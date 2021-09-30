@@ -3,7 +3,7 @@ import Util
 /// Object code for a regex program, to be interpreted by a VM
 ///
 /// Consists of an instruction list and metadata tracking:
-///   - Locations of lables (branch destinations)
+///   - Locations of labels (branch destinations)
 ///   - Locations of splits (branches)
 ///   - Total number of captures
 ///   - Various options (case-insensitive, etc)
