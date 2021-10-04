@@ -1,8 +1,37 @@
-# Library-Extensible Regex Literals
+# Regex Literals Musings
 
 * Author: Michael Ilseman
 
-## Example
+## Introduction
+
+As forums discussions bear fruit, I wanted to write down some of my emerging thoughts and musings on the topic of regex literals.
+
+Main points:
+
+- Go with a typical regex literal instead of something custom/nicer
+    + Main reason for regex is familiarity and broad appeal
+    + If we're building something custom, let's not do it on top of the shaky technical foundation that is regex
+    + This _should not_ be done in a way that preclude us from other kinds of matching API or even literals
+    + This _should_ be done in a way that motivates and develops the basis of future matching API or even literals
+- Provide library-extensibility by parsing regex literals *fully* in the compiler, invoking function decls for each feature
+    + Libraries (e.g. we) use availability on the ad-hoc function decls to statically communicate feature set
+    + We provide a way to pretty-print them back out (e.g. enabling a PCRE2 wrapper library)
+    + **TBD**: Tracking capabilities and API expressing capabilities
+- **TBD**: choice of delimiter itself (`'` vs `/` vs `#/`, etc) and/or custom delimiters
+
+
+## Normal Regex Literals
+
+The main reason for regex literals is familiarity and broad appeal. We lose this when we do anything "weird".
+
+Regular expressions serve as a poor basis for building something weird/custom on top of. Ambiguity / non-determinism is fine for their original intent of describing the set of strings belonging to a regular language, but that can really suck in practice. They occupy a weird complexity class, limiting their composability and applicability.
+
+The challenge is to ship them in a way that helps establish the basis for more generalized pattern matching and parsing support. We don't want to preclude other approaches (or even literals) and we want to be building towards a common good with `Pattern`, etc.
+
+
+## Library-extensible Regex Literals
+
+### Example
 
 Total straw-person:
 
@@ -32,52 +61,43 @@ let __C3 = builder.concatenate(__A3, __C2)
 return builder.finalize(__C3)
 ```
 
-Since regex syntax is acyclic, we don't strictly need tokens for terms, but it keeps it cleaner in my mind. I didn't assign types to captures in this example...
+This doesn't demonstrate typed captures, however...
 
-Note: enumeration of character ranges only really works for single-scalar grapheme clusters and would be ordered based on scalar value. For scalars that have decompositions.... well... maybe this only makes sense for ASCII. Also, what to do about CR-LF?
+Of course, we can also provide a built-in facility to pretty-print it back out, which would be useful for libraries wrapping string-based engines.
 
+Note: Enumeration of character ranges only really works for single-scalar grapheme clusters and would be ordered based on scalar value. It would also probably only make sense for single-segment normalization-invariant scalars. It's also essentially meaningless unless someone is really doing data processing and wants the scalar value range behavior. Also, what to do about CR-LF?
 
-## Supported features problem
+### Supported features problem
 
 There needs to be a way to surface the supported feature set:
 
 1) This conformer doesn't support a particular feature that's used
 2) This call site or usage doesn't support a particular feature that's used
 
-### 1) Conformer feature set
+This approach addresses concern #1. The compiler statically parses the regex, looking to invoke corresponding function declarations in some scope determined by the conforming type. If a declaration is not found, compiler issues an unsupported feature error. Libraries put availability on the declarations, which statically communicates their feature set and is the means for adding future functionality.
 
-Every single "feature" like a character class or some other meta-thingy, looks for a corresponding function definition on a conforming type. That is, we parse the regex, even providing intended semantics, while the conformer implements this. If the conformer doesn't provide a function definition, we generate a compilation error. Thus, conformers encode their feature set through ad-hoc function declarations, just like custom string interpolations.
+Concern #2 is... **TBD**. One example is if you're trying to run with grapheme cluster semantics, scalar properties aren't available (at least, beyond the subset that Swift can meaningfully prescribe grapheme cluster semantics for). APIs probably need some way to enforce this statically (and/or dynamically with traps).
 
-Of course, we provide a built-in facility to pretty-print it back out, which would be useful for e.g. a PCRE-wrapping package.
+### Why do this?
 
-### 2) Call site feature set
+One argument is allowing libraries (e.g. something bundling PCRE, code that explicitly wants to call into NSRegularExpression or JSCore, etc.) to be able to use regex literals. This is compelling and completely in line with our library-extensibility story for `String`.
 
-This is relevant to us. If you're trying to run with grapheme cluster semantics, scalar properties aren't available (at least, beyond the subset that Swift can meaningfully prescribe grapheme cluster semantics for).
+Personally, the argument I find the most compelling in the near term is that this pushes *us* into a clean and clear design. It can really highlight just-below-the-surface issues, and the "library" of ad-hoc function declarations serve as a compiler-checked specification of our feature set. The declarations can even serve as a place to hang documentation off of. Even if we start off with all this stuff being private, it's probably worth doing for ourselves.
 
-The APIs (i.e. us for now) should enforce this, instead of the conformer. But doing so means we probably want to track or otherwise know the feature set of regexes or even patterns statically whenever possible. When we don't know statically, we might still want precondition checks. So we're likely to have both a compile-time and run-time encoding of the used feature set.
-
-## Why do this?
-
-One argument is allowing libraries (e.g. something bundling PCRE, code that explicitly wants to call into NSRegularExpression or JSCore, etc.) to be able to use regex literals. I find this compelling and completely in line with our library-extensibility story for `String`.
-
-The argument I find the most compelling, personally, is that this pushes *us* into a clean and clear design. It can really highlight just-below-the-surface issues, and the "library" of ad-hoc function declarations serve as a compiler-checked specification of our feature set. It might be worth doing for ourselves, even if we make all the stuff private.
-
-Taking this argument further, it could help us stage improvements more effectively since the compiler has to do the parsing work anyways. We might as well have it parse the full feature set we want one day as it's harder to come back and add syntax after the fact. This allows us to wholly define the literal syntax now, and still be able to roll out features over time, complete with compile-time checking.
-
-The overloads would also be a pretty clean place to stick availability info.
+The compiler has to do the parsing anyways. It's easier to just parse the whole thing up-front than continuously come back to add syntax for each new feature rolled out. This allows us to deliver a full PCRE-esque literal parser while rolling out features over time, achieving a separation of (design) concerns.
 
 
-### Captures?
+## Delimiters
 
-There really is a pretty significant difference between literals with captures and literals without. Captures are certainly not relevant for many APIs, and I don't think we want some global (or even task-local) context to query for capture information after an e.g. `split`. Then again, that could be neat if explicitly opted into...
+- There might be problems with `/` specifically as the delimiter.
+- It's less important to allow multi-line or whitespace-insensitive literal variants (refactor into `Pattern`).
+    + It's probably also less important to allow for raw regex literals (requiring `#` to escape `\` or metacharacters)
+- It would be nice to have custom balanced delimiters
 
-### Vague concerns
+Personally, I'm not too invested in the choice of delimiter, but I respect that people have strong opinions.
 
-One of my (vague) concerns is that designing the literal feature set in isolation from the API they're intended for use with may be a source of blind spots. It could also lead us to over-engineer or over-design unimportant parts that become clear in the context of the API its used with.
 
-Swift literals resolve to a library-provided type directly, that is there is no "StringLiteral" type. This is a problem for e.g. character literals as we can't host API directly on a literal (e.g. `'a'.ascii`). For regexes, we might want to provide a real type that is the AST of a parsed regex with functionality on it.
-
-## Future Directions
+## Future Directions and Vague Concerns
 
 ### More general?
 
@@ -85,13 +105,20 @@ The basic syntax could be shared for PEG-like literals, though they have differe
 
 The strictly lexical syntax could be used for shell-style globs or some such, but that's probably a bit nuts to try to support with the same literal type.
 
-### Delimiters
+### Captures?
 
-- There might be problems with `/` specifically as the delimiter. That's TBD (CC Hamish).
-- It's less important to allow multi-line or whitespace-insensitive literal variants (refactor into `Pattern`).
-- It would be nice to have custom balanced delimiters
+There can be a pretty significant difference between literals with captures and literals without. Captures are certainly not relevant for many APIs, and I don't think we want some global (or even task-local) context to query for capture information after an e.g. `split`. Then again, that could be neat if explicitly opted into...
 
-### Fully-custom delimiters
+### Fully-custom literals
 
-It might be nice to have fully-custom literal syntax, understanding that we can say essentially nothing about them in general. This seems mostly orthogonal to this effort.
+It might be nice to have fully-custom literal syntax, understanding that we can say essentially nothing about them in general. One interface could be that both call and type context is passed to a compile-time library, which will parse and construct an instance of the requested type. This requires figuring out a significant portion of the library-driven compilation story, but any advance there is beneficial for this pattern matching effort. Beyond that, this seems mostly orthogonal to this effort.
 
+### Vague concerns
+
+I am a little concerned that typed captures will expose some latent issues or limitations in Swift's type system. I'm a little concerned that a particular approach or workaround might not generalize well to future matching capabilities.
+
+I'm a little concerned that if we go with `/`, we'll end up parsing differently based on language mode or accumulating gross hacks.
+
+I'm vaguely concerned that designing the literal feature set in isolation from the API they're intended for use with may be a source of blind spots. It could lead us to over-engineer or over-design unimportant parts that become clear in the context of the API its used with.
+
+I'm very-vaguely concerned that a lack of first-class literal types might be a problem.
