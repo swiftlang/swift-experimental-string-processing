@@ -1,7 +1,7 @@
 import Util
 
 public func compile(
-  _ regex: String, options: Options = .none
+  _ ast: AST, options: Options = .none
 ) throws -> RECode {
   var currentLabel = 0
   func createLabel() -> RECode.Instruction {
@@ -15,6 +15,9 @@ public func compile(
     case .empty: return
     case .character(let c):
       instructions.append(.character(c))
+      return
+    case .characterClass(let cc):
+      instructions.append(.characterClass(cc))
       return
     case .any:
       instructions.append(.any)
@@ -95,7 +98,6 @@ public func compile(
     }
   }
 
-  let ast = try parse(regex)
   compileNode(ast)
   instructions.append(.accept)
 
@@ -119,4 +121,11 @@ public func compile(
     splits: splits,
     numCaptures: numCaptures,
     options: options)
+}
+
+public func compile(
+  _ regex: String, options: Options = .none
+) throws -> RECode {
+  let ast = try parse(regex)
+  return try compile(ast, options: options)
 }

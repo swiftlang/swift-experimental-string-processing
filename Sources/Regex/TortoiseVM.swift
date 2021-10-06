@@ -99,11 +99,20 @@ extension TortoiseVM {
     }
     return result
   }
+
   func advance(_ input: String, _ sp: String.Index, _ bale: Bale) -> Bale {
     var result = Bale()
     guard bale.all({ code[$0.pc].isMatching }) else {
       fatalError("should of been readThrough")
     }
+
+    func advance(_ hatchling: inout Hatchling) {
+      hatchling.plod()
+      // TODO: this is double calculated
+      let sp = input.index(after: sp)
+      result.append(contentsOf: readThrough(sp, hatchling))
+    }
+
     for hatchling in bale {
       var hatchling = hatchling
       switch code[hatchling.pc] {
@@ -112,12 +121,14 @@ extension TortoiseVM {
 
       case .character(let c):
         guard input[sp] == c else { break }
-        fallthrough
+        advance(&hatchling)
+
+      case .characterClass(let cc):
+        guard cc.matches(input[sp]) else { break }
+        advance(&hatchling)
+
       case .any:
-        hatchling.plod()
-        // TODO: this is double calculated
-        let sp = input.index(after: sp)
-        result.append(contentsOf: readThrough(sp, hatchling))
+        advance(&hatchling)
 
       default: fatalError("should of been caught by isMatching")
       }

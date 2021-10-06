@@ -31,6 +31,7 @@ public enum AST: Hashable {
   indirect case oneOrMore(AST)
 
   case character(Character)
+  case characterClass(CharacterClass)
   case any
   case empty
 }
@@ -46,6 +47,7 @@ extension AST: CustomStringConvertible {
     case .zeroOrOne(let rest): return ".zeroOrOne(\(rest))"
     case .oneOrMore(let rest): return ".oneOrMore(\(rest))"
     case .character(let str): return str.halfWidthCornerQuoted
+    case .characterClass(let cc): return ".characterClass(\(cc))"
     case .any: return ".any"
     case .empty: return "".halfWidthCornerQuoted
     }
