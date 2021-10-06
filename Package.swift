@@ -43,6 +43,12 @@ let package = Package(
             name: "RegexTests",
             dependencies: ["Regex"]),
         .target(
+            name: "RegexDSL",
+            dependencies: ["Regex"]),
+        .testTarget(
+            name: "RegexDSLTests",
+            dependencies: ["RegexDSL"]),
+        .target(
             name: "PEG",
             dependencies: ["Util", "MatchingEngine"]),
         .testTarget(

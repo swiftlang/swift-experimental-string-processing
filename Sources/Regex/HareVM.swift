@@ -113,6 +113,21 @@ public struct HareVM: VirtualMachine {
         bunny.nibble(on: input)
         bunny.hop()
 
+      case .characterClass(let cc):
+        assert(bunny.sp < input.endIndex)
+        guard cc.matches(input[bunny.sp]) else {
+          // If there are no more alternatives to try, we failed
+          guard !stack.isEmpty else {
+            return (false, [])
+          }
+
+          // Continue with the next alternative
+          bunny = stack.restore()
+          continue
+        }
+        bunny.nibble(on: input)
+        bunny.hop()
+
       case .split(let disfavoring):
         var disfavoredBunny = bunny
         disfavoredBunny.hop(to: code.lookup(disfavoring))
@@ -136,5 +151,3 @@ public struct HareVM: VirtualMachine {
     }
   }
 }
-
-

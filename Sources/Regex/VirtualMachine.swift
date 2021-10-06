@@ -29,6 +29,9 @@ extension RECode {
     /// Consume and try to match a unit of input
     case character(Character)
 
+    /// Consume and try to match a unit of input against a character class
+    case characterClass(CharacterClass)
+
     /// Consume any unit of input
     case any
 
@@ -68,6 +71,7 @@ extension RECode.Instruction {
     switch self {
     case .accept: return true
     case .character(_): return true
+    case .characterClass(_): return true
     case .any: return true
     default: return false
     }
@@ -230,6 +234,7 @@ extension RECode.Instruction: CustomStringConvertible {
     case .nop: return "<NOP>"
     case .accept: return "<ACC>"
     case .any: return "<ANY>"
+    case .characterClass(let kind): return "<CHAR CLASS \(kind)>"
     case .character(let c): return c.halfWidthCornerQuoted
     case .split(let i): return "<SPLIT disfavoring \(i)>"
     case .goto(let label): return "<GOTO \(label)>"
