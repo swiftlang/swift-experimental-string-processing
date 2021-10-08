@@ -60,6 +60,12 @@ let package = Package(
         .testTarget(
             name: "PTCaRetTests",
             dependencies: ["PTCaRet", "Util"]),
+        .target(
+            name: "Algorithms",
+            dependencies: []),
+        .testTarget(
+            name: "AlgorithmsTests",
+            dependencies: ["Algorithms"]),
     ]
 )
 
