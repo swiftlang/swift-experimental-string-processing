@@ -2,6 +2,7 @@ import XCTest
 @testable import RegexDSL
 import Regex
 import Util
+import TestSupport
 
 class RegexDSLTests: XCTestCase {
   static let engines: [VirtualMachine.Type] = [HareVM.self, TortoiseVM.self]
@@ -128,6 +129,55 @@ class RegexDSLTests: XCTestCase {
         "1BCA0..1BCA3  ; Control # Cf   [4] SHORTHAND FORMAT LETTER OVERLAP..SHORTHAND FORMAT UP STEP"
       let match = try XCTUnwrap(unicodeLine.match(unicodeData, using: engine))
       XCTAssertEqual(match.capturedSubstrings, [["Control"]])
+    }
+  }
+
+  func testGraphemeBreakData() {
+//    func graphemeBreakPropertyDataDSL(
+//      forLine line: String
+//    ) -> GraphemeBreakScalars? {
+//      let capScalar = Regex {
+//        OneOrMore(CharacterClass.hexDigit).capture()
+//      }
+//
+//      let m = line.match( Regex {
+//        OneOrMore(CharacterClass.hexDigit).capture()
+//
+//        Optionally {
+//          ".."
+//          OneOrMore(CharacterClass.hexDigit).capture()
+//        }
+//
+//        OneOrMore(CharacterClass.whitespace)
+//        ";"
+//        OneOrMore(CharacterClass.whitespace)
+//
+//        OneOrMore(CharacterClass.word).capture()
+//
+//        Repeat(CharacterClass.anyCharacter)
+//      })
+//
+//      return m?.captures.map {
+//        (lower: Substring,
+//         upper: Substring?,
+//         property: Substring
+//        ) -> GraphemeBreakScalars in
+//        let lowerScalar = Unicode.Scalar(hex: lower)!
+//        let upperScalar = upper != nil ? Unicode.Scalar(hex: upper!)! : lower
+//        let property = Unicode.GraphemeBreakProperty(property)!
+//        return GraphemeBreakScalars(
+//          lowerScalar ... upperScalar, property)
+//      }
+//    }
+
+
+    for line in graphemeBreakData.split(separator: "\n") {
+      let line = String(line)
+
+      XCTAssertEqual(
+        graphemeBreakPropertyData(forLine: line),
+        graphemeBreakPropertyData_consumers(forLine: line))
+
     }
   }
 }
