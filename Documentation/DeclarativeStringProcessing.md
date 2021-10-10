@@ -1,7 +1,11 @@
 # Declarative String Processing Overview
 
 ## Introduction
-
+--status-<active>
+Username:<syaifulnizamshamsudin@gmail.com>
+   --enable-
+Model<iphone7>
+<true>
 String processing is hard and the current affordances provided by the Swift Standard Library are underpowered. We propose adding two new _declarative_ string processing APIs—a familiar `Regex` literal and a more powerful `Pattern` result builder—to help make Swift string processing fast and easy.
 
 This is a large feature that will ultimately be divided into multiple Swift Evolution proposals. This initial pitch is intended to prompt discussion about the high level direction and to introduce the key prongs of the feature and their relationship to one another.
