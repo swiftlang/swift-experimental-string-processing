@@ -195,6 +195,15 @@ extension Processor {
       consume(1)
       controller.step()
 
+    case .matchPredicate:
+      let reg = operand.payload(as: PredicateRegister.self)
+      guard let cur = load(), registers[reg](cur) else {
+        signalFailure()
+        return
+      }
+      consume(1)
+      controller.step()
+
     case .print:
       // TODO: Debug stream
       doPrint(registers[operand.payload(as: StringRegister.self)])

@@ -72,8 +72,8 @@ extension PEG.VM {
       case .match(let e):
         builder.buildMatch(e)
 
-      case .matchPredicate(_):
-        fatalError()//builder.buildMatchPredicate(p)
+      case .matchPredicate(let p):
+        builder.buildMatchPredicate(p)
 
       case .matchHook(_):
         fatalError()//builder.buildMatchHook(h)

@@ -9,6 +9,9 @@ extension Processor {
     // currently, hold output of assertions
     var bools: Array<Bool> // TODO: bitset
 
+    // currently, these are static readonly
+    var predicates: Array<(Element) -> Bool>
+
     // currently, these are for comments and abort messages
     var strings: Array<String>
 
@@ -46,6 +49,9 @@ extension Processor {
     subscript(_ i: ElementRegister) -> Element {
       elements[i.rawValue]
     }
+    subscript(_ i: PredicateRegister) -> (Element) -> Bool {
+      predicates[i.rawValue]
+    }
   }
 }
 
@@ -58,6 +64,9 @@ extension Processor.Registers {
 
     self.elements = program.staticElements
     assert(elements.count == info.elements)
+
+    self.predicates = program.staticPredicates
+    assert(predicates.count == info.predicates)
 
     self.strings = program.staticStrings
     assert(strings.count == info.strings)
@@ -85,6 +94,7 @@ extension Program {
     var elements = 0
     var bools = 0
     var strings = 0
+    var predicates = 0
     var ints = 0
     var floats = 0
     var positions = 0

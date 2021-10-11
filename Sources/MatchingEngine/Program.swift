@@ -5,6 +5,7 @@ public struct Program<Element> where Element: Equatable {
 
   var staticElements: Array<Element>
   var staticStrings: Array<String>
+  var staticPredicates: Array<(Element) -> Bool>
 
   var registerInfo: RegisterInfo
 
@@ -18,6 +19,9 @@ extension Program: CustomStringConvertible {
     Strings: \(staticStrings)
 
     """
+    if !staticPredicates.isEmpty {
+      result += "Predicates: \(staticPredicates)"
+    }
 
     // TODO: Extract into formatting code
 
