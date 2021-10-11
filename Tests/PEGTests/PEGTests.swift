@@ -29,13 +29,16 @@ extension PEG.Pattern {
   }
 }
 
-
 class PEGTests: XCTestCase {
+}
+
+class PEGStringTests: XCTestCase {
+  typealias Pattern = PEG<Character>.Pattern
+
   let doPrint = false
   func show<S: CustomStringConvertible>(_ s: S) {
     if doPrint { print(s) }
   }
-
 
   func testComments() {
     /// Match C-style comments 
@@ -149,8 +152,6 @@ class PEGTests: XCTestCase {
      OddBoth -> 0 OddOne | 1 OddZero
 
      */
-
-    typealias Pattern = PEG<Character>.Pattern
 
     let even = Pattern.orderedChoice(
       Pattern("0", .variable("OddZero")),
@@ -268,8 +269,6 @@ class PEGTests: XCTestCase {
   }
 
   func testCamelCase() {
-    typealias Pattern = PEG<Character>.Pattern
-
     let tests: Array<(String, Array<String>)> = [
       ("AB", ["AB"]),
       ("ABc", ["A", "Bc"]),
@@ -281,6 +280,41 @@ class PEGTests: XCTestCase {
     _ = tests
 
     return // TODO: camel case examples
+  }
+
+  func testCharacterClasses() {
+    func testClass(_ p: Pattern, _ c: Character) -> Bool {
+      // Compilation
+      let code = PEG.VM<String>.compile(PEG.Program(start: "S", environment: ["S": p]))
+      var vm = PEG.VM.load(code)
+      vm.enableTracing = false
+      show(vm)
+
+      let engine = Engine<String>(vm.transpile())
+      show(engine)
+
+      let s = String(c)
+
+      let (vmResult, transpileResult) = (vm.consume(s), engine.consume(s))
+      XCTAssertEqual(vmResult, transpileResult)
+      return vmResult != nil
+    }
+
+    let hex = Pattern.charactetSet(\.isHexDigit)
+    let newline = Pattern.charactetSet(\.isNewline)
+    let letter = Pattern.charactetSet(\.isLetter)
+    let ascii = Pattern.charactetSet(\.isASCII)
+
+    let alphaHexadecimal = Pattern.orderedChoice(hex, letter)
+
+    let tests = "7abCz 🧟‍♀️_e\u{301}_é\n.\r\n,"
+    for char in tests {
+      XCTAssertEqual(char.isHexDigit, testClass(hex, char))
+      XCTAssertEqual(char.isNewline, testClass(newline, char))
+      XCTAssertEqual(char.isLetter, testClass(letter, char))
+      XCTAssertEqual(char.isASCII, testClass(ascii, char))
+      XCTAssertEqual(char.isHexDigit || char.isLetter, testClass(alphaHexadecimal, char))
+    }
   }
 
   func testGraphemeBreakProperties() {
