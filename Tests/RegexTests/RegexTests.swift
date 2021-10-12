@@ -103,7 +103,7 @@ class RegexTests: XCTestCase {
                                    "d"))
     performTest("a|b?c", alt("a", concat(.zeroOrOne("b"), "c")))
     performTest("(?a|b)c", concat(.capturingGroup(alt("a", "b")), "c"))
-    performTest("(?.)*(?.*)", concat(.many(.capturingGroup(.any)), .capturingGroup(.many(.any))))
+    performTest("(?.)*(?.*)", concat(.many(.capturingGroup(.characterClass(.any))), .capturingGroup(.many(.characterClass(.any)))))
 
     // TODO: failure tests
   }
@@ -209,7 +209,7 @@ class RegexTests: XCTestCase {
                        labels: [0, 10, 3, 7], numCaptures: 1))
     performTest("(.*)*",
                 recode(label(0), split(disfavoring: 1),
-                       label(2), split(disfavoring: 3), .any, goto(label: 2),
+                       label(2), split(disfavoring: 3), .characterClass(.any), goto(label: 2),
                        label(3), goto(label: 0),
                        label(1),
                        labels: [0, 8, 2, 6], numCaptures: 0))
@@ -230,10 +230,11 @@ class RegexTests: XCTestCase {
       ("a\\sb", ["a b"], ["ab", "a  b"]),
       ("a\\s+b", ["a b", "a    b"], ["ab", "a    c"]),
       ("a\\dbc", ["a1bc"], ["ab2", "a1b", "a11b2", "a1b22"]),
-      // assertion failure at HareVM.swift line 117
-      // ("a\\db\\dc", ["a1b3c"], ["ab2", "a1b", "a11b2", "a1b22"]),
+      ("a\\db\\dc", ["a1b3c"], ["ab2", "a1b", "a11b2", "a1b22"]),
       ("a\\d\\db\\dc", ["a12b3c"], ["ab2", "a1b", "a11b2", "a1b22"]),
 
+      ("Caf\\u0065\\u0301", ["Cafe\u{301}"], ["Café", "Cafe"])
+      
       // Pathological (at least for HareVM and for now Tortoise too)
       //            ("(a*)*", ["a"], ["b"])
     ]
@@ -300,6 +301,30 @@ class RegexTests: XCTestCase {
     for (regex, input, captures) in captureTests {
       let caps = captures.map { Array($0) }
       performTest(regex: regex, input: input, expectedCaptures: caps)
+    }
+  }
+  
+  func testMatchLevel() {
+    let tests: Array<(String, chars: [String], unicodes: [String])> = [
+      ("..", ["e\u{301}e\u{301}"], ["e\u{301}"]),
+    ]
+
+    for (regex, characterInputs, scalarInputs) in tests {
+      let code = try! compile(regex)
+      let harvey = HareVM(code)
+      
+      let scalarCode = code.withMatchLevel(.unicodeScalar)
+      let scalarHarvey = HareVM(scalarCode)
+            
+      for input in characterInputs {
+        XCTAssertTrue(harvey.execute(input: input).0)
+        XCTAssertFalse(scalarHarvey.execute(input: input).0)
+      }
+      
+      for input in scalarInputs {
+        XCTAssertTrue(scalarHarvey.execute(input: input).0)
+        XCTAssertFalse(harvey.execute(input: input).0)
+      }
     }
   }
 }

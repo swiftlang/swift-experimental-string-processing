@@ -17,6 +17,12 @@ struct Leveret {
 
   mutating func nibble(on str: String) { sp = str.index(after: sp) }
 
+  mutating func nibble(to i: String.Index) { sp = i }
+
+  mutating func nibbleScalar(on str: String) {
+    sp = str.unicodeScalars.index(after: sp)
+  }
+
   mutating func beginCapture(_ id: CaptureId) {
     core.beginCapture(id, sp)
   }
@@ -113,9 +119,9 @@ public struct HareVM: VirtualMachine {
         bunny.nibble(on: input)
         bunny.hop()
 
-      case .characterClass(let cc):
+      case .unicodeScalar(let u):
         assert(bunny.sp < input.endIndex)
-        guard cc.matches(input[bunny.sp]) else {
+        guard input.unicodeScalars[bunny.sp] == u else {
           // If there are no more alternatives to try, we failed
           guard !stack.isEmpty else {
             return (false, [])
@@ -125,7 +131,22 @@ public struct HareVM: VirtualMachine {
           bunny = stack.restore()
           continue
         }
-        bunny.nibble(on: input)
+        bunny.nibbleScalar(on: input)
+        bunny.hop()
+
+      case .characterClass(let cc):
+        assert(bunny.sp < input.endIndex)
+        guard let nextSp = cc.matches(in: input, at: bunny.sp) else {
+          // If there are no more alternatives to try, we failed
+          guard !stack.isEmpty else {
+            return (false, [])
+          }
+
+          // Continue with the next alternative
+          bunny = stack.restore()
+          continue
+        }
+        bunny.nibble(to: nextSp)
         bunny.hop()
 
       case .split(let disfavoring):

@@ -48,8 +48,9 @@ public struct TortoiseVM: VirtualMachine {
     var bale = Bale()
     let startTurtle = Hatchling(code.startIndex, numCaptures: code.numCaptures)
     bale.append(contentsOf: readThrough(input.startIndex, startTurtle))
-    for idx in input.indices {
-      bale = advance(input, idx, bale)
+    var idx = input.startIndex
+    while idx < input.endIndex {
+      (bale, idx) = advance(input, idx, bale)
     }
     for hatchling in bale {
       if code[hatchling.pc].isAccept {
@@ -100,17 +101,23 @@ extension TortoiseVM {
     return result
   }
 
-  func advance(_ input: String, _ sp: String.Index, _ bale: Bale) -> Bale {
+  func advance(_ input: String, _ sp: String.Index, _ bale: Bale) -> (Bale, String.Index) {
     var result = Bale()
+    var nextPosition = input.index(after: sp)
+    
     guard bale.all({ code[$0.pc].isMatching }) else {
       fatalError("should of been readThrough")
     }
 
-    func advance(_ hatchling: inout Hatchling) {
+    func advance(_ hatchling: inout Hatchling, to sp: String.Index) {
       hatchling.plod()
       // TODO: this is double calculated
-      let sp = input.index(after: sp)
-      result.append(contentsOf: readThrough(sp, hatchling))
+      nextPosition = sp
+      result.append(contentsOf: readThrough(nextPosition, hatchling))
+    }
+
+    func advance(_ hatchling: inout Hatchling) {
+      advance(&hatchling, to: input.index(after: sp))
     }
 
     for hatchling in bale {
@@ -123,9 +130,13 @@ extension TortoiseVM {
         guard input[sp] == c else { break }
         advance(&hatchling)
 
+      case .unicodeScalar(let u):
+        guard input.unicodeScalars[sp] == u else { break }
+        advance(&hatchling, to: input.unicodeScalars.index(after: sp))
+
       case .characterClass(let cc):
-        guard cc.matches(input[sp]) else { break }
-        advance(&hatchling)
+        guard let nextSp = cc.matches(in: input, at: sp) else { break }
+        advance(&hatchling, to: nextSp)
 
       case .any:
         advance(&hatchling)
@@ -133,6 +144,6 @@ extension TortoiseVM {
       default: fatalError("should of been caught by isMatching")
       }
     }
-    return result
+    return (result, nextPosition)
   }
 }

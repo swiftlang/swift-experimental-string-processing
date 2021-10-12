@@ -31,6 +31,7 @@ public enum AST: Hashable {
   indirect case oneOrMore(AST)
 
   case character(Character)
+  case unicodeScalar(UnicodeScalar)
   case characterClass(CharacterClass)
   case any
   case empty
@@ -46,7 +47,8 @@ extension AST: CustomStringConvertible {
     case .many(let rest): return ".many(\(rest))"
     case .zeroOrOne(let rest): return ".zeroOrOne(\(rest))"
     case .oneOrMore(let rest): return ".oneOrMore(\(rest))"
-    case .character(let str): return str.halfWidthCornerQuoted
+    case .character(let c): return c.halfWidthCornerQuoted
+    case .unicodeScalar(let u): return u.halfWidthCornerQuoted
     case .characterClass(let cc): return ".characterClass(\(cc))"
     case .any: return ".any"
     case .empty: return "".halfWidthCornerQuoted
@@ -121,11 +123,28 @@ extension Parser {
       partialResult = isCapturing ? .capturingGroup(child) : .group(child)
       try lexer.eat(expecting: .rightParen)
 
-    case .character(let c, isEscaped: false)?:
+    case .character(let c, isEscaped: false):
       lexer.eat()
       partialResult = .character(c)
 
-    case .character(let c, isEscaped: true)?:
+    case .character("u", isEscaped: true):
+      lexer.eat()
+      var digits = ""
+      for _ in 0..<4 {
+        guard let tok = lexer.eat(),
+          case .character(let dig, isEscaped: false) = tok else {
+          try report("4 hex digits required after \\u")
+        }
+        digits.append(dig)
+      }
+      guard let value = UInt32(digits, radix: 16),
+            let scalar = UnicodeScalar(value)
+      else {
+        try report("invalid hex value after \\u: \(digits)")
+      }
+      partialResult = .unicodeScalar(scalar)
+      
+    case .character(let c, isEscaped: true):
       lexer.eat()
       if Token.MetaCharacter(rawValue: c) != nil {
         // Escaped metacharacters have their literal values
@@ -142,7 +161,7 @@ extension Parser {
 
     case .dot?:
       lexer.eat()
-      partialResult = .any
+      partialResult = .characterClass(.any)
 
     // Correct terminations
     case .rightParen?: fallthrough
