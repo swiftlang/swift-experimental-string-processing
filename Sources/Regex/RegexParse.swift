@@ -120,9 +120,26 @@ extension Parser {
       let child = try parse()
       partialResult = isCapturing ? .capturingGroup(child) : .group(child)
       try lexer.eat(expecting: .rightParen)
-    case .character(let c, _)?:
+
+    case .character(let c, isEscaped: false)?:
       lexer.eat()
       partialResult = .character(c)
+
+    case .character(let c, isEscaped: true)?:
+      lexer.eat()
+      if Token.MetaCharacter(rawValue: c) != nil {
+        // Escaped metacharacters have their literal values
+        partialResult = .character(c)
+
+      } else if let cc = CharacterClass(c) {
+        // Other characters either match a character class...
+        partialResult = .characterClass(cc)
+
+      } else {
+        // ...or are invalid
+        try report("unexpected escape sequence \\\(c)")
+      }
+
     case .dot?:
       lexer.eat()
       partialResult = .any

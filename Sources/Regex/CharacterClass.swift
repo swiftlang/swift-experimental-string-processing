@@ -21,6 +21,18 @@ public enum CharacterClass {
   }
 }
 
+extension CharacterClass {
+  init?(_ ch: Character) {
+    switch ch {
+    case "s": self = .whitespace
+    case "d": self = .digit
+    case "w": self = .word
+      
+    default: return nil
+    }
+  }
+}
+
 extension CharacterClass: CustomStringConvertible {
   public var description: String {
     switch self {

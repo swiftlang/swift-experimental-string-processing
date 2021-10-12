@@ -60,7 +60,7 @@ public struct HareVM: VirtualMachine {
   }
 
   public func execute(input: String) -> (Bool, [CaptureStack]) {
-    assert(.accept == code.last!)
+    assert(code.last!.isAccept)
     var bunny = Leveret(
       code.startIndex, input.startIndex, numCaptures: code.numCaptures)
     var stack = BunnyStack()

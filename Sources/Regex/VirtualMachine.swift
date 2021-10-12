@@ -50,8 +50,16 @@ extension RECode {
     /// End a numbered capture
     case endCapture(CaptureId)
 
+    var isAccept: Bool {
+      switch self {
+      case .accept:
+        return true
+      default:
+        return false
+      }
+    }
+    
     // Future instructions
-    //    case characterClass(CharacterClass)
     //    case ratchet
     //    case peekAhead([CharacterClass])
     //    case peekBehind([CharacterClass])
@@ -236,6 +244,7 @@ extension RECode.Instruction: CustomStringConvertible {
     case .any: return "<ANY>"
     case .characterClass(let kind): return "<CHAR CLASS \(kind)>"
     case .character(let c): return c.halfWidthCornerQuoted
+    case .characterClass(let cc): return "<CLASS \(cc)>"
     case .split(let i): return "<SPLIT disfavoring \(i)>"
     case .goto(let label): return "<GOTO \(label)>"
     case .label(let i): return "<\(i)>"

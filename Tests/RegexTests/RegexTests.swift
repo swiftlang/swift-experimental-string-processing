@@ -226,6 +226,14 @@ class RegexTests: XCTestCase {
        ["abc", "cdef", "abcde", "abcdeff"]),
       ("ab(c|def)+", ["abc", "abdef", "abcdef", "abdefdefcdefc"],
        ["ab", "c", "abca"]),
+      
+      ("a\\sb", ["a b"], ["ab", "a  b"]),
+      ("a\\s+b", ["a b", "a    b"], ["ab", "a    c"]),
+      ("a\\dbc", ["a1bc"], ["ab2", "a1b", "a11b2", "a1b22"]),
+      // assertion failure at HareVM.swift line 117
+      // ("a\\db\\dc", ["a1b3c"], ["ab2", "a1b", "a11b2", "a1b22"]),
+      ("a\\d\\db\\dc", ["a12b3c"], ["ab2", "a1b", "a11b2", "a1b22"]),
+
       // Pathological (at least for HareVM and for now Tortoise too)
       //            ("(a*)*", ["a"], ["b"])
     ]

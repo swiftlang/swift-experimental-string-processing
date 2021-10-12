@@ -52,7 +52,7 @@ public struct TortoiseVM: VirtualMachine {
       bale = advance(input, idx, bale)
     }
     for hatchling in bale {
-      if .accept == code[hatchling.pc] {
+      if code[hatchling.pc].isAccept {
         return (true, hatchling.core.captures)
       }
     }
