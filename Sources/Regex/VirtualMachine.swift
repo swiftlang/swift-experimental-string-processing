@@ -82,6 +82,7 @@ extension RECode.Instruction {
     switch self {
     case .any: return true
     case .character(_): return true
+    case .characterClass(_): return true
     default: return false
     }
   }

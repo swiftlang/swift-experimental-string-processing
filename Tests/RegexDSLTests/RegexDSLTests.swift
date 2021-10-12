@@ -123,8 +123,7 @@ class RegexDSLTests: XCTestCase {
     // Assert the inferred capture type.
     let _: [Character].Type = type(of: unicodeData).CaptureValue.self
 
-    // FIXME: HareVM currently fails at assertion `assert(bunny.sp < input.endIndex)`.
-    try forEachEngine(except: HareVM.self) { engine in
+    try forEachEngine { engine in
       let unicodeLine =
         "1BCA0..1BCA3  ; Control # Cf   [4] SHORTHAND FORMAT LETTER OVERLAP..SHORTHAND FORMAT UP STEP"
       let match = try XCTUnwrap(unicodeLine.match(unicodeData, using: engine))
