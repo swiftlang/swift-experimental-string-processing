@@ -228,8 +228,6 @@ func parseField(_ field: String) -> ParsedField {
 }
 ```
 
-We'd like more community feedback on these future directions.
-
 ### Other semantic details
 
 Further details about the semantics of regex literals, such as what definition we give to character classes, the initial supported feature set, and how to switch between grapheme-semantic and scalar-semantic usage, is still under investigation and outside the scope of this discussion.
