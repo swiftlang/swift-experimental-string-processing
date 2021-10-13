@@ -126,31 +126,14 @@ extension Parser {
     case .character(let c, isEscaped: false):
       lexer.eat()
       partialResult = .character(c)
-
-    case .character("u", isEscaped: true):
+      
+    case .unicodeScalar(let u):
       lexer.eat()
-      var digits = ""
-      for _ in 0..<4 {
-        guard let tok = lexer.eat(),
-          case .character(let dig, isEscaped: false) = tok else {
-          try report("4 hex digits required after \\u")
-        }
-        digits.append(dig)
-      }
-      guard let value = UInt32(digits, radix: 16),
-            let scalar = UnicodeScalar(value)
-      else {
-        try report("invalid hex value after \\u: \(digits)")
-      }
-      partialResult = .unicodeScalar(scalar)
+      partialResult = .unicodeScalar(u)
       
     case .character(let c, isEscaped: true):
       lexer.eat()
-      if Token.MetaCharacter(rawValue: c) != nil {
-        // Escaped metacharacters have their literal values
-        partialResult = .character(c)
-
-      } else if let cc = CharacterClass(c) {
+      if let cc = CharacterClass(c) {
         // Other characters either match a character class...
         partialResult = .characterClass(cc)
 

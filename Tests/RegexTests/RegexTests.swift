@@ -59,6 +59,10 @@ class RegexTests: XCTestCase {
                 .leftParen, "b", .pipe, "c", .rightParen, .question, "d")
     performTest("a|b?c", "a", .pipe, "b", .question, "c")
     performTest("(?a|b)c", .leftParen, .question, "a", .pipe, "b", .rightParen, "c")
+    performTest("a\\u0065b\\u{65}c\\x65d",
+                "a", .unicodeScalar("e"),
+                "b", .unicodeScalar("e"),
+                "c", .unicodeScalar("e"), "d")
 
     // Gramatically invalid (yet lexically valid)
     performTest("|*\\\\", .pipe, .star, "\\")
@@ -104,6 +108,12 @@ class RegexTests: XCTestCase {
     performTest("a|b?c", alt("a", concat(.zeroOrOne("b"), "c")))
     performTest("(?a|b)c", concat(.capturingGroup(alt("a", "b")), "c"))
     performTest("(?.)*(?.*)", concat(.many(.capturingGroup(.characterClass(.any))), .capturingGroup(.many(.characterClass(.any)))))
+    performTest("abc\\d",concat("a", "b", "c", .characterClass(.digit)))
+    performTest("a\\u0065b\\u{00000065}c\\x65d\\U00000065",
+                concat("a", .unicodeScalar("e"),
+                       "b", .unicodeScalar("e"),
+                       "c", .unicodeScalar("e"),
+                       "d", .unicodeScalar("e")))
 
     // TODO: failure tests
   }
@@ -233,8 +243,9 @@ class RegexTests: XCTestCase {
       ("a\\db\\dc", ["a1b3c"], ["ab2", "a1b", "a11b2", "a1b22"]),
       ("a\\d\\db\\dc", ["a12b3c"], ["ab2", "a1b", "a11b2", "a1b22"]),
 
-      ("Caf\\u0065\\u0301", ["Cafe\u{301}"], ["Café", "Cafe"])
-      
+      ("Caf\\u{65}\\u0301", ["Cafe\u{301}"], ["Café", "Cafe"]),
+      ("Caf\\x65\\u0301", ["Cafe\u{301}"], ["Café", "Cafe"]),
+
       // Pathological (at least for HareVM and for now Tortoise too)
       //            ("(a*)*", ["a"], ["b"])
     ]

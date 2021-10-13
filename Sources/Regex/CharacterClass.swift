@@ -6,15 +6,15 @@ public struct CharacterClass: Hashable {
   var matchLevel: MatchLevel
   
   public enum Representation {
-    // Any character
+    /// Any character
     case any
-    // Character.isDigit
+    /// Character.isDigit
     case digit
-    // Character.isHexDigit
+    /// Character.isHexDigit
     case hexDigit
-    // Character.isWhitespace
+    /// Character.isWhitespace
     case whitespace
-    // Character.isLetter or Character.isDigit or Character == "_"
+    /// Character.isLetter or Character.isDigit or Character == "_"
     case word
   }
   
