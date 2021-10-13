@@ -20,16 +20,28 @@ public struct CharacterClass: Hashable {
   
   public enum MatchLevel {
     /// Match at the extended grapheme cluster level.
-    case character
+    case graphemeCluster
     /// Match at the Unicode scalar level.
     case unicodeScalar
   }
 
+  public var scalarSemantic: Self {
+    var result = self
+    result.matchLevel = .unicodeScalar
+    return result
+  }
+  
+  public var graphemeClusterSemantic: Self {
+    var result = self
+    result.matchLevel = .graphemeCluster
+    return result
+  }
+  
   /// Returns the end of the match of this character class in `str`, if
   /// it matches.
   public func matches(in str: String, at i: String.Index) -> String.Index? {
     switch matchLevel {
-    case .character:
+    case .graphemeCluster:
       let c = str[i]
       let next = str.index(after: i)
       switch cc {
@@ -56,23 +68,23 @@ public struct CharacterClass: Hashable {
 
 extension CharacterClass {
   public static var any: CharacterClass {
-    .init(cc: .any, matchLevel: .character)
+    .init(cc: .any, matchLevel: .graphemeCluster)
   }
   
   public static var whitespace: CharacterClass {
-    .init(cc: .whitespace, matchLevel: .character)
+    .init(cc: .whitespace, matchLevel: .graphemeCluster)
   }
   
   public static var digit: CharacterClass {
-    .init(cc: .digit, matchLevel: .character)
+    .init(cc: .digit, matchLevel: .graphemeCluster)
   }
   
   public static var hexDigit: CharacterClass {
-    .init(cc: .hexDigit, matchLevel: .character)
+    .init(cc: .hexDigit, matchLevel: .graphemeCluster)
   }
   
   public static var word: CharacterClass {
-    .init(cc: .word, matchLevel: .character)
+    .init(cc: .word, matchLevel: .graphemeCluster)
   }
   
   init?(_ ch: Character) {
