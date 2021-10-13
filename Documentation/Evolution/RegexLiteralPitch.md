@@ -129,7 +129,7 @@ let x = </<0; let y = 1</<
 ```
 Is this a regex literal `/<0; let y = 1</` with a prefix and postfix `<` operator applied, or two `let` bindings each using prefix and postfix `</<` operators?
 
-There are no easy ways of resolving these ambiguities, therefore a regex literal parsed with `/` delimiters will likely need to be introduced under a new language version mode, along with a deprecation of prefix and postfix `/` operators. Some prefix and postfix operators containing `/` may be disambiguated with parenthesis, but we may have to figure out a way to refer to the operator explicitly.
+There are no easy ways of resolving these ambiguities, therefore a regex literal parsed with `/` delimiters will likely need to be introduced under a new language version mode, along with a deprecation of prefix and postfix `/` operators. Some prefix and postfix operators containing `/` may be disambiguated with parenthesis, but we may have to figure out a way to refer to the operator explicitly or deprecate prefix and postfix (but not infix) operators containing `/`.
 
 #### On the existing division operator `/`
 
