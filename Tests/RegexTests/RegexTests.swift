@@ -59,6 +59,10 @@ class RegexTests: XCTestCase {
                 .leftParen, "b", .pipe, "c", .rightParen, .question, "d")
     performTest("a|b?c", "a", .pipe, "b", .question, "c")
     performTest("(?a|b)c", .leftParen, .question, "a", .pipe, "b", .rightParen, "c")
+    performTest("a\\u0065b\\u{65}c\\x65d",
+                "a", .unicodeScalar("e"),
+                "b", .unicodeScalar("e"),
+                "c", .unicodeScalar("e"), "d")
 
     // Gramatically invalid (yet lexically valid)
     performTest("|*\\\\", .pipe, .star, "\\")
@@ -103,7 +107,13 @@ class RegexTests: XCTestCase {
                                    "d"))
     performTest("a|b?c", alt("a", concat(.zeroOrOne("b"), "c")))
     performTest("(?a|b)c", concat(.capturingGroup(alt("a", "b")), "c"))
-    performTest("(?.)*(?.*)", concat(.many(.capturingGroup(.any)), .capturingGroup(.many(.any))))
+    performTest("(?.)*(?.*)", concat(.many(.capturingGroup(.characterClass(.any))), .capturingGroup(.many(.characterClass(.any)))))
+    performTest("abc\\d",concat("a", "b", "c", .characterClass(.digit)))
+    performTest("a\\u0065b\\u{00000065}c\\x65d\\U00000065",
+                concat("a", .unicodeScalar("e"),
+                       "b", .unicodeScalar("e"),
+                       "c", .unicodeScalar("e"),
+                       "d", .unicodeScalar("e")))
 
     // TODO: failure tests
   }
@@ -209,7 +219,7 @@ class RegexTests: XCTestCase {
                        labels: [0, 10, 3, 7], numCaptures: 1))
     performTest("(.*)*",
                 recode(label(0), split(disfavoring: 1),
-                       label(2), split(disfavoring: 3), .any, goto(label: 2),
+                       label(2), split(disfavoring: 3), .characterClass(.any), goto(label: 2),
                        label(3), goto(label: 0),
                        label(1),
                        labels: [0, 8, 2, 6], numCaptures: 0))
@@ -226,6 +236,16 @@ class RegexTests: XCTestCase {
        ["abc", "cdef", "abcde", "abcdeff"]),
       ("ab(c|def)+", ["abc", "abdef", "abcdef", "abdefdefcdefc"],
        ["ab", "c", "abca"]),
+      
+      ("a\\sb", ["a b"], ["ab", "a  b"]),
+      ("a\\s+b", ["a b", "a    b"], ["ab", "a    c"]),
+      ("a\\dbc", ["a1bc"], ["ab2", "a1b", "a11b2", "a1b22"]),
+      ("a\\db\\dc", ["a1b3c"], ["ab2", "a1b", "a11b2", "a1b22"]),
+      ("a\\d\\db\\dc", ["a12b3c"], ["ab2", "a1b", "a11b2", "a1b22"]),
+
+      ("Caf\\u{65}\\u0301", ["Cafe\u{301}"], ["Café", "Cafe"]),
+      ("Caf\\x65\\u0301", ["Cafe\u{301}"], ["Café", "Cafe"]),
+
       // Pathological (at least for HareVM and for now Tortoise too)
       //            ("(a*)*", ["a"], ["b"])
     ]
@@ -292,6 +312,30 @@ class RegexTests: XCTestCase {
     for (regex, input, captures) in captureTests {
       let caps = captures.map { Array($0) }
       performTest(regex: regex, input: input, expectedCaptures: caps)
+    }
+  }
+  
+  func testMatchLevel() {
+    let tests: Array<(String, chars: [String], unicodes: [String])> = [
+      ("..", ["e\u{301}e\u{301}"], ["e\u{301}"]),
+    ]
+
+    for (regex, characterInputs, scalarInputs) in tests {
+      let code = try! compile(regex)
+      let harvey = HareVM(code)
+      
+      let scalarCode = code.withMatchLevel(.unicodeScalar)
+      let scalarHarvey = HareVM(scalarCode)
+            
+      for input in characterInputs {
+        XCTAssertTrue(harvey.execute(input: input).0)
+        XCTAssertFalse(scalarHarvey.execute(input: input).0)
+      }
+      
+      for input in scalarInputs {
+        XCTAssertTrue(scalarHarvey.execute(input: input).0)
+        XCTAssertFalse(harvey.execute(input: input).0)
+      }
     }
   }
 }

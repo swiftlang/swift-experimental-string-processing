@@ -1,5 +1,5 @@
 import Regex
-@_exported import enum Regex.CharacterClass
+@_exported import struct Regex.CharacterClass
 
 fileprivate typealias DefaultEngine = TortoiseVM
 
