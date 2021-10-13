@@ -88,7 +88,7 @@ Libraries can extend regex handling logic for their domains. For example, a high
 
 ### Opting into certain regex features
 
-We intend for the compiler to completely parse [the PCRE syntax][PCRE]. However, types conforming to `RegexLiteralProtocol` might not be able to handle the full feature set. The compiler looks for corresponding function declarations inside `RegexLiteralProtocol` and will emit a compilation error if missing. Conforming types can use `@availability` on these function declarations to communicate versioning and add more support in the future.
+We intend for the compiler to completely parse [the PCRE syntax][PCRE]. However, types conforming to `RegexLiteralProtocol` might not be able to handle the full feature set. The compiler looks for corresponding function declarations inside `RegexLiteralProtocol` and will emit a compilation error if missing. Conforming types can use `@available` on these function declarations to communicate versioning and add more support in the future.
 
 This approach of lookup combined with availability allows the stdlib to support more features over time.
 
