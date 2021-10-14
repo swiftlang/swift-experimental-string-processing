@@ -100,7 +100,7 @@ This approach of lookup combined with availability allows the stdlib to support 
 
 Single line comments use the syntax `//`, which would conflict with the spelling for an empty regex literal. As such, an empty regex literal would be forbidden.
 
-While not conflicting with the syntax proposed in this pitch, it's also worth noting that the `//` comment syntax (in particular documentation comments that use `///`) would likely preclude the ability to use `///` as a delimiter if we ever wanted to support multi-line regex literals. It's possible though that future multi-line support could be inferred from the regex options provided. For example, a regex that uses the multi-line option `/(?m)/` could be allowed to span multiple lines.
+While not conflicting with the syntax proposed in this pitch, it's also worth noting that the `//` comment syntax (in particular documentation comments that use `///`) would likely preclude the ability to use `///` as a delimiter if we ever wanted to support multi-line regex literals. It's possible though that future multi-line support could be provided through raw regex literals. Alternatively, it could be inferred from the regex options provided. For example, a regex that uses the multi-line option `/(?m)/` could be allowed to span multiple lines.
 
 Multi-line comments use the `/*` delimiter. As such, a regex literal starting with `*` wouldn't be parsed. This however isn't a major issue as an unqualified `*` is already invalid regex syntax. An escaped `/\*/` regex literal wouldn't be impacted.
 
