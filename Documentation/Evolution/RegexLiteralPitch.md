@@ -90,11 +90,11 @@ public protocol RegexLiteralProtocol {
 
 Types conforming to `ExpressibleByRegexLiteral` will be able to provide a custom type that conforms to `RegexLiteralProtocol`, which will be used to build the resulting regex value. A default conforming type will be provided by the standard library (`DefaultRegexLiteral` here).
 
-Libraries can extend regex handling logic for their domains. For example, a higher-level library could provide linguistically richer regular expressions by incorporate locale, collation, language dictionaries, and fuzzier matching. Similarly, libraries wrapping different regex engines (e.g. `NSRegularExpression`) can support custom regex literals.
+Libraries can extend regex handling logic for their domains. For example, a higher-level library could provide linguistically richer regular expressions by incorporating locale, collation, language dictionaries, and fuzzier matching. Similarly, libraries wrapping different regex engines (e.g. `NSRegularExpression`) can support custom regex literals.
 
 ### Opting into certain regex features
 
-We intend for the compiler to completely parse [the PCRE syntax][PCRE]. However, types conforming to `RegexLiteralProtocol` might not be able to handle the full feature set. The compiler looks for corresponding function declarations inside `RegexLiteralProtocol` and will emit a compilation error if missing. Conforming types can use `@available` on these function declarations to communicate versioning and add more support in the future.
+We intend for the compiler to completely parse [the PCRE syntax][PCRE]. However, types conforming to `RegexLiteralProtocol` might not be able to handle the full feature set. The compiler will look for corresponding function declarations inside `RegexLiteralProtocol` and will emit a compilation error if missing. Conforming types can use `@available` on these function declarations to communicate versioning and add more support in the future.
 
 This approach of lookup combined with availability allows the stdlib to support more features over time.
 
@@ -118,7 +118,7 @@ x+/y/+z
 
 Should the operators be parsed as `+/` and `/+` respectively, or should this be parsed as `x + /y/ + z`?
 
-In this case, things can be more readily disambiguated by the user inserting additional whitespace. We therefore could continue to parse `x+/y/+z` as a binary operator chain, and require additional whitespace to interpret `/y/` as a regex literal.
+In this case, things can be disambiguated by the user inserting additional whitespace. We therefore could continue to parse `x+/y/+z` as a binary operator chain, and require additional whitespace to interpret `/y/` as a regex literal.
 
 #### On custom prefix and postfix operators using the `/` character
 
