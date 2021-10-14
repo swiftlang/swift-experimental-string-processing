@@ -12,8 +12,10 @@ This is a component of a larger string processing picture. We would like to star
 
 Regular expressions are a ubiquitous, familiar, and concise syntax for matching and extracting text that satisfies a particular pattern. Syntactically, a regex literal in Swift should:
 
-- Be familiar and facilitate knowledge reuse
-- Fit in with Swift's library extensibility story for literals
+- Support a syntax familiar to developers who have learned to use regular expressions in other tools and languages
+- Allow reuse of many regular expressions not specifically designed for Swift (e.g. from Stack Overflow or popular programming books)
+- Allow libraries to define custom types that can be constructed with regex literals, much like string literals
+- Diagnose at compile time if a regex literal uses capabilities that aren't allowed by the type's regex dialect
 
 Further motivation, examples, and discussion can be found in the [overview thread][overview].
 
@@ -98,6 +100,8 @@ This approach of lookup combined with availability allows the stdlib to support 
 
 Single line comments use the syntax `//`, which would conflict with the spelling for an empty regex literal. As such, an empty regex literal would be forbidden.
 
+While not conflicting with the syntax proposed in this pitch, it's also worth noting that the `//` comment syntax (in particular documentation comments that use `///`) would likely preclude the ability to use `///` as a delimiter if we ever wanted to support multi-line regex literals. It's possible though that future multi-line support could be inferred from the regex options provided. For example, a regex that uses the multi-line option `/(?m)/` could be allowed to span multiple lines.
+
 Multi-line comments use the `/*` delimiter. As such, a regex literal starting with `*` wouldn't be parsed. This however isn't a major issue as an unqualified `*` is already invalid regex syntax. An escaped `/\*/` regex literal wouldn't be impacted.
 
 #### On custom infix operators using the `/` character
@@ -173,6 +177,17 @@ SomeBuilder {
 ```
 
 `{ print("hello") }` will be parsed as a trailing closure to `SomeType()` rather than as a separate element to the result builder.
+
+It can also currently arise with leading dot syntax in a result builder, e.g:
+
+```swift
+SomeBuilder {
+  SomeType()
+  .member
+}
+```
+
+`.member` will be parsed as a member access on `SomeType()` rather than as a separate element that may have its base type inferred by the parameter of a `buildExpression` method on the result builder.
 
 
 ## Future Directions
