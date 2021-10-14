@@ -72,7 +72,7 @@ New `ExpressibleByRegexLiteral` and `RegexLiteralProtocol` protocols will be int
 
 ```swift
 public protocol ExpressibleByRegexLiteral {
-  associatedtype RegexLiteral : RegexLiteralProtocol = Regex
+  associatedtype RegexLiteral : RegexLiteralProtocol = DefaultRegexLiteral
   init(regexLiteral: RegexLiteral)
 }
 
@@ -84,7 +84,7 @@ public protocol RegexLiteralProtocol {
 }
 ```
 
-Types conforming to `ExpressibleByRegexLiteral` will be able to provide a custom type that conforms to `RegexLiteralProtocol`, which will be used to build the resulting regex value. A default conforming type will be provided by the standard library (`Regex` here).
+Types conforming to `ExpressibleByRegexLiteral` will be able to provide a custom type that conforms to `RegexLiteralProtocol`, which will be used to build the resulting regex value. A default conforming type will be provided by the standard library (`DefaultRegexLiteral` here).
 
 Libraries can extend regex handling logic for their domains. For example, a higher-level library could provide linguistically richer regular expressions by incorporate locale, collation, language dictionaries, and fuzzier matching. Similarly, libraries wrapping different regex engines (e.g. `NSRegularExpression`) can support custom regex literals.
 
@@ -260,6 +260,22 @@ As explored above, using `/` as the delimiter has the potential to conflict with
 
 However one of the main goals of this pitch is to introduce a familiar syntax for regular expression literals, which has been the motivation behind choices such as using the PCRE regex syntax. Given the fact that `/` is an existing term of art for regular expressions, we feel that if the aforementioned parsing issues can be solved in a satisfactory manner, we should prefer it as the delimiter.
 
+
+### Reusing string literal syntax
+
+Instead of supporting a first-class literal kind for regular expressions, we could instead allow users to write a regular expression in a string literal, and parse, diagnose, and generate the appropriate code when it's coerced to an `ExpressibleByRegexLiteral` conforming type.
+
+```swift
+let regex: Regex = "([[:alpha:]]\w*) = ([0-9A-F]+)"
+```
+
+However we decided against this because:
+
+- We would not be able to easily apply custom syntax highlighting for the regex syntax
+- It would require an `ExpressibleByRegexLiteral` contextual type to be treated as a regex, otherwise it would be defaulted to `String`, which may be undesired
+- In an overloaded context it may be ambiguous whether a string literal is meant to be interpreted as a literal string or regex
+- Regex escape sequences aren't currently compatible with string literal escape sequence rules, e.g `\w` is currently illegal in a string literal
+- It wouldn't be compatible with other string literal features such as interpolations
 
 [PCRE]: http://pcre.org/current/doc/html/pcre2syntax.html
 [overview]: https://forums.swift.org/t/declarative-string-processing-overview/52459
