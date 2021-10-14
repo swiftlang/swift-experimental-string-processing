@@ -48,23 +48,27 @@ let regex = {
   var builder = T.RegexLiteral()
 
   // __A4 = /([[:alpha:]]\w*)/
-  let __A1 = builder.posixCharacterClassAlpha()
-  let __A2 = builder.characterClassWord()
-  let __A3 = builder.concatenate(__A1, __A2)
-  let __A4 = builder.captureGroup(__A3)
+  let __A1 = builder.buildCharacterClass_POSIX_alpha()
+  let __A2 = builder.buildCharacterClass_w()
+  let __A3 = builder.buildConcatenate(__A1, __A2)
+  let __A4 = builder.buildCaptureGroup(__A3)
 
   // __B1 = / = /
-  let __B1 = builder.literal(" = ")
+  let __B1 = builder.buildLiteral(" = ")
 
   // __C3 = /([0-9A-F]+)/
-  let __C1 = builder.customCharacterClass(["0"..."9", "A"..."F"])
-  let __C2 = builder.oneOrMore(__C1)
-  let __C3 = builder.captureGroup(__C2)
+  let __C1 = builder.buildCustomCharacterClass(["0"..."9", "A"..."F"])
+  let __C2 = builder.buildOneOrMore(__C1)
+  let __C3 = builder.buildCaptureGroup(__C2)
 
-  let __D1 = builder.concatenate(__A4, __B1, __C3)
+  let __D1 = builder.buildConcatenate(__A4, __B1, __C3)
   return T(regexLiteral: builder.finalize(__D1))
 }()
 ```
+
+In this formulation, the compiler fully parses the regex literal, calling mutating methods on a builder which constructs an AST. Here, the compiler recognizes syntax such as ranges and classifies metacharacters (`buildCharacterClass_w()`). Alternate formulations could involve less reasoning (`buildMetacharacter_w`), or more (`builderCharacterClass_word`). We'd like community feedback on this approach.
+
+Additionally, it may make sense for the stdlib to provide a `RegexLiteral` conformer that just constructs a string to pass off to a string-based library. Such a type might assume all features are supported unless communicated otherwise, and we'd like community feedback on mechanisms to communicate this (e.g. availability).
 
 ### The `ExpressibleByRegexLiteral` and `RegexLiteralProtocol` protocols
 
