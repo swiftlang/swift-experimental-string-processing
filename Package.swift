@@ -26,7 +26,6 @@ let package = Package(
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
-        .target(name: "TestSupport", dependencies: []),
         .target(
             name: "Util",
             dependencies: []),
@@ -50,12 +49,7 @@ let package = Package(
             dependencies: ["Regex"]),
         .testTarget(
             name: "RegexDSLTests",
-            dependencies: ["RegexDSL", "TestSupport"]),
-        .executableTarget(
-            name: "VariadicsGenerator",
-            dependencies: [
-              .product(name: "ArgumentParser", package: "swift-argument-parser")
-            ]),
+            dependencies: ["RegexDSL"]),
         .target(
             name: "PEG",
             dependencies: ["Util", "MatchingEngine"]),
@@ -68,6 +62,22 @@ let package = Package(
         .testTarget(
             name: "PTCaRetTests",
             dependencies: ["PTCaRet", "Util"]),
+
+        // MARK: Scripts
+        .executableTarget(
+            name: "VariadicsGenerator",
+            dependencies: [
+              .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ]),
+
+        // MARK: Exercises
+        .target(
+          name: "Exercises",
+          dependencies: ["MatchingEngine", "PEG", "PTCaRet", "Regex", "RegexDSL"]),
+        .testTarget(
+          name: "ExercisesTests",
+          dependencies: ["Exercises"]),
+
     ]
 )
 

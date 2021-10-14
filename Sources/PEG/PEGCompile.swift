@@ -88,6 +88,7 @@ extension PEG.VM {
   }
 }
 
+
 extension PEG.VM.Compilation.State: CustomStringConvertible {
   var description: String {
     """
@@ -269,4 +270,13 @@ extension PEG.VM.FunctionCompilation {
     }
   }
 
+}
+
+extension PEG.Program {
+  public func compile<Input: Collection>(
+    for input: Input.Type = Input.self
+  ) -> PEG.Consumer<Input> where Input.Element == Element {
+    let code = PEG.VM<Input>.compile(self)
+    return PEG.Consumer(vm: PEG.VM.load(code))
+  }
 }

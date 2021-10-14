@@ -1,7 +1,7 @@
 public enum PEG<Element: Comparable & Hashable> {}
 
 extension PEG {
-  enum Pattern {
+  public enum Pattern {
     /// Match any element
     case any
 
@@ -53,13 +53,16 @@ extension PEG {
     /// .end == .not(.any) == assertion { $1 == $0.endIndex }
     case end
 
-    static func many(_ p: Pattern) -> Pattern {
+    public static func many(_ p: Pattern) -> Pattern {
       .repeat(p, atLeast: 0)
     }
-    static func oneOrMore(_ p: Pattern) -> Pattern {
+    public static func oneOrMore(_ p: Pattern) -> Pattern {
       .repeat(p, atLeast: 1)
     }
-    static func range<RE: RangeExpression>(
+    public static func zeroOrOne(_ p: Pattern) -> Pattern {
+      .repeatRange(p, atLeast: 0, atMost: 1)
+    }
+    public static func range<RE: RangeExpression>(
       _ re: RE
     ) -> Pattern where RE.Bound == Element {
       .charactetSet({ re.contains($0) })
@@ -76,11 +79,16 @@ extension PEG {
   }
 
   // Environment is, effectively, a list of productions
-  typealias Environment = Dictionary<String, Pattern>
+  public typealias Environment = Dictionary<String, Pattern>
 
-  struct Program {
-    let start: String
-    let environment: Environment
+  public struct Program {
+    public let start: String
+    public let environment: Environment
+
+    public init(start: String, environment: Environment) {
+      self.start = start
+      self.environment = environment
+    }
 
     func checkInvariants() {
       assert(environment[start] != nil)
@@ -97,7 +105,7 @@ extension PEG {
 }
 
 extension PEG.Pattern: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     switch self {
     case .any: return "<any>"
     case .success: return "<success>"
@@ -130,5 +138,30 @@ extension PEG.Pattern: CustomStringConvertible {
     case .variable(let v): return "\(v)"
     case .end: return "<end>"
     }
+  }
+}
+
+extension PEG.Pattern:
+  ExpressibleByExtendedGraphemeClusterLiteral,
+  ExpressibleByUnicodeScalarLiteral,
+  ExpressibleByStringLiteral
+where Element == Character {
+  public typealias UnicodeScalarLiteralType = String
+  public typealias ExtendedGraphemeClusterLiteralType = String
+
+  public init(stringLiteral value: String) {
+    if value.count == 1 {
+      self = .element(value.first!)
+    } else {
+      self = .literal(Array(value))
+    }
+  }
+}
+extension PEG.Pattern {
+  public init(_ term: Self) {
+    self = term
+  }
+  public init(_ terms: Self...) {
+    self = .concat(terms)
   }
 }

@@ -4,30 +4,6 @@ import MatchingEngine
 
 // Make examples more sane. Need builder
 typealias Pattern = PEG<Character>.Pattern
-extension PEG.Pattern:
-  ExpressibleByExtendedGraphemeClusterLiteral,
-  ExpressibleByUnicodeScalarLiteral,
-  ExpressibleByStringLiteral
-where Element == Character {
-  public typealias UnicodeScalarLiteralType = String
-  public typealias ExtendedGraphemeClusterLiteralType = String
-
-  public init(stringLiteral value: String) {
-    if value.count == 1 {
-      self = .element(value.first!)
-    } else {
-      self = .literal(Array(value))
-    }
-  }
-}
-extension PEG.Pattern {
-  init(_ term: Self) {
-    self = term
-  }
-  init(_ terms: Self...) {
-    self = .concat(terms)
-  }
-}
 
 class PEGTests: XCTestCase {
 }
@@ -317,36 +293,5 @@ class PEGStringTests: XCTestCase {
     }
   }
 
-  func testGraphemeBreakProperties() {
 
-    /*
-     # This is a comment
-
-     0600..0605    ; Prepend # Cf   [6] ARABIC NUMBER SIGN..ARABIC NUMBER MARK ABOVE
-     06DD          ; Prepend # Cf       ARABIC END OF AYAH
-
-     */
-
-    // The API will run us over every line, our PEG tells whether the
-    // line matches and what captures to extract.
-    //
-    /*
-
-     Single line:
-
-     Decl -> <<\h{4, 6}> (".." <\h{4, 6}>)?> \s+ ";" \s <\w+> \s "#" .* success
-     
-     Multi line:
-
-     Decl -> <<Scalar> (".." <Scalar>)?> Space+ ";" Space Property Space "#" .* success
-     Scalar -> \h{4, 6}
-     Space -> \s
-     Property -> \w+
-
-     */
-
-
-    return // TODO: parse data file
-
-  }
 }

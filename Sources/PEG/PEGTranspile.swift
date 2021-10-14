@@ -95,3 +95,11 @@ extension PEG.VM {
     return builder.assemble()
   }
 }
+
+extension PEG.Program {
+  public func transpile<Input: Collection>(
+    for input: Input.Type = Input.self
+  ) -> Engine<Input> where Input.Element == Element {
+    Engine(compile(for: input).vm.transpile())
+  }
+}

@@ -1,3 +1,60 @@
+extension Unicode.Scalar {
+  // Convert a hexadecimal string to a scalar
+  public init?<S: StringProtocol>(hex: S) {
+    guard let val = UInt32(hex, radix: 16), let scalar = Self(val) else {
+      return nil
+    }
+    self = scalar
+  }
+}
+
+public struct GraphemeBreakEntry: Hashable {
+  let scalars: ClosedRange<Unicode.Scalar>
+  let property: Unicode.GraphemeBreakProperty
+
+  public init(
+    _ scalars: ClosedRange<Unicode.Scalar>,
+    _ property: Unicode.GraphemeBreakProperty) {
+    self.scalars = scalars
+    self.property = property
+  }
+}
+
+extension Unicode {
+  public enum GraphemeBreakProperty: UInt32 {
+    // We don't store the other properties, so we really don't care about them
+    // here.
+    case control = 0
+    case extend = 1
+    case prepend = 2
+    case spacingMark = 3
+    case extendedPictographic = 4
+
+    init?<S: StringProtocol>(_ str: S) {
+      switch str {
+      case "Extend":
+        self = .extend
+
+      // Although CR and LF are distinct properties, we have fast paths in place
+      // for those cases, so combine them here to allow for more contiguous
+      // ranges.
+      case "Control",
+           "CR",
+           "LF":
+        self = .control
+      case "Prepend":
+        self = .prepend
+      case "SpacingMark":
+        self = .spacingMark
+      case "Extended_Pictographic":
+        self = .extendedPictographic
+      default:
+        return nil
+      }
+    }
+  }
+}
+
 public let graphemeBreakData = """
 # GraphemeBreakProperty-13.0.0.txt
 # Date: 2019-10-21, 14:30:35 GMT
