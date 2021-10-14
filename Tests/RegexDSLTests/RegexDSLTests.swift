@@ -2,7 +2,6 @@ import XCTest
 @testable import RegexDSL
 import Regex
 import Util
-import TestSupport
 
 class RegexDSLTests: XCTestCase {
   static let engines: [VirtualMachine.Type] = [HareVM.self, TortoiseVM.self]
@@ -131,6 +130,7 @@ class RegexDSLTests: XCTestCase {
     }
   }
 
+  // TODO: Migrate over to be a Participant in the Exercises target
   func testGraphemeBreakData() {
 //    func graphemeBreakPropertyDataDSL(
 //      forLine line: String
@@ -168,15 +168,5 @@ class RegexDSLTests: XCTestCase {
 //          lowerScalar ... upperScalar, property)
 //      }
 //    }
-
-
-    for line in graphemeBreakData.split(separator: "\n") {
-      let line = String(line)
-
-      XCTAssertEqual(
-        graphemeBreakPropertyData(forLine: line),
-        graphemeBreakPropertyData_consumers(forLine: line))
-
-    }
   }
 }
