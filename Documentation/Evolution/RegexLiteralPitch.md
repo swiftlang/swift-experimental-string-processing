@@ -62,7 +62,8 @@ let regex = {
   let __C3 = builder.buildCaptureGroup(__C2)
 
   let __D1 = builder.buildConcatenate(__A4, __B1, __C3)
-  return T(regexLiteral: builder.finalize(__D1))
+  builder.finalize(__D1)
+  return T(regexLiteral: builder)
 }()
 ```
 
