@@ -348,5 +348,7 @@ A prior design allowed a user to choose their desired matching level and semanti
 
 - Since we want regular expressions created with a literal to be usable all the same places as those created using the DSL, anything predicate-based needs to have the input type specified at the time of creation. It wouldn't make sense to add a `(Character) -> Bool` predicate to a regular expression, and then apply it to the string's `UTF8View`.
 - The matching semantics of a regular expression are closely tied to the way it's composed, so it would likely be unpredictable or even nonsensical to apply a regular expression written for one view of a string to be applied to another view.
-- It's unclear whether the two UTF-encoded views would treat their elements as individual `UInt16` or `UInt8` values, or whether they would retain some notion of being encoded Unicode data. If the former, how would character classes like `\u{...}` or `\p{...}` be used by the parser? And if the latter, 
+- It's unclear whether the two UTF-encoded views would treat their elements as individual `UInt16` or `UInt8` values, or whether they would retain some notion of being encoded Unicode data. If the former, how would character classes like `\u{...}` or `\p{...}` be used by the parser? And if the latter, what purpose does this serve beyond parsing the `UnicodeScalarView`?
+
+For these reasons, regular expressions will target only the `StringProtocol`-conforming types — `String` and `Substring`. The other string views can be parsed using the more general `Collection`-based pattern matching, without the regular expression-specific features described in this proposal.
 
