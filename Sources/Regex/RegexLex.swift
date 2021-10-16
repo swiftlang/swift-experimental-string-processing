@@ -33,6 +33,7 @@ public enum Token {
 
   case meta(MetaCharacter)
   case character(Character, isEscaped: Bool)
+  case unicodeScalar(UnicodeScalar)
 
   // Convenience accessors
   public static var pipe: Token { .meta(.pipe) }
@@ -55,25 +56,53 @@ extension Token: CustomStringConvertible {
     switch self {
     case .meta(let meta): return meta.description
     case .character(let c, _): return c.halfWidthCornerQuoted
+    case .unicodeScalar(let u): return "U\(u.halfWidthCornerQuoted)"
     }
   }
 }
 
-extension Token: Equatable {
-  public static func ==(_ lhs: Token, _ rhs: Token) -> Bool {
-    switch (lhs, rhs) {
-    case (.meta(let l), .meta(let r)): return l == r
-    case (.character(let l, _), .character(let r, _)): return l == r
-    default: return false
-    }
-  }
-}
+extension Token: Equatable {}
 
 public struct Lexer {
   var source: Source
   var nextToken: Token? = nil
   public init(_ source: Source) { self.source = source }
 
+  private mutating func consumeUnicodeScalar(
+    firstDigit: Character? = nil,
+    digits digitCount: Int
+  ) -> UnicodeScalar {
+    var digits = firstDigit.map(String.init) ?? ""
+    for _ in digits.count ..< digitCount {
+      assert(!source.isEmpty, "Exactly \(digitCount) hex digits required")
+      digits.append(source.eat())
+    }
+
+    guard let value = UInt32(digits, radix: 16),
+          let scalar = UnicodeScalar(value)
+    else { fatalError("Invalid unicode sequence") }
+    
+    return scalar
+  }
+  
+  private mutating func consumeUnicodeScalar() -> UnicodeScalar {
+    var digits = ""
+    // Eat a maximum of 9 characters, the last of which must be the terminator
+    for _ in 0..<9 {
+      assert(!source.isEmpty, "Unterminated unicode value")
+      let next = source.eat()
+      if next == "}" { break }
+      digits.append(next)
+      assert(digits.count <= 8, "Maximum 8 hex values required")
+    }
+    
+    guard let value = UInt32(digits, radix: 16),
+          let scalar = UnicodeScalar(value)
+    else { fatalError("Invalid unicode sequence") }
+    
+    return scalar
+  }
+  
   private mutating func advance() {
     guard !source.isEmpty else {
       nextToken = nil
@@ -85,7 +114,44 @@ public struct Lexer {
       return
     }
     if current == Token.escape {
-      nextToken = .character(source.eat(), isEscaped: true)
+      assert(!source.isEmpty, "Escape at end of input string")
+      let nextCharacter = source.eat()
+      
+      switch nextCharacter {
+      // Escaped metacharacters are just regular characters
+      case let x where Token.MetaCharacter(rawValue: x) != nil:
+        fallthrough
+      case Token.escape:
+        nextToken = .character(nextCharacter, isEscaped: false)
+        
+      // Explicit Unicode scalar values have one of these forms:
+      // - \u{h...}   (1+ hex digits)
+      // - \uhhhh     (exactly 4 hex digits)
+      // - \x{h...}   (1+ hex digits)
+      // - \xhh       (exactly 2 hex digits)
+      // - \Uhhhhhhhh (exactly 8 hex digits)
+      case "u":
+        let firstDigit = source.eat()
+        if firstDigit == "{" {
+          nextToken = .unicodeScalar(consumeUnicodeScalar())
+        } else {
+          nextToken = .unicodeScalar(consumeUnicodeScalar(
+            firstDigit: firstDigit, digits: 4))
+        }
+      case "x":
+        let firstDigit = source.eat()
+        if firstDigit == "{" {
+          nextToken = .unicodeScalar(consumeUnicodeScalar())
+        } else {
+          nextToken = .unicodeScalar(consumeUnicodeScalar(
+            firstDigit: firstDigit, digits: 2))
+        }
+      case "U":
+        nextToken = .unicodeScalar(consumeUnicodeScalar(digits: 8))
+        
+      default:
+        nextToken = .character(nextCharacter, isEscaped: true)
+      }
       return
     }
     nextToken = .character(current, isEscaped: false)

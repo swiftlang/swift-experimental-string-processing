@@ -133,6 +133,11 @@ enum OpCode: UInt64 {
   /// Operand: Element register to compare against
   case match
 
+  /// Match an element based on whether it satisfies a predicate
+  ///
+  /// Operand: Predicate register to call
+  case matchPredicate
+
   /// Match against a provided element
   ///
   /// Operand: Packed condition register to write to and element register to compare against
@@ -339,6 +344,9 @@ extension Instruction {
   static func match(_ e: ElementRegister? = nil) -> Instruction {
     Instruction(.match, Operand(e))
   }
+  static func matchPredicate(_ e: PredicateRegister? = nil) -> Instruction {
+    Instruction(.matchPredicate, Operand(e))
+  }
   static func assertion(
     condition: BoolRegister? = nil, _ e: ElementRegister? = nil
   ) -> Instruction {
@@ -375,6 +383,12 @@ extension Instruction {
     case .match: fallthrough
     case .assertion:
       return operand.hasPayload ? operand.payload() : nil
+    default: return nil
+    }
+  }
+  var predicateRegister: PredicateRegister? {
+    switch opcode {
+    case .matchPredicate: return operand.payload()
     default: return nil
     }
   }

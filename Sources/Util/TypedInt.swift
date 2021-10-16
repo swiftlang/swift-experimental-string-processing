@@ -137,6 +137,10 @@ public enum _BoolRegister {}
 public typealias StringRegister = TypedInt<_StringRegister>
 public enum _StringRegister {}
 
+/// Used for predicates, e.g. character classes
+public typealias PredicateRegister = TypedInt<_StringRegister>
+public enum _PredicateRegister {}
+
 /// UNIMPLEMENTED
 public typealias IntRegister = TypedInt<_IntRegister>
 public enum _IntRegister {}

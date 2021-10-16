@@ -16,6 +16,9 @@ public func compile(
     case .character(let c):
       instructions.append(.character(c))
       return
+    case .unicodeScalar(let u):
+      instructions.append(.unicodeScalar(u))
+      return
     case .characterClass(let cc):
       instructions.append(.characterClass(cc))
       return

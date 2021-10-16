@@ -72,8 +72,8 @@ extension PEG.VM {
       case .match(let e):
         builder.buildMatch(e)
 
-      case .matchPredicate(_):
-        fatalError()//builder.buildMatchPredicate(p)
+      case .matchPredicate(let p):
+        builder.buildMatchPredicate(p)
 
       case .matchHook(_):
         fatalError()//builder.buildMatchHook(h)
@@ -93,5 +93,13 @@ extension PEG.VM {
     }
 
     return builder.assemble()
+  }
+}
+
+extension PEG.Program {
+  public func transpile<Input: Collection>(
+    for input: Input.Type = Input.self
+  ) -> Engine<Input> where Input.Element == Element {
+    Engine(compile(for: input).vm.transpile())
   }
 }

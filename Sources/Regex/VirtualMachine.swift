@@ -32,6 +32,8 @@ extension RECode {
     /// Consume and try to match a unit of input against a character class
     case characterClass(CharacterClass)
 
+    case unicodeScalar(UnicodeScalar)
+    
     /// Consume any unit of input
     case any
 
@@ -50,8 +52,16 @@ extension RECode {
     /// End a numbered capture
     case endCapture(CaptureId)
 
+    var isAccept: Bool {
+      switch self {
+      case .accept:
+        return true
+      default:
+        return false
+      }
+    }
+    
     // Future instructions
-    //    case characterClass(CharacterClass)
     //    case ratchet
     //    case peekAhead([CharacterClass])
     //    case peekBehind([CharacterClass])
@@ -71,6 +81,7 @@ extension RECode.Instruction {
     switch self {
     case .accept: return true
     case .character(_): return true
+    case .unicodeScalar(_): return true
     case .characterClass(_): return true
     case .any: return true
     default: return false
@@ -82,6 +93,8 @@ extension RECode.Instruction {
     switch self {
     case .any: return true
     case .character(_): return true
+    case .unicodeScalar(_): return true
+    case .characterClass(_): return true
     default: return false
     }
   }
@@ -129,6 +142,22 @@ extension RECode: RandomAccessCollection {
   }
   public func index(_ i: Index, offsetBy n: Int) -> Index {
     return Index(i.rawValue + n)
+  }
+}
+
+extension RECode {
+  public func withMatchLevel(_ level: CharacterClass.MatchLevel) -> RECode {
+    var result = self
+    result.instructions = result.instructions.map { inst in
+      switch inst {
+      case .characterClass(var cc):
+        cc.matchLevel = level
+        return .characterClass(cc)
+      default:
+        return inst
+      }
+    }
+    return result
   }
 }
 
@@ -236,6 +265,7 @@ extension RECode.Instruction: CustomStringConvertible {
     case .any: return "<ANY>"
     case .characterClass(let kind): return "<CHAR CLASS \(kind)>"
     case .character(let c): return c.halfWidthCornerQuoted
+    case .unicodeScalar(let u): return u.halfWidthCornerQuoted
     case .split(let i): return "<SPLIT disfavoring \(i)>"
     case .goto(let label): return "<GOTO \(label)>"
     case .label(let i): return "<\(i)>"

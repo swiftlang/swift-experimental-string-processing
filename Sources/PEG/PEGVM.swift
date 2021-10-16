@@ -6,7 +6,7 @@ extension PEG {
   // (provided no custom collection hooks are needed) to, and bind later.
   // For now, we bind Input with the VM
 
-  struct VM<Input: Collection> where Input.Element == Element {
+  public struct VM<Input: Collection> where Input.Element == Element {
     typealias Core = PEGCore<Input>
     typealias Instruction = Core.Instruction
 

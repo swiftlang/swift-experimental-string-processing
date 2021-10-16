@@ -4,38 +4,17 @@ import MatchingEngine
 
 // Make examples more sane. Need builder
 typealias Pattern = PEG<Character>.Pattern
-extension PEG.Pattern:
-  ExpressibleByExtendedGraphemeClusterLiteral,
-  ExpressibleByUnicodeScalarLiteral,
-  ExpressibleByStringLiteral
-where Element == Character {
-  public typealias UnicodeScalarLiteralType = String
-  public typealias ExtendedGraphemeClusterLiteralType = String
-
-  public init(stringLiteral value: String) {
-    if value.count == 1 {
-      self = .element(value.first!)
-    } else {
-      self = .literal(Array(value))
-    }
-  }
-}
-extension PEG.Pattern {
-  init(_ term: Self) {
-    self = term
-  }
-  init(_ terms: Self...) {
-    self = .concat(terms)
-  }
-}
-
 
 class PEGTests: XCTestCase {
+}
+
+class PEGStringTests: XCTestCase {
+  typealias Pattern = PEG<Character>.Pattern
+
   let doPrint = false
   func show<S: CustomStringConvertible>(_ s: S) {
     if doPrint { print(s) }
   }
-
 
   func testComments() {
     /// Match C-style comments 
@@ -149,8 +128,6 @@ class PEGTests: XCTestCase {
      OddBoth -> 0 OddOne | 1 OddZero
 
      */
-
-    typealias Pattern = PEG<Character>.Pattern
 
     let even = Pattern.orderedChoice(
       Pattern("0", .variable("OddZero")),
@@ -268,8 +245,6 @@ class PEGTests: XCTestCase {
   }
 
   func testCamelCase() {
-    typealias Pattern = PEG<Character>.Pattern
-
     let tests: Array<(String, Array<String>)> = [
       ("AB", ["AB"]),
       ("ABc", ["A", "Bc"]),
@@ -283,36 +258,40 @@ class PEGTests: XCTestCase {
     return // TODO: camel case examples
   }
 
-  func testGraphemeBreakProperties() {
+  func testCharacterClasses() {
+    func testClass(_ p: Pattern, _ c: Character) -> Bool {
+      // Compilation
+      let code = PEG.VM<String>.compile(PEG.Program(start: "S", environment: ["S": p]))
+      var vm = PEG.VM.load(code)
+      vm.enableTracing = false
+      show(vm)
 
-    /*
-     # This is a comment
+      let engine = Engine<String>(vm.transpile())
+      show(engine)
 
-     0600..0605    ; Prepend # Cf   [6] ARABIC NUMBER SIGN..ARABIC NUMBER MARK ABOVE
-     06DD          ; Prepend # Cf       ARABIC END OF AYAH
+      let s = String(c)
 
-     */
+      let (vmResult, transpileResult) = (vm.consume(s), engine.consume(s))
+      XCTAssertEqual(vmResult, transpileResult)
+      return vmResult != nil
+    }
 
-    // The API will run us over every line, our PEG tells whether the
-    // line matches and what captures to extract.
-    //
-    /*
+    let hex = Pattern.charactetSet(\.isHexDigit)
+    let newline = Pattern.charactetSet(\.isNewline)
+    let letter = Pattern.charactetSet(\.isLetter)
+    let ascii = Pattern.charactetSet(\.isASCII)
 
-     Single line:
+    let alphaHexadecimal = Pattern.orderedChoice(hex, letter)
 
-     Decl -> <<\h{4, 6}> (".." <\h{4, 6}>)?> \s+ ";" \s <\w+> \s "#" .* success
-     
-     Multi line:
-
-     Decl -> <<Scalar> (".." <Scalar>)?> Space+ ";" Space Property Space "#" .* success
-     Scalar -> \h{4, 6}
-     Space -> \s
-     Property -> \w+
-
-     */
-
-
-    return // TODO: parse data file
-
+    let tests = "7abCz 🧟‍♀️_e\u{301}_é\n.\r\n,"
+    for char in tests {
+      XCTAssertEqual(char.isHexDigit, testClass(hex, char))
+      XCTAssertEqual(char.isNewline, testClass(newline, char))
+      XCTAssertEqual(char.isLetter, testClass(letter, char))
+      XCTAssertEqual(char.isASCII, testClass(ascii, char))
+      XCTAssertEqual(char.isHexDigit || char.isLetter, testClass(alphaHexadecimal, char))
+    }
   }
+
+
 }

@@ -31,6 +31,7 @@ public enum AST: Hashable {
   indirect case oneOrMore(AST)
 
   case character(Character)
+  case unicodeScalar(UnicodeScalar)
   case characterClass(CharacterClass)
   case any
   case empty
@@ -46,7 +47,8 @@ extension AST: CustomStringConvertible {
     case .many(let rest): return ".many(\(rest))"
     case .zeroOrOne(let rest): return ".zeroOrOne(\(rest))"
     case .oneOrMore(let rest): return ".oneOrMore(\(rest))"
-    case .character(let str): return str.halfWidthCornerQuoted
+    case .character(let c): return c.halfWidthCornerQuoted
+    case .unicodeScalar(let u): return u.halfWidthCornerQuoted
     case .characterClass(let cc): return ".characterClass(\(cc))"
     case .any: return ".any"
     case .empty: return "".halfWidthCornerQuoted
@@ -120,12 +122,29 @@ extension Parser {
       let child = try parse()
       partialResult = isCapturing ? .capturingGroup(child) : .group(child)
       try lexer.eat(expecting: .rightParen)
-    case .character(let c, _)?:
+
+    case .character(let c, isEscaped: false):
       lexer.eat()
       partialResult = .character(c)
+      
+    case .unicodeScalar(let u):
+      lexer.eat()
+      partialResult = .unicodeScalar(u)
+      
+    case .character(let c, isEscaped: true):
+      lexer.eat()
+      if let cc = CharacterClass(c) {
+        // Other characters either match a character class...
+        partialResult = .characterClass(cc)
+
+      } else {
+        // ...or are invalid
+        try report("unexpected escape sequence \\\(c)")
+      }
+
     case .dot?:
       lexer.eat()
-      partialResult = .any
+      partialResult = .characterClass(.any)
 
     // Correct terminations
     case .rightParen?: fallthrough

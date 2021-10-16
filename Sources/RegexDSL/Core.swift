@@ -1,5 +1,5 @@
 import Regex
-@_exported import enum Regex.CharacterClass
+@_exported import struct Regex.CharacterClass
 
 fileprivate typealias DefaultEngine = TortoiseVM
 
@@ -26,12 +26,19 @@ internal class RegexProgram {
 
 /// A type that represents a regular expression.
 public protocol RegexProtocol {
+  associatedtype MatchValue
   associatedtype CaptureValue
   var regex: Regex<CaptureValue> { get }
 }
 
+public protocol EmptyProtocol {}
+public struct Empty: EmptyProtocol {}
+extension Array: EmptyProtocol where Element: EmptyProtocol {}
+extension Optional: EmptyProtocol where Wrapped: EmptyProtocol {}
+
 /// A regular expression.
 public struct Regex<CaptureValue>: RegexProtocol {
+  public typealias MatchValue = CaptureValue
   let program: RegexProgram
   var ast: AST { program.ast }
 

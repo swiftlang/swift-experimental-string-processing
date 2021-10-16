@@ -19,3 +19,13 @@ extension PEG.VM {
     }
   }
 }
+
+extension PEG {
+  public struct Consumer<Input: Collection> where Input.Element == Element {
+    var vm: PEG.VM<Input>
+
+    public func consume(_ input: Input) -> Input.Index? {
+      vm.consume(input)
+    }
+  }
+}

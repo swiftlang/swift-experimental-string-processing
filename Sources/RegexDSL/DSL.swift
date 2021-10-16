@@ -3,7 +3,8 @@ import Regex
 // MARK: - Primitives
 
 extension String: RegexProtocol {
-  public typealias CaptureValue = ()
+  public typealias MatchValue = Substring
+  public typealias CaptureValue = Empty
 
   public var regex: Regex<CaptureValue> {
     .init(ast: .concatenation(map(AST.character)))
@@ -11,7 +12,8 @@ extension String: RegexProtocol {
 }
 
 extension Character: RegexProtocol {
-  public typealias CaptureValue = ()
+  public typealias MatchValue = Character
+  public typealias CaptureValue = Empty
 
   public var regex: Regex<CaptureValue> {
     .init(ast: .character(self))
@@ -19,7 +21,8 @@ extension Character: RegexProtocol {
 }
 
 extension CharacterClass: RegexProtocol {
-  public typealias CaptureValue = ()
+  public typealias MatchValue = Character
+  public typealias CaptureValue = Empty
 
   public var regex: Regex<CaptureValue> {
     .init(ast: .characterClass(self))
@@ -28,81 +31,9 @@ extension CharacterClass: RegexProtocol {
 
 // MARK: - Combinators
 
-// MARK: Concatenation
-
-public struct Concatenate2<R0: RegexProtocol, R1: RegexProtocol>: RegexProtocol {
-  public let regex: Regex<(R0.CaptureValue, R1.CaptureValue)>
-
-  public init(_ r0: R0, _ r1: R1) {
-    regex = .init(ast: .concatenation([r0.regex.ast, r1.regex.ast]))
-  }
-}
-
-public struct Concatenate3<R0: RegexProtocol, R1: RegexProtocol, R2: RegexProtocol>: RegexProtocol {
-  public let regex: Regex<(R0.CaptureValue, R1.CaptureValue, R2.CaptureValue)>
-
-  public init(_ r0: R0, _ r1: R1, _ r2: R2) {
-    regex = .init(ast: .concatenation([r0.regex.ast, r1.regex.ast, r2.regex.ast]))
-  }
-}
-
-public struct Concatenate4<R0: RegexProtocol, R1: RegexProtocol, R2: RegexProtocol, R3: RegexProtocol>: RegexProtocol {
-  public let regex: Regex<(R0.CaptureValue, R1.CaptureValue, R2.CaptureValue, R3.CaptureValue)>
-
-  public init(_ r0: R0, _ r1: R1, _ r2: R2, _ r3: R3) {
-    regex = .init(ast: .concatenation([r0.regex.ast, r1.regex.ast, r2.regex.ast, r3.regex.ast]))
-  }
-}
-
-public struct Concatenate5<R0: RegexProtocol, R1: RegexProtocol, R2: RegexProtocol, R3: RegexProtocol, R4: RegexProtocol>: RegexProtocol {
-  public let regex: Regex<(R0.CaptureValue, R1.CaptureValue, R2.CaptureValue, R3.CaptureValue, R4.CaptureValue)>
-
-  public init(_ r0: R0, _ r1: R1, _ r2: R2, _ r3: R3, _ r4: R4) {
-    regex = .init(ast: .concatenation([r0.regex.ast, r1.regex.ast, r2.regex.ast, r3.regex.ast, r4.regex.ast]))
-  }
-}
-
-public struct Concatenate6<R0: RegexProtocol, R1: RegexProtocol, R2: RegexProtocol, R3: RegexProtocol, R4: RegexProtocol, R5: RegexProtocol>: RegexProtocol {
-  public let regex: Regex<(R0.CaptureValue, R1.CaptureValue, R2.CaptureValue, R3.CaptureValue, R4.CaptureValue)>
-
-  public init(_ r0: R0, _ r1: R1, _ r2: R2, _ r3: R3, _ r4: R4, _ r5: R5) {
-    regex = .init(ast: .concatenation([r0.regex.ast, r1.regex.ast, r2.regex.ast, r3.regex.ast, r4.regex.ast, r5.regex.ast]))
-  }
-}
-
-public struct Concatenate7<R0: RegexProtocol, R1: RegexProtocol, R2: RegexProtocol, R3: RegexProtocol, R4: RegexProtocol, R5: RegexProtocol, R6: RegexProtocol>: RegexProtocol {
-  public let regex: Regex<(R0.CaptureValue, R1.CaptureValue, R2.CaptureValue, R3.CaptureValue, R4.CaptureValue, R5.CaptureValue, R6.CaptureValue)>
-
-  public init(_ r0: R0, _ r1: R1, _ r2: R2, _ r3: R3, _ r4: R4, _ r5: R5, _ r6: R6) {
-    regex = .init(ast: .concatenation([r0.regex.ast, r1.regex.ast, r2.regex.ast, r3.regex.ast, r4.regex.ast, r5.regex.ast, r6.regex.ast]))
-  }
-}
-
-public struct Concatenate8<R0: RegexProtocol, R1: RegexProtocol, R2: RegexProtocol, R3: RegexProtocol, R4: RegexProtocol, R5: RegexProtocol, R6: RegexProtocol, R7: RegexProtocol>: RegexProtocol {
-  public let regex: Regex<(R0.CaptureValue, R1.CaptureValue, R2.CaptureValue, R3.CaptureValue, R4.CaptureValue, R5.CaptureValue, R6.CaptureValue, R7.CaptureValue)>
-
-  public init(_ r0: R0, _ r1: R1, _ r2: R2, _ r3: R3, _ r4: R4, _ r5: R5, _ r6: R6, _ r7: R7) {
-    regex = .init(ast: .concatenation([r0.regex.ast, r1.regex.ast, r2.regex.ast, r3.regex.ast, r4.regex.ast, r5.regex.ast, r6.regex.ast, r7.regex.ast]))
-  }
-}
-
-public struct Concatenate9<R0: RegexProtocol, R1: RegexProtocol, R2: RegexProtocol, R3: RegexProtocol, R4: RegexProtocol, R5: RegexProtocol, R6: RegexProtocol, R7: RegexProtocol, R8: RegexProtocol>: RegexProtocol {
-  public let regex: Regex<(R0.CaptureValue, R1.CaptureValue, R2.CaptureValue, R3.CaptureValue, R4.CaptureValue, R5.CaptureValue, R6.CaptureValue, R7.CaptureValue, R8.CaptureValue)>
-
-  public init(_ r0: R0, _ r1: R1, _ r2: R2, _ r3: R3, _ r4: R4, _ r5: R5, _ r6: R6, _ r7: R7, _ r8: R8) {
-    regex = .init(ast: .concatenation([r0.regex.ast, r1.regex.ast, r2.regex.ast, r3.regex.ast, r4.regex.ast, r5.regex.ast, r6.regex.ast, r7.regex.ast, r8.regex.ast]))
-  }
-}
-
-public struct Concatenate10<R0: RegexProtocol, R1: RegexProtocol, R2: RegexProtocol, R3: RegexProtocol, R4: RegexProtocol, R5: RegexProtocol, R6: RegexProtocol, R7: RegexProtocol, R8: RegexProtocol, R9: RegexProtocol>: RegexProtocol {
-  public let regex: Regex<(R0.CaptureValue, R1.CaptureValue, R2.CaptureValue, R3.CaptureValue, R4.CaptureValue, R5.CaptureValue, R6.CaptureValue, R7.CaptureValue, R8.CaptureValue, R9.CaptureValue)>
-
-  public init(_ r0: R0, _ r1: R1, _ r2: R2, _ r3: R3, _ r4: R4, _ r5: R5, _ r6: R6, _ r7: R7, _ r8: R8, _ r9: R9) {
-    regex = .init(ast: .concatenation([r0.regex.ast, r1.regex.ast, r2.regex.ast, r3.regex.ast, r4.regex.ast, r5.regex.ast, r6.regex.ast, r7.regex.ast, r8.regex.ast, r9.regex.ast]))
-  }
-}
-
 // TODO: We want variadic generics!
+// Overloads are auto-generated in Concatenation.swift.
+//
 // public struct Concatenate<R...: RegexContent>: RegexContent {
 //   public let regex: Regex<(R...).filter { $0 != Void.self }>
 //
@@ -115,6 +46,7 @@ public struct Concatenate10<R0: RegexProtocol, R1: RegexProtocol, R2: RegexProto
 
 /// A regular expression.
 public struct OneOrMore<Component: RegexProtocol>: RegexProtocol {
+  public typealias MatchValue = [Component.MatchValue]
   public typealias CaptureValue = [Component.CaptureValue]
 
   public let regex: Regex<CaptureValue>
@@ -135,6 +67,7 @@ public postfix func .+ <R: RegexProtocol>(lhs: R) -> OneOrMore<R> {
 }
 
 public struct Repeat<Component: RegexProtocol>: RegexProtocol {
+  public typealias MatchValue = [Component.MatchValue]
   public typealias CaptureValue = [Component.CaptureValue]
 
   public let regex: Regex<CaptureValue>
@@ -155,6 +88,7 @@ public postfix func .* <R: RegexProtocol>(lhs: R) -> Repeat<R> {
 }
 
 public struct Optionally<Component: RegexProtocol>: RegexProtocol {
+  public typealias MatchValue = Component.MatchValue?
   public typealias CaptureValue = Component.CaptureValue?
 
   public let regex: Regex<CaptureValue>
@@ -174,33 +108,37 @@ public postfix func .? <R: RegexProtocol>(lhs: R) -> Optionally<R> {
   .init(lhs)
 }
 
-public struct Alternation<First: RegexProtocol, Second: RegexProtocol>: RegexProtocol {
-  public enum CaptureValue {
-    case first(First)
-    case second(Second)
-  }
+public struct Alternation<
+  Component1: RegexProtocol,
+  Component2: RegexProtocol
+>: RegexProtocol {
+  public typealias MatchValue = Component1.MatchValue
+  public typealias CaptureValue = Component2.CaptureValue
 
   public let regex: Regex<CaptureValue>
 
-  public init(_ first: First, _ second: Second) {
+  public init(_ first: Component1, _ second: Component2) {
     regex = .init(ast: .alternation([first.regex.ast, second.regex.ast]))
   }
 
-  public init(@RegexBuilder _ content: () -> Alternation<First, Second>) {
+  public init(
+    @RegexBuilder _ content: () -> Alternation<Component1, Component2>
+  ) {
     self = content()
   }
 }
 
-public func | <First: RegexProtocol, Second: RegexProtocol>(
-  lhs: First, rhs: Second
-) -> Alternation<First, Second> {
+public func | <Component1, Component2>(
+  lhs: Component1, rhs: Component2
+) -> Alternation<Component1, Component2> {
   .init(lhs, rhs)
 }
 
 // MARK: - Capture
 
 public struct CapturingGroup<Component: RegexProtocol>: RegexProtocol {
-  public typealias CaptureValue = Component.CaptureValue
+  public typealias MatchValue = Component.MatchValue
+  public typealias CaptureValue = Component.MatchValue
 
   public let regex: Regex<CaptureValue>
 

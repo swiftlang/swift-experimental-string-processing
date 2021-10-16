@@ -18,99 +18,155 @@ class RegexDSLTests: XCTestCase {
   }
 
   func testSimpleStrings() throws {
+    let regex = Regex {
+      "a"
+      Character("b").capture() // Character
+      "c".capture() // Substring
+    }
+    let _: (Character, Substring).Type = type(of: regex).CaptureValue.self
     try forEachEngine { engine in
-      let maybeMatch = "abc".match(using: engine) {
-        "a"
-        "b".capture()
-        "c".capture()
-      }
+      let maybeMatch = "abc".match(regex, using: engine)
       let match = try XCTUnwrap(maybeMatch)
       XCTAssertEqual(match.capturedSubstrings, [["b"], ["c"]])
     }
   }
 
   func testCharacterClasses() throws {
+    let regex = Regex {
+      CharacterClass.any
+      CharacterClass.whitespace.capture() // Character
+      "c".capture() // Substring
+    }
+    // Assert the inferred capture type.
+    let _: (Character, Substring).Type = type(of: regex).CaptureValue.self
     try forEachEngine { engine in
-      let maybeMatch = "a c".match(using: engine) {
-        CharacterClass.any
-        CharacterClass.whitespace.capture()
-        "c".capture()
-      }
+      let maybeMatch = "a c".match(regex, using: engine)
       let match = try XCTUnwrap(maybeMatch)
       XCTAssertEqual(match.capturedSubstrings, [[" "], ["c"]])
     }
   }
 
   func testCombinators() throws {
+    let regex = Regex {
+      "a".+
+      OneOrMore(Character("b")).capture() // [Character]
+      Repeat("c").capture() // [Substring]
+      CharacterClass.hexDigit.capture().* // [Character]
+      "e".?
+      ("t" | "k").capture() // Substring
+    }
+    // Assert the inferred capture type.
+    let _: ([Character], [Substring], [Character], Substring).Type
+      = type(of: regex).CaptureValue.self
     try forEachEngine { engine in
-      let maybeMatch = "aaaabccccdddk".match {
-        "a".+
-        OneOrMore("b").capture()
-        Repeat("c").capture()
-        "d".capture().*
-        "e".?
-        ("t" | "k").capture()
-      }
+      let maybeMatch = "aaaabccccdddk".match(regex, using: engine)
       let match = try XCTUnwrap(maybeMatch)
-      XCTAssertEqual(match.capturedSubstrings, [["b"], ["cccc"], ["d", "d", "d"], ["k"]])
+      XCTAssertEqual(
+        match.capturedSubstrings,
+        [["b"], ["cccc"], ["d", "d", "d"], ["k"]])
     }
   }
 
   func testNestedGroups() throws {
+    let regex = Regex {
+      "a".+
+      OneOrMore {
+        OneOrMore("b").capture()
+        Repeat("c").capture()
+        "d".capture().*
+        "e".?
+      }.capture()
+    }
+    // Assert the inferred capture type.
+    let _: [([Substring], [Substring], [Substring])].Type = type(of: regex).CaptureValue.self
     try forEachEngine { engine in
-      let maybeMatch = "aaaabccccddd".match(using: engine) {
-        "a".+
-        OneOrMore {
-          OneOrMore("b").capture()
-          Repeat("c").capture()
-          "d".capture().*
-          "e".?
-        }.capture()
-      }
+      let maybeMatch = "aaaabccccddd".match(regex, using: engine)
       let match = try XCTUnwrap(maybeMatch)
       XCTAssertEqual(match.capturedSubstrings, [["bccccddd"], ["b"], ["cccc"], ["d", "d", "d"]])
     }
   }
 
   func testUnicodeScalarPostProcessing() throws {
-    // FIXME: HareVM currently fails at assertion `assert(bunny.sp < input.endIndex)`.
-    try forEachEngine(except: HareVM.self) { engine in
-      let spaces = Regex {
-        Repeat {
-          CharacterClass.whitespace
-        }
+    let spaces = Regex {
+      Repeat {
+        CharacterClass.whitespace
       }
+    }
 
-      let unicodeScalar = Regex {
-        OneOrMore {
-          CharacterClass.hexDigit
-        }
-        spaces
+    let unicodeScalar = Regex {
+      OneOrMore {
+        CharacterClass.hexDigit
       }
+      spaces
+    }
 
-      let unicodeData = Regex {
+    let unicodeData = Regex {
+      unicodeScalar
+      Optionally {
+        ".."
         unicodeScalar
-        Optionally {
-          ".."
-          unicodeScalar
-        }
-
-        ";"
-        spaces
-
-        OneOrMore {
-          CharacterClass.word
-        }.capture()
-
-        Repeat {
-          CharacterClass.any
-        }
       }
 
+      ";"
+      spaces
+
+      OneOrMore {
+        CharacterClass.word
+      }.capture()
+
+      Repeat {
+        CharacterClass.any
+      }
+    }
+
+    // Assert the inferred capture type.
+    let _: [Character].Type = type(of: unicodeData).CaptureValue.self
+
+    try forEachEngine { engine in
       let unicodeLine =
         "1BCA0..1BCA3  ; Control # Cf   [4] SHORTHAND FORMAT LETTER OVERLAP..SHORTHAND FORMAT UP STEP"
       let match = try XCTUnwrap(unicodeLine.match(unicodeData, using: engine))
       XCTAssertEqual(match.capturedSubstrings, [["Control"]])
     }
+  }
+
+  // TODO: Migrate over to be a Participant in the Exercises target
+  func testGraphemeBreakData() {
+//    func graphemeBreakPropertyDataDSL(
+//      forLine line: String
+//    ) -> GraphemeBreakScalars? {
+//      let capScalar = Regex {
+//        OneOrMore(CharacterClass.hexDigit).capture()
+//      }
+//
+//      let m = line.match( Regex {
+//        OneOrMore(CharacterClass.hexDigit).capture()
+//
+//        Optionally {
+//          ".."
+//          OneOrMore(CharacterClass.hexDigit).capture()
+//        }
+//
+//        OneOrMore(CharacterClass.whitespace)
+//        ";"
+//        OneOrMore(CharacterClass.whitespace)
+//
+//        OneOrMore(CharacterClass.word).capture()
+//
+//        Repeat(CharacterClass.anyCharacter)
+//      })
+//
+//      return m?.captures.map {
+//        (lower: Substring,
+//         upper: Substring?,
+//         property: Substring
+//        ) -> GraphemeBreakScalars in
+//        let lowerScalar = Unicode.Scalar(hex: lower)!
+//        let upperScalar = upper != nil ? Unicode.Scalar(hex: upper!)! : lower
+//        let property = Unicode.GraphemeBreakProperty(property)!
+//        return GraphemeBreakScalars(
+//          lowerScalar ... upperScalar, property)
+//      }
+//    }
   }
 }

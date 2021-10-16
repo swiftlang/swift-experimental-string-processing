@@ -1,11 +1,14 @@
 import Util
 
 extension Program where Element: Hashable {
+  public typealias Predicate = (Element) -> Bool
+
   public struct Builder {
     var instructions = Array<Instruction>()
 
     var elements = TypedSetVector<Element, _ElementRegister>()
     var strings = TypedSetVector<String, _StringRegister>()
+    var predicates = Array<Predicate>()
 
     // Map tokens to actual addresses
     var addressTokens = Array<InstructionAddress?>()
@@ -82,6 +85,10 @@ extension Program.Builder {
     instructions.append(.match(elements.store(e)))
   }
 
+  public mutating func buildMatchPredicate(_ p: @escaping Program.Predicate) {
+    instructions.append(.matchPredicate(createPredicate(p)))
+  }
+
   public mutating func buildAssert(_ e: Element, into c: BoolRegister) {
     instructions.append(.assertion(condition: c, elements.store(e)))
   }
@@ -107,11 +114,13 @@ extension Program.Builder {
     regInfo.elements = elements.count
     regInfo.strings = strings.count
     regInfo.bools = nextBoolRegister.rawValue
+    regInfo.predicates = predicates.count
 
     return Program(
       instructions: InstructionList(instructions),
       staticElements: elements.stored,
       staticStrings: strings.stored,
+      staticPredicates: predicates,
       registerInfo: regInfo)
   }
 
@@ -153,6 +162,13 @@ extension Program.Builder {
   public mutating func createRegister() -> BoolRegister {
     defer { nextBoolRegister.rawValue += 1 }
     return nextBoolRegister
+  }
+
+  public mutating func createPredicate(
+    _ f: @escaping Program.Predicate
+  ) -> PredicateRegister {
+    defer { predicates.append(f) }
+    return PredicateRegister(predicates.count)
   }
 }
 
