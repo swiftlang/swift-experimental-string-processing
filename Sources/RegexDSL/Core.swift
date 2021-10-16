@@ -74,8 +74,7 @@ extension RegexProtocol {
     using engine: VirtualMachine.Type
   ) -> RegexMatch<CaptureValue>? {
     let vm = engine.init(regex.program.executable)
-    let (didMatch, captures) = vm.execute(input: input)
-    guard didMatch else {
+    guard let (_, captures) = vm.execute(input: input, .wholeString) else {
       return nil
     }
     return RegexMatch(capturedSubstrings: captures.map { $0.asSubstrings(from: input) })

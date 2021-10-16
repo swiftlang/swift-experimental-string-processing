@@ -116,6 +116,7 @@ public struct Options: OptionSet {
   //    ??? partial
   //    ??? newlineTerminated
 
+
   public init() {
     self = .none
   }
@@ -245,6 +246,11 @@ public struct CaptureStack {
   }
 }
 
+public enum MatchMode {
+  case wholeString
+  case partialFromFront
+}
+
 /// VMs load RECode and run over Strings.
 public protocol VirtualMachine {
   /// Declare this VM's motto and general life philosophy
@@ -254,7 +260,7 @@ public protocol VirtualMachine {
   init(_: RECode)
 
   /// Match `input`
-  func execute(input: String) -> (Bool, [CaptureStack])
+  func execute(input: String, _ mode: MatchMode) -> (String.Index, [CaptureStack])?
 }
 
 extension RECode.Instruction: CustomStringConvertible {

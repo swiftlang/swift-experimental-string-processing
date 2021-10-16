@@ -225,6 +225,49 @@ class RegexTests: XCTestCase {
                        labels: [0, 8, 2, 6], numCaptures: 0))
   }
 
+  func performTest(
+    regex: String, input: String, mode: MatchMode,
+    expecting expected: String?, expectedCaptures: [[String]] = []
+  ) {
+    let code = try! compile(regex)
+    let lonesomeGeorge = TortoiseVM(code)
+    let harvey = HareVM(code)
+    func report(name: String,
+                _ output: (String, [[String]]),
+                _ expected: (String, [[String]])
+    ) -> String {
+      return """
+               \(name) failed
+               Regex:    \(regex)
+               Input:    \(input)
+               Expected: \(expected)
+               Saw: \(output)
+               """
+    }
+    func run(_ vm: VirtualMachine) -> (String, [[String]])? {
+      guard let result = vm.execute(input: input, mode) else { return nil }
+      let matched = String(input[..<result.0])
+      let actualCaptures = result.1.map({ $0.asStrings(from: input) })
+      return (matched, actualCaptures)
+    }
+
+    if let (georgeMatched, georgeCaptures) = run(lonesomeGeorge) {
+      if expected != georgeMatched || expectedCaptures != georgeCaptures {
+        XCTFail(report(name: "Lonesome George", (georgeMatched, georgeCaptures), (expected ?? "<nil>", expectedCaptures)))
+      }
+    } else {
+      XCTAssertNil(expected)
+    }
+    if let (harveyMatched, harveyCaptures) = run(harvey) {
+      if expected != harveyMatched || expectedCaptures != harveyCaptures {
+        XCTFail(report(name: "Harvey", (harveyMatched, harveyCaptures), (expected ?? "<nil>", expectedCaptures)))
+      }
+    } else {
+      XCTAssertNil(expected)
+    }
+
+  }
+
   func testVMs() {
     let tests: Array<(String, pass: [String], fail: [String])> = [
       ("a|b", ["a", "b"], ["ab", "c"]),
@@ -265,53 +308,17 @@ class RegexTests: XCTestCase {
     ]
     _ = nestedCaptureTests
 
-    func performTest(regex: String, input: String, expecting: Bool = true,
-                     expectedCaptures: [[String]] = []) {
-      let code = try! compile(regex)
-      let lonesomeGeorge = TortoiseVM(code)
-      let harvey = HareVM(code)
-      func report(name: String,
-                  _ output: (Bool, [[String]]),
-                  _ expected: (Bool, [[String]])
-      ) -> String {
-        return """
-                 \(name) failed
-                 Regex:    \(regex)
-                 Input:    \(input)
-                 Expected: \(expected)
-                 Saw: \(output)
-                 """
-      }
-      let expected = (expecting, expectedCaptures)
-      func run(_ vm: VirtualMachine) -> (Bool, [[String]]) {
-        let result = vm.execute(input: input)
-        let actualCaptures = result.1.map({ $0.asStrings(from: input) })
-        return (result.0, actualCaptures)
-      }
-
-      let georgeRun = run(lonesomeGeorge)
-      guard georgeRun.0 == expected.0 && georgeRun.1 == expected.1  else {
-        XCTFail(report(name: "Lonesome George", georgeRun, expected))
-        return
-      }
-      let harveyRun = run(harvey)
-      guard harveyRun.0 == expected.0 && harveyRun.1 == expected.1  else {
-        XCTFail(report(name: "Harvey", harveyRun, expected))
-        return
-      }
-
-    }
     for (regex, passes, fails) in tests {
       for pass in passes {
-        performTest(regex: regex, input: pass)
+        performTest(regex: regex, input: pass, mode: .wholeString, expecting: pass)
       }
       for fail in fails {
-        performTest(regex: regex, input: fail, expecting: false)
+        performTest(regex: regex, input: fail, mode: .wholeString, expecting: nil)
       }
     }
     for (regex, input, captures) in captureTests {
       let caps = captures.map { Array($0) }
-      performTest(regex: regex, input: input, expectedCaptures: caps)
+      performTest(regex: regex, input: input, mode: .wholeString, expecting: input, expectedCaptures: caps)
     }
   }
   
@@ -328,14 +335,46 @@ class RegexTests: XCTestCase {
       let scalarHarvey = HareVM(scalarCode)
             
       for input in characterInputs {
-        XCTAssertTrue(harvey.execute(input: input).0)
-        XCTAssertFalse(scalarHarvey.execute(input: input).0)
+        XCTAssertNotNil(harvey.execute(input: input, .wholeString))
+        XCTAssertNil(scalarHarvey.execute(input: input, .wholeString))
       }
-      
+
       for input in scalarInputs {
-        XCTAssertTrue(scalarHarvey.execute(input: input).0)
-        XCTAssertFalse(harvey.execute(input: input).0)
+        XCTAssertNotNil(scalarHarvey.execute(input: input, .wholeString))
+        XCTAssertNil(harvey.execute(input: input, .wholeString))
       }
     }
   }
+
+  func testPartialMatches() {
+    let tests: Array<(String, pass: [(String, matched: String)], fail: [String])> = [
+      ("a+",
+       pass: [("aaa", matched: "aaa"),
+              ("ab", matched: "a"),
+              ("aab", matched: "aa"),
+              ("a", matched: "a"),
+             ],
+       fail: ["b", ""]),
+      ("a|b",
+       pass: [
+        ("a", matched: "a"),
+        ("ab", matched: "a"),
+        ("ba", matched: "b"),
+        ("bc", matched: "b"),
+       ],
+       fail: ["c", "d", ""]
+      ),
+    ]
+
+    for (regex, passes, fails) in tests {
+      for pass in passes {
+        performTest(regex: regex, input: pass.0, mode: .partialFromFront, expecting: pass.matched)
+      }
+      for fail in fails {
+        performTest(regex: regex, input: fail, mode: .partialFromFront, expecting: nil)
+      }
+    }
+
+  }
 }
+
