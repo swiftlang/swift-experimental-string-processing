@@ -62,6 +62,12 @@ let package = Package(
         .testTarget(
             name: "PTCaRetTests",
             dependencies: ["PTCaRet", "Util"]),
+        .target(
+            name: "Algorithms",
+            dependencies: []),
+        .testTarget(
+            name: "AlgorithmsTests",
+            dependencies: ["Algorithms"]),
 
         // MARK: Scripts
         .executableTarget(
@@ -77,6 +83,7 @@ let package = Package(
         .testTarget(
           name: "ExercisesTests",
           dependencies: ["Exercises"]),
+
 
     ]
 )
