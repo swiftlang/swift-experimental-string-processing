@@ -132,3 +132,5 @@ public func compile(
   let ast = try parse(regex)
   return try compile(ast, options: options)
 }
+
+

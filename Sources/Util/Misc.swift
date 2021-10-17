@@ -73,3 +73,15 @@ extension BidirectionalCollection {
     return startIndex ..< endIndex
   }
 }
+
+extension Collection {
+  public func idx(_ i: Int) -> Index {
+    index(startIndex, offsetBy: i)
+  }
+  public func split(
+    around r: Range<Index>
+  ) -> (prefix: SubSequence, SubSequence, suffix: SubSequence) {
+    (self[..<r.lowerBound], self[r], self[r.upperBound...])
+  }
+}
+
