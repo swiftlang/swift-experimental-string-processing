@@ -30,6 +30,95 @@ extension RECode: Equatable {
   }
 }
 
+struct ExpectedPass {
+  let input: String
+  let range: Range<String.Index>
+  let expected: String
+  let expectedCaptures: [[String]]
+
+  init(
+    _ input: String,
+    offsets: Offsets? = nil,
+    expected: String,
+    expectedCaptures: [[String]] = []
+  ) {
+    self.input = input
+    self.range = input.flatmapOffsets(offsets)
+    self.expected = expected
+    self.expectedCaptures = expectedCaptures
+  }
+}
+
+
+struct TestCase {
+  let regex: String
+  let pass: [ExpectedPass]
+  let fail: [String]
+  let range: Range<String.Index>
+  let mode: MatchMode
+  let expected: (String?, [[String]])
+
+  init(regex: String, input: String) {
+    fatalError()
+  }
+
+}
+
+func performTest(
+  regex: String,
+  input: String,
+  offsets: Offsets? = nil,
+  mode: MatchMode = .wholeString,
+  expecting expected: String?,
+  expectedCaptures: [[String]] = []
+) {
+  let code = try! compile(regex)
+  let lonesomeGeorge = TortoiseVM(code)
+  let harvey = HareVM(code)
+  func report(name: String,
+              _ output: (String, [[String]]),
+              _ expected: (String, [[String]])
+  ) -> String {
+    return """
+             \(name) failed
+             Regex:    \(regex)
+             Input:    \(input)
+             Expected: \(expected)
+             Saw: \(output)
+             """
+  }
+  func run(_ vm: VirtualMachine) -> (String, [[String]])? {
+    let range = input.flatmapOffsets(offsets)
+
+    guard let (matched, captures) = vm.execute(
+      input: input, in: range, mode
+    )?.destructure else {
+      return nil
+    }
+    let actualCaptures = captures.map {
+      $0.asStrings(from: input)
+    }
+    return (String(input[matched]), actualCaptures)
+  }
+
+  if let (georgeMatched, georgeCaptures) = run(lonesomeGeorge) {
+    if expected != georgeMatched || expectedCaptures != georgeCaptures {
+      XCTFail(report(name: "Lonesome George", (georgeMatched, georgeCaptures), (expected ?? "<nil>", expectedCaptures)))
+    }
+  } else {
+    XCTAssertNil(expected)
+  }
+  if let (harveyMatched, harveyCaptures) = run(harvey) {
+    if expected != harveyMatched || expectedCaptures != harveyCaptures {
+      XCTFail(report(name: "Harvey", (harveyMatched, harveyCaptures), (expected ?? "<nil>", expectedCaptures)))
+    }
+  } else {
+    XCTAssertNil(expected)
+  }
+
+}
+
+
 class RegexTests: XCTestCase {
   func testLex() {
     _ = """
@@ -225,48 +314,6 @@ class RegexTests: XCTestCase {
                        labels: [0, 8, 2, 6], numCaptures: 0))
   }
 
-  func performTest(
-    regex: String, input: String, mode: MatchMode,
-    expecting expected: String?, expectedCaptures: [[String]] = []
-  ) {
-    let code = try! compile(regex)
-    let lonesomeGeorge = TortoiseVM(code)
-    let harvey = HareVM(code)
-    func report(name: String,
-                _ output: (String, [[String]]),
-                _ expected: (String, [[String]])
-    ) -> String {
-      return """
-               \(name) failed
-               Regex:    \(regex)
-               Input:    \(input)
-               Expected: \(expected)
-               Saw: \(output)
-               """
-    }
-    func run(_ vm: VirtualMachine) -> (String, [[String]])? {
-      guard let result = vm.execute(input: input, mode) else { return nil }
-      let matched = String(input[..<result.0])
-      let actualCaptures = result.1.map({ $0.asStrings(from: input) })
-      return (matched, actualCaptures)
-    }
-
-    if let (georgeMatched, georgeCaptures) = run(lonesomeGeorge) {
-      if expected != georgeMatched || expectedCaptures != georgeCaptures {
-        XCTFail(report(name: "Lonesome George", (georgeMatched, georgeCaptures), (expected ?? "<nil>", expectedCaptures)))
-      }
-    } else {
-      XCTAssertNil(expected)
-    }
-    if let (harveyMatched, harveyCaptures) = run(harvey) {
-      if expected != harveyMatched || expectedCaptures != harveyCaptures {
-        XCTFail(report(name: "Harvey", (harveyMatched, harveyCaptures), (expected ?? "<nil>", expectedCaptures)))
-      }
-    } else {
-      XCTAssertNil(expected)
-    }
-
-  }
 
   func testVMs() {
     let tests: Array<(String, pass: [String], fail: [String])> = [
@@ -310,15 +357,15 @@ class RegexTests: XCTestCase {
 
     for (regex, passes, fails) in tests {
       for pass in passes {
-        performTest(regex: regex, input: pass, mode: .wholeString, expecting: pass)
+        performTest(regex: regex, input: pass, expecting: pass)
       }
       for fail in fails {
-        performTest(regex: regex, input: fail, mode: .wholeString, expecting: nil)
+        performTest(regex: regex, input: fail, expecting: nil)
       }
     }
     for (regex, input, captures) in captureTests {
       let caps = captures.map { Array($0) }
-      performTest(regex: regex, input: input, mode: .wholeString, expecting: input, expectedCaptures: caps)
+      performTest(regex: regex, input: input, expecting: input, expectedCaptures: caps)
     }
   }
   
@@ -335,13 +382,13 @@ class RegexTests: XCTestCase {
       let scalarHarvey = HareVM(scalarCode)
             
       for input in characterInputs {
-        XCTAssertNotNil(harvey.execute(input: input, .wholeString))
-        XCTAssertNil(scalarHarvey.execute(input: input, .wholeString))
+        XCTAssertNotNil(harvey.execute(input: input))
+        XCTAssertNil(scalarHarvey.execute(input: input))
       }
 
       for input in scalarInputs {
-        XCTAssertNotNil(scalarHarvey.execute(input: input, .wholeString))
-        XCTAssertNil(harvey.execute(input: input, .wholeString))
+        XCTAssertNotNil(scalarHarvey.execute(input: input))
+        XCTAssertNil(harvey.execute(input: input))
       }
     }
   }
@@ -374,7 +421,50 @@ class RegexTests: XCTestCase {
         performTest(regex: regex, input: fail, mode: .partialFromFront, expecting: nil)
       }
     }
+  }
 
+  func testSubrangeMatches() {
+    // whole subrange
+    let tests: Array<
+      (String,
+       pass: [(String, offsets: (lower: Int, upper: Int), matched: String)],
+       fail: [(String, offsets: (lower: Int, upper: Int))])
+    > = [
+      ("a",
+       pass: [
+        ("a", offsets: (0, 0), matched: "a"),
+        ("ab", offsets: (0, -1), matched: "a"),
+        ("ba", offsets: (1, 0), matched: "a"),
+       ],
+       fail: [
+        ("a", offsets: (1, 0)),
+        ("a", offsets: (0, -1)),
+        ("ab", offsets: (1, 0)),
+        ("ba", offsets: (0, -1)),
+        ("ab", offsets: (0, 0)),
+       ])
+    ]
+
+    for (regex, passes, fails) in tests {
+      for pass in passes {
+        performTest(
+          regex: regex,
+          input: pass.0,
+          offsets: pass.offsets,
+          mode: .wholeString,
+          expecting: pass.matched)
+      }
+      for fail in fails {
+        performTest(
+          regex: regex,
+          input: fail.0,
+          offsets: fail.offsets,
+          mode: .wholeString,
+          expecting: nil)
+      }
+    }
+
+    // partial subrange from front
   }
 }
 

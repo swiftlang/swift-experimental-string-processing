@@ -45,21 +45,25 @@ public struct TortoiseVM: VirtualMachine {
     self.code = code
   }
 
-  public func execute(input: String, _ mode: MatchMode) -> (String.Index, [CaptureStack])? {
+  public func execute(
+    input: String, in range: Range<String.Index>, _ mode: MatchMode
+  ) -> MatchResult? {
+    let (start, end) = range.destructure
+
     var bale = Bale()
     let startTurtle = Hatchling(code.startIndex, numCaptures: code.numCaptures)
-    bale.append(contentsOf: readThrough(input.startIndex, startTurtle))
-    var idx = input.startIndex
+    bale.append(contentsOf: readThrough(start, startTurtle))
+    var idx = start
 
     switch mode {
     case .wholeString:
       // Run over the whole string, updating our bale
-      while idx < input.endIndex {
+      while idx < end {
         (bale, idx) = advance(input, idx, bale)
       }
     case .partialFromFront:
       // Run until we have no more hatchlings or we finish the string
-      while idx < input.endIndex && !bale.isEmpty {
+      while idx < end && !bale.isEmpty {
         let (nextBale, nextIdx) = advance(input, idx, bale)
         if nextBale.isEmpty { break }
         idx = nextIdx
@@ -68,7 +72,8 @@ public struct TortoiseVM: VirtualMachine {
     }
     for hatchling in bale {
       if code[hatchling.pc].isAccept {
-        return (idx, hatchling.core.captures)
+        return MatchResult(
+          start ..< idx, hatchling.core.captures)
       }
     }
     return nil

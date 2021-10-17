@@ -65,28 +65,31 @@ public struct HareVM: VirtualMachine {
     self.code = code
   }
 
-  public func execute(input: String, _ mode: MatchMode) -> (String.Index, [CaptureStack])? {
+  public func execute(
+    input: String, in range: Range<String.Index>, _ mode: MatchMode
+  ) -> MatchResult? {
+    let (start, end) = range.destructure
+
     assert(code.last!.isAccept)
     var bunny = Leveret(
-      code.startIndex, input.startIndex, numCaptures: code.numCaptures)
+      code.startIndex, start, numCaptures: code.numCaptures)
     var stack = BunnyStack()
 
     // TODO: Which bunny to return? Longest, left most, or what?
 
-    func yieldBunny() -> (String.Index, [CaptureStack])? {
-      switch mode {
-      case .wholeString:
-        return bunny.sp == input.endIndex ? (bunny.sp, bunny.core.captures) : nil
-      case .partialFromFront:
-        return (bunny.sp, bunny.core.captures)
+    func yieldBunny() -> MatchResult? {
+      if mode == .wholeString, bunny.sp != end {
+        return nil
       }
+      return MatchResult(
+        start ..< bunny.sp, bunny.core.captures)
     }
 
     while true {
       let inst = code[bunny.pc]
 
       // Consuming operations require more input
-      if bunny.sp == input.endIndex && inst.isConsuming {
+      if bunny.sp == end && inst.isConsuming {
         // If there are no more alternatives to try, we failed
         guard !stack.isEmpty else { return nil }
 
@@ -99,7 +102,7 @@ public struct HareVM: VirtualMachine {
       case .nop: bunny.hop()
       case .accept:
         // If we've matched all of our input, we're done
-        if bunny.sp == input.endIndex {
+        if bunny.sp == end {
           return yieldBunny()
         }
         // If there are no more alternatives to try, we're done
@@ -116,12 +119,12 @@ public struct HareVM: VirtualMachine {
         bunny = stack.restore()
 
       case .any:
-        assert(bunny.sp < input.endIndex)
+        assert(bunny.sp < end)
         bunny.nibble(on: input)
         bunny.hop()
 
       case .character(let c):
-        assert(bunny.sp < input.endIndex)
+        assert(bunny.sp < end)
         guard input[bunny.sp] == c else {
           // If there are no more alternatives to try, we failed
           guard !stack.isEmpty else {
@@ -136,7 +139,7 @@ public struct HareVM: VirtualMachine {
         bunny.hop()
 
       case .unicodeScalar(let u):
-        assert(bunny.sp < input.endIndex)
+        assert(bunny.sp < end)
         guard input.unicodeScalars[bunny.sp] == u else {
           // If there are no more alternatives to try, we failed
           guard !stack.isEmpty else {
@@ -151,7 +154,7 @@ public struct HareVM: VirtualMachine {
         bunny.hop()
 
       case .characterClass(let cc):
-        assert(bunny.sp < input.endIndex)
+        assert(bunny.sp < end)
         guard let nextSp = cc.matches(in: input, at: bunny.sp) else {
           // If there are no more alternatives to try, we failed
           guard !stack.isEmpty else {
