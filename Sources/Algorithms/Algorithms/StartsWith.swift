@@ -1,11 +1,11 @@
 extension Collection {
-  func starts<C: CollectionConsumer>(with consumer: C) -> Bool where C.Consumed == Self {
+  public func starts<C: CollectionConsumer>(with consumer: C) -> Bool where C.Consumed == Self {
     consumer.consume(self) != nil
   }
 }
 
 extension BidirectionalCollection {
-  func ends<C: BackwardCollectionConsumer>(with consumer: C) -> Bool where C.Consumed == Self {
+  public func ends<C: BackwardCollectionConsumer>(with consumer: C) -> Bool where C.Consumed == Self {
     consumer.consumeBack(self) != nil
   }
 }

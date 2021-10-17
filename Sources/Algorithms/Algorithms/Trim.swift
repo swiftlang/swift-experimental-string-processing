@@ -43,7 +43,7 @@ extension RangeReplaceableCollection where Self: BidirectionalCollection {
 }
 
 extension BidirectionalCollection {
-  func trimming<C: BidirectionalCollectionConsumer>(_ consumer: C) -> SubSequence where C.Consumed == Self {
+  public func trimming<C: BidirectionalCollectionConsumer>(_ consumer: C) -> SubSequence where C.Consumed == Self {
     let start = consumer.consume(self) ?? startIndex
     let end = consumer.consumeBack(self, subrange: start..<endIndex) ?? endIndex
     return self[start..<end]
