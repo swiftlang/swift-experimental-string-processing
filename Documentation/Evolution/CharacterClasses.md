@@ -1,354 +1,410 @@
-# Regular Expression Literals: Character Classes
+# Character Classes for String Processing
 
-- **Author:** [Nate Cook](https://github.com/natecook1000)
+- **Authors:** [Nate Cook](https://github.com/natecook1000), [Michael Ilseman](https://github.com/milseman)
 - **Status:** Draft pitch
 
 ## Introduction
 
-A regular expression literal comprises a combination of character classes, quantifiers (e.g. `?` and `+`), assertions, and a few other metacharacters. Character classes include metacharacters like `\d` to match a digit, `\s` to match whitespace, and `.` to match any character. Individual literal characters can also be thought of as character classes, as they at least match themselves, and, in case-insensitive matching, their case-toggled counterpart. 
+[Declarative String Processing Overview][overview] presents regex-powered matching broadly, without details concerning syntax and semantics, leaving clarification to subsequent pitches. [Regular Expression Literals][literals] presents more details on regex _syntax_ such as delimiters and PCRE-syntax innards, but explicitly excludes discussion of regex _semantics_. This pitch and discussion aims to address a targeted subset of regex semantics: definitions of character classes. We propose a comprehensive treatment of regex character class semantics in the context of existing and newly proposed API directly on `Character` and `Unicode.Scalar`.
 
-For the purpose of this work, then, we consider a *character class* to be any part of a regular expression literal that can match an actual component of a string. This proposal details these character classes, their denoting sequences in Swift regular expression literals, and describes their matching semantics.
+Character classes in regular expressions include metacharacters like `\d` to match a digit, `\s` to match whitespace, and `.` to match any character. Individual literal characters can also be thought of as character classes, as they at least match themselves, and, in case-insensitive matching, their case-toggled counterpart. For the purpose of this work, then, we consider a *character class* to be any part of a regular expression literal that can match an actual component of a string.
 
 ## Motivation
 
-Strings in Swift are designed to provide a predictable, character-based interface for users by default, regardless of the way a character is composed.
-
-The following small example demonstrates two sides of this predictability. `str` includes an accented character, which is formed in the string literal by `"e\u{301}"` — the letter “e” followed by a combining acute accent (U+0301). Although this accented character is written in the literal as two separate values, the default view of the string consistently presents it as a single character, and considers that single, composite character as equivalent to the accented letter written as  `"é"`, the Unicode scalar value U+00E9.
+Operating over classes of characters is a vital component of string processing. Swift's `String` provides, by default, a view of `Character`s or [extended grapheme clusters][graphemes] whose comparison honors [Unicode canonical equivalence][canoneq].
 
 ```swift
-let str = "Cafe\u{301}"
-for ch in str {
-    print(ch)
-}
-// C
-// a
-// f
-// é
-
-let composedAccentedE = "é"
-print(str.contains(composedAccentedE))
-// true
+let str = "Cafe\u{301}" // "Café"
+str == "Café"           // true
+str.dropLast()          // "Caf"
+str.last == "é"         // true (precomposed e with acute accent)
+str.last == "e\u{301}"  // true (e followed by composing acute accent)
 ```
 
-Instead of treating `“e”` and `"\u{301}"` as separate elements, Swift’s string recognizes the pair as a grapheme cluster, as represented by the `Character` type, and as canonically equivalent to their single Unicode scalar value counterpart. Characters that are made up of multiple Unicode scalars include emoji (flags are usually 2 Unicode scalar values, family groupings can be nearly a dozen), Korean hangeul (1-3 Unicode scalar values per character), and Thai script, among many others.
+Unicode leaves all interpretation of grapheme clusters up to implementations, which means that Swift needs to define any semantics for its own usage. Since other regex engines operate, at most, at the semantics level of Unicode scalar values, there is little to no prior art to consult.
 
-This is a departure from many other languages and frameworks, such as Python and Foundation's NSString, where individual Unicode scalars, or sometimes their UTF-16 or UTF-8 encoding units, are treated as the elements of a string.
+<details><summary>Other engines</summary>
 
-```python
-for ch in u'Cafe\u0301':
-    print("# " + ch)
-# C
-# a
-# f
-# e
-#´
-```
-
-Just as Python strings are different from Swift's, in these other languages, regular expressions behave in ways that do not match the expectations of a Swift string user.
-
-Character classes in other languages match at the Unicode scalar (or encoded unit) value, instead of recognizing grapheme clusters as characters. When matching the `.` character class, other languages will only match the first part of an `"e\u{301}"` grapheme cluster. Some languages, like Perl, Ruby, and Java, support an additional `\X` metacharacter, which explictly represents a single grapheme cluster.
+Character classes in other languages match at either the Unicode scalar value level, or even the code unit level, instead of recognizing grapheme clusters as characters. When matching the `.` character class, other languages will only match the first part of an `"e\u{301}"` grapheme cluster. Some languages, like Perl, Ruby, and Java, support an additional `\X` metacharacter, which explicitly represents a single grapheme cluster.
 
 | Matching  `"Cafe\u{301}"` | Pattern: `^Caf.` | Remaining | Pattern:  `^Caf\X` | Remaining |
 |---|---|---|---|---|
 | NSString, C#, Rust, Go | `"Cafe"` | `"´"` | n/a | n/a |
 | Java, Ruby, Perl | `"Cafe"` | `"´"` | `"Café"` | `""` |
 
-By and large, other languages do not use canonical equivalence when matching characters in regular expressions. Java provides a `CANON_EQ` option when compiling a pattern to opt into such checking.
+**FIXME**: But doesn't ICU support `\X`? What's going wrong here?
 
-```java
-String cafe = "Cafe\u0301";
+Other than Java's `CANON_EQ` option, the vast majority of other languages and engines are not capable of comparing with canonical equivalence.
 
-Pattern exactPatt = Pattern.compile("é");
-exactPatt.matcher(cafe).find()      // false
+</details>
 
-Pattern equivPatt = Pattern.compile("é", Pattern.CANON_EQ);
-equivPatt.matcher(cafe).find()      // true
-```
+[SE-0211 Unicode Scalar Properties][scalarprops] added basic building blocks for classification of scalars by surfacing Unicode data from the [UCD][ucd]. [SE-0221: Character Properties][charprops] defined grapheme-cluster semantics for Swift for a subset of these. But, many classifications used in string processing are combinations of scalar properties or ad-hoc listings, and as such are not present today in Swift.
 
-Finally, there is wide variance of the actual definitions of character classes between different languages. As one example, should the `\d` character class, which matches digits, include the digits from the _Halfwidth and Fullwidth Forms_ Unicode block? ICU-based regular expression engines, like those used in Java and Foundation's `NSRegularExpression`, include these extra digits, while other languages do not. Determining exactly what characters are matched by each character class of a particular language or library can be difficult, making it harder to fully understand what kinds of strings a pattern will or will not match.
+Regardless of any syntax or underlying formalism, classifying characters is a worthy and much needed addition to the Swift standard library. We believe our thorough treatment of every character class found across many popular regex engines gives Swift a solid semantic basis.
 
 ## Proposed Solution
 
-We propose a treatment of character classes in Swift regular expression that is consistent with the Swift string model, configurable at the point of declaration, and comprehensible for users getting to know Swift regular expressions.
+This pitch is narrowly scoped to Swift definitions of character classes found in regexes. For each character class, we propose:
 
-### Consistency
+- A name for use in API
+- A `Character` API, by extending Unicode scalar definitions to grapheme clusters
+- A `Unicode.Scalar` API with modern Unicode definitions
+- If applicable, a `Unicode.Scalar` API for notable standards like POSIX
 
-Just as the default view of a string's contents are as a collection of grapheme-cluster characters, with comparisons using canonical equivalence, regular expression matching by default will do the same. This assures that similar code produces predictable results as we add APIs that accept regular expressions and other patterns:
-
-```swift
-let str = "Cafe\u{301}"
-str.contains("é")       // true
-str.contains(/é/)       // true
-```
-
-Moreover, in accordance with the [Unicode guidelines for regular expressions](https://www.unicode.org/reports/tr18), we use Unicode property data rather than specific lists of characters whenever possible.
+We're proposing what we believe to be the Swiftiest definitions, referencing Unicode's [UTS\#18][uts18], [PCRE][pcre], [perl][perl], [Raku][raku], [Rust][rust], [Python][python], [C\#][csharp], [`NSRegularExpression` / ICU][icu], [POSIX][posix], [Oniguruma][oniguruma], (grep?), [Go][go], [C++][cplusplus], [RE2][re2], [Java][java] (kotlin if different?),  ... (or whatever the set is :-)
 
 
-### Configuration
-
-For compatibility with other languages, and in some cases to allow users to opt into higher performance, you can configure the character class matching level of regular expression at the declaration site. For example, you can opt into the Unicode scalar-based matching of other languages by using the `unicodeScalarSemantics` property on a regular expression instance.
-
-This example declares `pattern` with Unicode scalar semantics, instead of the default character semantics. `pattern` doesn't match the string above because `"e"` and `"\u{301}"` are treated as separate values.
-
-```swift
-let pattern = /^Caf.$/.unicodeScalarSemantics
-str.contains(pattern)   // false
-```
-
-Initially, we plan to allow configuration between character, Unicode scalar, and POSIX-compatible character class matching.
-
-
-### Comprehensibility
-
-For each of the character classes described below, we will base the  also add corresponding Boolean properties on both `Character` and `UnicodeScalar`. These properties will provide multiple valuable benefits:
-
-- they will be accessible from within the regular expression/pattern DSL,
-- the characters or values that each class matches can be clearly described in the symbols' documentation, and
-- the matched characters can be validated by accessing the properties directly.
-
-For example, the `\w` character class, for "word" characters, will have a matching `matchesAsWordCharacter` property.
-
-```swift
-"C".matchesAsWordCharacter  // true
-"é".matchesAsWordCharacter  // true
-"‡".matchesAsWordCharacter  // false
-```
-
-We could further extend the API to allow the redefinition of individual character classes, such as making `\d` match only the characters in the range `0` through `9`.
-
-```swift
-let fiveDigits = /\d/.customizingClass(\.matchesAsDigit, toMatch: /[0-9]/)
-```
+To extend scalar semantics to grapheme clusters, we're using algebra and rationale from [SE-0221: Character Properties][charpropsrationale].
 
 ## Detailed Design
 
-The following sections detail the different character classes that will be supported by Swift regular expression literals, along with their proposed counterparts in the regular expression DSL.
-
 ### Literal characters
 
-A literal character (such as `a`, `é`, or `한`) in a regex literal matches that particular character or code sequence. When matching in Unicode scalar or POSIX mode, the underlying code sequence must be an exact match.
+A literal character (such as `a`, `é`, or `한`) in a regex literal matches that particular character or code sequence. When matching at the semantic level of `Unicode.Scalar`, it should match the literal sequence of scalars. When matching at the semantic level of `Character`, it should match `Character`-by-`Character`, honoring Unicode canonical equivalence.
 
-```swift
-let str = "Cafe\u{301}"
-str.contains(/e/)                           // false
-str.contains(/e/.unicodeScalarSemantics)    //  true
-```
-
-**DSL:** Literal characters are represented by string literals.
-
-```swift
-Pattern {
-    "abc"
-}
-```
-
-### Match any: `.`, `\X`
-
-The dot metacharacter matches any single character or element except for a newline (see the _Whitespace and Newlines_ section, below). In "dot matches all" mode, newlines are treated like any other character. A future proposal will discuss modes in more detail.
-
-`\X` matches any grapheme cluster (`Character`), even when the regular expression is otherwise matching at the Unicode scalar or POSIX level.
-
-**DSL:** The "match anything" pattern is spelled `.anyCharacter`. `.anyCharacter` will match at the level of the overall pattern unless given a more specific level, so `.anyCharacter.graphemeScalarSemantics` is equivalent to the `\X` metacharacter.
-
-```swift
-Pattern {
-    OneOrMore(.anyCharacter)
-}
-```
-
-### Digits: `\d`,`\D`
-
-`\d` matches a "digit", which is any `Character` or Unicode scalar with the Unicode general category `Decimal_Number`.
-
-| Matching Level | Note |
-|-------------------------------|---------|
-| Character | any character where the general category of the first unicode scalar is `Decimal_Number` |
-| Unicode Scalar | any scalar where the general category is `Decimal_Number`, not including any combining marks |
-| POSIX | `[0-9]` |
-
-`\D` matches the inverse set of characters/elements.
-
-**DSL:** The corresponding pattern is called `.digitCharacter`:
-
-```swift
-Pattern {
-    OneOrMore(.digitCharacter)
-}
-```
-
-
-### Word Characters: `\w`, `\W`
-
-`\w` matches any letter or decimal number, as indicated by the Unicode general categories:
-
-- `Uppercase_Letter`
-- `Lowercase_Letter`
-- `Titlecase_Letter`
-- `Other_Letter`
-- `Decimal_Number`
-
-| Matching Level | Note |
-|-------------------------------|---------|
-| Character | any character where the general category of the first unicode scalar is in the above list |
-| Unicode Scalar | any scalar where the general category is in the above list |
-| POSIX | `[A-Za-z0-9_]` |
-
-`\W` matches the inverse set of characters/elements.
-
-**DSL:** The corresponding pattern is called `.wordCharacter`:
-
-```swift
-Pattern {
-    OneOrMore(.wordCharacter)
-}
-```
-
-
-### Whitespace and Newlines: `\s`, `\S` (plus `\h`, `\H`, `\v`, `\V`, and `\R`)
-
-`\s` matches any single, non-zero width whitespace character, as denoted by the following list.
-
-- `CHARACTER TABULATION` (U+0009)
-- `LINE FEED (LF)` (U+000A)*
-- `LINE TABULATION` (U+000B)*
-- `FORM FEED (FF)` (U+000C)*
-- `CARRIAGE RETURN (CR)` (U+000D)*
-- `NEWLINE (NEL)` (U+0085)*
-- any character in the Unicode general category `Z`/`Separator`
-- the CR/LF sequence
-
-`\h` matches the tab character (U+0009) or any character in the Unicode general category `Space_Separator`.
-
-`\v` matches the five line separator characters above, marked with *, as well as (U+2028) and (U+2029), not including the CR/LF sequence.
-
-`\R` matches the same characters as `\v`, and in addition matches the CR/LF sequence.
-
-| Matching level | Note |
-|-------------------------------|---------|
-| Character | any character where the general category of the first unicode scalar is in the above list |
-| Unicode Scalar | any scalar where the general category is in the above list |
-| POSIX | `[ \t\n\r\f\v]` |
-
-`\S`, `\H`, and `\V` match the inverse set of characters as their lowercase respective character classes.
-
-**DSL:** The corresponding pattern is called `.whitespaceOrNewline`. Additional patterns for `.whitespace` and `.newline` are also available.
-
-```swift
-Pattern {
-    "abc"
-    OneOrMore(.whitespace)
-    "def"
-    OneOrMore(.whitespaceOrNewline)
-}
-```
-
-### Control characters: `\t`, `\r`, `\n`, `\f`, `\0`, `\e`, `\a`, `\b`, `\cX`
-
-These escaped literal characters represent specific control characters only.
-
-- `\t`: `CHARACTER TABULATION` (U+0009)
-- `\r`: `CARRIAGE RETURN (CR)` (U+000D)
-- `\n`: `LINE FEED (LF)` (U+000A)
-- `\f`: `FORM FEED (FF)` (U+000C)
-- `\0`: `NUL` (U+0000)
-- `\e`: `ESCAPE` (U+001B)
-- `\a`: `BELL` (U+0007)
-- `\b`: `BACKSPACE` (U+0008) (within a character set only)
-- `\cX`: The control character indicated by Control-`X`; in the code point range `0..<32`.
-
-**DSL:** The corresponding patterns are available as named patterns, or alternatively as character literals.
-
-- `\t`: `.tabCharacter` or `"\u{09}"`
-- `\r`: `.carriageReturn` or `"\u{0d}"`
-- `\n`: `.lineFeed` or `"\u{0a}"`
-- `\f`: `.formFeed` or `"\u{0c}"`
-- `\0`: `.nul` or `"\u{0}"`
-- `\e`: `.escape` or `"\u{1b}"`
-- `\a`: `.bell` or `"\u{07}"`
-- `\b`: `.backspace` or `"\u{08}"`
-- `\cX`: `.control(_: UnicodeScalar)`
-
+We are not proposing new API here as this is already handled by `String` and `String.UnicodeScalarView`'s conformance to `Collection`.
 
 ### Unicode values: `\u`, `\U`, `\x`
 
-Metacharacters that begin with `\u`, `\U`, or `\x` match a character with the specified Unicode scalar values. The format used by Swift string literals (`\u{hhh...}`) and several other legacy regular expression formats are all supported.
+Metacharacters that begin with `\u`, `\U`, or `\x` match a character with the specified Unicode scalar values. We propose these be treated exactly the same as literals.
 
-- `\u{hhh...}` *(preferred)*: Can use 1 or more hexidecimal digits.
-- `\xhh`: Must use 2 hexidecimal digits.
-- `\uhhhh`: Must use 4 hexidecimal digits.
-- `\x{hhh...}`: Can use 1 or more hexidecimal digits.
-- `\Uhhhhhhhh`: Must use 8 hexidecimal digits.
 
-**DSL:** This functionality is supported through the DSL's use of string literals.
+### Match any: `.`, `\X`
+
+The dot metacharacter matches any single character or element. Depending on options and modes (i.e. API), it may exclude newlines.
+
+`\X` matches any grapheme cluster (`Character`), even when the regular expression is otherwise matching at semantic level of `Unicode.Scalar`.
+
+We are not proposing new API here as this is already handled by collection conformances.
+
+While we would like for the stdlib to have grapheme-breaking API over collections of `Unicode.Scalar`, that is a separate discussion and out-of-scope for this pitch.
+
+### Digits: `\d`,`\D`
+
+We propose `\d` be named "digit" with the following definitions:
 
 ```swift
-Pattern {
-    "abc"
-    "\u{032}"
-    "def"
+extension Character {
+  /// TODO
+  public var isDigit: Bool { get }    
+}
+
+extension Unicode.Scalar {
+  /// TODO
+  public var isDigit: Bool { get }
 }
 ```
+
+`\W` matches the inverse of `\d`.
+
+_<details><summary>Rationale</summary>_
+
+**TODO**
+
+We picked `\(bestStandard)`'s definition (or mixture?) for `Unicode.Scalar`. (If not obvious, reasons).
+
+We used `\(rationale)` for `Character`. (If not obvious, reasons).
+
+</details>
+
+### Word characters: `\w`, `\W`
+
+We propose `\w` be named "word" with the following definitions:
+
+
+```swift
+extension Character {
+  /// TODO
+  public var isWord: Bool { get }    
+}
+
+extension Unicode.Scalar {
+  /// TODO
+  public var isWord: Bool { get }
+}
+```
+
+`\W` matches the inverse of `\w`.
+
+_<details><summary>Rationale</summary>_
+
+**TODO**
+
+We picked `\(bestStandard)`'s definition (or mixture?) for `Unicode.Scalar`. (If not obvious, reasons).
+
+We used `\(rationale)` for `Character`. (If not obvious, reasons).
+
+</details>
+
+### Whitespace and newlines: `\s`, `\S` (plus `\h`, `\H`, `\v`, `\V`, and `\R`)
+
+We propose `\s` be named "whitespace" with the following definitions:
+
+```swift
+extension Unicode.Scalar {
+  /// TODO
+  public var isWhitespace: Bool { get }
+}
+```
+
+Note that `Character.isWhitespace` already exists with the desired semantics (**TODO** did you look `Character`'s semantics and is it what we want?)
+
+We propose `\h` be named "horizontalWhitespace" with the following definitions:
+
+```swift
+extension Character {
+  /// TODO
+  public var isHorizontalWhitespace: Bool { get }    
+}
+
+extension Unicode.Scalar {
+  /// TODO
+  public var isHorizontalWhitespace: Bool { get }
+}
+```
+
+We propose `\v` be named "verticalWhitespace" with the following definitions:
+
+
+```swift
+extension Character {
+  /// TODO
+  public var isVerticalWhitespace: Bool { get }    
+}
+
+extension Unicode.Scalar {
+  /// TODO
+  public var isVerticalWhitespace: Bool { get }
+}
+```
+
+`\S`, `\H`, and `\V` match the inverse of `\s`, `\h`, and `\v`, respectively.
+
+We propose `\R` include "verticalWhitespace" above with detection (and consumption) of the CR-LF sequence when applied to `Unicode.Scalar`. It is equivalent to `Character.isVerticalWhitespace` when applied to `Character`s.
+
+We are similarly not proposing any new API for `\R` until the stdlib has grapheme-breaking API over `Unicode.Scalar`.
+
+_<details><summary>Rationale</summary>_
+
+**TODO**
+
+We picked `\(bestStandard)`'s definition (or mixture?) for `Unicode.Scalar`. (If not obvious, reasons).
+
+We used `\(rationale)` for `Character`. (If not obvious, reasons).
+
+</details>
+
+### Control characters: `\t`, `\r`, `\n`, `\f`, `\0`, `\e`, `\a`, `\b`, `\cX`
+
+We propose the following names and meanings for these escaped literals representing specific control characters:
+
+```swift
+extension Character {
+  /// TODO  
+  public static var tab: Character { get }
+
+  /// TODO   
+  public static var carriageReturn: Character { get }
+
+  /// TODO   
+  public static var lineFeed: Character { get }
+
+  /// TODO   
+  public static var formFeed: Character { get }
+
+  /// TODO   
+  public static var nul: Character { get }
+
+  /// TODO   
+  public static var escape: Character { get }
+
+  /// TODO   
+  public static var bell: Character { get }
+
+  /// TODO   
+  public static var backspace: Character { get }
+
+  /// TODO
+  public static func control(_ x: Unicode.Scalar): Character { }
+}
+
+extension Unicode.Scalar {
+  /// TODO  
+  public static var tab: Unicode.Scalar { get }
+
+  /// TODO   
+  public static var carriageReturn: Unicode.Scalar { get }
+
+  /// TODO   
+  public static var lineFeed: Unicode.Scalar { get }
+
+  /// TODO   
+  public static var formFeed: Unicode.Scalar { get }
+
+  /// TODO   
+  public static var nul: Unicode.Scalar { get }
+
+  /// TODO   
+  public static var escape: Unicode.Scalar { get }
+
+  /// TODO   
+  public static var bell: Unicode.Scalar { get }
+
+  /// TODO   
+  public static var backspace: Unicode.Scalar { get }
+
+  /// TODO
+  public static func control(_ x: Unicode.Scalar): Unicode.Scalar { }
+}
+```
+
+**TODO**: What about `\r\n` in grapheme semantic mode?
+
+_<details><summary>Rationale</summary>_
+
+**TODO**
+
+We picked `\(bestStandard)`'s definition (or mixture?) for `Unicode.Scalar`. (If not obvious, reasons).
+
+We used `\(rationale)` for `Character`. (If not obvious, reasons).
+
+</details>
+
+
 
 ### Unicode named values and properties: `\N`, `\p`, `\P`
 
-`\N{NAME}` matches a Unicode scalar value with the specified name. For example, `/\p{name=HANGUL SYLLABLE GAG}/` matches the character `"각"`.
-
-`\p{PROPERTY}` and `\p{PROPERTY=VALUE}` match a Unicode scalar value with the given Unicode property (and value, if given). Binary properties (such as `White_Space`) and either full or abbreviated general categories (e.g. `Uppercase_Letter` or `Lu`), can be used without a value. For other properties, provide the property and value to match. For example, `/\p{Numeric_Type=Decimal}+/` matches the full range of the string `"0① ₂³"`.
+`\N{NAME}` matches a Unicode scalar value with the specified name. `\p{PROPERTY}` and `\p{PROPERTY=VALUE}` match a Unicode scalar value with the given Unicode property (and value, if given). 
 
 While most Unicode-defined properties can only match at the Unicode scalar level, some are defined to match an extended grapheme cluster. For example, `/\p{RGI_Emoji_Flag_Sequence}/` will match any flag emoji character, which are composed of two Unicode scalar values.
 
-`\P{...}` matches the inverse of the characters matched by the corresponding `\p{...}` character class.
+`\P{...}` matches the inverse of `\p{...}`.
 
-**DSL:** This functionality is supported through APIs that take a predicate as a parameter, focused either on a `Character` or `UnicodeScalar` instance.
+Most of this functionality is already provided inside `Unicode.Scalar.Properties`, and we propose to round out Swift's current support with:
 
 ```swift
-Pattern {
-    "abc"
-    OneOrMore(.unicodeProperty(where: \.isAlphabetic))
-    "def"
-}
+// TODO: any that are missing
 ```
 
-### POSIX Character Classes: `[:NAME:]`
+**TODO**: Check with Alejandro that the code size impact is reasonable
 
-The following POSIX character classes, of the form `[:NAME:]`, are supported:
+Even though we are not proposing any `Character`-based API, we'd like to discuss with the community whether or how to extend them to grapheme clusters. Some options:
 
-| POSIX class  | Matches           |
-|--------------|-------------------|
-| `[:alnum:]`  | `[A-Za-z0-9]`     |
-| `[:alpha:]`  | `[A-Za-z]`        |
-| `[:ascii:]`  | `[\x00-\x7F]`     |
-| `[:blank:]`  | `[ \t]`           |
-| `[:cntrl:]`  | `[\x00-\x1F\x7F]` |
-| `[:digit:]`  | `[0-9]`           |
-| `[:graph:]`  | `[\x21-\x7E]`     |
-| `[:lower:]`  | `[a-z]`           |
-| `[:print:]`  | `[[:graph:] ]`    |
-| `[:punct:]`  | `[-!"#$%&'()*+,./:;<=>?@[\\\]^_{|}~]` |
-| `[:space:]`  | `[ \t\n\r\f\v]`   |
-| `[:upper:]`  | `[A-Z]`           |
-| `[:word:]`   | `[A-Za-z0-9_]`    |
-| `[:xdigit:]` | `[0-9A-Fa-f]`     |
+- Forbid in any grapheme-cluster semantic mode
+- Match only single-scalar grapheme clusters with the given property
+- Match any grapheme cluster that starts with the given property
+- Something more-involved such as per-property reasoning
 
-### Custom Classes: `[...]`
 
-Users can create custom character classes by using literal characters and most predefined character classes within square brackets.
+### POSIX character classes: `[:NAME:]`
 
-- Individual characters and character classes described above can be used as is.
-- Ranges of Unicode scalar values can be specified by separating the start and end of the range (inclusive) with a hyphen. Note that because `Character` isn't a `Comparable` type, ranges can only match Unicode scalar values. Crossing the UTF-16 surrogate pair range (U+D800 to U+DFFF) is permitted, but values in that range do not match anything, regardless of the string's encoding.
-- Include a literal hyphen by escaping, or by placing it first or last in the custom class.
-- Negate a custom class by placing a caret immediately after the opening bracket (e.g. `[^a-zA-Z]`).
+We propose that POSIX character classes be named "posixName" with the following semantics:
+
+```swift
+extension Unicode.Scalar {
+  /// TODO:
+  public var isPOSIXAlphanumeric: Bool { get }
+
+  /// TODO:
+  public var isPOSIXAlphabetic: Bool { get }
+
+  /// TODO:
+  public var isASCII: Bool { get } // if not 
+
+  /// TODO:
+  public var isPOSIXBlank: Bool { get }
+
+  /// TODO:
+  public var isPOSIXControl: Bool { get }
+
+  /// TODO:
+  public var isPOSIXDigit: Bool { get }
+
+  /// TODO:
+  public var isPOSIXGraph: Bool { get }
+
+  /// TODO:
+  public var isPOSIXLowercase: Bool { get }
+
+  /// TODO:
+  public var isPOSIXPrint: Bool { get }
+
+  /// TODO:
+  public var isPOSIXPunctuation: Bool { get }
+
+  /// TODO:
+  public var isPOSIXSpace: Bool { get }
+
+  /// TODO:
+  public var isPOSIXUppercase: Bool { get }
+
+  /// TODO:
+  public var isPOSIXWord: Bool { get }
+
+  /// TODO:
+  public var isPOSIXHexDigit: Bool { get }
+}
+// ... same for Character ...
+```
+
+`Unicode.Scalar.isASCII` already exists and `Character.isASCII` and can satisfy `[:ascii:]`.
+
+Alternatively, we could introduce an option-set-like `POSIXCharacterClass` and `func isPOSIX(_:POSIXCharacterClass)` since POSIX is a fully defined standard. This would cut down on the amount of API noise directly visible on `Character` and `Unicode.Scalar` significantly.
+
+We'd like some more discussion with the community here, and it's possible this will become clearer as more of the string processing story takes shape.
+
+
+### Custom classes: `[...]`
+
+We propose that custom classes function just like set union. We propose that ranged-based custom character classes function just like `ClosedRange`. Thus, we are not proposing any additional API.
+
+That being said, providing grapheme cluster semantics is simultaneously obvious and tricky. A direct extension treats `[a-f]` as equivalent to `("a"..."f").contains()`. Strings (and thus Characters) are ordered for the purposes of efficiently maintaining programming invariants while honoring Unicode canonical equivalence. This ordering is _consistent_ but [linguistically meaningless][meaningless] and subject to implementation details such as whether we choose to normalize under NFC or NFD.
+
+```swift
+let c: ClosedRange<Character> = "a"..."f"
+c.contains("e") // true
+c.contains("g") // false
+c.contains("e\u{301}") // false, NFC uses precomposed é
+c.contains("e\u{305}") // true, there is no precomposed e̅
+```
+
+We will likely want corresponding `RangeExpression`-based API in the future and keeping consistency with ranges is important. 
+
+We would like to discuss this problem with the community here. Even though we are not addressing regex literals specifically in this thread, it makes sense to produce suggestions for compilation errors or warnings.
+
+Some options:
+
+- Do nothing, embrace emergent behavior
+- Warn/error for _any_ character class ranges
+- Warn/error for character class ranges outside of a quasi-meaningful subset (e.g. ACII, albeit still has issues above)
+- Warn/error for multiple-scalar grapheme clusters (albeit still has issues above)
+
+
+
+## Future Directions
+
+### Future API
+
+Library-extensible pattern matching will necessitate more types, protocols, and API in the future, many of which may involve character classes. This pitch aims to define names and semantics for exactly these kinds of API now, so that they can slot in naturally.
+
+
+### More classes or custom classes
+
+Future API might express custom classes or need more built-in classes. This pitch aims to establish rationale and precedent for a large number of character classes in Swift, serving as a basis that can be extended.
 
 
 ## Alternatives Considered
 
-### Applying Regular Expressions to String Views
+**NOTE** I say we leave this blank and fill this in as part of the discussion / second pitch. Or, we could reiterate that we'd like feedback on various things (e.g. alternate formulation for POSIX character classes).
 
-A prior design allowed a user to choose their desired matching level and semantics by applying a regular expression to a string's `UnicodeScalarView`, `UTF16View`, or `UTF8View`. While initially appealing, this approach posed multiple problems:
 
-- Since we want regular expressions created with a literal to be usable all the same places as those created using the DSL, anything predicate-based needs to have the input type specified at the time of creation. It wouldn't make sense to add a `(Character) -> Bool` predicate to a regular expression, and then apply it to the string's `UTF8View`.
-- The matching semantics of a regular expression are closely tied to the way it's composed, so it would likely be unpredictable or even nonsensical to apply a regular expression written for one view of a string to be applied to another view.
-- It's unclear whether the two UTF-encoded views would treat their elements as individual `UInt16` or `UInt8` values, or whether they would retain some notion of being encoded Unicode data. If the former, how would character classes like `\u{...}` or `\p{...}` be used by the parser? And if the latter, what purpose does this serve beyond parsing the `UnicodeScalarView`?
-
-For these reasons, regular expressions will target only the `StringProtocol`-conforming types — `String` and `Substring`. The other string views can be parsed using the more general `Collection`-based pattern matching, without the regular expression-specific features described in this proposal.
+[literals]: https://forums.swift.org/t/pitch-regular-expression-literals/52820
+[overview]: https://forums.swift.org/t/declarative-string-processing-overview/52459
+[charprops]: https://github.com/apple/swift-evolution/blob/master/proposals/0221-character-properties.md
+[charpropsrationale]: https://github.com/apple/swift-evolution/blob/master/proposals/0221-character-properties.md#detailed-semantics-and-rationale
+[canoneq]: https://www.unicode.org/reports/tr15/#Canon_Compat_Equivalence
+[graphemes]: https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries
+[meaningless]: https://forums.swift.org/t/declarative-string-processing-overview/52459/121
+[scalarprops]: https://github.com/apple/swift-evolution/blob/master/proposals/0211-unicode-scalar-properties.md
+[ucd]: https://www.unicode.org/reports/tr44/tr44-28.html
 
