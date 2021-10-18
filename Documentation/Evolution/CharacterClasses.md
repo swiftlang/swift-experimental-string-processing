@@ -244,7 +244,7 @@ _<details><summary>Rationale</summary>_
 
 We chose the Unicode recommendation as the basis for `Unicode.Scalar`, which is to derive whitespace matching from the Unicode `White_Space` property and general categories. This behavior matches `NSRegularExpression` and many languages with regular expressions in Unicode mode. In some languages, such as Go, `\s` is interpreted only as the ASCII whitespace characters, which would be surprising for Swift users. For details, see the [Unicode property list][proplist].
 
-We chose to treat any grapheme cluster that leads with whitespace to be a `Character`, for compatibility with existing `Character` API.
+We chose to leave the existing `Character.isWhitespace` intact and extend its reasoning to vertical and horizontal whitespace.
 
 </details>
 
