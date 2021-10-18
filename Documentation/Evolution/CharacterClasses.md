@@ -29,10 +29,8 @@ Character classes in other languages match at either the Unicode scalar value le
 
 | Matching  `"Cafe\u{301}"` | Pattern: `^Caf.` | Remaining | Pattern:  `^Caf\X` | Remaining |
 |---|---|---|---|---|
-| NSString, C#, Rust, Go | `"Cafe"` | `"´"` | n/a | n/a |
-| Java, Ruby, Perl | `"Cafe"` | `"´"` | `"Café"` | `""` |
-
-**FIXME**: But doesn't ICU support `\X`? What's going wrong here?
+| C#, Rust, Go | `"Cafe"` | `"´"` | n/a | n/a |
+| NSString, Java, Ruby, Perl | `"Cafe"` | `"´"` | `"Café"` | `""` |
 
 Other than Java's `CANON_EQ` option, the vast majority of other languages and engines are not capable of comparing with canonical equivalence.
 
@@ -49,10 +47,9 @@ This pitch is narrowly scoped to Swift definitions of character classes found in
 - A name for use in API
 - A `Character` API, by extending Unicode scalar definitions to grapheme clusters
 - A `Unicode.Scalar` API with modern Unicode definitions
-- If applicable, a `Unicode.Scalar` API for notable standards like POSIX
+- If applicable, a `Unicode.Scalar` API for notable standards like POSIX (or JS?)
 
-We're proposing what we believe to be the Swiftiest definitions, referencing Unicode's [UTS\#18][uts18], [PCRE][pcre], [perl][perl], [Raku][raku], [Rust][rust], [Python][python], [C\#][csharp], [`NSRegularExpression` / ICU][icu], [POSIX][posix], [Oniguruma][oniguruma], (grep?), [Go][go], [C++][cplusplus], [RE2][re2], [Java][java] (kotlin if different?),  ... (or whatever the set is :-)
-
+We're proposing what we believe to be the Swiftiest definitions, referencing Unicode's [UTS\#18][uts18], [PCRE][pcre], [perl][perl], [Raku][raku], [Rust][rust], [Python][python], [C\#][csharp], [`NSRegularExpression` / ICU][icu], [POSIX][posix], [Oniguruma][oniguruma], (grep?), [Go][go], [C++][cplusplus], [RE2][re2], [Java][java], and [ECMAScript][ecmascript].
 
 To extend scalar semantics to grapheme clusters, we're using algebra and rationale from [SE-0221: Character Properties][charpropsrationale].
 
@@ -67,7 +64,6 @@ We are not proposing new API here as this is already handled by `String` and `St
 ### Unicode values: `\u`, `\U`, `\x`
 
 Metacharacters that begin with `\u`, `\U`, or `\x` match a character with the specified Unicode scalar values. We propose these be treated exactly the same as literals.
-
 
 ### Match any: `.`, `\X`
 
@@ -85,42 +81,64 @@ We propose `\d` be named "digit" with the following definitions:
 
 ```swift
 extension Character {
-  /// TODO
+  /// A Boolean value indicating whether this character is considered 
+  /// a digit.
+  ///
+  /// All characters with an initial Unicode scalar in the general 
+  /// category `Nd`/`Decimal_Number` are considered digits. This 
+  /// includes the digits from the ASCII range, from the _Halfwidth 
+  /// and Fullwidth Forms_ Unicode block, as well as digits in some
+  /// scripts, like `DEVANAGARI DIGIT NINE` (U+096F).
   public var isDigit: Bool { get }    
 }
 
 extension Unicode.Scalar {
-  /// TODO
+  /// A Boolean value indicating whether this scalar is considered 
+  /// a digit.
+  ///
+  /// Any Unicode scalar in the general category `Nd`/`Decimal_Number`
+  /// is considered a digit. This includes the digits from the ASCII
+  /// range, from the _Halfwidth and Fullwidth Forms_ Unicode block,
+  /// as well as digits in some scripts, like `DEVANAGARI DIGIT NINE`
+  /// (U+096F).
   public var isDigit: Bool { get }
 }
 ```
 
-`\W` matches the inverse of `\d`.
+`\D` matches the inverse of `\d`.
 
 _<details><summary>Rationale</summary>_
 
-**TODO**
+We chose the Unicode recommendation as the basis for `Unicode.Scalar`, which is to derive digit matching from the Unicode general category `Decimal_Number`. This behavior matches `NSRegularExpression` and the ICU regular expression specification, along with some languages with regular expressions in Unicode mode (yes: Perl, Python; no: ECMAScript, Java). For details, see [Unicode derived numeric types][derivednumeric].
 
-We picked `\(bestStandard)`'s definition (or mixture?) for `Unicode.Scalar`. (If not obvious, reasons).
+We chose to treat any grapheme cluster that leads with a Unicode scalar "digit" as a digit as well. This is compatible with the existing `Character.isNumber` property, which only checks the first scalar's numeric type. It does, on the other hand, diverge from the `isWholeNumber` and `isHexDigit` properties, which require that the `Character` comprises a single Unicode scalar.
 
-We used `\(rationale)` for `Character`. (If not obvious, reasons).
+**TODO:** This is the right kind of matching for the rest of what we're doing, but it will yield substrings that will fail `Int.init?(_:radix:)`. Do we want to add another initializer that can understand this whole breadth of characters?
 
 </details>
 
 ### Word characters: `\w`, `\W`
 
-We propose `\w` be named "word" with the following definitions:
-
+We propose `\w` be named "word character" with the following definitions:
 
 ```swift
 extension Character {
-  /// TODO
-  public var isWord: Bool { get }    
+  /// A Boolean value indicating whether this scalar is considered 
+  /// a "word" character.
+  ///
+  /// All characters with an initial Unicode scalar that is considered a
+  /// word character are considered word character.
+  public var isWordCharacter: Bool { get }    
 }
 
 extension Unicode.Scalar {
-  /// TODO
-  public var isWord: Bool { get }
+  /// A Boolean value indicating whether this scalar is considered 
+  /// a "word" character.
+  ///
+  /// Any Unicode scalar that has one of the Unicode properties
+  /// `Alphabetic`, `Digit`, or `Join_Control`, or is in the 
+  /// general category `Mark` or `Connector_Punctuation`.
+  public var isWordCharacter: Bool { get }
 }
 ```
 
@@ -128,11 +146,9 @@ extension Unicode.Scalar {
 
 _<details><summary>Rationale</summary>_
 
-**TODO**
+We chose the Unicode recommendation as the basis for `Unicode.Scalar`, which is to derive word character matching from Unicode properties and general categories as described above. This behavior matches `NSRegularExpression` and the ICU regular expression specification.
 
-We picked `\(bestStandard)`'s definition (or mixture?) for `Unicode.Scalar`. (If not obvious, reasons).
-
-We used `\(rationale)` for `Character`. (If not obvious, reasons).
+We chose to treat any grapheme cluster that leads with a Unicode scalar word character as a word character as well.AA
 
 </details>
 
@@ -142,23 +158,47 @@ We propose `\s` be named "whitespace" with the following definitions:
 
 ```swift
 extension Unicode.Scalar {
-  /// TODO
+  /// A Boolean value indicating whether this scalar is considered 
+  /// whitespace.
+  ///
+  /// All Unicode scalars with the general category `Z`/`Separator`,
+  /// along with the following control characters, are considered
+  /// whitespace:
+  ///
+  /// - `CHARACTER TABULATION` (U+0009)
+  /// - `LINE FEED (LF)` (U+000A)
+  /// - `LINE TABULATION` (U+000B)
+  /// - `FORM FEED (FF)` (U+000C)
+  /// - `CARRIAGE RETURN (CR)` (U+000D)
+  /// - `NEWLINE (NEL)` (U+0085)
   public var isWhitespace: Bool { get }
 }
 ```
 
-Note that `Character.isWhitespace` already exists with the desired semantics (**TODO** did you look `Character`'s semantics and is it what we want?)
+This definition matches the value of the existing `Unicode.Scalar.Properties.isWhitespace` property. Note that `Character.isWhitespace` already exists with the desired semantics, which is a grapheme cluster that begins with a whitespace Unicode scalar.
 
 We propose `\h` be named "horizontalWhitespace" with the following definitions:
 
 ```swift
 extension Character {
-  /// TODO
+  /// A Boolean value indicating whether this character is considered 
+  /// horizontal whitespace.
+  ///
+  /// All characters with an initial Unicode scalar in the general 
+  /// category `Zs`/`Space_Separator`, or the control character 
+  /// `CHARACTER TABULATION` (U+0009), are considered horizontal 
+  /// whitespace.
   public var isHorizontalWhitespace: Bool { get }    
 }
 
 extension Unicode.Scalar {
-  /// TODO
+  /// A Boolean value indicating whether this scalar is considered 
+  /// horizontal whitespace.
+  ///
+  /// All Unicode scalars with the general category 
+  /// `Zs`/`Space_Separator`, along with the control character 
+  /// `CHARACTER TABULATION` (U+0009), are considered horizontal 
+  /// whitespace.
   public var isHorizontalWhitespace: Bool { get }
 }
 ```
@@ -168,12 +208,28 @@ We propose `\v` be named "verticalWhitespace" with the following definitions:
 
 ```swift
 extension Character {
-  /// TODO
+  /// A Boolean value indicating whether this scalar is considered 
+  /// vertical whitespace.
+  ///
+  /// All characters with an initial Unicode scalar in the general 
+  /// category `Zl`/`Line_Separator`, or the following control
+  /// characters, are considered vertical whitespace (see below)
   public var isVerticalWhitespace: Bool { get }    
 }
 
 extension Unicode.Scalar {
-  /// TODO
+  /// A Boolean value indicating whether this scalar is considered 
+  /// vertical whitespace.
+  ///
+  /// All Unicode scalars with the general category 
+  /// `Zl`/`Line_Separator`, along with the following control
+  /// characters, are considered vertical whitespace:
+  ///
+  /// - `LINE FEED (LF)` (U+000A)
+  /// - `LINE TABULATION` (U+000B)
+  /// - `FORM FEED (FF)` (U+000C)
+  /// - `CARRIAGE RETURN (CR)` (U+000D)
+  /// - `NEWLINE (NEL)` (U+0085)
   public var isVerticalWhitespace: Bool { get }
 }
 ```
@@ -186,11 +242,9 @@ We are similarly not proposing any new API for `\R` until the stdlib has graphem
 
 _<details><summary>Rationale</summary>_
 
-**TODO**
+We chose the Unicode recommendation as the basis for `Unicode.Scalar`, which is to derive whitespace matching from the Unicode `White_Space` property and general categories. This behavior matches `NSRegularExpression` and many languages with regular expressions in Unicode mode. In some languages, such as Go, `\s` is interpreted only as the ASCII whitespace characters, which would be surprising for Swift users. For details, see the [Unicode property list][proplist].
 
-We picked `\(bestStandard)`'s definition (or mixture?) for `Unicode.Scalar`. (If not obvious, reasons).
-
-We used `\(rationale)` for `Character`. (If not obvious, reasons).
+We chose to treat any grapheme cluster that leads with whitespace to be a `Character`, for compatibility with existing `Character` API.
 
 </details>
 
@@ -408,3 +462,20 @@ Future API might express custom classes or need more built-in classes. This pitc
 [scalarprops]: https://github.com/apple/swift-evolution/blob/master/proposals/0211-unicode-scalar-properties.md
 [ucd]: https://www.unicode.org/reports/tr44/tr44-28.html
 
+[uts18]: https://unicode.org/reports/tr18/
+[proplist]: https://www.unicode.org/Public/UCD/latest/ucd/PropList.txt
+[derivednumeric]: https://www.unicode.org/Public/UCD/latest/ucd/extracted/DerivedNumericType.txt
+[pcre]: https://www.pcre.org/current/doc/html/pcre2pattern.html
+[perl]: https://perldoc.perl.org/perlre
+[raku]: https://docs.raku.org/language/regexes
+[rust]: https://docs.rs/regex/1.5.4/regex/
+[python]: https://docs.python.org/3/library/re.html
+[csharp]: https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference
+[icu]: https://unicode-org.github.io/icu/userguide/strings/regexp.html
+[posix]: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap09.html
+[oniguruma]: https://www.cuminas.jp/sdk/regularExpression.html
+[go]: https://pkg.go.dev/regexp/syntax@go1.17.2
+[cplusplus]: https://www.cplusplus.com/reference/regex/ECMAScript/
+[ecmascript]: https://262.ecma-international.org/12.0/#sec-pattern-semantics
+[re2]: https://github.com/google/re2/wiki/Syntax
+[java]: https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html
