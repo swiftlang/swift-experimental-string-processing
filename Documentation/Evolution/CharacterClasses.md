@@ -161,9 +161,8 @@ extension Unicode.Scalar {
   /// A Boolean value indicating whether this scalar is considered 
   /// whitespace.
   ///
-  /// All Unicode scalars with the general category `Z`/`Separator`,
-  /// along with the following control characters, are considered
-  /// whitespace:
+  /// All Unicode scalars with the `White_Space` property are 
+  /// considered whitespace, including:
   ///
   /// - `CHARACTER TABULATION` (U+0009)
   /// - `LINE FEED (LF)` (U+000A)
@@ -254,61 +253,44 @@ We propose the following names and meanings for these escaped literals represent
 
 ```swift
 extension Character {
-  /// TODO  
+  /// A horizontal tab character, `CHARACTER TABULATION` (U+0009).
   public static var tab: Character { get }
 
-  /// TODO   
+  /// A carriage return character, `CARRIAGE RETURN (CR)` (U+000D).
   public static var carriageReturn: Character { get }
 
-  /// TODO   
+  /// A line feed character, `LINE FEED (LF)` (U+000A).
   public static var lineFeed: Character { get }
 
-  /// TODO   
+  /// A form feed character, `FORM FEED (FF)` (U+000C).   
   public static var formFeed: Character { get }
 
-  /// TODO   
+  /// A NULL character, `NUL` (U+0000).   
   public static var nul: Character { get }
 
-  /// TODO   
+  /// An escape control character, `ESC` (U+001B).
   public static var escape: Character { get }
 
-  /// TODO   
+  /// A bell character, `BEL` (U+0007).
   public static var bell: Character { get }
 
-  /// TODO   
+  /// A backspace character, `BS` (U+0008).
   public static var backspace: Character { get }
 
-  /// TODO
-  public static func control(_ x: Unicode.Scalar): Character { }
+  /// Returns a control character with the given value, Control-`x`.
+  ///
+  /// This method returns a value only for letters in the ASCII
+  /// range.
+  ///
+  /// - Parameter x: The letter to derive the control character 
+  ///   from.
+  /// - Returns: Control-`x` if `x` is in the pattern `[a-zA-Z]`;
+  ///   otherwise, `nil`.
+  public static func control(_ x: Unicode.Scalar) -> Character?
 }
 
 extension Unicode.Scalar {
-  /// TODO  
-  public static var tab: Unicode.Scalar { get }
-
-  /// TODO   
-  public static var carriageReturn: Unicode.Scalar { get }
-
-  /// TODO   
-  public static var lineFeed: Unicode.Scalar { get }
-
-  /// TODO   
-  public static var formFeed: Unicode.Scalar { get }
-
-  /// TODO   
-  public static var nul: Unicode.Scalar { get }
-
-  /// TODO   
-  public static var escape: Unicode.Scalar { get }
-
-  /// TODO   
-  public static var bell: Unicode.Scalar { get }
-
-  /// TODO   
-  public static var backspace: Unicode.Scalar { get }
-
-  /// TODO
-  public static func control(_ x: Unicode.Scalar): Unicode.Scalar { }
+  /// Same as above...
 }
 ```
 
@@ -316,11 +298,7 @@ extension Unicode.Scalar {
 
 _<details><summary>Rationale</summary>_
 
-**TODO**
-
-We picked `\(bestStandard)`'s definition (or mixture?) for `Unicode.Scalar`. (If not obvious, reasons).
-
-We used `\(rationale)` for `Character`. (If not obvious, reasons).
+This approach simplifies the use of some common control characters, while making the rest available through a method call.
 
 </details>
 
@@ -337,7 +315,7 @@ While most Unicode-defined properties can only match at the Unicode scalar level
 Most of this functionality is already provided inside `Unicode.Scalar.Properties`, and we propose to round out Swift's current support with:
 
 ```swift
-// TODO: any that are missing
+// TODO: Script and script extensions API
 ```
 
 **TODO**: Check with Alejandro that the code size impact is reasonable
