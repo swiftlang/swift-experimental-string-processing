@@ -294,6 +294,7 @@ We chose to leave the existing `Character.isWhitespace` intact and extend its re
 
 We propose the following names and meanings for these escaped literals representing specific control characters:
 
+
 ```swift
 extension Character {
   /// A horizontal tab character, `CHARACTER TABULATION` (U+0009).
@@ -320,6 +321,10 @@ extension Character {
   /// A backspace character, `BS` (U+0008).
   public static var backspace: Character { get }
 
+  /// A combined carriage return and line feed as a single character denoting
+  //  end-of-line.
+  public static var carriageReturnLineFeed: Character { get }
+
   /// Returns a control character with the given value, Control-`x`.
   ///
   /// This method returns a value only when you pass a letter in 
@@ -340,11 +345,12 @@ extension Character {
 }
 
 extension Unicode.Scalar {
-  /// Same as above...
+  /// Same as above, producing Unicode.Scalar, except for CR-LF...
 }
 ```
 
-**TODO**: What about `\r\n` in grapheme semantic mode?
+*TBD*: Should we have a CR-LF static var on `Unicode.Scalar` that produces a value of type `Character`?
+
 
 _<details><summary>Rationale</summary>_
 
