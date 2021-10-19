@@ -53,15 +53,16 @@ We're proposing what we believe to be the Swiftiest definitions using [Unicode's
 
 <details><summary>Broad language/engine survey</summary>
 
-For these definitions, we cross-referenced Unicode's [UTS\#18][uts18] with [PCRE][pcre], [perl][perl], [Raku][raku], [Rust][rust], [Python][python], [C\#][csharp], [`NSRegularExpression` / ICU][icu], [POSIX][posix], [Oniguruma][oniguruma], [Go][go], [C++][cplusplus], [RE2][re2], [Java][java], and [ECMAScript][ecmascript].
+For these definitions, we cross-referenced Unicode's [UTS\#18][uts18] with [PCRE][pcre], [perl][perl], [Raku][raku], [Rust][rust], [Python][python], [Ruby][ruby], [C\#][csharp], [`NSRegularExpression` / ICU][icu], [POSIX][posix], [Oniguruma][oniguruma], [Go][go], [C++][cplusplus], [RE2][re2], [Java][java], and [ECMAScript][ecmascript].
 
 We found that while these all offer a subset of [UTS\#18][uts18], each language or framework implements a slightly different subset. The following table shows some of the variation on a a subset of these languages:
 
 | Language/Framework    | Dot (`.`) matches                                  | Recognizes `\X` | Canonical Equivalence     | `\d` matches FULL WIDTH digit |
 |-----------------------|----------------------------------------------------|-----------------|---------------------------|-------------------------------|
 | ECMAScript            | UTF16 code unit, or Unicode scalar in Unicode mode | no              | no                        | no                            |
-| Perl                  | UTF16 code unit, or Unicode scalar in Unicode mode | yes             | no                        | no                            |
+| Perl/PCRE             | UTF16 code unit, or Unicode scalar in Unicode mode | yes             | no                        | no                            |
 | Raku                  | Grapheme cluster                                   | n/a             | strings always normalized | yes                           |
+| Ruby                  | Unicode scalar                                     | yes             | no                        | no                            |
 | Rust                  | Unicode scalar                                     | no              | no                        | no                            |
 | C#                    | UTF16 code unit                                    | no              | no                        | yes                           |
 | Java                  | Unicode scalar                                     | yes             | Only in CANON_EQ mode     | no                            |
@@ -474,6 +475,7 @@ The proposed semantics for matching "digits" are broader than what the existing 
 [raku]: https://docs.raku.org/language/regexes
 [rust]: https://docs.rs/regex/1.5.4/regex/
 [python]: https://docs.python.org/3/library/re.html
+[ruby]: https://ruby-doc.org/core-2.4.0/Regexp.html
 [csharp]: https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference
 [icu]: https://unicode-org.github.io/icu/userguide/strings/regexp.html
 [posix]: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap09.html
