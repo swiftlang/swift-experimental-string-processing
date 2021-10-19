@@ -361,7 +361,7 @@ extension Character {
   /// a control character.
   ///
   /// Control characters are a single Unicode scalar with the
-  /// general category `Cc`/`Control`.
+  /// general category `Cc`/`Control` or the CR-LF pair (`\r\n`).
   public var isControl: Bool { get }    
 }
 
