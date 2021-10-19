@@ -170,20 +170,19 @@ We propose `\w` be named "word character" with the following definitions:
 
 ```swift
 extension Character {
-  /// A Boolean value indicating whether this scalar is considered 
+  /// A Boolean value indicating whether this character is considered
   /// a "word" character.
   ///
-  /// All characters with an initial Unicode scalar that is considered a
-  /// word character are considered word character.
-  public var isWordCharacter: Bool { get }    
+  /// See `Unicode.Scalar.isWordCharacter`.
+  public var isWordCharacter: Bool { get }
 }
 
 extension Unicode.Scalar {
-  /// A Boolean value indicating whether this scalar is considered 
+  /// A Boolean value indicating whether this scalar is considered
   /// a "word" character.
   ///
   /// Any Unicode scalar that has one of the Unicode properties
-  /// `Alphabetic`, `Digit`, or `Join_Control`, or is in the 
+  /// `Alphabetic`, `Digit`, or `Join_Control`, or is in the
   /// general category `Mark` or `Connector_Punctuation`.
   public var isWordCharacter: Bool { get }
 }
@@ -193,10 +192,7 @@ extension Unicode.Scalar {
 
 _<details><summary>Rationale</summary>_
 
-The Unicode recommendation is to derive word character matching from Unicode properties and general categories as described above.
-
-We chose to treat any grapheme cluster that leads with a Unicode scalar word character as a word character as well.
-
+Word characters include more than letters, and we went with Unicode's recommended scalar semantics. We extend to grapheme clusters similarly to `Character.isLetter`, that is, subsequent (combining) scalars do not change the word-character-ness of the grapheme cluster.
 
 </details>
 
