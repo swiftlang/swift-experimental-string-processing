@@ -384,25 +384,25 @@ We propose that POSIX character classes be named "posixName" with APIs for testi
 
 Alternatively, we could introduce an option-set-like `POSIXCharacterClass` and `func isPOSIX(_:POSIXCharacterClass)` since POSIX is a fully defined standard. This would cut down on the amount of API noise directly visible on `Character` and `Unicode.Scalar` significantly.
 
-In addition, we'd like to make sure that the concepts these character classes represent, defined by POSIX but available in all semantic modes, are present for `Character` and `Unicode.Scalar`. This table represents the representation for those two types, including the APIs propsed in this document:
+POSIX's character classes represent concepts that we'd like to define at all semantic levels. We propose the following definitions, some of which are covered elsewhere in this pitch and some of which already exist today. Some Character definitions are *TBD* and we'd like more discussion with the community.
 
-| POSIX class | Character API | Unicode.Scalar API | POSIX mode value |
-|-------------|---------------|--------------------|------------------|
-| `[:lower:]`   | ? | `.properties.isLowercase` | `[a-z]` |
-| `[:upper:]`   | ? | `.properties.isUppercase` | `[A-Z]` |
-| `[:alpha:]`   | ? | `.properties.isAlphabetic` | `[A-Za-z]` |
-| `[:alnum:]`   | ? | `.properties.isAlphabetic || .isDecimalDigit` | `[A-Za-z0-9]` |
-| `[:word:]`    | `.isWordCharacter` | `.isWordCharacter` | `[[:alnum:]_]` |
-| `[:digit:]`   | `.isDecimalDigit` | `.isDecimalDigit` | `[0-9]` |
-| `[:xdigit:]`  | `.isHexDigit` | `.properties.isHexDigit` | `[0-9A-Fa-f]` |
-| `[:punct:]`   | ? | ? | `[-!"#%&'()*,./:;?@[\\\]_{}]` |
-| `[:blank:]`   | `.isHorizontalWhitespace` | `.isHorizontalWhitespace` | `[ \t]` |
-| `[:space:]`   | `.isWhitespace` | `.isWhitespace` | `[ \t\n\r\f\v]` |
-| `[:cntrl:]`   | ? | `.properties.generalCategory == .control` | `[\x00-\x1f\x7f]` |
-| `[:graph:]`   | ? | ? | `[^ [:cntrl:]]` |
-| `[:print:]`   | ? | ? | `[[:graph:] ]` |
 
-We'd like some more discussion with the community here, and it's possible this will become clearer as more of the string processing story takes shape.
+| POSIX class   | Character API                | Unicode.Scalar API                                            | POSIX mode value              |
+|---------------|------------------------------|---------------------------------------------------------------|-------------------------------|
+| `[:lower:]`   | `.isLowercase` (existing)    | `.properties.isLowercase`                                     | `[a-z]`                       |
+| `[:upper:]`   | `.isUppercase` (existing)    | `.properties.isUppercase`                                     | `[A-Z]`                       |
+| `[:alpha:]`   | `.isLetter` (existing)       | `.properties.isAlphabetic`                                    | `[A-Za-z]`                    |
+| `[:alnum:]`   | TBD                          | `.properties.isAlphabetic || .isDecimalDigit`                 | `[A-Za-z0-9]`                 |
+| `[:word:]`    | `.isWordCharacter`           | `.isWordCharacter`                                            | `[[:alnum:]_]`                |
+| `[:digit:]`   | `.isDecimalDigit`            | `.isDecimalDigit`                                             | `[0-9]`                       |
+| `[:xdigit:]`  | `.isHexDigit` (existing)     | `.properties.isHexDigit`                                      | `[0-9A-Fa-f]`                 |
+| `[:punct:]`   | `.isPunctuation` (existing)  | `Character(self).isPunctuation`                               | `[-!"#%&'()*,./:;?@[\\\]_{}]` |
+| `[:blank:]`   | `.isHorizontalWhitespace`    | `.isHorizontalWhitespace`                                     | `[ \t]`                       |
+| `[:space:]`   | `.isWhitespace`              | `.isWhitespace`                                               | `[ \t\n\r\f\v]`               |
+| `[:cntrl:]`   | TBD                          | `.properties.generalCategory == .control`                     | `[\x00-\x1f\x7f]`             |
+| `[:graph:]`   | TBD                          | `[^\p{space}\p{gc=Control}\p{gc=Surrogate}\p{gc=Unassigned}]` | `[^ [:cntrl:]]`               |
+| `[:print:]`   | TBD                          | `[\p{graph}\p{blank}--\p{cntrl}]`                             | `[[:graph:] ]`                |
+
 
 ### Custom classes: `[...]`
 
