@@ -53,12 +53,20 @@ We're proposing what we believe to be the Swiftiest definitions using [Unicode's
 
 <details><summary>Broad language/engine survey</summary>
 
-For these definitions, we cross-referenced Unicode's [UTS\#18][uts18] with [PCRE][pcre], [perl][perl], [Raku][raku], [Rust][rust], [Python][python], [C\#][csharp], [`NSRegularExpression` / ICU][icu], [POSIX][posix], [Oniguruma][oniguruma], (grep?), [Go][go], [C++][cplusplus], [RE2][re2], [Java][java], and [ECMAScript][ecmascript].
+For these definitions, we cross-referenced Unicode's [UTS\#18][uts18] with [PCRE][pcre], [perl][perl], [Raku][raku], [Rust][rust], [Python][python], [C\#][csharp], [`NSRegularExpression` / ICU][icu], [POSIX][posix], [Oniguruma][oniguruma], [Go][go], [C++][cplusplus], [RE2][re2], [Java][java], and [ECMAScript][ecmascript].
 
-We found that ... **TODO** these are all subsets of UTS18, right? This is where to mention "ICU", NSRegularExpression, etc., but _definitely_ also perl/PCRE and Raku. Wait, does C\# do scalars or just UTF-16 code units? I feel like we've done a lot of research, so it would be nice to present some of it. This could be a table or just a couple of sentences.
+We found that while these all offer a subset of [UTS\#18][uts18], each language or framework implements a slightly different subset. The following table shows some of the variation on a a subset of these languages:
 
-None of these languages extended properties to grapheme-clusters (**TODO**: what about Raku? Doesn't `.` match a grapheme cluster (it used to at one point at least)?).
-
+| Language/Framework    | Dot (`.`) matches                                  | Recognizes `\X` | Canonical Equivalence     | `\d` matches FULL WIDTH digit |
+|-----------------------|----------------------------------------------------|-----------------|---------------------------|-------------------------------|
+| ECMAScript            | UTF16 code unit, or Unicode scalar in Unicode mode | no              | no                        | no                            |
+| Perl                  | UTF16 code unit, or Unicode scalar in Unicode mode | yes             | no                        | no                            |
+| Raku                  | Grapheme cluster                                   | n/a             | strings always normalized | yes                           |
+| Rust                  | Unicode scalar                                     | no              | no                        | no                            |
+| C#                    | UTF16 code unit                                    | no              | no                        | yes                           |
+| Java                  | Unicode scalar                                     | yes             | Only in CANON_EQ mode     | no                            |
+| Go                    | Unicode scalar                                     | no              | no                        | no                            |
+| `NSRegularExpression` | Unicode scalar                                     | yes             | no                        | yes                           |
 
 </details>
 
@@ -184,11 +192,9 @@ extension Unicode.Scalar {
 
 _<details><summary>Rationale</summary>_
 
-The Unicode recommendation is to derive word character matching from Unicode properties and general categories as described above
+The Unicode recommendation is to derive word character matching from Unicode properties and general categories as described above.
 
 We chose to treat any grapheme cluster that leads with a Unicode scalar word character as a word character as well.
-
-**TODO** How does this relate to `isLetter`? Why don't we have `alphaNumeric`? Let's establish proper subsetting here.
 
 
 </details>
@@ -370,7 +376,7 @@ While most Unicode-defined properties can only match at the Unicode scalar level
 
 `\P{...}` matches the inverse of `\p{...}`.
 
-Most of this is already present inside `Unicode.Scalar.Properties`, and we propose to round it out with anything missing, e.g. script and script extensions. (API is _TBD_, still working on it)
+Most of this is already present inside `Unicode.Scalar.Properties`, and we propose to round it out with anything missing, e.g. script and script extensions. (API is _TBD_, still working on it.)
 
 Even though we are not proposing any `Character`-based API, we'd like to discuss with the community whether or how to extend them to grapheme clusters. Some options:
 
