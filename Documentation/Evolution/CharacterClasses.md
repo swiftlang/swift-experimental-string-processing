@@ -299,7 +299,6 @@ We use ICU's definition for vertical whitespace, similarly extended to grapheme 
 
 We propose the following names and meanings for these escaped literals representing specific control characters:
 
-
 ```swift
 extension Character {
   /// A horizontal tab character, `CHARACTER TABULATION` (U+0009).
@@ -354,6 +353,27 @@ extension Unicode.Scalar {
 }
 ```
 
+We also propose `isControl` properties with the following definitions:
+
+```swift
+extension Character {
+  /// A Boolean value indicating whether this character represents 
+  /// a control character.
+  ///
+  /// Control characters are a single Unicode scalar with the
+  /// general category `Cc`/`Control`.
+  public var isControl: Bool { get }    
+}
+
+extension Unicode.Scalar {
+  /// A Boolean value indicating whether this scalar represents 
+  /// a control character.
+  ///
+  /// Control characters have the general category `Cc`/`Control`.
+  public var isControl: Bool { get }
+}
+```
+
 *TBD*: Should we have a CR-LF static var on `Unicode.Scalar` that produces a value of type `Character`?
 
 
@@ -402,7 +422,7 @@ POSIX's character classes represent concepts that we'd like to define at all sem
 | `[:punct:]` | punctuation          | (exists)              | (port from `Character`)       | `[-!"#%&'()*,./:;?@[\\\]_{}]` |
 | `[:blank:]` | horizontalWhitespace | (pitched)             | (pitched)                     | `[ \t]`                       |
 | `[:space:]` | whitespace           | (exists)              | `\p{Whitespace}`              | `[ \t\n\r\f\v]`               |
-| `[:cntrl:]` | control              | check first scalar    | `\p{gc=Control}`              | `[\x00-\x1f\x7f]`             |
+| `[:cntrl:]` | control              | (pitched)             | (pitched)                     | `[\x00-\x1f\x7f]`             |
 | `[:graph:]` | TBD                  | TBD                   | TBD                           | `[^ [:cntrl:]]`               |
 | `[:print:]` | TBD                  | TBD                   | TBD                           | `[[:graph:] ]`                |
 
