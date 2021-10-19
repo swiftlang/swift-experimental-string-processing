@@ -136,8 +136,6 @@ extension Unicode.Scalar {
   /// range, from the _Halfwidth and Fullwidth Forms_  Unicode block, as well
   ///  as digits in some scripts, like `DEVANAGARI DIGIT NINE` (U+096F).
   public var isDecimalDigit: Bool { get }
-
-  // TODO: Should we provide the value too? what about other Character properties?
 }
 ```
 
