@@ -149,7 +149,7 @@ _<details><summary>Rationale</summary>_
 
 Unicode's recommended definition for `\d` is its [numeric type][numerictype] of "Decimal" in contrast to "Digit". It is specifically restricted to sets of ascending contiguously-encoded scalars in a decimal radix positional numeral system. Thus, it excludes "digits" such as superscript numerals from its [definition][derivednumeric] and is a proper subset of `Character.isWholeNumber`. 
 
-We interpret Unicode's definition of the set of scalars, especially it's requirement that scalars be encoded in ascending chains, to imply that this class is restricted to scalars which meaningfully encode base-10 digits. Thus, we choose to make this Character property _restrictive_, similar to `isHexDigit` and `isWholeNumber` and provide a way to access this value.
+We interpret Unicode's definition of the set of scalars, especially its requirement that scalars be encoded in ascending chains, to imply that this class is restricted to scalars which meaningfully encode base-10 digits. Thus, we choose to make this Character property _restrictive_, similar to `isHexDigit` and `isWholeNumber` and provide a way to access this value.
 
 It's possible we might add future properties to differentiate Unicode's non-decimal digits, but that is outside the scope of this pitch.
 
