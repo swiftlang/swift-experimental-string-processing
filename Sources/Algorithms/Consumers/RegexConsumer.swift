@@ -12,16 +12,16 @@ public struct RegexConsumer: CollectionConsumer {
   }
 
   public func consume(
-    _ consumed: String, subrange: Range<String.Index>
+    _ consumed: String, from index: String.Index
   ) -> String.Index? {
     let result = vm.execute(
-      input: consumed, in: subrange, .partialFromFront)
-    assert(result?.range ==
+      input: consumed, in: index..<consumed.endIndex, .partialFromFront)
+    assert(result?.matched ==
            referenceVM.execute(
-            input: consumed, in: subrange, .partialFromFront
-           )?.range)
+            input: consumed, in: index..<consumed.endIndex, .partialFromFront
+           )?.matched)
 
-    return result?.range.upperBound
+    return result?.matched.upperBound
   }
 }
 
@@ -32,14 +32,14 @@ extension RegexConsumer: StatelessCollectionSearcher {
   // take advantage of the structure of the regex itself and
   // its own internal state
   public func search(
-    _ searched: String, subrange: Range<String.Index>
+    _ searched: String, from index: String.Index
   ) -> Range<String.Index>? {
     // TODO: This definition should be available to any
     // consumer conformer that wants it.
     // TODO: What about empty consumes?
-    var (start, end) = subrange.destructure
+    var (start, end) = (index, searched.endIndex)
     while start != end {
-      if let result = consume(searched, subrange: start..<end) {
+      if let result = consume(searched, from: start) {
         return start ..< result
       }
       searched.formIndex(after: &start)
@@ -51,30 +51,13 @@ extension RegexConsumer: StatelessCollectionSearcher {
 }
 
 // TODO: We'll want to bake backwards into the engine
-extension RegexConsumer: BidirectionalCollectionConsumer {
-  private func findSearchStart(
-    _ consumed: String, subrange: Range<String.Index>
-  ) -> String.Index? {
-    // TODO: This definition should be available to any
-    // consumer conformer that wants it.
-    // TODO: What about empty consumes?
-    let end = subrange.upperBound
-    var start = end
-    repeat { // FIXME: empty subrange?
-      consumed.formIndex(before: &start)
-      if consume(consumed, subrange: start..<end) != nil {
-        return start
-      }
-    } while start != subrange.lowerBound
-    return nil
-  }
-
+extension RegexConsumer: BackwardCollectionConsumer {
   public func consumeBack(
-    _ consumed: String, subrange: Range<String.Index>
+    _ consumed: String, from index: String.Index
   ) -> String.Index? {
 
-    if let r = searchBack(consumed, subrange: subrange),
-       r.upperBound == subrange.upperBound
+    if let r = searchBack(consumed, from: index),
+       r.upperBound == index
     {
       return r.lowerBound
     }
@@ -85,22 +68,20 @@ extension RegexConsumer: BidirectionalCollectionConsumer {
 // TODO: Bake in search-back to engine too
 extension RegexConsumer: StatelessBackwardCollectionSearcher {
   public func searchBack(
-    _ searched: String, subrange: Range<String.Index>
+    _ searched: String, from index: String.Index
   ) -> Range<String.Index>? {
     // TODO: This definition should be available to any
     // consumer conformer that wants it.
     // TODO: What about empty consumes?
-    let end = subrange.upperBound
+    let end = index
     var start = end
     repeat { // FIXME: empty subrange?
       searched.formIndex(before: &start)
-      if let upper = consume(searched, subrange: start..<end) {
+      if let upper = consume(searched, from: start) {
         return start..<upper
       }
-    } while start != subrange.lowerBound
+    } while start != searched.startIndex
 
     return nil
   }
-
-
 }

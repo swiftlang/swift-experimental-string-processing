@@ -25,6 +25,22 @@ public struct RangesSequence<Base, Searcher: CollectionSearcher>
 {
   let base: Base
   let searcher: Searcher
+  private(set) public var startIndex: Index
+  
+  init(base: Base, searcher: Searcher) {
+    self.base = base
+    self.searcher = searcher
+    
+    let startIndex = base.startIndex
+    var state = searcher.state(startingAt: startIndex, in: base)
+    self.startIndex = Index(range: startIndex..<startIndex, state: state)
+    
+    if let range = searcher.search(base, &state) {
+      self.startIndex = Index(range: range, state: state)
+    } else {
+      self.startIndex = endIndex
+    }
+  }
 }
 
 extension RangesSequence: Sequence {
@@ -45,36 +61,31 @@ extension RangesSequence: Sequence {
     Iterator(
       base: base,
       searcher: searcher,
-      searcherState: searcher.initialState(base),
+      searcherState: searcher.state(startingAt: base.startIndex, in: base),
       index: base.startIndex)
   }
 }
 
-// TODO: consider making this a collection even when the searcher maintains a state,
-// and storing this state inside the `Index`.
-extension RangesSequence: Collection where Searcher: StatelessCollectionSearcher {
+extension RangesSequence: Collection {
   public struct Index {
-    let range: Range<Searcher.Searched.Index>
-  }
-  
-  public var startIndex: Index {
-    _index(after: base.startIndex)
+    var range: Range<Searcher.Searched.Index>
+    var state: Searcher.State
   }
   
   public var endIndex: Index {
-    Index(range: base.endIndex..<base.endIndex)
+    Index(
+      range: base.endIndex..<base.endIndex,
+      state: searcher.state(startingAt: base.endIndex, in: base))
   }
   
-  func _index(after index: Base.Index) -> Index {
-    if let range = searcher.search(base, subrange: index..<base.endIndex) {
-      return Index(range: range)
-    } else {
-      return endIndex
-    }
+  public func formIndex(after index: inout Index) {
+    index.range = searcher.search(base, &index.state) ?? base.endIndex..<base.endIndex
   }
   
   public func index(after index: Index) -> Index {
-    _index(after: index.range.upperBound)
+    var index = index
+    formIndex(after: &index)
+    return index
   }
   
   public subscript(index: Index) -> Range<Base.Index> {
@@ -93,11 +104,4 @@ extension RangesSequence.Index: Comparable {
   }
 }
 
-extension RangesSequence: BidirectionalCollection
-  where Searcher: StatelessBidirectionalCollectionSearcher
-{
-  public func index(before index: Index) -> Index {
-    let range = searcher.searchBack(base, subrange: base.startIndex..<index.range.lowerBound)!
-    return Index(range: range)
-  }
-}
+// TODO: `BidirectionalCollection` conformance

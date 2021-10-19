@@ -1,77 +1,55 @@
 public protocol CollectionSearcher {
   associatedtype Searched: Collection
-  associatedtype State = ()
-  func initialState(_ searched: Searched) -> State
-  func search(
-    _ searched: Searched,
-    subrange: Range<Searched.Index>,
-    _ state: inout State
-  ) -> Range<Searched.Index>?
+  associatedtype State = Searched.Index
+  
+  func state(startingAt index: Searched.Index, in searched: Searched) -> State
+  func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>?
 }
 
-extension CollectionSearcher {
-  public func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {
-    search(searched, subrange: searched.startIndex..<searched.endIndex, &state)
-  }
-}
-
-public protocol StatelessCollectionSearcher: CollectionSearcher where State == () {
-  func search(_ searched: Searched, subrange: Range<Searched.Index>) -> Range<Searched.Index>?
+public protocol StatelessCollectionSearcher: CollectionSearcher
+  where State == Searched.Index
+{
+  func search(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>?
 }
 
 extension StatelessCollectionSearcher {
-  public func search(
-    _ searched: Searched,
-    subrange: Range<Searched.Index>,
-    _ state: inout State
-  ) -> Range<Searched.Index>? {
-    search(searched, subrange: subrange)
+  public func state(startingAt index: Searched.Index, in searched: Searched) -> State {
+    index
   }
   
-  public func search(_ searched: Searched) -> Range<Searched.Index>? {
-    search(searched, subrange: searched.startIndex..<searched.endIndex)
-  }
-  
-  public func initialState(_ searched: Searched) -> State {
-    ()
+  public func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {
+    let range = search(searched, from: state)
+    state = range?.upperBound ?? searched.endIndex
+    return range
   }
 }
 
 // MARK: Searching from the back
 
-public protocol BackwardCollectionSearcher: CollectionSearcher where Searched: BidirectionalCollection {
-  func searchBack(
-    _ searched: Searched,
-    subrange: Range<Searched.Index>,
-    _ state: inout State
-  ) -> Range<Searched.Index>?
+public protocol BackwardCollectionSearcher {
+  associatedtype Searched: BidirectionalCollection
+  associatedtype State = Searched.Index
+  
+  func backwardState(startingAt index: Searched.Index, in searched: Searched) -> State
+  func searchBack(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>?
 }
 
-extension BackwardCollectionSearcher {
-  public func searchBack(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {
-    searchBack(searched, subrange: searched.startIndex..<searched.endIndex, &state)
-  }
-}
-
-public protocol StatelessBackwardCollectionSearcher: BackwardCollectionSearcher, StatelessCollectionSearcher {
-  func searchBack(_ searched: Searched, subrange: Range<Searched.Index>) -> Range<Searched.Index>?
+public protocol StatelessBackwardCollectionSearcher: BackwardCollectionSearcher
+  where State == Searched.Index
+{
+  func searchBack(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>?
 }
 
 extension StatelessBackwardCollectionSearcher {
-  public func searchBack(
-    _ searched: Searched,
-    subrange: Range<Searched.Index>,
-    _ state: inout State
-  ) -> Range<Searched.Index>? {
-    searchBack(searched, subrange: subrange)
+  public func backwardState(startingAt index: Searched.Index, in searched: Searched) -> State {
+    index
   }
   
-  public func searchBack(_ searched: Searched) -> Range<Searched.Index>? {
-    searchBack(searched, subrange: searched.startIndex..<searched.endIndex)
+  public func searchBack(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {
+    let range = searchBack(searched, from: state)
+    state = range?.lowerBound ?? searched.startIndex
+    return range
   }
 }
 
-public protocol BidirectionalCollectionSeacher: BackwardCollectionSearcher {}
-
-public typealias StatelessBidirectionalCollectionSearcher
-  = BidirectionalCollectionSeacher & StatelessBackwardCollectionSearcher
+// TODO: `BidirectionalCollectionSeacher`

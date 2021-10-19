@@ -9,3 +9,9 @@ extension BidirectionalCollection where Element: Comparable {
     firstRange(of: other) != nil
   }
 }
+
+extension Collection {
+  public func contains<Searcher: CollectionSearcher>(_ searcher: Searcher) -> Bool where Searcher.Searched == Self {
+    firstRange(searcher) != nil
+  }
+}
