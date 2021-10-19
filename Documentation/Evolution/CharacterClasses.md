@@ -77,7 +77,7 @@ Metacharacters that begin with `\u`, `\U`, or `\x` match a character with the sp
 
 ### Match any: `.`, `\X`
 
-The dot metacharacter matches any single character or element. Depending on options and modes (i.e. API), it may exclude newlines.
+The dot metacharacter matches any single character or element. Depending on options and modes, it may exclude newlines.
 
 `\X` matches any grapheme cluster (`Character`), even when the regular expression is otherwise matching at semantic level of `Unicode.Scalar`.
 
