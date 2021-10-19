@@ -85,33 +85,59 @@ We are not proposing new API here as this is already handled by collection confo
 
 While we would like for the stdlib to have grapheme-breaking API over collections of `Unicode.Scalar`, that is a separate discussion and out-of-scope for this pitch.
 
-### Digits: `\d`,`\D`
+### Decimal digits: `\d`,`\D`
 
-We propose `\d` be named "digit" with the following definitions:
+We propose `\d` be named "decimalDigit" with the following definitions:
 
 ```swift
 extension Character {
-  /// A Boolean value indicating whether this character is considered 
-  /// a digit.
+  /// A Boolean value indicating whether this character represents
+  /// a decimal digit.
   ///
-  /// All characters with an initial Unicode scalar that has a 
-  /// `numericType` property equal to `.decimal` are considered digits.
-  /// This includes the digits from the ASCII range, from the _Halfwidth
-  /// and Fullwidth Forms_ Unicode block, as well as digits in some
-  /// scripts, like `DEVANAGARI DIGIT NINE` (U+096F).
-  public var isDigit: Bool { get }
+  /// Decimal digits are comprised of a single Unicode scalar that has a 
+  /// `numericType` property equal to `.decimal`. This includes the digits
+  ///  from the ASCII range, from the _Halfwidth and Fullwidth Forms_ Unicode
+  ///  block, as well as digits in some scripts, like `DEVANAGARI DIGIT NINE`
+  ///  (U+096F).
+  ///
+  /// Decimal digits are a subset of whole numbers, see `isWholeNumber`.
+  ///
+  /// To get the character's value, use the `decimalDigitValue` property.
+  public var isDecimalDigit: Bool { get }
+
+  /// The numeric value this character represents, if it is a decimal digit.
+  ///
+  /// Decimal digits are comprised of a single Unicode scalar that has a 
+  /// `numericType` property equal to `.decimal`. This includes the digits
+  ///  from the ASCII range, from the _Halfwidth and Fullwidth Forms_ Unicode
+  ///  block, as well as digits in some scripts, like `DEVANAGARI DIGIT NINE`
+  ///  (U+096F).
+  ///
+  /// Decimal digits are a subset of whole numbers, see `wholeNumberValue`.
+  ///
+  ///     let chars: [Character] = ["1", "९", "A"]
+  ///     for ch in chars {
+  ///         print(ch, "-->", ch.decimalDigitValue)
+  ///     }
+  ///     // Prints:
+  ///     // 1 --> Optional(1)
+  ///     // ९ --> Optional(9)
+  ///     // A --> nil
+  public var decimalDigitValue: Int? { get }
+
 }
 
 extension Unicode.Scalar {
   /// A Boolean value indicating whether this scalar is considered 
-  /// a digit.
+  /// a decimal digit.
   ///
-  /// Any Unicode scalar that has a `numericType` property equal to
-  /// `.decimal` is considered a digit. This includes the digits from
-  /// the ASCII range, from the _Halfwidth and Fullwidth Forms_ 
-  /// Unicode block, as well as digits in some scripts, like
-  /// `DEVANAGARI DIGIT NINE` (U+096F).
-  public var isDigit: Bool { get }
+  /// Any Unicode scalar that has a `numericType` property equal to `.decimal`
+  /// is considered a decimal digit. This includes the digits from the ASCII
+  /// range, from the _Halfwidth and Fullwidth Forms_  Unicode block, as well
+  ///  as digits in some scripts, like `DEVANAGARI DIGIT NINE` (U+096F).
+  public var isDecimalDigit: Bool { get }
+
+  // TODO: Should we provide the value too? what about other Character properties?
 }
 ```
 
@@ -119,11 +145,14 @@ extension Unicode.Scalar {
 
 _<details><summary>Rationale</summary>_
 
-The Unicode recommendation is to base digit matching on the derived Unicode numeric type. For details, see [Unicode derived numeric types][derivednumeric].
+Unicode's recommended definition for `\d` is its [numeric type][numerictype] of "Decimal" in contrast to "Digit". It is specifically restricted to sets of ascending contiguously-encoded scalars in a decimal radix positional numeral system. Thus, it excludes "digits" such as superscript numerals from its [definition][derivednumeric] and is a proper subset of `Character.isWholeNumber`. 
 
-We chose to treat any grapheme cluster that leads with a Unicode scalar "digit" as a digit as well. This is compatible with the existing `Character.isNumber` property, which only checks the first scalar's numeric type. It does, on the other hand, diverge from the `isWholeNumber` and `isHexDigit` properties, which require that the `Character` comprises a single Unicode scalar.
+We interpret Unicode's definition of the set of scalars, especially it's requirement that scalars be encoded in ascending chains, to imply that this class is restricted to scalars which meaningfully encode base-10 digits. Thus, we choose to make this Character property _restrictive_, similar to `isHexDigit` and `isWholeNumber` and provide a way to access this value.
+
+It's possible we might add future properties to differentiate Unicode's non-decimal digits, but that is outside the scope of this pitch.
 
 </details>
+
 
 ### Word characters: `\w`, `\W`
 
