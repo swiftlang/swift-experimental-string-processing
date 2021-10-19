@@ -388,28 +388,26 @@ Even though we are not proposing any `Character`-based API, we'd like to discuss
 
 ### POSIX character classes: `[:NAME:]`
 
-We propose that POSIX character classes be named "posixName" with APIs for testing membership of `Character`s and `Unicode.Scalar`s. `Unicode.Scalar.isASCII` and `Character.isASCII` already exist and can satisfy `[:ascii:]`, and can be used in combination with new members like `isDigit` to represent individual POSIX character classes.
-
-Alternatively, we could introduce an option-set-like `POSIXCharacterClass` and `func isPOSIX(_:POSIXCharacterClass)` since POSIX is a fully defined standard. This would cut down on the amount of API noise directly visible on `Character` and `Unicode.Scalar` significantly.
+We propose that POSIX character classes be prefixed with "posix" in their name with APIs for testing membership of `Character`s and `Unicode.Scalar`s. `Unicode.Scalar.isASCII` and `Character.isASCII` already exist and can satisfy `[:ascii:]`, and can be used in combination with new members like `isDigit` to represent individual POSIX character classes. Alternatively, we could introduce an option-set-like `POSIXCharacterClass` and `func isPOSIX(_:POSIXCharacterClass)` since POSIX is a fully defined standard. This would cut down on the amount of API noise directly visible on `Character` and `Unicode.Scalar` significantly. We'd like some discussion the the community here, noting that this will become clearer as more of the string processing overview takes shape.
 
 POSIX's character classes represent concepts that we'd like to define at all semantic levels. We propose the following definitions, some of which are covered elsewhere in this pitch and some of which already exist today. Some Character definitions are *TBD* and we'd like more discussion with the community.
 
 
-| POSIX class   | Character API                | Unicode.Scalar API                                            | POSIX mode value              |
-|---------------|------------------------------|---------------------------------------------------------------|-------------------------------|
-| `[:lower:]`   | `.isLowercase` (existing)    | `.properties.isLowercase`                                     | `[a-z]`                       |
-| `[:upper:]`   | `.isUppercase` (existing)    | `.properties.isUppercase`                                     | `[A-Z]`                       |
-| `[:alpha:]`   | `.isLetter` (existing)       | `.properties.isAlphabetic`                                    | `[A-Za-z]`                    |
-| `[:alnum:]`   | TBD                          | `.properties.isAlphabetic || .isDecimalDigit`                 | `[A-Za-z0-9]`                 |
-| `[:word:]`    | `.isWordCharacter`           | `.isWordCharacter`                                            | `[[:alnum:]_]`                |
-| `[:digit:]`   | `.isDecimalDigit`            | `.isDecimalDigit`                                             | `[0-9]`                       |
-| `[:xdigit:]`  | `.isHexDigit` (existing)     | `.properties.isHexDigit`                                      | `[0-9A-Fa-f]`                 |
-| `[:punct:]`   | `.isPunctuation` (existing)  | `Character(self).isPunctuation`                               | `[-!"#%&'()*,./:;?@[\\\]_{}]` |
-| `[:blank:]`   | `.isHorizontalWhitespace`    | `.isHorizontalWhitespace`                                     | `[ \t]`                       |
-| `[:space:]`   | `.isWhitespace`              | `.isWhitespace`                                               | `[ \t\n\r\f\v]`               |
-| `[:cntrl:]`   | TBD                          | `.properties.generalCategory == .control`                     | `[\x00-\x1f\x7f]`             |
-| `[:graph:]`   | TBD                          | `[^\p{space}\p{gc=Control}\p{gc=Surrogate}\p{gc=Unassigned}]` | `[^ [:cntrl:]]`               |
-| `[:print:]`   | TBD                          | `[\p{graph}\p{blank}--\p{cntrl}]`                             | `[[:graph:] ]`                |
+| POSIX class | API name             | `Character`           | `Unicode.Scalar`                | POSIX mode value              |
+|-------------|----------------------|-----------------------|---------------------------------|-------------------------------|
+| `[:lower:]` | lowercase            | (exists)              | `\p{Lowercase}`                 | `[a-z]`                       |
+| `[:upper:]` | uppercase            | (exists)              | `\p{Uppercase}`                 | `[A-Z]`                       |
+| `[:alpha:]` | alphabetic           | (exists: `.isLetter`) | `\p{Alphabetic}`                | `[A-Za-z]`                    |
+| `[:alnum:]` | alphaNumeric         | TBD                   | `\p{Alphabetic} || \p{Decimal}` | `[A-Za-z0-9]`                 |
+| `[:word:]`  | wordCharacter        | (pitched)             | (pitched)                       | `[[:alnum:]_]`                |
+| `[:digit:]` | decimalDigit         | (pitched)             | (pitched)                       | `[0-9]`                       |
+| `[:xdigit:]`| hexDigit             | (exists)              | `\p{Hex_Digit}`                 | `[0-9A-Fa-f]`                 |
+| `[:punct:]` | punctuation          | (exists)              | (port from `Character`)         | `[-!"#%&'()*,./:;?@[\\\]_{}]` |
+| `[:blank:]` | horizontalWhitespace | (pitched)             | (pitched)                       | `[ \t]`                       |
+| `[:space:]` | whitespace           | (exists)              | `\p{Whitespace}`                | `[ \t\n\r\f\v]`               |
+| `[:cntrl:]` | control              | check first scalar    | `\p{gc=Control}`                | `[\x00-\x1f\x7f]`             |
+| `[:graph:]` | TBD                  | TBD                   | TBD                             | `[^ [:cntrl:]]`               |
+| `[:print:]` | TBD                  | TBD                   | TBD                             | `[[:graph:] ]`                |
 
 
 ### Custom classes: `[...]`
