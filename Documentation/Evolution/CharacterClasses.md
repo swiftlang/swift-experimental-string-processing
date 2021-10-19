@@ -47,7 +47,7 @@ This pitch is narrowly scoped to Swift definitions of character classes found in
 - A name for use in API
 - A `Character` API, by extending Unicode scalar definitions to grapheme clusters
 - A `Unicode.Scalar` API with modern Unicode definitions
-- If applicable, a `Unicode.Scalar` API for notable standards like POSIX (or JS?)
+- If applicable, a `Unicode.Scalar` API for notable standards like POSIX
 
 We're proposing what we believe to be the Swiftiest definitions using [Unicode's guidance][uts18] for `Unicode.Scalar` and extending this to grapheme clusters using `Character`'s existing [rationale][charpropsrationale].
 
