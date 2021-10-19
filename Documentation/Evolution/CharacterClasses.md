@@ -58,7 +58,8 @@ For these definitions, we cross-referenced Unicode's [UTS\#18][uts18] with a bro
 | Language/Framework           | Dot (`.`) matches                                  | Supports `\X` | Canonical Equivalence     | `\d` matches FULL WIDTH digit |
 |------------------------------|----------------------------------------------------|---------------|---------------------------|-------------------------------|
 | [ECMAScript][ecmascript]     | UTF16 code unit (Unicode scalar in Unicode mode)   | no            | no                        | no  |
-| [Perl][perl]/[PCRE][pcre]    | UTF16 code unit, (Unicode scalar in Unicode mode)  | yes           | no                        | no  |
+| [Perl][perl] / [PCRE][pcre]  | UTF16 code unit, (Unicode scalar in Unicode mode)  | yes           | no                        | no  |
+| [Python3][python]            | Unicode scalar                                     | no            | no                        | yes |
 | [Raku][raku]                 | Grapheme cluster                                   | n/a           | strings always normalized | yes |
 | [Ruby][ruby]                 | Unicode scalar                                     | yes           | no                        | no  |
 | [Rust][rust]                 | Unicode scalar                                     | no            | no                        | no  |
@@ -67,10 +68,9 @@ For these definitions, we cross-referenced Unicode's [UTS\#18][uts18] with a bro
 | [Go][go]                     | Unicode scalar                                     | no            | no                        | no  |
 | [`NSRegularExpression`][icu] | Unicode scalar                                     | yes           | no                        | yes |
 
-We are still in the process of evaluating [C++][cplusplus], [RE2][re2], [Oniguruma][oniguruma], and [Python][python].
+We are still in the process of evaluating [C++][cplusplus], [RE2][re2], and [Oniguruma][oniguruma].
 
 </details>
-
 
 ## Detailed Design
 
