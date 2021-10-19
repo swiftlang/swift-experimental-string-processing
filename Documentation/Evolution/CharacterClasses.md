@@ -390,21 +390,21 @@ We propose that POSIX character classes be prefixed with "posix" in their name w
 POSIX's character classes represent concepts that we'd like to define at all semantic levels. We propose the following definitions, some of which are covered elsewhere in this pitch and some of which already exist today. Some Character definitions are *TBD* and we'd like more discussion with the community.
 
 
-| POSIX class | API name             | `Character`           | `Unicode.Scalar`                | POSIX mode value              |
-|-------------|----------------------|-----------------------|---------------------------------|-------------------------------|
-| `[:lower:]` | lowercase            | (exists)              | `\p{Lowercase}`                 | `[a-z]`                       |
-| `[:upper:]` | uppercase            | (exists)              | `\p{Uppercase}`                 | `[A-Z]`                       |
-| `[:alpha:]` | alphabetic           | (exists: `.isLetter`) | `\p{Alphabetic}`                | `[A-Za-z]`                    |
-| `[:alnum:]` | alphaNumeric         | TBD                   | `\p{Alphabetic} || \p{Decimal}` | `[A-Za-z0-9]`                 |
-| `[:word:]`  | wordCharacter        | (pitched)             | (pitched)                       | `[[:alnum:]_]`                |
-| `[:digit:]` | decimalDigit         | (pitched)             | (pitched)                       | `[0-9]`                       |
-| `[:xdigit:]`| hexDigit             | (exists)              | `\p{Hex_Digit}`                 | `[0-9A-Fa-f]`                 |
-| `[:punct:]` | punctuation          | (exists)              | (port from `Character`)         | `[-!"#%&'()*,./:;?@[\\\]_{}]` |
-| `[:blank:]` | horizontalWhitespace | (pitched)             | (pitched)                       | `[ \t]`                       |
-| `[:space:]` | whitespace           | (exists)              | `\p{Whitespace}`                | `[ \t\n\r\f\v]`               |
-| `[:cntrl:]` | control              | check first scalar    | `\p{gc=Control}`                | `[\x00-\x1f\x7f]`             |
-| `[:graph:]` | TBD                  | TBD                   | TBD                             | `[^ [:cntrl:]]`               |
-| `[:print:]` | TBD                  | TBD                   | TBD                             | `[[:graph:] ]`                |
+| POSIX class | API name             | `Character`           | `Unicode.Scalar`                 | POSIX mode value              |
+|-------------|----------------------|-----------------------|----------------------------------|-------------------------------|
+| `[:lower:]` | lowercase            | (exists)              | `\p{Lowercase}`                  | `[a-z]`                       |
+| `[:upper:]` | uppercase            | (exists)              | `\p{Uppercase}`                  | `[A-Z]`                       |
+| `[:alpha:]` | alphabetic           | (exists: `.isLetter`) | `\p{Alphabetic}`                 | `[A-Za-z]`                    |
+| `[:alnum:]` | alphaNumeric         | TBD                   | `\p{Alphabetic} \|\| \p{Decimal}`| `[A-Za-z0-9]`                 |
+| `[:word:]`  | wordCharacter        | (pitched)             | (pitched)                        | `[[:alnum:]_]`                |
+| `[:digit:]` | decimalDigit         | (pitched)             | (pitched)                        | `[0-9]`                       |
+| `[:xdigit:]`| hexDigit             | (exists)              | `\p{Hex_Digit}`                  | `[0-9A-Fa-f]`                 |
+| `[:punct:]` | punctuation          | (exists)              | (port from `Character`)          | `[-!"#%&'()*,./:;?@[\\\]_{}]` |
+| `[:blank:]` | horizontalWhitespace | (pitched)             | (pitched)                        | `[ \t]`                       |
+| `[:space:]` | whitespace           | (exists)              | `\p{Whitespace}`                 | `[ \t\n\r\f\v]`               |
+| `[:cntrl:]` | control              | check first scalar    | `\p{gc=Control}`                 | `[\x00-\x1f\x7f]`             |
+| `[:graph:]` | TBD                  | TBD                   | TBD                              | `[^ [:cntrl:]]`               |
+| `[:print:]` | TBD                  | TBD                   | TBD                              | `[[:graph:] ]`                |
 
 
 ### Custom classes: `[...]`
