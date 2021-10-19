@@ -143,6 +143,10 @@ extension Unicode.Scalar {
 
 `\D` matches the inverse of `\d`.
 
+*TBD*: [SE-0221: Character Properties][charprops] did not define equivalent API on `Unicode.Scalar`, as it was itself an extension of single `Unicode.Scalar.Properties`. Since we're defining additional classifications formed from algebraic formulations of properties, it may make sense to put API such as `decimalDigitValue` on `Unicode.Scalar` as well as back-porting other API from `Character` (e.g. `hexDigitValue`). We'd like to discuss this with the community.
+
+*TBD*: `Character.isHexDigit` is currently constrained to the subset of decimal digits that are followed by encodings of Latin letters `A-F` in various forms (all 6 of them... thanks Unicode). We could consider extending this to be a superset of `isDecimalDigit` by allowing and producing values for all decimal digits, one would just have to use the Latin letters to refer to values greater than `9`. We'd like to discuss this with the community.
+
 _<details><summary>Rationale</summary>_
 
 Unicode's recommended definition for `\d` is its [numeric type][numerictype] of "Decimal" in contrast to "Digit". It is specifically restricted to sets of ascending contiguously-encoded scalars in a decimal radix positional numeral system. Thus, it excludes "digits" such as superscript numerals from its [definition][derivednumeric] and is a proper subset of `Character.isWholeNumber`. 
