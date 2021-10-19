@@ -53,21 +53,21 @@ We're proposing what we believe to be the Swiftiest definitions using [Unicode's
 
 <details><summary>Broad language/engine survey</summary>
 
-For these definitions, we cross-referenced Unicode's [UTS\#18][uts18] with [PCRE][pcre], [perl][perl], [Raku][raku], [Rust][rust], [Python][python], [Ruby][ruby], [C\#][csharp], [`NSRegularExpression` / ICU][icu], [POSIX][posix], [Oniguruma][oniguruma], [Go][go], [C++][cplusplus], [RE2][re2], [Java][java], and [ECMAScript][ecmascript].
+For these definitions, we cross-referenced Unicode's [UTS\#18][uts18] with a broad survey of existing languages and engines. We found that while these all support a subset of UTS\#18, each language or framework implements a slightly different subset. The following table shows some of the variations:
 
-We found that while these all offer a subset of [UTS\#18][uts18], each language or framework implements a slightly different subset. The following table shows some of the variation on a a subset of these languages:
+| Language/Framework           | Dot (`.`) matches                                  | Supports `\X` | Canonical Equivalence     | `\d` matches FULL WIDTH digit |
+|------------------------------|----------------------------------------------------|---------------|---------------------------|-------------------------------|
+| [ECMAScript][ecmascript]     | UTF16 code unit (Unicode scalar in Unicode mode)   | no            | no                        | no  |
+| [Perl][perl]/[PCRE][pcre]    | UTF16 code unit, (Unicode scalar in Unicode mode)  | yes           | no                        | no  |
+| [Raku][raku]                 | Grapheme cluster                                   | n/a           | strings always normalized | yes |
+| [Ruby][ruby]                 | Unicode scalar                                     | yes           | no                        | no  |
+| [Rust][rust]                 | Unicode scalar                                     | no            | no                        | no  |
+| [C#][csharp]                 | UTF16 code unit                                    | no            | no                        | yes |
+| [Java][java]                 | Unicode scalar                                     | yes           | Only in CANON_EQ mode     | no  |
+| [Go][go]                     | Unicode scalar                                     | no            | no                        | no  |
+| [`NSRegularExpression`][icu] | Unicode scalar                                     | yes           | no                        | yes |
 
-| Language/Framework    | Dot (`.`) matches                                  | Recognizes `\X` | Canonical Equivalence     | `\d` matches FULL WIDTH digit |
-|-----------------------|----------------------------------------------------|-----------------|---------------------------|-------------------------------|
-| ECMAScript            | UTF16 code unit, or Unicode scalar in Unicode mode | no              | no                        | no                            |
-| Perl/PCRE             | UTF16 code unit, or Unicode scalar in Unicode mode | yes             | no                        | no                            |
-| Raku                  | Grapheme cluster                                   | n/a             | strings always normalized | yes                           |
-| Ruby                  | Unicode scalar                                     | yes             | no                        | no                            |
-| Rust                  | Unicode scalar                                     | no              | no                        | no                            |
-| C#                    | UTF16 code unit                                    | no              | no                        | yes                           |
-| Java                  | Unicode scalar                                     | yes             | Only in CANON_EQ mode     | no                            |
-| Go                    | Unicode scalar                                     | no              | no                        | no                            |
-| `NSRegularExpression` | Unicode scalar                                     | yes             | no                        | yes                           |
+We are still in the process of evaluating [C++][cplusplus], [RE2][re2], [Oniguruma][oniguruma], and [Python][python].
 
 </details>
 
