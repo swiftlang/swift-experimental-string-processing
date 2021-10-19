@@ -55,6 +55,10 @@ To extend scalar semantics to grapheme clusters, we're using algebra and rationa
 
 ## Detailed Design
 
+In general, we choose the Unicode recommendations in [UTS\#18][uts18] as the basis for matching character classes to `Unicode.Scalar`s. This is similar to the behavior of several languages' regular expressions when in Unicode mode (such as Perl and Python), as well as ICU-based regular expressions like `NSRegularExpression`.
+
+To extend this matching behavior to `Character`s, we treat a `Character` as belonging to a character class if its leading Unicode scalar belongs to that class.
+
 ### Literal characters
 
 A literal character (such as `a`, `é`, or `한`) in a regex literal matches that particular character or code sequence. When matching at the semantic level of `Unicode.Scalar`, it should match the literal sequence of scalars. When matching at the semantic level of `Character`, it should match `Character`-by-`Character`, honoring Unicode canonical equivalence.
@@ -84,23 +88,23 @@ extension Character {
   /// A Boolean value indicating whether this character is considered 
   /// a digit.
   ///
-  /// All characters with an initial Unicode scalar in the general 
-  /// category `Nd`/`Decimal_Number` are considered digits. This 
-  /// includes the digits from the ASCII range, from the _Halfwidth 
+  /// All characters with an initial Unicode scalar that has a 
+  /// `numericType` property equal to `.decimal` are considered digits.
+  /// This includes the digits from the ASCII range, from the _Halfwidth
   /// and Fullwidth Forms_ Unicode block, as well as digits in some
   /// scripts, like `DEVANAGARI DIGIT NINE` (U+096F).
-  public var isDigit: Bool { get }    
+  public var isDigit: Bool { get }
 }
 
 extension Unicode.Scalar {
   /// A Boolean value indicating whether this scalar is considered 
   /// a digit.
   ///
-  /// Any Unicode scalar in the general category `Nd`/`Decimal_Number`
-  /// is considered a digit. This includes the digits from the ASCII
-  /// range, from the _Halfwidth and Fullwidth Forms_ Unicode block,
-  /// as well as digits in some scripts, like `DEVANAGARI DIGIT NINE`
-  /// (U+096F).
+  /// Any Unicode scalar that has a `numericType` property equal to
+  /// `.decimal` is considered a digit. This includes the digits from
+  /// the ASCII range, from the _Halfwidth and Fullwidth Forms_ 
+  /// Unicode block, as well as digits in some scripts, like
+  /// `DEVANAGARI DIGIT NINE` (U+096F).
   public var isDigit: Bool { get }
 }
 ```
@@ -109,11 +113,9 @@ extension Unicode.Scalar {
 
 _<details><summary>Rationale</summary>_
 
-We chose the Unicode recommendation as the basis for `Unicode.Scalar`, which is to derive digit matching from the Unicode general category `Decimal_Number`. This behavior matches `NSRegularExpression` and the ICU regular expression specification, along with some languages with regular expressions in Unicode mode (yes: Perl, Python; no: ECMAScript, Java). For details, see [Unicode derived numeric types][derivednumeric].
+The Unicode recommendation is to base digit matching on the derived Unicode numeric type. For details, see [Unicode derived numeric types][derivednumeric].
 
 We chose to treat any grapheme cluster that leads with a Unicode scalar "digit" as a digit as well. This is compatible with the existing `Character.isNumber` property, which only checks the first scalar's numeric type. It does, on the other hand, diverge from the `isWholeNumber` and `isHexDigit` properties, which require that the `Character` comprises a single Unicode scalar.
-
-**TODO:** This is the right kind of matching for the rest of what we're doing, but it will yield substrings that will fail `Int.init?(_:radix:)`. Do we want to add another initializer that can understand this whole breadth of characters?
 
 </details>
 
@@ -146,9 +148,9 @@ extension Unicode.Scalar {
 
 _<details><summary>Rationale</summary>_
 
-We chose the Unicode recommendation as the basis for `Unicode.Scalar`, which is to derive word character matching from Unicode properties and general categories as described above. This behavior matches `NSRegularExpression` and the ICU regular expression specification.
+The Unicode recommendation is to derive word character matching from Unicode properties and general categories as described above
 
-We chose to treat any grapheme cluster that leads with a Unicode scalar word character as a word character as well.AA
+We chose to treat any grapheme cluster that leads with a Unicode scalar word character as a word character as well.
 
 </details>
 
@@ -161,7 +163,7 @@ extension Unicode.Scalar {
   /// A Boolean value indicating whether this scalar is considered 
   /// whitespace.
   ///
-  /// All Unicode scalars with the `White_Space` property are 
+  /// All Unicode scalars with the derived `White_Space` property are 
   /// considered whitespace, including:
   ///
   /// - `CHARACTER TABULATION` (U+0009)
@@ -241,7 +243,7 @@ We are similarly not proposing any new API for `\R` until the stdlib has graphem
 
 _<details><summary>Rationale</summary>_
 
-We chose the Unicode recommendation as the basis for `Unicode.Scalar`, which is to derive whitespace matching from the Unicode `White_Space` property and general categories. This behavior matches `NSRegularExpression` and many languages with regular expressions in Unicode mode. In some languages, such as Go, `\s` is interpreted only as the ASCII whitespace characters, which would be surprising for Swift users. For details, see the [Unicode property list][proplist].
+We chose the Unicode recommendation as the basis for `Unicode.Scalar`, which is to derive whitespace matching from Unicode properties and general categories as described above. For details, see the [Unicode property list][proplist].
 
 We chose to leave the existing `Character.isWhitespace` intact and extend its reasoning to vertical and horizontal whitespace.
 
@@ -279,11 +281,18 @@ extension Character {
 
   /// Returns a control character with the given value, Control-`x`.
   ///
-  /// This method returns a value only for letters in the ASCII
-  /// range.
+  /// This method returns a value only when you pass a letter in 
+  /// the ASCII range as `x`:
   ///
-  /// - Parameter x: The letter to derive the control character 
-  ///   from.
+  ///     if let ch = Character.control("G") {
+  ///         print("'ch' is a bell character", ch == Character.bell)
+  ///     } else {
+  ///         print("'ch' is not a control character")
+  ///     }
+  ///     // Prints "'ch' is a bell character: true"
+  ///
+  /// - Parameter x: An upper- or lowercase letter to derive
+  ///   the control character from.
   /// - Returns: Control-`x` if `x` is in the pattern `[a-zA-Z]`;
   ///   otherwise, `nil`.
   public static func control(_ x: Unicode.Scalar) -> Character?
@@ -312,11 +321,7 @@ While most Unicode-defined properties can only match at the Unicode scalar level
 
 `\P{...}` matches the inverse of `\p{...}`.
 
-Most of this functionality is already provided inside `Unicode.Scalar.Properties`, and we propose to round out Swift's current support with:
-
-```swift
-// TODO: Script and script extensions API
-```
+Most of this functionality is already provided inside `Unicode.Scalar.Properties`, and we propose to round out Swift's current support with API to access the Unicode script(s) for a `Unicode.Scalar` or `Character`. (API TBD)
 
 **TODO**: Check with Alejandro that the code size impact is reasonable
 
@@ -330,56 +335,7 @@ Even though we are not proposing any `Character`-based API, we'd like to discuss
 
 ### POSIX character classes: `[:NAME:]`
 
-We propose that POSIX character classes be named "posixName" with the following semantics:
-
-```swift
-extension Unicode.Scalar {
-  /// TODO:
-  public var isPOSIXAlphanumeric: Bool { get }
-
-  /// TODO:
-  public var isPOSIXAlphabetic: Bool { get }
-
-  /// TODO:
-  public var isASCII: Bool { get } // if not 
-
-  /// TODO:
-  public var isPOSIXBlank: Bool { get }
-
-  /// TODO:
-  public var isPOSIXControl: Bool { get }
-
-  /// TODO:
-  public var isPOSIXDigit: Bool { get }
-
-  /// TODO:
-  public var isPOSIXGraph: Bool { get }
-
-  /// TODO:
-  public var isPOSIXLowercase: Bool { get }
-
-  /// TODO:
-  public var isPOSIXPrint: Bool { get }
-
-  /// TODO:
-  public var isPOSIXPunctuation: Bool { get }
-
-  /// TODO:
-  public var isPOSIXSpace: Bool { get }
-
-  /// TODO:
-  public var isPOSIXUppercase: Bool { get }
-
-  /// TODO:
-  public var isPOSIXWord: Bool { get }
-
-  /// TODO:
-  public var isPOSIXHexDigit: Bool { get }
-}
-// ... same for Character ...
-```
-
-`Unicode.Scalar.isASCII` already exists and `Character.isASCII` and can satisfy `[:ascii:]`.
+We propose that POSIX character classes be named "posixName" with APIs for testing membership of `Character`s and `Unicode.Scalar`s. `Unicode.Scalar.isASCII` and `Character.isASCII` already exist and can satisfy `[:ascii:]`, and can be used in combination with new members like `isDigit` to represent individual POSIX character classes.
 
 Alternatively, we could introduce an option-set-like `POSIXCharacterClass` and `func isPOSIX(_:POSIXCharacterClass)` since POSIX is a fully defined standard. This would cut down on the amount of API noise directly visible on `Character` and `Unicode.Scalar` significantly.
 
@@ -419,15 +375,15 @@ Some options:
 
 Library-extensible pattern matching will necessitate more types, protocols, and API in the future, many of which may involve character classes. This pitch aims to define names and semantics for exactly these kinds of API now, so that they can slot in naturally.
 
-
 ### More classes or custom classes
 
 Future API might express custom classes or need more built-in classes. This pitch aims to establish rationale and precedent for a large number of character classes in Swift, serving as a basis that can be extended.
 
+### More lenient conversion APIs
 
-## Alternatives Considered
+The proposed semantics for matching "digits" are broader than what the existing `Int(_:radix:)?` initializer accepts. It may be useful to provide additional initializers that can understand the whole breadth of characters matched by `\d`, or other related conversions.
 
-**NOTE** I say we leave this blank and fill this in as part of the discussion / second pitch. Or, we could reiterate that we'd like feedback on various things (e.g. alternate formulation for POSIX character classes).
+
 
 
 [literals]: https://forums.swift.org/t/pitch-regular-expression-literals/52820
