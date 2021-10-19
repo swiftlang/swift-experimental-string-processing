@@ -49,15 +49,21 @@ This pitch is narrowly scoped to Swift definitions of character classes found in
 - A `Unicode.Scalar` API with modern Unicode definitions
 - If applicable, a `Unicode.Scalar` API for notable standards like POSIX (or JS?)
 
-We're proposing what we believe to be the Swiftiest definitions, referencing Unicode's [UTS\#18][uts18], [PCRE][pcre], [perl][perl], [Raku][raku], [Rust][rust], [Python][python], [C\#][csharp], [`NSRegularExpression` / ICU][icu], [POSIX][posix], [Oniguruma][oniguruma], (grep?), [Go][go], [C++][cplusplus], [RE2][re2], [Java][java], and [ECMAScript][ecmascript].
+We're proposing what we believe to be the Swiftiest definitions using [Unicode's guidance][uts18] for `Unicode.Scalar` and extending this to grapheme clusters using `Character`'s existing [rationale][charpropsrationale].
 
-To extend scalar semantics to grapheme clusters, we're using algebra and rationale from [SE-0221: Character Properties][charpropsrationale].
+<details><summary>Broad language/engine survey</summary>
+
+For these definitions, we cross-referenced Unicode's [UTS\#18][uts18] with [PCRE][pcre], [perl][perl], [Raku][raku], [Rust][rust], [Python][python], [C\#][csharp], [`NSRegularExpression` / ICU][icu], [POSIX][posix], [Oniguruma][oniguruma], (grep?), [Go][go], [C++][cplusplus], [RE2][re2], [Java][java], and [ECMAScript][ecmascript].
+
+We found that ... **TODO** these are all subsets of UTS18, right? This is where to mention "ICU", NSRegularExpression, etc., but _definitely_ also perl/PCRE and Raku. Wait, does C\# do scalars or just UTF-16 code units? I feel like we've done a lot of research, so it would be nice to present some of it. This could be a table or just a couple of sentences.
+
+None of these languages extended properties to grapheme-clusters (**TODO**: what about Raku? Doesn't `.` match a grapheme cluster (it used to at one point at least)?).
+
+
+</details>
+
 
 ## Detailed Design
-
-In general, we choose the Unicode recommendations in [UTS\#18][uts18] as the basis for matching character classes to `Unicode.Scalar`s. This is similar to the behavior of several languages' regular expressions when in Unicode mode (such as Perl and Python), as well as ICU-based regular expressions like `NSRegularExpression`.
-
-To extend this matching behavior to `Character`s, we treat a `Character` as belonging to a character class if its leading Unicode scalar belongs to that class.
 
 ### Literal characters
 
