@@ -153,7 +153,6 @@ It's possible we might add future properties to differentiate Unicode's non-deci
 
 </details>
 
-
 ### Word characters: `\w`, `\W`
 
 We propose `\w` be named "word character" with the following definitions:
@@ -186,6 +185,9 @@ _<details><summary>Rationale</summary>_
 The Unicode recommendation is to derive word character matching from Unicode properties and general categories as described above
 
 We chose to treat any grapheme cluster that leads with a Unicode scalar word character as a word character as well.
+
+**TODO** How does this relate to `isLetter`? Why don't we have `alphaNumeric`? Let's establish proper subsetting here.
+
 
 </details>
 
@@ -356,9 +358,7 @@ While most Unicode-defined properties can only match at the Unicode scalar level
 
 `\P{...}` matches the inverse of `\p{...}`.
 
-Most of this functionality is already provided inside `Unicode.Scalar.Properties`, and we propose to round out Swift's current support with API to access the Unicode script(s) for a `Unicode.Scalar` or `Character`. (API TBD)
-
-**TODO**: Check with Alejandro that the code size impact is reasonable
+Most of this is already present inside `Unicode.Scalar.Properties`, and we propose to round it out with anything missing, e.g. script and script extensions. (API is _TBD_, still working on it)
 
 Even though we are not proposing any `Character`-based API, we'd like to discuss with the community whether or how to extend them to grapheme clusters. Some options:
 
@@ -430,10 +430,12 @@ The proposed semantics for matching "digits" are broader than what the existing 
 [meaningless]: https://forums.swift.org/t/declarative-string-processing-overview/52459/121
 [scalarprops]: https://github.com/apple/swift-evolution/blob/master/proposals/0211-unicode-scalar-properties.md
 [ucd]: https://www.unicode.org/reports/tr44/tr44-28.html
+[numerictype]: https://www.unicode.org/reports/tr44/#Numeric_Type
+[derivednumeric]: https://www.unicode.org/Public/UCD/latest/ucd/extracted/DerivedNumericType.txt
+
 
 [uts18]: https://unicode.org/reports/tr18/
 [proplist]: https://www.unicode.org/Public/UCD/latest/ucd/PropList.txt
-[derivednumeric]: https://www.unicode.org/Public/UCD/latest/ucd/extracted/DerivedNumericType.txt
 [pcre]: https://www.pcre.org/current/doc/html/pcre2pattern.html
 [perl]: https://perldoc.perl.org/perlre
 [raku]: https://docs.raku.org/language/regexes
