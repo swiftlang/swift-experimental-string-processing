@@ -64,7 +64,7 @@ let package = Package(
             dependencies: ["PTCaRet", "Util"]),
         .target(
             name: "Algorithms",
-            dependencies: []),
+            dependencies: ["Regex", "PEG"]),
         .testTarget(
             name: "AlgorithmsTests",
             dependencies: ["Algorithms"]),

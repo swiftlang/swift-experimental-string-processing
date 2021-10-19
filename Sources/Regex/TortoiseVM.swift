@@ -28,6 +28,7 @@ struct Hatchling {
 typealias Bale = [Hatchling]
 
 public struct TortoiseVM: VirtualMachine {
+
   public static let motto = """
         "Slow and steady", which is a concise way of saying that tracking all
          eventualities ensures runtime linearly proportional to input size.
@@ -44,20 +45,38 @@ public struct TortoiseVM: VirtualMachine {
     self.code = code
   }
 
-  public func execute(input: String) -> (Bool, [CaptureStack]) {
+  public func execute(
+    input: String, in range: Range<String.Index>, _ mode: MatchMode
+  ) -> MatchResult? {
+    let (start, end) = range.destructure
+
     var bale = Bale()
     let startTurtle = Hatchling(code.startIndex, numCaptures: code.numCaptures)
-    bale.append(contentsOf: readThrough(input.startIndex, startTurtle))
-    var idx = input.startIndex
-    while idx < input.endIndex {
-      (bale, idx) = advance(input, idx, bale)
+    bale.append(contentsOf: readThrough(start, startTurtle))
+    var idx = start
+
+    switch mode {
+    case .wholeString:
+      // Run over the whole string, updating our bale
+      while idx < end {
+        (bale, idx) = advance(input, idx, bale)
+      }
+    case .partialFromFront:
+      // Run until we have no more hatchlings or we finish the string
+      while idx < end && !bale.isEmpty {
+        let (nextBale, nextIdx) = advance(input, idx, bale)
+        if nextBale.isEmpty { break }
+        idx = nextIdx
+        bale = nextBale
+      }
     }
     for hatchling in bale {
       if code[hatchling.pc].isAccept {
-        return (true, hatchling.core.captures)
+        return MatchResult(
+          start ..< idx, hatchling.core.captures)
       }
     }
-    return (false, [])
+    return nil
   }
 }
 

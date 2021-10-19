@@ -47,3 +47,41 @@ extension Sequence {
     return false
   }
 }
+
+extension Range {
+  public var destructure: (
+    lowerBound: Bound, upperBound: Bound
+  ) {
+    (lowerBound, upperBound)
+  }
+}
+
+public typealias Offsets = (lower: Int, upper: Int)
+extension BidirectionalCollection {
+  public func mapOffsets(_ offsets: Offsets) -> Range<Index> {
+    assert(offsets.lower >= 0 && offsets.upper <= 0)
+    let lower = index(startIndex, offsetBy: offsets.lower)
+    let upper = index(endIndex, offsetBy: offsets.upper)
+    return lower ..< upper
+  }
+
+  // Is this the right name?
+  public func flatmapOffsets(_ offsets: Offsets?) -> Range<Index> {
+    if let o = offsets {
+      return mapOffsets(o)
+    }
+    return startIndex ..< endIndex
+  }
+}
+
+extension Collection {
+  public func idx(_ i: Int) -> Index {
+    index(startIndex, offsetBy: i)
+  }
+  public func split(
+    around r: Range<Index>
+  ) -> (prefix: SubSequence, SubSequence, suffix: SubSequence) {
+    (self[..<r.lowerBound], self[r], self[r.upperBound...])
+  }
+}
+

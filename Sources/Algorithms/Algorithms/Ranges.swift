@@ -1,5 +1,5 @@
 extension Collection {
-  func ranges<S: CollectionSearcher>(_ searcher: S) -> RangesSequence<Self, S> {
+  public func ranges<S: CollectionSearcher>(_ searcher: S) -> RangesSequence<Self, S> {
     RangesSequence(base: self, searcher: searcher)
   }
 }
