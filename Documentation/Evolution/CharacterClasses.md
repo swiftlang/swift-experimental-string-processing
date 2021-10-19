@@ -274,6 +274,8 @@ extension Unicode.Scalar {
 }
 ```
 
+Note that `Character.isNewline` already exists with the definition [required][lineboundary] by UTS\#18. *TBD:* Should we backport to `Unicode.Scalar`?
+
 `\S`, `\H`, and `\V` match the inverse of `\s`, `\h`, and `\v`, respectively.
 
 We propose `\R` include "verticalWhitespace" above with detection (and consumption) of the CR-LF sequence when applied to `Unicode.Scalar`. It is equivalent to `Character.isVerticalWhitespace` when applied to `Character`s.
@@ -282,9 +284,11 @@ We are similarly not proposing any new API for `\R` until the stdlib has graphem
 
 _<details><summary>Rationale</summary>_
 
-We chose the Unicode recommendation as the basis for `Unicode.Scalar`, which is to derive whitespace matching from Unicode properties and general categories as described above. For details, see the [Unicode property list][proplist].
+Note that "whitespace" is a term-of-art and is not correlated with visibility, which is a completely separate concept.
 
-We chose to leave the existing `Character.isWhitespace` intact and extend its reasoning to vertical and horizontal whitespace.
+We use Unicode's recommended scalar semantics for horizontal whitespace and extend that to grapheme semantics similarly to `Character.isWhitespace`.
+
+We use ICU's definition for vertical whitespace, similarly extended to grapheme clusters.
 
 </details>
 
