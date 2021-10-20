@@ -23,7 +23,7 @@ public enum AST: Hashable {
   indirect case alternation([AST]) // alternation(AST, AST?)
   indirect case concatenation([AST])
   indirect case group(AST)
-  indirect case capturingGroup(AST)
+  indirect case capturingGroup(AST, transform: CaptureTransform? = nil)
 
   // Post-fix modifiers
   indirect case many(AST)
@@ -43,7 +43,10 @@ extension AST: CustomStringConvertible {
     case .alternation(let rest): return ".alt(\(rest))"
     case .concatenation(let rest): return ".concat(\(rest))"
     case .group(let rest): return ".group(\(rest))"
-    case .capturingGroup(let rest): return ".capturingGroup(\(rest))"
+    case .capturingGroup(let rest, let transform):
+      return """
+          .capturingGroup(\(rest), transform: \(transform.map(String.init(describing:)) ?? "nil")
+          """
     case .many(let rest): return ".many(\(rest))"
     case .zeroOrOne(let rest): return ".zeroOrOne(\(rest))"
     case .oneOrMore(let rest): return ".oneOrMore(\(rest))"

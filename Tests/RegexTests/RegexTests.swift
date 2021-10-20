@@ -26,7 +26,6 @@ extension RECode: Equatable {
   public static func ==(lhs: RECode, rhs: RECode) -> Bool {
     return lhs.instructions == rhs.instructions
     && lhs.labels == rhs.labels && lhs.options == rhs.options
-    && lhs.numCaptures == rhs.numCaptures
   }
 }
 
@@ -61,63 +60,93 @@ struct TestCase {
   init(regex: String, input: String) {
     fatalError()
   }
-
 }
 
-func performTest(
+struct TestExpectation<CaptureValue> {
+  let content: String?
+  let captures: CaptureValue
+  // A function that determines
+  let capturesEqual: (CaptureValue, CaptureValue) -> Bool
+
+  init(
+    _ content: String? = nil,
+    captures: CaptureValue,
+    capturesEqual: @escaping (CaptureValue, CaptureValue) -> Bool
+  ) {
+    self.content = content
+    self.captures = captures
+    self.capturesEqual = capturesEqual
+  }
+
+  init(_ content: String? = nil) where CaptureValue == Void {
+    self.content = content
+    self.captures = ()
+    self.capturesEqual = { _, _ in true }
+  }
+
+  func isExpectedCapture(_ actualCaptures: CaptureValue) -> Bool {
+    capturesEqual(actualCaptures, captures)
+  }
+
+  func isExpectedContentIfSpecified(_ actualContent: Substring) -> Bool {
+    return content.map { $0 == actualContent } ?? true
+  }
+}
+
+func performTest<CaptureValue>(
   regex: String,
   input: String,
   offsets: Offsets? = nil,
   mode: MatchMode = .wholeString,
-  expecting expected: String?,
-  expectedCaptures: [[String]] = []
+  expectedCaptureType: CaptureValue.Type,
+  expecting expectation: TestExpectation<CaptureValue>?
 ) {
   let code = try! compile(regex)
   let lonesomeGeorge = TortoiseVM(code)
   let harvey = HareVM(code)
   func report(name: String,
-              _ output: (String, [[String]]),
-              _ expected: (String, [[String]])
+              matchedRange: Range<String.Index>?,
+              actualCaptures: Any?,
+              expectedCaptures: CaptureValue?
   ) -> String {
     return """
-             \(name) failed
-             Regex:    \(regex)
-             Input:    \(input)
-             Expected: \(expected)
-             Saw: \(output)
-             """
+      \(name) failed
+      Regex:    \(regex)
+      Input:    \(input)
+      Matched range: \(String(describing: matchedRange))
+      Matched content: \(matchedRange.map { "\"\(input[$0])\"" } ?? "none")
+      Expected captures: \(expectedCaptures.map { "\"\($0)\": \(type(of: $0))" } ?? "none")
+      Saw: \(actualCaptures.map { "\"\($0)\": \(type(of: $0))" } ?? "none")
+      """
   }
-  func run(_ vm: VirtualMachine) -> (String, [[String]])? {
+  func run(_ vm: VirtualMachine, name: String) {
     let range = input.flatmapOffsets(offsets)
-
-    guard let (matched, captures) = vm.execute(
-      input: input, in: range, mode
-    )?.destructure else {
-      return nil
+    let actualResult = vm.execute(input: input, in: range, mode)
+    switch (actualResult, expectation) {
+    case let (result?, expectation?) where CaptureValue.self != Void.self:
+      guard expectation.isExpectedContentIfSpecified(input[result.range]),
+            let actualCapture = result.captures.value as? CaptureValue,
+            expectation.isExpectedCapture(actualCapture) else {
+        XCTFail(report(
+          name: name,
+          matchedRange: result.range,
+          actualCaptures: result.captures.value,
+          expectedCaptures: expectation.captures))
+        break
+      }
+    case (_?, nil), (nil, _?):
+      XCTFail(report(
+        name: name,
+        matchedRange: actualResult?.range,
+        actualCaptures: actualResult?.captures.value,
+        expectedCaptures: expectation?.captures))
+    default:
+      break;
     }
-    let actualCaptures = captures.map {
-      $0.asStrings(from: input)
-    }
-    return (String(input[matched]), actualCaptures)
   }
-
-  if let (georgeMatched, georgeCaptures) = run(lonesomeGeorge) {
-    if expected != georgeMatched || expectedCaptures != georgeCaptures {
-      XCTFail(report(name: "Lonesome George", (georgeMatched, georgeCaptures), (expected ?? "<nil>", expectedCaptures)))
-    }
-  } else {
-    XCTAssertNil(expected)
-  }
-  if let (harveyMatched, harveyCaptures) = run(harvey) {
-    if expected != harveyMatched || expectedCaptures != harveyCaptures {
-      XCTFail(report(name: "Harvey", (harveyMatched, harveyCaptures), (expected ?? "<nil>", expectedCaptures)))
-    }
-  } else {
-    XCTAssertNil(expected)
-  }
-
+  run(lonesomeGeorge, name: "Lonesome George")
+  run(harvey, name: "Harvey")
 }
-
 
 class RegexTests: XCTestCase {
   func testLex() {
@@ -229,18 +258,17 @@ class RegexTests: XCTestCase {
                   Expected: \(expecting)
                   Found:    \(recode)
                   """)
-
         return
       }
     }
 
     func recode(
-      _ list: RECode.Instruction..., labels: Array<Int> = [],
-      numCaptures: Int = 0
+      _ list: RECode.Instruction..., labels: [Int] = [], splits: [Int] = []
     ) -> RECode {
       return RECode(instructions: list + [.accept],
-                    labels: labels.map { InstructionAddress($0) }, splits: [],
-                    numCaptures: numCaptures, options: .none)
+                    labels: labels.map { InstructionAddress($0) },
+                    splits: splits.map { InstructionAddress($0) },
+                    options: .none)
     }
     func label(_ id: Int) -> RECode.Instruction {
       return .label(LabelId(id))
@@ -251,12 +279,6 @@ class RegexTests: XCTestCase {
     func goto(label id: Int) -> RECode.Instruction {
       return .goto(label: LabelId(id))
     }
-    func cap(_ id: Int) -> RECode.Instruction {
-      return .beginCapture(CaptureId(id))
-    }
-    func endCap(_ id: Int) -> RECode.Instruction {
-      return .endCapture(CaptureId(id))
-    }
 
     performTest("abc", recode("a", "b", "c"))
     performTest("abc\\+d*",
@@ -266,54 +288,110 @@ class RegexTests: XCTestCase {
                        labels: [4, 8]))
 
     performTest("abc(de)+fghi*k|j",
-                recode(split(disfavoring: 1), "a", "b", "c",
-                       label(2), "d", "e",
+                recode(split(disfavoring: 1),
+                       .beginGroup,
+                       "a", "b", "c",
+                       .beginGroup,
+                       label(2),
+                       .beginGroup,
+                       "d", "e",
+                       .endGroup,
                        split(disfavoring: 3), goto(label: 2),
-                       label(3), "f", "g", "h",
+                       label(3),
+                       .captureArray,
+                       .endGroup,
+                       "f", "g", "h",
                        label(4),
                        split(disfavoring: 5), "i", goto(label: 4),
-                       label(5), "k", goto(label: 0),
+                       label(5), "k",
+                       .endGroup,
+                       goto(label: 0),
                        label(1), "j",
                        label(0),
-                       labels: [22, 20, 4, 9, 13, 17]))
+                       labels: [29, 27, 6, 13, 19, 23]))
     performTest("a(b|c)?d",
-                recode("a",
+                recode(.beginGroup,
+                       "a",
+                       .beginGroup,
                        split(disfavoring: 0),
-                       split(disfavoring: 2), "b", goto(label: 1),
-                       label(2), "c",
-                       label(1),
-                       label(0), "d",
-                       labels: [8, 7, 5]))
+                       .beginGroup,
+                       split(disfavoring: 3), "b",
+                       goto(label: 2),
+                       label(3), "c",
+                       label(2),
+                       .endGroup,
+                       .captureSome,
+                       .goto(label: 1),
+                       label(0), .captureNil,
+                       .label(1),
+                       .endGroup,
+                       "d",
+                       .endGroup,
+                       labels: [14, 16, 10, 8],
+                       splits: [3, 5]))
     performTest("a(?b|c)?d",
-                recode("a",
+                recode(.beginGroup,
+                       "a",
+                       .beginGroup,
                        split(disfavoring: 0),
-                       cap(0),
-                       split(disfavoring: 2), "b", goto(label: 1),
-                       label(2), "c",
+                       .beginCapture,
+                       split(disfavoring: 3), "b", goto(label: 2),
+                       label(3), "c",
+                       label(2),
+                       .endCapture(),
+                       .captureSome,
+                       goto(label: 1),
+                       label(0),
+                       .captureNil,
                        label(1),
-                       endCap(0),
-                       label(0), "d",
-                       labels: [10, 8, 6],
-                       numCaptures: 1))
-    //        performTest("a(?b|c)*",
-    //                    recode("a",
-    //                           cap(0),
-    //                           labels: [8, 7, 5]
-    //        ))
+                       .endGroup,
+                       "d",
+                       .endGroup,
+                       labels: [14, 16, 10, 8],
+                       splits: [3, 5]))
+    performTest("a(?b|c)*",
+                recode(.beginGroup,
+                       "a",
+                       .beginGroup,
+                       .label(0),
+                       .split(disfavoring: 1),
+                       .beginCapture,
+                       .split(disfavoring: 3),
+                       "b",
+                       .goto(label: 2),
+                       .label(3),
+                       "c",
+                       .label(2),
+                       .endCapture(),
+                       .goto(label: 0),
+                       .label(1),
+                       .captureArray,
+                       .endGroup,
+                       .endGroup,
+                       labels: [3, 14, 11, 9],
+                       splits: [4, 6]))
     performTest("(?a*)*",
-                recode(label(0), split(disfavoring: 1), cap(0),
+                recode(.beginGroup,
+                       label(0), split(disfavoring: 1), .beginCapture,
                        label(2), split(disfavoring: 3), "a", goto(label: 2),
-                       label(3), endCap(0), goto(label: 0),
+                       label(3), .endCapture(), goto(label: 0),
                        label(1),
-                       labels: [0, 10, 3, 7], numCaptures: 1))
+                       .captureArray,
+                       .endGroup,
+                       labels: [1, 11, 4, 8], splits: [2, 5]))
     performTest("(.*)*",
-                recode(label(0), split(disfavoring: 1),
+                recode(.beginGroup,
+                       label(0), split(disfavoring: 1),
+                       .beginGroup,
                        label(2), split(disfavoring: 3), .characterClass(.any), goto(label: 2),
-                       label(3), goto(label: 0),
+                       label(3),
+                       .endGroup,
+                       goto(label: 0),
                        label(1),
-                       labels: [0, 8, 2, 6], numCaptures: 0))
+                       .captureArray,
+                       .endGroup,
+                       labels: [1, 11, 4, 8], splits: [2, 5]))
   }
-
 
   func testVMs() {
     let tests: Array<(String, pass: [String], fail: [String])> = [
@@ -340,33 +418,39 @@ class RegexTests: XCTestCase {
       //            ("(a*)*", ["a"], ["b"])
     ]
 
-    // Singly nested capture tests
-    let captureTests: Array<(String, input: String, captures: [String])> = [
-      ("a(?b)c", "abc", ["b"]),
-      ("a(?.)c", "axc", ["x"]),
-      ("a(?b)c(?d)ef", "abcdef", ["b", "d"]),
-      ("a(?b*)c(?d+)ef", "acddddef", ["", "dddd"]),
-      ("a(?b*)c(?d+)ef", "abbcdef", ["bb", "d"]),
-      //            ("(?a*)*", "aaaa", ["aaaa"]),
-    ]
-
-    // Nested capture tests
-    let nestedCaptureTests: Array<(String, captures: [[String]])> = [
-    ]
-    _ = nestedCaptureTests
-
+    // Matching tests
     for (regex, passes, fails) in tests {
       for pass in passes {
-        performTest(regex: regex, input: pass, expecting: pass)
+        performTest(
+          regex: regex, input: pass, expectedCaptureType: Void.self, expecting: .init(pass))
       }
       for fail in fails {
-        performTest(regex: regex, input: fail, expecting: nil)
+        performTest(
+          regex: regex, input: fail, expectedCaptureType: Void.self, expecting: nil)
       }
     }
-    for (regex, input, captures) in captureTests {
-      let caps = captures.map { Array($0) }
-      performTest(regex: regex, input: input, expecting: input, expectedCaptures: caps)
-    }
+
+    // Singly nested capture tests
+    performTest(
+      regex: "a(?b)c", input: "abc",
+      expectedCaptureType: Substring.self, expecting: .init(captures: "b", capturesEqual: ==))
+    performTest(
+      regex: "a(?.)c", input: "axc",
+      expectedCaptureType: Substring.self, expecting: .init(captures: "x", capturesEqual: ==))
+    performTest(
+      regex: "a(?b)c(?d)ef", input: "abcdef",
+      expectedCaptureType: (Substring, Substring).self,
+      expecting: .init(captures: ("b", "d"), capturesEqual: ==))
+    performTest(
+      regex: "a(?b*)c(?d+)ef", input: "acddddef",
+      expectedCaptureType: (Substring, Substring).self,
+      expecting: .init(captures: ("", "dddd"), capturesEqual: ==))
+    performTest(regex: "a(?b*)c(?d+)ef", input: "abbcdef",
+      expectedCaptureType: (Substring, Substring).self,
+      expecting: .init(captures: ("bb", "d"), capturesEqual: ==))
+    // performTest(regex: "(?a*)*", input: "aaaa",
+    //   expectedCaptureType: Substring.self,
+    //   expecting: .init(captures: "aaaa", capturesEqual: ==))
   }
   
   func testMatchLevel() {
@@ -415,10 +499,16 @@ class RegexTests: XCTestCase {
 
     for (regex, passes, fails) in tests {
       for pass in passes {
-        performTest(regex: regex, input: pass.0, mode: .partialFromFront, expecting: pass.matched)
+        performTest(
+          regex: regex, input: pass.0, mode: .partialFromFront,
+          expectedCaptureType: Void.self,
+          expecting: .init(pass.matched))
       }
       for fail in fails {
-        performTest(regex: regex, input: fail, mode: .partialFromFront, expecting: nil)
+        performTest(
+          regex: regex, input: fail, mode: .partialFromFront,
+          expectedCaptureType: Void.self,
+          expecting: nil)
       }
     }
   }
@@ -452,7 +542,8 @@ class RegexTests: XCTestCase {
           input: pass.0,
           offsets: pass.offsets,
           mode: .wholeString,
-          expecting: pass.matched)
+          expectedCaptureType: Void.self,
+          expecting: .init(pass.matched))
       }
       for fail in fails {
         performTest(
@@ -460,6 +551,7 @@ class RegexTests: XCTestCase {
           input: fail.0,
           offsets: fail.offsets,
           mode: .wholeString,
+          expectedCaptureType: Void.self,
           expecting: nil)
       }
     }

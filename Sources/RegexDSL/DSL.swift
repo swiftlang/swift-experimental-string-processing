@@ -136,23 +136,38 @@ public func | <Component1, Component2>(
 
 // MARK: - Capture
 
-public struct CapturingGroup<Component: RegexProtocol>: RegexProtocol {
-  public typealias MatchValue = Component.MatchValue
-  public typealias CaptureValue = Component.MatchValue
+public struct CapturingGroup<MatchValue, CaptureValue>: RegexProtocol {
+  public typealias MatchValue = MatchValue
+  public typealias CaptureValue = CaptureValue
 
   public let regex: Regex<CaptureValue>
 
-  public init(_ component: Component) {
+  init<Component: RegexProtocol>(
+    _ component: Component
+  ) where MatchValue == CaptureValue {
     self.regex = .init(ast: .capturingGroup(component.regex.ast))
   }
 
-  public init(@RegexBuilder _ content: () -> Component) {
-    self.init(content())
+  init<Component: RegexProtocol>(
+    _ component: Component,
+    transform: @escaping (MatchValue) -> CaptureValue
+  ) where MatchValue == Substring {
+    self.regex = .init(ast: .capturingGroup(component.regex.ast, transform: CaptureTransform {
+      transform($0) as Any
+    }))
   }
 }
 
+// TODO: Support capturing non-substrings, e.g.
+//   OneOrMore("x").capture() // Captures `[Substring]`.
 extension RegexProtocol {
-  public func capture() -> CapturingGroup<Self> {
+  public func capture() -> CapturingGroup<Substring, Substring> {
     .init(self)
+  }
+
+  public func capture<CaptureValue>(
+    _ transform: @escaping (Substring) -> CaptureValue
+  ) -> CapturingGroup<MatchValue, CaptureValue> where MatchValue == Substring {
+    .init(self, transform: transform)
   }
 }

@@ -4,8 +4,8 @@ import Regex
 fileprivate typealias DefaultEngine = TortoiseVM
 
 public struct RegexMatch<CapturedValue> {
-  // TODO: Add transformed captures.
-  public let capturedSubstrings: [[Substring]]
+  public let range: Range<String.Index>
+  public let captures: CapturedValue
 }
 
 /// A compiled regular expression.
@@ -74,11 +74,11 @@ extension RegexProtocol {
     using engine: VirtualMachine.Type
   ) -> RegexMatch<CaptureValue>? {
     let vm = engine.init(regex.program.executable)
-    guard let (_, captures) = vm.execute(input: input)?.destructure
+    guard let (range, captures) = vm.execute(input: input)?.destructure
     else {
       return nil
     }
-    return RegexMatch(capturedSubstrings: captures.map { $0.asSubstrings(from: input) })
+    return RegexMatch(range: range, captures: captures.value as! CaptureValue)
   }
 }
 

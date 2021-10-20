@@ -9,38 +9,55 @@ public func compile(
     return .label(currentLabel)
   }
   var instructions = RECode.InstructionList()
-  var numCaptures = 0
   func compileNode(_ ast: AST) {
     switch ast {
     case .empty: return
+    
     case .character(let c):
       instructions.append(.character(c))
       return
+
     case .unicodeScalar(let u):
       instructions.append(.unicodeScalar(u))
       return
+      
     case .characterClass(let cc):
       instructions.append(.characterClass(cc))
       return
+
     case .any:
       instructions.append(.any)
       return
+
     case .group(let child):
+      instructions.append(.beginGroup)
       compileNode(child)
+      instructions.append(.endGroup)
       return
-    case .capturingGroup(let child):
-      let capId = numCaptures
-      numCaptures += 1
-      instructions.append(.beginCapture(capId))
+
+    case .capturingGroup(let child, let transform):
+      instructions.append(.beginCapture)
       compileNode(child)
-      instructions.append(.endCapture(capId))
+      instructions.append(.endCapture(transform: transform))
+      return
 
     case .concatenation(let children):
+      let childrenHaveCaptures = children.any(\.hasCaptures)
+      if childrenHaveCaptures {
+        instructions.append(.beginGroup)
+      }
       children.forEach { compileNode($0) }
+      if childrenHaveCaptures {
+        instructions.append(.endGroup)
+      }
       return
 
     case .many(let child):
       // a* ==> L_START, <split L_DONE>, a, goto L_START, L_DONE
+      let childHasCaptures = child.hasCaptures
+      if childHasCaptures {
+        instructions.append(.beginGroup)
+      }
       let start = createLabel()
       instructions.append(start)
       let done = createLabel()
@@ -48,18 +65,42 @@ public func compile(
       compileNode(child)
       instructions.append(.goto(label: start.label!))
       instructions.append(done)
+      if childHasCaptures {
+        instructions.append(.captureArray)
+        instructions.append(.endGroup)
+      }
       return
 
     case .zeroOrOne(let child):
       // a? ==> <split L_DONE> a, L_DONE
-      let done = createLabel()
-      instructions.append(.split(disfavoring: done.label!))
-      compileNode(child)
-      instructions.append(done)
+      if child.hasCaptures {
+        instructions.append(.beginGroup)
+        let nilCase = createLabel()
+        let done = createLabel()
+        instructions.append(.split(disfavoring: nilCase.label!))
+        compileNode(child)
+        instructions += [
+          .captureSome,
+          .goto(label: done.label!),
+          nilCase,
+          .captureNil,
+          done,
+          .endGroup
+        ]
+      } else {
+        let done = createLabel()
+        instructions.append(.split(disfavoring: done.label!))
+        compileNode(child)
+        instructions.append(done)
+      }
       return
 
     case .oneOrMore(let child):
       // a+ ==> L_START, a, <split L_DONE>, goto L_START, L_DONE
+      let childHasCaptures = child.hasCaptures
+      if childHasCaptures {
+        instructions.append(.beginGroup)
+      }
       let start = createLabel()
       let done = createLabel()
       instructions.append(start)
@@ -67,6 +108,10 @@ public func compile(
       instructions.append(.split(disfavoring: done.label!))
       instructions.append(.goto(label: start.label!))
       instructions.append(done)
+      if childHasCaptures {
+        instructions.append(.captureArray)
+        instructions.append(.endGroup)
+      }
       return
 
     case .alternation(let children):
@@ -122,7 +167,6 @@ public func compile(
     instructions: instructions,
     labels: labels,
     splits: splits,
-    numCaptures: numCaptures,
     options: options)
 }
 

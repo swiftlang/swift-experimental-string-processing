@@ -6,8 +6,8 @@ struct Leveret {
   var sp: String.Index
   var pc: InstructionAddress { return core.pc }
 
-  init(_ pc: InstructionAddress, _ sp: String.Index, numCaptures: Int) {
-    self.core = RECode.ThreadCore(startingAt: pc, numCaptures: numCaptures)
+  init(_ pc: InstructionAddress, _ sp: String.Index, input: String) {
+    self.core = RECode.ThreadCore(startingAt: pc, input: input)
     self.sp = sp
   }
 
@@ -21,13 +21,6 @@ struct Leveret {
 
   mutating func nibbleScalar(on str: String) {
     sp = str.unicodeScalars.index(after: sp)
-  }
-
-  mutating func beginCapture(_ id: CaptureId) {
-    core.beginCapture(id, sp)
-  }
-  mutating func endCapture(_ id: CaptureId) {
-    core.endCapture(id, sp)
   }
 }
 
@@ -71,8 +64,7 @@ public struct HareVM: VirtualMachine {
     let (start, end) = range.destructure
 
     assert(code.last!.isAccept)
-    var bunny = Leveret(
-      code.startIndex, start, numCaptures: code.numCaptures)
+    var bunny = Leveret(code.startIndex, start, input: input)
     var stack = BunnyStack()
 
     // TODO: Which bunny to return? Longest, left most, or what?
@@ -82,7 +74,7 @@ public struct HareVM: VirtualMachine {
         return nil
       }
       return MatchResult(
-        start ..< bunny.sp, bunny.core.captures)
+        start ..< bunny.sp, bunny.core.singleCapture())
     }
 
     while true {
@@ -180,12 +172,32 @@ public struct HareVM: VirtualMachine {
       case .label(_):
         bunny.hop()
 
-      case .beginCapture(let id):
-        bunny.beginCapture(id)
+      case .beginCapture:
+        bunny.core.beginCapture(bunny.sp)
         bunny.hop()
 
-      case .endCapture(let id):
-        bunny.endCapture(id)
+      case let .endCapture(transform):
+        bunny.core.endCapture(bunny.sp, transform: transform)
+        bunny.hop()
+
+      case .beginGroup:
+        bunny.core.beginGroup()
+        bunny.hop()
+
+      case .endGroup:
+        bunny.core.endGroup()
+        bunny.hop()
+
+      case .captureSome:
+        bunny.core.captureSome()
+        bunny.hop()
+
+      case .captureNil:
+        bunny.core.captureNil()
+        bunny.hop()
+
+      case .captureArray:
+        bunny.core.captureArray()
         bunny.hop()
       }
     }
