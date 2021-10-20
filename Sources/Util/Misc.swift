@@ -85,3 +85,10 @@ extension Collection {
   }
 }
 
+extension UnsafeMutableRawPointer {
+  public func roundedUp<T>(toAlignmentOf type: T.Type) -> Self {
+    let alignmentMask = MemoryLayout<T>.alignment - 1
+    let rounded = (Int(bitPattern: self) + alignmentMask) & ~alignmentMask
+    return UnsafeMutableRawPointer(bitPattern: rounded).unsafelyUnwrapped
+  }
+}

@@ -18,8 +18,6 @@ public protocol Participant {
   // ...
 }
 
-extension String: Error {}
-
 // Default impls
 extension Participant {
   static var unsupported: Error { "Unsupported" }

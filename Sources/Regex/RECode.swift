@@ -13,23 +13,22 @@ public struct RECode {
   var instructions: InstructionList
   var labels: [InstructionAddress]
   var splits: [InstructionAddress]
-  var numCaptures: Int
   var options: REOptions
 }
 
 extension RECode {
   /// A RECode instruction.
   public enum Instruction: Hashable {
-    /// NOP (currently unused)
+    /// NOP (currently unused).
     case nop
 
-    /// Denote a sucessful match. (currently used only at the end of a program)
+    /// Denote a sucessful match. (currently used only at the end of a program).
     case accept
 
-    /// Consume and try to match a unit of input
+    /// Consume and try to match a unit of input.
     case character(Character)
 
-    /// Consume and try to match a unit of input against a character class
+    /// Consume and try to match a unit of input against a character class.
     case characterClass(CharacterClass)
 
     case unicodeScalar(UnicodeScalar)
@@ -37,20 +36,39 @@ extension RECode {
     /// Consume any unit of input
     case any
 
-    /// Split execution. Favored path will fall through while disfavored will branch to `disfavoring`
+    /// Split execution. Favored path will fall through while disfavored will branch to
+    /// `disfavoring`.
     case split(disfavoring: LabelId)
 
-    /// Branch to `label`
+    /// Branch to `label`.
     case goto(label: LabelId)
 
-    /// The target of a branch, executed as a NOP
+    /// The target of a branch, executed as a NOP.
     case label(LabelId)
 
-    /// Begin a numbered capture
-    case beginCapture(CaptureId)
+    /// Begin a capture group.
+    case beginGroup
 
-    /// End a numbered capture
-    case endCapture(CaptureId)
+    /// Ends a capture group.
+    case endGroup
+
+    /// Begin capturing a portion of the input string.
+    case beginCapture
+
+    /// End capturing a portion of the input string, transforming the substring with the specified
+    /// transform.
+    case endCapture(transform: CaptureTransform? = nil)
+
+    /// Form a `Capture.optional(.some(...))` from top-level captures, and use it to replace the
+    /// top-level captures.
+    case captureSome
+
+    /// Replace top-level captures with a single `Capture.optional(nil)`.
+    case captureNil
+
+    /// Form a `Capture.array(...)` from top-level captures, and use it to replace the top-level
+    /// captures.
+    case captureArray
 
     var isAccept: Bool {
       switch self {
@@ -100,9 +118,6 @@ extension RECode.Instruction {
   }
 
   // Convenience constructors
-  static func beginCapture(_ i: Int) -> Self { .beginCapture(CaptureId(i)) }
-  static func endCapture(_ i: Int) -> Self { .endCapture(CaptureId(i)) }
-
   static func label(_ i: Int) -> Self { .label(LabelId(i)) }
 }
 
@@ -185,8 +200,13 @@ extension RECode.Instruction: CustomStringConvertible {
     case .split(let i): return "<SPLIT disfavoring \(i)>"
     case .goto(let label): return "<GOTO \(label)>"
     case .label(let i): return "<\(i)>"
-    case .beginCapture(let id): return "<CAP \(id)>"
-    case .endCapture(let id): return "<END CAP \(id)>"
+    case .beginGroup: return "<BEGIN GROUP>"
+    case .endGroup: return "<END GROUP>"
+    case .beginCapture: return "<BEGIN CAP>"
+    case .endCapture: return "<END CAP>"
+    case .captureSome: return "<CAP SOME>"
+    case .captureNil: return "<CAP NIL>"
+    case .captureArray: return "<CAP ARRAY>"
     }
   }
 }

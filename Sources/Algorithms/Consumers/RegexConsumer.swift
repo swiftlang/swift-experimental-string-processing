@@ -16,12 +16,12 @@ public struct RegexConsumer: CollectionConsumer {
   ) -> String.Index? {
     let result = vm.execute(
       input: consumed, in: subrange, .partialFromFront)
-    assert(result?.matched ==
+    assert(result?.range ==
            referenceVM.execute(
             input: consumed, in: subrange, .partialFromFront
-           )?.matched)
+           )?.range)
 
-    return result?.matched.upperBound
+    return result?.range.upperBound
   }
 }
 
