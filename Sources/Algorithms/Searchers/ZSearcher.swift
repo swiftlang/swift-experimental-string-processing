@@ -1,9 +1,10 @@
+// TODO: Check if this works with empty patterns
 public struct ZSearcher<Searched: Collection> {
   let pattern: [Searched.Element]
   let z: [Int]
   let areEquivalent: (Searched.Element, Searched.Element) -> Bool
   
-  init(pattern: [Searched.Element], by areEquivalent: @escaping (Searched.Element, Searched.Element) -> Bool) {
+  public init(pattern: [Searched.Element], by areEquivalent: @escaping (Searched.Element, Searched.Element) -> Bool) {
     self.pattern = pattern
     self.z = zAlgorithm(pattern, by: areEquivalent)
     self.areEquivalent = areEquivalent
@@ -37,9 +38,11 @@ extension ZSearcher: StatelessCollectionSearcher {
       }
     }
     
-    for index in searched.indices[index...] {
-      if index >= r {
-        if let range = compare(start: index, end: index, minLength: 0) {
+    var i = index
+    
+    while true {
+      if i >= r {
+        if let range = compare(start: i, end: i, minLength: 0) {
           return range
         }
       } else {
@@ -47,17 +50,20 @@ extension ZSearcher: StatelessCollectionSearcher {
         let prev = z[distanceFromL]
         
         if prev >= length {
-          if let range = compare(start: index, end: r, minLength: length) {
+          if let range = compare(start: i, end: r, minLength: length) {
             return range
           }
         }
       }
       
+      if i == searched.endIndex {
+        return nil
+      }
+      
+      searched.formIndex(after: &i)
       distanceFromL += 1
       distanceToR -= 1
     }
-    
-    return nil
   }
 }
 

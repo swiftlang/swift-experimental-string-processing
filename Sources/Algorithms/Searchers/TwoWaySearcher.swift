@@ -5,8 +5,8 @@ public struct TwoWaySearcher<Searched: BidirectionalCollection> where Searched.E
   let period: Int
   let periodIsExact: Bool
   
-  init(pattern: [Searched.Element]) {
-    assert(!pattern.isEmpty)
+  init?(pattern: [Searched.Element]) {
+    guard !pattern.isEmpty else { return nil }
     
     let (criticalIndex, periodOfSecondPart) = pattern._criticalFactorization(<)
     let periodIsExact = pattern[criticalIndex...]

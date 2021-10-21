@@ -1,25 +1,52 @@
+import MatchingEngine
+
+public struct DefaultState<Searched: Collection> {
+  enum _State {
+    case index(Searched.Index)
+    case done
+  }
+  
+  let state: _State
+}
+
 public protocol CollectionSearcher {
   associatedtype Searched: Collection
-  associatedtype State = Searched.Index
+  
+  // Note: Removing the default value causes a lot of associated type inference breakage
+  associatedtype State = DefaultState<Searched>
   
   func state(startingAt index: Searched.Index, in searched: Searched) -> State
   func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>?
 }
 
 public protocol StatelessCollectionSearcher: CollectionSearcher
-  where State == Searched.Index
+  where State == DefaultState<Searched>
 {
   func search(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>?
 }
 
 extension StatelessCollectionSearcher {
   public func state(startingAt index: Searched.Index, in searched: Searched) -> State {
-    index
+    DefaultState(state: .index(index))
   }
   
   public func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {
-    let range = search(searched, from: state)
-    state = range?.upperBound ?? searched.endIndex
+    guard
+      case .index(let index) = state.state,
+      let range = search(searched, from: index)
+    else { return nil }
+    
+    
+    if range.isEmpty {
+      if range.upperBound == searched.endIndex {
+        state = State(state: .done)
+      } else {
+        state = State(state: .index(searched.index(after: range.upperBound)))
+      }
+    } else {
+      state = State(state: .index(range.upperBound))
+    }
+    
     return range
   }
 }
@@ -35,19 +62,33 @@ public protocol BackwardCollectionSearcher {
 }
 
 public protocol StatelessBackwardCollectionSearcher: BackwardCollectionSearcher
-  where State == Searched.Index
+  where State == DefaultState<Searched>
 {
   func searchBack(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>?
 }
 
 extension StatelessBackwardCollectionSearcher {
   public func backwardState(startingAt index: Searched.Index, in searched: Searched) -> State {
-    index
+    DefaultState(state: .index(index))
   }
   
   public func searchBack(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {
-    let range = searchBack(searched, from: state)
-    state = range?.lowerBound ?? searched.startIndex
+    guard
+      case .index(let index) = state.state,
+      let range = searchBack(searched, from: index)
+    else { return nil }
+    
+    
+    if range.isEmpty {
+      if range.lowerBound == searched.startIndex {
+        state = State(state: .done)
+      } else {
+        state = State(state: .index(searched.index(before: range.lowerBound)))
+      }
+    } else {
+      state = State(state: .index(range.lowerBound))
+    }
+    
     return range
   }
 }

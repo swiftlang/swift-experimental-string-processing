@@ -1,26 +1,26 @@
 extension Collection {
-  public func ranges<S: CollectionSearcher>(_ searcher: S) -> RangesSequence<Self, S> {
-    RangesSequence(base: self, searcher: searcher)
+  public func ranges<S: CollectionSearcher>(_ searcher: S) -> RangesCollection<Self, S> {
+    RangesCollection(base: self, searcher: searcher)
   }
 }
 
 extension Collection where Element: Equatable {
   public func ranges<S: Sequence>(
     of other: S
-  ) -> RangesSequence<Self, ZSearcher<Self>> where S.Element == Element {
-    ranges(ZSearcher(pattern: Array(other), by: ==))
+  ) -> RangesCollection<Self, ZSearcher<Self>> where S.Element == Element {
+    ranges(ZSearcher<Self>(pattern: Array(other), by: ==))
   }
 }
 
 extension BidirectionalCollection where Element: Comparable {
   public func ranges<S: Sequence>(
     of other: S
-  ) -> RangesSequence<Self, TwoWaySearcher<Self>> where S.Element == Element {
-    ranges(TwoWaySearcher(pattern: Array(other)))
+  ) -> RangesCollection<Self, PatternOrEmpty<TwoWaySearcher<Self>>> where S.Element == Element {
+    ranges(PatternOrEmpty(searcher: TwoWaySearcher<Self>(pattern: Array(other))))
   }
 }
 
-public struct RangesSequence<Base, Searcher: CollectionSearcher>
+public struct RangesCollection<Base, Searcher: CollectionSearcher>
   where Searcher.Searched == Base
 {
   let base: Base
@@ -33,7 +33,7 @@ public struct RangesSequence<Base, Searcher: CollectionSearcher>
     
     let startIndex = base.startIndex
     var state = searcher.state(startingAt: startIndex, in: base)
-    self.startIndex = Index(range: startIndex..<startIndex, state: state)
+    self.startIndex = Index(range: nil, state: state)
     
     if let range = searcher.search(base, &state) {
       self.startIndex = Index(range: range, state: state)
@@ -43,7 +43,7 @@ public struct RangesSequence<Base, Searcher: CollectionSearcher>
   }
 }
 
-extension RangesSequence: Sequence {
+extension RangesCollection: Sequence {
   public struct Iterator: IteratorProtocol {
     let base: Base
     var searcher: Searcher
@@ -66,20 +66,21 @@ extension RangesSequence: Sequence {
   }
 }
 
-extension RangesSequence: Collection {
+extension RangesCollection: Collection {
   public struct Index {
-    var range: Range<Searcher.Searched.Index>
+    var range: Range<Searcher.Searched.Index>?
     var state: Searcher.State
   }
   
   public var endIndex: Index {
     Index(
-      range: base.endIndex..<base.endIndex,
+      range: nil,
       state: searcher.state(startingAt: base.endIndex, in: base))
   }
   
   public func formIndex(after index: inout Index) {
-    index.range = searcher.search(base, &index.state) ?? base.endIndex..<base.endIndex
+    guard index != endIndex else { fatalError("Cannot advance past endIndex") }
+    index.range = searcher.search(base, &index.state)
   }
   
   public func index(after index: Index) -> Index {
@@ -89,18 +90,32 @@ extension RangesSequence: Collection {
   }
   
   public subscript(index: Index) -> Range<Base.Index> {
-    precondition(index != endIndex)
-    return index.range
+    guard let range = index.range else { fatalError("Cannot subscript using endIndex") }
+    return range
   }
 }
  
-extension RangesSequence.Index: Comparable {
+extension RangesCollection.Index: Comparable {
   public static func == (lhs: Self, rhs: Self) -> Bool {
-    lhs.range.lowerBound == rhs.range.lowerBound
+    switch (lhs.range, rhs.range) {
+    case (nil, nil):
+      return true
+    case (nil, _?), (_?, nil):
+      return false
+    case (let lhs?, let rhs?):
+      return lhs.lowerBound == rhs.lowerBound
+    }
   }
   
   public static func < (lhs: Self, rhs: Self) -> Bool {
-    lhs.range.lowerBound < rhs.range.lowerBound
+    switch (lhs.range, rhs.range) {
+    case (nil, _):
+      return false
+    case (_, nil):
+      return true
+    case (let lhs?, let rhs?):
+      return lhs.lowerBound < rhs.lowerBound
+    }
   }
 }
 

@@ -1,4 +1,5 @@
 import Regex
+import AppKit
 
 public struct RegexConsumer: CollectionConsumer {
   // NOTE: existential
@@ -37,15 +38,16 @@ extension RegexConsumer: StatelessCollectionSearcher {
     // TODO: This definition should be available to any
     // consumer conformer that wants it.
     // TODO: What about empty consumes?
-    var (start, end) = (index, searched.endIndex)
-    while start != end {
+    var start = index
+    while true {
       if let result = consume(searched, from: start) {
         return start ..< result
       }
+      if start == searched.endIndex {
+        return nil
+      }
       searched.formIndex(after: &start)
     }
-
-    return nil
   }
 
 }

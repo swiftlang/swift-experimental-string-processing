@@ -7,8 +7,28 @@ extension Collection {
   }
 }
 
+extension Collection where Element: Equatable {
+  public func split<S: Sequence>(
+    separator: S
+  ) -> SplitCollection<Self, PatternOrEmpty<ZSearcher<Self>>> where S.Element == Element {
+    let pattern: [Element] = Array(separator)
+    let searcher = pattern.isEmpty ? nil : ZSearcher<Self>(pattern: pattern, by: ==)
+    return split(PatternOrEmpty(searcher: searcher))
+  }
+}
+
+extension BidirectionalCollection where Element: Comparable {
+  public func split<S: Sequence>(
+    separator: S
+  ) -> SplitCollection<Self, PatternOrEmpty<TwoWaySearcher<Self>>> where S.Element == Element {
+    let pattern: [Element] = Array(separator)
+    let searcher = PatternOrEmpty(searcher: TwoWaySearcher<Self>(pattern: pattern))
+    return split(searcher)
+  }
+}
+
 public struct SplitCollection<Base, Searcher: CollectionSearcher> where Searcher.Searched == Base {
-  let ranges: RangesSequence<Base, Searcher>
+  let ranges: RangesCollection<Base, Searcher>
   
   init(base: Base, searcher: Searcher) {
     self.ranges = base.ranges(searcher)
@@ -18,7 +38,7 @@ public struct SplitCollection<Base, Searcher: CollectionSearcher> where Searcher
 extension SplitCollection: Collection {
   public struct Index {
     var start: Base.Index
-    var base: RangesSequence<Base, Searcher>.Index
+    var base: RangesCollection<Base, Searcher>.Index
     var isEndIndex: Bool
   }
   
@@ -34,12 +54,12 @@ extension SplitCollection: Collection {
   public func formIndex(after index: inout Index) {
     guard !index.isEndIndex else { fatalError("Cannot advance past endIndex") }
     
-    if index.base == ranges.endIndex {
-      index.isEndIndex = true
-    } else {
-      let newStart = index.base.range.upperBound
+    if let range = index.base.range {
+      let newStart = range.upperBound
       ranges.formIndex(after: &index.base)
       index.start = newStart
+    } else {
+      index.isEndIndex = true
     }
   }
   
@@ -51,7 +71,8 @@ extension SplitCollection: Collection {
   
   public subscript(index: Index) -> Base.SubSequence {
     guard !index.isEndIndex else { fatalError("Cannot subscript using endIndex") }
-    return ranges.base[index.start..<index.base.range.lowerBound]
+    let end = index.base.range?.lowerBound ?? ranges.base.endIndex
+    return ranges.base[index.start..<end]
   }
 }
 

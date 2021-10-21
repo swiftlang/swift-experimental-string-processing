@@ -24,7 +24,7 @@ extension RangeReplaceableCollection {
   }
   
   @inlinable
-  public func replacingOccurrences<Searcher: CollectionSearcher, Replacement: Collection>(
+  public func replacing<Searcher: CollectionSearcher, Replacement: Collection>(
     _ searcher: Searcher,
     with replacement: Replacement,
     maxReplacements: Int = .max
@@ -44,7 +44,7 @@ extension RangeReplaceableCollection {
     with replacement: Replacement,
     maxReplacements: Int = .max
   ) where Searcher.Searched == SubSequence, Replacement.Element == Element {
-    self = replacingOccurrences(
+    self = replacing(
       searcher,
       with: replacement,
       maxReplacements: maxReplacements)

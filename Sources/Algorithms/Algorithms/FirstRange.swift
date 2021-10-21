@@ -22,7 +22,7 @@ extension Collection where Element: Equatable {
 
 extension BidirectionalCollection where Element: Comparable {
   public func firstRange<S: Sequence>(of other: S) -> Range<Index>? where S.Element == Element {
-    let searcher = TwoWaySearcher<Self>(pattern: Array(other))
+    let searcher = PatternOrEmpty(searcher: TwoWaySearcher<Self>(pattern: Array(other)))
     var state = searcher.state(startingAt: startIndex, in: self)
     return searcher.search(self, &state)
   }

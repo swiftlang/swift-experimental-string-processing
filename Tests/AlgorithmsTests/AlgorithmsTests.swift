@@ -1,4 +1,4 @@
-import Algorithms
+@testable import Algorithms
 import XCTest
 import Util
 
@@ -44,6 +44,36 @@ class RegexConsumerTests: XCTestCase {
 //    XCTAssertEqual("x", "axb".trimming(r))
     // Bug: XCTAssertEqual("x", "axbb".trimming(r))
 
+  }
+  
+  func testSplit() {
+    let s = "abcd"
+    for range in s.ranges(of: "") {
+      print(s.split(around: range))
+    }
+    print(Array<Substring>("abcd".split(separator: "")))
+  }
+  
+  func testZ() {
+    let s = "abcd"
+    let searcher = ZSearcher<String>(pattern: [], by: ==)
+    print(searcher.search(s, from: s.endIndex) as Any)
+    print(s.split(searcher).map { $0 })
+  }
+  
+  func test() {
+    let regex = RegexConsumer(regex: "a*")
+    let s = "aabbccaabbcc"
+    for range in s.ranges(regex) {
+      print(s.split(around: range))
+    }
+  }
+  
+  func testReplace() {
+    let regex = RegexConsumer(regex: "a*")
+    var string = "aabbccaabbcc"
+    string.replace(regex, with: "X")
+    print(string)
   }
 
 }
