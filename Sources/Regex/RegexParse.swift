@@ -16,8 +16,8 @@ extension String: Error {}
 ///     Concatenation -> Quantification Quantification*
 ///     Quantification -> (Group | Atom) <token: qualifier>?
 ///     Atom -> <token: .character> | <any> | ... character classes ...
-///     Group -> '(' Capture? RE ')'
-///     Capture -> '?'
+///     CaptureGroup -> '(' RE ')'
+///     Group -> '(' '?' ':' RE ')'
 ///
 public enum AST: Hashable {
   indirect case alternation([AST]) // alternation(AST, AST?)
@@ -116,10 +116,9 @@ extension Parser {
     switch lexer.peek() {
     case .leftParen?:
       lexer.eat()
-      let isCapturing: Bool
+      var isCapturing = true
       if lexer.eat(.question) {
-        isCapturing = true
-      } else {
+        try lexer.eat(expecting: .colon)
         isCapturing = false
       }
       let child = try parse()
