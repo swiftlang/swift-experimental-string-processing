@@ -10,7 +10,9 @@ This is a component of a larger string processing picture. We would like to star
 
 ## Motivation
 
-Regular expressions are a ubiquitous, familiar, and concise syntax for matching and extracting text that satisfies a particular pattern. Syntactically, a regex literal in Swift should:
+Regular expressions are a ubiquitous, familiar, and concise syntax for matching and extracting text that satisfies a particular pattern. Their terse syntax makes them extremely useful for writing simple patterns as arguments to a function or cases of a `switch`. As such, we feel they can nicely complement the more versatile [`Pattern` result builder DSL][pattern-builder], which is well suited for more complex patterns.
+
+Syntactically, a regex literal in Swift should:
 
 - Support a syntax familiar to developers who have learned to use regular expressions in other tools and languages
 - Allow reuse of many regular expressions not specifically designed for Swift (e.g. from Stack Overflow or popular programming books)
@@ -21,13 +23,13 @@ Further motivation, examples, and discussion can be found in the [overview threa
 
 ## Proposed Solution
 
-We propose the introduction of a regular expression literal that supports [the PCRE syntax][PCRE], in addition to new standard library protocols `ExpressibleByRegexLiteral` and `RegexLiteralProtocol` that allow for the customization of how the regex literal is interpreted (similar to [string interpolation][stringinterpolation]). The compiler will parse the PCRE syntax within a regex literal, and synthesize calls to corresponding builder methods. Types conforming to `ExpressibleByRegexLiteral` will be able to provide a builder type that opts into supporting various regex constructs through the use of normal function declarations and `@available`.
+We propose the introduction of a regular expression literal that supports [the PCRE syntax][PCRE], in addition to new standard library protocols `ExpressibleByRegexLiteral` and `RegexLiteralProtocol` that allow for the customization of how the regex literal is interpreted (similar to [string interpolation][stringinterpolation]). The compiler will parse (potentially a superset of) PCRE syntax within a regex literal, and synthesize calls to corresponding builder methods. Types conforming to `ExpressibleByRegexLiteral` will be able to provide a builder type that opts into supporting various regex constructs through the use of normal function declarations and `@available`.
 
 _Note: This pitch concerns language syntax and compiler changes alone, it isn't stating what features the stdlib should support in the initial version or in future versions._
 
 ## Detailed Design
 
-A regular expression literal will be introduced using `/` delimiters, within which the compiler will parse [PCRE regex syntax][PCRE]:
+A regular expression literal will be introduced using `/` delimiters, within which the compiler will parse (potentially a superset of) [PCRE regex syntax][PCRE]:
 
 ```swift
 // Matches "<identifier> = <hexadecimal value>", extracting the identifier and hex number
@@ -38,7 +40,7 @@ The above regex literal will be inferred to be the default regex literal type `R
 
 _`Regex` here is a stand-in type, further details about the type such as if or how this will scale to strongly typed captures is still under investigation._
 
-_How best to diagnose grapheme-semantic concerns is still under investigation and probably best discussed in their corresponding threads. For example, `Range<Character>` is not [countable][countable] and [ordering is not linguistically meaningful][ordering], so validating character class ranges may involve restricting to a semantically-meaningful range (e.g. ASCII). This is best discussed in the (upcoming) character class pitch/thread._
+_How best to diagnose grapheme-semantic concerns is still under investigation and probably best discussed in their corresponding threads. For example, `Range<Character>` is not [countable][countable] and [ordering is not linguistically meaningful][ordering], so validating character class ranges may involve restricting to a semantically-meaningful range (e.g. ASCII). This is best discussed in the [character classes pitch thread][char-classes-pitch]._
 
 The compiler will then transform the literal into a set of builder calls that may be customized by adopting the `ExpressibleByRegexLiteral` protocol. Below is a straw-person transformation of this example: 
 
@@ -101,17 +103,17 @@ This approach of lookup combined with availability allows the stdlib to support 
 
 ### Impact of using `/` as the delimiter
 
-#### On comment syntax
+The `/` character is already used in a couple of different places in the language, and users may have defined their own custom operators that use the character. In some places, there will be a parsing ambiguity with the use of `/` as a delimiter. In other places, there will be a minimal impact.
 
-Single line comments use the syntax `//`, which would conflict with the spelling for an empty regex literal. As such, an empty regex literal would be forbidden.
+#### Cases with little or no impact
 
-While not conflicting with the syntax proposed in this pitch, it's also worth noting that the `//` comment syntax (in particular documentation comments that use `///`) would likely preclude the ability to use `///` as a delimiter if we ever wanted to support multi-line regex literals. It's possible though that future multi-line support could be provided through raw regex literals. Alternatively, it could be inferred from the regex options provided. For example, a regex that uses the multi-line option `/(?m)/` could be allowed to span multiple lines.
+Single line comments use the syntax `//`, which would be the spelling for an empty regex literal. As such, it will not be possible to write an empty regex literal. However such a regex literal would have little utility.
 
 Multi-line comments use the `/*` delimiter. As such, a regex literal starting with `*` wouldn't be parsed. This however isn't a major issue as an unqualified `*` is already invalid regex syntax. An escaped `/\*/` regex literal wouldn't be impacted.
 
-#### On custom infix operators using the `/` character
+While not conflicting with the syntax proposed in this pitch, it's also worth noting that the `//` comment syntax (in particular documentation comments that use `///`) would likely preclude the ability to use `///` as a delimiter if we ever wanted to support multi-line regex literals. It's possible though that future multi-line support could be provided through raw regex literals. Alternatively, it could be inferred from the regex options provided. For example, a regex that uses the multi-line option `/(?m)/` could be allowed to span multiple lines.
 
-Choosing `/` as the delimiter means there will a conflict for infix operators containing `/` in cases where whitespace isn't used, for example:
+There will a conflict for infix operators containing `/` in cases where whitespace isn't used, for example:
 
 ```swift
 x+/y/+z
@@ -119,11 +121,14 @@ x+/y/+z
 
 Should the operators be parsed as `+/` and `/+` respectively, or should this be parsed as `x + /y/ + z`?
 
-In this case, things can be disambiguated by the user inserting additional whitespace. We therefore could continue to parse `x+/y/+z` as a binary operator chain, and require additional whitespace to interpret `/y/` as a regex literal.
+In this case, things can be readily disambiguated by the user inserting additional whitespace. We therefore can continue to parse `x+/y/+z` as a binary operator chain, and require additional whitespace to interpret `/y/` as a regex literal.
 
-#### On custom prefix and postfix operators using the `/` character
+#### Cases that require language changes
 
-There will also be parsing ambiguity with any user-defined prefix and postfix operators containing the `/` character. For example, code such as the following poses an issue:
+There is a more significant conflict with prefix and postfix operators that use the `/` character, that would likely require the `/` regex delimiters to be introduced under a new language version mode, along with a deprecation of prefix and postfix `/` operators. Some prefix and postfix operators containing `/` may be disambiguated with parenthesis, but we may have to figure out a way to refer to the operator explicitly or deprecate prefix and postfix (but not infix) operators containing `/`.
+
+<details><summary>Rationale</summary>
+Code such as the following poses an issue:
 
 ```swift
 let x = /0; let y = 1/
@@ -138,11 +143,12 @@ let x = </<0; let y = 1</<
 ```
 Is this a regex literal `/<0; let y = 1</` with a prefix and postfix `<` operator applied, or two `let` bindings each using prefix and postfix `</<` operators?
 
-There are no easy ways of resolving these ambiguities, therefore a regex literal parsed with `/` delimiters will likely need to be introduced under a new language version mode, along with a deprecation of prefix and postfix `/` operators. Some prefix and postfix operators containing `/` may be disambiguated with parenthesis, but we may have to figure out a way to refer to the operator explicitly or deprecate prefix and postfix (but not infix) operators containing `/`.
+There are no easy ways of resolving these ambiguities, therefore the above mentioned language changes would be required.
+</details>
 
-#### On the existing division operator `/`
+#### Cases that require more investigation
 
-The existing division operator `/` has less concerns than the above cases, however it raises some cases that currently parse as a sequence of binary operations, whereas the user might be expecting a regex literal.
+The existing division operator `/` raises some cases that currently parse as a sequence of binary operations, whereas the user might be expecting a regex literal.
 
 For example:
 
@@ -169,7 +175,7 @@ SomeBuilder {
 
 Today this is parsed as `SomeBuilder { x / y / z }`, however it's likely the user was expecting this to become a result builder with 3 elements, the second of which being a regex literal.
 
-There is currently no source compatibility impact as both cases will continue to parse as binary operations. The user may insert a `;` on the prior line to get the desired regex literal parsing. However this may not be sufficient we may need to change parsing rules (under a version check) to favor parsing regex literals in these cases. We'd like to discuss this further with the community.
+There is currently no source compatibility impact as both cases will continue to parse as binary operations. The user may insert a `;` on the prior line to get the desired regex literal parsing. However this may not be sufficient, and we may need to change parsing rules (under a version check) to favor parsing regex literals in these cases. We'd like to discuss this further with the community.
 
 It's worth noting that this is similar to an ambiguity that already exists today with trailing closures, for example:
 
@@ -192,8 +198,9 @@ SomeBuilder {
 }
 ```
 
-`.member` will be parsed as a member access on `SomeType()` rather than as a separate element that may have its base type inferred by the parameter of a `buildExpression` method on the result builder.
+`.member` will be parsed as a member access on `SomeType()` rather than as a separate element that may have its base type inferred by the parameter of a `buildExpression` method on the result builder. However it's likely the member access behavior is what the user is expecting in most cases, especially if chained with multiple member accesses.
 
+These examples demonstrate that this ambiguity is a more general issue that, depending on feasibility, could potentially be addressed by a more general solution. We do however feel that the result builder case in particular is important for regex literals and, if not addressed in some way, may necessitate the choice of another delimiter.
 
 ## Future Directions
 
@@ -248,6 +255,11 @@ func parseField(_ field: String) -> ParsedField {
 }
 ```
 
+### Regex interpolation
+
+We could support the ability to perform interpolation in regex literals, similar to string literals. Types conforming to `RegexLiteralProtocol` could provide builder methods to interpolate other regex values, or even other strings. However this would likely not be able to use the same `\(...)` syntax as string literals, as `\(` is already valid regex syntax for a literal `(` character. As such, we would likely need a new syntax to express this. 
+
+
 ### Other semantic details
 
 Further details about the semantics of regex literals, such as what definition we give to character classes, the initial supported feature set, and how to switch between grapheme-semantic and scalar-semantic usage, is still under investigation and outside the scope of this discussion.
@@ -256,15 +268,46 @@ Further details about the semantics of regex literals, such as what definition w
 
 ### Using a different delimiter to `/`
 
-As explored above, using `/` as the delimiter has the potential to conflict with existing operators using that character, and may necessitate:
+One of the main goals of this pitch is to introduce a familiar and ubiquitous syntax for regular expression literals, which has been the motivation behind choices such as parsing a superset of the PCRE regex syntax. Given the fact that `/` is an existing term of art for regular expressions, we feel it should be the preferred delimiter syntax. However, this is provided that it's not too late to make the language changes required, and that such changes are an acceptable cost for the syntax.
 
-- Changing of parsing rules around chained `/` over multiple lines
+As explored above, the `/` delimiter has the potential to conflict with existing operators using that character, and may therefore necessitate:
+
 - Deprecating prefix and postfix operators containing the `/` character
-- Requiring additional whitespace to disambiguate from infix operators containing `/`
 - Requiring a new language version mode to parse the literal with `/` delimiters
+- Requiring users to add additional whitespace to disambiguate from infix operators containing `/`
+- Changing of parsing rules around chained `/` over multiple lines
 
-However one of the main goals of this pitch is to introduce a familiar syntax for regular expression literals, which has been the motivation behind choices such as using the PCRE regex syntax. Given the fact that `/` is an existing term of art for regular expressions, we feel that if the aforementioned parsing issues can be solved in a satisfactory manner, we should prefer it as the delimiter.
+It may also require the escaping of the `/` character within the literal, unless a raw literal syntax is also available.
 
+To help better evaluate the tradeoffs being made, we can take a look at some alternative delimiter suggestions that would not have the above impact.
+
+#### Using a `#/` delimiter
+
+We could use `#/.../#` delimiters, similar to the syntax for raw strings. This may subsume the need for raw regular expression literals, though like string literals we could additionally support adding an arbitrary number of balanced `#` characters.
+
+This syntax would retain most of the familiarity of the `/` delimiter, only requiring surrounding `#`s. However it is somewhat heavier than `/regex/`, with the `#` characters standing out quite a bit.
+
+#### Using `#regex(...)`
+
+We could opt for for a more explicitly spelled out literal syntax such as `#regex(...)`. This is an even more heavyweight option, similar to `#selector(...)`. As such, it may be considered syntactically noisy as e.g a function argument `str.match(#regex([abc]+))` vs `str.match(/[abc]+/)`.
+
+Such a syntax would require the containing regex to correctly balance capture group parentheses, otherwise the rest of the line might be incorrectly considered a regex. This could place additional cognitive burden on the user, and may lead to an awkward typing experience. For example, if the user is editing a previously written regex, the syntax highlighting for the rest of the line may change, and unhelpful spurious errors may be reported. With a different delimiter, the compiler would be able to detect and better diagnose unbalanced parentheses in the regex.
+
+It should also be noted that this would introduce a syntactic inconsistency where the argument of a `#literal(...)` is no longer necessarily valid Swift syntax, despite being written in the form of an argument.
+
+We could choose a different internal delimiter such as ```#regex`...` ``` or `#regex{...}`, however those would be inconsistent with the existing `#literal(...)` syntax and would overload the existing meanings for the ``` `` ``` and `{}` delimiters.
+
+#### Using `#(...)`
+
+We could reduce the visual weight of `#regex(...)` by only requiring `#(...)`. This would retain the same advantages e.g not requiring to escape `/`. However it would also still retain the same issues, such as still looking potentially visually noisy as an argument, and having suboptimal behavior for parenthesis balancing.
+
+#### Using single quotes `'...'`
+
+This would have similar advantages to the prior alternatives, while being much visually lighter. It would also allow for `'''` to be used as the delimiter for multi-line regex literals if decided to support them. However given how close it is to string literal syntax, it may not be entirely clear to users that `'...'` denotes a regular expression as opposed to some different form of string literal (e.g some form of character literal, or a string literal with different escaping rules).
+
+#### Using modified string literal syntax
+
+We could adopt the same syntax as a string literal, with a modifier such as `r"..."` used to denote a regex. This would be reasonably visually lightweight, and would have the advantage of the delimiter `r"""` being available for multi-line regex literals if we ever supported them.
 
 ### Reusing string literal syntax
 
@@ -282,6 +325,13 @@ However we decided against this because:
 - Regex escape sequences aren't currently compatible with string literal escape sequence rules, e.g `\w` is currently illegal in a string literal
 - It wouldn't be compatible with other string literal features such as interpolations
 
+### Using a custom regex syntax
+
+Rather than using PCRE syntax, we could adopt a custom syntax to make the regular expression easier to read by e.g making the whitespace non-semantic, spelling out meta-characters such as `\w` more explicitly, etc. 
+
+While the PCRE syntax definitely has its shortcomings, we feel that this is outweighed by the ubiquity and familiarity of the syntax for simple regular expressions. Introducing a custom syntax would help readability for more complex regular expressions, however in those cases we feel that users [would be better served by the `Pattern` result builder DSL][regex-to-pattern].
+
+
 [PCRE]: http://pcre.org/current/doc/html/pcre2syntax.html
 [overview]: https://forums.swift.org/t/declarative-string-processing-overview/52459
 [variadics]: https://forums.swift.org/t/pitching-the-start-of-variadic-generics/51467
@@ -291,3 +341,6 @@ However we decided against this because:
 [perlquotes]: https://perldoc.perl.org/perlop#Quote-and-Quote-like-Operators
 [rawstrings]: https://github.com/apple/swift-evolution/blob/main/proposals/0200-raw-string-escaping.md
 [rakuregex]: https://docs.raku.org/language/regexes
+[regex-to-pattern]: https://forums.swift.org/t/declarative-string-processing-overview/52459#from-regex-to-pattern-8
+[char-classes-pitch]: https://forums.swift.org/t/pitch-character-classes-for-string-processing/52920
+[pattern-builder]: https://forums.swift.org/t/declarative-string-processing-overview/52459#pattern-builder-9
