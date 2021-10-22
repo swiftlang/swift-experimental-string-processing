@@ -29,6 +29,7 @@ public enum Token {
     case lparen = "("
     case rparen = ")"
     case dot = "."
+    case colon = ":"
   }
 
   case meta(MetaCharacter)
@@ -43,6 +44,7 @@ public enum Token {
   public static var star: Token { .meta(.star) }
   public static var plus: Token { .meta(.plus) }
   public static var dot: Token { .meta(.dot) }
+  public static var colon: Token { .meta(.colon) }
 
   // Note: We do each character individually, as post-fix modifiers bind
   // tighter than concatenation. "abc*" is "a" -> "b" -> "c*"

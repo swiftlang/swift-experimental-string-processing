@@ -176,7 +176,7 @@ class RegexTests: XCTestCase {
     performTest("a(b|c)?d", "a",
                 .leftParen, "b", .pipe, "c", .rightParen, .question, "d")
     performTest("a|b?c", "a", .pipe, "b", .question, "c")
-    performTest("(?a|b)c", .leftParen, .question, "a", .pipe, "b", .rightParen, "c")
+    performTest("(?:a|b)c", .leftParen, .question, .colon, "a", .pipe, "b", .rightParen, "c")
     performTest("a\\u0065b\\u{65}c\\x65d",
                 "a", .unicodeScalar("e"),
                 "b", .unicodeScalar("e"),
@@ -193,7 +193,7 @@ class RegexTests: XCTestCase {
         Examples:
             "abc" -> .concat(｢abc｣)
             "abc\\+d*" -> .concat(｢abc+｣ .many(｢d｣))
-            "abc(de)+fghi*k|j" ->
+            "abc(?:de)+fghi*k|j" ->
                 .alt(.concat(｢abc｣, .oneOrMore(.group(.concat(｢de｣))),
                              ｢fgh｣ .many(｢i｣), ｢k｣),
                      ｢j｣)
@@ -216,16 +216,16 @@ class RegexTests: XCTestCase {
 
     performTest("abc", concat("a", "b", "c"))
     performTest("abc\\+d*", concat("a", "b", "c", "+", .many("d")))
-    performTest("abc(de)+fghi*k|j",
+    performTest("abc(?:de)+fghi*k|j",
                 alt(concat("a", "b", "c",
                            .oneOrMore(.group(concat("d", "e"))),
                            "f", "g", "h", .many("i"), "k"),
                     "j"))
-    performTest("a(b|c)?d", concat("a", .zeroOrOne(.group(alt("b", "c"))),
+    performTest("a(?:b|c)?d", concat("a", .zeroOrOne(.group(alt("b", "c"))),
                                    "d"))
     performTest("a|b?c", alt("a", concat(.zeroOrOne("b"), "c")))
-    performTest("(?a|b)c", concat(.capturingGroup(alt("a", "b")), "c"))
-    performTest("(?.)*(?.*)", concat(.many(.capturingGroup(.characterClass(.any))), .capturingGroup(.many(.characterClass(.any)))))
+    performTest("(a|b)c", concat(.capturingGroup(alt("a", "b")), "c"))
+    performTest("(.)*(.*)", concat(.many(.capturingGroup(.characterClass(.any))), .capturingGroup(.many(.characterClass(.any)))))
     performTest("abc\\d",concat("a", "b", "c", .characterClass(.digit)))
     performTest("a\\u0065b\\u{00000065}c\\x65d\\U00000065",
                 concat("a", .unicodeScalar("e"),
@@ -287,7 +287,7 @@ class RegexTests: XCTestCase {
                        label(1),
                        labels: [4, 8]))
 
-    performTest("abc(de)+fghi*k|j",
+    performTest("abc(?:de)+fghi*k|j",
                 recode(split(disfavoring: 1),
                        .beginGroup,
                        "a", "b", "c",
@@ -309,7 +309,7 @@ class RegexTests: XCTestCase {
                        label(1), "j",
                        label(0),
                        labels: [29, 27, 6, 13, 19, 23]))
-    performTest("a(b|c)?d",
+    performTest("a(?:b|c)?d",
                 recode(.beginGroup,
                        "a",
                        .beginGroup,
@@ -329,7 +329,7 @@ class RegexTests: XCTestCase {
                        .endGroup,
                        labels: [14, 16, 10, 8],
                        splits: [3, 5]))
-    performTest("a(?b|c)?d",
+    performTest("a(b|c)?d",
                 recode(.beginGroup,
                        "a",
                        .beginGroup,
@@ -349,7 +349,7 @@ class RegexTests: XCTestCase {
                        .endGroup,
                        labels: [14, 16, 10, 8],
                        splits: [3, 5]))
-    performTest("a(?b|c)*",
+    performTest("a(b|c)*",
                 recode(.beginGroup,
                        "a",
                        .beginGroup,
@@ -370,7 +370,7 @@ class RegexTests: XCTestCase {
                        .endGroup,
                        labels: [3, 14, 11, 9],
                        splits: [4, 6]))
-    performTest("(?a*)*",
+    performTest("(a*)*",
                 recode(.beginGroup,
                        label(0), split(disfavoring: 1), .beginCapture,
                        label(2), split(disfavoring: 3), "a", goto(label: 2),
@@ -379,7 +379,7 @@ class RegexTests: XCTestCase {
                        .captureArray,
                        .endGroup,
                        labels: [1, 11, 4, 8], splits: [2, 5]))
-    performTest("(.*)*",
+    performTest("(?:.*)*",
                 recode(.beginGroup,
                        label(0), split(disfavoring: 1),
                        .beginGroup,
@@ -432,20 +432,20 @@ class RegexTests: XCTestCase {
 
     // Singly nested capture tests
     performTest(
-      regex: "a(?b)c", input: "abc",
+      regex: "a(b)c", input: "abc",
       expectedCaptureType: Substring.self, expecting: .init(captures: "b", capturesEqual: ==))
     performTest(
-      regex: "a(?.)c", input: "axc",
+      regex: "a(.)c", input: "axc",
       expectedCaptureType: Substring.self, expecting: .init(captures: "x", capturesEqual: ==))
     performTest(
-      regex: "a(?b)c(?d)ef", input: "abcdef",
+      regex: "a(b)c(d)ef", input: "abcdef",
       expectedCaptureType: (Substring, Substring).self,
       expecting: .init(captures: ("b", "d"), capturesEqual: ==))
     performTest(
-      regex: "a(?b*)c(?d+)ef", input: "acddddef",
+      regex: "a(b*)c(d+)ef", input: "acddddef",
       expectedCaptureType: (Substring, Substring).self,
       expecting: .init(captures: ("", "dddd"), capturesEqual: ==))
-    performTest(regex: "a(?b*)c(?d+)ef", input: "abbcdef",
+    performTest(regex: "a(b*)c(d+)ef", input: "abbcdef",
       expectedCaptureType: (Substring, Substring).self,
       expecting: .init(captures: ("bb", "d"), capturesEqual: ==))
     // performTest(regex: "(?a*)*", input: "aaaa",
