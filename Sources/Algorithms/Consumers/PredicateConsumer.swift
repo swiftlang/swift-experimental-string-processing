@@ -1,4 +1,4 @@
-struct PredicateConsumer<Consumed: Collection> {
+struct PredicateConsumer<Consumed: Collection> where Consumed.SubSequence == Consumed {
   let predicate: (Consumed.Element) -> Bool
 }
 
@@ -18,5 +18,3 @@ extension PredicateConsumer: BackwardCollectionConsumer where Consumed: Bidirect
     return predicate(consumed[previous]) ? previous : nil
   }
 }
-
-//extension PredicateConsumer: BidirectionalCollectionConsumer where Consumed: BidirectionalCollection {}

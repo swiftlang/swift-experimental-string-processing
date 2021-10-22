@@ -1,5 +1,5 @@
 public protocol CollectionConsumer {
-  associatedtype Consumed: Collection
+  associatedtype Consumed: Collection where Consumed.SubSequence == Consumed
   func consume(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index?
 }
 

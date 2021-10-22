@@ -1,5 +1,7 @@
 struct SequenceConsumer<Consumed: Collection, Pattern: Collection>
-  where Pattern.Element == Consumed.Element, Consumed.Element: Equatable
+  where Consumed.Element: Equatable,
+        Consumed.SubSequence == Consumed,
+        Pattern.Element == Consumed.Element
 {
   let pattern: Pattern
 }

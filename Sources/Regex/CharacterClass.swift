@@ -39,7 +39,7 @@ public struct CharacterClass: Hashable {
   
   /// Returns the end of the match of this character class in `str`, if
   /// it matches.
-  public func matches(in str: String, at i: String.Index) -> String.Index? {
+  public func matches(in str: Substring, at i: String.Index) -> String.Index? {
     switch matchLevel {
     case .graphemeCluster:
       let c = str[i]

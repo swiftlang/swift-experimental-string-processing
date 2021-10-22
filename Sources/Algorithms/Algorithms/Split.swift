@@ -1,59 +1,32 @@
-extension Collection {
-  public func split<Searcher: CollectionSearcher>(
-    _ searcher: Searcher
-  ) -> SplitCollection<Self, Searcher> where Searcher.Searched == Self {
-    // TODO: `maxSplits`, `omittingEmptySubsequences`
-    SplitCollection(base: self, searcher: searcher)
-  }
-}
-
-extension Collection where Element: Equatable {
-  public func split<S: Sequence>(
-    separator: S
-  ) -> SplitCollection<Self, PatternOrEmpty<ZSearcher<Self>>> where S.Element == Element {
-    let pattern: [Element] = Array(separator)
-    let searcher = pattern.isEmpty ? nil : ZSearcher<Self>(pattern: pattern, by: ==)
-    return split(PatternOrEmpty(searcher: searcher))
-  }
-}
-
-extension BidirectionalCollection where Element: Comparable {
-  public func split<S: Sequence>(
-    separator: S
-  ) -> SplitCollection<Self, PatternOrEmpty<TwoWaySearcher<Self>>> where S.Element == Element {
-    let pattern: [Element] = Array(separator)
-    let searcher = PatternOrEmpty(searcher: TwoWaySearcher<Self>(pattern: pattern))
-    return split(searcher)
-  }
-}
-
-public struct SplitCollection<Base, Searcher: CollectionSearcher> where Searcher.Searched == Base {
-  let ranges: RangesCollection<Base, Searcher>
+public struct SplitCollection<Searcher: CollectionSearcher> {
+  public typealias Base = Searcher.Searched
   
+  let ranges: RangesCollection<Searcher>
+
   init(base: Base, searcher: Searcher) {
-    self.ranges = base.ranges(searcher)
+    self.ranges = base.ranges(of: searcher)
   }
 }
 
 extension SplitCollection: Collection {
   public struct Index {
     var start: Base.Index
-    var base: RangesCollection<Base, Searcher>.Index
+    var base: RangesCollection<Searcher>.Index
     var isEndIndex: Bool
   }
-  
+
   public var startIndex: Index {
     let base = ranges.startIndex
-    return Index(start: ranges.base.startIndex, base: base, isEndIndex: base == ranges.endIndex)
+    return Index(start: ranges.base.startIndex, base: base, isEndIndex: false)
   }
-  
+
   public var endIndex: Index {
     Index(start: ranges.base.endIndex, base: ranges.endIndex, isEndIndex: true)
   }
-  
+
   public func formIndex(after index: inout Index) {
     guard !index.isEndIndex else { fatalError("Cannot advance past endIndex") }
-    
+
     if let range = index.base.range {
       let newStart = range.upperBound
       ranges.formIndex(after: &index.base)
@@ -62,13 +35,13 @@ extension SplitCollection: Collection {
       index.isEndIndex = true
     }
   }
-  
+
   public func index(after index: Index) -> Index {
     var index = index
     formIndex(after: &index)
     return index
   }
-  
+
   public subscript(index: Index) -> Base.SubSequence {
     guard !index.isEndIndex else { fatalError("Cannot subscript using endIndex") }
     let end = index.base.range?.lowerBound ?? ranges.base.endIndex
@@ -85,7 +58,7 @@ extension SplitCollection.Index: Comparable {
       return lhs == rhs
     }
   }
-  
+
   public static func < (lhs: Self, rhs: Self) -> Bool {
     switch (lhs.isEndIndex, rhs.isEndIndex) {
     case (true, _):
@@ -95,5 +68,40 @@ extension SplitCollection.Index: Comparable {
     case (false, false):
       return lhs.start < rhs.start
     }
+  }
+}
+
+extension Collection {
+  public func split<Searcher: CollectionSearcher>(
+    separator searcher: Searcher
+  ) -> SplitCollection<Searcher> where Searcher.Searched == SubSequence {
+    // TODO: `maxSplits`, `omittingEmptySubsequences`
+    SplitCollection(base: self[...], searcher: searcher)
+  }
+}
+
+extension Collection where Element: Equatable {
+  public func split<S: Sequence>(
+    separator: S
+  ) -> SplitCollection<PatternOrEmpty<ZSearcher<SubSequence>>> where S.Element == Element {
+    let pattern: [Element] = Array(separator)
+    let searcher = pattern.isEmpty ? nil : ZSearcher<SubSequence>(pattern: pattern, by: ==)
+    return split(separator: PatternOrEmpty(searcher: searcher))
+  }
+}
+
+extension BidirectionalCollection where Element: Comparable {
+  public func split<S: Sequence>(
+    separator: S
+  ) -> SplitCollection<PatternOrEmpty<TwoWaySearcher<SubSequence>>> where S.Element == Element {
+    split(separator: PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(separator))))
+  }
+}
+
+// MARK: Regex
+
+extension Collection where SubSequence == Substring {
+  public func split(separator: Regex) -> SplitCollection<RegexConsumer> {
+    split(separator: RegexConsumer(regex: separator))
   }
 }

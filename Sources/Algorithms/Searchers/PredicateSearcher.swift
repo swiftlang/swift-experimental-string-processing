@@ -1,4 +1,4 @@
-struct PredicateSearcher<Searched: Collection> {
+struct PredicateSearcher<Searched: Collection> where Searched.SubSequence == Searched {
   let predicate: (Searched.Element) -> Bool
 }
 

@@ -64,13 +64,13 @@ public struct Regex<CaptureValue>: RegexProtocol {
 }
 
 extension RegexProtocol {
-  public func match(in input: String) -> RegexMatch<CaptureValue>? {
+  public func match(in input: Substring) -> RegexMatch<CaptureValue>? {
     match(in: input, using: DefaultEngine.self)
   }
 
-  // TODO: Support anything that conforms to `StringProtocol` rather than just `String`.
+  // TODO: Support anything that conforms to `StringProtocol` rather than just `Substring`.
   internal func match(
-    in input: String,
+    in input: Substring,
     using engine: VirtualMachine.Type
   ) -> RegexMatch<CaptureValue>? {
     let vm = engine.init(regex.program.executable)
@@ -84,14 +84,14 @@ extension RegexProtocol {
 
 extension String {
   public func match<R: RegexProtocol>(_ regex: R) -> RegexMatch<R.CaptureValue>? {
-    regex.match(in: self)
+    regex.match(in: self[...])
   }
 
   internal func match<R: RegexProtocol>(
     _ regex: R,
     using engine: VirtualMachine.Type
   ) -> RegexMatch<R.CaptureValue>? {
-    regex.match(in: self, using: engine)
+    regex.match(in: self[...], using: engine)
   }
 
   public func match<R: RegexProtocol>(

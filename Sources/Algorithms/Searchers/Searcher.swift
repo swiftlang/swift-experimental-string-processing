@@ -10,9 +10,9 @@ public struct DefaultState<Searched: Collection> {
 }
 
 public protocol CollectionSearcher {
-  associatedtype Searched: Collection
+  associatedtype Searched: Collection where Searched.SubSequence == Searched
   
-  // Note: Removing the default value causes a lot of associated type inference breakage
+  // NOTE: Removing the default value causes a lot of associated type inference breakage
   associatedtype State = DefaultState<Searched>
   
   func state(startingAt index: Searched.Index, in searched: Searched) -> State
@@ -53,6 +53,7 @@ extension StatelessCollectionSearcher {
 
 // MARK: Searching from the back
 
+// TODO: Inherit from `CollectionConsumer`? `State` might not match
 public protocol BackwardCollectionSearcher {
   associatedtype Searched: BidirectionalCollection
   associatedtype State = Searched.Index
