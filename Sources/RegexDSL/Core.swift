@@ -107,3 +107,12 @@ extension String {
     match(content(), using: engine)
   }
 }
+
+public struct MockRegexLiteral<CaptureValue>: RegexProtocol {
+  public typealias MatchValue = Substring
+  public let regex: Regex<CaptureValue>
+
+  public init(_ string: String, capturing: CaptureValue.Type = CaptureValue.self) throws {
+    regex = Regex(ast: try parse(string))
+  }
+}

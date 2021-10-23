@@ -30,6 +30,9 @@ public enum Token {
     case rparen = ")"
     case dot = "."
     case colon = ":"
+    case lsquare = "["
+    case rsquare = "]"
+    case minus = "-"
   }
 
   case meta(MetaCharacter)
@@ -45,6 +48,9 @@ public enum Token {
   public static var plus: Token { .meta(.plus) }
   public static var dot: Token { .meta(.dot) }
   public static var colon: Token { .meta(.colon) }
+  public static var leftSquareBracket: Token { .meta(.lsquare) }
+  public static var rightSquareBracket: Token { .meta(.rsquare) }
+  public static var minus: Token { .meta(.minus) }
 
   // Note: We do each character individually, as post-fix modifiers bind
   // tighter than concatenation. "abc*" is "a" -> "b" -> "c*"
@@ -171,7 +177,7 @@ extension Lexer {
     return nextToken.unsafelyUnwrapped
   }
 
-  // Eat a token is there is one. Returns whether anything
+  // Eat a token if there is one. Returns whether anything
   // happened
   public mutating func eat(_ tok: Token) -> Bool {
     guard peek() == tok else { return false }
