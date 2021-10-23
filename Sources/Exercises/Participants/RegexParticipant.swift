@@ -73,8 +73,8 @@ private func graphemeBreakPropertyData(
 private func graphemeBreakPropertyDataLiteral(
   forLine line: String
 ) -> GraphemeBreakEntry? {
-  let regex = try! MockRegexLiteral(
-    #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
-    capturing: (Substring, Substring?, Substring).self)
-  return graphemeBreakPropertyData(forLine: line, using: regex)
+  return graphemeBreakPropertyData(
+    forLine: line,
+    using: r(#"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
+             capturing: (Substring, Substring?, Substring).self))
 }

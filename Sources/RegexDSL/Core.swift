@@ -116,3 +116,12 @@ public struct MockRegexLiteral<CaptureValue>: RegexProtocol {
     regex = Regex(ast: try parse(string))
   }
 }
+
+public func r<C>(_ s: String) -> MockRegexLiteral<C> {
+  try! MockRegexLiteral<C>(s)
+}
+public func r<C>(
+  _ s: String, capturing: C.Type = C.self
+) -> MockRegexLiteral<C> {
+  try! MockRegexLiteral(s, capturing: capturing)
+}
