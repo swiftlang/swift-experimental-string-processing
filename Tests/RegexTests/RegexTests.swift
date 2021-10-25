@@ -95,7 +95,7 @@ struct TestExpectation<CaptureValue> {
 
 func performTest<CaptureValue>(
   regex: String,
-  input: String,
+  input: Substring,
   offsets: Offsets? = nil,
   mode: MatchMode = .wholeString,
   expectedCaptureType: CaptureValue.Type,
@@ -394,7 +394,7 @@ class RegexTests: XCTestCase {
   }
 
   func testVMs() {
-    let tests: Array<(String, pass: [String], fail: [String])> = [
+    let tests: Array<(String, pass: [Substring], fail: [Substring])> = [
       ("a|b", ["a", "b"], ["ab", "c"]),
       ("a.b", ["abb", "aab", "acb"], ["ab", "c", "abc"]),
       ("a|b?c", ["a", "c", "bc"], ["ab", "ac"]),
@@ -422,7 +422,7 @@ class RegexTests: XCTestCase {
     for (regex, passes, fails) in tests {
       for pass in passes {
         performTest(
-          regex: regex, input: pass, expectedCaptureType: Void.self, expecting: .init(pass))
+          regex: regex, input: pass, expectedCaptureType: Void.self, expecting: .init(String(pass)))
       }
       for fail in fails {
         performTest(
@@ -454,7 +454,7 @@ class RegexTests: XCTestCase {
   }
   
   func testMatchLevel() {
-    let tests: Array<(String, chars: [String], unicodes: [String])> = [
+    let tests: Array<(String, chars: [Substring], unicodes: [Substring])> = [
       ("..", ["e\u{301}e\u{301}"], ["e\u{301}"]),
     ]
 
@@ -478,7 +478,7 @@ class RegexTests: XCTestCase {
   }
 
   func testPartialMatches() {
-    let tests: Array<(String, pass: [(String, matched: String)], fail: [String])> = [
+    let tests: Array<(String, pass: [(Substring, matched: String)], fail: [Substring])> = [
       ("a+",
        pass: [("aaa", matched: "aaa"),
               ("ab", matched: "a"),
@@ -517,8 +517,8 @@ class RegexTests: XCTestCase {
     // whole subrange
     let tests: Array<
       (String,
-       pass: [(String, offsets: (lower: Int, upper: Int), matched: String)],
-       fail: [(String, offsets: (lower: Int, upper: Int))])
+       pass: [(Substring, offsets: (lower: Int, upper: Int), matched: String)],
+       fail: [(Substring, offsets: (lower: Int, upper: Int))])
     > = [
       ("a",
        pass: [

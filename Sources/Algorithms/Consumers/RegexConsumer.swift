@@ -27,12 +27,12 @@ public struct RegexConsumer: CollectionConsumer {
   ) -> String.Index? {
     let result = vm.execute(
       input: consumed, in: index..<consumed.endIndex, .partialFromFront)
-    assert(result?.matched ==
+    assert(result?.range ==
            referenceVM.execute(
             input: consumed, in: index..<consumed.endIndex, .partialFromFront
-           )?.matched)
+           )?.range)
 
-    return result?.matched.upperBound
+    return result?.range.upperBound
   }
 }
 

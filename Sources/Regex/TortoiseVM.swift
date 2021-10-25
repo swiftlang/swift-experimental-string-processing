@@ -5,7 +5,7 @@ struct Hatchling {
   var core: RECode.ThreadCore
   var pc: InstructionAddress { return core.pc }
 
-  init(_ pc: InstructionAddress, input: String) {
+  init(_ pc: InstructionAddress, input: Substring) {
     self.core = RECode.ThreadCore(startingAt: pc, input: input)
   }
 

@@ -6,7 +6,7 @@ struct Leveret {
   var sp: String.Index
   var pc: InstructionAddress { return core.pc }
 
-  init(_ pc: InstructionAddress, _ sp: String.Index, input: String) {
+  init(_ pc: InstructionAddress, _ sp: String.Index, input: Substring) {
     self.core = RECode.ThreadCore(startingAt: pc, input: input)
     self.sp = sp
   }
