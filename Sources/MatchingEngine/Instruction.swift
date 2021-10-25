@@ -18,6 +18,34 @@ enum State {
 // TODO: Save point and call stack interactions should be more formalized.
 // It's too easy to have unbalanced save/clears amongst function calls
 
+/*
+
+We're looking at 8-byte instructions, which allow us to really
+pack in complex series of operations into fewer
+fetch/decode/execute cycles.
+
+We'll want
+
+ A) A general-purpose RISC core
+ B) A customization-hook opcode area carved out
+ C) A specialized pattern-matching opcode area carved out
+ D) An extensible-for-other-purposes opcode area carved out
+
+ Where C and D can provide decompositions into A for testing,
+ and even B. A and B become extension mechanisms for the future:
+
+ Ideally, we'd avoid hot-switching between bytecode and normal
+ code execution. It's likely that the RISC core will be highly
+ valuable for this purpose. B will be necessary sometimes, but
+ ideally we'd avoid it when possible.
+
+ While we want some core operations to be fixed-length, there's
+ not necessarily (until I'm wrong, of course) a detriment to
+ allowing D to have other widths. Also, 8 bytes is a lot for A...
+
+
+ */
+
 enum OpCode: UInt64 {
   case invalid = 0
 
