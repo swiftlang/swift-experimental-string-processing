@@ -283,7 +283,7 @@ To help better evaluate the tradeoffs being made, we can take a look at some alt
 
 #### Using a `#/` delimiter
 
-We could use `#/.../#` delimiters, similar to the syntax for raw strings. This may subsume the need for raw regular expression literals, though like string literals we could additionally support adding an arbitrary number of balanced `#` characters.
+We could use `#/.../#` delimiters, similar to the syntax for raw strings. This may subsume the need for raw regular expression literals, though like string literals we could additionally support an arbitrary number of balanced `#` characters in the delimiter.
 
 This syntax would retain most of the familiarity of the `/` delimiter, only requiring surrounding `#`s. However it is somewhat heavier than `/regex/`, with the `#` characters standing out quite a bit.
 
@@ -293,9 +293,9 @@ We could opt for for a more explicitly spelled out literal syntax such as `#rege
 
 Such a syntax would require the containing regex to correctly balance capture group parentheses, otherwise the rest of the line might be incorrectly considered a regex. This could place additional cognitive burden on the user, and may lead to an awkward typing experience. For example, if the user is editing a previously written regex, the syntax highlighting for the rest of the line may change, and unhelpful spurious errors may be reported. With a different delimiter, the compiler would be able to detect and better diagnose unbalanced parentheses in the regex.
 
-It should also be noted that this would introduce a syntactic inconsistency where the argument of a `#literal(...)` is no longer necessarily valid Swift syntax, despite being written in the form of an argument.
+We could avoid the parenthesis balancing issue by requiring an additional internal delimiter such as `#regex(/.../)`, however that would lose the benefit of no longer requiring the escape of `/`, and adds additional syntax noise. It may also be unclear that `/` is part of the delimiter rather than part of the literal. Alternatively, we could replace the internal delimiter with another character such as ```#regex`...` ```, `#regex{...}`, or `#regex/.../`. However those would be inconsistent with the existing `#literal(...)` syntax and the first two would overload the existing meanings for the ``` `` ``` and `{}` delimiters.
 
-We could choose a different internal delimiter such as ```#regex`...` ``` or `#regex{...}`, however those would be inconsistent with the existing `#literal(...)` syntax and would overload the existing meanings for the ``` `` ``` and `{}` delimiters.
+It should also be noted that `#regex(...)` would introduce a syntactic inconsistency where the argument of a `#literal(...)` is no longer necessarily valid Swift syntax, despite being written in the form of an argument.
 
 #### Using `#(...)`
 
@@ -305,9 +305,13 @@ We could reduce the visual weight of `#regex(...)` by only requiring `#(...)`. T
 
 This would have similar advantages to the prior alternatives, while being much visually lighter. It would also allow for `'''` to be used as the delimiter for multi-line regex literals if decided to support them. However given how close it is to string literal syntax, it may not be entirely clear to users that `'...'` denotes a regular expression as opposed to some different form of string literal (e.g some form of character literal, or a string literal with different escaping rules).
 
+We could help distinguish it from a string literal by requiring e.g `'/.../'`, though it may not be clear that the `/` characters are part of the delimiters rather than part of the literal.
+
 #### Using modified string literal syntax
 
 We could adopt the same syntax as a string literal, with a modifier such as `r"..."` used to denote a regex. This would be reasonably visually lightweight, and would have the advantage of the delimiter `r"""` being available for multi-line regex literals if we ever supported them.
+
+Such a delimiter would be visually close to string literal syntax, though the prefix letter does help distinguish it.
 
 ### Reusing string literal syntax
 
