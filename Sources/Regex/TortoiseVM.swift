@@ -5,7 +5,7 @@ struct Hatchling {
   var core: RECode.ThreadCore
   var pc: InstructionAddress { return core.pc }
 
-  init(_ pc: InstructionAddress, input: Substring) {
+  init(_ pc: InstructionAddress, input: String) {
     self.core = RECode.ThreadCore(startingAt: pc, input: input)
   }
 
@@ -35,7 +35,7 @@ public struct TortoiseVM: VirtualMachine {
   }
 
   public func execute(
-    input: Substring, in range: Range<String.Index>, _ mode: MatchMode
+    input: String, in range: Range<String.Index>, _ mode: MatchMode
   ) -> MatchResult? {
     let (start, end) = range.destructure
 
@@ -124,7 +124,7 @@ extension TortoiseVM {
     return result
   }
 
-  func advance(_ input: Substring, _ sp: String.Index, _ bale: Bale) -> (Bale, String.Index) {
+  func advance(_ input: String, _ sp: String.Index, _ bale: Bale) -> (Bale, String.Index) {
     var result = Bale()
     var nextPosition = input.index(after: sp)
     

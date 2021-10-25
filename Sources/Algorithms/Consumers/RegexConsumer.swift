@@ -26,10 +26,10 @@ public struct RegexConsumer: CollectionConsumer {
     _ consumed: Substring, from index: String.Index
   ) -> String.Index? {
     let result = vm.execute(
-      input: consumed, in: index..<consumed.endIndex, .partialFromFront)
+      input: consumed.base, in: index..<consumed.endIndex, .partialFromFront)
     assert(result?.range ==
            referenceVM.execute(
-            input: consumed, in: index..<consumed.endIndex, .partialFromFront
+            input: consumed.base, in: index..<consumed.endIndex, .partialFromFront
            )?.range)
 
     return result?.range.upperBound

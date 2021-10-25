@@ -30,13 +30,13 @@ public protocol VirtualMachine {
   init(_: RECode)
 
   /// Match `input`
-  func execute(input: Substring, in range: Range<String.Index>, _ mode: MatchMode) -> MatchResult?
+  func execute(input: String, in range: Range<String.Index>, _ mode: MatchMode) -> MatchResult?
 }
 
 extension VirtualMachine {
   /// Match `input`
   public func execute(
-    input: Substring, _ mode: MatchMode = .wholeString
+    input: String, _ mode: MatchMode = .wholeString
   ) -> MatchResult? {
     execute(input: input, in: input.startIndex..<input.endIndex, mode)
   }
@@ -72,13 +72,13 @@ extension RECode {
       }
     }
     public var pc: InstructionAddress
-    public let input: Substring
+    public let input: String
 
     var groups = Stack<[Capture]>()
     var topLevelCaptures: [Capture] = []
     var captureState: CaptureState = .ended
 
-    public init(startingAt pc: InstructionAddress, input: Substring) {
+    public init(startingAt pc: InstructionAddress, input: String) {
       self.pc = pc
       self.input = input
     }

@@ -6,7 +6,7 @@ struct Leveret {
   var sp: String.Index
   var pc: InstructionAddress { return core.pc }
 
-  init(_ pc: InstructionAddress, _ sp: String.Index, input: Substring) {
+  init(_ pc: InstructionAddress, _ sp: String.Index, input: String) {
     self.core = RECode.ThreadCore(startingAt: pc, input: input)
     self.sp = sp
   }
@@ -15,11 +15,11 @@ struct Leveret {
 
   mutating func hop(to: InstructionAddress) { core.go(to: to) }
 
-  mutating func nibble(on str: Substring) { sp = str.index(after: sp) }
+  mutating func nibble(on str: String) { sp = str.index(after: sp) }
 
   mutating func nibble(to i: String.Index) { sp = i }
 
-  mutating func nibbleScalar(on str: Substring) {
+  mutating func nibbleScalar(on str: String) {
     sp = str.unicodeScalars.index(after: sp)
   }
 }
@@ -59,7 +59,7 @@ public struct HareVM: VirtualMachine {
   }
 
   public func execute(
-    input: Substring, in range: Range<String.Index>, _ mode: MatchMode
+    input: String, in range: Range<String.Index>, _ mode: MatchMode
   ) -> MatchResult? {
     let (start, end) = range.destructure
 
