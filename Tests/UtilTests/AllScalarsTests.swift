@@ -3,6 +3,12 @@ import XCTest
 
 let allScalars = Unicode.Scalar.allScalars
 
+extension Unicode.Scalar {
+  var isUnicode12OrEarlier: Bool {
+    properties.age.map { age in age <= (12, 0) } ?? false
+  }
+}
+
 class AllScalarsTests: XCTestCase {
   func testCollectionConformance() {
     let calculatedCount = (0...0xD7FF).count + (0xE000...0x10FFFF).count
@@ -23,13 +29,16 @@ class AllScalarsTests: XCTestCase {
     
     let numericIndices = allScalars
       .indices
-      .filter { allScalars[$0].properties.numericType == .decimal }
-    XCTAssertEqual(650, numericIndices.count)
+      .filter {
+        allScalars[$0].isUnicode12OrEarlier
+          && allScalars[$0].properties.numericType == .decimal
+      }
+    XCTAssertEqual(630, numericIndices.count)
     
     let digitSum = try numericIndices
       .map { try XCTUnwrap(allScalars[$0].properties.numericValue) }
       .reduce(0, +)
-    XCTAssertEqual(2925, digitSum)
+    XCTAssertEqual(2835, digitSum)
     XCTAssertEqual(4.5, digitSum / Double(numericIndices.count))
   }
 }
