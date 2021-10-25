@@ -53,7 +53,7 @@ extension StatelessCollectionSearcher {
 
 // MARK: Searching from the back
 
-// TODO: Inherit from `CollectionConsumer`? `State` might not match
+// TODO: Inherit from `CollectionSearcher`? `State` might not match
 public protocol BackwardCollectionSearcher {
   associatedtype Searched: BidirectionalCollection
   associatedtype State = Searched.Index
