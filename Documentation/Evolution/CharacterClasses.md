@@ -302,7 +302,7 @@ We propose the following names and meanings for these escaped literals represent
 ```swift
 extension Character {
   /// A horizontal tab character, `CHARACTER TABULATION` (U+0009).
-  public static var tab: Character { get }
+  public static var horizontalTab: Character { get }
 
   /// A carriage return character, `CARRIAGE RETURN (CR)` (U+000D).
   public static var carriageReturn: Character { get }
@@ -314,7 +314,7 @@ extension Character {
   public static var formFeed: Character { get }
 
   /// A NULL character, `NUL` (U+0000).   
-  public static var nul: Character { get }
+  public static var null: Character { get }
 
   /// An escape control character, `ESC` (U+001B).
   public static var escape: Character { get }
@@ -326,7 +326,7 @@ extension Character {
   public static var backspace: Character { get }
 
   /// A combined carriage return and line feed as a single character denoting
-  //  end-of-line.
+  /// end-of-line.
   public static var carriageReturnLineFeed: Character { get }
 
   /// Returns a control character with the given value, Control-`x`.
