@@ -108,8 +108,8 @@ extension Parser {
   //     Concatenation -> Quantification Quantification*
   mutating func parseConcatenation() throws -> AST {
     var result = Array<AST>()
-    while let quant = try parseQuantification() {
-      result.append(quant)
+    while let operand = try parseQuantifierOperand() {
+      result.append(try parseQuantification(of: operand))
     }
     guard !result.isEmpty else {
       // Happens in `abc|`
@@ -118,9 +118,31 @@ extension Parser {
     return result.count == 1 ? result[0] : .concatenation(result)
   }
   
-  //     Quantification -> (Group | <token: Character>) <token: Quantifier>?
-  mutating func parseQuantification() throws -> AST? {
-    let partialResult: AST
+  //     Quantification -> QuantifierOperand <token: Quantifier>?
+  mutating func parseQuantification(of operand: AST) throws -> AST {
+    switch lexer.peek() {
+    case .star?:
+      lexer.eat()
+      return lexer.eat(.question)
+        ? .lazyMany(operand)
+        : .many(operand)
+    case .plus?:
+      lexer.eat()
+      return lexer.eat(.question)
+        ? .lazyOneOrMore(operand)
+        : .oneOrMore(operand)
+    case .question?:
+      lexer.eat()
+      return lexer.eat(.question)
+        ? .lazyZeroOrOne(operand)
+        : .zeroOrOne(operand)
+    default:
+      return operand
+    }
+  }
+
+  //     QuantifierOperand -> (Group | <token: Character>)
+  mutating func parseQuantifierOperand() throws -> AST? {
     switch lexer.peek() {
     case .leftParen?:
       lexer.eat()
@@ -130,22 +152,22 @@ extension Parser {
         isCapturing = false
       }
       let child = try parse()
-      partialResult = isCapturing ? .capturingGroup(child) : .group(child)
       try lexer.eat(expecting: .rightParen)
+      return isCapturing ? .capturingGroup(child) : .group(child)
 
     case .character(let c, isEscaped: false):
       lexer.eat()
-      partialResult = .character(c)
-      
+      return .character(c)
+
     case .unicodeScalar(let u):
       lexer.eat()
-      partialResult = .unicodeScalar(u)
-      
+      return .unicodeScalar(u)
+
     case .character(let c, isEscaped: true):
       lexer.eat()
       if let cc = CharacterClass(c) {
         // Other characters either match a character class...
-        partialResult = .characterClass(cc)
+        return .characterClass(cc)
 
       } else {
         // ...or are invalid
@@ -161,40 +183,20 @@ extension Parser {
       return .character(meta.rawValue)
 
     case .leftSquareBracket?:
-      partialResult = try parseCustomCharacterClass()
+      return try parseCustomCharacterClass()
 
     case .dot?:
       lexer.eat()
-      partialResult = .characterClass(.any)
+      return .characterClass(.any)
 
     // Correct terminations
     case .rightParen?: fallthrough
     case .pipe?: fallthrough
     case nil:
       return nil
-      
+
     default:
       try report("expected a character or group")
-    }
-
-    switch lexer.peek() {
-    case .star?:
-      lexer.eat()
-      return lexer.eat(.question)
-        ? .lazyMany(partialResult)
-        : .many(partialResult)
-    case .plus?:
-      lexer.eat()
-      return lexer.eat(.question)
-        ? .lazyOneOrMore(partialResult)
-        : .oneOrMore(partialResult)
-    case .question?:
-      lexer.eat()
-      return lexer.eat(.question)
-        ? .lazyZeroOrOne(partialResult)
-        : .zeroOrOne(partialResult)
-    default:
-      return partialResult
     }
   }
 
