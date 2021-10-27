@@ -225,6 +225,12 @@ class RegexTests: XCTestCase {
     ) -> AST {
       .characterClass(.custom(comps).withInversion(inverted))
     }
+    func charClass(
+      _ comps: CharacterClass.CharacterSetComponent...,
+      inverted: Bool = false
+    ) -> CharacterClass.CharacterSetComponent {
+      .characterClass(.custom(comps).withInversion(inverted))
+    }
 
     performTest("abc", concat("a", "b", "c"))
     performTest("abc\\+d*", concat("a", "b", "c", "+", .many("d")))
@@ -265,6 +271,12 @@ class RegexTests: XCTestCase {
     performTest("\\D\\S\\W", concat(.characterClass(.digit.inverted),
                                     .characterClass(.whitespace.inverted),
                                     .characterClass(.word.inverted)))
+
+    performTest("[\\dd]", charClass(.characterClass(.digit), "d"))
+
+    performTest("[^[\\D]]", charClass(charClass(.characterClass(.digit.inverted)), inverted: true))
+    performTest("[[ab][bc]]", charClass(charClass("a", "b"), charClass("b", "c")))
+    performTest("[[ab]c[de]]", charClass(charClass("a", "b"), "c", charClass("d", "e")))
 
     // TODO: failure tests
   }
@@ -460,6 +472,11 @@ class RegexTests: XCTestCase {
 
       ("[^abc]", ["x", "0", "*", " "], ["a", "b", "c"]),
       ("\\D\\s\\W", ["a *", "* -"], ["0 *", "000", "a a", "a 8", "aaa", "***"]),
+
+      ("[^\\d]", ["x", "*", "_", " "], ["0", "9"]),
+      ("[^[\\D]]", ["0", "9"], ["x", "*", "_", " "]),
+      ("[[ab][bc]]", ["a", "b", "c"], ["d", "*", " "]),
+      ("[[ab]c[de]]", ["a", "b", "c", "d", "e"], ["f", "*", " "]),
 
       // Pathological (at least for HareVM and for now Tortoise too)
       //            ("(a*)*", ["a"], ["b"])

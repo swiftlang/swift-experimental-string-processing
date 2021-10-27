@@ -183,7 +183,7 @@ extension Parser {
       return .character(meta.rawValue)
 
     case .leftSquareBracket?:
-      return try parseCustomCharacterClass()
+      return .characterClass(try parseCustomCharacterClass())
 
     case .dot?:
       lexer.eat()
@@ -222,6 +222,16 @@ extension Parser {
   }
 
   mutating func parseCharacterSetComponent() throws -> CharacterSetComponent {
+    // Nested custom character class.
+    if lexer.peek() == .leftSquareBracket {
+      return .characterClass(try parseCustomCharacterClass())
+    }
+    // Escaped character class.
+    if case .character(let c, isEscaped: true) = lexer.peek(),
+       let cc = CharacterClass(c) {
+      lexer.eat()
+      return .characterClass(cc)
+    }
     // A character that can optionally form a range with another character.
     let c1 = try parseCharacterSetComponentCharacter()
     if lexer.eat(.minus) {
@@ -231,14 +241,14 @@ extension Parser {
     return .character(c1)
   }
 
-  mutating func parseCustomCharacterClass() throws -> AST {
+  mutating func parseCustomCharacterClass() throws -> CharacterClass {
     try lexer.eat(expecting: .leftSquareBracket)
     let isInverted = lexer.eat(Token.caret)
     var components: [CharacterSetComponent] = []
     while !lexer.eat(.rightSquareBracket) {
       components.append(try parseCharacterSetComponent())
     }
-    return .characterClass(.custom(components).withInversion(isInverted))
+    return .custom(components).withInversion(isInverted)
   }
 }
 

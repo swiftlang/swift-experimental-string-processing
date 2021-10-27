@@ -28,10 +28,16 @@ public struct CharacterClass: Hashable {
     case character(Character)
     case range(ClosedRange<Character>)
 
+    /// A nested character class.
+    case characterClass(CharacterClass)
+
     public func matches(_ character: Character) -> Bool {
       switch self {
       case .character(let c): return c == character
       case .range(let range): return range.contains(character)
+      case .characterClass(let custom):
+        let str = String(character)
+        return custom.matches(in: str, at: str.startIndex) != nil
       }
     }
   }
@@ -151,6 +157,7 @@ extension CharacterClass.CharacterSetComponent: CustomStringConvertible {
     switch self {
     case .range(let range): return "<range \(range)>"
     case .character(let character): return "<character \(character)>"
+    case .characterClass(let custom): return "\(custom)"
     }
   }
 }
