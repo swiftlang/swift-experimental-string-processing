@@ -3,7 +3,8 @@ public enum Exercises {
     [
       NaiveParticipant.self,
       HandWrittenParticipant.self,
-      RegexParticipant.self,
+      RegexDSLParticipant.self,
+      RegexLiteralParticipant.self,
       PEGParticipant.self,
     ]
   }

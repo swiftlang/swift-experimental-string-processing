@@ -28,7 +28,7 @@ class ExercisesTests: XCTestCase {
         let result = f(line)
         guard ref == result else {
           pass = false
-          XCTFail()
+          XCTFail("Participant \(participant.name) failed")
           break
         }
       }

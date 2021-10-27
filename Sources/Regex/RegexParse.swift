@@ -144,6 +144,9 @@ extension Parser {
         try report("unexpected escape sequence \\\(c)")
       }
 
+    case .leftSquareBracket?:
+      partialResult = try parseCustomCharacterClass()
+
     case .dot?:
       lexer.eat()
       partialResult = .characterClass(.any)
@@ -171,6 +174,25 @@ extension Parser {
     default:
       return partialResult
     }
+  }
+
+  mutating func parseCustomCharacterClass() throws -> AST {
+    try lexer.eat(expecting: .leftSquareBracket)
+    var components: [CharacterClass.CharacterSetComponent] = []
+    while !lexer.eat(.rightSquareBracket) {
+      guard case .character(let c1, isEscaped: _) = lexer.eat() else {
+        try report("expected a character or a ']'")
+      }
+      if lexer.eat(.minus) {
+        guard case .character(let c2, isEscaped: _) = lexer.eat() else {
+          try report("expected a character to end the range")
+        }
+        components.append(.range(c1...c2))
+      } else {
+        components.append(.character(c1))
+      }
+    }
+    return .characterClass(.custom(components))
   }
 }
 

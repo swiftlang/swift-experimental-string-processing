@@ -151,14 +151,24 @@ class RegexDSLTests: XCTestCase {
       Repeat(CharacterClass.any)
     }
     // Assert the inferred capture type.
-    let _: (Substring, Substring?, Substring).Type = type(of: regex).CaptureValue.self
-    try forEachEngine { engine in
-      let maybeMatchResult = line.match(regex, using: engine)
-      let matchResult = try XCTUnwrap(maybeMatchResult)
-      let (lower, upper, propertyString) = matchResult.captures
-      XCTAssertEqual(lower, "A6F0")
-      XCTAssertEqual(upper, "A6F1")
-      XCTAssertEqual(propertyString, "Extend")
+    typealias Capture = (Substring, Substring?, Substring)
+    let _: Capture.Type = type(of: regex).CaptureValue.self
+    func run<R: RegexProtocol>(
+      _ regex: R
+    ) throws where R.CaptureValue == Capture {
+      try forEachEngine { engine in
+        let maybeMatchResult = line.match(regex, using: engine)
+        let matchResult = try XCTUnwrap(maybeMatchResult)
+        let (lower, upper, propertyString) = matchResult.captures
+        XCTAssertEqual(lower, "A6F0")
+        XCTAssertEqual(upper, "A6F1")
+        XCTAssertEqual(propertyString, "Extend")
+      }
     }
+    let regexLiteral = try MockRegexLiteral(
+        #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
+        capturing: (Substring, Substring?, Substring).self)
+    try run(regex)
+    try run(regexLiteral)
   }
 }

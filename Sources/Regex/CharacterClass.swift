@@ -5,7 +5,7 @@ public struct CharacterClass: Hashable {
   /// The level (character or Unicode scalar) at which to match.
   var matchLevel: MatchLevel
   
-  public enum Representation {
+  public enum Representation: Hashable {
     /// Any character
     case any
     /// Character.isDigit
@@ -16,8 +16,22 @@ public struct CharacterClass: Hashable {
     case whitespace
     /// Character.isLetter or Character.isDigit or Character == "_"
     case word
+    /// One of the custom character set.
+    case custom([CharacterSetComponent])
   }
-  
+
+  public enum CharacterSetComponent: Hashable {
+    case character(Character)
+    case range(ClosedRange<Character>)
+
+    public func matches(_ character: Character) -> Bool {
+      switch self {
+      case .character(let c): return c == character
+      case .range(let range): return range.contains(character)
+      }
+    }
+  }
+
   public enum MatchLevel {
     /// Match at the extended grapheme cluster level.
     case graphemeCluster
@@ -51,6 +65,8 @@ public struct CharacterClass: Hashable {
       case .whitespace: return c.isWhitespace ? next : nil
       case .word: return c.isLetter || c.isNumber || c == "_"
         ? next : nil
+      case .custom(let set):
+        return set.any { $0.matches(c) } ? next : nil
       }
     case .unicodeScalar:
       let c = str.unicodeScalars[i]
@@ -61,6 +77,7 @@ public struct CharacterClass: Hashable {
       case .hexDigit: return Character(c).isHexDigit ? next : nil
       case .whitespace: return c.properties.isWhitespace ? next : nil
       case .word: return c.properties.isAlphabetic || c == "_" ? next : nil
+      case .custom: fatalError("Not supported")
       }
     }
   }
@@ -86,6 +103,12 @@ extension CharacterClass {
   public static var word: CharacterClass {
     .init(cc: .word, matchLevel: .graphemeCluster)
   }
+
+  public static func custom(
+    _ components: [CharacterSetComponent]
+  ) -> CharacterClass {
+    .init(cc: .custom(components), matchLevel: .graphemeCluster)
+  }
   
   init?(_ ch: Character) {
     switch ch {
@@ -98,6 +121,15 @@ extension CharacterClass {
   }
 }
 
+extension CharacterClass.CharacterSetComponent: CustomStringConvertible {
+  public var description: String {
+    switch self {
+    case .range(let range): return "<range \(range)>"
+    case .character(let character): return "<character \(character)>"
+    }
+  }
+}
+
 extension CharacterClass: CustomStringConvertible {
   public var description: String {
     switch cc {
@@ -106,6 +138,7 @@ extension CharacterClass: CustomStringConvertible {
     case .hexDigit: return "<hex digit>"
     case .whitespace: return "<whitespace>"
     case .word: return "<word>"
+    case .custom(let set): return "<custom \(set)>"
     }
   }
 }
