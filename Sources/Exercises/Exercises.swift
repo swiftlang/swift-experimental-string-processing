@@ -5,6 +5,7 @@ public enum Exercises {
       HandWrittenParticipant.self,
       RegexParticipant.self,
       PEGParticipant.self,
+      NSREParticipant.self,
     ]
   }
 
