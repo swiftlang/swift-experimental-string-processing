@@ -6,6 +6,7 @@ public enum Exercises {
       RegexDSLParticipant.self,
       RegexLiteralParticipant.self,
       PEGParticipant.self,
+      NSREParticipant.self,
     ]
   }
 
