@@ -110,59 +110,62 @@ public struct Lexer {
     
     return scalar
   }
-  
-  private mutating func advance() {
-    guard !source.isEmpty else {
-      nextToken = nil
-      return
+
+  private mutating func consumeEscapedCharacter() -> Token {
+    assert(!source.isEmpty, "Escape at end of input string")
+    let nextCharacter = source.eat()
+
+    switch nextCharacter {
+    // Escaped metacharacters are just regular characters
+    case let x where Token.MetaCharacter(rawValue: x) != nil:
+      fallthrough
+    case Token.escape:
+      return .character(nextCharacter, isEscaped: false)
+
+    // Explicit Unicode scalar values have one of these forms:
+    // - \u{h...}   (1+ hex digits)
+    // - \uhhhh     (exactly 4 hex digits)
+    // - \x{h...}   (1+ hex digits)
+    // - \xhh       (exactly 2 hex digits)
+    // - \Uhhhhhhhh (exactly 8 hex digits)
+    case "u":
+      let firstDigit = source.eat()
+      if firstDigit == "{" {
+        return .unicodeScalar(consumeUnicodeScalar())
+      } else {
+        return .unicodeScalar(consumeUnicodeScalar(
+          firstDigit: firstDigit, digits: 4))
+      }
+    case "x":
+      let firstDigit = source.eat()
+      if firstDigit == "{" {
+        return .unicodeScalar(consumeUnicodeScalar())
+      } else {
+        return .unicodeScalar(consumeUnicodeScalar(
+          firstDigit: firstDigit, digits: 2))
+      }
+    case "U":
+      return .unicodeScalar(consumeUnicodeScalar(digits: 8))
+
+    default:
+      return .character(nextCharacter, isEscaped: true)
     }
+  }
+
+  private mutating func consumeNextToken() -> Token? {
+    guard !source.isEmpty else { return nil }
     let current = source.eat()
     if let q = Token.MetaCharacter(rawValue: current) {
-      nextToken = .meta(q)
-      return
+      return .meta(q)
     }
     if current == Token.escape {
-      assert(!source.isEmpty, "Escape at end of input string")
-      let nextCharacter = source.eat()
-      
-      switch nextCharacter {
-      // Escaped metacharacters are just regular characters
-      case let x where Token.MetaCharacter(rawValue: x) != nil:
-        fallthrough
-      case Token.escape:
-        nextToken = .character(nextCharacter, isEscaped: false)
-        
-      // Explicit Unicode scalar values have one of these forms:
-      // - \u{h...}   (1+ hex digits)
-      // - \uhhhh     (exactly 4 hex digits)
-      // - \x{h...}   (1+ hex digits)
-      // - \xhh       (exactly 2 hex digits)
-      // - \Uhhhhhhhh (exactly 8 hex digits)
-      case "u":
-        let firstDigit = source.eat()
-        if firstDigit == "{" {
-          nextToken = .unicodeScalar(consumeUnicodeScalar())
-        } else {
-          nextToken = .unicodeScalar(consumeUnicodeScalar(
-            firstDigit: firstDigit, digits: 4))
-        }
-      case "x":
-        let firstDigit = source.eat()
-        if firstDigit == "{" {
-          nextToken = .unicodeScalar(consumeUnicodeScalar())
-        } else {
-          nextToken = .unicodeScalar(consumeUnicodeScalar(
-            firstDigit: firstDigit, digits: 2))
-        }
-      case "U":
-        nextToken = .unicodeScalar(consumeUnicodeScalar(digits: 8))
-        
-      default:
-        nextToken = .character(nextCharacter, isEscaped: true)
-      }
-      return
+      return consumeEscapedCharacter()
     }
-    nextToken = .character(current, isEscaped: false)
+    return .character(current, isEscaped: false)
+  }
+  
+  private mutating func advance() {
+    nextToken = consumeNextToken()
   }
 }
 
