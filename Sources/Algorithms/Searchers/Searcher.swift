@@ -11,11 +11,10 @@ public struct DefaultState<Searched: Collection> {
 
 public protocol CollectionSearcher {
   associatedtype Searched: Collection where Searched.SubSequence == Searched
+  associatedtype State
   
-  // NOTE: Removing the default value causes a lot of associated type inference breakage
-  associatedtype State = DefaultState<Searched>
-  
-  func state(startingAt index: Searched.Index, in searched: Searched) -> State
+  // TODO: Decide whether this needs an index parameter
+  func state(for searched: Searched) -> State
   func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>?
 }
 
@@ -26,8 +25,8 @@ public protocol StatelessCollectionSearcher: CollectionSearcher
 }
 
 extension StatelessCollectionSearcher {
-  public func state(startingAt index: Searched.Index, in searched: Searched) -> State {
-    DefaultState(state: .index(index))
+  public func state(for searched: Searched) -> State {
+    DefaultState(state: .index(searched.startIndex))
   }
   
   public func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {
@@ -39,12 +38,12 @@ extension StatelessCollectionSearcher {
     
     if range.isEmpty {
       if range.upperBound == searched.endIndex {
-        state = State(state: .done)
+        state = DefaultState(state: .done)
       } else {
-        state = State(state: .index(searched.index(after: range.upperBound)))
+        state = DefaultState(state: .index(searched.index(after: range.upperBound)))
       }
     } else {
-      state = State(state: .index(range.upperBound))
+      state = DefaultState(state: .index(range.upperBound))
     }
     
     return range
@@ -53,27 +52,26 @@ extension StatelessCollectionSearcher {
 
 // MARK: Searching from the back
 
-// TODO: Inherit from `CollectionSearcher`? `State` might not match
-public protocol BackwardCollectionSearcher {
-  associatedtype Searched: BidirectionalCollection
-  associatedtype State = Searched.Index
+// TODO: Decide whether or not to inherit from `CollectionSearcher`
+public protocol BackwardCollectionSearcher: CollectionSearcher where Searched: BidirectionalCollection {
+  associatedtype BackwardState
   
-  func backwardState(startingAt index: Searched.Index, in searched: Searched) -> State
-  func searchBack(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>?
+  func backwardState(for searched: Searched) -> BackwardState
+  func searchBack(_ searched: Searched, _ state: inout BackwardState) -> Range<Searched.Index>?
 }
 
 public protocol StatelessBackwardCollectionSearcher: BackwardCollectionSearcher
-  where State == DefaultState<Searched>
+  where BackwardState == DefaultState<Searched>
 {
   func searchBack(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>?
 }
 
 extension StatelessBackwardCollectionSearcher {
-  public func backwardState(startingAt index: Searched.Index, in searched: Searched) -> State {
-    DefaultState(state: .index(index))
+  public func backwardState(for searched: Searched) -> BackwardState {
+    DefaultState(state: .index(searched.endIndex))
   }
   
-  public func searchBack(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {
+  public func searchBack(_ searched: Searched, _ state: inout BackwardState) -> Range<Searched.Index>? {
     guard
       case .index(let index) = state.state,
       let range = searchBack(searched, from: index)
@@ -82,16 +80,16 @@ extension StatelessBackwardCollectionSearcher {
     
     if range.isEmpty {
       if range.lowerBound == searched.startIndex {
-        state = State(state: .done)
+        state = DefaultState(state: .done)
       } else {
-        state = State(state: .index(searched.index(before: range.lowerBound)))
+        state = DefaultState(state: .index(searched.index(before: range.lowerBound)))
       }
     } else {
-      state = State(state: .index(range.lowerBound))
+      state = DefaultState(state: .index(range.lowerBound))
     }
     
     return range
   }
 }
 
-// TODO: `BidirectionalCollectionSeacher`
+public protocol BidirectionalCollectionSearcher: BackwardCollectionSearcher {}

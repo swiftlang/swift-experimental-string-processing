@@ -1,14 +1,16 @@
 extension Collection {
   public func firstRange<S: CollectionSearcher>(of searcher: S) -> Range<Index>? where S.Searched == SubSequence {
-    var state = searcher.state(startingAt: startIndex, in: self[...])
-    return searcher.search(self[...], &state)
+    let slice = self[...]
+    var state = searcher.state(for: slice)
+    return searcher.search(slice, &state)
   }
 }
 
 extension BidirectionalCollection {
   public func lastRange<S: BackwardCollectionSearcher>(of searcher: S) -> Range<Index>? where S.Searched == SubSequence {
-    var state = searcher.backwardState(startingAt: endIndex, in: self[...])
-    return searcher.searchBack(self[...], &state)
+    let slice = self[...]
+    var state = searcher.backwardState(for: slice)
+    return searcher.searchBack(slice, &state)
   }
 }
 
@@ -23,8 +25,9 @@ extension Collection where Element: Equatable {
 extension BidirectionalCollection where Element: Comparable {
   public func firstRange<S: Sequence>(of other: S) -> Range<Index>? where S.Element == Element {
     let searcher = PatternOrEmpty(searcher: TwoWaySearcher<SubSequence>(pattern: Array(other)))
-    var state = searcher.state(startingAt: startIndex, in: self[...])
-    return searcher.search(self[...], &state)
+    let slice = self[...]
+    var state = searcher.state(for: slice)
+    return searcher.search(slice, &state)
   }
 }
 
@@ -41,4 +44,3 @@ extension BidirectionalCollection where SubSequence == Substring {
     lastRange(of: RegexConsumer(regex))
   }
 }
-

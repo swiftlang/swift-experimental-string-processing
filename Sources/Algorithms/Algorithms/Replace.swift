@@ -5,8 +5,6 @@ extension RangeReplaceableCollection {
     subrange: Range<Index>,
     maxReplacements: Int = .max
   ) -> Self where Searcher.Searched == SubSequence, Replacement.Element == Element {
-    // TODO: `Searcher.Searched == Self`?
-    
     precondition(maxReplacements >= 0)
     
     var index = subrange.lowerBound

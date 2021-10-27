@@ -36,38 +36,38 @@ extension NaivePatternSearcher: StatelessCollectionSearcher {
   }
 }
 
-//extension NaivePatternSearcher: BackwardCollectionSearcher, StatelessBackwardCollectionSearcher
-//  where Searched: BidirectionalCollection, Pattern: BidirectionalCollection
-//{
-//  func searchBack(_ searched: Searched, subrange: Range<Searched.Index>) -> Range<Searched.Index>? {
-//    var searchEnd = subrange.upperBound
-//
-//    guard let otherLastIndex = pattern.indices.last else {
-//      return searchEnd..<searchEnd
-//    }
-//    
-//    let patternLast = pattern[otherLastIndex]
-//    
-//    while let matchEnd = searched[subrange.lowerBound..<searchEnd]
-//            .lastIndex(of: patternLast)
-//    {
-//      var index = matchEnd
-//      var otherIndex = otherLastIndex
-//      
-//      repeat {
-//        if otherIndex == pattern.startIndex {
-//          return index..<searched.index(after: matchEnd)
-//        } else if index == subrange.lowerBound {
-//          return nil
-//        }
-//        
-//        searched.formIndex(before: &index)
-//        pattern.formIndex(before: &otherIndex)
-//      } while searched[index] == pattern[otherIndex]
-//      
-//      searchEnd = matchEnd
-//    }
-//    
-//    return nil
-//  }
-//}
+extension NaivePatternSearcher: BackwardCollectionSearcher, StatelessBackwardCollectionSearcher
+  where Searched: BidirectionalCollection, Pattern: BidirectionalCollection
+{
+  func searchBack(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>? {
+    var searchEnd = index
+
+    guard let otherLastIndex = pattern.indices.last else {
+      return searchEnd..<searchEnd
+    }
+    
+    let patternLast = pattern[otherLastIndex]
+    
+    while let matchEnd = searched[searched.startIndex..<searchEnd]
+            .lastIndex(of: patternLast)
+    {
+      var index = matchEnd
+      var otherIndex = otherLastIndex
+      
+      repeat {
+        if otherIndex == pattern.startIndex {
+          return index..<searched.index(after: matchEnd)
+        } else if index == searched.startIndex {
+          return nil
+        }
+        
+        searched.formIndex(before: &index)
+        pattern.formIndex(before: &otherIndex)
+      } while searched[index] == pattern[otherIndex]
+      
+      searchEnd = matchEnd
+    }
+    
+    return nil
+  }
+}

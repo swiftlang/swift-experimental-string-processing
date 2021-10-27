@@ -2,9 +2,51 @@ public struct SplitCollection<Searcher: CollectionSearcher> {
   public typealias Base = Searcher.Searched
   
   let ranges: RangesCollection<Searcher>
+  
+  init(ranges: RangesCollection<Searcher>) {
+    self.ranges = ranges
+  }
 
   init(base: Base, searcher: Searcher) {
     self.ranges = base.ranges(of: searcher)
+  }
+}
+
+extension SplitCollection where Searcher: BidirectionalCollectionSearcher {
+  public func reversed() -> ReversedSplitCollection<Searcher> {
+    ReversedSplitCollection(ranges: ranges.reversed())
+  }
+}
+
+extension SplitCollection: Sequence {
+  public struct Iterator: IteratorProtocol {
+    let base: Base
+    var index: Base.Index
+    var ranges: RangesCollection<Searcher>.Iterator
+    var isDone: Bool
+    
+    init(ranges: RangesCollection<Searcher>) {
+      self.base = ranges.base
+      self.index = base.startIndex
+      self.ranges = ranges.makeIterator()
+      self.isDone = false
+    }
+    
+    public mutating func next() -> Base.SubSequence? {
+      guard !isDone else { return nil }
+      
+      guard let range = ranges.next() else {
+        isDone = true
+        return base[index...]
+      }
+      
+      defer { index = range.upperBound }
+      return base[index..<range.lowerBound]
+    }
+  }
+  
+  public func makeIterator() -> Iterator {
+    Iterator(ranges: ranges)
   }
 }
 
@@ -71,12 +113,74 @@ extension SplitCollection.Index: Comparable {
   }
 }
 
+public struct ReversedSplitCollection<Searcher: BackwardCollectionSearcher> {
+  public typealias Base = Searcher.Searched
+  
+  let ranges: ReversedRangesCollection<Searcher>
+  
+  init(ranges: ReversedRangesCollection<Searcher>) {
+    self.ranges = ranges
+  }
+
+  init(base: Base, searcher: Searcher) {
+    self.ranges = base.rangesFromBack(of: searcher)
+  }
+}
+
+extension ReversedSplitCollection where Searcher: BidirectionalCollectionSearcher {
+  public func reversed() -> SplitCollection<Searcher> {
+    SplitCollection(ranges: ranges.reversed())
+  }
+}
+
+extension ReversedSplitCollection: Sequence {
+  public struct Iterator: IteratorProtocol {
+    let base: Base
+    var index: Base.Index
+    var ranges: ReversedRangesCollection<Searcher>.Iterator
+    var isDone: Bool
+    
+    init(ranges: ReversedRangesCollection<Searcher>) {
+      self.base = ranges.base
+      self.index = base.endIndex
+      self.ranges = ranges.makeIterator()
+      self.isDone = false
+    }
+    
+    public mutating func next() -> Base.SubSequence? {
+      guard !isDone else { return nil }
+      
+      guard let range = ranges.next() else {
+        isDone = true
+        return base[..<index]
+      }
+      
+      defer { index = range.lowerBound }
+      return base[range.upperBound..<index]
+    }
+  }
+  
+  public func makeIterator() -> Iterator {
+    Iterator(ranges: ranges)
+  }
+}
+
+// TODO: `Collection` conformance
+
 extension Collection {
   public func split<Searcher: CollectionSearcher>(
-    separator searcher: Searcher
+    separator: Searcher
   ) -> SplitCollection<Searcher> where Searcher.Searched == SubSequence {
-    // TODO: `maxSplits`, `omittingEmptySubsequences`
-    SplitCollection(base: self[...], searcher: searcher)
+    // TODO: `maxSplits`, `omittingEmptySubsequences`?
+    SplitCollection(base: self[...], searcher: separator)
+  }
+}
+
+extension BidirectionalCollection {
+  public func splitFromBack<Searcher: BackwardCollectionSearcher>(
+    separator: Searcher
+  ) -> ReversedSplitCollection<Searcher> where Searcher.Searched == SubSequence {
+    ReversedSplitCollection(base: self[...], searcher: separator)
   }
 }
 
@@ -84,7 +188,7 @@ extension Collection where Element: Equatable {
   public func split<S: Sequence>(
     separator: S
   ) -> SplitCollection<PatternOrEmpty<ZSearcher<SubSequence>>> where S.Element == Element {
-    let pattern: [Element] = Array(separator)
+    let pattern = Array(separator)
     let searcher = pattern.isEmpty ? nil : ZSearcher<SubSequence>(pattern: pattern, by: ==)
     return split(separator: PatternOrEmpty(searcher: searcher))
   }
