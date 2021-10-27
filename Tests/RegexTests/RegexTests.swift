@@ -14,6 +14,12 @@ extension AST: ExpressibleByExtendedGraphemeClusterLiteral {
     self = .character(value)
   }
 }
+extension CharacterClass.CharacterSetComponent: ExpressibleByExtendedGraphemeClusterLiteral {
+  public typealias ExtendedGraphemeClusterLiteralType = Character
+  public init(extendedGraphemeClusterLiteral value: Character) {
+    self = .character(value)
+  }
+}
 extension RECode.Instruction: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
@@ -213,6 +219,9 @@ class RegexTests: XCTestCase {
 
     func alt(_ asts: AST...) -> AST { return .alternation(asts) }
     func concat(_ asts: AST...) -> AST { return .concatenation(asts) }
+    func charClass(_ comps: CharacterClass.CharacterSetComponent...) -> AST {
+      .characterClass(.custom(comps))
+    }
 
     performTest("abc", concat("a", "b", "c"))
     performTest("abc\\+d*", concat("a", "b", "c", "+", .many("d")))
@@ -236,6 +245,12 @@ class RegexTests: XCTestCase {
                        "b", .unicodeScalar("e"),
                        "c", .unicodeScalar("e"),
                        "d", .unicodeScalar("e")))
+
+    performTest("[-|$^:?+*())(*-+-]",
+                charClass("-", "|", "$", "^", ":", "?", "+", "*", "(", ")", ")",
+                          "(", .range("*" ... "+"), "-"))
+
+    performTest("[a-b-c]", charClass(.range("a" ... "b"), "-", "c"))
 
     // TODO: failure tests
   }

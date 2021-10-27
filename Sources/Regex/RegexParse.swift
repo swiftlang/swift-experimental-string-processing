@@ -190,21 +190,42 @@ extension Parser {
     }
   }
 
+  typealias CharacterSetComponent = CharacterClass.CharacterSetComponent
+
+  /// Parse a literal character in a custom character class.
+  mutating func parseCharacterSetComponentCharacter() throws -> Character {
+    // Most metacharacters can be interpreted as literal characters in a
+    // custom character class. This even includes the '-' character if it
+    // appears in a position where it cannot be treated as a range
+    // (per PCRE#SEC9). We may want to warn on this and require the user to
+    // escape it though.
+    switch lexer.eat() {
+    case .meta(.rsquare):
+      try report("unexpected end of character class")
+    case .meta(let meta):
+      return meta.rawValue
+    case .character(let c, isEscaped: _):
+      return c
+    default:
+      try report("expected a character or a ']'")
+    }
+  }
+
+  mutating func parseCharacterSetComponent() throws -> CharacterSetComponent {
+    // A character that can optionally form a range with another character.
+    let c1 = try parseCharacterSetComponentCharacter()
+    if lexer.eat(.minus) {
+      let c2 = try parseCharacterSetComponentCharacter()
+      return .range(c1...c2)
+    }
+    return .character(c1)
+  }
+
   mutating func parseCustomCharacterClass() throws -> AST {
     try lexer.eat(expecting: .leftSquareBracket)
-    var components: [CharacterClass.CharacterSetComponent] = []
+    var components: [CharacterSetComponent] = []
     while !lexer.eat(.rightSquareBracket) {
-      guard case .character(let c1, isEscaped: _) = lexer.eat() else {
-        try report("expected a character or a ']'")
-      }
-      if lexer.eat(.minus) {
-        guard case .character(let c2, isEscaped: _) = lexer.eat() else {
-          try report("expected a character to end the range")
-        }
-        components.append(.range(c1...c2))
-      } else {
-        components.append(.character(c1))
-      }
+      components.append(try parseCharacterSetComponent())
     }
     return .characterClass(.custom(components))
   }
