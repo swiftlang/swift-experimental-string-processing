@@ -252,6 +252,10 @@ class RegexTests: XCTestCase {
 
     performTest("[a-b-c]", charClass(.range("a" ... "b"), "-", "c"))
 
+    // These are metacharacters in certain contexts, but normal characters
+    // otherwise.
+    performTest(":-]", concat(":", "-", "]"))
+
     // TODO: failure tests
   }
 

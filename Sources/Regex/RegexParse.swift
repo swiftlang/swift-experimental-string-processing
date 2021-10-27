@@ -152,6 +152,14 @@ extension Parser {
         try report("unexpected escape sequence \\\(c)")
       }
 
+    case .minus?, .colon?, .rightSquareBracket?:
+      // Outside of custom character classes, these are not considered to be
+      // metacharacters.
+      guard case .meta(let meta) = lexer.eat() else {
+        fatalError("Not a metachar?")
+      }
+      return .character(meta.rawValue)
+
     case .leftSquareBracket?:
       partialResult = try parseCustomCharacterClass()
 
