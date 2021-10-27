@@ -4,7 +4,11 @@ public struct CharacterClass: Hashable {
   
   /// The level (character or Unicode scalar) at which to match.
   var matchLevel: MatchLevel
-  
+
+  /// Whether this character class matches against an inverse,
+  /// e.g \D, \S, [^abc].
+  var isInverted: Bool = false
+
   public enum Representation: Hashable {
     /// Any character
     case any
@@ -50,6 +54,19 @@ public struct CharacterClass: Hashable {
     result.matchLevel = .graphemeCluster
     return result
   }
+
+  /// Returns the character class with the isInverted property set to a given
+  /// value.
+  public func withInversion(_ invertion: Bool) -> Self {
+    var copy = self
+    copy.isInverted = invertion
+    return copy
+  }
+
+  /// Returns the inverse character class.
+  public var inverted: Self {
+    return withInversion(!isInverted)
+  }
   
   /// Returns the end of the match of this character class in `str`, if
   /// it matches.
@@ -57,28 +74,34 @@ public struct CharacterClass: Hashable {
     switch matchLevel {
     case .graphemeCluster:
       let c = str[i]
-      let next = str.index(after: i)
+      var matched: Bool
       switch cc {
-      case .any: return next
-      case .digit: return c.isNumber ? next : nil
-      case .hexDigit: return c.isHexDigit ? next : nil
-      case .whitespace: return c.isWhitespace ? next : nil
-      case .word: return c.isLetter || c.isNumber || c == "_"
-        ? next : nil
-      case .custom(let set):
-        return set.any { $0.matches(c) } ? next : nil
+      case .any: matched = true
+      case .digit: matched = c.isNumber
+      case .hexDigit: matched = c.isHexDigit
+      case .whitespace: matched = c.isWhitespace
+      case .word: matched = c.isLetter || c.isNumber || c == "_"
+      case .custom(let set): matched = set.any { $0.matches(c) }
       }
+      if isInverted {
+        matched.toggle()
+      }
+      return matched ? str.index(after: i) : nil
     case .unicodeScalar:
       let c = str.unicodeScalars[i]
-      let next = str.unicodeScalars.index(after: i)
+      var matched: Bool
       switch cc {
-      case .any: return next
-      case .digit: return c.properties.numericType != nil ? next : nil
-      case .hexDigit: return Character(c).isHexDigit ? next : nil
-      case .whitespace: return c.properties.isWhitespace ? next : nil
-      case .word: return c.properties.isAlphabetic || c == "_" ? next : nil
+      case .any: matched = true
+      case .digit: matched = c.properties.numericType != nil
+      case .hexDigit: matched = Character(c).isHexDigit
+      case .whitespace: matched = c.properties.isWhitespace
+      case .word: matched = c.properties.isAlphabetic || c == "_"
       case .custom: fatalError("Not supported")
       }
+      if isInverted {
+        matched.toggle()
+      }
+      return matched ? str.unicodeScalars.index(after: i) : nil
     }
   }
 }
@@ -115,7 +138,9 @@ extension CharacterClass {
     case "s": self = .whitespace
     case "d": self = .digit
     case "w": self = .word
-      
+    case "S", "D", "W":
+      self = Self(Character(ch.lowercased()))!.inverted
+
     default: return nil
     }
   }
@@ -130,9 +155,9 @@ extension CharacterClass.CharacterSetComponent: CustomStringConvertible {
   }
 }
 
-extension CharacterClass: CustomStringConvertible {
+extension CharacterClass.Representation: CustomStringConvertible {
   public var description: String {
-    switch cc {
+    switch self {
     case .any: return "<any>"
     case .digit: return "<digit>"
     case .hexDigit: return "<hex digit>"
@@ -140,5 +165,11 @@ extension CharacterClass: CustomStringConvertible {
     case .word: return "<word>"
     case .custom(let set): return "<custom \(set)>"
     }
+  }
+}
+
+extension CharacterClass: CustomStringConvertible {
+  public var description: String {
+    return "\(isInverted ? "not " : "")\(cc)"
   }
 }

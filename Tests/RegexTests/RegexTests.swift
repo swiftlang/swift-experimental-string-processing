@@ -219,8 +219,11 @@ class RegexTests: XCTestCase {
 
     func alt(_ asts: AST...) -> AST { return .alternation(asts) }
     func concat(_ asts: AST...) -> AST { return .concatenation(asts) }
-    func charClass(_ comps: CharacterClass.CharacterSetComponent...) -> AST {
-      .characterClass(.custom(comps))
+    func charClass(
+      _ comps: CharacterClass.CharacterSetComponent...,
+      inverted: Bool = false
+    ) -> AST {
+      .characterClass(.custom(comps).withInversion(inverted))
     }
 
     performTest("abc", concat("a", "b", "c"))
@@ -255,6 +258,13 @@ class RegexTests: XCTestCase {
     // These are metacharacters in certain contexts, but normal characters
     // otherwise.
     performTest(":-]", concat(":", "-", "]"))
+
+    performTest("[^abc]", charClass("a", "b", "c", inverted: true))
+    performTest("[a^]", charClass("a", "^"))
+
+    performTest("\\D\\S\\W", concat(.characterClass(.digit.inverted),
+                                    .characterClass(.whitespace.inverted),
+                                    .characterClass(.word.inverted)))
 
     // TODO: failure tests
   }
@@ -447,6 +457,9 @@ class RegexTests: XCTestCase {
 
       ("Caf\\u{65}\\u0301", ["Cafe\u{301}"], ["Café", "Cafe"]),
       ("Caf\\x65\\u0301", ["Cafe\u{301}"], ["Café", "Cafe"]),
+
+      ("[^abc]", ["x", "0", "*", " "], ["a", "b", "c"]),
+      ("\\D\\s\\W", ["a *", "* -"], ["0 *", "000", "a a", "a 8", "aaa", "***"]),
 
       // Pathological (at least for HareVM and for now Tortoise too)
       //            ("(a*)*", ["a"], ["b"])

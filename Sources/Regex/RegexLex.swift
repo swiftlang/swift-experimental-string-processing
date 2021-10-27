@@ -33,6 +33,7 @@ public enum Token {
     case lsquare = "["
     case rsquare = "]"
     case minus = "-"
+    case caret = "^"
   }
 
   case meta(MetaCharacter)
@@ -51,6 +52,7 @@ public enum Token {
   public static var leftSquareBracket: Token { .meta(.lsquare) }
   public static var rightSquareBracket: Token { .meta(.rsquare) }
   public static var minus: Token { .meta(.minus) }
+  public static var caret: Token { .meta(.caret) }
 
   // Note: We do each character individually, as post-fix modifiers bind
   // tighter than concatenation. "abc*" is "a" -> "b" -> "c*"

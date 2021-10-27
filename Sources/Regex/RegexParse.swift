@@ -231,11 +231,12 @@ extension Parser {
 
   mutating func parseCustomCharacterClass() throws -> AST {
     try lexer.eat(expecting: .leftSquareBracket)
+    let isInverted = lexer.eat(Token.caret)
     var components: [CharacterSetComponent] = []
     while !lexer.eat(.rightSquareBracket) {
       components.append(try parseCharacterSetComponent())
     }
-    return .characterClass(.custom(components))
+    return .characterClass(.custom(components).withInversion(isInverted))
   }
 }
 
