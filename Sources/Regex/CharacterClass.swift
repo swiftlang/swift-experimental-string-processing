@@ -206,6 +206,10 @@ extension CharacterClass {
     .init(cc: .word, matchLevel: .graphemeCluster)
   }
 
+  public static var anyGraphemeCluster: CharacterClass {
+    .init(cc: .anyGraphemeCluster, matchLevel: .graphemeCluster)
+  }
+  
   public static func custom(
     _ components: [CharacterSetComponent]
   ) -> CharacterClass {
@@ -219,7 +223,8 @@ extension CharacterClass {
     case "w": self = .word
     case "S", "D", "W":
       self = Self(Character(ch.lowercased()))!.inverted
-
+    case "X": self = .anyGraphemeCluster
+      
     default: return nil
     }
   }
