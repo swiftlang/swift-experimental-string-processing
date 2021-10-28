@@ -263,10 +263,12 @@ class RegexTests: XCTestCase {
     performTest("(.)*(.*)", concat(.many(.capturingGroup(.characterClass(.any))), .capturingGroup(.many(.characterClass(.any)))))
     performTest("abc\\d",concat("a", "b", "c", .characterClass(.digit)))
     performTest("a\\u0065b\\u{00000065}c\\x65d\\U00000065",
-                concat("a", .unicodeScalar("e"),
-                       "b", .unicodeScalar("e"),
-                       "c", .unicodeScalar("e"),
-                       "d", .unicodeScalar("e")))
+                concat("a", "e",
+                       "b", "e",
+                       "c", "e",
+                       "d", "e"))
+    performTest("e\\u{301}e",
+                concat("é", "e"))
 
     performTest("[-|$^:?+*())(*-+-]",
                 charClass("-", "|", "$", "^", ":", "?", "+", "*", "(", ")", ")",
@@ -509,8 +511,8 @@ class RegexTests: XCTestCase {
       ("a\\db\\dc", ["a1b3c"], ["ab2", "a1b", "a11b2", "a1b22"]),
       ("a\\d\\db\\dc", ["a12b3c"], ["ab2", "a1b", "a11b2", "a1b22"]),
 
-      ("Caf\\u{65}\\u0301", ["Cafe\u{301}"], ["Café", "Cafe"]),
-      ("Caf\\x65\\u0301", ["Cafe\u{301}"], ["Café", "Cafe"]),
+      ("Caf\\u{65}\\u0301", ["Cafe\u{301}", "Café"], ["Cafe"]),
+      ("Caf\\x65\\u0301", ["Cafe\u{301}", "Café"], ["Cafe"]),
 
       ("[^abc]", ["x", "0", "*", " "], ["a", "b", "c"]),
       ("\\D\\s\\W", ["a *", "* -"], ["0 *", "000", "a a", "a 8", "aaa", "***"]),

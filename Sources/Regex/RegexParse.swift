@@ -155,13 +155,29 @@ extension Parser {
       try lexer.eat(expecting: .rightParen)
       return isCapturing ? .capturingGroup(child) : .group(child)
 
-    case .character(let c, isEscaped: false):
+    case .character(var c, isEscaped: false):
       lexer.eat()
+      while case .unicodeScalar(let u) = lexer.peek() {
+        let s = "\(c)\(u)"
+        guard s.count == 1 else { break }
+        lexer.eat()
+        c = s.first!
+      }
+      
       return .character(c)
-
+      
     case .unicodeScalar(let u):
       lexer.eat()
-      return .unicodeScalar(u)
+      var c = Character(u)
+      
+      while case .unicodeScalar(let u) = lexer.peek() {
+        let s = "\(c)\(u)"
+        guard s.count == 1 else { break }
+        lexer.eat()
+        c = s.first!
+      }
+      
+      return .character(c)
 
     case .character(let c, isEscaped: true):
       lexer.eat()
