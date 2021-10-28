@@ -131,6 +131,13 @@ public struct REOptions: OptionSet {
   //    ??? partial
   //    ??? newlineTerminated
 
+  public static var graphemeClusterSemantics = REOptions(rawValue: 1 << 1)
+  public static var unicodeScalarSemantics = REOptions(rawValue: 1 << 2)
+  public static var utf8Semantics = REOptions(rawValue: 1 << 3)
+  internal static var allSemantics: REOptions =
+    [.graphemeClusterSemantics, .unicodeScalarSemantics, .utf8Semantics]
+  
+  public static var asciiCharacterClasses = REOptions(rawValue: 1 << 4)
 
   public init() {
     self = .none
@@ -164,14 +171,11 @@ extension RECode: RandomAccessCollection {
 extension RECode {
   public func withMatchLevel(_ level: CharacterClass.MatchLevel) -> RECode {
     var result = self
-    result.instructions = result.instructions.map { inst in
-      switch inst {
-      case .characterClass(var cc):
-        cc.matchLevel = level
-        return .characterClass(cc)
-      default:
-        return inst
-      }
+    result.options.remove(.allSemantics)
+    switch level {
+    case .graphemeCluster: result.options.insert(.graphemeClusterSemantics)
+    case .unicodeScalar: result.options.insert(.unicodeScalarSemantics)
+    case .utf8CodeUnit: result.options.insert(.utf8Semantics)
     }
     return result
   }

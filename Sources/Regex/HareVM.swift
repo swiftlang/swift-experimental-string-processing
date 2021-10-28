@@ -15,12 +15,16 @@ struct Leveret {
 
   mutating func hop(to: InstructionAddress) { core.go(to: to) }
 
-  mutating func nibble(on str: String) { sp = str.index(after: sp) }
-
   mutating func nibble(to i: String.Index) { sp = i }
 
-  mutating func nibbleScalar(on str: String) {
-    sp = str.unicodeScalars.index(after: sp)
+  mutating func nibble(on str: String, options: REOptions) {
+    if options.contains(.unicodeScalarSemantics) {
+      str.unicodeScalars.formIndex(after: &sp)
+    } else if options.contains(.utf8Semantics) {
+      str.utf8.formIndex(after: &sp)
+    } else {
+      str.formIndex(after: &sp)
+    }
   }
 }
 
@@ -112,7 +116,7 @@ public struct HareVM: VirtualMachine {
 
       case .any:
         assert(bunny.sp < end)
-        bunny.nibble(on: input)
+        bunny.nibble(on: input, options: code.options)
         bunny.hop()
 
       case .character(let c):
@@ -127,27 +131,15 @@ public struct HareVM: VirtualMachine {
           bunny = stack.restore()
           continue
         }
-        bunny.nibble(on: input)
+        bunny.nibble(on: input, options: code.options)
         bunny.hop()
 
-      case .unicodeScalar(let u):
-        assert(bunny.sp < end)
-        guard input.unicodeScalars[bunny.sp] == u else {
-          // If there are no more alternatives to try, we failed
-          guard !stack.isEmpty else {
-            return nil
-          }
-
-          // Continue with the next alternative
-          bunny = stack.restore()
-          continue
-        }
-        bunny.nibbleScalar(on: input)
-        bunny.hop()
-
+      case .unicodeScalar:
+        assertionFailure()
+        
       case .characterClass(let cc):
         assert(bunny.sp < end)
-        guard let nextSp = cc.matches(in: input, at: bunny.sp) else {
+        guard let nextSp = cc.matches(in: input, at: bunny.sp, options: code.options) else {
           // If there are no more alternatives to try, we failed
           guard !stack.isEmpty else {
             return nil

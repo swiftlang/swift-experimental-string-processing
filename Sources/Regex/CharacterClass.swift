@@ -2,9 +2,6 @@ public struct CharacterClass: Hashable {
   /// The actual character class to match.
   var cc: Representation
   
-  /// The level (character or Unicode scalar) at which to match.
-  var matchLevel: MatchLevel
-
   /// Whether this character class matches against an inverse,
   /// e.g \D, \S, [^abc].
   var isInverted: Bool = false
@@ -87,18 +84,6 @@ public struct CharacterClass: Hashable {
     case utf8CodeUnit
   }
 
-  public var scalarSemantic: Self {
-    var result = self
-    result.matchLevel = .unicodeScalar
-    return result
-  }
-  
-  public var graphemeClusterSemantic: Self {
-    var result = self
-    result.matchLevel = .graphemeCluster
-    return result
-  }
-
   /// Returns the character class with the isInverted property set to a given
   /// value.
   public func withInversion(_ invertion: Bool) -> Self {
@@ -114,24 +99,9 @@ public struct CharacterClass: Hashable {
   
   /// Returns the end of the match of this character class in `str`, if
   /// it matches.
-  public func matches(in str: String, at i: String.Index) -> String.Index? {
-    switch matchLevel {
-    case .graphemeCluster:
-      let c = str[i]
-      var matched: Bool
-      switch cc {
-      case .any, .anyGraphemeCluster: matched = true
-      case .digit: matched = c.isNumber
-      case .hexDigit: matched = c.isHexDigit
-      case .whitespace: matched = c.isWhitespace
-      case .word: matched = c.isLetter || c.isNumber || c == "_"
-      case .custom(let set): matched = set.any { $0.matches(c) }
-      }
-      if isInverted {
-        matched.toggle()
-      }
-      return matched ? str.index(after: i) : nil
-    case .unicodeScalar:
+  public func matches(in str: String, at i: String.Index, options: REOptions) -> String.Index? {
+    switch options {
+    case let x where x.contains(.unicodeScalarSemantics):
       let c = str.unicodeScalars[i]
       var nextIndex = str.unicodeScalars.index(after: i)
       var matched: Bool
@@ -150,7 +120,8 @@ public struct CharacterClass: Hashable {
         matched.toggle()
       }
       return matched ? nextIndex : nil
-    case .utf8CodeUnit:
+
+    case let x where x.contains(.utf8Semantics):
       let byte = str.utf8[i]
       var nextIndex = str.unicodeScalars.index(after: i)
       var matched: Bool
@@ -181,39 +152,56 @@ public struct CharacterClass: Hashable {
         matched.toggle()
       }
       return matched ? nextIndex : nil
+
+    default:
+      let c = str[i]
+      var matched: Bool
+      switch cc {
+      case .any, .anyGraphemeCluster: matched = true
+      case .digit: matched = c.isNumber
+      case .hexDigit: matched = c.isHexDigit
+      case .whitespace: matched = c.isWhitespace
+      case .word: matched = c.isLetter || c.isNumber || c == "_"
+      case .custom(let set):
+        matched = set.any { $0.matches(c) }
+      }
+      if isInverted {
+        matched.toggle()
+      }
+      return matched ? str.index(after: i) : nil
     }
   }
 }
 
 extension CharacterClass {
   public static var any: CharacterClass {
-    .init(cc: .any, matchLevel: .graphemeCluster)
+    .init(cc: .any)
   }
   
   public static var whitespace: CharacterClass {
-    .init(cc: .whitespace, matchLevel: .graphemeCluster)
+    .init(cc: .whitespace)
   }
   
   public static var digit: CharacterClass {
-    .init(cc: .digit, matchLevel: .graphemeCluster)
+    .init(cc: .digit)
   }
   
   public static var hexDigit: CharacterClass {
-    .init(cc: .hexDigit, matchLevel: .graphemeCluster)
+    .init(cc: .hexDigit)
   }
   
   public static var word: CharacterClass {
-    .init(cc: .word, matchLevel: .graphemeCluster)
+    .init(cc: .word)
   }
-
+  
   public static var anyGraphemeCluster: CharacterClass {
-    .init(cc: .anyGraphemeCluster, matchLevel: .graphemeCluster)
+    .init(cc: .anyGraphemeCluster)
   }
   
   public static func custom(
     _ components: [CharacterSetComponent]
   ) -> CharacterClass {
-    .init(cc: .custom(components), matchLevel: .graphemeCluster)
+    .init(cc: .custom(components))
   }
   
   init?(_ ch: Character) {

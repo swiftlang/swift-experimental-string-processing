@@ -124,9 +124,19 @@ extension TortoiseVM {
     return result
   }
 
+  func position(after position: String.Index, in str: String, options: REOptions) -> String.Index {
+    if options.contains(.unicodeScalarSemantics) {
+      return str.unicodeScalars.index(after: position)
+    } else if options.contains(.utf8Semantics) {
+      return str.utf8.index(after: position)
+    } else {
+      return str.index(after: position)
+    }
+  }
+  
   func advance(_ input: String, _ sp: String.Index, _ bale: Bale) -> (Bale, String.Index) {
     var result = Bale()
-    var nextPosition = input.index(after: sp)
+    var nextPosition = position(after: sp, in: input, options: code.options)
     
     guard bale.all({ code[$0.pc].isMatching }) else {
       fatalError("should of been readThrough")
@@ -140,7 +150,8 @@ extension TortoiseVM {
     }
 
     func advance(_ hatchling: inout Hatchling) {
-      advance(&hatchling, to: input.index(after: sp))
+      let i = position(after: sp, in: input, options: code.options)
+      advance(&hatchling, to: i)
     }
 
     for hatchling in bale {
@@ -158,7 +169,7 @@ extension TortoiseVM {
         advance(&hatchling, to: input.unicodeScalars.index(after: sp))
 
       case .characterClass(let cc):
-        guard let nextSp = cc.matches(in: input, at: sp) else { break }
+        guard let nextSp = cc.matches(in: input, at: sp, options: code.options) else { break }
         advance(&hatchling, to: nextSp)
 
       case .any:
