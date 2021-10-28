@@ -10,8 +10,10 @@ public struct CharacterClass: Hashable {
   var isInverted: Bool = false
 
   public enum Representation: Hashable {
-    /// Any character
+    /// Any single elements
     case any
+    /// Any grapheme cluster, even in non-grapheme-cluster mode
+    case anyGraphemeCluster
     /// Character.isDigit
     case digit
     /// Character.isHexDigit
@@ -81,6 +83,8 @@ public struct CharacterClass: Hashable {
     case graphemeCluster
     /// Match at the Unicode scalar level.
     case unicodeScalar
+    /// Match at the UTF-8 code unit level.
+    case utf8CodeUnit
   }
 
   public var scalarSemantic: Self {
@@ -116,7 +120,7 @@ public struct CharacterClass: Hashable {
       let c = str[i]
       var matched: Bool
       switch cc {
-      case .any: matched = true
+      case .any, .anyGraphemeCluster: matched = true
       case .digit: matched = c.isNumber
       case .hexDigit: matched = c.isHexDigit
       case .whitespace: matched = c.isWhitespace
@@ -129,9 +133,13 @@ public struct CharacterClass: Hashable {
       return matched ? str.index(after: i) : nil
     case .unicodeScalar:
       let c = str.unicodeScalars[i]
+      var nextIndex = str.unicodeScalars.index(after: i)
       var matched: Bool
       switch cc {
       case .any: matched = true
+      case .anyGraphemeCluster:
+        matched = true
+        nextIndex = str.index(after: i)
       case .digit: matched = c.properties.numericType != nil
       case .hexDigit: matched = Character(c).isHexDigit
       case .whitespace: matched = c.properties.isWhitespace
@@ -141,7 +149,38 @@ public struct CharacterClass: Hashable {
       if isInverted {
         matched.toggle()
       }
-      return matched ? str.unicodeScalars.index(after: i) : nil
+      return matched ? nextIndex : nil
+    case .utf8CodeUnit:
+      let byte = str.utf8[i]
+      var nextIndex = str.unicodeScalars.index(after: i)
+      var matched: Bool
+      switch cc {
+      case .any: matched = true
+      case .anyGraphemeCluster:
+        // TODO: Is this the right behavior? This yields the start of the next
+        // character, even if `i` isn't character aligned, so the user may get
+        // only a partial character / the resulting character may be a result
+        // of rounding the starting index down to the previous character
+        // boundary.
+        matched = true
+        nextIndex = str.index(after: i)
+      case .digit:
+        matched = (0x30...0x39).contains(byte)
+      case .hexDigit:
+        matched = (0x30...0x39).contains(byte)
+          || (0x41...0x46).contains(byte)
+          || (0x61...0x66).contains(byte)
+      case .whitespace:
+        matched = (0x09...0x0d).contains(byte) || 0x20 == byte
+      case .word:
+        matched = (0x41...0x5a).contains(byte) || (0x61...0x7a).contains(byte)
+          || 0x5f == byte
+      case .custom: fatalError("Not supported")
+      }
+      if isInverted {
+        matched.toggle()
+      }
+      return matched ? nextIndex : nil
     }
   }
 }
@@ -201,6 +240,7 @@ extension CharacterClass.Representation: CustomStringConvertible {
   public var description: String {
     switch self {
     case .any: return "<any>"
+    case .anyGraphemeCluster: return "<any char>"
     case .digit: return "<digit>"
     case .hexDigit: return "<hex digit>"
     case .whitespace: return "<whitespace>"
