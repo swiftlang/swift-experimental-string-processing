@@ -138,7 +138,7 @@ public func compile(
       return
       
     case .lazyOneOrMore(let child):
-      // a+ ==> L_START, a, <split L_START>
+      // a+? ==> L_START, a, <split L_START>
       let childHasCaptures = child.hasCaptures
       if childHasCaptures {
         instructions.append(.beginGroup)
