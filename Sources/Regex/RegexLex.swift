@@ -5,6 +5,7 @@ public struct Source {
   var state: Substring
   public init(_ str: String) { state = str[...] }
 
+  public func peek() -> Character? { state.first }
   public mutating func eat() -> Character { state.eat() }
 
   public var isEmpty: Bool { state.isEmpty }
@@ -36,7 +37,14 @@ public enum Token {
     case caret = "^"
   }
 
+  public enum SetOperator: String, Hashable {
+    case doubleAmpersand = "&&"
+    case doubleDash = "--"
+    case doubleTilda = "~~"
+  }
+
   case meta(MetaCharacter)
+  case setOperator(SetOperator)
   case character(Character, isEscaped: Bool)
   case unicodeScalar(UnicodeScalar)
 
@@ -61,10 +69,14 @@ public enum Token {
 extension Token.MetaCharacter: CustomStringConvertible {
   public var description: String { String(self.rawValue) }
 }
+extension Token.SetOperator: CustomStringConvertible {
+  public var description: String { rawValue }
+}
 extension Token: CustomStringConvertible {
   public var description: String {
     switch self {
     case .meta(let meta): return meta.description
+    case .setOperator(let op): return op.description
     case .character(let c, _): return c.halfWidthCornerQuoted
     case .unicodeScalar(let u): return "U\(u.halfWidthCornerQuoted)"
     }
@@ -154,9 +166,28 @@ public struct Lexer {
     }
   }
 
+  private mutating func consumeIfSetOperator(_ ch: Character) -> Token? {
+    switch ch {
+    case "-" where source.peek() == "-":
+      _ = source.eat()
+      return .setOperator(.doubleDash)
+    case "~" where source.peek() == "~":
+      _ = source.eat()
+      return .setOperator(.doubleTilda)
+    case "&" where source.peek() == "&":
+      _ = source.eat()
+      return .setOperator(.doubleAmpersand)
+    default:
+      return nil
+    }
+  }
+
   private mutating func consumeNextToken() -> Token? {
     guard !source.isEmpty else { return nil }
     let current = source.eat()
+    if let op = consumeIfSetOperator(current) {
+      return op
+    }
     if let q = Token.MetaCharacter(rawValue: current) {
       return .meta(q)
     }

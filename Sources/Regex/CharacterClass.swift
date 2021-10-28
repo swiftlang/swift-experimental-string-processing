@@ -24,12 +24,45 @@ public struct CharacterClass: Hashable {
     case custom([CharacterSetComponent])
   }
 
+  public enum SetOperator: Hashable {
+    case intersection
+    case subtraction
+    case symmetricDifference
+  }
+
+  /// A binary set operation that forms a character class component.
+  public struct SetOperation: Hashable {
+    var lhs: CharacterSetComponent
+    var op: SetOperator
+    var rhs: CharacterSetComponent
+
+    public func matches(_ c: Character) -> Bool {
+      switch op {
+      case .intersection:
+        return lhs.matches(c) && rhs.matches(c)
+      case .subtraction:
+        return lhs.matches(c) && !rhs.matches(c)
+      case .symmetricDifference:
+        return lhs.matches(c) != rhs.matches(c)
+      }
+    }
+  }
+
   public enum CharacterSetComponent: Hashable {
     case character(Character)
     case range(ClosedRange<Character>)
 
     /// A nested character class.
     case characterClass(CharacterClass)
+
+    /// A binary set operation of character class components.
+    indirect case setOperation(SetOperation)
+
+    public static func setOperation(
+      lhs: CharacterSetComponent, op: SetOperator, rhs: CharacterSetComponent
+    ) -> CharacterSetComponent {
+      .setOperation(.init(lhs: lhs, op: op, rhs: rhs))
+    }
 
     public func matches(_ character: Character) -> Bool {
       switch self {
@@ -38,6 +71,7 @@ public struct CharacterClass: Hashable {
       case .characterClass(let custom):
         let str = String(character)
         return custom.matches(in: str, at: str.startIndex) != nil
+      case .setOperation(let op): return op.matches(character)
       }
     }
   }
@@ -158,6 +192,7 @@ extension CharacterClass.CharacterSetComponent: CustomStringConvertible {
     case .range(let range): return "<range \(range)>"
     case .character(let character): return "<character \(character)>"
     case .characterClass(let custom): return "\(custom)"
+    case .setOperation(let op): return "<\(op.lhs) \(op.op) \(op.rhs)>"
     }
   }
 }

@@ -187,11 +187,19 @@ class RegexTests: XCTestCase {
                 "a", .unicodeScalar("e"),
                 "b", .unicodeScalar("e"),
                 "c", .unicodeScalar("e"), "d")
+    performTest("[^a&&b--c~~d]", .leftSquareBracket,
+                  .caret, "a",
+                  .setOperator(.doubleAmpersand), "b",
+                  .setOperator(.doubleDash), "c",
+                  .setOperator(.doubleTilda), "d",
+                  .rightSquareBracket)
 
     // Gramatically invalid (yet lexically valid)
     performTest("|*\\\\", .pipe, .star, "\\")
     performTest(")ab(+", .rightParen, "a", "b", .leftParen, .plus)
     performTest("...", .dot, .dot, .dot)
+    performTest("&&^-^-~~", .setOperator(.doubleAmpersand), .caret,
+                .minus, .caret, .minus, .setOperator(.doubleTilda))
   }
 
   func testParse() {
@@ -277,6 +285,35 @@ class RegexTests: XCTestCase {
     performTest("[^[\\D]]", charClass(charClass(.characterClass(.digit.inverted)), inverted: true))
     performTest("[[ab][bc]]", charClass(charClass("a", "b"), charClass("b", "c")))
     performTest("[[ab]c[de]]", charClass(charClass("a", "b"), "c", charClass("d", "e")))
+
+    performTest("[[ab]&&[^bc]\\d]+", .oneOrMore(charClass(
+      .setOperation(
+        lhs: charClass("a", "b"),
+        op: .intersection,
+        rhs: charClass("b", "c", inverted: true)
+      ),
+      .characterClass(.digit)
+    )))
+
+    performTest("[a&&b]", charClass(
+      .setOperation(lhs: "a", op: .intersection, rhs: "b")
+    ))
+
+    // We left-associate for chained operators.
+    performTest("[a&&b~~c]", charClass(
+      .setOperation(
+        lhs: .setOperation(lhs: "a", op: .intersection, rhs: "b"),
+        op: .symmetricDifference,
+        rhs: "c"
+      )
+    ))
+
+    // Operators are only valid in custom character classes.
+    performTest("a&&b", concat("a", "&", "&", "b"))
+    performTest("&?", .zeroOrOne("&"))
+    performTest("&&?", concat("&", .zeroOrOne("&")))
+    performTest("--+", concat("-", .oneOrMore("-")))
+    performTest("~~*", concat("~", .many("~")))
 
     // TODO: failure tests
   }
@@ -477,6 +514,12 @@ class RegexTests: XCTestCase {
       ("[^[\\D]]", ["0", "9"], ["x", "*", "_", " "]),
       ("[[ab][bc]]", ["a", "b", "c"], ["d", "*", " "]),
       ("[[ab]c[de]]", ["a", "b", "c", "d", "e"], ["f", "*", " "]),
+
+      ("[\\w--\\d]+", ["w", "_wf"], ["0", "*", "_0", "0a"]),
+      ("[\\w&&\\d]+", ["0", "093"], ["a0", "*", "_"]),
+      ("[\\w~~[\\d\\s]]+", ["a", "_", " a ", " a _  c"], ["a0", " 0 ", "90", "*"]),
+      ("[[\\w\\d\\s]--\\s--[a-zA-Z]]+", ["0", "38", "8_90"], [" 38", "a", "a8", " ", "A", " T"]),
+      ("[[ab]~~[bc]]", ["a", "c"], ["b", "d"]),
 
       // Pathological (at least for HareVM and for now Tortoise too)
       //            ("(a*)*", ["a"], ["b"])
