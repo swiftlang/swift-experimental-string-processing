@@ -108,17 +108,7 @@ extension Parser {
   //     Concatenation -> Quantification Quantification*
   mutating func parseConcatenation() throws -> AST {
     var result = Array<AST>()
-    while true {
-      // Outside of character classes, binary set operators are interpreted as
-      // normal characters.
-      if case .setOperator(let op) = lexer.peek() {
-        lexer.eat()
-        let opText = op.rawValue
-        result.append(contentsOf: opText.dropLast().map(AST.character))
-        result.append(try parseQuantification(of: .character(opText.last!)))
-        continue
-      }
-      guard let operand = try parseQuantifierOperand() else { break }
+    while let operand = try parseQuantifierOperand() {
       result.append(try parseQuantification(of: operand))
     }
     guard !result.isEmpty else {

@@ -88,7 +88,14 @@ extension Token: Equatable {}
 public struct Lexer {
   var source: Source
   var nextToken: Token? = nil
+
+  /// The number of parent custom character classes we're lexing within.
+  private var customCharacterClassDepth = 0
+
   public init(_ source: Source) { self.source = source }
+
+  /// Whether the lexer is currently lexing within a custom character class.
+  private var isInCustomCharacterClass: Bool { customCharacterClassDepth > 0 }
 
   private mutating func consumeUnicodeScalar(
     firstDigit: Character? = nil,
@@ -167,6 +174,9 @@ public struct Lexer {
   }
 
   private mutating func consumeIfSetOperator(_ ch: Character) -> Token? {
+    // Can only occur in a custom character class. Otherwise, the operator
+    // characters are treated literally.
+    guard isInCustomCharacterClass else { return nil }
     switch ch {
     case "-" where source.peek() == "-":
       _ = source.eat()
@@ -182,14 +192,29 @@ public struct Lexer {
     }
   }
 
+  private mutating func consumeIfMetaCharacter(_ ch: Character) -> Token? {
+    guard let meta = Token.MetaCharacter(rawValue: ch) else { return nil }
+    // Track the custom character class depth. We can increment it every time
+    // we see a `[`, and decrement every time we see a `]`, though we don't
+    // decrement if we see `]` outside of a custom character class, as that
+    // should be treated as a literal character.
+    if meta == .lsquare {
+      customCharacterClassDepth += 1
+    }
+    if meta == .rsquare && isInCustomCharacterClass {
+      customCharacterClassDepth -= 1
+    }
+    return .meta(meta)
+  }
+
   private mutating func consumeNextToken() -> Token? {
     guard !source.isEmpty else { return nil }
     let current = source.eat()
     if let op = consumeIfSetOperator(current) {
       return op
     }
-    if let q = Token.MetaCharacter(rawValue: current) {
-      return .meta(q)
+    if let meta = consumeIfMetaCharacter(current) {
+      return meta
     }
     if current == Token.escape {
       return consumeEscapedCharacter()

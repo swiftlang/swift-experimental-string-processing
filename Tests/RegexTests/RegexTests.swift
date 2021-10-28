@@ -193,13 +193,18 @@ class RegexTests: XCTestCase {
                   .setOperator(.doubleDash), "c",
                   .setOperator(.doubleTilda), "d",
                   .rightSquareBracket)
+    performTest("&&^-^-~~", "&", "&", .caret, .minus, .caret, .minus, "~", "~")
+    performTest("[]]&&", .leftSquareBracket, .rightSquareBracket,
+                .rightSquareBracket, "&", "&")
 
     // Gramatically invalid (yet lexically valid)
     performTest("|*\\\\", .pipe, .star, "\\")
     performTest(")ab(+", .rightParen, "a", "b", .leftParen, .plus)
     performTest("...", .dot, .dot, .dot)
-    performTest("&&^-^-~~", .setOperator(.doubleAmpersand), .caret,
-                .minus, .caret, .minus, .setOperator(.doubleTilda))
+    performTest("[[[]&&]]&&", .leftSquareBracket, .leftSquareBracket,
+                .leftSquareBracket, .rightSquareBracket,
+                .setOperator(.doubleAmpersand), .rightSquareBracket,
+                .rightSquareBracket, "&", "&")
   }
 
   func testParse() {
