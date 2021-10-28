@@ -216,7 +216,6 @@ class RegexTests: XCTestCase {
 
     performTest("abc", concat("a", "b", "c"))
     performTest("abc\\+d*", concat("a", "b", "c", "+", .many("d")))
-    performTest("abc\\+d*?", concat("a", "b", "c", "+", .lazyMany("d")))
     performTest("abc(?:de)+fghi*k|j",
                 alt(concat("a", "b", "c",
                            .oneOrMore(.group(concat("d", "e"))),
@@ -224,6 +223,10 @@ class RegexTests: XCTestCase {
                     "j"))
     performTest("a(?:b|c)?d", concat("a", .zeroOrOne(.group(alt("b", "c"))),
                                    "d"))
+    performTest("a?b??c+d+?e*f*?", concat(
+      .zeroOrOne("a"), .lazyZeroOrOne("b"),
+      .oneOrMore("c"), .lazyOneOrMore("d"),
+      .many("e"), .lazyMany("f")))
     performTest("a|b?c", alt("a", concat(.zeroOrOne("b"), "c")))
     performTest("(a|b)c", concat(.capturingGroup(alt("a", "b")), "c"))
     performTest("(.)*(.*)", concat(.many(.capturingGroup(.characterClass(.any))), .capturingGroup(.many(.characterClass(.any)))))
@@ -392,16 +395,18 @@ class RegexTests: XCTestCase {
                        .captureArray,
                        .endGroup,
                        labels: [1, 11, 4, 8], splits: [2, 5]))
-    performTest("a.*?b+",
+    performTest("a.*?b+?c??",
                 recode("a",
                        label(0), split(disfavoring: 1), goto(label: 2),
                        label(1), .characterClass(.any), goto(label: 0),
                        label(2),
-                       label(3), "b", split(disfavoring: 4),
-                       goto(label: 3), label(4),
-                       labels: [1, 4, 7, 8, 12], splits: [2, 10]))
+                       label(3), "b", split(disfavoring: 3),
+                       split(disfavoring: 4), goto(label: 5),
+                       label(4), "c",
+                       label(5),
+                       labels: [1, 4, 7, 8, 13, 15], splits: [2, 10, 11]))
   }
-
+                                
   func testVMs() {
     let tests: Array<(String, pass: [String], fail: [String])> = [
       ("a|b", ["a", "b"], ["ab", "c"]),
@@ -458,18 +463,26 @@ class RegexTests: XCTestCase {
     performTest(regex: "a(b*)c(d+)ef", input: "abbcdef",
       expectedCaptureType: (Substring, Substring).self,
       expecting: .init(captures: ("bb", "d"), capturesEqual: ==))
-    performTest(regex: "a(.*)(c+)", input: "abbbbcccc",
-      expectedCaptureType: (Substring, Substring).self,
-      expecting: .init(captures: ("bbbbccc", "c"), capturesEqual: ==))
-    performTest(regex: "a(.+)(c+)", input: "abbbbcccc",
-      expectedCaptureType: (Substring, Substring).self,
-      expecting: .init(captures: ("bbbbccc", "c"), capturesEqual: ==))
-    performTest(regex: "a(.*?)(c+)", input: "abbbbcccc",
-      expectedCaptureType: (Substring, Substring).self,
-      expecting: .init(captures: ("bbbb", "cccc"), capturesEqual: ==))
-    performTest(regex: "a(.+?)(c+)", input: "abbbbcccc",
-      expectedCaptureType: (Substring, Substring).self,
-      expecting: .init(captures: ("bbbb", "cccc"), capturesEqual: ==))
+    
+    // Greedy vs lazy quantifiers
+    performTest(regex: "a(.*)(c+).*(e+)", input: "abbbbccccddddeeee",
+      expectedCaptureType: (Substring, Substring, Substring).self,
+      expecting: .init(captures: ("bbbbccc", "c", "e"), capturesEqual: ==))
+    performTest(regex: "a(.+)(c+).+(e+)", input: "abbbbccccddddeeee",
+      expectedCaptureType: (Substring, Substring, Substring).self,
+      expecting: .init(captures: ("bbbbccc", "c", "e"), capturesEqual: ==))
+    performTest(regex: "a(.?)(c+).?(e+)", input: "acccceeee",
+      expectedCaptureType: (Substring, Substring, Substring).self,
+      expecting: .init(captures: ("c", "ccc", "eee"), capturesEqual: ==))
+    performTest(regex: "a(.*?)(c+).*?(e+)", input: "abbbbccccddddeeee",
+      expectedCaptureType: (Substring, Substring, Substring).self,
+      expecting: .init(captures: ("bbbb", "cccc", "eeee"), capturesEqual: ==))
+    performTest(regex: "a(.+?)(c+).+?(e+)", input: "abbbbccccddddeeee",
+      expectedCaptureType: (Substring, Substring, Substring).self,
+      expecting: .init(captures: ("bbbb", "cccc", "eeee"), capturesEqual: ==))
+    performTest(regex: "a(.??)(c+).??(e+)", input: "acccceeee",
+      expectedCaptureType: (Substring, Substring, Substring).self,
+      expecting: .init(captures: ("", "cccc", "eeee"), capturesEqual: ==))
     // performTest(regex: "(?a*)*", input: "aaaa",
     //   expectedCaptureType: Substring.self,
     //   expecting: .init(captures: "aaaa", capturesEqual: ==))
