@@ -216,6 +216,7 @@ class RegexTests: XCTestCase {
 
     performTest("abc", concat("a", "b", "c"))
     performTest("abc\\+d*", concat("a", "b", "c", "+", .many("d")))
+    performTest("abc\\+d*?", concat("a", "b", "c", "+", .lazyMany("d")))
     performTest("abc(?:de)+fghi*k|j",
                 alt(concat("a", "b", "c",
                            .oneOrMore(.group(concat("d", "e"))),
@@ -391,6 +392,14 @@ class RegexTests: XCTestCase {
                        .captureArray,
                        .endGroup,
                        labels: [1, 11, 4, 8], splits: [2, 5]))
+    performTest("a.*?b+",
+                recode("a",
+                       label(0), split(disfavoring: 1), goto(label: 2),
+                       label(1), .characterClass(.any), goto(label: 0),
+                       label(2),
+                       label(3), "b", split(disfavoring: 4),
+                       goto(label: 3), label(4),
+                       labels: [1, 4, 7, 8, 12], splits: [2, 10]))
   }
 
   func testVMs() {
@@ -399,6 +408,7 @@ class RegexTests: XCTestCase {
       ("a.b", ["abb", "aab", "acb"], ["ab", "c", "abc"]),
       ("a|b?c", ["a", "c", "bc"], ["ab", "ac"]),
       ("abc*", ["abc", "ab", "abcc", "abccccc"], ["a", "c", "abca"]),
+      ("abc*?", ["abc", "ab", "abcc", "abccccc"], ["a", "c", "abca"]),
       ("abc+def", ["abcdef", "abccccccdef"], ["abc", "abdef"]),
       ("ab(cdef)*", ["ab", "abcdef", "abcdefcdefcdef"],
        ["abc", "cdef", "abcde", "abcdeff"]),
@@ -495,6 +505,14 @@ class RegexTests: XCTestCase {
        ],
        fail: ["c", "d", ""]
       ),
+      (".*a+", // greedy
+       pass: [("  a  aaa", matched: "aaa"),
+             ],
+       fail: ["b", ""]),
+      (".*?a+", // lazy
+       pass: [("  a  aaa", matched: "a"),
+             ],
+       fail: ["b", ""]),
     ]
 
     for (regex, passes, fails) in tests {
