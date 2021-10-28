@@ -170,7 +170,12 @@ extension Parser {
     switch lexer.peek() {
     case .star?:
       lexer.eat()
-      return .many(partialResult)
+      if lexer.peek() == .question {
+        lexer.eat()
+        return .lazyMany(partialResult)
+      } else {
+        return .many(partialResult)
+      }
     case .plus?:
       lexer.eat()
       return .oneOrMore(partialResult)
