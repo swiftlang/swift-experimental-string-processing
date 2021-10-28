@@ -32,7 +32,7 @@ public enum AST: Hashable {
 
   // Lazy versions of quantifiers
   indirect case lazyMany(AST)
-  // lazyZeroOrOne(AST)
+  indirect case lazyZeroOrOne(AST)
   indirect case lazyOneOrMore(AST)
 
   case character(Character)
@@ -56,6 +56,7 @@ extension AST: CustomStringConvertible {
     case .zeroOrOne(let rest): return ".zeroOrOne(\(rest))"
     case .oneOrMore(let rest): return ".oneOrMore(\(rest))"
     case .lazyMany(let rest): return ".lazyMany(\(rest))"
+    case .lazyZeroOrOne(let rest): return ".lazyZeroOrOne(\(rest))"
     case .lazyOneOrMore(let rest): return ".lazyOneOrMore(\(rest))"
     case .character(let c): return c.halfWidthCornerQuoted
     case .unicodeScalar(let u): return u.halfWidthCornerQuoted
@@ -181,7 +182,9 @@ extension Parser {
         : .oneOrMore(partialResult)
     case .question?:
       lexer.eat()
-      return .zeroOrOne(partialResult)
+      return lexer.eat(.question)
+        ? .lazyZeroOrOne(partialResult)
+        : .zeroOrOne(partialResult)
     default:
       return partialResult
     }
