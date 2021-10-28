@@ -136,6 +136,22 @@ public func compile(
         instructions.append(.endGroup)
       }
       return
+      
+    case .lazyOneOrMore(let child):
+      // a+ ==> L_START, a, <split L_START>
+      let childHasCaptures = child.hasCaptures
+      if childHasCaptures {
+        instructions.append(.beginGroup)
+      }
+      let start = createLabel()
+      instructions.append(start)
+      compileNode(child)
+      instructions.append(.split(disfavoring: start.label!))
+      if childHasCaptures {
+        instructions.append(.captureArray)
+        instructions.append(.endGroup)
+      }
+      return
 
     case .alternation(let children):
       // a|b ==> <split L_B>, a, goto L_DONE, L_B, b, L_DONE

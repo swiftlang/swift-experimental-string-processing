@@ -44,10 +44,8 @@ extension AST {
       return child.any(\.hasCaptures)
     case .capturingGroup, .group:
       return true
-    case let .many(child),
-         let .zeroOrOne(child),
-         let .oneOrMore(child),
-         let .lazyMany(child):
+    case let .many(child), let .zeroOrOne(child), let .oneOrMore(child),
+         let .lazyMany(child), let .lazyOneOrMore(child):
       return child.hasCaptures
     case .character, .unicodeScalar, .characterClass, .any, .empty:
       return false

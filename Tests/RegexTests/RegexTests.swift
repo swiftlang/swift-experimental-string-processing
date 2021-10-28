@@ -458,6 +458,18 @@ class RegexTests: XCTestCase {
     performTest(regex: "a(b*)c(d+)ef", input: "abbcdef",
       expectedCaptureType: (Substring, Substring).self,
       expecting: .init(captures: ("bb", "d"), capturesEqual: ==))
+    performTest(regex: "a(.*)(c+)", input: "abbbbcccc",
+      expectedCaptureType: (Substring, Substring).self,
+      expecting: .init(captures: ("bbbbccc", "c"), capturesEqual: ==))
+    performTest(regex: "a(.+)(c+)", input: "abbbbcccc",
+      expectedCaptureType: (Substring, Substring).self,
+      expecting: .init(captures: ("bbbbccc", "c"), capturesEqual: ==))
+    performTest(regex: "a(.*?)(c+)", input: "abbbbcccc",
+      expectedCaptureType: (Substring, Substring).self,
+      expecting: .init(captures: ("bbbb", "cccc"), capturesEqual: ==))
+    performTest(regex: "a(.+?)(c+)", input: "abbbbcccc",
+      expectedCaptureType: (Substring, Substring).self,
+      expecting: .init(captures: ("bbbb", "cccc"), capturesEqual: ==))
     // performTest(regex: "(?a*)*", input: "aaaa",
     //   expectedCaptureType: Substring.self,
     //   expecting: .init(captures: "aaaa", capturesEqual: ==))
@@ -505,14 +517,6 @@ class RegexTests: XCTestCase {
        ],
        fail: ["c", "d", ""]
       ),
-      (".*a+", // greedy
-       pass: [("  a  aaa", matched: "aaa"),
-             ],
-       fail: ["b", ""]),
-      (".*?a+", // lazy
-       pass: [("  a  aaa", matched: "a"),
-             ],
-       fail: ["b", ""]),
     ]
 
     for (regex, passes, fails) in tests {
