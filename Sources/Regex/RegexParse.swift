@@ -30,6 +30,11 @@ public enum AST: Hashable {
   indirect case zeroOrOne(AST)
   indirect case oneOrMore(AST)
 
+  // Lazy versions of quantifiers
+  indirect case lazyMany(AST)
+  // lazyZeroOrOne(AST)
+  // lazyoneOrMore(AST)
+
   case character(Character)
   case unicodeScalar(UnicodeScalar)
   case characterClass(CharacterClass)
@@ -50,6 +55,7 @@ extension AST: CustomStringConvertible {
     case .many(let rest): return ".many(\(rest))"
     case .zeroOrOne(let rest): return ".zeroOrOne(\(rest))"
     case .oneOrMore(let rest): return ".oneOrMore(\(rest))"
+    case .lazyMany(let rest): return ".lazyMany(\(rest))"
     case .character(let c): return c.halfWidthCornerQuoted
     case .unicodeScalar(let u): return u.halfWidthCornerQuoted
     case .characterClass(let cc): return ".characterClass(\(cc))"

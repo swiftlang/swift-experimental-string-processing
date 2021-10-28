@@ -71,6 +71,29 @@ public func compile(
       }
       return
 
+    case .lazyMany(let child):
+      // a*? ==> L_START, <split L_ELEMENT>, goto L_DONE,
+      //         L_ELEMENT, a, goto L_START, L_DONE
+      let childHasCaptures = child.hasCaptures
+      if childHasCaptures {
+        instructions.append(.beginGroup)
+      }
+      let start = createLabel()
+      let element = createLabel()
+      let done = createLabel()
+      instructions.append(start)
+      instructions.append(.split(disfavoring: element.label!))
+      instructions.append(.goto(label: done.label!))
+      instructions.append(element)
+      compileNode(child)
+      instructions.append(.goto(label: start.label!))
+      instructions.append(done)
+      if childHasCaptures {
+        instructions.append(.captureArray)
+        instructions.append(.endGroup)
+      }
+      return
+
     case .zeroOrOne(let child):
       // a? ==> <split L_DONE> a, L_DONE
       if child.hasCaptures {
