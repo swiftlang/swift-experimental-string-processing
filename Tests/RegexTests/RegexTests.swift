@@ -406,7 +406,7 @@ class RegexTests: XCTestCase {
                        label(5),
                        labels: [1, 4, 7, 8, 13, 15], splits: [2, 10, 11]))
   }
-                                
+
   func testVMs() {
     let tests: Array<(String, pass: [String], fail: [String])> = [
       ("a|b", ["a", "b"], ["ab", "c"]),
