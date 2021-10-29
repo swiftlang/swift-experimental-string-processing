@@ -1,9 +1,9 @@
-public struct ZSearcher<Searched: Collection> where Searched.SubSequence == Searched {
+public struct ZSearcher<Searched: Collection> {
   let pattern: [Searched.Element]
   let z: [Int]
   let areEquivalent: (Searched.Element, Searched.Element) -> Bool
   
-  public init(pattern: [Searched.Element], by areEquivalent: @escaping (Searched.Element, Searched.Element) -> Bool) {
+  init(pattern: [Searched.Element], by areEquivalent: @escaping (Searched.Element, Searched.Element) -> Bool) {
     self.pattern = pattern
     self.z = zAlgorithm(pattern, by: areEquivalent)
     self.areEquivalent = areEquivalent
@@ -11,8 +11,8 @@ public struct ZSearcher<Searched: Collection> where Searched.SubSequence == Sear
 }
 
 extension ZSearcher: StatelessCollectionSearcher {
-  public func search(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>? {
-    var l = index
+  public func search(_ searched: Searched, subrange: Range<Searched.Index>) -> Range<Searched.Index>? {
+    var l = subrange.lowerBound
     var r = l
     var distanceFromL = 0
     var distanceToR = 0
@@ -21,7 +21,7 @@ extension ZSearcher: StatelessCollectionSearcher {
       var left = minLength
       var right = end
       
-      while left != pattern.endIndex && right != searched.endIndex && areEquivalent(pattern[left], searched[right]) {
+      while left != pattern.endIndex && right != subrange.upperBound && areEquivalent(pattern[left], searched[right]) {
         left += 1
         searched.formIndex(after: &right)
       }
@@ -37,11 +37,9 @@ extension ZSearcher: StatelessCollectionSearcher {
       }
     }
     
-    var i = index
-    
-    while true {
-      if i >= r {
-        if let range = compare(start: i, end: i, minLength: 0) {
+    for index in searched.indices {
+      if index >= r {
+        if let range = compare(start: index, end: index, minLength: 0) {
           return range
         }
       } else {
@@ -49,20 +47,17 @@ extension ZSearcher: StatelessCollectionSearcher {
         let prev = z[distanceFromL]
         
         if prev >= length {
-          if let range = compare(start: i, end: r, minLength: length) {
+          if let range = compare(start: index, end: r, minLength: length) {
             return range
           }
         }
       }
       
-      if i == searched.endIndex {
-        return nil
-      }
-      
-      searched.formIndex(after: &i)
       distanceFromL += 1
       distanceToR -= 1
     }
+    
+    return nil
   }
 }
 

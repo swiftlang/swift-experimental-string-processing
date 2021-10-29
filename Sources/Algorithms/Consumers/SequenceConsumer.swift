@@ -1,14 +1,12 @@
 struct SequenceConsumer<Consumed: Collection, Pattern: Collection>
-  where Consumed.Element: Equatable,
-        Consumed.SubSequence == Consumed,
-        Pattern.Element == Consumed.Element
+  where Pattern.Element == Consumed.Element, Consumed.Element: Equatable
 {
   let pattern: Pattern
 }
 
 extension SequenceConsumer: CollectionConsumer {
-  func consume(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
-    var index = index
+  func consume(_ consumed: Consumed, subrange: Range<Consumed.Index>) -> Consumed.Index? {
+    var index = subrange.lowerBound
     var patternIndex = pattern.startIndex
     
     while true {
@@ -16,7 +14,7 @@ extension SequenceConsumer: CollectionConsumer {
         return index
       }
       
-      if index == consumed.endIndex || consumed[index] != pattern[patternIndex] {
+      if index == subrange.upperBound || consumed[index] != pattern[patternIndex] {
         return nil
       }
       
@@ -29,8 +27,8 @@ extension SequenceConsumer: CollectionConsumer {
 extension SequenceConsumer: BackwardCollectionConsumer
   where Consumed: BidirectionalCollection, Pattern: BidirectionalCollection
 {
-  func consumeBack(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
-    var index = index
+  func consumeBack(_ consumed: Consumed, subrange: Range<Consumed.Index>) -> Consumed.Index? {
+    var index = subrange.upperBound
     var patternIndex = pattern.endIndex
     
     while true {
@@ -38,7 +36,7 @@ extension SequenceConsumer: BackwardCollectionConsumer
         return index
       }
       
-      if index == consumed.startIndex {
+      if index == subrange.lowerBound {
         return nil
       }
       

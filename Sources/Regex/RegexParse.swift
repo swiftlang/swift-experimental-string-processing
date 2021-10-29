@@ -98,7 +98,7 @@ extension Parser {
   //     Alternation -> Concatenation ('|' Concatenation)*
   mutating func parseAlternation() throws -> AST {
     assert(!lexer.isEmpty)
-    var result = Array<AST>(singleElement: try parseConcatenation())
+    var result = Array<AST>(try parseConcatenation())
     while lexer.eat(.pipe) {
       result.append(try parseConcatenation())
     }
