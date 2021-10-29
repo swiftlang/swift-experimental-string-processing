@@ -83,6 +83,24 @@ extension Collection {
   ) -> (prefix: SubSequence, SubSequence, suffix: SubSequence) {
     (self[..<r.lowerBound], self[r], self[r.upperBound...])
   }
+
+  public func offset(of i: Index) -> Int {
+    distance(from: startIndex, to: i)
+  }
+
+  public func convertByOffset<
+    C: Collection
+  >(_ range: Range<Index>, in c: C) -> Range<C.Index> {
+    convertByOffset(range.lowerBound, in: c) ..<
+    convertByOffset(range.upperBound, in: c)
+  }
+
+  public func convertByOffset<
+    C: Collection
+  >(_ idx: Index, in c: C) -> C.Index {
+    c.idx(offset(of: idx))
+  }
+
 }
 
 extension UnsafeMutableRawPointer {
@@ -90,5 +108,16 @@ extension UnsafeMutableRawPointer {
     let alignmentMask = MemoryLayout<T>.alignment - 1
     let rounded = (Int(bitPattern: self) + alignmentMask) & ~alignmentMask
     return UnsafeMutableRawPointer(bitPattern: rounded).unsafelyUnwrapped
+  }
+}
+
+extension String {
+  public func isOnGraphemeClusterBoundary(_ i: Index) -> Bool {
+    String.Index(i, within: self) != nil
+  }
+  public init<Scalars: Collection>(
+    _ scs: Scalars
+  ) where Scalars.Element == Unicode.Scalar {
+    self.init(decoding: scs.map { $0.value }, as: UTF32.self)
   }
 }
