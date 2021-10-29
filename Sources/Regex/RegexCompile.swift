@@ -71,6 +71,29 @@ public func compile(
       }
       return
 
+    case .lazyMany(let child):
+      // a*? ==> L_START, <split L_ELEMENT>, goto L_DONE,
+      //         L_ELEMENT, a, goto L_START, L_DONE
+      let childHasCaptures = child.hasCaptures
+      if childHasCaptures {
+        instructions.append(.beginGroup)
+      }
+      let start = createLabel()
+      let element = createLabel()
+      let done = createLabel()
+      instructions.append(start)
+      instructions.append(.split(disfavoring: element.label!))
+      instructions.append(.goto(label: done.label!))
+      instructions.append(element)
+      compileNode(child)
+      instructions.append(.goto(label: start.label!))
+      instructions.append(done)
+      if childHasCaptures {
+        instructions.append(.captureArray)
+        instructions.append(.endGroup)
+      }
+      return
+
     case .zeroOrOne(let child):
       // a? ==> <split L_DONE> a, L_DONE
       if child.hasCaptures {
@@ -95,6 +118,36 @@ public func compile(
       }
       return
 
+    case .lazyZeroOrOne(let child):
+      // a?? ==> <split L_ELEMENT>, goto L_DONE, L_ELEMENT, a, L_DONE
+      if child.hasCaptures {
+        instructions.append(.beginGroup)
+        let element = createLabel()
+        let nilCase = createLabel()
+        let done = createLabel()
+        instructions.append(.split(disfavoring: element.label!))
+        instructions.append(.goto(label: nilCase.label!))
+        instructions.append(element)
+        compileNode(child)
+        instructions += [
+          .captureSome,
+          .goto(label: done.label!),
+          nilCase,
+          .captureNil,
+          done,
+          .endGroup
+        ]
+      } else {
+        let element = createLabel()
+        let done = createLabel()
+        instructions.append(.split(disfavoring: element.label!))
+        instructions.append(.goto(label: done.label!))
+        instructions.append(element)
+        compileNode(child)
+        instructions.append(done)
+      }
+      return
+
     case .oneOrMore(let child):
       // a+ ==> L_START, a, <split L_DONE>, goto L_START, L_DONE
       let childHasCaptures = child.hasCaptures
@@ -108,6 +161,22 @@ public func compile(
       instructions.append(.split(disfavoring: done.label!))
       instructions.append(.goto(label: start.label!))
       instructions.append(done)
+      if childHasCaptures {
+        instructions.append(.captureArray)
+        instructions.append(.endGroup)
+      }
+      return
+      
+    case .lazyOneOrMore(let child):
+      // a+? ==> L_START, a, <split L_START>
+      let childHasCaptures = child.hasCaptures
+      if childHasCaptures {
+        instructions.append(.beginGroup)
+      }
+      let start = createLabel()
+      instructions.append(start)
+      compileNode(child)
+      instructions.append(.split(disfavoring: start.label!))
       if childHasCaptures {
         instructions.append(.captureArray)
         instructions.append(.endGroup)

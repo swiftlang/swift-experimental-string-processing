@@ -30,6 +30,11 @@ public enum AST: Hashable {
   indirect case zeroOrOne(AST)
   indirect case oneOrMore(AST)
 
+  // Lazy versions of quantifiers
+  indirect case lazyMany(AST)
+  indirect case lazyZeroOrOne(AST)
+  indirect case lazyOneOrMore(AST)
+
   case character(Character)
   case unicodeScalar(UnicodeScalar)
   case characterClass(CharacterClass)
@@ -50,6 +55,9 @@ extension AST: CustomStringConvertible {
     case .many(let rest): return ".many(\(rest))"
     case .zeroOrOne(let rest): return ".zeroOrOne(\(rest))"
     case .oneOrMore(let rest): return ".oneOrMore(\(rest))"
+    case .lazyMany(let rest): return ".lazyMany(\(rest))"
+    case .lazyZeroOrOne(let rest): return ".lazyZeroOrOne(\(rest))"
+    case .lazyOneOrMore(let rest): return ".lazyOneOrMore(\(rest))"
     case .character(let c): return c.halfWidthCornerQuoted
     case .unicodeScalar(let u): return u.halfWidthCornerQuoted
     case .characterClass(let cc): return ".characterClass(\(cc))"
@@ -164,13 +172,19 @@ extension Parser {
     switch lexer.peek() {
     case .star?:
       lexer.eat()
-      return .many(partialResult)
+      return lexer.eat(.question)
+        ? .lazyMany(partialResult)
+        : .many(partialResult)
     case .plus?:
       lexer.eat()
-      return .oneOrMore(partialResult)
+      return lexer.eat(.question)
+        ? .lazyOneOrMore(partialResult)
+        : .oneOrMore(partialResult)
     case .question?:
       lexer.eat()
-      return .zeroOrOne(partialResult)
+      return lexer.eat(.question)
+        ? .lazyZeroOrOne(partialResult)
+        : .zeroOrOne(partialResult)
     default:
       return partialResult
     }
