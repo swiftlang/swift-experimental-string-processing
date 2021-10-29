@@ -1,14 +1,12 @@
-public struct TwoWaySearcher<Searched: BidirectionalCollection>
-  where Searched.Element: Comparable, Searched.SubSequence == Searched
-{
+public struct TwoWaySearcher<Searched: BidirectionalCollection> where Searched.Element: Comparable {
   // TODO: Be generic over the pattern?
   let pattern: [Searched.Element]
   let criticalIndex: Int
   let period: Int
   let periodIsExact: Bool
   
-  init?(pattern: [Searched.Element]) {
-    guard !pattern.isEmpty else { return nil }
+  init(pattern: [Searched.Element]) {
+    assert(!pattern.isEmpty)
     
     let (criticalIndex, periodOfSecondPart) = pattern._criticalFactorization(<)
     let periodIsExact = pattern[criticalIndex...]
@@ -26,23 +24,25 @@ public struct TwoWaySearcher<Searched: BidirectionalCollection>
 
 extension TwoWaySearcher: CollectionSearcher {
   public struct State {
-    var index: Searched.Index
-    var criticalIndex: Searched.Index
+    var position: Searched.Index
     var memory: (offset: Int, index: Searched.Index)?
   }
-  
-  public func state(startingAt index: Searched.Index, in searched: Searched) -> State {
-    let criticalIndex = searched.index(index, offsetBy: criticalIndex)
-    return State(index: index, criticalIndex: criticalIndex, memory: nil)
+
+  public func initialState(_ searched: Searched) -> State {
+    let position = searched.index(searched.startIndex, offsetBy: criticalIndex)
+    return State(position: position, memory: nil)
   }
 
-  public func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {
-    while state.criticalIndex != searched.endIndex {
-      if let end = _searchRight(searched, &state),
+  public func search(
+    _ searched: Searched,
+    subrange: Range<Searched.Index>,
+    _ state: inout State
+  ) -> Range<Searched.Index>? {
+    while state.position != subrange.upperBound {
+      if let end = _searchRight(searched, subrange: subrange, &state),
          let start = _searchLeft(searched, &state, end)
       {
-        state.index = end
-        state.criticalIndex = searched.index(end, offsetBy: criticalIndex)
+        state.position = searched.index(end, offsetBy: criticalIndex)
         state.memory = nil
         return start..<end
       }
@@ -53,6 +53,7 @@ extension TwoWaySearcher: CollectionSearcher {
   
   func _searchRight(
     _ searched: Searched,
+    subrange: Range<Searched.Index>,
     _ state: inout State
   ) -> Searched.Index? {
     let rStart: Int
@@ -63,17 +64,17 @@ extension TwoWaySearcher: CollectionSearcher {
       rIndex = memory.index
     } else {
       rStart = criticalIndex
-      rIndex = state.criticalIndex
+      rIndex = state.position
     }
     
     for i in rStart..<pattern.count {
-      if rIndex == searched.endIndex {
-        state.criticalIndex = searched.endIndex
+      if rIndex == subrange.upperBound {
+        state.position = subrange.upperBound
         return nil
       }
       
       if pattern[i] != searched[rIndex] {
-        state.criticalIndex = searched.index(after: rIndex)
+        state.position = searched.index(after: rIndex)
         state.memory = nil
         return nil
       }
@@ -90,13 +91,13 @@ extension TwoWaySearcher: CollectionSearcher {
     _ end: Searched.Index
   ) -> Searched.Index? {
     let lStart = min(state.memory?.offset ?? 0, criticalIndex)
-    var lIndex = state.criticalIndex
+    var lIndex = state.position
     
     for i in (lStart..<criticalIndex).reversed() {
       searched.formIndex(before: &lIndex)
       
       if pattern[i] != searched[lIndex] {
-        searched.formIndex(&state.criticalIndex, offsetBy: period)
+        searched.formIndex(&state.position, offsetBy: period)
         if periodIsExact { state.memory = (pattern.count - period, end) }
         return nil
       }
