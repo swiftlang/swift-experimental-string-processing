@@ -7,9 +7,9 @@ public struct CharacterClass: Hashable {
   var isInverted: Bool = false
 
   public enum Representation: Hashable {
-    /// Any single elements
+    /// Any single element, re the current matching semantics
     case any
-    /// Any grapheme cluster, even in non-grapheme-cluster mode
+    /// Any grapheme cluster, even when in a non-grapheme-cluster mode
     case anyGraphemeCluster
     /// Character.isDigit
     case digit
