@@ -14,6 +14,12 @@ extension AST: ExpressibleByExtendedGraphemeClusterLiteral {
     self = .character(value)
   }
 }
+extension CharacterClass.CharacterSetComponent: ExpressibleByExtendedGraphemeClusterLiteral {
+  public typealias ExtendedGraphemeClusterLiteralType = Character
+  public init(extendedGraphemeClusterLiteral value: Character) {
+    self = .character(value)
+  }
+}
 extension RECode.Instruction: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
@@ -181,11 +187,24 @@ class RegexTests: XCTestCase {
                 "a", .unicodeScalar("e"),
                 "b", .unicodeScalar("e"),
                 "c", .unicodeScalar("e"), "d")
+    performTest("[^a&&b--c~~d]", .leftSquareBracket,
+                  .caret, "a",
+                  .setOperator(.doubleAmpersand), "b",
+                  .setOperator(.doubleDash), "c",
+                  .setOperator(.doubleTilda), "d",
+                  .rightSquareBracket)
+    performTest("&&^-^-~~", "&", "&", .caret, .minus, .caret, .minus, "~", "~")
+    performTest("[]]&&", .leftSquareBracket, .rightSquareBracket,
+                .rightSquareBracket, "&", "&")
 
     // Gramatically invalid (yet lexically valid)
     performTest("|*\\\\", .pipe, .star, "\\")
     performTest(")ab(+", .rightParen, "a", "b", .leftParen, .plus)
     performTest("...", .dot, .dot, .dot)
+    performTest("[[[]&&]]&&", .leftSquareBracket, .leftSquareBracket,
+                .leftSquareBracket, .rightSquareBracket,
+                .setOperator(.doubleAmpersand), .rightSquareBracket,
+                .rightSquareBracket, "&", "&")
   }
 
   func testParse() {
@@ -213,6 +232,18 @@ class RegexTests: XCTestCase {
 
     func alt(_ asts: AST...) -> AST { return .alternation(asts) }
     func concat(_ asts: AST...) -> AST { return .concatenation(asts) }
+    func charClass(
+      _ comps: CharacterClass.CharacterSetComponent...,
+      inverted: Bool = false
+    ) -> AST {
+      .characterClass(.custom(comps).withInversion(inverted))
+    }
+    func charClass(
+      _ comps: CharacterClass.CharacterSetComponent...,
+      inverted: Bool = false
+    ) -> CharacterClass.CharacterSetComponent {
+      .characterClass(.custom(comps).withInversion(inverted))
+    }
 
     performTest("abc", concat("a", "b", "c"))
     performTest("abc\\+d*", concat("a", "b", "c", "+", .many("d")))
@@ -236,6 +267,58 @@ class RegexTests: XCTestCase {
                        "b", .unicodeScalar("e"),
                        "c", .unicodeScalar("e"),
                        "d", .unicodeScalar("e")))
+
+    performTest("[-|$^:?+*())(*-+-]",
+                charClass("-", "|", "$", "^", ":", "?", "+", "*", "(", ")", ")",
+                          "(", .range("*" ... "+"), "-"))
+
+    performTest("[a-b-c]", charClass(.range("a" ... "b"), "-", "c"))
+
+    // These are metacharacters in certain contexts, but normal characters
+    // otherwise.
+    performTest(":-]", concat(":", "-", "]"))
+
+    performTest("[^abc]", charClass("a", "b", "c", inverted: true))
+    performTest("[a^]", charClass("a", "^"))
+
+    performTest("\\D\\S\\W", concat(.characterClass(.digit.inverted),
+                                    .characterClass(.whitespace.inverted),
+                                    .characterClass(.word.inverted)))
+
+    performTest("[\\dd]", charClass(.characterClass(.digit), "d"))
+
+    performTest("[^[\\D]]", charClass(charClass(.characterClass(.digit.inverted)), inverted: true))
+    performTest("[[ab][bc]]", charClass(charClass("a", "b"), charClass("b", "c")))
+    performTest("[[ab]c[de]]", charClass(charClass("a", "b"), "c", charClass("d", "e")))
+
+    performTest("[[ab]&&[^bc]\\d]+", .oneOrMore(charClass(
+      .setOperation(
+        lhs: charClass("a", "b"),
+        op: .intersection,
+        rhs: charClass("b", "c", inverted: true)
+      ),
+      .characterClass(.digit)
+    )))
+
+    performTest("[a&&b]", charClass(
+      .setOperation(lhs: "a", op: .intersection, rhs: "b")
+    ))
+
+    // We left-associate for chained operators.
+    performTest("[a&&b~~c]", charClass(
+      .setOperation(
+        lhs: .setOperation(lhs: "a", op: .intersection, rhs: "b"),
+        op: .symmetricDifference,
+        rhs: "c"
+      )
+    ))
+
+    // Operators are only valid in custom character classes.
+    performTest("a&&b", concat("a", "&", "&", "b"))
+    performTest("&?", .zeroOrOne("&"))
+    performTest("&&?", concat("&", .zeroOrOne("&")))
+    performTest("--+", concat("-", .oneOrMore("-")))
+    performTest("~~*", concat("~", .many("~")))
 
     // TODO: failure tests
   }
@@ -428,6 +511,20 @@ class RegexTests: XCTestCase {
 
       ("Caf\\u{65}\\u0301", ["Cafe\u{301}"], ["Café", "Cafe"]),
       ("Caf\\x65\\u0301", ["Cafe\u{301}"], ["Café", "Cafe"]),
+
+      ("[^abc]", ["x", "0", "*", " "], ["a", "b", "c"]),
+      ("\\D\\s\\W", ["a *", "* -"], ["0 *", "000", "a a", "a 8", "aaa", "***"]),
+
+      ("[^\\d]", ["x", "*", "_", " "], ["0", "9"]),
+      ("[^[\\D]]", ["0", "9"], ["x", "*", "_", " "]),
+      ("[[ab][bc]]", ["a", "b", "c"], ["d", "*", " "]),
+      ("[[ab]c[de]]", ["a", "b", "c", "d", "e"], ["f", "*", " "]),
+
+      ("[\\w--\\d]+", ["w", "_wf"], ["0", "*", "_0", "0a"]),
+      ("[\\w&&\\d]+", ["0", "093"], ["a0", "*", "_"]),
+      ("[\\w~~[\\d\\s]]+", ["a", "_", " a ", " a _  c"], ["a0", " 0 ", "90", "*"]),
+      ("[[\\w\\d\\s]--\\s--[a-zA-Z]]+", ["0", "38", "8_90"], [" 38", "a", "a8", " ", "A", " T"]),
+      ("[[ab]~~[bc]]", ["a", "c"], ["b", "d"]),
 
       // Pathological (at least for HareVM and for now Tortoise too)
       //            ("(a*)*", ["a"], ["b"])

@@ -108,8 +108,8 @@ extension Parser {
   //     Concatenation -> Quantification Quantification*
   mutating func parseConcatenation() throws -> AST {
     var result = Array<AST>()
-    while let quant = try parseQuantification() {
-      result.append(quant)
+    while let operand = try parseQuantifierOperand() {
+      result.append(try parseQuantification(of: operand))
     }
     guard !result.isEmpty else {
       // Happens in `abc|`
@@ -118,9 +118,31 @@ extension Parser {
     return result.count == 1 ? result[0] : .concatenation(result)
   }
   
-  //     Quantification -> (Group | <token: Character>) <token: Quantifier>?
-  mutating func parseQuantification() throws -> AST? {
-    let partialResult: AST
+  //     Quantification -> QuantifierOperand <token: Quantifier>?
+  mutating func parseQuantification(of operand: AST) throws -> AST {
+    switch lexer.peek() {
+    case .star?:
+      lexer.eat()
+      return lexer.eat(.question)
+        ? .lazyMany(operand)
+        : .many(operand)
+    case .plus?:
+      lexer.eat()
+      return lexer.eat(.question)
+        ? .lazyOneOrMore(operand)
+        : .oneOrMore(operand)
+    case .question?:
+      lexer.eat()
+      return lexer.eat(.question)
+        ? .lazyZeroOrOne(operand)
+        : .zeroOrOne(operand)
+    default:
+      return operand
+    }
+  }
+
+  //     QuantifierOperand -> (Group | <token: Character>)
+  mutating func parseQuantifierOperand() throws -> AST? {
     switch lexer.peek() {
     case .leftParen?:
       lexer.eat()
@@ -130,83 +152,137 @@ extension Parser {
         isCapturing = false
       }
       let child = try parse()
-      partialResult = isCapturing ? .capturingGroup(child) : .group(child)
       try lexer.eat(expecting: .rightParen)
+      return isCapturing ? .capturingGroup(child) : .group(child)
 
     case .character(let c, isEscaped: false):
       lexer.eat()
-      partialResult = .character(c)
-      
+      return .character(c)
+
     case .unicodeScalar(let u):
       lexer.eat()
-      partialResult = .unicodeScalar(u)
-      
+      return .unicodeScalar(u)
+
     case .character(let c, isEscaped: true):
       lexer.eat()
       if let cc = CharacterClass(c) {
         // Other characters either match a character class...
-        partialResult = .characterClass(cc)
+        return .characterClass(cc)
 
       } else {
         // ...or are invalid
         try report("unexpected escape sequence \\\(c)")
       }
 
+    case .minus?, .colon?, .rightSquareBracket?:
+      // Outside of custom character classes, these are not considered to be
+      // metacharacters.
+      guard case .meta(let meta) = lexer.eat() else {
+        fatalError("Not a metachar?")
+      }
+      return .character(meta.rawValue)
+
     case .leftSquareBracket?:
-      partialResult = try parseCustomCharacterClass()
+      return .characterClass(try parseCustomCharacterClass())
 
     case .dot?:
       lexer.eat()
-      partialResult = .characterClass(.any)
+      return .characterClass(.any)
 
     // Correct terminations
     case .rightParen?: fallthrough
     case .pipe?: fallthrough
     case nil:
       return nil
-      
+
     default:
       try report("expected a character or group")
     }
+  }
 
-    switch lexer.peek() {
-    case .star?:
-      lexer.eat()
-      return lexer.eat(.question)
-        ? .lazyMany(partialResult)
-        : .many(partialResult)
-    case .plus?:
-      lexer.eat()
-      return lexer.eat(.question)
-        ? .lazyOneOrMore(partialResult)
-        : .oneOrMore(partialResult)
-    case .question?:
-      lexer.eat()
-      return lexer.eat(.question)
-        ? .lazyZeroOrOne(partialResult)
-        : .zeroOrOne(partialResult)
+  typealias CharacterSetComponent = CharacterClass.CharacterSetComponent
+
+  /// Parse a literal character in a custom character class.
+  mutating func parseCharacterSetComponentCharacter() throws -> Character {
+    // Most metacharacters can be interpreted as literal characters in a
+    // custom character class. This even includes the '-' character if it
+    // appears in a position where it cannot be treated as a range
+    // (per PCRE#SEC9). We may want to warn on this and require the user to
+    // escape it though.
+    switch lexer.eat() {
+    case .meta(.rsquare):
+      try report("unexpected end of character class")
+    case .meta(let meta):
+      return meta.rawValue
+    case .character(let c, isEscaped: _):
+      return c
     default:
-      return partialResult
+      try report("expected a character or a ']'")
     }
   }
 
-  mutating func parseCustomCharacterClass() throws -> AST {
-    try lexer.eat(expecting: .leftSquareBracket)
-    var components: [CharacterClass.CharacterSetComponent] = []
-    while !lexer.eat(.rightSquareBracket) {
-      guard case .character(let c1, isEscaped: _) = lexer.eat() else {
-        try report("expected a character or a ']'")
-      }
-      if lexer.eat(.minus) {
-        guard case .character(let c2, isEscaped: _) = lexer.eat() else {
-          try report("expected a character to end the range")
-        }
-        components.append(.range(c1...c2))
-      } else {
-        components.append(.character(c1))
-      }
+  mutating func parseCharacterSetComponent() throws -> CharacterSetComponent {
+    // Nested custom character class.
+    if lexer.peek() == .leftSquareBracket {
+      return .characterClass(try parseCustomCharacterClass())
     }
-    return .characterClass(.custom(components))
+    // Escaped character class.
+    if case .character(let c, isEscaped: true) = lexer.peek(),
+       let cc = CharacterClass(c) {
+      lexer.eat()
+      return .characterClass(cc)
+    }
+    // A character that can optionally form a range with another character.
+    let c1 = try parseCharacterSetComponentCharacter()
+    if lexer.eat(.minus) {
+      let c2 = try parseCharacterSetComponentCharacter()
+      return .range(c1...c2)
+    }
+    return .character(c1)
+  }
+
+  /// Attempt to parse a set operator, returning nil if the next token is not
+  /// for a set operator.
+  mutating func tryParseSetOperator() -> CharacterClass.SetOperator? {
+    guard case .setOperator(let opTok) = lexer.peek() else { return nil }
+    lexer.eat()
+    switch opTok {
+    case .doubleAmpersand:
+      return .intersection
+    case .doubleDash:
+      return .subtraction
+    case .doubleTilda:
+      return .symmetricDifference
+    }
+  }
+
+  ///     CharacterClass -> '[' CharacterSetComponent+ ']'
+  ///
+  ///     CharacterSetComponent -> CharacterSetComponent SetOp CharacterSetComponent
+  ///     CharacterSetComponent -> CharacterClass
+  ///     CharacterSetComponent -> <token: Character>
+  ///     CharacterSetComponent -> <token: Character> '-' <token: Character>
+  ///
+  mutating func parseCustomCharacterClass() throws -> CharacterClass {
+    try lexer.eat(expecting: .leftSquareBracket)
+    let isInverted = lexer.eat(Token.caret)
+    var components: [CharacterSetComponent] = []
+    while !lexer.eat(.rightSquareBracket) {
+      // If we have a binary set operator, parse it and the next component. Note
+      // that this means we left associate for a chain of operators.
+      // TODO: We may want to diagnose and require users to disambiguate,
+      // at least for chains of separate operators.
+      if let op = tryParseSetOperator() {
+        guard let lhs = components.popLast() else {
+          try report("Binary set operator requires operand")
+        }
+        let rhs = try parseCharacterSetComponent()
+        components.append(.setOperation(lhs: lhs, op: op, rhs: rhs))
+        continue
+      }
+      components.append(try parseCharacterSetComponent())
+    }
+    return .custom(components).withInversion(isInverted)
   }
 }
 
