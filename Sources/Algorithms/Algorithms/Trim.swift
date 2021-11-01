@@ -5,13 +5,14 @@ extension Collection {
   }
 }
 
-extension Collection where SubSequence == Self {
-  public mutating func trimPrefix<C: CollectionConsumer>(_ consumer: C) where C.Consumed == SubSequence {
-    if let start = consumer.consume(self[...]) {
-      self = self[start...]
-    }
-  }
-}
+// FIXME: Restore this once the CI accepts
+//extension Collection where SubSequence == Self {
+//  public mutating func trimPrefix<C: CollectionConsumer>(_ consumer: C) where C.Consumed == SubSequence {
+//    if let start = consumer.consume(self) {
+//      self = self[start...]
+//    }
+//  }
+//}
 
 extension RangeReplaceableCollection {
   // NOTE: Disfavored because the `Collection with SubSequence == Self` overload
@@ -31,13 +32,14 @@ extension BidirectionalCollection {
   }
 }
 
-extension BidirectionalCollection where SubSequence == Self {
-  public mutating func trimSuffix<C: BackwardCollectionConsumer>(_ consumer: C) where C.Consumed == SubSequence {
-    if let end = consumer.consumeBack(self[...]) {
-      self = self[..<end]
-    }
-  }
-}
+// FIXME: Restore this once the CI accepts
+//extension BidirectionalCollection where SubSequence == Self {
+//  public mutating func trimSuffix<C: BackwardCollectionConsumer>(_ consumer: C) where C.Consumed == SubSequence {
+//    if let end = consumer.consumeBack(self) {
+//      self = self[..<end]
+//    }
+//  }
+//}
 
 extension RangeReplaceableCollection where Self: BidirectionalCollection {
   @_disfavoredOverload
@@ -51,23 +53,23 @@ extension RangeReplaceableCollection where Self: BidirectionalCollection {
 extension BidirectionalCollection {
   public func trimming<C: CollectionConsumer & BackwardCollectionConsumer>(
     _ consumer: C
-  ) -> SubSequence where C.Consumed == Self {
+  ) -> SubSequence where C.Consumed == SubSequence {
     // NOTE: Might give different results than trimming the suffix before trimming the prefix
     trimmingPrefix(consumer).trimmingSuffix(consumer)
   }
 }
 
-extension BidirectionalCollection where SubSequence == Self {
-  mutating func trim<C: BackwardCollectionConsumer>(_ consumer: C) where C.Consumed == Self {
-    trimPrefix(consumer)
-    trimSuffix(consumer)
-  }
-}
+//extension BidirectionalCollection where SubSequence == Self {
+//  mutating func trim<C: BackwardCollectionConsumer>(_ consumer: C) where C.Consumed == Self {
+//    trimPrefix(consumer)
+//    trimSuffix(consumer)
+//  }
+//}
 
 extension RangeReplaceableCollection where Self: BidirectionalCollection {
-  mutating func trim<C: BackwardCollectionConsumer>(_ consumer: C) where C.Consumed == Self {
-    trimSuffix(consumer)
+  mutating func trim<C: BackwardCollectionConsumer>(_ consumer: C) where C.Consumed == SubSequence {
     trimPrefix(consumer)
+    trimSuffix(consumer)
   }
 }
 
