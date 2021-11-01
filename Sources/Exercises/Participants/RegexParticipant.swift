@@ -49,7 +49,7 @@ private func extractFromCaptures(
 private func graphemeBreakPropertyData<RP: RegexProtocol>(
   forLine line: String,
   using regex: RP
-) -> GraphemeBreakEntry? where RP.CaptureValue == (Substring, Substring?, Substring) {
+) -> GraphemeBreakEntry? where RP.Capture == (Substring, Substring?, Substring) {
   line.match(regex).map(\.captures).flatMap(extractFromCaptures)
 }
 

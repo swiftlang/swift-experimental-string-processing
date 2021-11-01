@@ -68,29 +68,29 @@ struct TestCase {
   }
 }
 
-struct TestExpectation<CaptureValue> {
+struct TestExpectation<Capture> {
   let content: String?
-  let captures: CaptureValue
+  let captures: Capture
   // A function that determines
-  let capturesEqual: (CaptureValue, CaptureValue) -> Bool
+  let capturesEqual: (Capture, Capture) -> Bool
 
   init(
     _ content: String? = nil,
-    captures: CaptureValue,
-    capturesEqual: @escaping (CaptureValue, CaptureValue) -> Bool
+    captures: Capture,
+    capturesEqual: @escaping (Capture, Capture) -> Bool
   ) {
     self.content = content
     self.captures = captures
     self.capturesEqual = capturesEqual
   }
 
-  init(_ content: String? = nil) where CaptureValue == Void {
+  init(_ content: String? = nil) where Capture == Void {
     self.content = content
     self.captures = ()
     self.capturesEqual = { _, _ in true }
   }
 
-  func isExpectedCapture(_ actualCaptures: CaptureValue) -> Bool {
+  func isExpectedCapture(_ actualCaptures: Capture) -> Bool {
     capturesEqual(actualCaptures, captures)
   }
 
@@ -99,13 +99,13 @@ struct TestExpectation<CaptureValue> {
   }
 }
 
-func performTest<CaptureValue>(
+func performTest<Capture>(
   regex: String,
   input: String,
   offsets: Offsets? = nil,
   mode: MatchMode = .wholeString,
-  expectedCaptureType: CaptureValue.Type,
-  expecting expectation: TestExpectation<CaptureValue>?
+  expectedCaptureType: Capture.Type,
+  expecting expectation: TestExpectation<Capture>?
 ) {
   let code = try! compile(regex)
   let lonesomeGeorge = TortoiseVM(code)
@@ -113,7 +113,7 @@ func performTest<CaptureValue>(
   func report(name: String,
               matchedRange: Range<String.Index>?,
               actualCaptures: Any?,
-              expectedCaptures: CaptureValue?
+              expectedCaptures: Capture?
   ) -> String {
     return """
       \(name) failed
@@ -129,9 +129,9 @@ func performTest<CaptureValue>(
     let range = input.flatmapOffsets(offsets)
     let actualResult = vm.execute(input: input, in: range, mode)
     switch (actualResult, expectation) {
-    case let (result?, expectation?) where CaptureValue.self != Void.self:
+    case let (result?, expectation?) where Capture.self != Void.self:
       guard expectation.isExpectedContentIfSpecified(input[result.range]),
-            let actualCapture = result.captures.value as? CaptureValue,
+            let actualCapture = result.captures.value as? Capture,
             expectation.isExpectedCapture(actualCapture) else {
         XCTFail(report(
           name: name,

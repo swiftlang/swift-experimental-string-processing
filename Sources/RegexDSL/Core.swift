@@ -26,9 +26,8 @@ internal class RegexProgram {
 
 /// A type that represents a regular expression.
 public protocol RegexProtocol {
-  associatedtype MatchValue
-  associatedtype CaptureValue
-  var regex: Regex<CaptureValue> { get }
+  associatedtype Capture
+  var regex: Regex<Capture> { get }
 }
 
 public protocol EmptyProtocol {}
@@ -37,8 +36,7 @@ extension Array: EmptyProtocol where Element: EmptyProtocol {}
 extension Optional: EmptyProtocol where Wrapped: EmptyProtocol {}
 
 /// A regular expression.
-public struct Regex<CaptureValue>: RegexProtocol {
-  public typealias MatchValue = CaptureValue
+public struct Regex<Capture>: RegexProtocol {
   let program: RegexProgram
   var ast: AST { program.ast }
 
@@ -48,23 +46,23 @@ public struct Regex<CaptureValue>: RegexProtocol {
 
   public init<Content: RegexProtocol>(
     _ content: Content
-  ) where Content.CaptureValue == CaptureValue {
+  ) where Content.Capture == Capture {
     self = content.regex
   }
 
   public init<Content: RegexProtocol>(
     @RegexBuilder _ content: () -> Content
-  ) where Content.CaptureValue == CaptureValue {
+  ) where Content.Capture == Capture {
     self.init(content())
   }
 
-  public var regex: Regex<CaptureValue> {
+  public var regex: Regex<Capture> {
     self
   }
 }
 
 extension RegexProtocol {
-  public func match(in input: String) -> RegexMatch<CaptureValue>? {
+  public func match(in input: String) -> RegexMatch<Capture>? {
     match(in: input, using: DefaultEngine.self)
   }
 
@@ -72,47 +70,47 @@ extension RegexProtocol {
   internal func match(
     in input: String,
     using engine: VirtualMachine.Type
-  ) -> RegexMatch<CaptureValue>? {
+  ) -> RegexMatch<Capture>? {
     let vm = engine.init(regex.program.executable)
     guard let (range, captures) = vm.execute(input: input)?.destructure
     else {
       return nil
     }
-    return RegexMatch(range: range, captures: captures.value as! CaptureValue)
+    return RegexMatch(range: range, captures: captures.value as! Capture)
   }
 }
 
 extension String {
-  public func match<R: RegexProtocol>(_ regex: R) -> RegexMatch<R.CaptureValue>? {
+  public func match<R: RegexProtocol>(_ regex: R) -> RegexMatch<R.Capture>? {
     regex.match(in: self)
   }
 
   internal func match<R: RegexProtocol>(
     _ regex: R,
     using engine: VirtualMachine.Type
-  ) -> RegexMatch<R.CaptureValue>? {
+  ) -> RegexMatch<R.Capture>? {
     regex.match(in: self, using: engine)
   }
 
   public func match<R: RegexProtocol>(
     @RegexBuilder _ content: () -> R
-  ) -> RegexMatch<R.CaptureValue>? {
+  ) -> RegexMatch<R.Capture>? {
     match(content())
   }
 
   internal func match<R: RegexProtocol>(
     using engine: VirtualMachine.Type,
     @RegexBuilder _ content: () -> R
-  ) -> RegexMatch<R.CaptureValue>? {
+  ) -> RegexMatch<R.Capture>? {
     match(content(), using: engine)
   }
 }
 
-public struct MockRegexLiteral<CaptureValue>: RegexProtocol {
+public struct MockRegexLiteral<Capture>: RegexProtocol {
   public typealias MatchValue = Substring
-  public let regex: Regex<CaptureValue>
+  public let regex: Regex<Capture>
 
-  public init(_ string: String, capturing: CaptureValue.Type = CaptureValue.self) throws {
+  public init(_ string: String, capturing: Capture.Type = Capture.self) throws {
     regex = Regex(ast: try parse(string))
   }
 }

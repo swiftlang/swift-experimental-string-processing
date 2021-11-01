@@ -5,7 +5,7 @@ import ArgumentParser
 struct Permutation {
   let arity: Int
   // 1 -> no extra constraint
-  // 0 -> where T.CaptureValue: NoCaptureProtocol
+  // 0 -> where T.Capture: NoCaptureProtocol
   let bits: Int64
 
   func isCaptureless(at index: Int) -> Bool {
@@ -76,8 +76,8 @@ func outputForEach<C: Collection>(
 typealias Counter = Int64
 let patternProtocolName = "RegexProtocol"
 let concatenationStructTypeBaseName = "Concatenate"
-let matchValueAssociatedTypeName = "MatchValue"
-let captureValueAssociatedTypeName = "CaptureValue"
+let capturingGroupTypeBaseName = "CapturingGroup"
+let captureAssociatedTypeName = "Capture"
 let patternBuilderTypeName = "RegexBuilder"
 let patternProtocolRequirementName = "regex"
 let PatternTypeBaseName = "Regex"
@@ -100,69 +100,66 @@ struct VariadicsGenerator: ParsableCommand {
     output("// BEGIN AUTO-GENERATED CONTENT\n\n\n")
 
     for arity in minArity...maxArity {
-      emitDeclarations(arity: arity)
+      for permutation in Permutations(arity: arity) {
+        emitConcatenation(permutation: permutation)
+      }
       output("\n\n")
     }
 
     output("// END AUTO-GENERATED CONTENT")
   }
 
-  func emitDeclarations(arity: Int) {
-    for permutation in Permutations(arity: arity) {
-      // Emit type declarations.
-      let typeName = "\(concatenationStructTypeBaseName)\(arity)_\(permutation.identifier)"
-      output("public struct \(typeName)<")
-      outputForEach(0..<arity, separator: ", ") { "T\($0): \(patternProtocolName)" }
-      output(">: \(patternProtocolName)")
-      if permutation.hasCaptureless {
-        output(" where ")
-        outputForEach(permutation.capturelessIndices, separator: ", ") {
-          "T\($0).\(captureValueAssociatedTypeName): \(emptyProtocolName)"
-        }
+  func emitConcatenation(permutation: Permutation) {
+    let arity = permutation.arity
+    // Emit concatenation type declarations.
+    //   public struct Concatenation{n}_{perm}<...>: RegexProtocol {
+    //     public typealias Capture = ...
+    //     public let regex: Regex
+    //     public init(...) { ... }
+    //   }
+    let typeName = "\(concatenationStructTypeBaseName)\(arity)_\(permutation.identifier)"
+    output("public struct \(typeName)<")
+    outputForEach(0..<arity, separator: ", ") { "T\($0): \(patternProtocolName)" }
+    output(">: \(patternProtocolName)")
+    if permutation.hasCaptureless {
+      output(" where ")
+      outputForEach(permutation.capturelessIndices, separator: ", ") {
+        "T\($0).\(captureAssociatedTypeName): \(emptyProtocolName)"
       }
-      output(" {\n")
-      output("  public typealias \(matchValueAssociatedTypeName) = ")
-      let captureIndices = permutation.captureIndices
-      let matchElements = captureIndices
-        .map { "T\($0).\(matchValueAssociatedTypeName)" }
-      if matchElements.isEmpty {
-        output(emptyStructName)
-      } else {
-        output("(\(matchElements.joined(separator: ", ")))")
-      }
-      output("\n")
-      output("  public typealias \(captureValueAssociatedTypeName) = ")
-      let captureElements = captureIndices
-        .map { "T\($0).\(captureValueAssociatedTypeName)" }
-      if captureElements.isEmpty {
-        output(emptyStructName)
-      } else {
-        output("(\(captureElements.joined(separator: ", ")))")
-      }
-      output("\n")
-      output("  public let \(patternProtocolRequirementName): \(PatternTypeBaseName)<\(captureValueAssociatedTypeName)>\n")
-      output("  init(")
-      outputForEach(0..<arity, separator: ", ") { "_ x\($0): T\($0)" }
-      output(") {\n")
-      output("    \(patternProtocolRequirementName) = .init(ast: .concatenation([")
-      outputForEach(0..<arity, separator: ", ") { i in
-        "x\(i).\(patternProtocolRequirementName).ast"
-      }
-      output("]))\n")
-      output("  }\n}\n\n")
-
-      // Emit builders.
-      output("extension \(patternBuilderTypeName) {\n")
-      output("  public static func buildBlock<")
-      outputForEach(0..<arity, separator: ", ") { "T\($0)" }
-      output(">(\n    ")
-      outputForEach(0..<arity, separator: ", ") { "_ x\($0): T\($0)" }
-      output("\n  ) -> \(typeName)<")
-      outputForEach(0..<arity, separator: ", ") { "T\($0)" }
-      output("> {\n")
-      output("    \(typeName)(")
-      outputForEach(0..<arity, separator: ", ") { "x\($0)" }
-      output(")\n  }\n}\n\n")
     }
+    output(" {\n")
+    let captureIndices = permutation.captureIndices
+    output("  public typealias \(captureAssociatedTypeName) = ")
+    let captureElements = captureIndices
+      .map { "T\($0).\(captureAssociatedTypeName)" }
+    if captureElements.isEmpty {
+      output(emptyStructName)
+    } else {
+      output("(\(captureElements.joined(separator: ", ")))")
+    }
+    output("\n")
+    output("  public let \(patternProtocolRequirementName): \(PatternTypeBaseName)<\(captureAssociatedTypeName)>\n")
+    output("  init(")
+    outputForEach(0..<arity, separator: ", ") { "_ x\($0): T\($0)" }
+    output(") {\n")
+    output("    \(patternProtocolRequirementName) = .init(ast: .concatenation([")
+    outputForEach(0..<arity, separator: ", ") { i in
+      "x\(i).\(patternProtocolRequirementName).ast"
+    }
+    output("]))\n")
+    output("  }\n}\n\n")
+
+    // Emit concatenation builders.
+    output("extension \(patternBuilderTypeName) {\n")
+    output("  public static func buildBlock<")
+    outputForEach(0..<arity, separator: ", ") { "T\($0)" }
+    output(">(\n    ")
+    outputForEach(0..<arity, separator: ", ") { "_ x\($0): T\($0)" }
+    output("\n  ) -> \(typeName)<")
+    outputForEach(0..<arity, separator: ", ") { "T\($0)" }
+    output("> {\n")
+    output("    \(typeName)(")
+    outputForEach(0..<arity, separator: ", ") { "x\($0)" }
+    output(")\n  }\n}\n\n")
   }
 }

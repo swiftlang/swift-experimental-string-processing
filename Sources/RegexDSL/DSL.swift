@@ -3,28 +3,25 @@ import Regex
 // MARK: - Primitives
 
 extension String: RegexProtocol {
-  public typealias MatchValue = Substring
-  public typealias CaptureValue = Empty
+  public typealias Capture = Empty
 
-  public var regex: Regex<CaptureValue> {
+  public var regex: Regex<Capture> {
     .init(ast: .concatenation(map(AST.character)))
   }
 }
 
 extension Character: RegexProtocol {
-  public typealias MatchValue = Character
-  public typealias CaptureValue = Empty
+  public typealias Capture = Empty
 
-  public var regex: Regex<CaptureValue> {
+  public var regex: Regex<Capture> {
     .init(ast: .character(self))
   }
 }
 
 extension CharacterClass: RegexProtocol {
-  public typealias MatchValue = Character
-  public typealias CaptureValue = Empty
+  public typealias Capture = Empty
 
-  public var regex: Regex<CaptureValue> {
+  public var regex: Regex<Capture> {
     .init(ast: .characterClass(self))
   }
 }
@@ -46,10 +43,9 @@ extension CharacterClass: RegexProtocol {
 
 /// A regular expression.
 public struct OneOrMore<Component: RegexProtocol>: RegexProtocol {
-  public typealias MatchValue = [Component.MatchValue]
-  public typealias CaptureValue = [Component.CaptureValue]
+  public typealias Capture = [Component.Capture]
 
-  public let regex: Regex<CaptureValue>
+  public let regex: Regex<Capture>
 
   public init(_ component: Component) {
     self.regex = .init(ast: .oneOrMore(component.regex.ast))
@@ -67,10 +63,9 @@ public postfix func .+ <R: RegexProtocol>(lhs: R) -> OneOrMore<R> {
 }
 
 public struct Repeat<Component: RegexProtocol>: RegexProtocol {
-  public typealias MatchValue = [Component.MatchValue]
-  public typealias CaptureValue = [Component.CaptureValue]
+  public typealias Capture = [Component.Capture]
 
-  public let regex: Regex<CaptureValue>
+  public let regex: Regex<Capture>
 
   public init(_ component: Component) {
     self.regex = .init(ast: .many(component.regex.ast))
@@ -88,10 +83,9 @@ public postfix func .* <R: RegexProtocol>(lhs: R) -> Repeat<R> {
 }
 
 public struct Optionally<Component: RegexProtocol>: RegexProtocol {
-  public typealias MatchValue = Component.MatchValue?
-  public typealias CaptureValue = Component.CaptureValue?
+  public typealias Capture = Component.Capture?
 
-  public let regex: Regex<CaptureValue>
+  public let regex: Regex<Capture>
 
   public init(_ component: Component) {
     self.regex = .init(ast: .zeroOrOne(component.regex.ast))
@@ -112,10 +106,9 @@ public struct Alternation<
   Component1: RegexProtocol,
   Component2: RegexProtocol
 >: RegexProtocol {
-  public typealias MatchValue = Component1.MatchValue
-  public typealias CaptureValue = Component2.CaptureValue
+  public typealias Capture = Component2.Capture
 
-  public let regex: Regex<CaptureValue>
+  public let regex: Regex<Capture>
 
   public init(_ first: Component1, _ second: Component2) {
     regex = .init(ast: .alternation([first.regex.ast, second.regex.ast]))
@@ -136,38 +129,106 @@ public func | <Component1, Component2>(
 
 // MARK: - Capture
 
-public struct CapturingGroup<MatchValue, CaptureValue>: RegexProtocol {
-  public typealias MatchValue = MatchValue
-  public typealias CaptureValue = CaptureValue
+public struct CapturingGroup<Capture>: RegexProtocol {
+  public typealias Capture = Capture
 
-  public let regex: Regex<CaptureValue>
+  public let regex: Regex<Capture>
 
   init<Component: RegexProtocol>(
     _ component: Component
-  ) where MatchValue == CaptureValue {
+  ) {
     self.regex = .init(ast: .capturingGroup(component.regex.ast))
   }
 
-  init<Component: RegexProtocol>(
+  init<NewCapture, Component: RegexProtocol>(
     _ component: Component,
-    transform: @escaping (MatchValue) -> CaptureValue
-  ) where MatchValue == Substring {
+    transform: @escaping (Substring) -> NewCapture
+  ) {
     self.regex = .init(ast: .capturingGroup(component.regex.ast, transform: CaptureTransform {
       transform($0) as Any
     }))
   }
 }
 
-// TODO: Support capturing non-substrings, e.g.
-//   OneOrMore("x").capture() // Captures `[Substring]`.
-extension RegexProtocol {
-  public func capture() -> CapturingGroup<Substring, Substring> {
+extension RegexProtocol where Capture: EmptyProtocol {
+  public func capture() -> CapturingGroup<Substring> {
     .init(self)
   }
 
-  public func capture<CaptureValue>(
-    _ transform: @escaping (Substring) -> CaptureValue
-  ) -> CapturingGroup<MatchValue, CaptureValue> where MatchValue == Substring {
+  public func capture<NewCapture>(
+    _ transform: @escaping (Substring) -> NewCapture
+  ) -> CapturingGroup<NewCapture> {
     .init(self, transform: transform)
   }
 }
+
+extension RegexProtocol {
+  // Note: We use `@_disfavoredOverload` to prevent tuple captures from choosing this overload.
+  @_disfavoredOverload
+  public func capture() -> CapturingGroup<(Substring, Capture)> {
+    .init(self)
+  }
+
+  // Note: We use `@_disfavoredOverload` to prevent tuple captures from choosing this overload.
+  @_disfavoredOverload
+  public func capture<NewCapture>(
+    _ transform: @escaping (Substring) -> NewCapture
+  ) -> CapturingGroup<(Substring, Capture)> {
+    .init(self, transform: transform)
+  }
+
+  public func capture<C0, C1>() -> CapturingGroup<(Substring, C0, C1)> where Capture == (C0, C1) {
+    .init(self)
+  }
+
+  public func capture<NewCapture, C0, C1>(
+    _ transform: @escaping (Substring) -> NewCapture
+  ) -> CapturingGroup<(Substring, C0, C1)> where Capture == (C0, C1) {
+    .init(self, transform: transform)
+  }
+
+  public func capture<C0, C1, C2>() -> CapturingGroup<(Substring, C0, C1, C2)>
+  where Capture == (C0, C1, C2) {
+    .init(self)
+  }
+
+  public func capture<NewCapture, C0, C1, C2>(
+    _ transform: @escaping (Substring) -> NewCapture
+  ) -> CapturingGroup<(Substring, C0, C1, C2)> where Capture == (C0, C1, C2) {
+    .init(self, transform: transform)
+  }
+
+  public func capture<C0, C1, C2, C3>() -> CapturingGroup<(Substring, C0, C1, C2, C3)>
+  where Capture == (C0, C1, C2, C3) {
+    .init(self)
+  }
+
+  public func capture<C0, C1, C2, C3, C4>() -> CapturingGroup<(Substring, C0, C1, C2, C3, C4)>
+  where Capture == (C0, C1, C2, C3, C4) {
+    .init(self)
+  }
+
+  public func capture<C0, C1, C2, C3, C4, C5>() -> CapturingGroup<(Substring, C0, C1, C2, C3, C4, C5)>
+  where Capture == (C0, C1, C2, C3, C4, C5) {
+    .init(self)
+  }
+
+  public func capture<C0, C1, C2, C3, C4, C5, C6>() -> CapturingGroup<(Substring, C0, C1, C2, C3, C4, C5, C6)>
+  where Capture == (C0, C1, C2, C3, C4, C5, C6) {
+    .init(self)
+  }
+}
+
+/* Or using parameterized extensions and variadic generics.
+extension<T...> RegexProtocol where Capture == (T...) {
+  public func capture() -> CapturingGroup<(Substring, T...)> {
+    .init(self)
+  }
+
+  public func capture<NewCapture>(
+    _ transform: @escaping (Substring) -> NewCapture
+  ) -> CapturingGroup<(NewCapture, T...)> {
+    .init(self, transform: transform)
+  }
+}
+*/

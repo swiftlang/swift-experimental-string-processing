@@ -24,7 +24,7 @@ class RegexDSLTests: XCTestCase {
       "1".capture { Int($0)! } // Int
     }
     // Assert the inferred capture type.
-    let _: (Substring, Int).Type = type(of: regex).CaptureValue.self
+    let _: (Substring, Int).Type = type(of: regex).Capture.self
     try forEachEngine { engine in
       let maybeMatch = "ab1".match(regex, using: engine)
       let match = try XCTUnwrap(maybeMatch)
@@ -39,7 +39,7 @@ class RegexDSLTests: XCTestCase {
       "c".capture() // Substring
     }
     // Assert the inferred capture type.
-    let _: (Substring, Substring).Type = type(of: regex).CaptureValue.self
+    let _: (Substring, Substring).Type = type(of: regex).Capture.self
     try forEachEngine { engine in
       let maybeMatch = "a c".match(regex, using: engine)
       let match = try XCTUnwrap(maybeMatch)
@@ -58,7 +58,7 @@ class RegexDSLTests: XCTestCase {
     }
     // Assert the inferred capture type.
     let _: (Substring, Substring, [Substring], Substring).Type
-      = type(of: regex).CaptureValue.self
+      = type(of: regex).Capture.self
     try forEachEngine { engine in
       let maybeMatch = "aaaabccccdddk".match(regex, using: engine)
       let match = try XCTUnwrap(maybeMatch)
@@ -79,7 +79,7 @@ class RegexDSLTests: XCTestCase {
       }
     }
     // Assert the inferred capture type.
-    let _: [(Substring, Substring, [Substring])].Type = type(of: regex).CaptureValue.self
+    let _: [(Substring, Substring, [Substring])].Type = type(of: regex).Capture.self
     try forEachEngine { engine in
       let maybeMatch = "aaaabccccddd".match(regex, using: engine)
       let match = try XCTUnwrap(maybeMatch)
@@ -88,6 +88,44 @@ class RegexDSLTests: XCTestCase {
         match.captures[0]
           == ("b", "cccc", ["d", "d", "d"]))
     }
+  }
+
+  func testNestedCaptureTypes() throws {
+    let regex1 = Regex {
+      "a".+
+      Regex {
+        OneOrMore("b").capture()
+        "e".?
+      }.capture()
+    }
+    let _: (Substring, Substring).Type = type(of: regex1).Capture.self
+    let regex2 = Regex {
+      "a".+
+      Regex {
+        "b".capture { Int($0)! }.*
+        "e".?
+      }.capture()
+    }
+    let _: (Substring, [Int]).Type = type(of: regex2).Capture.self
+    let regex3 = Regex {
+      "a".+
+      Regex {
+        "b".capture { Int($0)! }
+        "c".capture { Double($0)! }.*
+        "e".?
+      }.capture()
+    }
+    let _: (Substring, Int, [Double]).Type = type(of: regex3).Capture.self
+    let regex4 = Regex {
+      "a".+
+      OneOrMore {
+        OneOrMore("b").capture()
+        Repeat("c").capture()
+        "d".capture().*
+        "e".?
+      }.capture()
+    }
+    let _: (Substring, [(Substring, Substring, [Substring])]).Type = type(of: regex4).Capture.self
   }
 
   func testUnicodeScalarPostProcessing() throws {
@@ -124,7 +162,7 @@ class RegexDSLTests: XCTestCase {
     }
 
     // Assert the inferred capture type.
-    let _: Substring.Type = type(of: unicodeData).CaptureValue.self
+    let _: Substring.Type = type(of: unicodeData).Capture.self
 
     try forEachEngine { engine in
       let unicodeLine =
@@ -152,10 +190,10 @@ class RegexDSLTests: XCTestCase {
     }
     // Assert the inferred capture type.
     typealias Capture = (Substring, Substring?, Substring)
-    let _: Capture.Type = type(of: regex).CaptureValue.self
+    let _: Capture.Type = type(of: regex).Capture.self
     func run<R: RegexProtocol>(
       _ regex: R
-    ) throws where R.CaptureValue == Capture {
+    ) throws where R.Capture == Capture {
       try forEachEngine { engine in
         let maybeMatchResult = line.match(regex, using: engine)
         let matchResult = try XCTUnwrap(maybeMatchResult)
