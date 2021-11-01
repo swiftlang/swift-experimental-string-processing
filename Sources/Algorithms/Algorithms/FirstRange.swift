@@ -1,3 +1,5 @@
+// MARK: `CollectionSearcher` algorithms
+
 extension Collection {
   public func firstRange<S: CollectionSearcher>(of searcher: S) -> Range<Index>? where S.Searched == SubSequence {
     let slice = self[...]
@@ -13,6 +15,8 @@ extension BidirectionalCollection {
     return searcher.searchBack(slice, &state)
   }
 }
+
+// MARK: Fixed pattern algorithms
 
 extension Collection where Element: Equatable {
   public func firstRange<S: Sequence>(of sequence: S) -> Range<Index>? where S.Element == Element {
@@ -31,15 +35,13 @@ extension BidirectionalCollection where Element: Comparable {
   }
 }
 
-// MARK: Regex
+// MARK: Regex algorithms
 
-extension Collection where SubSequence == Substring {
+extension BidirectionalCollection where SubSequence == Substring {
   public func firstRange(of regex: Regex) -> Range<Index>? {
     firstRange(of: RegexConsumer(regex))
   }
-}
-
-extension BidirectionalCollection where SubSequence == Substring {
+  
   public func lastRange(of regex: Regex) -> Range<Index>? {
     lastRange(of: RegexConsumer(regex))
   }

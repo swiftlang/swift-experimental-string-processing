@@ -1,12 +1,12 @@
-struct SequenceConsumer<Consumed: Collection, Pattern: Collection>
+struct FixedPatternConsumer<Consumed: Collection, Pattern: Collection>
   where Consumed.Element: Equatable,
-        Consumed.SubSequence == Consumed,
-        Pattern.Element == Consumed.Element
+    Consumed.SubSequence == Consumed,
+    Pattern.Element == Consumed.Element
 {
   let pattern: Pattern
 }
 
-extension SequenceConsumer: CollectionConsumer {
+extension FixedPatternConsumer: CollectionConsumer {
   func consume(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
     var index = index
     var patternIndex = pattern.startIndex
@@ -26,7 +26,7 @@ extension SequenceConsumer: CollectionConsumer {
   }
 }
 
-extension SequenceConsumer: BackwardCollectionConsumer
+extension FixedPatternConsumer: BackwardCollectionConsumer
   where Consumed: BidirectionalCollection, Pattern: BidirectionalCollection
 {
   func consumeBack(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {

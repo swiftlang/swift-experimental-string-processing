@@ -1,14 +1,16 @@
+// MARK: `CollectionConsumer` algorithms
+
 extension Collection {
-  public func trimmingPrefix<C: CollectionConsumer>(_ consumer: C) -> SubSequence where C.Consumed == SubSequence {
+  public func trimmingPrefix<Consumer: CollectionConsumer>(_ consumer: Consumer) -> SubSequence where Consumer.Consumed == SubSequence {
     let start = consumer.consume(self[...]) ?? startIndex
     return self[start...]
   }
 }
 
-// FIXME: Restore this once the CI accepts
+// FIXME: Restore this once the CI accepts this constraint
 //extension Collection where SubSequence == Self {
-//  public mutating func trimPrefix<C: CollectionConsumer>(_ consumer: C) where C.Consumed == SubSequence {
-//    if let start = consumer.consume(self) {
+//  public mutating func trimPrefix<Consumer: CollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == SubSequence {
+//    if let start = consumer.consume(self[...]) {
 //      self = self[start...]
 //    }
 //  }
@@ -18,7 +20,7 @@ extension RangeReplaceableCollection {
   // NOTE: Disfavored because the `Collection with SubSequence == Self` overload
   // should be preferred whenever both are available
   @_disfavoredOverload
-  public mutating func trimPrefix<C: CollectionConsumer>(_ consumer: C) where C.Consumed == SubSequence {
+  public mutating func trimPrefix<Consumer: CollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == SubSequence {
     if let start = consumer.consume(self[...]) {
       removeSubrange(..<start)
     }
@@ -26,83 +28,194 @@ extension RangeReplaceableCollection {
 }
 
 extension BidirectionalCollection {
-  public func trimmingSuffix<C: BackwardCollectionConsumer>(_ consumer: C) -> SubSequence where C.Consumed == SubSequence {
+  public func trimmingSuffix<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) -> SubSequence where Consumer.Consumed == SubSequence {
     let end = consumer.consumeBack(self[...]) ?? endIndex
     return self[..<end]
   }
-}
-
-// FIXME: Restore this once the CI accepts
-//extension BidirectionalCollection where SubSequence == Self {
-//  public mutating func trimSuffix<C: BackwardCollectionConsumer>(_ consumer: C) where C.Consumed == SubSequence {
-//    if let end = consumer.consumeBack(self) {
-//      self = self[..<end]
-//    }
-//  }
-//}
-
-extension RangeReplaceableCollection where Self: BidirectionalCollection {
-  @_disfavoredOverload
-  public mutating func trimSuffix<C: BackwardCollectionConsumer>(_ consumer: C) where C.Consumed == SubSequence {
-    if let end = consumer.consumeBack(self[...]) {
-      removeSubrange(end...)
-    }
-  }
-}
-
-extension BidirectionalCollection {
-  public func trimming<C: CollectionConsumer & BackwardCollectionConsumer>(
-    _ consumer: C
-  ) -> SubSequence where C.Consumed == SubSequence {
+  
+  public func trimming<Consumer: BackwardCollectionConsumer>(
+    _ consumer: Consumer
+  ) -> SubSequence where Consumer.Consumed == SubSequence {
     // NOTE: Might give different results than trimming the suffix before trimming the prefix
     trimmingPrefix(consumer).trimmingSuffix(consumer)
   }
 }
 
+// FIXME: Restore this once the CI accepts this constraint
 //extension BidirectionalCollection where SubSequence == Self {
-//  mutating func trim<C: BackwardCollectionConsumer>(_ consumer: C) where C.Consumed == Self {
+//  public mutating func trimSuffix<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == SubSequence {
+//    if let end = consumer.consumeBack(self[...]) {
+//      self = self[..<end]
+//    }
+//  }
+//
+//  mutating func trim<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == Self {
 //    trimPrefix(consumer)
 //    trimSuffix(consumer)
 //  }
 //}
 
 extension RangeReplaceableCollection where Self: BidirectionalCollection {
-  mutating func trim<C: BackwardCollectionConsumer>(_ consumer: C) where C.Consumed == SubSequence {
+  @_disfavoredOverload
+  public mutating func trimSuffix<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == SubSequence {
+    if let end = consumer.consumeBack(self[...]) {
+      removeSubrange(end...)
+    }
+  }
+  
+  @_disfavoredOverload
+  mutating func trim<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == SubSequence {
+    trimSuffix(consumer)
+    trimPrefix(consumer)
+  }
+}
+
+// MARK: Predicate algorithms
+
+extension Collection {
+  // TODO: Non-escaping and throwing
+  public func trimmingPrefix(while predicate: @escaping (Element) -> Bool) -> SubSequence {
+    trimmingPrefix(ManyConsumer(base: PredicateConsumer(predicate: predicate)))
+  }
+}
+
+// FIXME: Restore this once the CI accepts this constraint
+//extension Collection where SubSequence == Self {
+//  public mutating func trimPrefix(while predicate: @escaping (Element) -> Bool) {
+//    trimPrefix(ManyConsumer(base: PredicateConsumer<SubSequence>(predicate: predicate)))
+//  }
+//}
+
+extension RangeReplaceableCollection {
+  @_disfavoredOverload
+  public mutating func trimPrefix(while predicate: @escaping (Element) -> Bool) {
+    trimPrefix(ManyConsumer(base: PredicateConsumer(predicate: predicate)))
+  }
+}
+
+extension BidirectionalCollection {
+  public func trimmingSuffix(while predicate: @escaping (Element) -> Bool) -> SubSequence {
+    trimmingSuffix(ManyConsumer(base: PredicateConsumer(predicate: predicate)))
+  }
+  
+  public func trimming(while predicate: @escaping (Element) -> Bool) -> SubSequence {
+    let consumer = ManyConsumer(base: PredicateConsumer<SubSequence>(predicate: predicate))
+    return trimmingPrefix(consumer).trimmingSuffix(consumer)
+  }
+}
+
+// FIXME: Restore this once the CI accepts this constraint
+//extension BidirectionalCollection where SubSequence == Self {
+//  public mutating func trimSuffix(while predicate: @escaping (Element) -> Bool) {
+//    trimSuffix(ManyConsumer(base: PredicateConsumer<SubSequence>(predicate: predicate)))
+//  }
+//
+//  public mutating func trim(while predicate: @escaping (Element) -> Bool) {
+//    let consumer = ManyConsumer(base: PredicateConsumer<SubSequence>(predicate: predicate))
+//    trimPrefix(consumer)
+//    trimSuffix(consumer)
+//  }
+//}
+
+extension RangeReplaceableCollection where Self: BidirectionalCollection {
+  @_disfavoredOverload
+  public mutating func trimSuffix(while predicate: @escaping (Element) -> Bool) {
+    trimSuffix(ManyConsumer(base: PredicateConsumer(predicate: predicate)))
+  }
+  
+  @_disfavoredOverload
+  public mutating func trim(while predicate: @escaping (Element) -> Bool) {
+    let consumer = ManyConsumer(base: PredicateConsumer<SubSequence>(predicate: predicate))
     trimPrefix(consumer)
     trimSuffix(consumer)
   }
 }
 
-// Some example overloads that take something other than a consumer
+// MARK: Fixed pattern algorithms
 
 extension Collection where Element: Equatable {
-  public func trimmingPrefix<Prefix: Collection>(_ prefix: Prefix) -> SubSequence where Prefix.Element == Element {
-    trimmingPrefix(SequenceConsumer(pattern: prefix))
+  public func trimmingPrefix<Prefix: Collection>(
+    _ prefix: Prefix
+  ) -> SubSequence where Prefix.Element == Element {
+    trimmingPrefix(FixedPatternConsumer(pattern: prefix))
   }
 }
 
-extension Collection {
-  public func trimmingPrefix(while predicate: @escaping (Element) -> Bool) -> SubSequence {
-    let consumer = ManyConsumer(base: PredicateConsumer<SubSequence>(predicate: predicate))
-    return trimmingPrefix(consumer)
+// FIXME: Restore this once the CI accepts this constraint
+//extension Collection where SubSequence == Self, Element: Equatable {
+//  public mutating func trimPrefix<Prefix: Collection>(
+//    _ prefix: Prefix
+//  ) where Prefix.Element == Element {
+//    trimPrefix(FixedPatternConsumer<SubSequence, Prefix>(pattern: prefix))
+//  }
+//}
+
+extension RangeReplaceableCollection where Element: Equatable {
+  @_disfavoredOverload
+  public mutating func trimPrefix<Prefix: Collection>(
+    _ prefix: Prefix
+  ) where Prefix.Element == Element {
+    trimPrefix(FixedPatternConsumer(pattern: prefix))
   }
 }
 
-// MARK: Regex
-
-extension Collection where SubSequence == Substring {
-  public func trimmingPrefix(_ regex: Regex) -> SubSequence {
-    trimmingPrefix(RegexConsumer(regex))
+extension BidirectionalCollection where Element: Equatable {
+  public func trimmingSuffix<Suffix: BidirectionalCollection>(
+    _ suffix: Suffix
+  ) -> SubSequence where Suffix.Element == Element {
+    trimmingSuffix(FixedPatternConsumer(pattern: suffix))
+  }
+  
+  public func trimming<Pattern: BidirectionalCollection>(
+    _ pattern: Pattern
+  ) -> SubSequence where Pattern.Element == Element {
+    let consumer = FixedPatternConsumer<SubSequence, Pattern>(pattern: pattern)
+    return trimmingPrefix(consumer).trimmingSuffix(consumer)
   }
 }
 
-extension RangeReplaceableCollection where SubSequence == Substring {
-  public mutating func trimPrefix(_ regex: Regex) {
-    trimPrefix(RegexConsumer(regex))
+// FIXME: Restore this once the CI accepts this constraint
+//extension BidirectionalCollection where SubSequence == Self, Element: Equatable {
+//  public mutating func trimSuffix<Suffix: BidirectionalCollection>(
+//    _ suffix: Suffix
+//  ) where Suffix.Element == Element {
+//    trimSuffix(FixedPatternConsumer<SubSequence, Suffix>(pattern: suffix))
+//  }
+//  
+//  public mutating func trim<Pattern: BidirectionalCollection>(
+//    _ pattern: Pattern
+//  ) where Pattern.Element == Element {
+//    let consumer = FixedPatternConsumer<SubSequence, Pattern>(pattern: pattern)
+//    trimPrefix(consumer)
+//    trimSuffix(consumer)
+//  }
+//}
+
+extension RangeReplaceableCollection where Self: BidirectionalCollection, Element: Equatable {
+  @_disfavoredOverload
+  public mutating func trimSuffix<Suffix: BidirectionalCollection>(
+    _ prefix: Suffix
+  ) where Suffix.Element == Element {
+    trimSuffix(FixedPatternConsumer(pattern: prefix))
+  }
+  
+  @_disfavoredOverload
+  public mutating func trim<Pattern: BidirectionalCollection>(
+    _ pattern: Pattern
+  ) where Pattern.Element == Element {
+    let consumer = FixedPatternConsumer<SubSequence, Pattern>(pattern: pattern)
+    trimPrefix(consumer)
+    trimSuffix(consumer)
   }
 }
+
+// MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
+  public func trimmingPrefix(_ regex: Regex) -> SubSequence {
+    trimmingPrefix(RegexConsumer(regex: regex))
+  }
+  
   public func trimmingSuffix(_ regex: Regex) -> SubSequence {
     trimmingSuffix(RegexConsumer(regex))
   }
@@ -114,6 +227,10 @@ extension BidirectionalCollection where SubSequence == Substring {
 }
 
 extension RangeReplaceableCollection where Self: BidirectionalCollection, SubSequence == Substring {
+  public mutating func trimPrefix(_ regex: Regex) {
+    trimPrefix(RegexConsumer(regex: regex))
+  }
+  
   public mutating func trimSuffix(_ regex: Regex) {
     trimSuffix(RegexConsumer(regex))
   }
