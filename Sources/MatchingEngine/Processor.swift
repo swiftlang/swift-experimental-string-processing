@@ -16,6 +16,7 @@ struct Processor<
   typealias Element = Input.Element
 
   let input: Input
+  let range: Range<Position>
   var currentPosition: Position
 
   let instructions: InstructionList<Instruction>
@@ -34,6 +35,9 @@ struct Processor<
   var state: State = .inprogress
 
   var enableTracing: Bool
+
+  var start: Position { range.lowerBound }
+  var end: Position { range.upperBound }
 }
 
 
@@ -55,15 +59,26 @@ extension Processor {
   init(
     _ program: Program<Input.Element>,
     _ input: Input,
-    enableTracing: Bool = false
+    in r: Range<Position>,
+    enableTracing: Bool
   ) {
     self.controller = Controller(pc: 0)
     self.instructions = program.instructions
     self.input = input
+    self.range = r
     self.enableTracing = enableTracing
-    self.currentPosition = input.startIndex
+    self.currentPosition = r.lowerBound
 
-    self.registers = Registers(program, input.endIndex)
+    self.registers = Registers(program, r.upperBound)
+
+    _checkInvariants()
+  }
+
+  func _checkInvariants() {
+    assert(end <= input.endIndex)
+    assert(start >= input.startIndex)
+    assert(currentPosition >= start)
+    assert(currentPosition <= end)
   }
 }
 
@@ -71,7 +86,7 @@ extension Processor {
   // Advance in our input
   mutating func consume(_ n: Distance) {
     // Want Collection to provide this behavior...
-    if input.distance(from: currentPosition, to: input.endIndex) < n.rawValue {
+    if input.distance(from: currentPosition, to: end) < n.rawValue {
       signalFailure()
       return
     }
@@ -86,7 +101,7 @@ extension Processor {
   }
 
   func load() -> Element? {
-    currentPosition < input.endIndex ? input[currentPosition] : nil
+    currentPosition < end ? input[currentPosition] : nil
   }
 
   mutating func signalFailure() {
@@ -101,11 +116,13 @@ extension Processor {
   }
 
   mutating func cycle() {
+    _checkInvariants()
     assert(state == .inprogress)
     if cycleCount == 0 { trace() }
     defer {
       cycleCount += 1
       trace()
+      _checkInvariants()
     }
     let (opcode, operand) = fetch().destructure
     switch opcode {

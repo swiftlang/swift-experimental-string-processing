@@ -31,7 +31,7 @@ fileprivate struct Test: ExpressibleByStringLiteral {
 
   init(
     _ s: String,
-    enableTracing: Bool? = true,
+    enableTracing: Bool? = nil,
     file: String = #file,
     line: UInt = #line
   ) {
@@ -68,19 +68,38 @@ fileprivate struct Test: ExpressibleByStringLiteral {
     self.init(stringLiteral)
   }
 
+  var slicedInput: (String, Range<String.Index>) {
+    let prefix = "aAa prefix ⚠️"
+    let suffix = "⚠️ aAa suffix"
+    let outer = prefix + input + suffix
+    let range = outer.mapOffsets(
+      (lower: prefix.count, upper: -suffix.count))
+    return (outer, range)
+  }
+
   func check(_ engine: Engine<String>,  expected: String) {
     var engine = engine
     if let t = enableTracing {
       engine.enableTracing = t
     }
     let output: String
+    let outputFromSlice: String
+
     if let idx = engine.consume(input) {
       output = String(input[idx...])
     } else {
       output = input
     }
 
+    let (outerInput, range) = slicedInput
+    if let idx = engine.consume(outerInput, in: range) {
+      outputFromSlice = String(outerInput[idx..<range.upperBound])
+    } else {
+      outputFromSlice = input
+    }
+
     XCTAssertEqual(expected, output)
+    XCTAssertEqual(output, outputFromSlice)
   }
 
   func check(
