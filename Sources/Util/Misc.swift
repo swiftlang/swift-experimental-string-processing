@@ -100,7 +100,24 @@ extension Collection {
   >(_ idx: Index, in c: C) -> C.Index {
     c.idx(offset(of: idx))
   }
+}
 
+extension Collection where Element: Equatable {
+  public func eat<S: Sequence>(_ other: S) -> Index?
+    where S.Element == Element
+  {
+    var current = startIndex
+    var otherIterator = other.makeIterator()
+    while current < endIndex {
+      guard let otherElement = otherIterator.next() else {
+        return current
+      }
+      guard otherElement == self[current] else { return nil }
+      formIndex(after: &current)
+    }
+    if otherIterator.next() == nil { return current }
+    return nil
+  }
 }
 
 extension UnsafeMutableRawPointer {

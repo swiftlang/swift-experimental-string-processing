@@ -24,4 +24,13 @@ class UtilTests: XCTestCase {
     XCTAssertEqual(tuple1.1, [true, false])
     XCTAssertEqual(tuple1.2, [3.0, 4.0])
   }
+  
+  func testEatOther() {
+    XCTAssertEqual(4, (1..<10).eat(1..<4))
+    XCTAssertEqual(1, (1..<10).eat(0..<0))
+    
+    XCTAssertNil((1..<1).eat(1..<2))
+    XCTAssertNil((1..<10).eat(2..<10))
+    XCTAssertNil((1..<10).eat(1..<11))
+  }
 }
