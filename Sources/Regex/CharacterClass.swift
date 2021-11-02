@@ -35,14 +35,23 @@ public struct CharacterClass: Hashable {
     var op: SetOperator
     var rhs: CharacterSetComponent
 
-    public func matches(_ c: Character) -> Bool {
-      switch op {
-      case .intersection:
-        return lhs.matches(c) && rhs.matches(c)
-      case .subtraction:
-        return lhs.matches(c) && !rhs.matches(c)
-      case .symmetricDifference:
-        return lhs.matches(c) != rhs.matches(c)
+    public func matches(in str: String, at i: String.Index, options: REOptions) -> String.Index? {
+      print("SetOperation", str, str[i...], i, lhs, rhs)
+      let lhsMatch = lhs.matches(in: str, at: i, options: options)
+      switch (op, lhsMatch) {
+      case (.intersection, nil), (.subtraction, nil):
+        return nil
+      case (.symmetricDifference, nil):
+        return rhs.matches(in: str, at: i, options: options)
+      case (.intersection, let lhsMatch?):
+        guard let rhsMatch = rhs.matches(in: str, at: i, options: options)
+          else { return nil }
+        print(lhsMatch, rhsMatch)
+        return min(lhsMatch, rhsMatch)
+      case (.subtraction, let lhsMatch?), (.symmetricDifference, let lhsMatch?):
+        return nil == rhs.matches(in: str, at: i, options: options)
+          ? lhsMatch
+          : nil
       }
     }
   }
@@ -63,14 +72,57 @@ public struct CharacterClass: Hashable {
       .setOperation(.init(lhs: lhs, op: op, rhs: rhs))
     }
 
-    public func matches(_ character: Character) -> Bool {
-      switch self {
-      case .character(let c): return c == character
-      case .range(let range): return range.contains(character)
-      case .characterClass(let custom):
-        let str = String(character)
-        return custom.matches(in: str, at: str.startIndex) != nil
-      case .setOperation(let op): return op.matches(character)
+    public func matches(in str: String, at i: String.Index, options: REOptions) -> String.Index? {
+      guard #available(macOS 10.15, iOS 13, tvOS 13, watchOS 6, *) else { fatalError() }
+      switch options {
+      case let x where x.contains(.unicodeScalarSemantics):
+        switch self {
+        case .character(let c):
+          return str.unicodeScalars[i...].eat(c.unicodeScalars)
+        case .range(let range):
+          if !str[i].unicodeScalars.lexicographicallyPrecedes(range.lowerBound.unicodeScalars)
+              && str[i].unicodeScalars.lexicographicallyPrecedes(range.upperBound.unicodeScalars) {
+            // TODO: Should this be a Unicode scalar calculation? To what point?
+            return str.index(after: i)
+          } else {
+            return nil
+          }
+        case .characterClass(let custom):
+          return custom.matches(in: str, at: str.startIndex, options: options)
+        case .setOperation(let op):
+          return op.matches(in: str, at: i, options: options)
+        }
+
+      case let x where x.contains(.utf8Semantics):
+        switch self {
+        case .character(let c):
+          return str.utf8[i...].eat(c.utf8)
+        case .range(let range):
+          if !str[i].utf8.lexicographicallyPrecedes(range.lowerBound.utf8)
+              && str[i].utf8.lexicographicallyPrecedes(range.upperBound.utf8) {
+            // TODO: Should this be a UTF-8 calculation? To what point?
+            return str.index(after: i)
+          } else {
+            return nil
+          }
+        case .characterClass(let custom):
+          return custom.matches(in: str, at: str.startIndex, options: options)
+        case .setOperation(let op):
+          return op.matches(in: str, at: i, options: options)
+        }
+        
+      default:
+        let nextIndex = str.index(after: i)
+        switch self {
+        case .character(let c):
+          return str[i] == c ? nextIndex : nil
+        case .range(let range):
+          return range.contains(str[i]) ? nextIndex : nil
+        case .characterClass(let custom):
+          return custom.matches(in: str, at: i, options: options)
+        case .setOperation(let op):
+          return op.matches(in: str, at: i, options: options)
+        }
       }
     }
   }
@@ -114,7 +166,13 @@ public struct CharacterClass: Hashable {
       case .hexDigit: matched = Character(c).isHexDigit
       case .whitespace: matched = c.properties.isWhitespace
       case .word: matched = c.properties.isAlphabetic || c == "_"
-      case .custom: fatalError("Not supported")
+      case .custom(let set):
+        if let end = set.lazy.compactMap({ $0.matches(in: str, at: i, options: options) }).first {
+          matched = true
+          nextIndex = end
+        } else {
+          matched = false
+        }
       }
       if isInverted {
         matched.toggle()
@@ -146,7 +204,13 @@ public struct CharacterClass: Hashable {
       case .word:
         matched = (0x41...0x5a).contains(byte) || (0x61...0x7a).contains(byte)
           || 0x5f == byte
-      case .custom: fatalError("Not supported")
+      case .custom(let set):
+        if let end = set.lazy.compactMap({ $0.matches(in: str, at: i, options: options) }).first {
+          matched = true
+          nextIndex = end
+        } else {
+          matched = false
+        }
       }
       if isInverted {
         matched.toggle()
@@ -155,6 +219,7 @@ public struct CharacterClass: Hashable {
 
     default:
       let c = str[i]
+      var nextIndex = str.index(after: i)
       var matched: Bool
       switch cc {
       case .any, .anyGraphemeCluster: matched = true
@@ -163,12 +228,17 @@ public struct CharacterClass: Hashable {
       case .whitespace: matched = c.isWhitespace
       case .word: matched = c.isLetter || c.isNumber || c == "_"
       case .custom(let set):
-        matched = set.any { $0.matches(c) }
+        if let end = set.lazy.compactMap({ $0.matches(in: str, at: i, options: options) }).first {
+          matched = true
+          nextIndex = end
+        } else {
+          matched = false
+        }
       }
       if isInverted {
         matched.toggle()
       }
-      return matched ? str.index(after: i) : nil
+      return matched ? nextIndex : nil
     }
   }
 }
