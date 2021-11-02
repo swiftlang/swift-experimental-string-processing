@@ -520,6 +520,7 @@ class RegexTests: XCTestCase {
       ("[^\\d]", ["x", "*", "_", " "], ["0", "9"]),
       ("[^[\\D]]", ["0", "9"], ["x", "*", "_", " "]),
       ("[[ab][bc]]", ["a", "b", "c"], ["d", "*", " "]),
+      ("[a-e]", ["a", "b", "c", "d", "e"], ["f", "*", " "]),
       ("[[ab]c[de]]", ["a", "b", "c", "d", "e"], ["f", "*", " "]),
 
       ("[\\w--\\d]+", ["w", "_wf"], ["0", "*", "_0", "0a"]),
@@ -608,6 +609,55 @@ class RegexTests: XCTestCase {
         XCTAssertNotNil(scalarHarvey.execute(input: input))
         XCTAssertNil(harvey.execute(input: input))
       }
+    }
+    
+    func performTest(input: String, regex: String, matchLevel: CharacterClass.MatchLevel) -> Bool {
+      let code = try! compile(regex).withMatchLevel(matchLevel)
+      let vm = HareVM(code)
+      return nil != vm.execute(input: input)
+    }
+    
+    // Café
+    do {
+      let composed = "Caf\u{e9}"
+      let decomposed = "Cafe\u{301}"
+      
+      let composedRegex = "C.f\\u{e9}"
+      let decomposedRegex = "C.fe\\u{301}"
+
+      // Any combination succeeds
+      XCTAssertTrue(performTest(input: composed, regex: composedRegex, matchLevel: .graphemeCluster))
+      XCTAssertTrue(performTest(input: composed, regex: decomposedRegex, matchLevel: .graphemeCluster))
+      XCTAssertTrue(performTest(input: decomposed, regex: composedRegex, matchLevel: .graphemeCluster))
+      XCTAssertTrue(performTest(input: decomposed, regex: decomposedRegex, matchLevel: .graphemeCluster))
+      
+      // Only matching combinations succeed
+      XCTAssertTrue(performTest(input: composed, regex: composedRegex, matchLevel: .unicodeScalar))
+      XCTAssertFalse(performTest(input: composed, regex: decomposedRegex, matchLevel: .unicodeScalar))
+      XCTAssertFalse(performTest(input: decomposed, regex: composedRegex, matchLevel: .unicodeScalar))
+      XCTAssertTrue(performTest(input: decomposed, regex: decomposedRegex, matchLevel: .unicodeScalar))
+
+      // Same for UTF-8
+      XCTAssertTrue(performTest(input: composed, regex: composedRegex, matchLevel: .utf8CodeUnit))
+      XCTAssertFalse(performTest(input: composed, regex: decomposedRegex, matchLevel: .utf8CodeUnit))
+      XCTAssertFalse(performTest(input: decomposed, regex: composedRegex, matchLevel: .utf8CodeUnit))
+      XCTAssertTrue(performTest(input: decomposed, regex: decomposedRegex, matchLevel: .utf8CodeUnit))
+    }
+    
+    // Flags
+    do {
+      let flag = "🇦🇺"
+      
+      let literalRegex = "\\u{1F1E6}\\u{1F1FA}"
+      let customClassRegex = "\\u{1F1E6}[\\u{1F1E6}-\\u{1F1FF}]"
+
+      // Literals succeed, but not custom classes
+      XCTAssertTrue(performTest(input: flag, regex: literalRegex, matchLevel: .graphemeCluster))
+      XCTAssertFalse(performTest(input: flag, regex: customClassRegex, matchLevel: .graphemeCluster))
+
+      // Matching spelling succeeds, including custom classes
+      XCTAssertTrue(performTest(input: flag, regex: literalRegex, matchLevel: .unicodeScalar))
+      XCTAssertTrue(performTest(input: flag, regex: customClassRegex, matchLevel: .unicodeScalar))
     }
   }
 

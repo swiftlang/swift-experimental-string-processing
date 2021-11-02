@@ -232,6 +232,8 @@ extension Parser {
       return meta.rawValue
     case .character(let c, isEscaped: _):
       return c
+    case .unicodeScalar(let s):
+      return Character(s)
     default:
       try report("expected a character or a ']'")
     }
