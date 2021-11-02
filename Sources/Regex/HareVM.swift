@@ -121,7 +121,19 @@ public struct HareVM: VirtualMachine {
 
       case .character(let c):
         assert(bunny.sp < end)
-        guard input[bunny.sp] == c else {
+        var possibleEndOfMatch: String.Index?
+        switch code.options {
+        case let x where x.contains(.unicodeScalarSemantics):
+          possibleEndOfMatch = input.unicodeScalars[bunny.sp...].eat(c.unicodeScalars)
+        case let x where x.contains(.utf8Semantics):
+          possibleEndOfMatch = input.utf8[bunny.sp...].eat(c.utf8)
+        default:
+          possibleEndOfMatch = input[bunny.sp] == c
+            ? input.index(after: bunny.sp)
+            : nil
+        }
+        
+        guard let endOfMatch = possibleEndOfMatch else {
           // If there are no more alternatives to try, we failed
           guard !stack.isEmpty else {
             return nil
@@ -131,7 +143,7 @@ public struct HareVM: VirtualMachine {
           bunny = stack.restore()
           continue
         }
-        bunny.nibble(on: input, options: code.options)
+        bunny.nibble(to: endOfMatch)
         bunny.hop()
 
       case .unicodeScalar:
