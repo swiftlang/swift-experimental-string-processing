@@ -5,23 +5,21 @@ struct ManyConsumer<Base: CollectionConsumer> {
 extension ManyConsumer: CollectionConsumer {
   typealias Consumed = Base.Consumed
   
-  func consume(_ consumed: Base.Consumed, subrange: Range<Consumed.Index>) -> Base.Consumed.Index? {
-    var start = subrange.lowerBound
-    while let index = base.consume(consumed, subrange: start..<subrange.upperBound) {
-      start = index
+  func consume(_ consumed: Base.Consumed, from index: Consumed.Index) -> Base.Consumed.Index? {
+    var result = index
+    while let index = base.consume(consumed, from: result), index != result {
+      result = index
     }
-    return start
+    return result
   }
 }
 
 extension ManyConsumer: BackwardCollectionConsumer where Base: BackwardCollectionConsumer {
-  func consumeBack(_ consumed: Base.Consumed, subrange: Range<Consumed.Index>) -> Base.Consumed.Index? {
-    var end = subrange.upperBound
-    while let index = base.consumeBack(consumed, subrange: subrange.lowerBound..<end) {
-      end = index
+  func consumeBack(_ consumed: Base.Consumed, from index: Consumed.Index) -> Base.Consumed.Index? {
+    var result = index
+    while let index = base.consumeBack(consumed, from: result), index != result {
+      result = index
     }
-    return end
+    return result
   }
 }
-
-extension ManyConsumer: BidirectionalCollectionConsumer where Base: BidirectionalCollectionConsumer {}

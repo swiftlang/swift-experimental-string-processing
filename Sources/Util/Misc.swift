@@ -9,7 +9,7 @@ extension CustomStringConvertible {
 
 extension Array {
   @_alwaysEmitIntoClient
-  public init(_ e: Element) {
+  public init(singleElement e: Element) {
     self.init(repeating: e, count: 1)
   }
 }
@@ -75,9 +75,14 @@ extension BidirectionalCollection {
 }
 
 extension Collection {
-  public func idx(_ i: Int) -> Index {
+  public func index(atOffset i: Int) -> Index {
     index(startIndex, offsetBy: i)
   }
+  
+  public func offset(ofIndex index: Index) -> Int {
+    distance(from: startIndex, to: index)
+  }
+  
   public func split(
     around r: Range<Index>
   ) -> (prefix: SubSequence, SubSequence, suffix: SubSequence) {
@@ -98,7 +103,7 @@ extension Collection {
   public func convertByOffset<
     C: Collection
   >(_ idx: Index, in c: C) -> C.Index {
-    c.idx(offset(of: idx))
+    c.index(atOffset: offset(of: idx))
   }
 
 }
