@@ -18,7 +18,7 @@ struct PEGCore<
 
   var state: State = .processing
 
-  var enableTracing: Bool
+  var isTracingEnabled: Bool
   var cycleCount = 0
 }
 
@@ -114,7 +114,7 @@ extension PEGCore {
     self.input = input
     self.current =
       Thread(pc: InstructionAddress(rawValue: 0), pos: input.startIndex)
-    self.enableTracing = enableTracing
+    self.isTracingEnabled = enableTracing
   }
 
   mutating func advance(instructions: Int = 1, positions: Int = 0) {

@@ -54,12 +54,12 @@ public struct HareVM: VirtualMachine {
         """
   var code: RECode
 
-  public init(_ code: RECode) {
-    self.code = code
+  public init(program: RECode) {
+    self.code = program
   }
 
   public func execute(
-    input: String, in range: Range<String.Index>, _ mode: MatchMode
+    input: String, in range: Range<String.Index>, mode: MatchMode
   ) -> MatchResult? {
     let (start, end) = range.destructure
 

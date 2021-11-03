@@ -2,7 +2,7 @@
 // TODO: Place shared formatting and trace infrastructure here
 
 public protocol Traced {
-  var enableTracing: Bool { get set }
+  var isTracingEnabled: Bool { get set }
 }
 
 public protocol TracedProcessor: ProcessorProtocol, Traced {
@@ -38,7 +38,7 @@ extension TracedProcessor {
   func printTrace() { print(formatTrace()) }
 
   public func trace() {
-    if enableTracing { printTrace() }
+    if isTracingEnabled { printTrace() }
   }
 
   // Helpers for the conformers
@@ -62,8 +62,34 @@ extension TracedProcessor {
        return ""
      }
      return "\(registers)\n"
-   }
-  public func formatInput() -> String{
+  }
+
+  public func formatInput() -> String {
+    // String override for printing sub-character information.
+    if !input.indices.contains(currentPosition),
+       let input = input as? StringProtocol {
+      // Format unicode scalars as:
+      //     abcde\u{0301}e\u{0301}
+      //     .....^~~~~~~~
+      func _format<S: StringProtocol>(_ input: S) -> String {
+        let currentPosition = currentPosition as! S.Index
+        let matchedHighlightWidth = input.unicodeScalars
+          .prefix(upTo: currentPosition).map {
+            $0.isASCII ? 1 : 8
+          }.reduce(0, +)
+        let nextHighlightWidth =
+          currentPosition == input.endIndex || input[currentPosition].isASCII
+          ? 1 : 8
+        return """
+          input: \(input.unicodeScalars
+                    .map { $0.escaped(asASCII: true).description }
+                    .joined())
+                 \(String(repeating: ".", count: matchedHighlightWidth))\
+          ^\(String(repeating: "~", count: nextHighlightWidth - 1))
+          """
+      }
+      return _openExistential(input, do: _format)
+    }
     let dist = input.distance(from: input.startIndex, to: currentPosition)
     return """
       input: \(input)

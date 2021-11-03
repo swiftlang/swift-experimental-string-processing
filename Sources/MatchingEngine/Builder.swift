@@ -1,18 +1,16 @@
 import Util
 
-extension Program where Element: Hashable {
-  public typealias Predicate = (Element) -> Bool
-
+extension Program where Input.Element: Hashable {
   public struct Builder {
-    var instructions = Array<Instruction>()
+    var instructions: [Instruction] = []
 
-    var elements = TypedSetVector<Element, _ElementRegister>()
+    var elements = TypedSetVector<Input.Element, _ElementRegister>()
     var strings = TypedSetVector<String, _StringRegister>()
-    var predicates = Array<Predicate>()
+    var consumeFunctions: [ConsumeFunction] = []
 
     // Map tokens to actual addresses
-    var addressTokens = Array<InstructionAddress?>()
-    var addressFixups = Array<(InstructionAddress, AddressToken)>()
+    var addressTokens: [InstructionAddress?] = []
+    var addressFixups: [(InstructionAddress, AddressToken)] = []
 
     // Registers
     var nextBoolRegister = BoolRegister(0)
@@ -22,7 +20,7 @@ extension Program where Element: Hashable {
 }
 
 extension Program.Builder {
-  public init<S: Sequence>(staticElements: S) where S.Element == Element {
+  public init<S: Sequence>(staticElements: S) where S.Element == Input.Element {
     staticElements.forEach { elements.store($0) }
   }
 
@@ -81,15 +79,15 @@ extension Program.Builder {
     instructions.append(.consume(n))
   }
 
-  public mutating func buildMatch(_ e: Element) {
+  public mutating func buildMatch(_ e: Input.Element) {
     instructions.append(.match(elements.store(e)))
   }
 
-  public mutating func buildMatchPredicate(_ p: @escaping Program.Predicate) {
-    instructions.append(.matchPredicate(createPredicate(p)))
+  public mutating func buildConsume(by p: @escaping Program.ConsumeFunction) {
+    instructions.append(.consume(by: makeConsumeFunction(p)))
   }
 
-  public mutating func buildAssert(_ e: Element, into c: BoolRegister) {
+  public mutating func buildAssert(_ e: Input.Element, into c: BoolRegister) {
     instructions.append(.assertion(condition: c, elements.store(e)))
   }
 
@@ -114,13 +112,13 @@ extension Program.Builder {
     regInfo.elements = elements.count
     regInfo.strings = strings.count
     regInfo.bools = nextBoolRegister.rawValue
-    regInfo.predicates = predicates.count
+    regInfo.consumeFunctions = consumeFunctions.count
 
     return Program(
       instructions: InstructionList(instructions),
       staticElements: elements.stored,
       staticStrings: strings.stored,
-      staticPredicates: predicates,
+      staticConsumeFunctions: consumeFunctions,
       registerInfo: regInfo)
   }
 
@@ -132,7 +130,7 @@ extension Program.Builder {
   public enum _AddressToken {}
   public typealias AddressToken = TypedInt<_AddressToken>
 
-  public mutating func createAddress() -> AddressToken {
+  public mutating func makeAddress() -> AddressToken {
     defer { addressTokens.append(nil) }
     return AddressToken(addressTokens.count)
   }
@@ -141,10 +139,16 @@ extension Program.Builder {
   // instruction, updating prior and future address references
   public mutating func resolve(_ t: AddressToken) {
     assert(!instructions.isEmpty)
-    assert(addressTokens[t.rawValue] == nil)
 
     addressTokens[t.rawValue] =
       InstructionAddress(instructions.count &- 1)
+  }
+
+  // Resolves the address token to the next instruction (one past the most
+  // recently added one), updating prior and future address references.
+  public mutating func label(_ t: AddressToken) {
+    addressTokens[t.rawValue] =
+      InstructionAddress(instructions.count)
   }
 
   // Associate the most recently added instruction with
@@ -159,16 +163,16 @@ extension Program.Builder {
 
 // Register helpers
 extension Program.Builder {
-  public mutating func createRegister() -> BoolRegister {
+  public mutating func makeRegister() -> BoolRegister {
     defer { nextBoolRegister.rawValue += 1 }
     return nextBoolRegister
   }
 
-  public mutating func createPredicate(
-    _ f: @escaping Program.Predicate
-  ) -> PredicateRegister {
-    defer { predicates.append(f) }
-    return PredicateRegister(predicates.count)
+  public mutating func makeConsumeFunction(
+    _ f: @escaping Program.ConsumeFunction
+  ) -> ConsumeFunctionRegister {
+    defer { consumeFunctions.append(f) }
+    return ConsumeFunctionRegister(consumeFunctions.count)
   }
 }
 

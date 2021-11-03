@@ -162,22 +162,6 @@ extension RECode: RandomAccessCollection {
 }
 
 extension RECode {
-  public func withMatchLevel(_ level: CharacterClass.MatchLevel) -> RECode {
-    var result = self
-    result.instructions = result.instructions.map { inst in
-      switch inst {
-      case .characterClass(var cc):
-        cc.matchLevel = level
-        return .characterClass(cc)
-      default:
-        return inst
-      }
-    }
-    return result
-  }
-}
-
-extension RECode {
   /// Lookup the location of a label
   public func lookup(_ id: LabelId) -> InstructionAddress {
     let result = labels[id.rawValue]

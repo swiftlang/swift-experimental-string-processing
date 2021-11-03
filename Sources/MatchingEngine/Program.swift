@@ -1,11 +1,12 @@
 import Util
 
-public struct Program<Element> where Element: Equatable {
+public struct Program<Input: Collection> where Input.Element: Equatable {
+  public typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?
   var instructions: InstructionList<Instruction>
 
-  var staticElements: Array<Element>
-  var staticStrings: Array<String>
-  var staticPredicates: Array<(Element) -> Bool>
+  var staticElements: [Input.Element]
+  var staticStrings: [String]
+  var staticConsumeFunctions: [ConsumeFunction]
 
   var registerInfo: RegisterInfo
 
@@ -19,8 +20,8 @@ extension Program: CustomStringConvertible {
     Strings: \(staticStrings)
 
     """
-    if !staticPredicates.isEmpty {
-      result += "Predicates: \(staticPredicates)"
+    if !staticConsumeFunctions.isEmpty {
+      result += "Consume functions: \(staticConsumeFunctions)"
     }
 
     // TODO: Extract into formatting code

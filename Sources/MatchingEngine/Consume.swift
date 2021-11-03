@@ -1,11 +1,15 @@
 var checkComments = true
 
 extension Engine {
-  func createProcessor(
-    _ input: Input, in r: Range<Input.Index>
+  func makeProcessor(
+    input: Input, bounds: Range<Input.Index>, matchMode: MatchMode
   ) -> Processor<Input> {
     Processor(
-      program, input, in: r, enableTracing: enableTracing)
+      program: program,
+      input: input,
+      bounds: bounds,
+      matchMode: matchMode,
+      isTracingEnabled: enableTracing)
   }
 
   public func consume(_ input: Input) -> Input.Index? {
@@ -13,12 +17,15 @@ extension Engine {
   }
 
   public func consume(
-    _ input: Input, in range: Range<Input.Index>) -> Input.Index? {
+    _ input: Input,
+    in range: Range<Input.Index>,
+    matchMode: MatchMode = .prefix
+  ) -> Input.Index? {
     if enableTracing {
       print("Consume: \(input)")
     }
 
-    var cpu = createProcessor(input, in: range)
+    var cpu = makeProcessor(input: input, bounds: range, matchMode: matchMode)
     let result: Input.Index? = {
       while true {
         switch cpu.state {

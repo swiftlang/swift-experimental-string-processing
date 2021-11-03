@@ -90,9 +90,8 @@ private func performTest<Capture>(
   expectedCaptureType: Capture.Type,
   expecting expectation: TestExpectation<Capture>?
 ) {
-  let code = try! compile(regex)
-  let lonesomeGeorge = TortoiseVM(code)
-  let harvey = HareVM(code)
+  let range = input.flatmapOffsets(offsets)
+  let ast = try! parse(regex, .traditional)
   func report(name: String,
               matchedRange: Range<String.Index>?,
               actualCaptures: Any?,
@@ -108,9 +107,8 @@ private func performTest<Capture>(
       Saw: \(actualCaptures.map { "\"\($0)\": \(type(of: $0))" } ?? "none")
       """
   }
-  func run(_ vm: VirtualMachine, name: String) {
-    let range = input.flatmapOffsets(offsets)
-    let actualResult = vm.execute(input: input, in: range, mode)
+  func run<VM: VirtualMachine>(_ vm: VM, name: String) {
+    let actualResult = vm.execute(input: input, in: range, mode: mode)
     switch (actualResult, expectation) {
     case let (result?, expectation?) where Capture.self != Void.self:
       guard expectation.isExpectedContentIfSpecified(input[result.range]),
@@ -130,11 +128,18 @@ private func performTest<Capture>(
         actualCaptures: actualResult?.captures.value,
         expectedCaptures: expectation?.captures))
     default:
-      break;
+      break
     }
   }
-  run(lonesomeGeorge, name: "Lonesome George")
-  run(harvey, name: "Harvey")
+  let legacyProgram = try! compile(ast)
+  run(TortoiseVM(program: legacyProgram), name: "Lonesome George")
+  run(HareVM(program: legacyProgram), name: "Harvey")
+  // TODO: Support captures in the matching engine.
+  guard !ast.hasCaptures else {
+    return
+  }
+  let program = Compiler(ast: ast).emit()
+  run(Executor(program: program), name: "Matching Engine")
 }
 
 extension RegexTests {
@@ -322,11 +327,16 @@ extension RegexTests {
       ("a|b?c", ["a", "c", "bc"], ["ab", "ac"]),
       ("abc*", ["abc", "ab", "abcc", "abccccc"], ["a", "c", "abca"]),
       ("abc*?", ["abc", "ab", "abcc", "abccccc"], ["a", "c", "abca"]),
+      ("ab*?bb", ["abb", "abbbbb"], ["ab", "acb", "abc"]),
+      ("ab+?bb", ["abbb", "abbbbb"], ["abb", "acb", "abc"]),
       ("abc+def", ["abcdef", "abccccccdef"], ["abc", "abdef"]),
       ("ab(cdef)*", ["ab", "abcdef", "abcdefcdefcdef"],
        ["abc", "cdef", "abcde", "abcdeff"]),
       ("ab(c|def)+", ["abc", "abdef", "abcdef", "abdefdefcdefc"],
        ["ab", "c", "abca"]),
+      ("a(.*?)(c+).*?(e+)", ["abbbbccccddddeeee"], ["aacccceeeeeef"]),
+      ("a(.+?)(c+).+?(e+)", ["abbbbccccddddeeee"], ["ace"]),
+      ("a(?:b|c|d)e", ["abe", "ace", "ade"], ["afe", "aae"]),
 
       ("a\\sb", ["a b"], ["ab", "a  b"]),
       ("a\\s+b", ["a b", "a    b"], ["ab", "a    c"]),
@@ -424,20 +434,23 @@ extension RegexTests {
     ]
 
     for (regex, characterInputs, scalarInputs) in tests {
-      let code = try! compile(regex)
-      let harvey = HareVM(code)
+      let ast = try! parse(regex, .traditional)
+      let program = Compiler(ast: ast).emit()
+      let executor = Executor(program: program)
 
-      let scalarCode = code.withMatchLevel(.unicodeScalar)
-      let scalarHarvey = HareVM(scalarCode)
+      let scalarAST = ast.withMatchLevel(.unicodeScalar)
+      let scalarProgram = Compiler(ast: scalarAST).emit()
+      let scalarExecutor = Executor(
+        program: scalarProgram, enablesTracing: true)
 
       for input in characterInputs {
-        XCTAssertNotNil(harvey.execute(input: input))
-        XCTAssertNil(scalarHarvey.execute(input: input))
+        XCTAssertNotNil(executor.execute(input: input))
+        XCTAssertNil(scalarExecutor.execute(input: input))
       }
 
       for input in scalarInputs {
-        XCTAssertNotNil(scalarHarvey.execute(input: input))
-        XCTAssertNil(harvey.execute(input: input))
+        XCTAssertNotNil(scalarExecutor.execute(input: input))
+        XCTAssertNil(executor.execute(input: input))
       }
     }
   }
