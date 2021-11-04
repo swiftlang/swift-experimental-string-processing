@@ -272,7 +272,7 @@ let graphemeBreakPropertyData = /(([0-9A-F]+)(\.\.([0-9A-F]+)))\s*;\s(\w+).*/
 //                 ".."
 //                 OneOrMore(CharacterClass.hexDigit).capture() // (3)
 //             }.capture() // (2)
-//         }
+//         }.capture() // (0)
 //         Repeat(CharacterClass.whitespace)
 //         ";"
 //         CharacterClass.whitespace
