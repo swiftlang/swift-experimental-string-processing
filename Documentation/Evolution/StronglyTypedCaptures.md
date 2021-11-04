@@ -291,23 +291,24 @@ let input = "007F..009F    ; Control # Cc  [33] <control-007F>..<control-009F>"
 
 #### Quantification
 
-A quantifier's capture type depends on its underlying pattern.
+A quantifier's capture type depends on its underlying pattern. The laziness of
+a quantifier, as denoted by a `?` suffix, does not affect the capture type. 
 
 ```
-pattern ::= pattern '*'
-pattern ::= pattern '+'
-pattern ::= pattern '?'
-pattern ::= pattern '{' number (',' spaces? number?)? '}'
+pattern ::= pattern '*' '?'?
+pattern ::= pattern '+' '?'?
+pattern ::= pattern '?' '?'?
+pattern ::= pattern '{' number (',' spaces? number?)? '}' '?'?
 ```
 
-| Syntax      | Description           | Capture type                                                  |
-| ----------- | --------------------- | ------------------------------------------------------------- |
-| `*`         | 0 or more             | `Array` of the sub-pattern capture type                       |
-| `+`         | 1 or more             | `Array` of the sub-pattern capture type                       |
-| `?`         | 0 or 1                | `Optional` of the sub-pattern capture type                    |
-| `{n}`       | Exactly _n_           | `Array` of the sub-pattern capture type                       |
-| `{n, m}`    | Between _n_ and _m_   | `Array` of the sub-pattern capture type                       |
-| `{n,}`      | _n_ or more           | `Array` of the sub-pattern capture type                       |
+| Syntax             | Description           | Capture type                                                  |
+| ------------------ | --------------------- | ------------------------------------------------------------- |
+| `*` / `*?`         | 0 or more             | `Array` of the sub-pattern capture type                       |
+| `+` / `+?`         | 1 or more             | `Array` of the sub-pattern capture type                       |
+| `?` / `??`         | 0 or 1                | `Optional` of the sub-pattern capture type                    |
+| `{n}` / `{n}?`     | Exactly _n_           | `Array` of the sub-pattern capture type                       |
+| `{n, m}` / `{n}?`  | Between _n_ and _m_   | `Array` of the sub-pattern capture type                       |
+| `{n,}` / `{n}?`    | _n_ or more           | `Array` of the sub-pattern capture type                       |
 
 ```swift
 /([0-9a-fA-F]+)+/
@@ -371,15 +372,15 @@ _last_ match of a repeated capture group. For example, Python only captures the
 last group in this dash-separated string:
 
 ```python
-rep = re.compile(‘(?:([0-9a-f]+)-?)+’)
-match = rep.match(“1234-5678-9abc-def0”)
+rep = re.compile('(?:([0-9a-f]+)-?)+')
+match = rep.match("1234-5678-9abc-def0")
 print(match.group(1))
+# Prints "def0"
 ```
 
 By contrast, the proposed Swift version captures all four sub-matches:
 
 ```swift
-// Note: Syntax / API still in discussion
 let pattern = /(?:([0-9a-f]+)-?)+/
 if let match = “1234-5678-9abc-def0".firstMatch(of: pattern) {
     print(match.captures)
@@ -433,7 +434,7 @@ able to exhaustively switch over all the captures.
 let number = line
     .firstMatch(/([01]+)|([0-9]+)|([0-9A-F]+)/)?
     .captures
-    .map {
+    .flatMap {
         switch $0 {
         case let .0(binary):
             return Int(binary, radix: 2)
@@ -473,7 +474,7 @@ public struct Alternation<Captures> { ... }
 extension<Option...> Alternation where Captures == (Option...) {
     public var options: (Option?...) { get }
     
-    public subscript<T>(dynamicMember keyPath: KeyPath<(T?...), T>) -> T {
+    public subscript<T>(dynamicMember keyPath: KeyPath<(Option?...), T>) -> T {
       options[keyPath: keyPath]
     }
 }
@@ -489,7 +490,7 @@ access the tuple's properties via key path dynamic member lookup.
 let number = line
     .firstMatch(/([01]+)|([0-9]+)|([0-9A-F]+)/)?
     .captures
-    .map {
+    .flatMap {
         switch $0.options {
         case let (binary?, nil, nil):
             return Int(binary, radix: 2)
@@ -506,7 +507,7 @@ let number = line
 let number = line
     .firstMatch(/(?<binary>[01]+)|(?<decimal>[0-9]+)|(?<hex>[0-9A-F]+)/)?
     .captures
-    .map {
+    .flatMap {
         if let binary = $0.binary {
             return Int(binary, radix: 2)
         } else if let decimal = $0.decimal {
@@ -568,7 +569,7 @@ e.g. `(5 x Substring)` as pitched in [Improved Compiler Support for Large Homoge
 
 However, this would cause an inconsistency between exact-count quantification
 and bounded quantification.  We believe that the proposed design will result in
-much less surprises as we associate the `{...}` quantifier syntax with `Array`.
+fewer surprises as we associate the `{...}` quantifier syntax with `Array`.
 
 ### `Never` as empty capture instead of `Void`
 
