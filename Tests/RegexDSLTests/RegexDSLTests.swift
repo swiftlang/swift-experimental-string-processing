@@ -209,4 +209,15 @@ class RegexDSLTests: XCTestCase {
     try run(regex)
     try run(regexLiteral)
   }
+
+  func testDynamicCaptures() throws {
+    let regex = try Regex(#"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#)
+    let line = """
+      A6F0..A6F1    ; Extend # Mn   [2] BAMUM COMBINING MARK KOQNDON..BAMUM COMBINING MARK TUKWENTIS
+      """
+    let captures = try XCTUnwrap(line.match(regex)?.captures)
+    XCTAssertEqual(
+        captures,
+        .tuple([.substring("A6F0"), .optional(.substring("A6F1")), .substring("Extend")]))
+  }
 }
