@@ -237,7 +237,7 @@ pattern ::= '(' '?' ':' pattern ')'
 
 ```swift
 let graphemeBreakLowerBound = /([0-9A-F]+)(?:\.\.([0-9A-F]+))?/
-// => `Regex<Void>`
+// => `Regex<(Substring, Substring?)>`
 
 // Result builder DSL equivalent:
 //     let graphemeBreakLowerBound = Regex {
