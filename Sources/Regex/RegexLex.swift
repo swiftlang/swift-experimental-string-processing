@@ -1,11 +1,62 @@
-public struct Lexer {
-  var source: Source
-  var nextToken: Token? = nil
+/// TODO: describe real lexical structure of regex
+struct Lexer {
+  var source: Source // TODO: fileprivate after diags
+  fileprivate var nextToken: Token? = nil
 
   /// The number of parent custom character classes we're lexing within.
-  private var customCharacterClassDepth = 0
+  fileprivate var customCharacterClassDepth = 0
 
-  public init(_ source: Source) { self.source = source }
+  init(_ source: Source) { self.source = source }
+}
+
+// MARK: - Intramodule Programming Interface (IPI?)
+
+extension Lexer {
+  /// Whether we're done
+  var isEmpty: Bool {
+    nextToken == nil && source.isEmpty
+  }
+
+  /// Grab the next token without consuming it, if there is one
+  mutating func peek() -> Token? {
+    if let tok = nextToken { return tok }
+    guard !source.isEmpty else { return nil }
+    advance()
+    return nextToken.unsafelyUnwrapped
+  }
+
+  /// Eat a token, returning it (unless we're at the end)
+  @discardableResult
+  mutating func eat() -> Token? {
+    defer { advance() }
+    return peek()
+  }
+
+  /// Eat the specified token if there is one. Returns whether anything happened
+  mutating func tryEat(_ tok: Token.Kind) -> Bool {
+    guard peek()?.kind == tok else { return false }
+    advance()
+    return true
+  }
+
+  /// Try to eat a token, throwing if we don't see what we're expecting.
+  mutating func eat(expecting tok: Token.Kind) throws {
+    guard tryEat(tok) else { throw "Expected \(tok)" }
+  }
+
+  /// Try to eat a token, asserting we saw what we expected
+  mutating func eat(asserting tok: Token.Kind) {
+    let expected = tryEat(tok)
+    assert(expected)
+  }
+
+  /// TODO: Consider a variant that will produce the requested token, but also
+  /// produce diagnostics/fixit if that's not what's really there.
+}
+
+// MARK: - Implementation
+
+extension Lexer {
 
   /// Whether the lexer is currently lexing within a custom character class.
   private var isInCustomCharacterClass: Bool { customCharacterClassDepth > 0 }
@@ -45,7 +96,7 @@ public struct Lexer {
     return scalar
   }
 
-  private mutating func consumeEscapedCharacter() -> Token {
+  private mutating func consumeEscapedCharacter() -> Token.Kind {
     assert(!source.isEmpty, "Escape at end of input string")
     let nextCharacter = source.eat()
 
@@ -86,7 +137,7 @@ public struct Lexer {
     }
   }
 
-  private mutating func consumeIfSetOperator(_ ch: Character) -> Token? {
+  private mutating func consumeIfSetOperator(_ ch: Character) -> Token.Kind? {
     // Can only occur in a custom character class. Otherwise, the operator
     // characters are treated literally.
     guard isInCustomCharacterClass else { return nil }
@@ -105,7 +156,7 @@ public struct Lexer {
     }
   }
 
-  private mutating func consumeIfMetaCharacter(_ ch: Character) -> Token? {
+  private mutating func consumeIfMetaCharacter(_ ch: Character) -> Token.Kind? {
     guard let meta = Token.MetaCharacter(rawValue: ch) else { return nil }
     // Track the custom character class depth. We can increment it every time
     // we see a `[`, and decrement every time we see a `]`, though we don't
@@ -122,17 +173,23 @@ public struct Lexer {
 
   private mutating func consumeNextToken() -> Token? {
     guard !source.isEmpty else { return nil }
+
+    let startLoc = source.currentLoc
+    func tok(_ kind: Token.Kind) -> Token {
+      Token(kind: kind, loc: startLoc..<source.currentLoc)
+    }
+
     let current = source.eat()
     if let op = consumeIfSetOperator(current) {
-      return op
+      return tok(op)
     }
     if let meta = consumeIfMetaCharacter(current) {
-      return meta
+      return tok(meta)
     }
     if current == Token.escape {
-      return consumeEscapedCharacter()
+      return tok(consumeEscapedCharacter())
     }
-    return .character(current, isEscaped: false)
+    return tok(.character(current, isEscaped: false))
   }
   
   private mutating func advance() {
@@ -140,43 +197,13 @@ public struct Lexer {
   }
 }
 
-// Main interface
-extension Lexer {
-  public var isEmpty: Bool { nextToken == nil && source.isEmpty }
 
-  public mutating func peek() -> Token? {
-    if let tok = nextToken { return tok }
-    guard !source.isEmpty else { return nil }
-    advance()
-    return nextToken.unsafelyUnwrapped
-  }
-
-  // Eat a token if there is one. Returns whether anything
-  // happened
-  public mutating func eat(_ tok: Token) -> Bool {
-    guard peek() == tok else { return false }
-    advance()
-    return true
-  }
-
-  // Eat a token, returning it (unless we're at the end)
-  @discardableResult
-  public mutating func eat() -> Token? {
-    defer { advance() }
-    return peek()
-  }
-
-  public mutating func eat(expecting tok: Token) throws {
-    guard peek() == tok else { throw "Expected \(tok)" }
-    advance()
-  }
-}
-
-// Can also be viewed as just a sequence of tokens
+// Can also be viewed as just a sequence of tokens. Useful for
+// testing
 extension Lexer: Sequence, IteratorProtocol {
-  public typealias Element = Token
+  typealias Element = Token
 
-  public mutating func next() -> Element? {
+  mutating func next() -> Element? {
     defer { advance() }
     return peek()
   }
