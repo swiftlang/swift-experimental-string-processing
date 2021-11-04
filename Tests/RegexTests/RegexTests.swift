@@ -2,7 +2,7 @@ import XCTest
 @testable import Regex
 import Util
 
-extension Token: ExpressibleByExtendedGraphemeClusterLiteral {
+extension Token.Kind: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
     self = .character(value, isEscaped: false)
@@ -169,8 +169,9 @@ class RegexTests: XCTestCase {
           "|*\\\\" -> pipe star ｢\\｣
           ")ab(+" -> rparen ｢ab｣ lparen plus
         """
-    func performTest(_ input: String, _ expecting: Token...) {
-      XCTAssertEqual(Array(Lexer(Source(input))), expecting)
+    func performTest(_ input: String, _ expecting: Token.Kind...) {
+      XCTAssertEqual(
+        expecting, Lexer(Source(input)).map { $0.kind })
     }
 
     // Gramatically valid

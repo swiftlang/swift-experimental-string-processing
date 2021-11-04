@@ -1,28 +1,38 @@
-
-/// The source to a lexer. This can be bytes in memory, a file on disk, something streamed over a
-/// network connection, ect. For our purposes, we model this as just a Substring (i.e. String + position)
-public struct Source {
+/// The source to a lexer. This can be bytes in memory, a file on disk,
+/// something streamed over a network connection, etc.
+///
+/// Currently, we model this as just a Substring (i.e. String + position)
+struct Source {
   var state: Substring
-  public init(_ str: String) { state = str[...] }
+  init(_ str: String) { state = str[...] }
 
-  public func peek() -> Character? { state.first }
-  public mutating func eat() -> Character { state.eat() }
+  func peek() -> Character? { state.first }
+  mutating func eat() -> Character { state.eat() }
 
-  public var isEmpty: Bool { state.isEmpty }
+  var isEmpty: Bool { state.isEmpty }
+
+  typealias Location = String.Index
+  var currentLoc: Location { state.startIndex }
 }
 
-/// A lexer consumes its input (in this case a String) and produces Tokens.
+/// Tokens are produced by the lexer and carry rich syntactic information
 ///
-/// Lexical structure of a regular expression:
-///
-///     RE            -> MetaCharacter RE | Character RE | ''
-///     MetaCharacter -> '*' | '+' | '?' | '|' | '(' | ')' | '.'
-///     Character     -> '\\'? <builtin: Character>
-///
-public enum Token {
-  static let escape: Character = "\\"
+struct Token {
+  /// The underlying syntactic info
+  let kind: Kind
 
-  public enum MetaCharacter: Character, Hashable {
+  /// The source location span of the token itself
+  let loc: Range<Source.Location>
+
+  // TODO: diagnostics
+}
+
+// MARK: - Token kinds
+
+extension Token {
+  static var escape: Character { #"\"# }
+
+  enum MetaCharacter: Character, Hashable {
     case star = "*"
     case plus = "+"
     case question = "?"
@@ -37,43 +47,52 @@ public enum Token {
     case caret = "^"
   }
 
-  public enum SetOperator: String, Hashable {
+  /// The underlying syntactic info carried by a token
+  enum Kind {
+    case meta(MetaCharacter)
+    case setOperator(SetOperator)
+    case character(Character, isEscaped: Bool)
+    case unicodeScalar(UnicodeScalar)
+  }
+
+  enum SetOperator: String, Hashable {
     case doubleAmpersand = "&&"
     case doubleDash = "--"
     case doubleTilda = "~~"
   }
 
-  case meta(MetaCharacter)
-  case setOperator(SetOperator)
-  case character(Character, isEscaped: Bool)
-  case unicodeScalar(UnicodeScalar)
 
-  // Convenience accessors
-  public static var pipe: Token { .meta(.pipe) }
-  public static var question: Token { .meta(.question) }
-  public static var leftParen: Token { .meta(.lparen) }
-  public static var rightParen: Token { .meta(.rparen) }
-  public static var star: Token { .meta(.star) }
-  public static var plus: Token { .meta(.plus) }
-  public static var dot: Token { .meta(.dot) }
-  public static var colon: Token { .meta(.colon) }
-  public static var leftSquareBracket: Token { .meta(.lsquare) }
-  public static var rightSquareBracket: Token { .meta(.rsquare) }
-  public static var minus: Token { .meta(.minus) }
-  public static var caret: Token { .meta(.caret) }
 
   // Note: We do each character individually, as post-fix modifiers bind
   // tighter than concatenation. "abc*" is "a" -> "b" -> "c*"
 }
 
+// TODO: Consider a flat kind representation and leave structure
+// as an API concern
+extension Token.Kind {
+  // Convenience accessors
+  static var pipe: Self { .meta(.pipe) }
+  static var question: Self { .meta(.question) }
+  static var leftParen: Self { .meta(.lparen) }
+  static var rightParen: Self { .meta(.rparen) }
+  static var star: Self { .meta(.star) }
+  static var plus: Self { .meta(.plus) }
+  static var dot: Self { .meta(.dot) }
+  static var colon: Self { .meta(.colon) }
+  static var leftSquareBracket: Self { .meta(.lsquare) }
+  static var rightSquareBracket: Self { .meta(.rsquare) }
+  static var minus: Self { .meta(.minus) }
+  static var caret: Self { .meta(.caret) }
+}
+
 extension Token.MetaCharacter: CustomStringConvertible {
-  public var description: String { String(self.rawValue) }
+  var description: String { String(self.rawValue) }
 }
 extension Token.SetOperator: CustomStringConvertible {
-  public var description: String { rawValue }
+  var description: String { rawValue }
 }
-extension Token: CustomStringConvertible {
-  public var description: String {
+extension Token.Kind: CustomStringConvertible {
+  var description: String {
     switch self {
     case .meta(let meta): return meta.description
     case .setOperator(let op): return op.description
@@ -83,4 +102,4 @@ extension Token: CustomStringConvertible {
   }
 }
 
-extension Token: Equatable {}
+extension Token.Kind: Equatable {}
