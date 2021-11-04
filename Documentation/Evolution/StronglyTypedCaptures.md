@@ -21,6 +21,9 @@
     - [Effect on ABI stability](#effect-on-abi-stability)
     - [Effect on API resilience](#effect-on-api-resilience)
     - [Alternatives considered](#alternatives-considered)
+        - [Lazy collections instead of arrays of substrings](#lazy-collections-instead-of-arrays-of-substrings)
+        - [Homogeneous tuples for exact-count quantification](#homogeneous-tuples-for-exact-count-quantification)
+        - [`Never` as empty capture instead of `Void`](#never-as-empty-capture-instead-of-void)
     - [Future directions](#future-directions)
         - [Dynamic captures](#dynamic-captures)
 
@@ -362,6 +365,31 @@ pattern ::= pattern '{' number (',' spaces? number?)? '}'
 //     // `.Captures == [Substring]`
 ```
 
+Note that capturing collections of repeated captures like this is a departure
+from most regular expression implementations, which only provide access to the
+_last_ match of a repeated capture group. For example, Python only captures the
+last group in this dash-separated string:
+
+```python
+rep = re.compile(‘(?:([0-9a-f]+)-?)+’)
+match = rep.match(“1234-5678-9abc-def0”)
+print(match.group(1))
+```
+
+By contrast, the proposed Swift version captures all four sub-matches:
+
+```swift
+// Note: Syntax / API still in discussion
+let pattern = /(?:([0-9a-f]+)-?)+/
+if let match = “1234-5678-9abc-def0".firstMatch(of: pattern) {
+    print(match.captures)
+}
+// Prints [“1234”, “5678", “9abc”, “def0"]
+```
+
+Despite the deviation from prior art, we believe that the proposed capture
+behavior leads to better consistency with the meaning of these quantifiers.
+
 #### Alternation
 
 Alternations are used to match one of multiple possible patterns.
@@ -526,9 +554,9 @@ public struct CaptureCollection<Captures>: BidirectionalCollection {
 However, we believe the use of arrays in capture types would make a much cleaner
 type signature.
   
-### Homogeneous tuples 
+### Homogeneous tuples for exact-count quantification
 
-For exact count quantifications, e.g. `[a-z]{5}`, it would slightly improve
+For exact-count quantifications, e.g. `[a-z]{5}`, it would slightly improve
 type safety to make its capture type be a homogeneous tuple instead of an array,
 e.g. `(5 x Substring)` as pitched in [Improved Compiler Support for Large Homogenous Tuples](https://forums.swift.org/t/pitch-improved-compiler-support-for-large-homogenous-tuples/49023).
 
@@ -538,9 +566,13 @@ e.g. `(5 x Substring)` as pitched in [Improved Compiler Support for Large Homoge
 /[a-z]{5,}/    // => Regex<[Substring]>     (lower-bounded count)
 ```
 
-However, this would cause an inconsistency between exact count quantification
+However, this would cause an inconsistency between exact-count quantification
 and bounded quantification.  We believe that the proposed design will result in
 much less surprises as we associate the `{...}` quantifier syntax with `Array`.
+
+### `Never` as empty capture instead of `Void`
+
+TODO 
 
 ## Future directions
 
