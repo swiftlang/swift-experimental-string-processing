@@ -301,14 +301,14 @@ pattern ::= pattern '?' '?'?
 pattern ::= pattern '{' number (',' spaces? number?)? '}' '?'?
 ```
 
-| Syntax             | Description           | Capture type                                                  |
-| ------------------ | --------------------- | ------------------------------------------------------------- |
-| `*` / `*?`         | 0 or more             | `Array` of the sub-pattern capture type                       |
-| `+` / `+?`         | 1 or more             | `Array` of the sub-pattern capture type                       |
-| `?` / `??`         | 0 or 1                | `Optional` of the sub-pattern capture type                    |
-| `{n}` / `{n}?`     | Exactly _n_           | `Array` of the sub-pattern capture type                       |
-| `{n, m}` / `{n}?`  | Between _n_ and _m_   | `Array` of the sub-pattern capture type                       |
-| `{n,}` / `{n}?`    | _n_ or more           | `Array` of the sub-pattern capture type                       |
+| Syntax               | Description           | Capture type                                                  |
+| -------------------- | --------------------- | ------------------------------------------------------------- |
+| `*` / `*?`           | 0 or more             | `Array` of the sub-pattern capture type                       |
+| `+` / `+?`           | 1 or more             | `Array` of the sub-pattern capture type                       |
+| `?` / `??`           | 0 or 1                | `Optional` of the sub-pattern capture type                    |
+| `{n}` / `{n}?`       | Exactly _n_           | `Array` of the sub-pattern capture type                       |
+| `{n, m}` / `{n, m}?` | Between _n_ and _m_   | `Array` of the sub-pattern capture type                       |
+| `{n,}` / `{n,}?`     | _n_ or more           | `Array` of the sub-pattern capture type                       |
 
 ```swift
 /([0-9a-fA-F]+)+/
