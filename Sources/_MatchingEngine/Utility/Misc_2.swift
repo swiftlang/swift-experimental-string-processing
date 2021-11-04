@@ -46,6 +46,15 @@ extension Sequence {
     }
     return false
   }
+  
+  // Collection.count and !isEmpty for Sequences
+  public func elementCount() -> Int {
+    reduce(0) { sum, _ in sum + 1 }
+  }
+  public func hasElements() -> Bool {
+    var iterator = makeIterator()
+    return iterator.next() != nil
+  }
 }
 
 extension Range {

@@ -1,6 +1,7 @@
 import XCTest
 @testable import _MatchingEngine
 @testable import _StringProcessing
+import Exercises
 
 func matchTest(
   _ regex: String,
@@ -831,5 +832,60 @@ extension RegexTests {
     matchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba", xfail: true)
     matchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
   }
+  
+  func testAllMatches() throws {
+    let line = """
+      A6F0..A6F1    ; Extend # Mn   [2] BAMUM COMBINING MARK KOQNDON..BAMUM COMBINING MARK TUKWENTIS
+      """
+
+    let nonMatching = line.allMatches(Regex { "zZzZzZz" })
+    XCTAssertFalse(nonMatching.hasElements())
+    
+    let regexLiteral = r(#"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+)"#).regex
+       as Regex<Tuple3<Substring, Substring?, Substring>>
+    
+    let lineAll = line.allMatches(regexLiteral)
+    XCTAssertEqual(lineAll.elementCount(), 1)
+    
+    let expectedMatchCount = 1364
+    let expectedInitialCaptures: [(Substring, Substring?, Substring)] = [
+      ("0600", "0605", "Prepend"),
+      ("06DD", nil, "Prepend"),
+      ("070F", nil, "Prepend"),
+    ]
+    
+    let dataAll = graphemeBreakData.allMatches(regexLiteral)
+    XCTAssertEqual(dataAll.elementCount(), expectedMatchCount)
+    XCTAssertTrue(
+      dataAll.prefix(expectedInitialCaptures.count).map(\.match.tuple)
+        .elementsEqual(expectedInitialCaptures, by: ==))
+    
+    let endOfFirstMatch = dataAll.first(where: { _ in true })!.range.upperBound
+    let dataFromSubstring = graphemeBreakData[endOfFirstMatch...]
+      .allMatches(regexLiteral)
+    XCTAssertEqual(dataFromSubstring.elementCount(), expectedMatchCount - 1)
+    XCTAssertTrue(
+      dataFromSubstring.prefix(expectedInitialCaptures.count - 1).map(\.match.tuple)
+        .elementsEqual(expectedInitialCaptures.dropFirst(), by: ==))
+
+    let digitsOrX = r(#"\d*|x"#).regex as Regex<Substring>
+    let digitsOrXString = "x1"
+    
+    let allDigitsOrX = digitsOrXString.allMatches(digitsOrX)
+    XCTAssertEqual(allDigitsOrX.elementCount(), 3)
+    XCTAssertEqual(
+      allDigitsOrX.map { digitsOrXString[$0.range] },
+      ["",    // empty range before 'x'
+       "1",   // the '1' digit
+       ""     // empty range after '1'
+      ])
+    // With the Perl approach to advancing after empty matches, this yields:
+    //   ["",    // empty range before 'x'
+    //    "x",
+    //    "1",
+    //    ""     // empty range after '1'
+    //   ]
+  }
+
 }
 

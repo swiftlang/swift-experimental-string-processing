@@ -43,7 +43,7 @@ let package = Package(
             dependencies: []),
         .testTarget(
             name: "RegexTests",
-            dependencies: ["_StringProcessing"]),
+            dependencies: ["_StringProcessing", "Exercises"]),
         .target(
             name: "Prototypes",
             dependencies: ["_MatchingEngine"]),

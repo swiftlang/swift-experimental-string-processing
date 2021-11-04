@@ -28,4 +28,28 @@ class UtilTests: XCTestCase {
     XCTAssertEqual(tuple1.1, [true, false])
     XCTAssertEqual(tuple1.2, [3.0, 4.0])
   }
+  
+  func testSequenceMethods() {
+    let seq = sequence(first: 0, next: { $0 < 10 ? $0 + 1 : nil })
+    let empty = sequence(state: 0, next: { _ -> Int? in nil })
+    assert(seq.elementsEqual(0...10))
+
+    XCTAssertTrue(seq.all { $0 <= 10 })
+    XCTAssertFalse(seq.all { $0 != 10 })
+    XCTAssertTrue(empty.all { $0 < 10 })
+    
+    XCTAssertTrue(seq.none { $0 > 10 })
+    XCTAssertFalse(seq.none { $0 == 10 })
+    XCTAssertTrue(empty.none { $0 < 10 })
+    
+    XCTAssertTrue(seq.any { $0 == 5 })
+    XCTAssertFalse(seq.any { $0 == 15 })
+    XCTAssertFalse(empty.any { $0 == 5 })
+    
+    XCTAssertEqual(seq.elementCount(), 11)
+    XCTAssertEqual(empty.elementCount(), 0)
+    
+    XCTAssertTrue(seq.hasElements())
+    XCTAssertFalse(empty.hasElements())
+  }
 }
