@@ -30,7 +30,7 @@
 
 Capturing groups are a commonly used component of regular expressions as they
 allow the programmer to extract information from matched input. A capturing
-group groups multiple characters together as a single unit that can be
+group collects multiple characters together as a single unit that can be
 [backreferenced](https://www.regular-expressions.info/backref.html) within the
 regular expression and accessed in the result of a successful match. For
 example, the following regular expression contains the capturing groups `(cd*)`
@@ -52,7 +52,7 @@ let regex = /ab(cd*)(ef)gh/
 //         "gh"
 //     }
 
-if let match = "abcddddefgh".match(regex) {
+if let match = "abcddddefgh".firstMatch(regex) {
     print(match.captures) // => ("cdddd", "ef")
 }
 ```
@@ -84,15 +84,14 @@ libraries present captures as a collection of captured content to the caller
 upon a successful match
 [[1](https://developer.apple.com/documentation/foundation/nsregularexpression)][[2](https://docs.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.capture)].
 However, to know the structure of captured contents, programmers often need to
-read the regular expression, which may be a literal or a series of API calls, or
-run the regular expression on some input to find out. Because regular
-expressions are oftentimes statically available in the source code, there is a
-missed opportunity to use generics to present captures as part of type
-information to the programmer, and to leverage the compiler to infer the type
-of captures based on a regular expression literal. As we propose to introduce
-declarative string processing capabilities to the language and the standary
-library, we would like to explore a type-safe approach to regular expression
-captures.
+carefully read the regular expression or run the regular expression on some
+input to find out. Because regular expressions are oftentimes statically
+available in the source code, there is a missed opportunity to use generics to
+present captures as part of type information to the programmer, and to leverage
+the compiler to infer the type of captures based on a regular expression
+literal. As we propose to introduce declarative string processing capabilities
+to the language and the Standard Library, we would like to explore a type-safe
+approach to regular expression captures.
 
 ## Proposed solution
 
@@ -105,21 +104,21 @@ adopters of variadic generics.
 ```swift
 let regex = /ab(cd*)(ef)gh/
 // => Regex<(Substring, Substring)>
-if let match = "abcddddefgh".match(regex) {
+if let match = "abcddddefgh".firstMatch(regex) {
   print(match.captures) // => ("cdddd", "ef")
 }
 ```
 
 During type inference for regular expression literals, the compiler infers the
-capture type based on the regular expression's content.  Same for the regex DSL,
-except that the type inference rules are expressed as method declarations in the
-result builder type.
+capture type based on the regular expression's content.  Same for the result
+builder syntax, except that the type inference rules are expressed as method
+declarations in the result builder type.
 
 ## Detailed design
 
 ### `Regex` type
 
-`Regex` is a structure that represents a regular expression. Regex is generic
+`Regex` is a structure that represents a regular expression. `Regex` is generic
 over an unconstrained generic parameter `Captures`. Upon a regex match, the
 captured value is available in type `Captures` in the match result.
 
@@ -363,19 +362,6 @@ pattern ::= pattern '{' number (',' spaces? number?)? '}'
 //     // `.Captures == [Substring]`
 ```
 
-Note:
-- For quantifiers that produce an array, it is arguable that a lazy collection
-  based on matched ranges could minimize reference counting operations on
-  `Substring` and reduce allocations. However, array in capture types would make
-  a much cleaner type signature.
-- For repetitions or an exact count, e.g. `[a-z]{2}`, it would slightly improve
-  type safety to make its capture type be a homogeneous tuple instead of an
-  array. However, because large homogeneous tuples are difficult to work with
-  and because fixed-count repetitions are syntactically very similar to
-  dynamic-count repetitions which produce an array, an tuple capture may come as
-  a surprise. An array on the other is a better choise for both ease of
-  use and consistency.
-
 #### Alternation
 
 Alternations are used to match one of multiple possible patterns.
@@ -393,7 +379,8 @@ pattern.
 // => `Regex<Alternation<(Substring, Void, Substring)>>`
 ```
 
-If there are no capturing groups within an alternation the resulting capture type is `Void`.
+If there are no capturing groups within an alternation the resulting capture
+type is `Void`.
 
 ```swift
 /[01]+|[0-9]+|[0-9A-F]+/
@@ -406,19 +393,19 @@ Nested captures follow the algebra previously described.
 /([01]+|[0-9]+|[0-9A-F]+)/
 // => `Regex<Substring>`
 /(([01]+)|([0-9]+)|([0-9A-F]+))/
-// => Regex<Substring, Alternation<(Substring, Substring, Substring)>>
+// => `Regex<(Substring, Alternation<(Substring, Substring, Substring))>>`
+/(?<overall>(?<binary>[01]+)|(?<decimal>[0-9]+)|(?<hex>[0-9A-F]+))/
+// => `Regex<(overall: Substring, Alternation<(binary: Substring, decimal: Substring, hex: Substring))>>`
 ```
 
-At the use site, you often want to be able use `Alternation` like an `enum`.
-Ideally you'd be able to exhaustively switch over all the captures.
-
-Like:
+At the use site, `Alternation` behaves like an `enum`. Ideally you should be
+able to exhaustively switch over all the captures.
 
 ```swift
 let number = line
     .firstMatch(/([01]+)|([0-9]+)|([0-9A-F]+)/)?
     .captures
-    .flatMap {
+    .map {
         switch $0 {
         case let .0(binary):
             return Int(binary, radix: 2)
@@ -428,11 +415,8 @@ let number = line
             return Int(decimal, radix: 16)
         }
     }
-```
 
-Or:
-
-```swift
+// Or with named captures:
 let number = line
     .firstMatch(/(?<binary>[01]+)|(?<decimal>[0-9]+)|(?<hex>[0-9A-F]+)/)?
     .captures
@@ -449,27 +433,36 @@ let number = line
 ```
 
 In the fullness of time, we'd like to design a language feature to support this.
-In the meantime, we'd like to do the best we can and leave the door open for a
-source compatible migration.
+In the meantime, we would like to do the best we can and leave the door open for
+a source-compatible migration.
 
-With variadic generics we think we can defining the following `Alternation` type.
+With variadic generics we think we can define the following `Alternation` type.
 
 ```swift
-struct Alternation<Captures> { ... }
+@dynamicMemberLookup
+public struct Alternation<Captures> { ... }
 
-extension<T...> Alternation where Captures == (T...) {
-    var captures: (T?...) { ... }
+extension<Option...> Alternation where Captures == (Option...) {
+    public var options: (Option?...) { get }
+    
+    public subscript<T>(dynamicMember keyPath: KeyPath<(T?...), T>) -> T {
+      options[keyPath: keyPath]
+    }
 }
 ```
 
-Which would support:
+An optional projection property, `options`, presents all options as a tuple of
+optionals. The Standard Library will provide the runtime guarantee that only one
+element of the `options` tuple will be non-nil. The programmer can use a
+`switch` statement to pattern-match the tuple and handle each case, or directly
+access the tuple's properties via key path dynamic member lookup.
 
 ```swift
 let number = line
     .firstMatch(/([01]+)|([0-9]+)|([0-9A-F]+)/)?
     .captures
-    .flatMap {
-        switch $0.captures {
+    .map {
+        switch $0.options {
         case let (binary?, nil, nil):
             return Int(binary, radix: 2)
         case let (nil, decimal?, nil):
@@ -480,26 +473,28 @@ let number = line
             fatalError("unreachable")
         }
     }
-```
 
-Or:
-
-```swift
+// Or with named captures:
 let number = line
     .firstMatch(/(?<binary>[01]+)|(?<decimal>[0-9]+)|(?<hex>[0-9A-F]+)/)?
     .captures
-    .flatMap {
-        if let binary = $0.captures.binary {
+    .map {
+        if let binary = $0.binary {
             return Int(binary, radix: 2)
-        } else if let decimal = $0.captures.decimal {
+        } else if let decimal = $0.decimal {
             return Int(decimal, radix: 10)
-        } else if let hex = $0.captures.hex {
+        } else if let hex = $0.hex {
             return Int(hex, radix: 16)
         } else {
             fatalError("unreachable")
         }
     }
 ```
+
+We acknowledge that it is unforunate that the programmer has to write an
+unreachable `fatalError(...)` even when all possible cases are handled.  We
+believe that, in the fullness of time, this will motivate the design of a
+language-level solution to variadic enumerations.
 
 ## Effect on ABI stability
 
@@ -511,7 +506,41 @@ None.  This is a purely additive change to the Standard Library.
 
 ## Alternatives considered
 
-None.
+### Lazy collections instead of arrays of substrings
+
+For quantifiers that produce an array, it is arguable that a lazy collection
+based on matched ranges could minimize reference counting operations on
+`Substring` and reduce allocations.
+
+```swift
+let regex = /([a-z])+/
+// => `Regex<CaptureCollection<Substring>>`
+
+// `CaptureCollection` implemented as... 
+public struct CaptureCollection<Captures>: BidirectionalCollection {
+    private var ranges: [ClosedRange<String.Index>]
+    ...
+}
+```
+
+However, we believe the use of arrays in capture types would make a much cleaner
+type signature.
+  
+### Homogeneous tuples 
+
+For exact count quantifications, e.g. `[a-z]{5}`, it would slightly improve
+type safety to make its capture type be a homogeneous tuple instead of an array,
+e.g. `(5 x Substring)` as pitched in [Improved Compiler Support for Large Homogenous Tuples](https://forums.swift.org/t/pitch-improved-compiler-support-for-large-homogenous-tuples/49023).
+
+```swift
+/[a-z]{5}/     // => Regex<(5 x Substring)> (exact count)
+/[a-z]{5, 8}/  // => Regex<[Substring]>     (bounded count) 
+/[a-z]{5,}/    // => Regex<[Substring]>     (lower-bounded count)
+```
+
+However, this would cause an inconsistency between exact count quantification
+and bounded quantification.  We believe that the proposed design will result in
+much less surprises as we associate the `{...}` quantifier syntax with `Array`.
 
 ## Future directions
 
@@ -544,7 +573,7 @@ Example usage:
 ```swift
 let regex = readLine()! // (\w*)(\d)+z(\w*)?
 let input = readLine()! // abcd1234xyz
-print(input.match(regex)?.captures)
+print(input.firstMatch(regex)?.captures)
 // .tuple(
 //     .substring("abcd"),
 //     .array([
