@@ -7,14 +7,13 @@ extension Collection {
   }
 }
 
-// FIXME: Restore this once the CI accepts this constraint
-//extension Collection where SubSequence == Self {
-//  public mutating func trimPrefix<Consumer: CollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == SubSequence {
-//    if let start = consumer.consume(self[...]) {
-//      self = self[start...]
-//    }
-//  }
-//}
+extension Collection where SubSequence == Self {
+  public mutating func trimPrefix<Consumer: CollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == SubSequence {
+    if let start = consumer.consume(self) {
+      self = self[start...]
+    }
+  }
+}
 
 extension RangeReplaceableCollection {
   // NOTE: Disfavored because the `Collection with SubSequence == Self` overload
@@ -41,19 +40,18 @@ extension BidirectionalCollection {
   }
 }
 
-// FIXME: Restore this once the CI accepts this constraint
-//extension BidirectionalCollection where SubSequence == Self {
-//  public mutating func trimSuffix<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == SubSequence {
-//    if let end = consumer.consumeBack(self[...]) {
-//      self = self[..<end]
-//    }
-//  }
-//
-//  mutating func trim<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == Self {
-//    trimPrefix(consumer)
-//    trimSuffix(consumer)
-//  }
-//}
+extension BidirectionalCollection where SubSequence == Self {
+  public mutating func trimSuffix<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == SubSequence {
+    if let end = consumer.consumeBack(self) {
+      self = self[..<end]
+    }
+  }
+
+  mutating func trim<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == Self {
+    trimPrefix(consumer)
+    trimSuffix(consumer)
+  }
+}
 
 extension RangeReplaceableCollection where Self: BidirectionalCollection {
   @_disfavoredOverload
@@ -79,12 +77,11 @@ extension Collection {
   }
 }
 
-// FIXME: Restore this once the CI accepts this constraint
-//extension Collection where SubSequence == Self {
-//  public mutating func trimPrefix(while predicate: @escaping (Element) -> Bool) {
-//    trimPrefix(ManyConsumer(base: PredicateConsumer<SubSequence>(predicate: predicate)))
-//  }
-//}
+extension Collection where SubSequence == Self {
+  public mutating func trimPrefix(while predicate: @escaping (Element) -> Bool) {
+    trimPrefix(ManyConsumer(base: PredicateConsumer<SubSequence>(predicate: predicate)))
+  }
+}
 
 extension RangeReplaceableCollection {
   @_disfavoredOverload
@@ -104,18 +101,17 @@ extension BidirectionalCollection {
   }
 }
 
-// FIXME: Restore this once the CI accepts this constraint
-//extension BidirectionalCollection where SubSequence == Self {
-//  public mutating func trimSuffix(while predicate: @escaping (Element) -> Bool) {
-//    trimSuffix(ManyConsumer(base: PredicateConsumer<SubSequence>(predicate: predicate)))
-//  }
-//
-//  public mutating func trim(while predicate: @escaping (Element) -> Bool) {
-//    let consumer = ManyConsumer(base: PredicateConsumer<SubSequence>(predicate: predicate))
-//    trimPrefix(consumer)
-//    trimSuffix(consumer)
-//  }
-//}
+extension BidirectionalCollection where SubSequence == Self {
+  public mutating func trimSuffix(while predicate: @escaping (Element) -> Bool) {
+    trimSuffix(ManyConsumer(base: PredicateConsumer<SubSequence>(predicate: predicate)))
+  }
+
+  public mutating func trim(while predicate: @escaping (Element) -> Bool) {
+    let consumer = ManyConsumer(base: PredicateConsumer<SubSequence>(predicate: predicate))
+    trimPrefix(consumer)
+    trimSuffix(consumer)
+  }
+}
 
 extension RangeReplaceableCollection where Self: BidirectionalCollection {
   @_disfavoredOverload
@@ -174,22 +170,21 @@ extension BidirectionalCollection where Element: Equatable {
   }
 }
 
-// FIXME: Restore this once the CI accepts this constraint
-//extension BidirectionalCollection where SubSequence == Self, Element: Equatable {
-//  public mutating func trimSuffix<Suffix: BidirectionalCollection>(
-//    _ suffix: Suffix
-//  ) where Suffix.Element == Element {
-//    trimSuffix(FixedPatternConsumer<SubSequence, Suffix>(pattern: suffix))
-//  }
-//  
-//  public mutating func trim<Pattern: BidirectionalCollection>(
-//    _ pattern: Pattern
-//  ) where Pattern.Element == Element {
-//    let consumer = FixedPatternConsumer<SubSequence, Pattern>(pattern: pattern)
-//    trimPrefix(consumer)
-//    trimSuffix(consumer)
-//  }
-//}
+extension BidirectionalCollection where SubSequence == Self, Element: Equatable {
+  public mutating func trimSuffix<Suffix: BidirectionalCollection>(
+    _ suffix: Suffix
+  ) where Suffix.Element == Element {
+    trimSuffix(FixedPatternConsumer<SubSequence, Suffix>(pattern: suffix))
+  }
+  
+  public mutating func trim<Pattern: BidirectionalCollection>(
+    _ pattern: Pattern
+  ) where Pattern.Element == Element {
+    let consumer = FixedPatternConsumer<SubSequence, Pattern>(pattern: pattern)
+    trimPrefix(consumer)
+    trimSuffix(consumer)
+  }
+}
 
 extension RangeReplaceableCollection where Self: BidirectionalCollection, Element: Equatable {
   @_disfavoredOverload

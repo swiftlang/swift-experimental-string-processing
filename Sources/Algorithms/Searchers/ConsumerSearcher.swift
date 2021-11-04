@@ -1,10 +1,12 @@
-/// A collection searcher that naive searches the input by repeatedly trying to consume it using the underlying consumer.
-struct ConsumerSearcher<C: CollectionConsumer> {
-  let consumer: C
+/// A collection searcher that naively searches the input by repeatedly trying to consume it using the underlying consumer.
+struct ConsumerSearcher<Consumer: CollectionConsumer>
+  where Consumer.Consumed.SubSequence == Consumer.Consumed
+{
+  let consumer: Consumer
 }
 
 extension ConsumerSearcher: StatelessCollectionSearcher {
-  typealias Searched = C.Consumed
+  typealias Searched = Consumer.Consumed
   
   func search(
     _ searched: Searched,
@@ -24,7 +26,7 @@ extension ConsumerSearcher: StatelessCollectionSearcher {
 }
 
 extension ConsumerSearcher: BackwardCollectionSearcher, StatelessBackwardCollectionSearcher
-  where C: BackwardCollectionConsumer
+  where Consumer: BackwardCollectionConsumer
 {
   func searchBack(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>? {
     var end = index
