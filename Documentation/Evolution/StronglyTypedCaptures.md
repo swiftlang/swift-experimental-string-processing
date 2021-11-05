@@ -1,4 +1,4 @@
-# Strongly typed regex captures
+# Strongly Typed Regex Captures
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
