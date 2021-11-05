@@ -441,7 +441,7 @@ let number = line
         case let .1(decimal):
             return Int(decimal, radix: 10)
         case let .2(hex):
-            return Int(decimal, radix: 16)
+            return Int(hex, radix: 16)
         }
     }
 
