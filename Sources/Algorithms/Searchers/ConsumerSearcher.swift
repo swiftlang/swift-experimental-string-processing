@@ -14,7 +14,7 @@ extension ConsumerSearcher: StatelessCollectionSearcher {
   ) -> Range<Searched.Index>? {
     var start = index
     while true {
-      if let end = consumer.consume(searched, from: start) {
+      if let end = consumer.consuming(searched, from: start) {
         return start..<end
       } else if start == searched.endIndex {
         return nil
@@ -31,7 +31,7 @@ extension ConsumerSearcher: BackwardCollectionSearcher, StatelessBackwardCollect
   func searchBack(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>? {
     var end = index
     while true {
-      if let start = consumer.consumeBack(searched, from: end) {
+      if let start = consumer.consumingBack(searched, from: end) {
         return start..<end
       } else if end == searched.startIndex {
         return nil

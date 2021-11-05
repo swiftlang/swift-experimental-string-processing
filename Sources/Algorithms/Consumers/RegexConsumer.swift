@@ -20,7 +20,7 @@ public struct RegexConsumer: CollectionConsumer {
     self.vm = _compileRegex(regex.string)
   }
 
-  public func consume(
+  public func consuming(
     _ consumed: Substring, from index: String.Index
   ) -> String.Index? {
     let result = vm.execute(
@@ -33,12 +33,12 @@ public struct RegexConsumer: CollectionConsumer {
 
 // TODO: We'll want to bake backwards into the engine
 extension RegexConsumer: BackwardCollectionConsumer {
-  public func consumeBack(
+  public func consumingBack(
     _ consumed: Substring, from index: String.Index
   ) -> String.Index? {
     var i = consumed.startIndex
     while true {
-      if let end = consume(consumed[..<index], from: i), end == index {
+      if let end = consuming(consumed[..<index], from: i), end == index {
         return i
       } else if i == index {
         return nil

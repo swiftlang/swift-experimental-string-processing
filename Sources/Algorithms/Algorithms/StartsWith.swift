@@ -2,13 +2,13 @@
 
 extension Collection {
   public func starts<C: CollectionConsumer>(with consumer: C) -> Bool where C.Consumed == SubSequence {
-    consumer.consume(self[...]) != nil
+    consumer.consuming(self[...]) != nil
   }
 }
 
 extension BidirectionalCollection {
   public func ends<C: BackwardCollectionConsumer>(with consumer: C) -> Bool where C.Consumed == SubSequence {
-    consumer.consumeBack(self[...]) != nil
+    consumer.consumingBack(self[...]) != nil
   }
 }
 

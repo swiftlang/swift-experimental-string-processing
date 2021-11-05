@@ -3,7 +3,7 @@ public struct PredicateConsumer<Consumed: Collection> where Consumed.SubSequence
 }
 
 extension PredicateConsumer: CollectionConsumer {
-  public func consume(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
+  public func consuming(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
     let start = index
     guard start != consumed.endIndex && predicate(consumed[start]) else { return nil }
     return consumed.index(after: start)
@@ -11,7 +11,7 @@ extension PredicateConsumer: CollectionConsumer {
 }
 
 extension PredicateConsumer: BackwardCollectionConsumer where Consumed: BidirectionalCollection {
-  public func consumeBack(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
+  public func consumingBack(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
     let end = index
     guard end != consumed.startIndex else { return nil }
     let previous = consumed.index(before: end)

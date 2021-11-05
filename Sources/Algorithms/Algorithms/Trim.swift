@@ -2,16 +2,14 @@
 
 extension Collection {
   public func trimmingPrefix<Consumer: CollectionConsumer>(_ consumer: Consumer) -> SubSequence where Consumer.Consumed == SubSequence {
-    let start = consumer.consume(self[...]) ?? startIndex
+    let start = consumer.consuming(self[...]) ?? startIndex
     return self[start...]
   }
 }
 
 extension Collection where SubSequence == Self {
   public mutating func trimPrefix<Consumer: CollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == SubSequence {
-    if let start = consumer.consume(self) {
-      self = self[start...]
-    }
+    _ = consumer.consume(&self)
   }
 }
 
@@ -20,7 +18,7 @@ extension RangeReplaceableCollection {
   // should be preferred whenever both are available
   @_disfavoredOverload
   public mutating func trimPrefix<Consumer: CollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == SubSequence {
-    if let start = consumer.consume(self[...]) {
+    if let start = consumer.consuming(self[...]) {
       removeSubrange(..<start)
     }
   }
@@ -28,7 +26,7 @@ extension RangeReplaceableCollection {
 
 extension BidirectionalCollection {
   public func trimmingSuffix<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) -> SubSequence where Consumer.Consumed == SubSequence {
-    let end = consumer.consumeBack(self[...]) ?? endIndex
+    let end = consumer.consumingBack(self[...]) ?? endIndex
     return self[..<end]
   }
   
@@ -42,9 +40,7 @@ extension BidirectionalCollection {
 
 extension BidirectionalCollection where SubSequence == Self {
   public mutating func trimSuffix<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == SubSequence {
-    if let end = consumer.consumeBack(self) {
-      self = self[..<end]
-    }
+    _ = consumer.consumeBack(&self)
   }
 
   mutating func trim<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == Self {
@@ -56,7 +52,7 @@ extension BidirectionalCollection where SubSequence == Self {
 extension RangeReplaceableCollection where Self: BidirectionalCollection {
   @_disfavoredOverload
   public mutating func trimSuffix<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) where Consumer.Consumed == SubSequence {
-    if let end = consumer.consumeBack(self[...]) {
+    if let end = consumer.consumingBack(self[...]) {
       removeSubrange(end...)
     }
   }

@@ -7,7 +7,7 @@ struct FixedPatternConsumer<Consumed: Collection, Pattern: Collection>
 }
 
 extension FixedPatternConsumer: CollectionConsumer {
-  func consume(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
+  func consuming(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
     var index = index
     var patternIndex = pattern.startIndex
     
@@ -29,7 +29,7 @@ extension FixedPatternConsumer: CollectionConsumer {
 extension FixedPatternConsumer: BackwardCollectionConsumer
   where Consumed: BidirectionalCollection, Pattern: BidirectionalCollection
 {
-  func consumeBack(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
+  func consumingBack(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
     var index = index
     var patternIndex = pattern.endIndex
     
