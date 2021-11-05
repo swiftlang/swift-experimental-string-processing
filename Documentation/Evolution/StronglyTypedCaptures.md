@@ -11,10 +11,10 @@
         - [`Regex` type](#regex-type)
         - [Capture type](#capture-type)
             - [Basics](#basics)
-            - [Capturing Group](#capturing-group)
+            - [Capturing group](#capturing-group)
             - [Concatenation](#concatenation)
-            - [Named Capturing Group](#named-capturing-group)
-            - [Non-capturing Group](#non-capturing-group)
+            - [Named capturing group](#named-capturing-group)
+            - [Non-capturing group](#non-capturing-group)
             - [Nested capturing group](#nested-capturing-group)
             - [Quantification](#quantification)
             - [Alternation](#alternation)
@@ -153,7 +153,7 @@ let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Void>`
 //     } // => `Regex<Void>`
 ```
 
-#### Capturing Group
+#### Capturing group
 
 In regular expression literals, a capturing group is a pattern wrapped by a pair
 of parentheses. A capturing group's capture type is reflected in the result
@@ -210,7 +210,7 @@ let graphemeBreakRange = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)/
 //     // `.Captures == (Substring, Substring)`
 ```
 
-#### Named Capturing Group
+#### Named capturing group
 
 A named capturing group in a pattern with multiple captures causes the resulting
 tuple to have a tuple element label at the corresponding capture type position.
@@ -229,7 +229,7 @@ let graphemeBreakRange = /(?<lower>[0-9A-F]+)\.\.(?<upper>[0-9A-F]+)/
 // => `Regex<(lower: Substring, upper: Substring)>`
 ```
 
-#### Non-capturing Group
+#### Non-capturing group
 
 A non-capturing group's capture type is the capture type of its underlying pattern.
 
