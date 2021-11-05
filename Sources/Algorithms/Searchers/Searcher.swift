@@ -1,5 +1,3 @@
-import _MatchingEngine
-
 public struct DefaultState<Searched: Collection> {
   enum _State {
     case index(Searched.Index)
@@ -13,8 +11,7 @@ public protocol CollectionSearcher {
   associatedtype Searched: Collection where Searched.SubSequence == Searched
   associatedtype State
   
-  // TODO: Decide whether this needs an index parameter
-  func state(for searched: Searched) -> State
+  func state(for searched: Searched, startingAt index: Searched.Index) -> State
   func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>?
 }
 
@@ -25,8 +22,8 @@ public protocol StatelessCollectionSearcher: CollectionSearcher
 }
 
 extension StatelessCollectionSearcher {
-  public func state(for searched: Searched) -> State {
-    DefaultState(state: .index(searched.startIndex))
+  public func state(for searched: Searched, startingAt index: Searched.Index) -> State {
+    DefaultState(state: .index(index))
   }
   
   public func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {

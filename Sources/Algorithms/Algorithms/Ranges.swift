@@ -12,7 +12,7 @@ public struct RangesCollection<Searcher: CollectionSearcher> {
     self.searcher = searcher
     
     let slice = base[...]
-    var state = searcher.state(for: slice)
+    var state = searcher.state(for: slice, startingAt: base.startIndex)
     self.startIndex = Index(range: nil, state: state)
 
     if let range = searcher.search(slice, &state) {
@@ -43,7 +43,7 @@ public struct RangesIterator<Searcher: CollectionSearcher>: IteratorProtocol {
   init(base: Base, searcher: Searcher) {
     self.base = base
     self.searcher = searcher
-    self.state = searcher.state(for: base)
+    self.state = searcher.state(for: base, startingAt: base.startIndex)
   }
 
   public mutating func next() -> Range<Base.Index>? {
@@ -66,10 +66,10 @@ extension RangesCollection: Collection {
   }
 
   public var endIndex: Index {
-    // TODO: Avoid calling `state(for:)` here
+    // TODO: Avoid calling `state(for:startingAt)` here
     Index(
       range: nil,
-      state: searcher.state(for: base[...]))
+      state: searcher.state(for: base[...], startingAt: base.endIndex))
   }
 
   public func formIndex(after index: inout Index) {

@@ -15,11 +15,11 @@ extension PatternOrEmpty: CollectionSearcher {
     let representation: Representation
   }
   
-  public func state(for searched: Searcher.Searched) -> State {
+  public func state(for searched: Searcher.Searched, startingAt index: Searched.Index) -> State {
     if let searcher = searcher {
-      return State(representation: .state(searcher.state(for: searched)))
+      return State(representation: .state(searcher.state(for: searched, startingAt: index)))
     } else {
-      return State(representation: .empty(searched.startIndex))
+      return State(representation: .empty(index))
     }
   }
   

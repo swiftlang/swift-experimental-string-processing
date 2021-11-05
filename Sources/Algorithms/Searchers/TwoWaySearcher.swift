@@ -31,10 +31,9 @@ extension TwoWaySearcher: CollectionSearcher {
     var memory: (offset: Int, index: Searched.Index)?
   }
   
-  public func state(for searched: Searched) -> State {
-    let startIndex = searched.startIndex
-    let criticalIndex = searched.index(startIndex, offsetBy: criticalIndex)
-    return State(index: startIndex, criticalIndex: criticalIndex, memory: nil)
+  public func state(for searched: Searched, startingAt index: Searched.Index) -> State {
+    let criticalIndex = searched.index(index, offsetBy: criticalIndex)
+    return State(index: index, criticalIndex: criticalIndex, memory: nil)
   }
 
   public func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {

@@ -3,7 +3,7 @@
 extension Collection {
   public func firstRange<S: CollectionSearcher>(of searcher: S) -> Range<Index>? where S.Searched == SubSequence {
     let slice = self[...]
-    var state = searcher.state(for: slice)
+    var state = searcher.state(for: slice, startingAt: startIndex)
     return searcher.search(slice, &state)
   }
 }
@@ -30,7 +30,7 @@ extension BidirectionalCollection where Element: Comparable {
   public func firstRange<S: Sequence>(of other: S) -> Range<Index>? where S.Element == Element {
     let searcher = PatternOrEmpty(searcher: TwoWaySearcher<SubSequence>(pattern: Array(other)))
     let slice = self[...]
-    var state = searcher.state(for: slice)
+    var state = searcher.state(for: slice, startingAt: startIndex)
     return searcher.search(slice, &state)
   }
 }
