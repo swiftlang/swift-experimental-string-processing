@@ -573,7 +573,32 @@ fewer surprises as we associate the `{...}` quantifier syntax with `Array`.
 
 ### `Never` as empty capture instead of `Void`
 
-TODO 
+Past swift evolution proposals
+([SE-0215](https://github.com/apple/swift-evolution/blob/main/proposals/0215-conform-never-to-hashable-and-equatable.md),
+[SE-0319](https://github.com/apple/swift-evolution/blob/main/proposals/0319-never-identifiable.md))
+have added conformances for `Never` in order to support its use a bottom type.
+`Never` may seem like a natural fit for the empty capture type instead of
+`Void`, such that a regex of type `Regex<Never>` means it never captures.
+
+However, a `Never` value never exists. Functions with return type `Never` will
+never return. As a result, a trivial use of regex like the following could cause
+the program to abort or hang.
+
+```swift
+let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Never>`
+print(str.firstMatch(identifier)?.captures)
+// ❗️ Program aborts or hangs.
+```
+
+In contrast, using `Void` as the empty capture type allows captures to be
+accessed safely at anytime. When a regex has no captures, the match result's
+capture is simply `()`.
+
+```swift
+let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Void>`
+print(str.firstMatch(identifier)?.captures)
+// Prints `()`.
+```
 
 ## Future directions
 
