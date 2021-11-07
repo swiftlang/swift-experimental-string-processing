@@ -170,39 +170,52 @@ class RegexTests: XCTestCase {
           ")ab(+" -> rparen ｢ab｣ lparen plus
         """
     func performTest(_ input: String, _ expecting: Token.Kind...) {
-      XCTAssertEqual(
-        expecting, Lexer(Source(input)).map { $0.kind })
+      let actual = Lexer(Source(input)).map { $0.kind }
+      XCTAssertEqual(expecting, actual)
+    }
+    func esc(_ c: Character) -> Token.Kind {
+      .character(c, isEscaped: true)
     }
 
     // Gramatically valid
     performTest("abc", "a", "b", "c")
-    performTest("abc\\+d*", "a", "b", "c", "+", "d", .star)
+    performTest("ab\\c", "a", "b", esc("c"))
+    performTest("abc\\+d*", "a", "b", "c", esc("+"), "d", .star)
     performTest("abc(de)+fghi*k|j",
-                "a", "b", "c", .leftParen, "d", "e", .rightParen, .plus,
-                "f", "g", "h", "i", .star, "k", .pipe, "j")
-    performTest("a(b|c)?d", "a",
-                .leftParen, "b", .pipe, "c", .rightParen, .question, "d")
+                "a", "b", "c", .leftParen, "d", "e", .rightParen,
+                .plus, "f", "g", "h", "i", .star, "k", .pipe, "j")
+    performTest("a(b|c)?d",
+                "a", .leftParen, "b", .pipe, "c", .rightParen,
+                .question, "d")
     performTest("a|b?c", "a", .pipe, "b", .question, "c")
-    performTest("(?:a|b)c", .leftParen, .question, .colon, "a", .pipe, "b", .rightParen, "c")
+    performTest("(?:a|b)c",
+                .leftParen, .question, .colon, "a", .pipe, "b",
+                .rightParen, "c")
     performTest("a\\u0065b\\u{65}c\\x65d",
                 "a", .unicodeScalar("e"),
                 "b", .unicodeScalar("e"),
                 "c", .unicodeScalar("e"), "d")
     performTest("[^a&&b--c~~d]", .leftSquareBracket,
-                  .caret, "a",
-                  .setOperator(.doubleAmpersand), "b",
-                  .setOperator(.doubleDash), "c",
-                  .setOperator(.doubleTilda), "d",
-                  .rightSquareBracket)
-    performTest("&&^-^-~~", "&", "&", .caret, .minus, .caret, .minus, "~", "~")
-    performTest("[]]&&", .leftSquareBracket, .rightSquareBracket,
+                .caret, "a",
+                .setOperator(.doubleAmpersand), "b",
+                .setOperator(.doubleDash), "c",
+                .setOperator(.doubleTilda), "d",
+                .rightSquareBracket)
+    performTest("&&^-^-~~",
+                "&", "&", .caret, .minus, .caret, .minus, "~", "~")
+    performTest("[]]&&",
+                .leftSquareBracket, .rightSquareBracket,
                 .rightSquareBracket, "&", "&")
+    performTest("[]]&\\&",
+                .leftSquareBracket, .rightSquareBracket,
+                .rightSquareBracket, "&", esc("&"))
 
     // Gramatically invalid (yet lexically valid)
-    performTest("|*\\\\", .pipe, .star, "\\")
+    performTest("|*\\\\", .pipe, .star, esc("\\"))
     performTest(")ab(+", .rightParen, "a", "b", .leftParen, .plus)
     performTest("...", .dot, .dot, .dot)
-    performTest("[[[]&&]]&&", .leftSquareBracket, .leftSquareBracket,
+    performTest("[[[]&&]]&&",
+                .leftSquareBracket, .leftSquareBracket,
                 .leftSquareBracket, .rightSquareBracket,
                 .setOperator(.doubleAmpersand), .rightSquareBracket,
                 .rightSquareBracket, "&", "&")

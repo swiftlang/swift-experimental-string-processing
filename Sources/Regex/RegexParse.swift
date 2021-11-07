@@ -117,15 +117,17 @@ extension Parser {
       if let cc = CharacterClass(c) {
         // Other characters either match a character class...
         return .characterClass(cc)
-
-      } else {
-        // ...or are invalid
-        try report("unexpected escape sequence \\\(c)")
       }
+
+      // TODO: anything else here?
+      return .character(c)
 
     case .minus?, .colon?, .rightSquareBracket?:
       // Outside of custom character classes, these are not considered to be
       // metacharacters.
+
+      // TODO: we want a much cleaner separation here, perhaps
+      // lexer can present as normal characters
       guard case .meta(let meta) = lexer.eat()?.kind else {
         fatalError("Not a metachar?")
       }
