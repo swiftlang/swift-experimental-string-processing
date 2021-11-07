@@ -1,20 +1,3 @@
-/// The source to a lexer. This can be bytes in memory, a file on disk,
-/// something streamed over a network connection, etc.
-///
-/// Currently, we model this as just a Substring (i.e. String + position)
-struct Source {
-  var state: Substring
-  init(_ str: String) { state = str[...] }
-
-  func peek() -> Character? { state.first }
-  mutating func eat() -> Character { state.eat() }
-
-  var isEmpty: Bool { state.isEmpty }
-
-  typealias Location = String.Index
-  var currentLoc: Location { state.startIndex }
-}
-
 /// Tokens are produced by the lexer and carry rich syntactic information
 ///
 struct Token {
