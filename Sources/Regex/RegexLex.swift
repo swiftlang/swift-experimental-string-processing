@@ -1,6 +1,18 @@
 /*
 
- Our current lexical structure of a regular expression:
+ Lexically, regular expressions are two langauges, one for inside
+ a custom character class and one for outside.
+
+ Outside of a custom character class, regexes have the following
+ lexical structure:
+
+ TODO
+
+ Inside a custom character class:
+
+ TODO
+
+ Our currently-matched lexical structure of a regular expression:
 
  Regex     -> Token*
  Token     -> '\' Escaped | _SetOperator_ | Terminal
@@ -17,8 +29,6 @@
  _SetOperator_ is valid if we're inside a custom character set,
  otherwise it's just characters.
 
- TODO: We'll need a more principled approach here.
-
 */
 
 /// The lexer produces a stream of `Token`s for the parser to consume
@@ -30,10 +40,17 @@ struct Lexer {
   ///
   /// We're choosing encapsulation here for our buffer-management strategy, as
   /// the lexer is at the end of the assembly line.
-  ///
   fileprivate var nextToken: Token? = nil
 
   /// The number of parent custom character classes we're lexing within.
+  ///
+  /// Nested custom character classes are possible in some engines,
+  /// and regex lexes differently inside and outside custom char classes.
+  /// Tracking which language we're lexing is technically the job of the parser.
+  /// But, we want the lexer to provide rich lexical information and let the parser
+  /// just handle parsing. We could have a `setIsInCustomCC(_:Bool)` called by
+  /// the parser, which would save/restore via the call stack, but it's
+  /// far simpler to just have the lexer count the `[` and `]`s.
   fileprivate var customCharacterClassDepth = 0
 
   init(_ source: Source) { self.source = source }
