@@ -1,6 +1,36 @@
-/// TODO: describe real lexical structure of regex
+/*
+
+ Our current lexical structure of a regular expression:
+
+ Regex     -> Token*
+ Token     -> '\' Escaped | _SetOperator_ | Terminal
+ Escaped   -> UniScalar | Terminal
+ Terminal  -> `MetaCharacter` | `Character`
+
+ UniScalar -> 'u{' HexDigit{1, 8}
+            | 'u' HexDigit{4}
+            | 'x{' HexDigit{1, 8}
+            | 'x' HexDigit{2}
+            | 'U' HexDigit{8}
+ HexDigit  -> 0-9A-Fa-f
+
+ _SetOperator_ is valid if we're inside a custom character set,
+ otherwise it's just characters.
+
+ TODO: We'll need a more principled approach here.
+
+*/
+
+/// The lexer produces a stream of `Token`s for the parser to consume
 struct Lexer {
   var source: Source // TODO: fileprivate after diags
+
+  /// The lexer manages a fixed-length buffer of tokens on behalf of the parser.
+  /// Currently, the parser uses a lookahead of 1.
+  ///
+  /// We're choosing encapsulation here for our buffer-management strategy, as
+  /// the lexer is at the end of the assembly line.
+  ///
   fileprivate var nextToken: Token? = nil
 
   /// The number of parent custom character classes we're lexing within.
@@ -57,15 +87,89 @@ extension Lexer {
 // MARK: - Implementation
 
 extension Lexer {
+  private mutating func advance() {
+    nextToken = lexToken()
+  }
+
+  private mutating func lexToken() -> Token? {
+    guard !source.isEmpty else { return nil }
+
+    let startLoc = source.currentLoc
+    func tok(_ kind: Token.Kind) -> Token {
+      Token(kind: kind, loc: startLoc..<source.currentLoc)
+    }
+
+    // Lex:  Token -> '\' Escaped | _SetOperator | Terminal
+    let current = source.eat()
+    if current.isEscape {
+      return tok(consumeEscaped())
+    }
+    if isInCustomCharacterClass,
+       let op = tryConsumeSetOperator(current)
+    {
+      return tok(op)
+    }
+
+    // Track the custom character class depth. We can increment it every time
+    // we see a `[`, and decrement every time we see a `]`, though we don't
+    // decrement if we see `]` outside of a custom character class, as that
+    // should be treated as a literal character.
+    if current == "[" {
+      customCharacterClassDepth += 1
+    }
+    if current == "]" && isInCustomCharacterClass {
+      customCharacterClassDepth -= 1
+    }
+
+    return tok(.classifyTerminal(current, fromEscape: false))
+  }
 
   /// Whether the lexer is currently lexing within a custom character class.
   private var isInCustomCharacterClass: Bool { customCharacterClassDepth > 0 }
 
+  // TODO: plumb diagnostics
+  private mutating func consumeEscaped() -> Token.Kind {
+    assert(!source.isEmpty, "TODO: diagnostic for this")
+    /*
+
+    Escaped   -> UniScalar | Terminal
+    UniScalar -> 'u{' HexDigit{1, 8}
+               | 'u' HexDigit{4}
+               | 'x{' HexDigit{1, 8}
+               | 'x' HexDigit{2}
+               | 'U' HexDigit{8}
+    */
+    switch source.eat() {
+    case "u":
+      return consumeUniScalar(
+        allowBracketVariant: true, unbracketedNumDigits: 4)
+    case "x":
+      return consumeUniScalar(
+        allowBracketVariant: true, unbracketedNumDigits: 2)
+    case "U":
+      return consumeUniScalar(
+        allowBracketVariant: false, unbracketedNumDigits: 8)
+    case let c:
+      return .classifyTerminal(c, fromEscape: true)
+    }
+  }
+
+  // TODO: plumb diagnostic info
+  private mutating func consumeUniScalar(
+    allowBracketVariant: Bool,
+    unbracketedNumDigits: Int
+  ) -> Token.Kind {
+    if allowBracketVariant, source.tryEat("{") {
+      return .unicodeScalar(consumeBracketedUnicodeScalar())
+    }
+    return .unicodeScalar(consumeUnicodeScalar(
+      digits: unbracketedNumDigits))
+  }
+
   private mutating func consumeUnicodeScalar(
-    firstDigit: Character? = nil,
     digits digitCount: Int
   ) -> UnicodeScalar {
-    var digits = firstDigit.map(String.init) ?? ""
+    var digits = ""
     for _ in digits.count ..< digitCount {
       assert(!source.isEmpty, "Exactly \(digitCount) hex digits required")
       digits.append(source.eat())
@@ -74,11 +178,11 @@ extension Lexer {
     guard let value = UInt32(digits, radix: 16),
           let scalar = UnicodeScalar(value)
     else { fatalError("Invalid unicode sequence") }
-    
+
     return scalar
   }
-  
-  private mutating func consumeUnicodeScalar() -> UnicodeScalar {
+
+  private mutating func consumeBracketedUnicodeScalar() -> UnicodeScalar {
     var digits = ""
     // Eat a maximum of 9 characters, the last of which must be the terminator
     for _ in 0..<9 {
@@ -88,112 +192,28 @@ extension Lexer {
       digits.append(next)
       assert(digits.count <= 8, "Maximum 8 hex values required")
     }
-    
+
     guard let value = UInt32(digits, radix: 16),
           let scalar = UnicodeScalar(value)
     else { fatalError("Invalid unicode sequence") }
-    
+
     return scalar
   }
 
-  private mutating func consumeEscapedCharacter() -> Token.Kind {
-    assert(!source.isEmpty, "Escape at end of input string")
-    let nextCharacter = source.eat()
-
-    switch nextCharacter {
-    // Escaped metacharacters are just regular characters
-    case let x where Token.MetaCharacter(rawValue: x) != nil:
-      fallthrough
-    case Token.escape:
-      return .character(nextCharacter, isEscaped: false)
-
-    // Explicit Unicode scalar values have one of these forms:
-    // - \u{h...}   (1+ hex digits)
-    // - \uhhhh     (exactly 4 hex digits)
-    // - \x{h...}   (1+ hex digits)
-    // - \xhh       (exactly 2 hex digits)
-    // - \Uhhhhhhhh (exactly 8 hex digits)
-    case "u":
-      let firstDigit = source.eat()
-      if firstDigit == "{" {
-        return .unicodeScalar(consumeUnicodeScalar())
-      } else {
-        return .unicodeScalar(consumeUnicodeScalar(
-          firstDigit: firstDigit, digits: 4))
-      }
-    case "x":
-      let firstDigit = source.eat()
-      if firstDigit == "{" {
-        return .unicodeScalar(consumeUnicodeScalar())
-      } else {
-        return .unicodeScalar(consumeUnicodeScalar(
-          firstDigit: firstDigit, digits: 2))
-      }
-    case "U":
-      return .unicodeScalar(consumeUnicodeScalar(digits: 8))
-
-    default:
-      return .character(nextCharacter, isEscaped: true)
-    }
-  }
-
-  private mutating func consumeIfSetOperator(_ ch: Character) -> Token.Kind? {
+  private mutating func tryConsumeSetOperator(_ ch: Character) -> Token.Kind? {
     // Can only occur in a custom character class. Otherwise, the operator
     // characters are treated literally.
-    guard isInCustomCharacterClass else { return nil }
+    assert(isInCustomCharacterClass)
     switch ch {
-    case "-" where source.peek() == "-":
-      _ = source.eat()
+    case "-" where source.tryEat("-"):
       return .setOperator(.doubleDash)
-    case "~" where source.peek() == "~":
-      _ = source.eat()
+    case "~" where source.tryEat("~"):
       return .setOperator(.doubleTilda)
-    case "&" where source.peek() == "&":
-      _ = source.eat()
+    case "&" where source.tryEat("&"):
       return .setOperator(.doubleAmpersand)
     default:
       return nil
     }
-  }
-
-  private mutating func consumeIfMetaCharacter(_ ch: Character) -> Token.Kind? {
-    guard let meta = Token.MetaCharacter(rawValue: ch) else { return nil }
-    // Track the custom character class depth. We can increment it every time
-    // we see a `[`, and decrement every time we see a `]`, though we don't
-    // decrement if we see `]` outside of a custom character class, as that
-    // should be treated as a literal character.
-    if meta == .lsquare {
-      customCharacterClassDepth += 1
-    }
-    if meta == .rsquare && isInCustomCharacterClass {
-      customCharacterClassDepth -= 1
-    }
-    return .meta(meta)
-  }
-
-  private mutating func consumeNextToken() -> Token? {
-    guard !source.isEmpty else { return nil }
-
-    let startLoc = source.currentLoc
-    func tok(_ kind: Token.Kind) -> Token {
-      Token(kind: kind, loc: startLoc..<source.currentLoc)
-    }
-
-    let current = source.eat()
-    if let op = consumeIfSetOperator(current) {
-      return tok(op)
-    }
-    if let meta = consumeIfMetaCharacter(current) {
-      return tok(meta)
-    }
-    if current == Token.escape {
-      return tok(consumeEscapedCharacter())
-    }
-    return tok(.character(current, isEscaped: false))
-  }
-  
-  private mutating func advance() {
-    nextToken = consumeNextToken()
   }
 }
 

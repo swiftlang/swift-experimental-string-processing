@@ -13,8 +13,6 @@ struct Token {
 // MARK: - Token kinds
 
 extension Token {
-  static var escape: Character { #"\"# }
-
   enum MetaCharacter: Character, Hashable {
     case star = "*"
     case plus = "+"
@@ -28,6 +26,7 @@ extension Token {
     case rsquare = "]"
     case minus = "-"
     case caret = "^"
+    case dollar = "$"
   }
 
   /// The underlying syntactic info carried by a token
@@ -43,8 +42,6 @@ extension Token {
     case doubleDash = "--"
     case doubleTilda = "~~"
   }
-
-
 
   // Note: We do each character individually, as post-fix modifiers bind
   // tighter than concatenation. "abc*" is "a" -> "b" -> "c*"
@@ -86,3 +83,20 @@ extension Token.Kind: CustomStringConvertible {
 }
 
 extension Token.Kind: Equatable {}
+
+extension Character {
+  var isEscape: Bool { return self == "\\" }
+}
+
+extension Token.Kind {
+  /// Classify a given terminal character
+  static func classifyTerminal(
+    _ t: Character, fromEscape escaped: Bool
+  ) -> Self {
+    assert(!t.isEscape || escaped)
+    if !escaped, let mc = Token.MetaCharacter(rawValue: t) {
+      return .meta(mc)
+    }
+    return .character(t, isEscaped: escaped)
+  }
+}
