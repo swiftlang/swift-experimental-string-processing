@@ -428,8 +428,15 @@ if let match = "1234-5678-9abc-def0".firstMatch(of: pattern) {
 // Prints ["1234", "5678", "9abc", "def0"]
 ```
 
+
 Despite the deviation from prior art, we believe that the proposed capture
-behavior leads to better consistency with the meaning of these quantifiers.
+behavior leads to better consistency with the meaning of these quantifiers. 
+
+The said alternative behavior does have the advantage of smaller memory
+footprint because the matching algorithm would not need to allocate storage for
+capturing anything but the last match. As a future direction, we could introduce
+a variant of quantifiers for this behavior that the programmer would opt in for
+memory-critical use cases.
 
 #### Alternation: `a|b`
 
