@@ -1,18 +1,16 @@
 // MARK: `CollectionSearcher` algorithms
 
 extension Collection {
-  public func firstRange<S: CollectionSearcher>(of searcher: S) -> Range<Index>? where S.Searched == SubSequence {
-    let slice = self[...]
-    var state = searcher.state(for: slice, startingAt: startIndex)
-    return searcher.search(slice, &state)
+  public func firstRange<S: CollectionSearcher>(of searcher: S) -> Range<Index>? where S.Searched == Self {
+    var state = searcher.state(for: self, startingAt: startIndex)
+    return searcher.search(self, &state)
   }
 }
 
 extension BidirectionalCollection {
-  public func lastRange<S: BackwardCollectionSearcher>(of searcher: S) -> Range<Index>? where S.Searched == SubSequence {
-    let slice = self[...]
-    var state = searcher.backwardState(for: slice)
-    return searcher.searchBack(slice, &state)
+  public func lastRange<S: BackwardCollectionSearcher>(of searcher: S) -> Range<Index>? where S.Searched == Self {
+    var state = searcher.backwardState(for: self)
+    return searcher.searchBack(self, &state)
   }
 }
 

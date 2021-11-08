@@ -3,7 +3,7 @@
 extension Collection {
   public func contains<Searcher: CollectionSearcher>(
     _ searcher: Searcher
-  ) -> Bool where Searcher.Searched == SubSequence {
+  ) -> Bool where Searcher.Searched == Self {
     firstRange(of: searcher) != nil
   }
 }
@@ -24,7 +24,7 @@ extension BidirectionalCollection where Element: Comparable {
 
 // MARK: Regex algorithms
 
-extension Collection where SubSequence == Substring {
+extension BidirectionalCollection where SubSequence == Substring {
   public func contains(_ regex: Regex) -> Bool {
     contains(RegexConsumer(regex))
   }

@@ -1,4 +1,4 @@
-public struct PredicateConsumer<Consumed: Collection> where Consumed.SubSequence == Consumed {
+public struct PredicateConsumer<Consumed: Collection> {
   let predicate: (Consumed.Element) -> Bool
 }
 

@@ -1,4 +1,4 @@
-public struct ZSearcher<Searched: Collection> where Searched.SubSequence == Searched {
+public struct ZSearcher<Searched: Collection> {
   let pattern: [Searched.Element]
   let z: [Int]
   let areEquivalent: (Searched.Element, Searched.Element) -> Bool

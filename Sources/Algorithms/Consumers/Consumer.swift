@@ -1,6 +1,4 @@
 public protocol CollectionConsumer {
-  // NOTE: Adding the constraint `where Consumed.SubSequence == Consumed` currently causes
-  // compiler errors elsewhere
   associatedtype Consumed: Collection
   func consuming(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index?
 }

@@ -1,7 +1,5 @@
 /// A collection searcher that naively searches the input by repeatedly trying to consume it using the underlying consumer.
-struct ConsumerSearcher<Consumer: CollectionConsumer>
-  where Consumer.Consumed.SubSequence == Consumer.Consumed
-{
+struct ConsumerSearcher<Consumer: CollectionConsumer> {
   let consumer: Consumer
 }
 

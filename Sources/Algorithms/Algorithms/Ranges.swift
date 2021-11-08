@@ -11,11 +11,10 @@ public struct RangesCollection<Searcher: CollectionSearcher> {
     self.base = base
     self.searcher = searcher
     
-    let slice = base[...]
-    var state = searcher.state(for: slice, startingAt: base.startIndex)
+    var state = searcher.state(for: base, startingAt: base.startIndex)
     self.startIndex = Index(range: nil, state: state)
 
-    if let range = searcher.search(slice, &state) {
+    if let range = searcher.search(base, &state) {
       self.startIndex = Index(range: range, state: state)
     } else {
       self.startIndex = endIndex
@@ -58,7 +57,7 @@ extension RangesCollection: Sequence {
 }
 
 extension RangesCollection: Collection {
-  public typealias SubSequence = Self
+  // TODO: Custom `SubSequence` for the sake of more efficient slice iteration
   
   public struct Index {
     var range: Range<Searcher.Searched.Index>?
@@ -69,12 +68,12 @@ extension RangesCollection: Collection {
     // TODO: Avoid calling `state(for:startingAt)` here
     Index(
       range: nil,
-      state: searcher.state(for: base[...], startingAt: base.endIndex))
+      state: searcher.state(for: base, startingAt: base.endIndex))
   }
 
   public func formIndex(after index: inout Index) {
     guard index != endIndex else { fatalError("Cannot advance past endIndex") }
-    index.range = searcher.search(base[...], &index.state)
+    index.range = searcher.search(base, &index.state)
   }
 
   public func index(after index: Index) -> Index {
@@ -86,13 +85,6 @@ extension RangesCollection: Collection {
   public subscript(index: Index) -> Range<Base.Index> {
     guard let range = index.range else { fatalError("Cannot subscript using endIndex") }
     return range
-  }
-  
-  public subscript(bounds: Range<Index>) -> Self {
-    let start = bounds.lowerBound.range?.lowerBound ?? base.endIndex
-    let end = bounds.upperBound.range?.lowerBound ?? base.endIndex
-    // TODO: Avoid precomputing the `startIndex` of the slice again
-    return Self(base: base[start..<end], searcher: searcher)
   }
 }
 
@@ -173,16 +165,16 @@ extension ReversedRangesCollection: Sequence {
 extension Collection {
   public func ranges<S: CollectionSearcher>(
     of searcher: S
-  ) -> RangesCollection<S> where S.Searched == SubSequence {
-    RangesCollection(base: self[...], searcher: searcher)
+  ) -> RangesCollection<S> where S.Searched == Self {
+    RangesCollection(base: self, searcher: searcher)
   }
 }
 
 extension BidirectionalCollection {
   public func rangesFromBack<S: BackwardCollectionSearcher>(
     of searcher: S
-  ) -> ReversedRangesCollection<S> where S.Searched == SubSequence {
-    ReversedRangesCollection(base: self[...], searcher: searcher)
+  ) -> ReversedRangesCollection<S> where S.Searched == Self {
+    ReversedRangesCollection(base: self, searcher: searcher)
   }
 }
 
@@ -191,7 +183,7 @@ extension BidirectionalCollection {
 extension Collection where Element: Equatable {
   public func ranges<S: Sequence>(
     of other: S
-  ) -> RangesCollection<ZSearcher<SubSequence>> where S.Element == Element {
+  ) -> RangesCollection<ZSearcher<Self>> where S.Element == Element {
     ranges(of: ZSearcher(pattern: Array(other), by: ==))
   }
 }
@@ -208,7 +200,7 @@ extension BidirectionalCollection where Element: Equatable {
 extension BidirectionalCollection where Element: Comparable {
   public func ranges<S: Sequence>(
     of other: S
-  ) -> RangesCollection<PatternOrEmpty<TwoWaySearcher<SubSequence>>> where S.Element == Element {
+  ) -> RangesCollection<PatternOrEmpty<TwoWaySearcher<Self>>> where S.Element == Element {
     ranges(of: PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(other))))
   }
   
@@ -227,7 +219,7 @@ extension BidirectionalCollection where SubSequence == Substring {
     ranges(of: RegexConsumer(regex))
   }
   
-  public func rangesFromBack(of regex: Regex) -> ReversedRangesCollection<RegexConsumer> {
+  public func rangesFromBack(of regex: Regex) -> ReversedRangesCollection<RegexConsumer<Self>> {
     rangesFromBack(of: RegexConsumer(regex: regex))
   }
 }

@@ -176,17 +176,17 @@ extension ReversedSplitCollection: Sequence {
 extension Collection {
   public func split<Searcher: CollectionSearcher>(
     separator: Searcher
-  ) -> SplitCollection<Searcher> where Searcher.Searched == SubSequence {
+  ) -> SplitCollection<Searcher> where Searcher.Searched == Self {
     // TODO: `maxSplits`, `omittingEmptySubsequences`?
-    SplitCollection(base: self[...], searcher: separator)
+    SplitCollection(base: self, searcher: separator)
   }
 }
 
 extension BidirectionalCollection {
   public func splitFromBack<Searcher: BackwardCollectionSearcher>(
     separator: Searcher
-  ) -> ReversedSplitCollection<Searcher> where Searcher.Searched == SubSequence {
-    ReversedSplitCollection(base: self[...], searcher: separator)
+  ) -> ReversedSplitCollection<Searcher> where Searcher.Searched == Self {
+    ReversedSplitCollection(base: self, searcher: separator)
   }
 }
 
@@ -194,13 +194,13 @@ extension BidirectionalCollection {
 
 extension Collection {
   // TODO: Non-escaping and throwing
-  public func split(whereSeparator predicate: @escaping (Element) -> Bool) -> SplitCollection<PredicateConsumer<SubSequence>> {
+  public func split(whereSeparator predicate: @escaping (Element) -> Bool) -> SplitCollection<PredicateConsumer<Self>> {
     split(separator: PredicateConsumer(predicate: predicate))
   }
 }
 
 extension BidirectionalCollection where Element: Equatable {
-  public func splitFromBack(whereSeparator predicate: @escaping (Element) -> Bool) -> ReversedSplitCollection<PredicateConsumer<SubSequence>> {
+  public func splitFromBack(whereSeparator predicate: @escaping (Element) -> Bool) -> ReversedSplitCollection<PredicateConsumer<Self>> {
     splitFromBack(separator: PredicateConsumer(predicate: predicate))
   }
 }
@@ -208,13 +208,13 @@ extension BidirectionalCollection where Element: Equatable {
 // MARK: Single element algorithms
 
 extension Collection where Element: Equatable {
-  public func split(separator: Element) -> SplitCollection<PredicateConsumer<SubSequence>> {
+  public func split(separator: Element) -> SplitCollection<PredicateConsumer<Self>> {
     split(whereSeparator: { $0 == separator })
   }
 }
 
 extension BidirectionalCollection where Element: Equatable {
-  public func splitFromBack(separator: Element) -> ReversedSplitCollection<PredicateConsumer<SubSequence>> {
+  public func splitFromBack(separator: Element) -> ReversedSplitCollection<PredicateConsumer<Self>> {
     splitFromBack(whereSeparator: { $0 == separator })
   }
 }
@@ -224,7 +224,7 @@ extension BidirectionalCollection where Element: Equatable {
 extension Collection where Element: Equatable {
   public func split<S: Sequence>(
     separator: S
-  ) -> SplitCollection<ZSearcher<SubSequence>> where S.Element == Element {
+  ) -> SplitCollection<ZSearcher<Self>> where S.Element == Element {
     split(separator: ZSearcher(pattern: Array(separator), by: ==))
   }
 }
@@ -241,7 +241,7 @@ extension BidirectionalCollection where Element: Equatable {
 extension BidirectionalCollection where Element: Comparable {
   public func split<S: Sequence>(
     separator: S
-  ) -> SplitCollection<PatternOrEmpty<TwoWaySearcher<SubSequence>>> where S.Element == Element {
+  ) -> SplitCollection<PatternOrEmpty<TwoWaySearcher<Self>>> where S.Element == Element {
     split(separator: PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(separator))))
   }
   
@@ -260,7 +260,7 @@ extension BidirectionalCollection where SubSequence == Substring {
     split(separator: RegexConsumer(separator))
   }
   
-  public func splitFromBack(separator: Regex) -> ReversedSplitCollection<RegexConsumer> {
+  public func splitFromBack(separator: Regex) -> ReversedSplitCollection<RegexConsumer<Self>> {
     splitFromBack(separator: RegexConsumer(regex: separator))
   }
 }

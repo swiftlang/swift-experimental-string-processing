@@ -21,18 +21,18 @@ class RegexConsumerTests: XCTestCase {
       _ expected: [Range<Int>],
       file: StaticString = #file, line: UInt = #line
     ) {
-      let actualSeq = string.ranges(of: regex).map {
+      let actualSeq = string[...].ranges(of: regex).map {
         string.offset(ofIndex: $0.lowerBound) ..< string.offset(ofIndex: $0.upperBound)
       }
       XCTAssertEqual(actualSeq, expected, file: file, line: line)
-      
+
       // `IndexingIterator` tests the collection conformance
-      let actualCol = string.ranges(of: regex)[...].map {
+      let actualCol = string[...].ranges(of: regex)[...].map {
         string.offset(ofIndex: $0.lowerBound) ..< string.offset(ofIndex: $0.upperBound)
       }
       XCTAssertEqual(actualCol, expected, file: file, line: line)
     }
-    
+
     expectRanges("", Regex(""), [0..<0])
     expectRanges("", Regex("x"), [])
     expectRanges("", Regex("x+"), [])
@@ -52,7 +52,7 @@ class RegexConsumerTests: XCTestCase {
     expectRanges("abc", Regex("(b|c)+"), [1..<3])
     expectRanges("abc", Regex("(b|c)*"), [0..<0, 1..<3, 3..<3])
   }
-  
+
   func testSplit() {
     func expectSplit(
       _ string: String,
@@ -63,7 +63,7 @@ class RegexConsumerTests: XCTestCase {
       let actual = Array(string.split(separator: regex))
       XCTAssertEqual(actual, expected, file: file, line: line)
     }
-    
+
     expectSplit("", Regex(""), ["", ""])
     expectSplit("", Regex("x"), [""])
     expectSplit("a", Regex(""), ["", "a", ""])

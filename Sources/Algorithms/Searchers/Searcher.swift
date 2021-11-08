@@ -8,7 +8,7 @@ public struct DefaultSearcherState<Searched: Collection> {
 }
 
 public protocol CollectionSearcher {
-  associatedtype Searched: Collection where Searched.SubSequence == Searched
+  associatedtype Searched: Collection
   associatedtype State
   
   func state(for searched: Searched, startingAt index: Searched.Index) -> State

@@ -1,5 +1,5 @@
 public struct TwoWaySearcher<Searched: BidirectionalCollection>
-  where Searched.Element: Comparable, Searched.SubSequence == Searched
+  where Searched.Element: Comparable
 {
   // TODO: Be generic over the pattern?
   let pattern: [Searched.Element]

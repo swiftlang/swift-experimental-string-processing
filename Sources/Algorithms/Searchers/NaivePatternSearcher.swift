@@ -1,5 +1,5 @@
 struct NaivePatternSearcher<Searched: Collection, Pattern: Collection>
-  where Searched.Element: Equatable, Searched.SubSequence == Searched, Pattern.Element == Searched.Element
+  where Searched.Element: Equatable, Pattern.Element == Searched.Element
 {
   let pattern: Pattern
 }
