@@ -74,7 +74,8 @@ feature, this pitch discusses the following topics.
 This focus of this pitch is the structural properties of capture types and how
 regular expression patterns compose to form new capture types. The semantics of
 string matching, its effect on the capture types (i.e. `UnicodeScalarView` or
-`Substring`), or the matching API will be discussed in a separate pitch.
+`Substring`), the result builder DSL, or the literal syntax will be discussed in
+future pitches.
 
 For background on Declarative String Processing, see related topics:
 - [Declarative String Processing Overview](https://forums.swift.org/t/declarative-string-processing-overview/52459)
@@ -154,16 +155,12 @@ let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Void>`
 //     } // => `Regex<Void>`
 ```
 
-#### Capturing group
+#### Capturing group: `(...)`
 
 In regular expression literals, a capturing group is a pattern wrapped by a pair
 of parentheses. A capturing group's capture type is reflected in the result
 type's `Capture` generic argument. A capturing group's corresponding capture type
 is `Substring`.
-
-```
-pattern ::= '(' pattern ')'
-```
 
 ```swift
 let graphemeBreakLowerBound = /([0-9a-fA-F]+)/ // => `Regex<Substring>`
@@ -173,7 +170,7 @@ let graphemeBreakLowerBound = /([0-9a-fA-F]+)/ // => `Regex<Substring>`
 //     // `.Captures == Substring`
 ```
 
-#### Concatenation
+#### Concatenation: `abc`
 
 Concatenating a sequence of patterns, _r0_, _r1_, _r2_, ..., will cause the
 resulting capture type to reflect the _concatenated capture type_, represented
@@ -182,10 +179,6 @@ quantity of captures in _r0_, _r1_, _r2_, ... If the overall capture quantity i
 `1`, the resulting capture type is the capture type of the single pattern that
 has a capture; otherwise, the resulting capture type is a tuple of capture types
 of all patterns that have a capture.
-
-```
-pattern ::= pattern pattern
-```
 
 ```swift
 let graphemeBreakLowerBound = /([0-9a-fA-F]+)\.\.[0-9a-fA-F]+/
@@ -211,16 +204,12 @@ let graphemeBreakRange = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)/
 //     // `.Captures == (Substring, Substring)`
 ```
 
-#### Named capturing group
+#### Named capturing group: `(?<name>...)`
 
 A named capturing group in a pattern with multiple captures causes the resulting
 tuple to have a tuple element label at the corresponding capture type position.
 When the pattern has only one capture, there will be no tuple element label
 because there are no 1-element tuples.
-
-```
-pattern ::= '(' '?' '<' name '>' pattern ')'
-```
 
 ```swift
 let graphemeBreakLowerBound = /(?<lower>[0-9A-F]+)\.\.[0-9A-F]+/
@@ -230,13 +219,11 @@ let graphemeBreakRange = /(?<lower>[0-9A-F]+)\.\.(?<upper>[0-9A-F]+)/
 // => `Regex<(lower: Substring, upper: Substring)>`
 ```
 
-#### Non-capturing group
+#### Non-capturing group: `(?:...)`
 
-A non-capturing group's capture type is the capture type of its underlying pattern.
-
-```
-pattern ::= '(' '?' ':' pattern ')'
-```
+A non-capturing group's capture type is the capture type of its underlying
+pattern. That is, it does not capture anything by itself, but transparently
+propagates its underlying pattern's captures.
 
 ```swift
 let graphemeBreakLowerBound = /([0-9A-F]+)(?:\.\.([0-9A-F]+))?/
@@ -253,7 +240,7 @@ let graphemeBreakLowerBound = /([0-9A-F]+)(?:\.\.([0-9A-F]+))?/
 //     // `.Captures == (Substring, Substring?)`
 ```
 
-#### Nested capturing group
+#### Nested capturing group: `(abc(def))`
 
 When capturing group is nested within another capturing group, they count as two
 distinct captures in the order their left parenthesis first appears in the
@@ -290,26 +277,21 @@ let input = "007F..009F    ; Control # Cc  [33] <control-007F>..<control-009F>"
 ```
 
 
-#### Quantification
+#### Quantification: `*`, `+`, `?`, `{n}`, `{n,}`, `{n,m}`
 
-A quantifier's capture type depends on its underlying pattern. The laziness of
-a quantifier, as denoted by a `?` suffix, does not affect the capture type. 
-
-```
-pattern ::= pattern '*' '?'?
-pattern ::= pattern '+' '?'?
-pattern ::= pattern '?' '?'?
-pattern ::= pattern '{' number (',' spaces? number?)? '}' '?'?
-```
+A quantifier wraps its underlying pattern's capture type in either an `Optional`
+or `Array`. Zero-or-one quantification (`?`) produces an `Optional` and all
+others produce an `Array`. The kind of quantification, i.e. greedy vs reluctant
+vs possessive, is irrelevant to determining the capture type.
 
 | Syntax               | Description           | Capture type                                                  |
 | -------------------- | --------------------- | ------------------------------------------------------------- |
-| `*` / `*?`           | 0 or more             | `Array` of the sub-pattern capture type                       |
-| `+` / `+?`           | 1 or more             | `Array` of the sub-pattern capture type                       |
-| `?` / `??`           | 0 or 1                | `Optional` of the sub-pattern capture type                    |
-| `{n}` / `{n}?`       | Exactly _n_           | `Array` of the sub-pattern capture type                       |
-| `{n, m}` / `{n, m}?` | Between _n_ and _m_   | `Array` of the sub-pattern capture type                       |
-| `{n,}` / `{n,}?`     | _n_ or more           | `Array` of the sub-pattern capture type                       |
+| `*`                  | 0 or more             | `Array` of the sub-pattern capture type                       |
+| `+`                  | 1 or more             | `Array` of the sub-pattern capture type                       |
+| `?`                  | 0 or 1                | `Optional` of the sub-pattern capture type                    |
+| `{n}`                | Exactly _n_           | `Array` of the sub-pattern capture type                       |
+| `{n,m}`              | Between _n_ and _m_   | `Array` of the sub-pattern capture type                       |
+| `{n,}`               | _n_ or more           | `Array` of the sub-pattern capture type                       |
 
 ```swift
 /([0-9a-fA-F]+)+/
@@ -392,17 +374,11 @@ if let match = “1234-5678-9abc-def0".firstMatch(of: pattern) {
 Despite the deviation from prior art, we believe that the proposed capture
 behavior leads to better consistency with the meaning of these quantifiers.
 
-#### Alternation
+#### Alternation: `a|b`
 
-Alternations are used to match one of multiple possible patterns.
-
-```txt
-pattern ::= pattern '|' pattern
-```
-
-If there are one or more capturing groups within an alternation, the resulting
-capture type is an `Alternation` that's generic over each option's underlying
-pattern.
+Alternations are used to match one of multiple patterns. If there are one or
+more capturing groups within an alternation, the resulting capture type is an
+`Alternation` that's generic over each option's underlying pattern.
 
 ```swift
 /([01]+)|[0-9]+|([0-9A-F]+)/
@@ -615,11 +591,11 @@ represents a tree of captures, and add a `Regex` initializer that accepts a
 string and produces `Regex<DynamicCaptures>`.
   
 ```swift
-public enum DynamicCaptures: Equatable {
-  case substring(Substring)
-  indirect case tuple([DynamicCaptures])
-  indirect case optional(DynamicCaptures?)
-  indirect case array([DynamicCaptures])
+public struct DynamicCaptures: Equatable, RandomAccessCollection {
+  var range: Range<String.Index> { get }
+  var substring: Substring? { get }
+  subscript(name: String) -> DynamicCaptures { get }
+  subscript(position: Int) -> DynamicCaptures { get }
 }
 
 extension Regex where Capture == DynamicCaptures {
@@ -633,18 +609,16 @@ Example usage:
 let regex = readLine()! // (\w*)(\d)+z(\w*)?
 let input = readLine()! // abcd1234xyz
 print(input.firstMatch(regex)?.captures)
-// .tuple(
-//     .substring("abcd"),
-//     .array([
-//         .substring("1"),
-//         .substring("2"),
-//         .substring("3"),
-//         .substring("4"),
-//     ]),
-//     .optional(
-//         .substring("xyz")
-//     )
-// )
+// [
+//     "abcd",
+//     [
+//         "1",
+//         "2",
+//         "3",
+//         "4",
+//     ],
+//     .some("xyz")
+// ]
 ```
 
 ### Single-element labeled tuples
