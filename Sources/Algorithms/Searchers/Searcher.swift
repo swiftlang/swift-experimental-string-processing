@@ -1,4 +1,4 @@
-public struct DefaultState<Searched: Collection> {
+public struct DefaultSearcherState<Searched: Collection> {
   enum _State {
     case index(Searched.Index)
     case done
@@ -16,14 +16,14 @@ public protocol CollectionSearcher {
 }
 
 public protocol StatelessCollectionSearcher: CollectionSearcher
-  where State == DefaultState<Searched>
+  where State == DefaultSearcherState<Searched>
 {
   func search(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>?
 }
 
 extension StatelessCollectionSearcher {
   public func state(for searched: Searched, startingAt index: Searched.Index) -> State {
-    DefaultState(state: .index(index))
+    State(state: .index(index))
   }
   
   public func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {
@@ -35,12 +35,12 @@ extension StatelessCollectionSearcher {
     
     if range.isEmpty {
       if range.upperBound == searched.endIndex {
-        state = DefaultState(state: .done)
+        state = State(state: .done)
       } else {
-        state = DefaultState(state: .index(searched.index(after: range.upperBound)))
+        state = State(state: .index(searched.index(after: range.upperBound)))
       }
     } else {
-      state = DefaultState(state: .index(range.upperBound))
+      state = State(state: .index(range.upperBound))
     }
     
     return range
@@ -58,14 +58,14 @@ public protocol BackwardCollectionSearcher: CollectionSearcher where Searched: B
 }
 
 public protocol StatelessBackwardCollectionSearcher: BackwardCollectionSearcher
-  where BackwardState == DefaultState<Searched>
+  where BackwardState == DefaultSearcherState<Searched>
 {
   func searchBack(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>?
 }
 
 extension StatelessBackwardCollectionSearcher {
   public func backwardState(for searched: Searched) -> BackwardState {
-    DefaultState(state: .index(searched.endIndex))
+    BackwardState(state: .index(searched.endIndex))
   }
   
   public func searchBack(_ searched: Searched, _ state: inout BackwardState) -> Range<Searched.Index>? {
@@ -77,12 +77,12 @@ extension StatelessBackwardCollectionSearcher {
     
     if range.isEmpty {
       if range.lowerBound == searched.startIndex {
-        state = DefaultState(state: .done)
+        state = BackwardState(state: .done)
       } else {
-        state = DefaultState(state: .index(searched.index(before: range.lowerBound)))
+        state = BackwardState(state: .index(searched.index(before: range.lowerBound)))
       }
     } else {
-      state = DefaultState(state: .index(range.lowerBound))
+      state = BackwardState(state: .index(range.lowerBound))
     }
     
     return range

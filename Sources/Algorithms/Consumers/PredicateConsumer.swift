@@ -29,7 +29,9 @@ extension PredicateConsumer: StatelessCollectionSearcher {
   }
 }
 
-extension PredicateConsumer: BackwardCollectionSearcher, StatelessBackwardCollectionSearcher where Searched: BidirectionalCollection {
+extension PredicateConsumer: BackwardCollectionSearcher, StatelessBackwardCollectionSearcher
+  where Searched: BidirectionalCollection
+{
   public func searchBack(_ searched: Consumed, from index: Consumed.Index) -> Range<Consumed.Index>? {
     // TODO: Make this reusable
     guard let index = searched[..<index].lastIndex(where: predicate) else { return nil }
