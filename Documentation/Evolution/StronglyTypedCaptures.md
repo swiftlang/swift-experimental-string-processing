@@ -56,7 +56,7 @@ let regex = /ab(cd*)(ef)gh/
 //         "gh"
 //     }
 
-if let match = "abcddddefgh".firstMatch(regex) {
+if let match = "abcddddefgh".firstMatch(of: regex) {
     print(match.captures) // => ("cdddd", "ef")
 }
 ```
@@ -108,8 +108,8 @@ adopters of variadic generics.
 ```swift
 let regex = /ab(cd*)(ef)gh/
 // => Regex<(Substring, Substring)>
-if let match = "abcddddefgh".firstMatch(regex) {
-  print(match.captures) // => ("cdddd", "ef")
+if let match = "abcddddefgh".firstMatch(of: regex) {
+  print(match) // => (match: "abcddddefgh", "cdddd", "ef")
 }
 ```
 
@@ -129,6 +129,62 @@ captured value is available in type `Captures` in the match result.
 ```swift
 public struct Regex<Captures>: RegexProtocol, ExpressibleByRegexLiteral {
     ...
+}
+```
+
+### `firstMatch` method
+
+The `firstMatch` method returns a `Substring` of the first match of the provided regex in the string, or `nil` if there are no matches. If the provided regex contains captures, the result is a tuple of the match and the flattened capture type (described more below).
+
+```swift
+extension String {
+    public func firstMatch<R: RegexProtocol, C...>(of regex: R)
+        -> (match: Substring, C...)? where R.Captures == (C...)
+}
+
+// Expands to:
+//     extension String {
+//         func firstMatch<R: RegexProtocol>(of regex: R)
+//             -> Substring? where R.Captures == ()
+//         func firstMatch<R: RegexProtocol, C1>(of regex: R)
+//             -> (match: Substring, C1)? where R.Captures == (C1)
+//         func firstMatch<R: RegexProtocol, C1, C2>(of regex: R)
+//             -> (match: Substring, C1, C2)? where R.Captures == (C1, C2)
+//         ...
+//     }
+```
+
+This signature is approachable and ergonomic:
+
+- When there are no captures, it degenerates to returning an optional substring that represents the match.
+
+    ```swift
+    let line = "007F..009F    ; Control # Cc  [33] <control-007F>..<control-009F>"
+    line.firstMatch(/[0-9A-F]+/) // => "007F"
+    ```
+
+- It supports convienent tuple destructuring.
+
+    ```swift
+    line
+        .firstMatch(/([0-9A-F]+)(?:\.\.([0-9A-F]+))?/)
+        .flatMap { (_, l, u)
+            guard 
+                let lower = Int(l, radix: 16),
+                let upper = Int(u ?? l, radix: 16),
+            else { return nil }
+            return lower...upper
+        }
+    // => 127...159
+    ```
+
+This signature is also consistent with traditional regex backreference numbering. The numbering of backreferences to captures starts at `\1` because `\0` refers to the entire match. Flattening the match and captures into the same tuple, aligns the tuple index numbering of the result with the regex backreference numbering:
+
+```swift
+let scalarRangePattern = /([0-9A-F]+)(?:\.\.([0-9A-F]+))?/
+// Result tuple index:  1 ^~~~~~~~~~~     2 ^~~~~~~~~~~
+if let match = line.firstMatch(scalarRangePattern) {
+    print(match.0, match.1, match.2) // => 007F..009F, 007F, 009F
 }
 ```
 
@@ -262,24 +318,24 @@ backreferences (e.g. `\2`) with linear indices.
 
 ```swift
 let graphemeBreakPropertyData = /(([0-9A-F]+)(\.\.([0-9A-F]+)))\s*;\s(\w+).*/
-// Positions in capture tuple: 0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    4 ^~~~~
-//                                         2 ^~~~~~~~~~~~~~~~~
-//                              1 ^~~~~~~~~~~   3 ^~~~~~~~~~~
+// Positions in result tuple:  1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    5 ^~~~~
+//                                         3 ^~~~~~~~~~~~~~~~~
+//                              2 ^~~~~~~~~~~   4 ^~~~~~~~~~~
 // => `Regex<(Substring, Substring, Substring, Substring, Substring)>`
 
 // Result builder DSL equivalent:
 //     let graphemeBreakPropertyData = Regex {
 //         Regex {
-//             OneOrMore(CharacterClass.hexDigit).capture() // (1)
+//             OneOrMore(CharacterClass.hexDigit).capture() // (2)
 //             Regex {
 //                 ".."
-//                 OneOrMore(CharacterClass.hexDigit).capture() // (3)
-//             }.capture() // (2)
-//         }.capture() // (0)
+//                 OneOrMore(CharacterClass.hexDigit).capture() // (4)
+//             }.capture() // (3)
+//         }.capture() // (1)
 //         Repeat(CharacterClass.whitespace)
 //         ";"
 //         CharacterClass.whitespace
-//         OneOrMore(CharacterClass.word).capture() // (4)
+//         OneOrMore(CharacterClass.word).capture() // (5)
 //         Repeat(CharacterClass.any)
 //     }
 //     // `.Captures == Regex(Substring, Substring, Substring, Substring, Substring)`
@@ -383,10 +439,10 @@ By contrast, the proposed Swift version captures all four sub-matches:
 
 ```swift
 let pattern = /(?:([0-9a-f]+)-?)+/
-if let match = “1234-5678-9abc-def0".firstMatch(of: pattern) {
+if let match = "1234-5678-9abc-def0".firstMatch(of: pattern) {
     print(match.captures)
 }
-// Prints [“1234”, “5678", “9abc”, “def0"]
+// Prints ["1234", "5678", "9abc", "def0"]
 ```
 
 Despite the deviation from prior art, we believe that the proposed capture
@@ -433,10 +489,9 @@ able to exhaustively switch over all the captures.
 
 ```swift
 let number = line
-    .firstMatch(/([01]+)|([0-9]+)|([0-9A-F]+)/)?
-    .captures
+    .firstMatch(of: /([01]+)|([0-9]+)|([0-9A-F]+)/)
     .flatMap {
-        switch $0 {
+        switch $0.1 {
         case let .0(binary):
             return Int(binary, radix: 2)
         case let .1(decimal):
@@ -448,10 +503,9 @@ let number = line
 
 // Or with named captures:
 let number = line
-    .firstMatch(/(?<binary>[01]+)|(?<decimal>[0-9]+)|(?<hex>[0-9A-F]+)/)?
-    .captures
+    .firstMatch(of: /(?<binary>[01]+)|(?<decimal>[0-9]+)|(?<hex>[0-9A-F]+)/)
     .flatMap {
-        switch $0 {
+        switch $0.1 {
         case let .binary(str):
             return Int(str, radix: 2)
         case let .decimal(str):
@@ -489,10 +543,9 @@ access the tuple's properties via key path dynamic member lookup.
 
 ```swift
 let number = line
-    .firstMatch(/([01]+)|([0-9]+)|([0-9A-F]+)/)?
-    .captures
+    .firstMatch(of: /([01]+)|([0-9]+)|([0-9A-F]+)/)
     .flatMap {
-        switch $0.options {
+        switch $0.1.options {
         case let (binary?, nil, nil):
             return Int(binary, radix: 2)
         case let (nil, decimal?, nil):
@@ -506,14 +559,13 @@ let number = line
 
 // Or with named captures:
 let number = line
-    .firstMatch(/(?<binary>[01]+)|(?<decimal>[0-9]+)|(?<hex>[0-9A-F]+)/)?
-    .captures
+    .firstMatch(of: /(?<binary>[01]+)|(?<decimal>[0-9]+)|(?<hex>[0-9A-F]+)/)
     .flatMap {
-        if let binary = $0.binary {
+        if let binary = $0.1.binary {
             return Int(binary, radix: 2)
-        } else if let decimal = $0.decimal {
+        } else if let decimal = $0.1.decimal {
             return Int(decimal, radix: 10)
-        } else if let hex = $0.hex {
+        } else if let hex = $0.1.hex {
             return Int(hex, radix: 16)
         } else {
             fatalError("unreachable")
@@ -587,7 +639,7 @@ the program to abort or hang.
 
 ```swift
 let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Never>`
-print(str.firstMatch(identifier)?.captures)
+print(str.firstMatch(of: identifier)?.captures)
 // ❗️ Program aborts or hangs.
 ```
 
@@ -597,7 +649,7 @@ capture is simply `()`.
 
 ```swift
 let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Void>`
-print(str.firstMatch(identifier)?.captures)
+print(str.firstMatch(of: identifier)?.captures)
 // Prints `()`.
 ```
 
@@ -632,7 +684,7 @@ Example usage:
 ```swift
 let regex = readLine()! // (\w*)(\d)+z(\w*)?
 let input = readLine()! // abcd1234xyz
-print(input.firstMatch(regex)?.captures)
+print(input.firstMatch(of: regex)?.captures)
 // .tuple(
 //     .substring("abcd"),
 //     .array([
@@ -667,14 +719,14 @@ Dropping the argument label is particularly undesirable because `firstMatch` con
 ```swift
 let str = "007F..009F    ; Control # Cc  [33] <control-007F>..<control-009F>"
 
-if let m = str.firstMatch(/(?<lower>[0-9A-F]+)\.\.(?<upper>[0-9A-F]+)/) {
+if let m = str.firstMatch(of: /(?<lower>[0-9A-F]+)\.\.(?<upper>[0-9A-F]+)/) {
     print(type(of: m)) // Prints (match: Substring, lower: Substring, upper: Substring)
     print(m.match) // Prints "007F..009F"
     print(m.lower) // Prints "007F"
     print(m.upper) // Prints "009F"
 }
 
-if let m = str.firstMatch(/(?<lower>[0-9A-F]+)\.\.[0-9A-F]+/) {
+if let m = str.firstMatch(of: /(?<lower>[0-9A-F]+)\.\.[0-9A-F]+/) {
     print(type(of: m)) // Prints (match: Substring, Substring)
     print(m.match) // Prints "007F..009F"
     print(m.lower) // error
