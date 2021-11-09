@@ -1,5 +1,7 @@
 # Strongly Typed Regex Captures
 
+Authors: [Richard Wei](https://github.com/rxwei), [Kyle Macomber](https://github.com/kylemacomber)
+
 ## Introduction
 
 Capturing groups are a commonly used component of regular expressions as they
