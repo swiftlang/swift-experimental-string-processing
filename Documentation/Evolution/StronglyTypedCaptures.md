@@ -76,8 +76,8 @@ feature, this pitch discusses the following topics.
 This focus of this pitch is the structural properties of capture types and how
 regular expression patterns compose to form new capture types. The semantics of
 string matching, its effect on the capture types (i.e. `UnicodeScalarView` or
-`Substring`), the result builder syntax, or the literal syntax will be discussed in
-future pitches.
+`Substring`), the result builder syntax, or the literal syntax will be discussed
+in future pitches.
 
 For background on Declarative String Processing, see related topics:
 - [Declarative String Processing Overview](https://forums.swift.org/t/declarative-string-processing-overview/52459)
@@ -105,8 +105,7 @@ approach to regular expression captures.
 We introduce a generic structure `Regex<Captures>` whose generic parameter
 `Captures` denotes the type of the captured content of such a regular
 expression. With a single generic parameter `Captures`, we make use of tuples to
-represent multiple and nested captures, and are looking to be one of the first
-adopters of variadic generics.
+represent multiple and nested captures.
 
 ```swift
 let regex = /ab(cd*)(ef)gh/
@@ -127,7 +126,7 @@ declarations in the result builder type.
 
 `Regex` is a structure that represents a regular expression. `Regex` is generic
 over an unconstrained generic parameter `Captures`. Upon a regex match, the
-captured value is available in type `Captures` in the match result.
+captured values are available as part of the result.
 
 ```swift
 public struct Regex<Captures>: RegexProtocol, ExpressibleByRegexLiteral {
@@ -142,7 +141,7 @@ The `firstMatch` method returns a `Substring` of the first match of the provided
 ```swift
 extension String {
     public func firstMatch<R: RegexProtocol, C...>(of regex: R)
-        -> (match: Substring, C...)? where R.Captures == (C...)
+        -> (Substring, C...)? where R.Captures == (C...)
 }
 
 // Expands to:
@@ -150,42 +149,22 @@ extension String {
 //         func firstMatch<R: RegexProtocol>(of regex: R)
 //             -> Substring? where R.Captures == ()
 //         func firstMatch<R: RegexProtocol, C1>(of regex: R)
-//             -> (match: Substring, C1)? where R.Captures == (C1)
+//             -> (Substring, C1)? where R.Captures == (C1)
 //         func firstMatch<R: RegexProtocol, C1, C2>(of regex: R)
-//             -> (match: Substring, C1, C2)? where R.Captures == (C1, C2)
+//             -> (Substring, C1, C2)? where R.Captures == (C1, C2)
 //         ...
 //     }
 ```
 
-This signature is approachable and ergonomic:
-
-- When there are no captures, it degenerates to returning an optional substring that represents the match.
-
-    ```swift
-    let line = "007F..009F    ; Control # Cc  [33] <control-007F>..<control-009F>"
-    line.firstMatch(of: /[0-9A-F]+/) // => "007F"
-    ```
-
-- It supports convienent tuple destructuring.
-
-    ```swift
-    line
-        .firstMatch(of: /([0-9A-F]+)(?:\.\.([0-9A-F]+))?/)
-        .flatMap { (_, l, u)
-            guard 
-                let lower = Int(l, radix: 16),
-                let upper = Int(u ?? l, radix: 16),
-            else { return nil }
-            return lower...upper
-        }
-    // => 127...159
-    ```
-
-This signature is also consistent with traditional regex backreference numbering. The numbering of backreferences to captures starts at `\1` because `\0` refers to the entire match. Flattening the match and captures into the same tuple, aligns the tuple index numbering of the result with the regex backreference numbering:
+This signature is consistent with traditional regex backreference numbering. The
+numbering of backreferences to captures starts at `\1` (with `\0` refering to
+the entire match). Flattening the match and captures into the same tuple aligns
+the tuple index numbering of the result with the regex backreference numbering:
 
 ```swift
 let scalarRangePattern = /([0-9A-F]+)(?:\.\.([0-9A-F]+))?/
-// Result tuple index:  1 ^~~~~~~~~~~     2 ^~~~~~~~~~~
+// Result tuple index:  0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                      1 ^~~~~~~~~~~     2 ^~~~~~~~~~~
 if let match = line.firstMatch(of: scalarRangePattern) {
     print(match.0, match.1, match.2) // => 007F..009F, 007F, 009F
 }
@@ -323,9 +302,9 @@ let graphemeBreakPropertyData = /(([0-9A-F]+)(\.\.([0-9A-F]+)))\s*;\s(\w+).*/
 //         Repeat(CharacterClass.any)
 //     }
 
-let input = "007F..009F    ; Control # Cc  [33] <control-007F>..<control-009F>"
+let input = "007F..009F   ; Control"
 // Match result for `input`:
-// ("007F..009F", "007F", "..009F", "009F", "Control")
+// ("007F..009F   ; Control", "007F..009F", "007F", "..009F", "009F", "Control")
 ```
 
 
@@ -421,7 +400,7 @@ if let match = "1234-5678-9abc-def0".firstMatch(of: pattern) {
 Despite the deviation from prior art, we believe that the proposed capture
 behavior leads to better consistency with the meaning of these quantifiers. 
 
-The said alternative behavior does have the advantage of smaller memory
+Note, the alternative behavior does have the advantage of a smaller memory
 footprint because the matching algorithm would not need to allocate storage for
 capturing anything but the last match. As a future direction, we could introduce
 a variant of quantifiers for this behavior that the programmer would opt in for
@@ -457,8 +436,8 @@ Nested captures follow the algebra previously described.
 // => `Regex<(overall: Substring, Alternation<(binary: Substring, decimal: Substring, hex: Substring))>>`
 ```
 
-At the use site, `Alternation` behaves like an `enum`. Ideally you should be
-able to exhaustively switch over all the captures.
+At the use site, ideally `Alternation` would behave like an `enum` allowing you
+to exhaustively switch over all the captures.
 
 ```swift
 let number = line
