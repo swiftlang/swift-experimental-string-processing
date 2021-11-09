@@ -16,9 +16,9 @@ let regex = /ab(cd*)(ef)gh/
 // => `Regex<(Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let regex = Regex {
+//     let regex = Pattern {
 //         "ab"
-//         Regex {
+//         Group {
 //             "c"
 //             Repeat("d")
 //         }.capture()
@@ -155,7 +155,7 @@ Regular expressions without any capturing groups have type `Regex<Void>`, for ex
 let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Void>`
 
 // Equivalent result builder syntax:
-//     let identifier = Regex {
+//     let identifier = Pattern {
 //         OneOrMore(/[_a-zA-Z]/)
 //         Repeat(/[_a-zA-Z0-9]/)
 //     }
@@ -171,7 +171,7 @@ matched by its contained pattern. A capturing group's capture type is
 let graphemeBreakLowerBound = /([0-9a-fA-F]+)/ // => `Regex<Substring>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakLowerBound = OneOrMore(CharacterClass.hexDigit).capture()
+//     let graphemeBreakLowerBound = OneOrMore(.hexDigit).capture()
 ```
 
 #### Concatenation: `abc`
@@ -189,20 +189,20 @@ let graphemeBreakLowerBound = /([0-9a-fA-F]+)\.\.[0-9a-fA-F]+/
 // => `Regex<Substring>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakLowerBound = Regex {
-//         OneOrMore(CharacterClass.hexDigit).capture()
+//     let graphemeBreakLowerBound = Pattern {
+//         OneOrMore(.hexDigit).capture()
 //         ".."
-//         OneOrMore(CharacterClass.hexDigit)
+//         OneOrMore(.hexDigit)
 //     }
 
 let graphemeBreakRange = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)/
 // => `Regex<(Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakRange = Regex {
-//         OneOrMore(CharacterClass.hexDigit).capture()
+//     let graphemeBreakRange = Pattern {
+//         OneOrMore(.hexDigit).capture()
 //         ".."
-//         OneOrMore(CharacterClass.hexDigit).capture()
+//         OneOrMore(.hexDigit).capture()
 //     }
 ```
 
@@ -232,11 +232,11 @@ let graphemeBreakLowerBound = /([0-9A-F]+)(?:\.\.([0-9A-F]+))?/
 // => `Regex<(Substring, Substring?)>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakLowerBound = Regex {
-//         OneOrMore(CharacterClass.hexDigit).capture()
+//     let graphemeBreakLowerBound = Pattern {
+//         OneOrMore(.hexDigit).capture()
 //         Optionally {
 //             ".."
-//             OneOrMore(CharacterClass.hexDigit).capture()
+//             OneOrMore(.hexDigit).capture()
 //         }
 //     }
 ```
@@ -256,19 +256,19 @@ let graphemeBreakPropertyData = /(([0-9A-F]+)(\.\.([0-9A-F]+)))\s*;\s(\w+).*/
 // => `Regex<(Substring, Substring, Substring, Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakPropertyData = Regex {
-//         Regex {
-//             OneOrMore(CharacterClass.hexDigit).capture() // (2)
-//             Regex {
+//     let graphemeBreakPropertyData = Pattern {
+//         Group {
+//             OneOrMore(.hexDigit).capture() // (2)
+//             Group {
 //                 ".."
-//                 OneOrMore(CharacterClass.hexDigit).capture() // (4)
+//                 OneOrMore(.hexDigit).capture() // (4)
 //             }.capture() // (3)
 //         }.capture() // (1)
-//         Repeat(CharacterClass.whitespace)
+//         Repeat(.whitespace)
 //         ";"
 //         CharacterClass.whitespace
-//         OneOrMore(CharacterClass.word).capture() // (5)
-//         Repeat(CharacterClass.any)
+//         OneOrMore(.word).capture() // (5)
+//         Repeat(.any)
 //     }
 
 let input = "007F..009F   ; Control"
@@ -299,7 +299,7 @@ vs possessive, is irrelevant to determining the capture type.
 
 // Equivalent result builder syntax:
 //     OneOrMore {
-//         OneOrMore(CharacterClass.hexDigit).capture()
+//         OneOrMore(.hexDigit).capture()
 //     }
 
 /([0-9a-fA-F]+)*/
@@ -307,7 +307,7 @@ vs possessive, is irrelevant to determining the capture type.
 
 // Equivalent result builder syntax:
 //     Repeat {
-//         OneOrMore(CharacterClass.hexDigit).capture()
+//         OneOrMore(.hexDigit).capture()
 //     }
 
 /([0-9a-fA-F]+)?/
@@ -315,7 +315,7 @@ vs possessive, is irrelevant to determining the capture type.
 
 // Equivalent result builder syntax:
 //     Optionally {
-//         OneOrMore(CharacterClass.hexDigit).capture()
+//         OneOrMore(.hexDigit).capture()
 //     }
 
 /([0-9a-fA-F]+){3}/
@@ -323,7 +323,7 @@ vs possessive, is irrelevant to determining the capture type.
 
 // Equivalent result builder syntax:
 //     Repeat(3) {
-//         OneOrMore(CharacterClass.hexDigit).capture()
+//         OneOrMore(.hexDigit).capture()
 //     )
 
 /([0-9a-fA-F]+){3,5}/
@@ -331,7 +331,7 @@ vs possessive, is irrelevant to determining the capture type.
 
 // Equivalent result builder syntax:
 //     Repeat(3...5) {
-//         OneOrMore(CharacterClass.hexDigit).capture()
+//         OneOrMore(.hexDigit).capture()
 //     )
 
 /([0-9a-fA-F]+){3,}/
@@ -339,7 +339,7 @@ vs possessive, is irrelevant to determining the capture type.
 
 // Equivalent result builder syntax:
 //     Repeat(3...) {
-//         OneOrMore(CharacterClass.hexDigit).capture()
+//         OneOrMore(.hexDigit).capture()
 //     )
 ```
 
