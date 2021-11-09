@@ -162,14 +162,14 @@ This signature is approachable and ergonomic:
 
     ```swift
     let line = "007F..009F    ; Control # Cc  [33] <control-007F>..<control-009F>"
-    line.firstMatch(/[0-9A-F]+/) // => "007F"
+    line.firstMatch(of: /[0-9A-F]+/) // => "007F"
     ```
 
 - It supports convienent tuple destructuring.
 
     ```swift
     line
-        .firstMatch(/([0-9A-F]+)(?:\.\.([0-9A-F]+))?/)
+        .firstMatch(of: /([0-9A-F]+)(?:\.\.([0-9A-F]+))?/)
         .flatMap { (_, l, u)
             guard 
                 let lower = Int(l, radix: 16),
@@ -185,7 +185,7 @@ This signature is also consistent with traditional regex backreference numbering
 ```swift
 let scalarRangePattern = /([0-9A-F]+)(?:\.\.([0-9A-F]+))?/
 // Result tuple index:  1 ^~~~~~~~~~~     2 ^~~~~~~~~~~
-if let match = line.firstMatch(scalarRangePattern) {
+if let match = line.firstMatch(of: scalarRangePattern) {
     print(match.0, match.1, match.2) // => 007F..009F, 007F, 009F
 }
 ```
