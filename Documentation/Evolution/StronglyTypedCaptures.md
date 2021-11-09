@@ -58,7 +58,7 @@ let regex = /ab(cd*)(ef)gh/
 //     }
 
 if let match = "abcddddefgh".firstMatch(of: regex) {
-    print(match) // => (match: "abcddddefgh", "cdddd", "ef")
+    print(match) // => ("abcddddefgh", "cdddd", "ef")
 }
 ```
 
@@ -111,7 +111,7 @@ represent multiple and nested captures.
 let regex = /ab(cd*)(ef)gh/
 // => Regex<(Substring, Substring)>
 if let match = "abcddddefgh".firstMatch(of: regex) {
-  print(match) // => (match: "abcddddefgh", "cdddd", "ef")
+  print(match) // => ("abcddddefgh", "cdddd", "ef")
 }
 ```
 
@@ -679,14 +679,14 @@ Dropping the argument label is particularly undesirable because `firstMatch` con
 let str = "007F..009F    ; Control # Cc  [33] <control-007F>..<control-009F>"
 
 if let m = str.firstMatch(of: /(?<lower>[0-9A-F]+)\.\.(?<upper>[0-9A-F]+)/) {
-    print(type(of: m)) // Prints (match: Substring, lower: Substring, upper: Substring)
+    print(type(of: m)) // Prints (Substring, lower: Substring, upper: Substring)
     print(m.match) // Prints "007F..009F"
     print(m.lower) // Prints "007F"
     print(m.upper) // Prints "009F"
 }
 
 if let m = str.firstMatch(of: /(?<lower>[0-9A-F]+)\.\.[0-9A-F]+/) {
-    print(type(of: m)) // Prints (match: Substring, Substring)
+    print(type(of: m)) // Prints (Substring, Substring)
     print(m.match) // Prints "007F..009F"
     print(m.lower) // error
 }
