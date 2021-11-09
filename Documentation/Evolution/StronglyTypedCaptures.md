@@ -681,7 +681,9 @@ print(input.firstMatch(of: regex)?.1)
 
 ### Single-element labeled tuples
 
-Swift doesn't currently support [single-element labeled tuples](https://forums.swift.org/t/single-element-labeled-tuples/9797), which leads to a discontinuity at arity 1:
+Swift doesn't currently support [single-element labeled
+tuples](https://forums.swift.org/t/single-element-labeled-tuples/9797), which
+leads to a discontinuity at arity 1:
 
 ```swift
 let noCaptures = /[0-9A-F]+\.\.[0-9A-F]+/
@@ -694,23 +696,31 @@ let twoCaptures = /(?<lower>[0-9A-F]+)\.\.(?<upper>[0-9A-F]+)/
 // => `Regex<(lower: Substring, upper: Substring)>`
 ```
 
-Dropping the argument label is particularly undesirable because `firstMatch` concatenates the match and the captures, make the argument label more significant:
+Dropping the argument label is particularly undesirable because `firstMatch`
+concatenates the match and the captures, make the argument label more
+significant:
 
 ```swift
 let str = "007F..009F    ; Control # Cc  [33] <control-007F>..<control-009F>"
 
 if let m = str.firstMatch(of: /(?<lower>[0-9A-F]+)\.\.(?<upper>[0-9A-F]+)/) {
     print(type(of: m)) // Prints (Substring, lower: Substring, upper: Substring)
-    print(m.match) // Prints "007F..009F"
+    print(m.0) // Prints "007F..009F"
     print(m.lower) // Prints "007F"
     print(m.upper) // Prints "009F"
 }
 
 if let m = str.firstMatch(of: /(?<lower>[0-9A-F]+)\.\.[0-9A-F]+/) {
     print(type(of: m)) // Prints (Substring, Substring)
-    print(m.match) // Prints "007F..009F"
+    print(m.0) // Prints "007F..009F"
     print(m.lower) // error
 }
 ```
 
-[Forum discussion](https://forums.swift.org/t/single-element-labeled-tuples/9797/21) suggests there isn't a  technical reason why support for single-element labeled tuples can't be added in the future. In particular, the examples here would be source compatible if as [suggested](https://forums.swift.org/t/single-element-labeled-tuples/9797/23) `(T)`, which is equivalent to `T`, is made a supertype of `(label: T)`.
+[Forum
+discussion](https://forums.swift.org/t/single-element-labeled-tuples/9797/21)
+suggests there isn't a technical reason why support for single-element labeled
+tuples can't be added in the future. In particular, the examples here would be
+source compatible if as
+[suggested](https://forums.swift.org/t/single-element-labeled-tuples/9797/23)
+`(T)`, which is equivalent to `T`, is made a supertype of `(label: T)`.
