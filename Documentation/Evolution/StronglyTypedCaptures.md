@@ -241,7 +241,7 @@ let graphemeBreakLowerBound = /([0-9A-F]+)(?:\.\.([0-9A-F]+))?/
 //     }
 ```
 
-#### Nested capturing group: `(abc(def))`
+#### Nested capturing group: `(...(...)...)`
 
 When capturing group is nested within another capturing group, they count as two
 distinct captures in the order their left parenthesis first appears in the
@@ -582,6 +582,56 @@ captures:
 | 0      | `()`                     |
 | 1      | `(Substring)`            |
 | 2      | `(Substring, Substring)` |
+
+### `Regex<(EntireMatch, Capture...)>` instead of `Regex<Captures>`
+
+There are a few downsides when `Regex`'s generic parameter represents captures:
+- When there is only one capture and it is a named one, e.g.
+  `\d{4}-(?<month>\d{2})-\d{2}`, the name will be lost in the type
+  `Regex<Substring>` because Swift does not support single-element tuples.
+- The indices in the `Captures` tuple do not align with the conventional
+  backreference indices, where the latter uses `\0` to refer to the entire match
+  and `\1` for the start of captures.
+  
+One alternative design to address these downsides is to include the whole match
+in the generic parameter. When a regex has captures, the generic argument is a
+tuple that can be seen as `(EntireMatch, Capture...)`. Capturing can then be
+seen as appending substrings on to an existing `Match` (as additional tuple
+elements).
+
+```swift
+public struct Regex<Match>: RegexProtocol, ExpressibleByRegexLiteral {
+    ...
+}
+
+extension String {
+    public func firstMatch<R: RegexProtocol>(of regex: R) -> R.Match?
+}
+```
+
+With this design, regexes with a single named capture will preserve the name as
+a tuple element label.
+
+```
+\d{4}-(?<month>\d{2})-\d{2} // (Substring, month: Substring)
+```
+
+However, one downside to this approach is that the typing rules of
+ concatenation, alternation, etc would require discarding the first element of
+ `Match` when forming the new type. It would also lead to a harder requirement
+ on variadic generics for the result builder syntax down the road, where the
+ concatenation pattern needs to drop the first element from `Match` to be able
+ to concatenate each component's capture type.
+
+```swift
+extension<EntireMatch, Capture...> Regex where Match == (EntireMatch, Capture...) {
+    public typealias Captures = (Capture...) // Dropping first from `Match`
+}
+```
+
+The other downside is that the role of the first tuple element can be unclear at
+call sites, even though `Match` is now consistent with backreference numbering
+in most other regex implementations.
 
 ## Future directions
 
