@@ -58,7 +58,7 @@ let regex = /ab(cd*)(ef)gh/
 //     }
 
 if let match = "abcddddefgh".firstMatch(of: regex) {
-    print(match.captures) // => ("cdddd", "ef")
+    print(match) // => (match: "abcddddefgh", "cdddd", "ef")
 }
 ```
 
@@ -411,7 +411,7 @@ By contrast, the proposed Swift version captures all four sub-matches:
 ```swift
 let pattern = /(?:([0-9a-f]+)-?)+/
 if let match = "1234-5678-9abc-def0".firstMatch(of: pattern) {
-    print(match.captures)
+    print(match.1)
 }
 // Prints ["1234", "5678", "9abc", "def0"]
 ```
@@ -462,8 +462,8 @@ able to exhaustively switch over all the captures.
 ```swift
 let number = line
     .firstMatch(of: /([01]+)|([0-9]+)|([0-9A-F]+)/)
-    .flatMap {
-        switch $0.1 {
+    .flatMap { (_, n) in
+        switch n {
         case let .0(binary):
             return Int(binary, radix: 2)
         case let .1(decimal):
@@ -476,8 +476,8 @@ let number = line
 // Or with named captures:
 let number = line
     .firstMatch(of: /(?<binary>[01]+)|(?<decimal>[0-9]+)|(?<hex>[0-9A-F]+)/)
-    .flatMap {
-        switch $0.1 {
+    .flatMap { (_, n) in
+        switch n {
         case let .binary(str):
             return Int(str, radix: 2)
         case let .decimal(str):
@@ -516,8 +516,8 @@ access the tuple's properties via key path dynamic member lookup.
 ```swift
 let number = line
     .firstMatch(of: /([01]+)|([0-9]+)|([0-9A-F]+)/)
-    .flatMap {
-        switch $0.1.options {
+    .flatMap { (_, n) in
+        switch n.options {
         case let (binary?, nil, nil):
             return Int(binary, radix: 2)
         case let (nil, decimal?, nil):
@@ -532,12 +532,12 @@ let number = line
 // Or with named captures:
 let number = line
     .firstMatch(of: /(?<binary>[01]+)|(?<decimal>[0-9]+)|(?<hex>[0-9A-F]+)/)
-    .flatMap {
-        if let binary = $0.1.binary {
+    .flatMap { (_, n) in
+        if let binary = n.binary {
             return Int(binary, radix: 2)
-        } else if let decimal = $0.1.decimal {
+        } else if let decimal = n.decimal {
             return Int(decimal, radix: 10)
-        } else if let hex = $0.1.hex {
+        } else if let hex = n.hex {
             return Int(hex, radix: 16)
         } else {
             fatalError("unreachable")
@@ -606,8 +606,8 @@ have added conformances for `Never` in order to support its use a bottom type.
 `Void`, such that a regex of type `Regex<Never>` means it never captures.
 
 However, a `Never` value never exists. Functions with return type `Never` will
-never return. As a result, a trivial use of regex like the following could cause
-the program to abort or hang.
+never return. As a result, calling an API like `captures` on a regex with no
+captures would cause the program to abort or hang.
 
 ```swift
 let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Never>`
@@ -615,7 +615,7 @@ print(str.firstMatch(of: identifier)?.captures)
 // ❗️ Program aborts or hangs.
 ```
 
-In contrast, using `Void` as the empty capture type allows captures to be
+In contrast, using `Void` as the empty capture type would allow `captures` to be
 accessed safely at anytime. When a regex has no captures, the match result's
 capture is simply `()`.
 
@@ -624,6 +624,15 @@ let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Void>`
 print(str.firstMatch(of: identifier)?.captures)
 // Prints `()`.
 ```
+
+`()` is also just a more consistent, continuous representation of a type with 0
+captures:
+
+| Number | Capture type             |
+|--------|--------------------------|
+| 0      | `()`                     |
+| 1      | `(Substring)`            |
+| 2      | `(Substring, Substring)` |
 
 ## Future directions
 
@@ -656,7 +665,7 @@ Example usage:
 ```swift
 let regex = readLine()! // (\w*)(\d)+z(\w*)?
 let input = readLine()! // abcd1234xyz
-print(input.firstMatch(of: regex)?.captures)
+print(input.firstMatch(of: regex)?.1)
 // [
 //     "abcd",
 //     [
