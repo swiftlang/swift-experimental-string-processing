@@ -46,7 +46,7 @@ and `(ef)`.
 let regex = /ab(cd*)(ef)gh/
 // => `Regex<(Substring, Substring)>`
 
-// Result builder DSL equivalent:
+// Equivalent result builder syntax:
 //     let regex = Regex {
 //         "ab"
 //         Regex {
@@ -67,15 +67,16 @@ as part of a regular expression's type information for type safety and ease of
 use. As we explore a fundamental design aspect of the regular expression
 feature, this pitch discusses the following topics.
 
-- A type definition of generic type `Regex<Captures>`.
+- A type definition of the generic type `Regex<Captures>` and `firstMatch`
+  method.
 - Capture type inference and composition in regular expression literals and the
-  forthcoming result builder DSL.
+  forthcoming result builder syntax.
 - New language features which this design may require.
 
 This focus of this pitch is the structural properties of capture types and how
 regular expression patterns compose to form new capture types. The semantics of
 string matching, its effect on the capture types (i.e. `UnicodeScalarView` or
-`Substring`), the result builder DSL, or the literal syntax will be discussed in
+`Substring`), the result builder syntax, or the literal syntax will be discussed in
 future pitches.
 
 For background on Declarative String Processing, see related topics:
@@ -205,11 +206,11 @@ Regular expressions without any capturing groups have type `Regex<Void>`, for ex
 ```swift
 let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Void>`
 
-// Result builder DSL equivalent:
+// Equivalent result builder syntax:
 //     let identifier = Regex {
 //         OneOrMore(/[_a-zA-Z]/)
 //         Repeat(/[_a-zA-Z0-9]/)
-//     } // => `Regex<Void>`
+//     }
 ```
 
 #### Capturing group: `(...)`
@@ -221,7 +222,7 @@ matched by its contained pattern. A capturing group's capture type is
 ```swift
 let graphemeBreakLowerBound = /([0-9a-fA-F]+)/ // => `Regex<Substring>`
 
-// Result builder DSL equivalent
+// Equivalent result builder syntax:
 //     let graphemeBreakLowerBound = OneOrMore(CharacterClass.hexDigit).capture()
 ```
 
@@ -239,7 +240,7 @@ of all patterns that have a capture.
 let graphemeBreakLowerBound = /([0-9a-fA-F]+)\.\.[0-9a-fA-F]+/
 // => `Regex<Substring>`
 
-// Result builder DSL equivalent:
+// Equivalent result builder syntax:
 //     let graphemeBreakLowerBound = Regex {
 //         OneOrMore(CharacterClass.hexDigit).capture()
 //         ".."
@@ -249,7 +250,7 @@ let graphemeBreakLowerBound = /([0-9a-fA-F]+)\.\.[0-9a-fA-F]+/
 let graphemeBreakRange = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)/
 // => `Regex<(Substring, Substring)>`
 
-// Result builder DSL equivalent:
+// Equivalent result builder syntax:
 //     let graphemeBreakRange = Regex {
 //         OneOrMore(CharacterClass.hexDigit).capture()
 //         ".."
@@ -282,7 +283,7 @@ propagates its underlying pattern's captures.
 let graphemeBreakLowerBound = /([0-9A-F]+)(?:\.\.([0-9A-F]+))?/
 // => `Regex<(Substring, Substring?)>`
 
-// Result builder DSL equivalent:
+// Equivalent result builder syntax:
 //     let graphemeBreakLowerBound = Regex {
 //         OneOrMore(CharacterClass.hexDigit).capture()
 //         Optionally {
@@ -306,7 +307,7 @@ let graphemeBreakPropertyData = /(([0-9A-F]+)(\.\.([0-9A-F]+)))\s*;\s(\w+).*/
 //                              2 ^~~~~~~~~~~   4 ^~~~~~~~~~~
 // => `Regex<(Substring, Substring, Substring, Substring, Substring)>`
 
-// Result builder DSL equivalent:
+// Equivalent result builder syntax:
 //     let graphemeBreakPropertyData = Regex {
 //         Regex {
 //             OneOrMore(CharacterClass.hexDigit).capture() // (2)
@@ -348,7 +349,7 @@ vs possessive, is irrelevant to determining the capture type.
 /([0-9a-fA-F]+)+/
 // => `Regex<[Substring]>`
 
-// Result builder DSL equivalent:
+// Equivalent result builder syntax:
 //     OneOrMore {
 //         OneOrMore(CharacterClass.hexDigit).capture()
 //     }
@@ -356,7 +357,7 @@ vs possessive, is irrelevant to determining the capture type.
 /([0-9a-fA-F]+)*/
 // => `Regex<[Substring]>`
 
-// Result builder DSL equivalent:
+// Equivalent result builder syntax:
 //     Repeat {
 //         OneOrMore(CharacterClass.hexDigit).capture()
 //     }
@@ -364,7 +365,7 @@ vs possessive, is irrelevant to determining the capture type.
 /([0-9a-fA-F]+)?/
 // => `Regex<Substring?>`
 
-// Result builder DSL equivalent:
+// Equivalent result builder syntax:
 //     Optionally {
 //         OneOrMore(CharacterClass.hexDigit).capture()
 //     }
@@ -372,7 +373,7 @@ vs possessive, is irrelevant to determining the capture type.
 /([0-9a-fA-F]+){3}/
 // => `Regex<[Substring]>
 
-// Result builder DSL equivalent:
+// Equivalent result builder syntax:
 //     Repeat(3) {
 //         OneOrMore(CharacterClass.hexDigit).capture()
 //     )
@@ -380,7 +381,7 @@ vs possessive, is irrelevant to determining the capture type.
 /([0-9a-fA-F]+){3,5}/
 // => `Regex<[Substring]>`
 
-// Result builder DSL equivalent:
+// Equivalent result builder syntax:
 //     Repeat(3...5) {
 //         OneOrMore(CharacterClass.hexDigit).capture()
 //     )
@@ -388,7 +389,7 @@ vs possessive, is irrelevant to determining the capture type.
 /([0-9a-fA-F]+){3,}/
 // => `Regex<[Substring]>`
 
-// Result builder DSL equivalent:
+// Equivalent result builder syntax:
 //     Repeat(3...) {
 //         OneOrMore(CharacterClass.hexDigit).capture()
 //     )
