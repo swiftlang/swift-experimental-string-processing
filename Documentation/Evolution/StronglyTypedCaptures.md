@@ -1,36 +1,5 @@
 # Strongly Typed Regex Captures
 
-<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
-**Table of Contents**
-
-- [Strongly Typed Regex Captures](#strongly-typed-regex-captures)
-    - [Introduction](#introduction)
-    - [Motivation](#motivation)
-    - [Proposed solution](#proposed-solution)
-    - [Detailed design](#detailed-design)
-        - [`Regex` type](#regex-type)
-        - [`firstMatch` method](#firstmatch-method)
-        - [Capture type](#capture-type)
-            - [Basics](#basics)
-            - [Capturing group: `(...)`](#capturing-group-)
-            - [Concatenation: `abc`](#concatenation-abc)
-            - [Named capturing group: `(?<name>...)`](#named-capturing-group-name)
-            - [Non-capturing group: `(?:...)`](#non-capturing-group-)
-            - [Nested capturing group: `(abc(def))`](#nested-capturing-group-abcdef)
-            - [Quantification: `*`, `+`, `?`, `{n}`, `{n,}`, `{n,m}`](#quantification----n-n-nm)
-            - [Alternation: `a|b`](#alternation-ab)
-    - [Effect on ABI stability](#effect-on-abi-stability)
-    - [Effect on API resilience](#effect-on-api-resilience)
-    - [Alternatives considered](#alternatives-considered)
-        - [Lazy collections instead of arrays of substrings](#lazy-collections-instead-of-arrays-of-substrings)
-        - [Homogeneous tuples for exact-count quantification](#homogeneous-tuples-for-exact-count-quantification)
-        - [`Never` as empty capture instead of `Void`](#never-as-empty-capture-instead-of-void)
-    - [Future directions](#future-directions)
-        - [Dynamic captures](#dynamic-captures)
-        - [Single-element labeled tuples](#single-element-labeled-tuples)
-
-<!-- markdown-toc end -->
-
 ## Introduction
 
 Capturing groups are a commonly used component of regular expressions as they
