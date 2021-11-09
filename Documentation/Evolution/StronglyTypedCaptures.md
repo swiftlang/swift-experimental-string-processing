@@ -196,7 +196,7 @@ In this section, we dive into capture types for regular expression patterns and
 how they compose.
 
 By default, a regular expression literal has type `Regex`. Its generic argument
-`Capture` is its capture type.
+`Captures` is its capture type.
 
 #### Basics
 
@@ -646,7 +646,7 @@ public struct DynamicCaptures: Equatable, RandomAccessCollection {
   subscript(position: Int) -> DynamicCaptures { get }
 }
 
-extension Regex where Capture == DynamicCaptures {
+extension Regex where Captures == DynamicCaptures {
   public init(_ string: String) throws
 }
 ```
