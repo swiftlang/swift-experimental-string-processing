@@ -13,7 +13,7 @@ example, the following regular expression contains the capturing groups `(cd*)`
 and `(ef)`.
 
 ```swift
-// Literal version.
+// Regex literal syntax:
 let regex = /ab(cd*)(ef)gh/
 // => `Regex<(Substring, Substring)>`
 
@@ -33,10 +33,13 @@ if let match = "abcddddefgh".firstMatch(of: regex) {
 }
 ```
 
+>***Note:** The `Regex` type is only generic over its captures, but `firstMatch`
+also includes the entire match at position `.0` in the result.*
+
 We introduce a generic type `Regex<Captures>`, which treats the type of captures
-as part of a regular expression's type information for type safety and ease of
-use. As we explore a fundamental design aspect of the regular expression
-feature, this pitch discusses the following topics.
+as part of a regular expression's type information for clarity, type safety, and
+convenience. As we explore a fundamental design aspect of the regular expression
+feature, this pitch discusses the following topics:
 
 - A type definition of the generic type `Regex<Captures>` and `firstMatch`
   method.
@@ -46,9 +49,9 @@ feature, this pitch discusses the following topics.
 
 This focus of this pitch is the structural properties of capture types and how
 regular expression patterns compose to form new capture types. The semantics of
-string matching, its effect on the capture types (i.e. `UnicodeScalarView` or
-`Substring`), the result builder syntax, or the literal syntax will be discussed
-in future pitches.
+string matching, its effect on the capture types (i.e.
+`UnicodeScalarView.SubSequence` or `Substring`), the result builder syntax, or
+the literal syntax will be discussed in future pitches.
 
 For background on Declarative String Processing, see related topics:
 - [Declarative String Processing Overview](https://forums.swift.org/t/declarative-string-processing-overview/52459)
@@ -105,9 +108,20 @@ public struct Regex<Captures>: RegexProtocol, ExpressibleByRegexLiteral {
 }
 ```
 
+> ***Note**: Semantic-level switching (i.e. matching grapheme clusters with
+canonical equivalence vs Unicode scalars) is out-of-scope for this pitch, but
+handling that will likely introduce constraints on `Captures`. We use an
+unconstrained generic parameter in this pitch for brevity and simplicity. The
+`Substring`s we use for illustration throughout this pitch are created
+on-the-fly; the actual memory representation uses `Range<String.Index>`. In this
+sense, the `Captures` generic type is just an encoding of the arity and kind of captured content.*
+
 ### `firstMatch` method
 
-The `firstMatch` method returns a `Substring` of the first match of the provided regex in the string, or `nil` if there are no matches. If the provided regex contains captures, the result is a tuple of the match and the flattened capture type (described more below).
+The `firstMatch` method returns a `Substring` of the first match of the provided
+regex in the string, or `nil` if there are no matches. If the provided regex
+contains captures, the result is a tuple of the match and the flattened capture
+type (described more below).
 
 ```swift
 extension String {
@@ -127,10 +141,11 @@ extension String {
 //     }
 ```
 
-This signature is consistent with traditional regex backreference numbering. The
-numbering of backreferences to captures starts at `\1` (with `\0` refering to
-the entire match). Flattening the match and captures into the same tuple aligns
-the tuple index numbering of the result with the regex backreference numbering:
+This signature is consistent with the traditional numbering of backreferences to
+capture groups starting at `\1`. Many regex libraries make the entire match
+available as the "0th backreference". We propose to do the same here—flattening
+the match and captures into the result tuple in order to align the tuple index
+numbering with the regex backreference numbering:
 
 ```swift
 let scalarRangePattern = /([0-9A-F]+)(?:\.\.([0-9A-F]+))?/
@@ -140,6 +155,14 @@ if let match = line.firstMatch(of: scalarRangePattern) {
     print(match.0, match.1, match.2) // => 007F..009F, 007F, 009F
 }
 ```
+
+> ***Note**: Additional features like efficient access to the matched ranges are
+out-of-scope for this pitch, but will likely mean returning a nominal type from
+`firstMatch`. In this pitch, the result type of `firstMatch` is a tuple of
+`Substring`s for simplicity and brevity. Either way, the developer experience
+is meant to be light-weight and tuple-y. Any nominal type would likely come with
+dynamic member lookup for accessing captures by index (i.e. `.0`, `.1`, etc.)
+or name.*
 
 ### Capture type
 
@@ -496,7 +519,7 @@ let number = line
     }
 ```
 
-We acknowledge that it is unforunate that the programmer has to write an
+We acknowledge that it is unfortunate that the programmer has to write an
 unreachable `fatalError(...)` even when all possible cases are handled.  We
 believe that, in the fullness of time, this will motivate the design of a
 language-level solution to variadic enumerations.
