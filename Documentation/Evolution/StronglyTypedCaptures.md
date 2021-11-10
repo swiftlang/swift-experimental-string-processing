@@ -33,15 +33,16 @@ if let match = "abcddddefgh".firstMatch(of: regex) {
 }
 ```
 
->***Note:** The `Regex` type is only generic over its captures, but `firstMatch`
-also includes the entire match at position `.0` in the result.*
+>***Note:** The `Regex` type is only generic over its captures, but
+`firstMatch(of:)` also includes the entire match at position `.0` in the
+result.*
 
 We introduce a generic type `Regex<Captures>`, which treats the type of captures
 as part of a regular expression's type information for clarity, type safety, and
 convenience. As we explore a fundamental design aspect of the regular expression
 feature, this pitch discusses the following topics:
 
-- A type definition of the generic type `Regex<Captures>` and `firstMatch`
+- A type definition of the generic type `Regex<Captures>` and `firstMatch(of:)`
   method.
 - Capture type inference and composition in regular expression literals and the
   forthcoming result builder syntax.
@@ -116,9 +117,9 @@ unconstrained generic parameter in this pitch for brevity and simplicity. The
 on-the-fly; the actual memory representation uses `Range<String.Index>`. In this
 sense, the `Captures` generic type is just an encoding of the arity and kind of captured content.*
 
-### `firstMatch` method
+### `firstMatch(of:)` method
 
-The `firstMatch` method returns a `Substring` of the first match of the provided
+The `firstMatch(of:)` method returns a `Substring` of the first match of the provided
 regex in the string, or `nil` if there are no matches. If the provided regex
 contains captures, the result is a tuple of the match and the flattened capture
 type (described more below).
@@ -158,11 +159,11 @@ if let match = line.firstMatch(of: scalarRangePattern) {
 
 > ***Note**: Additional features like efficient access to the matched ranges are
 out-of-scope for this pitch, but will likely mean returning a nominal type from
-`firstMatch`. In this pitch, the result type of `firstMatch` is a tuple of
-`Substring`s for simplicity and brevity. Either way, the developer experience
-is meant to be light-weight and tuple-y. Any nominal type would likely come with
-dynamic member lookup for accessing captures by index (i.e. `.0`, `.1`, etc.)
-or name.*
+`firstMatch(of:)`. In this pitch, the result type of `firstMatch(of:)` is a
+tuple of `Substring`s for simplicity and brevity. Either way, the developer
+experience is meant to be light-weight and tuple-y. Any nominal type would
+likely come with dynamic member lookup for accessing captures by index (i.e.
+`.0`, `.1`, etc.) or name.*
 
 ### Capture type
 
@@ -719,9 +720,9 @@ let twoCaptures = /(?<lower>[0-9A-F]+)\.\.(?<upper>[0-9A-F]+)/
 // => `Regex<(lower: Substring, upper: Substring)>`
 ```
 
-Dropping the argument label is particularly undesirable because `firstMatch`
-concatenates the match and the captures, make the argument label more
-significant:
+Dropping the argument label is particularly undesirable because
+`firstMatch(of:)` concatenates the match and the captures, make the argument
+label more significant:
 
 ```swift
 let str = "007F..009F    ; Control # Cc  [33] <control-007F>..<control-009F>"
