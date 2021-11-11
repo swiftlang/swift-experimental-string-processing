@@ -7,7 +7,7 @@ extension Collection {
 }
 
 extension BidirectionalCollection {
-  public func ends<C: BackwardCollectionConsumer>(with consumer: C) -> Bool where C.Consumed == SubSequence {
+  public func ends<C: BidirectionalCollectionConsumer>(with consumer: C) -> Bool where C.Consumed == SubSequence {
     consumer.consumingBack(self[...]) != nil
   }
 }

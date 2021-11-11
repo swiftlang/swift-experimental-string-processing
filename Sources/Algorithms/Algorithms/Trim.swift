@@ -25,14 +25,14 @@ extension RangeReplaceableCollection {
 }
 
 extension BidirectionalCollection {
-  public func trimmingSuffix<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer) -> SubSequence
+  public func trimmingSuffix<Consumer: BidirectionalCollectionConsumer>(_ consumer: Consumer) -> SubSequence
     where Consumer.Consumed == Self
   {
     let end = consumer.consumingBack(self) ?? endIndex
     return self[..<end]
   }
   
-  public func trimming<Consumer: BackwardCollectionConsumer>(
+  public func trimming<Consumer: BidirectionalCollectionConsumer>(
     _ consumer: Consumer
   ) -> SubSequence where Consumer.Consumed == Self {
     // NOTE: Might give different results than trimming the suffix before trimming the prefix
@@ -44,13 +44,13 @@ extension BidirectionalCollection {
 }
 
 extension BidirectionalCollection where SubSequence == Self {
-  public mutating func trimSuffix<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer)
+  public mutating func trimSuffix<Consumer: BidirectionalCollectionConsumer>(_ consumer: Consumer)
     where Consumer.Consumed == SubSequence
   {
     _ = consumer.consumeBack(&self)
   }
 
-  mutating func trim<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer)
+  mutating func trim<Consumer: BidirectionalCollectionConsumer>(_ consumer: Consumer)
     where Consumer.Consumed == Self
   {
     trimPrefix(consumer)
@@ -60,7 +60,7 @@ extension BidirectionalCollection where SubSequence == Self {
 
 extension RangeReplaceableCollection where Self: BidirectionalCollection {
   @_disfavoredOverload
-  public mutating func trimSuffix<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer)
+  public mutating func trimSuffix<Consumer: BidirectionalCollectionConsumer>(_ consumer: Consumer)
     where Consumer.Consumed == Self
   {
     if let end = consumer.consumingBack(self) {
@@ -69,7 +69,7 @@ extension RangeReplaceableCollection where Self: BidirectionalCollection {
   }
   
   @_disfavoredOverload
-  mutating func trim<Consumer: BackwardCollectionConsumer>(_ consumer: Consumer)
+  mutating func trim<Consumer: BidirectionalCollectionConsumer>(_ consumer: Consumer)
     where Consumer.Consumed == Self
   {
     trimSuffix(consumer)

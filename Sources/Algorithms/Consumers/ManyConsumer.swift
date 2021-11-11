@@ -14,7 +14,7 @@ extension ManyConsumer: CollectionConsumer {
   }
 }
 
-extension ManyConsumer: BackwardCollectionConsumer where Base: BackwardCollectionConsumer {
+extension ManyConsumer: BidirectionalCollectionConsumer where Base: BidirectionalCollectionConsumer {
   func consumingBack(_ consumed: Base.Consumed, from index: Consumed.Index) -> Base.Consumed.Index? {
     var result = index
     while let index = base.consumingBack(consumed, from: result), index != result {

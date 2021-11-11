@@ -38,7 +38,7 @@ public struct RegexConsumer<Consumed: BidirectionalCollection> where Consumed.Su
 }
 
 // TODO: We'll want to bake backwards into the engine
-extension RegexConsumer: BackwardCollectionConsumer {
+extension RegexConsumer: BidirectionalCollectionConsumer {
   public func consumingBack(
     _ consumed: Consumed, from index: Consumed.Index
   ) -> String.Index? {

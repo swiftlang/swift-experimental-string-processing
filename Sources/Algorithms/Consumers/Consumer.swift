@@ -19,11 +19,11 @@ extension CollectionConsumer {
 
 // MARK: Consuming from the back
 
-public protocol BackwardCollectionConsumer: CollectionConsumer where Consumed: BidirectionalCollection {
+public protocol BidirectionalCollectionConsumer: CollectionConsumer where Consumed: BidirectionalCollection {
   func consumingBack(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index?
 }
 
-extension BackwardCollectionConsumer {
+extension BidirectionalCollectionConsumer {
   public func consumingBack(_ consumed: Consumed) -> Consumed.Index? {
     consumingBack(consumed, from: consumed.endIndex)
   }

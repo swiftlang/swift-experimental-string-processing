@@ -24,7 +24,7 @@ extension FixedPatternConsumer: CollectionConsumer {
   }
 }
 
-extension FixedPatternConsumer: BackwardCollectionConsumer
+extension FixedPatternConsumer: BidirectionalCollectionConsumer
   where Consumed: BidirectionalCollection, Pattern: BidirectionalCollection
 {
   func consumingBack(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {

@@ -10,7 +10,7 @@ extension PredicateConsumer: CollectionConsumer {
   }
 }
 
-extension PredicateConsumer: BackwardCollectionConsumer where Consumed: BidirectionalCollection {
+extension PredicateConsumer: BidirectionalCollectionConsumer where Consumed: BidirectionalCollection {
   public func consumingBack(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
     let end = index
     guard end != consumed.startIndex else { return nil }
