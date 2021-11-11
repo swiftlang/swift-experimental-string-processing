@@ -70,7 +70,7 @@ public struct Repeat<Component: RegexProtocol>: RegexProtocol {
 
   public init(_ component: Component) {
     self.regex = .init(
-      ast: .many(.greedy, component.regex.ast))
+      ast: .zeroOrMore(.greedy, component.regex.ast))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {

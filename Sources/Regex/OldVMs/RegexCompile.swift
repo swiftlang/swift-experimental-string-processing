@@ -20,7 +20,7 @@ public func compile(
     case .unicodeScalar(let u):
       instructions.append(.unicodeScalar(u))
       return
-      
+
     case .characterClass(let cc):
       instructions.append(.characterClass(cc))
       return

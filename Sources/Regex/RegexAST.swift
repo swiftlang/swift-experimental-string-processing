@@ -63,64 +63,11 @@ extension _ASTPrintable {
   public var debugDescription: String { _dump() }
 }
 
-extension Quantifier.Amount: _ASTPrintable {
-  public func _print() -> String {
-    switch self {
-    case .zeroOrMore: return "*"
-    case .oneOrMore:  return "+"
-    case .zeroOrOne:  return "?"
-    case let .exactly(n):  return "{\(n)}"
-    case let .nOrMore(n):  return "{\(n),}"
-    case let .upToN(n):    return "{,\(n)}"
-    case let .range(n, m): return "{\(n),\(m)}"
-    }
-  }
-  public func _dump() -> String {
-    switch self {
-    case .zeroOrMore: return ".zeroOrMore"
-    case .oneOrMore:  return ".oneOrMore"
-    case .zeroOrOne:  return ".zeroOrOne"
-    case let .exactly(n):  return ".exactly(\(n))"
-    case let .nOrMore(n):  return ".nOrMore(\(n))"
-    case let .upToN(n):    return ".uptoN(\(n))"
-    case let .range(n, m): return ".range(\(n),\(m))"
-    }
-
-  }
-}
-extension Quantifier.Kind: _ASTPrintable {
-  public func _print() -> String {
-    switch self {
-    case .greedy: return ""
-    case .reluctant:  return "?"
-    case .possessive:  return "+"
-    }
-  }
-  public func _dump() -> String {
-    switch self {
-    case .greedy: return ".greedy"
-    case .reluctant:  return ".reluctant"
-    case .possessive:  return ".possessive"
-    }
-  }
-}
-
-extension Quantifier: _ASTPrintable {
-  public func _print() -> String {
-    "\(amount._print())\(kind._print())"
-  }
-
-  public func _dump() -> String {
-    "\(amount._dump())\(kind._dump())"
-  }
-}
 
 // TODO: Do we want an AST builder or something? Is this distinct
-// from an AST builder?
-//
-// Or, should these be top-level cases?
+// from an AST result builder?
 extension AST {
-  public static func many(
+  public static func zeroOrMore(
     _ kind: Quantifier.Kind, _ a: AST
   ) -> AST {
     .quantification(.zeroOrMore(kind), a)

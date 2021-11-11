@@ -225,10 +225,10 @@ class RegexTests: XCTestCase {
     _ = """
         Examples:
             "abc" -> .concat(｢abc｣)
-            "abc\\+d*" -> .concat(｢abc+｣ .many(｢d｣))
+            "abc\\+d*" -> .concat(｢abc+｣ .zeroOrMore(｢d｣))
             "abc(?:de)+fghi*k|j" ->
                 .alt(.concat(｢abc｣, .oneOrMore(.group(.concat(｢de｣))),
-                             ｢fgh｣ .many(｢i｣), ｢k｣),
+                             ｢fgh｣ .zeroOrMore(｢i｣), ｢k｣),
                      ｢j｣)
         """
     func performTest(_ input: String, _ expecting: AST) {
@@ -262,13 +262,13 @@ class RegexTests: XCTestCase {
     performTest("abc", concat("a", "b", "c"))
     performTest(
       "abc\\+d*",
-      concat("a", "b", "c", "+", .many(.greedy, "d")))
+      concat("a", "b", "c", "+", .zeroOrMore(.greedy, "d")))
     performTest(
       "abc(?:de)+fghi*k|j",
       alt(concat(
         "a", "b", "c",
         .oneOrMore(.greedy, .group(concat("d", "e"))),
-        "f", "g", "h", .many(.greedy, "i"), "k"), "j"))
+        "f", "g", "h", .zeroOrMore(.greedy, "i"), "k"), "j"))
     performTest(
       "a(?:b|c)?d",
       concat("a", .zeroOrOne(.greedy, .group(alt("b", "c"))), "d"))
@@ -277,7 +277,7 @@ class RegexTests: XCTestCase {
       concat(
         .zeroOrOne(.greedy, "a"), .zeroOrOne(.reluctant, "b"),
         .oneOrMore(.greedy, "c"), .oneOrMore(.reluctant, "d"),
-        .many(.greedy, "e"), .many(.reluctant, "f")))
+        .zeroOrMore(.greedy, "e"), .zeroOrMore(.reluctant, "f")))
     performTest(
       "a|b?c",
       alt("a", concat(.zeroOrOne(.greedy, "b"), "c")))
@@ -287,8 +287,8 @@ class RegexTests: XCTestCase {
     performTest(
       "(.)*(.*)",
       concat(
-        .many(.greedy, .capturingGroup(.characterClass(.any))),
-        .capturingGroup(.many(.greedy, .characterClass(.any)))))
+        .zeroOrMore(.greedy, .capturingGroup(.characterClass(.any))),
+        .capturingGroup(.zeroOrMore(.greedy, .characterClass(.any)))))
     performTest(
       "abc\\d",
       concat("a", "b", "c", .characterClass(.digit)))
@@ -362,7 +362,7 @@ class RegexTests: XCTestCase {
     performTest("&?", .zeroOrOne(.greedy, "&"))
     performTest("&&?", concat("&", .zeroOrOne(.greedy, "&")))
     performTest("--+", concat("-", .oneOrMore(.greedy, "-")))
-    performTest("~~*", concat("~", .many(.greedy, "~")))
+    performTest("~~*", concat("~", .zeroOrMore(.greedy, "~")))
 
     // TODO: failure tests
   }
