@@ -1,6 +1,6 @@
-public struct Quantifier: Hashable {
-  public var amount: Amount
-  public var kind: Kind
+public struct Quantifier: ASTParentEntity {
+  public let amount: Amount
+  public let kind: Kind
 
   public init(_ a: Amount, _ k: Kind) {
     self.amount = a
@@ -9,7 +9,7 @@ public struct Quantifier: Hashable {
 }
 
 extension Quantifier {
-  public enum Amount: Hashable {
+  public enum Amount: ASTEntity {
     case zeroOrMore   // *
     case oneOrMore    // +
     case zeroOrOne    // ?
@@ -20,14 +20,15 @@ extension Quantifier {
       atLeast: Int, atMost: Int)
   }
 
-  public enum Kind: Hashable {
-    case greedy     //
-    case reluctant  // ?
-    case possessive // +
+  public enum Kind: String, ASTEntity {
+    case greedy     = ""
+    case reluctant  = "?"
+    case possessive = "+"
   }
 }
 
 // MARK: - Convenience constructors
+
 extension Quantifier {
   public static func zeroOrMore(_ k: Kind) -> Self {
     Self(.zeroOrMore, k)
@@ -54,6 +55,8 @@ extension Quantifier {
   }
 }
 
+// MARK: - Printing
+
 extension Quantifier.Amount: _ASTPrintable {
   public func _print() -> String {
     switch self {
@@ -76,32 +79,25 @@ extension Quantifier.Amount: _ASTPrintable {
     case let .upToN(n):    return ".uptoN(\(n))"
     case let .range(n, m): return ".range(\(n),\(m))"
     }
-
   }
 }
 extension Quantifier.Kind: _ASTPrintable {
-  public func _print() -> String {
-    switch self {
-    case .greedy: return ""
-    case .reluctant:  return "?"
-    case .possessive:  return "+"
-    }
-  }
+  public func _print() -> String { rawValue }
   public func _dump() -> String {
     switch self {
     case .greedy: return ".greedy"
-    case .reluctant:  return ".reluctant"
-    case .possessive:  return ".possessive"
+    case .reluctant: return ".reluctant"
+    case .possessive: return ".possessive"
     }
   }
 }
 
 extension Quantifier: _ASTPrintable {
-  public func _print() -> String {
-    "\(amount._print())\(kind._print())"
+  public func _printNested(_ child: String) -> String {
+    "<?:\(child)>\(amount._print())\(kind._print())"
   }
 
-  public func _dump() -> String {
-    "\(amount._dump())\(kind._dump())"
+  public func _dumpNested(_ child: String) -> String {
+    "\(amount._dump())_\(kind._dump())(\(child)"
   }
 }

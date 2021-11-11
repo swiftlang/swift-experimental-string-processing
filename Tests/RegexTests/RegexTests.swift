@@ -267,11 +267,12 @@ class RegexTests: XCTestCase {
       "abc(?:de)+fghi*k|j",
       alt(concat(
         "a", "b", "c",
-        .oneOrMore(.greedy, .group(concat("d", "e"))),
+        .oneOrMore(.greedy, .group(.nonCapture, concat("d", "e"))),
         "f", "g", "h", .zeroOrMore(.greedy, "i"), "k"), "j"))
     performTest(
       "a(?:b|c)?d",
-      concat("a", .zeroOrOne(.greedy, .group(alt("b", "c"))), "d"))
+      concat("a", .zeroOrOne(
+        .greedy, .group(.nonCapture, alt("b", "c"))), "d"))
     performTest(
       "a?b??c+d+?e*f*?",
       concat(
@@ -283,12 +284,14 @@ class RegexTests: XCTestCase {
       alt("a", concat(.zeroOrOne(.greedy, "b"), "c")))
     performTest(
       "(a|b)c",
-      concat(.capturingGroup(alt("a", "b")), "c"))
+      concat(.group(.capture, alt("a", "b")), "c"))
     performTest(
       "(.)*(.*)",
       concat(
-        .zeroOrMore(.greedy, .capturingGroup(.characterClass(.any))),
-        .capturingGroup(.zeroOrMore(.greedy, .characterClass(.any)))))
+        .zeroOrMore(
+          .greedy, .group(.capture, .characterClass(.any))),
+        .group(
+          .capture, .zeroOrMore(.greedy, .characterClass(.any)))))
     performTest(
       "abc\\d",
       concat("a", "b", "c", .characterClass(.digit)))
@@ -411,127 +414,150 @@ class RegexTests: XCTestCase {
       return .goto(label: LabelId(id))
     }
 
-    performTest("abc", recode("a", "b", "c"))
-    performTest("abc\\+d*",
-                recode("a", "b", "c", "+", label(0),
-                       split(disfavoring: 1), "d", goto(label: 0),
-                       label(1),
-                       labels: [4, 8]))
-
-    performTest("abc(?:de)+fghi*k|j",
-                recode(split(disfavoring: 1),
-                       .beginGroup,
-                       "a", "b", "c",
-                       .beginGroup,
-                       label(2),
-                       .beginGroup,
-                       "d", "e",
-                       .endGroup,
-                       split(disfavoring: 3), goto(label: 2),
-                       label(3),
-                       .captureArray,
-                       .endGroup,
-                       "f", "g", "h",
-                       label(4),
-                       split(disfavoring: 5), "i", goto(label: 4),
-                       label(5), "k",
-                       .endGroup,
-                       goto(label: 0),
-                       label(1), "j",
-                       label(0),
-                       labels: [29, 27, 6, 13, 19, 23]))
-    performTest("a(?:b|c)?d",
-                recode(.beginGroup,
-                       "a",
-                       .beginGroup,
-                       split(disfavoring: 0),
-                       .beginGroup,
-                       split(disfavoring: 3), "b",
-                       goto(label: 2),
-                       label(3), "c",
-                       label(2),
-                       .endGroup,
-                       .captureSome,
-                       .goto(label: 1),
-                       label(0), .captureNil,
-                       .label(1),
-                       .endGroup,
-                       "d",
-                       .endGroup,
-                       labels: [14, 16, 10, 8],
-                       splits: [3, 5]))
-    performTest("a(b|c)?d",
-                recode(.beginGroup,
-                       "a",
-                       .beginGroup,
-                       split(disfavoring: 0),
-                       .beginCapture,
-                       split(disfavoring: 3), "b", goto(label: 2),
-                       label(3), "c",
-                       label(2),
-                       .endCapture(),
-                       .captureSome,
-                       goto(label: 1),
-                       label(0),
-                       .captureNil,
-                       label(1),
-                       .endGroup,
-                       "d",
-                       .endGroup,
-                       labels: [14, 16, 10, 8],
-                       splits: [3, 5]))
-    performTest("a(b|c)*",
-                recode(.beginGroup,
-                       "a",
-                       .beginGroup,
-                       .label(0),
-                       .split(disfavoring: 1),
-                       .beginCapture,
-                       .split(disfavoring: 3),
-                       "b",
-                       .goto(label: 2),
-                       .label(3),
-                       "c",
-                       .label(2),
-                       .endCapture(),
-                       .goto(label: 0),
-                       .label(1),
-                       .captureArray,
-                       .endGroup,
-                       .endGroup,
-                       labels: [3, 14, 11, 9],
-                       splits: [4, 6]))
-    performTest("(a*)*",
-                recode(.beginGroup,
-                       label(0), split(disfavoring: 1), .beginCapture,
-                       label(2), split(disfavoring: 3), "a", goto(label: 2),
-                       label(3), .endCapture(), goto(label: 0),
-                       label(1),
-                       .captureArray,
-                       .endGroup,
-                       labels: [1, 11, 4, 8], splits: [2, 5]))
-    performTest("(?:.*)*",
-                recode(.beginGroup,
-                       label(0), split(disfavoring: 1),
-                       .beginGroup,
-                       label(2), split(disfavoring: 3), .characterClass(.any), goto(label: 2),
-                       label(3),
-                       .endGroup,
-                       goto(label: 0),
-                       label(1),
-                       .captureArray,
-                       .endGroup,
-                       labels: [1, 11, 4, 8], splits: [2, 5]))
-    performTest("a.*?b+?c??",
-                recode("a",
-                       label(0), split(disfavoring: 1), goto(label: 2),
-                       label(1), .characterClass(.any), goto(label: 0),
-                       label(2),
-                       label(3), "b", split(disfavoring: 3),
-                       split(disfavoring: 4), goto(label: 5),
-                       label(4), "c",
-                       label(5),
-                       labels: [1, 4, 7, 8, 13, 15], splits: [2, 10, 11]))
+    performTest(
+      "abc", recode("a", "b", "c"))
+    performTest(
+      "abc\\+d*",
+      recode("a", "b", "c", "+", label(0),
+             split(disfavoring: 1), "d", goto(label: 0), label(1),
+             labels: [4, 8]))
+    performTest(
+      "a(b)c",
+      recode(
+        .beginGroup, // For some reason, because child captures
+        "a", .beginCapture, "b", .endCapture(), "c",
+        .endGroup // For some reason, because child captures
+      ))
+    performTest(
+      "a(?:b)c",
+      recode(
+        .beginGroup, // For some reason, even though noncap
+        "a", .beginGroup, "b", .endGroup, "c",
+        .endGroup // For some reason, even though noncap
+      ))
+    performTest(
+      "abc(?:de)+fghi*k|j",
+      recode(split(disfavoring: 1),
+             .beginGroup,
+             "a", "b", "c",
+             .beginGroup,
+             label(2),
+             .beginGroup,
+             "d", "e",
+             .endGroup,
+             split(disfavoring: 3), goto(label: 2),
+             label(3),
+             .captureArray,
+             .endGroup,
+             "f", "g", "h",
+             label(4),
+             split(disfavoring: 5), "i", goto(label: 4),
+             label(5), "k",
+             .endGroup,
+             goto(label: 0),
+             label(1), "j",
+             label(0),
+             labels: [29, 27, 6, 13, 19, 23]))
+    performTest(
+      "a(?:b|c)?d",
+      recode(
+        .beginGroup,
+        "a",
+        .beginGroup,
+        split(disfavoring: 0),
+        .beginGroup,
+        split(disfavoring: 3), "b",
+        goto(label: 2),
+        label(3), "c",
+        label(2),
+        .endGroup,
+        .captureSome,
+        .goto(label: 1),
+        label(0), .captureNil,
+        .label(1),
+        .endGroup,
+        "d",
+        .endGroup,
+        labels: [14, 16, 10, 8],
+        splits: [3, 5]))
+    performTest(
+      "a(b|c)?d",
+      recode(.beginGroup,
+             "a",
+             .beginGroup,
+             split(disfavoring: 0),
+             .beginCapture,
+             split(disfavoring: 3), "b", goto(label: 2),
+             label(3), "c",
+             label(2),
+             .endCapture(),
+             .captureSome,
+             goto(label: 1),
+             label(0),
+             .captureNil,
+             label(1),
+             .endGroup,
+             "d",
+             .endGroup,
+             labels: [14, 16, 10, 8],
+             splits: [3, 5]))
+    performTest(
+      "a(b|c)*",
+      recode(.beginGroup,
+             "a",
+             .beginGroup,
+             .label(0),
+             .split(disfavoring: 1),
+             .beginCapture,
+             .split(disfavoring: 3),
+             "b",
+             .goto(label: 2),
+             .label(3),
+             "c",
+             .label(2),
+             .endCapture(),
+             .goto(label: 0),
+             .label(1),
+             .captureArray,
+             .endGroup,
+             .endGroup,
+             labels: [3, 14, 11, 9],
+             splits: [4, 6]))
+    performTest(
+      "(a*)*",
+      recode(.beginGroup,
+             label(0), split(disfavoring: 1), .beginCapture,
+             label(2), split(disfavoring: 3), "a", goto(label: 2),
+             label(3), .endCapture(), goto(label: 0),
+             label(1),
+             .captureArray,
+             .endGroup,
+             labels: [1, 11, 4, 8], splits: [2, 5]))
+    performTest(
+      "(?:.*)*",
+      recode(
+        .beginGroup,
+        label(0), split(disfavoring: 1),
+        .beginGroup,
+        label(2), split(disfavoring: 3), .characterClass(.any), goto(label: 2),
+        label(3),
+        .endGroup,
+        goto(label: 0),
+        label(1),
+        .captureArray,
+        .endGroup,
+        labels: [1, 11, 4, 8], splits: [2, 5]))
+    performTest(
+      "a.*?b+?c??",
+      recode("a",
+             label(0), split(disfavoring: 1), goto(label: 2),
+             label(1), .characterClass(.any), goto(label: 0),
+             label(2),
+             label(3), "b", split(disfavoring: 3),
+             split(disfavoring: 4), goto(label: 5),
+             label(4), "c",
+             label(5),
+             labels: [1, 4, 7, 8, 13, 15], splits: [2, 10, 11]))
   }
 
   func testVMs() {

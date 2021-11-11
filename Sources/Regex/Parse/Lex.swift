@@ -92,7 +92,7 @@ extension Lexer {
   }
 
   mutating func tryEatQuantification() -> Quantifier? {
-    // TODO: assert or know if in ccc
+    // TODO: just lex directly, for now we bootstrap
     switch peek()?.kind {
     case .star?:
       eat()
@@ -106,6 +106,19 @@ extension Lexer {
     default:
       return nil
     }
+  }
+
+  mutating func tryEatGroupStart() -> Group? {
+    // TODO: just lex directly, for now we bootstrap
+    guard tryEat(.leftParen) else { return nil }
+
+    if tryEat(.question) {
+      guard tryEat(.colon) else {
+        fatalError("TODO: diagnostic, or else other group kinds")
+      }
+      return .nonCapture
+    }
+    return .capture
   }
 
   /// Eat the specified token if there is one. Returns whether anything happened

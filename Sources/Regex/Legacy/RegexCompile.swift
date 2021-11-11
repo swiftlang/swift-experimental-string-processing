@@ -29,17 +29,29 @@ public func compile(
       instructions.append(.any)
       return
 
-    case .group(let child):
+    case .group(.nonCapture, let child):
       instructions.append(.beginGroup)
       compileNode(child)
       instructions.append(.endGroup)
       return
 
-    case .capturingGroup(let child, let transform):
+    case .group(.capture, let child):
+      instructions.append(.beginCapture)
+      compileNode(child)
+      instructions.append(.endCapture())
+      return
+
+    case .group(let g, _):
+      fatalError("Unsupported group \(g)")
+
+    case .groupTransform(.capture, let child, let transform):
       instructions.append(.beginCapture)
       compileNode(child)
       instructions.append(.endCapture(transform: transform))
       return
+
+    case .groupTransform(let g, _, _):
+      fatalError("Unsupported group \(g)")
 
     case .concatenation(let children):
       let childrenHaveCaptures = children.any(\.hasCaptures)

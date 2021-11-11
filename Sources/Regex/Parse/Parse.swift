@@ -74,18 +74,18 @@ extension Parser {
 
   //     QuantifierOperand -> (Group | <token: Character>)
   mutating func parseQuantifierOperand() throws -> AST? {
+    if let g = lexer.tryEatGroupStart() {
+      defer {
+        guard lexer.tryEat(.rightParen) else {
+          fatalError("TODO: diagnostics")
+        }
+      }
+      return .group(g, try parse())
+    }
+
     switch lexer.peek()?.kind {
     case .leftParen?:
-      lexer.eat()
-      var isCapturing = true
-      if lexer.tryEat(.question) {
-        try lexer.eat(expecting: .colon)
-        isCapturing = false
-      }
-      let child = try parse()
-      try lexer.eat(expecting: .rightParen)
-      return isCapturing ? .capturingGroup(child) : .group(child)
-
+      fatalError("Shouldn't be possible anymore")
     case .character(let c, isEscaped: false):
       lexer.eat()
       return .character(c)

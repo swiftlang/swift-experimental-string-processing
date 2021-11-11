@@ -140,16 +140,21 @@ public struct CapturingGroup<Capture>: RegexProtocol {
   init<Component: RegexProtocol>(
     _ component: Component
   ) {
-    self.regex = .init(ast: .capturingGroup(component.regex.ast))
+    self.regex = .init(
+      ast: .group(.capture, component.regex.ast))
   }
 
   init<NewCapture, Component: RegexProtocol>(
     _ component: Component,
     transform: @escaping (Substring) -> NewCapture
   ) {
-    self.regex = .init(ast: .capturingGroup(component.regex.ast, transform: CaptureTransform {
-      transform($0) as Any
-    }))
+    self.regex = .init(
+      ast: .groupTransform(
+        .capture,
+        component.regex.ast,
+        transform: CaptureTransform {
+          transform($0) as Any
+        }))
   }
 }
 

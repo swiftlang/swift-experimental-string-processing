@@ -42,8 +42,9 @@ extension AST {
     switch self {
     case let .alternation(child), let .concatenation(child):
       return child.any(\.hasCaptures)
-    case .capturingGroup, .group:
-      return true
+    case let .group(g, child), let .groupTransform(g, child, _):
+      return g.isCapturing || child.hasCaptures
+      || true // wait, why?
     case .quantification(_, let child):
       return child.hasCaptures
     case .character, .unicodeScalar, .characterClass, .any, .empty:

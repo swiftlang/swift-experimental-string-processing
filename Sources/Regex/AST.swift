@@ -7,12 +7,12 @@ public enum AST: Hashable {
   /// ... ...
   indirect case concatenation([AST])
 
-  /// (?:...)
-  indirect case group(AST)
-
   /// (...)
-  indirect case capturingGroup(
-    AST, transform: CaptureTransform? = nil)
+  indirect case group(Group, AST)
+
+  /// Group with a registered transform
+  indirect case groupTransform(
+    Group, AST, transform: CaptureTransform)
 
   indirect case quantification(Quantifier, AST)
 
@@ -21,46 +21,6 @@ public enum AST: Hashable {
   case characterClass(CharacterClass)
   case any
   case empty
-}
-
-extension AST: CustomStringConvertible {
-  public var description: String {
-    switch self {
-    case .alternation(let rest): return ".alt(\(rest))"
-    case .concatenation(let rest): return ".concat(\(rest))"
-    case .group(let rest): return ".group(\(rest))"
-    case .capturingGroup(let rest, let transform):
-      return """
-          .capturingGroup(\(rest), transform: \(transform.map(String.init(describing:)) ?? "nil")
-          """
-    case .quantification(let q, let rest):
-      return "\(q._dump())(\(rest))"
-
-    case .character(let c): return c.halfWidthCornerQuoted
-    case .unicodeScalar(let u): return u.halfWidthCornerQuoted
-    case .characterClass(let cc): return ".characterClass(\(cc))"
-    case .any: return ".any"
-    case .empty: return "".halfWidthCornerQuoted
-    }
-  }
-}
-
-// MARK: - Printing
-
-/// AST entities can be pretty-printed or dumped
-///
-/// Alternative: just use `description` for pretty-print
-/// and `debugDescription` for dump
-public protocol _ASTPrintable:
-  CustomStringConvertible,
-  CustomDebugStringConvertible
-{
-  func _print() -> String
-  func _dump() -> String
-}
-extension _ASTPrintable {
-  public var description: String { _print() }
-  public var debugDescription: String { _dump() }
 }
 
 // MARK: - Convenience constructors
@@ -81,3 +41,4 @@ extension AST {
     .quantification(.zeroOrOne(kind), a)
   }
 }
+
