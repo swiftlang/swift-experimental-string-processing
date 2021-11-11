@@ -115,7 +115,7 @@ extension RangesCollection.Index: Comparable {
 // MARK: `ReversedRangesCollection`
 
 public struct ReversedRangesCollection<Searcher: BackwardCollectionSearcher> {
-  public typealias Base = Searcher.Searched
+  public typealias Base = Searcher.BackwardSearched
   
   let base: Base
   let searcher: Searcher
@@ -173,7 +173,7 @@ extension Collection {
 extension BidirectionalCollection {
   public func rangesFromBack<S: BackwardCollectionSearcher>(
     of searcher: S
-  ) -> ReversedRangesCollection<S> where S.Searched == Self {
+  ) -> ReversedRangesCollection<S> where S.BackwardSearched == Self {
     ReversedRangesCollection(base: self, searcher: searcher)
   }
 }

@@ -26,7 +26,9 @@ extension ConsumerSearcher: StatelessCollectionSearcher {
 extension ConsumerSearcher: BackwardCollectionSearcher, StatelessBackwardCollectionSearcher
   where Consumer: BidirectionalCollectionConsumer
 {
-  func searchBack(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>? {
+  typealias BackwardSearched = Consumer.Consumed
+  
+  func searchBack(_ searched: BackwardSearched, from index: Searched.Index) -> Range<Searched.Index>? {
     var end = index
     while true {
       if let start = consumer.consumingBack(searched, from: end) {

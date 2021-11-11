@@ -49,26 +49,26 @@ extension StatelessCollectionSearcher {
 
 // MARK: Searching from the back
 
-// TODO: Decide whether or not to inherit from `CollectionSearcher`
-public protocol BackwardCollectionSearcher: CollectionSearcher where Searched: BidirectionalCollection {
+public protocol BackwardCollectionSearcher {
+  associatedtype BackwardSearched: BidirectionalCollection
   associatedtype BackwardState
   
-  func backwardState(for searched: Searched) -> BackwardState
-  func searchBack(_ searched: Searched, _ state: inout BackwardState) -> Range<Searched.Index>?
+  func backwardState(for searched: BackwardSearched) -> BackwardState
+  func searchBack(_ searched: BackwardSearched, _ state: inout BackwardState) -> Range<BackwardSearched.Index>?
 }
 
 public protocol StatelessBackwardCollectionSearcher: BackwardCollectionSearcher
-  where BackwardState == DefaultSearcherState<Searched>
+  where BackwardState == DefaultSearcherState<BackwardSearched>
 {
-  func searchBack(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>?
+  func searchBack(_ searched: BackwardSearched, from index: BackwardSearched.Index) -> Range<BackwardSearched.Index>?
 }
 
 extension StatelessBackwardCollectionSearcher {
-  public func backwardState(for searched: Searched) -> BackwardState {
+  public func backwardState(for searched: BackwardSearched) -> BackwardState {
     BackwardState(state: .index(searched.endIndex))
   }
   
-  public func searchBack(_ searched: Searched, _ state: inout BackwardState) -> Range<Searched.Index>? {
+  public func searchBack(_ searched: BackwardSearched, _ state: inout BackwardState) -> Range<BackwardSearched.Index>? {
     guard
       case .index(let index) = state.state,
       let range = searchBack(searched, from: index)
@@ -89,4 +89,5 @@ extension StatelessBackwardCollectionSearcher {
   }
 }
 
-public protocol BidirectionalCollectionSearcher: BackwardCollectionSearcher {}
+public protocol BidirectionalCollectionSearcher: CollectionSearcher, BackwardCollectionSearcher
+  where Searched == BackwardSearched {}

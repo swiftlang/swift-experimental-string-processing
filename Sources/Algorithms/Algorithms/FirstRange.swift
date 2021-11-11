@@ -8,7 +8,7 @@ extension Collection {
 }
 
 extension BidirectionalCollection {
-  public func lastRange<S: BackwardCollectionSearcher>(of searcher: S) -> Range<Index>? where S.Searched == Self {
+  public func lastRange<S: BackwardCollectionSearcher>(of searcher: S) -> Range<Index>? where S.BackwardSearched == Self {
     var state = searcher.backwardState(for: self)
     return searcher.searchBack(self, &state)
   }

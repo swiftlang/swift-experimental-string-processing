@@ -39,7 +39,9 @@ extension NaivePatternSearcher: StatelessCollectionSearcher {
 extension NaivePatternSearcher: BackwardCollectionSearcher, StatelessBackwardCollectionSearcher
   where Searched: BidirectionalCollection, Pattern: BidirectionalCollection
 {
-  func searchBack(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>? {
+  typealias BackwardSearched = Searched
+  
+  func searchBack(_ searched: BackwardSearched, from index: Searched.Index) -> Range<Searched.Index>? {
     var searchEnd = index
 
     guard let otherLastIndex = pattern.indices.last else {

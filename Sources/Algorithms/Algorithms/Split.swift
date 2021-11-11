@@ -118,7 +118,7 @@ extension SplitCollection.Index: Comparable {
 // MARK: `ReversedSplitCollection`
 
 public struct ReversedSplitCollection<Searcher: BackwardCollectionSearcher> {
-  public typealias Base = Searcher.Searched
+  public typealias Base = Searcher.BackwardSearched
   
   let ranges: ReversedRangesCollection<Searcher>
   
@@ -185,7 +185,7 @@ extension Collection {
 extension BidirectionalCollection {
   public func splitFromBack<Searcher: BackwardCollectionSearcher>(
     separator: Searcher
-  ) -> ReversedSplitCollection<Searcher> where Searcher.Searched == Self {
+  ) -> ReversedSplitCollection<Searcher> where Searcher.BackwardSearched == Self {
     ReversedSplitCollection(base: self, searcher: separator)
   }
 }

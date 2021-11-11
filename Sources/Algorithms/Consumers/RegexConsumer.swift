@@ -70,8 +70,10 @@ extension RegexConsumer: StatelessCollectionSearcher {
 
 // TODO: Bake in search-back to engine too
 extension RegexConsumer: StatelessBackwardCollectionSearcher {
+  public typealias BackwardSearched = Consumed
+  
   public func searchBack(
-    _ searched: Searched, from index: Searched.Index
+    _ searched: BackwardSearched, from index: Searched.Index
   ) -> Range<String.Index>? {
     ConsumerSearcher(consumer: self).searchBack(searched, from: index)
   }
