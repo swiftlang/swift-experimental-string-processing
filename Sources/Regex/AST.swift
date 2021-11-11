@@ -63,9 +63,7 @@ extension _ASTPrintable {
   public var debugDescription: String { _dump() }
 }
 
-
-// TODO: Do we want an AST builder or something? Is this distinct
-// from an AST result builder?
+// MARK: - Convenience constructors
 extension AST {
   public static func zeroOrMore(
     _ kind: Quantifier.Kind, _ a: AST
@@ -82,5 +80,4 @@ extension AST {
   ) -> AST {
     .quantification(.zeroOrOne(kind), a)
   }
-
 }
