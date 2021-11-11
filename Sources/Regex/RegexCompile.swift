@@ -52,7 +52,7 @@ public func compile(
       }
       return
 
-    case .many(let child):
+    case .quantification(.zeroOrMore(.greedy), let child):
       // a* ==> L_START, <split L_DONE>, a, goto L_START, L_DONE
       let childHasCaptures = child.hasCaptures
       if childHasCaptures {
@@ -71,7 +71,7 @@ public func compile(
       }
       return
 
-    case .lazyMany(let child):
+    case .quantification(.zeroOrMore(.reluctant), let child):
       // a*? ==> L_START, <split L_ELEMENT>, goto L_DONE,
       //         L_ELEMENT, a, goto L_START, L_DONE
       let childHasCaptures = child.hasCaptures
@@ -94,7 +94,7 @@ public func compile(
       }
       return
 
-    case .zeroOrOne(let child):
+    case .quantification(.zeroOrOne(.greedy), let child):
       // a? ==> <split L_DONE> a, L_DONE
       if child.hasCaptures {
         instructions.append(.beginGroup)
@@ -118,7 +118,7 @@ public func compile(
       }
       return
 
-    case .lazyZeroOrOne(let child):
+    case .quantification(.zeroOrOne(.reluctant), let child):
       // a?? ==> <split L_ELEMENT>, goto L_DONE, L_ELEMENT, a, L_DONE
       if child.hasCaptures {
         instructions.append(.beginGroup)
@@ -148,7 +148,7 @@ public func compile(
       }
       return
 
-    case .oneOrMore(let child):
+    case .quantification(.oneOrMore(.greedy), let child):
       // a+ ==> L_START, a, <split L_DONE>, goto L_START, L_DONE
       let childHasCaptures = child.hasCaptures
       if childHasCaptures {
@@ -167,7 +167,7 @@ public func compile(
       }
       return
       
-    case .lazyOneOrMore(let child):
+    case .quantification(.oneOrMore(.reluctant), let child):
       // a+? ==> L_START, a, <split L_START>
       let childHasCaptures = child.hasCaptures
       if childHasCaptures {
@@ -182,6 +182,8 @@ public func compile(
         instructions.append(.endGroup)
       }
       return
+    case .quantification(let q, _):
+      fatalError("Unsupported: \(q._dump())")
 
     case .alternation(let children):
       // a|b ==> <split L_B>, a, goto L_DONE, L_B, b, L_DONE

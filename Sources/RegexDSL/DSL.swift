@@ -48,7 +48,8 @@ public struct OneOrMore<Component: RegexProtocol>: RegexProtocol {
   public let regex: Regex<Capture>
 
   public init(_ component: Component) {
-    self.regex = .init(ast: .oneOrMore(component.regex.ast))
+    self.regex = .init(
+      ast: .oneOrMore(.greedy, component.regex.ast))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
@@ -68,7 +69,8 @@ public struct Repeat<Component: RegexProtocol>: RegexProtocol {
   public let regex: Regex<Capture>
 
   public init(_ component: Component) {
-    self.regex = .init(ast: .many(component.regex.ast))
+    self.regex = .init(
+      ast: .many(.greedy, component.regex.ast))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
@@ -88,7 +90,8 @@ public struct Optionally<Component: RegexProtocol>: RegexProtocol {
   public let regex: Regex<Capture>
 
   public init(_ component: Component) {
-    self.regex = .init(ast: .zeroOrOne(component.regex.ast))
+    self.regex = .init(
+      ast: .zeroOrOne(.greedy, component.regex.ast))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {

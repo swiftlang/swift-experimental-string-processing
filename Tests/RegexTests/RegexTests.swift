@@ -260,33 +260,53 @@ class RegexTests: XCTestCase {
     }
 
     performTest("abc", concat("a", "b", "c"))
-    performTest("abc\\+d*", concat("a", "b", "c", "+", .many("d")))
-    performTest("abc(?:de)+fghi*k|j",
-                alt(concat("a", "b", "c",
-                           .oneOrMore(.group(concat("d", "e"))),
-                           "f", "g", "h", .many("i"), "k"),
-                    "j"))
-    performTest("a(?:b|c)?d", concat("a", .zeroOrOne(.group(alt("b", "c"))),
-                                   "d"))
-    performTest("a?b??c+d+?e*f*?", concat(
-      .zeroOrOne("a"), .lazyZeroOrOne("b"),
-      .oneOrMore("c"), .lazyOneOrMore("d"),
-      .many("e"), .lazyMany("f")))
-    performTest("a|b?c", alt("a", concat(.zeroOrOne("b"), "c")))
-    performTest("(a|b)c", concat(.capturingGroup(alt("a", "b")), "c"))
-    performTest("(.)*(.*)", concat(.many(.capturingGroup(.characterClass(.any))), .capturingGroup(.many(.characterClass(.any)))))
-    performTest("abc\\d",concat("a", "b", "c", .characterClass(.digit)))
-    performTest("a\\u0065b\\u{00000065}c\\x65d\\U00000065",
-                concat("a", .unicodeScalar("e"),
-                       "b", .unicodeScalar("e"),
-                       "c", .unicodeScalar("e"),
-                       "d", .unicodeScalar("e")))
+    performTest(
+      "abc\\+d*",
+      concat("a", "b", "c", "+", .many(.greedy, "d")))
+    performTest(
+      "abc(?:de)+fghi*k|j",
+      alt(concat(
+        "a", "b", "c",
+        .oneOrMore(.greedy, .group(concat("d", "e"))),
+        "f", "g", "h", .many(.greedy, "i"), "k"), "j"))
+    performTest(
+      "a(?:b|c)?d",
+      concat("a", .zeroOrOne(.greedy, .group(alt("b", "c"))), "d"))
+    performTest(
+      "a?b??c+d+?e*f*?",
+      concat(
+        .zeroOrOne(.greedy, "a"), .zeroOrOne(.reluctant, "b"),
+        .oneOrMore(.greedy, "c"), .oneOrMore(.reluctant, "d"),
+        .many(.greedy, "e"), .many(.reluctant, "f")))
+    performTest(
+      "a|b?c",
+      alt("a", concat(.zeroOrOne(.greedy, "b"), "c")))
+    performTest(
+      "(a|b)c",
+      concat(.capturingGroup(alt("a", "b")), "c"))
+    performTest(
+      "(.)*(.*)",
+      concat(
+        .many(.greedy, .capturingGroup(.characterClass(.any))),
+        .capturingGroup(.many(.greedy, .characterClass(.any)))))
+    performTest(
+      "abc\\d",
+      concat("a", "b", "c", .characterClass(.digit)))
+    performTest(
+      "a\\u0065b\\u{00000065}c\\x65d\\U00000065",
+      concat("a", .unicodeScalar("e"),
+             "b", .unicodeScalar("e"),
+             "c", .unicodeScalar("e"),
+             "d", .unicodeScalar("e")))
 
-    performTest("[-|$^:?+*())(*-+-]",
-                charClass("-", "|", "$", "^", ":", "?", "+", "*", "(", ")", ")",
-                          "(", .range("*" ... "+"), "-"))
+    performTest(
+      "[-|$^:?+*())(*-+-]",
+      charClass("-", "|", "$", "^", ":", "?", "+", "*", "(", ")", ")",
+                "(", .range("*" ... "+"), "-"))
 
-    performTest("[a-b-c]", charClass(.range("a" ... "b"), "-", "c"))
+    performTest(
+      "[a-b-c]",
+      charClass(.range("a" ... "b"), "-", "c"))
 
     // These are metacharacters in certain contexts, but normal characters
     // otherwise.
@@ -295,44 +315,54 @@ class RegexTests: XCTestCase {
     performTest("[^abc]", charClass("a", "b", "c", inverted: true))
     performTest("[a^]", charClass("a", "^"))
 
-    performTest("\\D\\S\\W", concat(.characterClass(.digit.inverted),
-                                    .characterClass(.whitespace.inverted),
-                                    .characterClass(.word.inverted)))
+    performTest(
+      "\\D\\S\\W",
+      concat(.characterClass(.digit.inverted),
+             .characterClass(.whitespace.inverted),
+             .characterClass(.word.inverted)))
 
     performTest("[\\dd]", charClass(.characterClass(.digit), "d"))
 
-    performTest("[^[\\D]]", charClass(charClass(.characterClass(.digit.inverted)), inverted: true))
-    performTest("[[ab][bc]]", charClass(charClass("a", "b"), charClass("b", "c")))
-    performTest("[[ab]c[de]]", charClass(charClass("a", "b"), "c", charClass("d", "e")))
+    performTest(
+      "[^[\\D]]",
+      charClass(charClass(
+        .characterClass(.digit.inverted)), inverted: true))
+    performTest(
+      "[[ab][bc]]",
+      charClass(charClass("a", "b"), charClass("b", "c")))
+    performTest(
+      "[[ab]c[de]]",
+      charClass(charClass("a", "b"), "c", charClass("d", "e")))
 
-    performTest("[[ab]&&[^bc]\\d]+", .oneOrMore(charClass(
-      .setOperation(
-        lhs: charClass("a", "b"),
-        op: .intersection,
-        rhs: charClass("b", "c", inverted: true)
-      ),
-      .characterClass(.digit)
-    )))
+    performTest(
+      "[[ab]&&[^bc]\\d]+",
+      .oneOrMore(.greedy, charClass(
+        .setOperation(
+          lhs: charClass("a", "b"),
+          op: .intersection,
+          rhs: charClass("b", "c", inverted: true)
+        ),
+        .characterClass(.digit))))
 
-    performTest("[a&&b]", charClass(
-      .setOperation(lhs: "a", op: .intersection, rhs: "b")
-    ))
+    performTest(
+      "[a&&b]",
+      charClass(
+        .setOperation(lhs: "a", op: .intersection, rhs: "b")))
 
     // We left-associate for chained operators.
-    performTest("[a&&b~~c]", charClass(
-      .setOperation(
+    performTest(
+      "[a&&b~~c]",
+      charClass(.setOperation(
         lhs: .setOperation(lhs: "a", op: .intersection, rhs: "b"),
         op: .symmetricDifference,
-        rhs: "c"
-      )
-    ))
+        rhs: "c")))
 
     // Operators are only valid in custom character classes.
     performTest("a&&b", concat("a", "&", "&", "b"))
-    performTest("&?", .zeroOrOne("&"))
-    performTest("&&?", concat("&", .zeroOrOne("&")))
-    performTest("--+", concat("-", .oneOrMore("-")))
-    performTest("~~*", concat("~", .many("~")))
+    performTest("&?", .zeroOrOne(.greedy, "&"))
+    performTest("&&?", concat("&", .zeroOrOne(.greedy, "&")))
+    performTest("--+", concat("-", .oneOrMore(.greedy, "-")))
+    performTest("~~*", concat("~", .many(.greedy, "~")))
 
     // TODO: failure tests
   }

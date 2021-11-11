@@ -40,7 +40,12 @@ struct Lexer {
   ///
   /// We're choosing encapsulation here for our buffer-management strategy, as
   /// the lexer is at the end of the assembly line.
-  fileprivate var nextToken: Token? = nil
+  fileprivate var nextTokenStorage: TokenStorage? = nil
+
+  var nextToken: Token? {
+    guard let s = nextTokenStorage else { return nil }
+    return Token(kind: s.oldTokenKind, loc: s.loc)
+  }
 
   /// The number of parent custom character classes we're lexing within.
   ///
@@ -86,6 +91,36 @@ extension Lexer {
     return true
   }
 
+  mutating func tryEatQuantification() -> Quantifier? {
+    // TODO: assert or know if in ccc
+    switch peek()?.kind {
+    case .star?:
+      eat()
+      return .zeroOrMore(tryEat(.question) ? .reluctant : .greedy)
+    case .plus?:
+      eat()
+      return .oneOrMore(tryEat(.question) ? .reluctant : .greedy)
+    case .question?:
+      eat()
+      return .zeroOrOne(tryEat(.question) ? .reluctant : .greedy)
+    default:
+      return nil
+    }
+  }
+
+  /// Eat the specified token if there is one. Returns whether anything happened
+  mutating func tryEat2(_ tok: NewToken) -> Bool {
+    switch tok {
+    case .alternation:
+      return tryEat(.pipe)
+
+    default: fatalError()
+    }
+  }
+  mutating func peek2() -> NewToken? {
+    fatalError()
+  }
+
   /// Try to eat a token, throwing if we don't see what we're expecting.
   mutating func eat(expecting tok: Token.Kind) throws {
     guard tryEat(tok) else { throw "Expected \(tok)" }
@@ -105,15 +140,19 @@ extension Lexer {
 
 extension Lexer {
   private mutating func advance() {
-    nextToken = lexToken()
+    nextTokenStorage = lexToken()
   }
 
-  private mutating func lexToken() -> Token? {
+  private mutating func lexToken() -> TokenStorage? {
     guard !source.isEmpty else { return nil }
 
     let startLoc = source.currentLoc
-    func tok(_ kind: Token.Kind) -> Token {
-      Token(kind: kind, loc: startLoc..<source.currentLoc)
+    func tok(_ kind: Token.Kind) -> TokenStorage {
+      TokenStorage(
+        loc: startLoc..<source.currentLoc,
+        fromCustomCharacterClass: isInCustomCharacterClass,
+        oldTokenKind: kind
+      )
     }
 
     // Lex:  Token -> '\' Escaped | _SetOperator | Terminal

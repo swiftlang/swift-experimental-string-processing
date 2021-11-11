@@ -10,14 +10,11 @@ Syntactic structure of a regular expression
  CaptureGroup   -> '(' RE ')'
  Group          -> '(' '?' ':' RE ')'
 
-
 */
-
-
-
 
 private struct Parser {
   var lexer: Lexer
+
   init(_ lexer: Lexer) {
     self.lexer = lexer
   }
@@ -48,7 +45,7 @@ extension Parser {
   mutating func parseAlternation() throws -> AST {
     assert(!lexer.isEmpty)
     var result = Array<AST>(singleElement: try parseConcatenation())
-    while lexer.tryEat(.pipe) {
+    while lexer.tryEat2(.alternation) {
       result.append(try parseConcatenation())
     }
     return result.count == 1 ? result[0] : .alternation(result)
@@ -69,25 +66,10 @@ extension Parser {
   
   //     Quantification -> QuantifierOperand <token: Quantifier>?
   mutating func parseQuantification(of operand: AST) throws -> AST {
-    switch lexer.peek()?.kind {
-    case .star?:
-      lexer.eat()
-      return lexer.tryEat(.question)
-        ? .lazyMany(operand)
-        : .many(operand)
-    case .plus?:
-      lexer.eat()
-      return lexer.tryEat(.question)
-        ? .lazyOneOrMore(operand)
-        : .oneOrMore(operand)
-    case .question?:
-      lexer.eat()
-      return lexer.tryEat(.question)
-        ? .lazyZeroOrOne(operand)
-        : .zeroOrOne(operand)
-    default:
-      return operand
+    if let q = lexer.tryEatQuantification() {
+      return .quantification(q, operand)
     }
+    return operand
   }
 
   //     QuantifierOperand -> (Group | <token: Character>)

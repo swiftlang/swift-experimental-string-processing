@@ -2,7 +2,7 @@
 ///
 /// Note: This is a Swifty, nested, non-trivial projection of `TokenStorage`.
 /// Store and traffic in that instead.
-enum NewToken {
+public enum NewToken {
   // Just a character
   //
   // A, \*, \\, ...
@@ -86,11 +86,11 @@ enum NewToken {
 import Util
 
 extension NewToken {
-  typealias POSIXSet = Unicode.POSIXCharacterSet
+  public typealias POSIXSet = Unicode.POSIXCharacterSet
 
   // Characters, character types, literals, etc., derived from an escape
   // sequence.
-  enum EscapedSingle: Character {
+  public enum EscapedSingle: Character {
     // Literal single characters
     case alarm         = "a"
     case escape        = "e"
@@ -139,7 +139,7 @@ extension NewToken {
 
   }
 
-  enum Prop {
+  public enum Prop {
     case gc(Unicode.GeneralCategory)
     case pcreSpecial(PCRESpecialCategory)
     case script(Unicode.Script)
@@ -147,85 +147,149 @@ extension NewToken {
 
     case oniguruma(FlattendedOnigurumaUnicodeProperty)
 
-    enum PCRESpecialCategory: String {
-      case alphanumeric = "Xan"
-      case posixSpace = "Xps"
-      case perlSpace = "Xsp"
-      case universallyNamedCharacter = "Xuc"
-      case perlWord = "Xwd"
+    public enum PCRESpecialCategory: String {
+      case alphanumeric     = "Xan"
+      case posixSpace       = "Xps"
+      case perlSpace        = "Xsp"
+      case universallyNamed = "Xuc"
+      case perlWord         = "Xwd"
     }
   }
 }
 
-extension NewToken {
-  // TODO: how much sharing should we do with AST, etc?
-  enum Quantifier {
-    case zeroOrMore(Kind)   // *,     *?,     *+
-    case oneOrMore(Kind)    // +,     +?,     ++
-    case zeroOrOne(Kind)    // ?,     ??,     ?+
-    case exactly(Int, Kind) // {n},   {n}?,   {n}+
-    case nOrMore(Int, Kind) // {n,},  {n,}?,  {n,}+
-    case upToN(Int, Kind)   // {,n},  {,n}?,  {,n}+
-    case range(             // {n,m}, {n,m}?, {n,m}+
-      atLeast: Int, atMost: Int, Kind)
+public struct Quantifier: Hashable {
+  public var amount: Amount
+  public var kind: Kind
 
-    enum Kind {
-      case greedy     //
-      case reluctant  // ?
-      case possessive // +
-    }
+  public enum Amount: Hashable {
+    case zeroOrMore   // *
+    case oneOrMore    // +
+    case zeroOrOne    // ?
+    case exactly(Int) // {n}
+    case nOrMore(Int) // {n,}
+    case upToN(Int)   // {,n}
+    case range(       // {n,m}
+      atLeast: Int, atMost: Int)
   }
 
-  enum SetOperator: String {
-    case intersection        = "&&"
+  public enum Kind: Hashable {
+    case greedy     //
+    case reluctant  // ?
+    case possessive // +
 
-    // The following are mentioned in UTS #18
-    case symmetricDifference = "~~"
-    case union               = "||"
-    case difference          = "--"
+    
   }
 
-  enum GroupStart {
-    // (...)
-    case capture
-
-    // (?<name>...) (?'name'...) (?P<name>...)
-    case namedCapture(String)
-
-    // (?:...) (?|...)
-    case nonCapture(resetNumbersForAlternations: Bool)
-
-    // (?>...)
-    case atomicNonCapturing // TODO: is Oniguruma capturing?
-
-    // (?#....)
-    case comment
-
-    // (?=...) (?!...)
-    case lookahead(inverted: Bool)
-
-    // (?<=...) (?<!...)
-    case lookbehind(inverted: Bool)
+  public init(_ a: Amount, _ k: Kind) {
+    self.amount = a
+    self.kind = k
   }
 
-  enum Reference {
-    // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
-    // Oniguruma: \k<n>, \k'n'
-    case absolute(Int)
-
-    // \g{-n} \g<+n> \g'+n' \g<-n> \g'-n' (?+n) (?-n)
-    // (?(+n)... (?(-n)...
-    // Oniguruma: \k<-n> \k<+n> \k'-n' \k'+n'
-    case relative(Int)
-
-    // \k<name> \k'name' \g{name} \k{name} (?P=name)
-    // \g<name> \g'name' (?&name) (?P>name)
-    // (?(<name>)... (?('name')... (?(name)...
-    case named(String)
-
-    // ?(R) (?(R)...
-    case recurseWholePattern
+  public static func zeroOrMore(_ k: Kind) -> Self {
+    Self(.zeroOrMore, k)
   }
+  public static func oneOrMore(_ k: Kind) -> Self {
+    Self(.oneOrMore, k)
+  }
+  public static func zeroOrOne(_ k: Kind) -> Self {
+    Self(.zeroOrOne, k)
+  }
+  public static func exactly(_ k: Kind, _ i: Int) -> Self {
+    Self(.exactly(i), k)
+  }
+  public static func nOrMore(_ k: Kind, _ i: Int) -> Self {
+    Self(.nOrMore(i), k)
+  }
+  public static func upToN(_ k: Kind, _ i: Int) -> Self {
+    Self(.upToN(i), k)
+  }
+  public static func range(
+    _ k: Kind, atLeast: Int, atMost: Int
+  ) -> Self {
+    Self(.range(atLeast: atLeast, atMost: atMost), k)
+  }
+
+}
+
+//// TODO: how much sharing should we do with AST, etc?
+//public enum Quantifier: Hashable {
+//  case zeroOrMore(Kind)   // *,     *?,     *+
+//  case oneOrMore(Kind)    // +,     +?,     ++
+//  case zeroOrOne(Kind)    // ?,     ??,     ?+
+//  case exactly(Int, Kind) // {n},   {n}?,   {n}+
+//  case nOrMore(Int, Kind) // {n,},  {n,}?,  {n,}+
+//  case upToN(Int, Kind)   // {,n},  {,n}?,  {,n}+
+//  case range(             // {n,m}, {n,m}?, {n,m}+
+//    atLeast: Int, atMost: Int, Kind)
+//
+//  public enum Kind: Hashable {
+//    case greedy     //
+//    case reluctant  // ?
+//    case possessive // +
+//  }
+//  public var kind: Kind {
+//    switch self {
+//      case .zeroOrMore(let k): return k
+//      case .oneOrMore(let k): return k
+//      case .zeroOrOne(let k): return k
+//      case .exactly(let k): return k
+//      case .nOrMore(let k): return k
+//      case .upToN(let k): return k
+//      case .range(let k): return k
+//    }
+//  }
+//}
+
+public enum SetOperator: String {
+  case intersection        = "&&"
+
+  // The following are mentioned in UTS #18
+  case symmetricDifference = "~~"
+  case union               = "||"
+  case difference          = "--"
+}
+
+public enum GroupStart {
+  // (...)
+  case capture
+
+  // (?<name>...) (?'name'...) (?P<name>...)
+  case namedCapture(String)
+
+  // (?:...) (?|...)
+  case nonCapture(resetNumbersForAlternations: Bool)
+
+  // (?>...)
+  case atomicNonCapturing // TODO: is Oniguruma capturing?
+
+  // (?#....)
+  case comment
+
+  // (?=...) (?!...)
+  case lookahead(inverted: Bool)
+
+  // (?<=...) (?<!...)
+  case lookbehind(inverted: Bool)
+}
+
+public enum Reference {
+  // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
+  // Oniguruma: \k<n>, \k'n'
+  case absolute(Int)
+
+  // \g{-n} \g<+n> \g'+n' \g<-n> \g'-n' (?+n) (?-n)
+  // (?(+n)... (?(-n)...
+  // Oniguruma: \k<-n> \k<+n> \k'-n' \k'+n'
+  case relative(Int)
+
+  // \k<name> \k'name' \g{name} \k{name} (?P=name)
+  // \g<name> \g'name' (?&name) (?P>name)
+  // (?(<name>)... (?('name')... (?(name)...
+  case named(String)
+
+  // ?(R) (?(R)...
+  case recurseWholePattern
+}
 
   /*
 
@@ -240,22 +304,21 @@ extension NewToken {
    - outer options
 
    */
-}
 
 typealias OldToken = Token
 
 /// The stored representation of a token. This is more efficiently stored, passed around,
 /// and has access to original source locations.
 struct TokenStorage {
-  // Bootstrapping ourselves a bit. We will just want a flat
-  // trivial enum and source locations
-  var oldTokenKind: OldToken.Kind
-
   /// The source location span of the token itself
   let loc: Range<Source.Location>
 
   /// Whether this token was found in a custom character class
   let fromCustomCharacterClass: Bool
+
+  // Bootstrapping ourselves a bit. We will just want a flat
+  // trivial enum
+  let oldTokenKind: OldToken.Kind
 }
 
 extension TokenStorage {
