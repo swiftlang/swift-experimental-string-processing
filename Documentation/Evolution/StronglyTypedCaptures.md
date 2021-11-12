@@ -596,9 +596,73 @@ included in the generic signature.
 Given all of this, it seems simpler and more pragmatic to make `Regex` generic
 over both the match and the captures.
 
-### Nested rather than flattened captures
+### Structured rather than flat captures
 
-TODO: Including a more ergonomic Alternation. Maybe the default for `Pattern`?
+This pitch proposes infering capture types in such a way as to align with the
+traditional numbering of backreferences. This is because much of the motivation
+behind providing regex literals in Swift is their familiarity.
+
+If we decided to deprioritize this motivation, there are opportunities to infer
+safer, more ergonomic, and arguably more intuitive types for captures.
+
+For example, to be consistent with traditional regex backreferences
+quantifications of multiple or nested captures produces parallel arrays rather
+than an array of tuples.
+
+```swift
+/(?:(?<lower>[0-9a-fA-F]+)\.\.(?<upper>[0-9a-fA-F]+))+/
+// Flat captures type:
+// => `Regex<(Substring, lower: [Substring], upper: [Substring])>`
+
+// Structured captures type:
+// => `Regex<(Substring, [(lower: Substring, upper: Substring)])>`
+```
+
+The structured captures type is safer because the type system encodes that there
+are an equal number of `lower` and `upper` hex numbers. It's also more
+convenient because you're likely to be processing `lower` and `upper` in
+parallel (e.g. to create ranges).
+
+Similarly, alternations of multiple or nested captures produces flat optionals
+rather than a structured alternation type.
+
+```swift
+/([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)|([0-9a-fA-F]+)/
+// Flat captures type:
+// => `Regex<(Substring, Substring?, Substring?, Substring?)>`
+
+// Structured captures type:
+// => `Regex<(Substring, Alternation<((Substring, Substring), Substring)>)>`
+```
+
+The structured capture type is safer because the type system encodes which
+options in the alternation of mutually exclusive. It'd also be much more
+convenient if, in the future, `Alternation` could behave like an enum, allowing
+exhaustive switching over all the options.
+
+It's possible to derive the flat type from the structured type (but not vice
+versa), so `Regex` could be generic over the structured type and
+`firstMatch(of:)` could return a result type that vends both.
+
+```swift
+extension String {
+    struct MatchResult<R: RegexProtocol> {
+        var flat: R.Match.Flat { get }
+        var structured: R.Match { get }
+    }
+    func firstMatch<R>(of regex: R) -> MatchResult<R>?
+}
+```
+
+This is cool, but it adds extra complexity to `Regex` and it isn't as clear
+because the generic type no longer aligns with the traditional regex
+backreference numbering. Because the primary motivation for providing regex
+literals in Swift is their familiarity, we think the consistency of the flat
+captures type trumps the added safety and ergonomics of the structured captures
+type.
+
+We think the calculus probably flips in favor of a structured captures type for
+the result builder syntax, for which familiarity is not as high a priority.
 
 ## Future directions
 
