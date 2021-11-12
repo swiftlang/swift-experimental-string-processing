@@ -5,9 +5,10 @@ Authors: [Richard Wei](https://github.com/rxwei), [Kyle Macomber](https://github
 ## Revision history
 
 - **v1**
-    - Initial pitch.
+    - [Initial pitch](https://forums.swift.org/t/pitch-strongly-typed-regex-captures/53391).
 - **v2**
-    - `Regex<Captures>` includes entire match as first generic parameter.
+    - Includes entire match in `Regex`'s generic parameter.
+    - Fixes Quantification and Alternation capture types to be consistent with traditional back reference numbering.
 
 ## Introduction
 
@@ -43,12 +44,12 @@ if let match = "abcddddefgh".firstMatch(of: regex) {
 >***Note:** The `Regex` type includes, and `firstMatch(of:)` returns, the entire
 match as the "0th capture".*
 
-We introduce a generic type `Regex<Captures>`, which treats the type of captures
+We introduce a generic type `Regex<Match>`, which treats the type of captures
 as part of a regular expression's type information for clarity, type safety, and
 convenience. As we explore a fundamental design aspect of the regular expression
 feature, this pitch discusses the following topics:
 
-- A type definition of the generic type `Regex<Captures>` and `firstMatch(of:)`
+- A type definition of the generic type `Regex<Match>` and `firstMatch(of:)`
   method.
 - Capture type inference and composition in regular expression literals and the
   forthcoming result builder syntax.
@@ -57,8 +58,8 @@ feature, this pitch discusses the following topics:
 The focus of this pitch is the structural properties of capture types and how
 regular expression patterns compose to form new capture types. The semantics of
 string matching, its effect on the capture types (i.e.
-`UnicodeScalarView.SubSequence` or `Substring`), the result builder syntax, or
-the literal syntax will be discussed in future pitches.
+`UnicodeScalarView.SubSequence` or `Substring`), and the result builder syntax
+will be discussed in future pitches.
 
 For background on Declarative String Processing, see related topics:
 - [Declarative String Processing Overview](https://forums.swift.org/t/declarative-string-processing-overview/52459)
@@ -83,10 +84,8 @@ approach to regular expression captures.
 
 ## Proposed solution
 
-We introduce a generic structure `Regex<Captures>` whose generic parameter
-`Captures` denotes the type of the captured content of such a regular
-expression. With a single generic parameter `Captures`, we make use of tuples to
-represent multiple and nested captures.
+We introduce a generic structure `Regex<Match>` whose generic parameter `Match` includes the match and any captures, using tuples to represent multiple and
+nested captures.
 
 ```swift
 let regex = /ab(cd*)(ef)gh/
@@ -97,14 +96,14 @@ if let match = "abcddddefgh".firstMatch(of: regex) {
 ```
 
 During type inference for regular expression literals, the compiler infers the
-capture type based on the regular expression's content.  Same for the result
-builder syntax, except that the type inference rules are expressed as method
-declarations in the result builder type.
+type of `Match` from the content of the regular expression. The same will be
+true for the result builder syntax, except that the type inference rules are
+expressed as method declarations in the result builder type.
 
 Because much of the motivation behind providing regex literals in Swift is their
-familiarity, a top priority of this design is for the result of
-`firstMatch(of:)` to align with the traditional numbering of backreferences to
-capture groups, which start at `\1`.
+familiarity, a top priority of this design is for the result of calling
+`firstMatch(of:)` with a regex to align with the traditional numbering of
+backreferences to capture groups, which start at `\1`.
 
 ```swift
 let regex = /ab(cd*)(ef)gh/
@@ -118,22 +117,23 @@ if let match = "abcddddefgh".firstMatch(of: regex) {
 ### `Regex` type
 
 `Regex` is a structure that represents a regular expression. `Regex` is generic
-over an unconstrained generic parameter `Captures`. Upon a regex match, the
-captured values are available as part of the result.
+over an unconstrained generic parameter `Match`. Upon a regex match, the
+entire match and any captured values are available as part of the result.
 
 ```swift
-public struct Regex<Captures>: RegexProtocol, ExpressibleByRegexLiteral {
+public struct Regex<Match>: RegexProtocol, ExpressibleByRegexLiteral {
     ...
 }
 ```
 
 > ***Note**: Semantic-level switching (i.e. matching grapheme clusters with
 canonical equivalence vs Unicode scalar values) is out-of-scope for this pitch,
-but handling that will likely introduce constraints on `Captures`. We use an
+but handling that will likely introduce constraints on `Match`. We use an
 unconstrained generic parameter in this pitch for brevity and simplicity. The
 `Substring`s we use for illustration throughout this pitch are created
 on-the-fly; the actual memory representation uses `Range<String.Index>`. In this
-sense, the `Captures` generic type is just an encoding of the arity and kind of captured content.*
+sense, the `Match` generic type is just an encoding of the arity and kind of 
+captured content.*
 
 ### `firstMatch(of:)` method
 
@@ -144,14 +144,14 @@ captures (described more below).
 
 ```swift
 extension String {
-    public func firstMatch<R: RegexProtocol>(of regex: R) -> R.Captures?
+    public func firstMatch<R: RegexProtocol>(of regex: R) -> R.Match?
 }
 ```
 
 This signature is consistent with the traditional numbering of backreferences to
 capture groups starting at `\1`. Many regex libraries make the entire match
-available as the "0th capture". We propose to do the same in order to align the
-tuple index numbering with the regex backreference numbering:
+available at position `0`. We propose to do the same in order to align the tuple
+index numbering with the regex backreference numbering:
 
 ```swift
 let scalarRangePattern = /([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?/
@@ -172,11 +172,20 @@ likely come with dynamic member lookup for accessing captures by index (i.e.
 
 ### Capture type
 
-In this section, we dive into capture types for regular expression patterns and
-how they compose.
+In this section, we describe the inferred capture types for regular expression 
+patterns and how they compose.
 
 By default, a regular expression literal has type `Regex`. Its generic argument
-`Captures` is its capture type.
+`Match` can be viewed as a tuple of the entire matched substring and any
+captures.
+
+```txt
+(EntireMatch, Captures...)
+              ^~~~~~~~~~~
+              Capture types
+```
+
+When there are no captures, `Match` is just the entire matched substring.
 
 #### Basics
 
@@ -195,18 +204,6 @@ let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Substring>`
 
 #### Capturing group: `(...)`
 
-A `Regex`'s `Captures` type can be viewed as a tuple of the entire matched
-substring and any captures.
-
-```txt
-(EntireMatch, Captures...)
-              ^~~~~~~~~~~
-              Capture types
-```
-
-When there are no captures, it's the entire matched substring
-itself.
-
 A capturing group saves the portion of the input matched by its contained
 pattern. Its capture type is `Substring`.
 
@@ -220,9 +217,9 @@ let graphemeBreakLowerBound = /([0-9a-fA-F]+)/
 
 #### Concatenation: `abc`
 
-A concatenation's `Captures` is a tuple of `Substring` followed by every
-pattern's capture type. When there are no capturing groups, the `Captures` is
-just `Substring`.
+A concatenation's `Match` is a tuple of `Substring`s followed by every pattern's
+capture type. When there are no capturing groups, the `Match` is just
+`Substring`.
 
 ```swift
 let graphemeBreakLowerBound = /([0-9a-fA-F]+)\.\.[0-9a-fA-F]+/
@@ -248,8 +245,8 @@ let graphemeBreakRange = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)/
 
 #### Named capturing group: `(?<name>...)`
 
-A named capturing group's capture type is `Substring`. In its `Captures` type,
-the capture type has a tuple element label specified by the capture name.
+A named capturing group's capture type is `Substring`. In its `Match` type, the
+capture type has a tuple element label specified by the capture name.
 
 ```swift
 let graphemeBreakLowerBound = /(?<lower>[0-9a-fA-F]+)\.\.[0-9a-fA-F]+/
@@ -308,12 +305,12 @@ let graphemeBreakPropertyData = /(([0-9a-fA-F]+)(\.\.([0-9a-fA-F]+)))\s*;\s(\w+)
 //         OneOrMore(.word).capture() // (5)
 //         Repeat(.any)
 //     }
+//     .flattened()
 
 let input = "007F..009F   ; Control"
 // Match result for `input`:
 // ("007F..009F   ; Control", "007F..009F", "007F", "..009F", "009F", "Control")
 ```
-
 
 #### Quantification: `*`, `+`, `?`, `{n}`, `{n,}`, `{n,m}`
 
@@ -394,6 +391,7 @@ let multipleAndNestedOptional = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))?/
 //         }
 //         .capture()
 //     }
+//     .flattened()
 
 let multipleAndNestedQuantifier = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))+/
 // Positions in result:          1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -408,8 +406,8 @@ let multipleAndNestedQuantifier = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))+/
 //             OneOrMore(.hexDigit).capture()
 //         }
 //         .capture()
-//         .unzipped()
 //     }
+//     .flattened()
 ```
 
 Note that capturing collections of repeated captures like this is a departure
@@ -438,8 +436,7 @@ We believe that the proposed capture behavior leads to better consistency with
 the meaning of these quantifiers. However, the alternative behavior does have
 the advantage of a smaller memory footprint because the matching algorithm would
 not need to allocate storage for capturing anything but the last match. As a
-future direction, we could introduce a variant of quantifiers for this behavior
-that the programmer would opt in for memory-critical use cases.
+future direction, we could introduce some way of opting into this behavior.
 
 #### Alternation: `a|b`
 
@@ -458,8 +455,8 @@ let numberAlternationRegex = /([01]+)|[0-9]+|([0-9a-fA-F]+)/
 //             OneOrMore(.decimalDigit)
 //             OneOrMore(.hexDigit).capture()
 //         }
-//         .flattened()
 //     }
+//     .flattened()
 
 let scalarRangeAlternation = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)|([0-9a-fA-F]+)/
 // Positions in result:     1 ^~~~~~~~~~~~~~  2 ^~~~~~~~~~~~~~
@@ -476,8 +473,8 @@ let scalarRangeAlternation = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)|([0-9a-fA-F]+)/
 //             }
 //             OneOrMore(.hexDigit).capture()
 //         }
-//         .flattened()
 //     }
+//     .flattened()
 
 let nestedScalarRangeAlternation = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))|([0-9a-fA-F]+)/
 // Positions in result:           1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
@@ -497,8 +494,8 @@ let nestedScalarRangeAlternation = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))|([0-9a-fA
 //
 //             OneOrMore(.hexDigit).capture()
 //         }
-//         .flattened()
 //     }
+//     .flattened()
 ```
 
 ## Effect on ABI stability
