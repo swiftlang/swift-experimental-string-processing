@@ -518,7 +518,7 @@ based on matched ranges could minimize reference counting operations on
 
 ```swift
 let regex = /([a-z])+/
-// => `Regex<Substring, CaptureCollection<Substring>>`
+// => `Regex<(Substring, CaptureCollection<Substring>)>`
 
 // `CaptureCollection` implemented as... 
 public struct CaptureCollection<Captures>: BidirectionalCollection {
