@@ -23,4 +23,23 @@ struct Source {
 
 // TODO: more source-location constructs
 
+fileprivate protocol Consumer {
+  associatedtype Input
+  associatedtype Output
+
+  init(_ state: Input)
+
+  mutating func eat() -> Output
+  var isEmpty: Bool { get }
+}
+
+
+extension Substring {
+  typealias Input = String
+  fileprivate mutating func eat() -> Character {
+    assert(!isEmpty)
+    defer { self = self.dropFirst() }
+    return self.first.unsafelyUnwrapped
+  }
+}
 
