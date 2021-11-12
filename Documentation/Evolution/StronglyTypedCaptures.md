@@ -446,7 +446,8 @@ its underlying pattern's capture type in an `Optional`.
 
 ```swift
 let numberAlternationRegex = /([01]+)|[0-9]+|([0-9a-fA-F]+)/
-// Positions in result:     1 ^~~~~~~      2 ^~~~~~~~~~~~~~
+// Positions in result:     0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                          1 ^~~~~~~      2 ^~~~~~~~~~~~~~
 // => `Regex<(Substring, Substring?, Substring?)>`
 
 // Equivalent result builder syntax:
