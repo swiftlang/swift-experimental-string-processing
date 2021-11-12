@@ -41,8 +41,8 @@ if let match = "abcddddefgh".firstMatch(of: regex) {
 }
 ```
 
->***Note:** The `Regex` type includes, and `firstMatch(of:)` returns, the entire
-match as the "0th capture".*
+>_**Note:** The `Regex` type includes, and `firstMatch(of:)` returns, the entire
+match as the "0th capture"._
 
 We introduce a generic type `Regex<Match>`, which treats the type of captures
 as part of a regular expression's type information for clarity, type safety, and
@@ -84,7 +84,8 @@ approach to regular expression captures.
 
 ## Proposed solution
 
-We introduce a generic structure `Regex<Match>` whose generic parameter `Match` includes the match and any captures, using tuples to represent multiple and
+We introduce a generic structure `Regex<Match>` whose generic parameter `Match`
+includes the match and any captures, using tuples to represent multiple and
 nested captures.
 
 ```swift
@@ -546,9 +547,54 @@ fewer surprises as we associate the `{...}` quantifier syntax with `Array`.
 
 ### `Regex<Captures>` instead of `Regex<Match>`
 
-TODO: The previous version of this pitch...
+In the initial version of this pitch, `Regex` was _only_ generic over its
+captures and `firstMatch(of:)` was responsible for flattening together the
+match and captures into a tuple.
 
-Old definition of Regex and `firstMatch` go here.
+```swift
+extension String {
+    public func firstMatch<R: RegexProtocol, C...>(of regex: R)
+        -> (Substring, C...)? where R.Captures == (C...)
+}
+
+// Expands to:
+//     extension String {
+//         func firstMatch<R: RegexProtocol>(of regex: R)
+//             -> Substring? where R.Captures == ()
+//         func firstMatch<R: RegexProtocol, C1>(of regex: R)
+//             -> (Substring, C1)? where R.Captures == (C1)
+//         func firstMatch<R: RegexProtocol, C1, C2>(of regex: R)
+//             -> (Substring, C1, C2)? where R.Captures == (C1, C2)
+//         ...
+//     }
+```
+
+For simple regular expressions this had the benefit of aligning the generic
+signature more obviously with the captures in the regex.
+
+```swift
+let regex = /ab(cd*)(ef)gh/
+// => `Regex<(Substring, Substring)>`
+```
+
+However, it came with a number of (not necessarily insurmountable) open
+questions:
+
+- Will variadic generic tuple splatting preserve element labels?
+- Will variadic generic tuple splatting eliminate `Void`s? _(We don't want
+`firstMatch(of:)` to return `(Substring, Void)` for a regex with no captures)._
+- Will we be able to add [single-element labeled tuples](https://forums.swift.org/t/single-element-labeled-tuples/9797)?
+_(This would be needed to preserve the name of a capture in a regex with a
+single named capturing group.)_
+- What should be the type of `Captures` for a regex with no captures (e.g.
+`Void` or `Never` or something else)?
+
+Also, when using a regex within the result builder syntax, it's more obvious
+that `capture()` will have access to the entire match, when the match is
+included in the generic signature.
+
+Given all of this, it seems simpler and more pragmatic to make `Regex` generic
+over both the match and the captures.
 
 ### Nested rather than flattened captures
 
