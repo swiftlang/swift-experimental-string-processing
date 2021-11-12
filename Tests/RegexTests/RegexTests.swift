@@ -2,7 +2,7 @@ import XCTest
 @testable import Regex
 import Util
 
-extension Token.Kind: ExpressibleByExtendedGraphemeClusterLiteral {
+extension Token: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
     self = .character(value, isEscaped: false)
@@ -169,11 +169,11 @@ class RegexTests: XCTestCase {
           "|*\\\\" -> pipe star ｢\\｣
           ")ab(+" -> rparen ｢ab｣ lparen plus
         """
-    func performTest(_ input: String, _ expecting: Token.Kind...) {
-      let actual = Lexer(Source(input)).map { $0.kind }
+    func performTest(_ input: String, _ expecting: Token...) {
+      let actual = Lexer(Source(input)).map { $0 }
       XCTAssertEqual(expecting, actual)
     }
-    func esc(_ c: Character) -> Token.Kind {
+    func esc(_ c: Character) -> Token {
       .character(c, isEscaped: true)
     }
 
@@ -191,7 +191,8 @@ class RegexTests: XCTestCase {
     performTest(
       "a(b|c)?d",
       "a", .leftParen, "b", .pipe, "c", .rightParen, .question, "d")
-    performTest("a|b?c", "a", .pipe, "b", .question, "c")
+    performTest(
+      "a|b?c", "a", .pipe, "b", .question, "c")
     performTest(
       "(?:a|b)c",
       .leftParen, .question, .colon, "a", .pipe, "b",
@@ -239,10 +240,10 @@ class RegexTests: XCTestCase {
     _ = """
         Examples:
             "abc" -> .concat(｢abc｣)
-            "abc\\+d*" -> .concat(｢abc+｣ .many(｢d｣))
+            "abc\\+d*" -> .concat(｢abc+｣ .zeroOrMore(｢d｣))
             "abc(?:de)+fghi*k|j" ->
                 .alt(.concat(｢abc｣, .oneOrMore(.group(.concat(｢de｣))),
-                             ｢fgh｣ .many(｢i｣), ｢k｣),
+                             ｢fgh｣ .zeroOrMore(｢i｣), ｢k｣),
                      ｢j｣)
         """
     func performTest(_ input: String, _ expecting: AST) {
@@ -276,33 +277,40 @@ class RegexTests: XCTestCase {
     performTest(
       "abc", concat("a", "b", "c"))
     performTest(
-      "abc\\+d*", concat("a", "b", "c", "+", .many("d")))
+      "abc\\+d*",
+      concat("a", "b", "c", "+", .zeroOrMore(.greedy, "d")))
     performTest(
       "abc(?:de)+fghi*k|j",
       alt(
         concat(
           "a", "b", "c",
-          .oneOrMore(.group(concat("d", "e"))),
-          "f", "g", "h", .many("i"), "k"),
+          .oneOrMore(
+            .greedy, .group(.nonCapture, concat("d", "e"))),
+          "f", "g", "h", .zeroOrMore(.greedy, "i"), "k"),
         "j"))
     performTest(
       "a(?:b|c)?d",
-      concat("a", .zeroOrOne(.group(alt("b", "c"))), "d"))
+      concat("a", .zeroOrOne(
+        .greedy, .group(.nonCapture, alt("b", "c"))), "d"))
     performTest(
       "a?b??c+d+?e*f*?",
       concat(
-        .zeroOrOne("a"), .lazyZeroOrOne("b"),
-        .oneOrMore("c"), .lazyOneOrMore("d"),
-        .many("e"), .lazyMany("f")))
+        .zeroOrOne(.greedy, "a"), .zeroOrOne(.reluctant, "b"),
+        .oneOrMore(.greedy, "c"), .oneOrMore(.reluctant, "d"),
+        .zeroOrMore(.greedy, "e"), .zeroOrMore(.reluctant, "f")))
     performTest(
-      "a|b?c", alt("a", concat(.zeroOrOne("b"), "c")))
+      "a|b?c",
+      alt("a", concat(.zeroOrOne(.greedy, "b"), "c")))
     performTest(
-      "(a|b)c", concat(.capturingGroup(alt("a", "b")), "c"))
+      "(a|b)c",
+      concat(.group(.capture, alt("a", "b")), "c"))
     performTest(
       "(.)*(.*)",
       concat(
-        .many(.capturingGroup(.characterClass(.any))),
-        .capturingGroup(.many(.characterClass(.any)))))
+        .zeroOrMore(
+          .greedy, .group(.capture, .characterClass(.any))),
+        .group(
+          .capture, .zeroOrMore(.greedy, .characterClass(.any)))))
     performTest(
       "abc\\d", concat("a", "b", "c", .characterClass(.digit)))
     performTest(
@@ -353,7 +361,7 @@ class RegexTests: XCTestCase {
 
     performTest(
       "[[ab]&&[^bc]\\d]+",
-      .oneOrMore(charClass(
+      .oneOrMore(.greedy, charClass(
         .setOperation(
           lhs: charClass("a", "b"),
           op: .intersection,
@@ -379,13 +387,13 @@ class RegexTests: XCTestCase {
     performTest(
       "a&&b", concat("a", "&", "&", "b"))
     performTest(
-      "&?", .zeroOrOne("&"))
+      "&?", .zeroOrOne(.greedy, "&"))
     performTest(
-      "&&?", concat("&", .zeroOrOne("&")))
+      "&&?", concat("&", .zeroOrOne(.greedy, "&")))
     performTest(
-      "--+", concat("-", .oneOrMore("-")))
+      "--+", concat("-", .oneOrMore(.greedy, "-")))
     performTest(
-      "~~*", concat("~", .many("~")))
+      "~~*", concat("~", .zeroOrMore(.greedy, "~")))
 
     // TODO: failure tests
   }
@@ -439,10 +447,22 @@ class RegexTests: XCTestCase {
     performTest(
       "abc\\+d*",
       recode("a", "b", "c", "+", label(0),
-             split(disfavoring: 1), "d", goto(label: 0),
-             label(1),
+             split(disfavoring: 1), "d", goto(label: 0), label(1),
              labels: [4, 8]))
-
+    performTest(
+      "a(b)c",
+      recode(
+        .beginGroup, // For some reason, because child captures
+        "a", .beginCapture, "b", .endCapture(), "c",
+        .endGroup // For some reason, because child captures
+      ))
+    performTest(
+      "a(?:b)c",
+      recode(
+        .beginGroup, // For some reason, even though noncap
+        "a", .beginGroup, "b", .endGroup, "c",
+        .endGroup // For some reason, even though noncap
+      ))
     performTest(
       "abc(?:de)+fghi*k|j",
       recode(split(disfavoring: 1),
@@ -468,25 +488,26 @@ class RegexTests: XCTestCase {
              labels: [29, 27, 6, 13, 19, 23]))
     performTest(
       "a(?:b|c)?d",
-      recode(.beginGroup,
-             "a",
-             .beginGroup,
-             split(disfavoring: 0),
-             .beginGroup,
-             split(disfavoring: 3), "b",
-             goto(label: 2),
-             label(3), "c",
-             label(2),
-             .endGroup,
-             .captureSome,
-             .goto(label: 1),
-             label(0), .captureNil,
-             .label(1),
-             .endGroup,
-             "d",
-             .endGroup,
-             labels: [14, 16, 10, 8],
-             splits: [3, 5]))
+      recode(
+        .beginGroup,
+        "a",
+        .beginGroup,
+        split(disfavoring: 0),
+        .beginGroup,
+        split(disfavoring: 3), "b",
+        goto(label: 2),
+        label(3), "c",
+        label(2),
+        .endGroup,
+        .captureSome,
+        .goto(label: 1),
+        label(0), .captureNil,
+        .label(1),
+        .endGroup,
+        "d",
+        .endGroup,
+        labels: [14, 16, 10, 8],
+        splits: [3, 5]))
     performTest(
       "a(b|c)?d",
       recode(.beginGroup,
@@ -542,17 +563,18 @@ class RegexTests: XCTestCase {
              labels: [1, 11, 4, 8], splits: [2, 5]))
     performTest(
       "(?:.*)*",
-      recode(.beginGroup,
-             label(0), split(disfavoring: 1),
-             .beginGroup,
-             label(2), split(disfavoring: 3), .characterClass(.any), goto(label: 2),
-             label(3),
-             .endGroup,
-             goto(label: 0),
-             label(1),
-             .captureArray,
-             .endGroup,
-             labels: [1, 11, 4, 8], splits: [2, 5]))
+      recode(
+        .beginGroup,
+        label(0), split(disfavoring: 1),
+        .beginGroup,
+        label(2), split(disfavoring: 3), .characterClass(.any), goto(label: 2),
+        label(3),
+        .endGroup,
+        goto(label: 0),
+        label(1),
+        .captureArray,
+        .endGroup,
+        labels: [1, 11, 4, 8], splits: [2, 5]))
     performTest(
       "a.*?b+?c??",
       recode("a",
@@ -578,7 +600,7 @@ class RegexTests: XCTestCase {
        ["abc", "cdef", "abcde", "abcdeff"]),
       ("ab(c|def)+", ["abc", "abdef", "abcdef", "abdefdefcdefc"],
        ["ab", "c", "abca"]),
-      
+
       ("a\\sb", ["a b"], ["ab", "a  b"]),
       ("a\\s+b", ["a b", "a    b"], ["ab", "a    c"]),
       ("a\\dbc", ["a1bc"], ["ab2", "a1b", "a11b2", "a1b22"]),
@@ -637,7 +659,7 @@ class RegexTests: XCTestCase {
       regex: "a(b*)c(d+)ef", input: "abbcdef",
       expectedCaptureType: (Substring, Substring).self,
       expecting: .init(captures: ("bb", "d"), capturesEqual: ==))
-    
+
     // Greedy vs lazy quantifiers
     performTest(
       regex: "a(.*)(c+).*(e+)", input: "abbbbccccddddeeee",
@@ -668,7 +690,7 @@ class RegexTests: XCTestCase {
 //      expectedCaptureType: Substring.self,
 //      expecting: .init(captures: "aaaa", capturesEqual: ==))
   }
-  
+
   func testMatchLevel() {
     let tests: Array<(String, chars: [String], unicodes: [String])> = [
       ("..", ["e\u{301}e\u{301}"], ["e\u{301}"]),
@@ -677,10 +699,10 @@ class RegexTests: XCTestCase {
     for (regex, characterInputs, scalarInputs) in tests {
       let code = try! compile(regex)
       let harvey = HareVM(code)
-      
+
       let scalarCode = code.withMatchLevel(.unicodeScalar)
       let scalarHarvey = HareVM(scalarCode)
-            
+
       for input in characterInputs {
         XCTAssertNotNil(harvey.execute(input: input))
         XCTAssertNil(scalarHarvey.execute(input: input))
@@ -775,4 +797,3 @@ class RegexTests: XCTestCase {
     // partial subrange from front
   }
 }
-

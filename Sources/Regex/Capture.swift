@@ -42,11 +42,10 @@ extension AST {
     switch self {
     case let .alternation(child), let .concatenation(child):
       return child.any(\.hasCaptures)
-    case .capturingGroup, .group:
-      return true
-    case let .many(child), let .zeroOrOne(child), let .oneOrMore(child),
-         let .lazyMany(child), let .lazyOneOrMore(child),
-         let .lazyZeroOrOne(child):
+    case let .group(g, child), let .groupTransform(g, child, _):
+      return g.isCapturing || child.hasCaptures
+      || true // WIP: preserves old behavior
+    case .quantification(_, let child):
       return child.hasCaptures
     case .character, .unicodeScalar, .characterClass, .any, .empty:
       return false

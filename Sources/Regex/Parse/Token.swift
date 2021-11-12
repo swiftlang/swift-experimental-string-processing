@@ -1,13 +1,24 @@
 /// Tokens are produced by the lexer and carry rich syntactic information
-///
-struct Token {
+struct TokenStorage {
   /// The underlying syntactic info
-  let kind: Kind
+  let kind: Token
 
   /// The source location span of the token itself
   let loc: Range<Source.Location>
 
-  // TODO: diagnostics
+  let fromCustomCharacterClass: Bool
+
+  var token: Token {
+    kind
+  }
+}
+
+/// The underlying syntactic info carried by a token
+enum Token: Hashable {
+  case meta(MetaCharacter)
+  case setOperator(SetOperator)
+  case character(Character, isEscaped: Bool)
+  case unicodeScalar(UnicodeScalar)
 }
 
 // MARK: - Token kinds
@@ -29,13 +40,6 @@ extension Token {
     case dollar = "$"
   }
 
-  /// The underlying syntactic info carried by a token
-  enum Kind {
-    case meta(MetaCharacter)
-    case setOperator(SetOperator)
-    case character(Character, isEscaped: Bool)
-    case unicodeScalar(UnicodeScalar)
-  }
 
   enum SetOperator: String, Hashable {
     case doubleAmpersand = "&&"
@@ -49,7 +53,7 @@ extension Token {
 
 // TODO: Consider a flat kind representation and leave structure
 // as an API concern
-extension Token.Kind {
+extension Token {
   // Convenience accessors
   static var pipe: Self { .meta(.pipe) }
   static var question: Self { .meta(.question) }
@@ -71,7 +75,7 @@ extension Token.MetaCharacter: CustomStringConvertible {
 extension Token.SetOperator: CustomStringConvertible {
   var description: String { rawValue }
 }
-extension Token.Kind: CustomStringConvertible {
+extension Token: CustomStringConvertible {
   var description: String {
     switch self {
     case .meta(let meta): return meta.description
@@ -82,13 +86,11 @@ extension Token.Kind: CustomStringConvertible {
   }
 }
 
-extension Token.Kind: Equatable {}
-
 extension Character {
   var isEscape: Bool { return self == "\\" }
 }
 
-extension Token.Kind {
+extension Token {
   /// Classify a given terminal character
   static func classifyTerminal(
     _ t: Character, fromEscape escaped: Bool
