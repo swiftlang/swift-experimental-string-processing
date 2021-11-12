@@ -267,7 +267,7 @@ its underlying pattern's captures.
 
 ```swift
 let graphemeBreakLowerBound = /([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?/
-// => `Regex<(Substring, Substring?)>`
+// => `Regex<(Substring, Substring, Substring?)>`
 
 // Equivalent result builder syntax:
 //     let graphemeBreakLowerBound = Pattern {
@@ -291,7 +291,7 @@ let graphemeBreakPropertyData = /(([0-9a-fA-F]+)(\.\.([0-9a-fA-F]+)))\s*;\s(\w+)
 // Positions in result:        1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    5 ^~~~~
 //                                            3 ^~~~~~~~~~~~~~~~~~~~
 //                              2 ^~~~~~~~~~~~~~   4 ^~~~~~~~~~~~~~
-// => `Regex<(Substring, Substring, Substring, Substring, Substring)>`
+// => `Regex<(Substring, Substring, Substring, Substring, Substring, Substring)>`
 
 // Equivalent result builder syntax:
 //     let graphemeBreakPropertyData = Pattern {
@@ -522,7 +522,7 @@ based on matched ranges could minimize reference counting operations on
 
 ```swift
 let regex = /([a-z])+/
-// => `Regex<CaptureCollection<Substring>>`
+// => `Regex<Substring, CaptureCollection<Substring>>`
 
 // `CaptureCollection` implemented as... 
 public struct CaptureCollection<Captures>: BidirectionalCollection {
@@ -541,9 +541,9 @@ type safety to make its capture type be a homogeneous tuple instead of an array,
 e.g. `(5 x Substring)` as pitched in [Improved Compiler Support for Large Homogenous Tuples](https://forums.swift.org/t/pitch-improved-compiler-support-for-large-homogenous-tuples/49023).
 
 ```swift
-/[a-z]{5}/     // => Regex<(5 x Substring)> (exact count)
-/[a-z]{5, 8}/  // => Regex<[Substring]>     (bounded count) 
-/[a-z]{5,}/    // => Regex<[Substring]>     (lower-bounded count)
+/[a-z]{5}/     // => Regex<(Substring, (5 x Substring))> (exact count)
+/[a-z]{5, 8}/  // => Regex<(Substring, [Substring])>     (bounded count)
+/[a-z]{5,}/    // => Regex<(Substring, [Substring])>     (lower-bounded count)
 ```
 
 However, this would cause an inconsistency between exact-count quantification
@@ -571,7 +571,7 @@ matching a string using a regular expression obtained at runtime.
 
 To support dynamism, we could introduce a new type, `DynamicCaptures` that
 represents a tree of captures, and add a `Regex` initializer that accepts a
-string and produces `Regex<DynamicCaptures>`.
+string and produces `Regex<Substring, DynamicCaptures>`.
   
 ```swift
 public struct DynamicCaptures: Equatable, RandomAccessCollection {
