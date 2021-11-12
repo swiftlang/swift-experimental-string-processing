@@ -443,9 +443,6 @@ that the programmer would opt in for memory-critical use cases.
 
 #### Alternation: `a|b`
 
-A quantifier wraps its underlying pattern's capture type in either an `Optional`
-or `Array`.
-
 Alternations are used to match one of multiple patterns. An alternation wraps
 its underlying pattern's capture type in an `Optional`.
 
