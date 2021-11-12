@@ -155,8 +155,8 @@ tuple index numbering with the regex backreference numbering:
 
 ```swift
 let scalarRangePattern = /([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?/
-// Positions in result: 0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//                      1 ^~~~~~~~~~~     2 ^~~~~~~~~~~
+// Positions in result: 0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                      1 ^~~~~~~~~~~~~~     2 ^~~~~~~~~~~~~~
 if let match = line.firstMatch(of: scalarRangePattern) {
     print((match.0, match.1, match.2)) // => ("007F..009F", "007F", "009F")
 }
