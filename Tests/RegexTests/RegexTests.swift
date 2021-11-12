@@ -178,47 +178,61 @@ class RegexTests: XCTestCase {
     }
 
     // Gramatically valid
-    performTest("abc", "a", "b", "c")
-    performTest("ab\\c", "a", "b", esc("c"))
-    performTest("abc\\+d*", "a", "b", "c", esc("+"), "d", .star)
-    performTest("abc(de)+fghi*k|j",
-                "a", "b", "c", .leftParen, "d", "e", .rightParen,
-                .plus, "f", "g", "h", "i", .star, "k", .pipe, "j")
-    performTest("a(b|c)?d",
-                "a", .leftParen, "b", .pipe, "c", .rightParen,
-                .question, "d")
+    performTest(
+      "abc", "a", "b", "c")
+    performTest(
+      "ab\\c", "a", "b", esc("c"))
+    performTest(
+      "abc\\+d*", "a", "b", "c", esc("+"), "d", .star)
+    performTest(
+      "abc(de)+fghi*k|j",
+      "a", "b", "c", .leftParen, "d", "e", .rightParen,
+      .plus, "f", "g", "h", "i", .star, "k", .pipe, "j")
+    performTest(
+      "a(b|c)?d",
+      "a", .leftParen, "b", .pipe, "c", .rightParen, .question, "d")
     performTest("a|b?c", "a", .pipe, "b", .question, "c")
-    performTest("(?:a|b)c",
-                .leftParen, .question, .colon, "a", .pipe, "b",
-                .rightParen, "c")
-    performTest("a\\u0065b\\u{65}c\\x65d",
-                "a", .unicodeScalar("e"),
-                "b", .unicodeScalar("e"),
-                "c", .unicodeScalar("e"), "d")
-    performTest("[^a&&b--c~~d]", .leftSquareBracket,
-                .caret, "a",
-                .setOperator(.doubleAmpersand), "b",
-                .setOperator(.doubleDash), "c",
-                .setOperator(.doubleTilda), "d",
-                .rightSquareBracket)
-    performTest("&&^-^-~~",
-                "&", "&", .caret, .minus, .caret, .minus, "~", "~")
-    performTest("[]]&&",
-                .leftSquareBracket, .rightSquareBracket,
-                .rightSquareBracket, "&", "&")
-    performTest("[]]&\\&",
-                .leftSquareBracket, .rightSquareBracket,
-                .rightSquareBracket, "&", esc("&"))
+    performTest(
+      "(?:a|b)c",
+      .leftParen, .question, .colon, "a", .pipe, "b",
+      .rightParen, "c")
+    performTest(
+      "a\\u0065b\\u{65}c\\x65d",
+      "a", .unicodeScalar("e"),
+      "b", .unicodeScalar("e"),
+      "c", .unicodeScalar("e"), "d")
+    performTest(
+      "[^a&&b--c~~d]",
+      .leftSquareBracket, .caret, "a",
+      .setOperator(.doubleAmpersand), "b",
+      .setOperator(.doubleDash), "c",
+      .setOperator(.doubleTilda), "d",
+      .rightSquareBracket)
+    performTest(
+      "&&^-^-~~",
+      "&", "&", .caret, .minus, .caret, .minus, "~", "~")
+    performTest(
+      "[]]&&",
+      .leftSquareBracket, .rightSquareBracket,
+      .rightSquareBracket, "&", "&")
+    performTest(
+      "[]]&\\&",
+      .leftSquareBracket, .rightSquareBracket,
+      .rightSquareBracket, "&", esc("&"))
 
     // Gramatically invalid (yet lexically valid)
-    performTest("|*\\\\", .pipe, .star, esc("\\"))
-    performTest(")ab(+", .rightParen, "a", "b", .leftParen, .plus)
-    performTest("...", .dot, .dot, .dot)
-    performTest("[[[]&&]]&&",
-                .leftSquareBracket, .leftSquareBracket,
-                .leftSquareBracket, .rightSquareBracket,
-                .setOperator(.doubleAmpersand), .rightSquareBracket,
-                .rightSquareBracket, "&", "&")
+    performTest(
+      "|*\\\\", .pipe, .star, esc("\\"))
+    performTest(
+      ")ab(+", .rightParen, "a", "b", .leftParen, .plus)
+    performTest(
+      "...", .dot, .dot, .dot)
+    performTest(
+      "[[[]&&]]&&",
+      .leftSquareBracket, .leftSquareBracket,
+      .leftSquareBracket, .rightSquareBracket,
+      .setOperator(.doubleAmpersand), .rightSquareBracket,
+      .rightSquareBracket, "&", "&")
   }
 
   func testParse() {
@@ -259,80 +273,119 @@ class RegexTests: XCTestCase {
       .characterClass(.custom(comps).withInversion(inverted))
     }
 
-    performTest("abc", concat("a", "b", "c"))
-    performTest("abc\\+d*", concat("a", "b", "c", "+", .many("d")))
-    performTest("abc(?:de)+fghi*k|j",
-                alt(concat("a", "b", "c",
-                           .oneOrMore(.group(concat("d", "e"))),
-                           "f", "g", "h", .many("i"), "k"),
-                    "j"))
-    performTest("a(?:b|c)?d", concat("a", .zeroOrOne(.group(alt("b", "c"))),
-                                   "d"))
-    performTest("a?b??c+d+?e*f*?", concat(
-      .zeroOrOne("a"), .lazyZeroOrOne("b"),
-      .oneOrMore("c"), .lazyOneOrMore("d"),
-      .many("e"), .lazyMany("f")))
-    performTest("a|b?c", alt("a", concat(.zeroOrOne("b"), "c")))
-    performTest("(a|b)c", concat(.capturingGroup(alt("a", "b")), "c"))
-    performTest("(.)*(.*)", concat(.many(.capturingGroup(.characterClass(.any))), .capturingGroup(.many(.characterClass(.any)))))
-    performTest("abc\\d",concat("a", "b", "c", .characterClass(.digit)))
-    performTest("a\\u0065b\\u{00000065}c\\x65d\\U00000065",
-                concat("a", .unicodeScalar("e"),
-                       "b", .unicodeScalar("e"),
-                       "c", .unicodeScalar("e"),
-                       "d", .unicodeScalar("e")))
+    performTest(
+      "abc", concat("a", "b", "c"))
+    performTest(
+      "abc\\+d*", concat("a", "b", "c", "+", .many("d")))
+    performTest(
+      "abc(?:de)+fghi*k|j",
+      alt(
+        concat(
+          "a", "b", "c",
+          .oneOrMore(.group(concat("d", "e"))),
+          "f", "g", "h", .many("i"), "k"),
+        "j"))
+    performTest(
+      "a(?:b|c)?d",
+      concat("a", .zeroOrOne(.group(alt("b", "c"))), "d"))
+    performTest(
+      "a?b??c+d+?e*f*?",
+      concat(
+        .zeroOrOne("a"), .lazyZeroOrOne("b"),
+        .oneOrMore("c"), .lazyOneOrMore("d"),
+        .many("e"), .lazyMany("f")))
+    performTest(
+      "a|b?c", alt("a", concat(.zeroOrOne("b"), "c")))
+    performTest(
+      "(a|b)c", concat(.capturingGroup(alt("a", "b")), "c"))
+    performTest(
+      "(.)*(.*)",
+      concat(
+        .many(.capturingGroup(.characterClass(.any))),
+        .capturingGroup(.many(.characterClass(.any)))))
+    performTest(
+      "abc\\d", concat("a", "b", "c", .characterClass(.digit)))
+    performTest(
+      "a\\u0065b\\u{00000065}c\\x65d\\U00000065",
+      concat("a", .unicodeScalar("e"),
+             "b", .unicodeScalar("e"),
+             "c", .unicodeScalar("e"),
+             "d", .unicodeScalar("e")))
 
-    performTest("[-|$^:?+*())(*-+-]",
-                charClass("-", "|", "$", "^", ":", "?", "+", "*", "(", ")", ")",
-                          "(", .range("*" ... "+"), "-"))
+    performTest(
+      "[-|$^:?+*())(*-+-]",
+      charClass(
+        "-", "|", "$", "^", ":", "?", "+", "*", "(", ")", ")",
+        "(", .range("*" ... "+"), "-"))
 
-    performTest("[a-b-c]", charClass(.range("a" ... "b"), "-", "c"))
+    performTest(
+      "[a-b-c]", charClass(.range("a" ... "b"), "-", "c"))
 
     // These are metacharacters in certain contexts, but normal characters
     // otherwise.
-    performTest(":-]", concat(":", "-", "]"))
+    performTest(
+      ":-]", concat(":", "-", "]"))
 
-    performTest("[^abc]", charClass("a", "b", "c", inverted: true))
-    performTest("[a^]", charClass("a", "^"))
+    performTest(
+      "[^abc]", charClass("a", "b", "c", inverted: true))
+    performTest(
+      "[a^]", charClass("a", "^"))
 
-    performTest("\\D\\S\\W", concat(.characterClass(.digit.inverted),
-                                    .characterClass(.whitespace.inverted),
-                                    .characterClass(.word.inverted)))
+    performTest(
+      "\\D\\S\\W",
+      concat(.characterClass(.digit.inverted),
+             .characterClass(.whitespace.inverted),
+             .characterClass(.word.inverted)))
 
-    performTest("[\\dd]", charClass(.characterClass(.digit), "d"))
+    performTest(
+      "[\\dd]", charClass(.characterClass(.digit), "d"))
 
-    performTest("[^[\\D]]", charClass(charClass(.characterClass(.digit.inverted)), inverted: true))
-    performTest("[[ab][bc]]", charClass(charClass("a", "b"), charClass("b", "c")))
-    performTest("[[ab]c[de]]", charClass(charClass("a", "b"), "c", charClass("d", "e")))
+    performTest(
+      "[^[\\D]]",
+      charClass(charClass(.characterClass(.digit.inverted)),
+                inverted: true))
+    performTest(
+      "[[ab][bc]]",
+      charClass(charClass("a", "b"), charClass("b", "c")))
+    performTest(
+      "[[ab]c[de]]",
+      charClass(charClass("a", "b"), "c", charClass("d", "e")))
 
-    performTest("[[ab]&&[^bc]\\d]+", .oneOrMore(charClass(
-      .setOperation(
-        lhs: charClass("a", "b"),
-        op: .intersection,
-        rhs: charClass("b", "c", inverted: true)
-      ),
-      .characterClass(.digit)
-    )))
+    performTest(
+      "[[ab]&&[^bc]\\d]+",
+      .oneOrMore(charClass(
+        .setOperation(
+          lhs: charClass("a", "b"),
+          op: .intersection,
+          rhs: charClass("b", "c", inverted: true)
+        ),
+        .characterClass(.digit))))
 
-    performTest("[a&&b]", charClass(
-      .setOperation(lhs: "a", op: .intersection, rhs: "b")
-    ))
+    performTest(
+      "[a&&b]",
+      charClass(
+        .setOperation(lhs: "a", op: .intersection, rhs: "b")))
 
     // We left-associate for chained operators.
-    performTest("[a&&b~~c]", charClass(
-      .setOperation(
-        lhs: .setOperation(lhs: "a", op: .intersection, rhs: "b"),
-        op: .symmetricDifference,
-        rhs: "c"
-      )
-    ))
+    performTest(
+      "[a&&b~~c]",
+      charClass(
+        .setOperation(
+          lhs: .setOperation(lhs: "a", op: .intersection, rhs: "b"),
+          op: .symmetricDifference,
+          rhs: "c")))
 
     // Operators are only valid in custom character classes.
-    performTest("a&&b", concat("a", "&", "&", "b"))
-    performTest("&?", .zeroOrOne("&"))
-    performTest("&&?", concat("&", .zeroOrOne("&")))
-    performTest("--+", concat("-", .oneOrMore("-")))
-    performTest("~~*", concat("~", .many("~")))
+    performTest(
+      "a&&b", concat("a", "&", "&", "b"))
+    performTest(
+      "&?", .zeroOrOne("&"))
+    performTest(
+      "&&?", concat("&", .zeroOrOne("&")))
+    performTest(
+      "--+", concat("-", .oneOrMore("-")))
+    performTest(
+      "~~*", concat("~", .many("~")))
 
     // TODO: failure tests
   }
@@ -381,127 +434,136 @@ class RegexTests: XCTestCase {
       return .goto(label: LabelId(id))
     }
 
-    performTest("abc", recode("a", "b", "c"))
-    performTest("abc\\+d*",
-                recode("a", "b", "c", "+", label(0),
-                       split(disfavoring: 1), "d", goto(label: 0),
-                       label(1),
-                       labels: [4, 8]))
+    performTest(
+      "abc", recode("a", "b", "c"))
+    performTest(
+      "abc\\+d*",
+      recode("a", "b", "c", "+", label(0),
+             split(disfavoring: 1), "d", goto(label: 0),
+             label(1),
+             labels: [4, 8]))
 
-    performTest("abc(?:de)+fghi*k|j",
-                recode(split(disfavoring: 1),
-                       .beginGroup,
-                       "a", "b", "c",
-                       .beginGroup,
-                       label(2),
-                       .beginGroup,
-                       "d", "e",
-                       .endGroup,
-                       split(disfavoring: 3), goto(label: 2),
-                       label(3),
-                       .captureArray,
-                       .endGroup,
-                       "f", "g", "h",
-                       label(4),
-                       split(disfavoring: 5), "i", goto(label: 4),
-                       label(5), "k",
-                       .endGroup,
-                       goto(label: 0),
-                       label(1), "j",
-                       label(0),
-                       labels: [29, 27, 6, 13, 19, 23]))
-    performTest("a(?:b|c)?d",
-                recode(.beginGroup,
-                       "a",
-                       .beginGroup,
-                       split(disfavoring: 0),
-                       .beginGroup,
-                       split(disfavoring: 3), "b",
-                       goto(label: 2),
-                       label(3), "c",
-                       label(2),
-                       .endGroup,
-                       .captureSome,
-                       .goto(label: 1),
-                       label(0), .captureNil,
-                       .label(1),
-                       .endGroup,
-                       "d",
-                       .endGroup,
-                       labels: [14, 16, 10, 8],
-                       splits: [3, 5]))
-    performTest("a(b|c)?d",
-                recode(.beginGroup,
-                       "a",
-                       .beginGroup,
-                       split(disfavoring: 0),
-                       .beginCapture,
-                       split(disfavoring: 3), "b", goto(label: 2),
-                       label(3), "c",
-                       label(2),
-                       .endCapture(),
-                       .captureSome,
-                       goto(label: 1),
-                       label(0),
-                       .captureNil,
-                       label(1),
-                       .endGroup,
-                       "d",
-                       .endGroup,
-                       labels: [14, 16, 10, 8],
-                       splits: [3, 5]))
-    performTest("a(b|c)*",
-                recode(.beginGroup,
-                       "a",
-                       .beginGroup,
-                       .label(0),
-                       .split(disfavoring: 1),
-                       .beginCapture,
-                       .split(disfavoring: 3),
-                       "b",
-                       .goto(label: 2),
-                       .label(3),
-                       "c",
-                       .label(2),
-                       .endCapture(),
-                       .goto(label: 0),
-                       .label(1),
-                       .captureArray,
-                       .endGroup,
-                       .endGroup,
-                       labels: [3, 14, 11, 9],
-                       splits: [4, 6]))
-    performTest("(a*)*",
-                recode(.beginGroup,
-                       label(0), split(disfavoring: 1), .beginCapture,
-                       label(2), split(disfavoring: 3), "a", goto(label: 2),
-                       label(3), .endCapture(), goto(label: 0),
-                       label(1),
-                       .captureArray,
-                       .endGroup,
-                       labels: [1, 11, 4, 8], splits: [2, 5]))
-    performTest("(?:.*)*",
-                recode(.beginGroup,
-                       label(0), split(disfavoring: 1),
-                       .beginGroup,
-                       label(2), split(disfavoring: 3), .characterClass(.any), goto(label: 2),
-                       label(3),
-                       .endGroup,
-                       goto(label: 0),
-                       label(1),
-                       .captureArray,
-                       .endGroup,
-                       labels: [1, 11, 4, 8], splits: [2, 5]))
-    performTest("a.*?b+?c??",
-                recode("a",
-                       label(0), split(disfavoring: 1), goto(label: 2),
-                       label(1), .characterClass(.any), goto(label: 0),
-                       label(2),
-                       label(3), "b", split(disfavoring: 3),
-                       split(disfavoring: 4), goto(label: 5),
-                       label(4), "c",
-                       label(5),
-                       labels: [1, 4, 7, 8, 13, 15], splits: [2, 10, 11]))
+    performTest(
+      "abc(?:de)+fghi*k|j",
+      recode(split(disfavoring: 1),
+             .beginGroup,
+             "a", "b", "c",
+             .beginGroup,
+             label(2),
+             .beginGroup,
+             "d", "e",
+             .endGroup,
+             split(disfavoring: 3), goto(label: 2),
+             label(3),
+             .captureArray,
+             .endGroup,
+             "f", "g", "h",
+             label(4),
+             split(disfavoring: 5), "i", goto(label: 4),
+             label(5), "k",
+             .endGroup,
+             goto(label: 0),
+             label(1), "j",
+             label(0),
+             labels: [29, 27, 6, 13, 19, 23]))
+    performTest(
+      "a(?:b|c)?d",
+      recode(.beginGroup,
+             "a",
+             .beginGroup,
+             split(disfavoring: 0),
+             .beginGroup,
+             split(disfavoring: 3), "b",
+             goto(label: 2),
+             label(3), "c",
+             label(2),
+             .endGroup,
+             .captureSome,
+             .goto(label: 1),
+             label(0), .captureNil,
+             .label(1),
+             .endGroup,
+             "d",
+             .endGroup,
+             labels: [14, 16, 10, 8],
+             splits: [3, 5]))
+    performTest(
+      "a(b|c)?d",
+      recode(.beginGroup,
+             "a",
+             .beginGroup,
+             split(disfavoring: 0),
+             .beginCapture,
+             split(disfavoring: 3), "b", goto(label: 2),
+             label(3), "c",
+             label(2),
+             .endCapture(),
+             .captureSome,
+             goto(label: 1),
+             label(0),
+             .captureNil,
+             label(1),
+             .endGroup,
+             "d",
+             .endGroup,
+             labels: [14, 16, 10, 8],
+             splits: [3, 5]))
+    performTest(
+      "a(b|c)*",
+      recode(.beginGroup,
+             "a",
+             .beginGroup,
+             .label(0),
+             .split(disfavoring: 1),
+             .beginCapture,
+             .split(disfavoring: 3),
+             "b",
+             .goto(label: 2),
+             .label(3),
+             "c",
+             .label(2),
+             .endCapture(),
+             .goto(label: 0),
+             .label(1),
+             .captureArray,
+             .endGroup,
+             .endGroup,
+             labels: [3, 14, 11, 9],
+             splits: [4, 6]))
+    performTest(
+      "(a*)*",
+      recode(.beginGroup,
+             label(0), split(disfavoring: 1), .beginCapture,
+             label(2), split(disfavoring: 3), "a", goto(label: 2),
+             label(3), .endCapture(), goto(label: 0),
+             label(1),
+             .captureArray,
+             .endGroup,
+             labels: [1, 11, 4, 8], splits: [2, 5]))
+    performTest(
+      "(?:.*)*",
+      recode(.beginGroup,
+             label(0), split(disfavoring: 1),
+             .beginGroup,
+             label(2), split(disfavoring: 3), .characterClass(.any), goto(label: 2),
+             label(3),
+             .endGroup,
+             goto(label: 0),
+             label(1),
+             .captureArray,
+             .endGroup,
+             labels: [1, 11, 4, 8], splits: [2, 5]))
+    performTest(
+      "a.*?b+?c??",
+      recode("a",
+             label(0), split(disfavoring: 1), goto(label: 2),
+             label(1), .characterClass(.any), goto(label: 0),
+             label(2),
+             label(3), "b", split(disfavoring: 3),
+             split(disfavoring: 4), goto(label: 5),
+             label(4), "c",
+             label(5),
+             labels: [1, 4, 7, 8, 13, 15], splits: [2, 10, 11]))
   }
 
   func testVMs() {
@@ -571,32 +633,40 @@ class RegexTests: XCTestCase {
       regex: "a(b*)c(d+)ef", input: "acddddef",
       expectedCaptureType: (Substring, Substring).self,
       expecting: .init(captures: ("", "dddd"), capturesEqual: ==))
-    performTest(regex: "a(b*)c(d+)ef", input: "abbcdef",
+    performTest(
+      regex: "a(b*)c(d+)ef", input: "abbcdef",
       expectedCaptureType: (Substring, Substring).self,
       expecting: .init(captures: ("bb", "d"), capturesEqual: ==))
     
     // Greedy vs lazy quantifiers
-    performTest(regex: "a(.*)(c+).*(e+)", input: "abbbbccccddddeeee",
+    performTest(
+      regex: "a(.*)(c+).*(e+)", input: "abbbbccccddddeeee",
       expectedCaptureType: (Substring, Substring, Substring).self,
       expecting: .init(captures: ("bbbbccc", "c", "e"), capturesEqual: ==))
-    performTest(regex: "a(.+)(c+).+(e+)", input: "abbbbccccddddeeee",
+    performTest(
+      regex: "a(.+)(c+).+(e+)", input: "abbbbccccddddeeee",
       expectedCaptureType: (Substring, Substring, Substring).self,
       expecting: .init(captures: ("bbbbccc", "c", "e"), capturesEqual: ==))
-    performTest(regex: "a(.?)(c+).?(e+)", input: "acccceeee",
+    performTest(
+      regex: "a(.?)(c+).?(e+)", input: "acccceeee",
       expectedCaptureType: (Substring, Substring, Substring).self,
       expecting: .init(captures: ("c", "ccc", "eee"), capturesEqual: ==))
-    performTest(regex: "a(.*?)(c+).*?(e+)", input: "abbbbccccddddeeee",
+    performTest(
+      regex: "a(.*?)(c+).*?(e+)", input: "abbbbccccddddeeee",
       expectedCaptureType: (Substring, Substring, Substring).self,
       expecting: .init(captures: ("bbbb", "cccc", "eeee"), capturesEqual: ==))
-    performTest(regex: "a(.+?)(c+).+?(e+)", input: "abbbbccccddddeeee",
+    performTest(
+      regex: "a(.+?)(c+).+?(e+)", input: "abbbbccccddddeeee",
       expectedCaptureType: (Substring, Substring, Substring).self,
       expecting: .init(captures: ("bbbb", "cccc", "eeee"), capturesEqual: ==))
-    performTest(regex: "a(.??)(c+).??(e+)", input: "acccceeee",
+    performTest(
+      regex: "a(.??)(c+).??(e+)", input: "acccceeee",
       expectedCaptureType: (Substring, Substring, Substring).self,
       expecting: .init(captures: ("", "cccc", "eeee"), capturesEqual: ==))
-    // performTest(regex: "(?a*)*", input: "aaaa",
-    //   expectedCaptureType: Substring.self,
-    //   expecting: .init(captures: "aaaa", capturesEqual: ==))
+//    performTest(
+//      regex: "(?a*)*", input: "aaaa",
+//      expectedCaptureType: Substring.self,
+//      expecting: .init(captures: "aaaa", capturesEqual: ==))
   }
   
   func testMatchLevel() {
