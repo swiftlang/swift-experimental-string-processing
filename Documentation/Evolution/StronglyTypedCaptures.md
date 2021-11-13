@@ -617,14 +617,14 @@ rather than an array of tuples.
 
 ```swift
 /(?:(?<lower>[0-9a-fA-F]+)\.\.(?<upper>[0-9a-fA-F]+))+/
-// Flat captures type:
+// Flat capture type:
 // => `Regex<(Substring, lower: [Substring], upper: [Substring])>`
 
-// Structured captures type:
+// Structured capture type:
 // => `Regex<(Substring, [(lower: Substring, upper: Substring)])>`
 ```
 
-The structured captures type is safer because the type system encodes that there
+The structured capture type is safer because the type system encodes that there
 are an equal number of `lower` and `upper` hex numbers. It's also more
 convenient because you're likely to be processing `lower` and `upper` in
 parallel (e.g. to create ranges).
@@ -634,10 +634,10 @@ rather than a structured alternation type.
 
 ```swift
 /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)|([0-9a-fA-F]+)/
-// Flat captures type:
+// Flat capture type:
 // => `Regex<(Substring, Substring?, Substring?, Substring?)>`
 
-// Structured captures type:
+// Structured capture type:
 // => `Regex<(Substring, Alternation<((Substring, Substring), Substring)>)>`
 ```
 
@@ -664,10 +664,10 @@ This is cool, but it adds extra complexity to `Regex` and it isn't as clear
 because the generic type no longer aligns with the traditional regex
 backreference numbering. Because the primary motivation for providing regex
 literals in Swift is their familiarity, we think the consistency of the flat
-captures type trumps the added safety and ergonomics of the structured captures
+capture type trumps the added safety and ergonomics of the structured captures
 type.
 
-We think the calculus probably flips in favor of a structured captures type for
+We think the calculus probably flips in favor of a structured capture type for
 the result builder syntax, for which familiarity is not as high a priority.
 
 ## Future directions
