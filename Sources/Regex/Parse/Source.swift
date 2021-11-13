@@ -1,45 +1,96 @@
-/// The source to a lexer. This can be bytes in memory, a file on disk,
+/// The source given to a parser. This can be bytes in memory, a file on disk,
 /// something streamed over a network connection, etc.
-///
-/// Currently, we model this as just a Substring (i.e. String + position)
 struct Source {
-  var state: Substring
-  init(_ str: String) { state = str[...] }
-
-  func peek() -> Character? { state.first }
-  mutating func eat() -> Character { state.eat() }
-
-  mutating func tryEat(_ c: Character) -> Bool {
-    guard peek() == c else { return false }
-    _ = state.eat()
-    return true
+  var input: Input
+  init<C: Collection>(_ str: C) where C.SubSequence == Input {
+    input = str[...]
   }
 
-  var isEmpty: Bool { state.isEmpty }
-
-  typealias Location = String.Index
-  var currentLoc: Location { state.startIndex }
+  var currentLoc: Loc { input.startIndex }
 }
 
-// TODO: more source-location constructs
+extension Source: _CollectionWrapper {
+  typealias _Wrapped = Input
+  typealias Element = Char
+  typealias Index = Loc
+  var _wrapped: _Wrapped { input }
+}
 
-fileprivate protocol Consumer {
+extension Source: _Peekable {
+  typealias Output = Char
+
+  mutating func advance() {
+    input = input.dropFirst()
+  }
+}
+
+// MARK: - Prototype uses String
+
+// For prototyping, base everything on String. Might be buffer
+// of bytes, etc., in the future
+extension Source {
+  typealias Input = Substring
+  typealias Char  = Character
+  typealias Loc   = String.Index
+}
+
+// MARK: - _Peekable
+
+protocol _Peekable: Collection {
   associatedtype Input
   associatedtype Output
 
-  init(_ state: Input)
+  init<C: Collection>(_ str: C) where C.SubSequence == Input
 
-  mutating func eat() -> Output
   var isEmpty: Bool { get }
+  mutating func peek() -> Output?
+  mutating func advance()
 }
-
-
-extension Substring {
-  typealias Input = String
-  fileprivate mutating func eat() -> Character {
+extension _Peekable where Output == Element {
+  func peek() -> Output? { self.first }
+}
+extension _Peekable {
+  mutating func eat() -> Output {
     assert(!isEmpty)
-    defer { self = self.dropFirst() }
-    return self.first.unsafelyUnwrapped
+    defer { advance() }
+    return peek().unsafelyUnwrapped
   }
 }
+extension _Peekable where Output: Equatable {
+  mutating func tryEat(_ c: Output) -> Bool {
+    guard peek() == c else { return false }
+    advance()
+    return true
+  }
+}
+
+// MARK: - _CollectionWrapper
+
+protocol _CollectionWrapper: Collection
+  where Index == _Wrapped.Index, Element == _Wrapped.Element
+{
+  associatedtype _Wrapped: Collection
+  var _wrapped: _Wrapped { get } // but just for default impls
+}
+extension _CollectionWrapper {
+  func index(after i: Index) -> Index {
+    _wrapped.index(after: i)
+  }
+  subscript(_ i: Index) -> Element {
+    _wrapped[i]
+  }
+  var startIndex: Index { _wrapped.startIndex }
+  var endIndex: Index { _wrapped.endIndex }
+
+  // TODO: all the customization points
+
+}
+
+// Below doesn't work, can't insert inheritor...
+//
+//extension _CollectionWrapper: BidirectionalCollection where _Wrapped: BidirectionalCollection {
+//  func index(before i: Index) -> Index {
+//    _wrapped.index(before: i)
+//  }
+//}
 

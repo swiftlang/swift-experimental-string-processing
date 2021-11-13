@@ -5,10 +5,14 @@ Syntactic structure of a regular expression
  Regex          -> '' | Alternation
  Alternation    -> Concatenation ('|' Concatenation)*
  Concatenation  -> Quantification Quantification*
- Quantification -> (Group | Atom) <token: qualifier>?
+ Quantification -> (Group | Atom) Quantifier?
  Atom           -> <token: .character> | <any> | ... character classes ...
  CaptureGroup   -> '(' RE ')'
  Group          -> '(' '?' ':' RE ')'
+
+ Quantifier -> <provided by lexer>
+ Group      -> GroupStart Regex ')'
+ GroupStart -> <provided by lexer>
 
 */
 
