@@ -2,14 +2,19 @@ public struct Group: ASTParentEntity {
   public let name: String?
   public let kind: Kind
 
-  public init(_ kind: Kind, _ name: String? = nil) {
+  public let sourceRange: SourceRange?
+
+  public init(
+    _ kind: Kind, _ name: String? = nil, _ r: SourceRange? = nil
+  ) {
     self.name = name
     self.kind = kind
+    self.sourceRange = r
   }
 }
 
 extension Group {
-  public enum Kind: ASTEntity {
+  public enum Kind: ASTValue {
     // (...)
     case capture
 

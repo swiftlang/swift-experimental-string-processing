@@ -1,5 +1,5 @@
 /// A regex abstract syntax tree
-public enum AST: ASTEntity {
+public enum AST: ASTValue {
 
   /// ... | ... | ...
   indirect case alternation([AST])
@@ -22,6 +22,12 @@ public enum AST: ASTEntity {
   case any
   case empty
 }
+
+// Note that we're not yet an ASTEntity, would need to be a struct.
+// We might end up with ASTStorage which projects the nice AST type.
+// Values and projected entities can still refer to positions.
+
+// TODO: plumb source ranges through everything
 
 // MARK: - Convenience constructors
 extension AST {

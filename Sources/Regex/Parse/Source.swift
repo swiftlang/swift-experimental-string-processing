@@ -1,6 +1,6 @@
 /// The source given to a parser. This can be bytes in memory, a file on disk,
 /// something streamed over a network connection, etc.
-struct Source {
+public struct Source {
   var input: Input
   init<C: Collection>(_ str: C) where C.SubSequence == Input {
     input = str[...]
@@ -10,10 +10,10 @@ struct Source {
 }
 
 extension Source: _CollectionWrapper {
-  typealias _Wrapped = Input
-  typealias Element = Char
-  typealias Index = Loc
-  var _wrapped: _Wrapped { input }
+  public typealias _Wrapped = Input
+  public typealias Element = Char
+  public typealias Index = Loc
+  public var _wrapped: _Wrapped { input }
 }
 
 extension Source: _Peekable {
@@ -29,8 +29,11 @@ extension Source: _Peekable {
 // For prototyping, base everything on String. Might be buffer
 // of bytes, etc., in the future
 extension Source {
-  typealias Input = Substring
-  typealias Char  = Character
-  typealias Loc   = String.Index
+  public typealias Input = Substring
+  public typealias Char  = Character
+  public typealias Loc   = String.Index
 }
+
+public typealias SourceRange = Range<Source.Loc>
+public typealias SourceLoc = Source.Loc
 
