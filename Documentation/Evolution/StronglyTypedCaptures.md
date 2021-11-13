@@ -286,7 +286,8 @@ backreference numbering.
 
 ```swift
 let graphemeBreakPropertyData = /(([0-9a-fA-F]+)(\.\.([0-9a-fA-F]+)))\s*;\s(\w+).*/
-// Positions in result:        1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    5 ^~~~~
+// Positions in result:        0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                             1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    5 ^~~~~
 //                                            3 ^~~~~~~~~~~~~~~~~~~~
 //                              2 ^~~~~~~~~~~~~~   4 ^~~~~~~~~~~~~~
 // => `Regex<(Substring, Substring, Substring, Substring, Substring, Substring)>`
@@ -379,7 +380,8 @@ vs possessive, is irrelevant to determining the capture type.
 //     )
 
 let multipleAndNestedOptional = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))?/
-// Positions in result:        1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Positions in result:        0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                             1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                              2 ^~~~~~~~~~~~~~  3 ^~~~~~~~~~~~~~
 // => `Regex<(Substring, Substring?, Substring?, Substring?)>`
 
@@ -395,7 +397,8 @@ let multipleAndNestedOptional = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))?/
 //     .flattened()
 
 let multipleAndNestedQuantifier = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))+/
-// Positions in result:          1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Positions in result:          0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                               1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                                2 ^~~~~~~~~~~~~~  3 ^~~~~~~~~~~~~~
 // => `Regex<(Substring, [Substring], [Substring], [Substring])>`
 
@@ -461,7 +464,8 @@ let numberAlternationRegex = /([01]+)|[0-9]+|([0-9a-fA-F]+)/
 //     .flattened()
 
 let scalarRangeAlternation = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)|([0-9a-fA-F]+)/
-// Positions in result:     1 ^~~~~~~~~~~~~~  2 ^~~~~~~~~~~~~~
+// Positions in result:     0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                          1 ^~~~~~~~~~~~~~  2 ^~~~~~~~~~~~~~
 //                                                           3 ^~~~~~~~~~~~~~
 // => `Regex<(Substring, Substring?, Substring?, Substring?)>
 
@@ -479,7 +483,8 @@ let scalarRangeAlternation = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)|([0-9a-fA-F]+)/
 //     .flattened()
 
 let nestedScalarRangeAlternation = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))|([0-9a-fA-F]+)/
-// Positions in result:           1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
+// Positions in result:           0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                                1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
 //                                 2 ^~~~~~~~~~~~~~  3 ^~~~~~~~~~~~~~
 //                                                                   4 ^~~~~~~~~~~~~~
 // => `Regex<(Substring, Substring?, Substring?, Substring?, Substring?)>
