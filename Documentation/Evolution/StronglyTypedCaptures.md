@@ -607,8 +607,8 @@ If we decided to deprioritize this motivation, there are opportunities to infer
 safer, more ergonomic, and arguably more intuitive types for captures.
 
 For example, to be consistent with traditional regex backreferences
-quantifications of multiple or nested captures produces parallel arrays rather
-than an array of tuples.
+quantifications of multiple or nested captures had to produce parallel arrays
+rather than an array of tuples.
 
 ```swift
 /(?:(?<lower>[0-9a-fA-F]+)\.\.(?<upper>[0-9a-fA-F]+))+/
