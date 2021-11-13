@@ -62,11 +62,11 @@ struct Lexer {
 
 // MARK: - Intramodule Programming Interface (IPI?)
 
-extension Lexer {
+extension Lexer: _Peekable {
+  typealias Output = Token
+
   /// Whether we're done
-  var isEmpty: Bool {
-    nextToken == nil && source.isEmpty
-  }
+  var isEmpty: Bool { nextToken == nil && source.isEmpty }
 
   /// Grab the next token without consuming it, if there is one
   mutating func peek() -> Token? {
@@ -76,20 +76,14 @@ extension Lexer {
     return nextToken.unsafelyUnwrapped
   }
 
-  /// Eat a token, returning it (unless we're at the end)
-  @discardableResult
-  mutating func eat() -> Token? {
-    defer { advance() }
-    return peek()
+  mutating func advance() {
+    nextTokenStorage = lexToken()
   }
+}
 
-  /// Eat the specified token if there is one. Returns whether anything happened
-  mutating func tryEat(_ tok: Token) -> Bool {
-    guard peek() == tok else { return false }
-    advance()
-    return true
-  }
+// MARK: - Richer lexical analysis IPI
 
+extension Lexer {
   mutating func tryEatQuantification() -> Quantifier? {
     // TODO: just lex directly, for now we bootstrap
     switch peek() {
@@ -138,9 +132,6 @@ extension Lexer {
 // MARK: - Implementation
 
 extension Lexer {
-  private mutating func advance() {
-    nextTokenStorage = lexToken()
-  }
 
   private mutating func lexToken() -> TokenStorage? {
     guard !source.isEmpty else { return nil }
