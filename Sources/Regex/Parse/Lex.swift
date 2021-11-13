@@ -109,9 +109,9 @@ extension Lexer {
       guard tryEat(.colon) else {
         fatalError("TODO: diagnostic, or else other group kinds")
       }
-      return .nonCapture
+      return .nonCapture()
     }
-    return .capture
+    return .capture()
   }
 
   /// Try to eat a token, throwing if we don't see what we're expecting.

@@ -4,14 +4,16 @@ public struct Group: ASTParentEntity {
 
   public let sourceRange: SourceRange?
 
-  public init(
-    _ kind: Kind, _ name: String? = nil, _ r: SourceRange? = nil
+  init(
+    _ kind: Kind, name: String? = nil, _ r: SourceRange?
   ) {
     self.name = name
     self.kind = kind
     self.sourceRange = r
   }
 }
+
+// TODO: sourceRange doesn't participate in equality...
 
 extension Group {
   public enum Kind: ASTValue {
@@ -44,8 +46,12 @@ extension Group {
 // MARK: - Convenience constructors
 
 extension Group {
-  public static var capture: Group { Group(.capture) }
-  public static var nonCapture: Group { Group(.nonCapture) }
+  public static func capture(_ sr: SourceRange? = nil) -> Group {
+    Group(.capture, sr)
+  }
+  public static func nonCapture(_ sr: SourceRange? = nil) -> Group {
+    Group(.nonCapture, sr)
+  }
 }
 
 // MARK: - API
@@ -102,5 +108,20 @@ extension Group {
     res += child
     res += ")"
     return res
+  }
+}
+
+// MARK: - AST constructors
+
+extension AST {
+  public static func capture(
+    _ a: AST, _ sr: SourceRange? = nil
+  ) -> AST {
+    .group(.capture(sr), a)
+  }
+  public static func nonCapture(
+    _ a: AST, _ sr: SourceRange? = nil
+  ) -> AST {
+    .group(.nonCapture(sr), a)
   }
 }

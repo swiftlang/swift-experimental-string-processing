@@ -4,12 +4,14 @@ public struct Quantifier: ASTParentEntity {
 
   public let sourceRange: SourceRange?
 
-  public init(_ a: Amount, _ k: Kind, _ r: SourceRange? = nil) {
+  init(_ a: Amount, _ k: Kind, _ r: SourceRange?) {
     self.amount = a
     self.kind = k
     self.sourceRange = r
   }
 }
+
+// TODO: sourceRange doesn't participate in equality...
 
 extension Quantifier {
   public enum Amount: ASTValue {
@@ -33,29 +35,39 @@ extension Quantifier {
 
 extension Quantifier {
   public static func zeroOrMore(
-    _ k: Kind, _ r: SourceRange? = nil
+    _ k: Kind, _ sr: SourceRange? = nil
   ) -> Self {
-    Self(.zeroOrMore, k, r)
+    Self(.zeroOrMore, k, sr)
   }
-  public static func oneOrMore(_ k: Kind) -> Self {
-    Self(.oneOrMore, k)
+  public static func oneOrMore(
+    _ k: Kind, _ sr: SourceRange? = nil
+  ) -> Self {
+    Self(.oneOrMore, k, sr)
   }
-  public static func zeroOrOne(_ k: Kind) -> Self {
-    Self(.zeroOrOne, k)
+  public static func zeroOrOne(
+    _ k: Kind, _ sr: SourceRange? = nil
+  ) -> Self {
+    Self(.zeroOrOne, k, sr)
   }
-  public static func exactly(_ k: Kind, _ i: Int) -> Self {
-    Self(.exactly(i), k)
+  public static func exactly(
+    _ k: Kind, _ i: Int, _ sr: SourceRange? = nil
+  ) -> Self {
+    Self(.exactly(i), k, sr)
   }
-  public static func nOrMore(_ k: Kind, _ i: Int) -> Self {
-    Self(.nOrMore(i), k)
+  public static func nOrMore(
+    _ k: Kind, _ i: Int, _ sr: SourceRange? = nil
+  ) -> Self {
+    Self(.nOrMore(i), k, sr)
   }
-  public static func upToN(_ k: Kind, _ i: Int) -> Self {
-    Self(.upToN(i), k)
+  public static func upToN(
+    _ k: Kind, _ i: Int, _ sr: SourceRange? = nil
+  ) -> Self {
+    Self(.upToN(i), k, sr)
   }
   public static func range(
-    _ k: Kind, _ r: ClosedRange<Int>
+    _ k: Kind, _ r: ClosedRange<Int>, _ sr: SourceRange? = nil
   ) -> Self {
-    Self(.range(r), k)
+    Self(.range(r), k, sr)
   }
 }
 
@@ -105,5 +117,25 @@ extension Quantifier: _ASTPrintable {
 
   public func _dumpNested(_ child: String) -> String {
     "\(amount._dump())_\(kind._dump())(\(child)"
+  }
+}
+
+// MARK: - AST constructors
+
+extension AST {
+  public static func zeroOrMore(
+    _ kind: Quantifier.Kind, _ a: AST, _ r: SourceRange? = nil
+  ) -> AST {
+    .quantification(.zeroOrMore(kind, r), a)
+  }
+  public static func oneOrMore(
+    _ kind: Quantifier.Kind, _ a: AST, _ r: SourceRange? = nil
+  ) -> AST {
+    .quantification(.oneOrMore(kind, r), a)
+  }
+  public static func zeroOrOne(
+    _ kind: Quantifier.Kind, _ a: AST, _ r: SourceRange? = nil
+  ) -> AST {
+    .quantification(.zeroOrOne(kind, r), a)
   }
 }

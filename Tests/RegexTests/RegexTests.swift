@@ -285,13 +285,13 @@ class RegexTests: XCTestCase {
         concat(
           "a", "b", "c",
           .oneOrMore(
-            .greedy, .group(.nonCapture, concat("d", "e"))),
+            .greedy, .group(.nonCapture(), concat("d", "e"))),
           "f", "g", "h", .zeroOrMore(.greedy, "i"), "k"),
         "j"))
     performTest(
       "a(?:b|c)?d",
       concat("a", .zeroOrOne(
-        .greedy, .group(.nonCapture, alt("b", "c"))), "d"))
+        .greedy, .group(.nonCapture(), alt("b", "c"))), "d"))
     performTest(
       "a?b??c+d+?e*f*?",
       concat(
@@ -303,14 +303,14 @@ class RegexTests: XCTestCase {
       alt("a", concat(.zeroOrOne(.greedy, "b"), "c")))
     performTest(
       "(a|b)c",
-      concat(.group(.capture, alt("a", "b")), "c"))
+      concat(.group(.capture(), alt("a", "b")), "c"))
     performTest(
       "(.)*(.*)",
       concat(
         .zeroOrMore(
-          .greedy, .group(.capture, .characterClass(.any))),
+          .greedy, .group(.capture(), .characterClass(.any))),
         .group(
-          .capture, .zeroOrMore(.greedy, .characterClass(.any)))))
+          .capture(), .zeroOrMore(.greedy, .characterClass(.any)))))
     performTest(
       "abc\\d", concat("a", "b", "c", .characterClass(.digit)))
     performTest(
