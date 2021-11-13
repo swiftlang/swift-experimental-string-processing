@@ -10,14 +10,13 @@ public struct Quantifier: ASTParentEntity {
 
 extension Quantifier {
   public enum Amount: ASTEntity {
-    case zeroOrMore   // *
-    case oneOrMore    // +
-    case zeroOrOne    // ?
-    case exactly(Int) // {n}
-    case nOrMore(Int) // {n,}
-    case upToN(Int)   // {,n}
-    case range(       // {n,m}
-      atLeast: Int, atMost: Int)
+    case zeroOrMore              // *
+    case oneOrMore               // +
+    case zeroOrOne               // ?
+    case exactly(Int)            // {n}
+    case nOrMore(Int)            // {n,}
+    case upToN(Int)              // {,n}
+    case range(ClosedRange<Int>) // {n,m}
   }
 
   public enum Kind: String, ASTEntity {
@@ -49,9 +48,9 @@ extension Quantifier {
     Self(.upToN(i), k)
   }
   public static func range(
-    _ k: Kind, atLeast: Int, atMost: Int
+    _ k: Kind, _ r: ClosedRange<Int>
   ) -> Self {
-    Self(.range(atLeast: atLeast, atMost: atMost), k)
+    Self(.range(r), k)
   }
 }
 
@@ -60,24 +59,26 @@ extension Quantifier {
 extension Quantifier.Amount: _ASTPrintable {
   public func _print() -> String {
     switch self {
-    case .zeroOrMore: return "*"
-    case .oneOrMore:  return "+"
-    case .zeroOrOne:  return "?"
+    case .zeroOrMore:      return "*"
+    case .oneOrMore:       return "+"
+    case .zeroOrOne:       return "?"
     case let .exactly(n):  return "{\(n)}"
     case let .nOrMore(n):  return "{\(n),}"
     case let .upToN(n):    return "{,\(n)}"
-    case let .range(n, m): return "{\(n),\(m)}"
+    case let .range(r):
+      return "{\(r.lowerBound),\(r.upperBound)}"
     }
   }
   public func _dump() -> String {
     switch self {
-    case .zeroOrMore: return ".zeroOrMore"
-    case .oneOrMore:  return ".oneOrMore"
-    case .zeroOrOne:  return ".zeroOrOne"
+    case .zeroOrMore:      return ".zeroOrMore"
+    case .oneOrMore:       return ".oneOrMore"
+    case .zeroOrOne:       return ".zeroOrOne"
     case let .exactly(n):  return ".exactly(\(n))"
     case let .nOrMore(n):  return ".nOrMore(\(n))"
     case let .upToN(n):    return ".uptoN(\(n))"
-    case let .range(n, m): return ".range(\(n),\(m))"
+    case let .range(r):
+      return ".range(\(r.lowerBound),\(r.upperBound))"
     }
   }
 }
@@ -85,8 +86,8 @@ extension Quantifier.Kind: _ASTPrintable {
   public func _print() -> String { rawValue }
   public func _dump() -> String {
     switch self {
-    case .greedy: return ".greedy"
-    case .reluctant: return ".reluctant"
+    case .greedy:     return ".greedy"
+    case .reluctant:  return ".reluctant"
     case .possessive: return ".possessive"
     }
   }
