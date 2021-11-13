@@ -1,5 +1,6 @@
 /// A regex abstract syntax tree
-public enum AST: ASTValue {
+public enum AST: ASTValue, ASTAction {
+  public typealias Product = Self
 
   /// ... | ... | ...
   indirect case alternation([AST])
@@ -26,24 +27,8 @@ public enum AST: ASTValue {
 // Note that we're not yet an ASTEntity, would need to be a struct.
 // We might end up with ASTStorage which projects the nice AST type.
 // Values and projected entities can still refer to positions.
-
-// TODO: plumb source ranges through everything
-
-// MARK: - Convenience constructors
-extension AST {
-  public static func zeroOrMore(
-    _ kind: Quantifier.Kind, _ a: AST
-  ) -> AST {
-    .quantification(.zeroOrMore(kind), a)
-  }
-  public static func oneOrMore(
-    _ kind: Quantifier.Kind, _ a: AST
-  ) -> AST {
-    .quantification(.oneOrMore(kind), a)
-  }
-  public static func zeroOrOne(
-    _ kind: Quantifier.Kind, _ a: AST
-  ) -> AST {
-    .quantification(.zeroOrOne(kind), a)
-  }
+// ASTStorage might end up becoming the ASTAction conformer
+private struct ASTStorage {
+  let ast: AST
+  let sourceRange: SourceRange?
 }
