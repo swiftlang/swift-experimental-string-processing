@@ -4,7 +4,7 @@ struct TokenStorage {
   let kind: Token
 
   /// The source location span of the token itself
-  let loc: Range<Source.Location>
+  let loc: Range<Source.Loc>
 
   let fromCustomCharacterClass: Bool
 
