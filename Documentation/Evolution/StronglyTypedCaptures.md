@@ -676,7 +676,7 @@ matching a string using a regular expression obtained at runtime.
 
 To support dynamism, we could introduce a new type, `DynamicCaptures` that
 represents a tree of captures, and add a `Regex` initializer that accepts a
-string and produces `Regex<Substring, DynamicCaptures>`.
+string and produces `Regex<(Substring, DynamicCaptures)>`.
   
 ```swift
 public struct DynamicCaptures: Equatable, RandomAccessCollection {
