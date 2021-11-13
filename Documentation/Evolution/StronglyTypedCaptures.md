@@ -595,10 +595,6 @@ single named capturing group.)_
 - What should be the type of `Captures` for a regex with no captures (e.g.
 `Void` or `Never` or something else)?
 
-Also, when using a regex within the result builder syntax, it's more obvious
-that `capture()` will have access to the entire match, when the match is
-included in the generic signature.
-
 Given all of this, it seems simpler and more pragmatic to make `Regex` generic
 over both the match and the captures.
 
