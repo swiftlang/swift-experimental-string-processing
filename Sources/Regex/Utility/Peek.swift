@@ -28,21 +28,21 @@ extension _Peekable where Output: Equatable {
 
 // MARK: - _CollectionWrapper
 
-protocol _CollectionWrapper: Collection
+public protocol _CollectionWrapper: Collection
   where Index == _Wrapped.Index, Element == _Wrapped.Element
 {
   associatedtype _Wrapped: Collection
   var _wrapped: _Wrapped { get } // but just for default impls
 }
 extension _CollectionWrapper {
-  func index(after i: Index) -> Index {
+  public func index(after i: Index) -> Index {
     _wrapped.index(after: i)
   }
-  subscript(_ i: Index) -> Element {
+  public subscript(_ i: Index) -> Element {
     _wrapped[i]
   }
-  var startIndex: Index { _wrapped.startIndex }
-  var endIndex: Index { _wrapped.endIndex }
+  public var startIndex: Index { _wrapped.startIndex }
+  public var endIndex: Index { _wrapped.endIndex }
 
   // TODO: all the customization points
 

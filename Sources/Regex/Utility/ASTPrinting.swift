@@ -26,13 +26,6 @@ extension _ASTPrintableNested {
   public func _dump() -> String { _dumpNested("") }
 }
 
-public protocol ASTEntity: _ASTPrintable, Hashable {
-}
-
-public protocol ASTParentEntity: ASTEntity, _ASTPrintableNested {
-  // TODO: variadic access to children?
-}
-
 // MARK: - AST's conformance
 
 extension AST {

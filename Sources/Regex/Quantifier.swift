@@ -2,14 +2,17 @@ public struct Quantifier: ASTParentEntity {
   public let amount: Amount
   public let kind: Kind
 
-  public init(_ a: Amount, _ k: Kind) {
+  public let sourceRange: SourceRange?
+
+  public init(_ a: Amount, _ k: Kind, _ r: SourceRange? = nil) {
     self.amount = a
     self.kind = k
+    self.sourceRange = r
   }
 }
 
 extension Quantifier {
-  public enum Amount: ASTEntity {
+  public enum Amount: ASTValue {
     case zeroOrMore              // *
     case oneOrMore               // +
     case zeroOrOne               // ?
@@ -19,7 +22,7 @@ extension Quantifier {
     case range(ClosedRange<Int>) // {n,m}
   }
 
-  public enum Kind: String, ASTEntity {
+  public enum Kind: String, ASTValue {
     case greedy     = ""
     case reluctant  = "?"
     case possessive = "+"
@@ -29,8 +32,10 @@ extension Quantifier {
 // MARK: - Convenience constructors
 
 extension Quantifier {
-  public static func zeroOrMore(_ k: Kind) -> Self {
-    Self(.zeroOrMore, k)
+  public static func zeroOrMore(
+    _ k: Kind, _ r: SourceRange? = nil
+  ) -> Self {
+    Self(.zeroOrMore, k, r)
   }
   public static func oneOrMore(_ k: Kind) -> Self {
     Self(.oneOrMore, k)
