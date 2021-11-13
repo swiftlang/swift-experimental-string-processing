@@ -42,7 +42,7 @@ if let match = "abcddddefgh".firstMatch(of: regex) {
 ```
 
 >_**Note:** The `Regex` type includes, and `firstMatch(of:)` returns, the entire
-match as the "0th capture"._
+match as the "0th element"._
 
 We introduce a generic type `Regex<Match>`, which treats the type of captures
 as part of a regular expression's type information for clarity, type safety, and
