@@ -1,6 +1,18 @@
 /*
 
- Our current lexical structure of a regular expression:
+ Lexically, regular expressions are two langauges, one for inside
+ a custom character class and one for outside.
+
+ Outside of a custom character class, regexes have the following
+ lexical structure:
+
+ TODO
+
+ Inside a custom character class:
+
+ TODO
+
+ Our currently-matched lexical structure of a regular expression:
 
  Regex     -> Token*
  Token     -> '\' Escaped | _SetOperator_ | Terminal
@@ -17,8 +29,6 @@
  _SetOperator_ is valid if we're inside a custom character set,
  otherwise it's just characters.
 
- TODO: We'll need a more principled approach here.
-
 */
 
 /// The lexer produces a stream of `Token`s for the parser to consume
@@ -30,10 +40,21 @@ struct Lexer {
   ///
   /// We're choosing encapsulation here for our buffer-management strategy, as
   /// the lexer is at the end of the assembly line.
-  ///
-  fileprivate var nextToken: Token? = nil
+  fileprivate var nextTokenStorage: TokenStorage? = nil
+
+  var nextToken: Token? {
+    nextTokenStorage?.token
+  }
 
   /// The number of parent custom character classes we're lexing within.
+  ///
+  /// Nested custom character classes are possible in some engines,
+  /// and regex lexes differently inside and outside custom char classes.
+  /// Tracking which language we're lexing is technically the job of the parser.
+  /// But, we want the lexer to provide rich lexical information and let the parser
+  /// just handle parsing. We could have a `setIsInCustomCC(_:Bool)` called by
+  /// the parser, which would save/restore via the call stack, but it's
+  /// far simpler to just have the lexer count the `[` and `]`s.
   fileprivate var customCharacterClassDepth = 0
 
   init(_ source: Source) { self.source = source }
@@ -63,19 +84,49 @@ extension Lexer {
   }
 
   /// Eat the specified token if there is one. Returns whether anything happened
-  mutating func tryEat(_ tok: Token.Kind) -> Bool {
-    guard peek()?.kind == tok else { return false }
+  mutating func tryEat(_ tok: Token) -> Bool {
+    guard peek() == tok else { return false }
     advance()
     return true
   }
 
+  mutating func tryEatQuantification() -> Quantifier? {
+    // TODO: just lex directly, for now we bootstrap
+    switch peek() {
+    case .star?:
+      eat()
+      return .zeroOrMore(tryEat(.question) ? .reluctant : .greedy)
+    case .plus?:
+      eat()
+      return .oneOrMore(tryEat(.question) ? .reluctant : .greedy)
+    case .question?:
+      eat()
+      return .zeroOrOne(tryEat(.question) ? .reluctant : .greedy)
+    default:
+      return nil
+    }
+  }
+
+  mutating func tryEatGroupStart() -> Group? {
+    // TODO: just lex directly, for now we bootstrap
+    guard tryEat(.leftParen) else { return nil }
+
+    if tryEat(.question) {
+      guard tryEat(.colon) else {
+        fatalError("TODO: diagnostic, or else other group kinds")
+      }
+      return .nonCapture
+    }
+    return .capture
+  }
+
   /// Try to eat a token, throwing if we don't see what we're expecting.
-  mutating func eat(expecting tok: Token.Kind) throws {
+  mutating func eat(expecting tok: Token) throws {
     guard tryEat(tok) else { throw "Expected \(tok)" }
   }
 
   /// Try to eat a token, asserting we saw what we expected
-  mutating func eat(asserting tok: Token.Kind) {
+  mutating func eat(asserting tok: Token) {
     let expected = tryEat(tok)
     assert(expected)
   }
@@ -88,15 +139,18 @@ extension Lexer {
 
 extension Lexer {
   private mutating func advance() {
-    nextToken = lexToken()
+    nextTokenStorage = lexToken()
   }
 
-  private mutating func lexToken() -> Token? {
+  private mutating func lexToken() -> TokenStorage? {
     guard !source.isEmpty else { return nil }
 
     let startLoc = source.currentLoc
-    func tok(_ kind: Token.Kind) -> Token {
-      Token(kind: kind, loc: startLoc..<source.currentLoc)
+    func tok(_ kind: Token) -> TokenStorage {
+      TokenStorage(
+        kind: kind,
+        loc: startLoc..<source.currentLoc,
+        fromCustomCharacterClass: isInCustomCharacterClass)
     }
 
     // Lex:  Token -> '\' Escaped | _SetOperator | Terminal
@@ -128,7 +182,7 @@ extension Lexer {
   private var isInCustomCharacterClass: Bool { customCharacterClassDepth > 0 }
 
   // TODO: plumb diagnostics
-  private mutating func consumeEscaped() -> Token.Kind {
+  private mutating func consumeEscaped() -> Token {
     assert(!source.isEmpty, "TODO: diagnostic for this")
     /*
 
@@ -158,7 +212,7 @@ extension Lexer {
   private mutating func consumeUniScalar(
     allowBracketVariant: Bool,
     unbracketedNumDigits: Int
-  ) -> Token.Kind {
+  ) -> Token {
     if allowBracketVariant, source.tryEat("{") {
       return .unicodeScalar(consumeBracketedUnicodeScalar())
     }
@@ -200,7 +254,7 @@ extension Lexer {
     return scalar
   }
 
-  private mutating func tryConsumeSetOperator(_ ch: Character) -> Token.Kind? {
+  private mutating func tryConsumeSetOperator(_ ch: Character) -> Token? {
     // Can only occur in a custom character class. Otherwise, the operator
     // characters are treated literally.
     assert(isInCustomCharacterClass)
@@ -228,4 +282,3 @@ extension Lexer: Sequence, IteratorProtocol {
     return peek()
   }
 }
-

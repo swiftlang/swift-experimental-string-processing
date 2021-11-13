@@ -48,7 +48,8 @@ public struct OneOrMore<Component: RegexProtocol>: RegexProtocol {
   public let regex: Regex<Capture>
 
   public init(_ component: Component) {
-    self.regex = .init(ast: .oneOrMore(component.regex.ast))
+    self.regex = .init(
+      ast: .oneOrMore(.greedy, component.regex.ast))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
@@ -68,7 +69,8 @@ public struct Repeat<Component: RegexProtocol>: RegexProtocol {
   public let regex: Regex<Capture>
 
   public init(_ component: Component) {
-    self.regex = .init(ast: .many(component.regex.ast))
+    self.regex = .init(
+      ast: .zeroOrMore(.greedy, component.regex.ast))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
@@ -88,7 +90,8 @@ public struct Optionally<Component: RegexProtocol>: RegexProtocol {
   public let regex: Regex<Capture>
 
   public init(_ component: Component) {
-    self.regex = .init(ast: .zeroOrOne(component.regex.ast))
+    self.regex = .init(
+      ast: .zeroOrOne(.greedy, component.regex.ast))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
@@ -137,16 +140,21 @@ public struct CapturingGroup<Capture>: RegexProtocol {
   init<Component: RegexProtocol>(
     _ component: Component
   ) {
-    self.regex = .init(ast: .capturingGroup(component.regex.ast))
+    self.regex = .init(
+      ast: .group(.capture, component.regex.ast))
   }
 
   init<NewCapture, Component: RegexProtocol>(
     _ component: Component,
     transform: @escaping (Substring) -> NewCapture
   ) {
-    self.regex = .init(ast: .capturingGroup(component.regex.ast, transform: CaptureTransform {
-      transform($0) as Any
-    }))
+    self.regex = .init(
+      ast: .groupTransform(
+        .capture,
+        component.regex.ast,
+        transform: CaptureTransform {
+          transform($0) as Any
+        }))
   }
 }
 

@@ -10,14 +10,11 @@ Syntactic structure of a regular expression
  CaptureGroup   -> '(' RE ')'
  Group          -> '(' '?' ':' RE ')'
 
-
 */
-
-
-
 
 private struct Parser {
   var lexer: Lexer
+
   init(_ lexer: Lexer) {
     self.lexer = lexer
   }
@@ -43,7 +40,7 @@ extension Parser {
     if lexer.isEmpty { return .empty }
     return try parseAlternation()
   }
-  
+
   //     Alternation -> Concatenation ('|' Concatenation)*
   mutating func parseAlternation() throws -> AST {
     assert(!lexer.isEmpty)
@@ -53,7 +50,7 @@ extension Parser {
     }
     return result.count == 1 ? result[0] : .alternation(result)
   }
-  
+
   //     Concatenation -> Quantification Quantification*
   mutating func parseConcatenation() throws -> AST {
     var result = Array<AST>()
@@ -66,44 +63,29 @@ extension Parser {
     }
     return result.count == 1 ? result[0] : .concatenation(result)
   }
-  
+
   //     Quantification -> QuantifierOperand <token: Quantifier>?
   mutating func parseQuantification(of operand: AST) throws -> AST {
-    switch lexer.peek()?.kind {
-    case .star?:
-      lexer.eat()
-      return lexer.tryEat(.question)
-        ? .lazyMany(operand)
-        : .many(operand)
-    case .plus?:
-      lexer.eat()
-      return lexer.tryEat(.question)
-        ? .lazyOneOrMore(operand)
-        : .oneOrMore(operand)
-    case .question?:
-      lexer.eat()
-      return lexer.tryEat(.question)
-        ? .lazyZeroOrOne(operand)
-        : .zeroOrOne(operand)
-    default:
-      return operand
+    if let q = lexer.tryEatQuantification() {
+      return .quantification(q, operand)
     }
+    return operand
   }
 
   //     QuantifierOperand -> (Group | <token: Character>)
   mutating func parseQuantifierOperand() throws -> AST? {
-    switch lexer.peek()?.kind {
-    case .leftParen?:
-      lexer.eat()
-      var isCapturing = true
-      if lexer.tryEat(.question) {
-        try lexer.eat(expecting: .colon)
-        isCapturing = false
+    if let g = lexer.tryEatGroupStart() {
+      defer {
+        guard lexer.tryEat(.rightParen) else {
+          fatalError("TODO: diagnostics")
+        }
       }
-      let child = try parse()
-      try lexer.eat(expecting: .rightParen)
-      return isCapturing ? .capturingGroup(child) : .group(child)
+      return .group(g, try parse())
+    }
 
+    switch lexer.peek() {
+    case .leftParen?:
+      fatalError("Shouldn't be possible anymore")
     case .character(let c, isEscaped: false):
       lexer.eat()
       return .character(c)
@@ -128,7 +110,7 @@ extension Parser {
 
       // TODO: we want a much cleaner separation here, perhaps
       // lexer can present as normal characters
-      guard case .meta(let meta) = lexer.eat()?.kind else {
+      guard case .meta(let meta) = lexer.eat() else {
         fatalError("Not a metachar?")
       }
       return .character(meta.rawValue)
@@ -160,7 +142,7 @@ extension Parser {
     // appears in a position where it cannot be treated as a range
     // (per PCRE#SEC9). We may want to warn on this and require the user to
     // escape it though.
-    switch lexer.eat()?.kind {
+    switch lexer.eat() {
     case .meta(.rsquare):
       try report("unexpected end of character class")
     case .meta(let meta):
@@ -174,11 +156,11 @@ extension Parser {
 
   mutating func parseCharacterSetComponent() throws -> CharacterSetComponent {
     // Nested custom character class.
-    if lexer.peek()?.kind == .leftSquareBracket {
+    if lexer.peek() == .leftSquareBracket {
       return .characterClass(try parseCustomCharacterClass())
     }
     // Escaped character class.
-    if case .character(let c, isEscaped: true) = lexer.peek()?.kind,
+    if case .character(let c, isEscaped: true) = lexer.peek(),
        let cc = CharacterClass(c) {
       lexer.eat()
       return .characterClass(cc)
@@ -195,7 +177,7 @@ extension Parser {
   /// Attempt to parse a set operator, returning nil if the next token is not
   /// for a set operator.
   mutating func tryParseSetOperator() -> CharacterClass.SetOperator? {
-    guard case .setOperator(let opTok) = lexer.peek()?.kind else { return nil }
+    guard case .setOperator(let opTok) = lexer.peek() else { return nil }
     lexer.eat()
     switch opTok {
     case .doubleAmpersand:
