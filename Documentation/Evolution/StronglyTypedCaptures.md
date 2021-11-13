@@ -599,7 +599,7 @@ over both the match and the captures.
 
 ### Structured rather than flat captures
 
-This pitch proposes infering capture types in such a way as to align with the
+This pitch proposes inferring capture types in such a way as to align with the
 traditional numbering of backreferences. This is because much of the motivation
 behind providing regex literals in Swift is their familiarity.
 
