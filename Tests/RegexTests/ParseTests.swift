@@ -118,13 +118,10 @@ extension RegexTests {
 
     lexTest(
       #"a\Q .\Eb"#,
-      "a", .startQuote, esc(" "), esc("."), .endQuote, "b")
+      "a", .quote(" ."), "b")
     lexTest(
       #"a\Q E\Q \\.\Eb"#,
-      "a", .startQuote,
-      esc(" "), esc("E"), esc("\\"), esc("Q"), esc(" "),
-      esc("\\"), esc("\\"), esc("."),
-      .endQuote, "b")
+      "a", .quote(#" E\Q \\."#), "b")
 
   }
 }

@@ -87,8 +87,12 @@ extension Parser {
       return .group(g, try parse())
     }
 
-    switch lexer.peek() {
-    case .leftParen?:
+    guard let nextTok = lexer.peek() else {
+      return nil
+    }
+
+    switch nextTok {
+    case .leftParen:
       fatalError("Shouldn't be possible anymore")
     case .character(let c, isEscaped: false):
       lexer.eat()
@@ -108,7 +112,7 @@ extension Parser {
       // TODO: anything else here?
       return .character(c)
 
-    case .minus?, .colon?, .rightSquareBracket?:
+    case .minus, .colon, .rightSquareBracket:
       // Outside of custom character classes, these are not considered to be
       // metacharacters.
 
@@ -117,49 +121,34 @@ extension Parser {
       guard case .meta(let meta) = lexer.eat() else {
         fatalError("Not a metachar?")
       }
+
+      // FIXME: Where is the lexer.eat() call?
+
       return .character(meta.rawValue)
 
-    case .leftSquareBracket?:
+    case .leftSquareBracket:
       return .characterClass(try parseCustomCharacterClass())
 
-    case .dot?:
+    case .dot:
       lexer.eat()
       return .characterClass(.any)
 
-    case .startQuote?:
-      return parseQuoted()
+    case .quote(let s):
+      lexer.eat()
+      return .quote(s)
 
     // Correct terminations
 
-    case .trivia?:
+    case .trivia:
       lexer.eat()
       return .trivia
 
-    case .rightParen?, .pipe?, nil:
+    case .rightParen, .pipe:
       return nil
 
     default:
       try report("expected a character or group")
     }
-  }
-
-  mutating func parseQuoted() -> AST {
-    lexer.eat(asserting: .startQuote)
-
-    var result = ""
-    while !lexer.tryEat(.endQuote) {
-      if lexer.isEmpty {
-        fatalError("Error: expected end of quote")
-      }
-      switch lexer.eat() {
-      case let .character(c, isEscaped):
-        assert(isEscaped) // For now, this is how we model it
-        result.append(c)
-      default:
-        fatalError("Non-character in quote; is this possible?")
-      }
-    }
-    return .quote(result)
   }
 
   typealias CharacterSetComponent = CharacterClass.CharacterSetComponent

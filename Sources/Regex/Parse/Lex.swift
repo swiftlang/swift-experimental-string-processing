@@ -57,10 +57,6 @@ struct Lexer {
   /// far simpler to just have the lexer count the `[` and `]`s.
   fileprivate var customCharacterClassDepth = 0
 
-  /// Whether we are quoted / inside a quote
-  fileprivate var isQuoted = false
-
-
   init(_ source: Source) { self.source = source }
 }
 
@@ -151,29 +147,13 @@ extension Lexer {
 
     let current = source.eat()
 
-    // If we're in a quoted expression, everything is raw
-    // except \E
-    if isQuoted {
-      if (current == "\\" && source.tryEat("E"))
-      || (current == "\"" && syntax.contains(.swiftyQuotes))
-      {
-        self.isQuoted = false
-        return tok(.endQuote)
-      }
-
-      // FIXME: Well, not explicitly escaped...
-      return tok(classifyTerminal(current, fromEscape: true))
-    }
-
     // Lex:  Token -> '\' Escaped | _SetOperator | Terminal
     if current.isEscape {
       return tok(consumeEscaped())
     }
 
     if syntax.contains(.swiftyQuotes), current == "\"" {
-      assert(!isQuoted)
-      self.isQuoted = true
-      return tok(.startQuote)
+      return tok(consumeQuoted(.swift))
     }
 
     if isInCustomCharacterClass,
@@ -226,8 +206,7 @@ extension Lexer {
 
     // Quoting
     case "Q":
-      self.isQuoted = true
-      return .startQuote
+      return consumeQuoted(.pcre)
     case "E":
       // TODO: diagnostics
       fatalError("Error: End-quote without open quote")
@@ -298,6 +277,29 @@ extension Lexer {
       return nil
     }
   }
+
+  private enum QuoteKind {
+    case pcre  // \Q ... \E
+    case swift // " ... "
+  }
+  private mutating func consumeQuoted(_ kind: QuoteKind) -> Token {
+    var result = ""
+
+    while true {
+      let c = source.eat()
+      switch (c, kind) {
+      case ("\"", .swift):
+        return .quote(result)
+      case ("\\", .pcre):
+        if source.tryEat("E") {
+          return .quote(result)
+        }
+        fallthrough
+      default:
+        result.append(c)
+      }
+    }
+  }
 }
 
 
@@ -322,7 +324,7 @@ extension Lexer {
     assert(!t.isEscape || escaped)
     if !escaped {
       // TODO: figure out best way to organize options logic...
-      if !isQuoted, syntax.ignoreWhitespace, t == " " {
+      if syntax.ignoreWhitespace, t == " " {
         return .trivia
       }
 
@@ -334,3 +336,4 @@ extension Lexer {
     return .character(t, isEscaped: escaped)
   }
 }
+

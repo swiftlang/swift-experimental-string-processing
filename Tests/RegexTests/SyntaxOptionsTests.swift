@@ -27,13 +27,13 @@ extension RegexTests {
 
     lexTest(
       #"a\Q .\Eb"#,
-      "a", .startQuote, esc(" "), esc("."), .endQuote, "b",
+      "a", .quote(" ."), "b",
       syntax: .traditional)
 
     // If we're quoted, whitespace is quoted too
     lexTest(
       #"a\Q .\Eb"#,
-      "a", .startQuote, esc(" "), esc("."), .endQuote, "b",
+      "a", .quote(" ."), "b",
       syntax: .nonSemanticWhitespace)
 
     func concat(_ asts: AST...) -> AST { return .concatenation(asts) }

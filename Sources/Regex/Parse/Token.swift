@@ -20,8 +20,7 @@ enum Token: Hashable {
   case character(Character, isEscaped: Bool)
   case unicodeScalar(UnicodeScalar)
 
-  case startQuote // \Q
-  case endQuote   // \E
+  case quote(String)
 
   case trivia // comments, ignored stuff, etc
 
@@ -89,8 +88,7 @@ extension Token: CustomStringConvertible {
     case .setOperator(let op): return op.description
     case .character(let c, _): return c.halfWidthCornerQuoted
     case .unicodeScalar(let u): return "U\(u.halfWidthCornerQuoted)"
-    case .startQuote: return "\\Q"
-    case .endQuote: return "\\E"
+    case .quote(let s): return "\\Q\(s.halfWidthCornerQuoted)\\E"
     case .trivia: return ""
     }
   }
