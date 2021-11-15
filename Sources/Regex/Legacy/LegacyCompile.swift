@@ -11,7 +11,7 @@ public func compile(
   var instructions = RECode.InstructionList()
   func compileNode(_ ast: AST) {
     switch ast {
-    case .empty: return
+    case .empty, .trivia: return
 
     case .character(let c):
       instructions.append(.character(c))

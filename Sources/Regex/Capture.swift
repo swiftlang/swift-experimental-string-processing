@@ -47,8 +47,10 @@ extension AST {
       || true // WIP: preserves old behavior
     case .quantification(_, let child):
       return child.hasCaptures
-    case .character, .unicodeScalar, .characterClass, .any, .empty:
+    case .character, .unicodeScalar, .characterClass, .any, .empty,
+        .trivia:
       return false
+
     }
   }
 }
