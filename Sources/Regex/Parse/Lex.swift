@@ -57,6 +57,10 @@ struct Lexer {
   /// far simpler to just have the lexer count the `[` and `]`s.
   fileprivate var customCharacterClassDepth = 0
 
+  /// Whether we are quoted / inside a quote
+  fileprivate var isQuoted = false
+
+
   init(_ source: Source) { self.source = source }
 }
 
@@ -145,8 +149,21 @@ extension Lexer {
         fromCustomCharacterClass: isInCustomCharacterClass)
     }
 
-    // Lex:  Token -> '\' Escaped | _SetOperator | Terminal
     let current = source.eat()
+
+    // If we're in a quoted expression, everything is raw
+    // except \E
+    if isQuoted {
+      if source.tryEat("E") {
+        self.isQuoted = false
+        return tok(.endQuote)
+      }
+
+      // FIXME: Well, not explicitly escaped...
+      return tok(classifyTerminal(current, fromEscape: true))
+    }
+
+    // Lex:  Token -> '\' Escaped | _SetOperator | Terminal
     if current.isEscape {
       return tok(consumeEscaped())
     }
@@ -195,6 +212,14 @@ extension Lexer {
     case "U":
       return consumeUniScalar(
         allowBracketVariant: false, unbracketedNumDigits: 8)
+
+    // Quoting
+    case "Q":
+      self.isQuoted = true
+      return .startQuote
+    case "E":
+      fatalError("What should we do here?")
+
     case let c:
       return classifyTerminal(c, fromEscape: true)
     }

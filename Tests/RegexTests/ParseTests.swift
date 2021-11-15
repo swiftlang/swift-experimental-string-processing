@@ -111,6 +111,21 @@ extension RegexTests {
       .leftSquareBracket, .rightSquareBracket,
       .setOperator(.doubleAmpersand), .rightSquareBracket,
       .rightSquareBracket, "&", "&")
+
+    // TODO: Lex unit testing is probably better formulated
+    // as parse tests. We might want a pull-based testing
+    // harness instead of running it for the sequence of tokens.
+
+    lexTest(
+      #"a\Q .\Eb"#,
+      "a", .startQuote, esc(" "), esc("."), .endQuote, "b")
+    lexTest(
+      #"a\Q \Q \\.\Eb"#,
+      "a", .startQuote,
+      esc(" "), esc("\\"), esc("Q"), esc(" "),
+      esc("\\"), esc("\\"), esc("."),
+      .endQuote, "b")
+
   }
 }
 
