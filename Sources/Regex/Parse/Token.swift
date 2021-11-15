@@ -19,6 +19,10 @@ enum Token: Hashable {
   case setOperator(SetOperator)
   case character(Character, isEscaped: Bool)
   case unicodeScalar(UnicodeScalar)
+
+  case trivia // comments, ignored stuff, etc
+
+  var isSemantic: Bool { self != .trivia }
 }
 
 // MARK: - Token kinds
@@ -82,6 +86,7 @@ extension Token: CustomStringConvertible {
     case .setOperator(let op): return op.description
     case .character(let c, _): return c.halfWidthCornerQuoted
     case .unicodeScalar(let u): return "U\(u.halfWidthCornerQuoted)"
+    case .trivia: return ""
     }
   }
 }

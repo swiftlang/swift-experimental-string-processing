@@ -127,9 +127,12 @@ extension Parser {
       return .characterClass(.any)
 
     // Correct terminations
-    case .rightParen?: fallthrough
-    case .pipe?: fallthrough
-    case nil:
+
+    case .trivia?:
+      lexer.eat()
+      return .trivia
+
+    case .rightParen?, .pipe?, nil:
       return nil
 
     default:
