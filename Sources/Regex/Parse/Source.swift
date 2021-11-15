@@ -2,8 +2,13 @@
 /// something streamed over a network connection, etc.
 public struct Source {
   var input: Input
-  init<C: Collection>(_ str: C) where C.SubSequence == Input {
-    input = str[...]
+  var syntax: SyntaxOptions
+
+  init<C: Collection>(
+    _ str: C, _ syntax: SyntaxOptions
+  ) where C.SubSequence == Input {
+    self.input = str[...]
+    self.syntax = syntax
   }
 
   var currentLoc: Loc { input.startIndex }

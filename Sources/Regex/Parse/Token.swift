@@ -95,15 +95,24 @@ extension Character {
   var isEscape: Bool { return self == "\\" }
 }
 
-extension Token {
+extension Lexer {
   /// Classify a given terminal character
-  static func classifyTerminal(
-    _ t: Character, fromEscape escaped: Bool
-  ) -> Self {
+  func classifyTerminal(
+    _ t: Character,
+    fromEscape escaped: Bool
+  ) -> Token {
     assert(!t.isEscape || escaped)
-    if !escaped, let mc = Token.MetaCharacter(rawValue: t) {
-      return .meta(mc)
+    if !escaped {
+      // TODO: figure out best way to organize options logic...
+      if syntax.ignoreWhitespace, t == " " {
+        return .trivia
+      }
+
+      if let mc = Token.MetaCharacter(rawValue: t) {
+        return .meta(mc)
+      }
     }
+
     return .character(t, isEscaped: escaped)
   }
 }

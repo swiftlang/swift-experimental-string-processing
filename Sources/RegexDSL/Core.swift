@@ -110,8 +110,12 @@ public struct MockRegexLiteral<Capture>: RegexProtocol {
   public typealias MatchValue = Substring
   public let regex: Regex<Capture>
 
-  public init(_ string: String, capturing: Capture.Type = Capture.self) throws {
-    regex = Regex(ast: try parse(string))
+  public init(
+    _ string: String,
+    _ syntax: SyntaxOptions = .traditional,
+    capturing: Capture.Type = Capture.self
+  ) throws {
+    regex = Regex(ast: try parse(string, syntax))
   }
 }
 

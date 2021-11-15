@@ -254,9 +254,10 @@ public func compile(
 }
 
 public func compile(
-  _ regex: String, options: REOptions = .none
+  _ regex: String, options: REOptions = .none,
+  _ syntax: SyntaxOptions = .traditional
 ) throws -> RECode {
-  let ast = try parse(regex)
+  let ast = try parse(regex, syntax)
   return try compile(ast, options: options)
 }
 
