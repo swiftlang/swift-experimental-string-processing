@@ -2,24 +2,7 @@ import XCTest
 @testable import Regex
 import Util
 
-extension Token: ExpressibleByExtendedGraphemeClusterLiteral {
-  public typealias ExtendedGraphemeClusterLiteralType = Character
-  public init(extendedGraphemeClusterLiteral value: Character) {
-    self = .character(value, isEscaped: false)
-  }
-}
-extension AST: ExpressibleByExtendedGraphemeClusterLiteral {
-  public typealias ExtendedGraphemeClusterLiteralType = Character
-  public init(extendedGraphemeClusterLiteral value: Character) {
-    self = .character(value)
-  }
-}
-extension CharacterClass.CharacterSetComponent: ExpressibleByExtendedGraphemeClusterLiteral {
-  public typealias ExtendedGraphemeClusterLiteralType = Character
-  public init(extendedGraphemeClusterLiteral value: Character) {
-    self = .character(value)
-  }
-}
+
 extension RECode.Instruction: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
@@ -55,7 +38,7 @@ struct ExpectedPass {
 }
 
 
-struct TestCase {
+private struct TestCase {
   let regex: String
   let pass: [ExpectedPass]
   let fail: [String]
@@ -99,7 +82,7 @@ struct TestExpectation<Capture> {
   }
 }
 
-func performTest<Capture>(
+private func performTest<Capture>(
   regex: String,
   input: String,
   offsets: Offsets? = nil,
@@ -154,264 +137,8 @@ func performTest<Capture>(
   run(harvey, name: "Harvey")
 }
 
-class RegexTests: XCTestCase {
-  func testLex() {
-    _ = """
-        Note: Since everything's String-based, escape backslashes.
-              Literal backslashes are thus double-escaped, i.e. "\\\\"
-        Examples:
-          "abc" -> ｢abc｣
-          "abc\\+d*" -> ｢abc+d｣ star
-          "abc(de)+fghi*k|j" ->
-              ｢abc｣ lparen ｢de｣ rparen plus ｢fghi｣ star ｢k｣ pipe ｢j｣
-
-        Gramatically invalid but lexically accepted examples:
-          "|*\\\\" -> pipe star ｢\\｣
-          ")ab(+" -> rparen ｢ab｣ lparen plus
-        """
-    func performTest(_ input: String, _ expecting: Token...) {
-      let actual = Lexer(Source(input)).map { $0 }
-      XCTAssertEqual(expecting, actual)
-    }
-    func esc(_ c: Character) -> Token {
-      .character(c, isEscaped: true)
-    }
-
-    // Gramatically valid
-    performTest(
-      "abc", "a", "b", "c")
-    performTest(
-      "ab\\c", "a", "b", esc("c"))
-    performTest(
-      "abc\\+d*", "a", "b", "c", esc("+"), "d", .star)
-    performTest(
-      "abc(de)+fghi*k|j",
-      "a", "b", "c", .leftParen, "d", "e", .rightParen,
-      .plus, "f", "g", "h", "i", .star, "k", .pipe, "j")
-    performTest(
-      "a(b|c)?d",
-      "a", .leftParen, "b", .pipe, "c", .rightParen, .question, "d")
-    performTest(
-      "a|b?c", "a", .pipe, "b", .question, "c")
-    performTest(
-      "(?:a|b)c",
-      .leftParen, .question, .colon, "a", .pipe, "b",
-      .rightParen, "c")
-    performTest(
-      "a\\u0065b\\u{65}c\\x65d",
-      "a", .unicodeScalar("e"),
-      "b", .unicodeScalar("e"),
-      "c", .unicodeScalar("e"), "d")
-    performTest(
-      "[^a&&b--c~~d]",
-      .leftSquareBracket, .caret, "a",
-      .setOperator(.doubleAmpersand), "b",
-      .setOperator(.doubleDash), "c",
-      .setOperator(.doubleTilda), "d",
-      .rightSquareBracket)
-    performTest(
-      "&&^-^-~~",
-      "&", "&", .caret, .minus, .caret, .minus, "~", "~")
-    performTest(
-      "[]]&&",
-      .leftSquareBracket, .rightSquareBracket,
-      .rightSquareBracket, "&", "&")
-    performTest(
-      "[]]&\\&",
-      .leftSquareBracket, .rightSquareBracket,
-      .rightSquareBracket, "&", esc("&"))
-
-    // Gramatically invalid (yet lexically valid)
-    performTest(
-      "|*\\\\", .pipe, .star, esc("\\"))
-    performTest(
-      ")ab(+", .rightParen, "a", "b", .leftParen, .plus)
-    performTest(
-      "...", .dot, .dot, .dot)
-    performTest(
-      "[[[]&&]]&&",
-      .leftSquareBracket, .leftSquareBracket,
-      .leftSquareBracket, .rightSquareBracket,
-      .setOperator(.doubleAmpersand), .rightSquareBracket,
-      .rightSquareBracket, "&", "&")
-  }
-
-  func testParse() {
-    _ = """
-        Examples:
-            "abc" -> .concat(｢abc｣)
-            "abc\\+d*" -> .concat(｢abc+｣ .zeroOrMore(｢d｣))
-            "abc(?:de)+fghi*k|j" ->
-                .alt(.concat(｢abc｣, .oneOrMore(.group(.concat(｢de｣))),
-                             ｢fgh｣ .zeroOrMore(｢i｣), ｢k｣),
-                     ｢j｣)
-        """
-    func performTest(_ input: String, _ expecting: AST) {
-      let ast = try! parse(input)
-      guard ast == expecting else {
-        XCTFail("""
-
-                  Expected: \(expecting)
-                  Found:    \(ast)
-                  """)
-
-        return
-      }
-    }
-
-    func alt(_ asts: AST...) -> AST { return .alternation(asts) }
-    func concat(_ asts: AST...) -> AST { return .concatenation(asts) }
-    func charClass(
-      _ comps: CharacterClass.CharacterSetComponent...,
-      inverted: Bool = false
-    ) -> AST {
-      .characterClass(.custom(comps).withInversion(inverted))
-    }
-    func charClass(
-      _ comps: CharacterClass.CharacterSetComponent...,
-      inverted: Bool = false
-    ) -> CharacterClass.CharacterSetComponent {
-      .characterClass(.custom(comps).withInversion(inverted))
-    }
-
-    performTest(
-      "abc", concat("a", "b", "c"))
-    performTest(
-      "abc\\+d*",
-      concat("a", "b", "c", "+", .zeroOrMore(.greedy, "d")))
-    performTest(
-      "abc(?:de)+fghi*k|j",
-      alt(
-        concat(
-          "a", "b", "c",
-          .oneOrMore(
-            .greedy, .group(.nonCapture(), concat("d", "e"))),
-          "f", "g", "h", .zeroOrMore(.greedy, "i"), "k"),
-        "j"))
-    performTest(
-      "a(?:b|c)?d",
-      concat("a", .zeroOrOne(
-        .greedy, .group(.nonCapture(), alt("b", "c"))), "d"))
-    performTest(
-      "a?b??c+d+?e*f*?",
-      concat(
-        .zeroOrOne(.greedy, "a"), .zeroOrOne(.reluctant, "b"),
-        .oneOrMore(.greedy, "c"), .oneOrMore(.reluctant, "d"),
-        .zeroOrMore(.greedy, "e"), .zeroOrMore(.reluctant, "f")))
-    performTest(
-      "a|b?c",
-      alt("a", concat(.zeroOrOne(.greedy, "b"), "c")))
-    performTest(
-      "(a|b)c",
-      concat(.group(.capture(), alt("a", "b")), "c"))
-    performTest(
-      "(.)*(.*)",
-      concat(
-        .zeroOrMore(
-          .greedy, .group(.capture(), .characterClass(.any))),
-        .group(
-          .capture(), .zeroOrMore(.greedy, .characterClass(.any)))))
-    performTest(
-      "abc\\d", concat("a", "b", "c", .characterClass(.digit)))
-    performTest(
-      "a\\u0065b\\u{00000065}c\\x65d\\U00000065",
-      concat("a", .unicodeScalar("e"),
-             "b", .unicodeScalar("e"),
-             "c", .unicodeScalar("e"),
-             "d", .unicodeScalar("e")))
-
-    performTest(
-      "[-|$^:?+*())(*-+-]",
-      charClass(
-        "-", "|", "$", "^", ":", "?", "+", "*", "(", ")", ")",
-        "(", .range("*" ... "+"), "-"))
-
-    performTest(
-      "[a-b-c]", charClass(.range("a" ... "b"), "-", "c"))
-
-    // These are metacharacters in certain contexts, but normal characters
-    // otherwise.
-    performTest(
-      ":-]", concat(":", "-", "]"))
-
-    performTest(
-      "[^abc]", charClass("a", "b", "c", inverted: true))
-    performTest(
-      "[a^]", charClass("a", "^"))
-
-    performTest(
-      "\\D\\S\\W",
-      concat(.characterClass(.digit.inverted),
-             .characterClass(.whitespace.inverted),
-             .characterClass(.word.inverted)))
-
-    performTest(
-      "[\\dd]", charClass(.characterClass(.digit), "d"))
-
-    performTest(
-      "[^[\\D]]",
-      charClass(charClass(.characterClass(.digit.inverted)),
-                inverted: true))
-    performTest(
-      "[[ab][bc]]",
-      charClass(charClass("a", "b"), charClass("b", "c")))
-    performTest(
-      "[[ab]c[de]]",
-      charClass(charClass("a", "b"), "c", charClass("d", "e")))
-
-    performTest(
-      "[[ab]&&[^bc]\\d]+",
-      .oneOrMore(.greedy, charClass(
-        .setOperation(
-          lhs: charClass("a", "b"),
-          op: .intersection,
-          rhs: charClass("b", "c", inverted: true)
-        ),
-        .characterClass(.digit))))
-
-    performTest(
-      "[a&&b]",
-      charClass(
-        .setOperation(lhs: "a", op: .intersection, rhs: "b")))
-
-    // We left-associate for chained operators.
-    performTest(
-      "[a&&b~~c]",
-      charClass(
-        .setOperation(
-          lhs: .setOperation(lhs: "a", op: .intersection, rhs: "b"),
-          op: .symmetricDifference,
-          rhs: "c")))
-
-    // Operators are only valid in custom character classes.
-    performTest(
-      "a&&b", concat("a", "&", "&", "b"))
-    performTest(
-      "&?", .zeroOrOne(.greedy, "&"))
-    performTest(
-      "&&?", concat("&", .zeroOrOne(.greedy, "&")))
-    performTest(
-      "--+", concat("-", .oneOrMore(.greedy, "-")))
-    performTest(
-      "~~*", concat("~", .zeroOrMore(.greedy, "~")))
-
-    // TODO: failure tests
-  }
-
-  func testParseErrors() {
-
-    func performErrorTest(_ input: String, _ expecting: String) {
-      //      // Quick pattern match against AST to extract error nodes
-      //      let ast = parse2(input)
-      //      print(ast)
-    }
-
-    performErrorTest("(", "")
-
-
-  }
-
-  func testCompile() {
+extension RegexTests {
+  func testLegacyCompile() {
     func performTest(_ input: String, _ expecting: RECode) {
       let recode = try! compile(input)
       guard recode == expecting else {
@@ -588,7 +315,7 @@ class RegexTests: XCTestCase {
              labels: [1, 4, 7, 8, 13, 15], splits: [2, 10, 11]))
   }
 
-  func testVMs() {
+  func testLegacyVMs() {
     let tests: Array<(String, pass: [String], fail: [String])> = [
       ("a|b", ["a", "b"], ["ab", "c"]),
       ("a.b", ["abb", "aab", "acb"], ["ab", "c", "abc"]),
@@ -691,7 +418,7 @@ class RegexTests: XCTestCase {
 //      expecting: .init(captures: "aaaa", capturesEqual: ==))
   }
 
-  func testMatchLevel() {
+  func testLegacyMatchLevel() {
     let tests: Array<(String, chars: [String], unicodes: [String])> = [
       ("..", ["e\u{301}e\u{301}"], ["e\u{301}"]),
     ]
@@ -715,7 +442,7 @@ class RegexTests: XCTestCase {
     }
   }
 
-  func testPartialMatches() {
+  func testLegacyPartialMatches() {
     let tests: Array<(String, pass: [(String, matched: String)], fail: [String])> = [
       ("a+",
        pass: [("aaa", matched: "aaa"),
@@ -751,7 +478,7 @@ class RegexTests: XCTestCase {
     }
   }
 
-  func testSubrangeMatches() {
+  func testLegacySubrangeMatches() {
     // whole subrange
     let tests: Array<
       (String,
