@@ -17,6 +17,7 @@ public enum AST: ASTValue, ASTAction {
 
   indirect case quantification(Quantifier, AST)
 
+  case quote(String)
   case character(Character)
   case unicodeScalar(UnicodeScalar)
   case characterClass(CharacterClass)
@@ -70,7 +71,7 @@ extension AST {
       return .quantification(q, c)
 
     case .character, .unicodeScalar, .characterClass,
-        .any, .empty, .trivia:
+        .any, .empty, .trivia, .quote:
       return f(self) ? self : nil
     }
   }

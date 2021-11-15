@@ -120,9 +120,9 @@ extension RegexTests {
       #"a\Q .\Eb"#,
       "a", .startQuote, esc(" "), esc("."), .endQuote, "b")
     lexTest(
-      #"a\Q \Q \\.\Eb"#,
+      #"a\Q E\Q \\.\Eb"#,
       "a", .startQuote,
-      esc(" "), esc("\\"), esc("Q"), esc(" "),
+      esc(" "), esc("E"), esc("\\"), esc("Q"), esc(" "),
       esc("\\"), esc("\\"), esc("."),
       .endQuote, "b")
 
@@ -296,6 +296,17 @@ extension RegexTests {
       "--+", concat("-", .oneOrMore(.greedy, "-")))
     parseTest(
       "~~*", concat("~", .zeroOrMore(.greedy, "~")))
+
+    parseTest(
+      #"a\Q .\Eb"#,
+      concat("a", .quote(" ."), "b"))
+    parseTest(
+      #"a\Q \Q \\.\Eb"#,
+      concat(
+        "a",
+        .quote(#" \Q \\."#),
+        "b"))
+
 
     // TODO: failure tests
   }

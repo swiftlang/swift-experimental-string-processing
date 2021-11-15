@@ -154,7 +154,9 @@ extension Lexer {
     // If we're in a quoted expression, everything is raw
     // except \E
     if isQuoted {
-      if source.tryEat("E") {
+      if (current == "\\" && source.tryEat("E"))
+      || (current == "\"" && syntax.contains(.swiftyQuotes))
+      {
         self.isQuoted = false
         return tok(.endQuote)
       }
@@ -167,6 +169,13 @@ extension Lexer {
     if current.isEscape {
       return tok(consumeEscaped())
     }
+
+    if syntax.contains(.swiftyQuotes), current == "\"" {
+      assert(!isQuoted)
+      self.isQuoted = true
+      return tok(.startQuote)
+    }
+
     if isInCustomCharacterClass,
        let op = tryConsumeSetOperator(current)
     {
@@ -188,7 +197,9 @@ extension Lexer {
   }
 
   /// Whether the lexer is currently lexing within a custom character class.
-  private var isInCustomCharacterClass: Bool { customCharacterClassDepth > 0 }
+  private var isInCustomCharacterClass: Bool {
+    customCharacterClassDepth > 0
+  }
 
   // TODO: plumb diagnostics
   private mutating func consumeEscaped() -> Token {
@@ -218,7 +229,8 @@ extension Lexer {
       self.isQuoted = true
       return .startQuote
     case "E":
-      fatalError("What should we do here?")
+      // TODO: diagnostics
+      fatalError("Error: End-quote without open quote")
 
     case let c:
       return classifyTerminal(c, fromEscape: true)
@@ -297,5 +309,28 @@ extension Lexer: Sequence, IteratorProtocol {
   mutating func next() -> Element? {
     defer { advance() }
     return peek()
+  }
+}
+
+
+extension Lexer {
+  /// Classify a given terminal character
+  func classifyTerminal(
+    _ t: Character,
+    fromEscape escaped: Bool
+  ) -> Token {
+    assert(!t.isEscape || escaped)
+    if !escaped {
+      // TODO: figure out best way to organize options logic...
+      if !isQuoted, syntax.ignoreWhitespace, t == " " {
+        return .trivia
+      }
+
+      if let mc = Token.MetaCharacter(rawValue: t) {
+        return .meta(mc)
+      }
+    }
+
+    return .character(t, isEscaped: escaped)
   }
 }

@@ -48,7 +48,7 @@ extension AST {
     case .quantification(_, let child):
       return child.hasCaptures
     case .character, .unicodeScalar, .characterClass, .any, .empty,
-        .trivia:
+        .trivia, .quote:
       return false
 
     }

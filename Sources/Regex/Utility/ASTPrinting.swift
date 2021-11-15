@@ -53,6 +53,7 @@ extension AST {
     case .characterClass(let cc): return ".characterClass(\(cc))"
     case .any: return ".any"
     case .empty: return "".halfWidthCornerQuoted
+    case .quote(let s): return s.halfWidthCornerQuoted
 
     case .trivia: return ""
     }

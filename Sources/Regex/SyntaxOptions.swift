@@ -13,6 +13,9 @@ public struct SyntaxOptions: OptionSet {
   public static var nonSemanticWhitespace: Self { Self(1 << 0) }
 
   /// `a "." b` == `a\Q.\Eb`
+  ///
+  /// NOTE: Currently, this means we have raw quotes.
+  /// Better would be to have real Swift string delimiter parsing logic.
   public static var swiftyQuotes:          Self { Self(1 << 1) }
 
   /// `a /* comment */ b` == `a(?#. comment )b`

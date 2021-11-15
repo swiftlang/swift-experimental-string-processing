@@ -13,6 +13,10 @@ public func compile(
     switch ast {
     case .empty, .trivia: return
 
+    case .quote(let s):
+      s.forEach { instructions.append(.character($0)) }
+      return
+
     case .character(let c):
       instructions.append(.character(c))
       return

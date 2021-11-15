@@ -126,6 +126,9 @@ extension Parser {
       lexer.eat()
       return .characterClass(.any)
 
+    case .startQuote?:
+      return parseQuoted()
+
     // Correct terminations
 
     case .trivia?:
@@ -138,6 +141,25 @@ extension Parser {
     default:
       try report("expected a character or group")
     }
+  }
+
+  mutating func parseQuoted() -> AST {
+    lexer.eat(asserting: .startQuote)
+
+    var result = ""
+    while !lexer.tryEat(.endQuote) {
+      if lexer.isEmpty {
+        fatalError("Error: expected end of quote")
+      }
+      switch lexer.eat() {
+      case let .character(c, isEscaped):
+        assert(isEscaped) // For now, this is how we model it
+        result.append(c)
+      default:
+        fatalError("Non-character in quote; is this possible?")
+      }
+    }
+    return .quote(result)
   }
 
   typealias CharacterSetComponent = CharacterClass.CharacterSetComponent
