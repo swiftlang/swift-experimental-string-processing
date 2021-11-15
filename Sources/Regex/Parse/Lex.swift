@@ -132,6 +132,7 @@ extension Lexer {
 // MARK: - Implementation
 
 extension Lexer {
+  var syntax: SyntaxOptions { source.syntax }
 
   private mutating func lexToken() -> TokenStorage? {
     guard !source.isEmpty else { return nil }
@@ -166,7 +167,7 @@ extension Lexer {
       customCharacterClassDepth -= 1
     }
 
-    return tok(.classifyTerminal(current, fromEscape: false))
+    return tok(classifyTerminal(current, fromEscape: false))
   }
 
   /// Whether the lexer is currently lexing within a custom character class.
@@ -195,7 +196,7 @@ extension Lexer {
       return consumeUniScalar(
         allowBracketVariant: false, unbracketedNumDigits: 8)
     case let c:
-      return .classifyTerminal(c, fromEscape: true)
+      return classifyTerminal(c, fromEscape: true)
     }
   }
 

@@ -226,8 +226,12 @@ extension Parser {
   }
 }
 
-public func parse(_ regex: String) throws -> AST {
-  let lexer = Lexer(Source(regex))
+public func parse<S: StringProtocol>(
+  _ regex: S, _ syntax: SyntaxOptions
+) throws -> AST where S.SubSequence == Substring
+{
+  let source = Source(regex, syntax)
+  let lexer = Lexer(source)
   var parser = Parser(lexer)
   return try parser.parse()
 }
