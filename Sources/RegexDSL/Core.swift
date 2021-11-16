@@ -76,7 +76,13 @@ extension RegexProtocol {
     else {
       return nil
     }
-    return RegexMatch(range: range, captures: captures.value as! Capture)
+    let convertedCapture: Capture
+    if Capture.self == DynamicCaptures.self {
+      convertedCapture = DynamicCaptures(captures) as! Capture
+    } else {
+      convertedCapture = captures.value as! Capture
+    }
+    return RegexMatch(range: range, captures: convertedCapture)
   }
 }
 
