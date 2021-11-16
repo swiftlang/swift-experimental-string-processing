@@ -312,6 +312,22 @@ extension RegexTests {
       #"a(?#. comment)b"#,
       concat("a", "b"))
 
+    parseTest(
+      #"a{1,2}"#,
+      .quantification(.range(.greedy, 1...2), "a"))
+    parseTest(
+      #"a{,2}"#,
+      .quantification(.upToN(.greedy, 2), "a"))
+    parseTest(
+      #"a{1,}"#,
+      .quantification(.nOrMore(.greedy, 1), "a"))
+    parseTest(
+      #"a{1}"#,
+      .quantification(.exactly(.greedy, 1), "a"))
+    parseTest(
+      #"a{1,2}?"#,
+      .quantification(.range(.reluctant, 1...2), "a"))
+
     // TODO: failure tests
   }
 

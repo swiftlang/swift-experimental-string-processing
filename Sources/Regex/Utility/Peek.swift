@@ -9,6 +9,12 @@ protocol _Peekable {
 }
 extension _Peekable where Self: Collection, Output == Element {
   func peek() -> Output? { self.first }
+
+  @discardableResult
+  mutating func eat(upTo: Index) -> SubSequence {
+    defer { while startIndex != upTo { eat() } }
+    return self[..<upTo]
+  }
 }
 extension _Peekable {
   @discardableResult

@@ -93,7 +93,12 @@ extension Parser {
 
     switch nextTok {
     case .leftParen:
-      fatalError("Shouldn't be possible anymore")
+      fatalError("Shouldn't be possible anymore: '(")
+    case .leftCurlyBracket:
+      fatalError("Shouldn't be possible anymore: '{'")
+    case .rightCurlyBracket:
+      fatalError("Shouldn't be possible anymore: '}'")
+
     case .character(let c, isEscaped: false):
       lexer.eat()
       return .character(c)
@@ -152,7 +157,7 @@ extension Parser {
       return .trivia
 
     case .meta, .setOperator:
-      try report("expected a character or group")
+      fatalError("expected a character or group: \(nextTok)")
     }
   }
 

@@ -45,6 +45,10 @@ extension Token {
     case minus = "-"
     case caret = "^"
     case dollar = "$"
+
+    case rightCurlyBracket = "}"
+    case leftCurlyBracket = "{"
+    case comma = ","
   }
 
 
@@ -74,6 +78,11 @@ extension Token {
   static var rightSquareBracket: Self { .meta(.rsquare) }
   static var minus: Self { .meta(.minus) }
   static var caret: Self { .meta(.caret) }
+
+  static var rightCurlyBracket: Self { .meta(.rightCurlyBracket) }
+  static var leftCurlyBracket: Self { .meta(.leftCurlyBracket) }
+  static var comma: Self { .meta(.comma) }
+
 }
 
 extension Token.MetaCharacter: CustomStringConvertible {

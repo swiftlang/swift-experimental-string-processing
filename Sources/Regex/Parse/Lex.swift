@@ -84,18 +84,75 @@ extension Lexer: _Peekable {
 // MARK: - Richer lexical analysis IPI
 
 extension Lexer {
+  mutating func tryConsumeNumber() -> Int? {
+    func tryConsNum() -> Character? {
+      switch peek() {
+      case .character(let c, false)? where c.isNumber:
+        eat()
+        return c
+      default: return nil
+      }
+    }
+
+    var num = ""
+    while let c = tryConsNum() { num.append(c) }
+
+    guard !num.isEmpty else { return nil }
+
+    guard let i = Int(num) else {
+      fatalError("ERROR: overflow on \(num)")
+    }
+    return i
+  }
+
   mutating func tryEatQuantification() -> Quantifier? {
+    guard !isEmpty else { return nil }
+
+    func consumeQuantKind() -> Quantifier.Kind {
+      // TODO: possessive
+      tryEat(.question) ? .reluctant : .greedy
+    }
+
     // TODO: just lex directly, for now we bootstrap
-    switch peek() {
-    case .star?:
+    switch peek()! {
+    case .star:
       eat()
-      return .zeroOrMore(tryEat(.question) ? .reluctant : .greedy)
-    case .plus?:
+      return .zeroOrMore(consumeQuantKind())
+    case .plus:
       eat()
-      return .oneOrMore(tryEat(.question) ? .reluctant : .greedy)
-    case .question?:
+      return .oneOrMore(consumeQuantKind())
+    case .question:
       eat()
-      return .zeroOrOne(tryEat(.question) ? .reluctant : .greedy)
+      return .zeroOrOne(consumeQuantKind())
+    case .leftCurlyBracket:
+      // TODO: diagnostics
+      eat()
+
+      let lower = tryConsumeNumber()
+      let comma = tryEat(.comma)
+      let upper = tryConsumeNumber()
+      eat(asserting: .rightCurlyBracket)
+      let kind = consumeQuantKind()
+
+      switch (lower, comma, upper) {
+      case let (l?, false, nil):
+        return .exactly(kind, l)
+
+      case let (l?, true, nil):
+        return .nOrMore(kind, l)
+
+      case let (nil, true, u?):
+        return .upToN(kind, u)
+
+      case let (l?, true, u?):
+        return .range(kind, l...u)
+
+      case let (nil, false, u) where u != nil:
+        fatalError("Not possible")
+      default:
+        fatalError("TODO: diagnose")
+      }
+
     default:
       return nil
     }
