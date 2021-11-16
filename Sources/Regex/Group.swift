@@ -31,15 +31,15 @@ extension Group {
 
     // (?>...)
     case atomicNonCapturing // TODO: is Oniguruma capturing?
-
-    // (?#....)
-    case comment
-
     // (?=...) (?!...)
     case lookahead(inverted: Bool)
 
     // (?<=...) (?<!...)
     case lookbehind(inverted: Bool)
+
+    // NOTE: Comments appear to be groups, but are not parsed
+    // the same. They parse more like quotes so are not listed
+    // here.
   }
 }
 
@@ -75,7 +75,7 @@ extension Group.Kind {
   public func _print() -> String {
     switch self {
     case .capture:            return "("
-    case .comment:            return "(?#."
+//    case .comment:            return "(?#."
     case .atomicNonCapturing: return "(?>"
     case .namedCapture:       return "(?<"
     case .nonCapture:         return "(?:"

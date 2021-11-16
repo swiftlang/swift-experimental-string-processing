@@ -16,24 +16,32 @@ public struct SyntaxOptions: OptionSet {
   ///
   /// NOTE: Currently, this means we have raw quotes.
   /// Better would be to have real Swift string delimiter parsing logic.
-  public static var swiftyQuotes:          Self { Self(1 << 1) }
+  public static var modernQuotes:          Self { Self(1 << 1) }
 
   /// `a /* comment */ b` == `a(?#. comment )b`
-  public static var swiftyComments:        Self { Self(1 << 2) }
+  ///
+  /// NOTE: traditional comments are not nested. Currently, we are neither.
+  /// Traditional comments can't have `)`, not even escaped in them either, we
+  /// can. Traditional comments can have `*/` in them, we can't without
+  /// escaping. We don't currently do escaping.
+  public static var modernComments:        Self { Self(1 << 2) }
 
 /*
   /// `a{3..<10}` == `a{3,9}`
-  public static var swiftyRanges:        Self { Self(1 << 3) }
+  public static var modernRanges
 
-  /// `[[:digit:]]*` == `\d*` == `<digit>*`
- public static var consumers:            Self { Self(1 << 4) }
+  /// `(name: .*)` == `(?<name>.*)`
+  public static var modernCaptures
+
+ /// `<digit>*` == `[[:digit:]]*` == `\d*`
+ public static var modernConsumers
 
  */
 
   public static var traditional: Self { Self() }
 
   public static var modern: Self {
-    [.nonSemanticWhitespace, .swiftyQuotes, .swiftyComments]
+    [.nonSemanticWhitespace, .modernQuotes, .modernComments]
   }
 
   public var ignoreWhitespace: Bool {

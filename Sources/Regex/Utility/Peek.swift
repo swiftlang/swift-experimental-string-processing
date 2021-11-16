@@ -17,11 +17,28 @@ extension _Peekable {
     defer { advance() }
     return peek().unsafelyUnwrapped
   }
+
+  mutating func advance(_ i: Int) {
+    for _ in 0..<i {
+      advance()
+    }
+  }
 }
 extension _Peekable where Output: Equatable {
   mutating func tryEat(_ c: Output) -> Bool {
     guard peek() == c else { return false }
     advance()
+    return true
+  }
+}
+extension _Peekable
+  where Self: Collection, Output == Element, Output: Equatable
+{
+  mutating func tryEat<C: Collection>(sequence c: C) -> Bool
+    where C.Element == Element
+  {
+    guard starts(with: c) else { return false }
+    advance(c.count)
     return true
   }
 }

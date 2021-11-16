@@ -146,7 +146,12 @@ extension Parser {
     case .rightParen, .pipe:
       return nil
 
-    default:
+    // For now, map comments to trivia
+    case .comment(_):
+      lexer.eat()
+      return .trivia
+
+    case .meta, .setOperator:
       try report("expected a character or group")
     }
   }

@@ -1,10 +1,16 @@
 @testable import Regex
 import XCTest
 
+private func esc(_ c: Character) -> Token {
+  .character(c, isEscaped: true)
+}
+
+
 private let dplus = AST.quantification(
   .oneOrMore(.greedy), .characterClass(.digit))
 private let dotAST = AST.concatenation([
   dplus, ".", dplus, ".", dplus, ".", dplus])
+
 
 extension RegexTests {
 
@@ -20,10 +26,7 @@ extension RegexTests {
       dotAST, syntax: .modern)
   }
 
-  func testSwiftyQuotes() {
-    func esc(_ c: Character) -> Token {
-      .character(c, isEscaped: true)
-    }
+  func testModernQuotes() {
 
     lexTest(
       #"a\Q .\Eb"#,
@@ -47,7 +50,7 @@ extension RegexTests {
       quoteAST, syntax: .modern)
     parseTest(
       #"a" ."b"#,
-      quoteAST, syntax: .swiftyQuotes)
+      quoteAST, syntax: .modernQuotes)
     parseTest(
       #"a " ." b"#,
       quoteAST, syntax: .modern)
@@ -60,4 +63,16 @@ extension RegexTests {
       dotAST, syntax: .modern)
   }
 
+  func testModernComments() {
+    lexTest(
+      #"(?#. network ) \d+ \. \d+"#,
+      .comment(" network "), esc("d"), .plus,
+      esc("."), esc("d"), .plus,
+      syntax: .nonSemanticWhitespace)
+    lexTest(
+      #"/* network */ \d+ \. \d+"#,
+      .comment(" network "), esc("d"), .plus,
+      esc("."), esc("d"), .plus,
+      syntax: .modern)
+  }
 }

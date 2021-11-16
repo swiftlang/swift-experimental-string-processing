@@ -123,6 +123,13 @@ extension RegexTests {
       #"a\Q E\Q \\.\Eb"#,
       "a", .quote(#" E\Q \\."#), "b")
 
+    lexTest(
+      #"ab(?#. this is a comment)cd"#,
+      "a", "b", .comment(" this is a comment"), "c", "d")
+    lexTest(
+      #"ab(?#.not nested()cd"#,
+      "a", "b", .comment("not nested("), "c", "d")
+
   }
 }
 
@@ -299,11 +306,11 @@ extension RegexTests {
       concat("a", .quote(" ."), "b"))
     parseTest(
       #"a\Q \Q \\.\Eb"#,
-      concat(
-        "a",
-        .quote(#" \Q \\."#),
-        "b"))
+      concat("a", .quote(#" \Q \\."#), "b"))
 
+    parseTest(
+      #"a(?#. comment)b"#,
+      concat("a", "b"))
 
     // TODO: failure tests
   }

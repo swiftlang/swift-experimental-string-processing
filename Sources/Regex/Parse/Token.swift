@@ -21,6 +21,7 @@ enum Token: Hashable {
   case unicodeScalar(UnicodeScalar)
 
   case quote(String)
+  case comment(String)
 
   case trivia // comments, ignored stuff, etc
 
@@ -89,6 +90,7 @@ extension Token: CustomStringConvertible {
     case .character(let c, _): return c.halfWidthCornerQuoted
     case .unicodeScalar(let u): return "U\(u.halfWidthCornerQuoted)"
     case .quote(let s): return "\\Q\(s.halfWidthCornerQuoted)\\E"
+    case .comment(let s): return "(?#.\(s.halfWidthCornerQuoted))"
     case .trivia: return ""
     }
   }

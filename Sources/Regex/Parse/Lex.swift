@@ -152,8 +152,20 @@ extension Lexer {
       return tok(consumeEscaped())
     }
 
-    if syntax.contains(.swiftyQuotes), current == "\"" {
-      return tok(consumeQuoted(.swift))
+    // `"` for modern quoting
+    if syntax.contains(.modernQuotes), current == "\"" {
+      return tok(.quote(consumeQuoted(.doubleQuote)))
+    }
+
+    // `(?#.` for comments, `/*` for modern comments
+    if current == "(", source.tryEat(sequence: "?#.") {
+      return tok(.comment(consumeQuoted(.rightParen)))
+    }
+    if syntax.contains(.modernComments),
+       current == "/",
+       source.tryEat("*")
+    {
+      return tok(.comment(consumeQuoted(.starSlash)))
     }
 
     if isInCustomCharacterClass,
@@ -206,7 +218,7 @@ extension Lexer {
 
     // Quoting
     case "Q":
-      return consumeQuoted(.pcre)
+      return .quote(consumeQuoted(.backE))
     case "E":
       // TODO: diagnostics
       fatalError("Error: End-quote without open quote")
@@ -278,23 +290,27 @@ extension Lexer {
     }
   }
 
-  private enum QuoteKind {
-    case pcre  // \Q ... \E
-    case swift // " ... "
+  private enum QuoteEnd {
+    case backE       // \E
+    case doubleQuote // "
+    case starSlash   // */
+    case rightParen  // )
   }
-  private mutating func consumeQuoted(_ kind: QuoteKind) -> Token {
-    var result = ""
 
+  // Consume a quoted or commented portion.
+  private mutating func consumeQuoted(_ end: QuoteEnd) -> String {
+    var result = ""
     while true {
       let c = source.eat()
-      switch (c, kind) {
-      case ("\"", .swift):
-        return .quote(result)
-      case ("\\", .pcre):
-        if source.tryEat("E") {
-          return .quote(result)
-        }
-        fallthrough
+      switch (end, c) {
+      case (.doubleQuote, #"""#):
+        return result
+      case (.rightParen, ")"):
+        return result
+      case (.backE, "\\") where source.tryEat("E"):
+        return result
+      case (.starSlash, "*") where source.tryEat("/"):
+        return result
       default:
         result.append(c)
       }
@@ -313,7 +329,6 @@ extension Lexer: Sequence, IteratorProtocol {
     return peek()
   }
 }
-
 
 extension Lexer {
   /// Classify a given terminal character
@@ -336,4 +351,3 @@ extension Lexer {
     return .character(t, isEscaped: escaped)
   }
 }
-

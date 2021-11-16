@@ -24,7 +24,7 @@ public enum AST: ASTValue, ASTAction {
   case any
   case empty
 
-  case trivia
+  case trivia // TODO: track any comments
 }
 
 // Note that we're not yet an ASTEntity, would need to be a struct.
