@@ -95,6 +95,18 @@ extension RegexTests {
       syntax: .modern)
   }
 
+  func testModernCaptures() {
+    parseTest(
+      #"a(?:b)c"#,
+      .concatenation(["a", .nonCapture("b"), "c"]))
+    parseTest(
+      #"a(_:b)c"#,
+      .concatenation(["a", .nonCapture("b"), "c"]),
+      syntax: .modernCaptures)
+
+    // TODO: `(name: .*)`
+  }
+
   func testModernComments() {
     lexTest(
       #"(?#. network ) \d+ \. \d+"#,

@@ -130,7 +130,6 @@ extension Lexer {
 
       let lower = tryConsumeNumber()
 
-
       let closedRange: Bool?
       if tryEat(.comma) {
         closedRange = true
@@ -138,7 +137,7 @@ extension Lexer {
         eat(asserting: .dot) // TODO: diagnose
         if tryEat(.dot) {
           closedRange = true
-        } else if tryEat(.lessThan) {
+        } else if tryEat(.leftAngle) {
           closedRange = false
         } else {
           fatalError("TODO: diagnose bad range")
@@ -181,11 +180,93 @@ extension Lexer {
     guard tryEat(.leftParen) else { return nil }
 
     if tryEat(.question) {
-      guard tryEat(.colon) else {
-        fatalError("TODO: diagnostic, or else other group kinds")
+      // (?:...)
+      if tryEat(.colon) { return .nonCapture() }
+
+      // (?|...)
+      if tryEat(.pipe) { return .nonCaptureReset() }
+
+      // (?>...)
+      if tryEat(.rightAngle) { return .atomicNonCapturing() }
+
+      // (?=...)
+      if tryEat(.equals) { return .lookahead(inverted: false) }
+
+      // (?!...)
+      if tryEat(.character("!", isEscaped: false)) {
+        return .lookahead(inverted: true)
       }
-      return .nonCapture()
+
+      func named(_ terminator: QuoteEnd) -> Group {
+        // HACK HACK HACK
+        let nameFirst: Character
+        switch nextToken {
+        case .character(let c, isEscaped: false):
+          nameFirst = c
+        default: fatalError("Fix the lexer...")
+        }
+        nextTokenStorage = nil
+
+        // (?<name>...)
+        let name = consumeQuoted(terminator)
+        return .named("\(nameFirst)\(name)")        
+      }
+
+      if tryEat(.leftAngle) {
+        // (?<=...)
+        if tryEat(.equals) {
+          return .lookbehind(inverted: false)
+        }
+
+        // (?<!...)
+        if tryEat(.character("!", isEscaped: false)) {
+          return .lookbehind(inverted: true)
+        }
+
+        // (?<name>...)
+        return named(.rightAngle)
+      }
+
+      // (?'name'...)
+      if tryEat(.character("'", isEscaped: false)) {
+        return named(.singleQuote)
+      }
+
+      // (?P<name>...)
+      if tryEat(.character("P", isEscaped: false)) {
+        eat(asserting: .leftAngle)
+        return named(.rightAngle)
+      }
+
+      fatalError("diagnostics")
     }
+
+    // (_:), (name:)
+    if syntax.contains(.modernCaptures) {
+      // FIXME: this is ridiculous to do on top of
+      // lookahead-1 tokens, and yet is purely lexical.
+      // So, refactor lexical analysis soon...
+
+      // TODO: `(name:)` on top of better analysis
+
+      // (_:)
+      if tryEat(.meta(.underscore)) {
+        // FIXME: The lexer caching next token breaks the
+        // ability for the lexer to know where in the input
+        // it is reliably. We don't have "reset" points either,
+        // though we could add those and take/reset tokens if
+        // needed. We could have a way to save/restore lexical
+        // state, but why not just have the lexer be sane
+        // instead?
+
+        if tryEat(.colon) {
+          return .nonCapture()
+        } else {
+          fatalError("FIXME: information lost...")
+        }
+      }
+    }
+
     return .capture()
   }
 
@@ -365,23 +446,34 @@ extension Lexer {
     }
   }
 
+  // TODO: Probably just want to be string or character based...
   private enum QuoteEnd {
     case backE       // \E
     case doubleQuote // "
     case starSlash   // */
     case rightParen  // )
+    case rightAngle  // >
+    case singleQuote // '
   }
 
   // Consume a quoted or commented portion.
   private mutating func consumeQuoted(_ end: QuoteEnd) -> String {
+    // FIXME: token-based is wrong, don't want escapes here...
+    // In all of this I would write it against `source`, except
+    // that `nextToken` cached screws that up.
+
+    // FIXME: character classes for quoted content (e.g. named capture names
+    // wouldn't have parenthesis, but \Q...\E can)
+
+    // FIXME: But we have to backup...
     var result = ""
     while true {
       let c = source.eat()
       switch (end, c) {
-      case (.doubleQuote, #"""#):
-        return result
-      case (.rightParen, ")"):
-        return result
+      case (.doubleQuote, "\""):  return result
+      case (.singleQuote, "'"):  return result
+      case (.rightParen, ")"):    return result
+      case (.rightAngle, ">"):    return result
       case (.backE, "\\") where source.tryEat("E"):
         return result
       case (.starSlash, "*") where source.tryEat("/"):

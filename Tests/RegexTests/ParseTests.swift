@@ -328,6 +328,33 @@ extension RegexTests {
       #"a{1,2}?"#,
       .quantification(.range(.reluctant, 1...2), "a"))
 
+    // Named captures
+    parseTest(
+      #"a(?<label>b)c"#,
+      concat("a", .namedCapture("label", "b"), "c"))
+    parseTest(
+      #"a(?'label'b)c"#,
+      concat("a", .namedCapture("label", "b"), "c"))
+    parseTest(
+      #"a(?P<label>b)c"#,
+      concat("a", .namedCapture("label", "b"), "c"))
+    parseTest(
+      #"a(?P<label>b)c"#,
+      concat("a", .namedCapture("label", "b"), "c"))
+
+    // Other groups
+    parseTest(
+      #"a(?:b)c"#,
+      concat("a", .nonCapture("b"), "c"))
+    parseTest(
+      #"a(?|b)c"#,
+      concat("a", .nonCaptureReset("b"), "c"))
+    parseTest(
+      #"a(?>b)c"#,
+      concat("a", .atomicNonCapturing("b"), "c"))
+
+
+
     // TODO: failure tests
   }
 

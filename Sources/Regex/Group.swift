@@ -49,9 +49,28 @@ extension Group {
   public static func capture(_ sr: SourceRange? = nil) -> Group {
     Group(.capture, sr)
   }
+  public static func named(
+    _ s: String, _ sr: SourceRange? = nil
+  ) -> Group {
+    Group(.capture, name: s, sr)
+  }
   public static func nonCapture(_ sr: SourceRange? = nil) -> Group {
     Group(.nonCapture, sr)
   }
+  public static func nonCaptureReset(_ sr: SourceRange? = nil) -> Group {
+    Group(.nonCaptureReset, sr)
+  }
+  public static func atomicNonCapturing(_ sr: SourceRange? = nil) -> Group {
+    Group(.atomicNonCapturing, sr)
+  }
+  public static func lookahead(inverted: Bool, _ sr: SourceRange? = nil) -> Group {
+    Group(.lookahead(inverted: inverted), sr)
+  }
+  public static func lookbehind(inverted: Bool, _ sr: SourceRange? = nil) -> Group {
+    Group(.lookbehind(inverted: inverted), sr)
+  }
+
+
 }
 
 // MARK: - API
@@ -86,7 +105,7 @@ extension Group.Kind {
   }
 
   public func _dump() -> String {
-    fatalError()
+    _print()
   }
 }
 extension Group {
@@ -119,9 +138,34 @@ extension AST {
   ) -> AST {
     .group(.capture(sr), a)
   }
+  public static func namedCapture(
+    _ name: String, _ a: AST, _ sr: SourceRange? = nil
+  ) -> AST {
+    .group(.named(name, sr), a)
+  }
   public static func nonCapture(
     _ a: AST, _ sr: SourceRange? = nil
   ) -> AST {
     .group(.nonCapture(sr), a)
+  }
+  public static func nonCaptureReset(
+    _ a: AST, _ sr: SourceRange? = nil
+  ) -> AST {
+    .group(.nonCaptureReset(sr), a)
+  }
+  public static func atomicNonCapturing(
+    _ a: AST, _ sr: SourceRange? = nil
+  ) -> AST {
+    .group(.atomicNonCapturing(sr), a)
+  }
+  public static func lookahead(
+    inverted: Bool, _ a: AST, _ sr: SourceRange? = nil
+  ) -> AST {
+    .group(.lookahead(inverted: inverted, sr), a)
+  }
+  public static func lookbehind(
+    inverted: Bool, _ a: AST, _ sr: SourceRange? = nil
+  ) -> AST {
+    .group(.lookbehind(inverted: inverted, sr), a)
   }
 }

@@ -27,7 +27,7 @@ public struct SyntaxOptions: OptionSet {
   public static var modernComments: Self { Self(1 << 2) }
 
   /// ```
-  ///   'a{n...m}' == '/a{n,m}/
+  ///   'a{n...m}' == '/a{n,m}/'
   ///   'a{n..<m}' == '/a{n,m-1}/'
   ///   'a{n...}'  == '/a{n,}/'
   ///   'a{...m}'  == '/a{,m}/'
@@ -35,10 +35,11 @@ public struct SyntaxOptions: OptionSet {
   /// ```
   public static var modernRanges: Self { Self(1 << 3) }
 
+  /// `(name: .*)` == `(?<name>.*)`
+  ///  `(_: .*)` == `(?:.*)`
+  public static var modernCaptures: Self { Self(1 << 4) }
+
   /*
-    /// `(name: .*)` == `(?<name>.*)`
-    ///  `(_: .*)` == `(?:.*)`
-    public static var modernCaptures
 
     /// `<digit>*` == `[[:digit:]]*` == `\d*`
     public static var modernConsumers

@@ -49,9 +49,12 @@ extension Token {
     case rightCurlyBracket = "}"
     case leftCurlyBracket = "{"
     case comma = ","
-    case lessThan = "<"
+    case leftAngle = "<"
+    case rightAngle = ">"
+    case equals = "="
+    case underscore = "_"
+    case bang = "!"
   }
-
 
   enum SetOperator: String, Hashable {
     case doubleAmpersand = "&&"
@@ -84,7 +87,9 @@ extension Token {
   static var leftCurlyBracket: Self { .meta(.leftCurlyBracket) }
   static var comma: Self { .meta(.comma) }
 
-  static var lessThan: Self { .meta(.lessThan) }
+  static var leftAngle: Self { .meta(.leftAngle) }
+  static var rightAngle: Self { .meta(.rightAngle) }
+  static var equals: Self { .meta(.equals) }
 
 }
 
