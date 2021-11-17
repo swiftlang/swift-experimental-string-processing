@@ -129,25 +129,43 @@ extension Lexer {
       eat()
 
       let lower = tryConsumeNumber()
-      let comma = tryEat(.comma)
+
+
+      let closedRange: Bool?
+      if tryEat(.comma) {
+        closedRange = true
+      } else if tryEat(.dot) {
+        eat(asserting: .dot) // TODO: diagnose
+        if tryEat(.dot) {
+          closedRange = true
+        } else if tryEat(.lessThan) {
+          closedRange = false
+        } else {
+          fatalError("TODO: diagnose bad range")
+        }
+      } else {
+        closedRange = nil
+      }
+
       let upper = tryConsumeNumber()
       eat(asserting: .rightCurlyBracket)
       let kind = consumeQuantKind()
 
-      switch (lower, comma, upper) {
-      case let (l?, false, nil):
+      switch (lower, closedRange, upper) {
+      case let (l?, nil, nil):
         return .exactly(kind, l)
-
       case let (l?, true, nil):
         return .nOrMore(kind, l)
+      case let (l, false, nil) where l != nil:
+        fatalError("TODO: diagnose 5..<")
 
-      case let (nil, true, u?):
-        return .upToN(kind, u)
+      case let (nil, closed?, u?):
+        return .upToN(kind, closed ? u : u-1)
 
-      case let (l?, true, u?):
-        return .range(kind, l...u)
+      case let (l?, closed?, u?):
+        return .range(kind, l...(closed ? u : u-1))
 
-      case let (nil, false, u) where u != nil:
+      case let (nil, nil, u) where u != nil:
         fatalError("Not possible")
       default:
         fatalError("TODO: diagnose")

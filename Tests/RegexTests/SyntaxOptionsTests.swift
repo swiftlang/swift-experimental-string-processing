@@ -61,6 +61,38 @@ extension RegexTests {
     parseTest(
       #" \d+ "." \d+ "." \d+ "." \d+ "#,
       dotAST, syntax: .modern)
+
+    parseTest(
+      #"a{1,2}"#,
+      .quantification(.range(.greedy, 1...2), "a"))
+    parseTest(
+      #"a{1...2}"#,
+      .quantification(.range(.greedy, 1...2), "a"),
+      syntax: .modernRanges)
+    parseTest(
+      #"a{1..<3}"#,
+      .quantification(.range(.greedy, 1...2), "a"),
+      syntax: .modernRanges)
+
+    parseTest(
+      #"a{,2}"#,
+      .quantification(.upToN(.greedy, 2), "a"))
+    parseTest(
+      #"a{...2}"#,
+      .quantification(.upToN(.greedy, 2), "a"),
+      syntax: .modern)
+    parseTest(
+      #"a{..<3}"#,
+      .quantification(.upToN(.greedy, 2), "a"),
+      syntax: .modern)
+
+    parseTest(
+      #"a{1,}"#,
+      .quantification(.nOrMore(.greedy, 1), "a"))
+    parseTest(
+      #"a{1...}"#,
+      .quantification(.nOrMore(.greedy, 1), "a"),
+      syntax: .modern)
   }
 
   func testModernComments() {

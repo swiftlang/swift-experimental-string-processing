@@ -36,14 +36,14 @@ public struct SyntaxOptions: OptionSet {
   public static var modernRanges: Self { Self(1 << 3) }
 
   /*
-  /// `(name: .*)` == `(?<name>.*)`
-  ///  `(_: .*)` == `(?:.*)`
-  public static var modernCaptures
+    /// `(name: .*)` == `(?<name>.*)`
+    ///  `(_: .*)` == `(?:.*)`
+    public static var modernCaptures
 
- /// `<digit>*` == `[[:digit:]]*` == `\d*`
- public static var modernConsumers
+    /// `<digit>*` == `[[:digit:]]*` == `\d*`
+    public static var modernConsumers
 
- */
+  */
 
   public static var traditional: Self { Self(0) }
 

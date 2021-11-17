@@ -49,6 +49,7 @@ extension Token {
     case rightCurlyBracket = "}"
     case leftCurlyBracket = "{"
     case comma = ","
+    case lessThan = "<"
   }
 
 
@@ -82,6 +83,8 @@ extension Token {
   static var rightCurlyBracket: Self { .meta(.rightCurlyBracket) }
   static var leftCurlyBracket: Self { .meta(.leftCurlyBracket) }
   static var comma: Self { .meta(.comma) }
+
+  static var lessThan: Self { .meta(.lessThan) }
 
 }
 
