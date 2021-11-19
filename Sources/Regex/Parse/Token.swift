@@ -20,6 +20,7 @@ enum Token: Hashable {
   case character(Character, isEscaped: Bool)
   case unicodeScalar(UnicodeScalar)
   case builtinCharClass(CharacterClass)
+  case anchor(Anchor)
 
   case trivia // comments, ignored stuff, etc
 
@@ -42,9 +43,7 @@ extension Token {
     case rsquare = "]"
     case minus = "-"
     case caret = "^"
-    case dollar = "$"
   }
-
 
   enum SetOperator: String, Hashable {
     case doubleAmpersand = "&&"
@@ -88,6 +87,7 @@ extension Token: CustomStringConvertible {
     case .character(let c, _): return c.halfWidthCornerQuoted
     case .unicodeScalar(let u): return "U\(u.halfWidthCornerQuoted)"
     case .builtinCharClass(let cc): return cc.description
+    case .anchor(let anchor): return anchor.description
     case .trivia: return ""
     }
   }
