@@ -129,9 +129,9 @@ func show(_ s: CustomStringConvertible) {
 }
 
 func makeEngine(
-  _ constructor: (inout Program<Character>.Builder) -> ()
+  _ constructor: (inout Program<String>.Builder) -> ()
 ) -> Engine<String> {
-  var builder = Program<Character>.Builder()
+  var builder = Program<String>.Builder()
   constructor(&builder)
   let program = builder.assemble()
   let engine = Engine<String>(program)
@@ -166,8 +166,8 @@ let aEater: Engine<String> = {
 //
 let manyAEater: Engine<String> = {
   makeEngine { builder in
-    let accTok = builder.createAddress()
-    let matchTok = builder.createAddress()
+    let accTok = builder.makeAddress()
+    let matchTok = builder.makeAddress()
 
     builder.buildSaveAddress(accTok)
     builder.buildMatch("A")
@@ -191,9 +191,9 @@ let manyAEater: Engine<String> = {
 // instruction.
 let eatUntilA: Engine<String> = {
   makeEngine { builder in 
-    let reg = builder.createRegister()
-    let accTok = builder.createAddress()
-    let assertTok = builder.createAddress()
+    let reg = builder.makeRegister()
+    let accTok = builder.makeAddress()
+    let assertTok = builder.makeAddress()
     builder.buildAssert("A", into: reg)
     builder.resolve(assertTok)
     builder.buildCondBranch(reg, to: accTok)
@@ -213,9 +213,9 @@ let eatUntilA: Engine<String> = {
 //   [4] accept
 let eatThroughA: Engine<String> = {
   makeEngine { builder in
-    let reg = builder.createRegister()
-    let accTok = builder.createAddress()
-    let assertTok = builder.createAddress()
+    let reg = builder.makeRegister()
+    let accTok = builder.makeAddress()
+    let assertTok = builder.makeAddress()
     builder.buildAssert("A", into: reg)
     builder.resolve(assertTok)
     builder.buildConsume(1)

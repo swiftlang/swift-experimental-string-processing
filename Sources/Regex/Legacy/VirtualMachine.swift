@@ -21,24 +21,29 @@ public struct MatchResult {
   }
 }
 
-/// VMs load RECode and run over Strings.
 public protocol VirtualMachine {
-  /// Declare this VM's motto and general life philosophy
+  associatedtype Program
+
+  /// The backend's motto and general life philosophy.
   static var motto: String { get }
 
-  /// Load some RECode and prepare to match
-  init(_: RECode)
+  /// Creates a virtual machine.
+  init(program: Program)
 
-  /// Match `input`
-  func execute(input: String, in range: Range<String.Index>, _ mode: MatchMode) -> MatchResult?
+  /// Executes the program on the given input in the specified range.
+  func execute(
+    input: String,
+    in range: Range<String.Index>,
+    mode: MatchMode
+  ) -> MatchResult?
 }
 
 extension VirtualMachine {
-  /// Match `input`
+  /// Executes the program on the given input.
   public func execute(
-    input: String, _ mode: MatchMode = .wholeString
+    input: String, mode: MatchMode = .wholeString
   ) -> MatchResult? {
-    execute(input: input, in: input.startIndex..<input.endIndex, mode)
+    execute(input: input, in: input.startIndex..<input.endIndex, mode: mode)
   }
 }
 

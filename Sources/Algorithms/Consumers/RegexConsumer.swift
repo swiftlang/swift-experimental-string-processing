@@ -12,25 +12,30 @@ public struct Regex {
 
 public struct RegexConsumer: CollectionConsumer {
   // NOTE: existential
-  let vm: VirtualMachine
+  let vm: Executor
   let referenceVM: VirtualMachine
 
   public init(regex: Regex) {
-    let code = try! compile(regex.string, options: regex.options)
-    self.vm = HareVM(code)
-    self.referenceVM = TortoiseVM(code)
+    let ast = try! parse(regex.string, .traditional)
+    let program = Compiler(ast: ast).emit()
+    self.vm = Executor(program: program)
+    let legacyProgram = try! compile(ast, options: regex.options)
+    self.referenceVM = TortoiseVM(program: legacyProgram)
   }
 
   public func consume(
     _ consumed: Substring, from index: String.Index
   ) -> String.Index? {
     let result = vm.execute(
-      input: consumed.base, in: index..<consumed.endIndex, .partialFromFront)
-    assert(result?.range ==
-           referenceVM.execute(
-            input: consumed.base, in: index..<consumed.endIndex, .partialFromFront
-           )?.range)
-
+      input: consumed.base,
+      in: index..<consumed.endIndex,
+      mode: .partialFromFront)
+    assert(
+      result?.range == referenceVM.execute(
+        input: consumed.base,
+        in: index..<consumed.endIndex,
+        mode: .partialFromFront
+      )?.range)
     return result?.range.upperBound
   }
 }

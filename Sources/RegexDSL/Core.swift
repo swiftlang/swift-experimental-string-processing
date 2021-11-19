@@ -8,22 +8,6 @@ public struct RegexMatch<CapturedValue> {
   public let captures: CapturedValue
 }
 
-/// A compiled regular expression.
-internal class RegexProgram {
-  let ast: AST
-  lazy private(set) var executable: RECode = {
-    do {
-      return try compile(ast)
-    } catch {
-      fatalError("Regex engine internal error: \(String(describing: error))")
-    }
-  }()
-
-  init(ast: AST) {
-    self.ast = ast
-  }
-}
-
 /// A type that represents a regular expression.
 public protocol RegexProtocol {
   associatedtype Capture
@@ -37,11 +21,32 @@ extension Optional: EmptyProtocol where Wrapped: EmptyProtocol {}
 
 /// A regular expression.
 public struct Regex<Capture>: RegexProtocol {
-  let program: RegexProgram
+  /// A program representation that caches any lowered representation for
+  /// execution.
+  internal class Program {
+    /// The underlying AST.
+    let ast: AST
+    /// The legacy `RECode` for execution with a legacy VM.
+    lazy private(set) var legacyLoweredProgram: RECode = {
+      do {
+        return try compile(ast)
+      } catch {
+        fatalError("Regex engine internal error: \(String(describing: error))")
+      }
+    }()
+    /// The program for execution with the matching engine.
+    lazy private(set) var loweredProgram = Compiler(ast: ast).emit()
+
+    init(ast: AST) {
+      self.ast = ast
+    }
+  }
+
+  let program: Program
   var ast: AST { program.ast }
 
   init(ast: AST) {
-    self.program = RegexProgram(ast: ast)
+    self.program = Program(ast: ast)
   }
 
   public init<Content: RegexProtocol>(
@@ -63,26 +68,25 @@ public struct Regex<Capture>: RegexProtocol {
 
 extension RegexProtocol {
   public func match(in input: String) -> RegexMatch<Capture>? {
-    match(in: input, using: DefaultEngine.self)
-  }
-
-  // TODO: Support anything that conforms to `StringProtocol` rather than just `String`.
-  internal func match(
-    in input: String,
-    using engine: VirtualMachine.Type
-  ) -> RegexMatch<Capture>? {
-    let vm = engine.init(regex.program.executable)
-    guard let (range, captures) = vm.execute(input: input)?.destructure
-    else {
+    // TODO: Remove this branch when the matching engine supports captures.
+    if regex.ast.hasCaptures {
+      let vm = HareVM(program: regex.program.legacyLoweredProgram)
+      guard let (range, captures) = vm.execute(input: input)?.destructure else {
+        return nil
+      }
+      let convertedCapture: Capture
+      if Capture.self == DynamicCaptures.self {
+        convertedCapture = DynamicCaptures(captures) as! Capture
+      } else {
+        convertedCapture = captures.value as! Capture
+      }
+      return RegexMatch(range: range, captures: convertedCapture)
+    }
+    let executor = Executor(program: regex.program.loweredProgram)
+    guard let result = executor.execute(input: input) else {
       return nil
     }
-    let convertedCapture: Capture
-    if Capture.self == DynamicCaptures.self {
-      convertedCapture = DynamicCaptures(captures) as! Capture
-    } else {
-      convertedCapture = captures.value as! Capture
-    }
-    return RegexMatch(range: range, captures: convertedCapture)
+    return RegexMatch(range: result.range, captures: () as! Capture)
   }
 }
 
@@ -91,24 +95,10 @@ extension String {
     regex.match(in: self)
   }
 
-  internal func match<R: RegexProtocol>(
-    _ regex: R,
-    using engine: VirtualMachine.Type
-  ) -> RegexMatch<R.Capture>? {
-    regex.match(in: self, using: engine)
-  }
-
   public func match<R: RegexProtocol>(
     @RegexBuilder _ content: () -> R
   ) -> RegexMatch<R.Capture>? {
     match(content())
-  }
-
-  internal func match<R: RegexProtocol>(
-    using engine: VirtualMachine.Type,
-    @RegexBuilder _ content: () -> R
-  ) -> RegexMatch<R.Capture>? {
-    match(content(), using: engine)
   }
 }
 

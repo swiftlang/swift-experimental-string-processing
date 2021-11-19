@@ -2,7 +2,7 @@ import MatchingEngine
 import Util
 
 extension PEG.VM {
-  typealias MEProgram = MatchingEngine.Program<Input.Element>
+  typealias MEProgram = MatchingEngine.Program<Input>
   func transpile() -> MEProgram {
     typealias Builder = MEProgram.Builder
     var builder = MEProgram.Builder()
@@ -16,7 +16,7 @@ extension PEG.VM {
     for idx in instructions.indices {
       if let address = instructions[idx].pc {
         addressTokens.append(
-          (builder.createAddress(), use: idx, target: address))
+          (builder.makeAddress(), use: idx, target: address))
       }
     }
     var nextTokenIdx = addressTokens.startIndex
@@ -73,7 +73,11 @@ extension PEG.VM {
         builder.buildMatch(e)
 
       case .matchPredicate(let p):
-        builder.buildMatchPredicate(p)
+        builder.buildConsume { input, bounds in
+          p(input[bounds.lowerBound])
+            ? input.index(after: bounds.lowerBound)
+            : nil
+        }
 
       case .matchHook(_):
         fatalError()//builder.buildMatchHook(h)

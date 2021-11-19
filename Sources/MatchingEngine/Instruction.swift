@@ -149,26 +149,28 @@ enum OpCode: UInt64 {
 
   // MARK: - Interact with the input
 
-  /// Advance our input position
+  /// Advance the input position.
   ///
-  /// Operand: amount to advance by
+  /// Operand: Amount to advance by.
   case consume
 
   // TODO: assert, hooks, etc
 
-  /// Composite assert-consume else restore
+  /// Composite assert-consume else restore.
   ///
-  /// Operand: Element register to compare against
+  /// Operand: Element register to compare against.
   case match
 
-  /// Match an element based on whether it satisfies a predicate
+  /// Advance the input position based on the result by calling the consume
+  /// function.
   ///
-  /// Operand: Predicate register to call
-  case matchPredicate
+  /// Operand: Consume function register to call.
+  case consumeBy
 
-  /// Match against a provided element
+  /// Match against a provided element.
   ///
-  /// Operand: Packed condition register to write to and element register to compare against
+  /// Operand: Packed condition register to write to and element register to
+  /// compare against.
   case assertion
 
   // TODO: Fused assertions. It seems like we often want to
@@ -181,11 +183,6 @@ enum OpCode: UInt64 {
   ///
   /// Operand: String register
   case print
-
-  /// Custom consumption operation
-  ///
-  /// Operand: consume hook register
-  static var consumeHook: OpCode { fatalError() }
 
   /// Custom assertion operation
   ///
@@ -357,7 +354,7 @@ extension Instruction {
   static func call(start: InstructionAddress? = nil) -> Instruction {
     Instruction(.call, Operand(start))
   }
-    static func ret() -> Instruction {
+  static func ret() -> Instruction {
     Instruction(.ret, Operand())
   }
   static func abort(_ s: StringRegister? = nil) -> Instruction {
@@ -372,8 +369,8 @@ extension Instruction {
   static func match(_ e: ElementRegister? = nil) -> Instruction {
     Instruction(.match, Operand(e))
   }
-  static func matchPredicate(_ e: PredicateRegister? = nil) -> Instruction {
-    Instruction(.matchPredicate, Operand(e))
+  static func consume(by e: ConsumeFunctionRegister? = nil) -> Instruction {
+    Instruction(.consumeBy, Operand(e))
   }
   static func assertion(
     condition: BoolRegister? = nil, _ e: ElementRegister? = nil
@@ -414,9 +411,9 @@ extension Instruction {
     default: return nil
     }
   }
-  var predicateRegister: PredicateRegister? {
+  var consumeFunctionRegister: ConsumeFunctionRegister? {
     switch opcode {
-    case .matchPredicate: return operand.payload()
+    case .consumeBy: return operand.payload()
     default: return nil
     }
   }

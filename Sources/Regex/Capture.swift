@@ -12,6 +12,10 @@ extension Capture {
     elements.count == 1 ? elements[0] : .tuple(elements)
   }
 
+  public static var void: Capture {
+    .tuple([])
+  }
+
   public var value: Any {
     switch self {
     case .atom(let atom):
@@ -38,7 +42,7 @@ extension Capture {
 }
 
 extension AST {
-  var hasCaptures: Bool {
+  public var hasCaptures: Bool {
     switch self {
     case let .alternation(child), let .concatenation(child):
       return child.any(\.hasCaptures)

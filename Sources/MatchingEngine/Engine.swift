@@ -4,7 +4,7 @@ import Util
 // But, we can play around with this.
 public struct Engine<Input: Collection> where Input.Element: Hashable {
 
-  var program: Program<Input.Element>
+  var program: Program<Input>
 
   // TODO: Pre-allocated register banks
 
@@ -16,7 +16,7 @@ public struct Engine<Input: Collection> where Input.Element: Hashable {
   }
 
   public init(
-    _ program: Program<Input.Element>,
+    _ program: Program<Input>,
     enableTracing: Bool? = nil
   ) {
     var program = program

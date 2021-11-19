@@ -4,40 +4,40 @@ extension Processor {
   /// Our register file
   struct Registers {
     // currently, these are static readonly
-    var elements: Array<Element>
+    var elements: [Element]
 
     // currently, hold output of assertions
-    var bools: Array<Bool> // TODO: bitset
+    var bools: [Bool] // TODO: bitset
 
     // currently, these are static readonly
-    var predicates: Array<(Element) -> Bool>
+    var consumeFunctions: [Program<Input>.ConsumeFunction]
 
     // currently, these are for comments and abort messages
-    var strings: Array<String>
+    var strings: [String]
 
     // unused
-    var ints = Array<Int>()
+    var ints: [Int] = []
 
     // unused
-    var floats = Array<Double>()
+    var floats: [Double] = []
 
     // unused
     //
     // Unlikely to be static, as that means input must be bound
     // at compile time
-    var positions = Array<Position>()
+    var positions: [Position] = []
 
     // unused
-    var instructionAddresses = Array<InstructionAddress>()
+    var instructionAddresses: [InstructionAddress] = []
 
     // unused, any application?
-    var classStackAddresses = Array<CallStackAddress>()
+    var classStackAddresses: [CallStackAddress] = []
 
     // unused, any application?
-    var positionStackAddresses = Array<PositionStackAddress>()
+    var positionStackAddresses: [PositionStackAddress] = []
 
     // unused, any application?
-    var savePointAddresses = Array<SavePointStackAddress>()
+    var savePointAddresses: [SavePointStackAddress] = []
 
     subscript(_ i: StringRegister) -> String {
       strings[i.rawValue]
@@ -49,15 +49,15 @@ extension Processor {
     subscript(_ i: ElementRegister) -> Element {
       elements[i.rawValue]
     }
-    subscript(_ i: PredicateRegister) -> (Element) -> Bool {
-      predicates[i.rawValue]
+    subscript(_ i: ConsumeFunctionRegister) -> Program<Input>.ConsumeFunction {
+      consumeFunctions[i.rawValue]
     }
   }
 }
 
 extension Processor.Registers {
   init(
-    _ program: Program<Input.Element>,
+    _ program: Program<Input>,
     _ sentinel: Input.Index
   ) {
     let info = program.registerInfo
@@ -65,8 +65,8 @@ extension Processor.Registers {
     self.elements = program.staticElements
     assert(elements.count == info.elements)
 
-    self.predicates = program.staticPredicates
-    assert(predicates.count == info.predicates)
+    self.consumeFunctions = program.staticConsumeFunctions
+    assert(consumeFunctions.count == info.consumeFunctions)
 
     self.strings = program.staticStrings
     assert(strings.count == info.strings)
@@ -94,7 +94,7 @@ extension Program {
     var elements = 0
     var bools = 0
     var strings = 0
-    var predicates = 0
+    var consumeFunctions = 0
     var ints = 0
     var floats = 0
     var positions = 0
@@ -108,7 +108,7 @@ extension Program {
 extension Processor.Registers: CustomStringConvertible {
   var description: String {
     func formatRegisters<T>(
-      _ name: String, _ regs: Array<T>
+      _ name: String, _ regs: [T]
     ) -> String {
       // TODO: multi-line if long
       if regs.isEmpty { return "" }

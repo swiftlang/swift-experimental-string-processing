@@ -1,5 +1,10 @@
 import Util
 
+public enum MatchMode {
+  case full
+  case `prefix`
+}
+
 /// A concrete CU. Somehow will run the concrete logic and
 /// feed stuff back to generic code
 struct Controller {
@@ -16,7 +21,8 @@ struct Processor<
   typealias Element = Input.Element
 
   let input: Input
-  let range: Range<Position>
+  let bounds: Range<Position>
+  let matchMode: MatchMode
   var currentPosition: Position
 
   let instructions: InstructionList<Instruction>
@@ -28,16 +34,16 @@ struct Processor<
   var registers: Registers
 
   // Used for back tracking
-  var savePoints = Array<(SavePoint, stackEnd: Int)>()
+  var savePoints: [(SavePoint, stackEnd: Int)] = []
 
-  var callStack = Array<InstructionAddress>()
+  var callStack: [InstructionAddress] = []
 
   var state: State = .inprogress
 
-  var enableTracing: Bool
+  var isTracingEnabled: Bool
 
-  var start: Position { range.lowerBound }
-  var end: Position { range.upperBound }
+  var start: Position { bounds.lowerBound }
+  var end: Position { bounds.upperBound }
 }
 
 
@@ -57,19 +63,21 @@ extension Processor {
 
 extension Processor {
   init(
-    _ program: Program<Input.Element>,
-    _ input: Input,
-    in r: Range<Position>,
-    enableTracing: Bool
+    program: Program<Input>,
+    input: Input,
+    bounds: Range<Position>,
+    matchMode: MatchMode,
+    isTracingEnabled: Bool
   ) {
     self.controller = Controller(pc: 0)
     self.instructions = program.instructions
     self.input = input
-    self.range = r
-    self.enableTracing = enableTracing
-    self.currentPosition = r.lowerBound
+    self.bounds = bounds
+    self.matchMode = matchMode
+    self.isTracingEnabled = isTracingEnabled
+    self.currentPosition = bounds.lowerBound
 
-    self.registers = Registers(program, r.upperBound)
+    self.registers = Registers(program, bounds.upperBound)
 
     _checkInvariants()
   }
@@ -93,6 +101,13 @@ extension Processor {
     currentPosition = input.index(currentPosition, offsetBy: n.rawValue)
   }
 
+  mutating func advance(to nextIndex: Input.Index) {
+    assert(nextIndex >= bounds.lowerBound)
+    assert(nextIndex <= bounds.upperBound)
+    assert(nextIndex > currentPosition)
+    currentPosition = nextIndex
+  }
+
   func doPrint(_ s: String) {
     var enablePrinting: Bool { false }
     if enablePrinting {
@@ -113,6 +128,20 @@ extension Processor {
     controller.pc = thread.pc
     currentPosition = thread.pos ?? currentPosition
     callStack.removeLast(callStack.count - stackEnd)
+  }
+
+  mutating func tryAccept() {
+    switch (currentPosition, matchMode) {
+    // When reaching the end of the match bounds or when we are only doing a
+    // prefix match, transition to accept.
+    case (bounds.upperBound, _), (_, .prefix):
+      state = .accept
+
+    // When we are doing a full match but did not reach the end of the match
+    // bounds, backtrack if possible.
+    case (_, .full):
+      signalFailure()
+    }
   }
 
   mutating func cycle() {
@@ -181,7 +210,7 @@ extension Processor {
     case .ret:
       // TODO: Should empty stack mean success?
       guard let r = callStack.popLast() else {
-        state = .accept
+        tryAccept()
         return
       }
       controller.pc = r
@@ -190,11 +219,9 @@ extension Processor {
       // TODO: throw or otherwise propagate
       doPrint(registers[operand.payload(as: StringRegister.self)])
       state = .fail
-      return
 
     case .accept:
-      state = .accept
-      return
+      tryAccept()
 
     case .fail:
       signalFailure()
@@ -205,20 +232,22 @@ extension Processor {
 
     case .match:
       let reg = operand.payload(as: ElementRegister.self)
-      guard let cur = load(), cur ==  registers[reg] else {
+      guard let cur = load(), cur == registers[reg] else {
         signalFailure()
         return
       }
       consume(1)
       controller.step()
 
-    case .matchPredicate:
-      let reg = operand.payload(as: PredicateRegister.self)
-      guard let cur = load(), registers[reg](cur) else {
+    case .consumeBy:
+      let reg = operand.payload(as: ConsumeFunctionRegister.self)
+      guard currentPosition < bounds.upperBound,
+            let nextIndex = registers[reg](
+              input, currentPosition..<bounds.upperBound) else {
         signalFailure()
         return
       }
-      consume(1)
+      advance(to: nextIndex)
       controller.step()
 
     case .print:
@@ -227,7 +256,7 @@ extension Processor {
 
     case .assertion:
       let reg = operand.payload(as: ElementRegister.self)
-      var result: Bool
+      let result: Bool
       if let cur = load(), cur == registers[reg] {
         result = true
       } else {

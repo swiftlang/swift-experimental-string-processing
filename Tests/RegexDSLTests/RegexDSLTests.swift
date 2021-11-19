@@ -4,19 +4,6 @@ import Regex
 import Util
 
 class RegexDSLTests: XCTestCase {
-  static let engines: [VirtualMachine.Type] = [HareVM.self, TortoiseVM.self]
-
-  func forEachEngine(
-    except exceptions: VirtualMachine.Type...,
-    do body: (VirtualMachine.Type) throws -> Void
-  ) rethrows -> Void {
-    for engine in Self.engines {
-      if !exceptions.contains(where: { $0 == engine }) {
-        try body(engine)
-      }
-    }
-  }
-
   func testSimpleStrings() throws {
     let regex = Regex {
       "a"
@@ -25,11 +12,9 @@ class RegexDSLTests: XCTestCase {
     }
     // Assert the inferred capture type.
     let _: (Substring, Int).Type = type(of: regex).Capture.self
-    try forEachEngine { engine in
-      let maybeMatch = "ab1".match(regex, using: engine)
-      let match = try XCTUnwrap(maybeMatch)
-      XCTAssertTrue(match.captures == ("b", 1))
-    }
+    let maybeMatch = "ab1".match(regex)
+    let match = try XCTUnwrap(maybeMatch)
+    XCTAssertTrue(match.captures == ("b", 1))
   }
 
   func testCharacterClasses() throws {
@@ -40,11 +25,9 @@ class RegexDSLTests: XCTestCase {
     }
     // Assert the inferred capture type.
     let _: (Substring, Substring).Type = type(of: regex).Capture.self
-    try forEachEngine { engine in
-      let maybeMatch = "a c".match(regex, using: engine)
-      let match = try XCTUnwrap(maybeMatch)
-      XCTAssertTrue(match.captures == (" ", "c"))
-    }
+    let maybeMatch = "a c".match(regex)
+    let match = try XCTUnwrap(maybeMatch)
+    XCTAssertTrue(match.captures == (" ", "c"))
   }
 
   func testCombinators() throws {
@@ -59,13 +42,11 @@ class RegexDSLTests: XCTestCase {
     // Assert the inferred capture type.
     let _: (Substring, Substring, [Substring], Substring).Type
       = type(of: regex).Capture.self
-    try forEachEngine { engine in
-      let maybeMatch = "aaaabccccdddk".match(regex, using: engine)
-      let match = try XCTUnwrap(maybeMatch)
-      XCTAssertTrue(
-        match.captures
-          == ("b", "cccc", ["d", "d", "d"], "k"))
-    }
+    let maybeMatch = "aaaabccccdddk".match(regex)
+    let match = try XCTUnwrap(maybeMatch)
+    XCTAssertTrue(
+      match.captures
+        == ("b", "cccc", ["d", "d", "d"], "k"))
   }
 
   func testNestedGroups() throws {
@@ -80,14 +61,12 @@ class RegexDSLTests: XCTestCase {
     }
     // Assert the inferred capture type.
     let _: [(Substring, Substring, [Substring])].Type = type(of: regex).Capture.self
-    try forEachEngine { engine in
-      let maybeMatch = "aaaabccccddd".match(regex, using: engine)
-      let match = try XCTUnwrap(maybeMatch)
-      XCTAssertEqual(match.captures.count, 1)
-      XCTAssertTrue(
-        match.captures[0]
-          == ("b", "cccc", ["d", "d", "d"]))
-    }
+    let maybeMatch = "aaaabccccddd".match(regex)
+    let match = try XCTUnwrap(maybeMatch)
+    XCTAssertEqual(match.captures.count, 1)
+    XCTAssertTrue(
+      match.captures[0]
+        == ("b", "cccc", ["d", "d", "d"]))
   }
 
   func testNestedCaptureTypes() throws {
@@ -164,12 +143,10 @@ class RegexDSLTests: XCTestCase {
     // Assert the inferred capture type.
     let _: Substring.Type = type(of: unicodeData).Capture.self
 
-    try forEachEngine { engine in
-      let unicodeLine =
-        "1BCA0..1BCA3  ; Control # Cf   [4] SHORTHAND FORMAT LETTER OVERLAP..SHORTHAND FORMAT UP STEP"
-      let match = try XCTUnwrap(unicodeLine.match(unicodeData, using: engine))
-      XCTAssertEqual(match.captures, "Control")
-    }
+    let unicodeLine =
+      "1BCA0..1BCA3  ; Control # Cf   [4] SHORTHAND FORMAT LETTER OVERLAP..SHORTHAND FORMAT UP STEP"
+    let match = try XCTUnwrap(unicodeLine.match(unicodeData))
+    XCTAssertEqual(match.captures, "Control")
   }
 
   func testGraphemeBreakData() throws {
@@ -194,14 +171,12 @@ class RegexDSLTests: XCTestCase {
     func run<R: RegexProtocol>(
       _ regex: R
     ) throws where R.Capture == Capture {
-      try forEachEngine { engine in
-        let maybeMatchResult = line.match(regex, using: engine)
-        let matchResult = try XCTUnwrap(maybeMatchResult)
-        let (lower, upper, propertyString) = matchResult.captures
-        XCTAssertEqual(lower, "A6F0")
-        XCTAssertEqual(upper, "A6F1")
-        XCTAssertEqual(propertyString, "Extend")
-      }
+      let maybeMatchResult = line.match(regex)
+      let matchResult = try XCTUnwrap(maybeMatchResult)
+      let (lower, upper, propertyString) = matchResult.captures
+      XCTAssertEqual(lower, "A6F0")
+      XCTAssertEqual(upper, "A6F1")
+      XCTAssertEqual(propertyString, "Extend")
     }
     let regexLiteral = try MockRegexLiteral(
         #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
