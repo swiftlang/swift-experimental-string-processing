@@ -24,7 +24,7 @@ class RegexTests: XCTestCase {}
 
 func lexTest(
   _ input: String,
-  _ expecting: Token...,
+  _ expecting: [Token],
   syntax: SyntaxOptions = .traditional
 ) {
   let toks = Lexer(Source(input, syntax))
@@ -33,6 +33,14 @@ func lexTest(
     // breakpoint
     XCTAssertEqual(expecting, actual)
   }
+}
+
+func lexTest(
+  _ input: String,
+  _ expecting: Token...,
+  syntax: SyntaxOptions = .traditional
+) {
+  lexTest(input, expecting, syntax: syntax)
 }
 
 extension RegexTests {
@@ -113,6 +121,19 @@ extension RegexTests {
     lexTest("$\\A\\B[\\A\\B$]", .anchor(.lineEnd), .anchor(.stringStart),
             .anchor(.nonWordBoundary), .leftSquareBracket, esc("A"), esc("B"),
             "$", .rightSquareBracket)
+
+    let specialChars = [.tab, .carriageReturn, .formFeed, .bell, .escape]
+      .map(Token.specialCharEscape)
+
+    lexTest("\\t\\r\\f\\a\\e[\\t\\r\\f\\a\\e]",
+            specialChars + [.leftSquareBracket] + specialChars +
+            [.rightSquareBracket])
+
+    // \b is a word boundary outside of a character class, otherwise it's
+    // backspace.
+    lexTest("[\\b]\\b", .leftSquareBracket, .specialCharEscape(.backspace),
+            .rightSquareBracket, .anchor(.wordBoundary))
+    lexTest("[\\b", .leftSquareBracket, .specialCharEscape(.backspace))
   }
 }
 

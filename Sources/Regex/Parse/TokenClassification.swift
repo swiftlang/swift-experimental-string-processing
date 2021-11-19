@@ -1,4 +1,25 @@
 extension Lexer {
+  private static func classifyAsSpecialCharEscape(
+    _ t: Character, inCustomCharClass: Bool
+  ) -> Token.SpecialCharacterEscape? {
+    switch t {
+    case "t":
+      return .tab
+    case "r":
+      return .carriageReturn
+    case "b":
+      // \b only means backspace in a custom character class.
+      return inCustomCharClass ? .backspace : nil
+    case "f":
+      return .formFeed
+    case "a":
+      return .bell
+    case "e":
+      return .escape
+    default:
+      return nil
+    }
+  }
   private static func classifyAsAnchor(
     _ t: Character, fromEscape escaped: Bool, inCustomCharClass: Bool
   ) -> Anchor? {
@@ -70,7 +91,13 @@ extension Lexer {
     syntax: SyntaxOptions
   ) -> Token {
     assert(!t.isEscape || escaped)
-    if !escaped {
+    if escaped {
+      // A special character such as '\t' or '\n'.
+      if let special =
+          classifyAsSpecialCharEscape(t, inCustomCharClass: inCustomCharClass) {
+        return .specialCharEscape(special)
+      }
+    } else {
       // TODO: figure out best way to organize options logic...
       if syntax.ignoreWhitespace, t == " " {
         return .trivia

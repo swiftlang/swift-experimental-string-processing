@@ -21,6 +21,7 @@ enum Token: Hashable {
   case unicodeScalar(UnicodeScalar)
   case builtinCharClass(CharacterClass)
   case anchor(Anchor)
+  case specialCharEscape(SpecialCharacterEscape)
 
   case trivia // comments, ignored stuff, etc
 
@@ -51,6 +52,15 @@ extension Token {
     case doubleTilda = "~~"
   }
 
+  enum SpecialCharacterEscape: String, Hashable {
+    case tab = "\\t"
+    case carriageReturn = "\\r"
+    case backspace = "\\b"
+    case formFeed = "\\f"
+    case bell = "\\a"
+    case escape = "\\e"
+  }
+
   // Note: We do each character individually, as post-fix modifiers bind
   // tighter than concatenation. "abc*" is "a" -> "b" -> "c*"
 }
@@ -79,6 +89,9 @@ extension Token.MetaCharacter: CustomStringConvertible {
 extension Token.SetOperator: CustomStringConvertible {
   var description: String { rawValue }
 }
+extension Token.SpecialCharacterEscape: CustomStringConvertible {
+  var description: String { rawValue }
+}
 extension Token: CustomStringConvertible {
   var description: String {
     switch self {
@@ -88,6 +101,7 @@ extension Token: CustomStringConvertible {
     case .unicodeScalar(let u): return "U\(u.halfWidthCornerQuoted)"
     case .builtinCharClass(let cc): return cc.description
     case .anchor(let anchor): return anchor.description
+    case .specialCharEscape(let special): return special.description
     case .trivia: return ""
     }
   }
