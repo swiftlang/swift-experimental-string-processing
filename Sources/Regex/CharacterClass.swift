@@ -95,11 +95,13 @@ public struct CharacterClass: Hashable {
     return result
   }
 
-  /// Returns the character class with the isInverted property set to a given
-  /// value.
+  /// Returns an inverted character class if true is passed, otherwise the
+  /// same character class is returned.
   public func withInversion(_ invertion: Bool) -> Self {
     var copy = self
-    copy.isInverted = invertion
+    if invertion {
+      copy.isInverted.toggle()
+    }
     return copy
   }
 
