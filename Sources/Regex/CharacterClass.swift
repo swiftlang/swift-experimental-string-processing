@@ -174,18 +174,6 @@ extension CharacterClass {
   ) -> CharacterClass {
     .init(cc: .custom(components), matchLevel: .graphemeCluster)
   }
-  
-  init?(_ ch: Character) {
-    switch ch {
-    case "s": self = .whitespace
-    case "d": self = .digit
-    case "w": self = .word
-    case "S", "D", "W":
-      self = Self(Character(ch.lowercased()))!.inverted
-
-    default: return nil
-    }
-  }
 }
 
 extension CharacterClass.CharacterSetComponent: CustomStringConvertible {

@@ -100,13 +100,13 @@ extension Parser {
 
     case .character(let c, isEscaped: true):
       lexer.eat()
-      if let cc = CharacterClass(c) {
-        // Other characters either match a character class...
-        return .characterClass(cc)
-      }
 
       // TODO: anything else here?
       return .character(c)
+
+    case .builtinCharClass(let cc):
+      lexer.eat()
+      return .characterClass(cc)
 
     case .leftSquareBracket?:
       return .characterClass(try parseCustomCharacterClass())
@@ -155,9 +155,8 @@ extension Parser {
     if lexer.peek() == .leftSquareBracket {
       return .characterClass(try parseCustomCharacterClass())
     }
-    // Escaped character class.
-    if case .character(let c, isEscaped: true) = lexer.peek(),
-       let cc = CharacterClass(c) {
+    // Builtin character class.
+    if case .builtinCharClass(let cc) = lexer.peek() {
       lexer.eat()
       return .characterClass(cc)
     }
