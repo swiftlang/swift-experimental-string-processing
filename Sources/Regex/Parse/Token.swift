@@ -94,25 +94,3 @@ extension Token: CustomStringConvertible {
 extension Character {
   var isEscape: Bool { return self == "\\" }
 }
-
-extension Lexer {
-  /// Classify a given terminal character
-  func classifyTerminal(
-    _ t: Character,
-    fromEscape escaped: Bool
-  ) -> Token {
-    assert(!t.isEscape || escaped)
-    if !escaped {
-      // TODO: figure out best way to organize options logic...
-      if syntax.ignoreWhitespace, t == " " {
-        return .trivia
-      }
-
-      if let mc = Token.MetaCharacter(rawValue: t) {
-        return .meta(mc)
-      }
-    }
-
-    return .character(t, isEscaped: escaped)
-  }
-}
