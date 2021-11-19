@@ -106,7 +106,7 @@ extension Lexer {
     guard tryEat(.leftParen) else { return nil }
 
     if tryEat(.question) {
-      guard tryEat(.colon) else {
+      guard tryEat(.character(":", isEscaped: false)) else {
         fatalError("TODO: diagnostic, or else other group kinds")
       }
       return .nonCapture()
@@ -156,18 +156,23 @@ extension Lexer {
       return tok(op)
     }
 
+    let token = Lexer.classifyTerminal(
+      current, fromEscape: false, inCustomCharClass: isInCustomCharacterClass,
+      syntax: syntax
+    )
+
     // Track the custom character class depth. We can increment it every time
-    // we see a `[`, and decrement every time we see a `]`, though we don't
-    // decrement if we see `]` outside of a custom character class, as that
-    // should be treated as a literal character.
-    if current == "[" {
+    // we see a `[`, and decrement every time we see a `]`. The classification
+    // logic should take care of extra ']'s outside of a character class, as
+    // they should be treated as a literal character.
+    if token == .leftSquareBracket {
       customCharacterClassDepth += 1
     }
-    if current == "]" && isInCustomCharacterClass {
+    if token == .rightSquareBracket {
+      precondition(customCharacterClassDepth > 0)
       customCharacterClassDepth -= 1
     }
-
-    return tok(classifyTerminal(current, fromEscape: false))
+    return tok(token)
   }
 
   /// Whether the lexer is currently lexing within a custom character class.
@@ -196,7 +201,10 @@ extension Lexer {
       return consumeUniScalar(
         allowBracketVariant: false, unbracketedNumDigits: 8)
     case let c:
-      return classifyTerminal(c, fromEscape: true)
+      return Lexer.classifyTerminal(
+        c, fromEscape: true, inCustomCharClass: isInCustomCharacterClass,
+        syntax: syntax
+      )
     }
   }
 

@@ -108,17 +108,6 @@ extension Parser {
       // TODO: anything else here?
       return .character(c)
 
-    case .minus?, .colon?, .rightSquareBracket?:
-      // Outside of custom character classes, these are not considered to be
-      // metacharacters.
-
-      // TODO: we want a much cleaner separation here, perhaps
-      // lexer can present as normal characters
-      guard case .meta(let meta) = lexer.eat() else {
-        fatalError("Not a metachar?")
-      }
-      return .character(meta.rawValue)
-
     case .leftSquareBracket?:
       return .characterClass(try parseCustomCharacterClass())
 

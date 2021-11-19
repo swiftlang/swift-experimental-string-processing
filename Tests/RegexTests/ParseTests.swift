@@ -72,7 +72,7 @@ extension RegexTests {
       "a|b?c", "a", .pipe, "b", .question, "c")
     lexTest(
       "(?:a|b)c",
-      .leftParen, .question, .colon, "a", .pipe, "b",
+      .leftParen, .question, ":", "a", .pipe, "b",
       .rightParen, "c")
     lexTest(
       "a\\u0065b\\u{65}c\\x65d",
@@ -88,15 +88,13 @@ extension RegexTests {
       .rightSquareBracket)
     lexTest(
       "&&^-^-~~",
-      "&", "&", .caret, .minus, .caret, .minus, "~", "~")
+      "&", "&", .caret, "-", .caret, "-", "~", "~")
     lexTest(
       "[]]&&",
-      .leftSquareBracket, .rightSquareBracket,
-      .rightSquareBracket, "&", "&")
+      .leftSquareBracket, .rightSquareBracket, "]", "&", "&")
     lexTest(
       "[]]&\\&",
-      .leftSquareBracket, .rightSquareBracket,
-      .rightSquareBracket, "&", esc("&"))
+      .leftSquareBracket, .rightSquareBracket, "]", "&", esc("&"))
 
     // Gramatically invalid (yet lexically valid)
     lexTest(
