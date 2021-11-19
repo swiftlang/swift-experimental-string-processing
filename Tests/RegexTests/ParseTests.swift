@@ -88,7 +88,7 @@ extension RegexTests {
       .rightSquareBracket)
     lexTest(
       "&&^-^-~~",
-      "&", "&", .caret, "-", .caret, "-", "~", "~")
+      "&", "&", .anchor(.lineStart), "-", .anchor(.lineStart), "-", "~", "~")
     lexTest(
       "[]]&&",
       .leftSquareBracket, .rightSquareBracket, "]", "&", "&")
@@ -109,6 +109,10 @@ extension RegexTests {
       .leftSquareBracket, .rightSquareBracket,
       .setOperator(.doubleAmpersand), .rightSquareBracket,
       .rightSquareBracket, "&", "&")
+
+    lexTest("$\\A\\B[\\A\\B$]", .anchor(.lineEnd), .anchor(.stringStart),
+            .anchor(.nonWordBoundary), .leftSquareBracket, esc("A"), esc("B"),
+            "$", .rightSquareBracket)
   }
 }
 

@@ -1,4 +1,42 @@
 extension Lexer {
+  private static func classifyAsAnchor(
+    _ t: Character, fromEscape escaped: Bool, inCustomCharClass: Bool
+  ) -> Anchor? {
+    // Anchors aren't valid in custom char classes.
+    guard !inCustomCharClass else { return nil }
+    if !escaped {
+      switch t {
+      case "^":
+        return .lineStart
+      case "$":
+        return .lineEnd
+      default:
+        return nil
+      }
+    }
+    switch t {
+    case "b":
+      return .wordBoundary
+    case "B":
+      return .nonWordBoundary
+    case "A":
+      return .stringStart
+    case "Z":
+      return .stringEndOrBeforeNewline
+    case "z":
+      return .stringEnd
+    case "G":
+      return .startOfPreviousMatch
+    case "K":
+      return .resetMatch
+    case "y":
+      return .textSegmentBoundary
+    case "Y":
+      return .textSegmentNonBoundary
+    default:
+      return nil
+    }
+  }
   private static func classifyAsMetaChar(
     _ t: Character, inCustomCharClass: Bool
   ) -> Token.MetaCharacter? {
@@ -41,6 +79,11 @@ extension Lexer {
       if let mc = classifyAsMetaChar(t, inCustomCharClass: inCustomCharClass) {
         return .meta(mc)
       }
+    }
+    // An anchor such as '^', '\A'.
+    if let anchor = classifyAsAnchor(t, fromEscape: escaped,
+                                     inCustomCharClass: inCustomCharClass) {
+      return .anchor(anchor)
     }
     return .character(t, isEscaped: escaped)
   }
