@@ -66,8 +66,7 @@ extension TracedProcessor {
 
   public func formatInput() -> String {
     // String override for printing sub-character information.
-    if !input.indices.contains(currentPosition),
-       let input = input as? StringProtocol {
+    if !input.indices.contains(currentPosition) {
       // Format unicode scalars as:
       //     abcde\u{0301}e\u{0301}
       //     .....^~~~~~~~
@@ -88,7 +87,11 @@ extension TracedProcessor {
           ^\(String(repeating: "~", count: nextHighlightWidth - 1))
           """
       }
-      return _openExistential(input, do: _format)
+      if let string = input as? String {
+        return _format(string)
+      } else if let substring = input as? Substring {
+        return _format(substring)
+      }
     }
     let dist = input.distance(from: input.startIndex, to: currentPosition)
     return """
