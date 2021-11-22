@@ -189,13 +189,8 @@ extension Lexer {
                | 'x{' HexDigit{1, 8}
                | 'x' HexDigit{2}
                | 'U' HexDigit{8}
-    BuiltinCharClass -> '\d' | '\D' | '\s' | '\S' | '\w' | '\W'
     */
-    let c = source.eat()
-    if let cc = tryConsumeBuiltinCharacterClass(c) {
-      return .builtinCharClass(cc)
-    }
-    switch c {
+    switch source.eat() {
     case "u":
       return consumeUniScalar(
         allowBracketVariant: true, unbracketedNumDigits: 4)
@@ -270,22 +265,6 @@ extension Lexer {
       return .setOperator(.doubleTilda)
     case "&" where source.tryEat("&"):
       return .setOperator(.doubleAmpersand)
-    default:
-      return nil
-    }
-  }
-
-  private mutating func tryConsumeBuiltinCharacterClass(
-    _ c: Character
-  ) -> CharacterClass? {
-    // These are valid both inside and outside custom character classes.
-    switch c {
-    case "s": return .whitespace
-    case "d": return .digit
-    case "w": return .word
-    case "S", "D", "W":
-      let lower = Character(c.lowercased())
-      return tryConsumeBuiltinCharacterClass(lower)!.inverted
     default:
       return nil
     }

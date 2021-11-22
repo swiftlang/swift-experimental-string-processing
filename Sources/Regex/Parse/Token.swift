@@ -38,7 +38,6 @@ extension Token {
     case pipe = "|"
     case lparen = "("
     case rparen = ")"
-    case dot = "."
     case colon = ":"
     case lsquare = "["
     case rsquare = "]"
@@ -76,7 +75,6 @@ extension Token {
   static var rightParen: Self { .meta(.rparen) }
   static var star: Self { .meta(.star) }
   static var plus: Self { .meta(.plus) }
-  static var dot: Self { .meta(.dot) }
   static var colon: Self { .meta(.colon) }
   static var leftSquareBracket: Self { .meta(.lsquare) }
   static var rightSquareBracket: Self { .meta(.rsquare) }

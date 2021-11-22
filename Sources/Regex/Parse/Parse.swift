@@ -111,10 +111,6 @@ extension Parser {
     case .leftSquareBracket?:
       return .characterClass(try parseCustomCharacterClass())
 
-    case .dot?:
-      lexer.eat()
-      return .characterClass(.any)
-
     // Correct terminations
 
     case .trivia?:

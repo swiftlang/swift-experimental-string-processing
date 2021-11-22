@@ -109,7 +109,8 @@ extension RegexTests {
     lexTest(
       ")ab(+", .rightParen, "a", "b", .leftParen, .plus)
     lexTest(
-      "...", .dot, .dot, .dot)
+      "...",
+      .builtinCharClass(.any), .builtinCharClass(.any), .builtinCharClass(.any))
     lexTest(
       "[[[]&&]]&&",
       .leftSquareBracket, .leftSquareBracket,
@@ -134,6 +135,29 @@ extension RegexTests {
     lexTest(#"[\b]\b"#, .leftSquareBracket, .specialCharEscape(.backspace),
             .rightSquareBracket, .anchor(.wordBoundary))
     lexTest(#"[\b"#, .leftSquareBracket, .specialCharEscape(.backspace))
+
+    // '.' is a character class, but only outside a custom char class.
+    lexTest(#"[.].\."#, .leftSquareBracket, ".", .rightSquareBracket,
+            .builtinCharClass(.any), esc("."))
+
+    // Valid both inside and outside a custom char class.
+    let universalCharClasses = [
+      .digit, .whitespace, .word, .horizontalWhitespace, .verticalWhitespace,
+      .digit.inverted, .whitespace.inverted, .word.inverted,
+      .horizontalWhitespace.inverted, .verticalWhitespace.inverted
+    ].map(Token.builtinCharClass)
+
+    lexTest(#"\d\s\w\h\v\D\S\W\H\V[\d\s\w\h\v\D\S\W\H\V]"#,
+            universalCharClasses + [.leftSquareBracket] +
+            universalCharClasses + [.rightSquareBracket])
+
+    // Valid only outside a custom char class.
+    lexTest(#"[\N\R\X]\N\R\X"#,
+            .leftSquareBracket, esc("N"), esc("R"), esc("X"),
+            .rightSquareBracket,
+            .builtinCharClass(.newlineSequence.inverted),
+            .builtinCharClass(.newlineSequence),
+            .builtinCharClass(.anyGrapheme))
   }
 }
 

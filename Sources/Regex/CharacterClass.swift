@@ -9,13 +9,23 @@ public struct CharacterClass: Hashable {
   /// e.g \D, \S, [^abc].
   var isInverted: Bool = false
 
+  // TODO: Split out builtin character classes into their own type?
   public enum Representation: Hashable {
     /// Any character
     case any
+    /// Any grapheme cluster
+    case anyGrapheme
     /// Character.isDigit
     case digit
     /// Character.isHexDigit
     case hexDigit
+    /// Horizontal whitespace: `[:blank:]`, i.e
+    /// `[\p{gc=Space_Separator}\N{CHARACTER TABULATION}]
+    case horizontalWhitespace
+    /// Character.isNewline
+    case newlineSequence
+    /// Vertical whitespace: `[\u{0A}-\u{0D}\u{85}\u{2028}\u{2029}]`
+    case verticalWhitespace
     /// Character.isWhitespace
     case whitespace
     /// Character.isLetter or Character.isDigit or Character == "_"
@@ -118,9 +128,12 @@ public struct CharacterClass: Hashable {
       let c = str[i]
       var matched: Bool
       switch cc {
-      case .any: matched = true
+      case .any, .anyGrapheme: matched = true
       case .digit: matched = c.isNumber
       case .hexDigit: matched = c.isHexDigit
+      case .horizontalWhitespace: fatalError("Not implemented")
+      case .newlineSequence: matched = c.isNewline
+      case .verticalWhitespace: fatalError("Not implemented")
       case .whitespace: matched = c.isWhitespace
       case .word: matched = c.isLetter || c.isNumber || c == "_"
       case .custom(let set): matched = set.any { $0.matches(c) }
@@ -134,8 +147,12 @@ public struct CharacterClass: Hashable {
       var matched: Bool
       switch cc {
       case .any: matched = true
+      case .anyGrapheme: fatalError("Not matched in this mode")
       case .digit: matched = c.properties.numericType != nil
       case .hexDigit: matched = Character(c).isHexDigit
+      case .horizontalWhitespace: fatalError("Not implemented")
+      case .newlineSequence: fatalError("Not implemented")
+      case .verticalWhitespace: fatalError("Not implemented")
       case .whitespace: matched = c.properties.isWhitespace
       case .word: matched = c.properties.isAlphabetic || c == "_"
       case .custom: fatalError("Not supported")
@@ -152,7 +169,11 @@ extension CharacterClass {
   public static var any: CharacterClass {
     .init(cc: .any, matchLevel: .graphemeCluster)
   }
-  
+
+  public static var anyGrapheme: CharacterClass {
+    .init(cc: .anyGrapheme, matchLevel: .graphemeCluster)
+  }
+
   public static var whitespace: CharacterClass {
     .init(cc: .whitespace, matchLevel: .graphemeCluster)
   }
@@ -164,7 +185,19 @@ extension CharacterClass {
   public static var hexDigit: CharacterClass {
     .init(cc: .hexDigit, matchLevel: .graphemeCluster)
   }
-  
+
+  public static var horizontalWhitespace: CharacterClass {
+    .init(cc: .horizontalWhitespace, matchLevel: .graphemeCluster)
+  }
+
+  public static var newlineSequence: CharacterClass {
+    .init(cc: .newlineSequence, matchLevel: .graphemeCluster)
+  }
+
+  public static var verticalWhitespace: CharacterClass {
+    .init(cc: .verticalWhitespace, matchLevel: .graphemeCluster)
+  }
+
   public static var word: CharacterClass {
     .init(cc: .word, matchLevel: .graphemeCluster)
   }
@@ -191,8 +224,12 @@ extension CharacterClass.Representation: CustomStringConvertible {
   public var description: String {
     switch self {
     case .any: return "<any>"
+    case .anyGrapheme: return "<any grapheme>"
     case .digit: return "<digit>"
     case .hexDigit: return "<hex digit>"
+    case .horizontalWhitespace: return "<horizontal whitespace>"
+    case .newlineSequence: return "<newline sequence>"
+    case .verticalWhitespace: return "vertical whitespace"
     case .whitespace: return "<whitespace>"
     case .word: return "<word>"
     case .custom(let set): return "<custom \(set)>"

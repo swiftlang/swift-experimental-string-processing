@@ -1,4 +1,63 @@
 extension Lexer {
+  /// Classify a builtin character class.
+  ///
+  /// If in a custom character class:
+  /// BuiltinCharClass -> '\d' | '\D' |
+  ///                     '\s' | '\S' |
+  ///                     '\w' | '\W' |
+  ///                     '\h' | '\H' |
+  ///                     '\v' | '\V'
+  ///
+  /// Otherwise:
+  /// BuiltinCharClass -> '\d' | '\D' |
+  ///                     '\s' | '\S' |
+  ///                     '\w' | '\W' |
+  ///                     '\h' | '\H' |
+  ///                     '\v' | '\V' |
+  ///                     '\R' | '\N' |
+  ///                     '\X' | '.'
+  private static func classifyBuiltinCharacterClass(
+    _ c: Character, fromEscape escaped: Bool, inCustomCharClass: Bool
+  ) -> CharacterClass? {
+    if !escaped {
+      switch c {
+      case ".":
+        return inCustomCharClass ? nil : .any
+      default:
+        return nil
+      }
+    }
+    // These are valid both inside and outside custom character classes.
+    switch c {
+    case "s": return .whitespace
+    case "d": return .digit
+    case "h": return .horizontalWhitespace
+    case "v": return .verticalWhitespace
+    case "w": return .word
+    case "S", "D", "H", "W", "V":
+      let lowerCC = classifyBuiltinCharacterClass(
+        Character(c.lowercased()), fromEscape: escaped,
+        inCustomCharClass: inCustomCharClass
+      )
+      return lowerCC!.inverted
+    default:
+      break
+    }
+
+    // The following are only valid outside of a custom character class.
+    guard !inCustomCharClass else { return nil }
+    switch c {
+    case "N":
+      return .newlineSequence.inverted
+    case "R":
+      return .newlineSequence
+    case "X":
+      return .anyGrapheme
+    default:
+      return nil
+    }
+  }
+
   /// Classify a 'special character escape'.
   ///
   /// If in a custom character class:
@@ -83,7 +142,7 @@ extension Lexer {
   /// MetaChar -> '[' | ']' | '-' | '^'
   ///
   /// Otherwise:
-  /// MetaChar -> '[' | '*' | '?' | '|' | '(' | ')' | '.' | ':'
+  /// MetaChar -> '[' | '*' | '?' | '|' | '(' | ')' | ':'
   ///
   private static func classifyAsMetaChar(
     _ t: Character, inCustomCharClass: Bool
@@ -112,7 +171,8 @@ extension Lexer {
 
   /// Classify a given terminal character.
   ///
-  /// Terminal -> Anchor | MetaChar | SpecialCharEscape | Character
+  /// Terminal -> Anchor | MetaChar | SpecialCharEscape | Character |
+  ///             BuiltinCharClass
   ///
   /// If .ignoreWhitespace:
   /// ' ' -> Trivia
@@ -144,6 +204,11 @@ extension Lexer {
     if let anchor = classifyAsAnchor(t, fromEscape: escaped,
                                      inCustomCharClass: inCustomCharClass) {
       return .anchor(anchor)
+    }
+    // A builtin custom character class such as '.', '\d'.
+    if let cc = classifyBuiltinCharacterClass(
+      t, fromEscape: escaped, inCustomCharClass: inCustomCharClass) {
+      return .builtinCharClass(cc)
     }
     return .character(t, isEscaped: escaped)
   }
