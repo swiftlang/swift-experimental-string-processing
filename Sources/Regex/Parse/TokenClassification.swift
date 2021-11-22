@@ -1,4 +1,11 @@
 extension Lexer {
+  /// Classify a 'special character escape'.
+  ///
+  /// If in a custom character class:
+  /// SpecialCharEscape -> '\t' | '\r' | '\b' | '\f' | '\a' | '\e'
+  ///
+  /// Otherwise
+  /// SpecialCharEscape -> '\t' | '\r' | '\f' | '\a' | '\e'
   private static func classifyAsSpecialCharEscape(
     _ t: Character, inCustomCharClass: Bool
   ) -> Token.SpecialCharacterEscape? {
@@ -20,6 +27,15 @@ extension Lexer {
       return nil
     }
   }
+
+  /// Classify an anchor character.
+  ///
+  /// If in a custom character class:
+  /// Anchor -> <none>
+  ///
+  /// Otherwise:
+  /// Anchor -> '^' | '$' | '\b' | '\B' | '\A' | '\Z' | '\z' | '\G' | '\K' |
+  ///           '\y' | '\Y'
   private static func classifyAsAnchor(
     _ t: Character, fromEscape escaped: Bool, inCustomCharClass: Bool
   ) -> Anchor? {
@@ -58,6 +74,15 @@ extension Lexer {
       return nil
     }
   }
+
+  /// Classify a meta-character.
+  ///
+  /// In a custom character class:
+  /// MetaChar -> '[' | ']' | '-' | '^'
+  ///
+  /// Otherwise:
+  /// MetaChar -> '[' | '*' | '?' | '|' | '(' | ')' | '.' | ':'
+  ///
   private static func classifyAsMetaChar(
     _ t: Character, inCustomCharClass: Bool
   ) -> Token.MetaCharacter? {
@@ -83,7 +108,13 @@ extension Lexer {
     return mc
   }
 
-  /// Classify a given terminal character
+  /// Classify a given terminal character.
+  ///
+  /// Terminal -> Anchor | MetaChar | SpecialCharEscape | Character
+  ///
+  /// If .ignoreWhitespace:
+  /// ' ' -> Trivia
+  ///
   static func classifyTerminal(
     _ t: Character,
     fromEscape escaped: Bool,
