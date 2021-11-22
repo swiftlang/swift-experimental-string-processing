@@ -1,7 +1,7 @@
 // MARK: - Missing stdlib API
 
 extension Unicode {
-  public enum Script: String {
+  public enum Script: String, Hashable {
     case arabic = "Arabic"
     case armenian = "Armenian"
     case avestan = "Avestan"
@@ -129,7 +129,7 @@ extension Unicode {
     case yi = "Yi"
   }
 
-  public enum POSIXCharacterSet: String {
+  public enum POSIXCharacterSet: String, Hashable {
     case alnum = "alnum"
     case alpha = "alpha"
     case ascii = "ascii"
@@ -151,7 +151,7 @@ extension Unicode {
 // properties, rather than interpreting whether it's a script
 // or something else. Here I just splat it all in an enum,
 // TBD how we actually model it.
-public enum FlattendedOnigurumaUnicodeProperty: String {
+public enum FlattendedOnigurumaUnicodeProperty: String, Hashable {
   case ASCII_Hex_Digit
   case Adlam
   case Ahom

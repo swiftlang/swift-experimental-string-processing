@@ -9,33 +9,53 @@ public struct SyntaxOptions: OptionSet {
 
   public init() { self.init(0) }
 
-  /// `a \. b` == `a\.b`
+  /// `'a \. b' == '/a\.b/'`
   public static var nonSemanticWhitespace: Self { Self(1 << 0) }
 
-  /// `a "." b` == `a\Q.\Eb`
-  public static var swiftyQuotes:          Self { Self(1 << 1) }
+  /// `'a "." b' == '/a\Q.\Eb/'`
+  ///
+  /// NOTE: Currently, this means we have raw quotes.
+  /// Better would be to have real Swift string delimiter parsing logic.
+  public static var modernQuotes: Self { Self(1 << 1) }
 
-  /// `a /* comment */ b` == `a(?#. comment )b`
-  public static var swiftyComments:        Self { Self(1 << 2) }
+  /// `'a /* comment */ b' == '/a(?#. comment )b/'`
+  ///
+  /// NOTE: traditional comments are not nested. Currently, we are neither.
+  /// Traditional comments can't have `)`, not even escaped in them either, we
+  /// can. Traditional comments can have `*/` in them, we can't without
+  /// escaping. We don't currently do escaping.
+  public static var modernComments: Self { Self(1 << 2) }
 
-/*
-  /// `a{3..<10}` == `a{3,9}`
-  public static var swiftyRanges:        Self { Self(1 << 3) }
+  /// ```
+  ///   'a{n...m}' == '/a{n,m}/'
+  ///   'a{n..<m}' == '/a{n,m-1}/'
+  ///   'a{n...}'  == '/a{n,}/'
+  ///   'a{...m}'  == '/a{,m}/'
+  ///   'a{..<m}'  == '/a{,m-1}/'
+  /// ```
+  public static var modernRanges: Self { Self(1 << 3) }
 
-  /// `[[:digit:]]*` == `\d*` == `<digit>*`
- public static var consumers:            Self { Self(1 << 4) }
+  /// `(name: .*)` == `(?<name>.*)`
+  ///  `(_: .*)` == `(?:.*)`
+  public static var modernCaptures: Self { Self(1 << 4) }
 
- */
+  /*
 
-  public static var traditional: Self { Self() }
+    /// `<digit>*` == `[[:digit:]]*` == `\d*`
+    public static var modernConsumers
 
-  public static var modern: Self {
-    [.nonSemanticWhitespace, .swiftyQuotes, .swiftyComments]
-  }
+  */
+
+  public static var traditional: Self { Self(0) }
+
+  public static var modern: Self { Self(~0) }
 
   public var ignoreWhitespace: Bool {
     contains(.nonSemanticWhitespace)
   }
+
+  // TODO: Probably want to model strict-PCRE etc. options too.
+  // E.g. [abc&&b] is [b] in Oniguruma/UTS18 or [abc&] in PCRE
 }
 
 

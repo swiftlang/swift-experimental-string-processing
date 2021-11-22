@@ -4,6 +4,9 @@ public struct Source {
   var input: Input
   var syntax: SyntaxOptions
 
+  // TODO: source should hold outer collection and range, at least
+  // for error reporting if nothing else
+
   init<C: Collection>(
     _ str: C, _ syntax: SyntaxOptions
   ) where C.SubSequence == Input {
@@ -41,4 +44,22 @@ extension Source {
 
 public typealias SourceRange = Range<Source.Loc>
 public typealias SourceLoc = Source.Loc
+
+// Ugly...
+extension Slice where Base == Source {
+  var string: String {
+    String(self)
+  }
+}
+
+// MARK: - Sytax
+
+extension Source {
+  var modernRanges: Bool { syntax.contains(.modernRanges) }
+  var modernCaptures: Bool { syntax.contains(.modernCaptures) }
+  var modernQuotes: Bool { syntax.contains(.modernQuotes) }
+  var nonSemanticWhitespace: Bool {
+    syntax.contains(.nonSemanticWhitespace)
+  }
+}
 

@@ -1,3 +1,7 @@
+// NOTE: This is a model type. We want to be able to get one from
+// an AST, but this isn't a natural thing to produce in the context
+// of parsing or to store in an AST
+
 public struct CharacterClass: Hashable {
   /// The actual character class to match.
   var cc: Representation

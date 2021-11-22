@@ -2,154 +2,173 @@
 
 Syntactic structure of a regular expression
 
- Regex          -> '' | Alternation
- Alternation    -> Concatenation ('|' Concatenation)*
- Concatenation  -> Quantification Quantification*
- Quantification -> (Group | Atom) Quantifier?
- Atom           -> <token: .character> | <any> | ... character classes ...
- CaptureGroup   -> '(' RE ')'
- Group          -> '(' '?' ':' RE ')'
+ Regex           -> Alternation
+ Alternation     -> Concatenation ('|' Concatenation)*
+ Concatenation   -> (!'|' !')' ConcatComponent)*
+ ConcatComponent -> Trivia | Quote | Quantification
+ Quantification  -> QuantOperand Quantifier?
+ QuantOperand    -> Group | CustomCharClass | Atom
+ Group           -> GroupStart Regex ')'
 
- Quantifier -> <provided by lexer>
- Group      -> GroupStart Regex ')'
- GroupStart -> <provided by lexer>
+Custom character classes are a mini-language to their own. We
+support UTS#18 set operators and nested character classes. The
+meaning of some atoms, such as `\b` changes inside a custom
+chararacter class. Below, we have a grammar "scope", that is we say
+"SetOp" to mean "CustomCharactetClass.SetOp", so we don't have to
+abbreviate/obfuscate/disambiguate with ugly names like "CCCSetOp".
+
+TODO: Hamish, can you look this over?
+Also, PCRE lets you end in `&&`, but not Oniguruma as it's a set
+operator. We probably want a rule similar to how you can end in `-`
+and that's just the character. Perhaps we also have syntax options
+in case we need a compatibilty mode (it's easy to add here and now)
+
+ CustomCharClass -> Start Set (SetOp Set)* ']'
+ Set             -> Member+
+ Member          -> CustomCharClass | !']' !SetOp (Range | Atom)
+ Range           -> Atom `-` Atom
+
+Lexical analysis provides the following:
+
+ Atom       -> `lexAtom`
+ Trivia     -> `lexComment` | `lexNonSemanticWhitespace`
+ Quote      -> `lexQuote`
+ Quantifier -> `lexQuantifier`
+ GroupStart -> `lexGroupStart`
+
+ CustomCharacterClass.Start -> `lexCustomCCStart`
+ CustomCharacterClass.SetOp -> `lexCustomCCBinOp`
 
 */
 
 private struct Parser {
-  var lexer: Lexer
+  var source: Source
 
-  init(_ lexer: Lexer) {
-    self.lexer = lexer
+  fileprivate var customCharacterClassDepth = 0
+
+  init(_ source: Source) {
+    self.source = source
   }
 }
 
 // Diagnostics
 extension Parser {
+  private var isInCustomCharacterClass: Bool {
+    customCharacterClassDepth > 0
+  }
+
   mutating func report(
     _ str: String, _ function: String = #function, _ line: Int = #line
   ) throws -> Never {
     throw """
         ERROR: \(str)
-        (error in user string evaluating \(
-            String(describing: lexer.peek())) prior to: "\(lexer.source)")
         (error detected in parser at \(function):\(line))
         """
   }
 }
 
 extension Parser {
-  //     RE -> '' | Alternation
+  /// Parse a regular expression
+  ///
+  ///     Regex        -> Alternation
+  ///     Alternation  -> Concatenation ('|' Concatenation)*
+  ///
   mutating func parse() throws -> AST {
-    if lexer.isEmpty { return .empty }
-    return try parseAlternation()
-  }
-
-  //     Alternation -> Concatenation ('|' Concatenation)*
-  mutating func parseAlternation() throws -> AST {
-    assert(!lexer.isEmpty)
     var result = Array<AST>(singleElement: try parseConcatenation())
-    while lexer.tryEat(.pipe) {
+    while source.tryEat("|") {
       result.append(try parseConcatenation())
     }
     return result.count == 1 ? result[0] : .alternation(result)
   }
 
-  //     Concatenation -> Quantification Quantification*
+  /// Parse a term, potentially separated from others by `|`
+  ///
+  ///     Concatenation   -> (!'|' !')' ConcatComponent)*
+  ///     ConcatComponent -> Trivia | Quote | Quantification
+  ///     Quantification  -> QuantOperand Quantifier?
+  ///
   mutating func parseConcatenation() throws -> AST {
     var result = Array<AST>()
-    while let operand = try parseQuantifierOperand() {
-      result.append(try parseQuantification(of: operand))
+    while true {
+      // Check for termination, e.g. of recursion or bin ops
+      if source.isEmpty { break }
+      if source.peek() == "|" || source.peek() == ")" { break }
+
+      //     Trivia -> `lexComment` | `lexNonSemanticWhitespace`
+      if let _ = try source.lexComment() {
+        // TODO: remember comments
+        result.append(.trivia)
+        continue
+      }
+      if let _ = try source.lexNonSemanticWhitespace() {
+        // TODO: Remember source range
+        result.append(.trivia)
+        continue
+      }
+
+      //     Quote      -> `lexQuote`
+      if let quote = try source.lexQuote() {
+        result.append(.quote(quote.value))
+        continue
+      }
+      //     Quantification  -> QuantOperand Quantifier?
+      if let operand = try parseQuantifierOperand() {
+        if let q = try source.lexQuantifier()?.value {
+          result.append(.quantification(q, operand))
+        } else {
+          result.append(operand)
+        }
+        continue
+      }
+
+      fatalError("unreachable?")
     }
     guard !result.isEmpty else {
       // Happens in `abc|`
-      try report("empty concatenation")
+      throw LexicalError.unexpectedEndOfInput
     }
     return result.count == 1 ? result[0] : .concatenation(result)
   }
 
-  //     Quantification -> QuantifierOperand <token: Quantifier>?
-  mutating func parseQuantification(of operand: AST) throws -> AST {
-    if let q = lexer.tryEatQuantification() {
-      return .quantification(q, operand)
-    }
-    return operand
-  }
-
-  //     QuantifierOperand -> (Group | <token: Character>)
+  /// Parse a (potentially quantified) component
+  ///
+  ///     QuantOperand -> Group | CustomCharClass | Atom
+  ///     Group        -> GroupStart Regex ')'
   mutating func parseQuantifierOperand() throws -> AST? {
-    if let g = lexer.tryEatGroupStart() {
-      defer {
-        guard lexer.tryEat(.rightParen) else {
-          fatalError("TODO: diagnostics")
-        }
-      }
-      return .group(g, try parse())
+    assert(!source.isEmpty)
+
+    if let groupStart = try source.lexGroupStart()?.value {
+      let ast = AST.group(Group(groupStart, nil), try parse())
+      try source.expect(")")
+      return ast
+    }
+    if let cccStart = try source.lexCustomCCStart()?.value {
+      return .customCharacterClass(
+        cccStart, try parseCustomCharacterClass(cccStart))
     }
 
-    switch lexer.peek() {
-    case .leftParen?:
-      fatalError("Shouldn't be possible anymore")
-    case .character(let c, isEscaped: false):
-      lexer.eat()
-      return .character(c)
-
-    case .unicodeScalar(let u):
-      lexer.eat()
-      return .unicodeScalar(u)
-
-    case .character(let c, isEscaped: true):
-      lexer.eat()
-
-      // TODO: anything else here?
-      return .character(c)
-
-    case .builtinCharClass(let cc):
-      lexer.eat()
-      return .characterClass(cc)
-
-    case .leftSquareBracket?:
-      return .characterClass(try parseCustomCharacterClass())
-
-    // Correct terminations
-
-    case .trivia?:
-      lexer.eat()
-      return .trivia
-
-    case .rightParen?, .pipe?, nil:
-      return nil
-
-    default:
-      try report("expected a character or group")
+    if let atom = try source.lexAtom(
+      isInCustomCharacterClass: isInCustomCharacterClass
+    )?.value {
+      return .atom(atom)
     }
+
+    // TODO: Is this reachable?
+    return nil
   }
+}
 
-  typealias CharacterSetComponent = CharacterClass.CharacterSetComponent
+// MARK: - Custom character classes
 
-  /// Parse a literal character in a custom character class.
-  mutating func parseCharacterSetComponentCharacter() throws -> Character {
-    // Most metacharacters can be interpreted as literal characters in a
-    // custom character class. This even includes the '-' character if it
-    // appears in a position where it cannot be treated as a range
-    // (per PCRE#SEC9). We may want to warn on this and require the user to
-    // escape it though.
-    switch lexer.eat() {
-    case .meta(.rsquare):
-      try report("unexpected end of character class")
-    case .meta(let meta):
-      return meta.rawValue
-    case .character(let c, isEscaped: _):
-      return c
-    default:
-      try report("expected a character or a ']'")
-    }
-  }
+extension Parser {
+  private typealias CharacterSetComponent = CharacterClass.CharacterSetComponent
 
+  /*
   mutating func parseCharacterSetComponent() throws -> CharacterSetComponent {
     // Nested custom character class.
-    if lexer.peek() == .leftSquareBracket {
-      return .characterClass(try parseCustomCharacterClass())
+    if let cccStart = try source.lexCustomCCStart()?.value {
+      return .characterClass(
+        try parseCustomCharacterClass(cccStart))
     }
     // Builtin character class.
     if case .builtinCharClass(let cc) = lexer.peek() {
@@ -158,7 +177,7 @@ extension Parser {
     }
     // A character that can optionally form a range with another character.
     let c1 = try parseCharacterSetComponentCharacter()
-    if lexer.tryEat(.minus) {
+    if source.tryEat("-") {
       let c2 = try parseCharacterSetComponentCharacter()
       return .range(c1...c2)
     }
@@ -179,19 +198,56 @@ extension Parser {
       return .symmetricDifference
     }
   }
+*/
 
-  ///     CharacterClass -> '[' CharacterSetComponent+ ']'
+  /// Parse a custom character class
   ///
-  ///     CharacterSetComponent -> CharacterSetComponent SetOp CharacterSetComponent
-  ///     CharacterSetComponent -> CharacterClass
-  ///     CharacterSetComponent -> <token: Character>
-  ///     CharacterSetComponent -> <token: Character> '-' <token: Character>
+  ///     CustomCharClass -> Start Set (SetOp Set)* ']'
+  ///     Set             -> Member+
+  ///     Member          -> CustomCharClass | !']' !SetOp (Range | Atom)
+  ///     Range           -> Atom `-` Atom
   ///
-  mutating func parseCustomCharacterClass() throws -> CharacterClass {
-    try lexer.eat(expecting: .leftSquareBracket)
-    let isInverted = lexer.tryEat(.caret)
-    var components: [CharacterSetComponent] = []
-    while !lexer.tryEat(.rightSquareBracket) {
+  mutating func parseCustomCharacterClass(
+    _ start: CustomCharacterClass.Start
+  ) throws -> CustomCharacterClass {
+    typealias Member = CustomCharacterClass.Member
+    var members: Array<Member> = []
+
+    // TODO: Is this a correct/sane associativity? Precedence?
+    while true {
+      try source.expectNonEmpty()
+      try parseCCCMembers(into: &members)
+
+      // Slurp up the set operation and continue with it
+      if let binOp = try source.lexCustomCCBinOp()?.value {
+        var rhs: Array<Member> = []
+        try parseCCCMembers(into: &rhs)
+
+        // If we're done, bail early
+        let ccc = CustomCharacterClass.setOperation(
+          members, binOp, rhs)
+        if source.tryEat("]") {
+          return ccc
+        }
+
+        // Otherwise it's just another member to accumulate
+        members = [.custom(ccc)]
+        continue
+      }
+
+      // TODO: Pretty sure we're done here
+      try source.expect("]")
+      return .set(members)
+    }
+  }
+
+  mutating func parseCCCMembers(
+    into array: inout Array<CustomCharacterClass.Member>
+  ) throws {
+    fatalError("TODO")
+  }
+
+  /*
       // If we have a binary set operator, parse it and the next component. Note
       // that this means we left associate for a chain of operators.
       // TODO: We may want to diagnose and require users to disambiguate,
@@ -208,6 +264,8 @@ extension Parser {
     }
     return .custom(components).withInversion(isInverted)
   }
+ */
+
 }
 
 public func parse<S: StringProtocol>(
@@ -215,8 +273,7 @@ public func parse<S: StringProtocol>(
 ) throws -> AST where S.SubSequence == Substring
 {
   let source = Source(regex, syntax)
-  let lexer = Lexer(source)
-  var parser = Parser(lexer)
+  var parser = Parser(source)
   return try parser.parse()
 }
 
