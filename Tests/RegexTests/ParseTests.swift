@@ -45,19 +45,18 @@ func lexTest(
 
 extension RegexTests {
   func testLex() {
-    _ = """
-        Note: Since everything's String-based, escape backslashes.
-              Literal backslashes are thus double-escaped, i.e. "\\\\"
+    _ = #"""
+        Note: Since everything's String-based, use raw strings for backslashes.
         Examples:
           "abc" -> ｢abc｣
-          "abc\\+d*" -> ｢abc+d｣ star
+          #"abc\+d*"# -> ｢abc+d｣ star
           "abc(de)+fghi*k|j" ->
               ｢abc｣ lparen ｢de｣ rparen plus ｢fghi｣ star ｢k｣ pipe ｢j｣
 
         Gramatically invalid but lexically accepted examples:
-          "|*\\\\" -> pipe star ｢\\｣
+          #"|*\\"# -> pipe star ｢\\｣
           ")ab(+" -> rparen ｢ab｣ lparen plus
-        """
+        """#
     func esc(_ c: Character) -> Token {
       .character(c, isEscaped: true)
     }
@@ -66,9 +65,9 @@ extension RegexTests {
     lexTest(
       "abc", "a", "b", "c")
     lexTest(
-      "ab\\c", "a", "b", esc("c"))
+      #"ab\c"#, "a", "b", esc("c"))
     lexTest(
-      "abc\\+d*", "a", "b", "c", esc("+"), "d", .star)
+      #"abc\+d*"#, "a", "b", "c", esc("+"), "d", .star)
     lexTest(
       "abc(de)+fghi*k|j",
       "a", "b", "c", .leftParen, "d", "e", .rightParen,
@@ -83,7 +82,7 @@ extension RegexTests {
       .leftParen, .question, ":", "a", .pipe, "b",
       .rightParen, "c")
     lexTest(
-      "a\\u0065b\\u{65}c\\x65d",
+      #"a\u0065b\u{65}c\x65d"#,
       "a", .unicodeScalar("e"),
       "b", .unicodeScalar("e"),
       "c", .unicodeScalar("e"), "d")
@@ -101,12 +100,12 @@ extension RegexTests {
       "[]]&&",
       .leftSquareBracket, .rightSquareBracket, "]", "&", "&")
     lexTest(
-      "[]]&\\&",
+      #"[]]&\&"#,
       .leftSquareBracket, .rightSquareBracket, "]", "&", esc("&"))
 
     // Gramatically invalid (yet lexically valid)
     lexTest(
-      "|*\\\\", .pipe, .star, esc("\\"))
+      #"|*\\"#, .pipe, .star, esc(#"\"#))
     lexTest(
       ")ab(+", .rightParen, "a", "b", .leftParen, .plus)
     lexTest(
@@ -118,22 +117,22 @@ extension RegexTests {
       .setOperator(.doubleAmpersand), .rightSquareBracket,
       .rightSquareBracket, "&", "&")
 
-    lexTest("$\\A\\B[\\A\\B$]", .anchor(.lineEnd), .anchor(.stringStart),
+    lexTest(#"$\A\B[\A\B$]"#, .anchor(.lineEnd), .anchor(.stringStart),
             .anchor(.nonWordBoundary), .leftSquareBracket, esc("A"), esc("B"),
             "$", .rightSquareBracket)
 
     let specialChars = [.tab, .carriageReturn, .formFeed, .bell, .escape]
       .map(Token.specialCharEscape)
 
-    lexTest("\\t\\r\\f\\a\\e[\\t\\r\\f\\a\\e]",
+    lexTest(#"\t\r\f\a\e[\t\r\f\a\e]"#,
             specialChars + [.leftSquareBracket] + specialChars +
             [.rightSquareBracket])
 
     // \b is a word boundary outside of a character class, otherwise it's
     // backspace.
-    lexTest("[\\b]\\b", .leftSquareBracket, .specialCharEscape(.backspace),
+    lexTest(#"[\b]\b"#, .leftSquareBracket, .specialCharEscape(.backspace),
             .rightSquareBracket, .anchor(.wordBoundary))
-    lexTest("[\\b", .leftSquareBracket, .specialCharEscape(.backspace))
+    lexTest(#"[\b"#, .leftSquareBracket, .specialCharEscape(.backspace))
   }
 }
 
@@ -157,15 +156,15 @@ func parseTest(
 
 extension RegexTests {
   func testParse() {
-    _ = """
+    _ = #"""
         Examples:
             "abc" -> .concat(｢abc｣)
-            "abc\\+d*" -> .concat(｢abc+｣ .zeroOrMore(｢d｣))
+            #"abc\+d*"# -> .concat(｢abc+｣ .zeroOrMore(｢d｣))
             "abc(?:de)+fghi*k|j" ->
                 .alt(.concat(｢abc｣, .oneOrMore(.group(.concat(｢de｣))),
                              ｢fgh｣ .zeroOrMore(｢i｣), ｢k｣),
                      ｢j｣)
-        """
+        """#
 
     func alt(_ asts: AST...) -> AST { return .alternation(asts) }
     func concat(_ asts: AST...) -> AST { return .concatenation(asts) }
@@ -185,7 +184,7 @@ extension RegexTests {
     parseTest(
       "abc", concat("a", "b", "c"))
     parseTest(
-      "abc\\+d*",
+      #"abc\+d*"#,
       concat("a", "b", "c", "+", .zeroOrMore(.greedy, "d")))
     parseTest(
       "a(b)", concat("a", .group(.capture(), "b")))
@@ -222,9 +221,9 @@ extension RegexTests {
         .group(
           .capture(), .zeroOrMore(.greedy, .characterClass(.any)))))
     parseTest(
-      "abc\\d", concat("a", "b", "c", .characterClass(.digit)))
+      #"abc\d"#, concat("a", "b", "c", .characterClass(.digit)))
     parseTest(
-      "a\\u0065b\\u{00000065}c\\x65d\\U00000065",
+      #"a\u0065b\u{00000065}c\x65d\U00000065"#,
       concat("a", .unicodeScalar("e"),
              "b", .unicodeScalar("e"),
              "c", .unicodeScalar("e"),
@@ -250,16 +249,16 @@ extension RegexTests {
       "[a^]", charClass("a", "^"))
 
     parseTest(
-      "\\D\\S\\W",
+      #"\D\S\W"#,
       concat(.characterClass(.digit.inverted),
              .characterClass(.whitespace.inverted),
              .characterClass(.word.inverted)))
 
     parseTest(
-      "[\\dd]", charClass(.characterClass(.digit), "d"))
+      #"[\dd]"#, charClass(.characterClass(.digit), "d"))
 
     parseTest(
-      "[^[\\D]]",
+      #"[^[\D]]"#,
       charClass(charClass(.characterClass(.digit.inverted)),
                 inverted: true))
     parseTest(
@@ -270,7 +269,7 @@ extension RegexTests {
       charClass(charClass("a", "b"), "c", charClass("d", "e")))
 
     parseTest(
-      "[[ab]&&[^bc]\\d]+",
+      #"[[ab]&&[^bc]\d]+"#,
       .oneOrMore(.greedy, charClass(
         .setOperation(
           lhs: charClass("a", "b"),
