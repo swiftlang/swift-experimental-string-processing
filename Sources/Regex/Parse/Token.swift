@@ -59,6 +59,7 @@ extension Token {
     case formFeed = "\\f"
     case bell = "\\a"
     case escape = "\\e"
+    case newline = "\\n"
   }
 
   // Note: We do each character individually, as post-fix modifiers bind

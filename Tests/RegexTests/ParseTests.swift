@@ -121,10 +121,11 @@ extension RegexTests {
             .anchor(.nonWordBoundary), .leftSquareBracket, esc("A"), esc("B"),
             "$", .rightSquareBracket)
 
-    let specialChars = [.tab, .carriageReturn, .formFeed, .bell, .escape]
-      .map(Token.specialCharEscape)
+    let specialChars = [
+      .tab, .carriageReturn, .formFeed, .bell, .escape, .newline
+    ].map(Token.specialCharEscape)
 
-    lexTest(#"\t\r\f\a\e[\t\r\f\a\e]"#,
+    lexTest(#"\t\r\f\a\e\n[\t\r\f\a\e\n]"#,
             specialChars + [.leftSquareBracket] + specialChars +
             [.rightSquareBracket])
 

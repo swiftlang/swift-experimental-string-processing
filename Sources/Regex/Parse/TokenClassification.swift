@@ -2,10 +2,10 @@ extension Lexer {
   /// Classify a 'special character escape'.
   ///
   /// If in a custom character class:
-  /// SpecialCharEscape -> '\t' | '\r' | '\b' | '\f' | '\a' | '\e'
+  /// SpecialCharEscape -> '\t' | '\r' | '\b' | '\f' | '\a' | '\e' | '\n'
   ///
-  /// Otherwise
-  /// SpecialCharEscape -> '\t' | '\r' | '\f' | '\a' | '\e'
+  /// Otherwise:
+  /// SpecialCharEscape -> '\t' | '\r' | '\f' | '\a' | '\e' | '\n'
   private static func classifyAsSpecialCharEscape(
     _ t: Character, inCustomCharClass: Bool
   ) -> Token.SpecialCharacterEscape? {
@@ -23,6 +23,8 @@ extension Lexer {
       return .bell
     case "e":
       return .escape
+    case "n":
+      return .newline
     default:
       return nil
     }
