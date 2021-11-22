@@ -45,6 +45,8 @@ extension Token {
     case caret = "^"
   }
 
+  // TODO: See CustomCC.swift, and change this to a typealias or
+  // drop it
   enum SetOperator: String, Hashable {
     case doubleAmpersand = "&&"
     case doubleDash = "--"

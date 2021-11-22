@@ -6,7 +6,8 @@ extension String: RegexProtocol {
   public typealias Capture = Empty
 
   public var regex: Regex<Capture> {
-    .init(ast: .concatenation(map(AST.character)))
+    let atoms = self.map { AST.atom(.char($0)) }
+    return .init(ast: .concatenation(atoms))
   }
 }
 
@@ -14,7 +15,7 @@ extension Character: RegexProtocol {
   public typealias Capture = Empty
 
   public var regex: Regex<Capture> {
-    .init(ast: .character(self))
+    .init(ast: .atom(.char(self)))
   }
 }
 

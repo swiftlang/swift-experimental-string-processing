@@ -64,10 +64,10 @@ public class Compiler {
         cc.matches(in: input, at: bounds.lowerBound)
       }
 
-    case .character(let ch):
+    case .atom(.char(let ch)):
       builder.buildMatch(ch)
 
-    case .unicodeScalar(let scalar):
+    case .atom(.scalar(let scalar)):
       builder.buildConsume { input, bounds in
         input.unicodeScalars[bounds.lowerBound] == scalar
           ? input.unicodeScalars.index(after: bounds.lowerBound)
@@ -79,7 +79,7 @@ public class Compiler {
         emit(component)
       }
 
-    case .empty, .trivia:
+    case .trivia:
       break
 
     case .group(_, let component):
@@ -87,7 +87,12 @@ public class Compiler {
 
     case .quantification(let quantifier, let component):
       emitQuantification(quantifier, component)
+
+    case .atom, .quote, .customCharacterClass:
+      fatalError("FIXME")
     }
+
+
   }
 
   func emitQuantification(_ quantifier: Quantifier, _ component: AST) {
