@@ -1,4 +1,5 @@
 extension AST {
+  // TODO: Get this off the AST
   public func withMatchLevel(_ level: CharacterClass.MatchLevel) -> AST {
     func recurse(_ child: AST) -> AST {
       child.withMatchLevel(level)
@@ -22,12 +23,20 @@ extension AST {
       cc.matchLevel = level
       return .characterClass(cc)
 
-    case .any, .trivia, .quote: return self
+    case .any, .trivia, .quote, .empty: return self
 
     // FIXME: Do we need to do anything here? Match level is
     // fundamental to the interpretation of atoms, but not
     // their representation.
-    case .atom: return self
+    case .atom(let a) where a.characterClass != nil:
+      // FIXME: Ugh, fine, let's convert an atom to a cc node. This
+      // is a total butchery of the AST
+      var cc = a.characterClass!
+      cc.matchLevel = level
+      return .characterClass(cc)
+
+    case .atom:
+      return self
 
     case .customCharacterClass:
       fatalError("TODO")

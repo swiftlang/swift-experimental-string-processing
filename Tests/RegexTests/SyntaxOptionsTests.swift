@@ -7,7 +7,7 @@ private func esc(_ c: Character) -> Token {
 
 
 private let dplus = AST.quantification(
-  .oneOrMore(.greedy), .characterClass(.digit))
+  .oneOrMore(.greedy), .atom(.escaped(.decimalDigit)))
 private let dotAST = AST.concatenation([
   dplus, ".", dplus, ".", dplus, ".", dplus])
 

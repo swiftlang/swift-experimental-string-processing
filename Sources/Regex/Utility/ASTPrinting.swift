@@ -57,7 +57,7 @@ extension AST {
 
     case .atom(let a): return a._dump()
 
-    case .trivia: return ""
+    case .trivia, .empty: return ""
     case .customCharacterClass: fatalError("FIXME")
     }
   }

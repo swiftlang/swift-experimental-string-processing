@@ -113,6 +113,9 @@ extension Source {
 // MARK: - Lexical errors
 
 enum LexicalError: Error, Hashable {
+  // TODO: I wonder if it makes sense to store the string.
+  // This can make equality weird.
+
   case numberOverflow(String)
   case expectedDigits(String, expecting: ClosedRange<Int>)
   case tooManyDigits(String)

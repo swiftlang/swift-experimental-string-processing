@@ -28,6 +28,12 @@ public class Compiler {
     case .any:
       builder.buildConsume(1)
 
+    case let n where n.characterClass != nil:
+      let cc = n.characterClass!
+      builder.buildConsume { input, bounds in
+        cc.matches(in: input, at: bounds.lowerBound)
+      }
+
     // Alternation: p0 | p1 | ... | pn
     //     save next_p1
     //     <code for p0>
@@ -59,10 +65,8 @@ public class Compiler {
     case .groupTransform(_, let component, _):
       emit(component)
 
-    case .characterClass(let cc):
-      builder.buildConsume { input, bounds in
-        cc.matches(in: input, at: bounds.lowerBound)
-      }
+    case .characterClass:
+      fatalError("unreachable")
 
     case .atom(.char(let ch)):
       builder.buildMatch(ch)
@@ -79,7 +83,7 @@ public class Compiler {
         emit(component)
       }
 
-    case .trivia:
+    case .trivia, .empty:
       break
 
     case .group(_, let component):

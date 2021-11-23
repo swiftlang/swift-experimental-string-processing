@@ -28,6 +28,8 @@ public enum AST: ASTValue, ASTAction {
   case characterClass(CharacterClass)
 
   case customCharacterClass(CustomCharacterClass)
+
+  case empty
 }
 
 extension AST {
@@ -121,7 +123,7 @@ extension AST {
       guard let c = child.filter(f) else { return nil }
       return .quantification(q, c)
 
-    case .characterClass, .any, .trivia, .quote, .atom:
+    case .characterClass, .any, .trivia, .quote, .atom, .empty:
       return f(self) ? self : nil
     }
   }

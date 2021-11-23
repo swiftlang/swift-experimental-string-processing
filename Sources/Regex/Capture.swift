@@ -52,7 +52,7 @@ extension AST {
     case .quantification(_, let child):
       return child.hasCaptures
     case .characterClass, .any,
-        .trivia, .quote, .atom, .customCharacterClass:
+        .trivia, .quote, .atom, .customCharacterClass, .empty:
       return false
 
     }

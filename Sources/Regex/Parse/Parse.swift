@@ -2,7 +2,7 @@
 
 Syntactic structure of a regular expression
 
- Regex           -> Alternation
+ Regex           -> '' | Alternation
  Alternation     -> Concatenation ('|' Concatenation)*
  Concatenation   -> (!'|' !')' ConcatComponent)*
  ConcatComponent -> Trivia | Quote | Quantification
@@ -74,6 +74,8 @@ extension Parser {
   ///     Alternation  -> Concatenation ('|' Concatenation)*
   ///
   mutating func parse() throws -> AST {
+    if source.isEmpty { return .empty }
+
     var result = Array<AST>(singleElement: try parseConcatenation())
     while source.tryEat("|") {
       result.append(try parseConcatenation())
@@ -134,6 +136,7 @@ extension Parser {
   ///
   ///     QuantOperand -> Group | CustomCharClass | Atom
   ///     Group        -> GroupStart Regex ')'
+  ///     
   mutating func parseQuantifierOperand() throws -> AST? {
     assert(!source.isEmpty)
 
@@ -241,7 +244,7 @@ public func parse<S: StringProtocol>(
   _ regex: S, _ syntax: SyntaxOptions
 ) throws -> AST where S.SubSequence == Substring
 {
-  let source = Source(regex, syntax)
+  let source = Source(String(regex), syntax)
   var parser = Parser(source)
   return try parser.parse()
 }
