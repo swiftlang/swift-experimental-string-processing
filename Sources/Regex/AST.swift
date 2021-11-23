@@ -43,8 +43,7 @@ extension AST {
   /// something like this on demand
   var characterClass: CharacterClass? {
     switch self {
-    case .customCharacterClass:
-      fatalError("TODO")
+    case let .customCharacterClass(cc): return cc.modelCharacterClass
     case let .atom(a): return a.characterClass
 
     // TODO: remove

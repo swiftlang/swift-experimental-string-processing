@@ -38,11 +38,7 @@ public struct CharacterClass: Hashable {
     case custom([CharacterSetComponent])
   }
 
-  public enum SetOperator: Hashable {
-    case intersection
-    case subtraction
-    case symmetricDifference
-  }
+  public typealias SetOperator = CustomCharacterClass.SetOp
 
   /// A binary set operation that forms a character class component.
   public struct SetOperation: Hashable {
