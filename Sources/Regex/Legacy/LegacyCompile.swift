@@ -10,8 +10,14 @@ public func compile(
   }
   var instructions = RECode.InstructionList()
   func compileNode(_ ast: AST) {
+
+    if let cc = ast.characterClass {
+      instructions.append(.characterClass(cc))
+      return
+    }
+
     switch ast {
-    case .trivia: return
+    case .trivia, .empty: return
 
     case .quote(let s):
       s.forEach { instructions.append(.character($0)) }
@@ -23,10 +29,6 @@ public func compile(
 
     case .atom(.scalar(let u)):
       instructions.append(.unicodeScalar(u))
-      return
-
-    case .characterClass(let cc):
-      instructions.append(.characterClass(cc))
       return
 
     case .any:
@@ -230,9 +232,14 @@ public func compile(
       compileNode(last)
       instructions.append(done)
       return
+
     case .atom: fatalError("FIXME")
 
-    case .customCharacterClass: fatalError()
+    case .any, .characterClass, .customCharacterClass:
+      fatalError("unreachable")
+
+    case .atom(let a) where a.characterClass != nil:
+      fatalError("unreachable")
     }
 
   }

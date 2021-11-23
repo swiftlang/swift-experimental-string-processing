@@ -61,13 +61,29 @@ extension RegexTests {
         _ = try src.expectUnicodeScalar(escapedCharacter: base)
       }
     }
+    func diagnoseUniScalar(
+      _ input: String,
+      base: Character,
+      expectedDigits numDigits: Int
+    ) {
+      let scalars = input.first == "{"
+                  ? String(input.dropFirst().dropLast())
+                  : input
+      diagnose(
+        input,
+        expecting: .misc("Expected more digits") // FIXME:
+      ) { src in
+        _ = try src.expectUnicodeScalar(escapedCharacter: base)
+      }
+    }
 
+// FIXME:
+//    diagnoseUniScalar(
+//      "12ab", base: "x", expectedDigits: 2)
     diagnoseUniScalar(
-      "12ab", base: "x", expectedDigits: 2...2)
+      "12", base: "u", expectedDigits: 4)
     diagnoseUniScalar(
-      "12", base: "u", expectedDigits: 4...4)
-    diagnoseUniScalar(
-      "12", base: "U", expectedDigits: 8...8)
+      "12", base: "U", expectedDigits: 8)
     diagnoseUniScalar(
       "{123456789}", base: "u", expectedDigits: 1...8)
     diagnoseUniScalar(

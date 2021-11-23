@@ -1,34 +1,50 @@
 /// The source given to a parser. This can be bytes in memory, a file on disk,
 /// something streamed over a network connection, etc.
+///
+/// For now, we use String...
+///
 public struct Source {
   var input: Input
+  var bounds: Range<Input.Index>
   var syntax: SyntaxOptions
 
   // TODO: source should hold outer collection and range, at least
   // for error reporting if nothing else
 
-  init<C: Collection>(
-    _ str: C, _ syntax: SyntaxOptions
-  ) where C.SubSequence == Input {
-    self.input = str[...]
+  init(_ str: Input, _ syntax: SyntaxOptions) {
+    self.input = str
+    self.bounds = str.startIndex ..< str.endIndex
     self.syntax = syntax
   }
 
-  var currentLoc: Loc { input.startIndex }
+  var currentLoc: Loc { bounds.lowerBound }
 }
 
 extension Source: _CollectionWrapper {
-  public typealias _Wrapped = Input
+  public typealias _Wrapped = Input.SubSequence
   public typealias Element = Char
   public typealias Index = Loc
-  public var _wrapped: _Wrapped { input }
+  public var _wrapped: _Wrapped {
+    get { input[bounds] }
+    set {
+      let newBounds = newValue.startIndex ..< newValue.endIndex
+
+      // Really doubly check our assumptions
+      assert(newValue.base == input)
+      assert(bounds.lowerBound <= newBounds.lowerBound)
+      assert(bounds.upperBound >= newBounds.upperBound)
+
+      bounds = newBounds
+    }
+  }
 }
 
 extension Source: _Peekable {
   typealias Output = Char
 
   mutating func advance() {
-    input = input.dropFirst()
+    assert(!isEmpty)
+    _wrapped = _wrapped.dropFirst()
   }
 }
 
@@ -37,7 +53,7 @@ extension Source: _Peekable {
 // For prototyping, base everything on String. Might be buffer
 // of bytes, etc., in the future
 extension Source {
-  public typealias Input = Substring
+  public typealias Input = String
   public typealias Char  = Character
   public typealias Loc   = String.Index
 }
@@ -52,7 +68,7 @@ extension Slice where Base == Source {
   }
 }
 
-// MARK: - Sytax
+// MARK: - Syntax
 
 extension Source {
   var modernRanges: Bool { syntax.contains(.modernRanges) }
