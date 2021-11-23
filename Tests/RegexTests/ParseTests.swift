@@ -303,17 +303,17 @@ extension RegexTests {
       "[a^]", charClass("a", "^"))
 
     parseTest(
-      "\\D\\S\\W",
+      #"\D\S\W"#,
       concat(
         .atom(.escaped(.notDecimalDigit)),
         .atom(.escaped(.notWhitespace)),
         .atom(.escaped(.notWordCharacter))))
 
     parseTest(
-      "[\\dd]", charClass(.atom(.escaped(.decimalDigit)), "d"))
+      #"[\dd]"#, charClass(.atom(.escaped(.decimalDigit)), "d"))
 
     parseTest(
-      "[^[\\D]]",
+      #"[^[\D]]"#,
       charClass(charClass(.atom(.escaped(.notDecimalDigit))),
                 inverted: true))
     parseTest(
@@ -324,7 +324,7 @@ extension RegexTests {
       charClass(charClass("a", "b"), "c", charClass("d", "e")))
 
     parseTest(
-      "[a[bc]de&&[^bc]\\d]+",
+      #"[a[bc]de&&[^bc]\d]+"#,
       .oneOrMore(.greedy, charClass(
         .setOperation(
           ["a", charClass("b", "c"), "d", "e"],
