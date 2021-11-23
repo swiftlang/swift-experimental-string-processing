@@ -238,53 +238,71 @@ extension Atom.EscapedBuiltin {
     case .notTextSegment: return "Y"
     }
   }
-  public init?(_ c: Character, inCustomCharacterClass customCC: Bool) {
+  private static func fromCharacter(
+    _ c: Character, inCustomCharacterClass customCC: Bool
+  ) -> Self? {
+    // Valid both inside and outside custom character classes.
     switch c {
     // Literal single characters
-    case "a": self = .alarm
-    case "e": self = .escape
-    case "f": self = .formfeed
-    case "n": self = .newline
-    case "r": self = .carriageReturn
-    case "t": self = .tab
+    case "a": return .alarm
+    case "e": return .escape
+    case "f": return .formfeed
+    case "n": return .newline
+    case "r": return .carriageReturn
+    case "t": return .tab
 
     // Character types
-    case "C": self = .singleDataUnit
-    case "d": self = .decimalDigit
-    case "D": self = .notDecimalDigit
-    case "h": self = .horizontalWhitespace
-    case "H": self = .notHorizontalWhitespace
-    case "N": self = .notNewline
-    case "R": self = .newlineSequence
-    case "s": self = .whitespace
-    case "S": self = .notWhitespace
-    case "v": self = .verticalTab
-    case "V": self = .notVerticalTab
-    case "w": self = .wordCharacter
-    case "W": self = .notWordCharacter
-
-    case "X": self = .graphemeCluster
+    case "d": return .decimalDigit
+    case "D": return .notDecimalDigit
+    case "h": return .horizontalWhitespace
+    case "H": return .notHorizontalWhitespace
+    case "s": return .whitespace
+    case "S": return .notWhitespace
+    case "v": return .verticalTab
+    case "V": return .notVerticalTab
+    case "w": return .wordCharacter
+    case "W": return .notWordCharacter
 
     // Assertions
-    case "b": self = customCC ? .backspace : .wordBoundary
-    case "B": self = .notWordBoundary
+    case "b": return customCC ? .backspace : .wordBoundary
+
+    default: break
+    }
+
+    // The following are only valid outside custom character classes.
+    guard !customCC else { return nil }
+    switch c {
+    // Character types
+    case "C": return .singleDataUnit
+    case "N": return .notNewline
+    case "R": return .newlineSequence
+
+    case "X": return .graphemeCluster
+
+    // Assertions
+    case "B": return .notWordBoundary
 
     // Anchors
-    case "A": self = .startOfSubject
-    case "Z": self = .endOfSubjectBeforeNewline
-    case "z": self = .endOfSubject
-    case "G": self = .firstMatchingPositionInSubject
+    case "A": return .startOfSubject
+    case "Z": return .endOfSubjectBeforeNewline
+    case "z": return .endOfSubject
+    case "G": return .firstMatchingPositionInSubject
 
     // Other
-    case "K": self = .resetStartOfMatch
+    case "K": return .resetStartOfMatch
 
     // Oniguruma
-    case "O": self = .trueAnychar
-    case "y": self = .textSegment
-    case "Y": self = .notTextSegment
+    case "O": return .trueAnychar
+    case "y": return .textSegment
+    case "Y": return .notTextSegment
 
     default: return nil
     }
+  }
+  public init?(_ c: Character, inCustomCharacterClass customCC: Bool) {
+    guard let builtin = Self.fromCharacter(c, inCustomCharacterClass: customCC)
+      else { return nil }
+    self = builtin
   }
 }
 
