@@ -30,12 +30,10 @@ public enum Atom: Hashable {
   case keyboardMeta(Character)        // Oniguruma
   case keyboardMetaControl(Character) // Oniguruma
 
-  /// TODO: does this go here?
-  ///
   /// A named set (using POSIX syntax)
   ///
-  /// [[:...:]], [[:^...:]]
-  case named(POSIXSet, inverted: Bool)
+  /// [:...:], [:^...:]
+  case named(POSIXSet)
 
   /// .
   case any
@@ -307,8 +305,6 @@ extension Atom.EscapedBuiltin {
 }
 
 extension Atom {
-  public typealias POSIXSet = Unicode.POSIXCharacterSet
-
   // TODO: Hamish, I believe you have a formulation of this and have
   // thought through the parsing a whole lot more. This is just what
   // I have at the time, but let's get something better for the AST
@@ -467,5 +463,12 @@ extension Atom {
         .backreference, .subpattern, .condition, .trivia:
       return nil
     }
+  }
+}
+
+extension Atom {
+  public struct POSIXSet: Hashable {
+    var inverted: Bool
+    var set: Unicode.POSIXCharacterSet
   }
 }
