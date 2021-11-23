@@ -404,11 +404,7 @@ extension Atom: _ASTPrintable {
 
 extension Atom.EscapedBuiltin {
   var characterClass: CharacterClass? {
-    // TODO: Hamish, can you take over?
-
     switch self {
-    case .singleDataUnit: fatalError("TODO")
-
     case .decimalDigit:    return .digit
     case .notDecimalDigit: return .digit.inverted
 
@@ -416,7 +412,7 @@ extension Atom.EscapedBuiltin {
     case .notHorizontalWhitespace:
       return .horizontalWhitespace.inverted
 
-    case .notNewline: fatalError("TODO")
+    case .notNewline: return .newlineSequence.inverted
     case .newlineSequence: return .newlineSequence
 
     case .whitespace:    return .whitespace
@@ -427,6 +423,8 @@ extension Atom.EscapedBuiltin {
 
     case .wordCharacter:    return .word
     case .notWordCharacter: return .word.inverted
+
+    case .graphemeCluster: return .anyGrapheme
 
     default:
       return nil
