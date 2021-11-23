@@ -450,4 +450,22 @@ extension Atom {
 
     }
   }
+
+  /// Retrieve the character value of the atom if it represents a literal
+  /// character or unicode scalar, nil otherwise.
+  var literalCharacterValue: Character? {
+    switch self {
+    case .char(let c):
+      return c
+    case .scalar(let s):
+      return Character(s)
+
+    case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
+      fatalError("TODO")
+
+    case .property, .escaped, .named, .any, .startOfLine, .endOfLine,
+        .backreference, .subpattern, .condition, .trivia:
+      return nil
+    }
+  }
 }

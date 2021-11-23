@@ -13,10 +13,22 @@ extension AST: ExpressibleByExtendedGraphemeClusterLiteral {
     self = .atom(.char(value))
   }
 }
+extension Atom: ExpressibleByExtendedGraphemeClusterLiteral {
+  public typealias ExtendedGraphemeClusterLiteralType = Character
+  public init(extendedGraphemeClusterLiteral value: Character) {
+    self = .char(value)
+  }
+}
 extension CharacterClass.CharacterSetComponent: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
     self = .character(value)
+  }
+}
+extension CustomCharacterClass.Member: ExpressibleByExtendedGraphemeClusterLiteral {
+  public typealias ExtendedGraphemeClusterLiteralType = Character
+  public init(extendedGraphemeClusterLiteral value: Character) {
+    self = .atom(.char(value))
   }
 }
 
@@ -194,16 +206,22 @@ extension RegexTests {
     func alt(_ asts: AST...) -> AST { return .alternation(asts) }
     func concat(_ asts: AST...) -> AST { return .concatenation(asts) }
     func charClass(
-      _ comps: CharacterClass.CharacterSetComponent...,
+      _ members: CustomCharacterClass.Member...,
       inverted: Bool = false
     ) -> AST {
-      .characterClass(.custom(comps).withInversion(inverted))
+      let cc = CustomCharacterClass(
+        start: inverted ? .inverted : .normal, members: members
+      )
+      return .customCharacterClass(cc)
     }
     func charClass(
-      _ comps: CharacterClass.CharacterSetComponent...,
+      _ members: CustomCharacterClass.Member...,
       inverted: Bool = false
-    ) -> CharacterClass.CharacterSetComponent {
-      .characterClass(.custom(comps).withInversion(inverted))
+    ) -> CustomCharacterClass.Member {
+      let cc = CustomCharacterClass(
+        start: inverted ? .inverted : .normal, members: members
+      )
+      return .custom(cc)
     }
 
     parseTest(
@@ -255,24 +273,34 @@ extension RegexTests {
              "c", .atom(.scalar("e")),
              "d", .atom(.scalar("e"))))
 
-//    parseTest(
-//      "[-|$^:?+*())(*-+-]",
-//      charClass(
-//        "-", "|", "$", "^", ":", "?", "+", "*", "(", ")", ")",
-//        "(", .range("*" ... "+"), "-"))
-//
-//    parseTest(
-//      "[a-b-c]", charClass(.range("a" ... "b"), "-", "c"))
+    parseTest(
+      "[-|$^:?+*())(*-+-]",
+      charClass(
+        "-", "|", "$", "^", ":", "?", "+", "*", "(", ")", ")",
+        "(", .range("*", "+"), "-"))
+
+    parseTest(
+      "[a-b-c]", charClass(.range("a", "b"), "-", "c"))
+
+    parseTest("[-a-]", charClass("-", "a", "-"))
+
+    parseTest("[a-z]", charClass(.range("a", "z")))
+
+    parseTest("[a-d--a-c]", charClass(
+      .setOperation([.range("a", "d")], .subtraction, [.range("a", "c")])
+    ))
+
+    parseTest("[-]", charClass("-"))
 
     // These are metacharacters in certain contexts, but normal characters
     // otherwise.
     parseTest(
       ":-]", concat(":", "-", "]"))
-//
-//    parseTest(
-//      "[^abc]", charClass("a", "b", "c", inverted: true))
-//    parseTest(
-//      "[a^]", charClass("a", "^"))
+
+    parseTest(
+      "[^abc]", charClass("a", "b", "c", inverted: true))
+    parseTest(
+      "[a^]", charClass("a", "^"))
 
     parseTest(
       "\\D\\S\\W",
@@ -280,44 +308,47 @@ extension RegexTests {
         .atom(.escaped(.notDecimalDigit)),
         .atom(.escaped(.notWhitespace)),
         .atom(.escaped(.notWordCharacter))))
-//
-//    parseTest(
-//      "[\\dd]", charClass(.characterClass(.digit), "d"))
-//
-//    parseTest(
-//      "[^[\\D]]",
-//      charClass(charClass(.characterClass(.digit.inverted)),
-//                inverted: true))
-//    parseTest(
-//      "[[ab][bc]]",
-//      charClass(charClass("a", "b"), charClass("b", "c")))
-//    parseTest(
-//      "[[ab]c[de]]",
-//      charClass(charClass("a", "b"), "c", charClass("d", "e")))
-//
-//    parseTest(
-//      "[[ab]&&[^bc]\\d]+",
-//      .oneOrMore(.greedy, charClass(
-//        .setOperation(
-//          lhs: charClass("a", "b"),
-//          op: .intersection,
-//          rhs: charClass("b", "c", inverted: true)
-//        ),
-//        .characterClass(.digit))))
-//
-//    parseTest(
-//      "[a&&b]",
-//      charClass(
-//        .setOperation(lhs: "a", op: .intersection, rhs: "b")))
-//
-//    // We left-associate for chained operators.
-//    parseTest(
-//      "[a&&b~~c]",
-//      charClass(
-//        .setOperation(
-//          lhs: .setOperation(lhs: "a", op: .intersection, rhs: "b"),
-//          op: .symmetricDifference,
-//          rhs: "c")))
+
+    parseTest(
+      "[\\dd]", charClass(.atom(.escaped(.decimalDigit)), "d"))
+
+    parseTest(
+      "[^[\\D]]",
+      charClass(charClass(.atom(.escaped(.notDecimalDigit))),
+                inverted: true))
+    parseTest(
+      "[[ab][bc]]",
+      charClass(charClass("a", "b"), charClass("b", "c")))
+    parseTest(
+      "[[ab]c[de]]",
+      charClass(charClass("a", "b"), "c", charClass("d", "e")))
+
+    parseTest(
+      "[a[bc]de&&[^bc]\\d]+",
+      .oneOrMore(.greedy, charClass(
+        .setOperation(
+          ["a", charClass("b", "c"), "d", "e"],
+          .intersection,
+          [charClass("b", "c", inverted: true), .atom(.escaped(.decimalDigit))]
+        ))))
+
+    parseTest(
+      "[a&&b]",
+      charClass(
+        .setOperation(["a"], .intersection, ["b"])))
+
+    parseTest(
+      "[abc--def]",
+      charClass(.setOperation(["a", "b", "c"], .subtraction, ["d", "e", "f"])))
+
+    // We left-associate for chained operators.
+    parseTest(
+      "[ab&&b~~cd]",
+      charClass(
+        .setOperation(
+          [.setOperation(["a", "b"], .intersection, ["b"])],
+          .symmetricDifference,
+          ["c", "d"])))
 
     // Operators are only valid in custom character classes.
     parseTest(
