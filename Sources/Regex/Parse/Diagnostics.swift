@@ -130,6 +130,8 @@ enum LexicalError: Error, Hashable {
 
   case expectedASCII(Character)
 
+  case expectedCustomCharacterClassMembers
+  case invalidCharacterClassRangeOperand
 }
 
 

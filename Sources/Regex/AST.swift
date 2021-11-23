@@ -27,8 +27,7 @@ public enum AST: ASTValue, ASTAction {
   // type produced from an AST node.
   case characterClass(CharacterClass)
 
-  case customCharacterClass(
-    CustomCharacterClass.Start, CustomCharacterClass)
+  case customCharacterClass(CustomCharacterClass)
 }
 
 extension AST {
@@ -81,6 +80,26 @@ extension AST {
         return $0.filter(f)
       }
     }
+    func filt(_ cc: CustomCharacterClass) -> CustomCharacterClass {
+      CustomCharacterClass(start: cc.start, members: filt(cc.members))
+    }
+    typealias CCCMember = CustomCharacterClass.Member
+    func filt(_ children: [CCCMember]) -> [CCCMember] {
+      children.compactMap {
+        switch $0 {
+        case let .custom(cc):
+          return .custom(filt(cc))
+        case .range(let lhs, let rhs):
+          guard let filtLHS = f(.atom(lhs)) ? lhs : nil else { return nil }
+          guard let filtRHS = f(.atom(rhs)) ? rhs : nil else { return nil }
+          return .range(filtLHS, filtRHS)
+        case let .atom(atom):
+          return f(.atom(atom)) ? .atom(atom) : nil
+        case let .setOperation(lhsMembers, op, rhsMembers):
+          return .setOperation(filt(lhsMembers), op, filt(rhsMembers))
+        }
+      }
+    }
     switch self {
     case let .alternation(children):
       return .alternation(filt(children))
@@ -88,7 +107,8 @@ extension AST {
     case let .concatenation(children):
       return .concatenation(filt(children))
 
-    case .customCharacterClass: fatalError("TODO")
+    case let .customCharacterClass(cc):
+      return .customCharacterClass(filt(cc))
 
     case let .group(g, child):
       guard let c = child.filter(f) else { return nil }

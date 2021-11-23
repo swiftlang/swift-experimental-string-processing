@@ -386,11 +386,18 @@ extension Source {
     try recordLoc { src in
       // TODO: Perhaps a syntax options check (!PCRE)
       // TODO: Better AST types here
-      if src.tryEat(sequence: "--") { return .subtraction }
-      if src.tryEat(sequence: "~~") { return .intersection }
-      if src.tryEat(sequence: "&&") { return .symmetricDifference }
-      return nil
+      guard let binOp = src.peekCCBinOp() else { return nil }
+      try! src.expect(sequence: binOp.rawValue)
+      return binOp
     }
+  }
+
+  // Check to see if we can lex a binary operator.
+  func peekCCBinOp() -> CustomCharacterClass.SetOp? {
+    if starts(with: "--") { return .subtraction }
+    if starts(with: "~~") { return .symmetricDifference }
+    if starts(with: "&&") { return .intersection }
+    return nil
   }
 
   /// Consume an escaped atom, starting from after the backslash
@@ -458,9 +465,8 @@ extension Source {
   ) throws -> Value<Atom>? {
     try recordLoc { src in
       // Check for not-an-atom, e.g. parser recursion termination
-      if src.isEmpty || src.peek() == ")" || src.peek() == "|" {
-        return nil
-      }
+      if src.isEmpty { return nil }
+      if !customCC && (src.peek() == ")" || src.peek() == "|") { return nil }
       // TODO: Store customCC in the atom, if that's useful
 
       // POSIX named set
@@ -472,7 +478,11 @@ extension Source {
 
       let char = src.eat()
       switch char {
-      case ")", "|": fatalError("unreachable")
+      case ")", "|":
+        if customCC {
+          return .char(char)
+        }
+        fatalError("unreachable")
 
       // (sometimes) special metacharacters
       case ".": return customCC ? .char(".") : .any
@@ -494,6 +504,16 @@ extension Source {
     }
   }
 
+  /// Try to lex the end of a range in a custom character class, which consists
+  /// of a '-' character followed by an atom.
+  mutating func lexCustomCharClassRangeEnd() throws -> Value<Atom>? {
+    // Make sure we don't have a binary operator e.g '--', and the '-' is not
+    // ending the custom character class (in which case it is literal).
+    guard peekCCBinOp() == nil && !starts(with: "-]") && tryEat("-") else {
+      return nil
+    }
+    return try lexAtom(isInCustomCharacterClass: true)
+  }
 }
 
 

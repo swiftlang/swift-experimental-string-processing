@@ -143,8 +143,7 @@ extension Parser {
       return ast
     }
     if let cccStart = try source.lexCustomCCStart()?.value {
-      return .customCharacterClass(
-        cccStart, try parseCustomCharacterClass(cccStart))
+      return .customCharacterClass(try parseCustomCharacterClass(cccStart))
     }
 
     if let atom = try source.lexAtom(
@@ -161,45 +160,6 @@ extension Parser {
 // MARK: - Custom character classes
 
 extension Parser {
-  private typealias CharacterSetComponent = CharacterClass.CharacterSetComponent
-
-  /*
-  mutating func parseCharacterSetComponent() throws -> CharacterSetComponent {
-    // Nested custom character class.
-    if let cccStart = try source.lexCustomCCStart()?.value {
-      return .characterClass(
-        try parseCustomCharacterClass(cccStart))
-    }
-    // Builtin character class.
-    if case .builtinCharClass(let cc) = lexer.peek() {
-      lexer.eat()
-      return .characterClass(cc)
-    }
-    // A character that can optionally form a range with another character.
-    let c1 = try parseCharacterSetComponentCharacter()
-    if source.tryEat("-") {
-      let c2 = try parseCharacterSetComponentCharacter()
-      return .range(c1...c2)
-    }
-    return .character(c1)
-  }
-
-  /// Attempt to parse a set operator, returning nil if the next token is not
-  /// for a set operator.
-  mutating func tryParseSetOperator() -> CharacterClass.SetOperator? {
-    guard case .setOperator(let opTok) = lexer.peek() else { return nil }
-    lexer.eat()
-    switch opTok {
-    case .doubleAmpersand:
-      return .intersection
-    case .doubleDash:
-      return .subtraction
-    case .doubleTilda:
-      return .symmetricDifference
-    }
-  }
-*/
-
   /// Parse a custom character class
   ///
   ///     CustomCharClass -> Start Set (SetOp Set)* ']'
@@ -211,61 +171,70 @@ extension Parser {
     _ start: CustomCharacterClass.Start
   ) throws -> CustomCharacterClass {
     typealias Member = CustomCharacterClass.Member
+    try source.expectNonEmpty()
+
     var members: Array<Member> = []
+    try parseCCCMembers(into: &members)
 
-    // TODO: Is this a correct/sane associativity? Precedence?
-    while true {
-      try source.expectNonEmpty()
-      try parseCCCMembers(into: &members)
+    // If we have a binary set operator, parse it and the next members. Note
+    // that this means we left associate for a chain of operators.
+    // TODO: We may want to diagnose and require users to disambiguate, at least
+    // for chains of separate operators.
+    // TODO: What about precedence?
+    while let binOp = try source.lexCustomCCBinOp()?.value {
+      var rhs: Array<Member> = []
+      try parseCCCMembers(into: &rhs)
 
-      // Slurp up the set operation and continue with it
-      if let binOp = try source.lexCustomCCBinOp()?.value {
-        var rhs: Array<Member> = []
-        try parseCCCMembers(into: &rhs)
-
-        // If we're done, bail early
-        let ccc = CustomCharacterClass.setOperation(
-          members, binOp, rhs)
-        if source.tryEat("]") {
-          return ccc
-        }
-
-        // Otherwise it's just another member to accumulate
-        members = [.custom(ccc)]
-        continue
+      if members.isEmpty || rhs.isEmpty {
+        throw LexicalError.expectedCustomCharacterClassMembers
       }
 
-      // TODO: Pretty sure we're done here
-      try source.expect("]")
-      return .set(members)
+      // If we're done, bail early
+      let setOp = Member.setOperation(members, binOp, rhs)
+      if source.tryEat("]") {
+        return CustomCharacterClass(start: start, members: [setOp])
+      }
+
+      // Otherwise it's just another member to accumulate
+      members = [setOp]
     }
+    if members.isEmpty {
+      throw LexicalError.expectedCustomCharacterClassMembers
+    }
+    try source.expect("]")
+    return CustomCharacterClass(start: start, members: members)
   }
 
   mutating func parseCCCMembers(
-    into array: inout Array<CustomCharacterClass.Member>
+    into members: inout Array<CustomCharacterClass.Member>
   ) throws {
-    fatalError("TODO")
-  }
+    // Parse members until we see the end of the custom char class or an
+    // operator.
+    while source.peek() != "]" && source.peekCCBinOp() == nil {
 
-  /*
-      // If we have a binary set operator, parse it and the next component. Note
-      // that this means we left associate for a chain of operators.
-      // TODO: We may want to diagnose and require users to disambiguate,
-      // at least for chains of separate operators.
-      if let op = tryParseSetOperator() {
-        guard let lhs = components.popLast() else {
-          try report("Binary set operator requires operand")
-        }
-        let rhs = try parseCharacterSetComponent()
-        components.append(.setOperation(lhs: lhs, op: op, rhs: rhs))
+      // Nested custom character class.
+      if let cccStart = try source.lexCustomCCStart()?.value {
+        members.append(.custom(try parseCustomCharacterClass(cccStart)))
         continue
       }
-      components.append(try parseCharacterSetComponent())
-    }
-    return .custom(components).withInversion(isInverted)
-  }
- */
 
+      guard let atom = try source.lexAtom(isInCustomCharacterClass: true)?.value
+        else { break }
+
+      // Range between atoms.
+      if let rhs = try source.lexCustomCharClassRangeEnd()?.value {
+        guard atom.literalCharacterValue != nil &&
+              rhs.literalCharacterValue != nil else {
+          throw LexicalError.invalidCharacterClassRangeOperand
+        }
+        members.append(.range(atom, rhs))
+        continue
+      }
+
+      members.append(.atom(atom))
+      continue
+    }
+  }
 }
 
 public func parse<S: StringProtocol>(
