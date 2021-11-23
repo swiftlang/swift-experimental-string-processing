@@ -132,6 +132,8 @@ enum LexicalError: Error, Hashable {
 
   case expectedCustomCharacterClassMembers
   case invalidCharacterClassRangeOperand
+
+  case invalidPOSIXSetName(String)
 }
 
 

@@ -229,23 +229,29 @@ extension Source {
     }
   }
 
-  /// Expect a linear run of non-nested non-empty content
-  private mutating func expectQuoted(
-    endingWith end: String
+  private mutating func lexUntil(
+    _ end: String, validate: (String) throws -> Void = { _ in }
   ) throws -> Value<String> {
-    try recordLoc { src in 
+    try recordLoc { src in
       var result = ""
       while !src.tryEat(sequence: end) {
         // TODO(diagnostic): expected `end`, instead of end-of-input
 
         result.append(src.eat())
       }
+      return result
+    }
+  }
 
+  /// Expect a linear run of non-nested non-empty content
+  private mutating func expectQuoted(
+    endingWith end: String
+  ) throws -> Value<String> {
+    try lexUntil(end, validate: { result in
       guard !result.isEmpty else {
         throw LexicalError.misc("Expected non-empty contents")
       }
-      return result
-    }
+    })
   }
 
   /// Try to consume quoted content
@@ -368,8 +374,8 @@ extension Source {
   mutating func lexCustomCCStart(
   ) throws -> Value<CustomCharacterClass.Start>? {
     try recordLoc { src in
-      // POSIX named classes are atoms
-      guard !src.starts(with: "[[:") else { return nil }
+      // POSIX named sets are atoms.
+      guard !src.starts(with: "[:") else { return nil }
 
       if src.tryEat("[") {
         return src.tryEat("^") ? .inverted : .normal
@@ -398,6 +404,18 @@ extension Source {
     if starts(with: "~~") { return .symmetricDifference }
     if starts(with: "&&") { return .intersection }
     return nil
+  }
+
+  private mutating func lexPOSIXNamedSet() throws -> Value<Atom.POSIXSet>? {
+    try recordLoc { src in
+      guard src.tryEat(sequence: "[:") else { return nil }
+      let inverted = src.tryEat("^")
+      let name = try src.lexUntil(":]").value
+      guard let set = Unicode.POSIXCharacterSet(rawValue: name) else {
+        throw LexicalError.invalidPOSIXSetName(name)
+      }
+      return Atom.POSIXSet(inverted: inverted, set: set)
+    }
   }
 
   /// Consume an escaped atom, starting from after the backslash
@@ -454,7 +472,7 @@ extension Source {
   ///     Atom             -> SpecialCharacter | POSIXSet
   ///                       | '\' Escaped | [^')' '|']
   ///     SpecialCharacter -> '.' | '^' | '$'
-  ///     POSIXSet         -> '[[:' name ':]]'
+  ///     POSIXSet         -> '[:' name ':]'
   ///
   /// If `SyntaxOptions.nonSemanticWhitespace` is enabled, also accepts:
   ///
@@ -469,11 +487,11 @@ extension Source {
       if !customCC && (src.peek() == ")" || src.peek() == "|") { return nil }
       // TODO: Store customCC in the atom, if that's useful
 
-      // POSIX named set
-      if src.tryEat(sequence: "[[:") {
-        // ...
-        try src.expect(sequence: ":]]")
-        fatalError("TODO: posix named sets")
+      // POSIX named set. This is only allowed in a custom character class.
+      // TODO: Can we try and recover and diagnose for named sets outside
+      // character classes?
+      if customCC, let set = try src.lexPOSIXNamedSet()?.value {
+        return .named(set)
       }
 
       let char = src.eat()

@@ -223,6 +223,11 @@ extension RegexTests {
       )
       return .custom(cc)
     }
+    func posixSet(
+      _ set: Unicode.POSIXCharacterSet, inverted: Bool = false
+    ) -> Atom {
+      return .named(.init(inverted: inverted, set: set))
+    }
 
     parseTest(
       "abc", concat("a", "b", "c"))
@@ -322,6 +327,15 @@ extension RegexTests {
     parseTest(
       "[[ab]c[de]]",
       charClass(charClass("a", "b"), "c", charClass("d", "e")))
+
+    typealias POSIX = Atom.POSIXSet
+    parseTest(#"[ab[:space:]\d[:^upper:]cd]"#,
+              charClass("a", "b", .atom(posixSet(.space)),
+                        .atom(.escaped(.decimalDigit)),
+                        .atom(posixSet(.upper, inverted: true)), "c", "d"))
+
+    parseTest("[[[:space:]]]",
+              charClass(charClass(.atom(posixSet(.space)))))
 
     parseTest(
       #"[a[bc]de&&[^bc]\d]+"#,
