@@ -13,7 +13,7 @@ public struct Regex {
 public struct RegexConsumer: CollectionConsumer {
   // NOTE: existential
   let vm: Executor
-  let referenceVM: VirtualMachine
+  let referenceVM: TortoiseVM
 
   public init(regex: Regex) {
     let ast = try! parse(regex.string, .traditional)
