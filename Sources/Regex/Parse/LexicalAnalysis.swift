@@ -26,7 +26,7 @@ extension Source {
     }
     try validate(num)
     guard let i = Num(num, radix: radix) else {
-      throw LexicalError.numberOverflow(String(num))
+      throw ParseError.numberOverflow(String(num))
     }
     return i
   }
@@ -40,12 +40,12 @@ extension Source {
     numDigits: Int
   ) throws -> Num {
     guard let str = tryEat(count: numDigits)?.string else {
-      throw LexicalError.misc("Expected more digits")
+      throw ParseError.misc("Expected more digits")
     }
     guard let i = Num(str, radix: 16) else {
       // TODO: Or, it might have failed because of overflow,
       // Can we tell easily?
-      throw LexicalError.expectedHexNumber(str)
+      throw ParseError.expectedHexNumber(str)
     }
     return i
   }
@@ -56,16 +56,16 @@ extension Source {
     guard let str = self.tryEatPrefix(
       maxLength: digitRange.upperBound, \.isHexDigit)?.string
     else {
-      throw LexicalError.expectedDigits("", expecting: digitRange)
+      throw ParseError.expectedDigits("", expecting: digitRange)
     }
     guard digitRange.contains(str.count) else {
-      throw LexicalError.expectedDigits(
+      throw ParseError.expectedDigits(
         str, expecting: digitRange)
     }
     guard let i = Num(str, radix: 16) else {
       // TODO: Or, it might have failed because of overflow,
       // Can we tell easily?
-      throw LexicalError.expectedHexNumber(str)
+      throw ParseError.expectedHexNumber(str)
     }
     return i
   }
@@ -92,7 +92,7 @@ extension Source {
       let num: UInt32 = try src.consumeHexNumber(
         numDigits: numDigits)
       guard let scalar = Unicode.Scalar(num) else {
-        throw LexicalError.misc(
+        throw ParseError.misc(
           "Invalid scalar value U+\(num.hexStr)")
       }
       return scalar
@@ -106,15 +106,15 @@ extension Source {
     try recordLoc { src in
       let uOpt: UInt32? = try src.consumeHexNumber { s in
         guard digitRange.contains(s.count) else {
-          throw LexicalError.expectedDigits(
+          throw ParseError.expectedDigits(
             s, expecting: digitRange)
         }
       }
       guard let u = uOpt else {
-        throw LexicalError.misc("Expected scalar value")
+        throw ParseError.misc("Expected scalar value")
       }
       guard let scalar = Unicode.Scalar(u) else {
-        throw LexicalError.misc(
+        throw ParseError.misc(
           "Invalid scalar value U+\(u.hexStr)")
       }
       return scalar
@@ -148,7 +148,7 @@ extension Source {
         return try src.expectUnicodeScalar(numDigits: 8).value
 
       default:
-        throw LexicalError.misc("TODO: Or is this an assert?")
+        throw ParseError.misc("TODO: Or is this an assert?")
       }
     }
   }
@@ -224,7 +224,7 @@ extension Source {
       case let (nil, nil, u) where u != nil:
         fatalError("Not possible")
       default:
-        throw LexicalError.misc("Invalid range")
+        throw ParseError.misc("Invalid range")
       }
     }
   }
@@ -249,7 +249,7 @@ extension Source {
   ) throws -> Value<String> {
     try lexUntil(end, validate: { result in
       guard !result.isEmpty else {
-        throw LexicalError.misc("Expected non-empty contents")
+        throw ParseError.misc("Expected non-empty contents")
       }
     })
   }
@@ -357,7 +357,7 @@ extension Source {
           return .namedCapture(name.value)
         }
 
-        throw LexicalError.misc(
+        throw ParseError.misc(
           "Unknown group kind '(?\(src.peek()!)'")
       }
 
@@ -412,7 +412,7 @@ extension Source {
       let inverted = src.tryEat("^")
       let name = try src.lexUntil(":]").value
       guard let set = Unicode.POSIXCharacterSet(rawValue: name) else {
-        throw LexicalError.invalidPOSIXSetName(name)
+        throw ParseError.invalidPOSIXSetName(name)
       }
       return Atom.POSIXSet(inverted: inverted, set: set)
     }
