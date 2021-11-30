@@ -35,9 +35,9 @@ extension Source {
     do {
       let result = try f(&self)
       return Value(result, startLoc..<currentLoc)
-    } catch let e as Source.Error<LexicalError> {
+    } catch let e as Source.Error<ParseError> {
       throw e
-    } catch let e as LexicalError {
+    } catch let e as ParseError {
       throw Error(e, startLoc..<currentLoc)
     } catch {
       fatalError("FIXME: Let's not keep the boxed existential...")
@@ -53,9 +53,9 @@ extension Source {
     do {
       guard let result = try f(&self) else { return nil }
       return Value(result, startLoc..<currentLoc)
-    } catch let e as Source.Error<LexicalError> {
+    } catch let e as Source.Error<ParseError> {
       throw e
-    } catch let e as LexicalError {
+    } catch let e as ParseError {
       throw Error(e, startLoc..<currentLoc)
     } catch {
       fatalError("FIXME: Let's not keep the boxed existential...")
@@ -70,7 +70,7 @@ extension Source {
   mutating func expect(_ c: Character) throws {
     _ = try recordLoc { src in
       guard src.tryEat(c) else {
-        throw LexicalError.expected(String(c))
+        throw ParseError.expected(String(c))
       }
     }
   }
@@ -81,7 +81,7 @@ extension Source {
   {
     _ = try recordLoc { src in
       guard src.tryEat(sequence: c) else {
-        throw LexicalError.expected(String(c))
+        throw ParseError.expected(String(c))
       }
     }
   }
@@ -91,7 +91,7 @@ extension Source {
   /// Note: much of the time, but not always, we can vend a more specific error.
   mutating func expectNonEmpty() throws {
     _ = try recordLoc { src in
-      if src.isEmpty { throw LexicalError.unexpectedEndOfInput }
+      if src.isEmpty { throw ParseError.unexpectedEndOfInput }
     }
   }
 
@@ -99,10 +99,10 @@ extension Source {
   mutating func expectASCII() throws -> Value<Character> {
     try recordLoc { src in
       guard let c = src.peek() else {
-        throw LexicalError.unexpectedEndOfInput
+        throw ParseError.unexpectedEndOfInput
       }
       guard c.isASCII else {
-        throw LexicalError.expectedASCII(c)
+        throw ParseError.expectedASCII(c)
       }
       src.eat(asserting: c)
       return c
@@ -110,9 +110,9 @@ extension Source {
   }
 }
 
-// MARK: - Lexical errors
+// MARK: - Parse errors
 
-enum LexicalError: Error, Hashable {
+enum ParseError: Error, Hashable {
   // TODO: I wonder if it makes sense to store the string.
   // This can make equality weird.
 

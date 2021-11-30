@@ -127,7 +127,7 @@ extension Parser {
     }
     guard !result.isEmpty else {
       // Happens in `abc|`
-      throw LexicalError.unexpectedEndOfInput
+      throw ParseError.unexpectedEndOfInput
     }
     return result.count == 1 ? result[0] : .concatenation(result)
   }
@@ -189,7 +189,7 @@ extension Parser {
       try parseCCCMembers(into: &rhs)
 
       if members.isEmpty || rhs.isEmpty {
-        throw LexicalError.expectedCustomCharacterClassMembers
+        throw ParseError.expectedCustomCharacterClassMembers
       }
 
       // If we're done, bail early
@@ -202,7 +202,7 @@ extension Parser {
       members = [setOp]
     }
     if members.isEmpty {
-      throw LexicalError.expectedCustomCharacterClassMembers
+      throw ParseError.expectedCustomCharacterClassMembers
     }
     try source.expect("]")
     return CustomCharacterClass(start: start, members: members)
@@ -228,7 +228,7 @@ extension Parser {
       if let rhs = try source.lexCustomCharClassRangeEnd()?.value {
         guard atom.literalCharacterValue != nil &&
               rhs.literalCharacterValue != nil else {
-          throw LexicalError.invalidCharacterClassRangeOperand
+          throw ParseError.invalidCharacterClassRangeOperand
         }
         members.append(.range(atom, rhs))
         continue

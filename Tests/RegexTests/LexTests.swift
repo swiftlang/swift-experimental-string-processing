@@ -3,7 +3,7 @@ import XCTest
 
 func diagnose(
   _ input: String,
-  expecting expected: LexicalError,
+  expecting expected: ParseError,
   _ syntax: SyntaxOptions = .traditional,
   _ f: (inout Source) throws -> ()
 ) {
@@ -13,7 +13,7 @@ func diagnose(
     XCTFail("""
       Passed, but expected error: \(expected)
     """)
-  } catch let e as Source.Error<LexicalError> {
+  } catch let e as Source.Error<ParseError> {
     guard e.error == expected else {
       XCTFail("""
 
