@@ -37,10 +37,10 @@ if let match = "abcddddefgh".firstMatch(of: regex) {
 
 >_**Note:** The `Regex` type includes, and `firstMatch(of:)` returns, the entire match as the "0th element"._
 
-We introduce a generic type `Regex<Match>`, which treats the type of captures as part of a regular expression's type information for clarity, type safety, and convenience. As we explore a fundamental design aspect of the regular expression feature, this pitch discusses the following topics:
+We introduce a generic type `Regex<Match>`, which treats the capture types as part of a regular expression's type information for clarity, type safety, and convenience. As we explore a fundamental design aspect of the regular expression feature, this pitch discusses the following topics:
 
 - A type definition of the generic type `Regex<Match>` and `firstMatch(of:)` method.
-- Capture type inference and composition in regular expression literals and the forthcoming result builder syntax.
+- Inference and composition of capture types in regular expression literals and the forthcoming result builder syntax.
 - New language features which this design may require.
 
 The focus of this pitch is the structural properties of capture types and how regular expression patterns compose to form new capture types. The semantics of string matching, its effect on the capture types (i.e. `UnicodeScalarView.SubSequence` or `Substring`), and the result builder syntax will be discussed in future pitches.
@@ -52,7 +52,7 @@ For background on Declarative String Processing, see related topics:
 
 ## Motivation
 
-Across a variety of programming languages, many established regular expression libraries present captures as a collection of captured content to the caller upon a successful match [[1](https://developer.apple.com/documentation/foundation/nsregularexpression)][[2](https://docs.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.capture)]. However, to know the structure of captured contents, programmers often need to carefully read the regular expression or run the regular expression on some input to find out. Because regular expressions are oftentimes statically available in the source code, there is a missed opportunity to use generics to present captures as part of type information to the programmer, and to leverage the compiler to infer the type of captures based on a regular expression literal. As we propose to introduce declarative string processing capabilities to the language and the Standard Library, we would like to explore a type-safe approach to regular expression captures.
+Across a variety of programming languages, many established regular expression libraries present a collection of captured content to the caller upon a successful match [[1](https://developer.apple.com/documentation/foundation/nsregularexpression)][[2](https://docs.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.capture)]. However, to know the structure of captured contents, programmers often need to carefully read the regular expression or run the regular expression on some input to find out. Because regular expressions are oftentimes statically available in the source code, there is a missed opportunity to use generics to present captures as part of type information to the programmer, and to leverage the compiler to infer the type of captures based on a regular expression literal. As we propose to introduce declarative string processing capabilities to the language and the Standard Library, we would like to explore a type-safe approach to regular expression captures.
 
 ## Proposed solution
 
@@ -74,6 +74,15 @@ Because much of the motivation behind providing regex literals in Swift is their
 let regex = /ab(cd*)(ef)gh/
 if let match = "abcddddefgh".firstMatch(of: regex) {
   print((match.1, match.2)) // => ("cdddd", "ef")
+}
+```
+
+Quantifiers (`*`, `+`, and `?`) and alternations (`|`) wrap each capture inside them in `Array` or `Optional`. These structures can be nested, so a capture which is inside multiple levels of quantifiers or alternations will end up with a type like `[Substring?]?`. To ensure that backreference numbering and tuple element numbering match, each capture is separately wrapped in the structure implied by the quantifiers and alternations around it, rather than wrapping tuples of adjacent captures in the structure.
+
+```swift
+let regex = /ab(?:c(d)*(ef))?gh/
+if let match = "abcddddefgh".firstMatch(of: regex) {
+  print((match.1, match.2)) // => (Optional(["d","d","d","d"]), Optional("ef"))
 }
 ```
 
@@ -114,7 +123,7 @@ if let match = line.firstMatch(of: scalarRangePattern) {
 
 > ***Note**: Additional features like efficient access to the matched ranges are out-of-scope for this pitch, but will likely mean returning a nominal type from `firstMatch(of:)`. In this pitch, the result type of `firstMatch(of:)` is a tuple of `Substring`s for simplicity and brevity. Either way, the developer experience is meant to be light-weight and tuple-y. Any nominal type would likely come with dynamic member lookup for accessing captures by index (i.e. `.0`, `.1`, etc.) and name.*
 
-### Capture type
+### Capture types
 
 In this section, we describe the inferred capture types for regular expression patterns and how they compose.
 
@@ -126,11 +135,7 @@ By default, a regular expression literal has type `Regex`. Its generic argument 
               Capture types
 ```
 
-When there are no captures, `Match` is just the entire matched substring.
-
-#### Basics
-
-Regular expressions without any capturing groups have type `Regex<Substring>`, for example:
+When there are no captures, `Match` is just the entire matched substring, for example:
 
 ```swift
 let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Substring>`
@@ -142,9 +147,11 @@ let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Substring>`
 //     }
 ```
 
+This falls out of Swift's normal type system rules, which treat a 1-tuple as synonymous with the element itself.
+
 #### Capturing group: `(...)`
 
-A capturing group saves the portion of the input matched by its contained pattern. Its capture type is `Substring`.
+A capturing group saves the portion of the input matched by its contained pattern. The capture type of a leaf capturing group is `Substring`.
 
 ```swift
 let graphemeBreakLowerBound = /([0-9a-fA-F]+)/
@@ -156,7 +163,7 @@ let graphemeBreakLowerBound = /([0-9a-fA-F]+)/
 
 #### Concatenation: `abc`
 
-A concatenation's `Match` is a tuple of `Substring`s followed by every pattern's capture type. When there are no capturing groups, the `Match` is just `Substring`.
+A concatenation's capture types are a concatenation of the capture types of its underlying patterns, ignoring any underlying patterns with no captures.
 
 ```swift
 let graphemeBreakLowerBound = /([0-9a-fA-F]+)\.\.[0-9a-fA-F]+/
@@ -182,7 +189,7 @@ let graphemeBreakRange = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)/
 
 #### Named capturing group: `(?<name>...)`
 
-A named capturing group's capture type is `Substring`. In its `Match` type, the capture type has a tuple element label specified by the capture name.
+A named capturing group includes the capture's name as the label of the tuple element.
 
 ```swift
 let graphemeBreakLowerBound = /(?<lower>[0-9a-fA-F]+)\.\.[0-9a-fA-F]+/
@@ -194,7 +201,7 @@ let graphemeBreakRange = /(?<lower>[0-9a-fA-F]+)\.\.(?<upper>[0-9a-fA-F]+)/
 
 #### Non-capturing group: `(?:...)`
 
-A non-capturing group's capture type is the same as its underlying pattern's. That is, it does not capture anything by itself, but transparently propagates its underlying pattern's captures.
+A non-capturing group's capture types are the same as its underlying pattern's. That is, it does not capture anything by itself, but transparently propagates its underlying pattern's captures.
 
 ```swift
 let graphemeBreakLowerBound = /([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?/
@@ -212,7 +219,7 @@ let graphemeBreakLowerBound = /([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?/
 
 #### Nested capturing group: `(...(...))`
 
-When capturing group is nested within another capturing group, they count as two distinct captures in the order their left parenthesis first appears in the regular expression literal. This is consistent with traditional regex backreference numbering.
+When a capturing group is nested within another capturing group, they count as two distinct captures in the order their left parenthesis first appears in the regular expression literal. This is consistent with traditional regex backreference numbering.
 
 ```swift
 let graphemeBreakPropertyData = /(([0-9a-fA-F]+)(\.\.([0-9a-fA-F]+)))\s*;\s(\w+).*/
@@ -246,16 +253,16 @@ let input = "007F..009F   ; Control"
 
 #### Quantification: `*`, `+`, `?`, `{n}`, `{n,}`, `{n,m}`
 
-A quantifier wraps its underlying pattern's capture type in either an `Optional` or `Array`. Zero-or-one quantification (`?`) produces an `Optional` and all others produce an `Array`. The kind of quantification, i.e. greedy vs reluctant vs possessive, is irrelevant to determining the capture type.
+A quantifier wraps its underlying pattern's capture types in either an `Optional`s or `Array`s. Zero-or-one quantification (`?`) produces an `Optional` and all others produce an `Array`. The kind of quantification, i.e. greedy vs reluctant vs possessive, is irrelevant to determining the capture type.
 
 | Syntax               | Description           | Capture type                                                  |
 | -------------------- | --------------------- | ------------------------------------------------------------- |
-| `*`                  | 0 or more             | `Array` of the sub-pattern capture type                       |
-| `+`                  | 1 or more             | `Array` of the sub-pattern capture type                       |
-| `?`                  | 0 or 1                | `Optional` of the sub-pattern capture type                    |
-| `{n}`                | Exactly _n_           | `Array` of the sub-pattern capture type                       |
-| `{n,m}`              | Between _n_ and _m_   | `Array` of the sub-pattern capture type                       |
-| `{n,}`               | _n_ or more           | `Array` of the sub-pattern capture type                       |
+| `*`                  | 0 or more             | `Array`s of the sub-pattern capture types                     |
+| `+`                  | 1 or more             | `Array`s of the sub-pattern capture types                     |
+| `?`                  | 0 or 1                | `Optional`s of the sub-pattern capture types                  |
+| `{n}`                | Exactly _n_           | `Array`s of the sub-pattern capture types                     |
+| `{n,m}`              | Between _n_ and _m_   | `Array`s of the sub-pattern capture types                     |
+| `{n,}`               | _n_ or more           | `Array`s of the sub-pattern capture types                     |
 
 ```swift
 /([0-9a-fA-F]+)+/
@@ -360,12 +367,21 @@ if let match = "1234-5678-9abc-def0".firstMatch(of: pattern) {
 // Prints ["1234", "5678", "9abc", "def0"]
 ```
 
-We believe that the proposed capture behavior leads to better consistency with the meaning of these quantifiers. However, the alternative behavior does have the advantage of a smaller memory footprint because the matching algorithm would not need to allocate storage for capturing anything but the last match. As a future direction, we could introduce some way of opting into this behavior.
+We believe that the proposed capture behavior is more intuitive. However, the alternative behavior has a smaller memory footprint and is more consistent with usage of backreferences, which only refer to the last match of the repeated capture group:
+
+```swift
+let pattern = /(?:([0-9a-fA-F]+)-?)+ \1/
+var match = "1234-5678-9abc-def0 def0".firstMatch(of: pattern)
+print(match != nil) // true
+var match = "1234-5678-9abc-def0 1234".firstMatch(of: pattern)
+print(match != nil) // false
+```
+
+As a future direction, we could introduce some way of opting into this behavior.
 
 #### Alternation: `a|b`
 
-Alternations are used to match one of multiple patterns. An alternation wraps
-its underlying pattern's capture type in an `Optional`.
+Alternations are used to match one of multiple patterns. An alternation wraps its underlying patterns' capture types in an `Optional`s and concatenates them together, first to last.
 
 ```swift
 let numberAlternationRegex = /([01]+)|[0-9]+|([0-9a-fA-F]+)/
@@ -512,27 +528,27 @@ For example, to be consistent with traditional regex backreferences quantificati
 
 ```swift
 /(?:(?<lower>[0-9a-fA-F]+)\.\.(?<upper>[0-9a-fA-F]+))+/
-// Flat capture type:
+// Flat capture types:
 // => `Regex<(Substring, lower: [Substring], upper: [Substring])>`
 
-// Structured capture type:
+// Structured capture types:
 // => `Regex<(Substring, [(lower: Substring, upper: Substring)])>`
 ```
 
-The structured capture type is safer because the type system encodes that there are an equal number of `lower` and `upper` hex numbers. It's also more convenient because you're likely to be processing `lower` and `upper` in parallel (e.g. to create ranges).
+The structured capture types are safer because the type system encodes that there are an equal number of `lower` and `upper` hex numbers. It's also more convenient because you're likely to be processing `lower` and `upper` in parallel (e.g. to create ranges).
 
 Similarly, alternations of multiple or nested captures produces flat optionals rather than a structured alternation type.
 
 ```swift
 /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)|([0-9a-fA-F]+)/
-// Flat capture type:
+// Flat capture types:
 // => `Regex<(Substring, Substring?, Substring?, Substring?)>`
 
-// Structured capture type:
+// Structured capture types:
 // => `Regex<(Substring, Alternation<((Substring, Substring), Substring)>)>`
 ```
 
-The structured capture type is safer because the type system encodes which options in the alternation of mutually exclusive. It'd also be much more convenient if, in the future, `Alternation` could behave like an enum, allowing exhaustive switching over all the options.
+The structured capture types are safer because the type system encodes which options in the alternation of mutually exclusive. It'd also be much more convenient if, in the future, `Alternation` could behave like an enum, allowing exhaustive switching over all the options.
 
 It's possible to derive the flat type from the structured type (but not vice versa), so `Regex` could be generic over the structured type and `firstMatch(of:)` could return a result type that vends both.
 
@@ -546,9 +562,9 @@ extension String {
 }
 ```
 
-This is cool, but it adds extra complexity to `Regex` and it isn't as clear because the generic type no longer aligns with the traditional regex backreference numbering. Because the primary motivation for providing regex literals in Swift is their familiarity, we think the consistency of the flat capture type trumps the added safety and ergonomics of the structured captures type.
+This is cool, but it adds extra complexity to `Regex` and it isn't as clear because the generic type no longer aligns with the traditional regex backreference numbering. Because the primary motivation for providing regex literals in Swift is their familiarity, we think the consistency of the flat capture types trumps the added safety and ergonomics of the structured capture types.
 
-We think the calculus probably flips in favor of a structured capture type for the result builder syntax, for which familiarity is not as high a priority.
+We think the calculus probably flips in favor of a structured capture types for the result builder syntax, for which familiarity is not as high a priority.
 
 ## Future directions
 
@@ -566,7 +582,7 @@ public struct DynamicCaptures: Equatable, RandomAccessCollection {
   subscript(position: Int) -> DynamicCaptures { get }
 }
 
-extension Regex where Captures == DynamicCaptures {
+extension Regex where Match == (Substring, DynamicCaptures) {
   public init(_ string: String) throws
 }
 ```
