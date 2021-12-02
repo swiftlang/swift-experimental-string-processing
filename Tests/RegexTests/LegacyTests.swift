@@ -438,8 +438,9 @@ extension RegexTests {
       let program = Compiler(ast: ast).emit()
       let executor = Executor(program: program)
 
-      let scalarAST = ast.withMatchLevel(.unicodeScalar)
-      let scalarProgram = Compiler(ast: scalarAST).emit()
+      let scalarProgram = Compiler(
+        ast: ast, matchLevel: .unicodeScalar
+      ).emit()
       let scalarExecutor = Executor(
         program: scalarProgram, enablesTracing: true)
 

@@ -7,11 +7,17 @@ public struct RegexProgram {
 
 public class Compiler {
   public let ast: AST
+  public let matchLevel: CharacterClass.MatchLevel
   public let options: REOptions
   private var builder = RegexProgram.Program.Builder()
 
-  public init(ast: AST, options: REOptions = []) {
+  public init(
+    ast: AST,
+    matchLevel: CharacterClass.MatchLevel = .graphemeCluster,
+    options: REOptions = []
+  ) {
     self.ast = ast
+    self.matchLevel = matchLevel
     self.options = options
   }
 
@@ -25,11 +31,11 @@ public class Compiler {
     switch node {
     // Any: .
     //     consume 1
-    case .any:
+    case .any where matchLevel == .graphemeCluster:
       builder.buildConsume(1)
 
     case let n where n.characterClass != nil:
-      let cc = n.characterClass!
+      let cc = n.characterClass!.withMatchLevel(matchLevel)
       builder.buildConsume { input, bounds in
         cc.matches(in: input, at: bounds.lowerBound)
       }
@@ -64,9 +70,6 @@ public class Compiler {
 
     case .groupTransform(_, let component, _):
       emit(component)
-
-    case .characterClass:
-      fatalError("unreachable")
 
     case .atom(.char(let ch)):
       builder.buildMatch(ch)

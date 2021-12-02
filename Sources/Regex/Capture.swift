@@ -51,7 +51,7 @@ extension AST {
       || true // WIP: preserves old behavior
     case .quantification(_, let child):
       return child.hasCaptures
-    case .characterClass, .any,
+    case .any,
         .trivia, .quote, .atom, .customCharacterClass, .empty:
       return false
 

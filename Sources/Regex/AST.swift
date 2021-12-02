@@ -23,10 +23,6 @@ public enum AST: ASTValue, ASTAction {
 
   case atom(Atom)
 
-  // FIXME: This doesn't belong in the AST. It could be a model
-  // type produced from an AST node.
-  case characterClass(CharacterClass)
-
   case customCharacterClass(CustomCharacterClass)
 
   case empty
@@ -47,9 +43,6 @@ extension AST {
     switch self {
     case let .customCharacterClass(cc): return cc.modelCharacterClass
     case let .atom(a): return a.characterClass
-
-    // TODO: remove
-    case let .characterClass(c): return c
 
     default: return nil
     }
@@ -123,7 +116,7 @@ extension AST {
       guard let c = child.filter(f) else { return nil }
       return .quantification(q, c)
 
-    case .characterClass, .any, .trivia, .quote, .atom, .empty:
+    case .any, .trivia, .quote, .atom, .empty:
       return f(self) ? self : nil
     }
   }

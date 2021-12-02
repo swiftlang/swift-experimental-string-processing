@@ -235,7 +235,7 @@ public func compile(
 
     case .atom: fatalError("FIXME")
 
-    case .any, .characterClass, .customCharacterClass:
+    case .any, .customCharacterClass:
       fatalError("unreachable")
 
     case .atom(let a) where a.characterClass != nil:

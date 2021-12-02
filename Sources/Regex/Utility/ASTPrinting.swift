@@ -50,7 +50,6 @@ extension AST {
 
     case .atom(.char(let c)):    return c.halfWidthCornerQuoted
     case .atom(.scalar(let u)):  return u.halfWidthCornerQuoted
-    case .characterClass(let cc): return ".characterClass(\(cc))"
     case .any: return ".any"
 //    case .empty: return "".halfWidthCornerQuoted
     case .quote(let s): return s.halfWidthCornerQuoted
