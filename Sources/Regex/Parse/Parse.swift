@@ -17,7 +17,6 @@ chararacter class. Below, we have a grammar "scope", that is we say
 "SetOp" to mean "CustomCharactetClass.SetOp", so we don't have to
 abbreviate/obfuscate/disambiguate with ugly names like "CCCSetOp".
 
-TODO: Hamish, can you look this over?
 Also, PCRE lets you end in `&&`, but not Oniguruma as it's a set
 operator. We probably want a rule similar to how you can end in `-`
 and that's just the character. Perhaps we also have syntax options
@@ -70,7 +69,7 @@ extension Parser {
 extension Parser {
   /// Parse a regular expression
   ///
-  ///     Regex        -> Alternation
+  ///     Regex        -> '' | Alternation
   ///     Alternation  -> Concatenation ('|' Concatenation)*
   ///
   mutating func parse() throws -> AST {
@@ -127,6 +126,8 @@ extension Parser {
     }
     guard !result.isEmpty else {
       // Happens in `abc|`
+
+      // TODO: still the case?
       throw ParseError.unexpectedEndOfInput
     }
     return result.count == 1 ? result[0] : .concatenation(result)

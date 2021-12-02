@@ -23,7 +23,10 @@ extension CharacterClass: RegexProtocol {
   public typealias Capture = Empty
 
   public var regex: Regex<Capture> {
-    .init(ast: .characterClass(self))
+    guard let ast = self.makeAST() else {
+      fatalError("FIXME: extended AST?")
+    }
+    return Regex(ast: ast)
   }
 }
 
