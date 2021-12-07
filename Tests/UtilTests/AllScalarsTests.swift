@@ -1,5 +1,5 @@
 import XCTest
-@testable import Util
+@testable import Regex
 
 let allScalars = Unicode.Scalar.allScalars
 

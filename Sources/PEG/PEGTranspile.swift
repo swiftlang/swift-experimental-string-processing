@@ -1,5 +1,4 @@
 import MatchingEngine
-import Util
 
 extension PEG.VM {
   typealias MEProgram = MatchingEngine.Program<Input>

@@ -1,6 +1,5 @@
 @testable import Algorithms
 import XCTest
-import Util
 
 // TODO: Protocol-powered testing
 class AlgorithmTests: XCTestCase {

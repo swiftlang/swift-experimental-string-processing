@@ -6,8 +6,6 @@ import MatchingEngine
 
  */
 
-import Util
-
 // Stages are represented as nested namespaces that bind generic
 // types
 public enum Combinators {

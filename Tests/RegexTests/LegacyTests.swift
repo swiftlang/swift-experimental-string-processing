@@ -1,7 +1,5 @@
 import XCTest
 @testable import Regex
-import Util
-
 
 extension RECode.Instruction: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character

@@ -1,4 +1,3 @@
-import Util
 import MatchingEngine
 
 extension PEG.VM {

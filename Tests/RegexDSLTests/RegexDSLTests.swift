@@ -1,7 +1,6 @@
 import XCTest
 @testable import RegexDSL
 import Regex
-import Util
 
 class RegexDSLTests: XCTestCase {
   func testSimpleStrings() throws {
