@@ -1,6 +1,6 @@
 import XCTest
 @testable import PTCaRet
-import MatchingEngine
+import _MatchingEngine
 
 enum Event: UInt64, Hashable {
   case authenticate = 0

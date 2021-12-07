@@ -1,6 +1,6 @@
 import XCTest
 @testable import PEG
-import MatchingEngine
+import _MatchingEngine
 
 // Make examples more sane. Need builder
 typealias Pattern = PEG<Character>.Pattern

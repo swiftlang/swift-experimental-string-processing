@@ -75,6 +75,7 @@ extension RegexTests {
       ) { src in
         _ = try src.expectUnicodeScalar(escapedCharacter: base)
       }
+      _ = scalars
     }
 
 // FIXME:

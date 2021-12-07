@@ -1,4 +1,4 @@
-import MatchingEngine
+import _MatchingEngine
 
 public struct Executor {
   let engine: Engine<String>
@@ -31,7 +31,7 @@ extension Executor: VirtualMachine {
 }
 
 extension Regex.MatchMode {
-  var loweredMatchMode: MatchingEngine.MatchMode {
+  var loweredMatchMode: _MatchingEngine.MatchMode {
     switch self {
     case .wholeString:
       return .full

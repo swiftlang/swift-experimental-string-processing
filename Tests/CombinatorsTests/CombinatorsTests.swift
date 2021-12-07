@@ -1,6 +1,6 @@
 import XCTest
 @testable import Combinators
-import MatchingEngine
+import _MatchingEngine
 
 class CombinatorTests: XCTestCase {
   func testAdHoc() {

@@ -1,7 +1,7 @@
-import MatchingEngine
+import _MatchingEngine
 
 extension PEG.VM {
-  typealias MEProgram = MatchingEngine.Program<Input>
+  typealias MEProgram = _MatchingEngine.Program<Input>
   func transpile() -> MEProgram {
     typealias Builder = MEProgram.Builder
     var builder = MEProgram.Builder()

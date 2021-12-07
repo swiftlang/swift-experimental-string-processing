@@ -14,8 +14,8 @@ let package = Package(
             name: "PEG",
             targets: ["PEG"]),
         .library(
-            name: "MatchingEngine",
-            targets: ["MatchingEngine"]),
+            name: "_MatchingEngine",
+            targets: ["_MatchingEngine"]),
         .executable(
             name: "VariadicsGenerator",
             targets: ["VariadicsGenerator"])
@@ -30,14 +30,14 @@ let package = Package(
             name: "UtilTests",
             dependencies: ["Regex"]),
         .target(
-            name: "MatchingEngine",
+            name: "_MatchingEngine",
             dependencies: []),
         .testTarget(
             name: "MatchingEngineTests",
-            dependencies: ["MatchingEngine"]),
+            dependencies: ["_MatchingEngine"]),
         .target(
             name: "Regex",
-            dependencies: ["MatchingEngine"]),
+            dependencies: ["_MatchingEngine"]),
         .testTarget(
             name: "RegexTests",
             dependencies: ["Regex"]),
@@ -49,13 +49,13 @@ let package = Package(
             dependencies: ["RegexDSL"]),
         .target(
             name: "PEG",
-            dependencies: ["MatchingEngine"]),
+            dependencies: ["_MatchingEngine"]),
         .testTarget(
             name: "PEGTests",
             dependencies: ["PEG"]),
         .target(
             name: "PTCaRet",
-            dependencies: ["MatchingEngine"]),
+            dependencies: ["_MatchingEngine"]),
         .testTarget(
             name: "PTCaRetTests",
             dependencies: ["PTCaRet"]),
@@ -76,7 +76,7 @@ let package = Package(
         // MARK: Exercises
         .target(
           name: "Exercises",
-          dependencies: ["MatchingEngine", "PEG", "PTCaRet", "Regex", "RegexDSL"]),
+          dependencies: ["_MatchingEngine", "PEG", "PTCaRet", "Regex", "RegexDSL"]),
         .testTarget(
           name: "ExercisesTests",
           dependencies: ["Exercises"]),

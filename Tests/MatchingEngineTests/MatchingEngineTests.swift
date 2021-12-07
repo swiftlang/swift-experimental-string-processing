@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import MatchingEngine
+@testable import _MatchingEngine
 
 /// Hold context and run variety of ad-hoc tests
 ///

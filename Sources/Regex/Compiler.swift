@@ -1,7 +1,7 @@
-import MatchingEngine
+import _MatchingEngine
 
 public struct RegexProgram {
-  typealias Program = MatchingEngine.Program<String>
+  typealias Program = _MatchingEngine.Program<String>
   var program: Program
 }
 

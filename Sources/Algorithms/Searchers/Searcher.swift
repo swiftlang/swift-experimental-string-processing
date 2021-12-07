@@ -1,4 +1,4 @@
-import MatchingEngine
+import _MatchingEngine
 
 public struct DefaultState<Searched: Collection> {
   enum _State {
