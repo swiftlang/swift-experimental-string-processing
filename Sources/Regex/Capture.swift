@@ -1,3 +1,7 @@
+import _MatchingEngine
+
+// TODO: what here should be in the compile-time module?
+
 public enum Capture {
   case atom(Any)
   indirect case tuple([Capture])
@@ -54,32 +58,5 @@ extension AST {
       return false
 
     }
-  }
-}
-
-public struct CaptureTransform: Equatable, Hashable, CustomStringConvertible {
-  public let closure: (Substring) -> Any
-
-  public init(_ closure: @escaping (Substring) -> Any) {
-    self.closure = closure
-  }
-
-  public func callAsFunction(_ input: Substring) -> Any {
-    closure(input)
-  }
-
-  public static func == (lhs: CaptureTransform, rhs: CaptureTransform) -> Bool {
-    unsafeBitCast(lhs.closure, to: (Int, Int).self) ==
-      unsafeBitCast(rhs.closure, to: (Int, Int).self)
-  }
-
-  public func hash(into hasher: inout Hasher) {
-    let (fn, ctx) = unsafeBitCast(closure, to: (Int, Int).self)
-    hasher.combine(fn)
-    hasher.combine(ctx)
-  }
-
-  public var description: String {
-    "<transform>"
   }
 }

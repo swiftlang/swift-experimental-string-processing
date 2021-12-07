@@ -1,3 +1,5 @@
+import _MatchingEngine
+
 /// Object code for a regex program, to be interpreted by a VM
 ///
 /// Consists of an instruction list and metadata tracking:

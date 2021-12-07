@@ -1,3 +1,5 @@
+import _MatchingEngine
+
 import Regex
 
 extension Regex where Capture == DynamicCaptures {

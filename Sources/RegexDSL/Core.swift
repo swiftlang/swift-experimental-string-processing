@@ -1,3 +1,5 @@
+import _MatchingEngine
+
 import Regex
 @_exported import struct Regex.CharacterClass
 

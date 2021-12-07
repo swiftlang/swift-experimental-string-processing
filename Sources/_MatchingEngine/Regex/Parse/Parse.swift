@@ -196,7 +196,7 @@ extension Parser {
       // If we're done, bail early
       let setOp = Member.setOperation(members, binOp, rhs)
       if source.tryEat("]") {
-        return CustomCharacterClass(start: start, members: [setOp])
+        return CustomCharacterClass(start, [setOp])
       }
 
       // Otherwise it's just another member to accumulate
@@ -206,7 +206,7 @@ extension Parser {
       throw ParseError.expectedCustomCharacterClassMembers
     }
     try source.expect("]")
-    return CustomCharacterClass(start: start, members: members)
+    return CustomCharacterClass(start, members)
   }
 
   mutating func parseCCCMembers(

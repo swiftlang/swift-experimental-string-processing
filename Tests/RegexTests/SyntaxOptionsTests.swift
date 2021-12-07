@@ -1,9 +1,6 @@
+@testable import _MatchingEngine
 @testable import Regex
 import XCTest
-
-private func esc(_ c: Character) -> Token {
-  .character(c, isEscaped: true)
-}
 
 
 private let dplus = AST.quantification(
@@ -15,9 +12,6 @@ private let dotAST = AST.concatenation([
 extension RegexTests {
 
   func testSemanticWhitespace() {
-    lexTest("a b", "a", " ", "b", syntax: .traditional)
-    lexTest("a b", "a", "b", syntax: .nonSemanticWhitespace)
-
     parseTest(
       #"\d+\.\d+\.\d+\.\d+"#,
       dotAST, syntax: .traditional)

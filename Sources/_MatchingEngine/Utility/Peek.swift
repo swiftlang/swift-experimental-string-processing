@@ -1,6 +1,6 @@
 // MARK: - _Peekable
 
-protocol _Peekable {
+public protocol _Peekable {
   associatedtype Output
 
   var isEmpty: Bool { get }
@@ -9,7 +9,7 @@ protocol _Peekable {
 }
 
 extension _Peekable where Self: Collection, Output == Element {
-  func peek() -> Output? { self.first }
+  public func peek() -> Output? { self.first }
 
   @discardableResult
   mutating func eat(upTo: Index) -> SubSequence {

@@ -1,3 +1,5 @@
+import _MatchingEngine
+
 public enum MatchMode {
   case wholeString
   case partialFromFront

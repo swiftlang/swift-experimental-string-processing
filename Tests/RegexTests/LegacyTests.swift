@@ -1,3 +1,5 @@
+@testable import _MatchingEngine
+
 import XCTest
 @testable import Regex
 
@@ -41,7 +43,7 @@ private struct TestCase {
   let pass: [ExpectedPass]
   let fail: [String]
   let range: Range<String.Index>
-  let mode: MatchMode
+  let mode: Regex.MatchMode
   let expected: (String?, [[String]])
 
   init(regex: String, input: String) {
@@ -84,7 +86,7 @@ private func performTest<Capture>(
   regex: String,
   input: String,
   offsets: Offsets? = nil,
-  mode: MatchMode = .wholeString,
+  mode: Regex.MatchMode = .wholeString,
   expectedCaptureType: Capture.Type,
   expecting expectation: TestExpectation<Capture>?
 ) {

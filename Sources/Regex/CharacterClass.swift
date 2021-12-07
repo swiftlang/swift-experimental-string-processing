@@ -1,3 +1,5 @@
+import _MatchingEngine
+
 // NOTE: This is a model type. We want to be able to get one from
 // an AST, but this isn't a natural thing to produce in the context
 // of parsing or to store in an AST
@@ -284,12 +286,124 @@ extension CharacterClass {
         .range(.char("0"), .char("9")),
       ]
       let ccc = CustomCharacterClass(
-        start: inv ? .inverted : .normal,
-        members: members)
+        inv ? .inverted : .normal,
+        members)
 
       return .customCharacterClass(ccc)
 
     default: return nil
     }
+  }
+}
+
+extension AST {
+  /// If this has a character class representation, whether built-in or custom, return it.
+  ///
+  /// TODO: Not sure if this the right model type, but I suspect we'll want to produce
+  /// something like this on demand
+  var characterClass: CharacterClass? {
+    switch self {
+    case let .customCharacterClass(cc): return cc.modelCharacterClass
+    case let .atom(a): return a.characterClass
+
+    default: return nil
+    }
+  }
+}
+
+extension CharacterClass {
+  public func withMatchLevel(
+    _ level: CharacterClass.MatchLevel
+  ) -> CharacterClass {
+      var cc = self
+      cc.matchLevel = level
+      return cc
+  }
+}
+
+extension Atom {
+  var characterClass: CharacterClass? {
+    switch self {
+    case let .escaped(b): return b.characterClass
+
+    case .named: fatalError("TODO")
+
+    case .any: return .any
+
+    case .property:
+      // TODO: Would our model type for character classes include
+      // this? Or does grapheme-semantic mode complicate that?
+      return nil
+
+    default: return nil
+
+    }
+  }
+
+}
+
+extension Atom.EscapedBuiltin {
+  var characterClass: CharacterClass? {
+    switch self {
+    case .decimalDigit:    return .digit
+    case .notDecimalDigit: return .digit.inverted
+
+    case .horizontalWhitespace: return .horizontalWhitespace
+    case .notHorizontalWhitespace:
+      return .horizontalWhitespace.inverted
+
+    case .notNewline: return .newlineSequence.inverted
+    case .newlineSequence: return .newlineSequence
+
+    case .whitespace:    return .whitespace
+    case .notWhitespace: return .whitespace.inverted
+
+    case .verticalTab:    return .verticalWhitespace
+    case .notVerticalTab: return .verticalWhitespace.inverted
+
+    case .wordCharacter:    return .word
+    case .notWordCharacter: return .word.inverted
+
+    case .graphemeCluster: return .anyGrapheme
+
+    default:
+      return nil
+    }
+  }
+}
+
+extension CustomCharacterClass {
+  /// The model character class for this custom character class.
+  var modelCharacterClass: CharacterClass {
+    typealias Component = CharacterClass.CharacterSetComponent
+    func getComponents(_ members: [Member]) -> [Component] {
+      members.map { m in
+        switch m {
+        case .custom(let cc):
+          return .characterClass(cc.modelCharacterClass)
+        case .range(let lhs, let rhs):
+          return .range(
+            lhs.literalCharacterValue! ... rhs.literalCharacterValue!
+          )
+        case .atom(let a) where a.characterClass != nil:
+          return .characterClass(a.characterClass!)
+        case .setOperation(let lhs, let op, let rhs):
+          // FIXME: CharacterClass wasn't designed for set operations with
+          // multiple components in each operand, we should fix that. For now,
+          // just produce custom components.
+          return .setOperation(
+            .init(lhs: .characterClass(.custom(getComponents(lhs))), op: op,
+                  rhs: .characterClass(.custom(getComponents(rhs))))
+          )
+
+        case .atom(let a) where a.literalCharacterValue != nil:
+          return .character(a.literalCharacterValue!)
+
+        case .atom: fatalError("TODO")
+        }
+      }
+    }
+    let cc = CharacterClass.custom(getComponents(members))
+    return self.isInverted ? cc.inverted : cc
   }
 }

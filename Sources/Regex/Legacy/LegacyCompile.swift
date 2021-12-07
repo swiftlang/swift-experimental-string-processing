@@ -1,3 +1,5 @@
+import _MatchingEngine
+
 public func compile(
   _ ast: AST, options: REOptions = .none
 ) throws -> RECode {

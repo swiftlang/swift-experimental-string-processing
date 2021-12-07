@@ -29,26 +29,10 @@ public enum AST: ASTValue, ASTAction {
 }
 
 extension AST {
-  static var any: AST {
+  public static var any: AST {
     .atom(.any)
   }
 }
-
-extension AST {
-  /// If this has a character class representation, whether built-in or custom, return it.
-  ///
-  /// TODO: Not sure if this the right model type, but I suspect we'll want to produce
-  /// something like this on demand
-  var characterClass: CharacterClass? {
-    switch self {
-    case let .customCharacterClass(cc): return cc.modelCharacterClass
-    case let .atom(a): return a.characterClass
-
-    default: return nil
-    }
-  }
-}
-
 
 // Note that we're not yet an ASTEntity, would need to be a struct.
 // We might end up with ASTStorage which projects the nice AST type.
@@ -75,7 +59,7 @@ extension AST {
       }
     }
     func filt(_ cc: CustomCharacterClass) -> CustomCharacterClass {
-      CustomCharacterClass(start: cc.start, members: filt(cc.members))
+      CustomCharacterClass(cc.start, filt(cc.members))
     }
     typealias CCCMember = CustomCharacterClass.Member
     func filt(_ children: [CCCMember]) -> [CCCMember] {
@@ -125,3 +109,33 @@ extension AST {
     filter(\.isSemantic)
   }
 }
+
+// FIXME: Probably remove this from the AST
+
+public struct CaptureTransform: Equatable, Hashable, CustomStringConvertible {
+  public let closure: (Substring) -> Any
+
+  public init(_ closure: @escaping (Substring) -> Any) {
+    self.closure = closure
+  }
+
+  public func callAsFunction(_ input: Substring) -> Any {
+    closure(input)
+  }
+
+  public static func == (lhs: CaptureTransform, rhs: CaptureTransform) -> Bool {
+    unsafeBitCast(lhs.closure, to: (Int, Int).self) ==
+      unsafeBitCast(rhs.closure, to: (Int, Int).self)
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    let (fn, ctx) = unsafeBitCast(closure, to: (Int, Int).self)
+    hasher.combine(fn)
+    hasher.combine(ctx)
+  }
+
+  public var description: String {
+    "<transform>"
+  }
+}
+

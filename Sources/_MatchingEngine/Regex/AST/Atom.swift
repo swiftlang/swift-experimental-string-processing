@@ -392,62 +392,12 @@ extension Atom: _ASTPrintable {
   public func _dump() -> String {
     _print()
   }
-
-
-}
-
-extension Atom.EscapedBuiltin {
-  var characterClass: CharacterClass? {
-    switch self {
-    case .decimalDigit:    return .digit
-    case .notDecimalDigit: return .digit.inverted
-
-    case .horizontalWhitespace: return .horizontalWhitespace
-    case .notHorizontalWhitespace:
-      return .horizontalWhitespace.inverted
-
-    case .notNewline: return .newlineSequence.inverted
-    case .newlineSequence: return .newlineSequence
-
-    case .whitespace:    return .whitespace
-    case .notWhitespace: return .whitespace.inverted
-
-    case .verticalTab:    return .verticalWhitespace
-    case .notVerticalTab: return .verticalWhitespace.inverted
-
-    case .wordCharacter:    return .word
-    case .notWordCharacter: return .word.inverted
-
-    case .graphemeCluster: return .anyGrapheme
-
-    default:
-      return nil
-    }
-  }
 }
 
 extension Atom {
-  var characterClass: CharacterClass? {
-    switch self {
-    case let .escaped(b): return b.characterClass
-
-    case .named: fatalError("TODO")
-
-    case .any: return .any
-
-    case .property:
-      // TODO: Would our model type for character classes include
-      // this? Or does grapheme-semantic mode complicate that?
-      return nil
-
-    default: return nil
-
-    }
-  }
-
   /// Retrieve the character value of the atom if it represents a literal
   /// character or unicode scalar, nil otherwise.
-  var literalCharacterValue: Character? {
+  public var literalCharacterValue: Character? {
     switch self {
     case .char(let c):
       return c

@@ -1,3 +1,5 @@
+import _MatchingEngine
+
 import Regex
 
 public struct Regex {

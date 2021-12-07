@@ -1,12 +1,8 @@
+@testable import _MatchingEngine
+
 import XCTest
 @testable import Regex
 
-extension Token: ExpressibleByExtendedGraphemeClusterLiteral {
-  public typealias ExtendedGraphemeClusterLiteralType = Character
-  public init(extendedGraphemeClusterLiteral value: Character) {
-    self = .character(value, isEscaped: false)
-  }
-}
 extension AST: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
@@ -33,145 +29,6 @@ extension CustomCharacterClass.Member: ExpressibleByExtendedGraphemeClusterLiter
 }
 
 class RegexTests: XCTestCase {}
-
-func lexTest(
-  _ input: String,
-  _ expecting: [Token],
-  syntax: SyntaxOptions = .traditional
-) {
-  let toks = Lexer(Source(input, syntax))
-  let actual = toks.filter(\.isSemantic)
-  if !expecting.elementsEqual(actual) {
-    // breakpoint
-    XCTAssertEqual(expecting, actual)
-  }
-}
-
-func lexTest(
-  _ input: String,
-  _ expecting: Token...,
-  syntax: SyntaxOptions = .traditional
-) {
-  lexTest(input, expecting, syntax: syntax)
-}
-
-extension RegexTests {
-  func testLex() {
-    _ = #"""
-        Note: Since everything's String-based, use raw strings for backslashes.
-        Examples:
-          "abc" -> ｢abc｣
-          #"abc\+d*"# -> ｢abc+d｣ star
-          "abc(de)+fghi*k|j" ->
-              ｢abc｣ lparen ｢de｣ rparen plus ｢fghi｣ star ｢k｣ pipe ｢j｣
-
-        Gramatically invalid but lexically accepted examples:
-          #"|*\\"# -> pipe star ｢\\｣
-          ")ab(+" -> rparen ｢ab｣ lparen plus
-        """#
-    func esc(_ c: Character) -> Token {
-      .character(c, isEscaped: true)
-    }
-
-    // Gramatically valid
-    lexTest(
-      "abc", "a", "b", "c")
-    lexTest(
-      #"ab\c"#, "a", "b", esc("c"))
-    lexTest(
-      #"abc\+d*"#, "a", "b", "c", esc("+"), "d", .star)
-    lexTest(
-      "abc(de)+fghi*k|j",
-      "a", "b", "c", .leftParen, "d", "e", .rightParen,
-      .plus, "f", "g", "h", "i", .star, "k", .pipe, "j")
-    lexTest(
-      "a(b|c)?d",
-      "a", .leftParen, "b", .pipe, "c", .rightParen, .question, "d")
-    lexTest(
-      "a|b?c", "a", .pipe, "b", .question, "c")
-    lexTest(
-      "(?:a|b)c",
-      .leftParen, .question, ":", "a", .pipe, "b",
-      .rightParen, "c")
-    lexTest(
-      #"a\u0065b\u{65}c\x65d"#,
-      "a", .unicodeScalar("e"),
-      "b", .unicodeScalar("e"),
-      "c", .unicodeScalar("e"), "d")
-    lexTest(
-      "[^a&&b--c~~d]",
-      .leftSquareBracket, .caret, "a",
-      .setOperator(.doubleAmpersand), "b",
-      .setOperator(.doubleDash), "c",
-      .setOperator(.doubleTilda), "d",
-      .rightSquareBracket)
-    lexTest(
-      "&&^-^-~~",
-      "&", "&", .anchor(.lineStart), "-", .anchor(.lineStart), "-", "~", "~")
-    lexTest(
-      "[]]&&",
-      .leftSquareBracket, .rightSquareBracket, "]", "&", "&")
-    lexTest(
-      #"[]]&\&"#,
-      .leftSquareBracket, .rightSquareBracket, "]", "&", esc("&"))
-
-    // Gramatically invalid (yet lexically valid)
-    lexTest(
-      #"|*\\"#, .pipe, .star, esc(#"\"#))
-    lexTest(
-      ")ab(+", .rightParen, "a", "b", .leftParen, .plus)
-    lexTest(
-      "...",
-      .builtinCharClass(.any), .builtinCharClass(.any), .builtinCharClass(.any))
-    lexTest(
-      "[[[]&&]]&&",
-      .leftSquareBracket, .leftSquareBracket,
-      .leftSquareBracket, .rightSquareBracket,
-      .setOperator(.doubleAmpersand), .rightSquareBracket,
-      .rightSquareBracket, "&", "&")
-
-    lexTest(#"$\A\B[\A\B$]"#, .anchor(.lineEnd), .anchor(.stringStart),
-            .anchor(.nonWordBoundary), .leftSquareBracket, esc("A"), esc("B"),
-            "$", .rightSquareBracket)
-
-    let specialChars = [
-      .tab, .carriageReturn, .formFeed, .bell, .escape, .newline
-    ].map(Token.specialCharEscape)
-
-    lexTest(#"\t\r\f\a\e\n[\t\r\f\a\e\n]"#,
-            specialChars + [.leftSquareBracket] + specialChars +
-            [.rightSquareBracket])
-
-    // \b is a word boundary outside of a character class, otherwise it's
-    // backspace.
-    lexTest(#"[\b]\b"#, .leftSquareBracket, .specialCharEscape(.backspace),
-            .rightSquareBracket, .anchor(.wordBoundary))
-    lexTest(#"[\b"#, .leftSquareBracket, .specialCharEscape(.backspace))
-
-    // '.' is a character class, but only outside a custom char class.
-    lexTest(#"[.].\."#, .leftSquareBracket, ".", .rightSquareBracket,
-            .builtinCharClass(.any), esc("."))
-
-    // Valid both inside and outside a custom char class.
-    let universalCharClasses = [
-      .digit, .whitespace, .word, .horizontalWhitespace, .verticalWhitespace,
-      .digit.inverted, .whitespace.inverted, .word.inverted,
-      .horizontalWhitespace.inverted, .verticalWhitespace.inverted
-    ].map(Token.builtinCharClass)
-
-    lexTest(#"\d\s\w\h\v\D\S\W\H\V[\d\s\w\h\v\D\S\W\H\V]"#,
-            universalCharClasses + [.leftSquareBracket] +
-            universalCharClasses + [.rightSquareBracket])
-
-    // Valid only outside a custom char class.
-    lexTest(#"[\N\R\X]\N\R\X"#,
-            .leftSquareBracket, esc("N"), esc("R"), esc("X"),
-            .rightSquareBracket,
-            .builtinCharClass(.newlineSequence.inverted),
-            .builtinCharClass(.newlineSequence),
-            .builtinCharClass(.anyGrapheme))
-  }
-}
 
 func parseTest(
   _ input: String, _ expecting: AST,
@@ -210,7 +67,7 @@ extension RegexTests {
       inverted: Bool = false
     ) -> AST {
       let cc = CustomCharacterClass(
-        start: inverted ? .inverted : .normal, members: members
+        inverted ? .inverted : .normal, members
       )
       return .customCharacterClass(cc)
     }
@@ -219,7 +76,7 @@ extension RegexTests {
       inverted: Bool = false
     ) -> CustomCharacterClass.Member {
       let cc = CustomCharacterClass(
-        start: inverted ? .inverted : .normal, members: members
+        inverted ? .inverted : .normal, members
       )
       return .custom(cc)
     }

@@ -1,3 +1,5 @@
+@testable import _MatchingEngine
+
 import XCTest
 @testable import Regex
 
