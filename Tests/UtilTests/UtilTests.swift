@@ -1,5 +1,7 @@
 import XCTest
 @testable import Util
+@testable import Regex
+
 
 class UtilTests: XCTestCase {
   func testTupleTypeConstruction() {

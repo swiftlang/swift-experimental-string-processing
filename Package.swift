@@ -31,16 +31,16 @@ let package = Package(
             dependencies: []),
         .testTarget(
             name: "UtilTests",
-            dependencies: ["Util"]),
+            dependencies: ["Util", "Regex"]),
         .target(
             name: "MatchingEngine",
-            dependencies: ["Util"]),
+            dependencies: []),
         .testTarget(
             name: "MatchingEngineTests",
-            dependencies: ["MatchingEngine"]),
+            dependencies: ["MatchingEngine", "Util"]),
         .target(
             name: "Regex",
-            dependencies: ["Util", "MatchingEngine"]),
+            dependencies: ["MatchingEngine"]),
         .testTarget(
             name: "RegexTests",
             dependencies: ["Regex"]),

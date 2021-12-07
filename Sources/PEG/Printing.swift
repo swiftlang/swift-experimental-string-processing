@@ -1,4 +1,5 @@
 import Util
+import MatchingEngine
 
 extension PEGCore.Instruction: InstructionProtocol {
   var operandPC: InstructionAddress? { self.pc }

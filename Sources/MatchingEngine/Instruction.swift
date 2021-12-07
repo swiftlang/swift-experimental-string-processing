@@ -1,5 +1,3 @@
-import Util
-
 enum State {
   /// Still running
   case inprogress

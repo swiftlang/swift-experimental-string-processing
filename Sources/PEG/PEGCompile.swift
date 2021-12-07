@@ -1,4 +1,5 @@
 import Util
+import MatchingEngine
 
 extension PEG.VM {
   typealias InIndex = Input.Index

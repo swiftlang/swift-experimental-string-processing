@@ -1,5 +1,3 @@
-import Util
-
 public enum Capture {
   case atom(Any)
   indirect case tuple([Capture])
@@ -21,7 +19,7 @@ extension Capture {
     case .atom(let atom):
       return atom
     case .tuple(let elements):
-      return Util.tuple(of: elements.map(\.value))
+      return _tuple(of: elements.map(\.value))
     case .array(let elements):
       guard let first = elements.first else {
         return [Any]()

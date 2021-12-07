@@ -47,8 +47,6 @@ extension VirtualMachine {
   }
 }
 
-import Util
-
 extension RECode {
   /// A convenient VM thread "core" abstraction
   public struct ThreadCore {

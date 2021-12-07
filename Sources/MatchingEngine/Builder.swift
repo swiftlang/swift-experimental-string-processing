@@ -1,5 +1,3 @@
-import Util
-
 extension Program where Input.Element: Hashable {
   public struct Builder {
     var instructions: [Instruction] = []

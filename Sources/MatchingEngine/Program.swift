@@ -1,5 +1,3 @@
-import Util
-
 public struct Program<Input: Collection> where Input.Element: Equatable {
   public typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?
   var instructions: InstructionList<Instruction>

@@ -1,5 +1,3 @@
-import Util
-
 public enum Atom: Hashable {
   /// Just a character
   ///

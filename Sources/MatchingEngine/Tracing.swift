@@ -1,5 +1,3 @@
-import Util
-
 extension Processor: TracedProcessor {
   var isFailState: Bool { state == .fail }
   var isAcceptState: Bool { state == .accept }

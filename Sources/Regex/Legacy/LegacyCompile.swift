@@ -1,5 +1,3 @@
-import Util
-
 public func compile(
   _ ast: AST, options: REOptions = .none
 ) throws -> RECode {

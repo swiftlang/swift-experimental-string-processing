@@ -1,5 +1,3 @@
-import Util
-
 public enum MatchMode {
   case full
   case `prefix`

@@ -1,4 +1,5 @@
 import Util
+import MatchingEngine
 let emitComments = true
 
 struct PEGCore<

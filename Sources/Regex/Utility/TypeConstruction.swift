@@ -99,6 +99,13 @@ public func tupleType<ElementTypes: BidirectionalCollection>(
   }
 }
 
+// FIXME: namespaces are hard
+internal func _tuple<Elements: BidirectionalCollection>(
+  of elements: __owned Elements
+) -> Any where Elements.Element == Any {
+  tuple(of: elements)
+}
+
 /// Creates a type-erased tuple with the given elements.
 public func tuple<Elements: BidirectionalCollection>(
   of elements: __owned Elements

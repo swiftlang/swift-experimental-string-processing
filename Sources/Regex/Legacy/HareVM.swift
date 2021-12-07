@@ -1,5 +1,3 @@
-import Util
-
 /// A baby hare, to be spawned and sent down rabbit holes in search of a match
 struct Leveret {
   var core: RECode.ThreadCore

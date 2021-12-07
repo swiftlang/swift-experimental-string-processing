@@ -1,5 +1,3 @@
-import Util
-
 // Currently, engine binds the type and consume binds an instance.
 // But, we can play around with this.
 public struct Engine<Input: Collection> where Input.Element: Hashable {

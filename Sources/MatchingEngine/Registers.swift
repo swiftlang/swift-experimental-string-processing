@@ -1,5 +1,3 @@
-import Util
-
 extension Processor {
   /// Our register file
   struct Registers {
