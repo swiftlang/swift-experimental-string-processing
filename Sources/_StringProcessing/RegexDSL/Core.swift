@@ -1,7 +1,5 @@
 import _MatchingEngine
 
-fileprivate typealias DefaultEngine = TortoiseVM
-
 public struct RegexMatch<CapturedValue> {
   public let range: Range<String.Index>
   public let captures: CapturedValue
@@ -12,11 +10,6 @@ public protocol RegexProtocol {
   associatedtype Capture
   var regex: Regex<Capture> { get }
 }
-
-public protocol EmptyProtocol {}
-public struct Empty: EmptyProtocol {}
-extension Array: EmptyProtocol where Element: EmptyProtocol {}
-extension Optional: EmptyProtocol where Wrapped: EmptyProtocol {}
 
 /// A regular expression.
 public struct Regex<Capture>: RegexProtocol {
@@ -119,3 +112,11 @@ public func r<C>(
 ) -> MockRegexLiteral<C> {
   try! MockRegexLiteral(s, capturing: capturing)
 }
+
+fileprivate typealias DefaultEngine = TortoiseVM
+
+public protocol EmptyProtocol {}
+public struct Empty: EmptyProtocol {}
+extension Array: EmptyProtocol where Element: EmptyProtocol {}
+extension Optional: EmptyProtocol where Wrapped: EmptyProtocol {}
+

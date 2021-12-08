@@ -15,18 +15,13 @@ extension Atom: ExpressibleByExtendedGraphemeClusterLiteral {
     self = .char(value)
   }
 }
-extension CharacterClass.CharacterSetComponent: ExpressibleByExtendedGraphemeClusterLiteral {
-  public typealias ExtendedGraphemeClusterLiteralType = Character
-  public init(extendedGraphemeClusterLiteral value: Character) {
-    self = .character(value)
-  }
-}
 extension CustomCharacterClass.Member: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
     self = .atom(.char(value))
   }
 }
+
 
 class RegexTests: XCTestCase {}
 
@@ -50,81 +45,43 @@ func parseTest(
 
 extension RegexTests {
   func testParse() {
-    _ = #"""
-        Examples:
-            "abc" -> .concat(｢abc｣)
-            #"abc\+d*"# -> .concat(｢abc+｣ .zeroOrMore(｢d｣))
-            "abc(?:de)+fghi*k|j" ->
-                .alt(.concat(｢abc｣, .oneOrMore(.group(.concat(｢de｣))),
-                             ｢fgh｣ .zeroOrMore(｢i｣), ｢k｣),
-                     ｢j｣)
-        """#
-
-    func alt(_ asts: AST...) -> AST { return .alternation(asts) }
-    func concat(_ asts: AST...) -> AST { return .concatenation(asts) }
-    func charClass(
-      _ members: CustomCharacterClass.Member...,
-      inverted: Bool = false
-    ) -> AST {
-      let cc = CustomCharacterClass(
-        inverted ? .inverted : .normal, members
-      )
-      return .customCharacterClass(cc)
-    }
-    func charClass(
-      _ members: CustomCharacterClass.Member...,
-      inverted: Bool = false
-    ) -> CustomCharacterClass.Member {
-      let cc = CustomCharacterClass(
-        inverted ? .inverted : .normal, members
-      )
-      return .custom(cc)
-    }
-    func posixSet(
-      _ set: Unicode.POSIXCharacterSet, inverted: Bool = false
-    ) -> Atom {
-      return .named(.init(inverted: inverted, set: set))
-    }
-
     parseTest(
       "abc", concat("a", "b", "c"))
     parseTest(
       #"abc\+d*"#,
-      concat("a", "b", "c", "+", .zeroOrMore(.greedy, "d")))
+      concat("a", "b", "c", "+", zeroOrMore(.greedy, "d")))
     parseTest(
-      "a(b)", concat("a", .group(.capture(), "b")))
+      "a(b)", concat("a", capture("b")))
     parseTest(
       "abc(?:de)+fghi*k|j",
       alt(
         concat(
           "a", "b", "c",
-          .oneOrMore(
-            .greedy, .group(.nonCapture(), concat("d", "e"))),
-          "f", "g", "h", .zeroOrMore(.greedy, "i"), "k"),
+          oneOrMore(
+            .greedy, nonCapture(concat("d", "e"))),
+          "f", "g", "h", zeroOrMore(.greedy, "i"), "k"),
         "j"))
     parseTest(
       "a(?:b|c)?d",
-      concat("a", .zeroOrOne(
-        .greedy, .group(.nonCapture(), alt("b", "c"))), "d"))
+      concat("a", zeroOrOne(
+        .greedy, nonCapture(alt("b", "c"))), "d"))
     parseTest(
       "a?b??c+d+?e*f*?",
       concat(
-        .zeroOrOne(.greedy, "a"), .zeroOrOne(.reluctant, "b"),
-        .oneOrMore(.greedy, "c"), .oneOrMore(.reluctant, "d"),
-        .zeroOrMore(.greedy, "e"), .zeroOrMore(.reluctant, "f")))
+        zeroOrOne(.greedy, "a"), zeroOrOne(.reluctant, "b"),
+        oneOrMore(.greedy, "c"), oneOrMore(.reluctant, "d"),
+        zeroOrMore(.greedy, "e"), zeroOrMore(.reluctant, "f")))
     parseTest(
       "a|b?c",
-      alt("a", concat(.zeroOrOne(.greedy, "b"), "c")))
+      alt("a", concat(zeroOrOne(.greedy, "b"), "c")))
     parseTest(
       "(a|b)c",
-      concat(.group(.capture(), alt("a", "b")), "c"))
+      concat(capture(alt("a", "b")), "c"))
     parseTest(
       "(.)*(.*)",
       concat(
-        .zeroOrMore(
-          .greedy, .group(.capture(), .any)),
-        .group(
-          .capture(), .zeroOrMore(.greedy, .any))))
+        zeroOrMore(.greedy, capture(.any)),
+        capture(zeroOrMore(.greedy, .any))))
     parseTest(
       #"abc\d"#,
       concat("a", "b", "c", .atom(.escaped(.decimalDigit))))
@@ -196,7 +153,7 @@ extension RegexTests {
 
     parseTest(
       #"[a[bc]de&&[^bc]\d]+"#,
-      .oneOrMore(.greedy, charClass(
+      oneOrMore(.greedy, charClass(
         .setOperation(
           ["a", charClass("b", "c"), "d", "e"],
           .intersection,
@@ -225,13 +182,13 @@ extension RegexTests {
     parseTest(
       "a&&b", concat("a", "&", "&", "b"))
     parseTest(
-      "&?", .zeroOrOne(.greedy, "&"))
+      "&?", zeroOrOne(.greedy, "&"))
     parseTest(
-      "&&?", concat("&", .zeroOrOne(.greedy, "&")))
+      "&&?", concat("&", zeroOrOne(.greedy, "&")))
     parseTest(
-      "--+", concat("-", .oneOrMore(.greedy, "-")))
+      "--+", concat("-", oneOrMore(.greedy, "-")))
     parseTest(
-      "~~*", concat("~", .zeroOrMore(.greedy, "~")))
+      "~~*", concat("~", zeroOrMore(.greedy, "~")))
 
     parseTest(
       #"a\Q .\Eb"#,
@@ -263,27 +220,27 @@ extension RegexTests {
     // Named captures
     parseTest(
       #"a(?<label>b)c"#,
-      concat("a", .namedCapture("label", "b"), "c"))
+      concat("a", namedCapture("label", "b"), "c"))
     parseTest(
       #"a(?'label'b)c"#,
-      concat("a", .namedCapture("label", "b"), "c"))
+      concat("a", namedCapture("label", "b"), "c"))
     parseTest(
       #"a(?P<label>b)c"#,
-      concat("a", .namedCapture("label", "b"), "c"))
+      concat("a", namedCapture("label", "b"), "c"))
     parseTest(
       #"a(?P<label>b)c"#,
-      concat("a", .namedCapture("label", "b"), "c"))
+      concat("a", namedCapture("label", "b"), "c"))
 
     // Other groups
     parseTest(
       #"a(?:b)c"#,
-      concat("a", .nonCapture("b"), "c"))
+      concat("a", nonCapture("b"), "c"))
     parseTest(
       #"a(?|b)c"#,
-      concat("a", .nonCaptureReset("b"), "c"))
+      concat("a", nonCaptureReset("b"), "c"))
     parseTest(
       #"a(?>b)c"#,
-      concat("a", .atomicNonCapturing("b"), "c"))
+      concat("a", atomicNonCapturing("b"), "c"))
 
 
 

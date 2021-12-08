@@ -63,12 +63,22 @@ func output(_ content: String) {
 }
 
 func outputForEach<C: Collection>(
-  _ elements: C, separator: String, _ content: (C.Element) -> String
+  _ elements: C,
+  separator: String,
+  lineTerminator: String? = nil,
+  _ content: (C.Element) -> String
 ) {
   for i in elements.indices {
     output(content(elements[i]))
-    if elements.index(after: i) != elements.endIndex {
+    let needsSep = elements.index(after: i) != elements.endIndex
+    if needsSep {
       output(separator)
+    }
+    if let lt = lineTerminator {
+      let indent = needsSep ? "      " : "    "
+      output("\(lt)\n\(indent)")
+    } else if needsSep {
+      output(" ")
     }
   }
 }
@@ -97,7 +107,12 @@ struct VariadicsGenerator: ParsableCommand {
     precondition(maxArity > 1)
     precondition(maxArity < Counter.bitWidth)
 
-    output("// BEGIN AUTO-GENERATED CONTENT\n\n\n")
+    output("""
+      // BEGIN AUTO-GENERATED CONTENT
+
+      import _MatchingEngine
+
+      """)
 
     for arity in minArity...maxArity {
       for permutation in Permutations(arity: arity) {
@@ -118,12 +133,12 @@ struct VariadicsGenerator: ParsableCommand {
     //     public init(...) { ... }
     //   }
     let typeName = "\(concatenationStructTypeBaseName)\(arity)_\(permutation.identifier)"
-    output("public struct \(typeName)<")
-    outputForEach(0..<arity, separator: ", ") { "T\($0): \(patternProtocolName)" }
-    output(">: \(patternProtocolName)")
+    output("public struct \(typeName)<\n  ")
+    outputForEach(0..<arity, separator: ",") { "T\($0): \(patternProtocolName)" }
+    output("\n>: \(patternProtocolName)")
     if permutation.hasCaptureless {
       output(" where ")
-      outputForEach(permutation.capturelessIndices, separator: ", ") {
+      outputForEach(permutation.capturelessIndices, separator: ",") {
         "T\($0).\(captureAssociatedTypeName): \(emptyProtocolName)"
       }
     }
@@ -140,26 +155,28 @@ struct VariadicsGenerator: ParsableCommand {
     output("\n")
     output("  public let \(patternProtocolRequirementName): \(PatternTypeBaseName)<\(captureAssociatedTypeName)>\n")
     output("  init(")
-    outputForEach(0..<arity, separator: ", ") { "_ x\($0): T\($0)" }
+    outputForEach(0..<arity, separator: ",") { "_ x\($0): T\($0)" }
     output(") {\n")
-    output("    \(patternProtocolRequirementName) = .init(ast: .concatenation([")
-    outputForEach(0..<arity, separator: ", ") { i in
+    output("    \(patternProtocolRequirementName) = .init(ast: concat(\n      ")
+    outputForEach(
+      0..<arity, separator: ",", lineTerminator: ""
+    ) { i in
       "x\(i).\(patternProtocolRequirementName).ast"
     }
-    output("]))\n")
+    output("))\n")
     output("  }\n}\n\n")
 
     // Emit concatenation builders.
     output("extension \(patternBuilderTypeName) {\n")
     output("  public static func buildBlock<")
-    outputForEach(0..<arity, separator: ", ") { "T\($0)" }
+    outputForEach(0..<arity, separator: ",") { "T\($0)" }
     output(">(\n    ")
-    outputForEach(0..<arity, separator: ", ") { "_ x\($0): T\($0)" }
+    outputForEach(0..<arity, separator: ",") { "_ x\($0): T\($0)" }
     output("\n  ) -> \(typeName)<")
-    outputForEach(0..<arity, separator: ", ") { "T\($0)" }
+    outputForEach(0..<arity, separator: ",") { "T\($0)" }
     output("> {\n")
     output("    \(typeName)(")
-    outputForEach(0..<arity, separator: ", ") { "x\($0)" }
+    outputForEach(0..<arity, separator: ",") { "x\($0)" }
     output(")\n  }\n}\n\n")
   }
 }

@@ -10,7 +10,7 @@ public protocol ASTValue: _ASTPrintable, Hashable {
 ///
 /// Tracks source location information
 public protocol ASTEntity: ASTValue {
-  var sourceRange: SourceRange? { get }
+  var sourceRange: SourceRange { get }
 }
 
 public protocol ASTParentEntity: ASTEntity, _ASTPrintableNested {

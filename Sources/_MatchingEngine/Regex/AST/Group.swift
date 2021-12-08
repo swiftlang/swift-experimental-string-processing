@@ -1,10 +1,10 @@
 public struct Group: ASTParentEntity {
   public let kind: Kind
 
-  public let sourceRange: SourceRange?
+  public let sourceRange: SourceRange
 
-  init(
-    _ kind: Kind, _ r: SourceRange?
+  public init(
+    _ kind: Kind, _ r: SourceRange
   ) {
     self.kind = kind
     self.sourceRange = r
@@ -45,40 +45,6 @@ extension Group {
     // NOTE: Comments appear to be groups, but are not parsed
     // the same. They parse more like quotes, so are not listed
     // here.
-  }
-}
-
-// MARK: - Convenience constructors
-
-extension Group {
-  public static func capture(_ sr: SourceRange? = nil) -> Group {
-    Group(.capture, sr)
-  }
-  public static func named(
-    _ s: String, _ sr: SourceRange? = nil
-  ) -> Group {
-    Group(.namedCapture(s), sr)
-  }
-  public static func nonCapture(_ sr: SourceRange? = nil) -> Group {
-    Group(.nonCapture, sr)
-  }
-  public static func nonCaptureReset(_ sr: SourceRange? = nil) -> Group {
-    Group(.nonCaptureReset, sr)
-  }
-  public static func atomicNonCapturing(_ sr: SourceRange? = nil) -> Group {
-    Group(.atomicNonCapturing, sr)
-  }
-  public static func lookahead(_ sr: SourceRange? = nil) -> Group {
-    Group(.lookahead, sr)
-  }
-  public static func lookbehind(inverted: Bool, _ sr: SourceRange? = nil) -> Group {
-    Group(.lookbehind, sr)
-  }
-  public static func negativeLookahead(inverted: Bool, _ sr: SourceRange? = nil) -> Group {
-    Group(.negativeLookahead, sr)
-  }
-  public static func negativeLookbehind(inverted: Bool, _ sr: SourceRange? = nil) -> Group {
-    Group(.negativeLookbehind, sr)
   }
 }
 
@@ -150,47 +116,4 @@ extension Group {
     res += ")"
     return res
   }
-}
-
-// MARK: - AST constructors
-
-// TODO: Consider refactoring ASTAction some, but it will have
-// to encode the structure of the AST, fundamentally...
-
-extension AST {
-  public static func capture(
-    _ a: AST, _ sr: SourceRange? = nil
-  ) -> AST {
-    .group(.capture(sr), a)
-  }
-  public static func namedCapture(
-    _ name: String, _ a: AST, _ sr: SourceRange? = nil
-  ) -> AST {
-    .group(.named(name, sr), a)
-  }
-  public static func nonCapture(
-    _ a: AST, _ sr: SourceRange? = nil
-  ) -> AST {
-    .group(.nonCapture(sr), a)
-  }
-  public static func nonCaptureReset(
-    _ a: AST, _ sr: SourceRange? = nil
-  ) -> AST {
-    .group(.nonCaptureReset(sr), a)
-  }
-  public static func atomicNonCapturing(
-    _ a: AST, _ sr: SourceRange? = nil
-  ) -> AST {
-    .group(.atomicNonCapturing(sr), a)
-  }
-//  public static func lookahead(
-//    inverted: Bool, _ a: AST, _ sr: SourceRange? = nil
-//  ) -> AST {
-//    .group(.lookahead(inverted: inverted, sr), a)
-//  }
-//  public static func lookbehind(
-//    inverted: Bool, _ a: AST, _ sr: SourceRange? = nil
-//  ) -> AST {
-//    .group(.lookbehind(inverted: inverted, sr), a)
-//  }
 }

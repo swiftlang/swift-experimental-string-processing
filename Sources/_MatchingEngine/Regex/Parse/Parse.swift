@@ -142,7 +142,8 @@ extension Parser {
     assert(!source.isEmpty)
 
     if let groupStart = try source.lexGroupStart()?.value {
-      let ast = AST.group(Group(groupStart, nil), try parse())
+      let ast = AST.group(
+        Group(groupStart, _fakeRange), try parse())
       try source.expect(")")
       return ast
     }

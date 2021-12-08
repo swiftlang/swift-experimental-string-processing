@@ -176,7 +176,7 @@ extension Source {
         let amt = try src.expectRange()
         try src.expect("}")
         let kind = consumeKind()
-        return Quantifier(amt.value, kind, nil)
+        return Quantifier(amt.value, kind, _fakeRange)
       }
 
       return nil
