@@ -51,7 +51,7 @@ private func swift_getTupleTypeMetadata3(
 enum TypeConstruction {
 
   /// Returns a tuple metatype of the given element types.
-  public static func tupleType<
+  static func tupleType<
     ElementTypes: BidirectionalCollection
   >(
     of elementTypes: __owned ElementTypes
@@ -104,7 +104,7 @@ enum TypeConstruction {
   }
 
   /// Creates a type-erased tuple with the given elements.
-  public static func tuple<Elements: BidirectionalCollection>(
+  static func tuple<Elements: BidirectionalCollection>(
     of elements: __owned Elements
   ) -> Any where Elements.Element == Any {
     // Open existential on the overall tuple type.

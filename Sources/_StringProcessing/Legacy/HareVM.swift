@@ -39,8 +39,8 @@ struct BunnyStack {
   }
 }
 
-public struct HareVM: VirtualMachine {
-  public static let motto = """
+struct HareVM: VirtualMachine {
+  static let motto = """
         "Gotta go fast", which is a concise way of saying that by proceeding
         with the most optimistic of assumptions, matching happens very fast in
         average, common cases. However, hares have the tendency to become over-
@@ -54,11 +54,11 @@ public struct HareVM: VirtualMachine {
         """
   var code: RECode
 
-  public init(program: RECode) {
+  init(program: RECode) {
     self.code = program
   }
 
-  public func execute(
+  func execute(
     input: String, in range: Range<String.Index>, mode: MatchMode
   ) -> MatchResult? {
     let (start, end) = range.destructure

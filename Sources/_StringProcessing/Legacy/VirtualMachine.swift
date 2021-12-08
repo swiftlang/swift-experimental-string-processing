@@ -42,7 +42,7 @@ protocol VirtualMachine {
 
 extension VirtualMachine {
   /// Executes the program on the given input.
-  public func execute(
+  func execute(
     input: String, mode: MatchMode = .wholeString
   ) -> MatchResult? {
     execute(input: input, in: input.startIndex..<input.endIndex, mode: mode)
@@ -51,7 +51,7 @@ extension VirtualMachine {
 
 extension RECode {
   /// A convenient VM thread "core" abstraction
-  public struct ThreadCore {
+  struct ThreadCore {
     enum CaptureState {
       case started(String.Index)
       case ended
@@ -76,38 +76,38 @@ extension RECode {
         return startIndex..<endIndex
       }
     }
-    public var pc: InstructionAddress
-    public let input: String
+    var pc: InstructionAddress
+    let input: String
 
     var groups = Stack<[Capture]>()
     var topLevelCaptures: [Capture] = []
     var captureState: CaptureState = .ended
 
-    public init(startingAt pc: InstructionAddress, input: String) {
+    init(startingAt pc: InstructionAddress, input: String) {
       self.pc = pc
       self.input = input
     }
 
-    public mutating func advance() { self.pc = self.pc + 1 }
-    public mutating func go(to: InstructionAddress) { self.pc = to }
+    mutating func advance() { self.pc = self.pc + 1 }
+    mutating func go(to: InstructionAddress) { self.pc = to }
 
     public mutating func beginCapture(_ index: String.Index) {
       captureState.start(at: index)
     }
 
-    public mutating func endCapture(_ endIndex: String.Index, transform: CaptureTransform?) {
+    mutating func endCapture(_ endIndex: String.Index, transform: CaptureTransform?) {
       let range = captureState.end(at: endIndex)
       let substring = input[range]
       let value = transform?(substring) ?? substring
       topLevelCaptures.append(.atom(value))
     }
 
-    public mutating func beginGroup() {
+    mutating func beginGroup() {
       groups.push(topLevelCaptures)
       topLevelCaptures = []
     }
 
-    public mutating func endGroup() {
+    mutating func endGroup() {
       assert(!groups.isEmpty)
       var top = groups.pop()
       if !topLevelCaptures.isEmpty {
@@ -116,15 +116,15 @@ extension RECode {
       topLevelCaptures = top
     }
 
-    public mutating func captureNil() {
+    mutating func captureNil() {
       topLevelCaptures = [.optional(nil)]
     }
 
-    public mutating func captureSome() {
+    mutating func captureSome() {
       topLevelCaptures = [.optional(.tupleOrAtom(topLevelCaptures))]
     }
 
-    public mutating func captureArray() {
+    mutating func captureArray() {
       topLevelCaptures = [.array(topLevelCaptures)]
     }
 
@@ -134,20 +134,20 @@ extension RECode {
   }
 }
 
-public struct Stack<T> {
-  public var stack: Array<T>
+struct Stack<T> {
+  var stack: Array<T>
 
-  public init() { self.stack = [] }
-  public var isEmpty: Bool { return stack.isEmpty }
+  init() { self.stack = [] }
+  var isEmpty: Bool { return stack.isEmpty }
 
-  public mutating func pop() -> T {
+  mutating func pop() -> T {
     guard !isEmpty else { fatalError("stack is empty") }
     return stack.popLast()!
   }
-  public mutating func push(_ t: T) {
+  mutating func push(_ t: T) {
     stack.append(t)
   }
-  public func peek() -> T {
+  func peek() -> T {
     guard !isEmpty else { fatalError("stack is empty") }
     return stack.last!
   }

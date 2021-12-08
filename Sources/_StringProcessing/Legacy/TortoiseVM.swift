@@ -16,9 +16,9 @@ struct Hatchling {
 /// A group of hatchlings that march in lock-step
 typealias Bale = [Hatchling]
 
-public struct TortoiseVM: VirtualMachine {
+struct TortoiseVM: VirtualMachine {
 
-  public static let motto = """
+  static let motto = """
         "Slow and steady", which is a concise way of saying that tracking all
          eventualities ensures runtime linearly proportional to input size.
          Average case takes longer, but that's ok: tortoises have long lives.
@@ -30,11 +30,11 @@ public struct TortoiseVM: VirtualMachine {
         """
   var code: RECode
 
-  public init(program: RECode) {
+  init(program: RECode) {
     self.code = program
   }
 
-  public func execute(
+  func execute(
     input: String, in range: Range<String.Index>, mode: MatchMode
   ) -> MatchResult? {
     let (start, end) = range.destructure

@@ -8,8 +8,8 @@ import _MatchingEngine
 ///   - Total number of captures
 ///   - Various options (case-insensitive, etc)
 ///
-public struct RECode {
-  public typealias InstructionList = [Instruction]
+struct RECode {
+  typealias InstructionList = [Instruction]
   var instructions: InstructionList
   var labels: [InstructionAddress]
   var splits: [InstructionAddress]
@@ -18,7 +18,7 @@ public struct RECode {
 
 extension RECode {
   /// A RECode instruction.
-  public enum Instruction: Hashable {
+  enum Instruction: Hashable {
     /// NOP (currently unused).
     case nop
 
@@ -125,7 +125,7 @@ public struct REOptions: OptionSet {
   public let rawValue: Int
 
   public static var none = REOptions(rawValue: 0)
-  public static var caseInsensitive = REOptions(rawValue: 1 << 0)
+  static var caseInsensitive = REOptions(rawValue: 1 << 0)
   // Future options
   //    ratcheting
   //    ??? partial
@@ -143,27 +143,27 @@ public struct REOptions: OptionSet {
 // RECode as a RAC of instructions. We might want to make this instead be
 // `InstructionList` if that graduates from being an array.
 extension RECode: RandomAccessCollection {
-  public typealias Element = Instruction
-  public typealias Index = InstructionAddress
+  typealias Element = Instruction
+  typealias Index = InstructionAddress
 
-  public var startIndex: Index { return Index(instructions.startIndex) }
-  public var endIndex: Index { return Index(instructions.endIndex) }
-  public subscript(_ i: Index) -> Element { return instructions[i.rawValue] }
+  var startIndex: Index { return Index(instructions.startIndex) }
+  var endIndex: Index { return Index(instructions.endIndex) }
+  subscript(_ i: Index) -> Element { return instructions[i.rawValue] }
 
-  public func index(after i: Index) -> Index {
+  func index(after i: Index) -> Index {
     return Index(i.rawValue + 1)
   }
-  public func index(before i: Index) -> Index {
+  func index(before i: Index) -> Index {
     return Index(i.rawValue - 1)
   }
-  public func index(_ i: Index, offsetBy n: Int) -> Index {
+  func index(_ i: Index, offsetBy n: Int) -> Index {
     return Index(i.rawValue + n)
   }
 }
 
 extension RECode {
   /// Lookup the location of a label
-  public func lookup(_ id: LabelId) -> InstructionAddress {
+  func lookup(_ id: LabelId) -> InstructionAddress {
     let result = labels[id.rawValue]
     guard case .label(let lid) = self[result], lid == id else {
       fatalError("malformed program: labels not hooked up correctly")
@@ -173,7 +173,7 @@ extension RECode {
 }
 
 extension RECode.Instruction: CustomStringConvertible {
-  public var description: String {
+  var description: String {
     switch self {
     case .nop: return "<NOP>"
     case .accept: return "<ACC>"

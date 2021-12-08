@@ -1,6 +1,6 @@
 import _MatchingEngine
 
-public func compile(
+func compile(
   _ ast: AST, options: REOptions = .none
 ) throws -> RECode {
   var currentLabel = 0
@@ -268,7 +268,7 @@ public func compile(
     options: options)
 }
 
-public func compile(
+func compile(
   _ regex: String, options: REOptions = .none,
   _ syntax: SyntaxOptions = .traditional
 ) throws -> RECode {
