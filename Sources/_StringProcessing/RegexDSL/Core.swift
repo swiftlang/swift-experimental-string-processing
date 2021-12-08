@@ -1,8 +1,5 @@
 import _MatchingEngine
 
-import _StringProcessing
-@_exported import struct _StringProcessing.CharacterClass
-
 fileprivate typealias DefaultEngine = TortoiseVM
 
 public struct RegexMatch<CapturedValue> {

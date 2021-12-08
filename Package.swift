@@ -41,12 +41,9 @@ let package = Package(
         .testTarget(
             name: "RegexTests",
             dependencies: ["_StringProcessing"]),
-        .target(
-            name: "RegexDSL",
-            dependencies: ["_StringProcessing"]),
         .testTarget(
             name: "RegexDSLTests",
-            dependencies: ["RegexDSL"]),
+            dependencies: ["_StringProcessing"]),
         .target(
             name: "PEG",
             dependencies: ["_MatchingEngine"]),
@@ -76,7 +73,7 @@ let package = Package(
         // MARK: Exercises
         .target(
           name: "Exercises",
-          dependencies: ["_MatchingEngine", "PEG", "PTCaRet", "_StringProcessing", "RegexDSL"]),
+          dependencies: ["_MatchingEngine", "PEG", "PTCaRet", "_StringProcessing"]),
         .testTarget(
           name: "ExercisesTests",
           dependencies: ["Exercises"]),
