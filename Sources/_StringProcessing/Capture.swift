@@ -2,7 +2,7 @@ import _MatchingEngine
 
 // TODO: what here should be in the compile-time module?
 
-public enum Capture {
+enum Capture {
   case atom(Any)
   indirect case tuple([Capture])
   indirect case optional(Capture?)
@@ -14,16 +14,17 @@ extension Capture {
     elements.count == 1 ? elements[0] : .tuple(elements)
   }
 
-  public static var void: Capture {
+  static var void: Capture {
     .tuple([])
   }
 
-  public var value: Any {
+  var value: Any {
     switch self {
     case .atom(let atom):
       return atom
     case .tuple(let elements):
-      return _tuple(of: elements.map(\.value))
+      return TypeConstruction.tuple(
+        of: elements.map(\.value))
     case .array(let elements):
       guard let first = elements.first else {
         return [Any]()

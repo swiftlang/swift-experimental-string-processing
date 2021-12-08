@@ -40,9 +40,9 @@ extension Source: _CollectionWrapper {
 }
 
 extension Source: _Peekable {
-  public typealias Output = Char
+  typealias Output = Char
 
-  public mutating func advance() {
+  mutating func advance() {
     assert(!isEmpty)
     _wrapped = _wrapped.dropFirst()
   }

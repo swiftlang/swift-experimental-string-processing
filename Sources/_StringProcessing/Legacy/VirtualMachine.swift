@@ -7,15 +7,15 @@ public enum MatchMode {
 
 public struct MatchResult {
   public var range: Range<String.Index>
-  public var captures: Capture
+  var captures: Capture
 
-  public var destructure: (
+  var destructure: (
     matched: Range<String.Index>, captures: Capture
   ) {
     (range, captures)
   }
 
-  public init(
+  init(
     _ matched: Range<String.Index>, _ captures: Capture
   ) {
     self.range = matched
@@ -23,7 +23,7 @@ public struct MatchResult {
   }
 }
 
-public protocol VirtualMachine {
+protocol VirtualMachine {
   associatedtype Program
 
   /// The backend's motto and general life philosophy.
@@ -128,7 +128,7 @@ extension RECode {
       topLevelCaptures = [.array(topLevelCaptures)]
     }
 
-    public func singleCapture() -> Capture {
+    func singleCapture() -> Capture {
       .tupleOrAtom(topLevelCaptures)
     }
   }

@@ -3,7 +3,7 @@ import _MatchingEngine
 public struct Executor {
   let engine: Engine<String>
 
-  public init(program: RegexProgram, enablesTracing: Bool = false) {
+  init(program: RegexProgram, enablesTracing: Bool = false) {
     self.engine = Engine(program.program, enableTracing: enablesTracing)
   }
 
@@ -23,9 +23,9 @@ public struct Executor {
 // Backward compatibility layer. To be removed when we deprecate legacy
 // components.
 extension Executor: VirtualMachine {
-  public static let motto = "Executor"
+  static let motto = "Executor"
 
-  public init(program: RegexProgram) {
+  init(program: RegexProgram) {
     self.init(program: program, enablesTracing: false)
   }
 }

@@ -1,17 +1,17 @@
 import _MatchingEngine
 
-public struct RegexProgram {
+struct RegexProgram {
   typealias Program = _MatchingEngine.Program<String>
   var program: Program
 }
 
-public class Compiler {
-  public let ast: AST
-  public let matchLevel: CharacterClass.MatchLevel
-  public let options: REOptions
+class Compiler {
+  let ast: AST
+  let matchLevel: CharacterClass.MatchLevel
+  let options: REOptions
   private var builder = RegexProgram.Program.Builder()
 
-  public init(
+  init(
     ast: AST,
     matchLevel: CharacterClass.MatchLevel = .graphemeCluster,
     options: REOptions = []
@@ -21,7 +21,7 @@ public class Compiler {
     self.options = options
   }
 
-  public __consuming func emit() -> RegexProgram {
+  __consuming func emit() -> RegexProgram {
     emit(ast)
     builder.buildAccept()
     return RegexProgram(program: builder.assemble())
@@ -202,3 +202,10 @@ public class Compiler {
   }
 }
 
+public func _compileRegex(
+  _ regex: String, _ syntax: SyntaxOptions = .traditional
+) -> Executor {
+  let ast = try! parse(regex, .traditional)
+  let program = Compiler(ast: ast).emit()
+  return Executor(program: program)
+}
