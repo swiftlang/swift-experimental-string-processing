@@ -92,10 +92,10 @@ extension RegexTests {
   func testModernCaptures() {
     parseTest(
       #"a(?:b)c"#,
-      .concatenation(["a", .nonCapture("b"), "c"]))
+      .concatenation(["a", nonCapture("b"), "c"]))
     parseTest(
       #"a(_:b)c"#,
-      .concatenation(["a", .nonCapture("b"), "c"]),
+      .concatenation(["a", nonCapture("b"), "c"]),
       syntax: .modernCaptures)
 
     // TODO: `(name: .*)`

@@ -1,5 +1,5 @@
 /// A regex abstract syntax tree
-public enum AST: ASTValue, ASTAction {
+public enum AST: ASTValue/*, ASTAction*/ {
   public typealias Product = Self
 
   /// ... | ... | ...
@@ -10,10 +10,6 @@ public enum AST: ASTValue, ASTAction {
 
   /// (...)
   indirect case group(Group, AST)
-
-  /// Group with a registered transform
-  indirect case groupTransform(
-    Group, AST, transform: CaptureTransform)
 
   indirect case quantification(Quantifier, AST)
 
@@ -26,6 +22,11 @@ public enum AST: ASTValue, ASTAction {
   case customCharacterClass(CustomCharacterClass)
 
   case empty
+
+
+  // FIXME: Move off the regex literal AST
+  indirect case groupTransform(
+    Group, AST, transform: CaptureTransform)
 }
 
 extension AST {

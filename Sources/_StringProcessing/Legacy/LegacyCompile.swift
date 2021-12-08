@@ -35,22 +35,23 @@ func compile(
       instructions.append(.any)
       return
 
-    case .group(.nonCapture(), let child):
-      instructions.append(.beginGroup)
-      compileNode(child)
-      instructions.append(.endGroup)
-      return
+    case .group(let g, let child):
+      switch g.kind {
+      case .nonCapture:
+        instructions.append(.beginGroup)
+        compileNode(child)
+        instructions.append(.endGroup)
+        return
+      case .capture:
+        instructions.append(.beginCapture)
+        compileNode(child)
+        instructions.append(.endCapture())
+        return
+      default:
+        fatalError("Unsupported group \(g)")
+      }
 
-    case .group(.capture(), let child):
-      instructions.append(.beginCapture)
-      compileNode(child)
-      instructions.append(.endCapture())
-      return
-
-    case .group(let g, _):
-      fatalError("Unsupported group \(g)")
-
-    case .groupTransform(.capture(), let child, let transform):
+    case .groupTransform(let g, let child, let transform) where g.kind == .capture:
       instructions.append(.beginCapture)
       compileNode(child)
       instructions.append(.endCapture(transform: transform))
