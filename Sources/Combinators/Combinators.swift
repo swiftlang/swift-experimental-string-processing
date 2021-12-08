@@ -1,12 +1,10 @@
-import MatchingEngine
+import _MatchingEngine
 
 /*
 
  Inspired by "Staged Parser Combinators for Efficient Data Processing" by Jonnalagedda et al.
 
  */
-
-import Util
 
 // Stages are represented as nested namespaces that bind generic
 // types

@@ -1,4 +1,4 @@
-// swift run VariadicsGenerator --max-arity 10 > Sources/RegexDSL/Concatenation.swift
+// swift run VariadicsGenerator --max-arity 7 > Sources/RegexDSL/Concatenation.swift
 
 import ArgumentParser
 

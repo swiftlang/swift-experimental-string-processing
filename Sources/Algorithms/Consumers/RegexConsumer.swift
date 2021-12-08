@@ -1,4 +1,6 @@
-import Regex
+import _MatchingEngine
+
+import _StringProcessing
 
 public struct Regex {
   let string: String
@@ -13,14 +15,9 @@ public struct Regex {
 public struct RegexConsumer: CollectionConsumer {
   // NOTE: existential
   let vm: Executor
-  let referenceVM: TortoiseVM
 
-  public init(regex: Regex) {
-    let ast = try! parse(regex.string, .traditional)
-    let program = Compiler(ast: ast).emit()
-    self.vm = Executor(program: program)
-    let legacyProgram = try! compile(ast, options: regex.options)
-    self.referenceVM = TortoiseVM(program: legacyProgram)
+  public init(_ regex: Regex) {
+    self.vm = _compileRegex(regex.string)
   }
 
   public func consume(
@@ -30,12 +27,6 @@ public struct RegexConsumer: CollectionConsumer {
       input: consumed.base,
       in: index..<consumed.endIndex,
       mode: .partialFromFront)
-    assert(
-      result?.range == referenceVM.execute(
-        input: consumed.base,
-        in: index..<consumed.endIndex,
-        mode: .partialFromFront
-      )?.range)
     return result?.range.upperBound
   }
 }

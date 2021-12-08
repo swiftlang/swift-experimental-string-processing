@@ -20,6 +20,6 @@ extension Collection {
 
 extension Collection where SubSequence == Substring {
   public func contains(_ regex: Regex) -> Bool {
-    contains(RegexConsumer(regex: regex))
+    contains(RegexConsumer(regex))
   }
 }

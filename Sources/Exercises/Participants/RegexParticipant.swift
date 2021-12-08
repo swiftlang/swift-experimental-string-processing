@@ -1,5 +1,4 @@
-import Regex
-import RegexDSL
+import _StringProcessing
 
 /*
 

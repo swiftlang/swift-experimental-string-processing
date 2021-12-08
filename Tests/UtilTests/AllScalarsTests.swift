@@ -1,5 +1,5 @@
 import XCTest
-@testable import Util
+@testable import _StringProcessing
 
 let allScalars = Unicode.Scalar.allScalars
 

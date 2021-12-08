@@ -1,7 +1,7 @@
-import XCTest
-@testable import Regex
-import Util
+@testable import _MatchingEngine
 
+import XCTest
+@testable import _StringProcessing
 
 extension RECode.Instruction: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
@@ -43,7 +43,7 @@ private struct TestCase {
   let pass: [ExpectedPass]
   let fail: [String]
   let range: Range<String.Index>
-  let mode: MatchMode
+  let mode: _StringProcessing.MatchMode
   let expected: (String?, [[String]])
 
   init(regex: String, input: String) {
@@ -86,7 +86,7 @@ private func performTest<Capture>(
   regex: String,
   input: String,
   offsets: Offsets? = nil,
-  mode: MatchMode = .wholeString,
+  mode: _StringProcessing.MatchMode = .wholeString,
   expectedCaptureType: Capture.Type,
   expecting expectation: TestExpectation<Capture>?
 ) {

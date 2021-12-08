@@ -92,34 +92,34 @@ extension Collection {
 
 extension Collection where SubSequence == Substring {
   public func trimmingPrefix(_ regex: Regex) -> SubSequence {
-    trimmingPrefix(RegexConsumer(regex: regex))
+    trimmingPrefix(RegexConsumer(regex))
   }
 }
 
 extension RangeReplaceableCollection where SubSequence == Substring {
   public mutating func trimPrefix(_ regex: Regex) {
-    trimPrefix(RegexConsumer(regex: regex))
+    trimPrefix(RegexConsumer(regex))
   }
 }
 
 extension BidirectionalCollection where SubSequence == Substring {
   public func trimmingSuffix(_ regex: Regex) -> SubSequence {
-    trimmingSuffix(RegexConsumer(regex: regex))
+    trimmingSuffix(RegexConsumer(regex))
   }
   
   public func trimming(_ regex: Regex) -> SubSequence {
-    let consumer = RegexConsumer(regex: regex)
+    let consumer = RegexConsumer(regex)
     return trimmingPrefix(consumer).trimmingSuffix(consumer)
   }
 }
 
 extension RangeReplaceableCollection where Self: BidirectionalCollection, SubSequence == Substring {
   public mutating func trimSuffix(_ regex: Regex) {
-    trimSuffix(RegexConsumer(regex: regex))
+    trimSuffix(RegexConsumer(regex))
   }
   
   public mutating func trim(_ regex: Regex) {
-    let consumer = RegexConsumer(regex: regex)
+    let consumer = RegexConsumer(regex)
     trimPrefix(consumer)
     trimSuffix(consumer)
   }
@@ -127,15 +127,15 @@ extension RangeReplaceableCollection where Self: BidirectionalCollection, SubSeq
 
 extension Substring {
   public mutating func trimPrefix(_ regex: Regex) {
-    trimPrefix(RegexConsumer(regex: regex))
+    trimPrefix(RegexConsumer(regex))
   }
   
   public mutating func trimSuffix(_ regex: Regex) {
-    trimSuffix(RegexConsumer(regex: regex))
+    trimSuffix(RegexConsumer(regex))
   }
   
   public mutating func trim(_ regex: Regex) {
-    let consumer = RegexConsumer(regex: regex)
+    let consumer = RegexConsumer(regex)
     trimPrefix(consumer)
     trimSuffix(consumer)
   }
