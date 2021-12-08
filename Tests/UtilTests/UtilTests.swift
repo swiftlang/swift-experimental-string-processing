@@ -1,5 +1,5 @@
 import XCTest
-@testable import Regex
+@testable import _StringProcessing
 
 
 class UtilTests: XCTestCase {

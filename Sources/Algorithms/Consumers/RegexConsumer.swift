@@ -1,6 +1,6 @@
 import _MatchingEngine
 
-import Regex
+import _StringProcessing
 
 public struct Regex {
   let string: String

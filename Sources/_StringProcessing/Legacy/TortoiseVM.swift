@@ -1,3 +1,5 @@
+import _MatchingEngine
+
 /// A baby tortoise, to be spawned and march in lock-step with all the others
 struct Hatchling {
   var core: RECode.ThreadCore

@@ -30,7 +30,7 @@ extension Executor: VirtualMachine {
   }
 }
 
-extension Regex.MatchMode {
+extension _StringProcessing.MatchMode {
   var loweredMatchMode: _MatchingEngine.MatchMode {
     switch self {
     case .wholeString:

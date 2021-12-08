@@ -1,6 +1,6 @@
 import _MatchingEngine
 
-import Regex
+import _StringProcessing
 
 // MARK: - Primitives
 

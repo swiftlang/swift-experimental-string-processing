@@ -1,7 +1,7 @@
 import _MatchingEngine
 
-import Regex
-@_exported import struct Regex.CharacterClass
+import _StringProcessing
+@_exported import struct _StringProcessing.CharacterClass
 
 fileprivate typealias DefaultEngine = TortoiseVM
 

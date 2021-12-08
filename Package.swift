@@ -8,8 +8,8 @@ let package = Package(
     products: [
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
         .library(
-            name: "Regex",
-            targets: ["Regex"]),
+            name: "_StringProcessing",
+            targets: ["_StringProcessing"]),
         .library(
             name: "PEG",
             targets: ["PEG"]),
@@ -28,7 +28,7 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .testTarget(
             name: "UtilTests",
-            dependencies: ["Regex"]),
+            dependencies: ["_StringProcessing"]),
         .target(
             name: "_MatchingEngine",
             dependencies: []),
@@ -36,14 +36,14 @@ let package = Package(
             name: "MatchingEngineTests",
             dependencies: ["_MatchingEngine"]),
         .target(
-            name: "Regex",
+            name: "_StringProcessing",
             dependencies: ["_MatchingEngine"]),
         .testTarget(
             name: "RegexTests",
-            dependencies: ["Regex"]),
+            dependencies: ["_StringProcessing"]),
         .target(
             name: "RegexDSL",
-            dependencies: ["Regex"]),
+            dependencies: ["_StringProcessing"]),
         .testTarget(
             name: "RegexDSLTests",
             dependencies: ["RegexDSL"]),
@@ -61,7 +61,7 @@ let package = Package(
             dependencies: ["PTCaRet"]),
         .target(
             name: "Algorithms",
-            dependencies: ["Regex", "PEG"]),
+            dependencies: ["_StringProcessing", "PEG"]),
         .testTarget(
             name: "AlgorithmsTests",
             dependencies: ["Algorithms"]),
@@ -76,7 +76,7 @@ let package = Package(
         // MARK: Exercises
         .target(
           name: "Exercises",
-          dependencies: ["_MatchingEngine", "PEG", "PTCaRet", "Regex", "RegexDSL"]),
+          dependencies: ["_MatchingEngine", "PEG", "PTCaRet", "_StringProcessing", "RegexDSL"]),
         .testTarget(
           name: "ExercisesTests",
           dependencies: ["Exercises"]),

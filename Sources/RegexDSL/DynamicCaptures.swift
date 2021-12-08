@@ -1,6 +1,6 @@
 import _MatchingEngine
 
-import Regex
+import _StringProcessing
 
 extension Regex where Capture == DynamicCaptures {
   public init(_ string: String) throws {
@@ -27,3 +27,4 @@ public enum DynamicCaptures: Equatable {
     }
   }
 }
+

@@ -1,4 +1,4 @@
-import Regex
+import _StringProcessing
 
 extension RegexTests {
 

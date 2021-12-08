@@ -1,7 +1,7 @@
 @testable import _MatchingEngine
 
 import XCTest
-@testable import Regex
+@testable import _StringProcessing
 
 extension AST: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
