@@ -1,7 +1,5 @@
 import _MatchingEngine
 
-import _StringProcessing
-
 extension Regex where Capture == DynamicCaptures {
   public init(_ string: String) throws {
     self.init(ast: try parse(string, .traditional))

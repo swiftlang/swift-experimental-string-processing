@@ -57,7 +57,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     maxReplacements: Int = .max
   ) -> Self where Replacement.Element == Element {
     replacing(
-      RegexConsumer(regex: regex),
+      RegexConsumer(regex),
       with: replacement,
       subrange: subrange,
       maxReplacements: maxReplacements)

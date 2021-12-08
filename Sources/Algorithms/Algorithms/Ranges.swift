@@ -125,6 +125,6 @@ extension BidirectionalCollection where Element: Comparable {
 
 extension BidirectionalCollection where SubSequence == Substring {
   public func ranges(of regex: Regex) -> RangesCollection<RegexConsumer> {
-    ranges(of: RegexConsumer(regex: regex))
+    ranges(of: RegexConsumer(regex))
   }
 }

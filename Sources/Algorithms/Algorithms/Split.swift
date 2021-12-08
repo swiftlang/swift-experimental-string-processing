@@ -102,6 +102,6 @@ extension BidirectionalCollection where Element: Comparable {
 
 extension Collection where SubSequence == Substring {
   public func split(separator: Regex) -> SplitCollection<RegexConsumer> {
-    split(separator: RegexConsumer(regex: separator))
+    split(separator: RegexConsumer(separator))
   }
 }

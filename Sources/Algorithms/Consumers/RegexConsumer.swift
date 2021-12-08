@@ -16,7 +16,7 @@ public struct RegexConsumer: CollectionConsumer {
   // NOTE: existential
   let vm: Executor
 
-  public init(regex: Regex) {
+  public init(_ regex: Regex) {
     self.vm = _compileRegex(regex.string)
   }
 

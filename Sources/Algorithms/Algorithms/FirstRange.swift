@@ -32,13 +32,13 @@ extension BidirectionalCollection where Element: Comparable {
 
 extension Collection where SubSequence == Substring {
   public func firstRange(of regex: Regex) -> Range<Index>? {
-    firstRange(of: RegexConsumer(regex: regex))
+    firstRange(of: RegexConsumer(regex))
   }
 }
 
 extension BidirectionalCollection where SubSequence == Substring {
   public func lastRange(of regex: Regex) -> Range<Index>? {
-    lastRange(of: RegexConsumer(regex: regex))
+    lastRange(of: RegexConsumer(regex))
   }
 }
 

@@ -1,7 +1,5 @@
 import _MatchingEngine
 
-import _StringProcessing
-
 // MARK: - Primitives
 
 extension String: RegexProtocol {

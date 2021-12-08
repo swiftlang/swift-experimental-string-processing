@@ -26,12 +26,12 @@ extension BidirectionalCollection where Element: Equatable {
 
 extension Collection where SubSequence == Substring {
   public func starts(with regex: Regex) -> Bool {
-    starts(with: RegexConsumer(regex: regex))
+    starts(with: RegexConsumer(regex))
   }
 }
 
 extension BidirectionalCollection where SubSequence == Substring {
   public func ends(with regex: Regex) -> Bool {
-    ends(with: RegexConsumer(regex: regex))
+    ends(with: RegexConsumer(regex))
   }
 }
