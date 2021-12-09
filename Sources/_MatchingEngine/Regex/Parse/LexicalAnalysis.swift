@@ -230,24 +230,32 @@ extension Source {
   }
 
   private mutating func lexUntil(
-    _ end: String, validate: (String) throws -> Void = { _ in }
+    _ predicate: (inout Source) -> Bool,
+    validate: (String) throws -> Void = { _ in }
   ) throws -> Value<String> {
     try recordLoc { src in
       var result = ""
-      while !src.tryEat(sequence: end) {
+      while !predicate(&src) {
         // TODO(diagnostic): expected `end`, instead of end-of-input
 
         result.append(src.eat())
       }
+      try validate(result)
       return result
     }
+  }
+
+  private mutating func lexUntil(
+    eating end: String, validate: (String) throws -> Void = { _ in }
+  ) throws -> Value<String> {
+    try lexUntil({ src in src.tryEat(sequence: end) }, validate: validate)
   }
 
   /// Expect a linear run of non-nested non-empty content
   private mutating func expectQuoted(
     endingWith end: String
   ) throws -> Value<String> {
-    try lexUntil(end, validate: { result in
+    try lexUntil(eating: end, validate: { result in
       guard !result.isEmpty else {
         throw ParseError.misc("Expected non-empty contents")
       }
@@ -411,7 +419,7 @@ extension Source {
     try recordLoc { src in
       guard src.tryEat(sequence: "[:") else { return nil }
       let inverted = src.tryEat("^")
-      let name = try src.lexUntil(":]").value
+      let name = try src.lexUntil(eating: ":]").value
       guard let set = Unicode.POSIXCharacterSet(rawValue: name) else {
         throw ParseError.invalidPOSIXSetName(name)
       }
@@ -442,7 +450,7 @@ extension Source {
 
       // Named character \N{...}
       if src.tryEat(sequence: "N{") {
-        return .namedCharacter(try src.lexUntil("}").value)
+        return .namedCharacter(try src.lexUntil(eating: "}").value)
       }
 
       let char = src.eat()
