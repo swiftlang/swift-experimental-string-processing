@@ -81,6 +81,15 @@ extension _Peekable
     advance(c.count)
     return true
   }
+}
+extension _Peekable where Self: Collection, Output == Element {
+  @discardableResult
+  mutating func eat(count: Int) -> SubSequence {
+    let pre = self.prefix(count)
+    assert(pre.count == count)
+    defer { advance(count) }
+    return pre
+  }
   mutating func tryEat(count: Int) -> SubSequence? {
     let pre = self.prefix(count)
     guard pre.count == count else { return nil }
