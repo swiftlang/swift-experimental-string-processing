@@ -119,7 +119,7 @@ public struct CharacterClass: Hashable {
 
   /// Returns the inverse character class.
   public var inverted: Self {
-    return withInversion(!isInverted)
+    return withInversion(true)
   }
   
   /// Returns the end of the match of this character class in `str`, if
