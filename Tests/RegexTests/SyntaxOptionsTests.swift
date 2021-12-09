@@ -18,6 +18,8 @@ extension RegexTests {
     parseTest(
       #" \d+ \. \d+ \. \d+ \. \d+ "#,
       dotAST, syntax: .modern)
+
+    parseTest(#"a b c"#, concat("a", " ", "b", " ", "c"), syntax: .traditional)
   }
 
   func testModernQuotes() {

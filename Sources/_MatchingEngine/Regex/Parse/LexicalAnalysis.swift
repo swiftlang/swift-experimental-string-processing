@@ -305,7 +305,8 @@ extension Source {
   ///
   /// Does nothing unless `SyntaxOptions.nonSemanticWhitespace` is set
   mutating func lexNonSemanticWhitespace() throws -> Value<()>? {
-    try recordLoc { src in
+    guard syntax.ignoreWhitespace else { return nil }
+    return try recordLoc { src in
       var didSomething = false
       while src.tryEat(" ") {
         didSomething = true
