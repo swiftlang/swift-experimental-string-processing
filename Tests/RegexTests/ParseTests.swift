@@ -242,6 +242,14 @@ extension RegexTests {
       #"a(?>b)c"#,
       concat("a", atomicNonCapturing("b"), "c"))
 
+    // MARK: Character names.
+    parseTest(#"\N{abc}"#, .atom(.namedCharacter("abc")))
+    parseTest(#"[\N{abc}]"#, charClass(.atom(.namedCharacter("abc"))))
+    parseTest(#"\N{abc}+"#, .quantification(.oneOrMore(.greedy),
+                                            .atom(.namedCharacter("abc"))))
+    parseTest(#"\N {2}"#, concat(
+      .atom(.escaped(.notNewline)), .quantification(.exactly(.greedy, 2), " ")
+    ))
 
 
     // TODO: failure tests

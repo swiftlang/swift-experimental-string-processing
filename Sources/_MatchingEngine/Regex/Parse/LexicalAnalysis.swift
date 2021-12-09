@@ -440,6 +440,11 @@ extension Source {
         return .keyboardMeta(try src.expectASCII().value)
       }
 
+      // Named character \N{...}
+      if src.tryEat(sequence: "N{") {
+        return .namedCharacter(try src.lexUntil("}").value)
+      }
+
       let char = src.eat()
 
       // Single-character builtins
