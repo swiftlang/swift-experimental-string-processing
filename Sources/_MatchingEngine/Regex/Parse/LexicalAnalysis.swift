@@ -427,6 +427,38 @@ extension Source {
     }
   }
 
+  /// Try to consume a character property.
+  ///
+  ///     Property -> ('p{' | 'P{') Prop ('=' Prop)? '}'
+  ///     Prop -> [\s\w-]+
+  ///
+  private mutating func lexCharacterProperty(
+  ) throws -> Value<Atom.CharacterProperty>? {
+    try recordLoc { src in
+      // '\P{...}' is the inverted version of '\p{...}'
+      guard src.starts(with: "p{") || src.starts(with: "P{") else { return nil }
+      let isInverted = src.peek() == "P"
+      src.eat(count: 2)
+
+      // We should either have:
+      // - '\p{x=y}' where 'x' is a property key, and 'y' is a value.
+      // - '\p{y}' where 'y' is a value (or a bool key with an inferred value
+      //   of true), and its key is inferred.
+      // TODO: We could have better recovery here if we only ate the characters
+      // that property keys and values can use.
+      let lhs = try src.lexUntil({ $0.peek() == "}" || $0.peek() == "=" }).value
+      if src.tryEat("}") {
+        let prop = try Source.classifyCharacterPropertyValueOnly(lhs)
+        return .init(prop, isInverted: isInverted)
+      }
+      src.eat(asserting: "=")
+
+      let rhs = try src.lexUntil(eating: "}").value
+      let prop = try Source.classifyCharacterProperty(key: lhs, value: rhs)
+      return .init(prop, isInverted: isInverted)
+    }
+  }
+
   /// Consume an escaped atom, starting from after the backslash
   ///
   ///     Escaped          -> KeyboardModified | Builtin
@@ -451,6 +483,11 @@ extension Source {
       // Named character \N{...}
       if src.tryEat(sequence: "N{") {
         return .namedCharacter(try src.lexUntil(eating: "}").value)
+      }
+
+      // Character property \p{...} \P{...}.
+      if let prop = try src.lexCharacterProperty() {
+        return .property(prop.value)
       }
 
       let char = src.eat()

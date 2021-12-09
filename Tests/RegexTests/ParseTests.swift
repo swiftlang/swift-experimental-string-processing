@@ -251,6 +251,71 @@ extension RegexTests {
       .atom(.escaped(.notNewline)), .quantification(.exactly(.greedy, 2), " ")
     ))
 
+    // MARK: Character properties.
+
+    parseTest(#"\p{L}"#,
+              .atom(prop(.generalCategory(.letter))))
+    parseTest(#"\p{gc=L}"#,
+              .atom(prop(.generalCategory(.letter))))
+    parseTest(#"\p{Lu}"#,
+              .atom(prop(.generalCategory(.uppercaseLetter))))
+    parseTest(#"\P{Cc}"#,
+                .atom(prop(.generalCategory(.control), inverted: true)))
+    parseTest(#"\P{Z}"#,
+                .atom(prop(.generalCategory(.separator), inverted: true)))
+
+    parseTest(#"[\p{C}]"#, charClass(.atom(prop(.generalCategory(.other)))))
+    parseTest(#"\p{C}+"#, .quantification(.oneOrMore(.greedy),
+                          .atom(prop(.generalCategory(.other)))))
+
+    parseTest(#"\p{Lx}"#, .atom(prop(.other(key: nil, value: "Lx"))))
+    parseTest(#"\p{gcL}"#, .atom(prop(.other(key: nil, value: "gcL"))))
+    parseTest(#"\p{x=y}"#, .atom(prop(.other(key: "x", value: "y"))))
+
+    // UAX44-LM3 means all of the below are equivalent.
+    let lowercaseLetter = AST.atom(prop(.generalCategory(.lowercaseLetter)))
+    parseTest(#"\p{ll}"#, lowercaseLetter)
+    parseTest(#"\p{gc=ll}"#, lowercaseLetter)
+    parseTest(#"\p{General_Category=Ll}"#, lowercaseLetter)
+    parseTest(#"\p{General-Category=isLl}"#, lowercaseLetter)
+    parseTest(#"\p{  __l_ l  _ }"#, lowercaseLetter)
+    parseTest(#"\p{ g_ c =-  __l_ l  _ }"#, lowercaseLetter)
+    parseTest(#"\p{ general ca-tegory =  __l_ l  _ }"#, lowercaseLetter)
+    parseTest(#"\p{- general category =  is__l_ l  _ }"#, lowercaseLetter)
+    parseTest(#"\p{ general category -=  IS__l_ l  _ }"#, lowercaseLetter)
+
+    parseTest(#"\p{Any}"#, .atom(prop(.any)))
+    parseTest(#"\p{Assigned}"#, .atom(prop(.assigned)))
+    parseTest(#"\p{ascii}"#, .atom(prop(.ascii)))
+    parseTest(#"\p{isAny}"#, .atom(prop(.any)))
+
+    parseTest(#"\p{sc=grek}"#, .atom(prop(.script(.greek))))
+    parseTest(#"\p{sc=isGreek}"#, .atom(prop(.script(.greek))))
+    parseTest(#"\p{Greek}"#, .atom(prop(.script(.greek))))
+    parseTest(#"\p{isGreek}"#, .atom(prop(.script(.greek))))
+    parseTest(#"\P{Script=Latn}"#, .atom(prop(.script(.latin), inverted: true)))
+    parseTest(#"\p{script=zzzz}"#, .atom(prop(.script(.unknown))))
+    parseTest(#"\p{ISscript=iszzzz}"#, .atom(prop(.script(.unknown))))
+    parseTest(#"\p{scx=bamum}"#, .atom(prop(.scriptExtension(.bamum))))
+    parseTest(#"\p{ISBAMUM}"#, .atom(prop(.script(.bamum))))
+
+    parseTest(#"\p{alpha}"#, .atom(prop(.binary(.alphabetic))))
+    parseTest(#"\p{DEP}"#, .atom(prop(.binary(.deprecated))))
+    parseTest(#"\P{DEP}"#, .atom(prop(.binary(.deprecated), inverted: true)))
+    parseTest(#"\p{alphabetic=True}"#, .atom(prop(.binary(.alphabetic))))
+    parseTest(#"\p{emoji=t}"#, .atom(prop(.binary(.emoji))))
+    parseTest(#"\p{Alpha=no}"#, .atom(prop(.binary(.alphabetic, value: false))))
+    parseTest(#"\P{Alpha=no}"#, .atom(prop(.binary(.alphabetic, value: false), inverted: true)))
+    parseTest(#"\p{isAlphabetic}"#, .atom(prop(.binary(.alphabetic))))
+    parseTest(#"\p{isAlpha=isFalse}"#, .atom(prop(.binary(.alphabetic, value: false))))
+
+    parseTest(#"\p{In_Runic}"#, .atom(prop(.onigurumaSpecial(.inRunic))))
+
+    parseTest(#"\p{Xan}"#, .atom(prop(.pcreSpecial(.alphanumeric))))
+    parseTest(#"\p{Xps}"#, .atom(prop(.pcreSpecial(.posixSpace))))
+    parseTest(#"\p{Xsp}"#, .atom(prop(.pcreSpecial(.perlSpace))))
+    parseTest(#"\p{Xuc}"#, .atom(prop(.pcreSpecial(.universallyNamed))))
+    parseTest(#"\p{Xwd}"#, .atom(prop(.pcreSpecial(.perlWord))))
 
     // TODO: failure tests
   }

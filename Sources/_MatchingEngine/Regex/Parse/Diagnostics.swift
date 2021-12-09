@@ -137,6 +137,7 @@ enum ParseError: Error, Hashable {
   case invalidCharacterClassRangeOperand
 
   case invalidPOSIXSetName(String)
+  case emptyProperty
 }
 
 

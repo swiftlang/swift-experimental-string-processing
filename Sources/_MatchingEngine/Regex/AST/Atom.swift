@@ -12,7 +12,7 @@ public enum Atom: Hashable {
   /// A Unicode property, category, or script
   ///
   /// \p{...}, \p{^...}, \P
-  case property(Prop, inverted: Bool)
+  case property(CharacterProperty)
 
   /// A built-in escaped character
   ///
@@ -306,20 +306,51 @@ extension Atom.EscapedBuiltin {
 }
 
 extension Atom {
-  // TODO: Hamish, I believe you have a formulation of this and have
-  // thought through the parsing a whole lot more. This is just what
-  // I have at the time, but let's get something better for the AST
-  // and parser support.
-  public enum Prop: Hashable {
-    case gc(Unicode.GeneralCategory)
-    case pcreSpecial(PCRESpecialCategory)
+  public struct CharacterProperty: Hashable {
+    public var kind: Kind
+    public var isInverted: Bool
+
+    public init(_ kind: Kind, isInverted: Bool) {
+      self.kind = kind
+      self.isInverted = isInverted
+    }
+  }
+}
+
+extension Atom.CharacterProperty {
+  public enum Kind: Hashable {
+    /// Matches any character, equivalent to Oniguruma's '\O'.
+    case any
+
+    // The inverse of 'Unicode.ExtendedGeneralCategory.unassigned'.
+    case assigned
+
+    /// All ascii characters U+00...U+7F
+    case ascii
+
+    /// A general category property.
+    case generalCategory(Unicode.ExtendedGeneralCategory)
+
+    /// Binary character properties. Note that only the following are required
+    /// by UTS#18 Level 1:
+    /// - Alphabetic
+    /// - Uppercase
+    /// - Lowercase
+    /// - White_Space
+    /// - Noncharacter_Code_Point
+    /// - Default_Ignorable_Code_Point
+    case binary(Unicode.BinaryProperty, value: Bool = true)
+
+    /// Character script and script extensions.
     case script(Unicode.Script)
+    case scriptExtension(Unicode.Script)
 
-    // TODO: replace me
-    case propCheck(PropName, PropValue)
+    /// Some special properties implemented by PCRE and Oniguruma.
+    case pcreSpecial(PCRESpecialCategory)
+    case onigurumaSpecial(OnigurumaSpecialProperty)
 
-    // TODO: yuk, let's make sure other cases are a superset of this
-    case oniguruma(FlattendedOnigurumaUnicodeProperty)
+    /// Unhandled properties.
+    case other(key: String?, value: String)
 
     // TODO: erm, separate out or fold into something? splat it in?
     public enum PCRESpecialCategory: String, Hashable {
@@ -329,9 +360,6 @@ extension Atom {
       case universallyNamed = "Xuc"
       case perlWord         = "Xwd"
     }
-
-    public enum PropName: Hashable {}
-    public enum PropValue: Hashable {}
   }
 }
 

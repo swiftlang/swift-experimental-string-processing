@@ -154,3 +154,8 @@ public func posixSet(
 ) -> Atom {
   return .namedSet(.init(inverted: inverted, set: set))
 }
+func prop(
+  _ kind: Atom.CharacterProperty.Kind, inverted: Bool = false
+) -> Atom {
+  return .property(.init(kind, isInverted: inverted))
+}
