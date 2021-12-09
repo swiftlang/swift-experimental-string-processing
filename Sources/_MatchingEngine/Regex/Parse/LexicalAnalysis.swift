@@ -230,24 +230,32 @@ extension Source {
   }
 
   private mutating func lexUntil(
-    _ end: String, validate: (String) throws -> Void = { _ in }
+    _ predicate: (inout Source) -> Bool,
+    validate: (String) throws -> Void = { _ in }
   ) throws -> Value<String> {
     try recordLoc { src in
       var result = ""
-      while !src.tryEat(sequence: end) {
+      while !predicate(&src) {
         // TODO(diagnostic): expected `end`, instead of end-of-input
 
         result.append(src.eat())
       }
+      try validate(result)
       return result
     }
+  }
+
+  private mutating func lexUntil(
+    eating end: String, validate: (String) throws -> Void = { _ in }
+  ) throws -> Value<String> {
+    try lexUntil({ src in src.tryEat(sequence: end) }, validate: validate)
   }
 
   /// Expect a linear run of non-nested non-empty content
   private mutating func expectQuoted(
     endingWith end: String
   ) throws -> Value<String> {
-    try lexUntil(end, validate: { result in
+    try lexUntil(eating: end, validate: { result in
       guard !result.isEmpty else {
         throw ParseError.misc("Expected non-empty contents")
       }
@@ -305,7 +313,8 @@ extension Source {
   ///
   /// Does nothing unless `SyntaxOptions.nonSemanticWhitespace` is set
   mutating func lexNonSemanticWhitespace() throws -> Value<()>? {
-    try recordLoc { src in
+    guard syntax.ignoreWhitespace else { return nil }
+    return try recordLoc { src in
       var didSomething = false
       while src.tryEat(" ") {
         didSomething = true
@@ -410,11 +419,43 @@ extension Source {
     try recordLoc { src in
       guard src.tryEat(sequence: "[:") else { return nil }
       let inverted = src.tryEat("^")
-      let name = try src.lexUntil(":]").value
+      let name = try src.lexUntil(eating: ":]").value
       guard let set = Unicode.POSIXCharacterSet(rawValue: name) else {
         throw ParseError.invalidPOSIXSetName(name)
       }
       return Atom.POSIXSet(inverted: inverted, set: set)
+    }
+  }
+
+  /// Try to consume a character property.
+  ///
+  ///     Property -> ('p{' | 'P{') Prop ('=' Prop)? '}'
+  ///     Prop -> [\s\w-]+
+  ///
+  private mutating func lexCharacterProperty(
+  ) throws -> Value<Atom.CharacterProperty>? {
+    try recordLoc { src in
+      // '\P{...}' is the inverted version of '\p{...}'
+      guard src.starts(with: "p{") || src.starts(with: "P{") else { return nil }
+      let isInverted = src.peek() == "P"
+      src.eat(count: 2)
+
+      // We should either have:
+      // - '\p{x=y}' where 'x' is a property key, and 'y' is a value.
+      // - '\p{y}' where 'y' is a value (or a bool key with an inferred value
+      //   of true), and its key is inferred.
+      // TODO: We could have better recovery here if we only ate the characters
+      // that property keys and values can use.
+      let lhs = try src.lexUntil({ $0.peek() == "}" || $0.peek() == "=" }).value
+      if src.tryEat("}") {
+        let prop = try Source.classifyCharacterPropertyValueOnly(lhs)
+        return .init(prop, isInverted: isInverted)
+      }
+      src.eat(asserting: "=")
+
+      let rhs = try src.lexUntil(eating: "}").value
+      let prop = try Source.classifyCharacterProperty(key: lhs, value: rhs)
+      return .init(prop, isInverted: isInverted)
     }
   }
 
@@ -437,6 +478,16 @@ extension Source {
       }
       if src.tryEat(sequence: "M-") {
         return .keyboardMeta(try src.expectASCII().value)
+      }
+
+      // Named character \N{...}
+      if src.tryEat(sequence: "N{") {
+        return .namedCharacter(try src.lexUntil(eating: "}").value)
+      }
+
+      // Character property \p{...} \P{...}.
+      if let prop = try src.lexCharacterProperty() {
+        return .property(prop.value)
       }
 
       let char = src.eat()
@@ -491,7 +542,7 @@ extension Source {
       // TODO: Can we try and recover and diagnose for named sets outside
       // character classes?
       if customCC, let set = try src.lexPOSIXNamedSet()?.value {
-        return .named(set)
+        return .namedSet(set)
       }
 
       let char = src.eat()

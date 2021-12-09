@@ -1,7 +1,17 @@
 // MARK: - Missing stdlib API
 
 extension Unicode {
+  /// Character script types.
+  ///
+  /// Note this includes the "meta" script type "Katakana_Or_Hiragana", which
+  /// isn't defined by https://www.unicode.org/Public/UCD/latest/ucd/Scripts.txt,
+  /// but is defined by https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt.
+  /// We may want to split it out, as it's the only case that is a union of
+  /// other script types.
   public enum Script: String, Hashable {
+    case adlam = "Adlam"
+    case ahom = "Ahom"
+    case anatolianHieroglyphs = "Anatolian_Hieroglyphs"
     case arabic = "Arabic"
     case armenian = "Armenian"
     case avestan = "Avestan"
@@ -10,6 +20,7 @@ extension Unicode {
     case bassaVah = "Bassa_Vah"
     case batak = "Batak"
     case bengali = "Bengali"
+    case bhaiksuki = "Bhaiksuki"
     case bopomofo = "Bopomofo"
     case brahmi = "Brahmi"
     case braille = "Braille"
@@ -21,16 +32,21 @@ extension Unicode {
     case chakma = "Chakma"
     case cham = "Cham"
     case cherokee = "Cherokee"
+    case chorasmian = "Chorasmian"
     case common = "Common"
     case coptic = "Coptic"
     case cuneiform = "Cuneiform"
     case cypriot = "Cypriot"
     case cyrillic = "Cyrillic"
+    case cyproMinoan = "Cypro_Minoan"
     case deseret = "Deseret"
     case devanagari = "Devanagari"
+    case divesAkuru = "Dives_Akuru"
+    case dogra = "Dogra"
     case duployan = "Duployan"
     case egyptianHieroglyphs = "Egyptian_Hieroglyphs"
     case elbasan = "Elbasan"
+    case elymaic = "Elymaic"
     case ethiopic = "Ethiopic"
     case georgian = "Georgian"
     case glagolitic = "Glagolitic"
@@ -38,10 +54,13 @@ extension Unicode {
     case grantha = "Grantha"
     case greek = "Greek"
     case gujarati = "Gujarati"
+    case gunjalaGondi = "Gunjala_Gondi"
     case gurmukhi = "Gurmukhi"
     case han = "Han"
     case hangul = "Hangul"
+    case hanifiRohingya = "Hanifi_Rohingya"
     case hanunoo = "Hanunoo"
+    case hatran = "Hatran"
     case hebrew = "Hebrew"
     case hiragana = "Hiragana"
     case imperialAramaic = "Imperial_Aramaic"
@@ -52,8 +71,10 @@ extension Unicode {
     case kaithi = "Kaithi"
     case kannada = "Kannada"
     case katakana = "Katakana"
-    case kayah_Li = "Kayah_Li"
+    case katakanaOrHiragana = "Katakana_Or_Hiragana"
+    case kayahLi = "Kayah_Li"
     case kharoshthi = "Kharoshthi"
+    case khitanSmallScript = "Khitan_Small_Script"
     case khmer = "Khmer"
     case khojki = "Khojki"
     case khudawadi = "Khudawadi"
@@ -67,9 +88,13 @@ extension Unicode {
     case lycian = "Lycian"
     case lydian = "Lydian"
     case mahajani = "Mahajani"
+    case makasar = "Makasar"
     case malayalam = "Malayalam"
     case mandaic = "Mandaic"
     case manichaean = "Manichaean"
+    case marchen = "Marchen"
+    case masaramGondi = "Masaram_Gondi"
+    case medefaidrin = "Medefaidrin"
     case meeteiMayek = "Meetei_Mayek"
     case mendeKikakui = "Mende_Kikakui"
     case meroiticCursive = "Meroitic_Cursive"
@@ -78,19 +103,28 @@ extension Unicode {
     case modi = "Modi"
     case mongolian = "Mongolian"
     case mro = "Mro"
+    case multani = "Multani"
     case myanmar = "Myanmar"
     case nabataean = "Nabataean"
+    case nandinagari = "Nandinagari"
+    case newa = "Newa"
     case newTaiLue = "New_Tai_Lue"
     case nko = "Nko"
+    case nushu = "Nushu"
+    case nyiakengPuachueHmong = "Nyiakeng_Puachue_Hmong"
     case ogham = "Ogham"
     case olChiki = "Ol_Chiki"
+    case oldHungarian = "Old_Hungarian"
     case oldItalic = "Old_Italic"
     case oldNorthArabian = "Old_North_Arabian"
     case oldPermic = "Old_Permic"
     case oldPersian = "Old_Persian"
+    case oldSogdian = "Old_Sogdian"
     case oldSouthArabian = "Old_South_Arabian"
     case oldTurkic = "Old_Turkic"
+    case oldUyghur = "Old_Uyghur"
     case oriya = "Oriya"
+    case osage = "Osage"
     case osmanya = "Osmanya"
     case pahawhHmong = "Pahawh_Hmong"
     case palmyrene = "Palmyrene"
@@ -105,8 +139,11 @@ extension Unicode {
     case sharada = "Sharada"
     case shavian = "Shavian"
     case siddham = "Siddham"
+    case signWriting = "SignWriting"
     case sinhala = "Sinhala"
+    case sogdian = "Sogdian"
     case soraSompeng = "Sora_Sompeng"
+    case soyombo = "Soyombo"
     case sundanese = "Sundanese"
     case sylotiNagri = "Syloti_Nagri"
     case syriac = "Syriac"
@@ -117,16 +154,24 @@ extension Unicode {
     case taiViet = "Tai_Viet"
     case takri = "Takri"
     case tamil = "Tamil"
+    case tangsa = "Tangsa"
+    case tangut = "Tangut"
     case telugu = "Telugu"
     case thaana = "Thaana"
     case thai = "Thai"
     case tibetan = "Tibetan"
     case tifinagh = "Tifinagh"
     case tirhuta = "Tirhuta"
+    case toto = "Toto"
     case ugaritic = "Ugaritic"
+    case unknown = "Unknown"
     case vai = "Vai"
+    case vithkuqi = "Vithkuqi"
+    case wancho = "Wancho"
     case warangCiti = "Warang_Citi"
+    case yezidi = "Yezidi"
     case yi = "Yi"
+    case zanabazarSquare = "Zanabazar_Square"
   }
 
   public enum POSIXCharacterSet: String, Hashable {
@@ -145,839 +190,450 @@ extension Unicode {
     case word = "word"
     case xdigit = "xdigit"
   }
+
+  /// Unicode.GeneralCategory + cases for "meta categories" such as "L", which
+  /// encompasses Lu | Ll | Lt | Lm | Lo.
+  public enum ExtendedGeneralCategory: String, Hashable {
+    case other = "C"
+    case control = "Cc"
+    case format = "Cf"
+    case unassigned = "Cn"
+    case privateUse = "Co"
+    case surrogate = "Cs"
+
+    case letter = "L"
+    case casedLetter = "Lc"
+    case lowercaseLetter = "Ll"
+    case modifierLetter = "Lm"
+    case otherLetter = "Lo"
+    case titlecaseLetter = "Lt"
+    case uppercaseLetter = "Lu"
+
+    case mark = "M"
+    case spacingMark = "Mc"
+    case enclosingMark = "Me"
+    case nonspacingMark = "Mn"
+
+    case number = "N"
+    case decimalNumber = "Nd"
+    case letterNumber = "Nl"
+    case otherNumber = "No"
+
+    case punctuation = "P"
+    case connectorPunctuation = "Pc"
+    case dashPunctuation = "Pd"
+    case closePunctuation = "Pe"
+    case finalPunctuation = "Pf"
+    case initialPunctuation = "Pi"
+    case otherPunctuation = "Po"
+    case openPunctuation = "Ps"
+
+    case symbol = "S"
+    case currencySymbol = "Sc"
+    case modifierSymbol = "Sk"
+    case mathSymbol = "Sm"
+    case otherSymbol = "So"
+
+    case separator = "Z"
+    case lineSeparator = "Zl"
+    case paragraphSeparator = "Zp"
+    case spaceSeparator = "Zs"
+  }
+
+  // A list of unicode properties that can either be true or false.
+  // https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt
+  public enum BinaryProperty: String, Hashable {
+    case asciiHexDigit = "ASCII_Hex_Digit"
+    case alphabetic = "Alphabetic"
+    case bidiControl = "Bidi_Control"
+    case bidiMirrored = "Bidi_Mirrored"
+    case cased = "Cased"
+    case compositionExclusion = "Composition_Exclusion"
+    case caseIgnorable = "Case_Ignorable"
+    case changesWhenCasefolded = "Changes_When_Casefolded"
+    case changesWhenCasemapped = "Changes_When_Casemapped"
+    case changesWhenNFKCCasefolded = "Changes_When_NFKC_Casefolded"
+    case changesWhenLowercased = "Changes_When_Lowercased"
+    case changesWhenTitlecased = "Changes_When_Titlecased"
+    case changesWhenUppercased = "Changes_When_Uppercased"
+    case dash = "Dash"
+    case deprecated = "Deprecated"
+    case defaultIgnorableCodePoint = "Default_Ignorable_Code_Point"
+    case diacratic = "Diacritic"
+    case emojiModifierBase = "Emoji_Modifier_Base"
+    case emojiComponent = "Emoji_Component"
+    case emojiModifier = "Emoji_Modifier"
+    case emoji = "Emoji"
+    case emojiPresentation = "Emoji_Presentation"
+    case extender = "Extender"
+    case extendedPictographic = "Extended_Pictographic"
+    case fullCompositionExclusion = "Full_Composition_Exclusion"
+    case graphemeBase = "Grapheme_Base"
+    case graphemeExtended = "Grapheme_Extend"
+    case graphemeLink = "Grapheme_Link"
+    case hexDigit = "Hex_Digit"
+    case hyphen = "Hyphen"
+    case idContinue = "ID_Continue"
+    case ideographic = "Ideographic"
+    case idStart = "ID_Start"
+    case idsBinaryOperator = "IDS_Binary_Operator"
+    case idsTrinaryOperator = "IDS_Trinary_Operator"
+    case joinControl = "Join_Control"
+    case logicalOrderException = "Logical_Order_Exception"
+    case lowercase = "Lowercase"
+    case math = "Math"
+    case noncharacterCodePoint = "Noncharacter_Code_Point"
+    case otherAlphabetic = "Other_Alphabetic"
+    case otherDefaultIgnorableCodePoint = "Other_Default_Ignorable_Code_Point"
+    case otherGraphemeExtended = "Other_Grapheme_Extend"
+    case otherIDContinue = "Other_ID_Continue"
+    case otherIDStart = "Other_ID_Start"
+    case otherLowercase = "Other_Lowercase"
+    case otherMath = "Other_Math"
+    case otherUppercase = "Other_Uppercase"
+    case patternSyntax = "Pattern_Syntax"
+    case patternWhitespace = "Pattern_White_Space"
+    case prependedConcatenationMark = "Prepended_Concatenation_Mark"
+    case quotationMark = "Quotation_Mark"
+    case radical = "Radical"
+    case regionalIndicator = "Regional_Indicator"
+    case softDotted = "Soft_Dotted"
+    case sentenceTerminal = "Sentence_Terminal"
+    case terminalPunctuation = "Terminal_Punctuation"
+    case unifiedIdiograph = "Unified_Ideograph"
+    case uppercase = "Uppercase"
+    case variationSelector = "Variation_Selector"
+    case whitespace = "White_Space"
+    case xidContinue = "XID_Continue"
+    case xidStart = "XID_Start"
+    case expandsOnNFC = "Expands_On_NFC"
+    case expandsOnNFD = "Expands_On_NFD"
+    case expandsOnNFKC = "Expands_On_NFKC"
+    case expandsOnNFKD = "Expands_On_NFKD"
+  }
 }
 
-// Oniguruma presents itself as just a flattened list of 
-// properties, rather than interpreting whether it's a script
-// or something else. Here I just splat it all in an enum,
-// TBD how we actually model it.
-public enum FlattendedOnigurumaUnicodeProperty: String, Hashable {
-  case ASCII_Hex_Digit
-  case Adlam
-  case Ahom
-  case Alphabetic
-  case Anatolian_Hieroglyphs
-  case `Any`
-  case Arabic
-  case Armenian
-  case Assigned
-  case Avestan
-  case Balinese
-  case Bamum
-  case Bassa_Vah
-  case Batak
-  case Bengali
-  case Bhaiksuki
-  case Bidi_Control
-  case Bopomofo
-  case Brahmi
-  case Braille
-  case Buginese
-  case Buhid
-  case C
-  case Canadian_Aboriginal
-  case Carian
-  case Case_Ignorable
-  case Cased
-  case Caucasian_Albanian
-  case Cc
-  case Cf
-  case Chakma
-  case Cham
-  case Changes_When_Casefolded
-  case Changes_When_Casemapped
-  case Changes_When_Lowercased
-  case Changes_When_Titlecased
-  case Changes_When_Uppercased
-  case Cherokee
-  case Chorasmian
-  case Cn
-  case Co
-  case Common
-  case Coptic
-  case Cs
-  case Cuneiform
-  case Cypriot
-  case Cypro_Minoan
-  case Cyrillic
-  case Dash
-  case Default_Ignorable_Code_Point
-  case Deprecated
-  case Deseret
-  case Devanagari
-  case Diacritic
-  case Dives_Akuru
-  case Dogra
-  case Duployan
-  case Egyptian_Hieroglyphs
-  case Elbasan
-  case Elymaic
-  case Emoji
-  case Emoji_Component
-  case Emoji_Modifier
-  case Emoji_Modifier_Base
-  case Emoji_Presentation
-  case Ethiopic
-  case Extended_Pictographic
-  case Extender
-  case Georgian
-  case Glagolitic
-  case Gothic
-  case Grantha
-  case Grapheme_Base
-  case Grapheme_Extend
-  case Grapheme_Link
-  case Greek
-  case Gujarati
-  case Gunjala_Gondi
-  case Gurmukhi
-  case Han
-  case Hangul
-  case Hanifi_Rohingya
-  case Hanunoo
-  case Hatran
-  case Hebrew
-  case Hex_Digit
-  case Hiragana
-  case Hyphen
-  case IDS_Binary_Operator
-  case IDS_Trinary_Operator
-  case ID_Continue
-  case ID_Start
-  case Ideographic
-  case Imperial_Aramaic
-  case Inherited
-  case Inscriptional_Pahlavi
-  case Inscriptional_Parthian
-  case Javanese
-  case Join_Control
-  case Kaithi
-  case Kannada
-  case Katakana
-  case Kayah_Li
-  case Kharoshthi
-  case Khitan_Small_Script
-  case Khmer
-  case Khojki
-  case Khudawadi
-  case L
-  case LC
-  case Lao
-  case Latin
-  case Lepcha
-  case Limbu
-  case Linear_A
-  case Linear_B
-  case Lisu
-  case Ll
-  case Lm
-  case Lo
-  case Logical_Order_Exception
-  case Lowercase
-  case Lt
-  case Lu
-  case Lycian
-  case Lydian
-  case M
-  case Mahajani
-  case Makasar
-  case Malayalam
-  case Mandaic
-  case Manichaean
-  case Marchen
-  case Masaram_Gondi
-  case Math
-  case Mc
-  case Me
-  case Medefaidrin
-  case Meetei_Mayek
-  case Mende_Kikakui
-  case Meroitic_Cursive
-  case Meroitic_Hieroglyphs
-  case Miao
-  case Mn
-  case Modi
-  case Mongolian
-  case Mro
-  case Multani
-  case Myanmar
-  case N
-  case Nabataean
-  case Nandinagari
-  case Nd
-  case New_Tai_Lue
-  case Newa
-  case Nko
-  case Nl
-  case No
-  case Noncharacter_Code_Point
-  case Nushu
-  case Nyiakeng_Puachue_Hmong
-  case Ogham
-  case Ol_Chiki
-  case Old_Hungarian
-  case Old_Italic
-  case Old_North_Arabian
-  case Old_Permic
-  case Old_Persian
-  case Old_Sogdian
-  case Old_South_Arabian
-  case Old_Turkic
-  case Old_Uyghur
-  case Oriya
-  case Osage
-  case Osmanya
-  case Other_Alphabetic
-  case Other_Default_Ignorable_Code_Point
-  case Other_Grapheme_Extend
-  case Other_ID_Continue
-  case Other_ID_Start
-  case Other_Lowercase
-  case Other_Math
-  case Other_Uppercase
-  case P
-  case Pahawh_Hmong
-  case Palmyrene
-  case Pattern_Syntax
-  case Pattern_White_Space
-  case Pau_Cin_Hau
-  case Pc
-  case Pd
-  case Pe
-  case Pf
-  case Phags_Pa
-  case Phoenician
-  case Pi
-  case Po
-  case Prepended_Concatenation_Mark
-  case Ps
-  case Psalter_Pahlavi
-  case Quotation_Mark
-  case Radical
-  case Regional_Indicator
-  case Rejang
-  case Runic
-  case S
-  case Samaritan
-  case Saurashtra
-  case Sc
-  case Sentence_Terminal
-  case Sharada
-  case Shavian
-  case Siddham
-  case SignWriting
-  case Sinhala
-  case Sk
-  case Sm
-  case So
-  case Soft_Dotted
-  case Sogdian
-  case Sora_Sompeng
-  case Soyombo
-  case Sundanese
-  case Syloti_Nagri
-  case Syriac
-  case Tagalog
-  case Tagbanwa
-  case Tai_Le
-  case Tai_Tham
-  case Tai_Viet
-  case Takri
-  case Tamil
-  case Tangsa
-  case Tangut
-  case Telugu
-  case Terminal_Punctuation
-  case Thaana
-  case Thai
-  case Tibetan
-  case Tifinagh
-  case Tirhuta
-  case Toto
-  case Ugaritic
-  case Unified_Ideograph
-  case Unknown
-  case Uppercase
-  case Vai
-  case Variation_Selector
-  case Vithkuqi
-  case Wancho
-  case Warang_Citi
-  case White_Space
-  case XID_Continue
-  case XID_Start
-  case Yezidi
-  case Yi
-  case Z
-  case Zanabazar_Square
-  case Zl
-  case Zp
-  case Zs
-  case Adlm
-  case Aghb
-  case AHex
-  case Arab
-  case Armi
-  case Armn
-  case Avst
-  case Bali
-  case Bamu
-  case Bass
-  case Batk
-  case Beng
-  case Bhks
-  case Bidi_C
-  case Bopo
-  case Brah
-  case Brai
-  case Bugi
-  case Buhd
-  case Cakm
-  case Cans
-  case Cari
-  case Cased_Letter
-  case Cher
-  case Chrs
-  case CI
-  case Close_Punctuation
-  case Combining_Mark
-  case Connector_Punctuation
-  case Control
-  case Copt
-  case Cpmn
-  case Cprt
-  case Currency_Symbol
-  case CWCF
-  case CWCM
-  case CWL
-  case CWT
-  case CWU
-  case Cyrl
-  case Dash_Punctuation
-  case Decimal_Number
-  case Dep
-  case Deva
-  case DI
-  case Dia
-  case Diak
-  case Dogr
-  case Dsrt
-  case Dupl
-  case EBase
-  case EComp
-  case Egyp
-  case Elba
-  case Elym
-  case EMod
-  case Enclosing_Mark
-  case EPres
-  case Ethi
-  case Ext
-  case ExtPict
-  case Final_Punctuation
-  case Format
-  case Geor
-  case Glag
-  case Gong
-  case Gonm
-  case Goth
-  case Gran
-  case Gr_Base
-  case Grek
-  case Gr_Ext
-  case Gr_Link
-  case Gujr
-  case Guru
-  case Hang
-  case Hani
-  case Hano
-  case Hatr
-  case Hebr
-  case Hex
-  case Hira
-  case Hluw
-  case Hmng
-  case Hmnp
-  case Hung
-  case IDC
-  case Ideo
-  case IDS
-  case IDSB
-  case IDST
-  case Initial_Punctuation
-  case Ital
-  case Java
-  case Join_C
-  case Kali
-  case Kana
-  case Khar
-  case Khmr
-  case Khoj
-  case Kits
-  case Knda
-  case Kthi
-  case Lana
-  case Laoo
-  case Latn
-  case Lepc
-  case Letter
-  case Letter_Number
-  case Limb
-  case Lina
-  case Linb
-  case Line_Separator
-  case LOE
-  case Lowercase_Letter
-  case Lyci
-  case Lydi
-  case Mahj
-  case Maka
-  case Mand
-  case Mani
-  case Marc
-  case Mark
-  case Math_Symbol
-  case Medf
-  case Mend
-  case Merc
-  case Mero
-  case Mlym
-  case Modifier_Letter
-  case Modifier_Symbol
-  case Mong
-  case Mroo
-  case Mtei
-  case Mult
-  case Mymr
-  case Nand
-  case Narb
-  case Nbat
-  case NChar
-  case Nkoo
-  case Nonspacing_Mark
-  case Nshu
-  case Number
-  case OAlpha
-  case ODI
-  case Ogam
-  case OGr_Ext
-  case OIDC
-  case OIDS
-  case Olck
-  case OLower
-  case OMath
-  case Open_Punctuation
-  case Orkh
-  case Orya
-  case Osge
-  case Osma
-  case Other
-  case Other_Letter
-  case Other_Number
-  case Other_Punctuation
-  case Other_Symbol
-  case Ougr
-  case OUpper
-  case Palm
-  case Paragraph_Separator
-  case Pat_Syn
-  case Pat_WS
-  case Pauc
-  case PCM
-  case Perm
-  case Phag
-  case Phli
-  case Phlp
-  case Phnx
-  case Plrd
-  case Private_Use
-  case Prti
-  case Punctuation
-  case Qaac
-  case Qaai
-  case QMark
-  case RI
-  case Rjng
-  case Rohg
-  case Runr
-  case Samr
-  case Sarb
-  case Saur
-  case SD
-  case Separator
-  case Sgnw
-  case Shaw
-  case Shrd
-  case Sidd
-  case Sind
-  case Sinh
-  case Sogd
-  case Sogo
-  case Sora
-  case Soyo
-  case Space_Separator
-  case Spacing_Mark
-  case STerm
-  case Sund
-  case Surrogate
-  case Sylo
-  case Symbol
-  case Syrc
-  case Tagb
-  case Takr
-  case Tale
-  case Talu
-  case Taml
-  case Tang
-  case Tavt
-  case Telu
-  case Term
-  case Tfng
-  case Tglg
-  case Thaa
-  case Tibt
-  case Tirh
-  case Titlecase_Letter
-  case Tnsa
-  case Ugar
-  case UIdeo
-  case Unassigned
-  case Uppercase_Letter
-  case Vaii
-  case Vith
-  case VS
-  case Wara
-  case Wcho
-  case WSpace
-  case XIDC
-  case XIDS
-  case Xpeo
-  case Xsux
-  case Yezi
-  case Yiii
-  case Zanb
-  case Zinh
-  case Zyyy
-  case Zzzz
-  case In_Basic_Latin
-  case In_Latin_1_Supplement
-  case In_Latin_Extended_A
-  case In_Latin_Extended_B
-  case In_IPA_Extensions
-  case In_Spacing_Modifier_Letters
-  case In_Combining_Diacritical_Marks
-  case In_Greek_and_Coptic
-  case In_Cyrillic
-  case In_Cyrillic_Supplement
-  case In_Armenian
-  case In_Hebrew
-  case In_Arabic
-  case In_Syriac
-  case In_Arabic_Supplement
-  case In_Thaana
-  case In_NKo
-  case In_Samaritan
-  case In_Mandaic
-  case In_Syriac_Supplement
-  case In_Arabic_Extended_B
-  case In_Arabic_Extended_A
-  case In_Devanagari
-  case In_Bengali
-  case In_Gurmukhi
-  case In_Gujarati
-  case In_Oriya
-  case In_Tamil
-  case In_Telugu
-  case In_Kannada
-  case In_Malayalam
-  case In_Sinhala
-  case In_Thai
-  case In_Lao
-  case In_Tibetan
-  case In_Myanmar
-  case In_Georgian
-  case In_Hangul_Jamo
-  case In_Ethiopic
-  case In_Ethiopic_Supplement
-  case In_Cherokee
-  case In_Unified_Canadian_Aboriginal_Syllabics
-  case In_Ogham
-  case In_Runic
-  case In_Tagalog
-  case In_Hanunoo
-  case In_Buhid
-  case In_Tagbanwa
-  case In_Khmer
-  case In_Mongolian
-  case In_Unified_Canadian_Aboriginal_Syllabics_Extended
-  case In_Limbu
-  case In_Tai_Le
-  case In_New_Tai_Lue
-  case In_Khmer_Symbols
-  case In_Buginese
-  case In_Tai_Tham
-  case In_Combining_Diacritical_Marks_Extended
-  case In_Balinese
-  case In_Sundanese
-  case In_Batak
-  case In_Lepcha
-  case In_Ol_Chiki
-  case In_Cyrillic_Extended_C
-  case In_Georgian_Extended
-  case In_Sundanese_Supplement
-  case In_Vedic_Extensions
-  case In_Phonetic_Extensions
-  case In_Phonetic_Extensions_Supplement
-  case In_Combining_Diacritical_Marks_Supplement
-  case In_Latin_Extended_Additional
-  case In_Greek_Extended
-  case In_General_Punctuation
-  case In_Superscripts_and_Subscripts
-  case In_Currency_Symbols
-  case In_Combining_Diacritical_Marks_for_Symbols
-  case In_Letterlike_Symbols
-  case In_Number_Forms
-  case In_Arrows
-  case In_Mathematical_Operators
-  case In_Miscellaneous_Technical
-  case In_Control_Pictures
-  case In_Optical_Character_Recognition
-  case In_Enclosed_Alphanumerics
-  case In_Box_Drawing
-  case In_Block_Elements
-  case In_Geometric_Shapes
-  case In_Miscellaneous_Symbols
-  case In_Dingbats
-  case In_Miscellaneous_Mathematical_Symbols_A
-  case In_Supplemental_Arrows_A
-  case In_Braille_Patterns
-  case In_Supplemental_Arrows_B
-  case In_Miscellaneous_Mathematical_Symbols_B
-  case In_Supplemental_Mathematical_Operators
-  case In_Miscellaneous_Symbols_and_Arrows
-  case In_Glagolitic
-  case In_Latin_Extended_C
-  case In_Coptic
-  case In_Georgian_Supplement
-  case In_Tifinagh
-  case In_Ethiopic_Extended
-  case In_Cyrillic_Extended_A
-  case In_Supplemental_Punctuation
-  case In_CJK_Radicals_Supplement
-  case In_Kangxi_Radicals
-  case In_Ideographic_Description_Characters
-  case In_CJK_Symbols_and_Punctuation
-  case In_Hiragana
-  case In_Katakana
-  case In_Bopomofo
-  case In_Hangul_Compatibility_Jamo
-  case In_Kanbun
-  case In_Bopomofo_Extended
-  case In_CJK_Strokes
-  case In_Katakana_Phonetic_Extensions
-  case In_Enclosed_CJK_Letters_and_Months
-  case In_CJK_Compatibility
-  case In_CJK_Unified_Ideographs_Extension_A
-  case In_Yijing_Hexagram_Symbols
-  case In_CJK_Unified_Ideographs
-  case In_Yi_Syllables
-  case In_Yi_Radicals
-  case In_Lisu
-  case In_Vai
-  case In_Cyrillic_Extended_B
-  case In_Bamum
-  case In_Modifier_Tone_Letters
-  case In_Latin_Extended_D
-  case In_Syloti_Nagri
-  case In_Common_Indic_Number_Forms
-  case In_Phags_pa
-  case In_Saurashtra
-  case In_Devanagari_Extended
-  case In_Kayah_Li
-  case In_Rejang
-  case In_Hangul_Jamo_Extended_A
-  case In_Javanese
-  case In_Myanmar_Extended_B
-  case In_Cham
-  case In_Myanmar_Extended_A
-  case In_Tai_Viet
-  case In_Meetei_Mayek_Extensions
-  case In_Ethiopic_Extended_A
-  case In_Latin_Extended_E
-  case In_Cherokee_Supplement
-  case In_Meetei_Mayek
-  case In_Hangul_Syllables
-  case In_Hangul_Jamo_Extended_B
-  case In_High_Surrogates
-  case In_High_Private_Use_Surrogates
-  case In_Low_Surrogates
-  case In_Private_Use_Area
-  case In_CJK_Compatibility_Ideographs
-  case In_Alphabetic_Presentation_Forms
-  case In_Arabic_Presentation_Forms_A
-  case In_Variation_Selectors
-  case In_Vertical_Forms
-  case In_Combining_Half_Marks
-  case In_CJK_Compatibility_Forms
-  case In_Small_Form_Variants
-  case In_Arabic_Presentation_Forms_B
-  case In_Halfwidth_and_Fullwidth_Forms
-  case In_Specials
-  case In_Linear_B_Syllabary
-  case In_Linear_B_Ideograms
-  case In_Aegean_Numbers
-  case In_Ancient_Greek_Numbers
-  case In_Ancient_Symbols
-  case In_Phaistos_Disc
-  case In_Lycian
-  case In_Carian
-  case In_Coptic_Epact_Numbers
-  case In_Old_Italic
-  case In_Gothic
-  case In_Old_Permic
-  case In_Ugaritic
-  case In_Old_Persian
-  case In_Deseret
-  case In_Shavian
-  case In_Osmanya
-  case In_Osage
-  case In_Elbasan
-  case In_Caucasian_Albanian
-  case In_Vithkuqi
-  case In_Linear_A
-  case In_Latin_Extended_F
-  case In_Cypriot_Syllabary
-  case In_Imperial_Aramaic
-  case In_Palmyrene
-  case In_Nabataean
-  case In_Hatran
-  case In_Phoenician
-  case In_Lydian
-  case In_Meroitic_Hieroglyphs
-  case In_Meroitic_Cursive
-  case In_Kharoshthi
-  case In_Old_South_Arabian
-  case In_Old_North_Arabian
-  case In_Manichaean
-  case In_Avestan
-  case In_Inscriptional_Parthian
-  case In_Inscriptional_Pahlavi
-  case In_Psalter_Pahlavi
-  case In_Old_Turkic
-  case In_Old_Hungarian
-  case In_Hanifi_Rohingya
-  case In_Rumi_Numeral_Symbols
-  case In_Yezidi
-  case In_Old_Sogdian
-  case In_Sogdian
-  case In_Old_Uyghur
-  case In_Chorasmian
-  case In_Elymaic
-  case In_Brahmi
-  case In_Kaithi
-  case In_Sora_Sompeng
-  case In_Chakma
-  case In_Mahajani
-  case In_Sharada
-  case In_Sinhala_Archaic_Numbers
-  case In_Khojki
-  case In_Multani
-  case In_Khudawadi
-  case In_Grantha
-  case In_Newa
-  case In_Tirhuta
-  case In_Siddham
-  case In_Modi
-  case In_Mongolian_Supplement
-  case In_Takri
-  case In_Ahom
-  case In_Dogra
-  case In_Warang_Citi
-  case In_Dives_Akuru
-  case In_Nandinagari
-  case In_Zanabazar_Square
-  case In_Soyombo
-  case In_Unified_Canadian_Aboriginal_Syllabics_Extended_A
-  case In_Pau_Cin_Hau
-  case In_Bhaiksuki
-  case In_Marchen
-  case In_Masaram_Gondi
-  case In_Gunjala_Gondi
-  case In_Makasar
-  case In_Lisu_Supplement
-  case In_Tamil_Supplement
-  case In_Cuneiform
-  case In_Cuneiform_Numbers_and_Punctuation
-  case In_Early_Dynastic_Cuneiform
-  case In_Cypro_Minoan
-  case In_Egyptian_Hieroglyphs
-  case In_Egyptian_Hieroglyph_Format_Controls
-  case In_Anatolian_Hieroglyphs
-  case In_Bamum_Supplement
-  case In_Mro
-  case In_Tangsa
-  case In_Bassa_Vah
-  case In_Pahawh_Hmong
-  case In_Medefaidrin
-  case In_Miao
-  case In_Ideographic_Symbols_and_Punctuation
-  case In_Tangut
-  case In_Tangut_Components
-  case In_Khitan_Small_Script
-  case In_Tangut_Supplement
-  case In_Kana_Extended_B
-  case In_Kana_Supplement
-  case In_Kana_Extended_A
-  case In_Small_Kana_Extension
-  case In_Nushu
-  case In_Duployan
-  case In_Shorthand_Format_Controls
-  case In_Znamenny_Musical_Notation
-  case In_Byzantine_Musical_Symbols
-  case In_Musical_Symbols
-  case In_Ancient_Greek_Musical_Notation
-  case In_Mayan_Numerals
-  case In_Tai_Xuan_Jing_Symbols
-  case In_Counting_Rod_Numerals
-  case In_Mathematical_Alphanumeric_Symbols
-  case In_Sutton_SignWriting
-  case In_Latin_Extended_G
-  case In_Glagolitic_Supplement
-  case In_Nyiakeng_Puachue_Hmong
-  case In_Toto
-  case In_Wancho
-  case In_Ethiopic_Extended_B
-  case In_Mende_Kikakui
-  case In_Adlam
-  case In_Indic_Siyaq_Numbers
-  case In_Ottoman_Siyaq_Numbers
-  case In_Arabic_Mathematical_Alphabetic_Symbols
-  case In_Mahjong_Tiles
-  case In_Domino_Tiles
-  case In_Playing_Cards
-  case In_Enclosed_Alphanumeric_Supplement
-  case In_Enclosed_Ideographic_Supplement
-  case In_Miscellaneous_Symbols_and_Pictographs
-  case In_Emoticons
-  case In_Ornamental_Dingbats
-  case In_Transport_and_Map_Symbols
-  case In_Alchemical_Symbols
-  case In_Geometric_Shapes_Extended
-  case In_Supplemental_Arrows_C
-  case In_Supplemental_Symbols_and_Pictographs
-  case In_Chess_Symbols
-  case In_Symbols_and_Pictographs_Extended_A
-  case In_Symbols_for_Legacy_Computing
-  case In_CJK_Unified_Ideographs_Extension_B
-  case In_CJK_Unified_Ideographs_Extension_C
-  case In_CJK_Unified_Ideographs_Extension_D
-  case In_CJK_Unified_Ideographs_Extension_E
-  case In_CJK_Unified_Ideographs_Extension_F
-  case In_CJK_Compatibility_Ideographs_Supplement
-  case In_CJK_Unified_Ideographs_Extension_G
-  case In_Tags
-  case In_Variation_Selectors_Supplement
-  case In_Supplementary_Private_Use_Area_A
-  case In_Supplementary_Private_Use_Area_B
-  case In_No_Block
+// Oniguruma properties that are not covered by the above.
+public enum OnigurumaSpecialProperty: String, Hashable {
+  case inBasicLatin = "In_Basic_Latin"
+  case inLatin1Supplement = "In_Latin_1_Supplement"
+  case inLatinExtendedA = "In_Latin_Extended_A"
+  case inLatinExtendedB = "In_Latin_Extended_B"
+  case inIPAExtensions = "In_IPA_Extensions"
+  case inSpacingModifierLetters = "In_Spacing_Modifier_Letters"
+  case inCombiningDiacriticalMarks = "In_Combining_Diacritical_Marks"
+  case inGreekAndCoptic = "In_Greek_and_Coptic"
+  case inCyrillic = "In_Cyrillic"
+  case inCyrillicSupplement = "In_Cyrillic_Supplement"
+  case inArmenian = "In_Armenian"
+  case inHebrew = "In_Hebrew"
+  case inArabic = "In_Arabic"
+  case inSyriac = "In_Syriac"
+  case inArabicSupplement = "In_Arabic_Supplement"
+  case inThaana = "In_Thaana"
+  case inNKo = "In_NKo"
+  case inSamaritan = "In_Samaritan"
+  case inMandaic = "In_Mandaic"
+  case inSyriacSupplement = "In_Syriac_Supplement"
+  case inArabicExtendedB = "In_Arabic_Extended_B"
+  case inArabicExtendedA = "In_Arabic_Extended_A"
+  case inDevanagari = "In_Devanagari"
+  case inBengali = "In_Bengali"
+  case inGurmukhi = "In_Gurmukhi"
+  case inGujarati = "In_Gujarati"
+  case inOriya = "In_Oriya"
+  case inTamil = "In_Tamil"
+  case inTelugu = "In_Telugu"
+  case inKannada = "In_Kannada"
+  case inMalayalam = "In_Malayalam"
+  case inSinhala = "In_Sinhala"
+  case inThai = "In_Thai"
+  case inLao = "In_Lao"
+  case inTibetan = "In_Tibetan"
+  case inMyanmar = "In_Myanmar"
+  case inGeorgian = "In_Georgian"
+  case inHangulJamo = "In_Hangul_Jamo"
+  case inEthiopic = "In_Ethiopic"
+  case inEthiopicSupplement = "In_Ethiopic_Supplement"
+  case inCherokee = "In_Cherokee"
+  case inUnifiedCanadianAboriginalSyllabics = "In_Unified_Canadian_Aboriginal_Syllabics"
+  case inOgham = "In_Ogham"
+  case inRunic = "In_Runic"
+  case inTagalog = "In_Tagalog"
+  case inHanunoo = "In_Hanunoo"
+  case inBuhid = "In_Buhid"
+  case inTagbanwa = "In_Tagbanwa"
+  case inKhmer = "In_Khmer"
+  case inMongolian = "In_Mongolian"
+  case inUnifiedCanadianAboriginalSyllabicsExtended = "In_Unified_Canadian_Aboriginal_Syllabics_Extended"
+  case inLimbu = "In_Limbu"
+  case inTaiLe = "In_Tai_Le"
+  case inNewTaiLue = "In_New_Tai_Lue"
+  case inKhmerSymbols = "In_Khmer_Symbols"
+  case inBuginese = "In_Buginese"
+  case inTaiTham = "In_Tai_Tham"
+  case inCombiningDiacriticalMarksExtended = "In_Combining_Diacritical_Marks_Extended"
+  case inBalinese = "In_Balinese"
+  case inSundanese = "In_Sundanese"
+  case inBatak = "In_Batak"
+  case inLepcha = "In_Lepcha"
+  case inOlChiki = "In_Ol_Chiki"
+  case inCyrillicExtendedC = "In_Cyrillic_Extended_C"
+  case inGeorgianExtended = "In_Georgian_Extended"
+  case inSundaneseSupplement = "In_Sundanese_Supplement"
+  case inVedicExtensions = "In_Vedic_Extensions"
+  case inPhoneticExtensions = "In_Phonetic_Extensions"
+  case inPhoneticExtensions_Supplement = "In_Phonetic_Extensions_Supplement"
+  case inCombiningDiacriticalMarksSupplement = "In_Combining_Diacritical_Marks_Supplement"
+  case inLatinExtendedAdditional = "In_Latin_Extended_Additional"
+  case inGreekExtended = "In_Greek_Extended"
+  case inGeneralPunctuation = "In_General_Punctuation"
+  case inSuperscriptsandSubscripts = "In_Superscripts_and_Subscripts"
+  case inCurrencySymbols = "In_Currency_Symbols"
+  case inCombiningDiacriticalMarksforSymbols = "In_Combining_Diacritical_Marks_for_Symbols"
+  case inLetterlikeSymbols = "In_Letterlike_Symbols"
+  case inNumberForms = "In_Number_Forms"
+  case inArrows = "In_Arrows"
+  case inMathematicalOperators = "In_Mathematical_Operators"
+  case inMiscellaneousTechnical = "In_Miscellaneous_Technical"
+  case inControlPictures = "In_Control_Pictures"
+  case inOpticalCharacterRecognition = "In_Optical_Character_Recognition"
+  case inEnclosedAlphanumerics = "In_Enclosed_Alphanumerics"
+  case inBoxDrawing = "In_Box_Drawing"
+  case inBlockElements = "In_Block_Elements"
+  case inGeometricShapes = "In_Geometric_Shapes"
+  case inMiscellaneousSymbols = "In_Miscellaneous_Symbols"
+  case inDingbats = "In_Dingbats"
+  case inMiscellaneousMathematicalSymbolsA = "In_Miscellaneous_Mathematical_Symbols_A"
+  case inSupplementalArrowsA = "In_Supplemental_Arrows_A"
+  case inBraillePatterns = "In_Braille_Patterns"
+  case inSupplementalArrowsB = "In_Supplemental_Arrows_B"
+  case inMiscellaneousMathematicalSymbolsB = "In_Miscellaneous_Mathematical_Symbols_B"
+  case inSupplementalMathematicalOperators = "In_Supplemental_Mathematical_Operators"
+  case inMiscellaneousSymbolsAndArrows = "In_Miscellaneous_Symbols_and_Arrows"
+  case inGlagolitic = "In_Glagolitic"
+  case inLatinExtendedC = "In_Latin_Extended_C"
+  case inCoptic = "In_Coptic"
+  case inGeorgianSupplement = "In_Georgian_Supplement"
+  case inTifinagh = "In_Tifinagh"
+  case inEthiopicExtended = "In_Ethiopic_Extended"
+  case inCyrillicExtendedA = "In_Cyrillic_Extended_A"
+  case inSupplementalPunctuation = "In_Supplemental_Punctuation"
+  case inCJKRadicalsSupplement = "In_CJK_Radicals_Supplement"
+  case inKangxiRadicals = "In_Kangxi_Radicals"
+  case inIdeographicDescriptionCharacters = "In_Ideographic_Description_Characters"
+  case inCJKSymbolsAndPunctuation = "In_CJK_Symbols_and_Punctuation"
+  case inHiragana = "In_Hiragana"
+  case inKatakana = "In_Katakana"
+  case inBopomofo = "In_Bopomofo"
+  case inHangulCompatibilityJamo = "In_Hangul_Compatibility_Jamo"
+  case inKanbun = "In_Kanbun"
+  case inBopomofoExtended = "In_Bopomofo_Extended"
+  case inCJKStrokes = "In_CJK_Strokes"
+  case inKatakanaPhoneticExtensions = "In_Katakana_Phonetic_Extensions"
+  case inEnclosedCJKLettersAndMonths = "In_Enclosed_CJK_Letters_and_Months"
+  case inCJKCompatibility = "In_CJK_Compatibility"
+  case inCJKUnifiedIdeographsExtensionA = "In_CJK_Unified_Ideographs_Extension_A"
+  case inYijingHexagramSymbols = "In_Yijing_Hexagram_Symbols"
+  case inCJKUnifiedIdeographs = "In_CJK_Unified_Ideographs"
+  case inYiSyllables = "In_Yi_Syllables"
+  case inYiRadicals = "In_Yi_Radicals"
+  case inLisu = "In_Lisu"
+  case inVai = "In_Vai"
+  case inCyrillicExtendedB = "In_Cyrillic_Extended_B"
+  case inBamum = "In_Bamum"
+  case inModifierToneLetters = "In_Modifier_Tone_Letters"
+  case inLatinExtendedD = "In_Latin_Extended_D"
+  case inSylotiNagri = "In_Syloti_Nagri"
+  case inCommonIndicNumberForms = "In_Common_Indic_Number_Forms"
+  case inPhagsPA = "In_Phags_pa"
+  case inSaurashtra = "In_Saurashtra"
+  case inDevanagariExtended = "In_Devanagari_Extended"
+  case inKayahLi = "In_Kayah_Li"
+  case inRejang = "In_Rejang"
+  case inHangulJamoExtendedA = "In_Hangul_Jamo_Extended_A"
+  case inJavanese = "In_Javanese"
+  case inMyanmarExtendedB = "In_Myanmar_Extended_B"
+  case inCham = "In_Cham"
+  case inMyanmarExtendedA = "In_Myanmar_Extended_A"
+  case inTaiViet = "In_Tai_Viet"
+  case inMeeteiMayekExtensions = "In_Meetei_Mayek_Extensions"
+  case inEthiopicExtendedA = "In_Ethiopic_Extended_A"
+  case inLatinExtendedE = "In_Latin_Extended_E"
+  case inCherokeeSupplement = "In_Cherokee_Supplement"
+  case inMeeteiMayek = "In_Meetei_Mayek"
+  case inHangulSyllables = "In_Hangul_Syllables"
+  case inHangulJamoExtendedB = "In_Hangul_Jamo_Extended_B"
+  case inHighSurrogates = "In_High_Surrogates"
+  case inHighPrivateUseSurrogates = "In_High_Private_Use_Surrogates"
+  case inLowSurrogates = "In_Low_Surrogates"
+  case inPrivateUseArea = "In_Private_Use_Area"
+  case inCJKCompatibilityIdeographs = "In_CJK_Compatibility_Ideographs"
+  case inAlphabeticPresentationForms = "In_Alphabetic_Presentation_Forms"
+  case inArabicPresentationFormsA = "In_Arabic_Presentation_Forms_A"
+  case inVariationSelectors = "In_Variation_Selectors"
+  case inVerticalForms = "In_Vertical_Forms"
+  case inCombiningHalfMarks = "In_Combining_Half_Marks"
+  case inCJKCompatibilityForms = "In_CJK_Compatibility_Forms"
+  case inSmallFormVariants = "In_Small_Form_Variants"
+  case inArabicPresentationFormsB = "In_Arabic_Presentation_Forms_B"
+  case inHalfwidthAndFullwidthForms = "In_Halfwidth_and_Fullwidth_Forms"
+  case inSpecials = "In_Specials"
+  case inLinearBSyllabary = "In_Linear_B_Syllabary"
+  case inLinearBIdeograms = "In_Linear_B_Ideograms"
+  case inAegeanNumbers = "In_Aegean_Numbers"
+  case inAncientGreekNumbers = "In_Ancient_Greek_Numbers"
+  case inAncientSymbols = "In_Ancient_Symbols"
+  case inPhaistosDisc = "In_Phaistos_Disc"
+  case inLycian = "In_Lycian"
+  case inCarian = "In_Carian"
+  case inCopticEpactNumbers = "In_Coptic_Epact_Numbers"
+  case inOldItalic = "In_Old_Italic"
+  case inGothic = "In_Gothic"
+  case inOldPermic = "In_Old_Permic"
+  case inUgaritic = "In_Ugaritic"
+  case inOldPersian = "In_Old_Persian"
+  case inDeseret = "In_Deseret"
+  case inShavian = "In_Shavian"
+  case inOsmanya = "In_Osmanya"
+  case inOsage = "In_Osage"
+  case inElbasan = "In_Elbasan"
+  case inCaucasianAlbanian = "In_Caucasian_Albanian"
+  case inVithkuqi = "In_Vithkuqi"
+  case inLinearA = "In_Linear_A"
+  case inLatinExtendedF = "In_Latin_Extended_F"
+  case inCypriotSyllabary = "In_Cypriot_Syllabary"
+  case inImperialAramaic = "In_Imperial_Aramaic"
+  case inPalmyrene = "In_Palmyrene"
+  case inNabataean = "In_Nabataean"
+  case inHatran = "In_Hatran"
+  case inPhoenician = "In_Phoenician"
+  case inLydian = "In_Lydian"
+  case inMeroiticHieroglyphs = "In_Meroitic_Hieroglyphs"
+  case inMeroiticCursive = "In_Meroitic_Cursive"
+  case inKharoshthi = "In_Kharoshthi"
+  case inOldSouthArabian = "In_Old_South_Arabian"
+  case inOldNorthArabian = "In_Old_North_Arabian"
+  case inManichaean = "In_Manichaean"
+  case inAvestan = "In_Avestan"
+  case inInscriptionalParthian = "In_Inscriptional_Parthian"
+  case inInscriptionalPahlavi = "In_Inscriptional_Pahlavi"
+  case inPsalterPahlavi = "In_Psalter_Pahlavi"
+  case inOldTurkic = "In_Old_Turkic"
+  case inOldHungarian = "In_Old_Hungarian"
+  case inHanifiRohingya = "In_Hanifi_Rohingya"
+  case inRumiNumeralSymbols = "In_Rumi_Numeral_Symbols"
+  case inYezidi = "In_Yezidi"
+  case inOldSogdian = "In_Old_Sogdian"
+  case inSogdian = "In_Sogdian"
+  case inOldUyghur = "In_Old_Uyghur"
+  case inChorasmian = "In_Chorasmian"
+  case inElymaic = "In_Elymaic"
+  case inBrahmi = "In_Brahmi"
+  case inKaithi = "In_Kaithi"
+  case inSoraSompeng = "In_Sora_Sompeng"
+  case inChakma = "In_Chakma"
+  case inMahajani = "In_Mahajani"
+  case inSharada = "In_Sharada"
+  case inSinhalaArchaicNumbers = "In_Sinhala_Archaic_Numbers"
+  case inKhojki = "In_Khojki"
+  case inMultani = "In_Multani"
+  case inKhudawadi = "In_Khudawadi"
+  case inGrantha = "In_Grantha"
+  case inNewa = "In_Newa"
+  case inTirhuta = "In_Tirhuta"
+  case inSiddham = "In_Siddham"
+  case inModi = "In_Modi"
+  case inMongolianSupplement = "In_Mongolian_Supplement"
+  case inTakri = "In_Takri"
+  case inAhom = "In_Ahom"
+  case inDogra = "In_Dogra"
+  case inWarangCiti = "In_Warang_Citi"
+  case inDivesAkuru = "In_Dives_Akuru"
+  case inNandinagari = "In_Nandinagari"
+  case inZanabazarSquare = "In_Zanabazar_Square"
+  case inSoyombo = "In_Soyombo"
+  case inUnifiedCanadianAboriginalSyllabicsExtendedA = "In_Unified_Canadian_Aboriginal_Syllabics_Extended_A"
+  case inPauCinHau = "In_Pau_Cin_Hau"
+  case inBhaiksuki = "In_Bhaiksuki"
+  case inMarchen = "In_Marchen"
+  case inMasaramGondi = "In_Masaram_Gondi"
+  case inGunjalaGondi = "In_Gunjala_Gondi"
+  case inMakasar = "In_Makasar"
+  case inLisuSupplement = "In_Lisu_Supplement"
+  case inTamilSupplement = "In_Tamil_Supplement"
+  case inCuneiform = "In_Cuneiform"
+  case inCuneiformNumbersandPunctuation = "In_Cuneiform_Numbers_and_Punctuation"
+  case inEarlyDynasticCuneiform = "In_Early_Dynastic_Cuneiform"
+  case inCyproMinoan = "In_Cypro_Minoan"
+  case inEgyptianHieroglyphs = "In_Egyptian_Hieroglyphs"
+  case inEgyptianHieroglyphFormatControls = "In_Egyptian_Hieroglyph_Format_Controls"
+  case inAnatolianHieroglyphs = "In_Anatolian_Hieroglyphs"
+  case inBamumSupplement = "In_Bamum_Supplement"
+  case inMro = "In_Mro"
+  case inTangsa = "In_Tangsa"
+  case inBassaVah = "In_Bassa_Vah"
+  case inPahawhHmong = "In_Pahawh_Hmong"
+  case inMedefaidrin = "In_Medefaidrin"
+  case inMiao = "In_Miao"
+  case inIdeographicSymbolsAndPunctuation = "In_Ideographic_Symbols_and_Punctuation"
+  case inTangut = "In_Tangut"
+  case inTangutComponents = "In_Tangut_Components"
+  case inKhitanSmallScript = "In_Khitan_Small_Script"
+  case inTangutSupplement = "In_Tangut_Supplement"
+  case inKanaExtendedB = "In_Kana_Extended_B"
+  case inKanaSupplement = "In_Kana_Supplement"
+  case inKanaExtendedA = "In_Kana_Extended_A"
+  case inSmallKanaExtension = "In_Small_Kana_Extension"
+  case inNushu = "In_Nushu"
+  case inDuployan = "In_Duployan"
+  case inShorthandFormatControls = "In_Shorthand_Format_Controls"
+  case inZnamennyMusicalNotation = "In_Znamenny_Musical_Notation"
+  case inByzantineMusicalSymbols = "In_Byzantine_Musical_Symbols"
+  case inMusicalSymbols = "In_Musical_Symbols"
+  case inAncientGreekMusicalNotation = "In_Ancient_Greek_Musical_Notation"
+  case inMayanNumerals = "In_Mayan_Numerals"
+  case inTaiXuanJingSymbols = "In_Tai_Xuan_Jing_Symbols"
+  case inCountingRodNumerals = "In_Counting_Rod_Numerals"
+  case inMathematicalAlphanumericSymbols = "In_Mathematical_Alphanumeric_Symbols"
+  case inSuttonSignWriting = "In_Sutton_SignWriting"
+  case inLatinExtendedG = "In_Latin_Extended_G"
+  case inGlagoliticSupplement = "In_Glagolitic_Supplement"
+  case inNyiakengPuachueHmong = "In_Nyiakeng_Puachue_Hmong"
+  case inToto = "In_Toto"
+  case inWancho = "In_Wancho"
+  case inEthiopicExtendedB = "In_Ethiopic_Extended_B"
+  case inMendeKikakui = "In_Mende_Kikakui"
+  case inAdlam = "In_Adlam"
+  case inIndicSiyaqNumbers = "In_Indic_Siyaq_Numbers"
+  case inOttomanSiyaqNumbers = "In_Ottoman_Siyaq_Numbers"
+  case inArabicMathematicalAlphabeticSymbols = "In_Arabic_Mathematical_Alphabetic_Symbols"
+  case inMahjongTiles = "In_Mahjong_Tiles"
+  case inDominoTiles = "In_Domino_Tiles"
+  case inPlayingCards = "In_Playing_Cards"
+  case inEnclosedAlphanumericSupplement = "In_Enclosed_Alphanumeric_Supplement"
+  case inEnclosedIdeographicSupplement = "In_Enclosed_Ideographic_Supplement"
+  case inMiscellaneousSymbolsandPictographs = "In_Miscellaneous_Symbols_and_Pictographs"
+  case inEmoticons = "In_Emoticons"
+  case inOrnamentalDingbats = "In_Ornamental_Dingbats"
+  case inTransportandMapSymbols = "In_Transport_and_Map_Symbols"
+  case inAlchemicalSymbols = "In_Alchemical_Symbols"
+  case inGeometricShapesExtended = "In_Geometric_Shapes_Extended"
+  case inSupplementalArrowsC = "In_Supplemental_Arrows_C"
+  case inSupplementalSymbolsAndPictographs = "In_Supplemental_Symbols_and_Pictographs"
+  case inChessSymbols = "In_Chess_Symbols"
+  case inSymbolsAndPictographsExtendedA = "In_Symbols_and_Pictographs_Extended_A"
+  case inSymbolsForLegacyComputing = "In_Symbols_for_Legacy_Computing"
+  case inCJKUnifiedIdeographsExtensionB = "In_CJK_Unified_Ideographs_Extension_B"
+  case inCJKUnifiedIdeographsExtensionC = "In_CJK_Unified_Ideographs_Extension_C"
+  case inCJKUnifiedIdeographsExtensionD = "In_CJK_Unified_Ideographs_Extension_D"
+  case inCJKUnifiedIdeographsExtensionE = "In_CJK_Unified_Ideographs_Extension_E"
+  case inCJKUnifiedIdeographsExtensionF = "In_CJK_Unified_Ideographs_Extension_F"
+  case inCJKCompatibilityIdeographsSupplement = "In_CJK_Compatibility_Ideographs_Supplement"
+  case inCJKUnifiedIdeographsExtensionG = "In_CJK_Unified_Ideographs_Extension_G"
+  case inTags = "In_Tags"
+  case inVariationSelectorsSupplement = "In_Variation_Selectors_Supplement"
+  case inSupplementaryPrivateUseAreaA = "In_Supplementary_Private_Use_Area_A"
+  case inSupplementaryPrivateUseAreaB = "In_Supplementary_Private_Use_Area_B"
+  case inNoBlock = "In_No_Block"
 }

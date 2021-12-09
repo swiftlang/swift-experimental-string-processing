@@ -119,7 +119,7 @@ public struct CharacterClass: Hashable {
 
   /// Returns the inverse character class.
   public var inverted: Self {
-    return withInversion(!isInverted)
+    return withInversion(true)
   }
   
   /// Returns the end of the match of this character class in `str`, if
@@ -326,7 +326,7 @@ extension Atom {
     switch self {
     case let .escaped(b): return b.characterClass
 
-    case .named: fatalError("TODO")
+    case .namedSet: fatalError("TODO")
 
     case .any: return .any
 
