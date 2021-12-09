@@ -492,7 +492,7 @@ extension Source {
       // TODO: Can we try and recover and diagnose for named sets outside
       // character classes?
       if customCC, let set = try src.lexPOSIXNamedSet()?.value {
-        return .named(set)
+        return .namedSet(set)
       }
 
       let char = src.eat()

@@ -326,7 +326,7 @@ extension Atom {
     switch self {
     case let .escaped(b): return b.characterClass
 
-    case .named: fatalError("TODO")
+    case .namedSet: fatalError("TODO")
 
     case .any: return .any
 
