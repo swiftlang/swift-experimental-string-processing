@@ -11,8 +11,8 @@ let package = Package(
             name: "_StringProcessing",
             targets: ["_StringProcessing"]),
         .library(
-            name: "PEG",
-            targets: ["PEG"]),
+            name: "Prototypes",
+            targets: ["Prototypes"]),
         .library(
             name: "_MatchingEngine",
             targets: ["_MatchingEngine"]),
@@ -45,20 +45,17 @@ let package = Package(
             name: "RegexDSLTests",
             dependencies: ["_StringProcessing"]),
         .target(
-            name: "PEG",
+            name: "Prototypes",
             dependencies: ["_MatchingEngine"]),
         .testTarget(
             name: "PEGTests",
-            dependencies: ["PEG"]),
-        .target(
-            name: "PTCaRet",
-            dependencies: ["_MatchingEngine"]),
+            dependencies: ["Prototypes"]),
         .testTarget(
             name: "PTCaRetTests",
-            dependencies: ["PTCaRet"]),
+            dependencies: ["Prototypes"]),
         .target(
             name: "Algorithms",
-            dependencies: ["_StringProcessing", "PEG"]),
+            dependencies: ["_StringProcessing", "Prototypes"]),
         .testTarget(
             name: "AlgorithmsTests",
             dependencies: ["Algorithms"]),
@@ -73,12 +70,10 @@ let package = Package(
         // MARK: Exercises
         .target(
           name: "Exercises",
-          dependencies: ["_MatchingEngine", "PEG", "PTCaRet", "_StringProcessing"]),
+          dependencies: ["_MatchingEngine", "Prototypes", "_StringProcessing"]),
         .testTarget(
           name: "ExercisesTests",
           dependencies: ["Exercises"]),
-
-
     ]
 )
 

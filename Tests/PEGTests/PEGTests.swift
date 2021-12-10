@@ -1,5 +1,5 @@
 import XCTest
-@testable import PEG
+@testable import Prototypes
 import _MatchingEngine
 
 // Make examples more sane. Need builder
