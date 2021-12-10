@@ -1,67 +1,62 @@
-///// An AST value tracks source info from where it originated from.
-/////
-///// Note: source ranges participate in equality/hashing, so that two instances
-///// of the same e.g. literal `Character` in the input are distinct when stored in
-///// a set or dictionary.
-/////
-///// To get a location-invariant notion of equality/hashing, use `.value` directly.
-/////
-///// TODO: print/dump/anything else?
-//public protocol ASTValue: Hashable {
-//  associatedtype Value: Hashable
-//
-//  var value: Value { get }
-//  var sourceRange: SourceRange? { get }
-//
-//  init(_ value: Value, _ sourceRange: SourceRange?)
-//}
-//// TODO: Or is Source.Value above better?
-//
-//
-//// Source range doesn't participate in equality / hashing
-////
-//// FIXME: But should it? If we see same value twice, shouldn't that
-//// be two separate values inside a `Set`?
-////
-//// We could go either way. For the purposes of a testing harness,
-//// we want location-invariant equality checks. For the purposes
-//// of data structures, they're different values (identity from
-//// location). For the former we can have a "stripping source loc".
-//extension ASTValue {
-//  // For now, omit source ranges...
-//  public func hash(into hasher: inout Hasher) {
-//    value.hash(into: &hasher)
-//  }
-//  // For now, omit source ranges...
-//  static func == (lhs: Self, rhs: Self) -> Bool {
-//    lhs.value == rhs.value
-//  }
-//}
-//
-///// TODO: Describe
-/////
-///// Tracks source location information
-//public protocol ASTEntity: Hashable {
-//  var sourceRange: SourceRange? { get }
-//}
-//
-//public protocol ASTParentEntity: Hashable, _ASTPrintableNested {
-//  // TODO: variadic access to children?
-//}
+// MARK: - Printing
 
-// MARK: - Source range tracking
+/// AST entities can be pretty-printed or dumped
+///
+/// Alternative: just use `description` for pretty-print
+/// and `debugDescription` for dump
+public protocol _ASTPrintable:
+  CustomStringConvertible,
+  CustomDebugStringConvertible
+{
+  // The "base" dump out for AST nodes, like `alternation`.
+  // Children printing, parens, etc., handled automatically
+  var _dumpBase: String { get }
 
-// TODO: anything interesting here? E.g.:
-// protocol _ASTNode { sourceRange: SourceRange }
-
-// MARK: - AST parenting
-
-// Useful for relatively opaque recursive traversals
-
-// Can't pull in `Hashable` because `Self` requirement
-protocol _ASTNode: _ASTPrintable {
 }
-extension _ASTNode {
+extension _ASTPrintable {
+  public var description: String { _print() }
+  public var debugDescription: String { _dump() }
+
+  var _children: [AST]? {
+    (self as? _ASTParent)?.children
+  }
+
+  // TODO: Semi-pretty printing
+  var _printBase: String { _dumpBase }
+
+  func _print() -> String {
+    guard let children = _children else {
+      return _printBase
+    }
+    let sub = children.lazy.map {
+      $0._print()
+    }.joined(separator: ",")
+    return "\(_printBase)(\(sub))"
+  }
+  func _dump() -> String {
+    guard let children = _children else {
+      return _dumpBase
+    }
+    let sub = children.lazy.map {
+      $0._dump()
+    }.joined(separator: ",")
+    return "\(_dumpBase)(\(sub))"
+  }
+}
+
+extension AST: _ASTPrintable {
+  public var _printBase: String {
+    _associatedValue._printBase
+  }
+  public var _dumpBase: String {
+    _associatedValue._dumpBase
+  }
+}
+
+// MARK: - AST parent/child
+
+protocol _ASTNode: _ASTPrintable {
+  var sourceRange: SourceRange { get }
 }
 
 protocol _ASTParent: _ASTNode {

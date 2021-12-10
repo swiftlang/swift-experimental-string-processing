@@ -287,7 +287,8 @@ extension CharacterClass {
       ]
       let ccc = CustomCharacterClass(
         inv ? .inverted : .normal,
-        members)
+        members,
+        _fakeRange)
 
       return .customCharacterClass(ccc)
 

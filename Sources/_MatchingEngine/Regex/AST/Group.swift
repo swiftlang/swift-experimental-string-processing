@@ -3,7 +3,7 @@ extension AST {
     public let kind: Loc<Kind>
     public let child: AST
 
-    public let sourceRange: SourceRange? // TODO: drop nil
+    public let sourceRange: SourceRange
 
     public init(
       _ kind: Loc<Kind>, _ child: AST, _ r: SourceRange

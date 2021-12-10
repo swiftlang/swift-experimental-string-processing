@@ -73,7 +73,7 @@ extension Parser {
   ///     Alternation  -> Concatenation ('|' Concatenation)*
   ///
   mutating func parse() throws -> AST {
-    if source.isEmpty { return .empty }
+    if source.isEmpty { return .empty(.init(_fakeRange)) }
 
     var result = Array<AST>(singleElement: try parseConcatenation())
     while source.tryEat("|") {
@@ -206,7 +206,7 @@ extension Parser {
       // If we're done, bail early
       let setOp = Member.setOperation(members, binOp, rhs)
       if source.tryEat("]") {
-        return CustomCharacterClass(start, [setOp])
+        return CustomCharacterClass(start, [setOp], _fakeRange)
       }
 
       // Otherwise it's just another member to accumulate
@@ -216,7 +216,7 @@ extension Parser {
       throw ParseError.expectedCustomCharacterClassMembers
     }
     try source.expect("]")
-    return CustomCharacterClass(start, members)
+    return CustomCharacterClass(start, members, _fakeRange)
   }
 
   mutating func parseCCCMembers(

@@ -142,7 +142,7 @@ public func charClass(
   inverted: Bool = false
 ) -> AST {
   let cc = CustomCharacterClass(
-    inverted ? .inverted : .normal, members
+    inverted ? .inverted : .normal, members, _fakeRange
   )
   return .customCharacterClass(cc)
 }
@@ -151,7 +151,7 @@ public func charClass(
   inverted: Bool = false
 ) -> CustomCharacterClass.Member {
   let cc = CustomCharacterClass(
-    inverted ? .inverted : .normal, members
+    inverted ? .inverted : .normal, members, _fakeRange
   )
   return .custom(cc)
 }

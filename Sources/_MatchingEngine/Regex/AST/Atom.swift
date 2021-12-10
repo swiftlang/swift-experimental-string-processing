@@ -459,3 +459,11 @@ extension Atom {
     var set: Unicode.POSIXCharacterSet
   }
 }
+
+extension Atom {
+  var sourceRange: SourceRange {
+    // TODO: Does this mean we need to make Atom a struct?
+    _fakeRange
+  }
+}
+

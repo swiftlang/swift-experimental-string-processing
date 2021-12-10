@@ -26,7 +26,7 @@ public indirect enum AST:
 
   case customCharacterClass(CustomCharacterClass)
 
-  case empty
+  case empty(Empty)
 
 
   // FIXME: Move off the regex literal AST
@@ -43,9 +43,8 @@ private struct ASTStorage {
 
 extension AST {
   // :-(
-  var _associatedValue: _ASTNode? {
+  var _associatedValue: _ASTNode {
     switch self {
-    case .empty: return nil
     case let .alternation(v):          return v
     case let .concatenation(v):        return v
     case let .group(v):                return v
@@ -54,6 +53,7 @@ extension AST {
     case let .trivia(v):               return v
     case let .atom(v):                 return v
     case let .customCharacterClass(v): return v
+    case let .empty(v):                return v
 
     case let .groupTransform(g, _):
       return g // FIXME: get this out of here
@@ -62,8 +62,11 @@ extension AST {
 
   /// If this node is a parent node, access its children
   public var children: [AST]? {
-    guard let av = _associatedValue else { return nil }
-    return (av as? _ASTParent)?.children
+    return (_associatedValue as? _ASTParent)?.children
+  }
+
+  public var sourceRange: SourceRange {
+    _associatedValue.sourceRange
   }
 
   /// Whether this node is "trivia" or non-semantic, like comments
@@ -136,6 +139,16 @@ extension AST {
       // TODO: comments, non-semantic whitespace, etc.
       ""
     }
+  }
+
+  public struct Empty: Hashable, _ASTNode {
+    public let sourceRange: SourceRange
+
+    public init(_ sourceRange: SourceRange) {
+      self.sourceRange = sourceRange
+    }
+
+    public var _dumpBase: String { "" }
   }
 }
 

@@ -4,7 +4,7 @@ extension AST {
     public let kind: Loc<Kind>
 
     public let child: AST
-    public let sourceRange: SourceRange?
+    public let sourceRange: SourceRange
 
     public init(
       _ amount: Loc<Amount>,
@@ -89,24 +89,3 @@ extension AST.Quantification: _ASTPrintable {
     """
   }
 }
-
-//// MARK: - AST constructors
-//
-//extension AST {
-//  public static func zeroOrMore(
-//    _ kind: Quantifier.Kind, _ a: AST, _ r: SourceRange? = nil
-//  ) -> AST {
-//    .quantification(.zeroOrMore(kind, r), a)
-//  }
-//  public static func oneOrMore(
-//    _ kind: Quantifier.Kind, _ a: AST, _ r: SourceRange? = nil
-//  ) -> AST {
-//    .quantification(.oneOrMore(kind, r), a)
-//  }
-//  public static func zeroOrOne(
-//    _ kind: Quantifier.Kind, _ a: AST, _ r: SourceRange? = nil
-//  ) -> AST {
-//    .quantification(.zeroOrOne(kind, r), a)
-//  }
-//}
-

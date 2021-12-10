@@ -208,8 +208,8 @@ extension RegexTests {
       #"a{,2}"#,
       upToN(.greedy, 2, "a"))
     parseTest(
-      #"a{1,}"#,
-      nOrMore(.greedy, 1, "a"))
+      #"a{2,}"#,
+      nOrMore(.greedy, 2, "a"))
     parseTest(
       #"a{1}"#,
       exactly(.greedy, 1, "a"))

@@ -4,9 +4,17 @@ public struct CustomCharacterClass: Hashable {
   public var start: Start
   public var members: [Member]
 
-  public init(_ start: Start, _ members: [Member]) {
+  public let sourceRange: SourceRange
+
+
+  public init(
+    _ start: Start,
+    _ members: [Member],
+    _ sr: SourceRange
+  ) {
     self.start = start
     self.members = members
+    self.sourceRange = sr
   }
 
   public enum Member: Hashable {

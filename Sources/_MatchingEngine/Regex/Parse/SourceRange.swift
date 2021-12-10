@@ -98,3 +98,10 @@ extension Source.Value: Comparable where T: Comparable {
     lhs.value < rhs.value
   }
 }
+
+extension SourceRange {
+  /// Temporary: see if this is a faked range
+  ///
+  /// Currently, the empty range at the start of any string is the "fake" range
+  public var isFake: Bool { self == _fakeRange }
+}
