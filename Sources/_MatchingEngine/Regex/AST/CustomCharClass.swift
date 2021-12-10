@@ -39,3 +39,10 @@ public struct CustomCharacterClass: Hashable {
 extension CustomCharacterClass {
   public var isInverted: Bool { start == .inverted }
 }
+
+extension CustomCharacterClass: _ASTNode {
+  public var _dumpBase: String {
+    // FIXME: print out members...
+    "customCharacterClass"
+  }
+}

@@ -79,7 +79,10 @@ extension Parser {
     while source.tryEat("|") {
       result.append(try parseConcatenation())
     }
-    return result.count == 1 ? result[0] : .alternation(result)
+    if result.count == 1 {
+      return result[0]
+    }
+    return .alternation(.init(result, _fakeRange))
   }
 
   /// Parse a term, potentially separated from others by `|`
@@ -98,24 +101,25 @@ extension Parser {
       //     Trivia -> `lexComment` | `lexNonSemanticWhitespace`
       if let _ = try source.lexComment() {
         // TODO: remember comments
-        result.append(.trivia)
+        result.append(.trivia(.init(_fakeRange)))
         continue
       }
       if let _ = try source.lexNonSemanticWhitespace() {
         // TODO: Remember source range
-        result.append(.trivia)
+        result.append(.trivia(.init(_fakeRange)))
         continue
       }
 
       //     Quote      -> `lexQuote`
       if let quote = try source.lexQuote() {
-        result.append(.quote(quote.value))
+        result.append(.quote(.init(quote.value, _fakeRange)))
         continue
       }
       //     Quantification  -> QuantOperand Quantifier?
       if let operand = try parseQuantifierOperand() {
-        if let q = try source.lexQuantifier()?.value {
-          result.append(.quantification(q, operand))
+        if let (amt, kind) = try source.lexQuantifier() {
+           result.append(.quantification(.init(
+            amt, kind, operand, _fakeRange)))
         } else {
           result.append(operand)
         }
@@ -130,7 +134,10 @@ extension Parser {
       // TODO: still the case?
       throw ParseError.unexpectedEndOfInput
     }
-    return result.count == 1 ? result[0] : .concatenation(result)
+    if result.count == 1 {
+      return result[0]
+    }
+    return .concatenation(.init(result, _fakeRange))
   }
 
   /// Parse a (potentially quantified) component
@@ -141,9 +148,11 @@ extension Parser {
   mutating func parseQuantifierOperand() throws -> AST? {
     assert(!source.isEmpty)
 
-    if let groupStart = try source.lexGroupStart()?.value {
-      let ast = AST.group(
-        Group(groupStart, _fakeRange), try parse())
+    if let kind = try source.lexGroupStart() {
+      // TODO: more source locations
+      let child = try parse()
+
+      let ast = AST.group(.init(kind, child, _fakeRange))
       try source.expect(")")
       return ast
     }

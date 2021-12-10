@@ -9,55 +9,49 @@ public protocol _ASTPrintable:
   CustomStringConvertible,
   CustomDebugStringConvertible
 {
-  func _print() -> String
-  func _dump() -> String
+  // The "base" dump out for AST nodes, like `alternation`.
+  // Children printing, parens, etc., handled automatically
+  var _dumpBase: String { get }
+
 }
 extension _ASTPrintable {
   public var description: String { _print() }
   public var debugDescription: String { _dump() }
-}
 
-public protocol _ASTPrintableNested: _ASTPrintable {
-  func _printNested(_ child: String) -> String
-  func _dumpNested(_ child: String) -> String
-}
-extension _ASTPrintableNested {
-  public func _print() -> String { _printNested("") }
-  public func _dump() -> String { _dumpNested("") }
-}
-
-// MARK: - AST's conformance
-
-extension AST {
-  public func _print() -> String {
-    // TODO: printable version?
-    _dump()
+  var _children: [AST]? {
+    (self as? _ASTParent)?.children
   }
 
-  public func _dump() -> String {
-    switch self {
-    case let .alternation(rest): return ".alt(\(rest))"
-    case let .concatenation(rest): return ".concat(\(rest))"
-    case let .group(g, rest):
-      return g._dumpNested(rest._dump())
-    case let .groupTransform(g, rest, transform):
-      return g._dumpNested("""
-        \(rest._dump()), transform: \(
-          String(describing: transform)))
-        """)
-    case let .quantification(q, rest):
-      return q._dumpNested(rest._dump())
+  // TODO: Semi-pretty printing
+  var _printBase: String { _dumpBase }
 
-    case .atom(.char(let c)):    return c.halfWidthCornerQuoted
-    case .atom(.scalar(let u)):  return u.halfWidthCornerQuoted
-    case .any: return ".any"
-//    case .empty: return "".halfWidthCornerQuoted
-    case .quote(let s): return s.halfWidthCornerQuoted
-
-    case .atom(let a): return a._dump()
-
-    case .trivia, .empty: return ""
-    case .customCharacterClass: fatalError("FIXME")
+  func _print() -> String {
+    guard let children = _children else {
+      return _printBase
     }
+    let sub = children.lazy.map {
+      $0._print()
+    }.joined(separator: ",")
+    return "\(_printBase)(\(sub))"
+  }
+  func _dump() -> String {
+    guard let children = _children else {
+      return _dumpBase
+    }
+    let sub = children.lazy.map {
+      $0._dump()
+    }.joined(separator: ",")
+    return "\(_dumpBase)(\(sub))"
   }
 }
+
+extension AST: _ASTPrintable {
+  public var _printBase: String {
+    _associatedValue?._printBase ?? ""
+  }
+  public var _dumpBase: String {
+    _associatedValue?._dumpBase ?? ""
+  }
+}
+
+

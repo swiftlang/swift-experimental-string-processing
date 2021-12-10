@@ -254,7 +254,7 @@ extension CharacterClass {
     }
 
     switch cc {
-    case .any: return .any
+    case .any: return .atom(.any)
 
     case .digit:
       return esc(inv ? .notDecimalDigit : .decimalDigit)

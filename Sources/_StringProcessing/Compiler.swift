@@ -31,7 +31,7 @@ class Compiler {
     switch node {
     // Any: .
     //     consume 1
-    case .any where matchLevel == .graphemeCluster:
+    case .atom(.any) where matchLevel == .graphemeCluster:
       builder.buildConsume(1)
 
     case let n where n.characterClass != nil:
@@ -56,20 +56,21 @@ class Compiler {
     //   next_pn:
     //     <code for pn>
     //   done:
-    case .alternation(let components):
+    case .alternation(let alt):
       let done = builder.makeAddress()
-      for component in components.dropLast() {
+      for component in alt.children.dropLast() {
         let next = builder.makeAddress()
         builder.buildSave(next)
         emit(component)
         builder.buildBranch(to: done)
         builder.label(next)
       }
-      emit(components.last!)
+      emit(alt.children.last!)
       builder.label(done)
 
-    case .groupTransform(_, let component, _):
-      emit(component)
+    // FIXME: Wait, how does this work?
+    case .groupTransform(let g, _):
+      emit(g.child)
 
     case .atom(.char(let ch)):
       builder.buildMatch(ch)
@@ -81,19 +82,18 @@ class Compiler {
           : nil
       }
 
-    case .concatenation(let components):
-      for component in components {
-        emit(component)
-      }
+    case .concatenation(let concat):
+      concat.children.forEach(emit)
 
     case .trivia, .empty:
       break
 
-    case .group(_, let component):
-      emit(component)
+    // FIXME: This can't be right...
+    case .group(let g):
+      emit(g.child)
 
-    case .quantification(let quantifier, let component):
-      emitQuantification(quantifier, component)
+    case .quantification(let quant):
+      emitQuantification(quant)
 
     case .atom, .quote, .customCharacterClass:
       fatalError("FIXME")
@@ -102,8 +102,9 @@ class Compiler {
 
   }
 
-  func emitQuantification(_ quantifier: Quantifier, _ component: AST) {
-    switch (quantifier.amount, quantifier.kind, component) {
+  func emitQuantification(_ quant: AST.Quantification) {
+    let child = quant.child
+    switch (quant.amount.value, quant.kind.value) {
     // Lazy zero or more: *?
     //   start:
     //     save element
@@ -112,7 +113,7 @@ class Compiler {
     //     <code for component>
     //     branch start
     //   after:
-    case (.zeroOrMore, .reluctant, let component):
+    case (.zeroOrMore, .reluctant):
       let start = builder.makeAddress()
       let element = builder.makeAddress()
       let after = builder.makeAddress()
@@ -120,7 +121,7 @@ class Compiler {
       builder.buildSave(element)
       builder.buildBranch(to: after)
       builder.label(element)
-      emit(component)
+      emit(child)
       builder.buildBranch(to: start)
       builder.label(after)
 
@@ -129,11 +130,11 @@ class Compiler {
     //     <code for component>
     //     save element
     //   after:
-    case (.oneOrMore, .reluctant, let component):
+    case (.oneOrMore, .reluctant):
       let element = builder.makeAddress()
       let after = builder.makeAddress()
       builder.label(element)
-      emit(component)
+      emit(child)
       builder.buildSave(element)
       builder.label(after)
 
@@ -143,13 +144,13 @@ class Compiler {
     //   element:
     //     <code for component>
     //   after:
-    case (.zeroOrOne, .reluctant, let component):
+    case (.zeroOrOne, .reluctant):
       let element = builder.makeAddress()
       let after = builder.makeAddress()
       builder.buildSave(element)
       builder.buildBranch(to: after)
       builder.label(element)
-      emit(component)
+      emit(child)
       builder.label(after)
 
     // Zero or more: *
@@ -158,12 +159,12 @@ class Compiler {
     //     <code for component>
     //     branch start
     //   end:
-    case (.zeroOrMore, .greedy, let component):
+    case (.zeroOrMore, .greedy):
       let end = builder.makeAddress()
       let start = builder.makeAddress()
       builder.label(start)
       builder.buildSave(end)
-      emit(component)
+      emit(child)
       builder.buildBranch(to: start)
       builder.label(end)
 
@@ -173,11 +174,11 @@ class Compiler {
     //     save end
     //     branch element
     //   end:
-    case (.oneOrMore, .greedy, let component):
+    case (.oneOrMore, .greedy):
       let element = builder.makeAddress()
       let end = builder.makeAddress()
       builder.label(element)
-      emit(component)
+      emit(child)
       builder.buildSave(end)
       builder.buildBranch(to: element)
       builder.label(end)
@@ -186,17 +187,17 @@ class Compiler {
     //     save end
     //     <code for component>
     //   end:
-    case (.zeroOrOne, .greedy, let component):
+    case (.zeroOrOne, .greedy):
       let end = builder.makeAddress()
       builder.buildSave(end)
-      emit(component)
+      emit(child)
       builder.label(end)
 
-    case (.exactly(_), _, _),
-         (.nOrMore(_), _, _),
-         (.upToN(_), _, _),
-         (.range(_), _, _),
-         (_, .possessive, _):
+    case (.exactly(_), _),
+         (.nOrMore(_), _),
+         (.upToN(_), _),
+         (.range(_), _),
+         (_, .possessive):
       fatalError("Not yet supported")
     }
   }
@@ -209,3 +210,4 @@ public func _compileRegex(
   let program = Compiler(ast: ast).emit()
   return Executor(program: program)
 }
+

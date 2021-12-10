@@ -158,8 +158,7 @@ public struct CapturingGroup<Capture>: RegexProtocol {
   ) {
     self.regex = .init(ast:
       .groupTransform(
-        Group(.capture, _fakeRange),
-        component.regex.ast,
+        .init(_fake(.capture), component.regex.ast, _fakeRange),
         transform: CaptureTransform {
           transform($0) as Any
         }))

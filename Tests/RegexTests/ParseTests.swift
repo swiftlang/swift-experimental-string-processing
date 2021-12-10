@@ -30,7 +30,7 @@ func parseTest(
   syntax: SyntaxOptions = .traditional
 ) {
   let orig = try! parse(input, syntax)
-  let ast = orig.strippingTrivia!
+  let ast = orig//.strippingTrivia!
   guard ast == expecting
           || ast._dump() == expecting._dump() // EQ workaround
   else {
@@ -80,8 +80,8 @@ extension RegexTests {
     parseTest(
       "(.)*(.*)",
       concat(
-        zeroOrMore(.greedy, capture(.any)),
-        capture(zeroOrMore(.greedy, .any))))
+        zeroOrMore(.greedy, capture(.atom(.any))),
+        capture(zeroOrMore(.greedy, .atom(.any)))))
     parseTest(
       #"abc\d"#,
       concat("a", "b", "c", .atom(.escaped(.decimalDigit))))
@@ -192,10 +192,10 @@ extension RegexTests {
 
     parseTest(
       #"a\Q .\Eb"#,
-      concat("a", .quote(" ."), "b"))
+      concat("a", quote(" ."), "b"))
     parseTest(
       #"a\Q \Q \\.\Eb"#,
-      concat("a", .quote(#" \Q \\."#), "b"))
+      concat("a", quote(#" \Q \\."#), "b"))
 
     parseTest(
       #"a(?#. comment)b"#,
@@ -203,19 +203,19 @@ extension RegexTests {
 
     parseTest(
       #"a{1,2}"#,
-      .quantification(.range(.greedy, 1...2), "a"))
+      quantRange(.greedy, 1...2, "a"))
     parseTest(
       #"a{,2}"#,
-      .quantification(.upToN(.greedy, 2), "a"))
+      upToN(.greedy, 2, "a"))
     parseTest(
       #"a{1,}"#,
-      .quantification(.nOrMore(.greedy, 1), "a"))
+      nOrMore(.greedy, 1, "a"))
     parseTest(
       #"a{1}"#,
-      .quantification(.exactly(.greedy, 1), "a"))
+      exactly(.greedy, 1, "a"))
     parseTest(
       #"a{1,2}?"#,
-      .quantification(.range(.reluctant, 1...2), "a"))
+      quantRange(.reluctant, 1...2, "a"))
 
     // Named captures
     parseTest(
@@ -245,11 +245,14 @@ extension RegexTests {
     // MARK: Character names.
     parseTest(#"\N{abc}"#, .atom(.namedCharacter("abc")))
     parseTest(#"[\N{abc}]"#, charClass(.atom(.namedCharacter("abc"))))
-    parseTest(#"\N{abc}+"#, .quantification(.oneOrMore(.greedy),
-                                            .atom(.namedCharacter("abc"))))
-    parseTest(#"\N {2}"#, concat(
-      .atom(.escaped(.notNewline)), .quantification(.exactly(.greedy, 2), " ")
-    ))
+    parseTest(
+      #"\N{abc}+"#,
+      oneOrMore(.greedy,
+                .atom(.namedCharacter("abc"))))
+    parseTest(
+      #"\N {2}"#,
+      concat(.atom(.escaped(.notNewline)),
+             exactly(.greedy, 2, " ")))
 
     // MARK: Character properties.
 
@@ -265,8 +268,9 @@ extension RegexTests {
                 .atom(prop(.generalCategory(.separator), inverted: true)))
 
     parseTest(#"[\p{C}]"#, charClass(.atom(prop(.generalCategory(.other)))))
-    parseTest(#"\p{C}+"#, .quantification(.oneOrMore(.greedy),
-                          .atom(prop(.generalCategory(.other)))))
+    parseTest(
+      #"\p{C}+"#,
+      oneOrMore(.greedy, .atom(prop(.generalCategory(.other)))))
 
     parseTest(#"\p{Lx}"#, .atom(prop(.other(key: nil, value: "Lx"))))
     parseTest(#"\p{gcL}"#, .atom(prop(.other(key: nil, value: "gcL"))))

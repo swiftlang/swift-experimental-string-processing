@@ -61,7 +61,7 @@ public struct Regex<Capture>: RegexProtocol {
 extension RegexProtocol {
   public func match(in input: String) -> RegexMatch<Capture>? {
     // TODO: Remove this branch when the matching engine supports captures.
-    if regex.ast.hasCaptures {
+    if regex.ast.hasCapture {
       let vm = HareVM(program: regex.program.legacyLoweredProgram)
       guard let (range, captures) = vm.execute(input: input)?.destructure else {
         return nil
