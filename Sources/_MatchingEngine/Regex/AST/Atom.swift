@@ -1,4 +1,4 @@
-public enum Atom: Hashable {
+public enum Atom: Hashable, _ASTNode {
   /// Just a character
   ///
   /// A, \*, \\, ...
@@ -388,28 +388,28 @@ public enum Reference: Hashable {
 }
 
 extension Atom: _ASTPrintable {
-  public func _print() -> String {
+  public var _printBase: String {
+    if let lit = self.literalCharacterValue {
+      return String(lit).halfWidthCornerQuoted
+    }
+
     switch self {
-    case .char(let c): return c.halfWidthCornerQuoted
-    case .scalar(let s): return s.halfWidthCornerQuoted
-    case .property:
-      fatalError("TODO")
+    case .escaped(let c): return "\\\(c.character)"
 
-    case .escaped(let c): return "\\\(c.character)".halfWidthCornerQuoted
-
-    case .keyboardControl(_): fatalError("TODO")
-
-    case .keyboardMeta(_):
-      fatalError("TODO")
-    case .keyboardMetaControl(_):
-      fatalError("TODO")
-    case .namedSet:
-      fatalError("TODO")
     case .namedCharacter(let charName):
       return "\\N{\(charName)}"
-    case .any: return "."
+
+    case .property: fatalError("TODO")
+
+    case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
+      fatalError("TODO")
+
+    case .namedSet:
+      fatalError("TODO")
+
+    case .any:         return "."
     case .startOfLine: return "^"
-    case .endOfLine: return "$"
+    case .endOfLine:   return "$"
 
     case .backreference(_):
       fatalError("TODO")
@@ -417,13 +417,18 @@ extension Atom: _ASTPrintable {
       fatalError("TODO")
     case .condition(_):
       fatalError("TODO")
+
     case .trivia:
+      // TODO: print comments, non-semantic whitespace, etc
       return ""
+
+    case .char, .scalar:
+      fatalError("Unreachable")
     }
   }
 
-  public func _dump() -> String {
-    _print()
+  public var _dumpBase: String {
+    _printBase
   }
 }
 
@@ -438,7 +443,8 @@ extension Atom {
       return Character(s)
 
     case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
-      fatalError("TODO")
+      // TODO: Not a character per-say, what should we do?
+      fallthrough
 
     case .property, .escaped, .namedSet, .any, .startOfLine, .endOfLine,
         .backreference, .subpattern, .condition, .trivia, .namedCharacter:
@@ -453,3 +459,11 @@ extension Atom {
     var set: Unicode.POSIXCharacterSet
   }
 }
+
+extension Atom {
+  var sourceRange: SourceRange {
+    // TODO: Does this mean we need to make Atom a struct?
+    _fakeRange
+  }
+}
+

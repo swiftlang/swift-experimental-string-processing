@@ -123,7 +123,7 @@ fileprivate struct Test: ExpressibleByStringLiteral {
   }
 }
 
-var doPrint = true
+var doPrint = false
 func show(_ s: CustomStringConvertible) {
   if doPrint { print(s) }
 }

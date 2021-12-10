@@ -14,6 +14,8 @@ API convention:
 
 // MARK: - Consumption routines
 extension Source {
+  typealias Quant = AST.Quantification
+
   private mutating func consumeNumber<
     Num: FixedWidthInteger
   >(
@@ -158,16 +160,13 @@ extension Source {
   ///     Quantifier -> ('*' | '+' | '?' | '{' Range '}') QuantKind?
   ///     QuantKind  -> '?' | '+'
   ///
-  mutating func lexQuantifier() throws -> Value<Quantifier>? {
-    try recordLoc { src in
-      func consumeKind() -> Quantifier.Kind {
-        if src.tryEat("?") { return .reluctant  }
-        if src.tryEat("+") { return .possessive }
-        return .greedy
-      }
-      if src.tryEat("*") { return .zeroOrMore(consumeKind()) }
-      if src.tryEat("+") { return .oneOrMore(consumeKind()) }
-      if src.tryEat("?") { return .zeroOrOne(consumeKind()) }
+  mutating func lexQuantifier() throws -> (
+    Value<Quant.Amount>, Value<Quant.Kind>
+  )? {
+    let amt: Value<Quant.Amount>? = try recordLoc { src in
+      if src.tryEat("*") { return .zeroOrMore }
+      if src.tryEat("+") { return .oneOrMore }
+      if src.tryEat("?") { return .zeroOrOne }
 
       // FIXME: Actually, PCRE treats empty as literal `{}`...
       // But Java 8 errors out?
@@ -175,12 +174,20 @@ extension Source {
         // FIXME: Erm, PCRE parses as literal if no lowerbound...
         let amt = try src.expectRange()
         try src.expect("}")
-        let kind = consumeKind()
-        return Quantifier(amt.value, kind, _fakeRange)
+        return amt.value // FIXME: track actual range...
       }
 
       return nil
     }
+    guard let amt = amt else { return nil }
+
+    let kind: Value<Quant.Kind> = try recordLoc { src in
+      if src.tryEat("?") { return .reluctant  }
+      if src.tryEat("+") { return .possessive }
+      return .greedy
+    }
+
+    return (amt, kind)
   }
 
   /// Consume a range
@@ -189,7 +196,7 @@ extension Source {
   ///                  | ModernRange
   ///     ModernRange -> '..<' <Int> | '...' <Int>
   ///                  | <Int> '..<' <Int> | <Int> '...' <Int>?
-  mutating func expectRange() throws -> Value<Quantifier.Amount> {
+  mutating func expectRange() throws -> Value<Quant.Amount> {
     try recordLoc { src in
       // TODO: lex positive numbers, more specifically...
 
@@ -214,13 +221,14 @@ extension Source {
 
       switch (lowerOpt, closedRange, upperOpt) {
       case let (l?, nil, nil):
-        return .exactly(l)
+        return .exactly(_fake(l))
       case let (l?, true, nil):
-        return .nOrMore(l)
+        return .nOrMore(_fake(l))
       case let (nil, closed?, u?):
-        return .upToN(closed ? u : u-1)
+        return .upToN(_fake(closed ? u : u-1))
       case let (l?, closed?, u?):
-        return .range(l...(closed ? u : u-1))
+        return .range(
+          _fake(l) ... _fake(closed ? u : u-1))
       case let (nil, nil, u) where u != nil:
         fatalError("Not possible")
       default:
@@ -275,7 +283,7 @@ extension Source {
   /// TODO: Need to support some escapes
   ///
   mutating func lexQuote() throws -> Value<String>? {
-    try recordLoc { src in 
+    try recordLoc { src in
       if src.tryEat(sequence: #"\Q"#) {
         return try src.expectQuoted(endingWith: #"\E"#).value
       }
@@ -312,14 +320,14 @@ extension Source {
   /// Try to consume non-semantic whitespace as trivia
   ///
   /// Does nothing unless `SyntaxOptions.nonSemanticWhitespace` is set
-  mutating func lexNonSemanticWhitespace() throws -> Value<()>? {
+  mutating func lexNonSemanticWhitespace() throws -> Value<AST.Trivia>? {
     guard syntax.ignoreWhitespace else { return nil }
     return try recordLoc { src in
       var didSomething = false
       while src.tryEat(" ") {
         didSomething = true
       }
-      return didSomething ? () : nil
+      return didSomething ? AST.Trivia(_fakeRange) : nil
     }
   }
 
@@ -342,7 +350,8 @@ extension Source {
   /// need to be parsed earlier than the group check, as
   /// comments, like quotes, cannot be quantified.
   ///
-  mutating func lexGroupStart() throws -> Value<Group.Kind>? {
+  mutating func lexGroupStart(
+  ) throws -> Value<AST.Group.Kind>? {
     try recordLoc { src in
       guard src.tryEat("(") else { return nil }
 
@@ -359,11 +368,11 @@ extension Source {
         // Named
         if src.tryEat("<") || src.tryEat(sequence: "P<") {
           let name = try src.expectQuoted(endingWith: ">")
-          return .namedCapture(name.value)
+          return .namedCapture(name)
         }
         if src.tryEat("'") {
           let name = try src.expectQuoted(endingWith: "'")
-          return .namedCapture(name.value)
+          return .namedCapture(name)
         }
 
         throw ParseError.misc(
@@ -518,7 +527,7 @@ extension Source {
   }
 
 
-  /// Try to consume an Atom. 
+  /// Try to consume an Atom.
   ///
   ///     Atom             -> SpecialCharacter | POSIXSet
   ///                       | '\' Escaped | [^')' '|']
@@ -584,5 +593,4 @@ extension Source {
     return try lexAtom(isInCustomCharacterClass: true)
   }
 }
-
 

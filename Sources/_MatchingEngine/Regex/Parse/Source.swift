@@ -16,8 +16,6 @@ public struct Source {
     self.bounds = str.startIndex ..< str.endIndex
     self.syntax = syntax
   }
-
-  var currentLoc: Loc { bounds.lowerBound }
 }
 
 extension Source: _CollectionWrapper {
@@ -57,9 +55,6 @@ extension Source {
   public typealias Char  = Character
   public typealias Loc   = String.Index
 }
-
-public typealias SourceRange = Range<Source.Loc>
-public typealias SourceLoc = Source.Loc
 
 // Ugly...
 extension Slice where Base == Source {

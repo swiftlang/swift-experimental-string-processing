@@ -16,25 +16,28 @@ AST.
 
 public let _fakeLoc = "".startIndex
 public let _fakeRange = _fakeLoc ..< _fakeLoc
+public func _fake<T: Hashable>(_ t: T) -> AST.Loc<T> {
+  .init(t, _fakeRange)
+}
 
 public func alt(_ asts: [AST]) -> AST {
-  .alternation(asts)
+  .alternation(.init(asts, _fakeRange))
 }
 public func alt(_ asts: AST...) -> AST {
   alt(asts)
 }
 
 public func concat(_ asts: [AST]) -> AST {
-  .concatenation(asts)
+  .concatenation(.init(asts, _fakeRange))
 }
 public func concat(_ asts: AST...) -> AST {
   concat(asts)
 }
 
 public func group(
-  _ kind: Group.Kind, _ child: AST
+  _ kind: AST.Group.Kind, _ child: AST
 ) -> AST {
-  .group(Group(kind, _fakeRange), child)
+  .group(.init(_fake(kind), child, _fakeRange))
 }
 public func capture(
   _ child: AST
@@ -50,7 +53,7 @@ public func namedCapture(
   _ name: String,
   _ child: AST
 ) -> AST {
-  group(.namedCapture(name), child)
+  group(.namedCapture(_fake(name)), child)
 }
 public func nonCaptureReset(
   _ child: AST
@@ -75,60 +78,63 @@ public func negativeLookbehind(_ child: AST) -> AST {
   group(.negativeLookbehind, child)
 }
 
+
 public var any: AST { .atom(.any) }
 
 public func quant(
-  _ amount: Quantifier.Amount,
-  _ kind: Quantifier.Kind = .greedy,
+  _ amount: AST.Quantification.Amount,
+  _ kind: AST.Quantification.Kind = .greedy,
   _ child: AST
 ) -> AST {
-  .quantification(Quantifier(amount, kind, _fakeRange), child)
+  .quantification(.init(
+    _fake(amount), _fake(kind), child, _fakeRange))
 }
 public func zeroOrMore(
-  _ kind: Quantifier.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .greedy,
   _ child: AST
 ) -> AST {
   quant(.zeroOrMore, kind, child)
 }
 public func zeroOrOne(
-  _ kind: Quantifier.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .greedy,
   _ child: AST
 ) -> AST {
   quant(.zeroOrOne, kind, child)
 }
 public func oneOrMore(
-  _ kind: Quantifier.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .greedy,
   _ child: AST
 ) -> AST {
   quant(.oneOrMore, kind, child)
 }
 public func exactly(
-  _ kind: Quantifier.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .greedy,
   _ i: Int,
-  child: AST
+  _ child: AST
 ) -> AST {
-  quant(.exactly(i), kind, child)
+  quant(.exactly(_fake(i)), kind, child)
 }
 public func nOrMore(
-  _ kind: Quantifier.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .greedy,
   _ i: Int,
-  child: AST
+  _ child: AST
 ) -> AST {
-  quant(.nOrMore(i), kind, child)
+  quant(.nOrMore(_fake(i)), kind, child)
 }
 public func upToN(
-  _ kind: Quantifier.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .greedy,
   _ i: Int,
-  child: AST
+  _ child: AST
 ) -> AST {
-  quant(.upToN(i), kind, child)
+  quant(.upToN(_fake(i)), kind, child)
 }
 public func quantRange(
-  _ kind: Quantifier.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .greedy,
   _ r: ClosedRange<Int>,
-  child: AST
+  _ child: AST
 ) -> AST {
-  quant(.range(r), kind, child)
+  let range = _fake(r.lowerBound) ... _fake(r.upperBound)
+  return quant(.range(range), kind, child)
 }
 
 public func charClass(
@@ -136,7 +142,7 @@ public func charClass(
   inverted: Bool = false
 ) -> AST {
   let cc = CustomCharacterClass(
-    inverted ? .inverted : .normal, members
+    inverted ? .inverted : .normal, members, _fakeRange
   )
   return .customCharacterClass(cc)
 }
@@ -145,16 +151,21 @@ public func charClass(
   inverted: Bool = false
 ) -> CustomCharacterClass.Member {
   let cc = CustomCharacterClass(
-    inverted ? .inverted : .normal, members
+    inverted ? .inverted : .normal, members, _fakeRange
   )
   return .custom(cc)
 }
 public func posixSet(
   _ set: Unicode.POSIXCharacterSet, inverted: Bool = false
 ) -> Atom {
-  return .namedSet(.init(inverted: inverted, set: set))
+  .namedSet(.init(inverted: inverted, set: set))
 }
-func prop(
+
+public func quote(_ s: String) -> AST {
+  .quote(.init(s, _fakeRange))
+}
+
+public func prop(
   _ kind: Atom.CharacterProperty.Kind, inverted: Bool = false
 ) -> Atom {
   return .property(.init(kind, isInverted: inverted))

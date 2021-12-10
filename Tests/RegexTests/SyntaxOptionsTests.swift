@@ -3,11 +3,10 @@
 import XCTest
 
 
-private let dplus = AST.quantification(
-  .oneOrMore(.greedy), .atom(.escaped(.decimalDigit)))
-private let dotAST = AST.concatenation([
-  dplus, ".", dplus, ".", dplus, ".", dplus])
-
+private let dplus = oneOrMore(
+  .greedy, .atom(.escaped(.decimalDigit)))
+private let dotAST = concat(
+  dplus, ".", dplus, ".", dplus, ".", dplus)
 
 extension RegexTests {
 
@@ -35,9 +34,8 @@ extension RegexTests {
 //      "a", .quote(" ."), "b",
 //      syntax: .nonSemanticWhitespace)
 
-    func concat(_ asts: AST...) -> AST { return .concatenation(asts) }
     let quoteAST = concat(
-      "a", .quote(" ."), "b")
+      "a", quote(" ."), "b")
     parseTest(
       #"a\Q .\Eb"#,
       quoteAST, syntax: .traditional)
@@ -60,44 +58,44 @@ extension RegexTests {
 
     parseTest(
       #"a{1,2}"#,
-      .quantification(.range(.greedy, 1...2), "a"))
+      quantRange(.greedy, 1...2, "a"))
     parseTest(
       #"a{1...2}"#,
-      .quantification(.range(.greedy, 1...2), "a"),
+      quantRange(.greedy, 1...2, "a"),
       syntax: .modernRanges)
     parseTest(
       #"a{1..<3}"#,
-      .quantification(.range(.greedy, 1...2), "a"),
+      quantRange(.greedy, 1...2, "a"),
       syntax: .modernRanges)
 
     parseTest(
       #"a{,2}"#,
-      .quantification(.upToN(.greedy, 2), "a"))
+      upToN(.greedy, 2, "a"))
     parseTest(
       #"a{...2}"#,
-      .quantification(.upToN(.greedy, 2), "a"),
+      upToN(.greedy, 2, "a"),
       syntax: .modern)
     parseTest(
       #"a{..<3}"#,
-      .quantification(.upToN(.greedy, 2), "a"),
+      upToN(.greedy, 2, "a"),
       syntax: .modern)
 
     parseTest(
       #"a{1,}"#,
-      .quantification(.nOrMore(.greedy, 1), "a"))
+      nOrMore(.greedy, 1, "a"))
     parseTest(
       #"a{1...}"#,
-      .quantification(.nOrMore(.greedy, 1), "a"),
+      nOrMore(.greedy, 1, "a"),
       syntax: .modern)
   }
 
   func testModernCaptures() {
     parseTest(
       #"a(?:b)c"#,
-      .concatenation(["a", nonCapture("b"), "c"]))
+      concat("a", nonCapture("b"), "c"))
     parseTest(
       #"a(_:b)c"#,
-      .concatenation(["a", nonCapture("b"), "c"]),
+      concat("a", nonCapture("b"), "c"),
       syntax: .modernCaptures)
 
     // TODO: `(name: .*)`

@@ -43,21 +43,3 @@ extension Capture {
     }
   }
 }
-
-extension AST {
-  public var hasCaptures: Bool {
-    switch self {
-    case let .alternation(child), let .concatenation(child):
-      return child.any(\.hasCaptures)
-    case let .group(g, child), let .groupTransform(g, child, _):
-      return g.isCapturing || child.hasCaptures
-      || true // WIP: preserves old behavior
-    case .quantification(_, let child):
-      return child.hasCaptures
-    case .any,
-        .trivia, .quote, .atom, .customCharacterClass, .empty:
-      return false
-
-    }
-  }
-}

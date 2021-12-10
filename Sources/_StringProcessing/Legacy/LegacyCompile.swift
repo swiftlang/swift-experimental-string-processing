@@ -20,7 +20,7 @@ func compile(
     case .trivia, .empty: return
 
     case .quote(let s):
-      s.forEach { instructions.append(.character($0)) }
+      s.literal.forEach { instructions.append(.character($0)) }
       return
 
     case .atom(.char(let c)):
@@ -31,37 +31,39 @@ func compile(
       instructions.append(.unicodeScalar(u))
       return
 
-    case .any:
+    case .atom(.any):
       instructions.append(.any)
       return
 
-    case .group(let g, let child):
-      switch g.kind {
+    case .group(let g):
+      switch g.kind.value {
       case .nonCapture:
         instructions.append(.beginGroup)
-        compileNode(child)
+        compileNode(g.child)
         instructions.append(.endGroup)
         return
       case .capture:
         instructions.append(.beginCapture)
-        compileNode(child)
+        compileNode(g.child)
         instructions.append(.endCapture())
         return
+
       default:
-        fatalError("Unsupported group \(g)")
+        fatalError("Unsupported group \(g.kind.value) \(g)")
       }
 
-    case .groupTransform(let g, let child, let transform) where g.kind == .capture:
+    case let .groupTransform(g, transform: t) where g.kind.value == .capture:
       instructions.append(.beginCapture)
-      compileNode(child)
-      instructions.append(.endCapture(transform: transform))
+      compileNode(g.child)
+      instructions.append(.endCapture(transform: t))
       return
 
-    case .groupTransform(let g, _, _):
+    case .groupTransform(let g, _):
       fatalError("Unsupported group \(g)")
 
-    case .concatenation(let children):
-      let childrenHaveCaptures = children.any(\.hasCaptures)
+    case .concatenation(let concat):
+      let children = concat.children
+      let childrenHaveCaptures = children.any(\.hasCapture)
       if childrenHaveCaptures {
         instructions.append(.beginGroup)
       }
@@ -71,140 +73,145 @@ func compile(
       }
       return
 
-    case .quantification(.zeroOrMore(.greedy), let child):
-      // a* ==> L_START, <split L_DONE>, a, goto L_START, L_DONE
-      let childHasCaptures = child.hasCaptures
-      if childHasCaptures {
-        instructions.append(.beginGroup)
-      }
-      let start = createLabel()
-      instructions.append(start)
-      let done = createLabel()
-      instructions.append(.split(disfavoring: done.label!))
-      compileNode(child)
-      instructions.append(.goto(label: start.label!))
-      instructions.append(done)
-      if childHasCaptures {
-        instructions.append(.captureArray)
-        instructions.append(.endGroup)
-      }
-      return
 
-    case .quantification(.zeroOrMore(.reluctant), let child):
-      // a*? ==> L_START, <split L_ELEMENT>, goto L_DONE,
-      //         L_ELEMENT, a, goto L_START, L_DONE
-      let childHasCaptures = child.hasCaptures
-      if childHasCaptures {
-        instructions.append(.beginGroup)
-      }
-      let start = createLabel()
-      let element = createLabel()
-      let done = createLabel()
-      instructions.append(start)
-      instructions.append(.split(disfavoring: element.label!))
-      instructions.append(.goto(label: done.label!))
-      instructions.append(element)
-      compileNode(child)
-      instructions.append(.goto(label: start.label!))
-      instructions.append(done)
-      if childHasCaptures {
-        instructions.append(.captureArray)
-        instructions.append(.endGroup)
-      }
-      return
-
-    case .quantification(.zeroOrOne(.greedy), let child):
-      // a? ==> <split L_DONE> a, L_DONE
-      if child.hasCaptures {
-        instructions.append(.beginGroup)
-        let nilCase = createLabel()
-        let done = createLabel()
-        instructions.append(.split(disfavoring: nilCase.label!))
-        compileNode(child)
-        instructions += [
-          .captureSome,
-          .goto(label: done.label!),
-          nilCase,
-          .captureNil,
-          done,
-          .endGroup
-        ]
-      } else {
+    case .quantification(let quant):
+      let child = quant.child
+      switch (quant.amount.value, quant.kind.value) {
+      case (.zeroOrMore, .greedy):
+        // a* ==> L_START, <split L_DONE>, a, goto L_START, L_DONE
+        let childHasCaptures = child.hasCapture
+        if childHasCaptures {
+          instructions.append(.beginGroup)
+        }
+        let start = createLabel()
+        instructions.append(start)
         let done = createLabel()
         instructions.append(.split(disfavoring: done.label!))
         compileNode(child)
+        instructions.append(.goto(label: start.label!))
         instructions.append(done)
-      }
-      return
+        if childHasCaptures {
+          instructions.append(.captureArray)
+          instructions.append(.endGroup)
+        }
+        return
 
-    case .quantification(.zeroOrOne(.reluctant), let child):
-      // a?? ==> <split L_ELEMENT>, goto L_DONE, L_ELEMENT, a, L_DONE
-      if child.hasCaptures {
-        instructions.append(.beginGroup)
-        let element = createLabel()
-        let nilCase = createLabel()
-        let done = createLabel()
-        instructions.append(.split(disfavoring: element.label!))
-        instructions.append(.goto(label: nilCase.label!))
-        instructions.append(element)
-        compileNode(child)
-        instructions += [
-          .captureSome,
-          .goto(label: done.label!),
-          nilCase,
-          .captureNil,
-          done,
-          .endGroup
-        ]
-      } else {
+      case (.zeroOrMore, .reluctant):
+        // a*? ==> L_START, <split L_ELEMENT>, goto L_DONE,
+        //         L_ELEMENT, a, goto L_START, L_DONE
+        let childHasCaptures = child.hasCapture
+        if childHasCaptures {
+          instructions.append(.beginGroup)
+        }
+        let start = createLabel()
         let element = createLabel()
         let done = createLabel()
+        instructions.append(start)
         instructions.append(.split(disfavoring: element.label!))
         instructions.append(.goto(label: done.label!))
         instructions.append(element)
         compileNode(child)
+        instructions.append(.goto(label: start.label!))
         instructions.append(done)
-      }
-      return
+        if childHasCaptures {
+          instructions.append(.captureArray)
+          instructions.append(.endGroup)
+        }
+        return
 
-    case .quantification(.oneOrMore(.greedy), let child):
-      // a+ ==> L_START, a, <split L_DONE>, goto L_START, L_DONE
-      let childHasCaptures = child.hasCaptures
-      if childHasCaptures {
-        instructions.append(.beginGroup)
-      }
-      let start = createLabel()
-      let done = createLabel()
-      instructions.append(start)
-      compileNode(child)
-      instructions.append(.split(disfavoring: done.label!))
-      instructions.append(.goto(label: start.label!))
-      instructions.append(done)
-      if childHasCaptures {
-        instructions.append(.captureArray)
-        instructions.append(.endGroup)
-      }
-      return
+      case (.zeroOrOne, .greedy):
+        // a? ==> <split L_DONE> a, L_DONE
+        if child.hasCapture {
+          instructions.append(.beginGroup)
+          let nilCase = createLabel()
+          let done = createLabel()
+          instructions.append(.split(disfavoring: nilCase.label!))
+          compileNode(child)
+          instructions += [
+            .captureSome,
+            .goto(label: done.label!),
+            nilCase,
+            .captureNil,
+            done,
+            .endGroup
+          ]
+        } else {
+          let done = createLabel()
+          instructions.append(.split(disfavoring: done.label!))
+          compileNode(child)
+          instructions.append(done)
+        }
+        return
 
-    case .quantification(.oneOrMore(.reluctant), let child):
-      // a+? ==> L_START, a, <split L_START>
-      let childHasCaptures = child.hasCaptures
-      if childHasCaptures {
-        instructions.append(.beginGroup)
-      }
-      let start = createLabel()
-      instructions.append(start)
-      compileNode(child)
-      instructions.append(.split(disfavoring: start.label!))
-      if childHasCaptures {
-        instructions.append(.captureArray)
-        instructions.append(.endGroup)
-      }
-      return
-    case .quantification(let q, _):
-      fatalError("Unsupported: \(q._dump())")
+      case (.zeroOrOne, .reluctant):
+        // a?? ==> <split L_ELEMENT>, goto L_DONE, L_ELEMENT, a, L_DONE
+        if child.hasCapture {
+          instructions.append(.beginGroup)
+          let element = createLabel()
+          let nilCase = createLabel()
+          let done = createLabel()
+          instructions.append(.split(disfavoring: element.label!))
+          instructions.append(.goto(label: nilCase.label!))
+          instructions.append(element)
+          compileNode(child)
+          instructions += [
+            .captureSome,
+            .goto(label: done.label!),
+            nilCase,
+            .captureNil,
+            done,
+            .endGroup
+          ]
+        } else {
+          let element = createLabel()
+          let done = createLabel()
+          instructions.append(.split(disfavoring: element.label!))
+          instructions.append(.goto(label: done.label!))
+          instructions.append(element)
+          compileNode(child)
+          instructions.append(done)
+        }
+        return
 
-    case .alternation(let children):
+      case (.oneOrMore, .greedy):
+        // a+ ==> L_START, a, <split L_DONE>, goto L_START, L_DONE
+        let childHasCaptures = child.hasCapture
+        if childHasCaptures {
+          instructions.append(.beginGroup)
+        }
+        let start = createLabel()
+        let done = createLabel()
+        instructions.append(start)
+        compileNode(child)
+        instructions.append(.split(disfavoring: done.label!))
+        instructions.append(.goto(label: start.label!))
+        instructions.append(done)
+        if childHasCaptures {
+          instructions.append(.captureArray)
+          instructions.append(.endGroup)
+        }
+        return
+
+      case (.oneOrMore, .reluctant):
+        // a+? ==> L_START, a, <split L_START>
+        let childHasCaptures = child.hasCapture
+        if childHasCaptures {
+          instructions.append(.beginGroup)
+        }
+        let start = createLabel()
+        instructions.append(start)
+        compileNode(child)
+        instructions.append(.split(disfavoring: start.label!))
+        if childHasCaptures {
+          instructions.append(.captureArray)
+          instructions.append(.endGroup)
+        }
+        return
+      default:
+        fatalError("Unsupported: \(quant)")
+      }
+
+    case .alternation(let alt):
       // a|b ==> <split L_B>, a, goto L_DONE, L_B, b, L_DONE
       // a|b|c ==> <split L_B>, a, goto L_DONE,
       //           L_B, <split L_C>, b, goto L_DONE, L_C, c, L_DONE
@@ -217,6 +224,7 @@ func compile(
       //       E.g. `a` falls-through to the rest of the program and the
       //       other cases branch back.
       //
+      let children = alt.children
       assert(!children.isEmpty)
       guard children.count > 1 else { return compileNode(children[0]) }
 
@@ -236,7 +244,7 @@ func compile(
 
     case .atom: fatalError("FIXME")
 
-    case .any, .customCharacterClass:
+    case .customCharacterClass:
       fatalError("unreachable")
 
     case .atom(let a) where a.characterClass != nil:

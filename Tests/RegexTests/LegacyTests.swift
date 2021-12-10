@@ -10,7 +10,6 @@ extension RECode.Instruction: ExpressibleByExtendedGraphemeClusterLiteral {
   }
 }
 
-
 extension RECode: Equatable {
   public static func ==(lhs: RECode, rhs: RECode) -> Bool {
     return lhs.instructions == rhs.instructions
@@ -135,7 +134,7 @@ private func performTest<Capture>(
   run(TortoiseVM(program: legacyProgram), name: "Lonesome George")
   run(HareVM(program: legacyProgram), name: "Harvey")
   // TODO: Support captures in the matching engine.
-  guard !ast.hasCaptures else {
+  guard !ast.hasCapture else {
     return
   }
   let program = Compiler(ast: ast).emit()
@@ -184,61 +183,45 @@ extension RegexTests {
     performTest(
       "a(b)c",
       recode(
-        .beginGroup, // For some reason, because child captures
+        .beginGroup,
         "a", .beginCapture, "b", .endCapture(), "c",
-        .endGroup // For some reason, because child captures
-      ))
+        .endGroup))
     performTest(
       "a(?:b)c",
       recode(
-        .beginGroup, // For some reason, even though noncap
-        "a", .beginGroup, "b", .endGroup, "c",
-        .endGroup // For some reason, even though noncap
-      ))
+        "a", .beginGroup, "b", .endGroup, "c"))
     performTest(
       "abc(?:de)+fghi*k|j",
       recode(split(disfavoring: 1),
-             .beginGroup,
              "a", "b", "c",
-             .beginGroup,
              label(2),
              .beginGroup,
              "d", "e",
              .endGroup,
              split(disfavoring: 3), goto(label: 2),
              label(3),
-             .captureArray,
-             .endGroup,
              "f", "g", "h",
              label(4),
              split(disfavoring: 5), "i", goto(label: 4),
              label(5), "k",
-             .endGroup,
              goto(label: 0),
              label(1), "j",
              label(0),
-             labels: [29, 27, 6, 13, 19, 23]))
+             labels: [24, 22, 4, 11, 15, 19]))
     performTest(
       "a(?:b|c)?d",
       recode(
-        .beginGroup,
         "a",
-        .beginGroup,
         split(disfavoring: 0),
         .beginGroup,
-        split(disfavoring: 3), "b",
-        goto(label: 2),
-        label(3), "c",
-        label(2),
+        split(disfavoring: 2), "b",
+        goto(label: 1),
+        label(2), "c",
+        label(1),
         .endGroup,
-        .captureSome,
-        .goto(label: 1),
-        label(0), .captureNil,
-        .label(1),
-        .endGroup,
+        label(0),
         "d",
-        .endGroup,
-        labels: [14, 16, 10, 8],
+        labels: [10, 8, 6],
         splits: [3, 5]))
     performTest(
       "a(b|c)?d",
@@ -296,7 +279,6 @@ extension RegexTests {
     performTest(
       "(?:.*)*",
       recode(
-        .beginGroup,
         label(0), split(disfavoring: 1),
         .beginGroup,
         label(2), split(disfavoring: 3), .characterClass(.any), goto(label: 2),
@@ -304,9 +286,7 @@ extension RegexTests {
         .endGroup,
         goto(label: 0),
         label(1),
-        .captureArray,
-        .endGroup,
-        labels: [1, 11, 4, 8], splits: [2, 5]))
+        labels: [0, 10, 3, 7], splits: [1, 4]))
     performTest(
       "a.*?b+?c??",
       recode("a",
@@ -442,7 +422,7 @@ extension RegexTests {
         ast: ast, matchLevel: .unicodeScalar
       ).emit()
       let scalarExecutor = Executor(
-        program: scalarProgram, enablesTracing: true)
+        program: scalarProgram, enablesTracing: false)
 
       for input in characterInputs {
         XCTAssertNotNil(executor.execute(input: input))

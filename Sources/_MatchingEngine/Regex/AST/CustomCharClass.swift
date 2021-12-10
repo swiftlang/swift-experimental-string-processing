@@ -4,9 +4,17 @@ public struct CustomCharacterClass: Hashable {
   public var start: Start
   public var members: [Member]
 
-  public init(_ start: Start, _ members: [Member]) {
+  public let sourceRange: SourceRange
+
+
+  public init(
+    _ start: Start,
+    _ members: [Member],
+    _ sr: SourceRange
+  ) {
     self.start = start
     self.members = members
+    self.sourceRange = sr
   }
 
   public enum Member: Hashable {
@@ -38,4 +46,11 @@ public struct CustomCharacterClass: Hashable {
 
 extension CustomCharacterClass {
   public var isInverted: Bool { start == .inverted }
+}
+
+extension CustomCharacterClass: _ASTNode {
+  public var _dumpBase: String {
+    // FIXME: print out members...
+    "customCharacterClass"
+  }
 }

@@ -254,7 +254,7 @@ extension CharacterClass {
     }
 
     switch cc {
-    case .any: return .any
+    case .any: return .atom(.any)
 
     case .digit:
       return esc(inv ? .notDecimalDigit : .decimalDigit)
@@ -287,7 +287,8 @@ extension CharacterClass {
       ]
       let ccc = CustomCharacterClass(
         inv ? .inverted : .normal,
-        members)
+        members,
+        _fakeRange)
 
       return .customCharacterClass(ccc)
 

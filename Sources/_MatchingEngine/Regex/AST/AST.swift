@@ -1,118 +1,158 @@
 /// A regex abstract syntax tree
-public enum AST: ASTValue/*, ASTAction*/ {
-  public typealias Product = Self
+public indirect enum AST:
+  Hashable/*, _ASTPrintable ASTValue, ASTAction*/
+{
+  /// Located value: a value wrapped with a source range
+  public typealias Loc = Source.Value
 
   /// ... | ... | ...
-  indirect case alternation([AST])
+  case alternation(Alternation)
 
   /// ... ...
-  indirect case concatenation([AST])
+  case concatenation(Concatenation)
 
   /// (...)
-  indirect case group(Group, AST)
+  case group(Group)
 
-  indirect case quantification(Quantifier, AST)
+  case quantification(Quantification)
 
-  case quote(String)
+  /// \Q...\E
+  case quote(Quote)
 
-  case trivia // TODO: track comments
+  ///
+  case trivia(Trivia) // TODO: track comments
 
   case atom(Atom)
 
   case customCharacterClass(CustomCharacterClass)
 
-  case empty
+  case empty(Empty)
 
 
   // FIXME: Move off the regex literal AST
-  indirect case groupTransform(
-    Group, AST, transform: CaptureTransform)
+  case groupTransform(
+    Group, transform: CaptureTransform)
 }
 
-extension AST {
-  public static var any: AST {
-    .atom(.any)
-  }
-}
-
-// Note that we're not yet an ASTEntity, would need to be a struct.
-// We might end up with ASTStorage which projects the nice AST type.
-// Values and projected entities can still refer to positions.
-// ASTStorage might end up becoming the ASTAction conformer
+// TODO: This is currently unused, but it's likely we'll want
+// to host things like global options, more source info, etc.
 private struct ASTStorage {
   let ast: AST
   let sourceRange: SourceRange?
 }
 
 extension AST {
-  public var isSemantic: Bool {
+  // :-(
+  var _associatedValue: _ASTNode {
     switch self {
-    case .trivia: return false
-    default: return true
+    case let .alternation(v):          return v
+    case let .concatenation(v):        return v
+    case let .group(v):                return v
+    case let .quantification(v):       return v
+    case let .quote(v):                return v
+    case let .trivia(v):               return v
+    case let .atom(v):                 return v
+    case let .customCharacterClass(v): return v
+    case let .empty(v):                return v
+
+    case let .groupTransform(g, _):
+      return g // FIXME: get this out of here
     }
   }
 
-  func filter(_ f: (AST) -> Bool) -> AST? {
-    func filt(_ children: [AST]) -> [AST] {
-      children.compactMap {
-        guard f($0) else { return nil }
-        return $0.filter(f)
-      }
-    }
-    func filt(_ cc: CustomCharacterClass) -> CustomCharacterClass {
-      CustomCharacterClass(cc.start, filt(cc.members))
-    }
-    typealias CCCMember = CustomCharacterClass.Member
-    func filt(_ children: [CCCMember]) -> [CCCMember] {
-      children.compactMap {
-        switch $0 {
-        case let .custom(cc):
-          return .custom(filt(cc))
-        case .range(let lhs, let rhs):
-          guard let filtLHS = f(.atom(lhs)) ? lhs : nil else { return nil }
-          guard let filtRHS = f(.atom(rhs)) ? rhs : nil else { return nil }
-          return .range(filtLHS, filtRHS)
-        case let .atom(atom):
-          return f(.atom(atom)) ? .atom(atom) : nil
-        case let .setOperation(lhsMembers, op, rhsMembers):
-          return .setOperation(filt(lhsMembers), op, filt(rhsMembers))
-        }
-      }
-    }
+  /// If this node is a parent node, access its children
+  public var children: [AST]? {
+    return (_associatedValue as? _ASTParent)?.children
+  }
+
+  public var sourceRange: SourceRange {
+    _associatedValue.sourceRange
+  }
+
+  /// Whether this node is "trivia" or non-semantic, like comments
+  public var isTrivia: Bool {
     switch self {
-    case let .alternation(children):
-      return .alternation(filt(children))
-
-    case let .concatenation(children):
-      return .concatenation(filt(children))
-
-    case let .customCharacterClass(cc):
-      return .customCharacterClass(filt(cc))
-
-    case let .group(g, child):
-      guard let c = child.filter(f) else { return nil }
-      return .group(g, c)
-
-    case let .groupTransform(g, child, transform):
-      guard let c = child.filter(f) else { return nil }
-      return .groupTransform(g, c, transform: transform)
-
-    case let .quantification(q, child):
-      guard let c = child.filter(f) else { return nil }
-      return .quantification(q, c)
-
-    case .any, .trivia, .quote, .atom, .empty:
-      return f(self) ? self : nil
+    case .trivia: return true
+    default: return false
     }
   }
 
-  public var strippingTrivia: AST? {
-    filter(\.isSemantic)
+  /// Whether this node has nested somewhere inside it a capture
+  public var hasCapture: Bool {
+    if case let .group(g) = self, g.kind.value.isCapturing {
+      return true
+    }
+
+    return self.children?.any(\.hasCapture) ?? false
   }
 }
 
-// FIXME: Probably remove this from the AST
+// MARK: - AST types
 
+extension AST {
+
+  public struct Alternation: Hashable, _ASTNode {
+    public let children: [AST]
+    public let sourceRange: SourceRange
+
+    public init(_ mems: [AST], _ sourceRange: SourceRange) {
+      self.children = mems
+      self.sourceRange = sourceRange
+    }
+
+    public var _dumpBase: String { "alternation" }
+  }
+
+  public struct Concatenation: Hashable, _ASTNode {
+    public let children: [AST]
+    public let sourceRange: SourceRange
+
+    public init(_ mems: [AST], _ sourceRange: SourceRange) {
+      self.children = mems
+      self.sourceRange = sourceRange
+    }
+
+    public var _dumpBase: String { "" }
+  }
+
+  public struct Quote: Hashable, _ASTNode {
+    public let literal: String
+    public let sourceRange: SourceRange
+
+    public init(_ s: String, _ sourceRange: SourceRange) {
+      self.literal = s
+      self.sourceRange = sourceRange
+    }
+
+    public var _dumpBase: String { "quote" }
+  }
+
+  public struct Trivia: Hashable, _ASTNode {
+    // TODO: Contents of trivia, kinds, etc
+    public let sourceRange: SourceRange
+
+    public init(_ sourceRange: SourceRange) {
+      self.sourceRange = sourceRange
+    }
+
+    public var _dumpBase: String {
+      // TODO: comments, non-semantic whitespace, etc.
+      ""
+    }
+  }
+
+  public struct Empty: Hashable, _ASTNode {
+    public let sourceRange: SourceRange
+
+    public init(_ sourceRange: SourceRange) {
+      self.sourceRange = sourceRange
+    }
+
+    public var _dumpBase: String { "" }
+  }
+}
+
+// FIXME: Get this out of here
 public struct CaptureTransform: Equatable, Hashable, CustomStringConvertible {
   public let closure: (Substring) -> Any
 
