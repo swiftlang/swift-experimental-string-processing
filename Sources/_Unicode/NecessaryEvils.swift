@@ -12,10 +12,22 @@ func _internalInvariant(
   assert(b(), s)
 }
 
-extension UnsafeBufferPointer {
-  subscript(_unchecked idx: Int) -> Element {
-    // TODO: faster version
-    self[idx]
+// Don't use UnsafeRawBufferPointer for anything important
+public struct UnsafeByteBuffer {
+  var pointer: UnsafeRawPointer
+  var count: Int
+
+  func boundsCheck(_ idx: Int) -> Bool {
+    idx < count
+  }
+
+  subscript(_unchecked idx: Int) -> UInt8 {
+    assert(boundsCheck(idx))
+    return pointer.load(fromByteOffset: idx, as: UInt8.self)
+  }
+  subscript(idx: Int) -> UInt8 {
+    precondition(boundsCheck(idx))
+    return self[_unchecked: idx]
   }
 }
 

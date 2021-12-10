@@ -70,7 +70,7 @@ enum UnsafeAssumingValidUTF8 {
   // Also, assuming we can load from those bounds...
   @inlinable
   public func decode(
-    _ utf8: UnsafeBufferPointer<UInt8>, startingAt i: Int
+    _ utf8: UnsafeByteBuffer, startingAt i: Int
   ) -> (Unicode.Scalar, scalarLength: Int) {
     let cu0 = utf8[_unchecked: i]
     let len = scalarLength(cu0)
@@ -93,7 +93,7 @@ enum UnsafeAssumingValidUTF8 {
 
   @inlinable
   public func decode(
-    _ utf8: UnsafeBufferPointer<UInt8>, endingAt i: Int
+    _ utf8: UnsafeByteBuffer, endingAt i: Int
   ) -> (Unicode.Scalar, scalarLength: Int) {
     let len = scalarLength(utf8, endingAt: i)
     let (scalar, scalarLen) = decode(utf8, startingAt: i &- len)
@@ -111,7 +111,7 @@ enum UnsafeAssumingValidUTF8 {
 
   @inlinable @inline(__always)
   public func scalarLength(
-    _ utf8: UnsafeBufferPointer<UInt8>, endingAt i: Int
+    _ utf8: UnsafeByteBuffer, endingAt i: Int
   ) -> Int {
     var len = 1
     while UTF8.isContinuation(utf8[_unchecked: i &- len]) {
@@ -128,7 +128,7 @@ enum UnsafeAssumingValidUTF8 {
 
   @inlinable
   public func scalarAlign(
-    _ utf8: UnsafeBufferPointer<UInt8>, _ idx: Int
+    _ utf8: UnsafeByteBuffer, _ idx: Int
   ) -> Int {
     guard _fastPath(idx != utf8.count) else { return idx }
 
@@ -142,31 +142,11 @@ enum UnsafeAssumingValidUTF8 {
   }
 }
 
-enum UnsafeAssumingValidUTF16 {
-  // Also, assuming we can load from those bounds...
-  public func decode(
-    _ utf16: UnsafeBufferPointer<UInt16>, startingAt i: Int
-  ) -> (Unicode.Scalar, scalarLength: Int) {
-    let high = utf16[i]
-    if i + 1 >= utf16.count {
-      _internalInvariant(!UTF16.isLeadSurrogate(high))
-      _internalInvariant(!UTF16.isTrailSurrogate(high))
-      return (Unicode.Scalar(_unchecked: UInt32(high)), 1)
-    }
-
-    if !UTF16.isLeadSurrogate(high) {
-      _internalInvariant(!UTF16.isTrailSurrogate(high))
-      return (Unicode.Scalar(_unchecked: UInt32(high)), 1)
-    }
-
-    let low = utf16[i+1]
-    _internalInvariant(UTF16.isLeadSurrogate(high))
-    _internalInvariant(UTF16.isTrailSurrogate(low))
-    return (UTF16._decodeSurrogates(high, low), 2)
-  }
-}
-
 // TODO: Validating versions that remove that aspect of
 // unsafety. Stdlib has stuff on _StrinGuts that could be
-// at least partially refactored
+// at least partially refactored.
+
+// TODO: Consider UTF-16 support, but that's normally best
+// handled as a transcoding concern.
+
 
