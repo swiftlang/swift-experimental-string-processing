@@ -33,7 +33,7 @@ extension Combinators.BindElement.BindPosition.BindError {
   public struct Parser<T: Hashable> {
     let apply: (Position) throws -> ParseResult<T>
 
-    public init(_ f: @escaping (Position) throws -> ParseResult<T>) {
+    init(_ f: @escaping (Position) throws -> ParseResult<T>) {
       self.apply = f
     }
   }
@@ -88,8 +88,8 @@ extension
 
 // Combinators
 extension Combinators.BindElement.BindPosition.BindError.Parser {
-  typealias Parser = Combinators.BindElement<Element>.BindPosition<Position>.BindError<Err>.Parser
-  typealias ParseResult = Combinators.BindElement<Element>.BindPosition<Position>.BindError<Err>.ParseResult
+  public typealias Parser = Combinators.BindElement<Element>.BindPosition<Position>.BindError<Err>.Parser
+  public typealias ParseResult = Combinators.BindElement<Element>.BindPosition<Position>.BindError<Err>.ParseResult
 
   // Backtracking alternation
   public func or(_ rhs: Self) -> Self {

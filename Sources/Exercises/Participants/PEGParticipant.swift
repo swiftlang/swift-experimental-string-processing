@@ -2,7 +2,7 @@ struct PEGParticipant: Participant {
   static var name: String { "PEG" }
 }
 
-import PEG
+import Prototypes
 private func graphemeBreakPropertyData(forLine line: String) -> GraphemeBreakEntry? {
   typealias Pattern = PEG<Character>.Pattern
 
