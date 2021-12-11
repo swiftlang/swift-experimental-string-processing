@@ -108,11 +108,11 @@ extension TortoiseVM {
         case .captureSome:
           hatchling.core.captureSome()
           hatchling.plod()
-        case .captureNil:
-          hatchling.core.captureNil()
+        case .captureNil(let childType):
+          hatchling.core.captureNil(childType: childType)
           hatchling.plod()
-        case .captureArray:
-          hatchling.core.captureArray()
+        case .captureArray(let childType):
+          hatchling.core.captureArray(childType: childType)
           hatchling.plod()
 
         default:

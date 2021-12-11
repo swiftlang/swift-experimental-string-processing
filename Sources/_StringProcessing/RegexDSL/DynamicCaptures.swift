@@ -1,8 +1,8 @@
 import _MatchingEngine
 
-extension Regex where Capture == DynamicCaptures {
-  public init(_ string: String) throws {
-    self.init(ast: try parse(string, .traditional))
+extension Regex where Match == Tuple2<Substring, DynamicCaptures> {
+  public init(_ pattern: String) throws {
+    self.init(ast: try parse(pattern, .traditional))
   }
 }
 
@@ -22,11 +22,12 @@ public enum DynamicCaptures: Equatable {
       self = .substring(atom as! Substring)
     case .tuple(let components):
       self = .tuple(components.map(Self.init))
-    case .optional(let component):
-      self = .optional(component.map(Self.init))
-    case .array(let components):
+    case .some(let component):
+      self = .optional(Self(component))
+    case .none:
+      self = .optional(nil)
+    case .array(let components, _):
       self = .array(components.map(Self.init))
     }
   }
 }
-

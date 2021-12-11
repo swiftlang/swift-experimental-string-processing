@@ -3,26 +3,29 @@ import _MatchingEngine
 // MARK: - Primitives
 
 extension String: RegexProtocol {
-  public typealias Capture = Empty
+  public typealias Capture = EmptyCapture
+  public typealias Match = Substring
 
-  public var regex: Regex<Capture> {
+  public var regex: Regex<Match> {
     let atoms = self.map { atom(.char($0)) }
     return .init(ast: concat(atoms))
   }
 }
 
 extension Character: RegexProtocol {
-  public typealias Capture = Empty
+  public typealias Capture = EmptyCapture
+  public typealias Match = Substring
 
-  public var regex: Regex<Capture> {
+  public var regex: Regex<Match> {
     .init(ast: atom(.char(self)))
   }
 }
 
 extension CharacterClass: RegexProtocol {
-  public typealias Capture = Empty
+  public typealias Capture = EmptyCapture
+  public typealias Match = Substring
 
-  public var regex: Regex<Capture> {
+  public var regex: Regex<Match> {
     guard let ast = self.makeAST() else {
       fatalError("FIXME: extended AST?")
     }
@@ -47,9 +50,9 @@ extension CharacterClass: RegexProtocol {
 
 /// A regular expression.
 public struct OneOrMore<Component: RegexProtocol>: RegexProtocol {
-  public typealias Capture = [Component.Capture]
+  public typealias Match = Tuple2<Substring, [Component.Match.Capture]>
 
-  public let regex: Regex<Capture>
+  public let regex: Regex<Match>
 
   public init(_ component: Component) {
     self.regex = .init(ast:
@@ -64,14 +67,18 @@ public struct OneOrMore<Component: RegexProtocol>: RegexProtocol {
 
 postfix operator .+
 
-public postfix func .+ <R: RegexProtocol>(lhs: R) -> OneOrMore<R> {
+public postfix func .+ <R: RegexProtocol>(
+  lhs: R
+) -> OneOrMore<R> {
   .init(lhs)
 }
 
-public struct Repeat<Component: RegexProtocol>: RegexProtocol {
-  public typealias Capture = [Component.Capture]
+public struct Repeat<
+  Component: RegexProtocol
+>: RegexProtocol {
+  public typealias Match = Tuple2<Substring, [Component.Match.Capture]>
 
-  public let regex: Regex<Capture>
+  public let regex: Regex<Match>
 
   public init(_ component: Component) {
     self.regex = .init(ast:
@@ -85,14 +92,16 @@ public struct Repeat<Component: RegexProtocol>: RegexProtocol {
 
 postfix operator .*
 
-public postfix func .* <R: RegexProtocol>(lhs: R) -> Repeat<R> {
+public postfix func .* <R: RegexProtocol>(
+  lhs: R
+) -> Repeat<R> {
   .init(lhs)
 }
 
 public struct Optionally<Component: RegexProtocol>: RegexProtocol {
-  public typealias Capture = Component.Capture?
+  public typealias Match = Tuple2<Substring, Component.Match.Capture?>
 
-  public let regex: Regex<Capture>
+  public let regex: Regex<Match>
 
   public init(_ component: Component) {
     self.regex = .init(ast:
@@ -106,17 +115,19 @@ public struct Optionally<Component: RegexProtocol>: RegexProtocol {
 
 postfix operator .?
 
-public postfix func .? <R: RegexProtocol>(lhs: R) -> Optionally<R> {
+public postfix func .? <R: RegexProtocol>(
+  lhs: R
+) -> Optionally<R> {
   .init(lhs)
 }
 
+// TODO: Support heterogeneous capture alternation.
 public struct Alternation<
-  Component1: RegexProtocol,
-  Component2: RegexProtocol
->: RegexProtocol {
-  public typealias Capture = Component2.Capture
+  Component1: RegexProtocol, Component2: RegexProtocol
+>: RegexProtocol where Component1.Match.Capture == Component2.Match.Capture {
+  public typealias Match = Tuple2<Substring, Component1.Match.Capture>
 
-  public let regex: Regex<Capture>
+  public let regex: Regex<Match>
 
   public init(_ first: Component1, _ second: Component2) {
     regex = .init(ast: alt(
@@ -139,10 +150,8 @@ public func | <Component1, Component2>(
 
 // MARK: - Capture
 
-public struct CapturingGroup<Capture>: RegexProtocol {
-  public typealias Capture = Capture
-
-  public let regex: Regex<Capture>
+public struct CapturingGroup<Match: MatchProtocol>: RegexProtocol {
+  public let regex: Regex<Match>
 
   init<Component: RegexProtocol>(
     _ component: Component

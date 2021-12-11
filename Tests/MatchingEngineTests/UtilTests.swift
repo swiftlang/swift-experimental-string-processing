@@ -1,5 +1,5 @@
 import XCTest
-@testable import _StringProcessing
+@testable import _MatchingEngine
 
 class UtilTests: XCTestCase {
   func testTupleTypeConstruction() {

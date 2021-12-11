@@ -76,7 +76,6 @@ func compile(
       }
       return
 
-
     case .quantification(let quant):
       let child = quant.child
       switch (quant.amount.value, quant.kind.value) {
@@ -94,7 +93,7 @@ func compile(
         instructions.append(.goto(label: start.label!))
         instructions.append(done)
         if childHasCaptures {
-          instructions.append(.captureArray)
+          instructions.append(.captureArray(childType: child.captureStructure.type))
           instructions.append(.endGroup)
         }
         return
@@ -117,7 +116,7 @@ func compile(
         instructions.append(.goto(label: start.label!))
         instructions.append(done)
         if childHasCaptures {
-          instructions.append(.captureArray)
+          instructions.append(.captureArray(childType: child.captureStructure.type))
           instructions.append(.endGroup)
         }
         return
@@ -134,7 +133,7 @@ func compile(
             .captureSome,
             .goto(label: done.label!),
             nilCase,
-            .captureNil,
+            .captureNil(childType: child.captureStructure.type),
             done,
             .endGroup
           ]
@@ -161,7 +160,7 @@ func compile(
             .captureSome,
             .goto(label: done.label!),
             nilCase,
-            .captureNil,
+            .captureNil(childType: child.captureStructure.type),
             done,
             .endGroup
           ]
@@ -190,7 +189,7 @@ func compile(
         instructions.append(.goto(label: start.label!))
         instructions.append(done)
         if childHasCaptures {
-          instructions.append(.captureArray)
+          instructions.append(.captureArray(childType: child.captureStructure.type))
           instructions.append(.endGroup)
         }
         return
@@ -206,7 +205,7 @@ func compile(
         try compileNode(child)
         instructions.append(.split(disfavoring: start.label!))
         if childHasCaptures {
-          instructions.append(.captureArray)
+          instructions.append(.captureArray(childType: child.captureStructure.type))
           instructions.append(.endGroup)
         }
         return

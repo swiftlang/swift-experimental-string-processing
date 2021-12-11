@@ -12,7 +12,9 @@ public enum RegexBuilder {
     component
   }
 
-  public static func buildLimitedAvailability<R: RegexProtocol>(_ component: R) -> Optionally<R> {
+  public static func buildLimitedAvailability<R: RegexProtocol>(
+    _ component: R
+  ) -> Optionally<R> {
     .init(component)
   }
 }

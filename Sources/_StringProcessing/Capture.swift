@@ -5,8 +5,17 @@ import _MatchingEngine
 enum Capture {
   case atom(Any)
   indirect case tuple([Capture])
-  indirect case optional(Capture?)
-  indirect case array([Capture])
+  indirect case some(Capture)
+  case none(childType: AnyCaptureType)
+  indirect case array([Capture], childType: AnyCaptureType)
+
+  static func none(childType: Any.Type) -> Capture {
+    .none(childType: AnyCaptureType(childType))
+  }
+
+  static func array(_ children: [Capture], childType: Any.Type) -> Capture {
+    .array(children, childType: AnyCaptureType(childType))
+  }
 }
 
 extension Capture {
@@ -25,21 +34,48 @@ extension Capture {
     case .tuple(let elements):
       return TypeConstruction.tuple(
         of: elements.map(\.value))
-    case .array(let elements):
-      guard let first = elements.first else {
-        return [Any]()
+    case .array(let elements, let childType):
+      func helper<T>(_: T.Type) -> Any {
+        elements.map { $0.value as! T }
       }
-      // When the array is not empty, infer the concrete `Element `type from the first element.
-      func helper<T>(_ first: T) -> Any {
-        var castElements = [first]
-        for element in elements.dropFirst() {
-          castElements.append(element.value as! T)
-        }
-        return castElements
+      return _openExistential(childType.base, do: helper)
+    case .some(let subcapture):
+      return subcapture.value
+    case .none(let childType):
+      func helper<T>(_: T.Type) -> Any {
+        nil as T? as Any
       }
-      return _openExistential(first.value, do: helper)
-    case .optional(let subcapture):
-      return subcapture?.value as Any
+      return _openExistential(childType.base, do: helper)
     }
+  }
+
+  private func prepending(_ newElement: Any) -> Self {
+    switch self {
+    case .atom, .some, .none, .array:
+      return .tuple([.atom(newElement), self])
+    case .tuple(let elements):
+      return .tuple([.atom(newElement)] + elements)
+    }
+  }
+
+  func matchValue(withWholeMatch wholeMatch: Substring) -> Any {
+    prepending(wholeMatch).value
+  }
+}
+
+/// A wrapper of an existential metatype, equatable and hashable by reference.
+struct AnyCaptureType: Equatable, Hashable {
+  var base: Any.Type
+
+  init(_ type: Any.Type) {
+    base = type
+  }
+
+  static func == (lhs: AnyCaptureType, rhs: AnyCaptureType) -> Bool {
+    lhs.base == rhs.base
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine(ObjectIdentifier(base))
   }
 }

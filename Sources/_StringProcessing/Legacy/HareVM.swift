@@ -192,12 +192,12 @@ struct HareVM: VirtualMachine {
         bunny.core.captureSome()
         bunny.hop()
 
-      case .captureNil:
-        bunny.core.captureNil()
+      case .captureNil(let childType):
+        bunny.core.captureNil(childType: childType)
         bunny.hop()
 
-      case .captureArray:
-        bunny.core.captureArray()
+      case .captureArray(let childType):
+        bunny.core.captureArray(childType: childType)
         bunny.hop()
       }
     }
