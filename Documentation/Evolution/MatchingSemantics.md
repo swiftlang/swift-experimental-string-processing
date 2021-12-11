@@ -339,7 +339,7 @@ Our opinion is that it is preferable to have metacharacter matching follow the c
 [declarative-string-processing-overview]: https://forums.swift.org/t/declarative-string-processing-overview/52459
 [regular-expression-literals]: https://forums.swift.org/t/pitch-regular-expression-literals/52820
 [character-classes-for-string-processing]: https://forums.swift.org/t/pitch-character-classes-for-string-processing/52920
-[strongly-typed-regex-captures]: https://gist.github.pie.apple.com/rxwei/c1f24f30d96c13ba04d55ae3f8781992
+[strongly-typed-regex-captures]: https://forums.swift.org/t/pitch-strongly-typed-regex-captures/53391
 [grapheme-cluster]: https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries
 [canonical-equivalence]: https://www.unicode.org/reports/tr15/#Canon_Compat_Equivalence
 [degenerates]: https://www.unicode.org/reports/tr29/#Rule_Constraints
