@@ -105,8 +105,9 @@ extension RegexTests {
 
     parseTest("[a-z]", charClass(.range("a", "z")))
 
+    // FIXME: AST builder helpers for custom char class types
     parseTest("[a-d--a-c]", charClass(
-      .setOperation([.range("a", "d")], .subtraction, [.range("a", "c")])
+      .setOperation([.range("a", "d")], _fake(.subtraction), [.range("a", "c")])
     ))
 
     parseTest("[-]", charClass("-"))
@@ -156,26 +157,26 @@ extension RegexTests {
       oneOrMore(.greedy, charClass(
         .setOperation(
           ["a", charClass("b", "c"), "d", "e"],
-          .intersection,
+          _fake(.intersection),
           [charClass("b", "c", inverted: true), .atom(.escaped(.decimalDigit))]
         ))))
 
     parseTest(
       "[a&&b]",
       charClass(
-        .setOperation(["a"], .intersection, ["b"])))
+        .setOperation(["a"], _fake(.intersection), ["b"])))
 
     parseTest(
       "[abc--def]",
-      charClass(.setOperation(["a", "b", "c"], .subtraction, ["d", "e", "f"])))
+      charClass(.setOperation(["a", "b", "c"], _fake(.subtraction), ["d", "e", "f"])))
 
     // We left-associate for chained operators.
     parseTest(
       "[ab&&b~~cd]",
       charClass(
         .setOperation(
-          [.setOperation(["a", "b"], .intersection, ["b"])],
-          .symmetricDifference,
+          [.setOperation(["a", "b"], _fake(.intersection), ["b"])],
+          _fake(.symmetricDifference),
           ["c", "d"])))
 
     // Operators are only valid in custom character classes.

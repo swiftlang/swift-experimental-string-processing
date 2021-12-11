@@ -28,7 +28,7 @@ extension AST {
       case atom(Atom)
 
       /// A binary operator applied to sets of members `abc&&def`
-      case setOperation([Member], SetOp, [Member])
+      case setOperation([Member], Loc<SetOp>, [Member])
     }
     public enum SetOp: String, Hashable {
       case subtraction = "--"

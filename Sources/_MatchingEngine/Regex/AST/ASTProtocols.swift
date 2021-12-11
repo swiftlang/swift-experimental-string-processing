@@ -13,6 +13,10 @@
 protocol _ASTNode: _ASTPrintable {
   var sourceRange: SourceRange { get }
 }
+extension _ASTNode {
+  var startLoc: SourceLoc { sourceRange.lowerBound }
+  var endLoc: SourceLoc { sourceRange.upperBound }
+}
 
 protocol _ASTParent: _ASTNode {
   var children: [AST] { get }
@@ -110,6 +114,9 @@ extension AST {
     }
 
     for level in levels {
+      // TODO: Actually, I want to render into the bottom-most
+      // string that only has spaces over this range...
+
       var line = base
       for node in level {
         node._renderRange(in: input, into: &line)

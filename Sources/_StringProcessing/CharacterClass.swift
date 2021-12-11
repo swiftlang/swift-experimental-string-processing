@@ -393,8 +393,11 @@ extension AST.CustomCharacterClass {
           // multiple components in each operand, we should fix that. For now,
           // just produce custom components.
           return .setOperation(
-            .init(lhs: .characterClass(.custom(getComponents(lhs))), op: op,
-                  rhs: .characterClass(.custom(getComponents(rhs))))
+            .init(
+              lhs: .characterClass(
+                .custom(getComponents(lhs))), op: op.value,
+              rhs: .characterClass(
+                .custom(getComponents(rhs))))
           )
 
         case .atom(let a) where a.literalCharacterValue != nil:
