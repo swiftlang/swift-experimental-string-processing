@@ -1,3 +1,34 @@
+/*
+
+ Common protocols for AST nodes and values. These allow us
+ to do more capabilities-based programming, currently
+ implemented on top of existentials.
+
+ */
+
+
+
+// MARK: - AST parent/child
+
+protocol _ASTNode: _ASTPrintable {
+  var sourceRange: SourceRange { get }
+}
+
+protocol _ASTParent: _ASTNode {
+  var children: [AST] { get }
+}
+
+extension AST.Concatenation: _ASTParent {}
+extension AST.Alternation: _ASTParent {}
+
+extension AST.Group: _ASTParent {
+  var children: [AST] { [child] }
+}
+extension AST.Quantification: _ASTParent {
+  var children: [AST] { [child] }
+}
+
+
 // MARK: - Printing
 
 /// AST entities can be pretty-printed or dumped
@@ -53,23 +84,52 @@ extension AST: _ASTPrintable {
   }
 }
 
-// MARK: - AST parent/child
+// Useful for testing, debugging, etc.
+//
+// TODO: Prettier rendering, probably inverted
+extension AST {
 
-protocol _ASTNode: _ASTPrintable {
-  var sourceRange: SourceRange { get }
+  func _postOrder() -> Array<AST> {
+    var nodes = Array<AST>()
+    _postOrder(into: &nodes)
+    return nodes
+  }
+  func _postOrder(into array: inout Array<AST>) {
+    children?.forEach { $0._postOrder(into: &array) }
+    array.append(self)
+  }
+
+  // We render from top-to-bottom, coalescing siblings
+  public func _render(in input: String) -> [String] {
+    var lines = Array<String>()
+    let base = String(repeating: " ", count: input.count)
+
+    let nodes = _postOrder().filter(\.sourceRange.isReal)
+    let levels = nodes.chunked {
+      $0.sourceRange.upperBound <= $1.sourceRange.lowerBound
+    }
+
+    for level in levels {
+      var line = base
+      for node in level {
+        node._renderRange(in: input, into: &line)
+      }
+      lines.append(line)
+    }
+
+    return lines
+  }
+
+  // Produce a textually "rendered" rane
+  //
+  // NOTE: `input` must be the string from which a
+  // source range was derived.
+  func _renderRange(
+    in input: String, into output: inout String
+  ) {
+    guard !sourceRange.isEmpty else { return }
+    let sliceCount = input[sourceRange].count
+    let repl = String(repeating: "-", count: sliceCount-1) + "^"
+    output.replaceSubrange(sourceRange, with: repl)
+  }
 }
-
-protocol _ASTParent: _ASTNode {
-  var children: [AST] { get }
-}
-
-extension AST.Concatenation: _ASTParent {}
-extension AST.Alternation: _ASTParent {}
-
-extension AST.Group: _ASTParent {
-  var children: [AST] { [child] }
-}
-extension AST.Quantification: _ASTParent {
-  var children: [AST] { [child] }
-}
-

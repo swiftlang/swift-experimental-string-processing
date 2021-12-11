@@ -102,5 +102,11 @@ extension RegexTests {
 //      .comment(" network "), esc("d"), .plus,
 //      esc("."), esc("d"), .plus,
 //      syntax: .modern)
+//
+//    // TODO: better trivia stuff
+//    parseTest(
+//      "(?#. comment)b",
+//      concat(trivia(), "b")
+//    )
   }
 }
