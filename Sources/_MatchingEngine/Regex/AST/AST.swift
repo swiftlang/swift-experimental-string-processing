@@ -43,6 +43,10 @@ private struct ASTStorage {
 
 extension AST {
   // :-(
+  //
+  // Existential-based programming is highly prone to silent
+  // errors, but it does enable us to avoid having to switch
+  // over `self` _everywhere_ we want to do anything.
   var _associatedValue: _ASTNode {
     switch self {
     case let .alternation(v):          return v

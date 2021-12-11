@@ -15,7 +15,7 @@ extension Atom: ExpressibleByExtendedGraphemeClusterLiteral {
     self = .char(value)
   }
 }
-extension CustomCharacterClass.Member: ExpressibleByExtendedGraphemeClusterLiteral {
+extension AST.CustomCharacterClass.Member: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
     self = .atom(.char(value))

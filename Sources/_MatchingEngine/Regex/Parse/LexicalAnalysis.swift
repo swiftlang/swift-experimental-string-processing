@@ -390,7 +390,7 @@ extension Source {
   }
 
   mutating func lexCustomCCStart(
-  ) throws -> Value<CustomCharacterClass.Start>? {
+  ) throws -> Value<CustomCC.Start>? {
     try recordLoc { src in
       // POSIX named sets are atoms.
       guard !src.starts(with: "[:") else { return nil }
@@ -406,7 +406,7 @@ extension Source {
   ///
   ///     CustomCCBinOp -> '--' | '~~' | '&&'
   ///
-  mutating func lexCustomCCBinOp() throws -> Value<CustomCharacterClass.SetOp>? {
+  mutating func lexCustomCCBinOp() throws -> Value<CustomCC.SetOp>? {
     try recordLoc { src in
       // TODO: Perhaps a syntax options check (!PCRE)
       // TODO: Better AST types here
@@ -417,7 +417,7 @@ extension Source {
   }
 
   // Check to see if we can lex a binary operator.
-  func peekCCBinOp() -> CustomCharacterClass.SetOp? {
+  func peekCCBinOp() -> CustomCC.SetOp? {
     if starts(with: "--") { return .subtraction }
     if starts(with: "~~") { return .symmetricDifference }
     if starts(with: "&&") { return .intersection }

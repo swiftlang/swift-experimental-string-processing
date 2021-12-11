@@ -1,4 +1,4 @@
-import _MatchingEngine
+@testable import _MatchingEngine
 import _StringProcessing
 
 import XCTest
