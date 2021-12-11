@@ -14,6 +14,10 @@ AST.
 
 */
 
+// TODO: Sink this file into _StringProcessing and make it all
+// internal. For now, this lets us incrementally add source
+// ranges...
+
 public let _fakeLoc = "".startIndex
 public let _fakeRange = _fakeLoc ..< _fakeLoc
 public func _fake<T: Hashable>(_ t: T) -> AST.Loc<T> {

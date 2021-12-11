@@ -88,6 +88,8 @@ extension AST: _ASTPrintable {
   }
 }
 
+// MARK: - Rendering
+
 // Useful for testing, debugging, etc.
 //
 // TODO: Prettier rendering, probably inverted
@@ -105,26 +107,26 @@ extension AST {
 
   // We render from top-to-bottom, coalescing siblings
   public func _render(in input: String) -> [String] {
-    var lines = Array<String>()
     let base = String(repeating: " ", count: input.count)
+    var lines = [base]
 
     let nodes = _postOrder().filter(\.sourceRange.isReal)
-    let levels = nodes.chunked {
-      $0.sourceRange.upperBound <= $1.sourceRange.lowerBound
-    }
 
-    for level in levels {
-      // TODO: Actually, I want to render into the bottom-most
-      // string that only has spaces over this range...
-
-      var line = base
-      for node in level {
-        node._renderRange(in: input, into: &line)
+    nodes.forEach { node in
+      let sr = node.sourceRange
+      let count = input[sr].count
+      for idx in lines.indices {
+        if lines[idx][sr].all(\.isWhitespace) {
+          node._renderRange(count: count, into: &lines[idx])
+          return
+        }
       }
-      lines.append(line)
+      var nextLine = base
+      node._renderRange(count: count, into: &nextLine)
+      lines.append(nextLine)
     }
 
-    return lines
+    return lines.first!.all(\.isWhitespace) ? [] : lines
   }
 
   // Produce a textually "rendered" rane
@@ -132,11 +134,10 @@ extension AST {
   // NOTE: `input` must be the string from which a
   // source range was derived.
   func _renderRange(
-    in input: String, into output: inout String
+    count: Int, into output: inout String
   ) {
-    guard !sourceRange.isEmpty else { return }
-    let sliceCount = input[sourceRange].count
-    let repl = String(repeating: "-", count: sliceCount-1) + "^"
+    guard count > 0 else { return }
+    let repl = String(repeating: "-", count: count-1) + "^"
     output.replaceSubrange(sourceRange, with: repl)
   }
 }

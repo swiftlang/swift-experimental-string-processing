@@ -462,7 +462,7 @@ extension Atom {
 
 extension Atom {
   var sourceRange: SourceRange {
-    // TODO: Does this mean we need to make Atom a struct?
+    // FIXME: source location tracking
     _fakeRange
   }
 }

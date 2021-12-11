@@ -45,17 +45,23 @@ extension RegexTests {
       let lines = try! parse(
         str, .traditional
       )._render(in: str)
-      guard lines.count == expected.count else {
+      func fail() {
         XCTFail("""
           expected:
             \(expected.joined(separator: "\n    "))
           saw:
             \(lines.joined(separator: "\n    "))
         """)
+      }
+      guard lines.count == expected.count else {
+        fail()
         return
       }
       for (e, l) in zip(expected, lines) {
-        XCTAssertEqual(e, l)
+        guard e.elementsEqual(l) else {
+          fail()
+          return
+        }
       }
     }
 
@@ -70,12 +76,12 @@ extension RegexTests {
 
     // FIXME: Groups do, however
     // FIXME: This isn't an ideal leaf rendering...
-    renderTest("a(b)c+(d(e))f(?:g)", [
-           /*  "^^^ ^^^^^^  ^--^^ ", */
-               " --^-^  --^       ",
-               "       ---^       ",
-               "      -----^ ----^", // should be  higher
-               "-----------------^"
+    renderTest("a(b)c+(d(e))f(?:gh)", [
+           /*  "^^^ ^^^^^^  ^--^^^ ", */
+               " --^-^  --^     -^ ",
+               "       ---^  -----^",
+               "      -----^       ",
+               "------------------^"
     ])
   }
 }

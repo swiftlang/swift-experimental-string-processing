@@ -86,6 +86,7 @@ extension Parser {
       // TODO: track pipe locations too...
       result.append(try parseConcatenation())
     }
+
     if result.count == 1 {
       return result[0]
     }
@@ -233,6 +234,8 @@ extension Parser {
   mutating func parseCCCMembers(
     into members: inout Array<CustomCC.Member>
   ) throws {
+    // FIXME: Track source locations
+
     // Parse members until we see the end of the custom char class or an
     // operator.
     while source.peek() != "]" && source.peekCCBinOp() == nil {

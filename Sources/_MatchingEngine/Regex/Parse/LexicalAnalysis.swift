@@ -221,12 +221,16 @@ extension Source {
 
       switch (lowerOpt, closedRange, upperOpt) {
       case let (l?, nil, nil):
+        // FIXME: source location tracking
         return .exactly(_fake(l))
       case let (l?, true, nil):
+        // FIXME: source location tracking
         return .nOrMore(_fake(l))
       case let (nil, closed?, u?):
+        // FIXME: source location tracking
         return .upToN(_fake(closed ? u : u-1))
       case let (l?, closed?, u?):
+        // FIXME: source location tracking
         return .range(
           _fake(l) ... _fake(closed ? u : u-1))
       case let (nil, nil, u) where u != nil:
@@ -327,6 +331,7 @@ extension Source {
       while src.tryEat(" ") {
         didSomething = true
       }
+      // FIXME: source location tracking
       return didSomething ? AST.Trivia(_fakeRange) : nil
     }
   }
