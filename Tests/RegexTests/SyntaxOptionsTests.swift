@@ -22,18 +22,6 @@ extension RegexTests {
   }
 
   func testModernQuotes() {
-//
-//    lexTest(
-//      #"a\Q .\Eb"#,
-//      "a", .quote(" ."), "b",
-//      syntax: .traditional)
-//
-//    // If we're quoted, whitespace is quoted too
-//    lexTest(
-//      #"a\Q .\Eb"#,
-//      "a", .quote(" ."), "b",
-//      syntax: .nonSemanticWhitespace)
-
     let quoteAST = concat(
       "a", quote(" ."), "b")
     parseTest(
@@ -55,7 +43,9 @@ extension RegexTests {
     parseTest(
       #" \d+ "." \d+ "." \d+ "." \d+ "#,
       dotAST, syntax: .modern)
+  }
 
+  func testModernRanges() {
     parseTest(
       #"a{1,2}"#,
       quantRange(.greedy, 1...2, "a"))
@@ -112,5 +102,11 @@ extension RegexTests {
 //      .comment(" network "), esc("d"), .plus,
 //      esc("."), esc("d"), .plus,
 //      syntax: .modern)
+//
+//    // TODO: better trivia stuff
+//    parseTest(
+//      "(?#. comment)b",
+//      concat(trivia(), "b")
+//    )
   }
 }

@@ -40,7 +40,7 @@ public struct CharacterClass: Hashable {
     case custom([CharacterSetComponent])
   }
 
-  public typealias SetOperator = CustomCharacterClass.SetOp
+  public typealias SetOperator = AST.CustomCharacterClass.SetOp
 
   /// A binary set operation that forms a character class component.
   public struct SetOperation: Hashable {
@@ -280,13 +280,13 @@ extension CharacterClass {
       return esc(.graphemeCluster)
 
     case .hexDigit:
-      let members: [CustomCharacterClass.Member] = [
+      let members: [AST.CustomCharacterClass.Member] = [
         .range(.char("a"), .char("f")),
         .range(.char("A"), .char("F")),
         .range(.char("0"), .char("9")),
       ]
-      let ccc = CustomCharacterClass(
-        inv ? .inverted : .normal,
+      let ccc = AST.CustomCharacterClass(
+        _fake(inv ? .inverted : .normal),
         members,
         _fakeRange)
 
@@ -373,7 +373,7 @@ extension Atom.EscapedBuiltin {
   }
 }
 
-extension CustomCharacterClass {
+extension AST.CustomCharacterClass {
   /// The model character class for this custom character class.
   var modelCharacterClass: CharacterClass {
     typealias Component = CharacterClass.CharacterSetComponent
@@ -393,8 +393,11 @@ extension CustomCharacterClass {
           // multiple components in each operand, we should fix that. For now,
           // just produce custom components.
           return .setOperation(
-            .init(lhs: .characterClass(.custom(getComponents(lhs))), op: op,
-                  rhs: .characterClass(.custom(getComponents(rhs))))
+            .init(
+              lhs: .characterClass(
+                .custom(getComponents(lhs))), op: op.value,
+              rhs: .characterClass(
+                .custom(getComponents(rhs))))
           )
 
         case .atom(let a) where a.literalCharacterValue != nil:

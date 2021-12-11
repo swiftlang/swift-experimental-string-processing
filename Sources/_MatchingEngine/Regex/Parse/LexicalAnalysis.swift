@@ -221,12 +221,16 @@ extension Source {
 
       switch (lowerOpt, closedRange, upperOpt) {
       case let (l?, nil, nil):
+        // FIXME: source location tracking
         return .exactly(_fake(l))
       case let (l?, true, nil):
+        // FIXME: source location tracking
         return .nOrMore(_fake(l))
       case let (nil, closed?, u?):
+        // FIXME: source location tracking
         return .upToN(_fake(closed ? u : u-1))
       case let (l?, closed?, u?):
+        // FIXME: source location tracking
         return .range(
           _fake(l) ... _fake(closed ? u : u-1))
       case let (nil, nil, u) where u != nil:
@@ -327,6 +331,7 @@ extension Source {
       while src.tryEat(" ") {
         didSomething = true
       }
+      // FIXME: source location tracking
       return didSomething ? AST.Trivia(_fakeRange) : nil
     }
   }
@@ -390,7 +395,7 @@ extension Source {
   }
 
   mutating func lexCustomCCStart(
-  ) throws -> Value<CustomCharacterClass.Start>? {
+  ) throws -> Value<CustomCC.Start>? {
     try recordLoc { src in
       // POSIX named sets are atoms.
       guard !src.starts(with: "[:") else { return nil }
@@ -406,7 +411,7 @@ extension Source {
   ///
   ///     CustomCCBinOp -> '--' | '~~' | '&&'
   ///
-  mutating func lexCustomCCBinOp() throws -> Value<CustomCharacterClass.SetOp>? {
+  mutating func lexCustomCCBinOp() throws -> Value<CustomCC.SetOp>? {
     try recordLoc { src in
       // TODO: Perhaps a syntax options check (!PCRE)
       // TODO: Better AST types here
@@ -417,7 +422,7 @@ extension Source {
   }
 
   // Check to see if we can lex a binary operator.
-  func peekCCBinOp() -> CustomCharacterClass.SetOp? {
+  func peekCCBinOp() -> CustomCC.SetOp? {
     if starts(with: "--") { return .subtraction }
     if starts(with: "~~") { return .symmetricDifference }
     if starts(with: "&&") { return .intersection }

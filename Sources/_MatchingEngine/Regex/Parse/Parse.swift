@@ -64,6 +64,10 @@ extension Parser {
         (error detected in parser at \(function):\(line))
         """
   }
+
+  fileprivate func sr(_ start: SourceLoc) -> SourceRange {
+    start ..< source.currentLoc
+  }
 }
 
 extension Parser {
@@ -73,16 +77,21 @@ extension Parser {
   ///     Alternation  -> Concatenation ('|' Concatenation)*
   ///
   mutating func parse() throws -> AST {
-    if source.isEmpty { return .empty(.init(_fakeRange)) }
+    let _start = source.currentLoc
+
+    if source.isEmpty { return .empty(.init(sr(_start))) }
 
     var result = Array<AST>(singleElement: try parseConcatenation())
     while source.tryEat("|") {
+      // TODO: track pipe locations too...
       result.append(try parseConcatenation())
     }
+
     if result.count == 1 {
       return result[0]
     }
-    return .alternation(.init(result, _fakeRange))
+
+    return .alternation(.init(result, sr(_start)))
   }
 
   /// Parse a term, potentially separated from others by `|`
@@ -93,33 +102,38 @@ extension Parser {
   ///
   mutating func parseConcatenation() throws -> AST {
     var result = Array<AST>()
+    let _start = source.currentLoc
+
     while true {
       // Check for termination, e.g. of recursion or bin ops
       if source.isEmpty { break }
       if source.peek() == "|" || source.peek() == ")" { break }
 
+      // TODO: refactor loop body into function
+      let _start = source.currentLoc
+
       //     Trivia -> `lexComment` | `lexNonSemanticWhitespace`
       if let _ = try source.lexComment() {
         // TODO: remember comments
-        result.append(.trivia(.init(_fakeRange)))
+        result.append(.trivia(.init(sr(_start))))
         continue
       }
       if let _ = try source.lexNonSemanticWhitespace() {
         // TODO: Remember source range
-        result.append(.trivia(.init(_fakeRange)))
+        result.append(.trivia(.init(sr(_start))))
         continue
       }
 
       //     Quote      -> `lexQuote`
       if let quote = try source.lexQuote() {
-        result.append(.quote(.init(quote.value, _fakeRange)))
+        result.append(.quote(.init(quote.value, sr(_start))))
         continue
       }
       //     Quantification  -> QuantOperand Quantifier?
       if let operand = try parseQuantifierOperand() {
         if let (amt, kind) = try source.lexQuantifier() {
            result.append(.quantification(.init(
-            amt, kind, operand, _fakeRange)))
+            amt, kind, operand, sr(_start))))
         } else {
           result.append(operand)
         }
@@ -129,15 +143,13 @@ extension Parser {
       fatalError("unreachable?")
     }
     guard !result.isEmpty else {
-      // Happens in `abc|`
-
-      // TODO: still the case?
-      throw ParseError.unexpectedEndOfInput
+      return .empty(.init(sr(_start)))
     }
     if result.count == 1 {
       return result[0]
     }
-    return .concatenation(.init(result, _fakeRange))
+
+    return .concatenation(.init(result, sr(_start)))
   }
 
   /// Parse a (potentially quantified) component
@@ -148,25 +160,25 @@ extension Parser {
   mutating func parseQuantifierOperand() throws -> AST? {
     assert(!source.isEmpty)
 
-    if let kind = try source.lexGroupStart() {
-      // TODO: more source locations
-      let child = try parse()
+    let _start = source.currentLoc
 
-      let ast = AST.group(.init(kind, child, _fakeRange))
+    if let kind = try source.lexGroupStart() {
+      let child = try parse()
       try source.expect(")")
-      return ast
+      return .group(.init(kind, child, sr(_start)))
     }
-    if let cccStart = try source.lexCustomCCStart()?.value {
-      return .customCharacterClass(try parseCustomCharacterClass(cccStart))
+    if let cccStart = try source.lexCustomCCStart() {
+      return .customCharacterClass(
+        try parseCustomCharacterClass(cccStart))
     }
 
     if let atom = try source.lexAtom(
       isInCustomCharacterClass: isInCustomCharacterClass
     )?.value {
+      // TODO: track source locations
       return .atom(atom)
     }
 
-    // TODO: Is this reachable?
     return nil
   }
 }
@@ -182,9 +194,9 @@ extension Parser {
   ///     Range           -> Atom `-` Atom
   ///
   mutating func parseCustomCharacterClass(
-    _ start: CustomCharacterClass.Start
-  ) throws -> CustomCharacterClass {
-    typealias Member = CustomCharacterClass.Member
+    _ start: Source.Value<CustomCC.Start>
+  ) throws -> CustomCC {
+    typealias Member = CustomCC.Member
     try source.expectNonEmpty()
 
     var members: Array<Member> = []
@@ -195,7 +207,7 @@ extension Parser {
     // TODO: We may want to diagnose and require users to disambiguate, at least
     // for chains of separate operators.
     // TODO: What about precedence?
-    while let binOp = try source.lexCustomCCBinOp()?.value {
+    while let binOp = try source.lexCustomCCBinOp() {
       var rhs: Array<Member> = []
       try parseCCCMembers(into: &rhs)
 
@@ -206,7 +218,7 @@ extension Parser {
       // If we're done, bail early
       let setOp = Member.setOperation(members, binOp, rhs)
       if source.tryEat("]") {
-        return CustomCharacterClass(start, [setOp], _fakeRange)
+        return CustomCC(start, [setOp], sr(start.startLoc))
       }
 
       // Otherwise it's just another member to accumulate
@@ -216,18 +228,20 @@ extension Parser {
       throw ParseError.expectedCustomCharacterClassMembers
     }
     try source.expect("]")
-    return CustomCharacterClass(start, members, _fakeRange)
+    return CustomCC(start, members, sr(start.startLoc))
   }
 
   mutating func parseCCCMembers(
-    into members: inout Array<CustomCharacterClass.Member>
+    into members: inout Array<CustomCC.Member>
   ) throws {
+    // FIXME: Track source locations
+
     // Parse members until we see the end of the custom char class or an
     // operator.
     while source.peek() != "]" && source.peekCCBinOp() == nil {
 
       // Nested custom character class.
-      if let cccStart = try source.lexCustomCCStart()?.value {
+      if let cccStart = try source.lexCustomCCStart() {
         members.append(.custom(try parseCustomCharacterClass(cccStart)))
         continue
       }

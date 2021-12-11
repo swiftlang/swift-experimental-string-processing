@@ -104,4 +104,7 @@ extension SourceRange {
   ///
   /// Currently, the empty range at the start of any string is the "fake" range
   public var isFake: Bool { self == _fakeRange }
+
+  // Much of the time we actually want the inverse...
+  public var isReal: Bool { !isFake }
 }

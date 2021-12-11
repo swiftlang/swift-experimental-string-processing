@@ -14,6 +14,10 @@ AST.
 
 */
 
+// TODO: Sink this file into _StringProcessing and make it all
+// internal. For now, this lets us incrementally add source
+// ranges...
+
 public let _fakeLoc = "".startIndex
 public let _fakeRange = _fakeLoc ..< _fakeLoc
 public func _fake<T: Hashable>(_ t: T) -> AST.Loc<T> {
@@ -138,21 +142,23 @@ public func quantRange(
 }
 
 public func charClass(
-  _ members: CustomCharacterClass.Member...,
+  _ members: AST.CustomCharacterClass.Member...,
   inverted: Bool = false
 ) -> AST {
-  let cc = CustomCharacterClass(
-    inverted ? .inverted : .normal, members, _fakeRange
-  )
+  let cc = CustomCC(
+    _fake(inverted ? .inverted : .normal),
+    members,
+    _fakeRange)
   return .customCharacterClass(cc)
 }
 public func charClass(
-  _ members: CustomCharacterClass.Member...,
+  _ members: AST.CustomCharacterClass.Member...,
   inverted: Bool = false
-) -> CustomCharacterClass.Member {
-  let cc = CustomCharacterClass(
-    inverted ? .inverted : .normal, members, _fakeRange
-  )
+) -> AST.CustomCharacterClass.Member {
+  let cc = CustomCC(
+    _fake(inverted ? .inverted : .normal),
+    members,
+    _fakeRange)
   return .custom(cc)
 }
 public func posixSet(
