@@ -11,11 +11,11 @@
 // MARK: - AST parent/child
 
 protocol _ASTNode: _ASTPrintable {
-  var sourceRange: SourceRange { get }
+  var location: SourceLocation { get }
 }
 extension _ASTNode {
-  var startLoc: SourceLoc { sourceRange.lowerBound }
-  var endLoc: SourceLoc { sourceRange.upperBound }
+  var startPosition: Source.Position { location.start }
+  var endPosition: Source.Position { location.end }
 }
 
 protocol _ASTParent: _ASTNode {
@@ -110,13 +110,13 @@ extension AST {
     let base = String(repeating: " ", count: input.count)
     var lines = [base]
 
-    let nodes = _postOrder().filter(\.sourceRange.isReal)
+    let nodes = _postOrder().filter(\.location.isReal)
 
     nodes.forEach { node in
-      let sr = node.sourceRange
-      let count = input[sr].count
+      let loc = node.location
+      let count = input[loc.range].count
       for idx in lines.indices {
-        if lines[idx][sr].all(\.isWhitespace) {
+        if lines[idx][loc.range].all(\.isWhitespace) {
           node._renderRange(count: count, into: &lines[idx])
           return
         }
@@ -138,6 +138,6 @@ extension AST {
   ) {
     guard count > 0 else { return }
     let repl = String(repeating: "-", count: count-1) + "^"
-    output.replaceSubrange(sourceRange, with: repl)
+    output.replaceSubrange(location.range, with: repl)
   }
 }

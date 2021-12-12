@@ -14,164 +14,156 @@ AST.
 
 */
 
-// TODO: Sink this file into _StringProcessing and make it all
-// internal. For now, this lets us incrementally add source
-// ranges...
+import _MatchingEngine
 
-public let _fakeLoc = "".startIndex
-public let _fakeRange = _fakeLoc ..< _fakeLoc
-public func _fake<T: Hashable>(_ t: T) -> AST.Loc<T> {
-  .init(t, _fakeRange)
+func alt(_ asts: [AST]) -> AST {
+  .alternation(.init(asts, .fake))
 }
-
-public func alt(_ asts: [AST]) -> AST {
-  .alternation(.init(asts, _fakeRange))
-}
-public func alt(_ asts: AST...) -> AST {
+func alt(_ asts: AST...) -> AST {
   alt(asts)
 }
 
-public func concat(_ asts: [AST]) -> AST {
-  .concatenation(.init(asts, _fakeRange))
+func concat(_ asts: [AST]) -> AST {
+  .concatenation(.init(asts, .fake))
 }
-public func concat(_ asts: AST...) -> AST {
+func concat(_ asts: AST...) -> AST {
   concat(asts)
 }
 
-public func group(
+func group(
   _ kind: AST.Group.Kind, _ child: AST
 ) -> AST {
-  .group(.init(_fake(kind), child, _fakeRange))
+  .group(.init(.init(faking: kind), child, .fake))
 }
-public func capture(
+func capture(
   _ child: AST
 ) -> AST {
   group(.capture, child)
 }
-public func nonCapture(
+func nonCapture(
   _ child: AST
 ) -> AST {
   group(.nonCapture, child)
 }
-public func namedCapture(
+func namedCapture(
   _ name: String,
   _ child: AST
 ) -> AST {
-  group(.namedCapture(_fake(name)), child)
+  group(.namedCapture(.init(faking: name)), child)
 }
-public func nonCaptureReset(
+func nonCaptureReset(
   _ child: AST
 ) -> AST {
   group(.nonCaptureReset, child)
 }
-public func atomicNonCapturing(
+func atomicNonCapturing(
   _ child: AST
 ) -> AST {
   group(.atomicNonCapturing, child)
 }
-public func lookahead(_ child: AST) -> AST {
+func lookahead(_ child: AST) -> AST {
   group(.lookahead, child)
 }
-public func lookbehind(_ child: AST) -> AST {
+func lookbehind(_ child: AST) -> AST {
   group(.lookbehind, child)
 }
-public func negativeLookahead(_ child: AST) -> AST {
+func negativeLookahead(_ child: AST) -> AST {
   group(.negativeLookahead, child)
 }
-public func negativeLookbehind(_ child: AST) -> AST {
+func negativeLookbehind(_ child: AST) -> AST {
   group(.negativeLookbehind, child)
 }
 
 
-public var any: AST { .atom(.any) }
+var any: AST { .atom(.any) }
 
-public func quant(
+func quant(
   _ amount: AST.Quantification.Amount,
   _ kind: AST.Quantification.Kind = .greedy,
   _ child: AST
 ) -> AST {
   .quantification(.init(
-    _fake(amount), _fake(kind), child, _fakeRange))
+    .init(faking: amount), .init(faking: kind), child, .fake))
 }
-public func zeroOrMore(
+func zeroOrMore(
   _ kind: AST.Quantification.Kind = .greedy,
   _ child: AST
 ) -> AST {
   quant(.zeroOrMore, kind, child)
 }
-public func zeroOrOne(
+func zeroOrOne(
   _ kind: AST.Quantification.Kind = .greedy,
   _ child: AST
 ) -> AST {
   quant(.zeroOrOne, kind, child)
 }
-public func oneOrMore(
+func oneOrMore(
   _ kind: AST.Quantification.Kind = .greedy,
   _ child: AST
 ) -> AST {
   quant(.oneOrMore, kind, child)
 }
-public func exactly(
+func exactly(
   _ kind: AST.Quantification.Kind = .greedy,
   _ i: Int,
   _ child: AST
 ) -> AST {
-  quant(.exactly(_fake(i)), kind, child)
+  quant(.exactly(.init(faking: i)), kind, child)
 }
-public func nOrMore(
+func nOrMore(
   _ kind: AST.Quantification.Kind = .greedy,
   _ i: Int,
   _ child: AST
 ) -> AST {
-  quant(.nOrMore(_fake(i)), kind, child)
+  quant(.nOrMore(.init(faking: i)), kind, child)
 }
-public func upToN(
+func upToN(
   _ kind: AST.Quantification.Kind = .greedy,
   _ i: Int,
   _ child: AST
 ) -> AST {
-  quant(.upToN(_fake(i)), kind, child)
+  quant(.upToN(.init(faking: i)), kind, child)
 }
-public func quantRange(
+func quantRange(
   _ kind: AST.Quantification.Kind = .greedy,
   _ r: ClosedRange<Int>,
   _ child: AST
 ) -> AST {
-  let range = _fake(r.lowerBound) ... _fake(r.upperBound)
+  let range = AST.Loc(faking: r.lowerBound) ... AST.Loc(faking: r.upperBound)
   return quant(.range(range), kind, child)
 }
 
-public func charClass(
+func charClass(
   _ members: AST.CustomCharacterClass.Member...,
   inverted: Bool = false
 ) -> AST {
-  let cc = CustomCC(
-    _fake(inverted ? .inverted : .normal),
+  let cc = AST.CustomCharacterClass(
+    .init(faking: inverted ? .inverted : .normal),
     members,
-    _fakeRange)
+    .fake)
   return .customCharacterClass(cc)
 }
-public func charClass(
+func charClass(
   _ members: AST.CustomCharacterClass.Member...,
   inverted: Bool = false
 ) -> AST.CustomCharacterClass.Member {
-  let cc = CustomCC(
-    _fake(inverted ? .inverted : .normal),
+  let cc = AST.CustomCharacterClass(
+    .init(faking: inverted ? .inverted : .normal),
     members,
-    _fakeRange)
+    .fake)
   return .custom(cc)
 }
-public func posixSet(
+func posixSet(
   _ set: Unicode.POSIXCharacterSet, inverted: Bool = false
 ) -> Atom {
-  .namedSet(.init(inverted: inverted, set: set))
+  .namedSet(.init(inverted: inverted, set))
 }
 
-public func quote(_ s: String) -> AST {
-  .quote(.init(s, _fakeRange))
+func quote(_ s: String) -> AST {
+  .quote(.init(s, .fake))
 }
 
-public func prop(
+func prop(
   _ kind: Atom.CharacterProperty.Kind, inverted: Bool = false
 ) -> Atom {
   return .property(.init(kind, isInverted: inverted))

@@ -79,7 +79,7 @@ extension Source {
   ///
   /// Throws on overflow
   ///
-  mutating func lexNumber() throws -> Value<Int>? {
+  mutating func lexNumber() throws -> Loc<Int>? {
     try recordLoc {
       try $0.consumeNumber(
         \.isNumber, validate: { _ in }, radix: 10)
@@ -89,7 +89,7 @@ extension Source {
   /// Eat a scalar value from hexadecimal notation off the front
   private mutating func expectUnicodeScalar(
     numDigits: Int
-  ) throws -> Value<Unicode.Scalar> {
+  ) throws -> Loc<Unicode.Scalar> {
     try recordLoc { src in
       let num: UInt32 = try src.consumeHexNumber(
         numDigits: numDigits)
@@ -104,7 +104,7 @@ extension Source {
   /// Eat a scalar value from hexadecimal notation off the front
   private mutating func expectUnicodeScalar(
     digitRange: ClosedRange<Int>
-  ) throws -> Value<Unicode.Scalar> {
+  ) throws -> Loc<Unicode.Scalar> {
     try recordLoc { src in
       let uOpt: UInt32? = try src.consumeHexNumber { s in
         guard digitRange.contains(s.count) else {
@@ -134,7 +134,7 @@ extension Source {
   ///
   mutating func expectUnicodeScalar(
     escapedCharacter base: Character
-  ) throws -> Value<Unicode.Scalar> {
+  ) throws -> Loc<Unicode.Scalar> {
     try recordLoc { src in
       switch base {
       case "u", "x":
@@ -161,9 +161,9 @@ extension Source {
   ///     QuantKind  -> '?' | '+'
   ///
   mutating func lexQuantifier() throws -> (
-    Value<Quant.Amount>, Value<Quant.Kind>
+    Loc<Quant.Amount>, Loc<Quant.Kind>
   )? {
-    let amt: Value<Quant.Amount>? = try recordLoc { src in
+    let amt: Loc<Quant.Amount>? = try recordLoc { src in
       if src.tryEat("*") { return .zeroOrMore }
       if src.tryEat("+") { return .oneOrMore }
       if src.tryEat("?") { return .zeroOrOne }
@@ -181,7 +181,7 @@ extension Source {
     }
     guard let amt = amt else { return nil }
 
-    let kind: Value<Quant.Kind> = try recordLoc { src in
+    let kind: Loc<Quant.Kind> = try recordLoc { src in
       if src.tryEat("?") { return .reluctant  }
       if src.tryEat("+") { return .possessive }
       return .greedy
@@ -196,7 +196,7 @@ extension Source {
   ///                  | ModernRange
   ///     ModernRange -> '..<' <Int> | '...' <Int>
   ///                  | <Int> '..<' <Int> | <Int> '...' <Int>?
-  mutating func expectRange() throws -> Value<Quant.Amount> {
+  mutating func expectRange() throws -> Loc<Quant.Amount> {
     try recordLoc { src in
       // TODO: lex positive numbers, more specifically...
 
@@ -222,17 +222,17 @@ extension Source {
       switch (lowerOpt, closedRange, upperOpt) {
       case let (l?, nil, nil):
         // FIXME: source location tracking
-        return .exactly(_fake(l))
+        return .exactly(.init(faking: l))
       case let (l?, true, nil):
         // FIXME: source location tracking
-        return .nOrMore(_fake(l))
+        return .nOrMore(.init(faking: l))
       case let (nil, closed?, u?):
         // FIXME: source location tracking
-        return .upToN(_fake(closed ? u : u-1))
+        return .upToN(.init(faking: closed ? u : u-1))
       case let (l?, closed?, u?):
         // FIXME: source location tracking
         return .range(
-          _fake(l) ... _fake(closed ? u : u-1))
+          .init(faking: l) ... .init(faking: closed ? u : u-1))
       case let (nil, nil, u) where u != nil:
         fatalError("Not possible")
       default:
@@ -244,7 +244,7 @@ extension Source {
   private mutating func lexUntil(
     _ predicate: (inout Source) -> Bool,
     validate: (String) throws -> Void = { _ in }
-  ) throws -> Value<String> {
+  ) throws -> Loc<String> {
     try recordLoc { src in
       var result = ""
       while !predicate(&src) {
@@ -259,14 +259,14 @@ extension Source {
 
   private mutating func lexUntil(
     eating end: String, validate: (String) throws -> Void = { _ in }
-  ) throws -> Value<String> {
+  ) throws -> Loc<String> {
     try lexUntil({ src in src.tryEat(sequence: end) }, validate: validate)
   }
 
   /// Expect a linear run of non-nested non-empty content
   private mutating func expectQuoted(
     endingWith end: String
-  ) throws -> Value<String> {
+  ) throws -> Loc<String> {
     try lexUntil(eating: end, validate: { result in
       guard !result.isEmpty else {
         throw ParseError.misc("Expected non-empty contents")
@@ -286,7 +286,7 @@ extension Source {
   ///
   /// TODO: Need to support some escapes
   ///
-  mutating func lexQuote() throws -> Value<String>? {
+  mutating func lexQuote() throws -> Loc<String>? {
     try recordLoc { src in
       if src.tryEat(sequence: #"\Q"#) {
         return try src.expectQuoted(endingWith: #"\E"#).value
@@ -309,8 +309,8 @@ extension Source {
   ///
   /// TODO: Swift-style nested comments, line-ending comments, etc
   ///
-  mutating func lexComment() throws -> Value<String>? {
-    try recordLoc { src in
+  mutating func lexComment() throws -> AST.Trivia? {
+    let trivia: Loc<String>? = try recordLoc { src in
       if src.tryEat(sequence: "(?#.") {
         return try src.expectQuoted(endingWith: ")").value
       }
@@ -319,21 +319,29 @@ extension Source {
       }
       return nil
     }
+    // FIXME: gross
+    return trivia == nil ? nil :
+      AST.Trivia(
+        String(input[trivia!.location.range]), trivia!.location)
   }
 
   /// Try to consume non-semantic whitespace as trivia
   ///
   /// Does nothing unless `SyntaxOptions.nonSemanticWhitespace` is set
-  mutating func lexNonSemanticWhitespace() throws -> Value<AST.Trivia>? {
+  mutating func lexNonSemanticWhitespace() throws -> AST.Trivia? {
     guard syntax.ignoreWhitespace else { return nil }
-    return try recordLoc { src in
+    let trivia: Loc<String>? = try recordLoc { src in
       var didSomething = false
       while src.tryEat(" ") {
         didSomething = true
       }
-      // FIXME: source location tracking
-      return didSomething ? AST.Trivia(_fakeRange) : nil
+      // FIXME: gross
+      return didSomething ? "" : nil
     }
+    // FIXME: gross
+    return trivia == nil ? nil :
+      AST.Trivia(
+        String(input[trivia!.location.range]), trivia!.location)
   }
 
 
@@ -356,7 +364,7 @@ extension Source {
   /// comments, like quotes, cannot be quantified.
   ///
   mutating func lexGroupStart(
-  ) throws -> Value<AST.Group.Kind>? {
+  ) throws -> Loc<AST.Group.Kind>? {
     try recordLoc { src in
       guard src.tryEat("(") else { return nil }
 
@@ -395,7 +403,7 @@ extension Source {
   }
 
   mutating func lexCustomCCStart(
-  ) throws -> Value<CustomCC.Start>? {
+  ) throws -> Loc<CustomCC.Start>? {
     try recordLoc { src in
       // POSIX named sets are atoms.
       guard !src.starts(with: "[:") else { return nil }
@@ -411,7 +419,7 @@ extension Source {
   ///
   ///     CustomCCBinOp -> '--' | '~~' | '&&'
   ///
-  mutating func lexCustomCCBinOp() throws -> Value<CustomCC.SetOp>? {
+  mutating func lexCustomCCBinOp() throws -> Loc<CustomCC.SetOp>? {
     try recordLoc { src in
       // TODO: Perhaps a syntax options check (!PCRE)
       // TODO: Better AST types here
@@ -429,7 +437,7 @@ extension Source {
     return nil
   }
 
-  private mutating func lexPOSIXNamedSet() throws -> Value<Atom.POSIXSet>? {
+  private mutating func lexPOSIXNamedSet() throws -> Loc<Atom.POSIXSet>? {
     try recordLoc { src in
       guard src.tryEat(sequence: "[:") else { return nil }
       let inverted = src.tryEat("^")
@@ -437,7 +445,7 @@ extension Source {
       guard let set = Unicode.POSIXCharacterSet(rawValue: name) else {
         throw ParseError.invalidPOSIXSetName(name)
       }
-      return Atom.POSIXSet(inverted: inverted, set: set)
+      return Atom.POSIXSet(inverted: inverted, set)
     }
   }
 
@@ -447,7 +455,7 @@ extension Source {
   ///     Prop -> [\s\w-]+
   ///
   private mutating func lexCharacterProperty(
-  ) throws -> Value<Atom.CharacterProperty>? {
+  ) throws -> Loc<Atom.CharacterProperty>? {
     try recordLoc { src in
       // '\P{...}' is the inverted version of '\p{...}'
       guard src.starts(with: "p{") || src.starts(with: "P{") else { return nil }
@@ -481,7 +489,7 @@ extension Source {
   /// TODO: references
   mutating func expectEscaped(
     isInCustomCharacterClass ccc: Bool
-  ) throws -> Value<Atom> {
+  ) throws -> Loc<Atom> {
     try recordLoc { src in
       // Keyboard control/meta
       if src.tryEat("c") || src.tryEat(sequence: "C-") {
@@ -545,7 +553,7 @@ extension Source {
   ///
   mutating func lexAtom(
     isInCustomCharacterClass customCC: Bool
-  ) throws -> Value<Atom>? {
+  ) throws -> Loc<Atom>? {
     try recordLoc { src in
       // Check for not-an-atom, e.g. parser recursion termination
       if src.isEmpty { return nil }
@@ -589,7 +597,7 @@ extension Source {
 
   /// Try to lex the end of a range in a custom character class, which consists
   /// of a '-' character followed by an atom.
-  mutating func lexCustomCharClassRangeEnd() throws -> Value<Atom>? {
+  mutating func lexCustomCharClassRangeEnd() throws -> Loc<Atom>? {
     // Make sure we don't have a binary operator e.g '--', and the '-' is not
     // ending the custom character class (in which case it is literal).
     guard peekCCBinOp() == nil && !starts(with: "-]") && tryEat("-") else {

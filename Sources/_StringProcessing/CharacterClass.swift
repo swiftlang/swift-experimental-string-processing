@@ -286,9 +286,9 @@ extension CharacterClass {
         .range(.char("0"), .char("9")),
       ]
       let ccc = AST.CustomCharacterClass(
-        _fake(inv ? .inverted : .normal),
+        .init(faking: inv ? .inverted : .normal),
         members,
-        _fakeRange)
+        .fake)
 
       return .customCharacterClass(ccc)
 

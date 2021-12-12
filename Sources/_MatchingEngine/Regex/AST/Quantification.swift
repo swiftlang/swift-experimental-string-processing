@@ -4,18 +4,18 @@ extension AST {
     public let kind: Loc<Kind>
 
     public let child: AST
-    public let sourceRange: SourceRange
+    public let location: SourceLocation
 
     public init(
       _ amount: Loc<Amount>,
-      _ kind: Source.Value<Kind>,
+      _ kind: Loc<Kind>,
       _ child: AST,
-      _ r: SourceRange
+      _ r: SourceLocation
     ) {
       self.amount = amount
       self.kind = kind
       self.child = child
-      self.sourceRange = r
+      self.location = r
     }
 
     public enum Amount: Hashable {

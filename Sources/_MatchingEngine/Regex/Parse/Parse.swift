@@ -65,8 +65,10 @@ extension Parser {
         """
   }
 
-  fileprivate func sr(_ start: SourceLoc) -> SourceRange {
-    start ..< source.currentLoc
+  fileprivate func loc(
+    _ start: Source.Position
+  ) -> SourceLocation {
+    SourceLocation(start ..< source.currentPosition)
   }
 }
 
@@ -77,9 +79,9 @@ extension Parser {
   ///     Alternation  -> Concatenation ('|' Concatenation)*
   ///
   mutating func parse() throws -> AST {
-    let _start = source.currentLoc
+    let _start = source.currentPosition
 
-    if source.isEmpty { return .empty(.init(sr(_start))) }
+    if source.isEmpty { return .empty(.init(loc(_start))) }
 
     var result = Array<AST>(singleElement: try parseConcatenation())
     while source.tryEat("|") {
@@ -91,7 +93,7 @@ extension Parser {
       return result[0]
     }
 
-    return .alternation(.init(result, sr(_start)))
+    return .alternation(.init(result, loc(_start)))
   }
 
   /// Parse a term, potentially separated from others by `|`
@@ -102,7 +104,7 @@ extension Parser {
   ///
   mutating func parseConcatenation() throws -> AST {
     var result = Array<AST>()
-    let _start = source.currentLoc
+    let _start = source.currentPosition
 
     while true {
       // Check for termination, e.g. of recursion or bin ops
@@ -110,30 +112,28 @@ extension Parser {
       if source.peek() == "|" || source.peek() == ")" { break }
 
       // TODO: refactor loop body into function
-      let _start = source.currentLoc
+      let _start = source.currentPosition
 
       //     Trivia -> `lexComment` | `lexNonSemanticWhitespace`
-      if let _ = try source.lexComment() {
-        // TODO: remember comments
-        result.append(.trivia(.init(sr(_start))))
+      if let triv = try source.lexComment() {
+        result.append(.trivia(triv))
         continue
       }
-      if let _ = try source.lexNonSemanticWhitespace() {
-        // TODO: Remember source range
-        result.append(.trivia(.init(sr(_start))))
+      if let triv = try source.lexNonSemanticWhitespace() {
+        result.append(.trivia(triv))
         continue
       }
 
       //     Quote      -> `lexQuote`
       if let quote = try source.lexQuote() {
-        result.append(.quote(.init(quote.value, sr(_start))))
+        result.append(.quote(.init(quote.value, loc(_start))))
         continue
       }
       //     Quantification  -> QuantOperand Quantifier?
       if let operand = try parseQuantifierOperand() {
         if let (amt, kind) = try source.lexQuantifier() {
            result.append(.quantification(.init(
-            amt, kind, operand, sr(_start))))
+            amt, kind, operand, loc(_start))))
         } else {
           result.append(operand)
         }
@@ -143,13 +143,13 @@ extension Parser {
       fatalError("unreachable?")
     }
     guard !result.isEmpty else {
-      return .empty(.init(sr(_start)))
+      return .empty(.init(loc(_start)))
     }
     if result.count == 1 {
       return result[0]
     }
 
-    return .concatenation(.init(result, sr(_start)))
+    return .concatenation(.init(result, loc(_start)))
   }
 
   /// Parse a (potentially quantified) component
@@ -160,12 +160,12 @@ extension Parser {
   mutating func parseQuantifierOperand() throws -> AST? {
     assert(!source.isEmpty)
 
-    let _start = source.currentLoc
+    let _start = source.currentPosition
 
     if let kind = try source.lexGroupStart() {
       let child = try parse()
       try source.expect(")")
-      return .group(.init(kind, child, sr(_start)))
+      return .group(.init(kind, child, loc(_start)))
     }
     if let cccStart = try source.lexCustomCCStart() {
       return .customCharacterClass(
@@ -194,7 +194,7 @@ extension Parser {
   ///     Range           -> Atom `-` Atom
   ///
   mutating func parseCustomCharacterClass(
-    _ start: Source.Value<CustomCC.Start>
+    _ start: Source.Loc<CustomCC.Start>
   ) throws -> CustomCC {
     typealias Member = CustomCC.Member
     try source.expectNonEmpty()
@@ -218,7 +218,7 @@ extension Parser {
       // If we're done, bail early
       let setOp = Member.setOperation(members, binOp, rhs)
       if source.tryEat("]") {
-        return CustomCC(start, [setOp], sr(start.startLoc))
+        return CustomCC(start, [setOp], loc(start.start))
       }
 
       // Otherwise it's just another member to accumulate
@@ -228,7 +228,7 @@ extension Parser {
       throw ParseError.expectedCustomCharacterClassMembers
     }
     try source.expect("]")
-    return CustomCC(start, members, sr(start.startLoc))
+    return CustomCC(start, members, loc(start.start))
   }
 
   mutating func parseCCCMembers(

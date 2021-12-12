@@ -15,7 +15,7 @@ func diagnose(
     XCTFail("""
       Passed, but expected error: \(expected)
     """)
-  } catch let e as Source.Error<ParseError> {
+  } catch let e as Source.Err<ParseError> {
     guard e.error == expected else {
       XCTFail("""
 

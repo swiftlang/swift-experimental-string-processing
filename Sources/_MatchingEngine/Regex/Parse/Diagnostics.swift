@@ -31,7 +31,7 @@ extension Source {
   }
 
   /// Throws an expected ASCII character error if not matched
-  mutating func expectASCII() throws -> Value<Character> {
+  mutating func expectASCII() throws -> Loc<Character> {
     try recordLoc { src in
       guard let c = src.peek() else {
         throw ParseError.unexpectedEndOfInput

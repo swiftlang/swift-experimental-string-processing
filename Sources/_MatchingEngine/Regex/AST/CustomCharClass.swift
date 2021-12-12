@@ -4,16 +4,16 @@ extension AST {
     public var start: Loc<Start>
     public var members: [Member]
 
-    public let sourceRange: SourceRange
+    public let location: SourceLocation
 
     public init(
       _ start: Loc<Start>,
       _ members: [Member],
-      _ sr: SourceRange
+      _ sr: SourceLocation
     ) {
       self.start = start
       self.members = members
-      self.sourceRange = sr
+      self.location = sr
     }
 
     // FIXME: track source ranges

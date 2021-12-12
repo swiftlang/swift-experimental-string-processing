@@ -1,3 +1,5 @@
+
+
 public enum Atom: Hashable, _ASTNode {
   /// Just a character
   ///
@@ -51,17 +53,12 @@ public enum Atom: Hashable, _ASTNode {
   case backreference(Reference)
   case subpattern(Reference)
   case condition(Reference)
-
-  /// Meaningless, used for e.g. non-semantic whitespace
-  ///
-  /// TODO: Does this mean we can't be quantified? we should check sooner...
-  case trivia
 }
 
 extension Atom {
   struct Storage: Hashable {
     let kind: Atom
-    let loc: SourceRange
+    let loc: SourceLocation
 
     // TODO: would this be useful to anyone?
     let fromCustomCharacterClass: Bool
@@ -418,10 +415,6 @@ extension Atom: _ASTPrintable {
     case .condition(_):
       fatalError("TODO")
 
-    case .trivia:
-      // TODO: print comments, non-semantic whitespace, etc
-      return ""
-
     case .char, .scalar:
       fatalError("Unreachable")
     }
@@ -446,8 +439,9 @@ extension Atom {
       // TODO: Not a character per-say, what should we do?
       fallthrough
 
-    case .property, .escaped, .namedSet, .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .condition, .trivia, .namedCharacter:
+    case .property, .escaped, .namedSet, .any,
+        .startOfLine, .endOfLine, .backreference,
+        .subpattern, .condition, .namedCharacter:
       return nil
     }
   }
@@ -457,13 +451,20 @@ extension Atom {
   public struct POSIXSet: Hashable {
     var inverted: Bool
     var set: Unicode.POSIXCharacterSet
+
+    public init(
+      inverted: Bool, _ set: Unicode.POSIXCharacterSet
+    ) {
+      self.inverted = inverted
+      self.set = set
+    }
   }
 }
 
 extension Atom {
-  var sourceRange: SourceRange {
+  var location: SourceLocation {
     // FIXME: source location tracking
-    _fakeRange
+    .fake
   }
 }
 

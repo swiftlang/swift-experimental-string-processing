@@ -18,10 +18,12 @@ public struct Source {
   }
 }
 
+// NOTE: We should probably drop this unless it's more broadly
+// useful
 extension Source: _CollectionWrapper {
   public typealias _Wrapped = Input.SubSequence
   public typealias Element = Char
-  public typealias Index = Loc
+  public typealias Index = Position
   public var _wrapped: _Wrapped {
     get { input[bounds] }
     set {
@@ -51,9 +53,11 @@ extension Source: _Peekable {
 // For prototyping, base everything on String. Might be buffer
 // of bytes, etc., in the future
 extension Source {
-  public typealias Input = String
-  public typealias Char  = Character
-  public typealias Loc   = String.Index
+  public typealias Input = String    // for wrapper...
+  public typealias Char  = Character // for wrapper...
+
+  /// A precise point in the input, commonly used for bounded ranges
+  public typealias Position = String.Index
 }
 
 // Ugly...
