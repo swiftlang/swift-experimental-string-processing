@@ -1,14 +1,14 @@
 extension AST {
   public struct Quantification: Hashable {
-    public let amount: Loc<Amount>
-    public let kind: Loc<Kind>
+    public let amount: Located<Amount>
+    public let kind: Located<Kind>
 
     public let child: AST
     public let location: SourceLocation
 
     public init(
-      _ amount: Loc<Amount>,
-      _ kind: Loc<Kind>,
+      _ amount: Located<Amount>,
+      _ kind: Located<Kind>,
       _ child: AST,
       _ r: SourceLocation
     ) {
@@ -22,10 +22,10 @@ extension AST {
       case zeroOrMore              // *
       case oneOrMore               // +
       case zeroOrOne               // ?
-      case exactly(Loc<Int>)            // {n}
-      case nOrMore(Loc<Int>)            // {n,}
-      case upToN(Loc<Int>)              // {,n}
-      case range(Loc<Int>, Loc<Int>) // {n,m}
+      case exactly(Located<Int>)         // {n}
+      case nOrMore(Located<Int>)         // {n,}
+      case upToN(Located<Int>)           // {,n}
+      case range(Located<Int>, Located<Int>) // {n,m}
     }
 
     public enum Kind: String, Hashable {

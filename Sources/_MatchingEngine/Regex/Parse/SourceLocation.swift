@@ -17,7 +17,9 @@ extension Source {
       self.init(r.relative(to: input.input))
     }
 
-    /// A "fake" location, sometimes useful for tooling purposes
+    /// NOTE: This is a temporary measure to unblock DSL efforts and
+    /// incremental source location tracking. This shouldn't be called from
+    /// within the parser's module...
     public static var fake: Self {
       .init("".startIndex ..< "".startIndex)
     }
@@ -33,7 +35,7 @@ extension Source {
 
 extension Source {
   /// An error with source location info
-  public struct Err<E: Error>: Error {
+  public struct LocatedError<E: Error>: Error {
     public let error: E
     public let location: SourceLocation
 
@@ -53,7 +55,7 @@ extension Source {
   /// Note: source location is part of value identity, so that the same
   /// e.g. `Character` appearing twice can be stored in a data structure
   /// distinctly. To ignore source locations, use `.value` directly.
-  public struct Loc<T: Hashable>: Hashable {
+  public struct Located<T: Hashable>: Hashable {
     public var value: T
     public var location: SourceLocation
 
@@ -65,71 +67,18 @@ extension Source {
       self.value = v
       self.location = Location(r)
     }
+
+    /// NOTE: This is a temporary measure to unblock DSL efforts and
+    /// incremental source location tracking. This shouldn't be called from
+    /// within the parser's module...
     public init(faking v: T) {
+      // TODO: any way to assert or guarantee this is called
+      // externally?
       self.init(v, .fake)
     }
-
-    var start: Source.Position { location.start }
-    var endLoc: Source.Position { location.end }
   }
 }
 extension AST {
-  public typealias Loc = Source.Loc
+  public typealias Located = Source.Located
 }
 
-extension Source {
-  // MARK: - recordLoc
-
-  /// Record source loc before processing and return
-  /// or throw the value/error with source locations.
-  mutating func recordLoc<T>(
-    _ f: (inout Self) throws -> T
-  ) throws -> Loc<T> {
-    let start = currentPosition
-    do {
-      let result = try f(&self)
-      return Loc(result, Location(start..<currentPosition))
-    } catch let e as Err<ParseError> {
-      throw e
-    } catch let e as ParseError {
-      throw Err(e, Location(start..<currentPosition))
-    } catch {
-      fatalError("FIXME: Let's not keep the boxed existential...")
-    }
-  }
-
-  /// Record source loc before processing and return
-  /// or throw the value/error with source locations.
-  mutating func recordLoc<T>(
-    _ f: (inout Self) throws -> T?
-  ) throws -> Loc<T>? {
-    let start = currentPosition
-    do {
-      guard let result = try f(&self) else { return nil }
-      return Loc(result, start..<currentPosition)
-    } catch let e as Source.Err<ParseError> {
-      throw e
-    } catch let e as ParseError {
-      throw Err(e, start..<currentPosition)
-    } catch {
-      fatalError("FIXME: Let's not keep the boxed existential...")
-    }
-  }
-
-  /// Record source loc before processing and return
-  /// or throw the value/error with source locations.
-  mutating func recordLoc(
-    _ f: (inout Self) throws -> ()
-  ) throws {
-    let start = currentPosition
-    do {
-      try f(&self)
-    } catch let e as Source.Err<ParseError> {
-      throw e
-    } catch let e as ParseError {
-      throw Err(e, start..<currentPosition)
-    } catch {
-      fatalError("FIXME: Let's not keep the boxed existential...")
-    }
-  }
-}

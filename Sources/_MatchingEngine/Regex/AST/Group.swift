@@ -1,12 +1,12 @@
 extension AST {
   public struct Group: Hashable {
-    public let kind: Loc<Kind>
+    public let kind: Located<Kind>
     public let child: AST
 
     public let location: SourceLocation
 
     public init(
-      _ kind: Loc<Kind>, _ child: AST, _ r: SourceLocation
+      _ kind: Located<Kind>, _ child: AST, _ r: SourceLocation
     ) {
       self.kind = kind
       self.child = child
@@ -18,7 +18,7 @@ extension AST {
       case capture
 
       // (?<name>...) (?'name'...) (?P<name>...)
-      case namedCapture(Loc<String>)
+      case namedCapture(Located<String>)
 
       // (?:...)
       case nonCapture

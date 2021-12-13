@@ -131,7 +131,7 @@ extension AST {
       self.location = location
     }
 
-    init(_ v: Loc<String>) {
+    init(_ v: Located<String>) {
       self.contents = v.value
       self.location = v.location
     }

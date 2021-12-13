@@ -94,6 +94,8 @@ extension AST {
     let base = String(repeating: " ", count: input.count)
     var lines = [base]
 
+    // TODO: drop the filtering when fake-ness is taken out of
+    // this module
     let nodes = _postOrder().filter(\.location.isReal)
 
     nodes.forEach { node in

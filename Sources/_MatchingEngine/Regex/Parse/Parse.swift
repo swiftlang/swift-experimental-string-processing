@@ -194,7 +194,7 @@ extension Parser {
   ///     Range           -> Atom `-` Atom
   ///
   mutating func parseCustomCharacterClass(
-    _ start: Source.Loc<CustomCC.Start>
+    _ start: Source.Located<CustomCC.Start>
   ) throws -> CustomCC {
     typealias Member = CustomCC.Member
     try source.expectNonEmpty()
@@ -218,7 +218,8 @@ extension Parser {
       // If we're done, bail early
       let setOp = Member.setOperation(members, binOp, rhs)
       if source.tryEat("]") {
-        return CustomCC(start, [setOp], loc(start.start))
+        return CustomCC(
+          start, [setOp], loc(start.location.start))
       }
 
       // Otherwise it's just another member to accumulate
@@ -228,7 +229,7 @@ extension Parser {
       throw ParseError.expectedCustomCharacterClassMembers
     }
     try source.expect("]")
-    return CustomCC(start, members, loc(start.start))
+    return CustomCC(start, members, loc(start.location.start))
   }
 
   mutating func parseCCCMembers(
