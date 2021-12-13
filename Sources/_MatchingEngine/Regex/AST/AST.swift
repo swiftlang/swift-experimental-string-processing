@@ -137,6 +137,11 @@ extension AST {
       self.location = location
     }
 
+    init(_ v: Loc<String>) {
+      self.contents = v.value
+      self.location = v.location
+    }
+
     public var _dumpBase: String {
       // TODO: comments, non-semantic whitespace, etc.
       ""

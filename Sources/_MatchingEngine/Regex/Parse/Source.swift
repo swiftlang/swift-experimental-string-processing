@@ -18,36 +18,6 @@ public struct Source {
   }
 }
 
-// NOTE: We should probably drop this unless it's more broadly
-// useful
-extension Source: _CollectionWrapper {
-  public typealias _Wrapped = Input.SubSequence
-  public typealias Element = Char
-  public typealias Index = Position
-  public var _wrapped: _Wrapped {
-    get { input[bounds] }
-    set {
-      let newBounds = newValue.startIndex ..< newValue.endIndex
-
-      // Really doubly check our assumptions
-      assert(newValue.base == input)
-      assert(bounds.lowerBound <= newBounds.lowerBound)
-      assert(bounds.upperBound >= newBounds.upperBound)
-
-      bounds = newBounds
-    }
-  }
-}
-
-extension Source: _Peekable {
-  typealias Output = Char
-
-  mutating func advance() {
-    assert(!isEmpty)
-    _wrapped = _wrapped.dropFirst()
-  }
-}
-
 // MARK: - Prototype uses String
 
 // For prototyping, base everything on String. Might be buffer
@@ -60,21 +30,101 @@ extension Source {
   public typealias Position = String.Index
 }
 
-// Ugly...
-extension Slice where Base == Source {
-  var string: String {
-    String(self)
-  }
-}
-
 // MARK: - Syntax
 
 extension Source {
   var modernRanges: Bool { syntax.contains(.modernRanges) }
   var modernCaptures: Bool { syntax.contains(.modernCaptures) }
   var modernQuotes: Bool { syntax.contains(.modernQuotes) }
+  var modernComments: Bool { syntax.contains(.modernComments) }
   var nonSemanticWhitespace: Bool {
     syntax.contains(.nonSemanticWhitespace)
   }
 }
 
+// MARK: - Source as a peekable consumer
+
+extension Source {
+  var _slice: Input.SubSequence { input[bounds] }
+
+  var isEmpty: Bool { _slice.isEmpty }
+
+  mutating func peek() -> Char? { _slice.first }
+
+  mutating func advance() {
+    assert(!isEmpty)
+    let newLower = _slice.index(after: bounds.lowerBound)
+    self.bounds = newLower ..< bounds.upperBound
+  }
+
+  mutating func advance(_ i: Int) {
+    for _ in 0..<i {
+      advance()
+    }
+  }
+
+  mutating func tryEat(_ c: Char) -> Bool {
+    guard peek() == c else { return false }
+    advance()
+    return true
+  }
+
+  mutating func tryEat<C: Collection>(sequence c: C) -> Bool
+  where C.Element == Char {
+    guard _slice.starts(with: c) else { return false }
+    advance(c.count)
+    return true
+  }
+
+  mutating func eat(asserting c: Char) {
+    assert(peek() == c)
+    advance()
+  }
+
+  mutating func eat() -> Char {
+    assert(!isEmpty)
+    defer { advance() }
+    return peek().unsafelyUnwrapped
+  }
+
+  func starts<S: Sequence>(
+    with s: S
+  ) -> Bool where S.Element == Char {
+    _slice.starts(with: s)
+  }
+
+  mutating func eat(upTo: Position) -> Input.SubSequence {
+    defer {
+      while _slice.startIndex != upTo { advance() }
+    }
+    return _slice[..<upTo]
+  }
+
+  mutating func tryEatPrefix(
+    _ f: (Char) -> Bool
+  ) -> Input.SubSequence? {
+    guard let idx = _slice.firstIndex(where: { !f($0) }) else {
+      return self.eat(upTo: _slice.endIndex)
+    }
+    if idx == _slice.startIndex { return nil }
+    return eat(upTo: idx)
+  }
+  mutating func tryEatPrefix(
+    maxLength: Int,
+    _ f: (Char) -> Bool
+  ) -> Input.SubSequence? {
+
+    let pre = _slice.prefix(while: f).prefix(maxLength)
+    guard !pre.isEmpty else { return nil }
+
+    defer { self.advance(pre.count) }
+    return pre
+  }
+
+  mutating func tryEat(count: Int) -> Input.SubSequence? {
+    let pre = _slice.prefix(count)
+    guard pre.count == count else { return nil }
+    defer { advance(count) }
+    return pre
+  }
+}

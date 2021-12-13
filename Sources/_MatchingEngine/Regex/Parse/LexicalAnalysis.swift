@@ -19,11 +19,11 @@ extension Source {
   private mutating func consumeNumber<
     Num: FixedWidthInteger
   >(
-    _ isNumber: (Character) -> Bool,
-    validate: (String) throws -> (),
+    _ isNumber: (Char) -> Bool,
+    validate: (Input.SubSequence) throws -> (),
     radix: Int
   ) throws -> Num? {
-    guard let num = tryEatPrefix(isNumber)?.string else {
+    guard let num = tryEatPrefix(isNumber) else {
       return nil
     }
     try validate(num)
@@ -33,7 +33,7 @@ extension Source {
     return i
   }
   private mutating func consumeHexNumber<Num: FixedWidthInteger>(
-    validate: (String) throws -> ()
+    validate: (Input.SubSequence) throws -> ()
   ) throws -> Num? {
     try consumeNumber(\.isHexDigit, validate: validate, radix: 16)
   }
@@ -41,13 +41,13 @@ extension Source {
   private mutating func consumeHexNumber<Num: FixedWidthInteger>(
     numDigits: Int
   ) throws -> Num {
-    guard let str = tryEat(count: numDigits)?.string else {
+    guard let str = tryEat(count: numDigits) else {
       throw ParseError.misc("Expected more digits")
     }
     guard let i = Num(str, radix: 16) else {
       // TODO: Or, it might have failed because of overflow,
       // Can we tell easily?
-      throw ParseError.expectedHexNumber(str)
+      throw ParseError.expectedHexNumber(String(str))
     }
     return i
   }
@@ -56,18 +56,18 @@ extension Source {
     digitRange: ClosedRange<Int>
   ) throws -> Num {
     guard let str = self.tryEatPrefix(
-      maxLength: digitRange.upperBound, \.isHexDigit)?.string
-    else {
+      maxLength: digitRange.upperBound, \.isHexDigit
+    ) else {
       throw ParseError.expectedDigits("", expecting: digitRange)
     }
     guard digitRange.contains(str.count) else {
       throw ParseError.expectedDigits(
-        str, expecting: digitRange)
+        String(str), expecting: digitRange)
     }
     guard let i = Num(str, radix: 16) else {
       // TODO: Or, it might have failed because of overflow,
       // Can we tell easily?
-      throw ParseError.expectedHexNumber(str)
+      throw ParseError.expectedHexNumber(String(str))
     }
     return i
   }
@@ -109,7 +109,7 @@ extension Source {
       let uOpt: UInt32? = try src.consumeHexNumber { s in
         guard digitRange.contains(s.count) else {
           throw ParseError.expectedDigits(
-            s, expecting: digitRange)
+            String(s), expecting: digitRange)
         }
       }
       guard let u = uOpt else {
@@ -314,15 +314,13 @@ extension Source {
       if src.tryEat(sequence: "(?#.") {
         return try src.expectQuoted(endingWith: ")").value
       }
-      if src.tryEat(sequence: "/*") {
+      if src.modernComments, src.tryEat(sequence: "/*") {
         return try src.expectQuoted(endingWith: "*/").value
       }
       return nil
     }
-    // FIXME: gross
-    return trivia == nil ? nil :
-      AST.Trivia(
-        String(input[trivia!.location.range]), trivia!.location)
+    guard let trivia = trivia else { return nil }
+    return AST.Trivia(trivia)
   }
 
   /// Try to consume non-semantic whitespace as trivia
@@ -335,13 +333,11 @@ extension Source {
       while src.tryEat(" ") {
         didSomething = true
       }
-      // FIXME: gross
+      // FIXME: record the whitespace...
       return didSomething ? "" : nil
     }
-    // FIXME: gross
-    return trivia == nil ? nil :
-      AST.Trivia(
-        String(input[trivia!.location.range]), trivia!.location)
+    guard let trivia = trivia else { return nil }
+    return AST.Trivia(trivia)
   }
 
 
@@ -460,7 +456,7 @@ extension Source {
       // '\P{...}' is the inverted version of '\p{...}'
       guard src.starts(with: "p{") || src.starts(with: "P{") else { return nil }
       let isInverted = src.peek() == "P"
-      src.eat(count: 2)
+      src.advance(2)
 
       // We should either have:
       // - '\p{x=y}' where 'x' is a property key, and 'y' is a value.
