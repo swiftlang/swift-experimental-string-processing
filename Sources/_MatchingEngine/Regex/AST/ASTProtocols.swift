@@ -6,16 +6,14 @@
 
  */
 
-
-
 // MARK: - AST parent/child
 
 protocol _ASTNode: _ASTPrintable {
-  var sourceRange: SourceRange { get }
+  var location: SourceLocation { get }
 }
 extension _ASTNode {
-  var startLoc: SourceLoc { sourceRange.lowerBound }
-  var endLoc: SourceLoc { sourceRange.upperBound }
+  var startPosition: Source.Position { location.start }
+  var endPosition: Source.Position { location.end }
 }
 
 protocol _ASTParent: _ASTNode {
@@ -56,17 +54,9 @@ extension _ASTPrintable {
     (self as? _ASTParent)?.children
   }
 
-  // TODO: Semi-pretty printing
-  var _printBase: String { _dumpBase }
-
   func _print() -> String {
-    guard let children = _children else {
-      return _printBase
-    }
-    let sub = children.lazy.map {
-      $0._print()
-    }.joined(separator: ",")
-    return "\(_printBase)(\(sub))"
+    // TODO: prettier printing
+    _dump()
   }
   func _dump() -> String {
     guard let children = _children else {
@@ -80,9 +70,6 @@ extension _ASTPrintable {
 }
 
 extension AST: _ASTPrintable {
-  public var _printBase: String {
-    _associatedValue._printBase
-  }
   public var _dumpBase: String {
     _associatedValue._dumpBase
   }
@@ -91,10 +78,7 @@ extension AST: _ASTPrintable {
 // MARK: - Rendering
 
 // Useful for testing, debugging, etc.
-//
-// TODO: Prettier rendering, probably inverted
 extension AST {
-
   func _postOrder() -> Array<AST> {
     var nodes = Array<AST>()
     _postOrder(into: &nodes)
@@ -110,13 +94,15 @@ extension AST {
     let base = String(repeating: " ", count: input.count)
     var lines = [base]
 
-    let nodes = _postOrder().filter(\.sourceRange.isReal)
+    // TODO: drop the filtering when fake-ness is taken out of
+    // this module
+    let nodes = _postOrder().filter(\.location.isReal)
 
     nodes.forEach { node in
-      let sr = node.sourceRange
-      let count = input[sr].count
+      let loc = node.location
+      let count = input[loc.range].count
       for idx in lines.indices {
-        if lines[idx][sr].all(\.isWhitespace) {
+        if lines[idx][loc.range].all(\.isWhitespace) {
           node._renderRange(count: count, into: &lines[idx])
           return
         }
@@ -138,6 +124,6 @@ extension AST {
   ) {
     guard count > 0 else { return }
     let repl = String(repeating: "-", count: count-1) + "^"
-    output.replaceSubrange(sourceRange, with: repl)
+    output.replaceSubrange(location.range, with: repl)
   }
 }

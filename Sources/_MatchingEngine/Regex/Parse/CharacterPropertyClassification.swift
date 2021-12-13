@@ -1,5 +1,5 @@
 extension Source {
-  typealias PropertyKind = Atom.CharacterProperty.Kind
+  typealias PropertyKind = AST.Atom.CharacterProperty.Kind
 
   static private func withNormalizedForms<T>(
     _ str: String, match: (String) -> T?
@@ -374,7 +374,7 @@ extension Source {
     if let oniguruma = OnigurumaSpecialProperty(rawValue: value) {
       return .onigurumaSpecial(oniguruma)
     }
-    typealias PCRESpecial = Atom.CharacterProperty.Kind.PCRESpecialCategory
+    typealias PCRESpecial = AST.Atom.CharacterProperty.PCRESpecialCategory
     if let pcreSpecial = PCRESpecial(rawValue: value) {
       return .pcreSpecial(pcreSpecial)
     }

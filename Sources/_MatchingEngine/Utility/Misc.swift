@@ -43,3 +43,6 @@ extension Array /* for enumerated */ {
   }
 }
 
+extension Substring {
+  var string: String { String(self) }
+}

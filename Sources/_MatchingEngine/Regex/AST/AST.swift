@@ -2,9 +2,6 @@
 public indirect enum AST:
   Hashable/*, _ASTPrintable ASTValue, ASTAction*/
 {
-  /// Located value: a value wrapped with a source range
-  public typealias Loc = Source.Value
-
   /// ... | ... | ...
   case alternation(Alternation)
 
@@ -19,8 +16,8 @@ public indirect enum AST:
   /// \Q...\E
   case quote(Quote)
 
-  ///
-  case trivia(Trivia) // TODO: track comments
+  /// Comments, non-semantic whitespace, etc
+  case trivia(Trivia)
 
   case atom(Atom)
 
@@ -28,18 +25,12 @@ public indirect enum AST:
 
   case empty(Empty)
 
-
   // FIXME: Move off the regex literal AST
   case groupTransform(
     Group, transform: CaptureTransform)
 }
 
-// TODO: This is currently unused, but it's likely we'll want
-// to host things like global options, more source info, etc.
-private struct ASTStorage {
-  let ast: AST
-  let sourceRange: SourceRange?
-}
+// TODO: Do we want something that holds the AST and stored global options?
 
 extension AST {
   // :-(
@@ -69,8 +60,8 @@ extension AST {
     return (_associatedValue as? _ASTParent)?.children
   }
 
-  public var sourceRange: SourceRange {
-    _associatedValue.sourceRange
+  public var location: SourceLocation {
+    _associatedValue.location
   }
 
   /// Whether this node is "trivia" or non-semantic, like comments
@@ -97,11 +88,11 @@ extension AST {
 
   public struct Alternation: Hashable, _ASTNode {
     public let children: [AST]
-    public let sourceRange: SourceRange
+    public let location: SourceLocation
 
-    public init(_ mems: [AST], _ sourceRange: SourceRange) {
+    public init(_ mems: [AST], _ location: SourceLocation) {
       self.children = mems
-      self.sourceRange = sourceRange
+      self.location = location
     }
 
     public var _dumpBase: String { "alternation" }
@@ -109,11 +100,11 @@ extension AST {
 
   public struct Concatenation: Hashable, _ASTNode {
     public let children: [AST]
-    public let sourceRange: SourceRange
+    public let location: SourceLocation
 
-    public init(_ mems: [AST], _ sourceRange: SourceRange) {
+    public init(_ mems: [AST], _ location: SourceLocation) {
       self.children = mems
-      self.sourceRange = sourceRange
+      self.location = location
     }
 
     public var _dumpBase: String { "" }
@@ -121,22 +112,28 @@ extension AST {
 
   public struct Quote: Hashable, _ASTNode {
     public let literal: String
-    public let sourceRange: SourceRange
+    public let location: SourceLocation
 
-    public init(_ s: String, _ sourceRange: SourceRange) {
+    public init(_ s: String, _ location: SourceLocation) {
       self.literal = s
-      self.sourceRange = sourceRange
+      self.location = location
     }
 
     public var _dumpBase: String { "quote" }
   }
 
   public struct Trivia: Hashable, _ASTNode {
-    // TODO: Contents of trivia, kinds, etc
-    public let sourceRange: SourceRange
+    public let contents: String
+    public let location: SourceLocation
 
-    public init(_ sourceRange: SourceRange) {
-      self.sourceRange = sourceRange
+    public init(_ s: String, _ location: SourceLocation) {
+      self.contents = s
+      self.location = location
+    }
+
+    init(_ v: Located<String>) {
+      self.contents = v.value
+      self.location = v.location
     }
 
     public var _dumpBase: String {
@@ -146,10 +143,10 @@ extension AST {
   }
 
   public struct Empty: Hashable, _ASTNode {
-    public let sourceRange: SourceRange
+    public let location: SourceLocation
 
-    public init(_ sourceRange: SourceRange) {
-      self.sourceRange = sourceRange
+    public init(_ location: SourceLocation) {
+      self.location = location
     }
 
     public var _dumpBase: String { "" }

@@ -1,31 +1,31 @@
 extension AST {
   public struct Quantification: Hashable {
-    public let amount: Loc<Amount>
-    public let kind: Loc<Kind>
+    public let amount: Located<Amount>
+    public let kind: Located<Kind>
 
     public let child: AST
-    public let sourceRange: SourceRange
+    public let location: SourceLocation
 
     public init(
-      _ amount: Loc<Amount>,
-      _ kind: Source.Value<Kind>,
+      _ amount: Located<Amount>,
+      _ kind: Located<Kind>,
       _ child: AST,
-      _ r: SourceRange
+      _ r: SourceLocation
     ) {
       self.amount = amount
       self.kind = kind
       self.child = child
-      self.sourceRange = r
+      self.location = r
     }
 
     public enum Amount: Hashable {
       case zeroOrMore              // *
       case oneOrMore               // +
       case zeroOrOne               // ?
-      case exactly(Loc<Int>)            // {n}
-      case nOrMore(Loc<Int>)            // {n,}
-      case upToN(Loc<Int>)              // {,n}
-      case range(ClosedRange<Loc<Int>>) // {n,m}
+      case exactly(Located<Int>)         // {n}
+      case nOrMore(Located<Int>)         // {n,}
+      case upToN(Located<Int>)           // {,n}
+      case range(Located<Int>, Located<Int>) // {n,m}
     }
 
     public enum Kind: String, Hashable {
@@ -45,11 +45,11 @@ extension AST.Quantification.Amount: _ASTPrintable {
     case .zeroOrMore:      return "*"
     case .oneOrMore:       return "+"
     case .zeroOrOne:       return "?"
-    case let .exactly(n):  return "{\(n)}"
-    case let .nOrMore(n):  return "{\(n),}"
-    case let .upToN(n):    return "{,\(n)}"
-    case let .range(r):
-      return "{\(r.lowerBound),\(r.upperBound)}"
+    case let .exactly(n):  return "{\(n.value)}"
+    case let .nOrMore(n):  return "{\(n.value),}"
+    case let .upToN(n):    return "{,\(n.value)}"
+    case let .range(lower, upper):
+      return "{\(lower),\(upper)}"
     }
   }
   public var _dumpBase: String {
@@ -57,11 +57,11 @@ extension AST.Quantification.Amount: _ASTPrintable {
     case .zeroOrMore:      return "zeroOrMore"
     case .oneOrMore:       return "oneOrMore"
     case .zeroOrOne:       return "zeroOrOne"
-    case let .exactly(n):  return "exactly<\(n)>"
-    case let .nOrMore(n):  return "nOrMore<\(n)>"
-    case let .upToN(n):    return "uptoN<\(n)>"
-    case let .range(r):
-      return ".range<\(r.lowerBound)...\(r.upperBound)>"
+    case let .exactly(n):  return "exactly<\(n.value)>"
+    case let .nOrMore(n):  return "nOrMore<\(n.value)>"
+    case let .upToN(n):    return "uptoN<\(n.value)>"
+    case let .range(lower, upper):
+      return ".range<\(lower.value)...\(upper.value)>"
     }
   }
 }

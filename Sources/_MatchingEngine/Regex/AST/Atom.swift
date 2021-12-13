@@ -1,74 +1,71 @@
-public enum Atom: Hashable, _ASTNode {
-  /// Just a character
-  ///
-  /// A, \*, \\, ...
-  case char(Character)
+extension AST {
+  public struct Atom: Hashable, _ASTNode {
+    public let kind: Kind
+    public let location: SourceLocation
 
-  /// A Unicode scalar value written as a literal
-  ///
-  /// \u{...}, \0dd, \x{...}, ...
-  case scalar(Unicode.Scalar)
+    public init(_ k: Kind, _ loc: SourceLocation) {
+      self.kind = k
+      self.location = loc
+    }
 
-  /// A Unicode property, category, or script
-  ///
-  /// \p{...}, \p{^...}, \P
-  case property(CharacterProperty)
+    public enum Kind: Hashable {
+      /// Just a character
+      ///
+      /// A, \*, \\, ...
+      case char(Character)
 
-  /// A built-in escaped character
-  ///
-  /// Literal escapes: \n, \t ...
-  /// Character classes: \s, \w ...
-  /// \n, \s, \Q, \b, \A, \K, ...
-  case escaped(EscapedBuiltin) // TODO: expand this out
+      /// A Unicode scalar value written as a literal
+      ///
+      /// \u{...}, \0dd, \x{...}, ...
+      case scalar(Unicode.Scalar)
 
-  /// A control character
-  ///
-  /// \cx, \C-x, \M-x, \M-\C-x, ...
-  case keyboardControl(Character)
-  case keyboardMeta(Character)        // Oniguruma
-  case keyboardMetaControl(Character) // Oniguruma
+      /// A Unicode property, category, or script
+      ///
+      /// \p{...}, \p{^...}, \P
+      case property(CharacterProperty)
 
-  /// A named set (using POSIX syntax)
-  ///
-  /// [:...:], [:^...:]
-  case namedSet(POSIXSet)
+      /// A built-in escaped character
+      ///
+      /// Literal escapes: \n, \t ...
+      /// Character classes: \s, \w ...
+      /// \n, \s, \Q, \b, \A, \K, ...
+      case escaped(EscapedBuiltin) // TODO: expand this out
 
-  /// A named character \N{...}
-  case namedCharacter(String)
+      /// A control character
+      ///
+      /// \cx, \C-x, \M-x, \M-\C-x, ...
+      case keyboardControl(Character)
+      case keyboardMeta(Character)        // Oniguruma
+      case keyboardMetaControl(Character) // Oniguruma
 
-  /// .
-  case any
+      /// A named set (using POSIX syntax)
+      ///
+      /// [:...:], [:^...:]
+      case namedSet(POSIXSet)
 
-  /// ^
-  case startOfLine
+      /// A named character \N{...}
+      case namedCharacter(String)
 
-  /// $
-  case endOfLine
+      /// .
+      case any
 
-  // References
-  //
-  // TODO: Haven't thought through these a ton
-  case backreference(Reference)
-  case subpattern(Reference)
-  case condition(Reference)
+      /// ^
+      case startOfLine
 
-  /// Meaningless, used for e.g. non-semantic whitespace
-  ///
-  /// TODO: Does this mean we can't be quantified? we should check sooner...
-  case trivia
-}
+      /// $
+      case endOfLine
 
-extension Atom {
-  struct Storage: Hashable {
-    let kind: Atom
-    let loc: SourceRange
-
-    // TODO: would this be useful to anyone?
-    let fromCustomCharacterClass: Bool
+      // References
+      //
+      // TODO: Haven't thought through these a ton
+      case backreference(Reference)
+      case subpattern(Reference)
+      case condition(Reference)
+    }
   }
 }
 
-extension Atom {
+extension AST.Atom {
 
   // TODO: We might scrap this and break out a few categories so
   // we can pull in `^`, `$`, and `.`, but we probably want to
@@ -189,7 +186,7 @@ extension Atom {
   }
 }
 
-extension Atom.EscapedBuiltin {
+extension AST.Atom.EscapedBuiltin {
   public var character: Character {
     switch self {
     // Literal single characters
@@ -305,7 +302,7 @@ extension Atom.EscapedBuiltin {
   }
 }
 
-extension Atom {
+extension AST.Atom {
   public struct CharacterProperty: Hashable {
     public var kind: Kind
     public var isInverted: Bool
@@ -314,10 +311,15 @@ extension Atom {
       self.kind = kind
       self.isInverted = isInverted
     }
+
+    public var _dumpBase: String {
+      // FIXME: better printing...
+      "\(kind)\(isInverted)"
+    }
   }
 }
 
-extension Atom.CharacterProperty {
+extension AST.Atom.CharacterProperty {
   public enum Kind: Hashable {
     /// Matches any character, equivalent to Oniguruma's '\O'.
     case any
@@ -351,15 +353,15 @@ extension Atom.CharacterProperty {
 
     /// Unhandled properties.
     case other(key: String?, value: String)
+  }
 
-    // TODO: erm, separate out or fold into something? splat it in?
-    public enum PCRESpecialCategory: String, Hashable {
-      case alphanumeric     = "Xan"
-      case posixSpace       = "Xps"
-      case perlSpace        = "Xsp"
-      case universallyNamed = "Xuc"
-      case perlWord         = "Xwd"
-    }
+  // TODO: erm, separate out or fold into something? splat it in?
+  public enum PCRESpecialCategory: String, Hashable {
+    case alphanumeric     = "Xan"
+    case posixSpace       = "Xps"
+    case perlSpace        = "Xsp"
+    case universallyNamed = "Xuc"
+    case perlWord         = "Xwd"
   }
 }
 
@@ -387,19 +389,19 @@ public enum Reference: Hashable {
   case recurseWholePattern
 }
 
-extension Atom: _ASTPrintable {
-  public var _printBase: String {
+extension AST.Atom: _ASTPrintable {
+  public var _dumpBase: String {
     if let lit = self.literalCharacterValue {
       return String(lit).halfWidthCornerQuoted
     }
 
-    switch self {
+    switch kind {
     case .escaped(let c): return "\\\(c.character)"
 
     case .namedCharacter(let charName):
       return "\\N{\(charName)}"
 
-    case .property: fatalError("TODO")
+    case .property(let p): return "\(p._dumpBase)"
 
     case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
       fatalError("TODO")
@@ -418,25 +420,17 @@ extension Atom: _ASTPrintable {
     case .condition(_):
       fatalError("TODO")
 
-    case .trivia:
-      // TODO: print comments, non-semantic whitespace, etc
-      return ""
-
     case .char, .scalar:
       fatalError("Unreachable")
     }
   }
-
-  public var _dumpBase: String {
-    _printBase
-  }
 }
 
-extension Atom {
+extension AST.Atom {
   /// Retrieve the character value of the atom if it represents a literal
   /// character or unicode scalar, nil otherwise.
   public var literalCharacterValue: Character? {
-    switch self {
+    switch kind {
     case .char(let c):
       return c
     case .scalar(let s):
@@ -446,24 +440,24 @@ extension Atom {
       // TODO: Not a character per-say, what should we do?
       fallthrough
 
-    case .property, .escaped, .namedSet, .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .condition, .trivia, .namedCharacter:
+    case .property, .escaped, .namedSet, .any,
+        .startOfLine, .endOfLine, .backreference,
+        .subpattern, .condition, .namedCharacter:
       return nil
     }
   }
 }
 
-extension Atom {
+extension AST.Atom {
   public struct POSIXSet: Hashable {
     var inverted: Bool
     var set: Unicode.POSIXCharacterSet
+
+    public init(
+      inverted: Bool, _ set: Unicode.POSIXCharacterSet
+    ) {
+      self.inverted = inverted
+      self.set = set
+    }
   }
 }
-
-extension Atom {
-  var sourceRange: SourceRange {
-    // FIXME: source location tracking
-    _fakeRange
-  }
-}
-

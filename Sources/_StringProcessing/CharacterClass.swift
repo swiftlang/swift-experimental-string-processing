@@ -249,12 +249,12 @@ extension CharacterClass {
   public func makeAST() -> AST? {
     let inv = isInverted
 
-    func esc(_ b: Atom.EscapedBuiltin) -> AST {
-      .atom(.escaped(b))
+    func esc(_ b: AST.Atom.EscapedBuiltin) -> AST {
+      escaped(b)
     }
 
     switch cc {
-    case .any: return .atom(.any)
+    case .any: return atom(.any)
 
     case .digit:
       return esc(inv ? .notDecimalDigit : .decimalDigit)
@@ -281,14 +281,14 @@ extension CharacterClass {
 
     case .hexDigit:
       let members: [AST.CustomCharacterClass.Member] = [
-        .range(.char("a"), .char("f")),
-        .range(.char("A"), .char("F")),
-        .range(.char("0"), .char("9")),
+        range_m(.char("a"), .char("f")),
+        range_m(.char("A"), .char("F")),
+        range_m(.char("0"), .char("9")),
       ]
       let ccc = AST.CustomCharacterClass(
-        _fake(inv ? .inverted : .normal),
+        .init(faking: inv ? .inverted : .normal),
         members,
-        _fakeRange)
+        .fake)
 
       return .customCharacterClass(ccc)
 
@@ -322,9 +322,9 @@ extension CharacterClass {
   }
 }
 
-extension Atom {
+extension AST.Atom {
   var characterClass: CharacterClass? {
-    switch self {
+    switch kind {
     case let .escaped(b): return b.characterClass
 
     case .namedSet: fatalError("TODO")
@@ -343,7 +343,7 @@ extension Atom {
 
 }
 
-extension Atom.EscapedBuiltin {
+extension AST.Atom.EscapedBuiltin {
   var characterClass: CharacterClass? {
     switch self {
     case .decimalDigit:    return .digit

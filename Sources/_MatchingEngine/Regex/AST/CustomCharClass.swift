@@ -1,22 +1,21 @@
 
 extension AST {
   public struct CustomCharacterClass: Hashable {
-    public var start: Loc<Start>
+    public var start: Located<Start>
     public var members: [Member]
 
-    public let sourceRange: SourceRange
+    public let location: SourceLocation
 
     public init(
-      _ start: Loc<Start>,
+      _ start: Located<Start>,
       _ members: [Member],
-      _ sr: SourceRange
+      _ sr: SourceLocation
     ) {
       self.start = start
       self.members = members
-      self.sourceRange = sr
+      self.location = sr
     }
 
-    // FIXME: track source ranges
     public enum Member: Hashable {
       /// A nested custom character class `[[ab][cd]]`
       case custom(CustomCharacterClass)
@@ -28,7 +27,7 @@ extension AST {
       case atom(Atom)
 
       /// A binary operator applied to sets of members `abc&&def`
-      case setOperation([Member], Loc<SetOp>, [Member])
+      case setOperation([Member], Located<SetOp>, [Member])
     }
     public enum SetOp: String, Hashable {
       case subtraction = "--"

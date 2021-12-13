@@ -1,16 +1,16 @@
 @testable import _MatchingEngine
-import _StringProcessing
+@testable import _StringProcessing
 
 import XCTest
 
 extension RegexTests {
 
   func testUnit() {
-    XCTAssert(_fakeRange.isFake)
-    XCTAssert(group(.capture, "a").sourceRange.isFake)
+    XCTAssert(SourceLocation.fake.isFake)
+    XCTAssert(group(.capture, "a").location.isFake)
 
     let ast = try! parse("(a)", .traditional)
-    XCTAssert(ast.sourceRange.isReal)
+    XCTAssert(ast.location.isReal)
   }
 
   func testRender() {
@@ -24,22 +24,22 @@ extension RegexTests {
         XCTFail("Fail to parse: \(str)")
         return
       }
-      let nodes = ast.children?.filter(\.sourceRange.isReal)
+      let nodes = ast.children?.filter(\.location.isReal)
       let tracked = nodes?.map {
-        String(str[$0.sourceRange])
+        String(str[$0.location.range])
       }
       XCTAssertEqual(expected, tracked)
     }
 
     // FIXME: We don't track atoms yet, but this at least
     // checks for groups and quantifiers
-    flatTest("a(b)c", [/*"a",*/ "(b)" /*, "c" */])
-    flatTest("a(b)c+", [/*"a",*/ "(b)", "c+"])
-    flatTest("a*?b(c(d))", ["a*?", /*"b",*/ "(c(d))"])
-    flatTest("[abc]*?d", ["[abc]*?" /*, "d"*/])
-    flatTest("a(?:b)", [/* "a",*/ "(?:b)"])
-    flatTest("a|b|c|", [/* "a", "b", "c", */ ""])
-    flatTest("a|(b)|", [/* "a", */ "(b)", ""])
+    flatTest("a(b)c", ["a", "(b)" , "c"])
+    flatTest("a(b)c+", ["a", "(b)", "c+"])
+    flatTest("a*?b(c(d))", ["a*?", "b", "(c(d))"])
+    flatTest("[abc]*?d", ["[abc]*?" , "d"])
+    flatTest("a(?:b)", ["a", "(?:b)"])
+    flatTest("a|b|c|", ["a", "b", "c", ""])
+    flatTest("a|(b)|", ["a", "(b)", ""])
 
     func renderTest(_ str: String, _ expected: [String]) {
       let lines = try! parse(
@@ -68,20 +68,22 @@ extension RegexTests {
     // AST constructors fake ranges, nothing to render
     XCTAssertEqual([], concat("a", "b")._render(in: "ab"))
 
-    // FIXME: Atoms currently don't track locations
     renderTest("ab", [
-            /* "^^", */
+               "^^",
                "-^",
     ])
 
-    // FIXME: Groups do, however
-    // FIXME: This isn't an ideal leaf rendering...
     renderTest("a(b)c+(d(e))f(?:gh)", [
-           /*  "^^^ ^^^^^^  ^--^^^ ", */
+               "^ ^ ^  ^ ^  ^   ^^ ",
                " --^-^  --^     -^ ",
                "       ---^  -----^",
                "      -----^       ",
                "------------------^"
     ])
+
+    // TODO: Find out best way to test quantifier values
+
+    // TODO: Find out way to render value-members of AST, not
+    // just children
   }
 }
