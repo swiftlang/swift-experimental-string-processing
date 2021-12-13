@@ -234,7 +234,7 @@ extension Source {
         return .upToN(u)
       case let (l?, _, u?):
         // FIXME: source location tracking
-        return .range(l ... u)
+        return .range(l, u)
 
       case let (nil, nil, u) where u != nil:
         fatalError("Not possible")

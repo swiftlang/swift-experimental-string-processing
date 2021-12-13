@@ -126,8 +126,9 @@ func quantRange(
   _ r: ClosedRange<Int>,
   _ child: AST
 ) -> AST {
-  let range = AST.Loc(faking: r.lowerBound) ... AST.Loc(faking: r.upperBound)
-  return quant(.range(range), kind, child)
+  let lower = AST.Loc(faking: r.lowerBound)
+  let upper = AST.Loc(faking: r.upperBound)
+  return quant(.range(lower, upper), kind, child)
 }
 
 func charClass(

@@ -195,10 +195,10 @@ class Compiler {
       emit(child)
       builder.label(end)
 
-    case (.exactly(_), _),
-         (.nOrMore(_), _),
-         (.upToN(_), _),
-         (.range(_), _),
+    case (.exactly, _),
+         (.nOrMore, _),
+         (.upToN, _),
+         (.range, _),
          (_, .possessive):
       fatalError("Not yet supported")
     }

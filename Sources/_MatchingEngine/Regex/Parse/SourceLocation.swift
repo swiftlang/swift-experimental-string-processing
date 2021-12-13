@@ -133,14 +133,3 @@ extension Source {
     }
   }
 }
-
-// FIXME: comparable-ness doesn't account for source location,
-// likely weird corner cases. But it's needed for ranges...
-//
-// It's likely we'll want to stop using `Range`, it just isn't
-// great.
-extension AST.Loc: Comparable where T: Comparable {
-  public static func < (lhs: Self, rhs: Self) -> Bool {
-    lhs.value < rhs.value
-  }
-}

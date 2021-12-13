@@ -25,7 +25,7 @@ extension AST {
       case exactly(Loc<Int>)            // {n}
       case nOrMore(Loc<Int>)            // {n,}
       case upToN(Loc<Int>)              // {,n}
-      case range(ClosedRange<Loc<Int>>) // {n,m}
+      case range(Loc<Int>, Loc<Int>) // {n,m}
     }
 
     public enum Kind: String, Hashable {
@@ -48,8 +48,8 @@ extension AST.Quantification.Amount: _ASTPrintable {
     case let .exactly(n):  return "{\(n.value)}"
     case let .nOrMore(n):  return "{\(n.value),}"
     case let .upToN(n):    return "{,\(n.value)}"
-    case let .range(r):
-      return "{\(r.lowerBound),\(r.upperBound)}"
+    case let .range(lower, upper):
+      return "{\(lower),\(upper)}"
     }
   }
   public var _dumpBase: String {
@@ -60,8 +60,8 @@ extension AST.Quantification.Amount: _ASTPrintable {
     case let .exactly(n):  return "exactly<\(n.value)>"
     case let .nOrMore(n):  return "nOrMore<\(n.value)>"
     case let .upToN(n):    return "uptoN<\(n.value)>"
-    case let .range(r):
-      return ".range<\(r.lowerBound.value)...\(r.upperBound.value)>"
+    case let .range(lower, upper):
+      return ".range<\(lower.value)...\(upper.value)>"
     }
   }
 }
