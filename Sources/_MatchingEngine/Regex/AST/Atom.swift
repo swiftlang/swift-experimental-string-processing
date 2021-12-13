@@ -312,7 +312,7 @@ extension AST.Atom {
       self.isInverted = isInverted
     }
 
-    public var _printBase: String {
+    public var _dumpBase: String {
       // FIXME: better printing...
       "\(kind)\(isInverted)"
     }
@@ -390,7 +390,7 @@ public enum Reference: Hashable {
 }
 
 extension AST.Atom: _ASTPrintable {
-  public var _printBase: String {
+  public var _dumpBase: String {
     if let lit = self.literalCharacterValue {
       return String(lit).halfWidthCornerQuoted
     }
@@ -401,7 +401,7 @@ extension AST.Atom: _ASTPrintable {
     case .namedCharacter(let charName):
       return "\\N{\(charName)}"
 
-    case .property(let p): return "\(p._printBase)"
+    case .property(let p): return "\(p._dumpBase)"
 
     case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
       fatalError("TODO")
@@ -423,10 +423,6 @@ extension AST.Atom: _ASTPrintable {
     case .char, .scalar:
       fatalError("Unreachable")
     }
-  }
-
-  public var _dumpBase: String {
-    _printBase
   }
 }
 

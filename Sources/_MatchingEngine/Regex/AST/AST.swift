@@ -25,18 +25,12 @@ public indirect enum AST:
 
   case empty(Empty)
 
-
   // FIXME: Move off the regex literal AST
   case groupTransform(
     Group, transform: CaptureTransform)
 }
 
-// TODO: This is currently unused, but it's likely we'll want
-// to host things like global options, more source info, etc.
-private struct ASTStorage {
-  let ast: AST
-  let location: SourceLocation?
-}
+// TODO: Do we want something that holds the AST and stored global options?
 
 extension AST {
   // :-(

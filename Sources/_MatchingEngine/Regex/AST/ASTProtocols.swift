@@ -6,8 +6,6 @@
 
  */
 
-
-
 // MARK: - AST parent/child
 
 protocol _ASTNode: _ASTPrintable {
@@ -56,17 +54,9 @@ extension _ASTPrintable {
     (self as? _ASTParent)?.children
   }
 
-  // TODO: Semi-pretty printing
-  var _printBase: String { _dumpBase }
-
   func _print() -> String {
-    guard let children = _children else {
-      return _printBase
-    }
-    let sub = children.lazy.map {
-      $0._print()
-    }.joined(separator: ",")
-    return "\(_printBase)(\(sub))"
+    // TODO: prettier printing
+    _dump()
   }
   func _dump() -> String {
     guard let children = _children else {
@@ -80,9 +70,6 @@ extension _ASTPrintable {
 }
 
 extension AST: _ASTPrintable {
-  public var _printBase: String {
-    _associatedValue._printBase
-  }
   public var _dumpBase: String {
     _associatedValue._dumpBase
   }
@@ -91,10 +78,7 @@ extension AST: _ASTPrintable {
 // MARK: - Rendering
 
 // Useful for testing, debugging, etc.
-//
-// TODO: Prettier rendering, probably inverted
 extension AST {
-
   func _postOrder() -> Array<AST> {
     var nodes = Array<AST>()
     _postOrder(into: &nodes)
