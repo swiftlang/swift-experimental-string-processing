@@ -96,4 +96,32 @@ extension RegexTests {
     // TODO: want to dummy print out source ranges, etc, test that.
   }
 
+
+  func testCompilerInterface() {
+    let testCases: [(String, (String, SyntaxOptions)?)] = [
+      ("'/abc/'", ("abc", .traditional)),
+      ("'|abc|'", ("abc", .modern)),
+      ("'|ab\0c|'", nil),
+      ("'abc'", nil),
+      ("'/abc/def/'", ("abc/def", .traditional)),
+      ("'|abc|def|'", ("abc|def", .modern)),
+      ("'/abc\\/'def/'", ("abc\\/'def", .traditional)),
+      ("'|abc\\|'def|'", ("abc\\|'def", .modern)),
+      ("'/abc|'def/'", ("abc|'def", .traditional)),
+      ("'|abc/'def|'", ("abc/'def", .modern)),
+      ("'/abc|'def/", nil),
+      ("'|abc/'def'", nil),
+    ]
+
+    for (input, expected) in testCases {
+      input.withCString {
+        guard let out = try? _lexRegex(UnsafeRawPointer($0)) else {
+          XCTAssertNil(expected)
+          return
+        }
+        XCTAssertEqual(expected?.0, out.0)
+        XCTAssertEqual(expected?.1, out.1)
+      }
+    }
+  }
 }
