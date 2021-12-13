@@ -99,6 +99,11 @@ extension Source {
     }
     return _slice[..<upTo]
   }
+  mutating func eat(upToCount count: Int) -> Input.SubSequence {
+    let pre = _slice.prefix(count)
+    defer { advance(pre.count) }
+    return pre
+  }
 
   mutating func tryEatPrefix(
     _ f: (Char) -> Bool

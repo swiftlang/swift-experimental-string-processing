@@ -5,10 +5,8 @@ enum ParseError: Error, Hashable {
   // This can make equality weird.
 
   case numberOverflow(String)
-  case expectedDigits(String, expecting: ClosedRange<Int>)
-  case tooManyDigits(String)
-
-  case expectedHexNumber(String)
+  case expectedNumDigits(String, Int)
+  case expectedNumber(String, kind: RadixKind)
 
   // Expected the given character or string
   case expected(String)

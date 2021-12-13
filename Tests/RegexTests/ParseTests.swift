@@ -85,12 +85,22 @@ extension RegexTests {
     parseTest(
       #"abc\d"#,
       concat("a", "b", "c", escaped(.decimalDigit)))
+
+    // MARK: Unicode scalars
+
     parseTest(
       #"a\u0065b\u{00000065}c\x65d\U00000065"#,
       concat("a", scalar("e"),
              "b", scalar("e"),
              "c", scalar("e"),
              "d", scalar("e")))
+
+    parseTest(#"\u{00000000000000000000000000A}"#, scalar("\u{A}"))
+    parseTest(#"\x{00000000000000000000000000A}"#, scalar("\u{A}"))
+
+    // MARK: Character classes
+
+    parseTest(#"abc\d"#, concat("a", "b", "c", escaped(.decimalDigit)))
 
     parseTest(
       "[-|$^:?+*())(*-+-]",

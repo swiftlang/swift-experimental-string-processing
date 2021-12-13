@@ -113,63 +113,73 @@ extension Source {
       return c
     }
   }
+}
 
-  private mutating func consumeNumber<
-    Num: FixedWidthInteger
-  >(
-    _ isNumber: (Char) -> Bool,
-    validate: (Input.SubSequence) throws -> (),
-    radix: Int
-  ) throws -> Num? {
-    guard let num = tryEatPrefix(isNumber) else {
-      return nil
-    }
-    try validate(num)
-    guard let i = Num(num, radix: radix) else {
-      throw ParseError.numberOverflow(String(num))
-    }
-    return i
-  }
-  private mutating func consumeHexNumber<Num: FixedWidthInteger>(
-    validate: (Input.SubSequence) throws -> ()
-  ) throws -> Num? {
-    try consumeNumber(\.isHexDigit, validate: validate, radix: 16)
-  }
+enum RadixKind {
+  case decimal, hex
 
-  private mutating func consumeHexNumber<Num: FixedWidthInteger>(
-    numDigits: Int
+  var characterFilter: (Character) -> Bool {
+    switch self {
+    case .decimal: return \.isNumber
+    case .hex:     return \.isHexDigit
+    }
+  }
+  var radix: Int {
+    switch self {
+    case .decimal: return 10
+    case .hex:     return 16
+    }
+  }
+}
+
+extension Source {
+  /// Validate a string of digits as a particular radix, and return the number,
+  /// or throw an error if the string is malformed or would overflow the number
+  /// type.
+  private static func validateNumber<Num: FixedWidthInteger>(
+    _ str: String, _: Num.Type, _ kind: RadixKind
   ) throws -> Num {
-    guard let str = tryEat(count: numDigits) else {
-      throw ParseError.misc("Expected more digits")
+    guard !str.isEmpty && str.all(kind.characterFilter) else {
+      throw ParseError.expectedNumber(str, kind: kind)
     }
-    guard let i = Num(str, radix: 16) else {
-      // TODO: Or, it might have failed because of overflow,
-      // Can we tell easily?
-      throw ParseError.expectedHexNumber(String(str))
+    guard let i = Num(str, radix: kind.radix) else {
+      throw ParseError.numberOverflow(str)
     }
     return i
   }
 
-  private mutating func consumeHexNumber<Num: FixedWidthInteger>(
-    digitRange: ClosedRange<Int>
-  ) throws -> Num {
-    guard let str = self.tryEatPrefix(
-      maxLength: digitRange.upperBound, \.isHexDigit
-    ) else {
-      throw ParseError.expectedDigits("", expecting: digitRange)
+  /// Validate a string of digits as a unicode scalar of a particular radix, and
+  /// return the scalar value, or throw an error if the string is malformed or
+  /// would overflow the scalar.
+  private static func validateUnicodeScalar(
+    _ str: String, _ kind: RadixKind
+  ) throws -> Unicode.Scalar {
+    let num = try validateNumber(str, UInt32.self, kind)
+    guard let scalar = Unicode.Scalar(num) else {
+      throw ParseError.misc("Invalid scalar value U+\(num.hexStr)")
     }
-    guard digitRange.contains(str.count) else {
-      throw ParseError.expectedDigits(
-        String(str), expecting: digitRange)
-    }
-    guard let i = Num(str, radix: 16) else {
-      // TODO: Or, it might have failed because of overflow,
-      // Can we tell easily?
-      throw ParseError.expectedHexNumber(String(str))
-    }
-    return i
+    return scalar
   }
 
+  /// Try to eat a number of a particular type and radix off the front.
+  ///
+  /// Returns: `nil` if there's no number, otherwise the number
+  ///
+  /// Throws on overflow
+  ///
+  private mutating func lexNumber<Num: FixedWidthInteger>(
+    _ ty: Num.Type, _ kind: RadixKind
+  ) throws -> Located<Num>? {
+    try recordLoc { src in
+      guard let str = src.tryEatPrefix(kind.characterFilter)?.string else {
+        return nil
+      }
+      guard let i = Num(str, radix: kind.radix) else {
+        throw ParseError.numberOverflow(str)
+      }
+      return i
+    }
+  }
 
   /// Try to eat a number off the front.
   ///
@@ -178,10 +188,7 @@ extension Source {
   /// Throws on overflow
   ///
   mutating func lexNumber() throws -> Located<Int>? {
-    try recordLoc {
-      try $0.consumeNumber(
-        \.isNumber, validate: { _ in }, radix: 10)
-    }
+    try lexNumber(Int.self, .decimal)
   }
 
   /// Eat a scalar value from hexadecimal notation off the front
@@ -189,44 +196,20 @@ extension Source {
     numDigits: Int
   ) throws -> Located<Unicode.Scalar> {
     try recordLoc { src in
-      let num: UInt32 = try src.consumeHexNumber(
-        numDigits: numDigits)
-      guard let scalar = Unicode.Scalar(num) else {
-        throw ParseError.misc(
-          "Invalid scalar value U+\(num.hexStr)")
+      let str = src.eat(upToCount: numDigits).string
+      guard str.count == numDigits else {
+        throw ParseError.expectedNumDigits(str, numDigits)
       }
-      return scalar
-    }
-  }
-
-  /// Eat a scalar value from hexadecimal notation off the front
-  private mutating func expectUnicodeScalar(
-    digitRange: ClosedRange<Int>
-  ) throws -> Located<Unicode.Scalar> {
-    try recordLoc { src in
-      let uOpt: UInt32? = try src.consumeHexNumber { s in
-        guard digitRange.contains(s.count) else {
-          throw ParseError.expectedDigits(
-            String(s), expecting: digitRange)
-        }
-      }
-      guard let u = uOpt else {
-        throw ParseError.misc("Expected scalar value")
-      }
-      guard let scalar = Unicode.Scalar(u) else {
-        throw ParseError.misc(
-          "Invalid scalar value U+\(u.hexStr)")
-      }
-      return scalar
+      return try Source.validateUnicodeScalar(str, .hex)
     }
   }
 
   /// Eat a scalar off the front, starting from after the
   /// backslash and base character (e.g. `\u` or `\x`).
   ///
-  ///     UniScalar -> 'u{' HexDigit{1...8}
+  ///     UniScalar -> 'u{' HexDigit{1...} '}'
   ///                | 'u'  HexDigit{4}
-  ///                | 'x{' HexDigit{1...8}
+  ///                | 'x{' HexDigit{1...} '}'
   ///                | 'x'  HexDigit{2}
   ///                | 'U'  HexDigit{8}
   ///
@@ -237,13 +220,11 @@ extension Source {
       switch base {
       case "u", "x":
         if src.tryEat("{") {
-          let s = try src.expectUnicodeScalar(digitRange: 1...8)
-          try src.expect("}")
-          return s.value
+          let str = src.lexUntil(eating: "}").value
+          return try Source.validateUnicodeScalar(str, .hex)
         }
         let numDigits = base == "u" ? 4 : 2
-        return try src.expectUnicodeScalar(
-          numDigits: numDigits).value
+        return try src.expectUnicodeScalar(numDigits: numDigits).value
       case "U":
         return try src.expectUnicodeScalar(numDigits: 8).value
 
