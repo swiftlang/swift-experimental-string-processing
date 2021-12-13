@@ -87,7 +87,13 @@ extension RegexProtocol {
     guard let result = executor.execute(input: input) else {
       return nil
     }
-    return RegexMatch(range: result.range, captures: () as! Capture)
+    let convertedCapture: Capture
+    if Capture.self == DynamicCaptures.self {
+      convertedCapture = DynamicCaptures.tuple([]) as! Capture
+    } else {
+      convertedCapture = () as! Capture
+    }
+    return RegexMatch(range: result.range, captures: convertedCapture)
   }
 }
 
