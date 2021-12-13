@@ -17,7 +17,7 @@ extension Source {
   /// or throw the value/error with source locations.
   fileprivate mutating func recordLoc<T>(
     _ f: (inout Self) throws -> T
-  ) throws -> Located<T> {
+  ) rethrows -> Located<T> {
     let start = currentPosition
     do {
       let result = try f(&self)
@@ -35,7 +35,7 @@ extension Source {
   /// or throw the value/error with source locations.
   fileprivate mutating func recordLoc<T>(
     _ f: (inout Self) throws -> T?
-  ) throws -> Located<T>? {
+  ) rethrows -> Located<T>? {
     let start = currentPosition
     do {
       guard let result = try f(&self) else { return nil }
@@ -53,7 +53,7 @@ extension Source {
   /// or throw the value/error with source locations.
   fileprivate mutating func recordLoc(
     _ f: (inout Self) throws -> ()
-  ) throws {
+  ) rethrows {
     let start = currentPosition
     do {
       try f(&self)
@@ -279,7 +279,7 @@ extension Source {
     }
     guard let amt = amt else { return nil }
 
-    let kind: Located<Quant.Kind> = try recordLoc { src in
+    let kind: Located<Quant.Kind> = recordLoc { src in
       if src.tryEat("?") { return .reluctant  }
       if src.tryEat("+") { return .possessive }
       return .greedy
@@ -343,36 +343,32 @@ extension Source {
   }
 
   private mutating func lexUntil(
-    _ predicate: (inout Source) -> Bool,
-    validate: (String) throws -> Void = { _ in }
-  ) throws -> Located<String> {
-    try recordLoc { src in
+    _ predicate: (inout Source) -> Bool
+  ) -> Located<String> {
+    recordLoc { src in
       var result = ""
       while !predicate(&src) {
-        // TODO(diagnostic): expected `end`, instead of end-of-input
-
         result.append(src.eat())
       }
-      try validate(result)
       return result
     }
   }
 
-  private mutating func lexUntil(
-    eating end: String, validate: (String) throws -> Void = { _ in }
-  ) throws -> Located<String> {
-    try lexUntil({ src in src.tryEat(sequence: end) }, validate: validate)
+  private mutating func lexUntil(eating end: String) -> Located<String> {
+    lexUntil { $0.tryEat(sequence: end) }
   }
 
   /// Expect a linear run of non-nested non-empty content
   private mutating func expectQuoted(
     endingWith end: String
   ) throws -> Located<String> {
-    try lexUntil(eating: end, validate: { result in
+    try recordLoc { src in
+      let result = src.lexUntil(eating: end).value
       guard !result.isEmpty else {
         throw ParseError.misc("Expected non-empty contents")
       }
-    })
+      return result
+    }
   }
 
   /// Try to consume quoted content
@@ -429,7 +425,7 @@ extension Source {
   /// Does nothing unless `SyntaxOptions.nonSemanticWhitespace` is set
   mutating func lexNonSemanticWhitespace() throws -> AST.Trivia? {
     guard syntax.ignoreWhitespace else { return nil }
-    let trivia: Located<String>? = try recordLoc { src in
+    let trivia: Located<String>? = recordLoc { src in
       src.tryEatPrefix { $0 == " " }?.string
     }
     guard let trivia = trivia else { return nil }
@@ -496,7 +492,7 @@ extension Source {
 
   mutating func lexCustomCCStart(
   ) throws -> Located<CustomCC.Start>? {
-    try recordLoc { src in
+    recordLoc { src in
       // POSIX named sets are atoms.
       guard !src.starts(with: "[:") else { return nil }
 
@@ -512,7 +508,7 @@ extension Source {
   ///     CustomCCBinOp -> '--' | '~~' | '&&'
   ///
   mutating func lexCustomCCBinOp() throws -> Located<CustomCC.SetOp>? {
-    try recordLoc { src in
+    recordLoc { src in
       // TODO: Perhaps a syntax options check (!PCRE)
       // TODO: Better AST types here
       guard let binOp = src.peekCCBinOp() else { return nil }
@@ -533,7 +529,7 @@ extension Source {
     try recordLoc { src in
       guard src.tryEat(sequence: "[:") else { return nil }
       let inverted = src.tryEat("^")
-      let name = try src.lexUntil(eating: ":]").value
+      let name = src.lexUntil(eating: ":]").value
       guard let set = Unicode.POSIXCharacterSet(rawValue: name) else {
         throw ParseError.invalidPOSIXSetName(name)
       }
@@ -560,14 +556,14 @@ extension Source {
       //   of true), and its key is inferred.
       // TODO: We could have better recovery here if we only ate the characters
       // that property keys and values can use.
-      let lhs = try src.lexUntil({ $0.peek() == "}" || $0.peek() == "=" }).value
+      let lhs = src.lexUntil({ $0.peek() == "}" || $0.peek() == "=" }).value
       if src.tryEat("}") {
         let prop = try Source.classifyCharacterPropertyValueOnly(lhs)
         return .init(prop, isInverted: isInverted)
       }
       src.eat(asserting: "=")
 
-      let rhs = try src.lexUntil(eating: "}").value
+      let rhs = src.lexUntil(eating: "}").value
       let prop = try Source.classifyCharacterProperty(key: lhs, value: rhs)
       return .init(prop, isInverted: isInverted)
     }
@@ -596,7 +592,7 @@ extension Source {
 
       // Named character \N{...}
       if src.tryEat(sequence: "N{") {
-        return .namedCharacter(try src.lexUntil(eating: "}").value)
+        return .namedCharacter(src.lexUntil(eating: "}").value)
       }
 
       // Character property \p{...} \P{...}.
