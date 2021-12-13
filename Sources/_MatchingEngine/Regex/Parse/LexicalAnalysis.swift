@@ -518,6 +518,27 @@ extension Source {
     }
   }
 
+  /// Try to consume a named character.
+  ///
+  ///     NamedCharacter -> '\N{' CharName '}'
+  ///     CharName -> 'U+' HexDigit{1...8} | [\s\w-]+
+  ///
+  private mutating func lexNamedCharacter() throws -> Located<AST.Atom.Kind>? {
+    try recordLoc { src in
+      guard src.tryEat(sequence: "N{") else { return nil }
+
+      // We should either have a unicode scalar.
+      if src.tryEat(sequence: "U+") {
+        let str = src.lexUntil(eating: "}").value
+        return .scalar(try Source.validateUnicodeScalar(str, .hex))
+      }
+
+      // Or we should have a character name.
+      // TODO: Validate the types of characters that can appear in the name?
+      return .namedCharacter(src.lexUntil(eating: "}").value)
+    }
+  }
+
   /// Try to consume a character property.
   ///
   ///     Property -> ('p{' | 'P{') Prop ('=' Prop)? '}'
@@ -553,7 +574,7 @@ extension Source {
   /// Consume an escaped atom, starting from after the backslash
   ///
   ///     Escaped          -> KeyboardModified | Builtin
-  ///                       | UniScalar | Property
+  ///                       | UniScalar | Property | NamedCharacter
   ///
   /// TODO: references
   mutating func expectEscaped(
@@ -571,9 +592,9 @@ extension Source {
         return .keyboardMeta(try src.expectASCII().value)
       }
 
-      // Named character \N{...}
-      if src.tryEat(sequence: "N{") {
-        return .namedCharacter(src.lexUntil(eating: "}").value)
+      // Named character '\N{...}'.
+      if let char = try src.lexNamedCharacter() {
+        return char.value
       }
 
       // Character property \p{...} \P{...}.

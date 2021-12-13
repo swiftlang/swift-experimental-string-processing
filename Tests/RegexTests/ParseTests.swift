@@ -254,6 +254,7 @@ extension RegexTests {
       concat("a", atomicNonCapturing("b"), "c"))
 
     // MARK: Character names.
+
     parseTest(#"\N{abc}"#, atom(.namedCharacter("abc")))
     parseTest(#"[\N{abc}]"#, charClass(atom_m(.namedCharacter("abc"))))
     parseTest(
@@ -264,6 +265,11 @@ extension RegexTests {
       #"\N {2}"#,
       concat(atom(.escaped(.notNewline)),
              exactly(.greedy, 2, " ")))
+
+    parseTest(#"\N{AA}"#, atom(.namedCharacter("AA")))
+    parseTest(#"\N{U+AA}"#, scalar("\u{AA}"))
+    parseTest(#"\N{U+0123A}"#, scalar("\u{123A}"))
+    parseTest(#"\N{U+0000FFFF}"#, scalar("\u{FFFF}"))
 
     // MARK: Character properties.
 
