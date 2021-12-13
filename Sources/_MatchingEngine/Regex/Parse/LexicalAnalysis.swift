@@ -116,16 +116,18 @@ extension Source {
 }
 
 enum RadixKind {
-  case decimal, hex
+  case octal, decimal, hex
 
   var characterFilter: (Character) -> Bool {
     switch self {
+    case .octal:   return \.isOctalDigit
     case .decimal: return \.isNumber
     case .hex:     return \.isHexDigit
     }
   }
   var radix: Int {
     switch self {
+    case .octal:   return 8
     case .decimal: return 10
     case .hex:     return 16
     }
@@ -212,12 +214,15 @@ extension Source {
   ///                | 'x{' HexDigit{1...} '}'
   ///                | 'x'  HexDigit{2}
   ///                | 'U'  HexDigit{8}
+  ///                | 'o{' OctalDigit{1...} '}'
+  ///                | '0'  OctalDigit{0...2}
   ///
   mutating func expectUnicodeScalar(
     escapedCharacter base: Character
   ) throws -> Located<Unicode.Scalar> {
     try recordLoc { src in
       switch base {
+      // Hex numbers.
       case "u", "x":
         if src.tryEat("{") {
           let str = src.lexUntil(eating: "}").value
@@ -227,6 +232,19 @@ extension Source {
         return try src.expectUnicodeScalar(numDigits: numDigits).value
       case "U":
         return try src.expectUnicodeScalar(numDigits: 8).value
+
+      // Octal numbers.
+      case "o" where src.tryEat("{"):
+        let str = src.lexUntil(eating: "}").value
+        return try Source.validateUnicodeScalar(str, .octal)
+
+      case "0":
+        // We can read *up to* 2 more octal digits per PCRE.
+        // FIXME: ICU can read up to 3 octal digits, we should have a parser
+        // mode to switch.
+        guard let str = src.tryEatPrefix(maxLength: 2, \.isOctalDigit)?.string
+        else { return Unicode.Scalar(0) }
+        return try Source.validateUnicodeScalar(str, .octal)
 
       default:
         throw ParseError.misc("TODO: Or is this an assert?")
@@ -657,7 +675,7 @@ extension Source {
 
       switch char {
       // Scalars
-      case "u", "x", "U":
+      case "u", "x", "U", "o", "0":
         return try .scalar(
           src.expectUnicodeScalar(escapedCharacter: char).value)
 

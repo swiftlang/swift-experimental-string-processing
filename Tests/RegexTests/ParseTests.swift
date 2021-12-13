@@ -97,6 +97,15 @@ extension RegexTests {
 
     parseTest(#"\u{00000000000000000000000000A}"#, scalar("\u{A}"))
     parseTest(#"\x{00000000000000000000000000A}"#, scalar("\u{A}"))
+    parseTest(#"\o{000000000000000000000000007}"#, scalar("\u{7}"))
+
+    parseTest(#"\o{70}"#, scalar("\u{38}"))
+    parseTest(#"\0"#, scalar("\u{0}"))
+    parseTest(#"\01"#, scalar("\u{1}"))
+    parseTest(#"\070"#, scalar("\u{38}"))
+    parseTest(#"\07A"#, concat(scalar("\u{7}"), "A"))
+    parseTest(#"\08"#, concat(scalar("\u{0}"), "8"))
+    parseTest(#"\0707"#, concat(scalar("\u{38}"), "7"))
 
     // MARK: Character classes
 

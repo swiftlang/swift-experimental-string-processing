@@ -106,20 +106,16 @@ extension Source {
   }
 
   mutating func tryEatPrefix(
+    maxLength: Int? = nil,
     _ f: (Char) -> Bool
   ) -> Input.SubSequence? {
-    guard let idx = _slice.firstIndex(where: { !f($0) }) else {
-      return self.eat(upTo: _slice.endIndex)
+    let chunk: Input.SubSequence
+    if let maxLength = maxLength {
+      chunk = _slice.prefix(maxLength)
+    } else {
+      chunk = _slice[...]
     }
-    if idx == _slice.startIndex { return nil }
-    return eat(upTo: idx)
-  }
-  mutating func tryEatPrefix(
-    maxLength: Int,
-    _ f: (Char) -> Bool
-  ) -> Input.SubSequence? {
-
-    let pre = _slice.prefix(while: f).prefix(maxLength)
+    let pre = chunk.prefix(while: f)
     guard !pre.isEmpty else { return nil }
 
     defer { self.advance(pre.count) }

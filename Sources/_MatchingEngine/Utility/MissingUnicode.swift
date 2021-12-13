@@ -637,3 +637,7 @@ public enum OnigurumaSpecialProperty: String, Hashable {
   case inSupplementaryPrivateUseAreaB = "In_Supplementary_Private_Use_Area_B"
   case inNoBlock = "In_No_Block"
 }
+
+extension Character {
+  var isOctalDigit: Bool { ("0"..."7").contains(self) }
+}
