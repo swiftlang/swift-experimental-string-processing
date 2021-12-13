@@ -4,7 +4,7 @@ import XCTest
 
 
 private let dplus = oneOrMore(
-  .greedy, .atom(.escaped(.decimalDigit)))
+  .greedy, atom(.escaped(.decimalDigit)))
 private let dotAST = concat(
   dplus, ".", dplus, ".", dplus, ".", dplus)
 

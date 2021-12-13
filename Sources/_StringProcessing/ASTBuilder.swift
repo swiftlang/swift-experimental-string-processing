@@ -74,9 +74,6 @@ func negativeLookbehind(_ child: AST) -> AST {
   group(.negativeLookbehind, child)
 }
 
-
-var any: AST { .atom(.any) }
-
 func quant(
   _ amount: AST.Quantification.Amount,
   _ kind: AST.Quantification.Kind = .greedy,
@@ -153,18 +150,65 @@ func charClass(
     .fake)
   return .custom(cc)
 }
-func posixSet(
-  _ set: Unicode.POSIXCharacterSet, inverted: Bool = false
-) -> Atom {
-  .namedSet(.init(inverted: inverted, set))
-}
 
 func quote(_ s: String) -> AST {
   .quote(.init(s, .fake))
 }
 
-func prop(
-  _ kind: Atom.CharacterProperty.Kind, inverted: Bool = false
-) -> Atom {
-  return .property(.init(kind, isInverted: inverted))
+// MARK: - Atoms
+
+func atom(_ k: AST.Atom.Kind) -> AST {
+  .atom(.init(k, .fake))
 }
+
+func posixSet(
+  _ set: Unicode.POSIXCharacterSet, inverted: Bool = false
+) -> AST {
+  atom(.namedSet(.init(inverted: inverted, set)))
+}
+func escaped(
+  _ e: AST.Atom.EscapedBuiltin
+) -> AST {
+  atom(.escaped(e))
+}
+func scalar(_ s: Unicode.Scalar) -> AST {
+  atom(.scalar(s))
+}
+
+func prop(
+  _ kind: AST.Atom.CharacterProperty.Kind,
+  inverted: Bool = false
+) -> AST {
+  atom(.property(.init(kind, isInverted: inverted)))
+}
+
+// Raw atom constructing variant
+func atom_a(
+  _ k: AST.Atom.Kind
+) -> AST.Atom {
+  AST.Atom(k, .fake)
+}
+
+// CustomCC member variant
+func atom_m(
+  _ k: AST.Atom.Kind
+) -> AST.CustomCharacterClass.Member {
+  .atom(atom_a(k))
+}
+func posixSet_m(
+  _ set: Unicode.POSIXCharacterSet, inverted: Bool = false
+) -> AST.CustomCharacterClass.Member {
+  atom_m(.namedSet(.init(inverted: inverted, set)))
+}
+func prop_m(
+  _ kind: AST.Atom.CharacterProperty.Kind,
+  inverted: Bool = false
+) -> AST.CustomCharacterClass.Member {
+  atom_m(.property(.init(kind, isInverted: inverted)))
+}
+func range_m(
+  _ lower: AST.Atom.Kind, _ upper: AST.Atom.Kind
+) -> AST.CustomCharacterClass.Member {
+  .range(atom_a(lower), atom_a(upper))
+}
+

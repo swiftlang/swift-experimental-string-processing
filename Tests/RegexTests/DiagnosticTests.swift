@@ -33,13 +33,13 @@ extension RegexTests {
 
     // FIXME: We don't track atoms yet, but this at least
     // checks for groups and quantifiers
-    flatTest("a(b)c", [/*"a",*/ "(b)" /*, "c" */])
-    flatTest("a(b)c+", [/*"a",*/ "(b)", "c+"])
-    flatTest("a*?b(c(d))", ["a*?", /*"b",*/ "(c(d))"])
-    flatTest("[abc]*?d", ["[abc]*?" /*, "d"*/])
-    flatTest("a(?:b)", [/* "a",*/ "(?:b)"])
-    flatTest("a|b|c|", [/* "a", "b", "c", */ ""])
-    flatTest("a|(b)|", [/* "a", */ "(b)", ""])
+    flatTest("a(b)c", ["a", "(b)" , "c"])
+    flatTest("a(b)c+", ["a", "(b)", "c+"])
+    flatTest("a*?b(c(d))", ["a*?", "b", "(c(d))"])
+    flatTest("[abc]*?d", ["[abc]*?" , "d"])
+    flatTest("a(?:b)", ["a", "(?:b)"])
+    flatTest("a|b|c|", ["a", "b", "c", ""])
+    flatTest("a|(b)|", ["a", "(b)", ""])
 
     func renderTest(_ str: String, _ expected: [String]) {
       let lines = try! parse(
@@ -68,15 +68,13 @@ extension RegexTests {
     // AST constructors fake ranges, nothing to render
     XCTAssertEqual([], concat("a", "b")._render(in: "ab"))
 
-    // FIXME: Atoms currently don't track locations
     renderTest("ab", [
-            /* "^^", */
+               "^^",
                "-^",
     ])
 
-    // TODO: Atom tracking
     renderTest("a(b)c+(d(e))f(?:gh)", [
-           /*  "^^^ ^^^^^^  ^--^^^ ", */
+               "^ ^ ^  ^ ^  ^   ^^ ",
                " --^-^  --^     -^ ",
                "       ---^  -----^",
                "      -----^       ",

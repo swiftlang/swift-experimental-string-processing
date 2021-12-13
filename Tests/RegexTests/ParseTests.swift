@@ -6,19 +6,19 @@ import XCTest
 extension AST: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
-    self = .atom(.char(value))
+    self = _StringProcessing.atom(.char(value))
   }
 }
-extension Atom: ExpressibleByExtendedGraphemeClusterLiteral {
+extension AST.Atom: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
-    self = .char(value)
+    self = atom_a(.char(value))
   }
 }
 extension AST.CustomCharacterClass.Member: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
-    self = .atom(.char(value))
+    self = atom_m((.char(value)))
   }
 }
 
@@ -80,17 +80,17 @@ extension RegexTests {
     parseTest(
       "(.)*(.*)",
       concat(
-        zeroOrMore(.greedy, capture(.atom(.any))),
-        capture(zeroOrMore(.greedy, .atom(.any)))))
+        zeroOrMore(.greedy, capture(atom(.any))),
+        capture(zeroOrMore(.greedy, atom(.any)))))
     parseTest(
       #"abc\d"#,
-      concat("a", "b", "c", .atom(.escaped(.decimalDigit))))
+      concat("a", "b", "c", escaped(.decimalDigit)))
     parseTest(
       #"a\u0065b\u{00000065}c\x65d\U00000065"#,
-      concat("a", .atom(.scalar("e")),
-             "b", .atom(.scalar("e")),
-             "c", .atom(.scalar("e")),
-             "d", .atom(.scalar("e"))))
+      concat("a", scalar("e"),
+             "b", scalar("e"),
+             "c", scalar("e"),
+             "d", scalar("e")))
 
     parseTest(
       "[-|$^:?+*())(*-+-]",
@@ -125,16 +125,16 @@ extension RegexTests {
     parseTest(
       #"\D\S\W"#,
       concat(
-        .atom(.escaped(.notDecimalDigit)),
-        .atom(.escaped(.notWhitespace)),
-        .atom(.escaped(.notWordCharacter))))
+        escaped(.notDecimalDigit),
+        escaped(.notWhitespace),
+        escaped(.notWordCharacter)))
 
     parseTest(
-      #"[\dd]"#, charClass(.atom(.escaped(.decimalDigit)), "d"))
+      #"[\dd]"#, charClass(atom_m(.escaped(.decimalDigit)), "d"))
 
     parseTest(
       #"[^[\D]]"#,
-      charClass(charClass(.atom(.escaped(.notDecimalDigit))),
+      charClass(charClass(atom_m(.escaped(.notDecimalDigit))),
                 inverted: true))
     parseTest(
       "[[ab][bc]]",
@@ -143,14 +143,14 @@ extension RegexTests {
       "[[ab]c[de]]",
       charClass(charClass("a", "b"), "c", charClass("d", "e")))
 
-    typealias POSIX = Atom.POSIXSet
+    typealias POSIX = AST.Atom.POSIXSet
     parseTest(#"[ab[:space:]\d[:^upper:]cd]"#,
-              charClass("a", "b", .atom(posixSet(.space)),
-                        .atom(.escaped(.decimalDigit)),
-                        .atom(posixSet(.upper, inverted: true)), "c", "d"))
+              charClass("a", "b", posixSet_m(.space),
+                        atom_m(.escaped(.decimalDigit)),
+                        posixSet_m(.upper, inverted: true), "c", "d"))
 
     parseTest("[[[:space:]]]",
-              charClass(charClass(.atom(posixSet(.space)))))
+              charClass(charClass(posixSet_m(.space))))
 
     parseTest(
       #"[a[bc]de&&[^bc]\d]+"#,
@@ -158,7 +158,7 @@ extension RegexTests {
         .setOperation(
           ["a", charClass("b", "c"), "d", "e"],
           .init(faking: .intersection),
-          [charClass("b", "c", inverted: true), .atom(.escaped(.decimalDigit))]
+          [charClass("b", "c", inverted: true), atom_m(.escaped(.decimalDigit))]
         ))))
 
     parseTest(
@@ -244,41 +244,41 @@ extension RegexTests {
       concat("a", atomicNonCapturing("b"), "c"))
 
     // MARK: Character names.
-    parseTest(#"\N{abc}"#, .atom(.namedCharacter("abc")))
-    parseTest(#"[\N{abc}]"#, charClass(.atom(.namedCharacter("abc"))))
+    parseTest(#"\N{abc}"#, atom(.namedCharacter("abc")))
+    parseTest(#"[\N{abc}]"#, charClass(atom_m(.namedCharacter("abc"))))
     parseTest(
       #"\N{abc}+"#,
       oneOrMore(.greedy,
-                .atom(.namedCharacter("abc"))))
+                atom(.namedCharacter("abc"))))
     parseTest(
       #"\N {2}"#,
-      concat(.atom(.escaped(.notNewline)),
+      concat(atom(.escaped(.notNewline)),
              exactly(.greedy, 2, " ")))
 
     // MARK: Character properties.
 
     parseTest(#"\p{L}"#,
-              .atom(prop(.generalCategory(.letter))))
+              prop(.generalCategory(.letter)))
     parseTest(#"\p{gc=L}"#,
-              .atom(prop(.generalCategory(.letter))))
+              prop(.generalCategory(.letter)))
     parseTest(#"\p{Lu}"#,
-              .atom(prop(.generalCategory(.uppercaseLetter))))
+              prop(.generalCategory(.uppercaseLetter)))
     parseTest(#"\P{Cc}"#,
-                .atom(prop(.generalCategory(.control), inverted: true)))
+              prop(.generalCategory(.control), inverted: true))
     parseTest(#"\P{Z}"#,
-                .atom(prop(.generalCategory(.separator), inverted: true)))
+              prop(.generalCategory(.separator), inverted: true))
 
-    parseTest(#"[\p{C}]"#, charClass(.atom(prop(.generalCategory(.other)))))
+    parseTest(#"[\p{C}]"#, charClass(prop_m(.generalCategory(.other))))
     parseTest(
       #"\p{C}+"#,
-      oneOrMore(.greedy, .atom(prop(.generalCategory(.other)))))
+      oneOrMore(.greedy, prop(.generalCategory(.other))))
 
-    parseTest(#"\p{Lx}"#, .atom(prop(.other(key: nil, value: "Lx"))))
-    parseTest(#"\p{gcL}"#, .atom(prop(.other(key: nil, value: "gcL"))))
-    parseTest(#"\p{x=y}"#, .atom(prop(.other(key: "x", value: "y"))))
+    parseTest(#"\p{Lx}"#, prop(.other(key: nil, value: "Lx")))
+    parseTest(#"\p{gcL}"#, prop(.other(key: nil, value: "gcL")))
+    parseTest(#"\p{x=y}"#, prop(.other(key: "x", value: "y")))
 
     // UAX44-LM3 means all of the below are equivalent.
-    let lowercaseLetter = AST.atom(prop(.generalCategory(.lowercaseLetter)))
+    let lowercaseLetter = prop(.generalCategory(.lowercaseLetter))
     parseTest(#"\p{ll}"#, lowercaseLetter)
     parseTest(#"\p{gc=ll}"#, lowercaseLetter)
     parseTest(#"\p{General_Category=Ll}"#, lowercaseLetter)
@@ -289,38 +289,38 @@ extension RegexTests {
     parseTest(#"\p{- general category =  is__l_ l  _ }"#, lowercaseLetter)
     parseTest(#"\p{ general category -=  IS__l_ l  _ }"#, lowercaseLetter)
 
-    parseTest(#"\p{Any}"#, .atom(prop(.any)))
-    parseTest(#"\p{Assigned}"#, .atom(prop(.assigned)))
-    parseTest(#"\p{ascii}"#, .atom(prop(.ascii)))
-    parseTest(#"\p{isAny}"#, .atom(prop(.any)))
+    parseTest(#"\p{Any}"#, prop(.any))
+    parseTest(#"\p{Assigned}"#, prop(.assigned))
+    parseTest(#"\p{ascii}"#, prop(.ascii))
+    parseTest(#"\p{isAny}"#, prop(.any))
 
-    parseTest(#"\p{sc=grek}"#, .atom(prop(.script(.greek))))
-    parseTest(#"\p{sc=isGreek}"#, .atom(prop(.script(.greek))))
-    parseTest(#"\p{Greek}"#, .atom(prop(.script(.greek))))
-    parseTest(#"\p{isGreek}"#, .atom(prop(.script(.greek))))
-    parseTest(#"\P{Script=Latn}"#, .atom(prop(.script(.latin), inverted: true)))
-    parseTest(#"\p{script=zzzz}"#, .atom(prop(.script(.unknown))))
-    parseTest(#"\p{ISscript=iszzzz}"#, .atom(prop(.script(.unknown))))
-    parseTest(#"\p{scx=bamum}"#, .atom(prop(.scriptExtension(.bamum))))
-    parseTest(#"\p{ISBAMUM}"#, .atom(prop(.script(.bamum))))
+    parseTest(#"\p{sc=grek}"#, prop(.script(.greek)))
+    parseTest(#"\p{sc=isGreek}"#, prop(.script(.greek)))
+    parseTest(#"\p{Greek}"#, prop(.script(.greek)))
+    parseTest(#"\p{isGreek}"#, prop(.script(.greek)))
+    parseTest(#"\P{Script=Latn}"#, prop(.script(.latin), inverted: true))
+    parseTest(#"\p{script=zzzz}"#, prop(.script(.unknown)))
+    parseTest(#"\p{ISscript=iszzzz}"#, prop(.script(.unknown)))
+    parseTest(#"\p{scx=bamum}"#, prop(.scriptExtension(.bamum)))
+    parseTest(#"\p{ISBAMUM}"#, prop(.script(.bamum)))
 
-    parseTest(#"\p{alpha}"#, .atom(prop(.binary(.alphabetic))))
-    parseTest(#"\p{DEP}"#, .atom(prop(.binary(.deprecated))))
-    parseTest(#"\P{DEP}"#, .atom(prop(.binary(.deprecated), inverted: true)))
-    parseTest(#"\p{alphabetic=True}"#, .atom(prop(.binary(.alphabetic))))
-    parseTest(#"\p{emoji=t}"#, .atom(prop(.binary(.emoji))))
-    parseTest(#"\p{Alpha=no}"#, .atom(prop(.binary(.alphabetic, value: false))))
-    parseTest(#"\P{Alpha=no}"#, .atom(prop(.binary(.alphabetic, value: false), inverted: true)))
-    parseTest(#"\p{isAlphabetic}"#, .atom(prop(.binary(.alphabetic))))
-    parseTest(#"\p{isAlpha=isFalse}"#, .atom(prop(.binary(.alphabetic, value: false))))
+    parseTest(#"\p{alpha}"#, prop(.binary(.alphabetic)))
+    parseTest(#"\p{DEP}"#, prop(.binary(.deprecated)))
+    parseTest(#"\P{DEP}"#, prop(.binary(.deprecated), inverted: true))
+    parseTest(#"\p{alphabetic=True}"#, prop(.binary(.alphabetic)))
+    parseTest(#"\p{emoji=t}"#, prop(.binary(.emoji)))
+    parseTest(#"\p{Alpha=no}"#, prop(.binary(.alphabetic, value: false)))
+    parseTest(#"\P{Alpha=no}"#, prop(.binary(.alphabetic, value: false), inverted: true))
+    parseTest(#"\p{isAlphabetic}"#, prop(.binary(.alphabetic)))
+    parseTest(#"\p{isAlpha=isFalse}"#, prop(.binary(.alphabetic, value: false)))
 
-    parseTest(#"\p{In_Runic}"#, .atom(prop(.onigurumaSpecial(.inRunic))))
+    parseTest(#"\p{In_Runic}"#, prop(.onigurumaSpecial(.inRunic)))
 
-    parseTest(#"\p{Xan}"#, .atom(prop(.pcreSpecial(.alphanumeric))))
-    parseTest(#"\p{Xps}"#, .atom(prop(.pcreSpecial(.posixSpace))))
-    parseTest(#"\p{Xsp}"#, .atom(prop(.pcreSpecial(.perlSpace))))
-    parseTest(#"\p{Xuc}"#, .atom(prop(.pcreSpecial(.universallyNamed))))
-    parseTest(#"\p{Xwd}"#, .atom(prop(.pcreSpecial(.perlWord))))
+    parseTest(#"\p{Xan}"#, prop(.pcreSpecial(.alphanumeric)))
+    parseTest(#"\p{Xps}"#, prop(.pcreSpecial(.posixSpace)))
+    parseTest(#"\p{Xsp}"#, prop(.pcreSpecial(.perlSpace)))
+    parseTest(#"\p{Xuc}"#, prop(.pcreSpecial(.universallyNamed)))
+    parseTest(#"\p{Xwd}"#, prop(.pcreSpecial(.perlWord)))
 
     // TODO: failure tests
   }

@@ -431,7 +431,7 @@ extension Source {
     return nil
   }
 
-  private mutating func lexPOSIXNamedSet() throws -> Loc<Atom.POSIXSet>? {
+  private mutating func lexPOSIXNamedSet() throws -> Loc<AST.Atom.POSIXSet>? {
     try recordLoc { src in
       guard src.tryEat(sequence: "[:") else { return nil }
       let inverted = src.tryEat("^")
@@ -439,7 +439,7 @@ extension Source {
       guard let set = Unicode.POSIXCharacterSet(rawValue: name) else {
         throw ParseError.invalidPOSIXSetName(name)
       }
-      return Atom.POSIXSet(inverted: inverted, set)
+      return AST.Atom.POSIXSet(inverted: inverted, set)
     }
   }
 
@@ -449,7 +449,7 @@ extension Source {
   ///     Prop -> [\s\w-]+
   ///
   private mutating func lexCharacterProperty(
-  ) throws -> Loc<Atom.CharacterProperty>? {
+  ) throws -> Loc<AST.Atom.CharacterProperty>? {
     try recordLoc { src in
       // '\P{...}' is the inverted version of '\p{...}'
       guard src.starts(with: "p{") || src.starts(with: "P{") else { return nil }
@@ -483,7 +483,7 @@ extension Source {
   /// TODO: references
   mutating func expectEscaped(
     isInCustomCharacterClass ccc: Bool
-  ) throws -> Loc<Atom> {
+  ) throws -> Loc<AST.Atom.Kind> {
     try recordLoc { src in
       // Keyboard control/meta
       if src.tryEat("c") || src.tryEat(sequence: "C-") {
@@ -509,7 +509,7 @@ extension Source {
       let char = src.eat()
 
       // Single-character builtins
-      if let builtin = Atom.EscapedBuiltin(
+      if let builtin = AST.Atom.EscapedBuiltin(
         char, inCustomCharacterClass: ccc
       ) {
         return .escaped(builtin)
@@ -547,8 +547,8 @@ extension Source {
   ///
   mutating func lexAtom(
     isInCustomCharacterClass customCC: Bool
-  ) throws -> Loc<Atom>? {
-    try recordLoc { src in
+  ) throws -> AST.Atom? {
+    let kind: Loc<AST.Atom.Kind>? = try recordLoc { src in
       // Check for not-an-atom, e.g. parser recursion termination
       if src.isEmpty { return nil }
       if !customCC && (src.peek() == ")" || src.peek() == "|") { return nil }
@@ -557,8 +557,9 @@ extension Source {
       // POSIX named set. This is only allowed in a custom character class.
       // TODO: Can we try and recover and diagnose for named sets outside
       // character classes?
-      if customCC, let set = try src.lexPOSIXNamedSet()?.value {
-        return .namedSet(set)
+      if customCC, let set = try src.lexPOSIXNamedSet() {
+        // FIXME: track locations
+        return .namedSet(set.value)
       }
 
       let char = src.eat()
@@ -587,11 +588,13 @@ extension Source {
       default: return .char(char)
       }
     }
+    guard let kind = kind else { return nil }
+    return AST.Atom(kind.value, kind.location)
   }
 
   /// Try to lex the end of a range in a custom character class, which consists
   /// of a '-' character followed by an atom.
-  mutating func lexCustomCharClassRangeEnd() throws -> Loc<Atom>? {
+  mutating func lexCustomCharClassRangeEnd() throws -> AST.Atom? {
     // Make sure we don't have a binary operator e.g '--', and the '-' is not
     // ending the custom character class (in which case it is literal).
     guard peekCCBinOp() == nil && !starts(with: "-]") && tryEat("-") else {

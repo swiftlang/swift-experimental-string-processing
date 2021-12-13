@@ -174,7 +174,7 @@ extension Parser {
 
     if let atom = try source.lexAtom(
       isInCustomCharacterClass: isInCustomCharacterClass
-    )?.value {
+    ) {
       // TODO: track source locations
       return .atom(atom)
     }
@@ -246,11 +246,11 @@ extension Parser {
         continue
       }
 
-      guard let atom = try source.lexAtom(isInCustomCharacterClass: true)?.value
+      guard let atom = try source.lexAtom(isInCustomCharacterClass: true)
         else { break }
 
       // Range between atoms.
-      if let rhs = try source.lexCustomCharClassRangeEnd()?.value {
+      if let rhs = try source.lexCustomCharClassRangeEnd() {
         guard atom.literalCharacterValue != nil &&
               rhs.literalCharacterValue != nil else {
           throw ParseError.invalidCharacterClassRangeOperand

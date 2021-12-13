@@ -31,7 +31,7 @@ class Compiler {
     switch node {
     // Any: .
     //     consume 1
-    case .atom(.any) where matchLevel == .graphemeCluster:
+    case .atom(let a) where a.kind == .any && matchLevel == .graphemeCluster:
       builder.buildConsume(1)
 
     case let n where n.characterClass != nil:
@@ -72,14 +72,18 @@ class Compiler {
     case .groupTransform(let g, _):
       emit(g.child)
 
-    case .atom(.char(let ch)):
-      builder.buildMatch(ch)
-
-    case .atom(.scalar(let scalar)):
-      builder.buildConsume { input, bounds in
-        input.unicodeScalars[bounds.lowerBound] == scalar
+    case .atom(let a):
+      switch a.kind {
+      case .char(let ch):
+        builder.buildMatch(ch)
+      case .scalar(let scalar):
+        builder.buildConsume { input, bounds in
+          input.unicodeScalars[bounds.lowerBound] == scalar
           ? input.unicodeScalars.index(after: bounds.lowerBound)
           : nil
+        }
+      default:
+        fatalError("Unsupported: \(a._dumpBase)")
       }
 
     case .concatenation(let concat):
@@ -95,11 +99,9 @@ class Compiler {
     case .quantification(let quant):
       emitQuantification(quant)
 
-    case .atom, .quote, .customCharacterClass:
+    case .quote, .customCharacterClass:
       fatalError("FIXME")
     }
-
-
   }
 
   func emitQuantification(_ quant: AST.Quantification) {

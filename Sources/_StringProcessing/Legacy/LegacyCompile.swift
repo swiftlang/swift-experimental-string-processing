@@ -23,17 +23,20 @@ func compile(
       s.literal.forEach { instructions.append(.character($0)) }
       return
 
-    case .atom(.char(let c)):
-      instructions.append(.character(c))
-      return
-
-    case .atom(.scalar(let u)):
-      instructions.append(.unicodeScalar(u))
-      return
-
-    case .atom(.any):
-      instructions.append(.any)
-      return
+    case .atom(let a):
+      switch a.kind {
+      case .char(let c):
+        instructions.append(.character(c))
+        return
+      case .scalar(let u):
+        instructions.append(.unicodeScalar(u))
+        return
+      case .any:
+        instructions.append(.any)
+        return
+      default:
+        fatalError("Unsupported: \(a._dumpBase)")
+      }
 
     case .group(let g):
       switch g.kind.value {
@@ -208,7 +211,7 @@ func compile(
         }
         return
       default:
-        fatalError("Unsupported: \(quant)")
+        fatalError("Unsupported: \(quant._dumpBase)")
       }
 
     case .alternation(let alt):
@@ -241,8 +244,6 @@ func compile(
       compileNode(last)
       instructions.append(done)
       return
-
-    case .atom: fatalError("FIXME")
 
     case .customCharacterClass:
       fatalError("unreachable")
