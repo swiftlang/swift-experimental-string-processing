@@ -12,11 +12,9 @@ public protocol RegexProtocol {
 }
 
 /// A regular expression.
-@frozen
 public struct Regex<Capture>: RegexProtocol {
   /// A program representation that caches any lowered representation for
   /// execution.
-  @usableFromInline
   internal class Program {
     /// The underlying AST.
     let ast: AST
@@ -36,7 +34,6 @@ public struct Regex<Capture>: RegexProtocol {
     }
   }
 
-  @usableFromInline
   let program: Program
   var ast: AST { program.ast }
 
