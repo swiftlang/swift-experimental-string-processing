@@ -379,7 +379,7 @@ extension Source {
 
   /// Try to consume a comment
   ///
-  ///     Comment -> '(?#.' [^')']* ')'
+  ///     Comment -> '(?#' [^')']* ')'
   ///
   /// With `SyntaxOptions.modernComments`
   ///
@@ -389,7 +389,7 @@ extension Source {
   ///
   mutating func lexComment() throws -> AST.Trivia? {
     let trivia: Located<String>? = try recordLoc { src in
-      if src.tryEat(sequence: "(?#.") {
+      if src.tryEat(sequence: "(?#") {
         return try src.expectQuoted(endingWith: ")").value
       }
       if src.modernComments, src.tryEat(sequence: "/*") {

@@ -222,6 +222,9 @@ extension RegexTests {
       concat("a", quote(#" \Q \\."#), "b"))
 
     parseTest(
+      #"a(?#comment)b"#,
+      concat("a", "b"))
+    parseTest(
       #"a(?#. comment)b"#,
       concat("a", "b"))
 
