@@ -16,6 +16,9 @@ let package = Package(
         .library(
             name: "_MatchingEngine",
             targets: ["_MatchingEngine"]),
+        .library(
+            name: "_Unicode",
+            targets: ["_Unicode"]),
         .executable(
             name: "VariadicsGenerator",
             targets: ["VariadicsGenerator"])
@@ -31,13 +34,16 @@ let package = Package(
             dependencies: ["_StringProcessing"]),
         .target(
             name: "_MatchingEngine",
-            dependencies: []),
+            dependencies: [/*"_Unicode"*/]),
         .testTarget(
             name: "MatchingEngineTests",
             dependencies: ["_MatchingEngine"]),
         .target(
             name: "_StringProcessing",
             dependencies: ["_MatchingEngine"]),
+        .target(
+            name: "_Unicode",
+            dependencies: []),
         .testTarget(
             name: "RegexTests",
             dependencies: ["_StringProcessing"]),
@@ -59,6 +65,9 @@ let package = Package(
         .testTarget(
             name: "AlgorithmsTests",
             dependencies: ["Algorithms"]),
+        .testTarget(
+          name: "UnicodeTests",
+          dependencies: ["_Unicode"]),
 
         // MARK: Scripts
         .executableTarget(
