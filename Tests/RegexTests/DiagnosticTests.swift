@@ -82,5 +82,10 @@ extension RegexTests {
                "      -----^       ",
                "------------------^"
     ])
+
+    // TODO: Find out best way to test quantifier values
+
+    // TODO: Find out way to render value-members of AST, not
+    // just children
   }
 }

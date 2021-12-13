@@ -45,9 +45,9 @@ extension AST.Quantification.Amount: _ASTPrintable {
     case .zeroOrMore:      return "*"
     case .oneOrMore:       return "+"
     case .zeroOrOne:       return "?"
-    case let .exactly(n):  return "{\(n)}"
-    case let .nOrMore(n):  return "{\(n),}"
-    case let .upToN(n):    return "{,\(n)}"
+    case let .exactly(n):  return "{\(n.value)}"
+    case let .nOrMore(n):  return "{\(n.value),}"
+    case let .upToN(n):    return "{,\(n.value)}"
     case let .range(r):
       return "{\(r.lowerBound),\(r.upperBound)}"
     }
@@ -57,11 +57,11 @@ extension AST.Quantification.Amount: _ASTPrintable {
     case .zeroOrMore:      return "zeroOrMore"
     case .oneOrMore:       return "oneOrMore"
     case .zeroOrOne:       return "zeroOrOne"
-    case let .exactly(n):  return "exactly<\(n)>"
-    case let .nOrMore(n):  return "nOrMore<\(n)>"
-    case let .upToN(n):    return "uptoN<\(n)>"
+    case let .exactly(n):  return "exactly<\(n.value)>"
+    case let .nOrMore(n):  return "nOrMore<\(n.value)>"
+    case let .upToN(n):    return "uptoN<\(n.value)>"
     case let .range(r):
-      return ".range<\(r.lowerBound)...\(r.upperBound)>"
+      return ".range<\(r.lowerBound.value)...\(r.upperBound.value)>"
     }
   }
 }

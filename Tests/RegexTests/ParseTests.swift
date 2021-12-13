@@ -36,8 +36,8 @@ func parseTest(
   else {
     XCTFail("""
 
-              Expected: \(expecting)
-              Found:    \(ast)
+              Expected: \(expecting._dump())
+              Found:    \(ast._dump())
               """)
     return
   }

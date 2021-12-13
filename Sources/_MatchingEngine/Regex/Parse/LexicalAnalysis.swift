@@ -200,7 +200,7 @@ extension Source {
     try recordLoc { src in
       // TODO: lex positive numbers, more specifically...
 
-      let lowerOpt = try src.lexNumber()?.value
+      let lowerOpt = try src.lexNumber()
 
       // ',' or '...' or '..<' or nothing
       let closedRange: Bool?
@@ -217,22 +217,25 @@ extension Source {
       } else {
         closedRange = nil
       }
-      let upperOpt = try! src.lexNumber()?.value
+      // FIXME: wait, why `try!` ?
+      let upperOpt: Loc<Int>?
+      if let u = try! src.lexNumber() {
+        upperOpt = (closedRange == true) ? u : Loc(u.value-1, u.location)
+      } else {
+        upperOpt = nil
+      }
 
       switch (lowerOpt, closedRange, upperOpt) {
       case let (l?, nil, nil):
-        // FIXME: source location tracking
-        return .exactly(.init(faking: l))
+        return .exactly(l)
       case let (l?, true, nil):
+        return .nOrMore(l)
+      case let (nil, _, u?):
+        return .upToN(u)
+      case let (l?, _, u?):
         // FIXME: source location tracking
-        return .nOrMore(.init(faking: l))
-      case let (nil, closed?, u?):
-        // FIXME: source location tracking
-        return .upToN(.init(faking: closed ? u : u-1))
-      case let (l?, closed?, u?):
-        // FIXME: source location tracking
-        return .range(
-          .init(faking: l) ... .init(faking: closed ? u : u-1))
+        return .range(l ... u)
+
       case let (nil, nil, u) where u != nil:
         fatalError("Not possible")
       default:
@@ -329,12 +332,7 @@ extension Source {
   mutating func lexNonSemanticWhitespace() throws -> AST.Trivia? {
     guard syntax.ignoreWhitespace else { return nil }
     let trivia: Loc<String>? = try recordLoc { src in
-      var didSomething = false
-      while src.tryEat(" ") {
-        didSomething = true
-      }
-      // FIXME: record the whitespace...
-      return didSomething ? "" : nil
+      src.tryEatPrefix { $0 == " " }?.string
     }
     guard let trivia = trivia else { return nil }
     return AST.Trivia(trivia)
