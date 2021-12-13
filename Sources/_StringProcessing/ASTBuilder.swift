@@ -162,11 +162,6 @@ func atom(_ k: AST.Atom.Kind) -> AST {
   .atom(.init(k, .fake))
 }
 
-func posixSet(
-  _ set: Unicode.POSIXCharacterSet, inverted: Bool = false
-) -> AST {
-  atom(.namedSet(.init(inverted: inverted, set)))
-}
 func escaped(
   _ e: AST.Atom.EscapedBuiltin
 ) -> AST {
@@ -180,7 +175,7 @@ func prop(
   _ kind: AST.Atom.CharacterProperty.Kind,
   inverted: Bool = false
 ) -> AST {
-  atom(.property(.init(kind, isInverted: inverted)))
+  atom(.property(.init(kind, isInverted: inverted, isPOSIX: false)))
 }
 
 // Raw atom constructing variant
@@ -196,16 +191,16 @@ func atom_m(
 ) -> AST.CustomCharacterClass.Member {
   .atom(atom_a(k))
 }
-func posixSet_m(
-  _ set: Unicode.POSIXCharacterSet, inverted: Bool = false
+func posixProp_m(
+  _ kind: AST.Atom.CharacterProperty.Kind, inverted: Bool = false
 ) -> AST.CustomCharacterClass.Member {
-  atom_m(.namedSet(.init(inverted: inverted, set)))
+  atom_m(.property(.init(kind, isInverted: inverted, isPOSIX: true)))
 }
 func prop_m(
   _ kind: AST.Atom.CharacterProperty.Kind,
   inverted: Bool = false
 ) -> AST.CustomCharacterClass.Member {
-  atom_m(.property(.init(kind, isInverted: inverted)))
+  atom_m(.property(.init(kind, isInverted: inverted, isPOSIX: false)))
 }
 func range_m(
   _ lower: AST.Atom.Kind, _ upper: AST.Atom.Kind

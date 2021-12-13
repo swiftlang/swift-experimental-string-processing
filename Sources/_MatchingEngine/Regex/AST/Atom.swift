@@ -19,9 +19,10 @@ extension AST {
       /// \u{...}, \0dd, \x{...}, ...
       case scalar(Unicode.Scalar)
 
-      /// A Unicode property, category, or script
+      /// A Unicode property, category, or script, including those written using
+      /// POSIX syntax.
       ///
-      /// \p{...}, \p{^...}, \P
+      /// \p{...}, \p{^...}, \P, [:...:], [:^...:]
       case property(CharacterProperty)
 
       /// A built-in escaped character
@@ -37,11 +38,6 @@ extension AST {
       case keyboardControl(Character)
       case keyboardMeta(Character)        // Oniguruma
       case keyboardMetaControl(Character) // Oniguruma
-
-      /// A named set (using POSIX syntax)
-      ///
-      /// [:...:], [:^...:]
-      case namedSet(POSIXSet)
 
       /// A named character \N{...}
       case namedCharacter(String)
@@ -305,11 +301,17 @@ extension AST.Atom.EscapedBuiltin {
 extension AST.Atom {
   public struct CharacterProperty: Hashable {
     public var kind: Kind
+
+    /// Whether this is an inverted property e.g '\P{Ll}', '[:^ascii:]'.
     public var isInverted: Bool
 
-    public init(_ kind: Kind, isInverted: Bool) {
+    /// Whether this property was written using POSIX syntax e.g '[:ascii:]'.
+    public var isPOSIX: Bool
+
+    public init(_ kind: Kind, isInverted: Bool, isPOSIX: Bool) {
       self.kind = kind
       self.isInverted = isInverted
+      self.isPOSIX = isPOSIX
     }
 
     public var _dumpBase: String {
@@ -346,6 +348,8 @@ extension AST.Atom.CharacterProperty {
     /// Character script and script extensions.
     case script(Unicode.Script)
     case scriptExtension(Unicode.Script)
+
+    case posix(Unicode.POSIXProperty)
 
     /// Some special properties implemented by PCRE and Oniguruma.
     case pcreSpecial(PCRESpecialCategory)
@@ -406,9 +410,6 @@ extension AST.Atom: _ASTPrintable {
     case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
       fatalError("TODO")
 
-    case .namedSet:
-      fatalError("TODO")
-
     case .any:         return "."
     case .startOfLine: return "^"
     case .endOfLine:   return "$"
@@ -440,24 +441,9 @@ extension AST.Atom {
       // TODO: Not a character per-say, what should we do?
       fallthrough
 
-    case .property, .escaped, .namedSet, .any,
-        .startOfLine, .endOfLine, .backreference,
-        .subpattern, .condition, .namedCharacter:
+    case .property, .escaped, .any, .startOfLine, .endOfLine,
+        .backreference, .subpattern, .condition, .namedCharacter:
       return nil
-    }
-  }
-}
-
-extension AST.Atom {
-  public struct POSIXSet: Hashable {
-    var inverted: Bool
-    var set: Unicode.POSIXCharacterSet
-
-    public init(
-      inverted: Bool, _ set: Unicode.POSIXCharacterSet
-    ) {
-      self.inverted = inverted
-      self.set = set
     }
   }
 }

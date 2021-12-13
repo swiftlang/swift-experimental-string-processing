@@ -506,15 +506,13 @@ extension Source {
     return nil
   }
 
-  private mutating func lexPOSIXNamedSet() throws -> Located<AST.Atom.POSIXSet>? {
+  private mutating func lexPOSIXCharacterProperty(
+  ) throws -> Located<AST.Atom.CharacterProperty>? {
     try recordLoc { src in
       guard src.tryEat(sequence: "[:") else { return nil }
       let inverted = src.tryEat("^")
-      let name = src.lexUntil(eating: ":]").value
-      guard let set = Unicode.POSIXCharacterSet(rawValue: name) else {
-        throw ParseError.invalidPOSIXSetName(name)
-      }
-      return AST.Atom.POSIXSet(inverted: inverted, set)
+      let prop = try src.lexCharacterPropertyContents(end: ":]").value
+      return .init(prop, isInverted: inverted, isPOSIX: true)
     }
   }
 
@@ -539,6 +537,27 @@ extension Source {
     }
   }
 
+  private mutating func lexCharacterPropertyContents(
+    end: String
+  ) throws -> Located<AST.Atom.CharacterProperty.Kind> {
+    try recordLoc { src in
+      // We should either have:
+      // - 'x=y' where 'x' is a property key, and 'y' is a value.
+      // - 'y' where 'y' is a value (or a bool key with an inferred value
+      //   of true), and its key is inferred.
+      // TODO: We could have better recovery here if we only ate the characters
+      // that property keys and values can use.
+      let lhs = src.lexUntil { $0.peek() == "=" || $0.starts(with: end) }.value
+      if src.tryEat(sequence: end) {
+        return try Source.classifyCharacterPropertyValueOnly(lhs)
+      }
+      src.eat(asserting: "=")
+
+      let rhs = src.lexUntil(eating: end).value
+      return try Source.classifyCharacterProperty(key: lhs, value: rhs)
+    }
+  }
+
   /// Try to consume a character property.
   ///
   ///     Property -> ('p{' | 'P{') Prop ('=' Prop)? '}'
@@ -552,22 +571,8 @@ extension Source {
       let isInverted = src.peek() == "P"
       src.advance(2)
 
-      // We should either have:
-      // - '\p{x=y}' where 'x' is a property key, and 'y' is a value.
-      // - '\p{y}' where 'y' is a value (or a bool key with an inferred value
-      //   of true), and its key is inferred.
-      // TODO: We could have better recovery here if we only ate the characters
-      // that property keys and values can use.
-      let lhs = src.lexUntil({ $0.peek() == "}" || $0.peek() == "=" }).value
-      if src.tryEat("}") {
-        let prop = try Source.classifyCharacterPropertyValueOnly(lhs)
-        return .init(prop, isInverted: isInverted)
-      }
-      src.eat(asserting: "=")
-
-      let rhs = src.lexUntil(eating: "}").value
-      let prop = try Source.classifyCharacterProperty(key: lhs, value: rhs)
-      return .init(prop, isInverted: isInverted)
+      let prop = try src.lexCharacterPropertyContents(end: "}").value
+      return .init(prop, isInverted: isInverted, isPOSIX: false)
     }
   }
 
@@ -650,12 +655,12 @@ extension Source {
       if !customCC && (src.peek() == ")" || src.peek() == "|") { return nil }
       // TODO: Store customCC in the atom, if that's useful
 
-      // POSIX named set. This is only allowed in a custom character class.
-      // TODO: Can we try and recover and diagnose for named sets outside
-      // character classes?
-      if customCC, let set = try src.lexPOSIXNamedSet() {
-        // FIXME: track locations
-        return .namedSet(set.value)
+      // POSIX character property. This is only allowed in a custom character
+      // class.
+      // TODO: Can we try and recover and diagnose these outside character
+      // classes?
+      if customCC, let prop = try src.lexPOSIXCharacterProperty()?.value {
+        return .property(prop)
       }
 
       let char = src.eat()

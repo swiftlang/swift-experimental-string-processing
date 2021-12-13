@@ -153,14 +153,27 @@ extension RegexTests {
       "[[ab]c[de]]",
       charClass(charClass("a", "b"), "c", charClass("d", "e")))
 
-    typealias POSIX = AST.Atom.POSIXSet
     parseTest(#"[ab[:space:]\d[:^upper:]cd]"#,
-              charClass("a", "b", posixSet_m(.space),
+              charClass("a", "b",
+                        posixProp_m(.binary(.whitespace)),
                         atom_m(.escaped(.decimalDigit)),
-                        posixSet_m(.upper, inverted: true), "c", "d"))
+                        posixProp_m(.binary(.uppercase), inverted: true),
+                        "c", "d"))
 
-    parseTest("[[[:space:]]]",
-              charClass(charClass(posixSet_m(.space))))
+    parseTest("[[[:space:]]]", charClass(charClass(
+      posixProp_m(.binary(.whitespace))
+    )))
+
+    parseTest("[[:alnum:]]", charClass(posixProp_m(.posix(.alnum))))
+    parseTest("[[:blank:]]", charClass(posixProp_m(.posix(.blank))))
+    parseTest("[[:graph:]]", charClass(posixProp_m(.posix(.graph))))
+    parseTest("[[:print:]]", charClass(posixProp_m(.posix(.print))))
+    parseTest("[[:word:]]", charClass(posixProp_m(.posix(.word))))
+    parseTest("[[:xdigit:]]", charClass(posixProp_m(.posix(.xdigit))))
+
+    parseTest("[[:isALNUM:]]", charClass(posixProp_m(.posix(.alnum))))
+    parseTest("[[:AL_NUM:]]", charClass(posixProp_m(.posix(.alnum))))
+    parseTest("[[:script=Greek:]]", charClass(posixProp_m(.script(.greek))))
 
     parseTest(
       #"[a[bc]de&&[^bc]\d]+"#,
@@ -337,6 +350,14 @@ extension RegexTests {
     parseTest(#"\p{Xsp}"#, prop(.pcreSpecial(.perlSpace)))
     parseTest(#"\p{Xuc}"#, prop(.pcreSpecial(.universallyNamed)))
     parseTest(#"\p{Xwd}"#, prop(.pcreSpecial(.perlWord)))
+
+    parseTest(#"\p{alnum}"#, prop(.posix(.alnum)))
+    parseTest(#"\p{is_alnum}"#, prop(.posix(.alnum)))
+    parseTest(#"\p{blank}"#, prop(.posix(.blank)))
+    parseTest(#"\p{graph}"#, prop(.posix(.graph)))
+    parseTest(#"\p{print}"#, prop(.posix(.print)))
+    parseTest(#"\p{word}"#,  prop(.posix(.word)))
+    parseTest(#"\p{xdigit}"#, prop(.posix(.xdigit)))
 
     // TODO: failure tests
   }

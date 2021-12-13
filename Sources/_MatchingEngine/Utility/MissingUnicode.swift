@@ -174,21 +174,21 @@ extension Unicode {
     case zanabazarSquare = "Zanabazar_Square"
   }
 
-  public enum POSIXCharacterSet: String, Hashable {
+  /// POSIX character properties not already covered by general categories or
+  /// binary properties.
+  public enum POSIXProperty: String, Hashable {
     case alnum = "alnum"
-    case alpha = "alpha"
-    case ascii = "ascii"
     case blank = "blank"
-    case cntrl = "cntrl"
-    case digit = "digit"
     case graph = "graph"
-    case lower = "lower"
     case print = "print"
-    case punct = "punct"
-    case space = "space"
-    case upper = "upper"
     case word = "word"
     case xdigit = "xdigit"
+    // As per http://www.unicode.org/reports/tr18/#Compatibility_Properties,
+    // [:alpha:], [:lower:], [:upper:], and [:space:] are covered by binary
+    // properties. [:punct:], [:digit:], and [:cntrl:] are covered by general
+    // categories. [:ascii:] is covered by CharacterProperty.Kind.ascii.
+    // These may have different semantics depending on matching mode, but that
+    // should be left up to the matching engine.
   }
 
   /// Unicode.GeneralCategory + cases for "meta categories" such as "L", which
