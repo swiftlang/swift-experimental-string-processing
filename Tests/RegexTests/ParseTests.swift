@@ -175,6 +175,8 @@ extension RegexTests {
     parseTest("[[:AL_NUM:]]", charClass(posixProp_m(.posix(.alnum))))
     parseTest("[[:script=Greek:]]", charClass(posixProp_m(.script(.greek))))
 
+    // MARK: Operators
+
     parseTest(
       #"[a[bc]de&&[^bc]\d]+"#,
       oneOrMore(.greedy, charClass(
@@ -214,6 +216,8 @@ extension RegexTests {
     parseTest(
       "~~*", concat("~", zeroOrMore(.greedy, "~")))
 
+    // MARK: Quotes
+
     parseTest(
       #"a\Q .\Eb"#,
       concat("a", quote(" ."), "b"))
@@ -221,12 +225,16 @@ extension RegexTests {
       #"a\Q \Q \\.\Eb"#,
       concat("a", quote(#" \Q \\."#), "b"))
 
+    // MARK: Comments
+
     parseTest(
       #"a(?#comment)b"#,
       concat("a", "b"))
     parseTest(
       #"a(?#. comment)b"#,
       concat("a", "b"))
+
+    // MARK: Quantification
 
     parseTest(
       #"a{1,2}"#,
@@ -243,6 +251,8 @@ extension RegexTests {
     parseTest(
       #"a{1,2}?"#,
       quantRange(.reluctant, 1...2, "a"))
+
+    // MARK: Groups
 
     // Named captures
     parseTest(
@@ -268,6 +278,44 @@ extension RegexTests {
     parseTest(
       #"a(?>b)c"#,
       concat("a", atomicNonCapturing("b"), "c"))
+    parseTest(
+      "a(*atomic:b)c",
+      concat("a", atomicNonCapturing("b"), "c"))
+
+    parseTest("a(?=b)c", concat("a", lookahead("b"), "c"))
+    parseTest("a(*pla:b)c", concat("a", lookahead("b"), "c"))
+    parseTest("a(*positive_lookahead:b)c", concat("a", lookahead("b"), "c"))
+
+    parseTest("a(?!b)c", concat("a", negativeLookahead("b"), "c"))
+    parseTest("a(*nla:b)c", concat("a", negativeLookahead("b"), "c"))
+    parseTest("a(*negative_lookahead:b)c",
+              concat("a", negativeLookahead("b"), "c"))
+
+    parseTest("a(?<=b)c", concat("a", lookbehind("b"), "c"))
+    parseTest("a(*plb:b)c", concat("a", lookbehind("b"), "c"))
+    parseTest("a(*positive_lookbehind:b)c", concat("a", lookbehind("b"), "c"))
+
+    parseTest("a(?<!b)c", concat("a", negativeLookbehind("b"), "c"))
+    parseTest("a(*nlb:b)c", concat("a", negativeLookbehind("b"), "c"))
+    parseTest("a(*negative_lookbehind:b)c",
+              concat("a", negativeLookbehind("b"), "c"))
+
+    parseTest("a(?*b)c", concat("a", nonAtomicLookahead("b"), "c"))
+    parseTest("a(*napla:b)c", concat("a", nonAtomicLookahead("b"), "c"))
+    parseTest("a(*non_atomic_positive_lookahead:b)c",
+              concat("a", nonAtomicLookahead("b"), "c"))
+
+    parseTest("a(?<*b)c", concat("a", nonAtomicLookbehind("b"), "c"))
+    parseTest("a(*naplb:b)c", concat("a", nonAtomicLookbehind("b"), "c"))
+    parseTest("a(*non_atomic_positive_lookbehind:b)c",
+              concat("a", nonAtomicLookbehind("b"), "c"))
+
+    parseTest("a(*sr:b)c", concat("a", scriptRun("b"), "c"))
+    parseTest("a(*script_run:b)c", concat("a", scriptRun("b"), "c"))
+
+    parseTest("a(*asr:b)c", concat("a", atomicScriptRun("b"), "c"))
+    parseTest("a(*atomic_script_run:b)c",
+              concat("a", atomicScriptRun("b"), "c"))
 
     // MARK: Character names.
 

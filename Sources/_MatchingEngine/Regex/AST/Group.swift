@@ -35,11 +35,23 @@ extension AST {
       // (?!...)
       case negativeLookahead
 
+      // (?*...)
+      case nonAtomicLookahead
+
       // (?<=...)
       case lookbehind
 
       // (?<!...)
       case negativeLookbehind
+
+      // (?<*...)
+      case nonAtomicLookbehind
+
+      // (*sr:...)
+      case scriptRun
+
+      // (*asr:...)
+      case atomicScriptRun
 
       // NOTE: Comments appear to be groups, but are not parsed
       // the same. They parse more like quotes, so are not
@@ -65,8 +77,12 @@ extension AST.Group.Kind: _ASTPrintable {
     case .atomicNonCapturing:  return "atomicNonCapturing"
     case .lookahead:           return "lookahead"
     case .negativeLookahead:   return "negativeLookahead"
+    case .nonAtomicLookahead:  return "nonAtomicLookahead"
     case .lookbehind:          return "lookbehind"
     case .negativeLookbehind:  return "negativeLookbehind"
+    case .nonAtomicLookbehind: return "nonAtomicLookbehind"
+    case .scriptRun:           return "scriptRun"
+    case .atomicScriptRun:     return "atomicScriptRun"
     }
   }
 }

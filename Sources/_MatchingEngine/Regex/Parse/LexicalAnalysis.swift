@@ -443,9 +443,11 @@ extension Source {
         if src.tryEat(">") { return .atomicNonCapturing }
         if src.tryEat("=") { return .lookahead }
         if src.tryEat("!") { return .negativeLookahead }
+        if src.tryEat("*") { return .nonAtomicLookahead }
 
         if src.tryEat(sequence: "<=") { return .lookbehind }
         if src.tryEat(sequence: "<!") { return .negativeLookbehind }
+        if src.tryEat(sequence: "<*") { return .nonAtomicLookbehind }
 
         // Named
         if src.tryEat("<") || src.tryEat(sequence: "P<") {
@@ -459,6 +461,43 @@ extension Source {
 
         throw ParseError.misc(
           "Unknown group kind '(?\(src.peek()!)'")
+      }
+
+      // Explicitly spelled out PRCE2 syntax for some groups.
+      if src.tryEat("*") {
+        if src.tryEat(sequence: "atomic:") { return .atomicNonCapturing }
+
+        if src.tryEat(sequence: "pla:") ||
+            src.tryEat(sequence: "positive_lookahead:") {
+          return .lookahead
+        }
+        if src.tryEat(sequence: "nla:") ||
+            src.tryEat(sequence: "negative_lookahead:") {
+          return .negativeLookahead
+        }
+        if src.tryEat(sequence: "plb:") ||
+            src.tryEat(sequence: "positive_lookbehind:") {
+          return .lookbehind
+        }
+        if src.tryEat(sequence: "nlb:") ||
+            src.tryEat(sequence: "negative_lookbehind:") {
+          return .negativeLookbehind
+        }
+        if src.tryEat(sequence: "napla:") ||
+            src.tryEat(sequence: "non_atomic_positive_lookahead:") {
+          return .nonAtomicLookahead
+        }
+        if src.tryEat(sequence: "naplb:") ||
+            src.tryEat(sequence: "non_atomic_positive_lookbehind:") {
+          return .nonAtomicLookbehind
+        }
+        if src.tryEat(sequence: "sr:") || src.tryEat(sequence: "script_run:") {
+          return .scriptRun
+        }
+        if src.tryEat(sequence: "asr:") ||
+            src.tryEat(sequence: "atomic_script_run:") {
+          return .atomicScriptRun
+        }
       }
 
       // (_:)

@@ -73,6 +73,18 @@ func negativeLookahead(_ child: AST) -> AST {
 func negativeLookbehind(_ child: AST) -> AST {
   group(.negativeLookbehind, child)
 }
+public func nonAtomicLookahead(_ child: AST) -> AST {
+  group(.nonAtomicLookahead, child)
+}
+public func nonAtomicLookbehind(_ child: AST) -> AST {
+  group(.nonAtomicLookbehind, child)
+}
+public func scriptRun(_ child: AST) -> AST {
+  group(.scriptRun, child)
+}
+public func atomicScriptRun(_ child: AST) -> AST {
+  group(.atomicScriptRun, child)
+}
 
 func quant(
   _ amount: AST.Quantification.Amount,
