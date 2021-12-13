@@ -12,6 +12,10 @@ public enum DynamicCaptures: Equatable {
   indirect case optional(DynamicCaptures?)
   indirect case array([DynamicCaptures])
 
+  public static var empty: Self {
+    .tuple([])
+  }
+
   internal init(_ capture: Capture) {
     switch capture {
     case .atom(let atom):
