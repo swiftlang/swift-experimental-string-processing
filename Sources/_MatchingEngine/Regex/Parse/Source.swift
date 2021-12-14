@@ -99,22 +99,23 @@ extension Source {
     }
     return _slice[..<upTo]
   }
-
-  mutating func tryEatPrefix(
-    _ f: (Char) -> Bool
-  ) -> Input.SubSequence? {
-    guard let idx = _slice.firstIndex(where: { !f($0) }) else {
-      return self.eat(upTo: _slice.endIndex)
-    }
-    if idx == _slice.startIndex { return nil }
-    return eat(upTo: idx)
+  mutating func eat(upToCount count: Int) -> Input.SubSequence {
+    let pre = _slice.prefix(count)
+    defer { advance(pre.count) }
+    return pre
   }
+
   mutating func tryEatPrefix(
-    maxLength: Int,
+    maxLength: Int? = nil,
     _ f: (Char) -> Bool
   ) -> Input.SubSequence? {
-
-    let pre = _slice.prefix(while: f).prefix(maxLength)
+    let chunk: Input.SubSequence
+    if let maxLength = maxLength {
+      chunk = _slice.prefix(maxLength)
+    } else {
+      chunk = _slice[...]
+    }
+    let pre = chunk.prefix(while: f)
     guard !pre.isEmpty else { return nil }
 
     defer { self.advance(pre.count) }

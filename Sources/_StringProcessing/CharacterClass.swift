@@ -327,8 +327,6 @@ extension AST.Atom {
     switch kind {
     case let .escaped(b): return b.characterClass
 
-    case .namedSet: fatalError("TODO")
-
     case .any: return .any
 
     case .property:

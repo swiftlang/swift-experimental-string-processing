@@ -161,6 +161,10 @@ extension Source {
     }
   }
 
+  static private func classifyPOSIX(_ value: String) -> Unicode.POSIXProperty? {
+    withNormalizedForms(value) { Unicode.POSIXProperty(rawValue: $0) }
+  }
+
   static private func classifyScriptProperty(
     _ value: String
   ) -> Unicode.Script? {
@@ -367,6 +371,9 @@ extension Source {
     }
     if let script = classifyScriptProperty(value) {
       return .script(script)
+    }
+    if let posix = classifyPOSIX(value) {
+      return .posix(posix)
     }
 
     // Some additional special cases we recognise.

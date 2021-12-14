@@ -17,7 +17,7 @@ extension Source {
   /// or throw the value/error with source locations.
   fileprivate mutating func recordLoc<T>(
     _ f: (inout Self) throws -> T
-  ) throws -> Located<T> {
+  ) rethrows -> Located<T> {
     let start = currentPosition
     do {
       let result = try f(&self)
@@ -35,7 +35,7 @@ extension Source {
   /// or throw the value/error with source locations.
   fileprivate mutating func recordLoc<T>(
     _ f: (inout Self) throws -> T?
-  ) throws -> Located<T>? {
+  ) rethrows -> Located<T>? {
     let start = currentPosition
     do {
       guard let result = try f(&self) else { return nil }
@@ -53,7 +53,7 @@ extension Source {
   /// or throw the value/error with source locations.
   fileprivate mutating func recordLoc(
     _ f: (inout Self) throws -> ()
-  ) throws {
+  ) rethrows {
     let start = currentPosition
     do {
       try f(&self)
@@ -113,63 +113,75 @@ extension Source {
       return c
     }
   }
+}
 
-  private mutating func consumeNumber<
-    Num: FixedWidthInteger
-  >(
-    _ isNumber: (Char) -> Bool,
-    validate: (Input.SubSequence) throws -> (),
-    radix: Int
-  ) throws -> Num? {
-    guard let num = tryEatPrefix(isNumber) else {
-      return nil
-    }
-    try validate(num)
-    guard let i = Num(num, radix: radix) else {
-      throw ParseError.numberOverflow(String(num))
-    }
-    return i
-  }
-  private mutating func consumeHexNumber<Num: FixedWidthInteger>(
-    validate: (Input.SubSequence) throws -> ()
-  ) throws -> Num? {
-    try consumeNumber(\.isHexDigit, validate: validate, radix: 16)
-  }
+enum RadixKind {
+  case octal, decimal, hex
 
-  private mutating func consumeHexNumber<Num: FixedWidthInteger>(
-    numDigits: Int
+  var characterFilter: (Character) -> Bool {
+    switch self {
+    case .octal:   return \.isOctalDigit
+    case .decimal: return \.isNumber
+    case .hex:     return \.isHexDigit
+    }
+  }
+  var radix: Int {
+    switch self {
+    case .octal:   return 8
+    case .decimal: return 10
+    case .hex:     return 16
+    }
+  }
+}
+
+extension Source {
+  /// Validate a string of digits as a particular radix, and return the number,
+  /// or throw an error if the string is malformed or would overflow the number
+  /// type.
+  private static func validateNumber<Num: FixedWidthInteger>(
+    _ str: String, _: Num.Type, _ kind: RadixKind
   ) throws -> Num {
-    guard let str = tryEat(count: numDigits) else {
-      throw ParseError.misc("Expected more digits")
+    guard !str.isEmpty && str.all(kind.characterFilter) else {
+      throw ParseError.expectedNumber(str, kind: kind)
     }
-    guard let i = Num(str, radix: 16) else {
-      // TODO: Or, it might have failed because of overflow,
-      // Can we tell easily?
-      throw ParseError.expectedHexNumber(String(str))
+    guard let i = Num(str, radix: kind.radix) else {
+      throw ParseError.numberOverflow(str)
     }
     return i
   }
 
-  private mutating func consumeHexNumber<Num: FixedWidthInteger>(
-    digitRange: ClosedRange<Int>
-  ) throws -> Num {
-    guard let str = self.tryEatPrefix(
-      maxLength: digitRange.upperBound, \.isHexDigit
-    ) else {
-      throw ParseError.expectedDigits("", expecting: digitRange)
+  /// Validate a string of digits as a unicode scalar of a particular radix, and
+  /// return the scalar value, or throw an error if the string is malformed or
+  /// would overflow the scalar.
+  private static func validateUnicodeScalar(
+    _ str: String, _ kind: RadixKind
+  ) throws -> Unicode.Scalar {
+    let num = try validateNumber(str, UInt32.self, kind)
+    guard let scalar = Unicode.Scalar(num) else {
+      throw ParseError.misc("Invalid scalar value U+\(num.hexStr)")
     }
-    guard digitRange.contains(str.count) else {
-      throw ParseError.expectedDigits(
-        String(str), expecting: digitRange)
-    }
-    guard let i = Num(str, radix: 16) else {
-      // TODO: Or, it might have failed because of overflow,
-      // Can we tell easily?
-      throw ParseError.expectedHexNumber(String(str))
-    }
-    return i
+    return scalar
   }
 
+  /// Try to eat a number of a particular type and radix off the front.
+  ///
+  /// Returns: `nil` if there's no number, otherwise the number
+  ///
+  /// Throws on overflow
+  ///
+  private mutating func lexNumber<Num: FixedWidthInteger>(
+    _ ty: Num.Type, _ kind: RadixKind
+  ) throws -> Located<Num>? {
+    try recordLoc { src in
+      guard let str = src.tryEatPrefix(kind.characterFilter)?.string else {
+        return nil
+      }
+      guard let i = Num(str, radix: kind.radix) else {
+        throw ParseError.numberOverflow(str)
+      }
+      return i
+    }
+  }
 
   /// Try to eat a number off the front.
   ///
@@ -178,10 +190,7 @@ extension Source {
   /// Throws on overflow
   ///
   mutating func lexNumber() throws -> Located<Int>? {
-    try recordLoc {
-      try $0.consumeNumber(
-        \.isNumber, validate: { _ in }, radix: 10)
-    }
+    try lexNumber(Int.self, .decimal)
   }
 
   /// Eat a scalar value from hexadecimal notation off the front
@@ -189,63 +198,53 @@ extension Source {
     numDigits: Int
   ) throws -> Located<Unicode.Scalar> {
     try recordLoc { src in
-      let num: UInt32 = try src.consumeHexNumber(
-        numDigits: numDigits)
-      guard let scalar = Unicode.Scalar(num) else {
-        throw ParseError.misc(
-          "Invalid scalar value U+\(num.hexStr)")
+      let str = src.eat(upToCount: numDigits).string
+      guard str.count == numDigits else {
+        throw ParseError.expectedNumDigits(str, numDigits)
       }
-      return scalar
-    }
-  }
-
-  /// Eat a scalar value from hexadecimal notation off the front
-  private mutating func expectUnicodeScalar(
-    digitRange: ClosedRange<Int>
-  ) throws -> Located<Unicode.Scalar> {
-    try recordLoc { src in
-      let uOpt: UInt32? = try src.consumeHexNumber { s in
-        guard digitRange.contains(s.count) else {
-          throw ParseError.expectedDigits(
-            String(s), expecting: digitRange)
-        }
-      }
-      guard let u = uOpt else {
-        throw ParseError.misc("Expected scalar value")
-      }
-      guard let scalar = Unicode.Scalar(u) else {
-        throw ParseError.misc(
-          "Invalid scalar value U+\(u.hexStr)")
-      }
-      return scalar
+      return try Source.validateUnicodeScalar(str, .hex)
     }
   }
 
   /// Eat a scalar off the front, starting from after the
   /// backslash and base character (e.g. `\u` or `\x`).
   ///
-  ///     UniScalar -> 'u{' HexDigit{1...8}
+  ///     UniScalar -> 'u{' HexDigit{1...} '}'
   ///                | 'u'  HexDigit{4}
-  ///                | 'x{' HexDigit{1...8}
+  ///                | 'x{' HexDigit{1...} '}'
   ///                | 'x'  HexDigit{2}
   ///                | 'U'  HexDigit{8}
+  ///                | 'o{' OctalDigit{1...} '}'
+  ///                | '0'  OctalDigit{0...2}
   ///
   mutating func expectUnicodeScalar(
     escapedCharacter base: Character
   ) throws -> Located<Unicode.Scalar> {
     try recordLoc { src in
       switch base {
+      // Hex numbers.
       case "u", "x":
         if src.tryEat("{") {
-          let s = try src.expectUnicodeScalar(digitRange: 1...8)
-          try src.expect("}")
-          return s.value
+          let str = src.lexUntil(eating: "}").value
+          return try Source.validateUnicodeScalar(str, .hex)
         }
         let numDigits = base == "u" ? 4 : 2
-        return try src.expectUnicodeScalar(
-          numDigits: numDigits).value
+        return try src.expectUnicodeScalar(numDigits: numDigits).value
       case "U":
         return try src.expectUnicodeScalar(numDigits: 8).value
+
+      // Octal numbers.
+      case "o" where src.tryEat("{"):
+        let str = src.lexUntil(eating: "}").value
+        return try Source.validateUnicodeScalar(str, .octal)
+
+      case "0":
+        // We can read *up to* 2 more octal digits per PCRE.
+        // FIXME: ICU can read up to 3 octal digits, we should have a parser
+        // mode to switch.
+        guard let str = src.tryEatPrefix(maxLength: 2, \.isOctalDigit)?.string
+        else { return Unicode.Scalar(0) }
+        return try Source.validateUnicodeScalar(str, .octal)
 
       default:
         throw ParseError.misc("TODO: Or is this an assert?")
@@ -279,7 +278,7 @@ extension Source {
     }
     guard let amt = amt else { return nil }
 
-    let kind: Located<Quant.Kind> = try recordLoc { src in
+    let kind: Located<Quant.Kind> = recordLoc { src in
       if src.tryEat("?") { return .reluctant  }
       if src.tryEat("+") { return .possessive }
       return .greedy
@@ -343,36 +342,32 @@ extension Source {
   }
 
   private mutating func lexUntil(
-    _ predicate: (inout Source) -> Bool,
-    validate: (String) throws -> Void = { _ in }
-  ) throws -> Located<String> {
-    try recordLoc { src in
+    _ predicate: (inout Source) -> Bool
+  ) -> Located<String> {
+    recordLoc { src in
       var result = ""
       while !predicate(&src) {
-        // TODO(diagnostic): expected `end`, instead of end-of-input
-
         result.append(src.eat())
       }
-      try validate(result)
       return result
     }
   }
 
-  private mutating func lexUntil(
-    eating end: String, validate: (String) throws -> Void = { _ in }
-  ) throws -> Located<String> {
-    try lexUntil({ src in src.tryEat(sequence: end) }, validate: validate)
+  private mutating func lexUntil(eating end: String) -> Located<String> {
+    lexUntil { $0.tryEat(sequence: end) }
   }
 
   /// Expect a linear run of non-nested non-empty content
   private mutating func expectQuoted(
     endingWith end: String
   ) throws -> Located<String> {
-    try lexUntil(eating: end, validate: { result in
+    try recordLoc { src in
+      let result = src.lexUntil(eating: end).value
       guard !result.isEmpty else {
         throw ParseError.misc("Expected non-empty contents")
       }
-    })
+      return result
+    }
   }
 
   /// Try to consume quoted content
@@ -402,7 +397,7 @@ extension Source {
 
   /// Try to consume a comment
   ///
-  ///     Comment -> '(?#.' [^')']* ')'
+  ///     Comment -> '(?#' [^')']* ')'
   ///
   /// With `SyntaxOptions.modernComments`
   ///
@@ -412,7 +407,7 @@ extension Source {
   ///
   mutating func lexComment() throws -> AST.Trivia? {
     let trivia: Located<String>? = try recordLoc { src in
-      if src.tryEat(sequence: "(?#.") {
+      if src.tryEat(sequence: "(?#") {
         return try src.expectQuoted(endingWith: ")").value
       }
       if src.modernComments, src.tryEat(sequence: "/*") {
@@ -429,7 +424,7 @@ extension Source {
   /// Does nothing unless `SyntaxOptions.nonSemanticWhitespace` is set
   mutating func lexNonSemanticWhitespace() throws -> AST.Trivia? {
     guard syntax.ignoreWhitespace else { return nil }
-    let trivia: Located<String>? = try recordLoc { src in
+    let trivia: Located<String>? = recordLoc { src in
       src.tryEatPrefix { $0 == " " }?.string
     }
     guard let trivia = trivia else { return nil }
@@ -466,9 +461,11 @@ extension Source {
         if src.tryEat(">") { return .atomicNonCapturing }
         if src.tryEat("=") { return .lookahead }
         if src.tryEat("!") { return .negativeLookahead }
+        if src.tryEat("*") { return .nonAtomicLookahead }
 
         if src.tryEat(sequence: "<=") { return .lookbehind }
         if src.tryEat(sequence: "<!") { return .negativeLookbehind }
+        if src.tryEat(sequence: "<*") { return .nonAtomicLookbehind }
 
         // Named
         if src.tryEat("<") || src.tryEat(sequence: "P<") {
@@ -484,6 +481,43 @@ extension Source {
           "Unknown group kind '(?\(src.peek()!)'")
       }
 
+      // Explicitly spelled out PRCE2 syntax for some groups.
+      if src.tryEat("*") {
+        if src.tryEat(sequence: "atomic:") { return .atomicNonCapturing }
+
+        if src.tryEat(sequence: "pla:") ||
+            src.tryEat(sequence: "positive_lookahead:") {
+          return .lookahead
+        }
+        if src.tryEat(sequence: "nla:") ||
+            src.tryEat(sequence: "negative_lookahead:") {
+          return .negativeLookahead
+        }
+        if src.tryEat(sequence: "plb:") ||
+            src.tryEat(sequence: "positive_lookbehind:") {
+          return .lookbehind
+        }
+        if src.tryEat(sequence: "nlb:") ||
+            src.tryEat(sequence: "negative_lookbehind:") {
+          return .negativeLookbehind
+        }
+        if src.tryEat(sequence: "napla:") ||
+            src.tryEat(sequence: "non_atomic_positive_lookahead:") {
+          return .nonAtomicLookahead
+        }
+        if src.tryEat(sequence: "naplb:") ||
+            src.tryEat(sequence: "non_atomic_positive_lookbehind:") {
+          return .nonAtomicLookbehind
+        }
+        if src.tryEat(sequence: "sr:") || src.tryEat(sequence: "script_run:") {
+          return .scriptRun
+        }
+        if src.tryEat(sequence: "asr:") ||
+            src.tryEat(sequence: "atomic_script_run:") {
+          return .atomicScriptRun
+        }
+      }
+
       // (_:)
       if src.modernCaptures && src.tryEat(sequence: "_:") {
         return .nonCapture
@@ -496,7 +530,7 @@ extension Source {
 
   mutating func lexCustomCCStart(
   ) throws -> Located<CustomCC.Start>? {
-    try recordLoc { src in
+    recordLoc { src in
       // POSIX named sets are atoms.
       guard !src.starts(with: "[:") else { return nil }
 
@@ -512,7 +546,7 @@ extension Source {
   ///     CustomCCBinOp -> '--' | '~~' | '&&'
   ///
   mutating func lexCustomCCBinOp() throws -> Located<CustomCC.SetOp>? {
-    try recordLoc { src in
+    recordLoc { src in
       // TODO: Perhaps a syntax options check (!PCRE)
       // TODO: Better AST types here
       guard let binOp = src.peekCCBinOp() else { return nil }
@@ -529,15 +563,55 @@ extension Source {
     return nil
   }
 
-  private mutating func lexPOSIXNamedSet() throws -> Located<AST.Atom.POSIXSet>? {
+  private mutating func lexPOSIXCharacterProperty(
+  ) throws -> Located<AST.Atom.CharacterProperty>? {
     try recordLoc { src in
       guard src.tryEat(sequence: "[:") else { return nil }
       let inverted = src.tryEat("^")
-      let name = try src.lexUntil(eating: ":]").value
-      guard let set = Unicode.POSIXCharacterSet(rawValue: name) else {
-        throw ParseError.invalidPOSIXSetName(name)
+      let prop = try src.lexCharacterPropertyContents(end: ":]").value
+      return .init(prop, isInverted: inverted, isPOSIX: true)
+    }
+  }
+
+  /// Try to consume a named character.
+  ///
+  ///     NamedCharacter -> '\N{' CharName '}'
+  ///     CharName -> 'U+' HexDigit{1...8} | [\s\w-]+
+  ///
+  private mutating func lexNamedCharacter() throws -> Located<AST.Atom.Kind>? {
+    try recordLoc { src in
+      guard src.tryEat(sequence: "N{") else { return nil }
+
+      // We should either have a unicode scalar.
+      if src.tryEat(sequence: "U+") {
+        let str = src.lexUntil(eating: "}").value
+        return .scalar(try Source.validateUnicodeScalar(str, .hex))
       }
-      return AST.Atom.POSIXSet(inverted: inverted, set)
+
+      // Or we should have a character name.
+      // TODO: Validate the types of characters that can appear in the name?
+      return .namedCharacter(src.lexUntil(eating: "}").value)
+    }
+  }
+
+  private mutating func lexCharacterPropertyContents(
+    end: String
+  ) throws -> Located<AST.Atom.CharacterProperty.Kind> {
+    try recordLoc { src in
+      // We should either have:
+      // - 'x=y' where 'x' is a property key, and 'y' is a value.
+      // - 'y' where 'y' is a value (or a bool key with an inferred value
+      //   of true), and its key is inferred.
+      // TODO: We could have better recovery here if we only ate the characters
+      // that property keys and values can use.
+      let lhs = src.lexUntil { $0.peek() == "=" || $0.starts(with: end) }.value
+      if src.tryEat(sequence: end) {
+        return try Source.classifyCharacterPropertyValueOnly(lhs)
+      }
+      src.eat(asserting: "=")
+
+      let rhs = src.lexUntil(eating: end).value
+      return try Source.classifyCharacterProperty(key: lhs, value: rhs)
     }
   }
 
@@ -554,29 +628,15 @@ extension Source {
       let isInverted = src.peek() == "P"
       src.advance(2)
 
-      // We should either have:
-      // - '\p{x=y}' where 'x' is a property key, and 'y' is a value.
-      // - '\p{y}' where 'y' is a value (or a bool key with an inferred value
-      //   of true), and its key is inferred.
-      // TODO: We could have better recovery here if we only ate the characters
-      // that property keys and values can use.
-      let lhs = try src.lexUntil({ $0.peek() == "}" || $0.peek() == "=" }).value
-      if src.tryEat("}") {
-        let prop = try Source.classifyCharacterPropertyValueOnly(lhs)
-        return .init(prop, isInverted: isInverted)
-      }
-      src.eat(asserting: "=")
-
-      let rhs = try src.lexUntil(eating: "}").value
-      let prop = try Source.classifyCharacterProperty(key: lhs, value: rhs)
-      return .init(prop, isInverted: isInverted)
+      let prop = try src.lexCharacterPropertyContents(end: "}").value
+      return .init(prop, isInverted: isInverted, isPOSIX: false)
     }
   }
 
   /// Consume an escaped atom, starting from after the backslash
   ///
   ///     Escaped          -> KeyboardModified | Builtin
-  ///                       | UniScalar | Property
+  ///                       | UniScalar | Property | NamedCharacter
   ///
   /// TODO: references
   mutating func expectEscaped(
@@ -594,9 +654,9 @@ extension Source {
         return .keyboardMeta(try src.expectASCII().value)
       }
 
-      // Named character \N{...}
-      if src.tryEat(sequence: "N{") {
-        return .namedCharacter(try src.lexUntil(eating: "}").value)
+      // Named character '\N{...}'.
+      if let char = try src.lexNamedCharacter() {
+        return char.value
       }
 
       // Character property \p{...} \P{...}.
@@ -615,7 +675,7 @@ extension Source {
 
       switch char {
       // Scalars
-      case "u", "x", "U":
+      case "u", "x", "U", "o", "0":
         return try .scalar(
           src.expectUnicodeScalar(escapedCharacter: char).value)
 
@@ -652,12 +712,12 @@ extension Source {
       if !customCC && (src.peek() == ")" || src.peek() == "|") { return nil }
       // TODO: Store customCC in the atom, if that's useful
 
-      // POSIX named set. This is only allowed in a custom character class.
-      // TODO: Can we try and recover and diagnose for named sets outside
-      // character classes?
-      if customCC, let set = try src.lexPOSIXNamedSet() {
-        // FIXME: track locations
-        return .namedSet(set.value)
+      // POSIX character property. This is only allowed in a custom character
+      // class.
+      // TODO: Can we try and recover and diagnose these outside character
+      // classes?
+      if customCC, let prop = try src.lexPOSIXCharacterProperty()?.value {
+        return .property(prop)
       }
 
       let char = src.eat()

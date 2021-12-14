@@ -85,12 +85,31 @@ extension RegexTests {
     parseTest(
       #"abc\d"#,
       concat("a", "b", "c", escaped(.decimalDigit)))
+
+    // MARK: Unicode scalars
+
     parseTest(
       #"a\u0065b\u{00000065}c\x65d\U00000065"#,
       concat("a", scalar("e"),
              "b", scalar("e"),
              "c", scalar("e"),
              "d", scalar("e")))
+
+    parseTest(#"\u{00000000000000000000000000A}"#, scalar("\u{A}"))
+    parseTest(#"\x{00000000000000000000000000A}"#, scalar("\u{A}"))
+    parseTest(#"\o{000000000000000000000000007}"#, scalar("\u{7}"))
+
+    parseTest(#"\o{70}"#, scalar("\u{38}"))
+    parseTest(#"\0"#, scalar("\u{0}"))
+    parseTest(#"\01"#, scalar("\u{1}"))
+    parseTest(#"\070"#, scalar("\u{38}"))
+    parseTest(#"\07A"#, concat(scalar("\u{7}"), "A"))
+    parseTest(#"\08"#, concat(scalar("\u{0}"), "8"))
+    parseTest(#"\0707"#, concat(scalar("\u{38}"), "7"))
+
+    // MARK: Character classes
+
+    parseTest(#"abc\d"#, concat("a", "b", "c", escaped(.decimalDigit)))
 
     parseTest(
       "[-|$^:?+*())(*-+-]",
@@ -143,14 +162,29 @@ extension RegexTests {
       "[[ab]c[de]]",
       charClass(charClass("a", "b"), "c", charClass("d", "e")))
 
-    typealias POSIX = AST.Atom.POSIXSet
     parseTest(#"[ab[:space:]\d[:^upper:]cd]"#,
-              charClass("a", "b", posixSet_m(.space),
+              charClass("a", "b",
+                        posixProp_m(.binary(.whitespace)),
                         atom_m(.escaped(.decimalDigit)),
-                        posixSet_m(.upper, inverted: true), "c", "d"))
+                        posixProp_m(.binary(.uppercase), inverted: true),
+                        "c", "d"))
 
-    parseTest("[[[:space:]]]",
-              charClass(charClass(posixSet_m(.space))))
+    parseTest("[[[:space:]]]", charClass(charClass(
+      posixProp_m(.binary(.whitespace))
+    )))
+
+    parseTest("[[:alnum:]]", charClass(posixProp_m(.posix(.alnum))))
+    parseTest("[[:blank:]]", charClass(posixProp_m(.posix(.blank))))
+    parseTest("[[:graph:]]", charClass(posixProp_m(.posix(.graph))))
+    parseTest("[[:print:]]", charClass(posixProp_m(.posix(.print))))
+    parseTest("[[:word:]]", charClass(posixProp_m(.posix(.word))))
+    parseTest("[[:xdigit:]]", charClass(posixProp_m(.posix(.xdigit))))
+
+    parseTest("[[:isALNUM:]]", charClass(posixProp_m(.posix(.alnum))))
+    parseTest("[[:AL_NUM:]]", charClass(posixProp_m(.posix(.alnum))))
+    parseTest("[[:script=Greek:]]", charClass(posixProp_m(.script(.greek))))
+
+    // MARK: Operators
 
     parseTest(
       #"[a[bc]de&&[^bc]\d]+"#,
@@ -191,6 +225,8 @@ extension RegexTests {
     parseTest(
       "~~*", concat("~", zeroOrMore(.greedy, "~")))
 
+    // MARK: Quotes
+
     parseTest(
       #"a\Q .\Eb"#,
       concat("a", quote(" ."), "b"))
@@ -198,9 +234,16 @@ extension RegexTests {
       #"a\Q \Q \\.\Eb"#,
       concat("a", quote(#" \Q \\."#), "b"))
 
+    // MARK: Comments
+
+    parseTest(
+      #"a(?#comment)b"#,
+      concat("a", "b"))
     parseTest(
       #"a(?#. comment)b"#,
       concat("a", "b"))
+
+    // MARK: Quantification
 
     parseTest(
       #"a{1,2}"#,
@@ -217,6 +260,8 @@ extension RegexTests {
     parseTest(
       #"a{1,2}?"#,
       quantRange(.reluctant, 1...2, "a"))
+
+    // MARK: Groups
 
     // Named captures
     parseTest(
@@ -242,8 +287,47 @@ extension RegexTests {
     parseTest(
       #"a(?>b)c"#,
       concat("a", atomicNonCapturing("b"), "c"))
+    parseTest(
+      "a(*atomic:b)c",
+      concat("a", atomicNonCapturing("b"), "c"))
+
+    parseTest("a(?=b)c", concat("a", lookahead("b"), "c"))
+    parseTest("a(*pla:b)c", concat("a", lookahead("b"), "c"))
+    parseTest("a(*positive_lookahead:b)c", concat("a", lookahead("b"), "c"))
+
+    parseTest("a(?!b)c", concat("a", negativeLookahead("b"), "c"))
+    parseTest("a(*nla:b)c", concat("a", negativeLookahead("b"), "c"))
+    parseTest("a(*negative_lookahead:b)c",
+              concat("a", negativeLookahead("b"), "c"))
+
+    parseTest("a(?<=b)c", concat("a", lookbehind("b"), "c"))
+    parseTest("a(*plb:b)c", concat("a", lookbehind("b"), "c"))
+    parseTest("a(*positive_lookbehind:b)c", concat("a", lookbehind("b"), "c"))
+
+    parseTest("a(?<!b)c", concat("a", negativeLookbehind("b"), "c"))
+    parseTest("a(*nlb:b)c", concat("a", negativeLookbehind("b"), "c"))
+    parseTest("a(*negative_lookbehind:b)c",
+              concat("a", negativeLookbehind("b"), "c"))
+
+    parseTest("a(?*b)c", concat("a", nonAtomicLookahead("b"), "c"))
+    parseTest("a(*napla:b)c", concat("a", nonAtomicLookahead("b"), "c"))
+    parseTest("a(*non_atomic_positive_lookahead:b)c",
+              concat("a", nonAtomicLookahead("b"), "c"))
+
+    parseTest("a(?<*b)c", concat("a", nonAtomicLookbehind("b"), "c"))
+    parseTest("a(*naplb:b)c", concat("a", nonAtomicLookbehind("b"), "c"))
+    parseTest("a(*non_atomic_positive_lookbehind:b)c",
+              concat("a", nonAtomicLookbehind("b"), "c"))
+
+    parseTest("a(*sr:b)c", concat("a", scriptRun("b"), "c"))
+    parseTest("a(*script_run:b)c", concat("a", scriptRun("b"), "c"))
+
+    parseTest("a(*asr:b)c", concat("a", atomicScriptRun("b"), "c"))
+    parseTest("a(*atomic_script_run:b)c",
+              concat("a", atomicScriptRun("b"), "c"))
 
     // MARK: Character names.
+
     parseTest(#"\N{abc}"#, atom(.namedCharacter("abc")))
     parseTest(#"[\N{abc}]"#, charClass(atom_m(.namedCharacter("abc"))))
     parseTest(
@@ -254,6 +338,11 @@ extension RegexTests {
       #"\N {2}"#,
       concat(atom(.escaped(.notNewline)),
              exactly(.greedy, 2, " ")))
+
+    parseTest(#"\N{AA}"#, atom(.namedCharacter("AA")))
+    parseTest(#"\N{U+AA}"#, scalar("\u{AA}"))
+    parseTest(#"\N{U+0123A}"#, scalar("\u{123A}"))
+    parseTest(#"\N{U+0000FFFF}"#, scalar("\u{FFFF}"))
 
     // MARK: Character properties.
 
@@ -321,6 +410,14 @@ extension RegexTests {
     parseTest(#"\p{Xsp}"#, prop(.pcreSpecial(.perlSpace)))
     parseTest(#"\p{Xuc}"#, prop(.pcreSpecial(.universallyNamed)))
     parseTest(#"\p{Xwd}"#, prop(.pcreSpecial(.perlWord)))
+
+    parseTest(#"\p{alnum}"#, prop(.posix(.alnum)))
+    parseTest(#"\p{is_alnum}"#, prop(.posix(.alnum)))
+    parseTest(#"\p{blank}"#, prop(.posix(.blank)))
+    parseTest(#"\p{graph}"#, prop(.posix(.graph)))
+    parseTest(#"\p{print}"#, prop(.posix(.print)))
+    parseTest(#"\p{word}"#,  prop(.posix(.word)))
+    parseTest(#"\p{xdigit}"#, prop(.posix(.xdigit)))
 
     // TODO: failure tests
   }
