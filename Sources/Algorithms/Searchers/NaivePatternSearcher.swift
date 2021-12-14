@@ -5,14 +5,14 @@ struct NaivePatternSearcher<Searched: Collection, Pattern: Collection>
 }
 
 extension NaivePatternSearcher: StatelessCollectionSearcher {
-  func search(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>? {
-    var searchStart = index
+  func search(_ searched: Searched, in range: Range<Searched.Index>) -> Range<Searched.Index>? {
+    var searchStart = range.lowerBound
     
     guard let patternFirst = pattern.first else {
       return searchStart..<searchStart
     }
     
-    while let matchStart = searched[searchStart...]
+    while let matchStart = searched[searchStart..<range.upperBound]
             .firstIndex(of: patternFirst)
     {
       var index = matchStart
@@ -24,7 +24,7 @@ extension NaivePatternSearcher: StatelessCollectionSearcher {
         
         if patternIndex == pattern.endIndex {
           return matchStart..<index
-        } else if index == searched.endIndex {
+        } else if index == range.upperBound {
           return nil
         }
       } while searched[index] == pattern[patternIndex]
@@ -41,8 +41,8 @@ extension NaivePatternSearcher: BackwardCollectionSearcher, StatelessBackwardCol
 {
   typealias BackwardSearched = Searched
   
-  func searchBack(_ searched: BackwardSearched, from index: Searched.Index) -> Range<Searched.Index>? {
-    var searchEnd = index
+  func searchBack(_ searched: BackwardSearched, in range: Range<Searched.Index>) -> Range<Searched.Index>? {
+    var searchEnd = range.upperBound
 
     guard let otherLastIndex = pattern.indices.last else {
       return searchEnd..<searchEnd
@@ -50,7 +50,7 @@ extension NaivePatternSearcher: BackwardCollectionSearcher, StatelessBackwardCol
     
     let patternLast = pattern[otherLastIndex]
     
-    while let matchEnd = searched[searched.startIndex..<searchEnd]
+    while let matchEnd = searched[range.lowerBound..<searchEnd]
             .lastIndex(of: patternLast)
     {
       var index = matchEnd
@@ -59,7 +59,7 @@ extension NaivePatternSearcher: BackwardCollectionSearcher, StatelessBackwardCol
       repeat {
         if otherIndex == pattern.startIndex {
           return index..<searched.index(after: matchEnd)
-        } else if index == searched.startIndex {
+        } else if index == range.lowerBound {
           return nil
         }
         

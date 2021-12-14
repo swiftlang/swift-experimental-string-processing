@@ -9,17 +9,18 @@ extension PatternOrEmpty: CollectionSearcher {
   public struct State {
     enum Representation {
       case state(Searcher.State)
-      case empty(Searched.Index?)
+      case empty(index: Searched.Index, end: Searched.Index)
+      case emptyDone
     }
     
     let representation: Representation
   }
   
-  public func state(for searched: Searcher.Searched, startingAt index: Searched.Index) -> State {
+  public func state(for searched: Searcher.Searched, in range: Range<Searched.Index>) -> State {
     if let searcher = searcher {
-      return State(representation: .state(searcher.state(for: searched, startingAt: index)))
+      return State(representation: .state(searcher.state(for: searched, in: range)))
     } else {
-      return State(representation: .empty(index))
+      return State(representation: .empty(index: range.lowerBound, end: range.upperBound))
     }
   }
   
@@ -30,13 +31,15 @@ extension PatternOrEmpty: CollectionSearcher {
       let result = searcher!.search(searched, &s)
       state = State(representation: .state(s))
       return result
-    case .empty(let index):
-      guard let index = index else { return nil }
-      let next = index == searched.endIndex
-        ? nil
-        : searched.index(after: index)
-      state = State(representation: .empty(next))
+    case .empty(let index, let end):
+      if index == end {
+        state = State(representation: .emptyDone)
+      } else {
+        state = State(representation: .empty(index: searched.index(after: index), end: end))
+      }
       return index..<index
+    case .emptyDone:
+      return nil
     }
   }
 }

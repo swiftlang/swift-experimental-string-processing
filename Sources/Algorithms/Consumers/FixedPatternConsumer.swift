@@ -5,8 +5,8 @@ struct FixedPatternConsumer<Consumed: Collection, Pattern: Collection>
 }
 
 extension FixedPatternConsumer: CollectionConsumer {
-  func consuming(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
-    var index = index
+  func consuming(_ consumed: Consumed, in range: Range<Consumed.Index>) -> Consumed.Index? {
+    var index = range.lowerBound
     var patternIndex = pattern.startIndex
     
     while true {
@@ -14,7 +14,7 @@ extension FixedPatternConsumer: CollectionConsumer {
         return index
       }
       
-      if index == consumed.endIndex || consumed[index] != pattern[patternIndex] {
+      if index == range.upperBound || consumed[index] != pattern[patternIndex] {
         return nil
       }
       
@@ -27,8 +27,8 @@ extension FixedPatternConsumer: CollectionConsumer {
 extension FixedPatternConsumer: BidirectionalCollectionConsumer
   where Consumed: BidirectionalCollection, Pattern: BidirectionalCollection
 {
-  func consumingBack(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
-    var index = index
+  func consumingBack(_ consumed: Consumed, in range: Range<Consumed.Index>) -> Consumed.Index? {
+    var index = range.upperBound
     var patternIndex = pattern.endIndex
     
     while true {
@@ -36,7 +36,7 @@ extension FixedPatternConsumer: BidirectionalCollectionConsumer
         return index
       }
       
-      if index == consumed.startIndex {
+      if index == range.lowerBound {
         return nil
       }
       

@@ -1,46 +1,47 @@
 public struct DefaultSearcherState<Searched: Collection> {
-  enum _State {
+  enum Position {
     case index(Searched.Index)
     case done
   }
   
-  let state: _State
+  var position: Position
+  let end: Searched.Index
 }
 
 public protocol CollectionSearcher {
   associatedtype Searched: Collection
   associatedtype State
   
-  func state(for searched: Searched, startingAt index: Searched.Index) -> State
+  func state(for searched: Searched, in range: Range<Searched.Index>) -> State
   func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>?
 }
 
 public protocol StatelessCollectionSearcher: CollectionSearcher
   where State == DefaultSearcherState<Searched>
 {
-  func search(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>?
+  func search(_ searched: Searched, in range: Range<Searched.Index>) -> Range<Searched.Index>?
 }
 
 extension StatelessCollectionSearcher {
-  public func state(for searched: Searched, startingAt index: Searched.Index) -> State {
-    State(state: .index(index))
+  public func state(for searched: Searched, in range: Range<Searched.Index>) -> State {
+    State(position: .index(range.lowerBound), end: range.upperBound)
   }
   
   public func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {
     guard
-      case .index(let index) = state.state,
-      let range = search(searched, from: index)
+      case .index(let index) = state.position,
+      let range = search(searched, in: index..<state.end)
     else { return nil }
     
     
     if range.isEmpty {
       if range.upperBound == searched.endIndex {
-        state = State(state: .done)
+        state.position = .done
       } else {
-        state = State(state: .index(searched.index(after: range.upperBound)))
+        state.position = .index(searched.index(after: range.upperBound))
       }
     } else {
-      state = State(state: .index(range.upperBound))
+      state.position = .index(range.upperBound)
     }
     
     return range
@@ -53,36 +54,36 @@ public protocol BackwardCollectionSearcher {
   associatedtype BackwardSearched: BidirectionalCollection
   associatedtype BackwardState
   
-  func backwardState(for searched: BackwardSearched) -> BackwardState
+  func backwardState(for searched: BackwardSearched, in range: Range<BackwardSearched.Index>) -> BackwardState
   func searchBack(_ searched: BackwardSearched, _ state: inout BackwardState) -> Range<BackwardSearched.Index>?
 }
 
 public protocol StatelessBackwardCollectionSearcher: BackwardCollectionSearcher
   where BackwardState == DefaultSearcherState<BackwardSearched>
 {
-  func searchBack(_ searched: BackwardSearched, from index: BackwardSearched.Index) -> Range<BackwardSearched.Index>?
+  func searchBack(_ searched: BackwardSearched, in range: Range<BackwardSearched.Index>) -> Range<BackwardSearched.Index>?
 }
 
 extension StatelessBackwardCollectionSearcher {
-  public func backwardState(for searched: BackwardSearched) -> BackwardState {
-    BackwardState(state: .index(searched.endIndex))
+  public func backwardState(for searched: BackwardSearched, in range: Range<BackwardSearched.Index>) -> BackwardState {
+    BackwardState(position: .index(range.upperBound), end: range.lowerBound)
   }
   
   public func searchBack(_ searched: BackwardSearched, _ state: inout BackwardState) -> Range<BackwardSearched.Index>? {
     guard
-      case .index(let index) = state.state,
-      let range = searchBack(searched, from: index)
+      case .index(let index) = state.position,
+      let range = searchBack(searched, in: state.end..<index)
     else { return nil }
     
     
     if range.isEmpty {
       if range.lowerBound == searched.startIndex {
-        state = BackwardState(state: .done)
+        state.position = .done
       } else {
-        state = BackwardState(state: .index(searched.index(before: range.lowerBound)))
+        state.position = .index(searched.index(before: range.lowerBound))
       }
     } else {
-      state = BackwardState(state: .index(range.lowerBound))
+      state.position = .index(range.lowerBound)
     }
     
     return range

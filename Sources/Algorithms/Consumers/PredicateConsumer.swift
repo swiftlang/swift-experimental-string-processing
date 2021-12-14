@@ -3,17 +3,17 @@ public struct PredicateConsumer<Consumed: Collection> {
 }
 
 extension PredicateConsumer: CollectionConsumer {
-  public func consuming(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
-    let start = index
-    guard start != consumed.endIndex && predicate(consumed[start]) else { return nil }
+  public func consuming(_ consumed: Consumed, in range: Range<Consumed.Index>) -> Consumed.Index? {
+    let start = range.lowerBound
+    guard start != range.upperBound && predicate(consumed[start]) else { return nil }
     return consumed.index(after: start)
   }
 }
 
 extension PredicateConsumer: BidirectionalCollectionConsumer where Consumed: BidirectionalCollection {
-  public func consumingBack(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index? {
-    let end = index
-    guard end != consumed.startIndex else { return nil }
+  public func consumingBack(_ consumed: Consumed, in range: Range<Consumed.Index>) -> Consumed.Index? {
+    let end = range.upperBound
+    guard end != range.lowerBound else { return nil }
     let previous = consumed.index(before: end)
     return predicate(consumed[previous]) ? previous : nil
   }
@@ -22,9 +22,9 @@ extension PredicateConsumer: BidirectionalCollectionConsumer where Consumed: Bid
 extension PredicateConsumer: StatelessCollectionSearcher {
   public typealias Searched = Consumed
   
-  public func search(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>? {
+  public func search(_ searched: Searched, in range: Range<Searched.Index>) -> Range<Searched.Index>? {
     // TODO: Make this reusable
-    guard let index = searched[index...].firstIndex(where: predicate) else { return nil }
+    guard let index = searched[range].firstIndex(where: predicate) else { return nil }
     return index..<searched.index(after: index)
   }
 }
@@ -34,9 +34,9 @@ extension PredicateConsumer: BackwardCollectionSearcher, StatelessBackwardCollec
 {
   public typealias BackwardSearched = Consumed
   
-  public func searchBack(_ searched: BackwardSearched, from index: Consumed.Index) -> Range<Consumed.Index>? {
+  public func searchBack(_ searched: BackwardSearched, in range: Range<BackwardSearched.Index>) -> Range<BackwardSearched.Index>? {
     // TODO: Make this reusable
-    guard let index = searched[..<index].lastIndex(where: predicate) else { return nil }
+    guard let index = searched[range].lastIndex(where: predicate) else { return nil }
     return index..<searched.index(after: index)
   }
 }

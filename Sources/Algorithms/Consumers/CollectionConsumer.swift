@@ -1,11 +1,11 @@
 public protocol CollectionConsumer {
   associatedtype Consumed: Collection
-  func consuming(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index?
+  func consuming(_ consumed: Consumed, in range: Range<Consumed.Index>) -> Consumed.Index?
 }
 
 extension CollectionConsumer {
   public func consuming(_ consumed: Consumed) -> Consumed.Index? {
-    consuming(consumed, from: consumed.startIndex)
+    consuming(consumed, in: consumed.startIndex..<consumed.endIndex)
   }
   
   // TODO: `@discardableResult`?
@@ -20,12 +20,12 @@ extension CollectionConsumer {
 // MARK: Consuming from the back
 
 public protocol BidirectionalCollectionConsumer: CollectionConsumer where Consumed: BidirectionalCollection {
-  func consumingBack(_ consumed: Consumed, from index: Consumed.Index) -> Consumed.Index?
+  func consumingBack(_ consumed: Consumed, in range: Range<Consumed.Index>) -> Consumed.Index?
 }
 
 extension BidirectionalCollectionConsumer {
   public func consumingBack(_ consumed: Consumed) -> Consumed.Index? {
-    consumingBack(consumed, from: consumed.endIndex)
+    consumingBack(consumed, in: consumed.startIndex..<consumed.endIndex)
   }
   
   public func consumeBack(_ consumed: inout Consumed) -> Bool where Consumed.SubSequence == Consumed {

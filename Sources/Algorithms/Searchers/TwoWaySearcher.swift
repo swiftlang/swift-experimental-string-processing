@@ -26,14 +26,15 @@ public struct TwoWaySearcher<Searched: BidirectionalCollection>
 
 extension TwoWaySearcher: CollectionSearcher {
   public struct State {
+    let end: Searched.Index
     var index: Searched.Index
     var criticalIndex: Searched.Index
     var memory: (offset: Int, index: Searched.Index)?
   }
   
-  public func state(for searched: Searched, startingAt index: Searched.Index) -> State {
-    let criticalIndex = searched.index(index, offsetBy: criticalIndex)
-    return State(index: index, criticalIndex: criticalIndex, memory: nil)
+  public func state(for searched: Searched, in range: Range<Searched.Index>) -> State {
+    let criticalIndex = searched.index(range.lowerBound, offsetBy: criticalIndex)
+    return State(end: range.upperBound, index: range.lowerBound, criticalIndex: criticalIndex, memory: nil)
   }
 
   public func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {

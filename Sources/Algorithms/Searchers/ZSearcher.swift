@@ -11,8 +11,8 @@ public struct ZSearcher<Searched: Collection> {
 }
 
 extension ZSearcher: StatelessCollectionSearcher {
-  public func search(_ searched: Searched, from index: Searched.Index) -> Range<Searched.Index>? {
-    var l = index
+  public func search(_ searched: Searched, in range: Range<Searched.Index>) -> Range<Searched.Index>? {
+    var l = range.lowerBound
     var r = l
     var distanceFromL = 0
     var distanceToR = 0
@@ -21,7 +21,7 @@ extension ZSearcher: StatelessCollectionSearcher {
       var left = minLength
       var right = end
       
-      while left != pattern.endIndex && right != searched.endIndex && areEquivalent(pattern[left], searched[right]) {
+      while left != pattern.endIndex && right != range.upperBound && areEquivalent(pattern[left], searched[right]) {
         left += 1
         searched.formIndex(after: &right)
       }
@@ -37,7 +37,7 @@ extension ZSearcher: StatelessCollectionSearcher {
       }
     }
     
-    var i = index
+    var i = range.lowerBound
     
     while true {
       if i >= r {

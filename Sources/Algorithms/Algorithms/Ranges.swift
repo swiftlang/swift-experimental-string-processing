@@ -11,7 +11,7 @@ public struct RangesCollection<Searcher: CollectionSearcher> {
     self.base = base
     self.searcher = searcher
     
-    var state = searcher.state(for: base, startingAt: base.startIndex)
+    var state = searcher.state(for: base, in: base.startIndex..<base.endIndex)
     self.startIndex = Index(range: nil, state: state)
 
     if let range = searcher.search(base, &state) {
@@ -42,7 +42,7 @@ public struct RangesIterator<Searcher: CollectionSearcher>: IteratorProtocol {
   init(base: Base, searcher: Searcher) {
     self.base = base
     self.searcher = searcher
-    self.state = searcher.state(for: base, startingAt: base.startIndex)
+    self.state = searcher.state(for: base, in: base.startIndex..<base.endIndex)
   }
 
   public mutating func next() -> Range<Base.Index>? {
@@ -68,7 +68,7 @@ extension RangesCollection: Collection {
     // TODO: Avoid calling `state(for:startingAt)` here
     Index(
       range: nil,
-      state: searcher.state(for: base, startingAt: base.endIndex))
+      state: searcher.state(for: base, in: base.startIndex..<base.endIndex))
   }
 
   public func formIndex(after index: inout Index) {
@@ -145,7 +145,7 @@ extension ReversedRangesCollection: Sequence {
     init(base: Base, searcher: Searcher) {
       self.base = base
       self.searcher = searcher
-      self.state = searcher.backwardState(for: base)
+      self.state = searcher.backwardState(for: base, in: base.startIndex..<base.endIndex)
     }
     
     public mutating func next() -> Range<Base.Index>? {

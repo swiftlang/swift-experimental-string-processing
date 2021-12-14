@@ -21,7 +21,7 @@ public struct RegexConsumer<Consumed: BidirectionalCollection> where Consumed.Su
   }
   
   func _consuming(
-    _ consumed: Substring, from index: String.Index
+    _ consumed: Substring, in range: Range<String.Index>
   ) -> String.Index? {
     let result = vm.execute(
       input: consumed.base,
@@ -31,22 +31,22 @@ public struct RegexConsumer<Consumed: BidirectionalCollection> where Consumed.Su
   }
   
   public func consuming(
-    _ consumed: Consumed, from index: Consumed.Index
+    _ consumed: Consumed, in range: Range<Consumed.Index>
   ) -> String.Index? {
-    _consuming(consumed[...], from: index)
+    _consuming(consumed[...], in: range)
   }
 }
 
 // TODO: We'll want to bake backwards into the engine
 extension RegexConsumer: BidirectionalCollectionConsumer {
   public func consumingBack(
-    _ consumed: Consumed, from index: Consumed.Index
+    _ consumed: Consumed, in range: Range<Consumed.Index>
   ) -> String.Index? {
-    var i = consumed.startIndex
+    var i = range.lowerBound
     while true {
-      if let end = _consuming(consumed[..<index], from: i), end == index {
+      if let end = _consuming(consumed[...], in: i..<range.upperBound), end == range.upperBound {
         return i
-      } else if i == index {
+      } else if i == range.upperBound {
         return nil
       } else {
         consumed.formIndex(after: &i)
@@ -62,9 +62,9 @@ extension RegexConsumer: StatelessCollectionSearcher {
   // take advantage of the structure of the regex itself and
   // its own internal state
   public func search(
-    _ searched: Searched, from index: Searched.Index
+    _ searched: Searched, in range: Range<Searched.Index>
   ) -> Range<String.Index>? {
-    ConsumerSearcher(consumer: self).search(searched, from: index)
+    ConsumerSearcher(consumer: self).search(searched, in: range)
   }
 }
 
@@ -73,8 +73,8 @@ extension RegexConsumer: StatelessBackwardCollectionSearcher {
   public typealias BackwardSearched = Consumed
   
   public func searchBack(
-    _ searched: BackwardSearched, from index: Searched.Index
+    _ searched: BackwardSearched, in range: Range<Searched.Index>
   ) -> Range<String.Index>? {
-    ConsumerSearcher(consumer: self).searchBack(searched, from: index)
+    ConsumerSearcher(consumer: self).searchBack(searched, in: range)
   }
 }
