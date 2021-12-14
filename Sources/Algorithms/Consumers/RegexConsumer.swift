@@ -25,7 +25,7 @@ public struct RegexConsumer<Consumed: BidirectionalCollection> where Consumed.Su
   ) -> String.Index? {
     let result = vm.execute(
       input: consumed.base,
-      in: index..<consumed.endIndex,
+      in: range,
       mode: .partialFromFront)
     return result?.range.upperBound
   }
