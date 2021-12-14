@@ -76,6 +76,10 @@ extension TypedIndex: BidirectionalCollection where C: BidirectionalCollection {
     Index(rawValue.index(before: before.rawValue))
   }
 }
+
+// FIXME(apple/swift-experimental-string-processing#73): ParseableInterface test
+// failure in the Swift repo.
+#if false
 extension TypedIndex: RangeReplaceableCollection where C: RangeReplaceableCollection {
   @_alwaysEmitIntoClient
   public init() { rawValue = C() }
@@ -87,6 +91,14 @@ extension TypedIndex: RangeReplaceableCollection where C: RangeReplaceableCollec
   }
 
   // TODO: append, and all the other customization hooks...
+}
+#endif
+
+// Workaround for #73
+extension TypedIndex where C: RangeReplaceableCollection {
+  public mutating func append(_ newElement: Element) {
+    rawValue.append(newElement)
+  }
 }
 
 extension TypedIndex: ExpressibleByArrayLiteral where C: ExpressibleByArrayLiteral & RangeReplaceableCollection {
