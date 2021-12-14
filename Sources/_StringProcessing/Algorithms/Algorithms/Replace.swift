@@ -130,8 +130,8 @@ extension RangeReplaceableCollection where Self: BidirectionalCollection, Elemen
 // MARK: Regex algorithms
 
 extension RangeReplaceableCollection where SubSequence == Substring {
-  public func replacing<Replacement: Collection>(
-    _ regex: Regex,
+  public func replacing<Capture, Replacement: Collection>(
+    _ regex: Regex<Capture>,
     with replacement: Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max
@@ -143,8 +143,8 @@ extension RangeReplaceableCollection where SubSequence == Substring {
       maxReplacements: maxReplacements)
   }
   
-  public func replacing<Replacement: Collection>(
-    _ regex: Regex,
+  public func replacing<Capture, Replacement: Collection>(
+    _ regex: Regex<Capture>,
     with replacement: Replacement,
     maxReplacements: Int = .max
   ) -> Self where Replacement.Element == Element {
@@ -155,8 +155,8 @@ extension RangeReplaceableCollection where SubSequence == Substring {
       maxReplacements: maxReplacements)
   }
   
-  public mutating func replace<Replacement: Collection>(
-    _ regex: Regex,
+  public mutating func replace<Capture, Replacement: Collection>(
+    _ regex: Regex<Capture>,
     with replacement: Replacement,
     maxReplacements: Int = .max
   ) where Replacement.Element == Element {

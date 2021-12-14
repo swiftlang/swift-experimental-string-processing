@@ -213,29 +213,29 @@ extension RangeReplaceableCollection where Self: BidirectionalCollection, Elemen
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func trimmingPrefix(_ regex: Regex) -> SubSequence {
+  public func trimmingPrefix<Capture>(_ regex: Regex<Capture>) -> SubSequence {
     trimmingPrefix(RegexConsumer(regex))
   }
   
-  public func trimmingSuffix(_ regex: Regex) -> SubSequence {
+  public func trimmingSuffix<Capture>(_ regex: Regex<Capture>) -> SubSequence {
     trimmingSuffix(RegexConsumer(regex))
   }
   
-  public func trimming(_ regex: Regex) -> SubSequence {
+  public func trimming<Capture>(_ regex: Regex<Capture>) -> SubSequence {
     trimming(RegexConsumer(regex))
   }
 }
 
 extension RangeReplaceableCollection where Self: BidirectionalCollection, SubSequence == Substring {
-  public mutating func trimPrefix(_ regex: Regex) {
+  public mutating func trimPrefix<Capture>(_ regex: Regex<Capture>) {
     trimPrefix(RegexConsumer(regex))
   }
   
-  public mutating func trimSuffix(_ regex: Regex) {
+  public mutating func trimSuffix<Capture>(_ regex: Regex<Capture>) {
     trimSuffix(RegexConsumer(regex))
   }
   
-  public mutating func trim(_ regex: Regex) {
+  public mutating func trim<Capture>(_ regex: Regex<Capture>) {
     let consumer = RegexConsumer<Self>(regex)
     trimPrefix(consumer)
     trimSuffix(consumer)
@@ -243,15 +243,15 @@ extension RangeReplaceableCollection where Self: BidirectionalCollection, SubSeq
 }
 
 extension Substring {
-  public mutating func trimPrefix(_ regex: Regex) {
+  public mutating func trimPrefix<Capture>(_ regex: Regex<Capture>) {
     trimPrefix(RegexConsumer(regex))
   }
   
-  public mutating func trimSuffix(_ regex: Regex) {
+  public mutating func trimSuffix<Capture>(_ regex: Regex<Capture>) {
     trimSuffix(RegexConsumer(regex))
   }
   
-  public mutating func trim(_ regex: Regex) {
+  public mutating func trim<Capture>(_ regex: Regex<Capture>) {
     let consumer = RegexConsumer<Self>(regex)
     trimPrefix(consumer)
     trimSuffix(consumer)

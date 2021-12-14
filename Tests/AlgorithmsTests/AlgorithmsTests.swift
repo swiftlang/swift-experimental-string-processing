@@ -1,4 +1,4 @@
-@testable import Algorithms
+@testable import _StringProcessing
 import XCTest
 
 // TODO: Protocol-powered testing
@@ -15,9 +15,9 @@ func output<T>(_ s: @autoclosure () -> T) {
 
 class RegexConsumerTests: XCTestCase {
   func testRanges() {
-    func expectRanges(
+    func expectRanges<Capture>(
       _ string: String,
-      _ regex: Regex,
+      _ regex: Regex<Capture>,
       _ expected: [Range<Int>],
       file: StaticString = #file, line: UInt = #line
     ) {
@@ -33,60 +33,60 @@ class RegexConsumerTests: XCTestCase {
       XCTAssertEqual(actualCol, expected, file: file, line: line)
     }
 
-    expectRanges("", Regex(""), [0..<0])
-    expectRanges("", Regex("x"), [])
-    expectRanges("", Regex("x+"), [])
-    expectRanges("", Regex("x*"), [0..<0])
-    expectRanges("abc", Regex(""), [0..<0, 1..<1, 2..<2, 3..<3])
-    expectRanges("abc", Regex("x"), [])
-    expectRanges("abc", Regex("x+"), [])
-    expectRanges("abc", Regex("x*"), [0..<0, 1..<1, 2..<2, 3..<3])
-    expectRanges("abc", Regex("a"), [0..<1])
-    expectRanges("abc", Regex("a*"), [0..<1, 1..<1, 2..<2, 3..<3])
-    expectRanges("abc", Regex("a+"), [0..<1])
-    expectRanges("abc", Regex("a|b"), [0..<1, 1..<2])
-    expectRanges("abc", Regex("a|b+"), [0..<1, 1..<2])
-    expectRanges("abc", Regex("a|b*"), [0..<1, 1..<2, 2..<2, 3..<3])
-    expectRanges("abc", Regex("(a|b)+"), [0..<2])
-    expectRanges("abc", Regex("(a|b)*"), [0..<2, 2..<2, 3..<3])
-    expectRanges("abc", Regex("(b|c)+"), [1..<3])
-    expectRanges("abc", Regex("(b|c)*"), [0..<0, 1..<3, 3..<3])
+    expectRanges("", try! Regex(""), [0..<0])
+    expectRanges("", try! Regex("x"), [])
+    expectRanges("", try! Regex("x+"), [])
+    expectRanges("", try! Regex("x*"), [0..<0])
+    expectRanges("abc", try! Regex(""), [0..<0, 1..<1, 2..<2, 3..<3])
+    expectRanges("abc", try! Regex("x"), [])
+    expectRanges("abc", try! Regex("x+"), [])
+    expectRanges("abc", try! Regex("x*"), [0..<0, 1..<1, 2..<2, 3..<3])
+    expectRanges("abc", try! Regex("a"), [0..<1])
+    expectRanges("abc", try! Regex("a*"), [0..<1, 1..<1, 2..<2, 3..<3])
+    expectRanges("abc", try! Regex("a+"), [0..<1])
+    expectRanges("abc", try! Regex("a|b"), [0..<1, 1..<2])
+    expectRanges("abc", try! Regex("a|b+"), [0..<1, 1..<2])
+    expectRanges("abc", try! Regex("a|b*"), [0..<1, 1..<2, 2..<2, 3..<3])
+    expectRanges("abc", try! Regex("(a|b)+"), [0..<2])
+    expectRanges("abc", try! Regex("(a|b)*"), [0..<2, 2..<2, 3..<3])
+    expectRanges("abc", try! Regex("(b|c)+"), [1..<3])
+    expectRanges("abc", try! Regex("(b|c)*"), [0..<0, 1..<3, 3..<3])
   }
 
   func testSplit() {
-    func expectSplit(
+    func expectSplit<Capture>(
       _ string: String,
-      _ regex: Regex,
+      _ regex: Regex<Capture>,
       _ expected: [Substring],
       file: StaticString = #file, line: UInt = #line
     ) {
-      let actual = Array(string.split(separator: regex))
+      let actual = Array(string.split(by: regex))
       XCTAssertEqual(actual, expected, file: file, line: line)
     }
 
-    expectSplit("", Regex(""), ["", ""])
-    expectSplit("", Regex("x"), [""])
-    expectSplit("a", Regex(""), ["", "a", ""])
-    expectSplit("a", Regex("x"), ["a"])
-    expectSplit("a", Regex("a"), ["", ""])
+    expectSplit("", try! Regex(""), ["", ""])
+    expectSplit("", try! Regex("x"), [""])
+    expectSplit("a", try! Regex(""), ["", "a", ""])
+    expectSplit("a", try! Regex("x"), ["a"])
+    expectSplit("a", try! Regex("a"), ["", ""])
   }
 
   func testReplace() {
-    XCTAssertEqual("".replacing(Regex(""), with: "X"), "X")
-    XCTAssertEqual("".replacing(Regex("x"), with: "X"), "")
-    XCTAssertEqual("".replacing(Regex("x*"), with: "X"), "X")
-    XCTAssertEqual("a".replacing(Regex(""), with: "X"), "XaX")
-    XCTAssertEqual("a".replacing(Regex("x"), with: "X"), "a")
-    XCTAssertEqual("a".replacing(Regex("a"), with: "X"), "X")
-    XCTAssertEqual("a".replacing(Regex("a+"), with: "X"), "X")
-    XCTAssertEqual("a".replacing(Regex("a*"), with: "X"), "XX")
-    XCTAssertEqual("aab".replacing(Regex("a"), with: "X"), "XXb")
-    XCTAssertEqual("aab".replacing(Regex("a+"), with: "X"), "Xb")
-    XCTAssertEqual("aab".replacing(Regex("a*"), with: "X"), "XXbX")
+    XCTAssertEqual("".replacing(try! Regex(""), with: "X"), "X")
+    XCTAssertEqual("".replacing(try! Regex("x"), with: "X"), "")
+    XCTAssertEqual("".replacing(try! Regex("x*"), with: "X"), "X")
+    XCTAssertEqual("a".replacing(try! Regex(""), with: "X"), "XaX")
+    XCTAssertEqual("a".replacing(try! Regex("x"), with: "X"), "a")
+    XCTAssertEqual("a".replacing(try! Regex("a"), with: "X"), "X")
+    XCTAssertEqual("a".replacing(try! Regex("a+"), with: "X"), "X")
+    XCTAssertEqual("a".replacing(try! Regex("a*"), with: "X"), "XX")
+    XCTAssertEqual("aab".replacing(try! Regex("a"), with: "X"), "XXb")
+    XCTAssertEqual("aab".replacing(try! Regex("a+"), with: "X"), "Xb")
+    XCTAssertEqual("aab".replacing(try! Regex("a*"), with: "X"), "XXbX")
   }
 
   func testAdHoc() {
-    let r = Regex("a|b+")
+    let r = try! Regex("a|b+")
 
     XCTAssert("palindrome".contains(r))
     XCTAssert("botany".contains(r))

@@ -1,23 +1,11 @@
 import _MatchingEngine
 
-import _StringProcessing
-
-public struct Regex {
-  let string: String
-  let options: REOptions
-  
-  public init(_ string: String, options: REOptions = .none) {
-    self.string = string
-    self.options = options
-  }
-}
-
 public struct RegexConsumer<Consumed: BidirectionalCollection> where Consumed.SubSequence == Substring {
   // NOTE: existential
   let vm: Executor
 
-  public init(_ regex: Regex) {
-    self.vm = _compileRegex(regex.string)
+  public init<Capture>(_ regex: Regex<Capture>) {
+    self.vm = .init(program: Compiler(ast: regex.ast).emit())
   }
   
   func _consuming(
