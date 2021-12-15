@@ -1,7 +1,6 @@
 import XCTest
 @testable import _MatchingEngine
 @testable import _StringProcessing
-import Algorithms
 
 func matchTest(
   _ regex: String,
@@ -17,7 +16,7 @@ func matchTest(
     return
   }
 
-  let pattern = Algorithms.Regex(regex)
+  let pattern = try! Regex(regex)
   let range = input.firstRange(of: pattern)!
   XCTAssertEqual(String(input[range]), match)
 }
