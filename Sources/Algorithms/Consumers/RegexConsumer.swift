@@ -6,7 +6,7 @@ public struct Regex {
   let string: String
   let options: REOptions
   
-  init(_ string: String, options: REOptions = .none) {
+  public init(_ string: String, options: REOptions = .none) {
     self.string = string
     self.options = options
   }
