@@ -73,19 +73,31 @@ class RegexConsumerTests: XCTestCase {
     expectSplit("a", "x", ["a"])
     expectSplit("a", "a", ["", ""])
   }
-
+  
   func testReplace() {
-    XCTAssertEqual("".replacing("", with: "X"), "X")
-    XCTAssertEqual("".replacing("x", with: "X"), "")
-    XCTAssertEqual("".replacing("x*", with: "X"), "X")
-    XCTAssertEqual("a".replacing("", with: "X"), "XaX")
-    XCTAssertEqual("a".replacing("x", with: "X"), "a")
-    XCTAssertEqual("a".replacing("a", with: "X"), "X")
-    XCTAssertEqual("a".replacing("a+", with: "X"), "X")
-    XCTAssertEqual("a".replacing("a*", with: "X"), "XX")
-    XCTAssertEqual("aab".replacing("a", with: "X"), "XXb")
-    XCTAssertEqual("aab".replacing("a+", with: "X"), "Xb")
-    XCTAssertEqual("aab".replacing("a*", with: "X"), "XXbX")
+    func expectReplace(
+      _ string: String,
+      _ regex: String,
+      _ replacement: String,
+      _ expected: String,
+      file: StaticString = #file, line: UInt = #line
+    ) {
+      let regex = try! Regex(regex)
+      let actual = string.replacing(regex, with: replacement)
+      XCTAssertEqual(actual, expected, file: file, line: line)
+    }
+    
+    expectReplace("", "", "X", "X")
+    expectReplace("", "x", "X", "")
+    expectReplace("", "x*", "X", "X")
+    expectReplace("a", "", "X", "XaX")
+    expectReplace("a", "x", "X", "a")
+    expectReplace("a", "a", "X", "X")
+    expectReplace("a", "a+", "X", "X")
+    expectReplace("a", "a*", "X", "XX")
+    expectReplace("aab", "a", "X", "XXb")
+    expectReplace("aab", "a+", "X", "Xb")
+    expectReplace("aab", "a*", "X", "XXbX")
   }
 
   func testAdHoc() {
