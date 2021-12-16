@@ -56,7 +56,7 @@ extension RegexTests {
     matchTest(
       "(a|b)c", input: "123abcxyz", match: "bc")
     matchTest(
-      "(.)*(.*)", input: "123abcxyz", match: "123abcxyz", xfail: true)
+      "(.)*(.*)", input: "123abcxyz", match: "123abcxyz")
     matchTest(
       #"abc\d"#, input: "xyzabc123", match: "abc1")
 

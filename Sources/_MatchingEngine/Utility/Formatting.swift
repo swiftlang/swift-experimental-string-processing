@@ -51,7 +51,11 @@ extension TracedProcessor {
 
   public func formatSavePoints() -> String {
     if !savePoints.isEmpty {
-      return "save points: \(savePoints)\n"
+      var result = "save points:\n"
+      for point in savePoints {
+        result += "  \(point)\n"
+      }
+      return result
     }
     return ""
   }
@@ -101,7 +105,7 @@ extension TracedProcessor {
   }
 
   public func formatInstructionWindow(
-    windowSize: Int = 9
+    windowSize: Int = 12
   ) -> String {
     if isAcceptState { return "ACCEPT" }
     if isFailState { return "FAIL" }
@@ -173,7 +177,9 @@ extension Collection where Element: InstructionProtocol, Index == InstructionAdd
       """
 
     if let argPC = inst.operandPC, depth > 0 {
-      result += " // \(pcChain(argPC, depth: depth))"
+      // TODO: consider pruning anything in the rendered
+      // instruction window...
+      //result += " // \(pcChain(argPC, depth: depth))"
     }
     return result
   }

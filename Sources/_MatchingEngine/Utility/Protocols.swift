@@ -39,7 +39,7 @@ extension ProcessorProtocol {
   }
 
   public var callStack: Array<InstructionAddress> { [] }
-  public var savePoints: Array<SavePoint> { [] }
+//  public var savePoints: Array<SavePoint> { [] }
   public var registers: Array<Registers> { [] }
 
 }

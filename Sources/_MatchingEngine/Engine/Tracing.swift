@@ -3,6 +3,17 @@ extension Processor: TracedProcessor {
   var isAcceptState: Bool { state == .accept }
 
   var currentPC: InstructionAddress { controller.pc }
+
+  public func formatSavePoints() -> String {
+    if !savePoints.isEmpty {
+      var result = "save points:\n"
+      for point in savePoints {
+        result += "  \(point.describe(in: input))\n"
+      }
+      return result
+    }
+    return ""
+  }
 }
 
 extension Instruction: CustomStringConvertible {
@@ -25,8 +36,16 @@ extension Operand: CustomStringConvertible {
   }
 }
 
-extension Processor.SavePoint: CustomStringConvertible {
-  var description: String {
-    String(describing: self.destructure)
+extension Processor.SavePoint {
+  func describe(in input: Input) -> String {
+    let posStr: String
+    if let p = self.pos {
+      posStr = "\(input.distance(from: input.startIndex, to: p))"
+    } else {
+      posStr = "<none>"
+    }
+    return """
+      pc: \(self.pc), pos: \(posStr), stackEnd: \(stackEnd)
+      """
   }
 }
