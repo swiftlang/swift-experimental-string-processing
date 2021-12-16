@@ -43,6 +43,20 @@ func parseTest(
   }
 }
 
+func parseWithDelimitersTest(_ input: String, _ expecting: AST) {
+  let orig = try! parseWithDelimiters(input)
+  let ast = orig
+  guard ast == expecting
+          || ast._dump() == expecting._dump() // EQ workaround
+  else {
+    XCTFail("""
+              Expected: \(expecting._dump())
+              Found:    \(ast._dump())
+              """)
+    return
+  }
+}
+
 extension RegexTests {
   func testParse() {
     parseTest(
@@ -418,6 +432,9 @@ extension RegexTests {
     parseTest(#"\p{print}"#, prop(.posix(.print)))
     parseTest(#"\p{word}"#,  prop(.posix(.word)))
     parseTest(#"\p{xdigit}"#, prop(.posix(.xdigit)))
+
+    parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
+    parseWithDelimitersTest("'|a b|'", concat("a", "b"))
 
     // TODO: failure tests
   }

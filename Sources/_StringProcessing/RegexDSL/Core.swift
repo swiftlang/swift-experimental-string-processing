@@ -27,7 +27,7 @@ public struct Regex<Capture>: RegexProtocol {
       }
     }()
     /// The program for execution with the matching engine.
-    lazy private(set) var loweredProgram = Compiler(ast: ast).emit()
+    lazy private(set) var loweredProgram = try! Compiler(ast: ast).emit()
 
     init(ast: AST) {
       self.ast = ast
@@ -45,6 +45,15 @@ public struct Regex<Capture>: RegexProtocol {
   @usableFromInline
   init(_regexString pattern: String) {
     self.init(ast: try! parse(pattern, .traditional))
+  }
+
+  // Compiler interface. Do not change independently.
+  @usableFromInline
+  init(_regexString pattern: String, version: Int) {
+    assert(version == currentRegexLiteralFormatVersion)
+    // The version argument is passed by the compiler using the value defined
+    // in libswiftParseRegexLiteral.
+    self.init(ast: try! parseWithDelimiters(pattern))
   }
 
   public init<Content: RegexProtocol>(

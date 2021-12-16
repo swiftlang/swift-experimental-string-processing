@@ -91,29 +91,40 @@ extension RegexTests {
 
 
   func testCompilerInterface() {
-    let testCases: [(String, (String, SyntaxOptions)?)] = [
-      ("'/abc/'", ("abc", .traditional)),
+    let testCases: [(String, (String, Delimiter)?)] = [
+      ("'/abc/'", ("abc", .regular)),
       ("'|abc|'", ("abc", .modern)),
-      ("'|ab\0c|'", nil),
+
+      // TODO: Null characters are lexically valid, similar to string literals,
+      // but we ought to warn the user about them.
+      ("'|ab\0c|'", ("ab\0c", .modern)),
       ("'abc'", nil),
-      ("'/abc/def/'", ("abc/def", .traditional)),
+      ("'/abc/def/'", ("abc/def", .regular)),
       ("'|abc|def|'", ("abc|def", .modern)),
-      ("'/abc\\/'def/'", ("abc\\/'def", .traditional)),
+      ("'/abc\\/'def/'", ("abc\\/'def", .regular)),
       ("'|abc\\|'def|'", ("abc\\|'def", .modern)),
-      ("'/abc|'def/'", ("abc|'def", .traditional)),
+      ("'/abc|'def/'", ("abc|'def", .regular)),
       ("'|abc/'def|'", ("abc/'def", .modern)),
       ("'/abc|'def/", nil),
       ("'|abc/'def'", nil),
+      ("'/abc\n/'", nil),
+      ("'/abc\r/'", nil),
     ]
 
     for (input, expected) in testCases {
       input.withCString {
-        guard let out = try? _lexRegex(UnsafeRawPointer($0)) else {
+        let endPtr = $0 + input.utf8.count
+        assert(endPtr.pointee == 0)
+        guard let out = try? lexRegex(start: $0, end: endPtr) else {
           XCTAssertNil(expected)
           return
         }
         XCTAssertEqual(expected?.0, out.0)
         XCTAssertEqual(expected?.1, out.1)
+
+        let droppedDelimiters = droppingRegexDelimiters(input)
+        XCTAssertEqual(expected?.0, droppedDelimiters.0)
+        XCTAssertEqual(expected?.1, droppedDelimiters.1)
       }
     }
   }

@@ -9,7 +9,7 @@ func compile(
     return .label(currentLabel)
   }
   var instructions = RECode.InstructionList()
-  func compileNode(_ ast: AST) {
+  func compileNode(_ ast: AST) throws {
 
     if let cc = ast.characterClass {
       instructions.append(.characterClass(cc))
@@ -35,34 +35,34 @@ func compile(
         instructions.append(.any)
         return
       default:
-        fatalError("Unsupported: \(a._dumpBase)")
+        throw unsupported("Unsupported: \(a._dumpBase)")
       }
 
     case .group(let g):
       switch g.kind.value {
       case .nonCapture:
         instructions.append(.beginGroup)
-        compileNode(g.child)
+        try compileNode(g.child)
         instructions.append(.endGroup)
         return
       case .capture:
         instructions.append(.beginCapture)
-        compileNode(g.child)
+        try compileNode(g.child)
         instructions.append(.endCapture())
         return
 
       default:
-        fatalError("Unsupported group \(g.kind.value) \(g)")
+        throw unsupported("Unsupported group \(g.kind.value) \(g)")
       }
 
     case let .groupTransform(g, transform: t) where g.kind.value == .capture:
       instructions.append(.beginCapture)
-      compileNode(g.child)
+      try compileNode(g.child)
       instructions.append(.endCapture(transform: t))
       return
 
     case .groupTransform(let g, _):
-      fatalError("Unsupported group \(g)")
+      throw unsupported("Unsupported group \(g)")
 
     case .concatenation(let concat):
       let children = concat.children
@@ -70,7 +70,7 @@ func compile(
       if childrenHaveCaptures {
         instructions.append(.beginGroup)
       }
-      children.forEach { compileNode($0) }
+      try children.forEach { try compileNode($0) }
       if childrenHaveCaptures {
         instructions.append(.endGroup)
       }
@@ -90,7 +90,7 @@ func compile(
         instructions.append(start)
         let done = createLabel()
         instructions.append(.split(disfavoring: done.label!))
-        compileNode(child)
+        try compileNode(child)
         instructions.append(.goto(label: start.label!))
         instructions.append(done)
         if childHasCaptures {
@@ -113,7 +113,7 @@ func compile(
         instructions.append(.split(disfavoring: element.label!))
         instructions.append(.goto(label: done.label!))
         instructions.append(element)
-        compileNode(child)
+        try compileNode(child)
         instructions.append(.goto(label: start.label!))
         instructions.append(done)
         if childHasCaptures {
@@ -129,7 +129,7 @@ func compile(
           let nilCase = createLabel()
           let done = createLabel()
           instructions.append(.split(disfavoring: nilCase.label!))
-          compileNode(child)
+          try compileNode(child)
           instructions += [
             .captureSome,
             .goto(label: done.label!),
@@ -141,7 +141,7 @@ func compile(
         } else {
           let done = createLabel()
           instructions.append(.split(disfavoring: done.label!))
-          compileNode(child)
+          try compileNode(child)
           instructions.append(done)
         }
         return
@@ -156,7 +156,7 @@ func compile(
           instructions.append(.split(disfavoring: element.label!))
           instructions.append(.goto(label: nilCase.label!))
           instructions.append(element)
-          compileNode(child)
+          try compileNode(child)
           instructions += [
             .captureSome,
             .goto(label: done.label!),
@@ -171,7 +171,7 @@ func compile(
           instructions.append(.split(disfavoring: element.label!))
           instructions.append(.goto(label: done.label!))
           instructions.append(element)
-          compileNode(child)
+          try compileNode(child)
           instructions.append(done)
         }
         return
@@ -185,7 +185,7 @@ func compile(
         let start = createLabel()
         let done = createLabel()
         instructions.append(start)
-        compileNode(child)
+        try compileNode(child)
         instructions.append(.split(disfavoring: done.label!))
         instructions.append(.goto(label: start.label!))
         instructions.append(done)
@@ -203,7 +203,7 @@ func compile(
         }
         let start = createLabel()
         instructions.append(start)
-        compileNode(child)
+        try compileNode(child)
         instructions.append(.split(disfavoring: start.label!))
         if childHasCaptures {
           instructions.append(.captureArray)
@@ -211,7 +211,7 @@ func compile(
         }
         return
       default:
-        fatalError("Unsupported: \(quant._dumpBase)")
+        throw unsupported("Unsupported: \(quant._dumpBase)")
       }
 
     case .alternation(let alt):
@@ -229,7 +229,9 @@ func compile(
       //
       let children = alt.children
       assert(!children.isEmpty)
-      guard children.count > 1 else { return compileNode(children[0]) }
+      guard children.count > 1 else {
+        return try compileNode(children[0])
+      }
 
       let last = children.last!
       let middle = children.dropLast()
@@ -237,11 +239,11 @@ func compile(
       for child in middle {
         let nextLabel = createLabel()
         instructions.append(.split(disfavoring: nextLabel.label!))
-        compileNode(child)
+        try compileNode(child)
         instructions.append(.goto(label: done.label!))
         instructions.append(nextLabel)
       }
-      compileNode(last)
+      try compileNode(last)
       instructions.append(done)
       return
 
@@ -254,7 +256,7 @@ func compile(
 
   }
 
-  compileNode(ast)
+  try compileNode(ast)
   instructions.append(.accept)
 
   // TODO: Just remember them as we compile

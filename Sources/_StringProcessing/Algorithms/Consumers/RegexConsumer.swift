@@ -3,11 +3,11 @@ import _MatchingEngine
 public struct RegexConsumer<Consumed: BidirectionalCollection>
   where Consumed.SubSequence == Substring
 {
-  // NOTE: existential
-  let vm: Executor
+  // TODO: consider let, for now lets us toggle tracing
+    var vm: Executor
 
   public init<Capture>(_ regex: Regex<Capture>) {
-    self.vm = .init(program: Compiler(ast: regex.ast).emit())
+    self.vm = .init(program: try! Compiler(ast: regex.ast).emit())
   }
   
   func _consuming(

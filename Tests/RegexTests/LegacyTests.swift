@@ -137,7 +137,7 @@ private func performTest<Capture>(
   guard !ast.hasCapture else {
     return
   }
-  let program = Compiler(ast: ast).emit()
+  let program = try! Compiler(ast: ast).emit()
   run(Executor(program: program), name: "Matching Engine")
 }
 
@@ -408,17 +408,17 @@ extension RegexTests {
 //      expecting: .init(captures: "aaaa", capturesEqual: ==))
   }
 
-  func testLegacyMatchLevel() {
+  func testLegacyMatchLevel() throws {
     let tests: Array<(String, chars: [String], unicodes: [String])> = [
       ("..", ["e\u{301}e\u{301}"], ["e\u{301}"]),
     ]
 
     for (regex, characterInputs, scalarInputs) in tests {
-      let ast = try! parse(regex, .traditional)
-      let program = Compiler(ast: ast).emit()
+      let ast = try parse(regex, .traditional)
+      let program = try Compiler(ast: ast).emit()
       let executor = Executor(program: program)
 
-      let scalarProgram = Compiler(
+      let scalarProgram = try Compiler(
         ast: ast, matchLevel: .unicodeScalar
       ).emit()
       let scalarExecutor = Executor(
