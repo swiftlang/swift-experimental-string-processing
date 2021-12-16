@@ -595,8 +595,5 @@ extension Unicode.ExtendedGeneralCategory {
     case .spaceSeparator:
       return consumeScalarGC(.spaceSeparator)
     }
-
-
   }
-
 }
