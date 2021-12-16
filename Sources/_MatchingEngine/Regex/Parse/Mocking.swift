@@ -186,12 +186,21 @@ public let currentRegexLiteralFormatVersion: CUnsignedInt = 1
 
 /// Interface for libswift.
 ///
-/// Parse a regex string from `inputPtr`, which should be null-terminated
-/// C-string. `errOut` will be set if an error was encountered.
+/// - Parameters:
+///   - inputPtr: A null-terminated C string.
+///   - errOut: A buffer accepting an error string upon error.
+///   - versionOut: A buffer accepting a regex literal format
+///     version.
+///   - captureStructureOut: A buffer accepting a byte sequence representing the
+///     capture structure.
+///   - captureStructureSize: The size of the capture structure buffer. Must be
+///     greater than or equal to `strlen(inputPtr)`.
 func libswiftParseRegexLiteral(
   _ inputPtr: UnsafePointer<CChar>?,
   _ errOut: UnsafeMutablePointer<UnsafePointer<CChar>?>?,
-  _ versionOut: UnsafeMutablePointer<CUnsignedInt>?
+  _ versionOut: UnsafeMutablePointer<CUnsignedInt>?,
+  _ captureStructureOut: UnsafeMutablePointer<Int8>?,
+  _ captureStructureSize: CUnsignedInt
 ) {
   guard let s = inputPtr else { fatalError("Expected input param") }
   guard let errOut = errOut else { fatalError("Expected error out param") }
