@@ -223,14 +223,6 @@ extension AST.Atom.CharacterProperty {
   func generateConsumer(
     _ opts: CharacterClass.MatchLevel
   ) -> Program<String>.ConsumeFunction {
-    // TODO: Wean ourselves off of this type...
-    if let cc = self.characterClass?.withMatchLevel(opts) {
-      return { input, bounds in
-        // FIXME: should we worry about out of bounds?
-        cc.matches(in: input, at: bounds.lowerBound)
-      }
-    }
-
     // Handle inversion for us, albeit not efficiently
     func invert(
       _ p: @escaping Program<String>.ConsumeFunction
