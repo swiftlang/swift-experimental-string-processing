@@ -1,6 +1,8 @@
 import _MatchingEngine
 
-public struct RegexConsumer<Consumed: BidirectionalCollection> where Consumed.SubSequence == Substring {
+public struct RegexConsumer<Consumed: BidirectionalCollection>
+  where Consumed.SubSequence == Substring
+{
   // NOTE: existential
   let vm: Executor
 
@@ -32,7 +34,9 @@ extension RegexConsumer: BidirectionalCollectionConsumer {
   ) -> String.Index? {
     var i = range.lowerBound
     while true {
-      if let end = _consuming(consumed[...], in: i..<range.upperBound), end == range.upperBound {
+      if let end = _consuming(consumed[...], in: i..<range.upperBound),
+         end == range.upperBound
+      {
         return i
       } else if i == range.upperBound {
         return nil

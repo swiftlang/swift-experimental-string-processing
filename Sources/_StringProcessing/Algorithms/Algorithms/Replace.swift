@@ -6,7 +6,9 @@ extension RangeReplaceableCollection {
     with replacement: Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max
-  ) -> Self where Searcher.Searched == SubSequence, Replacement.Element == Element {
+  ) -> Self where Searcher.Searched == SubSequence,
+                  Replacement.Element == Element
+  {
     precondition(maxReplacements >= 0)
     
     var index = subrange.lowerBound
@@ -27,7 +29,9 @@ extension RangeReplaceableCollection {
     _ searcher: Searcher,
     with replacement: Replacement,
     maxReplacements: Int = .max
-  ) -> Self where Searcher.Searched == SubSequence, Replacement.Element == Element {
+  ) -> Self where Searcher.Searched == SubSequence,
+                  Replacement.Element == Element
+  {
     replacing(
       searcher,
       with: replacement,
@@ -35,11 +39,11 @@ extension RangeReplaceableCollection {
       maxReplacements: maxReplacements)
   }
   
-  public mutating func replace<Searcher: CollectionSearcher, Replacement: Collection>(
+  public mutating func replace<Searcher: CollectionSearcher, R: Collection>(
     _ searcher: Searcher,
-    with replacement: Replacement,
+    with replacement: R,
     maxReplacements: Int = .max
-  ) where Searcher.Searched == SubSequence, Replacement.Element == Element {
+  ) where Searcher.Searched == SubSequence, R.Element == Element {
     self = replacing(
       searcher,
       with: replacement,
@@ -88,7 +92,9 @@ extension RangeReplaceableCollection where Element: Equatable {
   }
 }
 
-extension RangeReplaceableCollection where Self: BidirectionalCollection, Element: Comparable {
+extension RangeReplaceableCollection
+  where Self: BidirectionalCollection, Element: Comparable
+{
   public func replacing<S: Sequence, Replacement: Collection>(
     _ other: S,
     with replacement: Replacement,

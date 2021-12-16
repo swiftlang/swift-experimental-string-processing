@@ -1,6 +1,9 @@
 public protocol CollectionConsumer {
   associatedtype Consumed: Collection
-  func consuming(_ consumed: Consumed, in range: Range<Consumed.Index>) -> Consumed.Index?
+  func consuming(
+    _ consumed: Consumed,
+    in range: Range<Consumed.Index>
+  ) -> Consumed.Index?
 }
 
 extension CollectionConsumer {
@@ -10,7 +13,9 @@ extension CollectionConsumer {
   
   // TODO: `@discardableResult`?
   /// Returns `true` if the consume was successful.
-  public func consume(_ consumed: inout Consumed) -> Bool where Consumed.SubSequence == Consumed {
+  public func consume(_ consumed: inout Consumed) -> Bool
+    where Consumed.SubSequence == Consumed
+  {
     guard let index = consuming(consumed) else { return false }
     consumed = consumed[index...]
     return true
@@ -19,8 +24,13 @@ extension CollectionConsumer {
 
 // MARK: Consuming from the back
 
-public protocol BidirectionalCollectionConsumer: CollectionConsumer where Consumed: BidirectionalCollection {
-  func consumingBack(_ consumed: Consumed, in range: Range<Consumed.Index>) -> Consumed.Index?
+public protocol BidirectionalCollectionConsumer: CollectionConsumer
+  where Consumed: BidirectionalCollection
+{
+  func consumingBack(
+    _ consumed: Consumed,
+    in range: Range<Consumed.Index>
+  ) -> Consumed.Index?
 }
 
 extension BidirectionalCollectionConsumer {
@@ -28,7 +38,9 @@ extension BidirectionalCollectionConsumer {
     consumingBack(consumed, in: consumed.startIndex..<consumed.endIndex)
   }
   
-  public func consumeBack(_ consumed: inout Consumed) -> Bool where Consumed.SubSequence == Consumed {
+  public func consumeBack(_ consumed: inout Consumed) -> Bool
+    where Consumed.SubSequence == Consumed
+  {
     guard let index = consumingBack(consumed) else { return false }
     consumed = consumed[..<index]
     return true

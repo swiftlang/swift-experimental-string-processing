@@ -5,7 +5,10 @@ struct NaivePatternSearcher<Searched: Collection, Pattern: Collection>
 }
 
 extension NaivePatternSearcher: StatelessCollectionSearcher {
-  func search(_ searched: Searched, in range: Range<Searched.Index>) -> Range<Searched.Index>? {
+  func search(
+    _ searched: Searched,
+    in range: Range<Searched.Index>
+  ) -> Range<Searched.Index>? {
     var searchStart = range.lowerBound
     
     guard let patternFirst = pattern.first else {
@@ -36,12 +39,16 @@ extension NaivePatternSearcher: StatelessCollectionSearcher {
   }
 }
 
-extension NaivePatternSearcher: BackwardCollectionSearcher, StatelessBackwardCollectionSearcher
+extension NaivePatternSearcher: BackwardCollectionSearcher,
+                                StatelessBackwardCollectionSearcher
   where Searched: BidirectionalCollection, Pattern: BidirectionalCollection
 {
   typealias BackwardSearched = Searched
   
-  func searchBack(_ searched: BackwardSearched, in range: Range<Searched.Index>) -> Range<Searched.Index>? {
+  func searchBack(
+    _ searched: BackwardSearched,
+    in range: Range<Searched.Index>
+  ) -> Range<Searched.Index>? {
     var searchEnd = range.upperBound
 
     guard let otherLastIndex = pattern.indices.last else {

@@ -23,14 +23,18 @@ class RegexConsumerTests: XCTestCase {
     ) {
       let regex = try! Regex(regex)
       
-      let actualSeq = string[...].ranges(of: regex).map {
-        string.offset(ofIndex: $0.lowerBound) ..< string.offset(ofIndex: $0.upperBound)
+      let actualSeq: [Range<Int>] = string[...].ranges(of: regex).map {
+        let start = string.offset(ofIndex: $0.lowerBound)
+        let end = string.offset(ofIndex: $0.upperBound)
+        return start..<end
       }
       XCTAssertEqual(actualSeq, expected, file: file, line: line)
 
       // `IndexingIterator` tests the collection conformance
-      let actualCol = string[...].ranges(of: regex)[...].map {
-        string.offset(ofIndex: $0.lowerBound) ..< string.offset(ofIndex: $0.upperBound)
+      let actualCol: [Range<Int>] = string[...].ranges(of: regex)[...].map {
+        let start = string.offset(ofIndex: $0.lowerBound)
+        let end = string.offset(ofIndex: $0.upperBound)
+        return start..<end
       }
       XCTAssertEqual(actualCol, expected, file: file, line: line)
     }
@@ -111,7 +115,9 @@ class RegexConsumerTests: XCTestCase {
     let str = "a string with the letter b in it"
     let first = str.firstRange(of: r)
     let last = str.lastRange(of: r)
-    let (expectFirst, expectLast) = (str.index(atOffset: 0)..<str.index(atOffset: 1), str.index(atOffset: 25)..<str.index(atOffset: 26))
+    let (expectFirst, expectLast) = (
+      str.index(atOffset: 0)..<str.index(atOffset: 1),
+      str.index(atOffset: 25)..<str.index(atOffset: 26))
     output(str.split(around: first!))
     output(str.split(around: last!))
 

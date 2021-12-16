@@ -83,7 +83,9 @@ extension RangesCollection: Collection {
   }
 
   public subscript(index: Index) -> Range<Base.Index> {
-    guard let range = index.range else { fatalError("Cannot subscript using endIndex") }
+    guard let range = index.range else {
+      fatalError("Cannot subscript using endIndex")
+    }
     return range
   }
 }
@@ -126,7 +128,9 @@ public struct ReversedRangesCollection<Searcher: BackwardCollectionSearcher> {
   }
 }
 
-extension ReversedRangesCollection where Searcher: BidirectionalCollectionSearcher {
+extension ReversedRangesCollection
+  where Searcher: BidirectionalCollectionSearcher
+{
   public func reversed() -> RangesCollection<Searcher> {
     RangesCollection(base: base, searcher: searcher)
   }
@@ -145,7 +149,8 @@ extension ReversedRangesCollection: Sequence {
     init(base: Base, searcher: Searcher) {
       self.base = base
       self.searcher = searcher
-      self.state = searcher.backwardState(for: base, in: base.startIndex..<base.endIndex)
+      self.state = searcher.backwardState(
+        for: base, in: base.startIndex..<base.endIndex)
     }
     
     public mutating func next() -> Range<Base.Index>? {
@@ -192,7 +197,9 @@ extension BidirectionalCollection where Element: Equatable {
   // FIXME
 //  public func rangesFromBack<S: Sequence>(
 //    of other: S
-//  ) -> ReversedRangesCollection<ZSearcher<SubSequence>> where S.Element == Element {
+//  ) -> ReversedRangesCollection<ZSearcher<SubSequence>>
+//    where S.Element == Element
+//  {
 //    fatalError()
 //  }
 }
@@ -200,26 +207,35 @@ extension BidirectionalCollection where Element: Equatable {
 extension BidirectionalCollection where Element: Comparable {
   public func ranges<S: Sequence>(
     of other: S
-  ) -> RangesCollection<PatternOrEmpty<TwoWaySearcher<Self>>> where S.Element == Element {
+  ) -> RangesCollection<PatternOrEmpty<TwoWaySearcher<Self>>>
+    where S.Element == Element
+  {
     ranges(of: PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(other))))
   }
   
   // FIXME
 //  public func rangesFromBack<S: Sequence>(
 //    of other: S
-//  ) -> ReversedRangesCollection<PatternOrEmpty<TwoWaySearcher<SubSequence>>> where S.Element == Element {
-//    rangesFromBack(of: PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(other))))
+//  ) -> ReversedRangesCollection<PatternOrEmpty<TwoWaySearcher<SubSequence>>>
+//    where S.Element == Element
+//  {
+//    rangesFromBack(
+//      of: PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(other))))
 //  }
 }
 
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func ranges<Capture>(of regex: Regex<Capture>) -> RangesCollection<RegexConsumer<Self>> {
+  public func ranges<Capture>(
+    of regex: Regex<Capture>
+  ) -> RangesCollection<RegexConsumer<Self>> {
     ranges(of: RegexConsumer(regex))
   }
   
-  public func rangesFromBack<Capture>(of regex: Regex<Capture>) -> ReversedRangesCollection<RegexConsumer<Self>> {
+  public func rangesFromBack<Capture>(
+    of regex: Regex<Capture>
+  ) -> ReversedRangesCollection<RegexConsumer<Self>> {
     rangesFromBack(of: RegexConsumer(regex))
   }
 }

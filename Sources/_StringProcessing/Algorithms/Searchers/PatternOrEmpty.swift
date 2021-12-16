@@ -16,15 +16,23 @@ extension PatternOrEmpty: CollectionSearcher {
     let representation: Representation
   }
   
-  public func state(for searched: Searcher.Searched, in range: Range<Searched.Index>) -> State {
+  public func state(
+    for searched: Searcher.Searched,
+    in range: Range<Searched.Index>
+  ) -> State {
     if let searcher = searcher {
-      return State(representation: .state(searcher.state(for: searched, in: range)))
+      return State(
+        representation: .state(searcher.state(for: searched, in: range)))
     } else {
-      return State(representation: .empty(index: range.lowerBound, end: range.upperBound))
+      return State(
+        representation: .empty(index: range.lowerBound, end: range.upperBound))
     }
   }
   
-  public func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {
+  public func search(
+    _ searched: Searched,
+    _ state: inout State
+  ) -> Range<Searched.Index>? {
     switch state.representation {
     case .state(var s):
       // TODO: Avoid a potential copy-on-write copy here
@@ -35,7 +43,8 @@ extension PatternOrEmpty: CollectionSearcher {
       if index == end {
         state = State(representation: .emptyDone)
       } else {
-        state = State(representation: .empty(index: searched.index(after: index), end: end))
+        state = State(
+          representation: .empty(index: searched.index(after: index), end: end))
       }
       return index..<index
     case .emptyDone:
