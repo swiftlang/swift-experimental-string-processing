@@ -1,5 +1,30 @@
 import _MatchingEngine
 
+struct Unsupported: Error, CustomStringConvertible {
+  var message: String
+  var file: String
+  var line: Int
+
+  var description: String { """
+    Unsupported: \(message)
+      \(file):\(line)
+    """
+  }
+}
+
+func unsupported(
+  _ s: String,
+  file: StaticString = #file,
+  line: UInt = #line
+) -> Unsupported {
+  // TODO: how do we not have a public init for this?
+  let fStr = file.withUTF8Buffer {
+    String(decoding: $0, as: UTF8.self)
+  }
+  return Unsupported(
+    message: s, file: fStr, line: Int(line))
+}
+
 extension AST {
   /// Attempt to generate a consumer from this AST node
   ///
@@ -8,12 +33,12 @@ extension AST {
   func generateConsumer(
     // TODO: Better option modeling
     _ opts: CharacterClass.MatchLevel
-  ) -> Program<String>.ConsumeFunction? {
+  ) throws -> Program<String>.ConsumeFunction? {
     switch self {
     case .atom(let a):
-      return a.generateConsumer(opts)
+      return try a.generateConsumer(opts)
     case .customCharacterClass(let ccc):
-      return ccc.generateConsumer(opts)
+      return try ccc.generateConsumer(opts)
 
     case .alternation, .concatenation, .group,
         .quantification, .quote, .trivia, .empty,
@@ -43,7 +68,7 @@ extension AST.Atom {
 
   func generateConsumer(
     _ opts: CharacterClass.MatchLevel
-  ) -> Program<String>.ConsumeFunction? {
+  ) throws -> Program<String>.ConsumeFunction? {
     // TODO: Wean ourselves off of this type...
     if let cc = self.characterClass?.withMatchLevel(opts) {
       return { input, bounds in
@@ -54,14 +79,7 @@ extension AST.Atom {
 
     switch kind {
     case let .scalar(s):
-      return { input, bounds in
-        // TODO: bounds checking?
-        let low = bounds.lowerBound
-        guard input.unicodeScalars[low] == s else {
-          return nil
-        }
-        return input.unicodeScalars.index(after: low)
-      }
+      return consumeScalar { $0 == s }
 
     case let .char(c):
       // TODO: Match level?
@@ -74,7 +92,7 @@ extension AST.Atom {
       }
 
     case let .property(p):
-      return p.generateConsumer(opts)
+      return try p.generateConsumer(opts)
 
     case let .namedCharacter(name):
       return consumeScalarProp {
@@ -94,17 +112,17 @@ extension AST.Atom {
 extension AST.CustomCharacterClass.Member {
   func generateConsumer(
     _ opts: CharacterClass.MatchLevel
-  ) -> Program<String>.ConsumeFunction {
+  ) throws -> Program<String>.ConsumeFunction {
     switch self {
     case .custom(let ccc):
-      return ccc.generateConsumer(opts)
+      return try ccc.generateConsumer(opts)
 
     case .range(let lower, let upper):
       guard let lhs = lower.literalCharacterValue else {
-        fatalError("TODO")
+        throw unsupported("\(lower) in range")
       }
       guard let rhs = upper.literalCharacterValue else {
-        fatalError("TODO")
+        throw unsupported("\(upper) in range")
       }
 
       return { input, bounds in
@@ -118,8 +136,8 @@ extension AST.CustomCharacterClass.Member {
       }
 
     case .atom(let atom):
-      guard let gen = atom.generateConsumer(opts) else {
-        fatalError("TODO")
+      guard let gen = try atom.generateConsumer(opts) else {
+        throw unsupported("TODO")
       }
       return gen
 
@@ -130,10 +148,10 @@ extension AST.CustomCharacterClass.Member {
       let start = AST.Located(
         faking: AST.CustomCharacterClass.Start.normal)
 
-      let lhs = AST.CustomCharacterClass(
+      let lhs = try AST.CustomCharacterClass(
         start, lhs, .fake
       ).generateConsumer(opts)
-      let rhs = AST.CustomCharacterClass(
+      let rhs = try AST.CustomCharacterClass(
         start, rhs, .fake
       ).generateConsumer(opts)
 
@@ -171,9 +189,11 @@ extension AST.CustomCharacterClass.Member {
 extension AST.CustomCharacterClass {
   func generateConsumer(
     _ opts: CharacterClass.MatchLevel
-  ) -> Program<String>.ConsumeFunction {
+  ) throws -> Program<String>.ConsumeFunction {
     // NOTE: Easy way to implement, obviously not performant
-    let consumers = members.map { $0.generateConsumer(opts) }
+    let consumers = try members.map {
+      try $0.generateConsumer(opts)
+    }
     return { input, bounds in
       for consumer in consumers {
         if let idx = consumer(input, bounds) {
@@ -222,7 +242,7 @@ private func consumeScalar(
 extension AST.Atom.CharacterProperty {
   func generateConsumer(
     _ opts: CharacterClass.MatchLevel
-  ) -> Program<String>.ConsumeFunction {
+  ) throws -> Program<String>.ConsumeFunction {
     // Handle inversion for us, albeit not efficiently
     func invert(
       _ p: @escaping Program<String>.ConsumeFunction
@@ -239,7 +259,8 @@ extension AST.Atom.CharacterProperty {
     // FIXME: Below is largely scalar based, for convenience,
     // but we want a comprehensive treatment to semantic mode
     // switching.
-    let preInversion: Program<String>.ConsumeFunction = {
+    let preInversion: Program<String>.ConsumeFunction =
+    try {
       switch kind {
         // TODO: is this modeled differently?
       case .any:
@@ -255,30 +276,30 @@ extension AST.Atom.CharacterProperty {
         return consumeScalar(\.isASCII)
 
       case .generalCategory(let p):
-        return p.generateConsumer(opts)
+        return try p.generateConsumer(opts)
 //        fatalError("TODO: Map categories: \(p)")
 
       case .binary(let prop, value: let value):
-        let cons = prop.generateConsumer(opts)
+        let cons = try prop.generateConsumer(opts)
         return value ? cons : invert(cons)
 
       case .script(let s):
-        fatalError("TODO: Map script: \(s)")
+        throw unsupported("TODO: Map script: \(s)")
 
       case .scriptExtension(let s):
-        fatalError("TODO: Map script: \(s)")
+        throw unsupported("TODO: Map script: \(s)")
 
       case .posix(let p):
         return p.generateConsumer(opts)
 
       case .pcreSpecial(let s):
-        fatalError("TODO: map PCRE special: \(s)")
+        throw unsupported("TODO: map PCRE special: \(s)")
 
       case .onigurumaSpecial(let s):
-        fatalError("TODO: map Oniguruma special: \(s)")
+        throw unsupported("TODO: map Oniguruma special: \(s)")
 
       case let .other(key, value):
-        fatalError("TODO: map other \(key ?? "")=\(value)")
+        throw unsupported("TODO: map other \(key ?? "")=\(value)")
       }
     }()
 
@@ -291,7 +312,7 @@ extension Unicode.BinaryProperty {
   // FIXME: Semantic level, vet for precise defs
   func generateConsumer(
     _ opts: CharacterClass.MatchLevel
-  ) -> Program<String>.ConsumeFunction {
+  ) throws -> Program<String>.ConsumeFunction {
     switch self {
 
     case .asciiHexDigit:
@@ -434,7 +455,7 @@ extension Unicode.BinaryProperty {
       break
     }
 
-    fatalError("TODO: map prop \(self)")
+    throw unsupported("TODO: map prop \(self)")
   }
 }
 
@@ -488,7 +509,7 @@ extension Unicode.ExtendedGeneralCategory {
   // FIXME: Semantic level
   func generateConsumer(
     _ opts: CharacterClass.MatchLevel
-  ) -> Program<String>.ConsumeFunction {
+  ) throws -> Program<String>.ConsumeFunction {
     switch self {
     case .letter:
       return consumeScalarGCs([
@@ -532,7 +553,7 @@ extension Unicode.ExtendedGeneralCategory {
       ])
 
     case .casedLetter:
-      fatalError("TODO: cased letter? not the property?")
+      throw unsupported("TODO: cased letter? not the property?")
 
     case .control:
       return consumeScalarGC(.control)

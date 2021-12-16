@@ -17,7 +17,7 @@ public struct RegexConsumer: CollectionConsumer {
   var vm: Executor
 
   public init(_ regex: Regex) {
-    self.vm = _compileRegex(regex.string)
+    self.vm = try! _compileRegex(regex.string)
   }
 
   public func consume(
