@@ -194,6 +194,16 @@ extension RegexTests {
     parseTest("[[:word:]]", charClass(posixProp_m(.posix(.word))))
     parseTest("[[:xdigit:]]", charClass(posixProp_m(.posix(.xdigit))))
 
+    parseTest("[[:ascii:]]", charClass(posixProp_m(.ascii)))
+    parseTest("[[:cntrl:]]", charClass(posixProp_m(.generalCategory(.control))))
+    parseTest("[[:digit:]]", charClass(posixProp_m(.generalCategory(.decimalNumber))))
+    parseTest("[[:lower:]]", charClass(posixProp_m(.binary(.lowercase))))
+    parseTest("[[:punct:]]", charClass(posixProp_m(.generalCategory(.punctuation))))
+    parseTest("[[:space:]]", charClass(posixProp_m(.binary(.whitespace))))
+    parseTest("[[:upper:]]", charClass(posixProp_m(.binary(.uppercase))))
+
+    parseTest("[[:UPPER:]]", charClass(posixProp_m(.binary(.uppercase))))
+
     parseTest("[[:isALNUM:]]", charClass(posixProp_m(.posix(.alnum))))
     parseTest("[[:AL_NUM:]]", charClass(posixProp_m(.posix(.alnum))))
     parseTest("[[:script=Greek:]]", charClass(posixProp_m(.script(.greek))))
