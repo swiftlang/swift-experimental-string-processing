@@ -273,13 +273,10 @@ extension RegexTests {
     matchTest(#"\p{gc=L}"#, input: "123abcXYZ", match: "a")
     matchTest(#"\p{Lu}"#, input: "123abcXYZ", match: "X")
 
-    // TODO: diagnose
     matchTest(
-      #"\P{Cc}"#, input: "123\n\n\nXYZ", match: "\n",
-      xfail: true)
+      #"\P{Cc}"#, input: "\n\n\nXYZ", match: "X")
     matchTest(
-      #"\P{Z}"#, input: "123 XYZ", match: " ",
-      xfail: true)
+      #"\P{Z}"#, input: "   XYZ", match: "X")
 
     matchTest(#"[\p{C}]"#, input: "123\n\n\nXYZ", match: "\n")
     matchTest(#"\p{C}+"#, input: "123\n\n\nXYZ", match: "\n\n\n")
