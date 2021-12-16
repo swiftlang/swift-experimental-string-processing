@@ -352,9 +352,14 @@ extension Source {
   }
 
   static func classifyCharacterPropertyValueOnly(
-    _ value: String
+    _ value: String, isPOSIX: Bool
   ) throws -> PropertyKind {
     guard !value.isEmpty else { throw ParseError.emptyProperty }
+
+    // If this is for POSIX syntax e.g [:alpha:], we prefer to parse as POSIX.
+    if isPOSIX, let posix = classifyPOSIX(value) {
+      return .posix(posix)
+    }
 
     // Some special cases defined by UTS#18 (and Oniguruma for 'ANY' and
     // 'Assigned').

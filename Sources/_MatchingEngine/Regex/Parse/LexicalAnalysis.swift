@@ -568,7 +568,8 @@ extension Source {
     try recordLoc { src in
       guard src.tryEat(sequence: "[:") else { return nil }
       let inverted = src.tryEat("^")
-      let prop = try src.lexCharacterPropertyContents(end: ":]").value
+      let prop = try src.lexCharacterPropertyContents(
+        end: ":]", isPOSIX: true).value
       return .init(prop, isInverted: inverted, isPOSIX: true)
     }
   }
@@ -595,7 +596,7 @@ extension Source {
   }
 
   private mutating func lexCharacterPropertyContents(
-    end: String
+    end: String, isPOSIX: Bool
   ) throws -> Located<AST.Atom.CharacterProperty.Kind> {
     try recordLoc { src in
       // We should either have:
@@ -606,7 +607,8 @@ extension Source {
       // that property keys and values can use.
       let lhs = src.lexUntil { $0.peek() == "=" || $0.starts(with: end) }.value
       if src.tryEat(sequence: end) {
-        return try Source.classifyCharacterPropertyValueOnly(lhs)
+        return try Source.classifyCharacterPropertyValueOnly(
+          lhs, isPOSIX: isPOSIX)
       }
       src.eat(asserting: "=")
 
@@ -628,7 +630,8 @@ extension Source {
       let isInverted = src.peek() == "P"
       src.advance(2)
 
-      let prop = try src.lexCharacterPropertyContents(end: "}").value
+      let prop = try src.lexCharacterPropertyContents(
+        end: "}", isPOSIX: false).value
       return .init(prop, isInverted: isInverted, isPOSIX: false)
     }
   }
