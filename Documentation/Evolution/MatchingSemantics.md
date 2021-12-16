@@ -15,9 +15,9 @@ For background see these previous pitches:
 
 ## Motivation
 
-Many string processing tasks, like the example in the [overview][declarative-string-processing-overview] of processing a Unicode data table, operate on ASCII-only input data. It should be simple and easy to use Swift regular expressions to match and extract captures from such data.
+Many string processing tasks, like the example in the [overview][declarative-string-processing-overview] of processing a Unicode data table, operate only on the ASCII portions of their input data. It should be simple and easy to use regular expressions to match and extract captures from such data in Swift.
 
-For more sophisticated tasks, Swift regular expressions also need to support controlling:
+At the same time, Swift's String API provides multiple views of a string's components, from grapheme clusters (`Character`s) down to the UTF-8 code units that represent the string's underlying data, and a rich Unicode feature set. With these features in mind, regular expressions should also support controlling:
 
 - Whether `.` matches a byte, a code point, or a grapheme cluster
 - The semantic level of character classes
@@ -41,15 +41,15 @@ cafe.last == "é"         // true (precomposed e with acute accent)
 cafe.last == "e\u{301}"  // true (e followed by composing acute accent)
 ```
 
-These are good defaults for the kinds of tasks that qualify as "string processing"—processing Unicode-rich, and especially user-generated, content. An example of such a task would be eliminating duplicate words:
+These are good defaults for the kinds of tasks that qualify as "string processing"—processing Unicode-rich, and especially user-generated, content. An example of such a task would be eliminating duplicated identifiers in a whitespace-delimited list:
 
 ```swift
-let duplicateWords = /\b(\w+)\s+\1\b/
+let duplicateIdentifiers = /\b(\w+)\s+\1\b/
 // => Regex<(Substring, Substring)>
 
 // Equivalent result builder syntax:
-//     struct DuplicateWords: Pattern {
-//       @Backreference word: Substring
+//     struct DuplicateIdentifiers: Pattern {
+//       @Backreference var word: Substring
 //     
 //       var body: some Pattern {
 //         CharacterClass.wordBoundary
@@ -59,11 +59,11 @@ let duplicateWords = /\b(\w+)\s+\1\b/
 //         CharacterClass.wordBoundary
 //       }
 //     }
-//     let duplicateWords = DuplicateWords()
+//     let duplicateIdentifiers = DuplicateIdentifiers()
 
-let content = "Meet me at the café cafe\u{301} on the corner."
-content.replaceAll(duplicateWords, with: { $1 })
-// => "Meet me at the café on the corner"
+let content = "all count count countAll every every oneOf some"
+content.replaceAll(duplicateIdentifiers, with: { $1 })
+// => "all count countAll every oneOf some"
 ```
 
 #### Textual data processing
@@ -131,23 +131,28 @@ To meet user expectations, regular expression matching in Swift should start by
 
 ```swift
 let cafe = "Cafe\u{301}"
-cafe == "Café"             // true
+cafe == "Café"              // true
 cafe.contains(/Café/)       // true
-cafe.contains(/Caf[åéîòü]/) // true
 ```
 
-Notably, a wildcard (`.`) in the default semantic mode matches any `Character` that isn't a new line. Regular expressions can match strings with a specific number of characters, but don't delve into the constitutive parts of a character to match individual Unicode scalars. In this example, the four `.` elements match all four characters of the `cafe` string, leaving nothing left for the custom character class to match:
+Notably, a wildcard (`.`) in the default semantic mode matches any `Character` that isn't a new line. Regular expressions with character semantics can match strings with a specific number of characters, but don't delve into the constitutive parts of a character to match individual Unicode scalars. In this example, the four `.` elements match all four characters of the `cafe` string, leaving nothing left for the custom character class to match:
 
 ```swift
 cafe.contains(/..../)    // true
 cafe.contains(/....[\u{300}-\u{314}]/) // false
 ```
 
-By moving into Unicode scalar semantics, we can use a regular expression to match specific Unicode scalar sequences and patterns. With this regular expression, each `.` or character class matches a single Unicode scalar, not an entire character:
+By moving to Unicode scalar semantics, we can use a regular expression to match specific Unicode scalar sequences and patterns. With this regular expression, each `.` or character class matches a single Unicode scalar, not an entire character:
 
 ```swift
-let adornedLetterRegex = /(?u)\w[\u{300}-\u{314}]/
-if let lastLetter = cafe.firstMatch(of: adornedLetterRegex) {
+let adornedLetter = /(?u)\w[\u{300}-\u{314}]/
+// Equivalent result builder syntax:
+//     let adornedLetter = Pattern(semantics: .unicodeScalar) {
+//       CharacterClass.wordCharacter
+//       AnyOf("\u{300}"..."\u{314}")
+//     }
+
+if let lastLetter = cafe.firstMatch(of: adornedLetter) {
     print("Last letter: \(lastLetter.match)")
 }
 // Prints "Last letter: é"
@@ -155,10 +160,26 @@ if let lastLetter = cafe.firstMatch(of: adornedLetterRegex) {
 
 When a regular expression employs byte semantics, the `.` and character classes match only a single byte, not a Unicode scalar or a `Character`. When applied to a `String`, which is guaranteed to be valid UTF-8, this is only provides a moderate increase in functionality. With other collection of bytes, however, you can use a regular expression in byte semantic mode to parse arbitrary binary data. And because you can switch between modes mid-stream, you can write patterns that read stretches of Unicode scalar data between binary delimiters.
 
-In this example, the `elementName` capture group is inside a Unicode scalar semantic mode, so the `.` matches only valid UTF-8 code sequences that represent Unicode scalar values, ensuring that it is safe to later convert to a string. The `value` capture group, on the other hand, has byte semantics, so it simply matches the next four bytes without checking for an encoding.
+In this example, the `elementName` capture group is inside a Unicode scalar semantic mode, so `.` matches only valid UTF-8 code sequences that represent Unicode scalar values. With the terminating null byte (`\x00`), the capture value is safe to convert to a string. The `value` capture group, on the other hand, has byte semantics, so it simply matches the next four bytes without checking for an encoding.
 
 ```swift
-let bsonInt32Regex = /\x10(?u:(?<elementName>:.+\x00))(?b:(?<value>:.{4}))/
+let bsonInt32 = /\x10(?u:(?<elementName>:.+\x00))(?b:(?<value>:.{4}))/
+// Equivalent result builder syntax:
+//     struct BSONInt32: Pattern {
+//       @Backreference var elementName: Substring
+//       @Backreference var value: Substring
+//
+//       var body: some Pattern {
+//         0x10 as UInt8
+//         Pattern(semantics: .unicodeScalar) {
+//           OneOrMore(.any)
+//           0x00 as UInt8
+//         }.capture($elementName)
+//         repeatElement(CharacterClass.anyByte, count: 4).capture($value)
+//       }
+//     }
+//     let bsonInt32 = BSONInt32()
+
 let source = [0x10, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x00,
               0x10, 0x00, 0x00, 0x00, 0x02, ...]
 if let element = source.firstMatch(of: bsonInt32Regex) {
@@ -167,19 +188,19 @@ if let element = source.firstMatch(of: bsonInt32Regex) {
 // Prints "age [0x2c, 0x00, 0x00, 0x00]"
 ```
 
-The example above shows another aspect of mode-switching, which is that some metacharacters carry an implicit mode. The initial byte literal, expressed as `\x10`, can only match that exact byte in the input collection, no matter what semantic mode the regular expression is executed in. Similarly, a Unicode property metacharacter such as `\p{Letter}` always matches at the Unicode scalar value level, even if the regular expression is using byte semantics at the time.
+The example above shows another aspect of mode-switching, which is that some metacharacters carry an implicit mode. The initial byte literal, expressed as `\x10`, can only match that exact byte in the input collection, no matter what semantic mode the regular expression is executed in.
 
 You can also use specific wildcard metacharacters to match an element at a specific level, even when matching in a different mode:
 
 - `\X` matches a single `Character`
 - `\U` matches a single Unicode scalar
-- `\C` matches a single byte
+- `\C` matches a single byte (spelling tbd)
 
-The last lever available is to turn off Unicode support within metacharacters like `\d` and `\w`. After specifying the `a` flag (tbd), these metacharacters will only match the ASCII subset of their more general character class. For more detail, see [Character Classes for String Processing][character-classes-for-string-processing].
+The last lever available is to turn off Unicode support within metacharacters like `\d` and `\w`. After specifying the `P` flag, these metacharacters will only match the ASCII subset of their more general character class. For more detail, see [Character Classes for String Processing][character-classes-for-string-processing].
 
 ## Detailed Design
 
-The standard library should include a single `Regex` type, which by default matches at the `Character` level, using the same semantics as `String` equality comparisons. The `Regex` type provides API for changing those defaults, or you can use modifiers within a regular expression literal to change the matching semantics for portions of the expression. Swift regular expresssions have three modes that affect the matching semantics:
+Swift regular expressions will by default match at the `Character` level, using the same semantics as `String` equality comparisons. The regular expression type provides API for changing those defaults, or you can use modifiers within a regular expression literal to change the matching semantics for portions of the expression. Regular expresssions have three modes that affect the matching semantics:
 
 - `Character` semantics (`X`)
 - Unicode scalar semantics (`u`)
@@ -187,65 +208,70 @@ The standard library should include a single `Regex` type, which by default matc
 
 Enabling and disabling these modes have the behavior of pushing and popping from a stack. The compiler will warn when a mode has been ended (e.g. `(?-b)`) before it has been enabled.
 
-You can use any of these modes when applying a regular expression to a `String`, a `Substring`, or any collection of `UInt8`. When applied to any of these types, the collection will be interpreted at the specified semantic level, allowing a `String` to be interpreted as binary data, and allow grapheme-breaking and canonical equivalence algorithms to be applied to UTF-8 encoded bytes in a `Data` instance.
+You can use any of these modes when applying a regular expression to a `String`, a `Substring`, or any collection of `UInt8`. When applied to any of these types, the collection will be interpreted at the specified semantic level, allowing a `String` to be interpreted as binary data, or alternatively, allowing grapheme-breaking and canonical equivalence algorithms to be applied to UTF-8 encoded bytes in a `Data` instance.
 
 Because the compiler determines the capture types of a regular epxression while parsing, we can preserve the ergonomics of captures that guarantee UTF-8 correctness. When a capture appears in a section of a regular expression literal that uses either `Character` or `UnicodeScalar` semantics, and that regular expression is applied to a `String` or `Substring`, the capture group is captured as a substring. However, if a capture includes any portion of a regular expression with byte semantics, or if a regular expression is applied to a non-string collection, then the capture group is captured as a collection that does not provide a UTF-8 correctness guarantee. See "Byte Semantics" for more detail.
 
 #### `Character` Semantics
 
-`Character`-based semantics mean that matching with a regular expression yields the same results as comparing for `String` equality. When matching with the default `Character`-level semantics, a "dot" or character class matches a single Swift `Character` and canonical equivalence is used when comparing:
+When using character semantics, `.` and the built-in or custom character classes match a grapheme cluster. This semantic level is analogous to comparing individual `Character`s while iterating over a `String`.
 
 ```swift
-let cafe = "Cafe\u{301}"      // "Café"
-cafe == "Café"                // true: String equality comparison
-cafe.matches(/Café/)          // true: canonical equivalence
-cafe.matches(/Cafe\u{301}/)   // true: character recognition in regex literals
-cafe.matches(/Caf./)          // true: dot matches a character
-cafe.matches(/Caf[åéîøü]/)    // true: canonical equivalence within custom classes
-cafe.matches(/Caf\w/)         // true: character class matches a character
-cafe.matches(/Caf\p{Letter}/) // true: Unicode property matches a character
-
-cafe.count == 4               // true
-cafe.matches(/.{4}/)          // true: dot matches a character
-
-// false: the fourth `.` matches the whole `"e\u{301}"` character
-cafe.matches(/....\u{301}/)
+let cafe1 = "Cafe\u{301}"
+cafe1.matches(/Caf./)          // true: `.` matches the last character
 ```
 
-You can turn on `Character` semantics by using the `X` flag in a regular expression literal or the `characterSemantics` property on a regular expression instance.
+Grapheme clusters that are written with Unicode literals in the non-custom character class portions of a regular expression are recognized just as they are in string literals. That is, both `cafe` string variations are matched by both regular expressions in character semantic mode:
 
 ```swift
-cafe.matches(/(?X)Café/)                // This is the default behavior...
-cafe.matches(/Café/.characterSemantics) // ...as is this
+let cafe2 = "Café"
+let regex1 = /Café/
+let regex2 = /Cafe\u{301}/
 ```
+
+The metacharacter classes `\w`, `\d`, and `\s`, the Unicode classes specified as `\p{...}`, and POSIX character class all match at the character level when in this semantic mode. For a grapheme cluster to match a character class, all Unicode scalars that constitute the grapheme cluster must belong to the requisite Unicode categories.
+
+```swift
+cafe1.matches(/Caf\w/)         // true: `\w` matches the last character because
+                               //       `e` is in Unicode category `Letter` and
+                               //       `\u{301}` is in Unicode category `Mark`
+"Caf1\u{301}".matches(/Caf\d/) // false: `\d` requires all parts of the character
+                               //        to be in Unicode category `Digit`
+```
+
+Within a custom character class (CCC, written as `[...]`), each character literal or Unicode scalar literal are treated as separate entities. In this way, `[e\u{301}]` is interpreted as a set that matches either `e` or `\u{301}` in a string, but not the `e\{301}` character. To match specific multi-scalar characters, you can specify a Unicode scalar sequence instead. Canonical equivalence is still used when matching the elements and ranges defined in a custom character class.
+
+```swift
+cafe1.matches(/Caf[é]/)           // true: CCC elements use canonical equivalence
+cafe1.matches(/Caf[e\u{301}]/)    // false: `e` and `\u{301}` are separate elements
+cafe1.matches(/Caf[\u{65 301}]/)  // true: Unicode scalar sequence is equivalent
+```
+
+Grapheme recognition does not apply across custom character class definitions, so attempting to match the individual parts of a decomposed character does not succeed in character semantic mode. In this example, the author is trying to match a vowel that has a diacritic attached, but the `[aeiou]` custom character class does not match the first element of `e\u{301}`:
+
+```swift
+cafe1.matches(/Caf[aeiou][\u{300}-\u{314}]/)  // false: A custom character class must
+                                              //        match an entire character
+```
+
+For control over the specific Unicode scalar spelling within a target string, use Unicode scalar semantics instead.
+
 
 #### `UnicodeScalar` Semantics
 
-`UnicodeScalar`-based semantics mean that matching with a regular expression operates directly on the Unicode scalar values that comprise a string, matching many other regular expression engines. At this semantic level, a "dot" or character class matches a single Unicode scalar value, and canonical equivalence is _not_ used when comparing:
+`UnicodeScalar`-based semantics mean that matching with a regular expression operates directly on the Unicode scalar values that comprise a string; analogous to comparing `UnicodeScalar` values while iterating over a string's `unicodeScalars` view. At this semantic level, a dot `.` or character class matches a single Unicode scalar value, and canonical equivalence is _not_ used, matching many other regular expression engines.
 
 ```swift
-let cafe = "Cafe\u{301}"           // "Café"
-// false: The two strings have different Unicode scalar sequences
-cafe.unicodeScalars.elementsEqual("Café".unicodeScalars)
-cafe.matches(/(?u)Cafe\u{301}$/)   // true: matches original Unicode scalar sequence
-cafe.matches(/(?u)Café$/)          // false: no canonical equivalence
-cafe.matches(/(?u)Caf.$/)          // false: dot matches a scalar value, not a character
-cafe.matches(/(?u)Caf[åéîøü]$/)    // false: no canonical equivalence
-cafe.matches(/(?u)Caf\w$/)         // false: a character class matches only a single Unicode scalar
-cafe.matches(/(?u)Caf[aeiou][\u{300}-\u{305}]$/) // true: custom character class matches a scalar
-
-// Unicode property class matches only a single Unicode scalar
-cafe.matches(/(?u)Caf\p{Letter}$/)                    // false
-cafe.matches(/(?u)Caf\p{Letter}\p{Nonspacing_Mark}$/) // true
-
-cafe.unicodeScalars.count == 5     // true
-cafe.matches(/(?u).{5}/)           // true: dot matches a Unicode scalar
-
-// true: the fourth `.` matches only the letter `"e"`
-cafe.matches(/(?u)....\u{301}/)
+let cafe1 = "Cafe\u{301}"           // "Café"
+cafe1.matches(/(?u)Cafe\u{301}$/)   // true: matches original Unicode scalar sequence
+cafe1.matches(/(?u)Café$/)          // false: no canonical equivalence
+cafe1.matches(/(?u)Caf.$/)          // false: dot matches a scalar value, not a character
+cafe1.matches(/(?u)Caf[åéîøü]$/)    // false: no canonical equivalence
+cafe1.matches(/(?u)Caf\w$/)         // false: a character class matches only a single Unicode scalar
+cafe1.matches(/(?u)Caf[aeiou][\u{300}-\u{314}]$/) // true: custom character class matches a scalar
 ```
 
-Using `UnicodeScalar` semantics, you could safely process the CSV mentioned above:
+Using `UnicodeScalar` semantics, you can safely process the CSV mentioned above:
 
 ```swift
 let csv = "...,\u{300},\u{301},\u{302},..."
@@ -255,18 +281,27 @@ csv.split(separator: /(?u),/)     // splits on every comma, as required:
                                   // ["...", "\u{300}", "\u{301}", "\u{302}", "..."]
 ```
 
-You can turn on `UnicodeScalar` semantics by using the `u` flag in a regular expression literal or the `unicodeScalarSemantics` property on a regular expression instance.
+All character classes match at the Unicode scalar level when in this semantic mode.
 
 ```swift
-cafe.matches(/(?u)Café/)
-cafe.matches(/Café/.unicodeScalarSemantics)
+cafe1.matches(/(?u)Caf\p{Letter}$/)          // false: `\p{Letter}` only matches the `e`
+cafe1.matches(/(?u)Caf\p{Letter}\p{Mark}$/)  // true: each scalar is properly matched by category
 ```
+
+In this semantic mode, custom character classes match individual Unicode scalars, which lets you match particular grapheme clusters that are constructed from multiple codepoints. This example shows regular expressions that could be useful when performing content analysis: `flags` matches a flag emoji composed of two regional indicator codepoints, while `familyEmoji` matches a composed emoji codepoint sequence:
+
+```swift
+let flags = /(?u)[\u{1F1E6}-\u{1F1FF}]{2}/
+let familyEmoji = / ... /
+```
+
 
 #### Byte Semantics
 
 When using byte semantics, a dot or character class matches only a single byte, allowing processing of binary data that may or may not be encoded as valid UTF-8. Because each character class can only match a single byte, this mode limits character classes to only match their ASCII members. For example, `\d` only matches the digits `0` through `9`. You can use byte literals to match individual bytes, even in a different semantic mode
 
 ```swift
+let data = 
 cafe.matches(/(?b)Café/)               // false: no canonical equivalence
 cafe.matches(/(?b)Cafe\xCC\x81/)       // true: bytes match
 
@@ -312,13 +347,13 @@ This table summarizes the capture types depending on the matching semantics and 
 | When matching...         | Unapplied      | Matching a string      | Matching a  `UInt8` collection |
 |--------------------------|----------------|------------------------|--------------------------------|
 | Character semantics      | Submatch       | Substring              | Slice<Collection>              |
-| Unicode scalar semantics | Submatch       | Substring              | Slice <Collection>             |
-| Byte semantics           | Submatch.Bytes | Slice<String.UTF8View> | Slice <Collection>             |
-| Includes byte literal    | Submatch.Bytes | Slice<String.UTF8View> | Slice <Collection>             |
+| Unicode scalar semantics | Submatch       | Substring              | Slice<Collection>              |
+| Byte semantics           | Submatch.Bytes | Slice<String.UTF8View> | Slice<Collection>              |
+| Includes byte literal    | Submatch.Bytes | Slice<String.UTF8View> | Slice<Collection>              |
 
 ## Alternatives Considered
 
-### Match Unicode values with metacharacters by default
+### ASCII metacharacters by default
 
 When matching character classes like `\d` and `\w`, a regular expression could only match ASCII values by default, instead of the broader set of Unicode values. Since regular expressions are frequently only one part of a multi-step text processing chain, this constrained matching behavior would help ensure that a regex doesn't match substring that an author doesn't expect.
 
@@ -330,6 +365,10 @@ let allIntegers = text.allMatches(of: intRegex).map { Int($0)! }
 ```
 
 Our opinion is that it is preferable to have metacharacter matching follow the current semantic level within the regular expression. Users that need to match only ASCII characters can opt into that mode explicitly using the `a` flag, or can use custom character classes such as `[0-9]` instead.
+
+### Semantic mode pushing / popping
+
+As an alternative to allowing pushing and popping of the semantic mode, we could instead only allow "setting" the current mode. With this approach, `-X`, `-u` and `-C` would be disallowed flags, and the current semantic mode would continue until going out of scope or being changed.
 
 ## Future Directions
 
