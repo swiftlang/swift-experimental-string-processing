@@ -29,9 +29,6 @@ let package = Package(
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
-        .testTarget(
-            name: "UtilTests",
-            dependencies: ["_StringProcessing"]),
         .target(
             name: "_MatchingEngine",
             dependencies: [/*"_Unicode"*/]),
@@ -47,18 +44,9 @@ let package = Package(
         .testTarget(
             name: "RegexTests",
             dependencies: ["_StringProcessing", "Algorithms"]),
-        .testTarget(
-            name: "RegexDSLTests",
-            dependencies: ["_StringProcessing"]),
         .target(
             name: "Prototypes",
             dependencies: ["_MatchingEngine"]),
-        .testTarget(
-            name: "PEGTests",
-            dependencies: ["Prototypes"]),
-        .testTarget(
-            name: "PTCaRetTests",
-            dependencies: ["Prototypes"]),
         .target(
             name: "Algorithms",
             dependencies: ["_StringProcessing", "Prototypes"]),
