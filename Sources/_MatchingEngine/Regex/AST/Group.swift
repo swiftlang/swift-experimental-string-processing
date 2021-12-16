@@ -71,7 +71,7 @@ extension AST.Group.Kind: _ASTPrintable {
   public var _dumpBase: String {
     switch self {
     case .capture:             return "capture"
-    case .namedCapture(let s): return "capture<\(s)>"
+    case .namedCapture(let s): return "capture<\(s.value)>"
     case .nonCapture:          return "nonCapture"
     case .nonCaptureReset:     return "nonCaptureReset"
     case .atomicNonCapturing:  return "atomicNonCapturing"

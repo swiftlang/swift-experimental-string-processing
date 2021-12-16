@@ -53,8 +53,19 @@ extension CustomCC {
 
 extension CustomCC: _ASTNode {
   public var _dumpBase: String {
-    // FIXME: print out members...
-    "customCharacterClass"
+    "customCharacterClass(\(members))"
   }
 }
 
+extension CustomCC.Member: _ASTPrintable {
+  public var _dumpBase: String {
+    switch self {
+    case .custom(let cc): return "\(cc)"
+    case .atom(let a): return "\(a)"
+    case .range(let lhs, let rhs):
+      return "range \(lhs) to \(rhs)"
+    case .setOperation(let lhs, let op, let rhs):
+      return "op \(lhs) \(op.value) \(rhs)"
+    }
+  }
+}

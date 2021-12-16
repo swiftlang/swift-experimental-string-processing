@@ -57,6 +57,19 @@ func parseWithDelimitersTest(_ input: String, _ expecting: AST) {
   }
 }
 
+/// Make sure the AST for two regex strings get compared differently.
+func parseNotEqualTest(_ lhs: String, _ rhs: String,
+                       syntax: SyntaxOptions = .traditional) {
+  let lhsAST = try! parse(lhs, syntax)
+  let rhsAST = try! parse(rhs, syntax)
+  if lhsAST == rhsAST || lhsAST._dump() == rhsAST._dump() {
+    XCTFail("""
+              AST: \(lhsAST._dump())
+              Should not be equal to: \(rhsAST._dump())
+              """)
+  }
+}
+
 extension RegexTests {
   func testParse() {
     parseTest(
@@ -445,6 +458,24 @@ extension RegexTests {
 
     parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
     parseWithDelimitersTest("'|a b|'", concat("a", "b"))
+
+    // Make sure dumping output correctly reflects differences in AST.
+    parseNotEqualTest(#"abc"#, #"abd"#)
+
+    parseNotEqualTest(#"[abc[:space:]\d]+"#,
+                      #"[abc[:upper:]\d]+"#)
+
+    parseNotEqualTest(#"[abc[:space:]\d]+"#,
+                      #"[ac[:space:]\d]+"#)
+
+    parseNotEqualTest(#"[abc[:space:]\d]+"#,
+                      #"[acc[:space:]\s]+"#)
+
+    parseNotEqualTest(#"[abc[:space:]\d]+"#,
+                      #"[acc[:space:]\d]*"#)
+
+    parseNotEqualTest(#"([a-c&&e]*)+"#,
+                      #"([a-d&&e]*)+"#)
 
     // TODO: failure tests
   }

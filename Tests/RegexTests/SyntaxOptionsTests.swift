@@ -7,6 +7,8 @@ private let dplus = oneOrMore(
   .greedy, atom(.escaped(.decimalDigit)))
 private let dotAST = concat(
   dplus, ".", dplus, ".", dplus, ".", dplus)
+private let dotASTQuoted = concat(
+  dplus, quote("."), dplus, quote("."), dplus, quote("."), dplus)
 
 extension RegexTests {
 
@@ -42,7 +44,7 @@ extension RegexTests {
       dotAST, syntax: .modern)
     parseTest(
       #" \d+ "." \d+ "." \d+ "." \d+ "#,
-      dotAST, syntax: .modern)
+      dotASTQuoted, syntax: .modern)
   }
 
   func testModernRanges() {
