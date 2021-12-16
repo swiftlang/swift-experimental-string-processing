@@ -76,8 +76,14 @@ extension AST.Atom {
     case let .property(p):
       return p.generateConsumer(opts)
 
+    case let .namedCharacter(name):
+      return consumeScalarProp {
+        // TODO: alias? casing?
+        $0.name == name || $0.nameAlias == name
+      }
+
     case .escaped, .keyboardControl, .keyboardMeta, .keyboardMetaControl,
-        .namedCharacter, .any, .startOfLine, .endOfLine,
+        .any, .startOfLine, .endOfLine,
         .backreference, .subpattern, .condition:
       // FIXME: implement
       return nil
@@ -183,7 +189,17 @@ extension AST.CustomCharacterClass {
   }
 }
 
-// NOTE:
+// NOTE: Conveniences, though not most performant
+private func consumeScalarGC(
+  _ gc: Unicode.GeneralCategory
+) -> Program<String>.ConsumeFunction {
+  consumeScalar { gc == $0.properties.generalCategory }
+}
+private func consumeScalarGCs(
+  _ gcs: [Unicode.GeneralCategory]
+) -> Program<String>.ConsumeFunction {
+  consumeScalar { gcs.contains($0.properties.generalCategory) }
+}
 private func consumeScalarProp(
   _ p: @escaping (Unicode.Scalar.Properties) -> Bool
 ) -> Program<String>.ConsumeFunction {
@@ -247,7 +263,8 @@ extension AST.Atom.CharacterProperty {
         return consumeScalar(\.isASCII)
 
       case .generalCategory(let p):
-        fatalError("TODO: Map categories: \(p)")
+        return p.generateConsumer(opts)
+//        fatalError("TODO: Map categories: \(p)")
 
       case .binary(let prop, value: let value):
         let cons = prop.generateConsumer(opts)
@@ -434,28 +451,38 @@ extension Unicode.POSIXProperty {
   func generateConsumer(
     _ opts: CharacterClass.MatchLevel
   ) -> Program<String>.ConsumeFunction {
-    // FIXME: Below defs are incorrect or approximations
+    // FIXME: semantic levels, modes, etc
     switch self {
     case .alnum:
       return consumeScalarProp {
         $0.isAlphabetic || $0.numericType != nil
       }
     case .blank:
-      return consumeScalarProp(\.isWhitespace) // incorrect
+      return consumeScalar { s in
+        s.properties.generalCategory == .spaceSeparator ||
+        s == "\t"
+      }
 
     case .graph:
-      return consumeScalarProp {
-        !$0.isWhitespace // not control, unassigned, etc
+      return consumeScalarProp { p in
+        !(
+          p.isWhitespace ||
+          p.generalCategory == .control ||
+          p.generalCategory == .surrogate ||
+          p.generalCategory == .unassigned
+        )
       }
     case .print:
-      return consumeScalarProp {
-        _ in true // not control
+      return consumeScalarProp { p in
+        // FIXME: better def
+        p.generalCategory != .control
       }
     case .word:
-      return consumeScalarProp {
-        $0.isAlphabetic || $0.numericType != nil
-        || $0.isJoinControl
-        || $0.isDash// marks and connectors...
+      return consumeScalarProp { p in
+        // FIXME: better def
+        p.isAlphabetic || p.numericType != nil
+        || p.isJoinControl
+        || p.isDash// marks and connectors...
       }
 
     case .xdigit:
@@ -465,4 +492,119 @@ extension Unicode.POSIXProperty {
 
 }
 
+extension Unicode.ExtendedGeneralCategory {
+  // FIXME: Semantic level
+  func generateConsumer(
+    _ opts: CharacterClass.MatchLevel
+  ) -> Program<String>.ConsumeFunction {
+    switch self {
+    case .letter:
+      return consumeScalarGCs([
+        .uppercaseLetter, .lowercaseLetter,
+        .titlecaseLetter, .modifierLetter,
+        .otherLetter
+      ])
 
+    case .mark:
+      return consumeScalarGCs([
+        .nonspacingMark, .spacingMark, .enclosingMark
+      ])
+
+    case .number:
+      return consumeScalarGCs([
+        .decimalNumber, .letterNumber, .otherNumber
+      ])
+
+    case .symbol:
+      return consumeScalarGCs([
+        .mathSymbol, .currencySymbol, .modifierSymbol,
+        .otherSymbol
+      ])
+
+    case .punctuation:
+      return consumeScalarGCs([
+        .connectorPunctuation, .dashPunctuation,
+        .openPunctuation, .closePunctuation,
+        .initialPunctuation, .finalPunctuation,
+        .otherPunctuation
+      ])
+
+    case .separator:
+      return consumeScalarGCs([
+        .spaceSeparator, .lineSeparator, .paragraphSeparator
+      ])
+
+    case .other:
+      return consumeScalarGCs([
+        .control, .format, .surrogate, .privateUse, .unassigned
+      ])
+
+    case .casedLetter:
+      fatalError("TODO: cased letter? not the property?")
+
+    case .control:
+      return consumeScalarGC(.control)
+    case .format:
+      return consumeScalarGC(.format)
+    case .unassigned:
+      return consumeScalarGC(.unassigned)
+    case .privateUse:
+      return consumeScalarGC(.privateUse)
+    case .surrogate:
+      return consumeScalarGC(.surrogate)
+    case .lowercaseLetter:
+      return consumeScalarGC(.lowercaseLetter)
+    case .modifierLetter:
+      return consumeScalarGC(.modifierLetter)
+    case .otherLetter:
+      return consumeScalarGC(.otherLetter)
+    case .titlecaseLetter:
+      return consumeScalarGC(.titlecaseLetter)
+    case .uppercaseLetter:
+      return consumeScalarGC(.uppercaseLetter)
+    case .spacingMark:
+      return consumeScalarGC(.spacingMark)
+    case .enclosingMark:
+      return consumeScalarGC(.enclosingMark)
+    case .nonspacingMark:
+      return consumeScalarGC(.nonspacingMark)
+    case .decimalNumber:
+      return consumeScalarGC(.decimalNumber)
+    case .letterNumber:
+      return consumeScalarGC(.letterNumber)
+    case .otherNumber:
+      return consumeScalarGC(.otherNumber)
+    case .connectorPunctuation:
+      return consumeScalarGC(.connectorPunctuation)
+    case .dashPunctuation:
+      return consumeScalarGC(.dashPunctuation)
+    case .closePunctuation:
+      return consumeScalarGC(.closePunctuation)
+    case .finalPunctuation:
+      return consumeScalarGC(.finalPunctuation)
+    case .initialPunctuation:
+      return consumeScalarGC(.initialPunctuation)
+    case .otherPunctuation:
+      return consumeScalarGC(.otherPunctuation)
+    case .openPunctuation:
+      return consumeScalarGC(.openPunctuation)
+    case .currencySymbol:
+      return consumeScalarGC(.currencySymbol)
+    case .modifierSymbol:
+      return consumeScalarGC(.modifierSymbol)
+    case .mathSymbol:
+      return consumeScalarGC(.mathSymbol)
+    case .otherSymbol:
+      return consumeScalarGC(.otherSymbol)
+    case .lineSeparator:
+      return consumeScalarGC(.lineSeparator)
+    case .paragraphSeparator:
+      return consumeScalarGC(.paragraphSeparator)
+    case .spaceSeparator:
+      return consumeScalarGC(.spaceSeparator)
+    }
+
+
+  }
+
+}

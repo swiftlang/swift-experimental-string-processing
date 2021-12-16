@@ -187,11 +187,21 @@ class Compiler {
       emit(child)
       builder.label(end)
 
-    case (.exactly, _),
-         (.nOrMore, _),
-         (.upToN, _),
-         (.range, _),
-         (_, .possessive):
+    // Exactly: {n}
+    //
+    //
+    //
+    //
+    case (.exactly(let n), _):
+      // FIXME: This works, but better to emit a loop
+      for _ in 0..<n.value {
+        emit(child)
+      }
+
+      case (.nOrMore, _),
+      (.upToN, _),
+      (.range, _),
+      (_, .possessive):
       fatalError("Not yet supported")
     }
   }

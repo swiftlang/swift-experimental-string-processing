@@ -187,37 +187,43 @@ extension RegexTests {
 
     matchTest(
       #"[ab[:space:]\d[:^upper:]cd]"#,
-      input: "123abcxyz", match: "1", xfail: true)
+      input: "123abcxyz", match: "1")
     matchTest(
       #"[ab[:space:]\d[:^upper:]cd]"#,
-      input: "xyzabc123", match: "x", xfail: true)
+      input: "xyzabc123", match: "x")
     matchTest(
       #"[ab[:space:]\d[:^upper:]cd]"#,
-      input: "XYZabc123", match: "a", xfail: true)
+      input: "XYZabc123", match: "a")
     matchTest(
       #"[ab[:space:]\d[:^upper:]cd]"#,
-      input: "XYZ abc123", match: " ", xfail: true)
+      input: "XYZ abc123", match: " ")
 
-    matchTest("[[[:space:]]]", input: "123 abc xyz", match: " ", xfail: true)
+    matchTest("[[[:space:]]]", input: "123 abc xyz", match: " ")
 
-    matchTest("[[:alnum:]]", input: "[[:alnum:]]", match: "a", xfail: true)
-    matchTest("[[:blank:]]", input: "123\tabc xyz", match: "\t", xfail: true)
+    matchTest("[[:alnum:]]", input: "[[:alnum:]]", match: "a")
+    matchTest("[[:blank:]]", input: "123\tabc xyz", match: "\t")
+
     matchTest(
       "[[:graph:]]",
-      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a", xfail: true)
+      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
     matchTest(
       "[[:print:]]",
-      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: " ", xfail: true)
+      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: " ")
+
     matchTest(
       "[[:word:]]",
-      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a", xfail: true)
+      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
     matchTest(
       "[[:xdigit:]]",
-      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a", xfail: true)
+      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
 
-    matchTest("[[:isALNUM:]]", input: "[[:alnum:]]", match: "a", xfail: true)
-    matchTest("[[:AL_NUM:]]", input: "[[:alnum:]]", match: "a", xfail: true)
-    matchTest("[[:script=Greek:]]", input: "123αβγxyz", match: "α", xfail: true)
+    matchTest("[[:isALNUM:]]", input: "[[:alnum:]]", match: "a")
+    matchTest("[[:AL_NUM:]]", input: "[[:alnum:]]", match: "a")
+
+    // Unfortunately, scripts are not part of stdlib...
+    matchTest(
+      "[[:script=Greek:]]", input: "123αβγxyz", match: "α",
+      xfail: true)
 
     // MARK: Operators
 
@@ -250,12 +256,12 @@ extension RegexTests {
 
     // MARK: Character names.
 
-    matchTest(#"\N{ASTERISK}"#, input: "123***xyz", match: "*", xfail: true)
-    matchTest(#"[\N{ASTERISK}]"#, input: "123***xyz", match: "*", xfail: true)
+    matchTest(#"\N{ASTERISK}"#, input: "123***xyz", match: "*")
+    matchTest(#"[\N{ASTERISK}]"#, input: "123***xyz", match: "*")
     matchTest(
-      #"\N{ASTERISK}+"#, input: "123***xyz", match: "***", xfail: true)
+      #"\N{ASTERISK}+"#, input: "123***xyz", match: "***")
     matchTest(
-      #"\N {2}"#, input: "123  xyz", match: "3  ", xfail: true)
+      #"\N {2}"#, input: "123  xyz", match: "3  ")
 
     matchTest(#"\N{U+2C}"#, input: "123,xyz", match: ",")
     matchTest(#"\N{U+1F4BF}"#, input: "123💿xyz", match: "💿")
@@ -263,97 +269,142 @@ extension RegexTests {
 
     // MARK: Character properties.
 
-    matchTest(#"\p{L}"#, input: "123abcXYZ", match: "a", xfail: true)
-    matchTest(#"\p{gc=L}"#, input: "123abcXYZ", match: "a", xfail: true)
-    matchTest(#"\p{Lu}"#, input: "123abcXYZ", match: "X", xfail: true)
-    matchTest(#"\P{Cc}"#, input: "123\n\n\nXYZ", match: "\n", xfail: true)
-    matchTest(#"\P{Z}"#, input: "123 XYZ", match: " ", xfail: true)
+    matchTest(#"\p{L}"#, input: "123abcXYZ", match: "a")
+    matchTest(#"\p{gc=L}"#, input: "123abcXYZ", match: "a")
+    matchTest(#"\p{Lu}"#, input: "123abcXYZ", match: "X")
 
-    matchTest(#"[\p{C}]"#, input: "123\n\n\nXYZ", match: "\n", xfail: true)
-    matchTest(#"\p{C}+"#, input: "123\n\n\nXYZ", match: "\n\n\n", xfail: true)
+    // TODO: diagnose
+    matchTest(
+      #"\P{Cc}"#, input: "123\n\n\nXYZ", match: "\n",
+      xfail: true)
+    matchTest(
+      #"\P{Z}"#, input: "123 XYZ", match: " ",
+      xfail: true)
+
+    matchTest(#"[\p{C}]"#, input: "123\n\n\nXYZ", match: "\n")
+    matchTest(#"\p{C}+"#, input: "123\n\n\nXYZ", match: "\n\n\n")
 
     // UAX44-LM3 means all of the below are equivalent.
-    matchTest(#"\p{ll}"#, input: "123abcXYZ", match: "a", xfail: true)
-    matchTest(#"\p{gc=ll}"#, input: "123abcXYZ", match: "a", xfail: true)
+    matchTest(#"\p{ll}"#, input: "123abcXYZ", match: "a")
+    matchTest(#"\p{gc=ll}"#, input: "123abcXYZ", match: "a")
     matchTest(
-      #"\p{General_Category=Ll}"#, input: "123abcXYZ", match: "a", xfail: true)
+      #"\p{General_Category=Ll}"#, input: "123abcXYZ", match: "a")
     matchTest(
       #"\p{General-Category=isLl}"#,
-      input: "123abcXYZ", match: "a", xfail: true)
-    matchTest(#"\p{  __l_ l  _ }"#, input: "123abcXYZ", match: "a", xfail: true)
+      input: "123abcXYZ", match: "a")
+    matchTest(#"\p{  __l_ l  _ }"#, input: "123abcXYZ", match: "a")
     matchTest(
-      #"\p{ g_ c =-  __l_ l  _ }"#, input: "123abcXYZ", match: "a", xfail: true)
+      #"\p{ g_ c =-  __l_ l  _ }"#, input: "123abcXYZ", match: "a")
     matchTest(
       #"\p{ general ca-tegory =  __l_ l  _ }"#,
-      input: "123abcXYZ", match: "a", xfail: true)
+      input: "123abcXYZ", match: "a")
     matchTest(
       #"\p{- general category =  is__l_ l  _ }"#,
-      input: "123abcXYZ", match: "a", xfail: true)
+      input: "123abcXYZ", match: "a")
     matchTest(
       #"\p{ general category -=  IS__l_ l  _ }"#,
-      input: "123abcXYZ", match: "a", xfail: true)
+      input: "123abcXYZ", match: "a")
 
-    matchTest(#"\p{Any}"#, input: "123abcXYZ", match: "1", xfail: true)
-    matchTest(#"\p{Assigned}"#, input: "123abcXYZ", match: "1", xfail: true)
-    matchTest(#"\p{ascii}"#, input: "123abcXYZ", match: "1", xfail: true)
-    matchTest(#"\p{isAny}"#, input: "123abcXYZ", match: "1", xfail: true)
+    matchTest(#"\p{Any}"#, input: "123abcXYZ", match: "1")
+    matchTest(#"\p{Assigned}"#, input: "123abcXYZ", match: "1")
+    matchTest(#"\p{ascii}"#, input: "123abcXYZ", match: "1")
+    matchTest(#"\p{isAny}"#, input: "123abcXYZ", match: "1")
 
-    matchTest(#"\p{sc=grek}"#, input: "123αβγxyz", match: "α", xfail: true)
-    matchTest(#"\p{sc=isGreek}"#, input: "123αβγxyz", match: "α", xfail: true)
-    matchTest(#"\p{Greek}"#, input: "123αβγxyz", match: "α", xfail: true)
-    matchTest(#"\p{isGreek}"#, input: "123αβγxyz", match: "α", xfail: true)
-    matchTest(#"\P{Script=Latn}"#, input: "abcαβγxyz", match: "α", xfail: true)
-    matchTest(#"\p{script=Greek}"#, input: "123αβγxyz", match: "α", xfail: true)
+    // Unfortunately, scripts are not part of stdlib...
     matchTest(
-      #"\p{ISscript=isGreek}"#, input: "123αβγxyz", match: "α", xfail: true)
-    matchTest(#"\p{scx=bamum}"#, input: "123ꚠꚡꚢxyz", match: "ꚠ", xfail: true)
-    matchTest(#"\p{ISBAMUM}"#, input: "123ꚠꚡꚢxyz", match: "ꚠ", xfail: true)
-
-    matchTest(#"\p{alpha}"#, input: "123abcXYZ", match: "a", xfail: true)
-    matchTest(#"\P{alpha}"#, input: "123abcXYZ", match: "1", xfail: true)
+      #"\p{sc=grek}"#, input: "123αβγxyz", match: "α",
+      xfail: true)
     matchTest(
-      #"\p{alphabetic=True}"#, input: "123abcXYZ", match: "a", xfail: true)
-    matchTest(#"\p{emoji=t}"#, input: "123💿xyz", match: "a", xfail: true)
-    matchTest(#"\p{Alpha=no}"#, input: "123abcXYZ", match: "1", xfail: true)
-    matchTest(#"\P{Alpha=no}"#, input: "123abcXYZ", match: "a", xfail: true)
-    matchTest(#"\p{isAlphabetic}"#, input: "123abcXYZ", match: "a", xfail: true)
+      #"\p{sc=isGreek}"#, input: "123αβγxyz", match: "α",
+      xfail: true)
     matchTest(
-      #"\p{isAlpha=isFalse}"#, input: "123abcXYZ", match: "1", xfail: true)
+      #"\p{Greek}"#, input: "123αβγxyz", match: "α",
+      xfail: true)
+    matchTest(
+      #"\p{isGreek}"#, input: "123αβγxyz", match: "α",
+      xfail: true)
+    matchTest(
+      #"\P{Script=Latn}"#, input: "abcαβγxyz", match: "α",
+      xfail: true)
+    matchTest(
+      #"\p{script=Greek}"#, input: "123αβγxyz", match: "α",
+      xfail: true)
+    matchTest(
+      #"\p{ISscript=isGreek}"#, input: "123αβγxyz", match: "α",
+      xfail: true)
+    matchTest(
+      #"\p{scx=bamum}"#, input: "123ꚠꚡꚢxyz", match: "ꚠ",
+      xfail: true)
+    matchTest(
+      #"\p{ISBAMUM}"#, input: "123ꚠꚡꚢxyz", match: "ꚠ",
+      xfail: true)
 
-    matchTest(#"\p{In_Runic}"#, input: "123ᚠᚡᚢXYZ", match: "ᚠ", xfail: true)
+    matchTest(#"\p{alpha}"#, input: "123abcXYZ", match: "a")
+    matchTest(#"\P{alpha}"#, input: "123abcXYZ", match: "1")
+    matchTest(
+      #"\p{alphabetic=True}"#, input: "123abcXYZ", match: "a")
 
-    matchTest(#"\p{Xan}"#, input: "[[:alnum:]]", match: "a", xfail: true)
-    matchTest(#"\p{Xps}"#, input: "123 abc xyz", match: " ", xfail: true)
-    matchTest(#"\p{Xsp}"#, input: "123 abc xyz", match: " ", xfail: true)
-    matchTest(#"\p{Xuc}"#, input: "$var", match: "$", xfail: true)
-    matchTest(#"\p{Xwd}"#, input: "[[:alnum:]]", match: "a", xfail: true)
+    // This is actually available-ed...
+    matchTest(
+      #"\p{emoji=t}"#, input: "123💿xyz", match: "a",
+      xfail: true)
 
-    matchTest(#"\p{alnum}"#, input: "[[:alnum:]]", match: "a", xfail: true)
-    matchTest(#"\p{is_alnum}"#, input: "[[:alnum:]]", match: "a", xfail: true)
-    matchTest(#"\p{blank}"#, input: "123\tabc xyz", match: "\t", xfail: true)
+    matchTest(#"\p{Alpha=no}"#, input: "123abcXYZ", match: "1")
+    matchTest(#"\P{Alpha=no}"#, input: "123abcXYZ", match: "a")
+    matchTest(#"\p{isAlphabetic}"#, input: "123abcXYZ", match: "a")
+    matchTest(
+      #"\p{isAlpha=isFalse}"#, input: "123abcXYZ", match: "1")
+
+    // Oniguruma special support not in stdlib
+    matchTest(
+      #"\p{In_Runic}"#, input: "123ᚠᚡᚢXYZ", match: "ᚠ",
+    xfail: true)
+
+    // TODO: PCRE special
+    matchTest(
+      #"\p{Xan}"#, input: "[[:alnum:]]", match: "a",
+      xfail: true)
+    matchTest(
+      #"\p{Xps}"#, input: "123 abc xyz", match: " ",
+      xfail: true)
+    matchTest(
+      #"\p{Xsp}"#, input: "123 abc xyz", match: " ",
+      xfail: true)
+    matchTest(
+      #"\p{Xuc}"#, input: "$var", match: "$",
+      xfail: true)
+    matchTest(
+      #"\p{Xwd}"#, input: "[[:alnum:]]", match: "a",
+      xfail: true)
+
+    matchTest(#"\p{alnum}"#, input: "[[:alnum:]]", match: "a")
+    matchTest(#"\p{is_alnum}"#, input: "[[:alnum:]]", match: "a")
+
+    matchTest(#"\p{blank}"#, input: "123\tabc xyz", match: "\t")
     matchTest(
       #"\p{graph}"#,
-      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a", xfail: true)
+      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
+
     matchTest(
       #"\p{print}"#,
-      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: " ", xfail: true)
+      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: " ")
     matchTest(
       #"\p{word}"#,
-      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a", xfail: true)
+      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
     matchTest(
       #"\p{xdigit}"#,
-      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a", xfail: true)
+      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
 
-    matchTest("[[:alnum:]]", input: "[[:alnum:]]", match: "a", xfail: true)
-    matchTest("[[:blank:]]", input: "123\tabc xyz", match: "\t", xfail: true)
+    matchTest("[[:alnum:]]", input: "[[:alnum:]]", match: "a")
+    matchTest("[[:blank:]]", input: "123\tabc xyz", match: "\t")
     matchTest("[[:graph:]]",
-      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a", xfail: true)
+      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
     matchTest("[[:print:]]",
-      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: " ", xfail: true)
+      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: " ")
     matchTest("[[:word:]]",
-      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a", xfail: true)
+      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
     matchTest("[[:xdigit:]]",
-      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a", xfail: true)
+      input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
   }
 
   func testMatchGroups() {
