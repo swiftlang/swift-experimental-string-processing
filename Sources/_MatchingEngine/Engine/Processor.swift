@@ -32,7 +32,7 @@ struct Processor<
   var registers: Registers
 
   // Used for back tracking
-  var savePoints: [(SavePoint, stackEnd: Int)] = []
+  var savePoints: [SavePoint] = []
 
   var callStack: [InstructionAddress] = []
 
@@ -52,9 +52,14 @@ extension Processor {
   struct SavePoint {
     var pc: InstructionAddress
     var pos: Position?
+    var stackEnd: Int
 
-    var destructure: (pc: InstructionAddress, pos: Position?) {
-      (pc, pos)
+    var destructure: (
+      pc: InstructionAddress,
+      pos: Position?,
+      stackEnd: Int
+    ) {
+      (pc, pos, stackEnd)
     }
   }
 }
@@ -90,13 +95,17 @@ extension Processor {
 
 extension Processor {
   // Advance in our input
-  mutating func consume(_ n: Distance) {
+  //
+  // Returns whether the advance succeeded. On failure, our 
+  // save point was restored
+  mutating func consume(_ n: Distance) -> Bool {
     // Want Collection to provide this behavior...
     if input.distance(from: currentPosition, to: end) < n.rawValue {
       signalFailure()
-      return
+      return false
     }
     currentPosition = input.index(currentPosition, offsetBy: n.rawValue)
+    return true
   }
 
   mutating func advance(to nextIndex: Input.Index) {
@@ -118,13 +127,14 @@ extension Processor {
   }
 
   mutating func signalFailure() {
-    guard let (thread, stackEnd) = savePoints.popLast() else {
+    guard let (pc, pos, stackEnd) = savePoints.popLast()?.destructure
+    else {
       state = .fail
       return
     }
     assert(stackEnd <= callStack.count)
-    controller.pc = thread.pc
-    currentPosition = thread.pos ?? currentPosition
+    controller.pc = pc
+    currentPosition = pos ?? currentPosition
     callStack.removeLast(callStack.count - stackEnd)
   }
 
@@ -152,6 +162,7 @@ extension Processor {
       _checkInvariants()
     }
     let (opcode, operand) = fetch().destructure
+
     switch opcode {
     case .invalid:
       fatalError("Invalid program")
@@ -172,13 +183,17 @@ extension Processor {
       }
 
     case .save:
-      savePoints.append(
-        (SavePoint(pc: operand.payload(), pos: currentPosition), callStack.count))
+      savePoints.append(SavePoint(
+        pc: operand.payload(),
+        pos: currentPosition,
+        stackEnd: callStack.count))
       controller.step()
 
     case .saveAddress:
-      savePoints.append(
-        (SavePoint(pc: operand.payload(), pos: nil), callStack.count))
+      savePoints.append(SavePoint(
+        pc: operand.payload(),
+        pos: nil,
+        stackEnd: callStack.count))
       controller.step()
 
     case .clear:
@@ -225,8 +240,9 @@ extension Processor {
       signalFailure()
 
     case .consume:
-      consume(operand.payload(as: Distance.self))
-      controller.step()
+      if consume(operand.payload(as: Distance.self)) {
+       controller.step()
+      }
 
     case .match:
       let reg = operand.payload(as: ElementRegister.self)
@@ -234,8 +250,9 @@ extension Processor {
         signalFailure()
         return
       }
-      consume(1)
-      controller.step()
+      if consume(1) {
+        controller.step()
+      }
 
     case .consumeBy:
       let reg = operand.payload(as: ConsumeFunctionRegister.self)
@@ -265,4 +282,3 @@ extension Processor {
     }
   }
 }
-
