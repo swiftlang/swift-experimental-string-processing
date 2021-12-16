@@ -28,17 +28,16 @@ class Compiler {
   }
 
   func emit(_ node: AST) {
+
     switch node {
     // Any: .
     //     consume 1
     case .atom(let a) where a.kind == .any && matchLevel == .graphemeCluster:
       builder.buildConsume(1)
 
-    case let n where n.characterClass != nil:
-      let cc = n.characterClass!.withMatchLevel(matchLevel)
-      builder.buildConsume { input, bounds in
-        cc.matches(in: input, at: bounds.lowerBound)
-      }
+    // Single characters we just match
+    case .atom(let a) where a.singleCharacter != nil :
+      builder.buildMatch(a.singleCharacter!)
 
     // Alternation: p0 | p1 | ... | pn
     //     save next_p1
@@ -72,19 +71,6 @@ class Compiler {
     case .groupTransform(let g, _):
       emit(g.child)
 
-    case .atom(let a):
-      switch a.kind {
-      case .char(let ch):
-        builder.buildMatch(ch)
-      case .scalar(let scalar):
-        builder.buildConsume { input, bounds in
-          input.unicodeScalars[bounds.lowerBound] == scalar
-          ? input.unicodeScalars.index(after: bounds.lowerBound)
-          : nil
-        }
-      default:
-        fatalError("Unsupported: \(a._dumpBase)")
-      }
 
     case .concatenation(let concat):
       concat.children.forEach(emit)
@@ -99,7 +85,13 @@ class Compiler {
     case .quantification(let quant):
       emitQuantification(quant)
 
-    case .quote, .customCharacterClass:
+    // For now, we model sets and atoms as consumers.
+    // This lets us rapidly expand support, and we can better
+    // design the actual instruction set with real examples
+    case _ where node.generateConsumer(matchLevel) != nil:
+      builder.buildConsume(by: node.generateConsumer(matchLevel)!)
+
+    case .quote, .customCharacterClass, .atom:
       fatalError("FIXME")
     }
   }

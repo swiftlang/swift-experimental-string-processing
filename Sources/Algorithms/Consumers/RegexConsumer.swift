@@ -5,7 +5,7 @@ import _StringProcessing
 public struct Regex {
   let string: String
   let options: REOptions
-  
+
   public init(_ string: String, options: REOptions = .none) {
     self.string = string
     self.options = options
@@ -13,8 +13,8 @@ public struct Regex {
 }
 
 public struct RegexConsumer: CollectionConsumer {
-  // NOTE: existential
-  let vm: Executor
+  // TODO: consider let, for now lets us toggle tracing
+  var vm: Executor
 
   public init(_ regex: Regex) {
     self.vm = _compileRegex(regex.string)

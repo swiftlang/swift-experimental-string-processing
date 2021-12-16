@@ -1,7 +1,8 @@
 import _MatchingEngine
 
 public struct Executor {
-  let engine: Engine<String>
+  // TODO: consider let, for now lets us toggle tracing
+  var engine: Engine<String>
 
   init(program: RegexProgram, enablesTracing: Bool = false) {
     self.engine = Engine(program.program, enableTracing: enablesTracing)
