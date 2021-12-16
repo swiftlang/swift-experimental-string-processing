@@ -373,39 +373,51 @@ extension AST.Atom.EscapedBuiltin {
 
 extension AST.CustomCharacterClass {
   /// The model character class for this custom character class.
-  var modelCharacterClass: CharacterClass {
+  var modelCharacterClass: CharacterClass? {
     typealias Component = CharacterClass.CharacterSetComponent
-    func getComponents(_ members: [Member]) -> [Component] {
-      members.map { m in
+    func getComponents(_ members: [Member]) -> [Component]? {
+      var result = Array<Component>()
+      for m in members {
         switch m {
         case .custom(let cc):
-          return .characterClass(cc.modelCharacterClass)
+          guard let cc = cc.modelCharacterClass else {
+            return nil
+          }
+          result.append(.characterClass(cc))
         case .range(let lhs, let rhs):
-          return .range(
-            lhs.literalCharacterValue! ... rhs.literalCharacterValue!
-          )
-        case .atom(let a) where a.characterClass != nil:
-          return .characterClass(a.characterClass!)
+          result.append(.range(
+            lhs.literalCharacterValue! ...
+            rhs.literalCharacterValue!))
+
+        case .atom(let a):
+          if let cc = a.characterClass {
+            result.append(.characterClass(cc))
+          } else if let lit = a.literalCharacterValue {
+            result.append(.character(lit))
+          } else {
+            return nil
+          }
         case .setOperation(let lhs, let op, let rhs):
           // FIXME: CharacterClass wasn't designed for set operations with
           // multiple components in each operand, we should fix that. For now,
           // just produce custom components.
-          return .setOperation(
-            .init(
-              lhs: .characterClass(
-                .custom(getComponents(lhs))), op: op.value,
-              rhs: .characterClass(
-                .custom(getComponents(rhs))))
-          )
-
-        case .atom(let a) where a.literalCharacterValue != nil:
-          return .character(a.literalCharacterValue!)
-
-        case .atom: fatalError("TODO")
+          guard let lhs = getComponents(lhs),
+                let rhs = getComponents(rhs)
+          else {
+            return nil
+          }
+          result.append(.setOperation(.init(
+            lhs: .characterClass(.custom(lhs)),
+            op: op.value,
+            rhs: .characterClass(.custom(rhs)))))
         }
       }
+      return result
     }
-    let cc = CharacterClass.custom(getComponents(members))
+    guard let comps = getComponents(members) else {
+      return nil
+    }
+    let cc = CharacterClass.custom(comps)
     return self.isInverted ? cc.inverted : cc
   }
 }

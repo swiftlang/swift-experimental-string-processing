@@ -21,24 +21,23 @@ class Compiler {
     self.options = options
   }
 
-  __consuming func emit() -> RegexProgram {
-    emit(ast)
+  __consuming func emit() throws -> RegexProgram {
+    try emit(ast)
     builder.buildAccept()
     return RegexProgram(program: builder.assemble())
   }
 
-  func emit(_ node: AST) {
+  func emit(_ node: AST) throws {
+
     switch node {
     // Any: .
     //     consume 1
     case .atom(let a) where a.kind == .any && matchLevel == .graphemeCluster:
       builder.buildConsume(1)
 
-    case let n where n.characterClass != nil:
-      let cc = n.characterClass!.withMatchLevel(matchLevel)
-      builder.buildConsume { input, bounds in
-        cc.matches(in: input, at: bounds.lowerBound)
-      }
+    // Single characters we just match
+    case .atom(let a) where a.singleCharacter != nil :
+      builder.buildMatch(a.singleCharacter!)
 
     // Alternation: p0 | p1 | ... | pn
     //     save next_p1
@@ -61,50 +60,43 @@ class Compiler {
       for component in alt.children.dropLast() {
         let next = builder.makeAddress()
         builder.buildSave(next)
-        emit(component)
+        try emit(component)
         builder.buildBranch(to: done)
         builder.label(next)
       }
-      emit(alt.children.last!)
+      try emit(alt.children.last!)
       builder.label(done)
 
     // FIXME: Wait, how does this work?
     case .groupTransform(let g, _):
-      emit(g.child)
+      try emit(g.child)
 
-    case .atom(let a):
-      switch a.kind {
-      case .char(let ch):
-        builder.buildMatch(ch)
-      case .scalar(let scalar):
-        builder.buildConsume { input, bounds in
-          input.unicodeScalars[bounds.lowerBound] == scalar
-          ? input.unicodeScalars.index(after: bounds.lowerBound)
-          : nil
-        }
-      default:
-        fatalError("Unsupported: \(a._dumpBase)")
-      }
 
     case .concatenation(let concat):
-      concat.children.forEach(emit)
+      try concat.children.forEach(emit)
 
     case .trivia, .empty:
       break
 
     // FIXME: This can't be right...
     case .group(let g):
-      emit(g.child)
+      try emit(g.child)
 
     case .quantification(let quant):
-      emitQuantification(quant)
+      try emitQuantification(quant)
 
-    case .quote, .customCharacterClass:
-      fatalError("FIXME")
+    // For now, we model sets and atoms as consumers.
+    // This lets us rapidly expand support, and we can better
+    // design the actual instruction set with real examples
+    case _ where try node.generateConsumer(matchLevel) != nil:
+      try builder.buildConsume(by: node.generateConsumer(matchLevel)!)
+
+    case .quote, .customCharacterClass, .atom:
+      throw unsupported(node._dumpBase)
     }
   }
 
-  func emitQuantification(_ quant: AST.Quantification) {
+  func emitQuantification(_ quant: AST.Quantification) throws {
     let child = quant.child
     switch (quant.amount.value, quant.kind.value) {
     // Lazy zero or more: *?
@@ -123,7 +115,7 @@ class Compiler {
       builder.buildSave(element)
       builder.buildBranch(to: after)
       builder.label(element)
-      emit(child)
+      try emit(child)
       builder.buildBranch(to: start)
       builder.label(after)
 
@@ -136,7 +128,7 @@ class Compiler {
       let element = builder.makeAddress()
       let after = builder.makeAddress()
       builder.label(element)
-      emit(child)
+      try emit(child)
       builder.buildSave(element)
       builder.label(after)
 
@@ -152,7 +144,7 @@ class Compiler {
       builder.buildSave(element)
       builder.buildBranch(to: after)
       builder.label(element)
-      emit(child)
+      try emit(child)
       builder.label(after)
 
     // Zero or more: *
@@ -166,7 +158,7 @@ class Compiler {
       let start = builder.makeAddress()
       builder.label(start)
       builder.buildSave(end)
-      emit(child)
+      try emit(child)
       builder.buildBranch(to: start)
       builder.label(end)
 
@@ -180,7 +172,7 @@ class Compiler {
       let element = builder.makeAddress()
       let end = builder.makeAddress()
       builder.label(element)
-      emit(child)
+      try emit(child)
       builder.buildSave(end)
       builder.buildBranch(to: element)
       builder.label(end)
@@ -192,14 +184,24 @@ class Compiler {
     case (.zeroOrOne, .greedy):
       let end = builder.makeAddress()
       builder.buildSave(end)
-      emit(child)
+      try emit(child)
       builder.label(end)
 
-    case (.exactly, _),
-         (.nOrMore, _),
-         (.upToN, _),
-         (.range, _),
-         (_, .possessive):
+    // Exactly: {n}
+    //
+    //
+    //
+    //
+    case (.exactly(let n), _):
+      // FIXME: This works, but better to emit a loop
+      for _ in 0..<n.value {
+        try emit(child)
+      }
+
+      case (.nOrMore, _),
+      (.upToN, _),
+      (.range, _),
+      (_, .possessive):
       fatalError("Not yet supported")
     }
   }
@@ -207,9 +209,9 @@ class Compiler {
 
 public func _compileRegex(
   _ regex: String, _ syntax: SyntaxOptions = .traditional
-) -> Executor {
-  let ast = try! parse(regex, .traditional)
-  let program = Compiler(ast: ast).emit()
+) throws -> Executor {
+  let ast = try parse(regex, .traditional)
+  let program = try Compiler(ast: ast).emit()
   return Executor(program: program)
 }
 

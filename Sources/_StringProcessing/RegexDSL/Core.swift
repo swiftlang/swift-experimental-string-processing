@@ -27,7 +27,7 @@ public struct Regex<Capture>: RegexProtocol {
       }
     }()
     /// The program for execution with the matching engine.
-    lazy private(set) var loweredProgram = Compiler(ast: ast).emit()
+    lazy private(set) var loweredProgram = try! Compiler(ast: ast).emit()
 
     init(ast: AST) {
       self.ast = ast
