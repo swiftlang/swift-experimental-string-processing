@@ -275,4 +275,13 @@ public func parse<S: StringProtocol>(
   return try parser.parse()
 }
 
+/// Parse a given regex string with delimiters, inferring the syntax options
+/// from the delimiter used.
+public func parseWithDelimiters<S: StringProtocol>(
+  _ regex: S
+) throws -> AST where S.SubSequence == Substring {
+  let (contents, delim) = droppingRegexDelimiters(String(regex))
+  return try parse(contents, delim.defaultSyntaxOptions)
+}
+
 extension String: Error {}
