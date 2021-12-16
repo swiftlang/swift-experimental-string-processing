@@ -47,6 +47,15 @@ public struct Regex<Capture>: RegexProtocol {
     self.init(ast: try! parse(pattern, .traditional))
   }
 
+  // Compiler interface. Do not change independently.
+  @usableFromInline
+  init(_regexString pattern: String, version: Int) {
+    assert(version == currentRegexLiteralFormatVersion)
+    // The version argument is passed by the compiler using the value defined
+    // in libswiftParseRegexLiteral.
+    self.init(ast: try! parseWithDelimiters(pattern))
+  }
+
   public init<Content: RegexProtocol>(
     _ content: Content
   ) where Content.Capture == Capture {
