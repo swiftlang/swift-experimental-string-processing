@@ -57,6 +57,19 @@ func parseWithDelimitersTest(_ input: String, _ expecting: AST) {
   }
 }
 
+/// Make sure the AST for two regex strings get compared differently.
+func parseNotEqualTest(_ lhs: String, _ rhs: String,
+                       syntax: SyntaxOptions = .traditional) {
+  let lhsAST = try! parse(lhs, syntax)
+  let rhsAST = try! parse(rhs, syntax)
+  if lhsAST == rhsAST || lhsAST._dump() == rhsAST._dump() {
+    XCTFail("""
+              AST: \(lhsAST._dump())
+              Should not be equal to: \(rhsAST._dump())
+              """)
+  }
+}
+
 extension RegexTests {
   func testParse() {
     parseTest(
@@ -193,6 +206,16 @@ extension RegexTests {
     parseTest("[[:print:]]", charClass(posixProp_m(.posix(.print))))
     parseTest("[[:word:]]", charClass(posixProp_m(.posix(.word))))
     parseTest("[[:xdigit:]]", charClass(posixProp_m(.posix(.xdigit))))
+
+    parseTest("[[:ascii:]]", charClass(posixProp_m(.ascii)))
+    parseTest("[[:cntrl:]]", charClass(posixProp_m(.generalCategory(.control))))
+    parseTest("[[:digit:]]", charClass(posixProp_m(.generalCategory(.decimalNumber))))
+    parseTest("[[:lower:]]", charClass(posixProp_m(.binary(.lowercase))))
+    parseTest("[[:punct:]]", charClass(posixProp_m(.generalCategory(.punctuation))))
+    parseTest("[[:space:]]", charClass(posixProp_m(.binary(.whitespace))))
+    parseTest("[[:upper:]]", charClass(posixProp_m(.binary(.uppercase))))
+
+    parseTest("[[:UPPER:]]", charClass(posixProp_m(.binary(.uppercase))))
 
     parseTest("[[:isALNUM:]]", charClass(posixProp_m(.posix(.alnum))))
     parseTest("[[:AL_NUM:]]", charClass(posixProp_m(.posix(.alnum))))
@@ -435,6 +458,24 @@ extension RegexTests {
 
     parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
     parseWithDelimitersTest("'|a b|'", concat("a", "b"))
+
+    // Make sure dumping output correctly reflects differences in AST.
+    parseNotEqualTest(#"abc"#, #"abd"#)
+
+    parseNotEqualTest(#"[abc[:space:]\d]+"#,
+                      #"[abc[:upper:]\d]+"#)
+
+    parseNotEqualTest(#"[abc[:space:]\d]+"#,
+                      #"[ac[:space:]\d]+"#)
+
+    parseNotEqualTest(#"[abc[:space:]\d]+"#,
+                      #"[acc[:space:]\s]+"#)
+
+    parseNotEqualTest(#"[abc[:space:]\d]+"#,
+                      #"[acc[:space:]\d]*"#)
+
+    parseNotEqualTest(#"([a-c&&e]*)+"#,
+                      #"([a-d&&e]*)+"#)
 
     // TODO: failure tests
   }

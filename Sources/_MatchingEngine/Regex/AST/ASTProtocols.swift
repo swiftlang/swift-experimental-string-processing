@@ -51,7 +51,13 @@ extension _ASTPrintable {
   public var debugDescription: String { _dump() }
 
   var _children: [AST]? {
-    (self as? _ASTParent)?.children
+    if let children = (self as? _ASTParent)?.children {
+      return children
+    }
+    if let children = (self as? AST)?.children {
+      return children
+    }
+    return nil
   }
 
   func _print() -> String {
@@ -62,8 +68,13 @@ extension _ASTPrintable {
     guard let children = _children else {
       return _dumpBase
     }
-    let sub = children.lazy.map {
-      $0._dump()
+    let sub = children.lazy.compactMap {
+      // Exclude trivia for now, as we don't want it to appear when performing
+      // comparisons of dumped output in tests.
+      // TODO: We should eventually have some way of filtering out trivia for
+      // tests, so that it can appear in regular dumps.
+      if $0.isTrivia { return nil }
+      return $0._dump()
     }.joined(separator: ",")
     return "\(_dumpBase)(\(sub))"
   }
