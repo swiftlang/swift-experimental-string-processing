@@ -354,25 +354,41 @@ extension Unicode.BinaryProperty {
     case .diacratic: // spelling?
       return consumeScalarProp(\.isDiacritic)
     case .emojiModifierBase:
-      break // availability
+      if #available(macOS 10.12.2, *) {
+        return consumeScalarProp(\.isEmojiModifierBase)
+      } else {
+        throw unsupported("isEmojiModifierBase on old OSes")
+      }
     case .emojiComponent:
       break
     case .emojiModifier:
-      break // availability
+      if #available(macOS 10.12.2, *) {
+        return consumeScalarProp(\.isEmojiModifier)
+      } else {
+        throw unsupported("isEmojiModifier on old OSes")
+      }
     case .emoji:
-      break // availability
+      if #available(macOS 10.12.2, *) {
+        return consumeScalarProp(\.isEmoji)
+      } else {
+        throw unsupported("isEmoji on old OSes")
+      }
     case .emojiPresentation:
-      break // availability
+      if #available(macOS 10.12.2, *) {
+        return consumeScalarProp(\.isEmojiPresentation)
+      } else {
+        throw unsupported("isEmojiPresentation on old OSes")
+      }
     case .extender:
       return consumeScalarProp(\.isExtender)
     case .extendedPictographic:
-      break
+      break // NOTE: Stdlib has this data internally
     case .fullCompositionExclusion:
       return consumeScalarProp(\.isFullCompositionExclusion)
     case .graphemeBase:
       return consumeScalarProp(\.isGraphemeBase)
     case .graphemeExtended:
-      break
+      return consumeScalarProp(\.isGraphemeExtend)
     case .graphemeLink:
       break
     case .hexDigit:
@@ -426,7 +442,9 @@ extension Unicode.BinaryProperty {
     case .radical:
       return consumeScalarProp(\.isRadical)
     case .regionalIndicator:
-      break
+      return consumeScalar { s in
+        (0x1F1E6...0x1F1FF).contains(s.value)
+      }
     case .softDotted:
       return consumeScalarProp(\.isSoftDotted)
     case .sentenceTerminal:
@@ -445,14 +463,9 @@ extension Unicode.BinaryProperty {
       return consumeScalarProp(\.isXIDContinue)
     case .xidStart:
       return consumeScalarProp(\.isXIDStart)
-    case .expandsOnNFC:
-      break
-    case .expandsOnNFD:
-      break
-    case .expandsOnNFKC:
-      break
-    case .expandsOnNFKD:
-      break
+    case .expandsOnNFC, .expandsOnNFD, .expandsOnNFKD,
+        .expandsOnNFKC:
+      throw unsupported("Unicode-deprecated: \(self)")
     }
 
     throw unsupported("TODO: map prop \(self)")
