@@ -1,7 +1,6 @@
 import XCTest
 @testable import _MatchingEngine
 @testable import _StringProcessing
-@testable import Algorithms
 
 func matchTest(
   _ regex: String,
@@ -19,8 +18,8 @@ func matchTest(
     return
   }
 
-  let pattern = Algorithms.Regex(regex)
-  var consumer = RegexConsumer(pattern)
+  let pattern = try! Regex(regex)
+  var consumer = RegexConsumer<String>(pattern)
   consumer.vm.engine.enableTracing = enableTracing
   let range = input.firstRange(of: consumer)!
   XCTAssertEqual(String(input[range]), match)

@@ -1,5 +1,5 @@
 public struct TwoWaySearcher<Searched: BidirectionalCollection>
-  where Searched.Element: Comparable, Searched.SubSequence == Searched
+  where Searched.Element: Comparable
 {
   // TODO: Be generic over the pattern?
   let pattern: [Searched.Element]
@@ -26,17 +26,30 @@ public struct TwoWaySearcher<Searched: BidirectionalCollection>
 
 extension TwoWaySearcher: CollectionSearcher {
   public struct State {
+    let end: Searched.Index
     var index: Searched.Index
     var criticalIndex: Searched.Index
     var memory: (offset: Int, index: Searched.Index)?
   }
   
-  public func state(startingAt index: Searched.Index, in searched: Searched) -> State {
-    let criticalIndex = searched.index(index, offsetBy: criticalIndex)
-    return State(index: index, criticalIndex: criticalIndex, memory: nil)
+  public func state(
+    for searched: Searched,
+    in range: Range<Searched.Index>
+  ) -> State {
+    let criticalIndex = searched.index(
+      range.lowerBound, offsetBy: criticalIndex)
+    return State(
+      end: range.upperBound,
+      index: range.lowerBound,
+      criticalIndex:
+        criticalIndex,
+      memory: nil)
   }
 
-  public func search(_ searched: Searched, _ state: inout State) -> Range<Searched.Index>? {
+  public func search(
+    _ searched: Searched,
+    _ state: inout State
+  ) -> Range<Searched.Index>? {
     while state.criticalIndex != searched.endIndex {
       if let end = _searchRight(searched, &state),
          let start = _searchLeft(searched, &state, end)

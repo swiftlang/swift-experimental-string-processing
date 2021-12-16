@@ -43,16 +43,13 @@ let package = Package(
             dependencies: []),
         .testTarget(
             name: "RegexTests",
-            dependencies: ["_StringProcessing", "Algorithms"]),
+            dependencies: ["_StringProcessing"]),
         .target(
             name: "Prototypes",
             dependencies: ["_MatchingEngine"]),
-        .target(
-            name: "Algorithms",
-            dependencies: ["_StringProcessing", "Prototypes"]),
         .testTarget(
             name: "AlgorithmsTests",
-            dependencies: ["Algorithms"]),
+            dependencies: ["_StringProcessing"]),
         .testTarget(
           name: "UnicodeTests",
           dependencies: ["_Unicode"]),
