@@ -281,7 +281,7 @@ extension Source {
     let kind: Located<Quant.Kind> = recordLoc { src in
       if src.tryEat("?") { return .reluctant  }
       if src.tryEat("+") { return .possessive }
-      return .greedy
+      return .eager
     }
 
     return (amt, kind)
@@ -290,8 +290,8 @@ extension Source {
   /// Consume a range
   ///
   ///     Range       -> ',' <Int> | <Int> ',' <Int>? | <Int>
-  ///                  | ModernRange
-  ///     ModernRange -> '..<' <Int> | '...' <Int>
+  ///                  | ExpRange
+  ///     ExpRange    -> '..<' <Int> | '...' <Int>
   ///                  | <Int> '..<' <Int> | <Int> '...' <Int>?
   mutating func expectRange() throws -> Located<Quant.Amount> {
     try recordLoc { src in
@@ -303,7 +303,7 @@ extension Source {
       let closedRange: Bool?
       if src.tryEat(",") {
         closedRange = true
-      } else if src.modernRanges && src.tryEat(".") {
+      } else if src.experimentalRanges && src.tryEat(".") {
         try src.expect(".")
         if src.tryEat(".") {
           closedRange = true
@@ -374,11 +374,11 @@ extension Source {
   ///
   ///     Quote -> '\Q' (!'\E' .)* '\E'
   ///
-  /// With `SyntaxOptions.modernQuotes`, also accepts
+  /// With `SyntaxOptions.experimentalQuotes`, also accepts
   ///
-  ///     ModernQuote -> '"' [^"]* '"'
+  ///     ExpQuote -> '"' [^"]* '"'
   ///
-  /// Future: Modern quotes are full fledged Swift string literals
+  /// Future: Experimental quotes are full fledged Swift string literals
   ///
   /// TODO: Need to support some escapes
   ///
@@ -387,7 +387,7 @@ extension Source {
       if src.tryEat(sequence: #"\Q"#) {
         return try src.expectQuoted(endingWith: #"\E"#).value
       }
-      if src.modernQuotes, src.tryEat("\"") {
+      if src.experimentalQuotes, src.tryEat("\"") {
         // TODO: escaped `"`, etc...
         return try src.expectQuoted(endingWith: "\"").value
       }
@@ -399,9 +399,9 @@ extension Source {
   ///
   ///     Comment -> '(?#' [^')']* ')'
   ///
-  /// With `SyntaxOptions.modernComments`
+  /// With `SyntaxOptions.experimentalComments`
   ///
-  ///     ModernComment -> '/*' (!'*/' .)* '*/'
+  ///     ExpComment -> '/*' (!'*/' .)* '*/'
   ///
   /// TODO: Swift-style nested comments, line-ending comments, etc
   ///
@@ -410,7 +410,7 @@ extension Source {
       if src.tryEat(sequence: "(?#") {
         return try src.expectQuoted(endingWith: ")").value
       }
-      if src.modernComments, src.tryEat(sequence: "/*") {
+      if src.experimentalComments, src.tryEat(sequence: "/*") {
         return try src.expectQuoted(endingWith: "*/").value
       }
       return nil
@@ -439,9 +439,9 @@ extension Source {
   ///     Named      -> '<' [^'>']+ '>' | 'P<' [^'>']+ '>'
   ///                 | '\'' [^'\'']+ '\''
   ///
-  /// If `SyntaxOptions.modernGroups` is enabled, also accepts:
+  /// If `SyntaxOptions.experimentalGroups` is enabled, also accepts:
   ///
-  ///     ModernGroupStart -> '(_:'
+  ///     ExpGroupStart -> '(_:'
   ///
   /// Future: Named groups of the form `(name: ...)`
   ///
@@ -519,7 +519,7 @@ extension Source {
       }
 
       // (_:)
-      if src.modernCaptures && src.tryEat(sequence: "_:") {
+      if src.experimentalCaptures && src.tryEat(sequence: "_:") {
         return .nonCapture
       }
       // TODO: (name:)
@@ -699,9 +699,9 @@ extension Source {
   ///     SpecialCharacter -> '.' | '^' | '$'
   ///     POSIXSet         -> '[:' name ':]'
   ///
-  /// If `SyntaxOptions.nonSemanticWhitespace` is enabled, also accepts:
+  /// If `SyntaxOptions.experimentalGroups` is enabled, also accepts:
   ///
-  ///     ModernGroupStart -> '(_:'
+  ///     ExpGroupStart -> '(_:'
   ///
   mutating func lexAtom(
     isInCustomCharacterClass customCC: Bool

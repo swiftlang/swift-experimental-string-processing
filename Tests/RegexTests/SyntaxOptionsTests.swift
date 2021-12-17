@@ -4,7 +4,7 @@ import XCTest
 
 
 private let dplus = oneOrMore(
-  .greedy, atom(.escaped(.decimalDigit)))
+  .eager, atom(.escaped(.decimalDigit)))
 private let dotAST = concat(
   dplus, ".", dplus, ".", dplus, ".", dplus)
 private let dotASTQuoted = concat(
@@ -18,12 +18,12 @@ extension RegexTests {
       dotAST, syntax: .traditional)
     parseTest(
       #" \d+ \. \d+ \. \d+ \. \d+ "#,
-      dotAST, syntax: .modern)
+      dotAST, syntax: .experimental)
 
     parseTest(#"a b c"#, concat("a", " ", "b", " ", "c"), syntax: .traditional)
   }
 
-  func testModernQuotes() {
+  func testExperimentalQuotes() {
     let quoteAST = concat(
       "a", quote(" ."), "b")
     parseTest(
@@ -31,69 +31,69 @@ extension RegexTests {
       quoteAST, syntax: .traditional)
     parseTest(
       #"a \Q .\E b"#,
-      quoteAST, syntax: .modern)
+      quoteAST, syntax: .experimental)
     parseTest(
       #"a" ."b"#,
-      quoteAST, syntax: .modernQuotes)
+      quoteAST, syntax: .experimentalQuotes)
     parseTest(
       #"a " ." b"#,
-      quoteAST, syntax: .modern)
+      quoteAST, syntax: .experimental)
 
     parseTest(
       #" \d+ \. \d+ \. \d+ \. \d+ "#,
-      dotAST, syntax: .modern)
+      dotAST, syntax: .experimental)
     parseTest(
       #" \d+ "." \d+ "." \d+ "." \d+ "#,
-      dotASTQuoted, syntax: .modern)
+      dotASTQuoted, syntax: .experimental)
   }
 
-  func testModernRanges() {
+  func testExperimentalRanges() {
     parseTest(
       #"a{1,2}"#,
-      quantRange(.greedy, 1...2, "a"))
+      quantRange(.eager, 1...2, "a"))
     parseTest(
       #"a{1...2}"#,
-      quantRange(.greedy, 1...2, "a"),
-      syntax: .modernRanges)
+      quantRange(.eager, 1...2, "a"),
+      syntax: .experimentalRanges)
     parseTest(
       #"a{1..<3}"#,
-      quantRange(.greedy, 1...2, "a"),
-      syntax: .modernRanges)
+      quantRange(.eager, 1...2, "a"),
+      syntax: .experimentalRanges)
 
     parseTest(
       #"a{,2}"#,
-      upToN(.greedy, 2, "a"))
+      upToN(.eager, 2, "a"))
     parseTest(
       #"a{...2}"#,
-      upToN(.greedy, 2, "a"),
-      syntax: .modern)
+      upToN(.eager, 2, "a"),
+      syntax: .experimental)
     parseTest(
       #"a{..<3}"#,
-      upToN(.greedy, 2, "a"),
-      syntax: .modern)
+      upToN(.eager, 2, "a"),
+      syntax: .experimental)
 
     parseTest(
       #"a{1,}"#,
-      nOrMore(.greedy, 1, "a"))
+      nOrMore(.eager, 1, "a"))
     parseTest(
       #"a{1...}"#,
-      nOrMore(.greedy, 1, "a"),
-      syntax: .modern)
+      nOrMore(.eager, 1, "a"),
+      syntax: .experimental)
   }
 
-  func testModernCaptures() {
+  func testExperimentalCaptures() {
     parseTest(
       #"a(?:b)c"#,
       concat("a", nonCapture("b"), "c"))
     parseTest(
       #"a(_:b)c"#,
       concat("a", nonCapture("b"), "c"),
-      syntax: .modernCaptures)
+      syntax: .experimentalCaptures)
 
     // TODO: `(name: .*)`
   }
 
-  func testModernComments() {
+  func testExperimentalComments() {
 //    lexTest(
 //      #"(?#. network ) \d+ \. \d+"#,
 //      .comment(" network "), esc("d"), .plus,
@@ -103,7 +103,7 @@ extension RegexTests {
 //      #"/* network */ \d+ \. \d+"#,
 //      .comment(" network "), esc("d"), .plus,
 //      esc("."), esc("d"), .plus,
-//      syntax: .modern)
+//      syntax: .experimental)
 //
 //    // TODO: better trivia stuff
 //    parseTest(

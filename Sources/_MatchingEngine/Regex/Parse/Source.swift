@@ -33,10 +33,10 @@ extension Source {
 // MARK: - Syntax
 
 extension Source {
-  var modernRanges: Bool { syntax.contains(.modernRanges) }
-  var modernCaptures: Bool { syntax.contains(.modernCaptures) }
-  var modernQuotes: Bool { syntax.contains(.modernQuotes) }
-  var modernComments: Bool { syntax.contains(.modernComments) }
+  var experimentalRanges: Bool { syntax.contains(.experimentalRanges) }
+  var experimentalCaptures: Bool { syntax.contains(.experimentalCaptures) }
+  var experimentalQuotes: Bool { syntax.contains(.experimentalQuotes) }
+  var experimentalComments: Bool { syntax.contains(.experimentalComments) }
   var nonSemanticWhitespace: Bool {
     syntax.contains(.nonSemanticWhitespace)
   }

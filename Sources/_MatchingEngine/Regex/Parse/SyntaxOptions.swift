@@ -16,7 +16,7 @@ public struct SyntaxOptions: OptionSet {
   ///
   /// NOTE: Currently, this means we have raw quotes.
   /// Better would be to have real Swift string delimiter parsing logic.
-  public static var modernQuotes: Self { Self(1 << 1) }
+  public static var experimentalQuotes: Self { Self(1 << 1) }
 
   /// `'a /* comment */ b' == '/a(?#. comment )b/'`
   ///
@@ -24,7 +24,7 @@ public struct SyntaxOptions: OptionSet {
   /// Traditional comments can't have `)`, not even escaped in them either, we
   /// can. Traditional comments can have `*/` in them, we can't without
   /// escaping. We don't currently do escaping.
-  public static var modernComments: Self { Self(1 << 2) }
+  public static var experimentalComments: Self { Self(1 << 2) }
 
   /// ```
   ///   'a{n...m}' == '/a{n,m}/'
@@ -33,22 +33,22 @@ public struct SyntaxOptions: OptionSet {
   ///   'a{...m}'  == '/a{,m}/'
   ///   'a{..<m}'  == '/a{,m-1}/'
   /// ```
-  public static var modernRanges: Self { Self(1 << 3) }
+  public static var experimentalRanges: Self { Self(1 << 3) }
 
   /// `(name: .*)` == `(?<name>.*)`
   ///  `(_: .*)` == `(?:.*)`
-  public static var modernCaptures: Self { Self(1 << 4) }
+  public static var experimentalCaptures: Self { Self(1 << 4) }
 
   /*
 
     /// `<digit>*` == `[[:digit:]]*` == `\d*`
-    public static var modernConsumers
+    public static var experimentalConsumers
 
   */
 
   public static var traditional: Self { Self(0) }
 
-  public static var modern: Self { Self(~0) }
+  public static var experimental: Self { Self(~0) }
 
   public var ignoreWhitespace: Bool {
     contains(.nonSemanticWhitespace)

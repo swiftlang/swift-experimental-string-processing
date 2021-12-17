@@ -76,7 +76,7 @@ extension RegexTests {
       "abc", concat("a", "b", "c"))
     parseTest(
       #"abc\+d*"#,
-      concat("a", "b", "c", "+", zeroOrMore(.greedy, "d")))
+      concat("a", "b", "c", "+", zeroOrMore(.eager, "d")))
     parseTest(
       "a(b)", concat("a", capture("b")))
     parseTest(
@@ -85,30 +85,30 @@ extension RegexTests {
         concat(
           "a", "b", "c",
           oneOrMore(
-            .greedy, nonCapture(concat("d", "e"))),
-          "f", "g", "h", zeroOrMore(.greedy, "i"), "k"),
+            .eager, nonCapture(concat("d", "e"))),
+          "f", "g", "h", zeroOrMore(.eager, "i"), "k"),
         "j"))
     parseTest(
       "a(?:b|c)?d",
       concat("a", zeroOrOne(
-        .greedy, nonCapture(alt("b", "c"))), "d"))
+        .eager, nonCapture(alt("b", "c"))), "d"))
     parseTest(
       "a?b??c+d+?e*f*?",
       concat(
-        zeroOrOne(.greedy, "a"), zeroOrOne(.reluctant, "b"),
-        oneOrMore(.greedy, "c"), oneOrMore(.reluctant, "d"),
-        zeroOrMore(.greedy, "e"), zeroOrMore(.reluctant, "f")))
+        zeroOrOne(.eager, "a"), zeroOrOne(.reluctant, "b"),
+        oneOrMore(.eager, "c"), oneOrMore(.reluctant, "d"),
+        zeroOrMore(.eager, "e"), zeroOrMore(.reluctant, "f")))
     parseTest(
       "a|b?c",
-      alt("a", concat(zeroOrOne(.greedy, "b"), "c")))
+      alt("a", concat(zeroOrOne(.eager, "b"), "c")))
     parseTest(
       "(a|b)c",
       concat(capture(alt("a", "b")), "c"))
     parseTest(
       "(.)*(.*)",
       concat(
-        zeroOrMore(.greedy, capture(atom(.any))),
-        capture(zeroOrMore(.greedy, atom(.any)))))
+        zeroOrMore(.eager, capture(atom(.any))),
+        capture(zeroOrMore(.eager, atom(.any)))))
     parseTest(
       #"abc\d"#,
       concat("a", "b", "c", escaped(.decimalDigit)))
@@ -225,7 +225,7 @@ extension RegexTests {
 
     parseTest(
       #"[a[bc]de&&[^bc]\d]+"#,
-      oneOrMore(.greedy, charClass(
+      oneOrMore(.eager, charClass(
         .setOperation(
           ["a", charClass("b", "c"), "d", "e"],
           .init(faking: .intersection),
@@ -254,13 +254,13 @@ extension RegexTests {
     parseTest(
       "a&&b", concat("a", "&", "&", "b"))
     parseTest(
-      "&?", zeroOrOne(.greedy, "&"))
+      "&?", zeroOrOne(.eager, "&"))
     parseTest(
-      "&&?", concat("&", zeroOrOne(.greedy, "&")))
+      "&&?", concat("&", zeroOrOne(.eager, "&")))
     parseTest(
-      "--+", concat("-", oneOrMore(.greedy, "-")))
+      "--+", concat("-", oneOrMore(.eager, "-")))
     parseTest(
-      "~~*", concat("~", zeroOrMore(.greedy, "~")))
+      "~~*", concat("~", zeroOrMore(.eager, "~")))
 
     // MARK: Quotes
 
@@ -284,16 +284,16 @@ extension RegexTests {
 
     parseTest(
       #"a{1,2}"#,
-      quantRange(.greedy, 1...2, "a"))
+      quantRange(.eager, 1...2, "a"))
     parseTest(
       #"a{,2}"#,
-      upToN(.greedy, 2, "a"))
+      upToN(.eager, 2, "a"))
     parseTest(
       #"a{2,}"#,
-      nOrMore(.greedy, 2, "a"))
+      nOrMore(.eager, 2, "a"))
     parseTest(
       #"a{1}"#,
-      exactly(.greedy, 1, "a"))
+      exactly(.eager, 1, "a"))
     parseTest(
       #"a{1,2}?"#,
       quantRange(.reluctant, 1...2, "a"))
@@ -369,12 +369,12 @@ extension RegexTests {
     parseTest(#"[\N{abc}]"#, charClass(atom_m(.namedCharacter("abc"))))
     parseTest(
       #"\N{abc}+"#,
-      oneOrMore(.greedy,
+      oneOrMore(.eager,
                 atom(.namedCharacter("abc"))))
     parseTest(
       #"\N {2}"#,
       concat(atom(.escaped(.notNewline)),
-             exactly(.greedy, 2, " ")))
+             exactly(.eager, 2, " ")))
 
     parseTest(#"\N{AA}"#, atom(.namedCharacter("AA")))
     parseTest(#"\N{U+AA}"#, scalar("\u{AA}"))
@@ -397,7 +397,7 @@ extension RegexTests {
     parseTest(#"[\p{C}]"#, charClass(prop_m(.generalCategory(.other))))
     parseTest(
       #"\p{C}+"#,
-      oneOrMore(.greedy, prop(.generalCategory(.other))))
+      oneOrMore(.eager, prop(.generalCategory(.other))))
 
     parseTest(#"\p{Lx}"#, prop(.other(key: nil, value: "Lx")))
     parseTest(#"\p{gcL}"#, prop(.other(key: nil, value: "gcL")))

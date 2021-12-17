@@ -153,7 +153,7 @@ class Compiler {
     //     <code for component>
     //     branch start
     //   end:
-    case (.zeroOrMore, .greedy):
+    case (.zeroOrMore, .eager):
       let end = builder.makeAddress()
       let start = builder.makeAddress()
       builder.label(start)
@@ -168,7 +168,7 @@ class Compiler {
     //     save end
     //     branch element
     //   end:
-    case (.oneOrMore, .greedy):
+    case (.oneOrMore, .eager):
       let element = builder.makeAddress()
       let end = builder.makeAddress()
       builder.label(element)
@@ -181,7 +181,7 @@ class Compiler {
     //     save end
     //     <code for component>
     //   end:
-    case (.zeroOrOne, .greedy):
+    case (.zeroOrOne, .eager):
       let end = builder.makeAddress()
       builder.buildSave(end)
       try emit(child)
