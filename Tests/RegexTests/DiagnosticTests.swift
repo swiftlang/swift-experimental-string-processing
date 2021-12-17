@@ -86,4 +86,12 @@ extension RegexTests {
     // TODO: Find out way to render value-members of AST, not
     // just children
   }
+
+  func testErrors() {
+    // Note: These don't really "test" anything, but good to
+    // see our output...
+    print("\(ParseError.emptyProperty)")
+    print("\(ParseError.expectedNumber("abc", kind: .decimal))")
+    print("\(ParseError.expectedNumber("abc", kind: .hex))")
+  }
 }
