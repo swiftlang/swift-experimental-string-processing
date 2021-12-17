@@ -6,8 +6,17 @@ public struct RegexConsumer<Consumed: BidirectionalCollection>
   // TODO: consider let, for now lets us toggle tracing
     var vm: Executor
 
+  // FIXME: Possibility of fatal error isn't user friendly
   public init<Capture>(_ regex: Regex<Capture>) {
-    self.vm = .init(program: try! Compiler(ast: regex.ast).emit())
+    do {
+      self.vm = .init(program: try Compiler(ast: regex.ast).emit())
+    } catch {
+      fatalError("error: \(error)")
+    }
+  }
+
+  public init(parsing regex: String) throws {
+    self.vm = try _compileRegex(regex)
   }
   
   func _consuming(
