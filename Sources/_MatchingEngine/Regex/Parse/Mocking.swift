@@ -150,29 +150,50 @@ private func copyCString(_ str: String) -> UnsafePointer<CChar> {
 
 /// Interface for libswift.
 ///
-/// Lex a regular expression literal starting at `inputPtr`, making sure not to
-/// lex past `bufferEndPtr`. The pointer at which to resume lexing is returned,
-/// or nil if this is not a regex literal. The `errOut` parameter will be set
-/// if an error is encountered.
+/// Attempt to lex a regex literal string.
+///
+/// - Parameters:
+///   - CurPtrPtr: A pointer to the current pointer of lexer, which should be
+///                the start of the literal. This will be advanced to the point
+///                at which the lexer should resume, or will remain the same if
+///                this is not a regex literal.
+///   - BufferEnd: A pointer to the end of the buffer, which should not be lexed
+///                past.
+///   - ErrorOut: If an error is encountered, this will be set to the error
+///               string.
+///
+/// - Returns: A bool indicating whether lexing was completely erroneous, and
+///            cannot be recovered from, or false if there either was no error,
+///            or there was a recoverable error.
 func libswiftLexRegexLiteral(
-  _ inputPtr: UnsafePointer<CChar>?,
+  _ curPtrPtr: UnsafeMutablePointer<UnsafePointer<CChar>?>?,
   _ bufferEndPtr: UnsafePointer<CChar>?,
   _ errOut: UnsafeMutablePointer<UnsafePointer<CChar>?>?
-) -> UnsafePointer<CChar>? {
-  guard let inputPtr = inputPtr, let endPtr = bufferEndPtr else { return nil }
+) -> /*CompletelyErroneous*/ CBool {
+  guard let curPtrPtr = curPtrPtr, let inputPtr = curPtrPtr.pointee,
+        let bufferEndPtr = bufferEndPtr
+  else {
+    fatalError("Expected lexing pointers")
+  }
   guard let errOut = errOut else { fatalError("Expected error out param") }
 
   do {
-    let (_, _, endPtr) = try lexRegex(start: inputPtr, end: endPtr)
-    return endPtr.assumingMemoryBound(to: CChar.self)
+    let (_, _, endPtr) = try lexRegex(start: inputPtr, end: bufferEndPtr)
+    curPtrPtr.pointee = endPtr.assumingMemoryBound(to: CChar.self)
+    return false
   } catch let error as LexError {
     if error.kind == .unknownDelimiter {
       // An unknown delimiter should be recovered from, as we may want to try
       // lex something else.
-      return nil
+      return false
     }
     errOut.pointee = copyCString("\(error)")
-    return error.resumePtr.assumingMemoryBound(to: CChar.self)
+    curPtrPtr.pointee = error.resumePtr.assumingMemoryBound(to: CChar.self)
+
+    // For now, treat every error as unrecoverable.
+    // TODO: We should ideally be able to recover from a regex with missing
+    // closing delimiters, which would help with code completion.
+    return true
   } catch {
     fatalError("Should be a LexError")
   }
