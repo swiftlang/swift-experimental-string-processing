@@ -11,18 +11,22 @@ func matchTest(
   dumpAST: Bool = false,
   xfail: Bool = false
 ) {
-  guard !xfail else {
-//    XCTExpectFailure {
-//      XCTFail()
-//    }
+  do {
+    var consumer = try RegexConsumer<String>(parsing: regex)
+    consumer.vm.engine.enableTracing = enableTracing
+    guard let range = input.firstRange(of: consumer) else {
+      throw "expect xfail"
+    }
+
+    if xfail {
+      XCTAssertNotEqual(String(input[range]), match)
+    } else {
+      XCTAssertEqual(String(input[range]), match)
+    }
+  } catch {
+    XCTAssert(xfail)
     return
   }
-
-  let pattern = try! Regex(regex)
-  var consumer = RegexConsumer<String>(pattern)
-  consumer.vm.engine.enableTracing = enableTracing
-  let range = input.firstRange(of: consumer)!
-  XCTAssertEqual(String(input[range]), match)
 }
 
 extension RegexTests {
@@ -120,7 +124,7 @@ extension RegexTests {
     matchTest(
       #"a{2,}"#, input: "123aaaxyz", match: "aaa", xfail: true)
     matchTest(
-      #"a{1}"#, input: "123aaaxyz", match: "a", xfail: true)
+      #"a{1}"#, input: "123aaaxyz", match: "a")
     matchTest(
       #"a{1,2}?"#, input: "123aaaxyz", match: "a", xfail: true)
     matchTest(

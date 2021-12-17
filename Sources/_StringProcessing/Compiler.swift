@@ -202,7 +202,7 @@ class Compiler {
       (.upToN, _),
       (.range, _),
       (_, .possessive):
-      fatalError("Not yet supported")
+      throw unsupported("\(quant._dumpBase)")
     }
   }
 }
