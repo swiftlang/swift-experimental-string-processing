@@ -2,13 +2,13 @@
 // TODO: mock up multi-line soon
 
 enum Delimiter: Hashable, CaseIterable {
-  case regular
-  case modern
+  case traditional
+  case experimental
 
   var openingAndClosing: (opening: String, closing: String) {
     switch self {
-    case .regular: return ("'/", "/'")
-    case .modern: return ("'|", "|'")
+    case .traditional: return ("'/", "/'")
+    case .experimental: return ("'|", "|'")
     }
   }
   var opening: String { openingAndClosing.opening }
@@ -17,8 +17,8 @@ enum Delimiter: Hashable, CaseIterable {
   /// The default set of syntax options that the delimiter indicates.
   var defaultSyntaxOptions: SyntaxOptions {
     switch self {
-    case .regular: return .traditional
-    case .modern: return .modern
+    case .traditional: return .traditional
+    case .experimental: return .experimental
     }
   }
 }
