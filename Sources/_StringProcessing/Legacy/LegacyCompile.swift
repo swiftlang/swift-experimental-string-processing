@@ -80,7 +80,7 @@ func compile(
     case .quantification(let quant):
       let child = quant.child
       switch (quant.amount.value, quant.kind.value) {
-      case (.zeroOrMore, .greedy):
+      case (.zeroOrMore, .eager):
         // a* ==> L_START, <split L_DONE>, a, goto L_START, L_DONE
         let childHasCaptures = child.hasCapture
         if childHasCaptures {
@@ -122,7 +122,7 @@ func compile(
         }
         return
 
-      case (.zeroOrOne, .greedy):
+      case (.zeroOrOne, .eager):
         // a? ==> <split L_DONE> a, L_DONE
         if child.hasCapture {
           instructions.append(.beginGroup)
@@ -176,7 +176,7 @@ func compile(
         }
         return
 
-      case (.oneOrMore, .greedy):
+      case (.oneOrMore, .eager):
         // a+ ==> L_START, a, <split L_DONE>, goto L_START, L_DONE
         let childHasCaptures = child.hasCapture
         if childHasCaptures {

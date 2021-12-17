@@ -88,53 +88,53 @@ public func atomicScriptRun(_ child: AST) -> AST {
 
 func quant(
   _ amount: AST.Quantification.Amount,
-  _ kind: AST.Quantification.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .eager,
   _ child: AST
 ) -> AST {
   .quantification(.init(
     .init(faking: amount), .init(faking: kind), child, .fake))
 }
 func zeroOrMore(
-  _ kind: AST.Quantification.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .eager,
   _ child: AST
 ) -> AST {
   quant(.zeroOrMore, kind, child)
 }
 func zeroOrOne(
-  _ kind: AST.Quantification.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .eager,
   _ child: AST
 ) -> AST {
   quant(.zeroOrOne, kind, child)
 }
 func oneOrMore(
-  _ kind: AST.Quantification.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .eager,
   _ child: AST
 ) -> AST {
   quant(.oneOrMore, kind, child)
 }
 func exactly(
-  _ kind: AST.Quantification.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .eager,
   _ i: Int,
   _ child: AST
 ) -> AST {
   quant(.exactly(.init(faking: i)), kind, child)
 }
 func nOrMore(
-  _ kind: AST.Quantification.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .eager,
   _ i: Int,
   _ child: AST
 ) -> AST {
   quant(.nOrMore(.init(faking: i)), kind, child)
 }
 func upToN(
-  _ kind: AST.Quantification.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .eager,
   _ i: Int,
   _ child: AST
 ) -> AST {
   quant(.upToN(.init(faking: i)), kind, child)
 }
 func quantRange(
-  _ kind: AST.Quantification.Kind = .greedy,
+  _ kind: AST.Quantification.Kind = .eager,
   _ r: ClosedRange<Int>,
   _ child: AST
 ) -> AST {

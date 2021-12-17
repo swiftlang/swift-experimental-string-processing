@@ -377,7 +377,7 @@ extension RegexTests {
       expectedCaptureType: (Substring, Substring).self,
       expecting: .init(captures: ("bb", "d"), capturesEqual: ==))
 
-    // Greedy vs lazy quantifiers
+    // Eager vs reluctant quantifiers
     performTest(
       regex: "a(.*)(c+).*(e+)", input: "abbbbccccddddeeee",
       expectedCaptureType: (Substring, Substring, Substring).self,

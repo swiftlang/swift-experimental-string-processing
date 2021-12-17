@@ -281,7 +281,7 @@ extension Source {
     let kind: Located<Quant.Kind> = recordLoc { src in
       if src.tryEat("?") { return .reluctant  }
       if src.tryEat("+") { return .possessive }
-      return .greedy
+      return .eager
     }
 
     return (amt, kind)

@@ -29,7 +29,7 @@ extension AST {
     }
 
     public enum Kind: String, Hashable {
-      case greedy     = ""
+      case eager      = ""
       case reluctant  = "?"
       case possessive = "+"
     }
@@ -69,7 +69,7 @@ extension AST.Quantification.Kind: _ASTPrintable {
   public var _printBase: String { rawValue }
   public var _dumpBase: String {
     switch self {
-    case .greedy:     return "greedy"
+    case .eager:      return "eager"
     case .reluctant:  return "reluctant"
     case .possessive: return "possessive"
     }
