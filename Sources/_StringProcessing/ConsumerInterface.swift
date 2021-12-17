@@ -354,7 +354,7 @@ extension Unicode.BinaryProperty {
     case .diacratic: // spelling?
       return consumeScalarProp(\.isDiacritic)
     case .emojiModifierBase:
-      if #available(macOS 10.12.2, *) {
+      if #available(macOS 10.12.2, iOS 10.2, tvOS 10.1, watchOS 3.1.1, *) {
         return consumeScalarProp(\.isEmojiModifierBase)
       } else {
         throw unsupported("isEmojiModifierBase on old OSes")
@@ -362,19 +362,19 @@ extension Unicode.BinaryProperty {
     case .emojiComponent:
       break
     case .emojiModifier:
-      if #available(macOS 10.12.2, *) {
+      if #available(macOS 10.12.2, iOS 10.2, tvOS 10.1, watchOS 3.1.1, *) {
         return consumeScalarProp(\.isEmojiModifier)
       } else {
         throw unsupported("isEmojiModifier on old OSes")
       }
     case .emoji:
-      if #available(macOS 10.12.2, *) {
+      if #available(macOS 10.12.2, iOS 10.2, tvOS 10.1, watchOS 3.1.1, *) {
         return consumeScalarProp(\.isEmoji)
       } else {
         throw unsupported("isEmoji on old OSes")
       }
     case .emojiPresentation:
-      if #available(macOS 10.12.2, *) {
+      if #available(macOS 10.12.2, iOS 10.2, tvOS 10.1, watchOS 3.1.1, *) {
         return consumeScalarProp(\.isEmojiPresentation)
       } else {
         throw unsupported("isEmojiPresentation on old OSes")
