@@ -100,6 +100,18 @@ extension Source {
     }
   }
 
+  mutating func tryEatNonEmpty(_ c: Char) throws -> Bool {
+    guard !isEmpty else { throw ParseError.expected(String(c)) }
+    return tryEat(c)
+  }
+
+  mutating func tryEatNonEmpty<C: Collection>(sequence c: C) throws -> Bool
+    where C.Element == Char
+  {
+    guard !isEmpty else { throw ParseError.expected(String(c)) }
+    return tryEat(sequence: c)
+  }
+
   /// Throws an expected ASCII character error if not matched
   mutating func expectASCII() throws -> Located<Character> {
     try recordLoc { src in
@@ -225,7 +237,7 @@ extension Source {
       // Hex numbers.
       case "u", "x":
         if src.tryEat("{") {
-          let str = src.lexUntil(eating: "}").value
+          let str = try src.lexUntil(eating: "}").value
           return try Source.validateUnicodeScalar(str, .hex)
         }
         let numDigits = base == "u" ? 4 : 2
@@ -235,7 +247,7 @@ extension Source {
 
       // Octal numbers.
       case "o" where src.tryEat("{"):
-        let str = src.lexUntil(eating: "}").value
+        let str = try src.lexUntil(eating: "}").value
         return try Source.validateUnicodeScalar(str, .octal)
 
       case "0":
@@ -342,19 +354,25 @@ extension Source {
   }
 
   private mutating func lexUntil(
-    _ predicate: (inout Source) -> Bool
-  ) -> Located<String> {
-    recordLoc { src in
+    _ predicate: (inout Source) throws -> Bool
+  ) rethrows -> Located<String> {
+    try recordLoc { src in
       var result = ""
-      while !predicate(&src) {
+      while try !predicate(&src) {
         result.append(src.eat())
       }
       return result
     }
   }
 
-  private mutating func lexUntil(eating end: String) -> Located<String> {
-    lexUntil { $0.tryEat(sequence: end) }
+  private mutating func lexUntil(eating end: String) throws -> Located<String> {
+    try lexUntil { try $0.tryEatNonEmpty(sequence: end) }
+  }
+
+  private mutating func lexUntil(
+    eating end: Character
+  ) throws -> Located<String> {
+    try lexUntil(eating: String(end))
   }
 
   /// Expect a linear run of non-nested non-empty content
@@ -362,7 +380,7 @@ extension Source {
     endingWith end: String
   ) throws -> Located<String> {
     try recordLoc { src in
-      let result = src.lexUntil(eating: end).value
+      let result = try src.lexUntil(eating: end).value
       guard !result.isEmpty else {
         throw ParseError.misc("Expected non-empty contents")
       }
@@ -586,13 +604,13 @@ extension Source {
 
       // We should either have a unicode scalar.
       if src.tryEat(sequence: "U+") {
-        let str = src.lexUntil(eating: "}").value
+        let str = try src.lexUntil(eating: "}").value
         return .scalar(try Source.validateUnicodeScalar(str, .hex))
       }
 
       // Or we should have a character name.
       // TODO: Validate the types of characters that can appear in the name?
-      return .namedCharacter(src.lexUntil(eating: "}").value)
+      return .namedCharacter(try src.lexUntil(eating: "}").value)
     }
   }
 
@@ -606,14 +624,15 @@ extension Source {
       //   of true), and its key is inferred.
       // TODO: We could have better recovery here if we only ate the characters
       // that property keys and values can use.
-      let lhs = src.lexUntil { $0.peek() == "=" || $0.starts(with: end) }.value
-      if src.tryEat(sequence: end) {
-        return try Source.classifyCharacterPropertyValueOnly(lhs)
+      let lhs = src.lexUntil {
+        $0.isEmpty || $0.peek() == "=" || $0.starts(with: end)
+      }.value
+      if src.tryEat("=") {
+        let rhs = try src.lexUntil(eating: end).value
+        return try Source.classifyCharacterProperty(key: lhs, value: rhs)
       }
-      src.eat(asserting: "=")
-
-      let rhs = src.lexUntil(eating: end).value
-      return try Source.classifyCharacterProperty(key: lhs, value: rhs)
+      try src.expect(sequence: end)
+      return try Source.classifyCharacterPropertyValueOnly(lhs)
     }
   }
 

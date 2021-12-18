@@ -91,6 +91,29 @@ extension RegexTests {
       _ = try $0.lexGroupStart()
     }
 
+    // Test expected closing delimiters.
+    diagnose(#"\u{5"#, expecting: .expected("}")) { src in
+      _ = try src.lexAtom(isInCustomCharacterClass: false)
+    }
+    diagnose(#"\x{5"#, expecting: .expected("}")) { src in
+      _ = try src.lexAtom(isInCustomCharacterClass: false)
+    }
+    diagnose(#"\N{A"#, expecting: .expected("}")) { src in
+      _ = try src.lexAtom(isInCustomCharacterClass: false)
+    }
+    diagnose(#"\N{U+A"#, expecting: .expected("}")) { src in
+      _ = try src.lexAtom(isInCustomCharacterClass: false)
+    }
+    diagnose(#"\p{a"#, expecting: .expected("}")) { src in
+      _ = try src.lexAtom(isInCustomCharacterClass: false)
+    }
+    diagnose(#"\p{a="#, expecting: .expected("}")) { src in
+      _ = try src.lexAtom(isInCustomCharacterClass: false)
+    }
+    diagnose(#"(?#"#, expecting: .expected(")")) { src in
+      _ = try src.lexComment()
+    }
+
     // TODO: want to dummy print out source ranges, etc, test that.
   }
 
