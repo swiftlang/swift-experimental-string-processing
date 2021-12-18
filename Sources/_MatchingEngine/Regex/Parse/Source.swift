@@ -76,6 +76,17 @@ extension Source {
     return true
   }
 
+  mutating func tryEat<C: Collection>(anyOf set: C) -> Char?
+    where C.Element == Char
+  {
+    guard let c = peek(), set.contains(c) else { return nil }
+    advance()
+    return c
+  }
+  mutating func tryEat(anyOf set: Char...) -> Char? {
+    tryEat(anyOf: set)
+  }
+
   mutating func eat(asserting c: Char) {
     assert(peek() == c)
     advance()

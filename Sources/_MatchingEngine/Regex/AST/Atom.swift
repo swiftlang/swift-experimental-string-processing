@@ -52,8 +52,6 @@ extension AST {
       case endOfLine
 
       // References
-      //
-      // TODO: Haven't thought through these a ton
       case backreference(Reference)
       case subpattern(Reference)
       case condition(Reference)
@@ -375,7 +373,9 @@ extension AST.Atom.CharacterProperty {
 public enum Reference: Hashable {
   // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
   // Oniguruma: \k<n>, \k'n'
-  case absolute(Int)
+  // If the reference was written as \n, and n could potentially be an octal
+  // sequence, `couldBeOctal` will be set to true.
+  case absolute(Int, couldBeOctal: Bool = false)
 
   // \g{-n} \g<+n> \g'+n' \g<-n> \g'-n' (?+n) (?-n)
   // (?(+n)... (?(-n)...
@@ -414,12 +414,8 @@ extension AST.Atom: _ASTPrintable {
     case .startOfLine: return "^"
     case .endOfLine:   return "$"
 
-    case .backreference(_):
-      fatalError("TODO")
-    case .subpattern(_):
-      fatalError("TODO")
-    case .condition(_):
-      fatalError("TODO")
+    case .backreference(let r), .subpattern(let r), .condition(let r):
+      return "\(r)"
 
     case .char, .scalar:
       fatalError("Unreachable")

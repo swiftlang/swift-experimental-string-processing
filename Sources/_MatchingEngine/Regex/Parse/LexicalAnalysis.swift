@@ -205,6 +205,13 @@ extension Source {
     try lexNumber(Int.self, .decimal)
   }
 
+  mutating func expectNumber() throws -> Located<Int> {
+    guard let num = try lexNumber() else {
+      throw ParseError.expectedNumber("", kind: .decimal)
+    }
+    return num
+  }
+
   /// Eat a scalar value from hexadecimal notation off the front
   private mutating func expectUnicodeScalar(
     numDigits: Int
@@ -654,12 +661,118 @@ extension Source {
     }
   }
 
+  private mutating func lexNumberedReference(
+  ) throws -> Located<Reference>? {
+    try recordLoc { src in
+      if src.tryEat("+") {
+        return .relative(try src.expectNumber().value)
+      }
+      if src.tryEat("-") {
+        return .relative(try -src.expectNumber().value)
+      }
+      if let num = try src.lexNumber() {
+        return .absolute(num.value)
+      }
+      return nil
+    }
+  }
+
+  private mutating func expectNamedOrNumberedReference(
+    endingWith ending: String
+  ) throws -> Located<Reference> {
+    try recordLoc { src in
+      if let numbered = try src.lexNumberedReference() {
+        try src.expect(sequence: ending)
+        return numbered.value
+      }
+      return .named(try src.lexUntil(eating: ending).value)
+    }
+  }
+
+  private static func getClosingDelimiter(
+    for openChar: Character
+  ) -> Character {
+    switch openChar {
+      case "<": return ">"
+      case "'": return "'"
+      case "{": return "}"
+      default:
+        fatalError("Not implemented")
+    }
+  }
+
+  /// Lex an escaped reference for a backreference or subpattern.
+  ///
+  ///     EscapedReference -> 'g{' NameOrNumberRef '}'
+  ///                       | 'g<' NameOrNumberRef '>'
+  ///                       | "g'" NameOrNumberRef "'"
+  ///                       | 'g' NumberRef
+  ///                       | 'k<' <String> '>'
+  ///                       | "k'" <String> "'"
+  ///                       | 'k{' <String> '}'
+  ///                       | [1-9] [0-9]+
+  ///
+  ///     NumberRef -> ('+' | '-')? <Decimal Number>
+  ///     NameOrNumberRef -> NumberRef | <String>
+  private mutating func lexEscapedReference(
+  ) throws -> Located<AST.Atom.Kind>? {
+    try recordLoc { src in
+      if src.tryEat("g") {
+        // PCRE-style backreferences.
+        if src.tryEat("{") {
+          let ref = try src.expectNamedOrNumberedReference(
+            endingWith: "}").value
+          return .backreference(ref)
+        }
+
+        // Oniguruma-style subpatterns.
+        if let openChar = src.tryEat(anyOf: "<", "'") {
+          let ref = try src.expectNamedOrNumberedReference(
+            endingWith: String(Source.getClosingDelimiter(for: openChar))).value
+          return .subpattern(ref)
+        }
+
+        // PCRE allows \g followed by a bare numeric reference.
+        if let ref = try src.lexNumberedReference() {
+          return .backreference(ref.value)
+        }
+
+        // Fallback to a literal character. We need to return here as we've
+        // already eaten the 'g'.
+        return .char("g")
+      }
+
+      if src.tryEat("k") {
+        // Perl/.NET-style backreferences.
+        if let openChar = src.tryEat(anyOf: "<", "'", "{") {
+          let closingChar = Source.getClosingDelimiter(for: openChar)
+          return .backreference(.named(
+            try src.lexUntil(eating: closingChar).value))
+        }
+        // Fallback to a literal character. We need to return here as we've
+        // already eaten the 'k'.
+        return .char("k")
+      }
+
+      // If we can lex a number other than 0 (as that's an octal sequence),
+      // it's a backreference. Though we should make a note of whether it could
+      // feasibly be an octal sequence, as the matching engine may need to
+      // treat it as such.
+      if src.peek() != "0", let num = try src.lexNumber()  {
+        let digits = src.input[num.location.range]
+        let couldBeOctal = digits.count > 1 && digits.all(\.isOctalDigit)
+        return .backreference(.absolute(num.value, couldBeOctal: couldBeOctal))
+      }
+      return nil
+    }
+  }
+
   /// Consume an escaped atom, starting from after the backslash
   ///
   ///     Escaped          -> KeyboardModified | Builtin
   ///                       | UniScalar | Property | NamedCharacter
+  ///                       | EscapedReference
   ///
-  /// TODO: references
   mutating func expectEscaped(
     isInCustomCharacterClass ccc: Bool
   ) throws -> Located<AST.Atom.Kind> {
@@ -685,30 +798,26 @@ extension Source {
         return .property(prop.value)
       }
 
+      // References using escape syntax, e.g \1, \g{1}, \k<...>, ...
+      if let ref = try src.lexEscapedReference()?.value {
+        return ref
+      }
+
+      // Hexadecimal and octal unicode scalars.
+      if let char = src.tryEat(anyOf: "u", "x", "U", "o", "0") {
+        return try .scalar(
+          src.expectUnicodeScalar(escapedCharacter: char).value)
+      }
+
       let char = src.eat()
 
-      // Single-character builtins
+      // Single-character builtins.
       if let builtin = AST.Atom.EscapedBuiltin(
         char, inCustomCharacterClass: ccc
       ) {
         return .escaped(builtin)
       }
-
-      switch char {
-      // Scalars
-      case "u", "x", "U", "o", "0":
-        return try .scalar(
-          src.expectUnicodeScalar(escapedCharacter: char).value)
-
-      // Unicode property checks
-      case "p", "P":
-        fatalError("TODO: properties")
-
-      case "1"..."9", "g", "k":
-        fatalError("TODO: References")
-
-      default: return .char(char)
-      }
+      return .char(char)
     }
   }
 
@@ -741,6 +850,8 @@ extension Source {
         return .property(prop)
       }
 
+      // TODO: Python-style backreferences (?P=...), which look like groups.
+
       let char = src.eat()
       switch char {
       case ")", "|":
@@ -757,8 +868,6 @@ extension Source {
       // Escaped
       case "\\": return try src.expectEscaped(
           isInCustomCharacterClass: customCC).value
-
-      // TODO: backreferences et al here?
 
       case "]":
         assert(!customCC, "parser should have prevented this")

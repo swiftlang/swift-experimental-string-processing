@@ -363,6 +363,40 @@ extension RegexTests {
     parseTest("a(*atomic_script_run:b)c",
               concat("a", atomicScriptRun("b"), "c"))
 
+    // MARK: References
+
+    parseTest(#"\1"#, atom(.backreference(.absolute(1))))
+    parseTest(#"\10"#, atom(.backreference(.absolute(10, couldBeOctal: true))))
+    parseTest(#"\18"#, atom(.backreference(.absolute(18, couldBeOctal: false))))
+    parseTest(#"\7777"#, atom(.backreference(.absolute(7777, couldBeOctal: true))))
+
+    parseTest(#"\g1"#, atom(.backreference(.absolute(1))))
+    parseTest(#"\g001"#, atom(.backreference(.absolute(1))))
+    parseTest(#"\g52"#, atom(.backreference(.absolute(52))))
+    parseTest(#"\g-01"#, atom(.backreference(.relative(-1))))
+    parseTest(#"\g+30"#, atom(.backreference(.relative(30))))
+
+    parseTest(#"\g{1}"#, atom(.backreference(.absolute(1))))
+    parseTest(#"\g{001}"#, atom(.backreference(.absolute(1))))
+    parseTest(#"\g{52}"#, atom(.backreference(.absolute(52))))
+    parseTest(#"\g{-01}"#, atom(.backreference(.relative(-1))))
+    parseTest(#"\g{+30}"#, atom(.backreference(.relative(30))))
+
+    parseTest(#"\k{a0}"#, atom(.backreference(.named("a0"))))
+    parseTest(#"\k<bc>"#, atom(.backreference(.named("bc"))))
+    parseTest(#"\k''"#, atom(.backreference(.named(""))))
+    parseTest(#"\g{abc}"#, atom(.backreference(.named("abc"))))
+
+    parseTest(#"\g<1>"#, atom(.subpattern(.absolute(1))))
+    parseTest(#"\g<001>"#, atom(.subpattern(.absolute(1))))
+    parseTest(#"\g'52'"#, atom(.subpattern(.absolute(52))))
+    parseTest(#"\g'-01'"#, atom(.subpattern(.relative(-1))))
+    parseTest(#"\g'+30'"#, atom(.subpattern(.relative(30))))
+    parseTest(#"\g'abc'"#, atom(.subpattern(.named("abc"))))
+
+    parseTest(#"\g"#, atom(.char("g")))
+    parseTest(#"\k"#, atom(.char("k")))
+
     // MARK: Character names.
 
     parseTest(#"\N{abc}"#, atom(.namedCharacter("abc")))
@@ -476,6 +510,8 @@ extension RegexTests {
 
     parseNotEqualTest(#"([a-c&&e]*)+"#,
                       #"([a-d&&e]*)+"#)
+
+    parseNotEqualTest(#"\1"#, #"\10"#)
 
     // TODO: failure tests
   }
