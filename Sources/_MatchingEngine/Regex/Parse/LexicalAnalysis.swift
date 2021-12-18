@@ -516,6 +516,8 @@ extension Source {
             src.tryEat(sequence: "atomic_script_run:") {
           return .atomicScriptRun
         }
+
+        throw ParseError.misc("Quantifier '*' must follow operand")
       }
 
       // (_:)

@@ -85,7 +85,12 @@ extension RegexTests {
       "12", base: "U", expectedDigits: 8)
     diagnoseUniScalarOverflow("{123456789}", base: "u")
     diagnoseUniScalarOverflow("{123456789}", base: "x")
-    
+
+    // Test expected group.
+    diagnose(#"(*"#, expecting: .misc("Quantifier '*' must follow operand")) {
+      _ = try $0.lexGroupStart()
+    }
+
     // TODO: want to dummy print out source ranges, etc, test that.
   }
 
