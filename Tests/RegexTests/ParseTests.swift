@@ -134,6 +134,19 @@ extension RegexTests {
     parseTest(#"\08"#, concat(scalar("\u{0}"), "8"))
     parseTest(#"\0707"#, concat(scalar("\u{38}"), "7"))
 
+    parseTest(#"[\0]"#, charClass("\u{0}"))
+    parseTest(#"[\01]"#, charClass("\u{1}"))
+    parseTest(#"[\070]"#, charClass("\u{38}"))
+    parseTest(#"[\07A]"#, charClass(scalar_m("\u{7}"), "A"))
+    parseTest(#"[\08]"#, charClass(scalar_m("\u{0}"), "8"))
+    parseTest(#"[\0707]"#, charClass(scalar_m("\u{38}"), "7"))
+
+    parseTest(#"[\1]"#, charClass(scalar_m("\u{1}")))
+    parseTest(#"[\123]"#, charClass(scalar_m("\u{53}")))
+    parseTest(#"[\101]"#, charClass(scalar_m("\u{41}")))
+    parseTest(#"[\7777]"#, charClass(scalar_m("\u{1FF}"), "7"))
+    parseTest(#"[\181]"#, charClass(scalar_m("\u{1}"), "8", "1"))
+
     // MARK: Character classes
 
     parseTest(#"abc\d"#, concat("a", "b", "c", escaped(.decimalDigit)))
@@ -365,34 +378,122 @@ extension RegexTests {
 
     // MARK: References
 
-    parseTest(#"\1"#, atom(.backreference(.absolute(1))))
-    parseTest(#"\10"#, atom(.backreference(.absolute(10, couldBeOctal: true))))
-    parseTest(#"\18"#, atom(.backreference(.absolute(18, couldBeOctal: false))))
-    parseTest(#"\7777"#, atom(.backreference(.absolute(7777, couldBeOctal: true))))
+    // \1 ... \9 are always backreferences.
+    for i in 1 ... 9 {
+      parseTest("\\\(i)", backreference(.absolute(i)))
+      parseTest(
+        "()()()()()()()()()\\\(i)",
+        concat((0..<9).map { _ in capture(empty()) }
+               + [backreference(.absolute(i))])
+      )
+    }
 
-    parseTest(#"\g1"#, atom(.backreference(.absolute(1))))
-    parseTest(#"\g001"#, atom(.backreference(.absolute(1))))
-    parseTest(#"\g52"#, atom(.backreference(.absolute(52))))
-    parseTest(#"\g-01"#, atom(.backreference(.relative(-1))))
-    parseTest(#"\g+30"#, atom(.backreference(.relative(30))))
+    // TODO: Some of these behaviors are unintuitive, we should likely warn on
+    // some of them.
+    parseTest(#"\10"#, scalar("\u{8}"))
+    parseTest(#"\18"#, concat(scalar("\u{1}"), "8"))
+    parseTest(#"\7777"#, concat(scalar("\u{1FF}"), "7"))
+    parseTest(#"\91"#, backreference(.absolute(91)))
 
-    parseTest(#"\g{1}"#, atom(.backreference(.absolute(1))))
-    parseTest(#"\g{001}"#, atom(.backreference(.absolute(1))))
-    parseTest(#"\g{52}"#, atom(.backreference(.absolute(52))))
-    parseTest(#"\g{-01}"#, atom(.backreference(.relative(-1))))
-    parseTest(#"\g{+30}"#, atom(.backreference(.relative(30))))
+    parseTest(
+      #"()()()()()()()()()()\10"#,
+      concat((0..<10).map { _ in capture(empty()) }
+             + [backreference(.absolute(10))])
+    )
+    parseTest(
+      #"()()()()()()()()()\10()"#,
+      concat((0..<9).map { _ in capture(empty()) }
+             + [scalar("\u{8}"), capture(empty())])
+    )
+    parseTest(#"()()\10"#,
+              concat(capture(empty()), capture(empty()), scalar("\u{8}")))
 
-    parseTest(#"\k{a0}"#, atom(.backreference(.named("a0"))))
-    parseTest(#"\k<bc>"#, atom(.backreference(.named("bc"))))
-    parseTest(#"\k''"#, atom(.backreference(.named(""))))
-    parseTest(#"\g{abc}"#, atom(.backreference(.named("abc"))))
+    // A capture of three empty captures.
+    let fourCaptures = capture(
+      concat(capture(empty()), capture(empty()), capture(empty()))
+    )
+    parseTest(
+      // There are 9 capture groups in total here.
+      #"((()()())(()()()))\10"#,
+      concat(capture(concat(fourCaptures, fourCaptures)), scalar("\u{8}"))
+    )
+    parseTest(
+      // There are 10 capture groups in total here.
+      #"((()()())()(()()()))\10"#,
+      concat(capture(concat(fourCaptures, capture(empty()), fourCaptures)),
+             backreference(.absolute(10)))
+    )
+    parseTest(
+      // There are 10 capture groups in total here.
+      #"((((((((((\10))))))))))"#,
+      capture(capture(capture(capture(capture(capture(capture(capture(capture(
+        capture(backreference(.absolute(10))))))))))))
+    )
 
-    parseTest(#"\g<1>"#, atom(.subpattern(.absolute(1))))
-    parseTest(#"\g<001>"#, atom(.subpattern(.absolute(1))))
-    parseTest(#"\g'52'"#, atom(.subpattern(.absolute(52))))
-    parseTest(#"\g'-01'"#, atom(.subpattern(.relative(-1))))
-    parseTest(#"\g'+30'"#, atom(.subpattern(.relative(30))))
-    parseTest(#"\g'abc'"#, atom(.subpattern(.named("abc"))))
+    // The cases from http://pcre.org/current/doc/html/pcre2pattern.html#digitsafterbackslash:
+    parseTest(#"\040"#, scalar(" "))
+    parseTest(
+      String(repeating: "()", count: 40) + #"\040"#,
+      concat((0..<40).map { _ in capture(empty()) } + [scalar(" ")])
+    )
+    parseTest(#"\40"#, scalar(" "))
+    parseTest(
+      String(repeating: "()", count: 40) + #"\40"#,
+      concat((0..<40).map { _ in capture(empty()) }
+             + [backreference(.absolute(40))])
+    )
+
+    parseTest(#"\7"#, backreference(.absolute(7)))
+
+    parseTest(#"\11"#, scalar("\u{9}"))
+    parseTest(
+      String(repeating: "()", count: 11) + #"\11"#,
+      concat((0..<11).map { _ in capture(empty()) }
+             + [backreference(.absolute(11))])
+    )
+    parseTest(#"\011"#, scalar("\u{9}"))
+    parseTest(
+      String(repeating: "()", count: 11) + #"\011"#,
+      concat((0..<11).map { _ in capture(empty()) } + [scalar("\u{9}")])
+    )
+
+    parseTest(#"\0113"#, concat(scalar("\u{9}"), "3"))
+    parseTest(#"\113"#, scalar("\u{4B}"))
+    parseTest(#"\377"#, scalar("\u{FF}"))
+    parseTest(#"\81"#, backreference(.absolute(81)))
+
+
+    parseTest(#"\g1"#, backreference(.absolute(1)))
+    parseTest(#"\g001"#, backreference(.absolute(1)))
+    parseTest(#"\g52"#, backreference(.absolute(52)))
+    parseTest(#"\g-01"#, backreference(.relative(-1)))
+    parseTest(#"\g+30"#, backreference(.relative(30)))
+
+    parseTest(#"\g{1}"#, backreference(.absolute(1)))
+    parseTest(#"\g{001}"#, backreference(.absolute(1)))
+    parseTest(#"\g{52}"#, backreference(.absolute(52)))
+    parseTest(#"\g{-01}"#, backreference(.relative(-1)))
+    parseTest(#"\g{+30}"#, backreference(.relative(30)))
+
+    parseTest(#"\k{a0}"#, backreference(.named("a0")))
+    parseTest(#"\k<bc>"#, backreference(.named("bc")))
+    parseTest(#"\k''"#, backreference(.named("")))
+    parseTest(#"\g{abc}"#, backreference(.named("abc")))
+
+    parseTest(#"\g<1>"#, subpattern(.absolute(1)))
+    parseTest(#"\g<001>"#, subpattern(.absolute(1)))
+    parseTest(#"\g'52'"#, subpattern(.absolute(52)))
+    parseTest(#"\g'-01'"#, subpattern(.relative(-1)))
+    parseTest(#"\g'+30'"#, subpattern(.relative(30)))
+    parseTest(#"\g'abc'"#, subpattern(.named("abc")))
+
+    // Backreferences are not valid in custom character classes.
+    parseTest(#"[\8]"#, charClass("8"))
+    parseTest(#"[\9]"#, charClass("9"))
+    parseTest(#"[\g]"#, charClass("g"))
+    parseTest(#"[\g+30]"#, charClass("g", "+", "3", "0"))
+    parseTest(#"[\g{1}]"#, charClass("g", "{", "1", "}"))
+    parseTest(#"[\k'a']"#, charClass("k", "'", "a", "'"))
 
     parseTest(#"\g"#, atom(.char("g")))
     parseTest(#"\k"#, atom(.char("k")))

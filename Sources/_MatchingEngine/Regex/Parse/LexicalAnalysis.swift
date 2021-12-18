@@ -234,7 +234,7 @@ extension Source {
   ///                | 'x'  HexDigit{2}
   ///                | 'U'  HexDigit{8}
   ///                | 'o{' OctalDigit{1...} '}'
-  ///                | '0'  OctalDigit{0...2}
+  ///                | OctalDigit{1...3}
   ///
   mutating func expectUnicodeScalar(
     escapedCharacter base: Character
@@ -257,12 +257,12 @@ extension Source {
         let str = try src.lexUntil(eating: "}").value
         return try Source.validateUnicodeScalar(str, .octal)
 
-      case "0":
+      case let c where c.isOctalDigit:
         // We can read *up to* 2 more octal digits per PCRE.
-        // FIXME: ICU can read up to 3 octal digits, we should have a parser
-        // mode to switch.
-        guard let str = src.tryEatPrefix(maxLength: 2, \.isOctalDigit)?.string
-        else { return Unicode.Scalar(0) }
+        // FIXME: ICU can read up to 3 octal digits if the leading digit is 0,
+        // we should have a parser mode to switch.
+        let nextDigits = src.tryEatPrefix(maxLength: 2, \.isOctalDigit)
+        let str = String(c) + (nextDigits?.string ?? "")
         return try Source.validateUnicodeScalar(str, .octal)
 
       default:
@@ -661,6 +661,10 @@ extension Source {
     }
   }
 
+  /// Try to lex an absolute or relative numbered reference.
+  ///
+  ///     NumberRef -> ('+' | '-')? <Decimal Number>
+  ///
   private mutating func lexNumberedReference(
   ) throws -> Located<Reference>? {
     try recordLoc { src in
@@ -677,6 +681,10 @@ extension Source {
     }
   }
 
+  /// Try to lex a numbered reference, or otherwise a named reference.
+  ///
+  ///     NameOrNumberRef -> NumberRef | <String>
+  ///
   private mutating func expectNamedOrNumberedReference(
     endingWith ending: String
   ) throws -> Located<Reference> {
@@ -712,9 +720,8 @@ extension Source {
   ///                       | 'k{' <String> '}'
   ///                       | [1-9] [0-9]+
   ///
-  ///     NumberRef -> ('+' | '-')? <Decimal Number>
-  ///     NameOrNumberRef -> NumberRef | <String>
   private mutating func lexEscapedReference(
+    priorGroupCount: Int
   ) throws -> Located<AST.Atom.Kind>? {
     try recordLoc { src in
       if src.tryEat("g") {
@@ -754,14 +761,27 @@ extension Source {
         return .char("k")
       }
 
-      // If we can lex a number other than 0 (as that's an octal sequence),
-      // it's a backreference. Though we should make a note of whether it could
-      // feasibly be an octal sequence, as the matching engine may need to
-      // treat it as such.
-      if src.peek() != "0", let num = try src.lexNumber()  {
-        let digits = src.input[num.location.range]
-        let couldBeOctal = digits.count > 1 && digits.all(\.isOctalDigit)
-        return .backreference(.absolute(num.value, couldBeOctal: couldBeOctal))
+      // Lexing \n is tricky, as it's ambiguous with octal sequences. In PCRE it
+      // is treated as a backreference if its first digit is not 0 (as that is
+      // always octal) and one of the following holds:
+      //
+      // - It's 0 < n < 10 (as octal would be pointless here)
+      // - Its first digit is 8 or 9 (as not valid octal)
+      // - There have been as many prior groups as the reference.
+      //
+      // Oniguruma follows the same rules except the second one. e.g \81 and \91
+      // are instead treated as literal 81 and 91 respectively.
+      // TODO: If we want a strict Oniguruma mode, we'll need to add a check
+      // here.
+      if src.peek() != "0", let digits = src.peekPrefix(\.isNumber) {
+        // First lex out the decimal digits and see if we can treat this as a
+        // backreference.
+        let num = try Source.validateNumber(digits.string, Int.self, .decimal)
+        if num < 10 || digits.first == "8" || digits.first == "9" ||
+            num <= priorGroupCount {
+          src.advance(digits.count)
+          return .backreference(.absolute(num))
+        }
       }
       return nil
     }
@@ -774,7 +794,7 @@ extension Source {
   ///                       | EscapedReference
   ///
   mutating func expectEscaped(
-    isInCustomCharacterClass ccc: Bool
+    isInCustomCharacterClass ccc: Bool, priorGroupCount: Int
   ) throws -> Located<AST.Atom.Kind> {
     try recordLoc { src in
       // Keyboard control/meta
@@ -799,14 +819,11 @@ extension Source {
       }
 
       // References using escape syntax, e.g \1, \g{1}, \k<...>, ...
-      if let ref = try src.lexEscapedReference()?.value {
+      // These are not valid inside custom character classes.
+      if !ccc, let ref = try src.lexEscapedReference(
+        priorGroupCount: priorGroupCount
+      )?.value {
         return ref
-      }
-
-      // Hexadecimal and octal unicode scalars.
-      if let char = src.tryEat(anyOf: "u", "x", "U", "o", "0") {
-        return try .scalar(
-          src.expectUnicodeScalar(escapedCharacter: char).value)
       }
 
       let char = src.eat()
@@ -817,7 +834,17 @@ extension Source {
       ) {
         return .escaped(builtin)
       }
-      return .char(char)
+
+      switch char {
+      // Hexadecimal and octal unicode scalars. This must be done after
+      // backreference lexing due to the ambiguity with \nnn.
+      case let c where c.isOctalDigit: fallthrough
+      case "u", "x", "U", "o":
+        return try .scalar(
+          src.expectUnicodeScalar(escapedCharacter: char).value)
+      default:
+        return .char(char)
+      }
     }
   }
 
@@ -834,7 +861,7 @@ extension Source {
   ///     ExpGroupStart -> '(_:'
   ///
   mutating func lexAtom(
-    isInCustomCharacterClass customCC: Bool
+    isInCustomCharacterClass customCC: Bool, priorGroupCount: Int
   ) throws -> AST.Atom? {
     let kind: Located<AST.Atom.Kind>? = try recordLoc { src in
       // Check for not-an-atom, e.g. parser recursion termination
@@ -867,7 +894,8 @@ extension Source {
 
       // Escaped
       case "\\": return try src.expectEscaped(
-          isInCustomCharacterClass: customCC).value
+        isInCustomCharacterClass: customCC,
+        priorGroupCount: priorGroupCount).value
 
       case "]":
         assert(!customCC, "parser should have prevented this")
@@ -882,13 +910,16 @@ extension Source {
 
   /// Try to lex the end of a range in a custom character class, which consists
   /// of a '-' character followed by an atom.
-  mutating func lexCustomCharClassRangeEnd() throws -> AST.Atom? {
+  mutating func lexCustomCharClassRangeEnd(
+    priorGroupCount: Int
+  ) throws -> AST.Atom? {
     // Make sure we don't have a binary operator e.g '--', and the '-' is not
     // ending the custom character class (in which case it is literal).
     guard peekCCBinOp() == nil && !starts(with: "-]") && tryEat("-") else {
       return nil
     }
-    return try lexAtom(isInCustomCharacterClass: true)
+    return try lexAtom(isInCustomCharacterClass: true,
+                       priorGroupCount: priorGroupCount)
   }
 }
 

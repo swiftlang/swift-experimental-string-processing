@@ -43,7 +43,13 @@ Lexical analysis provides the following:
 private struct Parser {
   var source: Source
 
+  /// Tracks the number of parent custom character classes to allow us to
+  /// determine whether or not to lex with custom character class syntax.
   fileprivate var customCharacterClassDepth = 0
+
+  /// Tracks the number of group openings we've seen, to disambiguate the '\n'
+  /// syntax as a backreference or an octal sequence.
+  fileprivate var priorGroupCount = 0
 
   init(_ source: Source) {
     self.source = source
@@ -163,6 +169,7 @@ extension Parser {
     let _start = source.currentPosition
 
     if let kind = try source.lexGroupStart() {
+      priorGroupCount += 1
       let child = try parse()
       try source.expect(")")
       return .group(.init(kind, child, loc(_start)))
@@ -173,7 +180,8 @@ extension Parser {
     }
 
     if let atom = try source.lexAtom(
-      isInCustomCharacterClass: isInCustomCharacterClass
+      isInCustomCharacterClass: isInCustomCharacterClass,
+      priorGroupCount: priorGroupCount
     ) {
       // TODO: track source locations
       return .atom(atom)
@@ -247,11 +255,14 @@ extension Parser {
         continue
       }
 
-      guard let atom = try source.lexAtom(isInCustomCharacterClass: true)
-        else { break }
+      guard let atom = try source.lexAtom(
+        isInCustomCharacterClass: true, priorGroupCount: priorGroupCount)
+      else { break }
 
       // Range between atoms.
-      if let rhs = try source.lexCustomCharClassRangeEnd() {
+      if let rhs = try source.lexCustomCharClassRangeEnd(
+        priorGroupCount: priorGroupCount
+      ) {
         guard atom.literalCharacterValue != nil &&
               rhs.literalCharacterValue != nil else {
           throw ParseError.invalidCharacterClassRangeOperand

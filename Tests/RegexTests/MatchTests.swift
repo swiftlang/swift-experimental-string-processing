@@ -531,7 +531,7 @@ extension RegexTests {
     matchTest(#"(.)\1"#, input: "112", match: "11", xfail: true)
     matchTest(#"(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)\10"#,
               input: "aaaaaaaaabbc", match: "aaaaaaaaabb", xfail: true)
-    matchTest(#"(.)\10"#, input: "a\u{8}b", match: "a\u{8}", xfail: true)
+    matchTest(#"(.)\10"#, input: "a\u{8}b", match: "a\u{8}")
 
     matchTest(#"(.)\g001"#, input: "112", match: "11", xfail: true)
     matchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)

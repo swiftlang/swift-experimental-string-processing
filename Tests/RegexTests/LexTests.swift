@@ -29,6 +29,13 @@ func diagnose(
   }
 }
 
+extension Source {
+  @discardableResult
+  fileprivate mutating func lexBasicAtom() throws -> AST.Atom? {
+    try lexAtom(isInCustomCharacterClass: false, priorGroupCount: 0)
+  }
+}
+
 extension RegexTests {
   func testLexicalAnalysis() {
     diagnose("a", expecting: .expected("b")) { src in
@@ -92,27 +99,13 @@ extension RegexTests {
     }
 
     // Test expected closing delimiters.
-    diagnose(#"\u{5"#, expecting: .expected("}")) { src in
-      _ = try src.lexAtom(isInCustomCharacterClass: false)
-    }
-    diagnose(#"\x{5"#, expecting: .expected("}")) { src in
-      _ = try src.lexAtom(isInCustomCharacterClass: false)
-    }
-    diagnose(#"\N{A"#, expecting: .expected("}")) { src in
-      _ = try src.lexAtom(isInCustomCharacterClass: false)
-    }
-    diagnose(#"\N{U+A"#, expecting: .expected("}")) { src in
-      _ = try src.lexAtom(isInCustomCharacterClass: false)
-    }
-    diagnose(#"\p{a"#, expecting: .expected("}")) { src in
-      _ = try src.lexAtom(isInCustomCharacterClass: false)
-    }
-    diagnose(#"\p{a="#, expecting: .expected("}")) { src in
-      _ = try src.lexAtom(isInCustomCharacterClass: false)
-    }
-    diagnose(#"(?#"#, expecting: .expected(")")) { src in
-      _ = try src.lexComment()
-    }
+    diagnose(#"\u{5"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
+    diagnose(#"\x{5"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
+    diagnose(#"\N{A"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
+    diagnose(#"\N{U+A"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
+    diagnose(#"\p{a"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
+    diagnose(#"\p{a="#, expecting: .expected("}")) { try $0.lexBasicAtom() }
+    diagnose(#"(?#"#, expecting: .expected(")")) { _ = try $0.lexComment() }
 
     // TODO: want to dummy print out source ranges, etc, test that.
   }
