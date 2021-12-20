@@ -30,6 +30,10 @@ func concat(_ asts: AST...) -> AST {
   concat(asts)
 }
 
+func empty() -> AST {
+  .empty(.init(.fake))
+}
+
 func group(
   _ kind: AST.Group.Kind, _ child: AST
 ) -> AST {
@@ -181,6 +185,19 @@ func escaped(
 }
 func scalar(_ s: Unicode.Scalar) -> AST {
   atom(.scalar(s))
+}
+func scalar_m(_ s: Unicode.Scalar) -> AST.CustomCharacterClass.Member {
+  atom_m(.scalar(s))
+}
+
+func backreference(_ r: Reference) -> AST {
+  atom(.backreference(r))
+}
+func subpattern(_ r: Reference) -> AST {
+  atom(.subpattern(r))
+}
+func condition(_ r: Reference) -> AST {
+  atom(.condition(r))
 }
 
 func prop(

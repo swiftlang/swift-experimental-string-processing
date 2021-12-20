@@ -525,5 +525,18 @@ extension RegexTests {
 
 
   }
+
+  func testMatchReferences() {
+    // TODO: Implement backreference/subpattern matching.
+    matchTest(#"(.)\1"#, input: "112", match: "11", xfail: true)
+    matchTest(#"(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)\10"#,
+              input: "aaaaaaaaabbc", match: "aaaaaaaaabb", xfail: true)
+    matchTest(#"(.)\10"#, input: "a\u{8}b", match: "a\u{8}")
+
+    matchTest(#"(.)\g001"#, input: "112", match: "11", xfail: true)
+    matchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
+    matchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba", xfail: true)
+    matchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
+  }
 }
 

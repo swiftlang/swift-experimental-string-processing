@@ -100,6 +100,18 @@ extension Source {
     }
   }
 
+  mutating func tryEatNonEmpty(_ c: Char) throws -> Bool {
+    guard !isEmpty else { throw ParseError.expected(String(c)) }
+    return tryEat(c)
+  }
+
+  mutating func tryEatNonEmpty<C: Collection>(sequence c: C) throws -> Bool
+    where C.Element == Char
+  {
+    guard !isEmpty else { throw ParseError.expected(String(c)) }
+    return tryEat(sequence: c)
+  }
+
   /// Throws an expected ASCII character error if not matched
   mutating func expectASCII() throws -> Located<Character> {
     try recordLoc { src in
@@ -193,6 +205,13 @@ extension Source {
     try lexNumber(Int.self, .decimal)
   }
 
+  mutating func expectNumber() throws -> Located<Int> {
+    guard let num = try lexNumber() else {
+      throw ParseError.expectedNumber("", kind: .decimal)
+    }
+    return num
+  }
+
   /// Eat a scalar value from hexadecimal notation off the front
   private mutating func expectUnicodeScalar(
     numDigits: Int
@@ -215,7 +234,7 @@ extension Source {
   ///                | 'x'  HexDigit{2}
   ///                | 'U'  HexDigit{8}
   ///                | 'o{' OctalDigit{1...} '}'
-  ///                | '0'  OctalDigit{0...2}
+  ///                | OctalDigit{1...3}
   ///
   mutating func expectUnicodeScalar(
     escapedCharacter base: Character
@@ -225,7 +244,7 @@ extension Source {
       // Hex numbers.
       case "u", "x":
         if src.tryEat("{") {
-          let str = src.lexUntil(eating: "}").value
+          let str = try src.lexUntil(eating: "}").value
           return try Source.validateUnicodeScalar(str, .hex)
         }
         let numDigits = base == "u" ? 4 : 2
@@ -235,15 +254,15 @@ extension Source {
 
       // Octal numbers.
       case "o" where src.tryEat("{"):
-        let str = src.lexUntil(eating: "}").value
+        let str = try src.lexUntil(eating: "}").value
         return try Source.validateUnicodeScalar(str, .octal)
 
-      case "0":
+      case let c where c.isOctalDigit:
         // We can read *up to* 2 more octal digits per PCRE.
-        // FIXME: ICU can read up to 3 octal digits, we should have a parser
-        // mode to switch.
-        guard let str = src.tryEatPrefix(maxLength: 2, \.isOctalDigit)?.string
-        else { return Unicode.Scalar(0) }
+        // FIXME: ICU can read up to 3 octal digits if the leading digit is 0,
+        // we should have a parser mode to switch.
+        let nextDigits = src.tryEatPrefix(maxLength: 2, \.isOctalDigit)
+        let str = String(c) + (nextDigits?.string ?? "")
         return try Source.validateUnicodeScalar(str, .octal)
 
       default:
@@ -342,19 +361,25 @@ extension Source {
   }
 
   private mutating func lexUntil(
-    _ predicate: (inout Source) -> Bool
-  ) -> Located<String> {
-    recordLoc { src in
+    _ predicate: (inout Source) throws -> Bool
+  ) rethrows -> Located<String> {
+    try recordLoc { src in
       var result = ""
-      while !predicate(&src) {
+      while try !predicate(&src) {
         result.append(src.eat())
       }
       return result
     }
   }
 
-  private mutating func lexUntil(eating end: String) -> Located<String> {
-    lexUntil { $0.tryEat(sequence: end) }
+  private mutating func lexUntil(eating end: String) throws -> Located<String> {
+    try lexUntil { try $0.tryEatNonEmpty(sequence: end) }
+  }
+
+  private mutating func lexUntil(
+    eating end: Character
+  ) throws -> Located<String> {
+    try lexUntil(eating: String(end))
   }
 
   /// Expect a linear run of non-nested non-empty content
@@ -362,7 +387,7 @@ extension Source {
     endingWith end: String
   ) throws -> Located<String> {
     try recordLoc { src in
-      let result = src.lexUntil(eating: end).value
+      let result = try src.lexUntil(eating: end).value
       guard !result.isEmpty else {
         throw ParseError.misc("Expected non-empty contents")
       }
@@ -516,6 +541,8 @@ extension Source {
             src.tryEat(sequence: "atomic_script_run:") {
           return .atomicScriptRun
         }
+
+        throw ParseError.misc("Quantifier '*' must follow operand")
       }
 
       // (_:)
@@ -584,13 +611,13 @@ extension Source {
 
       // We should either have a unicode scalar.
       if src.tryEat(sequence: "U+") {
-        let str = src.lexUntil(eating: "}").value
+        let str = try src.lexUntil(eating: "}").value
         return .scalar(try Source.validateUnicodeScalar(str, .hex))
       }
 
       // Or we should have a character name.
       // TODO: Validate the types of characters that can appear in the name?
-      return .namedCharacter(src.lexUntil(eating: "}").value)
+      return .namedCharacter(try src.lexUntil(eating: "}").value)
     }
   }
 
@@ -604,14 +631,15 @@ extension Source {
       //   of true), and its key is inferred.
       // TODO: We could have better recovery here if we only ate the characters
       // that property keys and values can use.
-      let lhs = src.lexUntil { $0.peek() == "=" || $0.starts(with: end) }.value
-      if src.tryEat(sequence: end) {
-        return try Source.classifyCharacterPropertyValueOnly(lhs)
+      let lhs = src.lexUntil {
+        $0.isEmpty || $0.peek() == "=" || $0.starts(with: end)
+      }.value
+      if src.tryEat("=") {
+        let rhs = try src.lexUntil(eating: end).value
+        return try Source.classifyCharacterProperty(key: lhs, value: rhs)
       }
-      src.eat(asserting: "=")
-
-      let rhs = src.lexUntil(eating: end).value
-      return try Source.classifyCharacterProperty(key: lhs, value: rhs)
+      try src.expect(sequence: end)
+      return try Source.classifyCharacterPropertyValueOnly(lhs)
     }
   }
 
@@ -633,14 +661,140 @@ extension Source {
     }
   }
 
+  /// Try to lex an absolute or relative numbered reference.
+  ///
+  ///     NumberRef -> ('+' | '-')? <Decimal Number>
+  ///
+  private mutating func lexNumberedReference(
+  ) throws -> Located<Reference>? {
+    try recordLoc { src in
+      if src.tryEat("+") {
+        return .relative(try src.expectNumber().value)
+      }
+      if src.tryEat("-") {
+        return .relative(try -src.expectNumber().value)
+      }
+      if let num = try src.lexNumber() {
+        return .absolute(num.value)
+      }
+      return nil
+    }
+  }
+
+  /// Try to lex a numbered reference, or otherwise a named reference.
+  ///
+  ///     NameOrNumberRef -> NumberRef | <String>
+  ///
+  private mutating func expectNamedOrNumberedReference(
+    endingWith ending: String
+  ) throws -> Located<Reference> {
+    try recordLoc { src in
+      if let numbered = try src.lexNumberedReference() {
+        try src.expect(sequence: ending)
+        return numbered.value
+      }
+      return .named(try src.lexUntil(eating: ending).value)
+    }
+  }
+
+  private static func getClosingDelimiter(
+    for openChar: Character
+  ) -> Character {
+    switch openChar {
+      case "<": return ">"
+      case "'": return "'"
+      case "{": return "}"
+      default:
+        fatalError("Not implemented")
+    }
+  }
+
+  /// Lex an escaped reference for a backreference or subpattern.
+  ///
+  ///     EscapedReference -> 'g{' NameOrNumberRef '}'
+  ///                       | 'g<' NameOrNumberRef '>'
+  ///                       | "g'" NameOrNumberRef "'"
+  ///                       | 'g' NumberRef
+  ///                       | 'k<' <String> '>'
+  ///                       | "k'" <String> "'"
+  ///                       | 'k{' <String> '}'
+  ///                       | [1-9] [0-9]+
+  ///
+  private mutating func lexEscapedReference(
+    priorGroupCount: Int
+  ) throws -> Located<AST.Atom.Kind>? {
+    try recordLoc { src in
+      if src.tryEat("g") {
+        // PCRE-style backreferences.
+        if src.tryEat("{") {
+          let ref = try src.expectNamedOrNumberedReference(
+            endingWith: "}").value
+          return .backreference(ref)
+        }
+
+        // Oniguruma-style subpatterns.
+        if let openChar = src.tryEat(anyOf: "<", "'") {
+          let ref = try src.expectNamedOrNumberedReference(
+            endingWith: String(Source.getClosingDelimiter(for: openChar))).value
+          return .subpattern(ref)
+        }
+
+        // PCRE allows \g followed by a bare numeric reference.
+        if let ref = try src.lexNumberedReference() {
+          return .backreference(ref.value)
+        }
+
+        // Fallback to a literal character. We need to return here as we've
+        // already eaten the 'g'.
+        return .char("g")
+      }
+
+      if src.tryEat("k") {
+        // Perl/.NET-style backreferences.
+        if let openChar = src.tryEat(anyOf: "<", "'", "{") {
+          let closingChar = Source.getClosingDelimiter(for: openChar)
+          return .backreference(.named(
+            try src.lexUntil(eating: closingChar).value))
+        }
+        // Fallback to a literal character. We need to return here as we've
+        // already eaten the 'k'.
+        return .char("k")
+      }
+
+      // Lexing \n is tricky, as it's ambiguous with octal sequences. In PCRE it
+      // is treated as a backreference if its first digit is not 0 (as that is
+      // always octal) and one of the following holds:
+      //
+      // - It's 0 < n < 10 (as octal would be pointless here)
+      // - Its first digit is 8 or 9 (as not valid octal)
+      // - There have been as many prior groups as the reference.
+      //
+      // Oniguruma follows the same rules except the second one. e.g \81 and \91
+      // are instead treated as literal 81 and 91 respectively.
+      // TODO: If we want a strict Oniguruma mode, we'll need to add a check
+      // here.
+      if src.peek() != "0", let digits = src.peekPrefix(\.isNumber) {
+        // First lex out the decimal digits and see if we can treat this as a
+        // backreference.
+        let num = try Source.validateNumber(digits.string, Int.self, .decimal)
+        if num < 10 || digits.first == "8" || digits.first == "9" ||
+            num <= priorGroupCount {
+          src.advance(digits.count)
+          return .backreference(.absolute(num))
+        }
+      }
+      return nil
+    }
+  }
+
   /// Consume an escaped atom, starting from after the backslash
   ///
   ///     Escaped          -> KeyboardModified | Builtin
   ///                       | UniScalar | Property | NamedCharacter
+  ///                       | EscapedReference
   ///
-  /// TODO: references
   mutating func expectEscaped(
-    isInCustomCharacterClass ccc: Bool
+    isInCustomCharacterClass ccc: Bool, priorGroupCount: Int
   ) throws -> Located<AST.Atom.Kind> {
     try recordLoc { src in
       // Keyboard control/meta
@@ -664,9 +818,17 @@ extension Source {
         return .property(prop.value)
       }
 
+      // References using escape syntax, e.g \1, \g{1}, \k<...>, ...
+      // These are not valid inside custom character classes.
+      if !ccc, let ref = try src.lexEscapedReference(
+        priorGroupCount: priorGroupCount
+      )?.value {
+        return ref
+      }
+
       let char = src.eat()
 
-      // Single-character builtins
+      // Single-character builtins.
       if let builtin = AST.Atom.EscapedBuiltin(
         char, inCustomCharacterClass: ccc
       ) {
@@ -674,19 +836,14 @@ extension Source {
       }
 
       switch char {
-      // Scalars
-      case "u", "x", "U", "o", "0":
+      // Hexadecimal and octal unicode scalars. This must be done after
+      // backreference lexing due to the ambiguity with \nnn.
+      case let c where c.isOctalDigit: fallthrough
+      case "u", "x", "U", "o":
         return try .scalar(
           src.expectUnicodeScalar(escapedCharacter: char).value)
-
-      // Unicode property checks
-      case "p", "P":
-        fatalError("TODO: properties")
-
-      case "1"..."9", "g", "k":
-        fatalError("TODO: References")
-
-      default: return .char(char)
+      default:
+        return .char(char)
       }
     }
   }
@@ -704,7 +861,7 @@ extension Source {
   ///     ExpGroupStart -> '(_:'
   ///
   mutating func lexAtom(
-    isInCustomCharacterClass customCC: Bool
+    isInCustomCharacterClass customCC: Bool, priorGroupCount: Int
   ) throws -> AST.Atom? {
     let kind: Located<AST.Atom.Kind>? = try recordLoc { src in
       // Check for not-an-atom, e.g. parser recursion termination
@@ -719,6 +876,8 @@ extension Source {
       if customCC, let prop = try src.lexPOSIXCharacterProperty()?.value {
         return .property(prop)
       }
+
+      // TODO: Python-style backreferences (?P=...), which look like groups.
 
       let char = src.eat()
       switch char {
@@ -735,9 +894,8 @@ extension Source {
 
       // Escaped
       case "\\": return try src.expectEscaped(
-          isInCustomCharacterClass: customCC).value
-
-      // TODO: backreferences et al here?
+        isInCustomCharacterClass: customCC,
+        priorGroupCount: priorGroupCount).value
 
       case "]":
         assert(!customCC, "parser should have prevented this")
@@ -752,13 +910,16 @@ extension Source {
 
   /// Try to lex the end of a range in a custom character class, which consists
   /// of a '-' character followed by an atom.
-  mutating func lexCustomCharClassRangeEnd() throws -> AST.Atom? {
+  mutating func lexCustomCharClassRangeEnd(
+    priorGroupCount: Int
+  ) throws -> AST.Atom? {
     // Make sure we don't have a binary operator e.g '--', and the '-' is not
     // ending the custom character class (in which case it is literal).
     guard peekCCBinOp() == nil && !starts(with: "-]") && tryEat("-") else {
       return nil
     }
-    return try lexAtom(isInCustomCharacterClass: true)
+    return try lexAtom(isInCustomCharacterClass: true,
+                       priorGroupCount: priorGroupCount)
   }
 }
 

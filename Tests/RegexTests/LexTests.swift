@@ -29,6 +29,13 @@ func diagnose(
   }
 }
 
+extension Source {
+  @discardableResult
+  fileprivate mutating func lexBasicAtom() throws -> AST.Atom? {
+    try lexAtom(isInCustomCharacterClass: false, priorGroupCount: 0)
+  }
+}
+
 extension RegexTests {
   func testLexicalAnalysis() {
     diagnose("a", expecting: .expected("b")) { src in
@@ -85,7 +92,21 @@ extension RegexTests {
       "12", base: "U", expectedDigits: 8)
     diagnoseUniScalarOverflow("{123456789}", base: "u")
     diagnoseUniScalarOverflow("{123456789}", base: "x")
-    
+
+    // Test expected group.
+    diagnose(#"(*"#, expecting: .misc("Quantifier '*' must follow operand")) {
+      _ = try $0.lexGroupStart()
+    }
+
+    // Test expected closing delimiters.
+    diagnose(#"\u{5"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
+    diagnose(#"\x{5"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
+    diagnose(#"\N{A"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
+    diagnose(#"\N{U+A"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
+    diagnose(#"\p{a"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
+    diagnose(#"\p{a="#, expecting: .expected("}")) { try $0.lexBasicAtom() }
+    diagnose(#"(?#"#, expecting: .expected(")")) { _ = try $0.lexComment() }
+
     // TODO: want to dummy print out source ranges, etc, test that.
   }
 

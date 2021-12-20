@@ -76,6 +76,17 @@ extension Source {
     return true
   }
 
+  mutating func tryEat<C: Collection>(anyOf set: C) -> Char?
+    where C.Element == Char
+  {
+    guard let c = peek(), set.contains(c) else { return nil }
+    advance()
+    return c
+  }
+  mutating func tryEat(anyOf set: Char...) -> Char? {
+    tryEat(anyOf: set)
+  }
+
   mutating func eat(asserting c: Char) {
     assert(peek() == c)
     advance()
@@ -109,6 +120,15 @@ extension Source {
     maxLength: Int? = nil,
     _ f: (Char) -> Bool
   ) -> Input.SubSequence? {
+    guard let pre = peekPrefix(maxLength: maxLength, f) else { return nil }
+    defer { self.advance(pre.count) }
+    return pre
+  }
+
+  func peekPrefix(
+    maxLength: Int? = nil,
+    _ f: (Char) -> Bool
+  ) -> Input.SubSequence? {
     let chunk: Input.SubSequence
     if let maxLength = maxLength {
       chunk = _slice.prefix(maxLength)
@@ -118,7 +138,6 @@ extension Source {
     let pre = chunk.prefix(while: f)
     guard !pre.isEmpty else { return nil }
 
-    defer { self.advance(pre.count) }
     return pre
   }
 

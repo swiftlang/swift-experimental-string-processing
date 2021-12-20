@@ -52,8 +52,6 @@ extension AST {
       case endOfLine
 
       // References
-      //
-      // TODO: Haven't thought through these a ton
       case backreference(Reference)
       case subpattern(Reference)
       case condition(Reference)
@@ -414,12 +412,8 @@ extension AST.Atom: _ASTPrintable {
     case .startOfLine: return "^"
     case .endOfLine:   return "$"
 
-    case .backreference(_):
-      fatalError("TODO")
-    case .subpattern(_):
-      fatalError("TODO")
-    case .condition(_):
-      fatalError("TODO")
+    case .backreference(let r), .subpattern(let r), .condition(let r):
+      return "\(r)"
 
     case .char, .scalar:
       fatalError("Unreachable")
