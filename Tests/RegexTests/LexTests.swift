@@ -107,6 +107,10 @@ extension RegexTests {
     diagnose(#"\p{a="#, expecting: .expected("}")) { try $0.lexBasicAtom() }
     diagnose(#"(?#"#, expecting: .expected(")")) { _ = try $0.lexComment() }
 
+    diagnose(#"(?"#, expecting: .expectedGroupSpecifier) {
+      _ = try $0.lexGroupStart()
+    }
+
     // TODO: want to dummy print out source ranges, etc, test that.
   }
 

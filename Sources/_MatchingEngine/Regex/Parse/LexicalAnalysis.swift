@@ -502,8 +502,10 @@ extension Source {
           return .namedCapture(name)
         }
 
-        throw ParseError.misc(
-          "Unknown group kind '(?\(src.peek()!)'")
+        guard let next = src.peek() else {
+          throw ParseError.expectedGroupSpecifier
+        }
+        throw ParseError.misc("Unknown group kind '(?\(next)'")
       }
 
       // Explicitly spelled out PRCE2 syntax for some groups.
