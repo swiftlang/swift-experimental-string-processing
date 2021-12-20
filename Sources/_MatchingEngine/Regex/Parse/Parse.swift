@@ -171,7 +171,10 @@ extension Parser {
     if let kind = try source.lexGroupStart() {
       priorGroupCount += 1
       let child = try parse()
-      try source.expect(")")
+      // An implicit scoped group has already consumed its closing paren.
+      if !kind.value.hasImplicitScope {
+        try source.expect(")")
+      }
       return .group(.init(kind, child, loc(_start)))
     }
     if let cccStart = try source.lexCustomCCStart() {

@@ -93,6 +93,14 @@ extension RegexTests {
     diagnoseUniScalarOverflow("{123456789}", base: "u")
     diagnoseUniScalarOverflow("{123456789}", base: "x")
 
+    // Text segment options
+    diagnose("(?-y{g})", expecting: .cannotRemoveTextSegmentOptions) {
+      _ = try $0.lexGroupStart()
+    }
+    diagnose("(?-y{w})", expecting: .cannotRemoveTextSegmentOptions) {
+      _ = try $0.lexGroupStart()
+    }
+
     // Test expected group.
     diagnose(#"(*"#, expecting: .misc("Quantifier '*' must follow operand")) {
       _ = try $0.lexGroupStart()
@@ -106,6 +114,27 @@ extension RegexTests {
     diagnose(#"\p{a"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
     diagnose(#"\p{a="#, expecting: .expected("}")) { try $0.lexBasicAtom() }
     diagnose(#"(?#"#, expecting: .expected(")")) { _ = try $0.lexComment() }
+    diagnose(#"(?x"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
+
+    diagnose(#"(?"#, expecting: .expectedGroupSpecifier) {
+      _ = try $0.lexGroupStart()
+    }
+
+    diagnose(#"(?^"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
+    diagnose(#"(?^i"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
+    diagnose(#"(?^-"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
+    diagnose(#"(?^-)"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
+    diagnose(#"(?^i-"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
+    diagnose(#"(?^i-m)"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
+
+    diagnose(#"(?y)"#, expecting: .expected("{")) { _ = try $0.lexGroupStart() }
+    diagnose(#"(?y{)"#, expecting: .expected("g")) { _ = try $0.lexGroupStart() }
+    diagnose(#"(?y{g)"#, expecting: .expected("}")) { _ = try $0.lexGroupStart() }
+    diagnose(#"(?y{x})"#, expecting: .expected("g")) { _ = try $0.lexGroupStart() }
+
+    diagnose(#"(?k)"#, expecting: .misc("Unknown group kind '(?k'")) {
+      _ = try $0.lexGroupStart()
+    }
 
     // TODO: want to dummy print out source ranges, etc, test that.
   }

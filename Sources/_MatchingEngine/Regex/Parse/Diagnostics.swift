@@ -24,6 +24,9 @@ enum ParseError: Error, Hashable {
 
   case invalidPOSIXSetName(String)
   case emptyProperty
+
+  case expectedGroupSpecifier
+  case cannotRemoveTextSegmentOptions
 }
 
 extension ParseError: CustomStringConvertible {
@@ -57,6 +60,10 @@ extension ParseError: CustomStringConvertible {
       return "invalid character set name: '\(n)'"
     case .emptyProperty:
       return "empty property"
+    case .expectedGroupSpecifier:
+      return "expected group specifier"
+    case .cannotRemoveTextSegmentOptions:
+      return "text segment mode cannot be unset, only changed"
     }
   }
 }
