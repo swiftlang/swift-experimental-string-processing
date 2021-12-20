@@ -89,6 +89,36 @@ public func scriptRun(_ child: AST) -> AST {
 public func atomicScriptRun(_ child: AST) -> AST {
   group(.atomicScriptRun, child)
 }
+func changeMatchingOptions(
+  _ seq: AST.MatchingOptionSequence, hasImplicitScope: Bool, _ child: AST
+) -> AST {
+  group(.changeMatchingOptions(seq, hasImplicitScope: hasImplicitScope), child)
+}
+
+func matchingOptions(
+  adding: [AST.MatchingOption.Kind] = [],
+  removing: [AST.MatchingOption.Kind] = []
+) -> AST.MatchingOptionSequence {
+  .init(caretLoc: nil, adding: adding.map { .init($0, location: .fake) },
+        minusLoc: nil, removing: removing.map { .init($0, location: .fake)})
+}
+func matchingOptions(
+  adding: AST.MatchingOption.Kind...,
+  removing: AST.MatchingOption.Kind...
+) -> AST.MatchingOptionSequence {
+  matchingOptions(adding: adding, removing: removing)
+}
+func unsetMatchingOptions(
+  adding: [AST.MatchingOption.Kind]
+) -> AST.MatchingOptionSequence {
+  .init(caretLoc: .fake, adding: adding.map { .init($0, location: .fake) },
+        minusLoc: nil, removing: [])
+}
+func unsetMatchingOptions(
+  adding: AST.MatchingOption.Kind...
+) -> AST.MatchingOptionSequence {
+  unsetMatchingOptions(adding: adding)
+}
 
 func quant(
   _ amount: AST.Quantification.Amount,

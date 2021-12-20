@@ -376,6 +376,127 @@ extension RegexTests {
     parseTest("a(*atomic_script_run:b)c",
               concat("a", atomicScriptRun("b"), "c"))
 
+    // Matching option changing groups.
+    parseTest("(?-)", changeMatchingOptions(
+      matchingOptions(), hasImplicitScope: true, empty())
+    )
+    parseTest("(?i)", changeMatchingOptions(
+      matchingOptions(adding: .caseInsensitive),
+      hasImplicitScope: true, empty())
+    )
+    parseTest("(?m)", changeMatchingOptions(
+      matchingOptions(adding: .multiline),
+      hasImplicitScope: true, empty())
+    )
+    parseTest("(?x)", changeMatchingOptions(
+      matchingOptions(adding: .extended),
+      hasImplicitScope: true, empty())
+    )
+    parseTest("(?xx)", changeMatchingOptions(
+      matchingOptions(adding: .extraExtended),
+      hasImplicitScope: true, empty())
+    )
+    parseTest("(?xxx)", changeMatchingOptions(
+      matchingOptions(adding: .extraExtended, .extended),
+      hasImplicitScope: true, empty())
+    )
+    parseTest("(?-i)", changeMatchingOptions(
+      matchingOptions(removing: .caseInsensitive),
+      hasImplicitScope: true, empty())
+    )
+    parseTest("(?i-s)", changeMatchingOptions(
+      matchingOptions(adding: .caseInsensitive, removing: .singleLine),
+      hasImplicitScope: true, empty())
+    )
+    parseTest("(?i-is)", changeMatchingOptions(
+      matchingOptions(adding: .caseInsensitive,
+                      removing: .caseInsensitive, .singleLine),
+      hasImplicitScope: true, empty())
+    )
+
+    parseTest("(?:)", nonCapture(empty()))
+    parseTest("(?-:)", changeMatchingOptions(
+      matchingOptions(), hasImplicitScope: false, empty())
+    )
+    parseTest("(?i:)", changeMatchingOptions(
+      matchingOptions(adding: .caseInsensitive),
+      hasImplicitScope: false, empty())
+    )
+    parseTest("(?-i:)", changeMatchingOptions(
+      matchingOptions(removing: .caseInsensitive),
+      hasImplicitScope: false, empty())
+    )
+
+    parseTest("(?^)", changeMatchingOptions(
+      unsetMatchingOptions(),
+      hasImplicitScope: true, empty())
+    )
+    parseTest("(?^:)", changeMatchingOptions(
+      unsetMatchingOptions(),
+      hasImplicitScope: false, empty())
+    )
+    parseTest("(?^ims:)", changeMatchingOptions(
+      unsetMatchingOptions(adding: .caseInsensitive, .multiline, .singleLine),
+      hasImplicitScope: false, empty())
+    )
+    parseTest("(?^J:)", changeMatchingOptions(
+      unsetMatchingOptions(adding: .allowDuplicateGroupNames),
+      hasImplicitScope: false, empty())
+    )
+    parseTest("(?^y{w}:)", changeMatchingOptions(
+      unsetMatchingOptions(adding: .textSegmentWordMode),
+      hasImplicitScope: false, empty())
+    )
+
+    let allOptions: [AST.MatchingOption.Kind] = [
+      .caseInsensitive, .allowDuplicateGroupNames, .multiline, .noAutoCapture,
+      .singleLine, .reluctantByDefault, .extraExtended, .extended,
+      .unicodeWordBoundaries, .asciiOnlyDigit, .asciiOnlyPOSIXProps,
+      .asciiOnlySpace, .asciiOnlyWord, .textSegmentGraphemeMode,
+      .textSegmentWordMode
+    ]
+    parseTest("(?iJmnsUxxxwDPSWy{g}y{w}-iJmnsUxxxwDPSW)", changeMatchingOptions(
+      matchingOptions(
+        adding: allOptions,
+        removing: allOptions.dropLast(2)
+      ),
+      hasImplicitScope: true, empty())
+    )
+    parseTest("(?iJmnsUxxxwDPSWy{g}y{w}-iJmnsUxxxwDPSW:)", changeMatchingOptions(
+      matchingOptions(
+        adding: allOptions,
+        removing: allOptions.dropLast(2)
+      ),
+      hasImplicitScope: false, empty())
+    )
+
+    parseTest(
+      "a(b(?i)c)d", concat("a", capture(concat("b", changeMatchingOptions(
+        matchingOptions(adding: .caseInsensitive),
+        hasImplicitScope: true, "c"))), "d")
+    )
+    parseTest(
+      "(a(?i)b(c)d)", capture(concat("a", changeMatchingOptions(
+        matchingOptions(adding: .caseInsensitive),
+        hasImplicitScope: true, concat("b", capture("c"), "d"))))
+    )
+    parseTest(
+      "(a(?i)b(?#hello)c)", capture(concat("a", changeMatchingOptions(
+        matchingOptions(adding: .caseInsensitive),
+        hasImplicitScope: true, concat("b", "c"))))
+    )
+
+    // TODO: This is Oniguruma's behavior, but PCRE treats it as:
+    //     ab(?i:c)|(?i:def)|(?i:gh)
+    // instead. We ought to have a mode to emulate that.
+    parseTest("ab(?i)c|def|gh", concat("a", "b", changeMatchingOptions(
+      matchingOptions(adding: .caseInsensitive), hasImplicitScope: true,
+      alt("c", concat("d", "e", "f"), concat("g", "h")))))
+
+    parseTest("(a|b(?i)c|d)", capture(alt("a", concat("b", changeMatchingOptions(
+      matchingOptions(adding: .caseInsensitive), hasImplicitScope: true,
+      alt("c", "d"))))))
+
     // MARK: References
 
     // \1 ... \9 are always backreferences.
@@ -613,6 +734,14 @@ extension RegexTests {
                       #"([a-d&&e]*)+"#)
 
     parseNotEqualTest(#"\1"#, #"\10"#)
+
+    parseNotEqualTest("(?^:)", ("(?-:)"))
+    parseNotEqualTest("(?^i:)", ("(?i:)"))
+    parseNotEqualTest("(?i)", ("(?i:)"))
+    parseNotEqualTest("(?i)", ("(?m)"))
+    parseNotEqualTest("(?i-s)", ("(?i-m)"))
+    parseNotEqualTest("(?i-s:)", ("(?i-m:)"))
+    parseNotEqualTest("(?y{w}:)", ("(?y{g}:)"))
 
     // TODO: failure tests
   }

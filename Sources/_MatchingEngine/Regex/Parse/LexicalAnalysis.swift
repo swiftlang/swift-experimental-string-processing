@@ -456,11 +456,108 @@ extension Source {
     return AST.Trivia(trivia)
   }
 
+  /// Try to lex a matching option.
+  ///
+  ///     MatchingOption -> 'i' | 'J' | 'm' | 'n' | 's' | 'U' | 'x' | 'xx' | 'w'
+  ///                     | 'D' | 'P' | 'S' | 'W' | 'y{' ('g' | 'w') '}'
+  ///
+  mutating func lexMatchingOption() throws -> AST.MatchingOption? {
+    typealias OptKind = AST.MatchingOption.Kind
+
+    let locOpt = try recordLoc { src -> OptKind? in
+      func advanceAndReturn(_ o: OptKind) -> OptKind {
+        src.advance()
+        return o
+      }
+      guard let c = src.peek() else { return nil }
+      switch c {
+      // PCRE options.
+      case "i": return advanceAndReturn(.caseInsensitive)
+      case "J": return advanceAndReturn(.allowDuplicateGroupNames)
+      case "m": return advanceAndReturn(.multiline)
+      case "n": return advanceAndReturn(.noAutoCapture)
+      case "s": return advanceAndReturn(.singleLine)
+      case "U": return advanceAndReturn(.reluctantByDefault)
+      case "x":
+        src.advance()
+        return src.tryEat("x") ? .extraExtended : .extended
+
+      // ICU options.
+      case "w": return advanceAndReturn(.unicodeWordBoundaries)
+
+      // Oniguruma options.
+      case "D": return advanceAndReturn(.asciiOnlyDigit)
+      case "P": return advanceAndReturn(.asciiOnlyPOSIXProps)
+      case "S": return advanceAndReturn(.asciiOnlySpace)
+      case "W": return advanceAndReturn(.asciiOnlyWord)
+      case "y":
+        src.advance()
+        try src.expect("{")
+        let opt: OptKind
+        if src.tryEat("w") {
+          opt = .textSegmentWordMode
+        } else {
+          try src.expect("g")
+          opt = .textSegmentGraphemeMode
+        }
+        try src.expect("}")
+        return opt
+
+      default:
+        return nil
+      }
+    }
+    guard let locOpt = locOpt else { return nil }
+    return .init(locOpt.value, location: locOpt.location)
+  }
+
+  /// Try to lex a sequence of matching options.
+  ///
+  ///     MatchingOptionSeq -> '^' MatchingOption* | MatchingOption+
+  ///                        | MatchingOption* '-' MatchingOption+
+  ///
+  mutating func lexMatchingOptionSequence(
+  ) throws -> AST.MatchingOptionSequence? {
+    let ateCaret = recordLoc { $0.tryEat("^") }
+
+    // TODO: Warn on duplicate options, and options appearing in both adding
+    // and removing lists?
+    var adding: [AST.MatchingOption] = []
+    while let opt = try lexMatchingOption() {
+      adding.append(opt)
+    }
+
+    // If the sequence begun with a caret '^', options can be added, so we're
+    // done.
+    if ateCaret.value {
+      return .init(caretLoc: ateCaret.location, adding: adding, minusLoc: nil,
+                   removing: [])
+    }
+
+    // Try to lex options to remove.
+    let ateMinus = recordLoc { $0.tryEat("-") }
+    if ateMinus.value {
+      var removing: [AST.MatchingOption] = []
+      while let opt = try lexMatchingOption() {
+        // Text segment options can only be added, they cannot be removed
+        // with (?-), they should instead be set to a different mode.
+        if opt.isTextSegmentMode {
+          throw ParseError.cannotRemoveTextSegmentOptions
+        }
+        removing.append(opt)
+      }
+      return .init(caretLoc: nil, adding: adding, minusLoc: ateMinus.location,
+                   removing: removing)
+    }
+    guard !adding.isEmpty else { return nil }
+    return .init(caretLoc: nil, adding: adding, minusLoc: nil, removing: [])
+  }
 
   /// Try to consume the start of a group
   ///
   ///     GroupStart -> '(?' GroupKind | '('
-  ///     GroupKind  -> Named | ':' | '|' | '>' | '=' | '!' | '<=' | '<!'
+  ///     GroupKind  -> Named | ':' | '|' | '>' | '=' | '!' | '*' | '<=' | '<!'
+  ///                 | '<*' | MatchingOptionSeq (':' | ')')
   ///     Named      -> '<' [^'>']+ '>' | 'P<' [^'>']+ '>'
   ///                 | '\'' [^'\'']+ '\''
   ///
@@ -500,6 +597,21 @@ extension Source {
         if src.tryEat("'") {
           let name = try src.expectQuoted(endingWith: "'")
           return .namedCapture(name)
+        }
+
+        // Matching option changing group (?iJmnsUxxxDPSWy{..}-iJmnsUxxxDPSW:).
+        if let seq = try src.lexMatchingOptionSequence() {
+          if src.tryEat(":") {
+            return .changeMatchingOptions(seq, hasImplicitScope: false)
+          }
+          // If this isn't start of an explicit group, we should have an
+          // implicit group that covers the remaining elements of the current
+          // group.
+          // TODO: This implicit scoping behavior matches Oniguruma, but PCRE
+          // also does it across alternations, which will require additional
+          // handling.
+          try src.expect(")")
+          return .changeMatchingOptions(seq, hasImplicitScope: true)
         }
 
         guard let next = src.peek() else {

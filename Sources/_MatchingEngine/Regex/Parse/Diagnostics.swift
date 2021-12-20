@@ -26,6 +26,7 @@ enum ParseError: Error, Hashable {
   case emptyProperty
 
   case expectedGroupSpecifier
+  case cannotRemoveTextSegmentOptions
 }
 
 extension ParseError: CustomStringConvertible {
@@ -61,6 +62,8 @@ extension ParseError: CustomStringConvertible {
       return "empty property"
     case .expectedGroupSpecifier:
       return "expected group specifier"
+    case .cannotRemoveTextSegmentOptions:
+      return "text segment mode cannot be unset, only changed"
     }
   }
 }
