@@ -32,6 +32,7 @@ extension Instruction.Payload {
 
     case string(StringRegister)
     case sequence(SequenceRegister)
+    case position(PositionRegister)
     case optionalString(StringRegister?)
     case int(IntRegister)
     case distance(Distance)
@@ -46,6 +47,7 @@ extension Instruction.Payload {
     case packedAddrAddr(InstructionAddress, InstructionAddress)
     case packedBoolInt(BoolRegister, IntRegister)
     case packedEltBool(ElementRegister, BoolRegister)
+    case packedPosPos(PositionRegister, PositionRegister)
   }
 }
 
@@ -142,6 +144,13 @@ extension Instruction.Payload {
     interpret()
   }
 
+  init(position: PositionRegister) {
+    self.init(position)
+  }
+  var position: PositionRegister {
+    interpret()
+  }
+
   init(int: IntRegister) {
     self.init(int)
   }
@@ -233,6 +242,13 @@ extension Instruction.Payload {
     self.init(element, bool)
   }
   var pairedElementBool: (ElementRegister, BoolRegister) {
+    interpretPair()
+  }
+
+  init(pos: PositionRegister, pos2: PositionRegister) {
+    self.init(pos, pos2)
+  }
+  var pairedPosPos: (PositionRegister, PositionRegister) {
     interpretPair()
   }
 

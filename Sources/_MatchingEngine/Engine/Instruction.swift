@@ -20,8 +20,7 @@ extension Instruction {
     ///
     ///     nop(comment: String?)
     ///
-    /// Operand:
-    ///   - Optional string register containing a comment or reason
+    /// Operand: Optional string register containing a comment or reason
     ///
     case nop
 
@@ -41,7 +40,8 @@ extension Instruction {
     ///     moveImmediate(_ i: Int, into: IntReg)
     ///
     /// Operands:
-    ///   - TODO
+    ///   - Immediate value to move
+    ///   - Int register to move into
     ///
     case moveImmediate
 
@@ -49,21 +49,28 @@ extension Instruction {
 
     /// Branch to a new instruction
     ///
+    ///     branch(to: InstAddr)
+    ///
     /// Operand: instruction address to branch to
     case branch
 
     /// Conditionally branch
     ///
-    /// Operand: packed condition register and address to branch to
+    ///     condBranch(to: InstAddr, if: BoolReg)
+    ///
+    /// Operands:
+    ///   - Address to branch to
+    ///   - Condition register to check
     case condBranch
 
     /// Conditionally branch if zero, otherwise decrement
     ///
-    ///     branch_cond_zero_else_decrement(_ i: IntReg, to: InstructionAddress)
+    ///     condBranch(
+    ///       to: InstAddr, ifZeroElseDecrement: IntReg)
     ///
     /// Operands:
-    ///   - Int register to check for zero, otherwise decrease
     ///   - Instruction address to branch to, if zero
+    ///   - Int register to check for zero, otherwise decrease
     ///
     case condBranchZeroElseDecrement
 
@@ -101,10 +108,11 @@ extension Instruction {
     case print
 
 
-
     // MARK: - Matching
 
     /// Advance the input position.
+    ///
+    ///     advance(_ amount: Distance)
     ///
     /// Operand: Amount to advance by.
     case advance
@@ -113,13 +121,34 @@ extension Instruction {
 
     /// Composite assert-advance else restore.
     ///
+    ///     match(_: EltReg)
+    ///
     /// Operand: Element register to compare against.
     case match
 
     /// Match against a sequence of elements
     ///
+    ///     matchSequence(_: SeqReg)
+    ///
     /// Operand: Sequence register to compare against.
     case matchSequence
+
+    /// Match against a slice of the input
+    ///
+    ///     matchSlice(
+    ///       lowerBound: PositionReg, upperBound: PositionReg)
+    ///
+    /// Operands:
+    ///   - Lowerbound position in the input
+    ///   - Upperbound position in the input
+    case matchSlice
+
+    /// Save the current position in the input in a register
+    ///
+    ///     movePosition(into: PositionReg)
+    ///
+    /// Operand: The position register to move into
+    case movePosition
 
     /// Match against a provided element.
     ///

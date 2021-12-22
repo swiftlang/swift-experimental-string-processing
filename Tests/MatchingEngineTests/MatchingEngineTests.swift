@@ -226,6 +226,8 @@ let eatThroughA: Engine<String> = {
   }
 }()
 
+
+
 class MatchingEngineTests: XCTestCase {
 
   func testAEaters() {
@@ -245,6 +247,44 @@ class MatchingEngineTests: XCTestCase {
       test.check(manyAEater: manyAEater)
       test.check(eatUntilA: eatUntilA)
       test.check(eatThroughA: eatThroughA)
+    }
+  }
+
+  func testThreeLetterRepeat() {
+    // Check for a repeated 3-letter sequence, such as in
+    //   `(...)\1`
+    //
+    //   [0] movePosition(into: %low)
+    //   [1] advance(3)
+    //   [2] movePosition(into: %high)
+    //   [3] matchSlice(%low, %high)
+    //   [4] accept
+    let threeLetterRepeat: Engine<String> = {
+      makeEngine { builder in
+        let low = builder.makePositionRegister(
+          initializingWithCurrentPosition: ())
+        builder.buildAdvance(3)
+        let high = builder.makePositionRegister(
+          initializingWithCurrentPosition: ())
+        builder.buildMatchSlice(lower: low, upper: high)
+        builder.buildAccept()
+      }
+    }()
+
+    let tests: Array<(String, Bool)> = [
+      ("abcabc", true),
+      ("abcabc_____", true),
+      ("dddddd_____", true),
+      ("🥳🧟‍♀️c🥳🧟‍♀️c", true),
+      ("abccba", false),
+      ("abcabb", false),
+      ("abcbac", false),
+      ("🥳🧟‍♀️c🥳🧟‍♂️c", false),
+    ]
+
+    for (test, expect) in tests {
+      let match = threeLetterRepeat.consume(test) != nil
+      XCTAssertEqual(expect, match)
     }
   }
 }

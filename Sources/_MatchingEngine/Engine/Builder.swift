@@ -14,6 +14,7 @@ extension Program where Input.Element: Hashable {
     // Registers
     var nextBoolRegister = BoolRegister(0)
     var nextIntRegister = IntRegister(0)
+    var nextPositionRegister = PositionRegister(0)
 
     // Special addresses or instructions
     var failAddressToken: AddressToken? = nil
@@ -71,6 +72,13 @@ extension Program.Builder {
     let uint = UInt64(truncatingIfNeeded: value)
     assert(uint == value)
     buildMoveImmediate(uint, into: into)
+  }
+
+  public mutating func buildMoveCurrentPosition(
+    into: PositionRegister
+  ) {
+    instructions.append(.init(
+      .movePosition, .init(position: into)))
   }
 
   public mutating func buildBranch(to t: AddressToken) {
@@ -150,6 +158,14 @@ extension Program.Builder {
       .init(sequence: sequences.store(.init(s)))))
   }
 
+  public mutating func buildMatchSlice(
+    lower: PositionRegister, upper: PositionRegister
+  ) {
+    instructions.append(.init(
+      .matchSlice,
+      .init(pos: lower, pos2: upper)))
+  }
+
   public mutating func buildConsume(
     by p: @escaping Program.ConsumeFunction
   ) {
@@ -225,6 +241,7 @@ extension Program.Builder {
     regInfo.strings = strings.count
     regInfo.bools = nextBoolRegister.rawValue
     regInfo.ints = nextIntRegister.rawValue
+    regInfo.positions = nextPositionRegister.rawValue
     regInfo.consumeFunctions = consumeFunctions.count
 
     return Program(
@@ -311,6 +328,10 @@ extension Program.Builder {
     defer { nextIntRegister.rawValue += 1 }
     return nextIntRegister
   }
+  public mutating func makePositionRegister() -> PositionRegister {
+    defer { nextPositionRegister.rawValue += 1 }
+    return nextPositionRegister
+  }
 
   // Allocate and initialize a register
   public mutating func makeIntRegister(
@@ -318,6 +339,15 @@ extension Program.Builder {
   ) -> IntRegister {
     let r = makeIntRegister()
     self.buildMoveImmediate(initialValue, into: r)
+    return r
+  }
+
+  // Allocate and initialize a register
+  public mutating func makePositionRegister(
+    initializingWithCurrentPosition: ()
+  ) -> PositionRegister {
+    let r = makePositionRegister()
+    self.buildMoveCurrentPosition(into: r)
     return r
   }
 
@@ -332,6 +362,14 @@ extension Program.Builder {
     // reading the code easier
     buildNop("kill \(r)")
   }
+  public mutating func kill(_ r: PositionRegister) {
+    // TODO: Release/reuse registers, for now nop makes
+    // reading the code easier
+    buildNop("kill \(r)")
+  }
+
+  // TODO: A register-mapping helper struct, which could release
+  // registers without monotonicity required
 
   public mutating func makeConsumeFunction(
     _ f: @escaping Program.ConsumeFunction
@@ -339,8 +377,5 @@ extension Program.Builder {
     defer { consumeFunctions.append(f) }
     return ConsumeFunctionRegister(consumeFunctions.count)
   }
-
-  // TODO: consider releasing registers
-
 }
 

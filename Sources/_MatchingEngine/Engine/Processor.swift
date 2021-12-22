@@ -133,6 +133,32 @@ extension Processor {
     return slice
   }
 
+  mutating func match(_ e: Element) {
+    guard let cur = load(), cur == e else {
+      signalFailure()
+      return
+    }
+    if consume(1) {
+      controller.step()
+    }
+  }
+  mutating func matchSeq<C: Collection>(
+    _ seq: C
+  ) where C.Element == Input.Element {
+    let count = seq.count
+
+    guard let inputSlice = load(count: count),
+          seq.elementsEqual(inputSlice)
+    else {
+      signalFailure()
+      return
+    }
+    guard consume(.init(count)) else {
+      fatalError("unreachable")
+    }
+    controller.step()
+  }
+
   mutating func signalFailure() {
     guard let (pc, pos, stackEnd) = savePoints.popLast()?.destructure
     else {
@@ -195,6 +221,11 @@ extension Processor {
       assert(int == imm)
 
       registers[reg] = int
+      controller.step()
+
+    case .movePosition:
+      let reg = payload.position
+      registers[reg] = currentPosition
       controller.step()
 
     case .branch:
@@ -291,29 +322,18 @@ extension Processor {
 
     case .match:
       let reg = payload.element
-      guard let cur = load(), cur == registers[reg] else {
-        signalFailure()
-        return
-      }
-      if consume(1) {
-        controller.step()
-      }
+      match(registers[reg])
 
     case .matchSequence:
       let reg = payload.sequence
       let seq = registers[reg]
-      let count = seq.count
+      matchSeq(seq)
 
-      guard let inputSlice = load(count: count),
-            seq.elementsEqual(inputSlice)
-      else {
-        signalFailure()
-        return
-      }
-      guard consume(.init(count)) else {
-        fatalError("unreachable")
-      }
-      controller.step()
+    case .matchSlice:
+      let (lower, upper) = payload.pairedPosPos
+      let range = registers[lower]..<registers[upper]
+      let slice = input[range]
+      matchSeq(slice)
 
     case .consumeBy:
       let reg = payload.consumer
