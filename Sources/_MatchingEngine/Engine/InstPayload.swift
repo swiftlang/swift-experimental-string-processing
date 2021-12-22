@@ -31,6 +31,7 @@ extension Instruction.Payload {
     // and variables
 
     case string(StringRegister)
+    case sequence(SequenceRegister)
     case optionalString(StringRegister?)
     case int(IntRegister)
     case distance(Distance)
@@ -124,6 +125,13 @@ extension Instruction.Payload {
     self.init(string)
   }
   var string: StringRegister {
+    interpret()
+  }
+
+  init(sequence: SequenceRegister) {
+    self.init(sequence)
+  }
+  var sequence: SequenceRegister {
     interpret()
   }
 

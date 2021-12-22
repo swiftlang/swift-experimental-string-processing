@@ -4,6 +4,11 @@ extension Processor {
     // currently, these are static readonly
     var elements: [Element]
 
+    // currently, these are static readonly
+    //
+    // TODO: We want to be `String` instead of `[Character]`...
+    var sequences: [[Element]] = []
+
     // currently, hold output of assertions
     var bools: [Bool] // TODO: bitset
 
@@ -40,6 +45,9 @@ extension Processor {
     subscript(_ i: StringRegister) -> String {
       strings[i.rawValue]
     }
+    subscript(_ i: SequenceRegister) -> [Element] {
+      sequences[i.rawValue]
+    }
     subscript(_ i: IntRegister) -> Int {
       get { ints[i.rawValue] }
       set { ints[i.rawValue] = newValue }
@@ -66,6 +74,9 @@ extension Processor.Registers {
 
     self.elements = program.staticElements
     assert(elements.count == info.elements)
+
+    self.sequences = program.staticSequences
+    assert(sequences.count == info.sequences)
 
     self.consumeFunctions = program.staticConsumeFunctions
     assert(consumeFunctions.count == info.consumeFunctions)
@@ -94,6 +105,7 @@ extension Processor.Registers {
 extension Program {
   struct RegisterInfo {
     var elements = 0
+    var sequences = 0
     var bools = 0
     var strings = 0
     var consumeFunctions = 0

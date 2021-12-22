@@ -127,6 +127,9 @@ public enum _SavePointAddress {}
 public typealias ElementRegister = TypedInt<_ElementRegister>
 public enum _ElementRegister {}
 
+public typealias SequenceRegister = TypedInt<_SequenceRegister>
+public enum _SequenceRegister {}
+
 /// The register number for a stored boolean value
 ///
 /// E.g. used for conditional branches

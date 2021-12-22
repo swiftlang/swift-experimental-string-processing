@@ -3,6 +3,7 @@ extension Program where Input.Element: Hashable {
     var instructions: [Instruction] = []
 
     var elements = TypedSetVector<Input.Element, _ElementRegister>()
+    var sequences = TypedSetVector<[Input.Element], _SequenceRegister>()
     var strings = TypedSetVector<String, _StringRegister>()
     var consumeFunctions: [ConsumeFunction] = []
 
@@ -141,6 +142,14 @@ extension Program.Builder {
       .match, .init(element: elements.store(e))))
   }
 
+  public mutating func buildMatchSequence<S: Sequence>(
+    _ s: S
+  ) where S.Element == Input.Element {
+    instructions.append(.init(
+      .matchSequence,
+      .init(sequence: sequences.store(.init(s)))))
+  }
+
   public mutating func buildConsume(
     by p: @escaping Program.ConsumeFunction
   ) {
@@ -212,6 +221,7 @@ extension Program.Builder {
 
     var regInfo = Program.RegisterInfo()
     regInfo.elements = elements.count
+    regInfo.sequences = sequences.count
     regInfo.strings = strings.count
     regInfo.bools = nextBoolRegister.rawValue
     regInfo.ints = nextIntRegister.rawValue
@@ -220,6 +230,7 @@ extension Program.Builder {
     return Program(
       instructions: InstructionList(instructions),
       staticElements: elements.stored,
+      staticSequences: sequences.stored,
       staticStrings: strings.stored,
       staticConsumeFunctions: consumeFunctions,
       registerInfo: regInfo)

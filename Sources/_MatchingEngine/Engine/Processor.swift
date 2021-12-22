@@ -127,6 +127,11 @@ extension Processor {
   func load() -> Element? {
     currentPosition < end ? input[currentPosition] : nil
   }
+  func load(count: Int) -> Input.SubSequence? {
+    let slice = input[currentPosition...].prefix(count)
+    guard slice.count == count else { return nil }
+    return slice
+  }
 
   mutating func signalFailure() {
     guard let (pc, pos, stackEnd) = savePoints.popLast()?.destructure
@@ -293,6 +298,22 @@ extension Processor {
       if consume(1) {
         controller.step()
       }
+
+    case .matchSequence:
+      let reg = payload.sequence
+      let seq = registers[reg]
+      let count = seq.count
+
+      guard let inputSlice = load(count: count),
+            seq.elementsEqual(inputSlice)
+      else {
+        signalFailure()
+        return
+      }
+      guard consume(.init(count)) else {
+        fatalError("unreachable")
+      }
+      controller.step()
 
     case .consumeBy:
       let reg = payload.consumer

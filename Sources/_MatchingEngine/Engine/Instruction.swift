@@ -116,6 +116,11 @@ extension Instruction {
     /// Operand: Element register to compare against.
     case match
 
+    /// Match against a sequence of elements
+    ///
+    /// Operand: Sequence register to compare against.
+    case matchSequence
+
     /// Match against a provided element.
     ///
     /// Operand: Packed condition register to write to and element register to
