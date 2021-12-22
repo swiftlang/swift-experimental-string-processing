@@ -24,10 +24,7 @@ extension Processor {
     // unused
     var floats: [Double] = []
 
-    // unused
-    //
-    // Unlikely to be static, as that means input must be bound
-    // at compile time
+    // Currently, used for `movePosition` and `matchSlice`
     var positions: [Position] = []
 
     // unused
@@ -55,6 +52,10 @@ extension Processor {
     subscript(_ i: BoolRegister) -> Bool {
       get { bools[i.rawValue] }
       set { bools[i.rawValue] = newValue }
+    }
+    subscript(_ i: PositionRegister) -> Position {
+      get { positions[i.rawValue] }
+      set { positions[i.rawValue] = newValue }
     }
     subscript(_ i: ElementRegister) -> Element {
       elements[i.rawValue]
