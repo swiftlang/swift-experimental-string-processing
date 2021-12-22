@@ -26,24 +26,63 @@ extension AST.CustomCharacterClass.Member: ExpressibleByExtendedGraphemeClusterL
 class RegexTests: XCTestCase {}
 
 func parseTest(
-  _ input: String, _ expecting: AST,
-  syntax: SyntaxOptions = .traditional
+  _ input: String, _ expectedAST: AST,
+  syntax: SyntaxOptions = .traditional,
+  captures expectedCaptures: CaptureStructure = .empty,
+  file: StaticString = #file,
+  line: UInt = #line
 ) {
-  let orig = try! parse(input, syntax)
-  let ast = orig//.strippingTrivia!
-  guard ast == expecting
-          || ast._dump() == expecting._dump() // EQ workaround
+  let ast = try! parse(input, syntax)
+  guard ast == expectedAST
+          || ast._dump() == expectedAST._dump() // EQ workaround
   else {
     XCTFail("""
 
-              Expected: \(expecting._dump())
+              Expected: \(expectedAST._dump())
               Found:    \(ast._dump())
-              """)
+              """,
+            file: file, line: line)
     return
   }
+  let captures = ast.captureStructure
+  guard captures == expectedCaptures else {
+    XCTFail("""
+
+              Expected captures: \(expectedCaptures)
+              Found:             \(captures)
+              """,
+            file: file, line: line)
+    return
+  }
+  // Test capture structure round trip serialization.
+  let serializedCapturesSize = CaptureStructure.serializationBufferSize(
+    forInputUTF8CodeUnitCount: input.utf8.count)
+  let serializedCaptures = UnsafeMutableRawBufferPointer.allocate(
+    byteCount: serializedCapturesSize,
+    alignment: MemoryLayout<Int8>.alignment)
+  captures.encode(to: serializedCaptures)
+  guard let decodedCaptures = CaptureStructure(
+    decoding: UnsafeRawBufferPointer(serializedCaptures)
+  ) else {
+    XCTFail("Malformed capture structure serialization")
+    return
+  }
+  guard decodedCaptures == captures else {
+    XCTFail("""
+
+              Expected captures:  \(expectedCaptures)
+              Decoded:            \(decodedCaptures)
+              """,
+            file: file, line: line)
+    return
+  }
+  serializedCaptures.deallocate()
 }
 
-func parseWithDelimitersTest(_ input: String, _ expecting: AST) {
+func parseWithDelimitersTest(
+  _ input: String, _ expecting: AST,
+  file: StaticString = #file, line: UInt = #line
+) {
   let orig = try! parseWithDelimiters(input)
   let ast = orig
   guard ast == expecting
@@ -52,14 +91,18 @@ func parseWithDelimitersTest(_ input: String, _ expecting: AST) {
     XCTFail("""
               Expected: \(expecting._dump())
               Found:    \(ast._dump())
-              """)
+              """,
+            file: file, line: line)
     return
   }
 }
 
 /// Make sure the AST for two regex strings get compared differently.
-func parseNotEqualTest(_ lhs: String, _ rhs: String,
-                       syntax: SyntaxOptions = .traditional) {
+func parseNotEqualTest(
+  _ lhs: String, _ rhs: String,
+  syntax: SyntaxOptions = .traditional,
+  file: StaticString = #file, line: UInt = #line
+) {
   let lhsAST = try! parse(lhs, syntax)
   let rhsAST = try! parse(rhs, syntax)
   if lhsAST == rhsAST || lhsAST._dump() == rhsAST._dump() {
@@ -78,7 +121,8 @@ extension RegexTests {
       #"abc\+d*"#,
       concat("a", "b", "c", "+", zeroOrMore(.eager, "d")))
     parseTest(
-      "a(b)", concat("a", capture("b")))
+      "a(b)", concat("a", capture("b")),
+      captures: .atom())
     parseTest(
       "abc(?:de)+fghi*k|j",
       alt(
@@ -103,12 +147,44 @@ extension RegexTests {
       alt("a", concat(zeroOrOne(.eager, "b"), "c")))
     parseTest(
       "(a|b)c",
-      concat(capture(alt("a", "b")), "c"))
+      concat(capture(alt("a", "b")), "c"),
+      captures: .atom())
+    parseTest(
+      "(a)|b",
+      alt(capture("a"), "b"),
+      captures: .optional(.atom()))
+    parseTest(
+      "(a)|(b)|c",
+      alt(capture("a"), capture("b"), "c"),
+      captures: .tuple(.optional(.atom()), .optional(.atom())))
+    parseTest(
+      "((a|b))c",
+      concat(capture(capture(alt("a", "b"))), "c"),
+      captures: .tuple([.atom(), .atom()]))
+    parseTest(
+      "(?:((a|b)))*?c",
+      concat(quant(
+        .zeroOrMore, .reluctant,
+        nonCapture(capture(capture(alt("a", "b"))))), "c"),
+      captures: .tuple(.array(.atom()), .array(.atom())))
+    parseTest(
+      "(a)|b|(c)d",
+      alt(capture("a"), "b", concat(capture("c"), "d")),
+      captures: .tuple([.optional(.atom()), .optional(.atom())]))
     parseTest(
       "(.)*(.*)",
       concat(
         zeroOrMore(.eager, capture(atom(.any))),
-        capture(zeroOrMore(.eager, atom(.any)))))
+        capture(zeroOrMore(.eager, atom(.any)))),
+      captures: .tuple([.array(.atom()), .atom()]))
+    parseTest(
+      "((.))*((.)?)",
+      concat(
+        zeroOrMore(.eager, capture(capture(atom(.any)))),
+        capture(zeroOrOne(.eager, capture(atom(.any))))),
+      captures: .tuple([
+        .array(.atom()), .array(.atom()), .atom(), .optional(.atom())
+      ]))
     parseTest(
       #"abc\d"#,
       concat("a", "b", "c", escaped(.decimalDigit)))
@@ -316,16 +392,25 @@ extension RegexTests {
     // Named captures
     parseTest(
       #"a(?<label>b)c"#,
-      concat("a", namedCapture("label", "b"), "c"))
+      concat("a", namedCapture("label", "b"), "c"),
+      captures: .atom(name: "label"))
+    parseTest(
+      #"a(?<label1>b)c(?<label2>d)"#,
+      concat(
+        "a", namedCapture("label1", "b"), "c", namedCapture("label2", "d")),
+      captures: .tuple([.atom(name: "label1"), .atom(name: "label2")]))
     parseTest(
       #"a(?'label'b)c"#,
-      concat("a", namedCapture("label", "b"), "c"))
+      concat("a", namedCapture("label", "b"), "c"),
+      captures: .atom(name: "label"))
     parseTest(
       #"a(?P<label>b)c"#,
-      concat("a", namedCapture("label", "b"), "c"))
+      concat("a", namedCapture("label", "b"), "c"),
+      captures: .atom(name: "label"))
     parseTest(
       #"a(?P<label>b)c"#,
-      concat("a", namedCapture("label", "b"), "c"))
+      concat("a", namedCapture("label", "b"), "c"),
+      captures: .atom(name: "label"))
 
     // Other groups
     parseTest(
@@ -473,17 +558,20 @@ extension RegexTests {
     parseTest(
       "a(b(?i)c)d", concat("a", capture(concat("b", changeMatchingOptions(
         matchingOptions(adding: .caseInsensitive),
-        hasImplicitScope: true, "c"))), "d")
+        hasImplicitScope: true, "c"))), "d"),
+      captures: .atom()
     )
     parseTest(
       "(a(?i)b(c)d)", capture(concat("a", changeMatchingOptions(
         matchingOptions(adding: .caseInsensitive),
-        hasImplicitScope: true, concat("b", capture("c"), "d"))))
+        hasImplicitScope: true, concat("b", capture("c"), "d")))),
+      captures: .tuple(.atom(), .atom())
     )
     parseTest(
       "(a(?i)b(?#hello)c)", capture(concat("a", changeMatchingOptions(
         matchingOptions(adding: .caseInsensitive),
-        hasImplicitScope: true, concat("b", "c"))))
+        hasImplicitScope: true, concat("b", "c")))),
+      captures: .atom()
     )
 
     // TODO: This is Oniguruma's behavior, but PCRE treats it as:
@@ -495,7 +583,8 @@ extension RegexTests {
 
     parseTest("(a|b(?i)c|d)", capture(alt("a", concat("b", changeMatchingOptions(
       matchingOptions(adding: .caseInsensitive), hasImplicitScope: true,
-      alt("c", "d"))))))
+      alt("c", "d"))))),
+      captures: .atom())
 
     // MARK: References
 
@@ -505,7 +594,8 @@ extension RegexTests {
       parseTest(
         "()()()()()()()()()\\\(i)",
         concat((0..<9).map { _ in capture(empty()) }
-               + [backreference(.absolute(i))])
+               + [backreference(.absolute(i))]),
+        captures: .tuple(Array(repeating: .atom(), count: 9))
       )
     }
 
@@ -519,15 +609,18 @@ extension RegexTests {
     parseTest(
       #"()()()()()()()()()()\10"#,
       concat((0..<10).map { _ in capture(empty()) }
-             + [backreference(.absolute(10))])
+             + [backreference(.absolute(10))]),
+      captures: .tuple(Array(repeating: .atom(), count: 10))
     )
     parseTest(
       #"()()()()()()()()()\10()"#,
       concat((0..<9).map { _ in capture(empty()) }
-             + [scalar("\u{8}"), capture(empty())])
+             + [scalar("\u{8}"), capture(empty())]),
+      captures: .tuple(Array(repeating: .atom(), count: 10))
     )
     parseTest(#"()()\10"#,
-              concat(capture(empty()), capture(empty()), scalar("\u{8}")))
+              concat(capture(empty()), capture(empty()), scalar("\u{8}")),
+              captures: .tuple(.atom(), .atom()))
 
     // A capture of three empty captures.
     let fourCaptures = capture(
@@ -536,32 +629,37 @@ extension RegexTests {
     parseTest(
       // There are 9 capture groups in total here.
       #"((()()())(()()()))\10"#,
-      concat(capture(concat(fourCaptures, fourCaptures)), scalar("\u{8}"))
+      concat(capture(concat(fourCaptures, fourCaptures)), scalar("\u{8}")),
+      captures: .tuple(Array(repeating: .atom(), count: 9))
     )
     parseTest(
       // There are 10 capture groups in total here.
       #"((()()())()(()()()))\10"#,
       concat(capture(concat(fourCaptures, capture(empty()), fourCaptures)),
-             backreference(.absolute(10)))
+             backreference(.absolute(10))),
+      captures: .tuple(Array(repeating: .atom(), count: 10))
     )
     parseTest(
       // There are 10 capture groups in total here.
       #"((((((((((\10))))))))))"#,
       capture(capture(capture(capture(capture(capture(capture(capture(capture(
-        capture(backreference(.absolute(10))))))))))))
+        capture(backreference(.absolute(10)))))))))))),
+      captures: .tuple(Array(repeating: .atom(), count: 10))
     )
 
     // The cases from http://pcre.org/current/doc/html/pcre2pattern.html#digitsafterbackslash:
     parseTest(#"\040"#, scalar(" "))
     parseTest(
       String(repeating: "()", count: 40) + #"\040"#,
-      concat((0..<40).map { _ in capture(empty()) } + [scalar(" ")])
+      concat((0..<40).map { _ in capture(empty()) } + [scalar(" ")]),
+      captures: .tuple(Array(repeating: .atom(), count: 40))
     )
     parseTest(#"\40"#, scalar(" "))
     parseTest(
       String(repeating: "()", count: 40) + #"\40"#,
       concat((0..<40).map { _ in capture(empty()) }
-             + [backreference(.absolute(40))])
+             + [backreference(.absolute(40))]),
+      captures: .tuple(Array(repeating: .atom(), count: 40))
     )
 
     parseTest(#"\7"#, backreference(.absolute(7)))
@@ -570,12 +668,14 @@ extension RegexTests {
     parseTest(
       String(repeating: "()", count: 11) + #"\11"#,
       concat((0..<11).map { _ in capture(empty()) }
-             + [backreference(.absolute(11))])
+             + [backreference(.absolute(11))]),
+      captures: .tuple(Array(repeating: .atom(), count: 11))
     )
     parseTest(#"\011"#, scalar("\u{9}"))
     parseTest(
       String(repeating: "()", count: 11) + #"\011"#,
-      concat((0..<11).map { _ in capture(empty()) } + [scalar("\u{9}")])
+      concat((0..<11).map { _ in capture(empty()) } + [scalar("\u{9}")]),
+      captures: .tuple(Array(repeating: .atom(), count: 11))
     )
 
     parseTest(#"\0113"#, concat(scalar("\u{9}"), "3"))

@@ -220,7 +220,7 @@ func libswiftParseRegexLiteral(
   _ inputPtr: UnsafePointer<CChar>?,
   _ errOut: UnsafeMutablePointer<UnsafePointer<CChar>?>?,
   _ versionOut: UnsafeMutablePointer<CUnsignedInt>?,
-  _ captureStructureOut: UnsafeMutablePointer<Int8>?,
+  _ captureStructureOut: UnsafeMutableRawPointer?,
   _ captureStructureSize: CUnsignedInt
 ) {
   guard let s = inputPtr else { fatalError("Expected input param") }
@@ -233,7 +233,14 @@ func libswiftParseRegexLiteral(
 
   let str = String(cString: s)
   do {
-    let _ = try parseWithDelimiters(str)
+    let ast = try parseWithDelimiters(str)
+    // Serialize the capture structure for later type inference.
+    if let captureStructureOut = captureStructureOut {
+      assert(captureStructureSize >= str.utf8.count)
+      let buffer = UnsafeMutableRawBufferPointer(
+          start: captureStructureOut, count: Int(captureStructureSize))
+      ast.captureStructure.encode(to: buffer)
+    }
   } catch {
     errOut.pointee = copyCString(
       "cannot parse regular expression: \(String(describing: error))")
