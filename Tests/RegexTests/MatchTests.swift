@@ -121,13 +121,13 @@ extension RegexTests {
 
     matchTest(
       #"a\Q .\Eb"#,
-      input: "123a .bxyz", match: "a .b", xfail: true)
+      input: "123a .bxyz", match: "a .b")
     matchTest(
       #"a\Q \Q \\.\Eb"#,
-      input: #"123a \Q \\.bxyz"#, match: #"a \Q \\.b"#, xfail: true)
+      input: #"123a \Q \\.bxyz"#, match: #"a \Q \\.b"#)
     matchTest(
       #"\d\Q...\E"#,
-      input: "Countdown: 3... 2... 1...", match: "3...", xfail: true)
+      input: "Countdown: 3... 2... 1...", match: "3...")
 
     // MARK: Comments
 

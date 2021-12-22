@@ -92,7 +92,11 @@ class Compiler {
     case _ where try node.generateConsumer(matchLevel) != nil:
       try builder.buildConsume(by: node.generateConsumer(matchLevel)!)
 
-    case .quote, .customCharacterClass, .atom:
+    case .quote(let q):
+      // We stick quoted content into read-only constant strings
+      builder.buildMatchSequence(q.literal)
+
+    case .customCharacterClass, .atom:
       throw unsupported(node._dumpBase)
     }
   }

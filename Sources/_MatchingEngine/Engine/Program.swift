@@ -3,6 +3,7 @@ public struct Program<Input: Collection> where Input.Element: Equatable {
   var instructions: InstructionList<Instruction>
 
   var staticElements: [Input.Element]
+  var staticSequences: [[Input.Element]]
   var staticStrings: [String]
   var staticConsumeFunctions: [ConsumeFunction]
 
