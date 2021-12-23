@@ -138,7 +138,7 @@ public typealias StringRegister = TypedInt<_StringRegister>
 public enum _StringRegister {}
 
 /// Used for consume functions, e.g. character classes
-public typealias ConsumeFunctionRegister = TypedInt<_StringRegister>
+public typealias ConsumeFunctionRegister = TypedInt<_ConsumeFunctionRegister>
 public enum _ConsumeFunctionRegister {}
 
 /// UNIMPLEMENTED

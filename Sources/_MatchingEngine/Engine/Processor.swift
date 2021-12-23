@@ -36,7 +36,7 @@ struct Processor<
 
   var callStack: [InstructionAddress] = []
 
-  var state: State = .inprogress
+  var state: State = .inProgress
 
   var isTracingEnabled: Bool
 
@@ -49,6 +49,8 @@ extension Processor {
   typealias Position = Input.Index
 
   // TODO: What all do we want to save? Configurable?
+  // TODO: Do we need to save any registers?
+  // TODO: Is this the right place to do function stack unwinding?
   struct SavePoint {
     var pc: InstructionAddress
     var pos: Position?
@@ -96,7 +98,7 @@ extension Processor {
 extension Processor {
   // Advance in our input
   //
-  // Returns whether the advance succeeded. On failure, our 
+  // Returns whether the advance succeeded. On failure, our
   // save point was restored
   mutating func consume(_ n: Distance) -> Bool {
     // Want Collection to provide this behavior...
@@ -154,47 +156,83 @@ extension Processor {
 
   mutating func cycle() {
     _checkInvariants()
-    assert(state == .inprogress)
+    assert(state == .inProgress)
     if cycleCount == 0 { trace() }
     defer {
       cycleCount += 1
       trace()
       _checkInvariants()
     }
-    let (opcode, operand) = fetch().destructure
+    let (opcode, payload) = fetch().destructure
 
     switch opcode {
     case .invalid:
       fatalError("Invalid program")
     case .nop:
-      if checkComments, operand.hasPayload {
-        doPrint(registers[operand.payload(as: StringRegister.self)])
+      if checkComments,
+         let s = payload.optionalString
+      {
+        doPrint(registers[s])
       }
       controller.step()
 
+    case .decrement:
+      let (bool, int) = payload.pairedBoolInt
+      let newValue = registers[int] - 1
+      registers[bool] = newValue == 0
+      registers[int] = newValue
+      controller.step()
+
+    case .moveImmediate:
+      let (imm, reg) = payload.pairedImmediateInt
+      // TODO: Consider UInt64 regs, which may subsume Bool
+      let int = Int(bitPattern: UInt(truncatingIfNeeded: imm))
+      assert(int == imm)
+
+      registers[reg] = int
+      controller.step()
+
     case .branch:
-      controller.pc = operand.payload()
+      controller.pc = payload.addr
 
     case .condBranch:
-      if registers[operand.condition] {
-        controller.pc = operand.payload()
+      let (addr, cond) = payload.pairedAddrBool
+      if registers[cond] {
+        controller.pc = addr
       } else {
+        controller.step()
+      }
+
+    case .condBranchZeroElseDecrement:
+      let (addr, int) = payload.pairedAddrInt
+      if registers[int] == 0 {
+        controller.pc = addr
+      } else {
+        registers[int] -= 1
         controller.step()
       }
 
     case .save:
       savePoints.append(SavePoint(
-        pc: operand.payload(),
+        pc: payload.addr,
         pos: currentPosition,
         stackEnd: callStack.count))
       controller.step()
 
     case .saveAddress:
       savePoints.append(SavePoint(
-        pc: operand.payload(),
+        pc: payload.addr,
         pos: nil,
         stackEnd: callStack.count))
       controller.step()
+
+    case .splitSaving:
+      let (nextPC, saveAddr) = payload.pairedAddrAddr
+      savePoints.append(SavePoint(
+        pc: saveAddr,
+        pos: currentPosition,
+        stackEnd: callStack.count))
+      controller.pc = nextPC
 
     case .clear:
       if let _ = savePoints.popLast() {
@@ -218,7 +256,7 @@ extension Processor {
     case .call:
       controller.step()
       callStack.append(controller.pc)
-      controller.pc = operand.payload()
+      controller.pc = payload.addr
 
     case .ret:
       // TODO: Should empty stack mean success?
@@ -230,7 +268,9 @@ extension Processor {
 
     case .abort:
       // TODO: throw or otherwise propagate
-      doPrint(registers[operand.payload(as: StringRegister.self)])
+      if let s = payload.optionalString {
+        doPrint(registers[s])
+      }
       state = .fail
 
     case .accept:
@@ -239,13 +279,13 @@ extension Processor {
     case .fail:
       signalFailure()
 
-    case .consume:
-      if consume(operand.payload(as: Distance.self)) {
-       controller.step()
+    case .advance:
+      if consume(payload.distance) {
+        controller.step()
       }
 
     case .match:
-      let reg = operand.payload(as: ElementRegister.self)
+      let reg = payload.element
       guard let cur = load(), cur == registers[reg] else {
         signalFailure()
         return
@@ -255,10 +295,11 @@ extension Processor {
       }
 
     case .consumeBy:
-      let reg = operand.payload(as: ConsumeFunctionRegister.self)
+      let reg = payload.consumer
       guard currentPosition < bounds.upperBound,
             let nextIndex = registers[reg](
-              input, currentPosition..<bounds.upperBound) else {
+              input, currentPosition..<bounds.upperBound)
+      else {
         signalFailure()
         return
       }
@@ -267,17 +308,18 @@ extension Processor {
 
     case .print:
       // TODO: Debug stream
-      doPrint(registers[operand.payload(as: StringRegister.self)])
+      doPrint(registers[payload.string])
 
     case .assertion:
-      let reg = operand.payload(as: ElementRegister.self)
+      let (element, cond) =
+        payload.pairedElementBool
       let result: Bool
-      if let cur = load(), cur == registers[reg] {
+      if let cur = load(), cur == registers[element] {
         result = true
       } else {
         result = false
       }
-      registers[operand.condition] = result
+      registers[cond] = result
       controller.step()
     }
   }

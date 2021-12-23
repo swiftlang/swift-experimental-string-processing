@@ -18,21 +18,27 @@ extension Processor: TracedProcessor {
 
 extension Instruction: CustomStringConvertible {
   var description: String {
-    "\(opcode) \(operand)"
+    // TODO: opcode specific rendering
+    "\(opcode) \(payload)"
   }
 }
 
-extension Operand: CustomStringConvertible {
+extension Instruction.Payload: CustomStringConvertible {
   var description: String {
-    var result = ""
-    if hasCondition {
-      result += "\(condition) "
-    }
-    if hasPayload {
-      let payload: TypedInt<_Boo> = payload()
-      result += payload.description
-    }
-    return result
+//    var result = ""
+//    if hasCondition {
+//      result += "\(condition) "
+//    }
+//    if hasPayload {
+//      let payload: TypedInt<_Boo> = payload()
+//      result += payload.description
+//    }
+//    return result
+
+    // TODO: Without bit packing our representation, what
+    // should we do? I'd say a payload cannot be printed
+    // in isolation of the instruction...
+    return "\(rawValue)"
   }
 }
 

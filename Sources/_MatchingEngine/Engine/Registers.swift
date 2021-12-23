@@ -13,8 +13,8 @@ extension Processor {
     // currently, these are for comments and abort messages
     var strings: [String]
 
-    // unused
-    var ints: [Int] = []
+    // currently, useful for range-based quantification
+    var ints: [Int]
 
     // unused
     var floats: [Double] = []
@@ -39,6 +39,10 @@ extension Processor {
 
     subscript(_ i: StringRegister) -> String {
       strings[i.rawValue]
+    }
+    subscript(_ i: IntRegister) -> Int {
+      get { ints[i.rawValue] }
+      set { ints[i.rawValue] = newValue }
     }
     subscript(_ i: BoolRegister) -> Bool {
       get { bools[i.rawValue] }

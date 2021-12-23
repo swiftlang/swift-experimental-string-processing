@@ -180,6 +180,8 @@ extension Collection where Element: InstructionProtocol, Index == InstructionAdd
       // TODO: consider pruning anything in the rendered
       // instruction window...
       //result += " // \(pcChain(argPC, depth: depth))"
+      _ = argPC
+      result += ""
     }
     return result
   }

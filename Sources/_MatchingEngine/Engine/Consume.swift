@@ -33,7 +33,7 @@ extension Engine {
           return cpu.currentPosition
         case .fail:
           return nil
-        case .inprogress: cpu.cycle()
+        case .inProgress: cpu.cycle()
         }
       }
     }()

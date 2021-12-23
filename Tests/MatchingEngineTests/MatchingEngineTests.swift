@@ -182,7 +182,7 @@ let manyAEater: Engine<String> = {
 //
 //   [0] assert #0 #0
 //   [1] condBranch #0 [x] // accept
-//   [2] consume(1)
+//   [2] advance(1)
 //   [3] goto 0
 //   [4] accept
 //
@@ -191,13 +191,13 @@ let manyAEater: Engine<String> = {
 // instruction.
 let eatUntilA: Engine<String> = {
   makeEngine { builder in 
-    let reg = builder.makeRegister()
+    let reg = builder.makeBoolRegister()
     let accTok = builder.makeAddress()
     let assertTok = builder.makeAddress()
     builder.buildAssert("A", into: reg)
     builder.resolve(assertTok)
     builder.buildCondBranch(reg, to: accTok)
-    builder.buildConsume(1)
+    builder.buildAdvance(1)
     builder.buildBranch(to: assertTok)
     builder.buildAccept()
     builder.resolve(accTok)
@@ -207,18 +207,18 @@ let eatUntilA: Engine<String> = {
 // Eat through the first A (FAIL if no A)
 //
 //   [0] assert #0 #0
-//   [1] consume(1)
+//   [1] advance(1)
 //   [2] condBranch #0 [x] // accept
 //   [3] goto 0
 //   [4] accept
 let eatThroughA: Engine<String> = {
   makeEngine { builder in
-    let reg = builder.makeRegister()
+    let reg = builder.makeBoolRegister()
     let accTok = builder.makeAddress()
     let assertTok = builder.makeAddress()
     builder.buildAssert("A", into: reg)
     builder.resolve(assertTok)
-    builder.buildConsume(1)
+    builder.buildAdvance(1)
     builder.buildCondBranch(reg, to: accTok)
     builder.buildBranch(to: assertTok)
     builder.buildAccept()

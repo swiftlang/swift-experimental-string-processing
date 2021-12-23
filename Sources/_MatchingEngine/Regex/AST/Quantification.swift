@@ -89,3 +89,21 @@ extension AST.Quantification: _ASTPrintable {
     """
   }
 }
+
+/// MARK: - Semantic API
+
+extension AST.Quantification.Amount {
+  /// Get the bounds
+  public var bounds: (atLeast: Int, atMost: Int?) {
+    switch self {
+    case .zeroOrMore: return (0, nil)
+    case .oneOrMore:  return (1, nil)
+    case .zeroOrOne:  return (0, 1)
+
+    case let .exactly(n):  return (n.value, n.value)
+    case let .nOrMore(n):  return (n.value, nil)
+    case let .upToN(n):    return (0, n.value)
+    case let .range(n, m): return (n.value, m.value)
+    }
+  }
+}

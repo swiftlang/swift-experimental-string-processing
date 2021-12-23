@@ -5,7 +5,7 @@ import XCTest
 func matchTest(
   _ regex: String,
   input: String,
-  match: String,
+  match: String?,
   syntax: SyntaxOptions = .traditional,
   enableTracing: Bool = false,
   dumpAST: Bool = false,
@@ -15,6 +15,9 @@ func matchTest(
     var consumer = try RegexConsumer<String>(parsing: regex)
     consumer.vm.engine.enableTracing = enableTracing
     guard let range = input.firstRange(of: consumer) else {
+      if match == nil {
+        return
+      }
       throw "expect xfail"
     }
 
@@ -24,8 +27,30 @@ func matchTest(
       XCTAssertEqual(String(input[range]), match)
     }
   } catch {
-    XCTAssert(xfail)
+    if !xfail {
+      XCTFail("\(error)")
+    }
     return
+  }
+}
+
+func matchTests(
+  _ regex: String,
+  _ tests: (input: String, match: String?)...,
+  syntax: SyntaxOptions = .traditional,
+  enableTracing: Bool = false,
+  dumpAST: Bool = false,
+  xfail: Bool = false
+) {
+  for (input, match) in tests {
+    matchTest(
+      regex,
+      input: input,
+      match: match,
+      syntax: syntax,
+      enableTracing: enableTracing,
+      dumpAST: dumpAST,
+      xfail: xfail)
   }
 }
 
@@ -110,25 +135,182 @@ extension RegexTests {
       #"a(?#comment)b"#, input: "123abcxyz", match: "ab")
     matchTest(
       #"a(?#. comment)b"#, input: "123abcxyz", match: "ab")
+  }
 
+  func testMatchQuantification() {
     // MARK: Quantification
 
     matchTest(
-      #"a{1,2}"#, input: "123aaaxyz", match: "aa", xfail: true)
+      #"a{1,2}"#, input: "123aaaxyz", match: "aa")
     matchTest(
-      #"a{,2}"#, input: "123aaaxyz", match: "", xfail: true)
+      #"a{,2}"#, input: "123aaaxyz", match: "")
     matchTest(
-      #"a{,2}x"#, input: "123aaaxyz", match: "aax", xfail: true)
+      #"a{,2}x"#, input: "123aaaxyz", match: "aax")
     matchTest(
-      #"a{,2}x"#, input: "123xyz", match: "x", xfail: true)
+      #"a{,2}x"#, input: "123xyz", match: "x")
     matchTest(
-      #"a{2,}"#, input: "123aaaxyz", match: "aaa", xfail: true)
+      #"a{2,}"#, input: "123aaaxyz", match: "aaa")
     matchTest(
       #"a{1}"#, input: "123aaaxyz", match: "a")
     matchTest(
-      #"a{1,2}?"#, input: "123aaaxyz", match: "a", xfail: true)
+      #"a{1,2}?"#, input: "123aaaxyz", match: "a")
     matchTest(
-      #"a{1,2}?x"#, input: "123aaaxyz", match: "aax", xfail: true)
+      #"a{1,2}?x"#, input: "123aaaxyz", match: "aax")
+
+    matchTest("a.*", input: "dcba", match: "a")
+
+    matchTest("a*", input: "", match: "")
+    matchTest("a*", input: "a", match: "a")
+    matchTest("a*", input: "aaa", match: "aaa")
+
+    matchTest("a*?", input: "", match: "")
+    matchTest("a*?", input: "a", match: "")
+    matchTest("a*?a", input: "aaa", match: "a")
+    matchTest("xa*?x", input: "_xx__", match: "xx")
+    matchTest("xa*?x", input: "_xax__", match: "xax")
+    matchTest("xa*?x", input: "_xaax__", match: "xaax")
+
+    matchTest("a+", input: "", match: nil)
+    matchTest("a+", input: "a", match: "a")
+    matchTest("a+", input: "aaa", match: "aaa")
+
+    matchTest("a+?", input: "", match: nil)
+    matchTest("a+?", input: "a", match: "a")
+    matchTest("a+?a", input: "aaa", match: "aa")
+    matchTest("xa+?x", input: "_xx__", match: nil)
+    matchTest("xa+?x", input: "_xax__", match: "xax")
+    matchTest("xa+?x", input: "_xaax__", match: "xaax")
+
+    matchTest("a??", input: "", match: "")
+    matchTest("a??", input: "a", match: "")
+    matchTest("a??a", input: "aaa", match: "a")
+    matchTest("xa??x", input: "_xx__", match: "xx")
+    matchTest("xa??x", input: "_xax__", match: "xax")
+    matchTest("xa??x", input: "_xaax__", match: nil)
+
+    // Possessive .* will consume entire input
+    matchTests(
+      ".*+x",
+      ("abc", nil), ("abcx", nil), ("", nil))
+
+    matchTests(
+      "a+b",
+      ("abc", "ab"),
+      ("aaabc", "aaab"),
+      ("b", nil))
+    matchTests(
+      "a++b",
+      ("abc", "ab"),
+      ("aaabc", "aaab"),
+      ("b", nil))
+    matchTests(
+      "a+?b",
+      ("abc", "ab"),
+      ("aaabc", "aaab"), // firstRange will match from front
+      ("b", nil))
+
+    matchTests(
+      "a+a",
+      ("babc", nil),
+      ("baaabc", "aaa"),
+      ("bb", nil))
+    matchTests(
+      "a++a",
+      ("babc", nil),
+      ("baaabc", nil),
+      ("bb", nil))
+    matchTests(
+      "a+?a",
+      ("babc", nil),
+      ("baaabc", "aa"),
+      ("bb", nil))
+
+
+    matchTests(
+      "a{2,4}a",
+      ("babc", nil),
+      ("baabc", nil),
+      ("baaabc", "aaa"),
+      ("baaaaabc", "aaaaa"),
+      ("baaaaaaaabc", "aaaaa"),
+      ("bb", nil))
+    matchTests(
+      "a{,4}a",
+      ("babc", "a"),
+      ("baabc", "aa"),
+      ("baaabc", "aaa"),
+      ("baaaaabc", "aaaaa"),
+      ("baaaaaaaabc", "aaaaa"),
+      ("bb", nil))
+    matchTests(
+      "a{2,}a",
+      ("babc", nil),
+      ("baabc", nil),
+      ("baaabc", "aaa"),
+      ("baaaaabc", "aaaaa"),
+      ("baaaaaaaabc", "aaaaaaaa"),
+      ("bb", nil))
+
+    matchTests(
+      "a{2,4}?a",
+      ("babc", nil),
+      ("baabc", nil),
+      ("baaabc", "aaa"),
+      ("baaaaabc", "aaa"),
+      ("baaaaaaaabc", "aaa"),
+      ("bb", nil))
+    matchTests(
+      "a{,4}?a",
+      ("babc", "a"),
+      ("baabc", "a"),
+      ("baaabc", "a"),
+      ("baaaaabc", "a"),
+      ("baaaaaaaabc", "a"),
+      ("bb", nil))
+    matchTests(
+      "a{2,}?a",
+      ("babc", nil),
+      ("baabc", nil),
+      ("baaabc", "aaa"),
+      ("baaaaabc", "aaa"),
+      ("baaaaaaaabc", "aaa"),
+      ("bb", nil))
+
+    matchTests(
+      "a{2,4}+a",
+      ("babc", nil),
+      ("baabc", nil),
+      ("baaabc", nil),
+      ("baaaaabc", "aaaaa"),
+      ("baaaaaaaabc", "aaaaa"),
+      ("bb", nil))
+    matchTests(
+      "a{,4}+a",
+      ("babc", nil),
+      ("baabc", nil),
+      ("baaabc", nil),
+      ("baaaaabc", "aaaaa"),
+      ("baaaaaaaabc", "aaaaa"),
+      ("bb", nil))
+    matchTests(
+      "a{2,}+a",
+      ("babc", nil),
+      ("baabc", nil),
+      ("baaabc", nil),
+      ("baaaaabc", nil),
+      ("baaaaaaaabc", nil),
+      ("bb", nil))
+
+
+    matchTests(
+      "(?:a{2,4}?b)+",
+      ("aab", "aab"),
+      ("aabaabaab", "aabaabaab"),
+      ("aaabaaaabaabab", "aaabaaaabaab")
+      // TODO: Nested reluctant reentrant example, xfailed
+    )
+
+    // TODO: After captures, easier to test these
   }
 
   func testMatchCharacterClasses() {
