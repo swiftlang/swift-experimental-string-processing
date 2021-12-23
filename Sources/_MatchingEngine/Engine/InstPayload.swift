@@ -39,6 +39,7 @@ extension Instruction.Payload {
     case bool(BoolRegister)
     case element(ElementRegister)
     case consumer(ConsumeFunctionRegister)
+    case assertion(AssertionFunctionRegister)
     case addr(InstructionAddress)
 
     case packedImmInt(Int, IntRegister)
@@ -183,6 +184,13 @@ extension Instruction.Payload {
     self.init(consumer)
   }
   var consumer: ConsumeFunctionRegister {
+    interpret()
+  }
+
+  init(assertion: AssertionFunctionRegister) {
+    self.init(assertion)
+  }
+  var assertion: AssertionFunctionRegister {
     interpret()
   }
 

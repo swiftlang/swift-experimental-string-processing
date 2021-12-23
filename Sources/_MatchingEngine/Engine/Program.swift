@@ -1,11 +1,14 @@
 public struct Program<Input: Collection> where Input.Element: Equatable {
   public typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?
+  public typealias AssertionFunction =
+    (Input, Input.Index, Range<Input.Index>) -> Bool
   var instructions: InstructionList<Instruction>
 
   var staticElements: [Input.Element]
   var staticSequences: [[Input.Element]]
   var staticStrings: [String]
   var staticConsumeFunctions: [ConsumeFunction]
+  var staticAssertionFunctions: [AssertionFunction]
 
   var registerInfo: RegisterInfo
 

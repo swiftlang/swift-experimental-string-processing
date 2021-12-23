@@ -162,11 +162,18 @@ extension Instruction {
     /// Operand: Consume function register to call.
     case consumeBy
 
-    /// Custom assertion operation
+    /// Custom lookaround assertion operation.
+    /// Triggers a failure if customFunction returns false.
+    ///
+    ///     assert(
+    ///       _ customFunction: (
+    ///         input: Input,
+    ///         currentPos: Position,
+    ///         bounds: Range<Position>) -> Bool
+    ///     )
     ///
     /// Operands: destination bool register, assert hook register
-    static var assertHook: OpCode { fatalError() }
-
+    case assertBy
 
     // MARK: Matching: Save points
 

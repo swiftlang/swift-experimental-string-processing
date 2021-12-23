@@ -15,6 +15,9 @@ extension Processor {
     // currently, these are static readonly
     var consumeFunctions: [Program<Input>.ConsumeFunction]
 
+    // currently, these are static readonly
+    var assertionFunctions: [Program<Input>.AssertionFunction]
+
     // currently, these are for comments and abort messages
     var strings: [String]
 
@@ -63,6 +66,9 @@ extension Processor {
     subscript(_ i: ConsumeFunctionRegister) -> Program<Input>.ConsumeFunction {
       consumeFunctions[i.rawValue]
     }
+    subscript(_ i: AssertionFunctionRegister) -> Program<Input>.AssertionFunction {
+      assertionFunctions[i.rawValue]
+    }
   }
 }
 
@@ -81,6 +87,9 @@ extension Processor.Registers {
 
     self.consumeFunctions = program.staticConsumeFunctions
     assert(consumeFunctions.count == info.consumeFunctions)
+
+    self.assertionFunctions = program.staticAssertionFunctions
+    assert(assertionFunctions.count == info.assertionFunctions)
 
     self.strings = program.staticStrings
     assert(strings.count == info.strings)
@@ -110,6 +119,7 @@ extension Program {
     var bools = 0
     var strings = 0
     var consumeFunctions = 0
+    var assertionFunctions = 0
     var ints = 0
     var floats = 0
     var positions = 0

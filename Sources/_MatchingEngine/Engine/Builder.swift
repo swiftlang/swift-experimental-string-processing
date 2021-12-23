@@ -6,6 +6,7 @@ extension Program where Input.Element: Hashable {
     var sequences = TypedSetVector<[Input.Element], _SequenceRegister>()
     var strings = TypedSetVector<String, _StringRegister>()
     var consumeFunctions: [ConsumeFunction] = []
+    var assertionFunctions: [AssertionFunction] = []
 
     // Map tokens to actual addresses
     var addressTokens: [InstructionAddress?] = []
@@ -174,6 +175,13 @@ extension Program.Builder {
   }
 
   public mutating func buildAssert(
+    by p: @escaping Program.AssertionFunction
+  ) {
+    instructions.append(.init(
+      .assertBy, .init(assertion: makeAssertionFunction(p))))
+  }
+
+  public mutating func buildAssert(
     _ e: Input.Element, into cond: BoolRegister
   ) {
     instructions.append(.init(.assertion, .init(
@@ -243,6 +251,7 @@ extension Program.Builder {
     regInfo.ints = nextIntRegister.rawValue
     regInfo.positions = nextPositionRegister.rawValue
     regInfo.consumeFunctions = consumeFunctions.count
+    regInfo.assertionFunctions = assertionFunctions.count
 
     return Program(
       instructions: InstructionList(instructions),
@@ -250,6 +259,7 @@ extension Program.Builder {
       staticSequences: sequences.stored,
       staticStrings: strings.stored,
       staticConsumeFunctions: consumeFunctions,
+      staticAssertionFunctions: assertionFunctions,
       registerInfo: regInfo)
   }
 
@@ -376,6 +386,12 @@ extension Program.Builder {
   ) -> ConsumeFunctionRegister {
     defer { consumeFunctions.append(f) }
     return ConsumeFunctionRegister(consumeFunctions.count)
+  }
+  public mutating func makeAssertionFunction(
+    _ f: @escaping Program.AssertionFunction
+  ) -> AssertionFunctionRegister {
+    defer { assertionFunctions.append(f) }
+    return AssertionFunctionRegister(assertionFunctions.count)
   }
 }
 
