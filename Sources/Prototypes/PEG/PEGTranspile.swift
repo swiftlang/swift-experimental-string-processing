@@ -40,7 +40,7 @@ extension PEG.VM {
       case .comment(let s):
         builder.buildNop(s)
       case .consume(let n):
-        builder.buildConsume(Distance(n))
+        builder.buildAdvance(Distance(n))
       case .branch(_):
         builder.buildBranch(to: nextToken())
       case .condBranch(let condition, _):
