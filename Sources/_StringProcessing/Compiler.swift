@@ -79,9 +79,21 @@ class Compiler {
     case .trivia, .empty:
       break
 
-    // FIXME: This can't be right...
     case .group(let g):
-      try emit(g.child)
+      if let lookaround = g.lookaroundKind {
+        try emitLookaround(lookaround, g.child)
+        return
+      }
+
+      switch g.kind.value {
+      case .lookahead, .negativeLookahead,
+          .lookbehind, .negativeLookbehind:
+        fatalError("unreachable")
+
+      default:
+        // FIXME: This can't be right...
+        try emit(g.child)
+      }
 
     case .quantification(let quant):
       try emitQuantification(quant)
@@ -100,6 +112,53 @@ class Compiler {
       throw unsupported(node._dumpBase)
     }
   }
+
+  func emitLookaround(
+    _ kind: (forwards: Bool, positive: Bool),
+    _ child: AST
+  ) throws {
+    guard kind.forwards else {
+      throw unsupported("backwards assertions")
+    }
+
+    let positive = kind.positive
+    /*
+      save(restoringAt: success)
+      save(restoringAt: intercept)
+      <sub-pattern>    // failure restores at intercept
+      clearSavePoint   // remove intercept
+      <if negative>:
+        clearSavePoint // remove success
+      fail             // positive->success, negative propagates
+    intercept:
+      <if positive>:
+        clearSavePoint // remove success
+      fail             // positive propagates, negative->success
+    success:
+      ...
+    */
+
+    let intercept = builder.makeAddress()
+    let success = builder.makeAddress()
+
+    builder.buildSave(success)
+    builder.buildSave(intercept)
+    try emit(child)
+    builder.buildClear()
+    if !positive {
+      builder.buildClear()
+    }
+    builder.buildFail()
+
+    builder.label(intercept)
+    if positive {
+      builder.buildClear()
+    }
+    builder.buildFail()
+
+    builder.label(success)
+  }
+
 
   func compileQuantification(
     low: Int,

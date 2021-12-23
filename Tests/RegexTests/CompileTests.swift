@@ -6,6 +6,28 @@ import XCTest
 
 extension RegexTests {
 
+  private func testCompilationEquivalence(
+    _ equivs: [String]
+  ) throws {
+    assert(!equivs.isEmpty)
+    let progs = try equivs.map {
+      try _compileRegex($0).engine.program
+    }
+    let ref = progs.first!
+    for prog in progs.dropFirst() {
+      guard ref.instructions.elementsEqual(
+        prog.instructions) else {
+          XCTFail("""
+          Reference:
+          \(ref)
+          Current:
+          \(prog)
+          """)
+          continue
+        }
+    }
+  }
+
   func testCompileQuantification() throws {
 
     // NOTE: While we might change how we compile
@@ -26,15 +48,22 @@ extension RegexTests {
     ]
 
     for row in equivalents {
-      let progs = try row.map {
-        try _compileRegex($0).engine.program
-      }
-      let ref = progs.first!
-      for prog in progs.dropFirst() {
-        XCTAssert(ref.instructions.elementsEqual(
-          prog.instructions))
+      try testCompilationEquivalence(row)
+    }
+  }
 
-      }
+  func testCompileGroups() throws {
+    let equivalents: Array<[String]> = [
+      ["(?= assert)",
+       "(*pla: assert)",
+       "(*positive_lookahead: assert)"],
+      ["(?! assert)",
+       "(*nla: assert)",
+       "(*negative_lookahead: assert)"]
+    ]
+
+    for row in equivalents {
+      try testCompilationEquivalence(row)
     }
   }
 }

@@ -438,7 +438,9 @@ extension RegexTests {
       "--+", input: "123---xyz", match: "---")
     matchTest(
       "~~*", input: "123~~~xyz", match: "~~~")
+  }
 
+  func testCharacterProperties() {
     // MARK: Character names.
 
     matchTest(#"\N{ASTERISK}"#, input: "123***xyz", match: "*")
@@ -589,6 +591,64 @@ extension RegexTests {
       input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
   }
 
+  func testAssertions() {
+    matchTest(
+      #"\d+(?= dollars)"#,
+      input: "Price: 100 dollars", match: "100")
+    matchTest(
+      #"\d+(?= pesos)"#,
+      input: "Price: 100 dollars", match: nil)
+    matchTest(
+      #"(?=\d+ dollars)\d+"#,
+      input: "Price: 100 dollars", match: "100",
+      xfail: true) // TODO
+
+    matchTest(
+      #"\d+(*pla: dollars)"#,
+      input: "Price: 100 dollars", match: "100")
+    matchTest(
+      #"\d+(*positive_lookahead: dollars)"#,
+      input: "Price: 100 dollars", match: "100")
+
+    matchTest(
+      #"\d+(?! dollars)"#,
+      input: "Price: 100 pesos", match: "100")
+    matchTest(
+      #"\d+(?! dollars)"#,
+      input: "Price: 100 dollars", match: "10")
+    matchTest(
+      #"(?!\d+ dollars)\d+"#,
+      input: "Price: 100 pesos", match: "100")
+    matchTest(
+      #"\d+(*nla: dollars)"#,
+      input: "Price: 100 pesos", match: "100")
+    matchTest(
+      #"\d+(*negative_lookahead: dollars)"#,
+      input: "Price: 100 pesos", match: "100")
+
+    matchTest(
+      #"(?<=USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
+    matchTest(
+      #"(*plb:USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
+    matchTest(
+      #"(*positive_lookbehind:USD)\d+"#,
+      input: "Price: USD100", match: "100", xfail: true)
+    // engines generally enforce that lookbehinds are fixed width
+    matchTest(
+      #"\d{3}(?<=USD\d{3})"#, input: "Price: USD100", match: "100", xfail: true)
+
+    matchTest(
+      #"(?<!USD)\d+"#, input: "Price: JYP100", match: "100", xfail: true)
+    matchTest(
+      #"(*nlb:USD)\d+"#, input: "Price: JYP100", match: "100", xfail: true)
+    matchTest(
+      #"(*negative_lookbehind:USD)\d+"#,
+      input: "Price: JYP100", match: "100", xfail: true)
+    // engines generally enforce that lookbehinds are fixed width
+    matchTest(
+      #"\d{3}(?<!USD\d{3})"#, input: "Price: JYP100", match: "100", xfail: true)
+  }
+
   func testMatchGroups() {
     // MARK: Groups
 
@@ -617,53 +677,6 @@ extension RegexTests {
     matchTest(
       #"(?>a+)[a-z]c"#, input: "123aacacxyz", match: "ac", xfail: true)
 
-    matchTest(
-      #"\d+(?= dollars)"#,
-      input: "Price: 100 dollars", match: "100", xfail: true)
-    matchTest(
-      #"(?=\d+ dollars)\d+"#,
-      input: "Price: 100 dollars", match: "100", xfail: true)
-    matchTest(
-      #"\d+(*pla: dollars)"#,
-      input: "Price: 100 dollars", match: "100", xfail: true)
-    matchTest(
-      #"\d+(*positive_lookahead: dollars)"#,
-      input: "Price: 100 dollars", match: "100", xfail: true)
-
-    matchTest(
-      #"\d+(?! dollars)"#,
-      input: "Price: 100 pesos", match: "100", xfail: true)
-    matchTest(
-      #"(?!\d+ dollars)\d+"#,
-      input: "Price: 100 pesos", match: "100", xfail: true)
-    matchTest(
-      #"\d+(*nla: dollars)"#,
-      input: "Price: 100 pesos", match: "100", xfail: true)
-    matchTest(
-      #"\d+(*negative_lookahead: dollars)"#,
-      input: "Price: 100 pesos", match: "100", xfail: true)
-
-    matchTest(
-      #"(?<=USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
-    matchTest(
-      #"(*plb:USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
-    matchTest(
-      #"(*positive_lookbehind:USD)\d+"#,
-      input: "Price: USD100", match: "100", xfail: true)
-    // engines generally enforce that lookbehinds are fixed width
-    matchTest(
-      #"\d{3}(?<=USD\d{3})"#, input: "Price: USD100", match: "100", xfail: true)
-
-    matchTest(
-      #"(?<!USD)\d+"#, input: "Price: JYP100", match: "100", xfail: true)
-    matchTest(
-      #"(*nlb:USD)\d+"#, input: "Price: JYP100", match: "100", xfail: true)
-    matchTest(
-      #"(*negative_lookbehind:USD)\d+"#,
-      input: "Price: JYP100", match: "100", xfail: true)
-    // engines generally enforce that lookbehinds are fixed width
-    matchTest(
-      #"\d{3}(?<!USD\d{3})"#, input: "Price: JYP100", match: "100", xfail: true)
 
     // TODO: Test example where non-atomic is significant
     matchTest(
