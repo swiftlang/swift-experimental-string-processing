@@ -116,4 +116,18 @@ extension AST.Group: _ASTPrintable {
   }
 }
 
+extension AST.Group {
+  /// If this group is a lookaround assertion, return its direction
+  /// and whether it is positive or negative. Otherwise returns
+  /// `nil`.
+  public var lookaroundKind: (forwards: Bool, positive: Bool)? {
+    switch self.kind.value {
+    case .lookahead:         return (true, true)
+    case .negativeLookahead: return (true, false)
+    case .lookbehind:         return (false, true)
+    case .negativeLookbehind: return (false, false)
+    default: return nil
+    }
+  }
 
+}
