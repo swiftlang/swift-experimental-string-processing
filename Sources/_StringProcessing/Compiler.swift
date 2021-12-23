@@ -108,8 +108,83 @@ class Compiler {
       // We stick quoted content into read-only constant strings
       builder.buildMatchSequence(q.literal)
 
+    case .atom(let a) where a.assertionKind != nil:
+      try emitAssertion(a.assertionKind!)
+
     case .customCharacterClass, .atom:
       throw unsupported(node._dumpBase)
+    }
+  }
+
+  func emitAssertion(_ kind: AST.Atom.AssertionKind) throws {
+    // FIXME: Depends on API model we have... We may want to
+    // think through some of these with API interactions in mind
+    //
+    // This might break how we use `bounds` for both slicing
+    // and things like `firstIndex`, that is `firstIndex` may
+    // need to supply both a slice bounds and a per-search bounds.
+    switch kind {
+    case .startOfSubject:
+      builder.buildAssert { (input, pos, bounds) in
+        pos == input.startIndex
+      }
+
+    case .endOfSubjectBeforeNewline:
+      builder.buildAssert { (input, pos, bounds) in
+        if pos == input.endIndex { return true }
+        return input.index(after: pos) == input.endIndex
+         && input[pos].isNewline
+      }
+
+    case .endOfSubject:
+      builder.buildAssert { (input, pos, bounds) in
+        pos == input.endIndex
+      }
+
+    case .resetStartOfMatch:
+      // FIXME: Figure out how to communicate this out
+      throw unsupported(#"\K (reset/keep assertion)"#)
+
+    case .firstMatchingPositionInSubject:
+      // TODO: We can probably build a nice model with API here
+      builder.buildAssert { (input, pos, bounds) in
+        pos == bounds.lowerBound
+      }
+
+    case .textSegment:
+      // This we should be able to do!
+      throw unsupported(#"\y (text segment)"#)
+
+    case .notTextSegment:
+      // This we should be able to do!
+      throw unsupported(#"\Y (not text segment)"#)
+
+    case .startOfLine:
+      builder.buildAssert { (input, pos, bounds) in
+        pos == input.startIndex ||
+        input[input.index(before: pos)].isNewline
+      }
+
+    case .endOfLine:
+      builder.buildAssert { (input, pos, bounds) in
+        pos == input.endIndex || input[pos].isNewline
+      }
+
+    case .wordBoundary:
+      // TODO: May want to consider Unicode level
+      builder.buildAssert { (input, pos, bounds) in
+        // TODO: How should we handle bounds?
+        CharacterClass.word.isBoundary(
+          input, at: pos, bounds: bounds)
+      }
+
+    case .notWordBoundary:
+      // TODO: May want to consider Unicode level
+      builder.buildAssert { (input, pos, bounds) in
+        // TODO: How should we handle bounds?
+        !CharacterClass.word.isBoundary(
+          input, at: pos, bounds: bounds)
+      }
     }
   }
 

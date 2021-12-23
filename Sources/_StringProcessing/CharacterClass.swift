@@ -421,3 +421,31 @@ extension AST.CustomCharacterClass {
     return self.isInverted ? cc.inverted : cc
   }
 }
+
+extension CharacterClass {
+  // FIXME: Calling on inverted sets wont be the same as the
+  // inverse of a boundary if at the start or end of the
+  // string. (Think through what we want: do it ourselves or
+  // give the caller both options).
+  func isBoundary(
+    _ input: String,
+    at pos: String.Index,
+    bounds: Range<String.Index>
+  ) -> Bool {
+    // FIXME: How should we handle bounds?
+    // We probably need two concepts
+    if input.isEmpty { return false }
+    if pos == input.startIndex {
+      return self.matches(in: input, at: pos) != nil
+    }
+    let priorIdx = input.index(before: pos)
+    if pos == input.endIndex {
+      return self.matches(in: input, at: priorIdx) != nil
+    }
+
+    let prior = self.matches(in: input, at: priorIdx) != nil
+    let current = self.matches(in: input, at: pos) != nil
+    return prior != current
+  }
+
+}

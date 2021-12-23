@@ -18,7 +18,7 @@ func matchTest(
       if match == nil {
         return
       }
-      throw "expect xfail"
+      throw "match not found for \(regex) in \(input)"
     }
 
     if xfail {
@@ -592,6 +592,7 @@ extension RegexTests {
   }
 
   func testAssertions() {
+    // MARK: Assertions
     matchTest(
       #"\d+(?= dollars)"#,
       input: "Price: 100 dollars", match: "100")
@@ -647,6 +648,78 @@ extension RegexTests {
     // engines generally enforce that lookbehinds are fixed width
     matchTest(
       #"\d{3}(?<!USD\d{3})"#, input: "Price: JYP100", match: "100", xfail: true)
+  }
+
+  func testMatchAnchors() {
+    // MARK: Anchors
+    matchTests(
+      #"^\d+"#,
+      ("123", "123"),
+      (" 123", nil),
+      ("123 456", "123"),
+      (" 123 \n456", "456"),
+      (" \n123 \n456", "123"))
+
+    matchTests(
+      #"\d+$"#,
+      ("123", "123"),
+      (" 123", "123"),
+      (" 123 \n456", "456"),
+      (" 123\n456", "123"),
+      ("123 456", "456"))
+
+    matchTests(
+      #"\A\d+"#,
+      ("123", "123"),
+      (" 123", nil),
+      (" 123 \n456", nil),
+      (" 123\n456", nil),
+      ("123 456", "123"))
+
+    matchTests(
+      #"\d+\Z"#,
+      ("123", "123"),
+      (" 123", "123"),
+      ("123\n", "123"),
+      (" 123\n", "123"),
+      (" 123 \n456", "456"),
+      (" 123\n456", "456"),
+      (" 123\n456\n", "456"),
+      ("123 456", "456"))
+
+
+    matchTests(
+      #"\d+\z"#,
+      ("123", "123"),
+      (" 123", "123"),
+      ("123\n", nil),
+      (" 123\n", nil),
+      (" 123 \n456", "456"),
+      (" 123\n456", "456"),
+      (" 123\n456\n", nil),
+      ("123 456", "456"))
+
+    matchTests(
+      #"\d+\b"#,
+      ("123", "123"),
+      (" 123", "123"),
+      ("123 456", "123"))
+    matchTests(
+      #"\d+\b\s\b\d+"#,
+      ("123", nil),
+      (" 123", nil),
+      ("123 456", "123 456"))
+
+    matchTests(
+      #"\B\d+"#,
+      ("123", "23"),
+      (" 123", "23"),
+      ("123 456", "23"))
+
+    // TODO: \G and \K
+
+    // TODO: Oniguruma \y and \Y
+
   }
 
   func testMatchGroups() {

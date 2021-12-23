@@ -144,6 +144,10 @@ public enum _StringRegister {}
 public typealias ConsumeFunctionRegister = TypedInt<_ConsumeFunctionRegister>
 public enum _ConsumeFunctionRegister {}
 
+/// Used for assertion functions, e.g. anchors etc
+public typealias AssertionFunctionRegister = TypedInt<_AssertionFunctionRegister>
+public enum _AssertionFunctionRegister {}
+
 /// UNIMPLEMENTED
 public typealias IntRegister = TypedInt<_IntRegister>
 public enum _IntRegister {}

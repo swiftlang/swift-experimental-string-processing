@@ -14,7 +14,7 @@ struct Controller {
 }
 
 struct Processor<
-  Input: Collection
+  Input: BidirectionalCollection
 > where Input.Element: Equatable { // maybe Hashable?
   typealias Element = Input.Element
 
@@ -345,6 +345,15 @@ extension Processor {
         return
       }
       advance(to: nextIndex)
+      controller.step()
+
+    case .assertBy:
+      let reg = payload.assertion
+      let assertion = registers[reg]
+      guard assertion(input, currentPosition, bounds) else {
+        signalFailure()
+        return
+      }
       controller.step()
 
     case .print:
