@@ -48,9 +48,6 @@ let package = Package(
             name: "Prototypes",
             dependencies: ["_MatchingEngine"]),
         .testTarget(
-            name: "AlgorithmsTests",
-            dependencies: ["_StringProcessing"]),
-        .testTarget(
           name: "UnicodeTests",
           dependencies: ["_Unicode"]),
 
