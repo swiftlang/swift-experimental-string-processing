@@ -57,6 +57,12 @@ let package = Package(
             dependencies: [
               .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
+        .executableTarget(
+            name: "PatternConverter",
+            dependencies: [
+              .product(name: "ArgumentParser", package: "swift-argument-parser"),
+              "_MatchingEngine",
+            ]),
 
         // MARK: Exercises
         .target(

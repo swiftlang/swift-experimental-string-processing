@@ -66,7 +66,7 @@ extension AST {
   }
 }
 
-extension AST.Group.Kind: _ASTPrintable {
+extension AST.Group.Kind {
   public var isCapturing: Bool {
     switch self {
     case .capture, .namedCapture: return true
@@ -87,32 +87,6 @@ extension AST.Group.Kind: _ASTPrintable {
     default:
       return false
     }
-  }
-
-  public var _dumpBase: String {
-    switch self {
-    case .capture:                         return "capture"
-    case .namedCapture(let s):             return "capture<\(s.value)>"
-    case .nonCapture:                      return "nonCapture"
-    case .nonCaptureReset:                 return "nonCaptureReset"
-    case .atomicNonCapturing:              return "atomicNonCapturing"
-    case .lookahead:                       return "lookahead"
-    case .negativeLookahead:               return "negativeLookahead"
-    case .nonAtomicLookahead:              return "nonAtomicLookahead"
-    case .lookbehind:                      return "lookbehind"
-    case .negativeLookbehind:              return "negativeLookbehind"
-    case .nonAtomicLookbehind:             return "nonAtomicLookbehind"
-    case .scriptRun:                       return "scriptRun"
-    case .atomicScriptRun:                 return "atomicScriptRun"
-    case .changeMatchingOptions(let seq, let hasImplicitScope):
-      return "changeMatchingOptions<\(seq), \(hasImplicitScope)>"
-    }
-  }
-}
-
-extension AST.Group: _ASTPrintable {
-  public var _dumpBase: String {
-    "group_\(kind.value._dumpBase)"
   }
 }
 

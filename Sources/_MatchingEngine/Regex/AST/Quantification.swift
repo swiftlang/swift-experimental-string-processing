@@ -36,60 +36,6 @@ extension AST {
   }
 }
 
-
-// MARK: - Printing
-
-extension AST.Quantification.Amount: _ASTPrintable {
-  public var _printBase: String {
-    switch self {
-    case .zeroOrMore:      return "*"
-    case .oneOrMore:       return "+"
-    case .zeroOrOne:       return "?"
-    case let .exactly(n):  return "{\(n.value)}"
-    case let .nOrMore(n):  return "{\(n.value),}"
-    case let .upToN(n):    return "{,\(n.value)}"
-    case let .range(lower, upper):
-      return "{\(lower),\(upper)}"
-    }
-  }
-  public var _dumpBase: String {
-    switch self {
-    case .zeroOrMore:      return "zeroOrMore"
-    case .oneOrMore:       return "oneOrMore"
-    case .zeroOrOne:       return "zeroOrOne"
-    case let .exactly(n):  return "exactly<\(n.value)>"
-    case let .nOrMore(n):  return "nOrMore<\(n.value)>"
-    case let .upToN(n):    return "uptoN<\(n.value)>"
-    case let .range(lower, upper):
-      return ".range<\(lower.value)...\(upper.value)>"
-    }
-  }
-}
-extension AST.Quantification.Kind: _ASTPrintable {
-  public var _printBase: String { rawValue }
-  public var _dumpBase: String {
-    switch self {
-    case .eager:      return "eager"
-    case .reluctant:  return "reluctant"
-    case .possessive: return "possessive"
-    }
-  }
-}
-
-extension AST.Quantification: _ASTPrintable {
-  public var _printBase: String {
-    """
-    quant_\(amount.value._printBase)\(kind.value._printBase)
-    """
-  }
-
-  public var _dumpBase: String {
-    """
-    quant_\(amount.value._dumpBase)_\(kind.value._dumpBase)
-    """
-  }
-}
-
 /// MARK: - Semantic API
 
 extension AST.Quantification.Amount {
