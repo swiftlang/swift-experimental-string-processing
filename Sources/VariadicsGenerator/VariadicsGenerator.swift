@@ -1,11 +1,11 @@
-// swift run VariadicsGenerator --max-arity 7 > Sources/RegexDSL/Concatenation.swift
+// swift run VariadicsGenerator --max-arity 7 > Sources/_StringProcessing/RegexDSL/Concatenation.swift
 
 import ArgumentParser
 
 struct Permutation {
   let arity: Int
   // 1 -> no extra constraint
-  // 0 -> where T.Capture: NoCaptureProtocol
+  // 0 -> where T.Match: NoCaptureProtocol
   let bits: Int64
 
   func isCaptureless(at index: Int) -> Bool {
@@ -77,8 +77,6 @@ func outputForEach<C: Collection>(
     if let lt = lineTerminator {
       let indent = needsSep ? "      " : "    "
       output("\(lt)\n\(indent)")
-    } else if needsSep {
-      output(" ")
     }
   }
 }
@@ -87,12 +85,13 @@ typealias Counter = Int64
 let patternProtocolName = "RegexProtocol"
 let concatenationStructTypeBaseName = "Concatenate"
 let capturingGroupTypeBaseName = "CapturingGroup"
+let matchAssociatedTypeName = "Match"
 let captureAssociatedTypeName = "Capture"
 let patternBuilderTypeName = "RegexBuilder"
 let patternProtocolRequirementName = "regex"
 let PatternTypeBaseName = "Regex"
-let emptyProtocolName = "EmptyProtocol"
-let emptyStructName = "Empty"
+let emptyProtocolName = "EmptyCaptureProtocol"
+let baseMatchTypeName = "Substring"
 
 @main
 struct VariadicsGenerator: ParsableCommand {
@@ -112,7 +111,12 @@ struct VariadicsGenerator: ParsableCommand {
 
       import _MatchingEngine
 
+
       """)
+
+    for arity in 2...maxArity+1 {
+      emitTupleStruct(arity: arity)
+    }
 
     for arity in minArity...maxArity {
       for permutation in Permutations(arity: arity) {
@@ -124,42 +128,121 @@ struct VariadicsGenerator: ParsableCommand {
     output("// END AUTO-GENERATED CONTENT")
   }
 
+  func emitTupleStruct(arity: Int) {
+    output("""
+      @frozen @dynamicMemberLookup
+      public struct Tuple\(arity)<
+      """)
+    outputForEach(0..<arity, separator: ", ") {
+      "_\($0)"
+    }
+    output("> {")
+    // `public typealias Tuple = (_0, ...)`
+    output("\n  public typealias Tuple = (")
+    outputForEach(0..<arity, separator: ", ") { "_\($0)" }
+    output(")")
+    // `public var tuple: Tuple`
+    output("\n  public var tuple: Tuple\n")
+    // `subscript(dynamicMember:)`
+    output("""
+        public subscript<T>(dynamicMember keyPath: WritableKeyPath<Tuple, T>) -> T {
+          get { tuple[keyPath: keyPath] }
+          _modify { yield &tuple[keyPath: keyPath] }
+        }
+      """)
+    output("\n}\n")
+    output("extension Tuple\(arity): \(emptyProtocolName) where ")
+    outputForEach(1..<arity, separator: ", ") {
+      "_\($0): \(emptyProtocolName)"
+    }
+    output(" {}\n")
+    output("extension Tuple\(arity): MatchProtocol {\n")
+    output("  public typealias Capture = ")
+    if arity == 2 {
+      output("_1")
+    } else {
+      output("Tuple\(arity-1)<")
+      outputForEach(1..<arity, separator: ", ") {
+        "_\($0)"
+      }
+      output(">")
+    }
+    output("\n  public init(_ tuple: Tuple) { self.tuple = tuple }")
+    // `public init(_0: _0, ...) { ... }`
+    output("\n  public init(")
+    outputForEach(0..<arity, separator: ", ") {
+      "_ _\($0): _\($0)"
+    }
+    output(") {\n")
+    output("    self.init((")
+    outputForEach(0..<arity, separator: ", ") { "_\($0)" }
+    output("))\n")
+    output("  }")
+    output("\n}\n")
+    // Equatable
+    output("extension Tuple\(arity): Equatable where ")
+    outputForEach(0..<arity, separator: ", ") {
+      "_\($0): Equatable"
+    }
+    output(" {\n")
+    output("  public static func == (lhs: Self, rhs: Self) -> Bool {\n")
+    output("    ")
+    outputForEach(0..<arity, separator: " && ") {
+      "lhs.tuple.\($0) == rhs.tuple.\($0)"
+    }
+    output("\n  }\n")
+    output("}\n")
+  }
+
   func emitConcatenation(permutation: Permutation) {
     let arity = permutation.arity
+
+    func emitGenericParameters(withConstraints: Bool) {
+      outputForEach(0..<arity, separator: ", ") {
+        var base = "T\($0)"
+        if withConstraints {
+          base += ": \(patternProtocolName)"
+        }
+        return base
+      }
+    }
+
     // Emit concatenation type declarations.
     //   public struct Concatenation{n}_{perm}<...>: RegexProtocol {
-    //     public typealias Capture = ...
-    //     public let regex: Regex
+    //     public typealias Match = ...
+    //     public let regex: Regex<Match>
     //     public init(...) { ... }
     //   }
-    let typeName = "\(concatenationStructTypeBaseName)\(arity)_\(permutation.identifier)"
+    let typeName =
+      "\(concatenationStructTypeBaseName)\(arity)_\(permutation.identifier)"
     output("public struct \(typeName)<\n  ")
-    outputForEach(0..<arity, separator: ",") { "T\($0): \(patternProtocolName)" }
+    emitGenericParameters(withConstraints: true)
     output("\n>: \(patternProtocolName)")
     if permutation.hasCaptureless {
       output(" where ")
-      outputForEach(permutation.capturelessIndices, separator: ",") {
-        "T\($0).\(captureAssociatedTypeName): \(emptyProtocolName)"
+      outputForEach(permutation.capturelessIndices, separator: ", ") {
+        "T\($0).\(matchAssociatedTypeName).\(captureAssociatedTypeName): \(emptyProtocolName)"
       }
     }
     output(" {\n")
     let captureIndices = permutation.captureIndices
-    output("  public typealias \(captureAssociatedTypeName) = ")
+    output("  public typealias \(matchAssociatedTypeName) = ")
     let captureElements = captureIndices
-      .map { "T\($0).\(captureAssociatedTypeName)" }
+      .map { "T\($0).\(matchAssociatedTypeName).\(captureAssociatedTypeName)" }
     if captureElements.isEmpty {
-      output(emptyStructName)
+      output(baseMatchTypeName)
     } else {
-      output("(\(captureElements.joined(separator: ", ")))")
+      let count = captureElements.count + 1
+      output("Tuple\(count)<\(baseMatchTypeName), \(captureElements.joined(separator: ", "))>")
     }
     output("\n")
-    output("  public let \(patternProtocolRequirementName): \(PatternTypeBaseName)<\(captureAssociatedTypeName)>\n")
+    output("  public let \(patternProtocolRequirementName): \(PatternTypeBaseName)<\(matchAssociatedTypeName)>\n")
     output("  init(")
-    outputForEach(0..<arity, separator: ",") { "_ x\($0): T\($0)" }
+    outputForEach(0..<arity, separator: ", ") { "_ x\($0): T\($0)" }
     output(") {\n")
     output("    \(patternProtocolRequirementName) = .init(ast: concat(\n      ")
     outputForEach(
-      0..<arity, separator: ",", lineTerminator: ""
+      0..<arity, separator: ", ", lineTerminator: ""
     ) { i in
       "x\(i).\(patternProtocolRequirementName).ast"
     }
@@ -169,14 +252,14 @@ struct VariadicsGenerator: ParsableCommand {
     // Emit concatenation builders.
     output("extension \(patternBuilderTypeName) {\n")
     output("  public static func buildBlock<")
-    outputForEach(0..<arity, separator: ",") { "T\($0)" }
+    emitGenericParameters(withConstraints: true)
     output(">(\n    ")
-    outputForEach(0..<arity, separator: ",") { "_ x\($0): T\($0)" }
+    outputForEach(0..<arity, separator: ", ") { "_ x\($0): T\($0)" }
     output("\n  ) -> \(typeName)<")
-    outputForEach(0..<arity, separator: ",") { "T\($0)" }
+    emitGenericParameters(withConstraints: false)
     output("> {\n")
     output("    \(typeName)(")
-    outputForEach(0..<arity, separator: ",") { "x\($0)" }
+    outputForEach(0..<arity, separator: ", ") { "x\($0)" }
     output(")\n  }\n}\n\n")
   }
 }

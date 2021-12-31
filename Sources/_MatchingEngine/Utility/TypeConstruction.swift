@@ -48,10 +48,9 @@ private func swift_getTupleTypeMetadata3(
   proposedWitnesses: UnsafeRawPointer?
 ) -> (value: Any.Type, state: Int)
 
-enum TypeConstruction {
-
+public enum TypeConstruction {
   /// Returns a tuple metatype of the given element types.
-  static func tupleType<
+  public static func tupleType<
     ElementTypes: BidirectionalCollection
   >(
     of elementTypes: __owned ElementTypes
@@ -104,7 +103,7 @@ enum TypeConstruction {
   }
 
   /// Creates a type-erased tuple with the given elements.
-  static func tuple<Elements: BidirectionalCollection>(
+  public static func tuple<Elements: BidirectionalCollection>(
     of elements: __owned Elements
   ) -> Any where Elements.Element == Any {
     // Open existential on the overall tuple type.
@@ -132,5 +131,19 @@ enum TypeConstruction {
     }
     let elementTypes = elements.map { type(of: $0) }
     return _openExistential(tupleType(of: elementTypes), do: create)
+  }
+
+  public static func arrayType(of childType: Any.Type) -> Any.Type {
+    func helper<T>(_: T.Type) -> Any.Type {
+      [T].self
+    }
+    return _openExistential(childType, do: helper)
+  }
+
+  public static func optionalType(of childType: Any.Type) -> Any.Type {
+    func helper<T>(_: T.Type) -> Any.Type {
+      T?.self
+    }
+    return _openExistential(childType, do: helper)
   }
 }

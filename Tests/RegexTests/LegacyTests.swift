@@ -237,7 +237,7 @@ extension RegexTests {
              .captureSome,
              goto(label: 1),
              label(0),
-             .captureNil,
+             .captureNil(childType: Substring.self),
              label(1),
              .endGroup,
              "d",
@@ -261,7 +261,7 @@ extension RegexTests {
              .endCapture(),
              .goto(label: 0),
              .label(1),
-             .captureArray,
+             .captureArray(childType: Substring.self),
              .endGroup,
              .endGroup,
              labels: [3, 14, 11, 9],
@@ -273,7 +273,7 @@ extension RegexTests {
              label(2), split(disfavoring: 3), "a", goto(label: 2),
              label(3), .endCapture(), goto(label: 0),
              label(1),
-             .captureArray,
+             .captureArray(childType: Substring.self),
              .endGroup,
              labels: [1, 11, 4, 8], splits: [2, 5]))
     performTest(

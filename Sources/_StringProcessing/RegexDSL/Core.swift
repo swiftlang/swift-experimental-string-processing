@@ -1,18 +1,23 @@
 import _MatchingEngine
 
-public struct RegexMatch<CapturedValue> {
+@dynamicMemberLookup
+public struct RegexMatch<Match> {
   public let range: Range<String.Index>
-  public let captures: CapturedValue
+  public let match: Match
+
+  public subscript<T>(dynamicMember keyPath: KeyPath<Match, T>) -> T {
+    match[keyPath: keyPath]
+  }
 }
 
 /// A type that represents a regular expression.
 public protocol RegexProtocol {
-  associatedtype Capture
-  var regex: Regex<Capture> { get }
+  associatedtype Match: MatchProtocol
+  var regex: Regex<Match> { get }
 }
 
 /// A regular expression.
-public struct Regex<Capture>: RegexProtocol {
+public struct Regex<Match: MatchProtocol>: RegexProtocol {
   /// A program representation that caches any lowered representation for
   /// execution.
   internal class Program {
@@ -58,86 +63,110 @@ public struct Regex<Capture>: RegexProtocol {
 
   public init<Content: RegexProtocol>(
     _ content: Content
-  ) where Content.Capture == Capture {
+  ) where Content.Match == Match {
     self = content.regex
   }
 
   public init<Content: RegexProtocol>(
     @RegexBuilder _ content: () -> Content
-  ) where Content.Capture == Capture {
+  ) where Content.Match == Match {
     self.init(content())
   }
 
-  public var regex: Regex<Capture> {
+  public var regex: Regex<Match> {
     self
   }
 }
 
 extension RegexProtocol {
-  public func match(in input: String) -> RegexMatch<Capture>? {
+  // FIXME: This is mostly hacky because we go down two different paths based on
+  // whether there are captures. This will be cleaned up once we deprecate the
+  // legacy virtual machines.
+  public func match(in input: String) -> RegexMatch<Match>? {
+    // Casts a Swift tuple to the custom `Tuple<n>`, assuming their memory
+    // layout is compatible.
+    func bitCastToMatch<T>(_ x: T) -> Match {
+      assert(MemoryLayout<T>.size == MemoryLayout<Match>.size)
+      return unsafeBitCast(x, to: Match.self)
+    }
     // TODO: Remove this branch when the matching engine supports captures.
     if regex.ast.hasCapture {
       let vm = HareVM(program: regex.program.legacyLoweredProgram)
       guard let (range, captures) = vm.execute(input: input)?.destructure else {
         return nil
       }
-      let convertedCapture: Capture
-      if Capture.self == DynamicCaptures.self {
-        convertedCapture = DynamicCaptures(captures) as! Capture
+      let convertedMatch: Match
+      if Match.self == Tuple2<Substring, DynamicCaptures>.self {
+        convertedMatch = Tuple2(
+          input[range], DynamicCaptures(captures)
+        ) as! Match
       } else {
-        convertedCapture = captures.value as! Capture
+        let typeErasedMatch = captures.matchValue(
+          withWholeMatch: input[range]
+        )
+        convertedMatch = _openExistential(typeErasedMatch, do: bitCastToMatch)
       }
-      return RegexMatch(range: range, captures: convertedCapture)
+      return RegexMatch(range: range, match: convertedMatch)
     }
     let executor = Executor(program: regex.program.loweredProgram)
     guard let result = executor.execute(input: input) else {
       return nil
     }
-    let convertedCapture: Capture
-    if Capture.self == DynamicCaptures.self {
-      convertedCapture = DynamicCaptures.tuple([]) as! Capture
+    let convertedMatch: Match
+    if Match.self == Tuple2<Substring, DynamicCaptures>.self {
+      convertedMatch = Tuple2(
+        input[result.range], DynamicCaptures.empty
+      ) as! Match
     } else {
-      convertedCapture = () as! Capture
+      assert(Match.self == Substring.self)
+      convertedMatch = input[result.range] as! Match
     }
-    return RegexMatch(range: result.range, captures: convertedCapture)
+    return RegexMatch(range: result.range, match: convertedMatch)
   }
 }
 
 extension String {
-  public func match<R: RegexProtocol>(_ regex: R) -> RegexMatch<R.Capture>? {
+  public func match<R: RegexProtocol>(_ regex: R) -> RegexMatch<R.Match>? {
     regex.match(in: self)
   }
 
   public func match<R: RegexProtocol>(
     @RegexBuilder _ content: () -> R
-  ) -> RegexMatch<R.Capture>? {
+  ) -> RegexMatch<R.Match>? {
     match(content())
   }
 }
 
-public struct MockRegexLiteral<Capture>: RegexProtocol {
+public struct MockRegexLiteral<Match: MatchProtocol>: RegexProtocol {
   public typealias MatchValue = Substring
-  public let regex: Regex<Capture>
+  public let regex: Regex<Match>
 
   public init(
     _ string: String,
     _ syntax: SyntaxOptions = .traditional,
-    capturing: Capture.Type = Capture.self
+    matching: Match.Type = Match.self
   ) throws {
     regex = Regex(ast: try parse(string, syntax))
   }
 }
 
-public func r<C>(
-  _ s: String, capturing: C.Type = C.self
-) -> MockRegexLiteral<C> {
-  try! MockRegexLiteral(s, capturing: capturing)
+public func r<Match>(
+  _ s: String, matching matchType: Match.Type = Match.self
+) -> MockRegexLiteral<Match> {
+  try! MockRegexLiteral(s, matching: matchType)
 }
 
 fileprivate typealias DefaultEngine = TortoiseVM
 
-public protocol EmptyProtocol {}
-public struct Empty: EmptyProtocol {}
-extension Array: EmptyProtocol where Element: EmptyProtocol {}
-extension Optional: EmptyProtocol where Wrapped: EmptyProtocol {}
+public protocol EmptyCaptureProtocol {}
+public struct EmptyCapture: EmptyCaptureProtocol {}
+extension Array: EmptyCaptureProtocol where Element: EmptyCaptureProtocol {}
+extension Optional: EmptyCaptureProtocol where Wrapped: EmptyCaptureProtocol {}
+
+public protocol MatchProtocol {
+  associatedtype Capture
+}
+extension Substring: MatchProtocol {
+  public typealias Capture = EmptyCapture
+}
 

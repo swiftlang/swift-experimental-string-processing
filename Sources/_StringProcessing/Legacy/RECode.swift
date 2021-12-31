@@ -64,11 +64,11 @@ extension RECode {
     case captureSome
 
     /// Replace top-level captures with a single `Capture.optional(nil)`.
-    case captureNil
+    case captureNil(childType: AnyCaptureType)
 
     /// Form a `Capture.array(...)` from top-level captures, and use it to replace the top-level
     /// captures.
-    case captureArray
+    case captureArray(childType: AnyCaptureType)
 
     var isAccept: Bool {
       switch self {
@@ -119,6 +119,14 @@ extension RECode.Instruction {
 
   // Convenience constructors
   static func label(_ i: Int) -> Self { .label(LabelId(i)) }
+
+  static func captureNil(childType: Any.Type) -> Self {
+    .captureNil(childType: AnyCaptureType(childType))
+  }
+
+  static func captureArray(childType: Any.Type) -> Self {
+    .captureArray(childType: AnyCaptureType(childType))
+  }
 }
 
 public struct REOptions: OptionSet {

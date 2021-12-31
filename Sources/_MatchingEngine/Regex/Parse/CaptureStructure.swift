@@ -25,7 +25,6 @@ extension AST {
         .reduce(.empty, +)
         .map(CaptureStructure.optional)
     case .concatenation(let concatenation):
-      assert(concatenation.children.count > 1)
       return concatenation.children.map(\.captureStructure).reduce(.empty, +)
     case .group(let group):
       let innerCaptures = group.child.captureStructure
@@ -107,6 +106,27 @@ extension CaptureStructure {
     }
     return false
   }
+
+  public func type(withAtomType atomType: Any.Type) -> Any.Type {
+    switch self {
+    case .atom:
+      return atomType
+    case .array(let child):
+      return TypeConstruction.arrayType(of: child.type(withAtomType: atomType))
+    case .optional(let child):
+      return TypeConstruction.optionalType(of: child.type(withAtomType: atomType))
+    case .tuple(let children):
+      return TypeConstruction.tupleType(of: children.map {
+        $0.type(withAtomType: atomType)
+      })
+    }
+  }
+
+  public typealias DefaultAtomType = Substring
+
+  public var type: Any.Type {
+    type(withAtomType: DefaultAtomType.self)
+  }
 }
 
 // MARK: - Serialization
@@ -142,6 +162,7 @@ extension CaptureStructure {
   /// 〚`name: T` (atom)〛 ==> .atom, `name`, '\0'
   /// 〚`[T]`〛 ==> 〚`T`〛, .formArray
   /// 〚`T?`〛 ==> 〚`T`〛, .formOptional
+  /// 〚`(T0, T1, ...)` (top level)〛 ==> 〚`T0`〛, 〚`T1`〛, ...
   /// 〚`(T0, T1, ...)`〛 ==> .beginTuple, 〚`T0`〛, 〚`T1`〛, ..., .endTuple
   /// ```
   ///
@@ -163,7 +184,7 @@ extension CaptureStructure {
       offset += MemoryLayout<Code>.stride
     }
     /// Recursively encode the node to the buffer.
-    func encode(_ node: CaptureStructure) {
+    func encode(_ node: CaptureStructure, isTopLevel: Bool = false) {
       switch node {
       // 〚`T` (atom)〛 ==> .atom
       case .atom(name: nil):
@@ -184,17 +205,22 @@ extension CaptureStructure {
       case .optional(let child):
         encode(child)
         append(.formOptional)
+      // 〚`(T0, T1, ...)` (top level)〛 ==> 〚`T0`〛, 〚`T1`〛, ...
       // 〚`(T0, T1, ...)`〛 ==> .beginTuple, 〚`T0`〛, 〚`T1`〛, ..., .endTuple
       case .tuple(let children):
-        append(.beginTuple)
+        if !isTopLevel {
+          append(.beginTuple)
+        }
         for child in children {
           encode(child)
         }
-        append(.endTuple)
+        if !isTopLevel {
+          append(.endTuple)
+        }
       }
     }
     if !isEmpty {
-      encode(self)
+      encode(self, isTopLevel: true)
     }
     append(.end)
   }
