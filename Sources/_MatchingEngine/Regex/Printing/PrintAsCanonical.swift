@@ -45,7 +45,7 @@ extension PrettyPrinter {
     case let .quantification(q):
       outputAsCanonical(q.child)
       output(q.amount.value._canonicalBase)
-      output("\(q.kind.value._canonicalBase)")
+      output(q.kind.value._canonicalBase)
 
     case let .quote(q):
       // TODO: Is this really what we want?
@@ -86,9 +86,9 @@ extension PrettyPrinter {
     case .custom(let ccc):
       outputAsCanonical(ccc)
     case .range(let a, let b):
-      let lhs = a._canonicalBase
-      let rhs = b._canonicalBase
-      output("\(lhs)-\(rhs)")
+      output(a._canonicalBase)
+      output("-")
+      output(b._canonicalBase)
     case .atom(let a):
       output(a._canonicalBase)
     case .setOperation:
