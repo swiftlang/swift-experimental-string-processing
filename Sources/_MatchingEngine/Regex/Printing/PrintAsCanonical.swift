@@ -1,39 +1,49 @@
-// TODO: Reevaluate whether to use pretty printer
 // TODO: Round-tripping tests
 
 extension AST {
   /// Render using Swift's preferred regex literal syntax
-  public func renderAsCanonical() -> String {
+  public func renderAsCanonical(
+    showDelimiters delimiters: Bool = false
+  ) -> String {
     var printer = PrettyPrinter()
-    printer.printAsCanonical(self)
-    return printer.output
+    printer.printAsCanonical(self, delimiters: delimiters)
+    return printer.finish()
   }
 }
 
 extension PrettyPrinter {
-  // Helper that prints without termination
-  private mutating func output(_ s: String) {
-    print(s, terminate: false)
+  /// Will output `ast` in canonical form, taking care to
+  /// also indent and terminate the line (updating internal state)
+  mutating func printAsCanonical(
+    _ ast: AST, delimiters: Bool = false
+  ) {
+    indent()
+    if delimiters { output("'/") }
+    outputAsCanonical(ast)
+    if delimiters { output("/'") }
+    terminateLine()
   }
 
-  mutating func printAsCanonical(_ ast: AST) {
+  /// Output the `ast` in canonical form, does not indent, terminate,
+  /// or affect internal state
+  mutating func outputAsCanonical(_ ast: AST) {
     switch ast {
     case let .alternation(a):
       for idx in a.children.indices {
-        printAsCanonical(a.children[idx])
+        outputAsCanonical(a.children[idx])
         if a.children.index(after: idx) != a.children.endIndex {
           output("|")
         }
       }
     case let .concatenation(c):
-      c.children.forEach { printAsCanonical($0) }
+      c.children.forEach { outputAsCanonical($0) }
     case let .group(g):
       output(g.kind.value._canonicalBase)
-      printAsCanonical(g.child)
+      outputAsCanonical(g.child)
       output(")")
 
     case let .quantification(q):
-      printAsCanonical(q.child)
+      outputAsCanonical(q.child)
       output(q.amount.value._canonicalBase)
       output("\(q.kind.value._canonicalBase)")
 
@@ -42,13 +52,15 @@ extension PrettyPrinter {
       output("\\Q\(q.literal)\\E")
 
     case let .trivia(t):
-      output("/* TODO: trivia \(t) */")
+      // TODO: We might want to output comments...
+      _ = t
+      output("")
 
     case let .atom(a):
       output(a._canonicalBase)
 
     case let .customCharacterClass(ccc):
-      printAsCanonical(ccc)
+      outputAsCanonical(ccc)
 
     case .empty:
       output("")
@@ -58,21 +70,21 @@ extension PrettyPrinter {
     }
   }
 
-  mutating func printAsCanonical(
+  mutating func outputAsCanonical(
     _ ccc: AST.CustomCharacterClass
   ) {
     output(ccc.start.value._canonicalBase)
-    ccc.members.forEach { printAsCanonical($0) }
+    ccc.members.forEach { outputAsCanonical($0) }
     output("]")
   }
 
-  mutating func printAsCanonical(
+  mutating func outputAsCanonical(
     _ member: AST.CustomCharacterClass.Member
   ) {
     // TODO: Do we need grouping or special escape rules?
     switch member {
     case .custom(let ccc):
-      printAsCanonical(ccc)
+      outputAsCanonical(ccc)
     case .range(let a, let b):
       let lhs = a._canonicalBase
       let rhs = b._canonicalBase

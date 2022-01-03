@@ -14,13 +14,25 @@ extension AST {
       maxTopDownLevels: maxTopDownLevels,
       minBottomUpLevels: minBottomUpLevels)
     printer.printAsPattern(self)
-    return printer.output
+    return printer.finish()
   }
 }
 
 extension PrettyPrinter {
+  /// If pattern printing should back off, prints the regex literal and returns true
+  mutating func patternBackoff(_ ast: AST) -> Bool {
+    if let max = maxTopDownLevels, depth >= max {
+      return true
+    }
+    if let min = minBottomUpLevels, ast.height <= min {
+      return true
+    }
+    return false
+  }
+
   mutating func printAsPattern(_ ast: AST) {
     if patternBackoff(ast) {
+      printAsCanonical(ast, delimiters: true)
       return
     }
 
@@ -46,7 +58,7 @@ extension PrettyPrinter {
           result += str
           col.formIndex(after: &idx)
         }
-        return result.isEmpty ? nil : result
+        return result.isEmpty ? nil : result._quoted
       }
 
       // No need to nest single children concatenations
@@ -58,17 +70,15 @@ extension PrettyPrinter {
       // Check for a single child post-coalescing
       var idx = c.children.startIndex
       if let s = coalesce(&idx), idx == c.children.endIndex {
-        printQuoted(s)
+        print(s)
         return
       }
-
-      // TODO: Omit if single child, post-coalescing
 
       printBlock("Concatenation") { printer in
         var curIdx = c.children.startIndex
         while curIdx < c.children.endIndex {
           if let str = coalesce(&curIdx) {
-            printer.printQuoted(str)
+            printer.print(str)
           } else {
             printer.printAsPattern(c.children[curIdx])
             c.children.formIndex(after: &curIdx)
@@ -94,8 +104,9 @@ extension PrettyPrinter {
       print("#\"\(q.literal)\"#")
 
     case let .trivia(t):
-      // TODO: Not for non-semantic whitespace, though
-      print("// \(t.contents)")
+      // TODO: We might want to output comments...
+      _ = t
+      return
 
     case let .atom(a):
       printAsPattern(a)
@@ -111,7 +122,7 @@ extension PrettyPrinter {
 
   mutating func printAsPattern(_ a: AST.Atom) {
     if let s = a.literalStringValue {
-      printQuoted(s)
+      print(s._quoted)
     } else {
       print(a._patternBase)
     }
@@ -131,15 +142,17 @@ extension PrettyPrinter {
     case .range(let a, let b):
       if let lhs = a.literalStringValue,
          let rhs = b.literalStringValue {
-        printQuoted(lhs, terminate: false)
-        print("...", terminate: false)
-        printQuoted(rhs)
+        indent()
+        output(lhs._quoted)
+        output("...")
+        output(rhs._quoted)
+        terminateLine()
       } else {
         print("// TODO: Range \(a) to \(b)")
       }
     case .atom(let a):
       if let s = a.literalStringValue {
-        printQuoted(s)
+        print(s._quoted)
       } else {
         print(a._patternBase)
       }
@@ -147,6 +160,11 @@ extension PrettyPrinter {
       print("// TODO: Set operation: \(member)")
     }
   }
+}
+
+extension String {
+  // TODO: Escaping?
+  fileprivate var _quoted: String { "\"\(self)\"" }
 }
 
 extension AST.Atom.AssertionKind {
