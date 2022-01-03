@@ -4,83 +4,83 @@
 extension AST {
   /// Render using Swift's preferred regex literal syntax
   public func renderAsCanonical() -> String {
-    // TODO: Right now, just a simple recursive
-    // function returning String, but it's likely we'll
-    // want to manage some kind of state.
     var printer = PrettyPrinter()
-    return printer.printAsCanonical(self)
-    //    return printer.output
+    printer.printAsCanonical(self)
+    return printer.output
   }
 }
 
 extension PrettyPrinter {
-  mutating func printAsCanonical(_ ast: AST) -> String {
+  // Helper that prints without termination
+  private mutating func output(_ s: String) {
+    print(s, terminate: false)
+  }
+
+  mutating func printAsCanonical(_ ast: AST) {
     switch ast {
     case let .alternation(a):
-      return a.children.map {
-        printAsCanonical($0)
-      }.joined(separator: "|")
+      for idx in a.children.indices {
+        printAsCanonical(a.children[idx])
+        if a.children.index(after: idx) != a.children.endIndex {
+          output("|")
+        }
+      }
     case let .concatenation(c):
-      return c.children.map {
-        printAsCanonical($0)
-      }.joined()
+      c.children.forEach { printAsCanonical($0) }
     case let .group(g):
-      let open = g.kind.value._canonicalBase
-      let child = printAsCanonical(g.child)
-      return "\(open)\(child))"
+      output(g.kind.value._canonicalBase)
+      printAsCanonical(g.child)
+      output(")")
 
     case let .quantification(q):
-      let child = printAsCanonical(q.child)
-      let amt = q.amount.value._canonicalBase
-      return "\(child)\(amt)\(q.kind.value.rawValue)"
+      printAsCanonical(q.child)
+      output(q.amount.value._canonicalBase)
+      output("\(q.kind.value._canonicalBase)")
 
     case let .quote(q):
       // TODO: Is this really what we want?
-      return "\\Q\(q.literal)\\E"
+      output("\\Q\(q.literal)\\E")
 
     case let .trivia(t):
-      return "/* TODO: trivia \(t) */"
+      output("/* TODO: trivia \(t) */")
 
     case let .atom(a):
-      return a._canonicalBase
+      output(a._canonicalBase)
 
     case let .customCharacterClass(ccc):
-      return printAsCanonical(ccc)
+      printAsCanonical(ccc)
 
     case .empty:
-      return ""
+      output("")
 
     case .groupTransform:
-      return "/* TODO: get groupTransform out of AST */"
+      output("/* TODO: get groupTransform out of AST */")
     }
   }
 
-  func printAsCanonical(
+  mutating func printAsCanonical(
     _ ccc: AST.CustomCharacterClass
-  ) -> String {
-    let start = ccc.start.value.rawValue
-    // TODO: Do we need grouping or special escape rules?
-    let middle = ccc.members.map {
-      printAsCanonical($0)
-    }.joined()
-    return "\(start)\(middle)]"
+  ) {
+    output(ccc.start.value._canonicalBase)
+    ccc.members.forEach { printAsCanonical($0) }
+    output("]")
   }
 
-  func printAsCanonical(
+  mutating func printAsCanonical(
     _ member: AST.CustomCharacterClass.Member
-  ) -> String {
+  ) {
     // TODO: Do we need grouping or special escape rules?
     switch member {
     case .custom(let ccc):
-      return printAsCanonical(ccc)
+      printAsCanonical(ccc)
     case .range(let a, let b):
       let lhs = a._canonicalBase
       let rhs = b._canonicalBase
-      return "\(lhs)-\(rhs)"
+      output("\(lhs)-\(rhs)")
     case .atom(let a):
-      return a._canonicalBase
+      output(a._canonicalBase)
     case .setOperation:
-      return "/* TODO: set operation \(self) */"
+      output("/* TODO: set operation \(self) */")
     }
   }
 }
@@ -122,6 +122,9 @@ extension AST.Quantification.Amount {
     }
   }
 }
+extension AST.Quantification.Kind {
+  var _canonicalBase: String { self.rawValue }
+}
 
 extension AST.Atom {
   var _canonicalBase: String {
@@ -143,4 +146,8 @@ extension AST.Atom {
       return "/* TODO: atom \(self) */"
     }
   }
+}
+
+extension AST.CustomCharacterClass.Start {
+  var _canonicalBase: String { self.rawValue }
 }

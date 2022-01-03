@@ -1,3 +1,4 @@
+/// Track and handle state relevant to pretty-printing ASTs.
 struct PrettyPrinter {
   var output = ""
 
@@ -17,7 +18,7 @@ extension PrettyPrinter {
     startOfLine ? String(repeating: " ", count: numCols) : ""
   }
 
-  // FIXME: track new line...
+  /// Print out a new entry. Will terminate the line by default.
   mutating func print(_ s: String, terminate: Bool = true) {
     let terminator = terminate ? "\n" : ""
     output += "\(header)\(s)\(terminator)"
@@ -32,18 +33,15 @@ extension PrettyPrinter {
   /// If pattern printing should back off, prints the regex literal and returns true
   mutating func patternBackoff(_ ast: AST) -> Bool {
     if let max = maxTopDownLevels, indentation >= max {
-      let canon = printAsCanonical(ast)
-      print("'/\(canon)/'")
+      printAsCanonical(ast)
       return true
     }
     if let min = minBottomUpLevels, ast.height <= min {
-      let canon = printAsCanonical(ast)
-      print("'/\(canon)/'")
+      printAsCanonical(ast)
       return true
     }
     return false
   }
-
 }
 
 extension PrettyPrinter {
