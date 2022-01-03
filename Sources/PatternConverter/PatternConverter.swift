@@ -31,8 +31,8 @@ struct PatternConverter: ParsableCommand {
           necessarily compilable.
 
     """)
-    print("Converting '/\(regex)/'")
-
+    let delim = experimentalSyntax ? "|" : "/"
+    print("Converting '\(delim)\(regex)\(delim)'")
 
     let ast = try _MatchingEngine.parse(
       regex,
