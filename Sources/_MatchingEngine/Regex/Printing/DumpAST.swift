@@ -185,10 +185,15 @@ extension AST.CustomCharacterClass.Member: _ASTPrintable {
     switch self {
     case .custom(let cc): return "\(cc)"
     case .atom(let a): return "\(a)"
-    case .range(let lhs, let rhs):
-      return "range \(lhs) to \(rhs)"
+    case .range(let r): return "\(r)"
     case .setOperation(let lhs, let op, let rhs):
       return "op \(lhs) \(op.value) \(rhs)"
     }
+  }
+}
+
+extension AST.CustomCharacterClass.Range: _ASTPrintable {
+  public var _dumpBase: String {
+    "\(lhs)-\(rhs)"
   }
 }

@@ -269,14 +269,14 @@ extension Parser {
       else { break }
 
       // Range between atoms.
-      if let rhs = try source.lexCustomCharClassRangeEnd(
+      if let (dashLoc, rhs) = try source.lexCustomCharClassRangeEnd(
         priorGroupCount: priorGroupCount
       ) {
         guard atom.literalCharacterValue != nil &&
               rhs.literalCharacterValue != nil else {
           throw ParseError.invalidCharacterClassRangeOperand
         }
-        members.append(.range(atom, rhs))
+        members.append(.range(.init(atom, dashLoc, rhs)))
         continue
       }
 

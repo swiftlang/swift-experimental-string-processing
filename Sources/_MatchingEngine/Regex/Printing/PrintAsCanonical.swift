@@ -85,10 +85,10 @@ extension PrettyPrinter {
     switch member {
     case .custom(let ccc):
       outputAsCanonical(ccc)
-    case .range(let a, let b):
-      output(a._canonicalBase)
+    case .range(let r):
+      output(r.lhs._canonicalBase)
       output("-")
-      output(b._canonicalBase)
+      output(r.rhs._canonicalBase)
     case .atom(let a):
       output(a._canonicalBase)
     case .setOperation:

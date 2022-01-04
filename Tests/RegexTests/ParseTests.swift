@@ -278,18 +278,18 @@ extension RegexTests {
       "[-|$^:?+*())(*-+-]",
       charClass(
         "-", "|", "$", "^", ":", "?", "+", "*", "(", ")", ")",
-        "(", .range("*", "+"), "-"))
+        "(", range_m("*", "+"), "-"))
 
     parseTest(
-      "[a-b-c]", charClass(.range("a", "b"), "-", "c"))
+      "[a-b-c]", charClass(range_m("a", "b"), "-", "c"))
 
     parseTest("[-a-]", charClass("-", "a", "-"))
 
-    parseTest("[a-z]", charClass(.range("a", "z")))
+    parseTest("[a-z]", charClass(range_m("a", "z")))
 
     // FIXME: AST builder helpers for custom char class types
     parseTest("[a-d--a-c]", charClass(
-      .setOperation([.range("a", "d")], .init(faking: .subtraction), [.range("a", "c")])
+      .setOperation([range_m("a", "d")], .init(faking: .subtraction), [range_m("a", "c")])
     ))
 
     parseTest("[-]", charClass("-"))
@@ -933,6 +933,12 @@ extension RegexTests {
     rangeTest("a|", range(1 ..< 2), at: { $0.as(Alt.self)!.pipes[0] })
     rangeTest("a|b", range(1 ..< 2), at: { $0.as(Alt.self)!.pipes[0] })
     rangeTest("|||", range(1 ..< 2), at: { $0.as(Alt.self)!.pipes[1] })
+
+    // MARK: Custom character classes
+
+    rangeTest("[a-z]", range(2 ..< 3), at: {
+      $0.as(CustomCC.self)!.members[0].as(CustomCC.Range.self)!.dashLoc
+    })
   }
 
   func testParseErrors() {

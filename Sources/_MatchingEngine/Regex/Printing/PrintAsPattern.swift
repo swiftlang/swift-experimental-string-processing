@@ -139,16 +139,16 @@ extension PrettyPrinter {
     switch member {
     case .custom(let ccc):
       printAsPattern(ccc)
-    case .range(let a, let b):
-      if let lhs = a.literalStringValue,
-         let rhs = b.literalStringValue {
+    case .range(let r):
+      if let lhs = r.lhs.literalStringValue,
+         let rhs = r.rhs.literalStringValue {
         indent()
         output(lhs._quoted)
         output("...")
         output(rhs._quoted)
         terminateLine()
       } else {
-        print("// TODO: Range \(a) to \(b)")
+        print("// TODO: Range \(r.lhs) to \(r.rhs)")
       }
     case .atom(let a):
       if let s = a.literalStringValue {
