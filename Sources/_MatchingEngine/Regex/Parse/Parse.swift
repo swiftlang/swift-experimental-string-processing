@@ -196,6 +196,9 @@ extension Parser {
 
 // MARK: - Custom character classes
 
+/// `AST.CustomCharacterClass.Start` is a mouthful
+internal typealias CustomCC = AST.CustomCharacterClass
+
 extension Parser {
   /// Parse a custom character class
   ///

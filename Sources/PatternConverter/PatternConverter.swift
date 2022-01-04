@@ -1,0 +1,65 @@
+// swift run PatternConverter <regex>
+
+import ArgumentParser
+import _MatchingEngine
+
+@main
+struct PatternConverter: ParsableCommand {
+
+  @Argument(help: "The regex to convert")
+  var regex: String
+
+  @Flag(help: "Whether to use the experimental syntax")
+  var experimentalSyntax: Bool = false
+
+  @Flag(help: "Whether to show rendered source ranges")
+  var renderSourceRanges: Bool = false
+
+  @Flag(help: "Whether to show canonical regex literal")
+  var showCanonical: Bool = false
+
+  @Option(help: "Limit (from top-down) the conversion levels")
+  var topDownConversionLimit: Int?
+
+  @Option(help: "(TODO) Limit (from bottom-up) the conversion levels")
+  var bottomUpConversionLimit: Int?
+
+  func run() throws {
+    print("""
+
+    NOTE: This tool is experimental and its output is not
+          necessarily compilable.
+
+    """)
+    let delim = experimentalSyntax ? "|" : "/"
+    print("Converting '\(delim)\(regex)\(delim)'")
+
+    let ast = try _MatchingEngine.parse(
+      regex,
+      experimentalSyntax ? .experimental : .traditional)
+
+    // Show rendered source ranges
+    if renderSourceRanges {
+      print()
+      print(regex)
+      print(ast._render(in: regex).joined(separator: "\n"))
+      print()
+    }
+
+    if showCanonical {
+      print("Canonical:")
+      print()
+      print(ast.renderAsCanonical())
+      print()
+    }
+
+    print()
+    let render = ast.renderAsPattern(
+      maxTopDownLevels: topDownConversionLimit,
+      minBottomUpLevels: bottomUpConversionLimit
+    )
+    print(render)
+
+    return
+  }
+}

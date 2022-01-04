@@ -55,6 +55,10 @@ extension AST {
     }
   }
 
+  func `as`<T: _ASTNode>(_ t: T.Type = T.self) -> T? {
+    _associatedValue as? T
+  }
+
   /// If this node is a parent node, access its children
   public var children: [AST]? {
     return (_associatedValue as? _ASTParent)?.children
@@ -94,8 +98,6 @@ extension AST {
       self.children = mems
       self.location = location
     }
-
-    public var _dumpBase: String { "alternation" }
   }
 
   public struct Concatenation: Hashable, _ASTNode {
@@ -106,8 +108,6 @@ extension AST {
       self.children = mems
       self.location = location
     }
-
-    public var _dumpBase: String { "" }
   }
 
   public struct Quote: Hashable, _ASTNode {
@@ -118,8 +118,6 @@ extension AST {
       self.literal = s
       self.location = location
     }
-
-    public var _dumpBase: String { "quote" }
   }
 
   public struct Trivia: Hashable, _ASTNode {
@@ -135,11 +133,6 @@ extension AST {
       self.contents = v.value
       self.location = v.location
     }
-
-    public var _dumpBase: String {
-      // TODO: comments, non-semantic whitespace, etc.
-      ""
-    }
   }
 
   public struct Empty: Hashable, _ASTNode {
@@ -148,8 +141,6 @@ extension AST {
     public init(_ location: SourceLocation) {
       self.location = location
     }
-
-    public var _dumpBase: String { "" }
   }
 }
 

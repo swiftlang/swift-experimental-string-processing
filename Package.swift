@@ -48,9 +48,6 @@ let package = Package(
             name: "Prototypes",
             dependencies: ["_MatchingEngine"]),
         .testTarget(
-            name: "AlgorithmsTests",
-            dependencies: ["_StringProcessing"]),
-        .testTarget(
           name: "UnicodeTests",
           dependencies: ["_Unicode"]),
 
@@ -59,6 +56,12 @@ let package = Package(
             name: "VariadicsGenerator",
             dependencies: [
               .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ]),
+        .executableTarget(
+            name: "PatternConverter",
+            dependencies: [
+              .product(name: "ArgumentParser", package: "swift-argument-parser"),
+              "_MatchingEngine",
             ]),
 
         // MARK: Exercises

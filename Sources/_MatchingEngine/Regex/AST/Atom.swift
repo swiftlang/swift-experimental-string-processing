@@ -291,7 +291,7 @@ extension AST.Atom.EscapedBuiltin {
   }
   public init?(_ c: Character, inCustomCharacterClass customCC: Bool) {
     guard let builtin = Self.fromCharacter(c, inCustomCharacterClass: customCC)
-      else { return nil }
+    else { return nil }
     self = builtin
   }
 }
@@ -367,6 +367,7 @@ extension AST.Atom.CharacterProperty {
   }
 }
 
+
 // TODO: I haven't thought through this a bunch; this seems like
 // a sensible type to have and break down this way. But it could
 // easily get folded in with the kind of reference
@@ -391,56 +392,8 @@ public enum Reference: Hashable {
   case recurseWholePattern
 }
 
-extension AST.Atom: _ASTPrintable {
-  public var _dumpBase: String {
-    if let lit = self.literalCharacterValue {
-      return String(lit).halfWidthCornerQuoted
-    }
 
-    switch kind {
-    case .escaped(let c): return "\\\(c.character)"
 
-    case .namedCharacter(let charName):
-      return "\\N{\(charName)}"
-
-    case .property(let p): return "\(p._dumpBase)"
-
-    case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
-      fatalError("TODO")
-
-    case .any:         return "."
-    case .startOfLine: return "^"
-    case .endOfLine:   return "$"
-
-    case .backreference(let r), .subpattern(let r), .condition(let r):
-      return "\(r)"
-
-    case .char, .scalar:
-      fatalError("Unreachable")
-    }
-  }
-}
-
-extension AST.Atom {
-  /// Retrieve the character value of the atom if it represents a literal
-  /// character or unicode scalar, nil otherwise.
-  public var literalCharacterValue: Character? {
-    switch kind {
-    case .char(let c):
-      return c
-    case .scalar(let s):
-      return Character(s)
-
-    case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
-      // TODO: Not a character per-say, what should we do?
-      fallthrough
-
-    case .property, .escaped, .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .condition, .namedCharacter:
-      return nil
-    }
-  }
-}
 
 extension AST.Atom {
   /// Anchors and other built-in zero-width assertions
@@ -492,9 +445,9 @@ extension AST.Atom {
     case .escaped(.textSegment):     return .textSegment
     case .escaped(.notTextSegment):  return .notTextSegment
     case .escaped(.endOfSubjectBeforeNewline):
-        return .endOfSubjectBeforeNewline
+      return .endOfSubjectBeforeNewline
     case .escaped(.firstMatchingPositionInSubject):
-        return .firstMatchingPositionInSubject
+      return .firstMatchingPositionInSubject
 
     case .escaped(.resetStartOfMatch): return .resetStartOfMatch
 
@@ -503,3 +456,63 @@ extension AST.Atom {
   }
 }
 
+extension AST.Atom {
+  /// Retrieve the character value of the atom if it represents a literal
+  /// character or unicode scalar, nil otherwise.
+  public var literalCharacterValue: Character? {
+    switch kind {
+    case .char(let c):
+      return c
+    case .scalar(let s):
+      return Character(s)
+
+    case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
+      // TODO: Not a character per-say, what should we do?
+      fallthrough
+
+    case .property, .escaped, .any, .startOfLine, .endOfLine,
+        .backreference, .subpattern, .condition, .namedCharacter:
+      return nil
+    }
+  }
+
+  /// Produce a string literal representation of the atom, if possible
+  ///
+  /// Individual characters will be returned, Unicode scalars will be
+  /// presented using "\u{nnnn}" syntax.
+  public var literalStringValue: String? {
+    switch kind {
+    case .char(let c):
+      return String(c)
+    case .scalar(let s):
+      return "\\u{\(String(s.value, radix: 16, uppercase: true))}"
+
+    case .keyboardControl(let x):
+      return "\\C-\(x)"
+    case .keyboardMeta(let x):
+      return "\\M-\(x)"
+
+    case .keyboardMetaControl(let x):
+      return "\\M-\\C-\(x)"
+
+    case .property, .escaped, .any, .startOfLine, .endOfLine,
+        .backreference, .subpattern, .condition, .namedCharacter:
+      return nil
+    }
+  }
+}
+
+extension AST {
+  public var literalStringValue: String? {
+    switch self {
+    case .atom(let a): return a.literalStringValue
+
+    case .alternation, .concatenation, .group,
+        .quantification, .quote, .trivia,
+        .customCharacterClass, .empty,
+        .groupTransform:
+      return nil
+    }
+  }
+
+}
