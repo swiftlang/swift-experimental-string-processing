@@ -210,12 +210,9 @@ extension RegexTests {
     parseTest(#"\08"#, concat(scalar("\u{0}"), "8"))
     parseTest(#"\0707"#, concat(scalar("\u{38}"), "7"))
 
-    // FIXME(Hamish): These now get printed using the unicode
-    // literal syntax instead of rendered as Character. Adjust
-    // testing infra to handle that.
-//    parseTest(#"[\0]"#, charClass("\u{0}"))
-//    parseTest(#"[\01]"#, charClass("\u{1}"))
-//    parseTest(#"[\070]"#, charClass("\u{38}"))
+    parseTest(#"[\0]"#, charClass(scalar_m("\u{0}")))
+    parseTest(#"[\01]"#, charClass(scalar_m("\u{1}")))
+    parseTest(#"[\070]"#, charClass(scalar_m("\u{38}")))
 
     parseTest(#"[\07A]"#, charClass(scalar_m("\u{7}"), "A"))
     parseTest(#"[\08]"#, charClass(scalar_m("\u{0}"), "8"))
@@ -597,7 +594,7 @@ extension RegexTests {
       parseTest("\\\(i)", backreference(.absolute(i)))
       parseTest(
         "()()()()()()()()()\\\(i)",
-        concat((0..<9).map { _ in capture(empty()) }
+        concat(Array(repeating: capture(empty()), count: 9)
                + [backreference(.absolute(i))]),
         captures: .tuple(Array(repeating: .atom(), count: 9))
       )
@@ -612,13 +609,13 @@ extension RegexTests {
 
     parseTest(
       #"()()()()()()()()()()\10"#,
-      concat((0..<10).map { _ in capture(empty()) }
+      concat(Array(repeating: capture(empty()), count: 10)
              + [backreference(.absolute(10))]),
       captures: .tuple(Array(repeating: .atom(), count: 10))
     )
     parseTest(
       #"()()()()()()()()()\10()"#,
-      concat((0..<9).map { _ in capture(empty()) }
+      concat(Array(repeating: capture(empty()), count: 9)
              + [scalar("\u{8}"), capture(empty())]),
       captures: .tuple(Array(repeating: .atom(), count: 10))
     )
@@ -655,13 +652,13 @@ extension RegexTests {
     parseTest(#"\040"#, scalar(" "))
     parseTest(
       String(repeating: "()", count: 40) + #"\040"#,
-      concat((0..<40).map { _ in capture(empty()) } + [scalar(" ")]),
+      concat(Array(repeating: capture(empty()), count: 40) + [scalar(" ")]),
       captures: .tuple(Array(repeating: .atom(), count: 40))
     )
     parseTest(#"\40"#, scalar(" "))
     parseTest(
       String(repeating: "()", count: 40) + #"\40"#,
-      concat((0..<40).map { _ in capture(empty()) }
+      concat(Array(repeating: capture(empty()), count: 40)
              + [backreference(.absolute(40))]),
       captures: .tuple(Array(repeating: .atom(), count: 40))
     )
@@ -671,14 +668,14 @@ extension RegexTests {
     parseTest(#"\11"#, scalar("\u{9}"))
     parseTest(
       String(repeating: "()", count: 11) + #"\11"#,
-      concat((0..<11).map { _ in capture(empty()) }
+      concat(Array(repeating: capture(empty()), count: 11)
              + [backreference(.absolute(11))]),
       captures: .tuple(Array(repeating: .atom(), count: 11))
     )
     parseTest(#"\011"#, scalar("\u{9}"))
     parseTest(
       String(repeating: "()", count: 11) + #"\011"#,
-      concat((0..<11).map { _ in capture(empty()) } + [scalar("\u{9}")]),
+      concat(Array(repeating: capture(empty()), count: 11) + [scalar("\u{9}")]),
       captures: .tuple(Array(repeating: .atom(), count: 11))
     )
 
