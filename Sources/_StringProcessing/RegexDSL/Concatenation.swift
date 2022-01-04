@@ -24,6 +24,11 @@ extension Tuple2: Equatable where _0: Equatable, _1: Equatable {
     lhs.tuple.0 == rhs.tuple.0 && lhs.tuple.1 == rhs.tuple.1
   }
 }
+extension Tuple2: CustomStringConvertible {
+  public var description: String {
+    String(describing: tuple)
+  }
+}
 @frozen @dynamicMemberLookup
 public struct Tuple3<_0, _1, _2> {
   public typealias Tuple = (_0, _1, _2)
@@ -44,6 +49,11 @@ extension Tuple3: MatchProtocol {
 extension Tuple3: Equatable where _0: Equatable, _1: Equatable, _2: Equatable {
   public static func == (lhs: Self, rhs: Self) -> Bool {
     lhs.tuple.0 == rhs.tuple.0 && lhs.tuple.1 == rhs.tuple.1 && lhs.tuple.2 == rhs.tuple.2
+  }
+}
+extension Tuple3: CustomStringConvertible {
+  public var description: String {
+    String(describing: tuple)
   }
 }
 @frozen @dynamicMemberLookup
@@ -68,6 +78,11 @@ extension Tuple4: Equatable where _0: Equatable, _1: Equatable, _2: Equatable, _
     lhs.tuple.0 == rhs.tuple.0 && lhs.tuple.1 == rhs.tuple.1 && lhs.tuple.2 == rhs.tuple.2 && lhs.tuple.3 == rhs.tuple.3
   }
 }
+extension Tuple4: CustomStringConvertible {
+  public var description: String {
+    String(describing: tuple)
+  }
+}
 @frozen @dynamicMemberLookup
 public struct Tuple5<_0, _1, _2, _3, _4> {
   public typealias Tuple = (_0, _1, _2, _3, _4)
@@ -88,6 +103,11 @@ extension Tuple5: MatchProtocol {
 extension Tuple5: Equatable where _0: Equatable, _1: Equatable, _2: Equatable, _3: Equatable, _4: Equatable {
   public static func == (lhs: Self, rhs: Self) -> Bool {
     lhs.tuple.0 == rhs.tuple.0 && lhs.tuple.1 == rhs.tuple.1 && lhs.tuple.2 == rhs.tuple.2 && lhs.tuple.3 == rhs.tuple.3 && lhs.tuple.4 == rhs.tuple.4
+  }
+}
+extension Tuple5: CustomStringConvertible {
+  public var description: String {
+    String(describing: tuple)
   }
 }
 @frozen @dynamicMemberLookup
@@ -112,6 +132,11 @@ extension Tuple6: Equatable where _0: Equatable, _1: Equatable, _2: Equatable, _
     lhs.tuple.0 == rhs.tuple.0 && lhs.tuple.1 == rhs.tuple.1 && lhs.tuple.2 == rhs.tuple.2 && lhs.tuple.3 == rhs.tuple.3 && lhs.tuple.4 == rhs.tuple.4 && lhs.tuple.5 == rhs.tuple.5
   }
 }
+extension Tuple6: CustomStringConvertible {
+  public var description: String {
+    String(describing: tuple)
+  }
+}
 @frozen @dynamicMemberLookup
 public struct Tuple7<_0, _1, _2, _3, _4, _5, _6> {
   public typealias Tuple = (_0, _1, _2, _3, _4, _5, _6)
@@ -134,6 +159,11 @@ extension Tuple7: Equatable where _0: Equatable, _1: Equatable, _2: Equatable, _
     lhs.tuple.0 == rhs.tuple.0 && lhs.tuple.1 == rhs.tuple.1 && lhs.tuple.2 == rhs.tuple.2 && lhs.tuple.3 == rhs.tuple.3 && lhs.tuple.4 == rhs.tuple.4 && lhs.tuple.5 == rhs.tuple.5 && lhs.tuple.6 == rhs.tuple.6
   }
 }
+extension Tuple7: CustomStringConvertible {
+  public var description: String {
+    String(describing: tuple)
+  }
+}
 @frozen @dynamicMemberLookup
 public struct Tuple8<_0, _1, _2, _3, _4, _5, _6, _7> {
   public typealias Tuple = (_0, _1, _2, _3, _4, _5, _6, _7)
@@ -154,6 +184,11 @@ extension Tuple8: MatchProtocol {
 extension Tuple8: Equatable where _0: Equatable, _1: Equatable, _2: Equatable, _3: Equatable, _4: Equatable, _5: Equatable, _6: Equatable, _7: Equatable {
   public static func == (lhs: Self, rhs: Self) -> Bool {
     lhs.tuple.0 == rhs.tuple.0 && lhs.tuple.1 == rhs.tuple.1 && lhs.tuple.2 == rhs.tuple.2 && lhs.tuple.3 == rhs.tuple.3 && lhs.tuple.4 == rhs.tuple.4 && lhs.tuple.5 == rhs.tuple.5 && lhs.tuple.6 == rhs.tuple.6 && lhs.tuple.7 == rhs.tuple.7
+  }
+}
+extension Tuple8: CustomStringConvertible {
+  public var description: String {
+    String(describing: tuple)
   }
 }
 public struct Concatenate2_TT<

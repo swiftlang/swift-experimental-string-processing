@@ -192,6 +192,15 @@ struct VariadicsGenerator: ParsableCommand {
     }
     output("\n  }\n")
     output("}\n")
+    // CustomStringConvertible
+    output("""
+      extension Tuple\(arity): CustomStringConvertible {
+        public var description: String {
+          String(describing: tuple)
+        }
+      }
+      
+      """)
   }
 
   func emitConcatenation(permutation: Permutation) {

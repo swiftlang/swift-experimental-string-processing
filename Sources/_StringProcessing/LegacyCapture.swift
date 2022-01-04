@@ -2,28 +2,28 @@ import _MatchingEngine
 
 // TODO: what here should be in the compile-time module?
 
-enum Capture {
+enum LegacyCapture {
   case atom(Any)
-  indirect case tuple([Capture])
-  indirect case some(Capture)
+  indirect case tuple([LegacyCapture])
+  indirect case some(LegacyCapture)
   case none(childType: AnyCaptureType)
-  indirect case array([Capture], childType: AnyCaptureType)
+  indirect case array([LegacyCapture], childType: AnyCaptureType)
 
-  static func none(childType: Any.Type) -> Capture {
+  static func none(childType: Any.Type) -> LegacyCapture {
     .none(childType: AnyCaptureType(childType))
   }
 
-  static func array(_ children: [Capture], childType: Any.Type) -> Capture {
+  static func array(_ children: [LegacyCapture], childType: Any.Type) -> LegacyCapture {
     .array(children, childType: AnyCaptureType(childType))
   }
 }
 
-extension Capture {
-  static func tupleOrAtom(_ elements: [Capture]) -> Self {
+extension LegacyCapture {
+  static func tupleOrAtom(_ elements: [LegacyCapture]) -> Self {
     elements.count == 1 ? elements[0] : .tuple(elements)
   }
 
-  static var void: Capture {
+  static var void: LegacyCapture {
     .tuple([])
   }
 
@@ -60,6 +60,24 @@ extension Capture {
 
   func matchValue(withWholeMatch wholeMatch: Substring) -> Any {
     prepending(wholeMatch).value
+  }
+}
+
+extension Capture where Input == String {
+  init(_ legacyCapture: LegacyCapture) {
+    switch legacyCapture {
+    case .atom(let value):
+      self = .concrete(value)
+    case .none(childType: let childType):
+      self = .none(childType: childType.base)
+    case .some(let value):
+      self = .some(Capture(value))
+    case .array(let values, childType: let childType):
+      self = .array(
+        values.map(Capture.init), childType: childType.base)
+    case .tuple(let values):
+      self = .tuple(values.map(Capture.init))
+    }
   }
 }
 

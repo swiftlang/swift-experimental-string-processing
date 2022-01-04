@@ -7,16 +7,16 @@ public enum MatchMode {
 
 public struct MatchResult {
   public var range: Range<String.Index>
-  var captures: Capture
+  var captures: Capture<String>
 
   var destructure: (
-    matched: Range<String.Index>, captures: Capture
+    matched: Range<String.Index>, captures: Capture<String>
   ) {
     (range, captures)
   }
 
   init(
-    _ matched: Range<String.Index>, _ captures: Capture
+    _ matched: Range<String.Index>, _ captures: Capture<String>
   ) {
     self.range = matched
     self.captures = captures
@@ -79,8 +79,8 @@ extension RECode {
     var pc: InstructionAddress
     let input: String
 
-    var groups = Stack<[Capture]>()
-    var topLevelCaptures: [Capture] = []
+    var groups = Stack<[LegacyCapture]>()
+    var topLevelCaptures: [LegacyCapture] = []
     var captureState: CaptureState = .ended
 
     init(startingAt pc: InstructionAddress, input: String) {
@@ -95,10 +95,12 @@ extension RECode {
       captureState.start(at: index)
     }
 
-    mutating func endCapture(_ endIndex: String.Index, transform: CaptureTransform?) {
+    mutating func endCapture(
+      _ endIndex: String.Index,
+      transform: CaptureTransform<String>?
+    ) {
       let range = captureState.end(at: endIndex)
-      let substring = input[range]
-      let value = transform?(substring) ?? substring
+      let value = transform?(input, at: range) ?? input[range]
       topLevelCaptures.append(.atom(value))
     }
 
@@ -128,7 +130,7 @@ extension RECode {
       topLevelCaptures = [.array(topLevelCaptures, childType: childType)]
     }
 
-    func singleCapture() -> Capture {
+    func singleCapture() -> LegacyCapture {
       .tupleOrAtom(topLevelCaptures)
     }
   }

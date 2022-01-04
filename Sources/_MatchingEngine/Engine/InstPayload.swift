@@ -40,6 +40,7 @@ extension Instruction.Payload {
     case element(ElementRegister)
     case consumer(ConsumeFunctionRegister)
     case assertion(AssertionFunctionRegister)
+    case captureTransform(CaptureTransformRegister)
     case addr(InstructionAddress)
 
     case packedImmInt(Int, IntRegister)
@@ -173,6 +174,20 @@ extension Instruction.Payload {
     interpret()
   }
 
+  init(float: FloatRegister) {
+    self.init(float)
+  }
+  var float: FloatRegister {
+    interpret()
+  }
+
+  init(type: TypeRegister) {
+    self.init(type)
+  }
+  var type: TypeRegister {
+    interpret()
+  }
+
   init(element: ElementRegister) {
     self.init(element)
   }
@@ -191,6 +206,13 @@ extension Instruction.Payload {
     self.init(assertion)
   }
   var assertion: AssertionFunctionRegister {
+    interpret()
+  }
+
+  init(captureTransform: CaptureTransformRegister) {
+    self.init(captureTransform)
+  }
+  var captureTransform: CaptureTransformRegister {
     interpret()
   }
 

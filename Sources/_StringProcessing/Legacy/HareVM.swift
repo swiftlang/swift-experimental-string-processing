@@ -74,7 +74,7 @@ struct HareVM: VirtualMachine {
         return nil
       }
       return MatchResult(
-        start ..< bunny.sp, bunny.core.singleCapture())
+        start ..< bunny.sp, Capture(bunny.core.singleCapture()))
     }
 
     while true {

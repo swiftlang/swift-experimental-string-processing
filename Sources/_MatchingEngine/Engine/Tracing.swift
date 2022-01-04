@@ -14,6 +14,20 @@ extension Processor: TracedProcessor {
     }
     return ""
   }
+
+  func formatCaptures() -> String {
+    return """
+      capture state: \(captureState)
+      top level captures: \
+      [\(topLevelCaptures.map { $0.description(input: input) }
+           .joined(separator: ", "))]
+      capture scopes (depth \(captureScopes.count)):
+        \(captureScopes.elements.reversed().map { scope in
+            scope.map { $0.description(input: input) }.joined(separator: ", ")
+          }.joined(separator: "\n  "))
+
+      """
+  }
 }
 
 extension Instruction: CustomStringConvertible {

@@ -5,8 +5,10 @@ extension Program where Input.Element: Hashable {
     var elements = TypedSetVector<Input.Element, _ElementRegister>()
     var sequences = TypedSetVector<[Input.Element], _SequenceRegister>()
     var strings = TypedSetVector<String, _StringRegister>()
+    var types = TypedSetVector<AnyType, _TypeRegister>()
     var consumeFunctions: [ConsumeFunction] = []
     var assertionFunctions: [AssertionFunction] = []
+    var captureTransforms: [CaptureTransform<Input>] = []
 
     // Map tokens to actual addresses
     var addressTokens: [InstructionAddress?] = []
@@ -196,6 +198,47 @@ extension Program.Builder {
     instructions.append(.init(.print, .init(string: s)))
   }
 
+  public mutating func buildBeginCapture() {
+    instructions.append(.init(.beginCapture))
+  }
+
+  public mutating func buildEndCapture() {
+    instructions.append(.init(.endCapture))
+  }
+
+  public mutating func buildClearCapture() {
+    instructions.append(.init(.clearCapture))
+  }
+
+  public mutating func buildBeginCaptureScope() {
+    instructions.append(.init(.beginCaptureScope))
+  }
+
+  public mutating func buildDiscardCaptureScope() {
+    instructions.append(.init(.discardCaptureScope))
+  }
+
+  public mutating func buildEndCaptureScope() {
+    instructions.append(.init(.endCaptureScope))
+  }
+
+  public mutating func buildCaptureArray(childType: Any.Type) {
+    instructions.append(.init(.captureArray, .init(type: makeType(childType))))
+  }
+
+  public mutating func buildCaptureNil(childType: Any.Type) {
+    instructions.append(.init(.captureNil, .init(type: makeType(childType))))
+  }
+
+  public mutating func buildCaptureSome() {
+    instructions.append(.init(.captureSome))
+  }
+
+  public mutating func buildMapCapture(_ f: CaptureTransform<Input>) {
+    instructions.append(.init(
+      .mapCapture, .init(captureTransform: makeCaptureTransform(f))))
+  }
+
   // TODO: Mutating because of fail address fixup, drop when
   // that's removed
   public mutating func assemble() -> Program {
@@ -249,17 +292,21 @@ extension Program.Builder {
     regInfo.strings = strings.count
     regInfo.bools = nextBoolRegister.rawValue
     regInfo.ints = nextIntRegister.rawValue
+    regInfo.types = types.count
     regInfo.positions = nextPositionRegister.rawValue
     regInfo.consumeFunctions = consumeFunctions.count
     regInfo.assertionFunctions = assertionFunctions.count
+    regInfo.captureTransforms = captureTransforms.count
 
     return Program(
       instructions: InstructionList(instructions),
       staticElements: elements.stored,
       staticSequences: sequences.stored,
       staticStrings: strings.stored,
+      staticTypes: types.stored.map(\.base),
       staticConsumeFunctions: consumeFunctions,
       staticAssertionFunctions: assertionFunctions,
+      staticCaptureTransforms: captureTransforms,
       registerInfo: regInfo)
   }
 
@@ -393,5 +440,14 @@ extension Program.Builder {
     defer { assertionFunctions.append(f) }
     return AssertionFunctionRegister(assertionFunctions.count)
   }
+  public mutating func makeCaptureTransform(
+    _ f: CaptureTransform<Input>
+  ) -> CaptureTransformRegister {
+    defer { captureTransforms.append(f) }
+    return CaptureTransformRegister(captureTransforms.count)
+  }
+  public mutating func makeType(_ t: Any.Type) -> TypeRegister {
+    let index = types.store(AnyType(t))
+    return TypeRegister(index.rawValue)
+  }
 }
-

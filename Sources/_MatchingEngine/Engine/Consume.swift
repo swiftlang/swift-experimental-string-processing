@@ -12,7 +12,7 @@ extension Engine {
       isTracingEnabled: enableTracing)
   }
 
-  public func consume(_ input: Input) -> Input.Index? {
+  public func consume(_ input: Input) -> (Input.Index, Capture<Input>)? {
     consume(input, in: input.startIndex ..< input.endIndex)
   }
 
@@ -20,7 +20,7 @@ extension Engine {
     _ input: Input,
     in range: Range<Input.Index>,
     matchMode: MatchMode = .prefix
-  ) -> Input.Index? {
+  ) -> (Input.Index, Capture<Input>)? {
     if enableTracing {
       print("Consume: \(input)")
     }
@@ -45,7 +45,12 @@ extension Engine {
         print("Result: nil")
       }
     }
-    return result
+
+    if let result = result {
+      assert(cpu.captureScopes.isEmpty, "Open capture scopes")
+      return (result, Capture.tupleOrSingleton(cpu.topLevelCaptures))
+    }
+    return nil
   }
 }
 

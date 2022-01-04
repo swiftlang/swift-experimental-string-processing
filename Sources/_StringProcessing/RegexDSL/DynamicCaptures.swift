@@ -7,6 +7,7 @@ extension Regex where Match == Tuple2<Substring, DynamicCaptures> {
 }
 
 public enum DynamicCaptures: Equatable {
+  case range(Range<String.Index>)
   case substring(Substring)
   indirect case tuple([DynamicCaptures])
   indirect case optional(DynamicCaptures?)
@@ -16,9 +17,13 @@ public enum DynamicCaptures: Equatable {
     .tuple([])
   }
 
-  internal init(_ capture: Capture) {
+  internal init(_ capture: Capture<String>) {
     switch capture {
-    case .atom(let atom):
+    case .range(let bounds):
+      self = .range(bounds)
+    case .slice(let slice):
+      self = .substring(slice)
+    case .concrete(let atom):
       self = .substring(atom as! Substring)
     case .tuple(let components):
       self = .tuple(components.map(Self.init))

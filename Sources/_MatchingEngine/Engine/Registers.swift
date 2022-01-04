@@ -18,6 +18,9 @@ extension Processor {
     // currently, these are static readonly
     var assertionFunctions: [Program<Input>.AssertionFunction]
 
+    // currently, these are static readonly
+    var captureTransforms: [CaptureTransform<Input>]
+
     // currently, these are for comments and abort messages
     var strings: [String]
 
@@ -26,6 +29,8 @@ extension Processor {
 
     // unused
     var floats: [Double] = []
+
+    var types: [Any.Type]
 
     // Currently, used for `movePosition` and `matchSlice`
     var positions: [Position] = []
@@ -56,6 +61,10 @@ extension Processor {
       get { bools[i.rawValue] }
       set { bools[i.rawValue] = newValue }
     }
+    subscript(_ i: TypeRegister) -> Any.Type {
+      get { types[i.rawValue] }
+      set { types[i.rawValue] = newValue }
+    }
     subscript(_ i: PositionRegister) -> Position {
       get { positions[i.rawValue] }
       set { positions[i.rawValue] = newValue }
@@ -68,6 +77,9 @@ extension Processor {
     }
     subscript(_ i: AssertionFunctionRegister) -> Program<Input>.AssertionFunction {
       assertionFunctions[i.rawValue]
+    }
+    subscript(_ i: CaptureTransformRegister) -> CaptureTransform<Input> {
+      captureTransforms[i.rawValue]
     }
   }
 }
@@ -91,8 +103,14 @@ extension Processor.Registers {
     self.assertionFunctions = program.staticAssertionFunctions
     assert(assertionFunctions.count == info.assertionFunctions)
 
+    self.captureTransforms = program.staticCaptureTransforms
+    assert(captureTransforms.count == info.captureTransforms)
+
     self.strings = program.staticStrings
     assert(strings.count == info.strings)
+
+    self.types = program.staticTypes
+    assert(types.count == info.types)
 
     self.bools = Array(repeating: false, count: info.bools)
 
@@ -118,8 +136,10 @@ extension Program {
     var sequences = 0
     var bools = 0
     var strings = 0
+    var types = 0
     var consumeFunctions = 0
     var assertionFunctions = 0
+    var captureTransforms = 0
     var ints = 0
     var floats = 0
     var positions = 0
@@ -145,6 +165,7 @@ extension Processor.Registers: CustomStringConvertible {
       \(formatRegisters("elements", elements))\
       \(formatRegisters("bools", bools))\
       \(formatRegisters("strings", strings))\
+      \(formatRegisters("types", types))\
       \(formatRegisters("ints", ints))\
       \(formatRegisters("floats", floats))\
       \(formatRegisters("positions", positions))\

@@ -15,6 +15,7 @@ public protocol TracedProcessor: ProcessorProtocol, Traced {
   func formatTrace() -> String
   func formatInput() -> String
   func formatInstructionWindow(windowSize: Int) -> String
+  func formatCaptures() -> String
 }
 
 func lineNumber(_ i: Int) -> String {
@@ -57,6 +58,10 @@ extension TracedProcessor {
       }
       return result
     }
+    return ""
+  }
+
+  public func formatCaptures() -> String {
     return ""
   }
 
@@ -133,6 +138,7 @@ extension TracedProcessor {
     result += formatCallStack()
     result += formatSavePoints()
     result += formatRegisters()
+    result += formatCaptures()
     result += formatInput()
     result += "\n"
     result += formatInstructionWindow()

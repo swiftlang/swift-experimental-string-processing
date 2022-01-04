@@ -68,10 +68,30 @@ class Compiler {
       try emit(alt.children.last!)
       builder.label(done)
 
-    // FIXME: Wait, how does this work?
-    case .groupTransform(let g, _):
+    // FIXME: Move this to a compiler for the DSL's own AST.
+    // Capturing group
+    //     begin_capture
+    //     save fail_propagation
+    //     <code for child>
+    //     end_capture
+    //     goto capture_done
+    //   fail_propagation:
+    //     clear_capture
+    //     fail
+    //   capture_done:
+    case .groupTransform(let g, let f):
+      let failPropagation = builder.makeAddress()
+      let captureDone = builder.makeAddress()
+      builder.buildBeginCapture()
+      builder.buildSave(failPropagation)
       try emit(g.child)
-
+      builder.buildEndCapture()
+      builder.buildMapCapture(f)
+      builder.buildBranch(to: captureDone)
+      builder.label(failPropagation)
+      builder.buildClearCapture()
+      builder.buildFail()
+      builder.label(captureDone)
 
     case .concatenation(let concat):
       try concat.children.forEach(emit)
@@ -89,6 +109,52 @@ class Compiler {
       case .lookahead, .negativeLookahead,
           .lookbehind, .negativeLookbehind:
         fatalError("unreachable")
+
+      // Capturing group
+      //     begin_capture
+      //     save fail_propagation
+      //     <code for child>
+      //     end_capture
+      //     goto capture_done
+      //   fail_propagation:
+      //     clear_capture
+      //     fail
+      //   capture_done:
+      case .capture, .namedCapture:
+        let failPropagation = builder.makeAddress()
+        let captureDone = builder.makeAddress()
+        builder.buildBeginCapture()
+        builder.buildSave(failPropagation)
+        try emit(g.child)
+        builder.buildEndCapture()
+        builder.buildBranch(to: captureDone)
+        builder.label(failPropagation)
+        builder.buildClearCapture()
+        builder.buildFail()
+        builder.label(captureDone)
+
+      case .nonCapture where g.child.hasCapture:
+        // Non-capturing group where child has capture
+        //     begin_capture_scope
+        //     save fail_propagation
+        //     <code for child>
+        //     end_capture_scope
+        //     goto tuple_done
+        //   fail_propagation:
+        //     discard_capture_scope
+        //     fail
+        //   tuple_done:
+        let failPropagation = builder.makeAddress()
+        let tupleDone = builder.makeAddress()
+        builder.buildBeginCaptureScope()
+        builder.buildSave(failPropagation)
+        try emit(g.child)
+        builder.buildEndCaptureScope()
+        builder.buildBranch(to: tupleDone)
+        builder.label(failPropagation)
+        builder.buildDiscardCaptureScope()
+        builder.buildFail()
+        builder.label(tupleDone)
 
       default:
         // FIXME: This can't be right...
@@ -239,7 +305,8 @@ class Compiler {
     low: Int,
     high: Int?,
     kind: AST.Quantification.Kind,
-    child: AST
+    child: AST,
+    capturesOptional: Bool
   ) throws {
     // Compiler and/or parser should enforce these invariants
     // before we are called
@@ -327,10 +394,14 @@ class Compiler {
       quantification instructions (e.g. reduce save-point traffic)
     */
 
+    let childHasCapture = child.hasCapture
+
     let minTripsControl = builder.makeAddress()
     let loopBody = builder.makeAddress()
     let exitPolicy = builder.makeAddress()
     let exit = builder.makeAddress()
+    let exitOnFail = builder.makeAddress()
+    let done = builder.makeAddress()
 
     // We'll need registers if we're (non-trivially) bounded
     let minTripsReg: IntRegister?
@@ -352,6 +423,11 @@ class Compiler {
     // Set up a dummy save point for possessive to update
     if kind == .possessive {
       builder.pushEmptySavePoint()
+    }
+
+    // Begin a capture scope to collect children.
+    if childHasCapture {
+      builder.buildBeginCaptureScope()
     }
 
     // min-trip-count:
@@ -398,19 +474,49 @@ class Compiler {
 
     switch kind {
     case .eager:
-      builder.buildSplit(to: loopBody, saving: exit)
+      builder.buildSplit(to: loopBody, saving: exitOnFail)
     case .possessive:
       builder.buildClear()
-      builder.buildSplit(to: loopBody, saving: exit)
+      builder.buildSplit(to: loopBody, saving: exitOnFail)
     case .reluctant:
       builder.buildSave(loopBody)
+      builder.buildBranch(to: done)
       // FIXME: Is this re-entrant? That is would nested
       // quantification break if trying to restore to a prior
       // iteration because the register got overwritten?
       //
     }
 
+    // exit-on-fail:
+    //   <if child has capture and quantification captures optional>:
+    //     captureNil
+    //     branch(to: done)
+    builder.label(exitOnFail)
+    // Capture nil if exiting on failure during optional quantification.
+    if childHasCapture, capturesOptional {
+      builder.buildCaptureNil(childType: child.captureStructure.type)
+      builder.buildBranch(to: done)
+    }
+
+    // exit:
+    //   <if child has capture>:
+    //     capture_some / capture_array
     builder.label(exit)
+    if childHasCapture {
+      if capturesOptional {
+        builder.buildCaptureSome()
+      } else {
+        builder.buildCaptureArray(childType: child.captureStructure.type)
+      }
+    }
+
+    // done:
+    //   <if child has capture>:
+    //     endCaptureScope
+    builder.label(done)
+    if childHasCapture {
+      builder.buildEndCaptureScope()
+    }
   }
 
   func emitQuantification(_ quant: AST.Quantification) throws {
@@ -420,16 +526,17 @@ class Compiler {
     switch quant.amount.value.bounds {
     case (_, atMost: 0):
       // TODO: Parser should warn
-      return
+      break
     case let (atLeast: n, atMost: m?) where n > m:
       // TODO: Parser should warn
       // TODO: Should we error?
-      return
+      break
 
     case let (atLeast: n, atMost: m) where m == nil || n <= m!:
       try compileQuantification(
-        low: n, high: m, kind: kind, child: child)
-      return
+        low: n, high: m, kind: kind, child: child,
+        capturesOptional: quant.amount.value == .zeroOrOne)
+      break
 
     default:
       fatalError("unreachable")

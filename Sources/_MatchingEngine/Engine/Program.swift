@@ -7,8 +7,10 @@ public struct Program<Input: Collection> where Input.Element: Equatable {
   var staticElements: [Input.Element]
   var staticSequences: [[Input.Element]]
   var staticStrings: [String]
+  var staticTypes: [Any.Type]
   var staticConsumeFunctions: [ConsumeFunction]
   var staticAssertionFunctions: [AssertionFunction]
+  var staticCaptureTransforms: [CaptureTransform<Input>]
 
   var registerInfo: RegisterInfo
 
@@ -20,10 +22,17 @@ extension Program: CustomStringConvertible {
     var result = """
     Elements: \(staticElements)
     Strings: \(staticStrings)
+    Types: \(staticTypes)
 
     """
     if !staticConsumeFunctions.isEmpty {
-      result += "Consume functions: \(staticConsumeFunctions)"
+      result += "Consume functions: \(staticConsumeFunctions)\n"
+    }
+    if !staticAssertionFunctions.isEmpty {
+      result += "Assert functions: \(staticAssertionFunctions)\n"
+    }
+    if !staticCaptureTransforms.isEmpty {
+      result += "Capture transforms: \(staticCaptureTransforms)\n"
     }
 
     // TODO: Extract into formatting code

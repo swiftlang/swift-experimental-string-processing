@@ -57,7 +57,7 @@ extension RECode {
 
     /// End capturing a portion of the input string, transforming the substring with the specified
     /// transform.
-    case endCapture(transform: CaptureTransform? = nil)
+    case endCapture(transform: CaptureTransform<String>? = nil)
 
     /// Form a `Capture.optional(.some(...))` from top-level captures, and use it to replace the
     /// top-level captures.

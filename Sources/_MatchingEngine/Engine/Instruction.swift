@@ -238,6 +238,45 @@ extension Instruction {
 
     // TODO: Fused assertions. It seems like we often want to
     // branch based on assertion fail or success.
+
+    // MARK: - Capturing
+
+    // Begin to capture the incoming input.
+    case beginCapture
+
+    // Ends the current capture.
+    case endCapture
+
+    // Stops and discards the most recently started capture.
+    case clearCapture
+
+    // Transforms the single top-level capture into an existent optional value.
+    case captureSome
+
+    // Assign optional nil as the top-level capture.
+    //
+    // Operand: A type register storing the type of the child.
+    case captureNil
+
+    // Capture array.
+    //
+    // Operand: A type register storing the type of the child.
+    case captureArray
+
+    // Starts a capture scope.
+    case beginCaptureScope
+
+    // Discards the recently created capture scope.
+    case discardCaptureScope
+
+    // Ends the most recently created capture scope and append it to the current
+    // top-level captures.
+    case endCaptureScope
+
+    // Transforms the most recently captured range.
+    //
+    // Operand: A capture transform closure.
+    case mapCapture
   }
 }
 
@@ -358,7 +397,6 @@ extension Instruction {
     default: return nil
     }
   }
-
 }
 
 extension Instruction: InstructionProtocol {

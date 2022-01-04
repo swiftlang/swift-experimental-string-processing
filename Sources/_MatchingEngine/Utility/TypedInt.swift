@@ -140,6 +140,10 @@ public enum _BoolRegister {}
 public typealias StringRegister = TypedInt<_StringRegister>
 public enum _StringRegister {}
 
+/// The register number for a metatype.
+public typealias TypeRegister = TypedInt<_TypeRegister>
+public enum _TypeRegister {}
+
 /// Used for consume functions, e.g. character classes
 public typealias ConsumeFunctionRegister = TypedInt<_ConsumeFunctionRegister>
 public enum _ConsumeFunctionRegister {}
@@ -147,6 +151,10 @@ public enum _ConsumeFunctionRegister {}
 /// Used for assertion functions, e.g. anchors etc
 public typealias AssertionFunctionRegister = TypedInt<_AssertionFunctionRegister>
 public enum _AssertionFunctionRegister {}
+
+/// Used for capture transforms.
+public typealias CaptureTransformRegister = TypedInt<_CaptureTransformRegister>
+public enum _CaptureTransformRegister {}
 
 /// UNIMPLEMENTED
 public typealias IntRegister = TypedInt<_IntRegister>

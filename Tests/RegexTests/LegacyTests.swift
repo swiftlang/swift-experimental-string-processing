@@ -133,10 +133,6 @@ private func performTest<Capture>(
   let legacyProgram = try! compile(ast)
   run(TortoiseVM(program: legacyProgram), name: "Lonesome George")
   run(HareVM(program: legacyProgram), name: "Harvey")
-  // TODO: Support captures in the matching engine.
-  guard !ast.hasCapture else {
-    return
-  }
   let program = try! Compiler(ast: ast).emit()
   run(Executor(program: program), name: "Matching Engine")
 }

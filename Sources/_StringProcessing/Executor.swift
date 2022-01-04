@@ -15,8 +15,8 @@ public struct Executor {
   ) -> MatchResult? {
     engine.consume(
       input, in: range, matchMode: mode.loweredMatchMode
-    ).map { endIndex in
-      MatchResult(range.lowerBound..<endIndex, .void)
+    ).map { endIndex, capture in
+      MatchResult(range.lowerBound..<endIndex, capture)
     }
   }
 }

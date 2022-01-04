@@ -13,6 +13,31 @@ struct Controller {
   }
 }
 
+enum CaptureState<Index: Comparable> {
+  case started(Index)
+  case ended
+
+  var isEnded: Bool {
+    guard case .ended = self else {
+      return false
+    }
+    return true
+  }
+
+  mutating func start(at index: Index) {
+    assert(isEnded, "Capture already started")
+    self = .started(index)
+  }
+
+  mutating func end(at endIndex: Index) -> Range<Index> {
+    guard case let .started(startIndex) = self else {
+      fatalError("Capture already ended")
+    }
+    self = .ended
+    return startIndex..<endIndex
+  }
+}
+
 struct Processor<
   Input: BidirectionalCollection
 > where Input.Element: Equatable { // maybe Hashable?
@@ -42,6 +67,10 @@ struct Processor<
 
   var start: Position { bounds.lowerBound }
   var end: Position { bounds.upperBound }
+
+  var captureState = CaptureState<Input.Index>.ended
+  var topLevelCaptures: [Capture<Input>] = []
+  var captureScopes = Stack<[Capture<Input>]>()
 }
 
 
@@ -370,6 +399,60 @@ extension Processor {
         result = false
       }
       registers[cond] = result
+      controller.step()
+
+    case .beginCapture:
+      captureState.start(at: currentPosition)
+      controller.step()
+
+    case .endCapture:
+      let range = captureState.end(at: currentPosition)
+      topLevelCaptures.append(.range(range))
+      controller.step()
+
+    case .clearCapture:
+      captureState = .ended
+      controller.step()
+
+    case .beginCaptureScope:
+      captureScopes.push(topLevelCaptures)
+      topLevelCaptures = []
+      controller.step()
+
+    case .endCaptureScope:
+      assert(!captureScopes.isEmpty)
+      var top = captureScopes.pop()
+      if !topLevelCaptures.isEmpty {
+        top.append(.tupleOrSingleton(topLevelCaptures))
+      }
+      topLevelCaptures = top
+      controller.step()
+
+    case .discardCaptureScope:
+      assert(!captureScopes.isEmpty)
+      captureScopes.pop()
+      controller.step()
+
+    case .captureSome:
+      topLevelCaptures = [.some(.tupleOrSingleton(topLevelCaptures))]
+      controller.step()
+
+    case .captureNil:
+      topLevelCaptures = [.none(childType: registers[payload.type])]
+      controller.step()
+
+    case .captureArray:
+      topLevelCaptures = [
+        .array(topLevelCaptures, childType: registers[payload.type])
+      ]
+      controller.step()
+
+    case .mapCapture:
+      guard case let .range(range) = topLevelCaptures.removeLast() else {
+        fatalError("Capture should be a range for transform")
+      }
+      let transform = registers[payload.captureTransform]
+      topLevelCaptures.append(.concrete(transform(input, at: range)))
       controller.step()
     }
   }

@@ -126,3 +126,61 @@ extension String {
     self.init(decoding: scs.map { $0.value }, as: UTF32.self)
   }
 }
+
+struct Stack<Element> {
+  var elements: [Element]
+
+  init() {
+    elements = []
+  }
+
+  init(_ elements: [Element]) {
+    self.elements = elements
+  }
+
+  var isEmpty: Bool {
+    elements.isEmpty
+  }
+
+  var count: Int {
+    elements.count
+  }
+
+  @discardableResult
+  mutating func pop() -> Element {
+    assert(!isEmpty)
+    return elements.removeLast()
+  }
+
+  mutating func push(_ newElement: Element) {
+    elements.append(newElement)
+  }
+
+  var top: Element {
+    get {
+      assert(!isEmpty)
+      return elements[elements.endIndex - 1]
+    }
+    _modify {
+      assert(!isEmpty)
+      yield &elements[elements.endIndex - 1]
+    }
+  }
+}
+
+/// A wrapper of an existential metatype, equatable and hashable by reference.
+public struct AnyType: Equatable, Hashable {
+  public var base: Any.Type
+
+  public init(_ type: Any.Type) {
+    base = type
+  }
+
+  public static func == (lhs: AnyType, rhs: AnyType) -> Bool {
+    lhs.base == rhs.base
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(ObjectIdentifier(base))
+  }
+}

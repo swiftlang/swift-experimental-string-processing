@@ -86,27 +86,11 @@ extension RegexProtocol {
     // Casts a Swift tuple to the custom `Tuple<n>`, assuming their memory
     // layout is compatible.
     func bitCastToMatch<T>(_ x: T) -> Match {
-      assert(MemoryLayout<T>.size == MemoryLayout<Match>.size)
+      assert(
+        MemoryLayout<T>.size == MemoryLayout<Match>.size,
+        "Matched \(T.self), not the expected \(Match.self)"
+      )
       return unsafeBitCast(x, to: Match.self)
-    }
-    // TODO: Remove this branch when the matching engine supports captures.
-    if regex.ast.hasCapture {
-      let vm = HareVM(program: regex.program.legacyLoweredProgram)
-      guard let (range, captures) = vm.execute(input: input)?.destructure else {
-        return nil
-      }
-      let convertedMatch: Match
-      if Match.self == Tuple2<Substring, DynamicCaptures>.self {
-        convertedMatch = Tuple2(
-          input[range], DynamicCaptures(captures)
-        ) as! Match
-      } else {
-        let typeErasedMatch = captures.matchValue(
-          withWholeMatch: input[range]
-        )
-        convertedMatch = _openExistential(typeErasedMatch, do: bitCastToMatch)
-      }
-      return RegexMatch(range: range, match: convertedMatch)
     }
     let executor = Executor(program: regex.program.loweredProgram)
     guard let result = executor.execute(input: input) else {
@@ -115,11 +99,12 @@ extension RegexProtocol {
     let convertedMatch: Match
     if Match.self == Tuple2<Substring, DynamicCaptures>.self {
       convertedMatch = Tuple2(
-        input[result.range], DynamicCaptures.empty
+        input[result.range],
+        DynamicCaptures(result.captures.mapRanges { input[$0] })
       ) as! Match
     } else {
-      assert(Match.self == Substring.self)
-      convertedMatch = input[result.range] as! Match
+      let typeErasedMatch = result.captures.matchValue(input: input)
+      convertedMatch = _openExistential(typeErasedMatch, do: bitCastToMatch)
     }
     return RegexMatch(range: result.range, match: convertedMatch)
   }

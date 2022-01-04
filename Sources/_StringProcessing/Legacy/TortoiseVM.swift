@@ -62,7 +62,7 @@ struct TortoiseVM: VirtualMachine {
     for hatchling in bale {
       if code[hatchling.pc].isAccept {
         return MatchResult(
-          start ..< idx, hatchling.core.singleCapture())
+          start ..< idx, Capture(hatchling.core.singleCapture()))
       }
     }
     return nil

@@ -1,6 +1,6 @@
 // A tree representing the type of some captures.
 public enum CaptureStructure: Equatable {
-  case atom(name: String? = nil)
+  case atom(name: String? = nil, type: AnyType? = nil)
   indirect case array(CaptureStructure)
   indirect case optional(CaptureStructure)
   indirect case tuple([CaptureStructure])
@@ -41,8 +41,8 @@ extension AST {
         quantification.amount.value == .zeroOrOne
           ? CaptureStructure.optional
           : CaptureStructure.array)
-    case .groupTransform:
-      fatalError("Unreachable. Case will be removed later.")
+    case .groupTransform(_, let transform):
+      return .atom(name: nil, type: AnyType(transform.resultType))
     case .quote, .trivia, .atom, .customCharacterClass, .empty:
       return .empty
     }
@@ -187,10 +187,10 @@ extension CaptureStructure {
     func encode(_ node: CaptureStructure, isTopLevel: Bool = false) {
       switch node {
       // 〚`T` (atom)〛 ==> .atom
-      case .atom(name: nil):
+      case .atom(name: nil, _):
         append(.atom)
       // 〚`name: T` (atom)〛 ==> .atom, `name`, '\0'
-      case .atom(name: let name?):
+      case .atom(name: let name?, _):
         append(.namedAtom)
         let nameCString = name.utf8CString
         let nameSlot = UnsafeMutableRawBufferPointer(
