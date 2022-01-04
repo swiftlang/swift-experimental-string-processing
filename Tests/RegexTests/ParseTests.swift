@@ -475,74 +475,74 @@ extension RegexTests {
 
     // Matching option changing groups.
     parseTest("(?-)", changeMatchingOptions(
-      matchingOptions(), hasImplicitScope: true, empty())
+      matchingOptions(), isIsolated: true, empty())
     )
     parseTest("(?i)", changeMatchingOptions(
       matchingOptions(adding: .caseInsensitive),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?m)", changeMatchingOptions(
       matchingOptions(adding: .multiline),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?x)", changeMatchingOptions(
       matchingOptions(adding: .extended),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?xx)", changeMatchingOptions(
       matchingOptions(adding: .extraExtended),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?xxx)", changeMatchingOptions(
       matchingOptions(adding: .extraExtended, .extended),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?-i)", changeMatchingOptions(
       matchingOptions(removing: .caseInsensitive),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?i-s)", changeMatchingOptions(
       matchingOptions(adding: .caseInsensitive, removing: .singleLine),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?i-is)", changeMatchingOptions(
       matchingOptions(adding: .caseInsensitive,
                       removing: .caseInsensitive, .singleLine),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
 
     parseTest("(?:)", nonCapture(empty()))
     parseTest("(?-:)", changeMatchingOptions(
-      matchingOptions(), hasImplicitScope: false, empty())
+      matchingOptions(), isIsolated: false, empty())
     )
     parseTest("(?i:)", changeMatchingOptions(
       matchingOptions(adding: .caseInsensitive),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
     parseTest("(?-i:)", changeMatchingOptions(
       matchingOptions(removing: .caseInsensitive),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
 
     parseTest("(?^)", changeMatchingOptions(
       unsetMatchingOptions(),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?^:)", changeMatchingOptions(
       unsetMatchingOptions(),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
     parseTest("(?^ims:)", changeMatchingOptions(
       unsetMatchingOptions(adding: .caseInsensitive, .multiline, .singleLine),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
     parseTest("(?^J:)", changeMatchingOptions(
       unsetMatchingOptions(adding: .allowDuplicateGroupNames),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
     parseTest("(?^y{w}:)", changeMatchingOptions(
       unsetMatchingOptions(adding: .textSegmentWordMode),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
 
     let allOptions: [AST.MatchingOption.Kind] = [
@@ -557,32 +557,32 @@ extension RegexTests {
         adding: allOptions,
         removing: allOptions.dropLast(2)
       ),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?iJmnsUxxxwDPSWy{g}y{w}-iJmnsUxxxwDPSW:)", changeMatchingOptions(
       matchingOptions(
         adding: allOptions,
         removing: allOptions.dropLast(2)
       ),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
 
     parseTest(
       "a(b(?i)c)d", concat("a", capture(concat("b", changeMatchingOptions(
         matchingOptions(adding: .caseInsensitive),
-        hasImplicitScope: true, "c"))), "d"),
+        isIsolated: true, "c"))), "d"),
       captures: .atom()
     )
     parseTest(
       "(a(?i)b(c)d)", capture(concat("a", changeMatchingOptions(
         matchingOptions(adding: .caseInsensitive),
-        hasImplicitScope: true, concat("b", capture("c"), "d")))),
+        isIsolated: true, concat("b", capture("c"), "d")))),
       captures: .tuple(.atom(), .atom())
     )
     parseTest(
       "(a(?i)b(?#hello)c)", capture(concat("a", changeMatchingOptions(
         matchingOptions(adding: .caseInsensitive),
-        hasImplicitScope: true, concat("b", "c")))),
+        isIsolated: true, concat("b", "c")))),
       captures: .atom()
     )
 
@@ -590,11 +590,11 @@ extension RegexTests {
     //     ab(?i:c)|(?i:def)|(?i:gh)
     // instead. We ought to have a mode to emulate that.
     parseTest("ab(?i)c|def|gh", concat("a", "b", changeMatchingOptions(
-      matchingOptions(adding: .caseInsensitive), hasImplicitScope: true,
+      matchingOptions(adding: .caseInsensitive), isIsolated: true,
       alt("c", concat("d", "e", "f"), concat("g", "h")))))
 
     parseTest("(a|b(?i)c|d)", capture(alt("a", concat("b", changeMatchingOptions(
-      matchingOptions(adding: .caseInsensitive), hasImplicitScope: true,
+      matchingOptions(adding: .caseInsensitive), isIsolated: true,
       alt("c", "d"))))),
       captures: .atom())
 

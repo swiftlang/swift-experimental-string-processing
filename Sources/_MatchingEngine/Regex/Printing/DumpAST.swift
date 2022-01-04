@@ -120,8 +120,8 @@ extension AST.Group.Kind: _ASTPrintable {
     case .nonAtomicLookbehind:   return "nonAtomicLookbehind"
     case .scriptRun:             return "scriptRun"
     case .atomicScriptRun:       return "atomicScriptRun"
-    case .changeMatchingOptions(let seq, let hasImplicitScope):
-      return "changeMatchingOptions<\(seq), \(hasImplicitScope)>"
+    case .changeMatchingOptions(let seq, let isIsolated):
+      return "changeMatchingOptions<\(seq), \(isIsolated)>"
     }
   }
 }

@@ -602,7 +602,7 @@ extension Source {
         // Matching option changing group (?iJmnsUxxxDPSWy{..}-iJmnsUxxxDPSW:).
         if let seq = try src.lexMatchingOptionSequence() {
           if src.tryEat(":") {
-            return .changeMatchingOptions(seq, hasImplicitScope: false)
+            return .changeMatchingOptions(seq, isIsolated: false)
           }
           // If this isn't start of an explicit group, we should have an
           // implicit group that covers the remaining elements of the current
@@ -611,7 +611,7 @@ extension Source {
           // also does it across alternations, which will require additional
           // handling.
           try src.expect(")")
-          return .changeMatchingOptions(seq, hasImplicitScope: true)
+          return .changeMatchingOptions(seq, isIsolated: true)
         }
 
         guard let next = src.peek() else {

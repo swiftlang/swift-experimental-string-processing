@@ -90,9 +90,9 @@ public func atomicScriptRun(_ child: AST) -> AST {
   group(.atomicScriptRun, child)
 }
 func changeMatchingOptions(
-  _ seq: AST.MatchingOptionSequence, hasImplicitScope: Bool, _ child: AST
+  _ seq: AST.MatchingOptionSequence, isIsolated: Bool, _ child: AST
 ) -> AST {
-  group(.changeMatchingOptions(seq, hasImplicitScope: hasImplicitScope), child)
+  group(.changeMatchingOptions(seq, isIsolated: isIsolated), child)
 }
 
 func matchingOptions(
