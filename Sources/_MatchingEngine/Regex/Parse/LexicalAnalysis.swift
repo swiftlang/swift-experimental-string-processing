@@ -602,7 +602,7 @@ extension Source {
         // Matching option changing group (?iJmnsUxxxDPSWy{..}-iJmnsUxxxDPSW:).
         if let seq = try src.lexMatchingOptionSequence() {
           if src.tryEat(":") {
-            return .changeMatchingOptions(seq, hasImplicitScope: false)
+            return .changeMatchingOptions(seq, isIsolated: false)
           }
           // If this isn't start of an explicit group, we should have an
           // implicit group that covers the remaining elements of the current
@@ -611,7 +611,7 @@ extension Source {
           // also does it across alternations, which will require additional
           // handling.
           try src.expect(")")
-          return .changeMatchingOptions(seq, hasImplicitScope: true)
+          return .changeMatchingOptions(seq, isIsolated: true)
         }
 
         guard let next = src.peek() else {
@@ -1026,14 +1026,19 @@ extension Source {
   /// of a '-' character followed by an atom.
   mutating func lexCustomCharClassRangeEnd(
     priorGroupCount: Int
-  ) throws -> AST.Atom? {
+  ) throws -> (dashLoc: SourceLocation, AST.Atom)? {
     // Make sure we don't have a binary operator e.g '--', and the '-' is not
     // ending the custom character class (in which case it is literal).
+    let start = currentPosition
     guard peekCCBinOp() == nil && !starts(with: "-]") && tryEat("-") else {
       return nil
     }
-    return try lexAtom(isInCustomCharacterClass: true,
-                       priorGroupCount: priorGroupCount)
+    let dashLoc = Location(start ..< currentPosition)
+    guard let end = try lexAtom(isInCustomCharacterClass: true,
+                                priorGroupCount: priorGroupCount) else {
+      return nil
+    }
+    return (dashLoc, end)
   }
 }
 

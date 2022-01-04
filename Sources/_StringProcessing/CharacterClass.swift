@@ -384,10 +384,10 @@ extension AST.CustomCharacterClass {
             return nil
           }
           result.append(.characterClass(cc))
-        case .range(let lhs, let rhs):
+        case .range(let r):
           result.append(.range(
-            lhs.literalCharacterValue! ...
-            rhs.literalCharacterValue!))
+            r.lhs.literalCharacterValue! ...
+            r.rhs.literalCharacterValue!))
 
         case .atom(let a):
           if let cc = a.characterClass {

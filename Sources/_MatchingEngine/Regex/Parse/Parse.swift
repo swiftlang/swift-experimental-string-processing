@@ -89,9 +89,12 @@ extension Parser {
 
     if source.isEmpty { return .empty(.init(loc(_start))) }
 
-    var result = Array<AST>(singleElement: try parseConcatenation())
-    while source.tryEat("|") {
-      // TODO: track pipe locations too...
+    var result = [try parseConcatenation()]
+    var pipes: [SourceLocation] = []
+    while true {
+      let pipeStart = source.currentPosition
+      guard source.tryEat("|") else { break }
+      pipes.append(loc(pipeStart))
       result.append(try parseConcatenation())
     }
 
@@ -99,7 +102,7 @@ extension Parser {
       return result[0]
     }
 
-    return .alternation(.init(result, loc(_start)))
+    return .alternation(.init(result, pipes: pipes))
   }
 
   /// Parse a term, potentially separated from others by `|`
@@ -266,14 +269,14 @@ extension Parser {
       else { break }
 
       // Range between atoms.
-      if let rhs = try source.lexCustomCharClassRangeEnd(
+      if let (dashLoc, rhs) = try source.lexCustomCharClassRangeEnd(
         priorGroupCount: priorGroupCount
       ) {
         guard atom.literalCharacterValue != nil &&
               rhs.literalCharacterValue != nil else {
           throw ParseError.invalidCharacterClassRangeOperand
         }
-        members.append(.range(atom, rhs))
+        members.append(.range(.init(atom, dashLoc, rhs)))
         continue
       }
 

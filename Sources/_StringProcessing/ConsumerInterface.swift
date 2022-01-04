@@ -117,12 +117,12 @@ extension AST.CustomCharacterClass.Member {
     case .custom(let ccc):
       return try ccc.generateConsumer(opts)
 
-    case .range(let lower, let upper):
-      guard let lhs = lower.literalCharacterValue else {
-        throw unsupported("\(lower) in range")
+    case .range(let r):
+      guard let lhs = r.lhs.literalCharacterValue else {
+        throw unsupported("\(r.lhs) in range")
       }
-      guard let rhs = upper.literalCharacterValue else {
-        throw unsupported("\(upper) in range")
+      guard let rhs = r.rhs.literalCharacterValue else {
+        throw unsupported("\(r.rhs) in range")
       }
 
       return { input, bounds in

@@ -83,6 +83,17 @@ func parseWithDelimitersTest(
   _ input: String, _ expecting: AST,
   file: StaticString = #file, line: UInt = #line
 ) {
+  // First try lexing.
+  input.withCString { ptr in
+    let (contents, delim, end) = try! lexRegex(start: ptr,
+                                               end: ptr + input.count)
+    XCTAssertEqual(end, ptr + input.count, file: file, line: line)
+
+    let (parseContents, parseDelim) = droppingRegexDelimiters(input)
+    XCTAssertEqual(contents, parseContents, file: file, line: line)
+    XCTAssertEqual(delim, parseDelim, file: file, line: line)
+  }
+
   let orig = try! parseWithDelimiters(input)
   let ast = orig
   guard ast == expecting
@@ -110,6 +121,26 @@ func parseNotEqualTest(
               AST: \(lhsAST._dump())
               Should not be equal to: \(rhsAST._dump())
               """)
+  }
+}
+
+func rangeTest(
+  _ input: String, syntax: SyntaxOptions = .traditional,
+  _ expectedRange: (String) -> Range<Int>,
+  at locFn: (AST) -> SourceLocation = \.location,
+  file: StaticString = #file, line: UInt = #line
+) {
+  let ast = try! parse(input, syntax)
+  let range = input.offsets(of: locFn(ast).range)
+  let expected = expectedRange(input)
+
+  guard range == expected else {
+    XCTFail("""
+            Expected range: "\(expected)"
+            Found range: "\(range)"
+            """,
+            file: file, line: line)
+    return
   }
 }
 
@@ -142,6 +173,27 @@ extension RegexTests {
         zeroOrOne(.eager, "a"), zeroOrOne(.reluctant, "b"),
         oneOrMore(.eager, "c"), oneOrMore(.reluctant, "d"),
         zeroOrMore(.eager, "e"), zeroOrMore(.reluctant, "f")))
+
+    parseTest(
+      "(.)*(.*)",
+      concat(
+        zeroOrMore(.eager, capture(atom(.any))),
+        capture(zeroOrMore(.eager, atom(.any)))),
+      captures: .tuple([.array(.atom()), .atom()]))
+    parseTest(
+      "((.))*((.)?)",
+      concat(
+        zeroOrMore(.eager, capture(capture(atom(.any)))),
+        capture(zeroOrOne(.eager, capture(atom(.any))))),
+      captures: .tuple([
+        .array(.atom()), .array(.atom()), .atom(), .optional(.atom())
+      ]))
+    parseTest(
+      #"abc\d"#,
+      concat("a", "b", "c", escaped(.decimalDigit)))
+
+    // MARK: Alternations
+
     parseTest(
       "a|b?c",
       alt("a", concat(zeroOrOne(.eager, "b"), "c")))
@@ -171,23 +223,17 @@ extension RegexTests {
       "(a)|b|(c)d",
       alt(capture("a"), "b", concat(capture("c"), "d")),
       captures: .tuple([.optional(.atom()), .optional(.atom())]))
-    parseTest(
-      "(.)*(.*)",
-      concat(
-        zeroOrMore(.eager, capture(atom(.any))),
-        capture(zeroOrMore(.eager, atom(.any)))),
-      captures: .tuple([.array(.atom()), .atom()]))
-    parseTest(
-      "((.))*((.)?)",
-      concat(
-        zeroOrMore(.eager, capture(capture(atom(.any)))),
-        capture(zeroOrOne(.eager, capture(atom(.any))))),
-      captures: .tuple([
-        .array(.atom()), .array(.atom()), .atom(), .optional(.atom())
-      ]))
-    parseTest(
-      #"abc\d"#,
-      concat("a", "b", "c", escaped(.decimalDigit)))
+
+    // Alternations with empty branches are permitted.
+    parseTest("|", alt(empty(), empty()))
+    parseTest("(|)", capture(alt(empty(), empty())), captures: .atom())
+    parseTest("a|", alt("a", empty()))
+    parseTest("|b", alt(empty(), "b"))
+    parseTest("|b|", alt(empty(), "b", empty()))
+    parseTest("a|b|", alt("a", "b", empty()))
+    parseTest("||c|", alt(empty(), empty(), "c", empty()))
+    parseTest("|||", alt(empty(), empty(), empty(), empty()))
+    parseTest("a|||d", alt("a", empty(), empty(), "d"))
 
     // MARK: Unicode scalars
 
@@ -210,12 +256,9 @@ extension RegexTests {
     parseTest(#"\08"#, concat(scalar("\u{0}"), "8"))
     parseTest(#"\0707"#, concat(scalar("\u{38}"), "7"))
 
-    // FIXME(Hamish): These now get printed using the unicode
-    // literal syntax instead of rendered as Character. Adjust
-    // testing infra to handle that.
-//    parseTest(#"[\0]"#, charClass("\u{0}"))
-//    parseTest(#"[\01]"#, charClass("\u{1}"))
-//    parseTest(#"[\070]"#, charClass("\u{38}"))
+    parseTest(#"[\0]"#, charClass(scalar_m("\u{0}")))
+    parseTest(#"[\01]"#, charClass(scalar_m("\u{1}")))
+    parseTest(#"[\070]"#, charClass(scalar_m("\u{38}")))
 
     parseTest(#"[\07A]"#, charClass(scalar_m("\u{7}"), "A"))
     parseTest(#"[\08]"#, charClass(scalar_m("\u{0}"), "8"))
@@ -235,18 +278,18 @@ extension RegexTests {
       "[-|$^:?+*())(*-+-]",
       charClass(
         "-", "|", "$", "^", ":", "?", "+", "*", "(", ")", ")",
-        "(", .range("*", "+"), "-"))
+        "(", range_m("*", "+"), "-"))
 
     parseTest(
-      "[a-b-c]", charClass(.range("a", "b"), "-", "c"))
+      "[a-b-c]", charClass(range_m("a", "b"), "-", "c"))
 
     parseTest("[-a-]", charClass("-", "a", "-"))
 
-    parseTest("[a-z]", charClass(.range("a", "z")))
+    parseTest("[a-z]", charClass(range_m("a", "z")))
 
     // FIXME: AST builder helpers for custom char class types
     parseTest("[a-d--a-c]", charClass(
-      .setOperation([.range("a", "d")], .init(faking: .subtraction), [.range("a", "c")])
+      .setOperation([range_m("a", "d")], .init(faking: .subtraction), [range_m("a", "c")])
     ))
 
     parseTest("[-]", charClass("-"))
@@ -467,74 +510,74 @@ extension RegexTests {
 
     // Matching option changing groups.
     parseTest("(?-)", changeMatchingOptions(
-      matchingOptions(), hasImplicitScope: true, empty())
+      matchingOptions(), isIsolated: true, empty())
     )
     parseTest("(?i)", changeMatchingOptions(
       matchingOptions(adding: .caseInsensitive),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?m)", changeMatchingOptions(
       matchingOptions(adding: .multiline),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?x)", changeMatchingOptions(
       matchingOptions(adding: .extended),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?xx)", changeMatchingOptions(
       matchingOptions(adding: .extraExtended),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?xxx)", changeMatchingOptions(
       matchingOptions(adding: .extraExtended, .extended),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?-i)", changeMatchingOptions(
       matchingOptions(removing: .caseInsensitive),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?i-s)", changeMatchingOptions(
       matchingOptions(adding: .caseInsensitive, removing: .singleLine),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?i-is)", changeMatchingOptions(
       matchingOptions(adding: .caseInsensitive,
                       removing: .caseInsensitive, .singleLine),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
 
     parseTest("(?:)", nonCapture(empty()))
     parseTest("(?-:)", changeMatchingOptions(
-      matchingOptions(), hasImplicitScope: false, empty())
+      matchingOptions(), isIsolated: false, empty())
     )
     parseTest("(?i:)", changeMatchingOptions(
       matchingOptions(adding: .caseInsensitive),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
     parseTest("(?-i:)", changeMatchingOptions(
       matchingOptions(removing: .caseInsensitive),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
 
     parseTest("(?^)", changeMatchingOptions(
       unsetMatchingOptions(),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?^:)", changeMatchingOptions(
       unsetMatchingOptions(),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
     parseTest("(?^ims:)", changeMatchingOptions(
       unsetMatchingOptions(adding: .caseInsensitive, .multiline, .singleLine),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
     parseTest("(?^J:)", changeMatchingOptions(
       unsetMatchingOptions(adding: .allowDuplicateGroupNames),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
     parseTest("(?^y{w}:)", changeMatchingOptions(
       unsetMatchingOptions(adding: .textSegmentWordMode),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
 
     let allOptions: [AST.MatchingOption.Kind] = [
@@ -549,32 +592,32 @@ extension RegexTests {
         adding: allOptions,
         removing: allOptions.dropLast(2)
       ),
-      hasImplicitScope: true, empty())
+      isIsolated: true, empty())
     )
     parseTest("(?iJmnsUxxxwDPSWy{g}y{w}-iJmnsUxxxwDPSW:)", changeMatchingOptions(
       matchingOptions(
         adding: allOptions,
         removing: allOptions.dropLast(2)
       ),
-      hasImplicitScope: false, empty())
+      isIsolated: false, empty())
     )
 
     parseTest(
       "a(b(?i)c)d", concat("a", capture(concat("b", changeMatchingOptions(
         matchingOptions(adding: .caseInsensitive),
-        hasImplicitScope: true, "c"))), "d"),
+        isIsolated: true, "c"))), "d"),
       captures: .atom()
     )
     parseTest(
       "(a(?i)b(c)d)", capture(concat("a", changeMatchingOptions(
         matchingOptions(adding: .caseInsensitive),
-        hasImplicitScope: true, concat("b", capture("c"), "d")))),
+        isIsolated: true, concat("b", capture("c"), "d")))),
       captures: .tuple(.atom(), .atom())
     )
     parseTest(
       "(a(?i)b(?#hello)c)", capture(concat("a", changeMatchingOptions(
         matchingOptions(adding: .caseInsensitive),
-        hasImplicitScope: true, concat("b", "c")))),
+        isIsolated: true, concat("b", "c")))),
       captures: .atom()
     )
 
@@ -582,11 +625,11 @@ extension RegexTests {
     //     ab(?i:c)|(?i:def)|(?i:gh)
     // instead. We ought to have a mode to emulate that.
     parseTest("ab(?i)c|def|gh", concat("a", "b", changeMatchingOptions(
-      matchingOptions(adding: .caseInsensitive), hasImplicitScope: true,
+      matchingOptions(adding: .caseInsensitive), isIsolated: true,
       alt("c", concat("d", "e", "f"), concat("g", "h")))))
 
     parseTest("(a|b(?i)c|d)", capture(alt("a", concat("b", changeMatchingOptions(
-      matchingOptions(adding: .caseInsensitive), hasImplicitScope: true,
+      matchingOptions(adding: .caseInsensitive), isIsolated: true,
       alt("c", "d"))))),
       captures: .atom())
 
@@ -597,7 +640,7 @@ extension RegexTests {
       parseTest("\\\(i)", backreference(.absolute(i)))
       parseTest(
         "()()()()()()()()()\\\(i)",
-        concat((0..<9).map { _ in capture(empty()) }
+        concat(Array(repeating: capture(empty()), count: 9)
                + [backreference(.absolute(i))]),
         captures: .tuple(Array(repeating: .atom(), count: 9))
       )
@@ -612,13 +655,13 @@ extension RegexTests {
 
     parseTest(
       #"()()()()()()()()()()\10"#,
-      concat((0..<10).map { _ in capture(empty()) }
+      concat(Array(repeating: capture(empty()), count: 10)
              + [backreference(.absolute(10))]),
       captures: .tuple(Array(repeating: .atom(), count: 10))
     )
     parseTest(
       #"()()()()()()()()()\10()"#,
-      concat((0..<9).map { _ in capture(empty()) }
+      concat(Array(repeating: capture(empty()), count: 9)
              + [scalar("\u{8}"), capture(empty())]),
       captures: .tuple(Array(repeating: .atom(), count: 10))
     )
@@ -655,13 +698,13 @@ extension RegexTests {
     parseTest(#"\040"#, scalar(" "))
     parseTest(
       String(repeating: "()", count: 40) + #"\040"#,
-      concat((0..<40).map { _ in capture(empty()) } + [scalar(" ")]),
+      concat(Array(repeating: capture(empty()), count: 40) + [scalar(" ")]),
       captures: .tuple(Array(repeating: .atom(), count: 40))
     )
     parseTest(#"\40"#, scalar(" "))
     parseTest(
       String(repeating: "()", count: 40) + #"\40"#,
-      concat((0..<40).map { _ in capture(empty()) }
+      concat(Array(repeating: capture(empty()), count: 40)
              + [backreference(.absolute(40))]),
       captures: .tuple(Array(repeating: .atom(), count: 40))
     )
@@ -671,14 +714,14 @@ extension RegexTests {
     parseTest(#"\11"#, scalar("\u{9}"))
     parseTest(
       String(repeating: "()", count: 11) + #"\11"#,
-      concat((0..<11).map { _ in capture(empty()) }
+      concat(Array(repeating: capture(empty()), count: 11)
              + [backreference(.absolute(11))]),
       captures: .tuple(Array(repeating: .atom(), count: 11))
     )
     parseTest(#"\011"#, scalar("\u{9}"))
     parseTest(
       String(repeating: "()", count: 11) + #"\011"#,
-      concat((0..<11).map { _ in capture(empty()) } + [scalar("\u{9}")]),
+      concat(Array(repeating: capture(empty()), count: 11) + [scalar("\u{9}")]),
       captures: .tuple(Array(repeating: .atom(), count: 11))
     )
 
@@ -819,8 +862,14 @@ extension RegexTests {
     parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
     parseWithDelimitersTest("'|a b|'", concat("a", "b"))
 
+    parseWithDelimitersTest("'|||'", alt(empty(), empty()))
+    parseWithDelimitersTest("'||||'", alt(empty(), empty(), empty()))
+    parseWithDelimitersTest("'|a||'", alt("a", empty()))
+
     // Make sure dumping output correctly reflects differences in AST.
     parseNotEqualTest(#"abc"#, #"abd"#)
+
+    parseNotEqualTest(#"[\p{Any}]"#, #"[[:Any:]]"#)
 
     parseNotEqualTest(#"[abc[:space:]\d]+"#,
                       #"[abc[:upper:]\d]+"#)
@@ -847,7 +896,49 @@ extension RegexTests {
     parseNotEqualTest("(?i-s:)", ("(?i-m:)"))
     parseNotEqualTest("(?y{w}:)", ("(?y{g}:)"))
 
+    parseNotEqualTest("|", "||")
+    parseNotEqualTest("a|", "|")
+    parseNotEqualTest("a|b", "|")
+
     // TODO: failure tests
+  }
+
+  func testParseSourceLocations() throws {
+    func entireRange(input: String) -> Range<Int> {
+      0 ..< input.count
+    }
+    func insetRange(by i: Int) -> (String) -> Range<Int> {
+      { i ..< $0.count - i }
+    }
+    func range(_ indices: Range<Int>) -> (String) -> Range<Int> {
+      { _ in indices }
+    }
+
+    // MARK: Alternations
+
+    typealias Alt = AST.Alternation
+
+    let alternations = [
+      "|", "a|", "|b", "a|b", "abc|def", "a|b|c|d", "a|b|", "|||", "a|||d",
+      "||c|"
+    ]
+
+    // Make sure we correctly compute source ranges for alternations.
+    for alt in alternations {
+      rangeTest(alt, entireRange)
+      rangeTest("(\(alt))", insetRange(by: 1), at: \.children![0].location)
+    }
+
+    rangeTest("|", entireRange, at: { $0.as(Alt.self)!.pipes[0] })
+    rangeTest("a|", range(1 ..< 2), at: { $0.as(Alt.self)!.pipes[0] })
+    rangeTest("a|b", range(1 ..< 2), at: { $0.as(Alt.self)!.pipes[0] })
+    rangeTest("|||", range(1 ..< 2), at: { $0.as(Alt.self)!.pipes[1] })
+
+    // MARK: Custom character classes
+
+    rangeTest("[a-z]", range(2 ..< 3), at: {
+      $0.as(CustomCC.self)!.members[0].as(CustomCC.Range.self)!.dashLoc
+    })
   }
 
   func testParseErrors() {
