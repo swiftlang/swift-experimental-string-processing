@@ -314,7 +314,7 @@ extension AST.Atom {
 
     public var _dumpBase: String {
       // FIXME: better printing...
-      "\(kind)\(isInverted)"
+      "\(kind)\(isInverted)\(isPOSIX)"
     }
   }
 }

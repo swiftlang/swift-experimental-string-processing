@@ -822,6 +822,8 @@ extension RegexTests {
     // Make sure dumping output correctly reflects differences in AST.
     parseNotEqualTest(#"abc"#, #"abd"#)
 
+    parseNotEqualTest(#"[\p{Any}]"#, #"[[:Any:]]"#)
+
     parseNotEqualTest(#"[abc[:space:]\d]+"#,
                       #"[abc[:upper:]\d]+"#)
 
