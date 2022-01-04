@@ -17,7 +17,9 @@ AST.
 import _MatchingEngine
 
 func alt(_ asts: [AST]) -> AST {
-  .alternation(.init(asts, .fake))
+  return .alternation(
+    .init(asts, pipes: Array(repeating: .fake, count: asts.count - 1))
+  )
 }
 func alt(_ asts: AST...) -> AST {
   alt(asts)

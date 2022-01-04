@@ -92,11 +92,20 @@ extension AST {
 
   public struct Alternation: Hashable, _ASTNode {
     public let children: [AST]
-    public let location: SourceLocation
+    public let pipes: [SourceLocation]
 
-    public init(_ mems: [AST], _ location: SourceLocation) {
+    public init(_ mems: [AST], pipes: [SourceLocation]) {
+      // An alternation must have at least two branches (though the branches
+      // may be empty AST nodes), and n - 1 pipes.
+      precondition(mems.count >= 2)
+      precondition(pipes.count == mems.count - 1)
+
       self.children = mems
-      self.location = location
+      self.pipes = pipes
+    }
+
+    public var location: SourceLocation {
+      .init(children.first!.location.start ..< children.last!.location.end)
     }
   }
 

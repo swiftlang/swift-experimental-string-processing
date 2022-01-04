@@ -928,6 +928,11 @@ extension RegexTests {
       rangeTest(alt, entireRange)
       rangeTest("(\(alt))", insetRange(by: 1), at: \.children![0].location)
     }
+
+    rangeTest("|", entireRange, at: { $0.as(Alt.self)!.pipes[0] })
+    rangeTest("a|", range(1 ..< 2), at: { $0.as(Alt.self)!.pipes[0] })
+    rangeTest("a|b", range(1 ..< 2), at: { $0.as(Alt.self)!.pipes[0] })
+    rangeTest("|||", range(1 ..< 2), at: { $0.as(Alt.self)!.pipes[1] })
   }
 
   func testParseErrors() {
