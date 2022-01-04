@@ -83,6 +83,17 @@ func parseWithDelimitersTest(
   _ input: String, _ expecting: AST,
   file: StaticString = #file, line: UInt = #line
 ) {
+  // First try lexing.
+  input.withCString { ptr in
+    let (contents, delim, end) = try! lexRegex(start: ptr,
+                                               end: ptr + input.count)
+    XCTAssertEqual(end, ptr + input.count, file: file, line: line)
+
+    let (parseContents, parseDelim) = droppingRegexDelimiters(input)
+    XCTAssertEqual(contents, parseContents, file: file, line: line)
+    XCTAssertEqual(delim, parseDelim, file: file, line: line)
+  }
+
   let orig = try! parseWithDelimiters(input)
   let ast = orig
   guard ast == expecting
