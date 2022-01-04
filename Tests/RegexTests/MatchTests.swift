@@ -9,7 +9,9 @@ func matchTest(
   syntax: SyntaxOptions = .traditional,
   enableTracing: Bool = false,
   dumpAST: Bool = false,
-  xfail: Bool = false
+  xfail: Bool = false,
+  file: StaticString = #filePath,
+  line: UInt = #line
 ) {
   do {
     var consumer = try RegexConsumer<String>(parsing: regex)
@@ -22,13 +24,13 @@ func matchTest(
     }
 
     if xfail {
-      XCTAssertNotEqual(String(input[range]), match)
+      XCTAssertNotEqual(String(input[range]), match, file: file, line: line)
     } else {
-      XCTAssertEqual(String(input[range]), match)
+      XCTAssertEqual(String(input[range]), match, file: file, line: line)
     }
   } catch {
     if !xfail {
-      XCTFail("\(error)")
+      XCTFail("\(error)", file: file, line: line)
     }
     return
   }
@@ -64,6 +66,14 @@ extension RegexTests {
       #"abc\+d*"#, input: "123abc+dddxyz", match: "abc+ddd")
     matchTest(
       "a(b)", input: "123abcxyz", match: "ab")
+
+    matchTest(
+      "(.)*(.*)", input: "123abcxyz", match: "123abcxyz")
+    matchTest(
+      #"abc\d"#, input: "xyzabc123", match: "abc1")
+
+    // MARK: Alternations
+
     matchTest(
       "abc(?:de)+fghi*k|j", input: "123abcdefghijxyz", match: "j")
     matchTest(
@@ -84,10 +94,25 @@ extension RegexTests {
       "a|b?c", input: "123bcxyz", match: "bc")
     matchTest(
       "(a|b)c", input: "123abcxyz", match: "bc")
-    matchTest(
-      "(.)*(.*)", input: "123abcxyz", match: "123abcxyz")
-    matchTest(
-      #"abc\d"#, input: "xyzabc123", match: "abc1")
+
+    // Alternations with empty branches are permitted.
+    matchTest("|", input: "ab", match: "")
+    matchTest("(|)", input: "ab", match: "")
+    matchTest("a|", input: "ab", match: "a")
+    matchTest("a|", input: "ba", match: "")
+    matchTest("|b", input: "ab", match: "")
+    matchTest("|b", input: "ba", match: "")
+    matchTest("|b|", input: "ab", match: "")
+    matchTest("|b|", input: "ba", match: "")
+    matchTest("a|b|", input: "ab", match: "a")
+    matchTest("a|b|", input: "ba", match: "b")
+    matchTest("a|b|", input: "ca", match: "")
+    matchTest("||c|", input: "ab", match: "")
+    matchTest("||c|", input: "cb", match: "")
+    matchTest("|||", input: "ab", match: "")
+    matchTest("a|||d", input: "bc", match: "")
+    matchTest("a|||d", input: "abc", match: "a")
+    matchTest("a|||d", input: "d", match: "")
 
     // MARK: Unicode scalars
 

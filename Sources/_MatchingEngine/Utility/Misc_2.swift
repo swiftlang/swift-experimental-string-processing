@@ -93,6 +93,10 @@ extension Collection {
     distance(from: startIndex, to: i)
   }
 
+  public func offsets(of r: Range<Index>) -> Range<Int> {
+    offset(of: r.lowerBound) ..< offset(of: r.upperBound)
+  }
+
   public func convertByOffset<
     C: Collection
   >(_ range: Range<Index>, in c: C) -> Range<C.Index> {

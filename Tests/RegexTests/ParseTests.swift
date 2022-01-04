@@ -124,6 +124,26 @@ func parseNotEqualTest(
   }
 }
 
+func rangeTest(
+  _ input: String, syntax: SyntaxOptions = .traditional,
+  _ expectedRange: (String) -> Range<Int>,
+  at locFn: (AST) -> SourceLocation = \.location,
+  file: StaticString = #file, line: UInt = #line
+) {
+  let ast = try! parse(input, syntax)
+  let range = input.offsets(of: locFn(ast).range)
+  let expected = expectedRange(input)
+
+  guard range == expected else {
+    XCTFail("""
+            Expected range: "\(expected)"
+            Found range: "\(range)"
+            """,
+            file: file, line: line)
+    return
+  }
+}
+
 extension RegexTests {
   func testParse() {
     parseTest(
@@ -153,6 +173,27 @@ extension RegexTests {
         zeroOrOne(.eager, "a"), zeroOrOne(.reluctant, "b"),
         oneOrMore(.eager, "c"), oneOrMore(.reluctant, "d"),
         zeroOrMore(.eager, "e"), zeroOrMore(.reluctant, "f")))
+
+    parseTest(
+      "(.)*(.*)",
+      concat(
+        zeroOrMore(.eager, capture(atom(.any))),
+        capture(zeroOrMore(.eager, atom(.any)))),
+      captures: .tuple([.array(.atom()), .atom()]))
+    parseTest(
+      "((.))*((.)?)",
+      concat(
+        zeroOrMore(.eager, capture(capture(atom(.any)))),
+        capture(zeroOrOne(.eager, capture(atom(.any))))),
+      captures: .tuple([
+        .array(.atom()), .array(.atom()), .atom(), .optional(.atom())
+      ]))
+    parseTest(
+      #"abc\d"#,
+      concat("a", "b", "c", escaped(.decimalDigit)))
+
+    // MARK: Alternations
+
     parseTest(
       "a|b?c",
       alt("a", concat(zeroOrOne(.eager, "b"), "c")))
@@ -182,23 +223,17 @@ extension RegexTests {
       "(a)|b|(c)d",
       alt(capture("a"), "b", concat(capture("c"), "d")),
       captures: .tuple([.optional(.atom()), .optional(.atom())]))
-    parseTest(
-      "(.)*(.*)",
-      concat(
-        zeroOrMore(.eager, capture(atom(.any))),
-        capture(zeroOrMore(.eager, atom(.any)))),
-      captures: .tuple([.array(.atom()), .atom()]))
-    parseTest(
-      "((.))*((.)?)",
-      concat(
-        zeroOrMore(.eager, capture(capture(atom(.any)))),
-        capture(zeroOrOne(.eager, capture(atom(.any))))),
-      captures: .tuple([
-        .array(.atom()), .array(.atom()), .atom(), .optional(.atom())
-      ]))
-    parseTest(
-      #"abc\d"#,
-      concat("a", "b", "c", escaped(.decimalDigit)))
+
+    // Alternations with empty branches are permitted.
+    parseTest("|", alt(empty(), empty()))
+    parseTest("(|)", capture(alt(empty(), empty())), captures: .atom())
+    parseTest("a|", alt("a", empty()))
+    parseTest("|b", alt(empty(), "b"))
+    parseTest("|b|", alt(empty(), "b", empty()))
+    parseTest("a|b|", alt("a", "b", empty()))
+    parseTest("||c|", alt(empty(), empty(), "c", empty()))
+    parseTest("|||", alt(empty(), empty(), empty(), empty()))
+    parseTest("a|||d", alt("a", empty(), empty(), "d"))
 
     // MARK: Unicode scalars
 
@@ -827,6 +862,10 @@ extension RegexTests {
     parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
     parseWithDelimitersTest("'|a b|'", concat("a", "b"))
 
+    parseWithDelimitersTest("'|||'", alt(empty(), empty()))
+    parseWithDelimitersTest("'||||'", alt(empty(), empty(), empty()))
+    parseWithDelimitersTest("'|a||'", alt("a", empty()))
+
     // Make sure dumping output correctly reflects differences in AST.
     parseNotEqualTest(#"abc"#, #"abd"#)
 
@@ -857,7 +896,38 @@ extension RegexTests {
     parseNotEqualTest("(?i-s:)", ("(?i-m:)"))
     parseNotEqualTest("(?y{w}:)", ("(?y{g}:)"))
 
+    parseNotEqualTest("|", "||")
+    parseNotEqualTest("a|", "|")
+    parseNotEqualTest("a|b", "|")
+
     // TODO: failure tests
+  }
+
+  func testParseSourceLocations() throws {
+    func entireRange(input: String) -> Range<Int> {
+      0 ..< input.count
+    }
+    func insetRange(by i: Int) -> (String) -> Range<Int> {
+      { i ..< $0.count - i }
+    }
+    func range(_ indices: Range<Int>) -> (String) -> Range<Int> {
+      { _ in indices }
+    }
+
+    // MARK: Alternations
+
+    typealias Alt = AST.Alternation
+
+    let alternations = [
+      "|", "a|", "|b", "a|b", "abc|def", "a|b|c|d", "a|b|", "|||", "a|||d",
+      "||c|"
+    ]
+
+    // Make sure we correctly compute source ranges for alternations.
+    for alt in alternations {
+      rangeTest(alt, entireRange)
+      rangeTest("(\(alt))", insetRange(by: 1), at: \.children![0].location)
+    }
   }
 
   func testParseErrors() {
