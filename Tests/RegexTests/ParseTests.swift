@@ -270,6 +270,13 @@ extension RegexTests {
     parseTest(#"[\7777]"#, charClass(scalar_m("\u{1FF}"), "7"))
     parseTest(#"[\181]"#, charClass(scalar_m("\u{1}"), "8", "1"))
 
+    // We take *up to* the first two valid digits for \x. No valid digits is 0.
+    parseTest(#"\x"#, scalar("\u{0}"))
+    parseTest(#"\x5"#, scalar("\u{5}"))
+    parseTest(#"\xX"#, concat(scalar("\u{0}"), "X"))
+    parseTest(#"\x5X"#, concat(scalar("\u{5}"), "X"))
+    parseTest(#"\x12ab"#, concat(scalar("\u{12}"), "a", "b"))
+
     // MARK: Character classes
 
     parseTest(#"abc\d"#, concat("a", "b", "c", escaped(.decimalDigit)))

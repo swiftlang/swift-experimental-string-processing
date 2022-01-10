@@ -83,9 +83,6 @@ extension RegexTests {
       _ = scalars
     }
 
-// FIXME:
-//    diagnoseUniScalar(
-//      "12ab", base: "x", expectedDigits: 2)
     diagnoseUniScalar(
       "12", base: "u", expectedDigits: 4)
     diagnoseUniScalar(
