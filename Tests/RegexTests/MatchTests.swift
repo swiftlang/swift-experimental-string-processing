@@ -831,5 +831,156 @@ extension RegexTests {
     matchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba", xfail: true)
     matchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
   }
+  
+  // MARK: Character Semantics
+  
+  var eComposed: String { "é" }
+  var eDecomposed: String { "e\u{301}" }
+  
+  func testCanonicalEquivalence() throws {
+    // Expectation: Matching should use canonical equivalence whenever comparing
+    // characters, so a user can write characters using any equivalent spelling
+    // in either a regex literal or the string targeted for matching.
+    
+    matchTests(
+      #"é$"#,
+      (eComposed, eComposed),
+      (eDecomposed, eDecomposed))
+    
+    // FIXME: Decomposed character in regex literal doesn't match an equivalent character
+    matchTests(
+      #"e\u{301}$"#,
+      (eComposed, eComposed),
+      (eDecomposed, eDecomposed),
+      xfail: true)
+    
+    matchTests(
+      #"e$"#,
+      (eComposed, nil),
+      (eDecomposed, nil))
+  }
+  
+  func testCanonicalEquivalenceCharacterClass() throws {
+    // Expectation: Character classes should match equivalent characters to the
+    // same degree, regardless of how they are spelled. Unicode "property
+    // classes" should match characters when all the code points that comprise
+    // the character are members of the property class.
+    
+    // \w
+    matchTests(
+      #"^\w$"#,
+      (eComposed, eComposed),
+      (eDecomposed, eDecomposed))
+    // \p{Letter}
+    matchTest(#"\p{Letter}$"#, input: eComposed, match: eComposed)
+    // FIXME: \p{Letter} doesn't match a decomposed character
+    matchTest(#"\p{Letter}$"#, input: eDecomposed, match: eDecomposed,
+              xfail: true)
+    
+    // \d
+    matchTest(#"\d"#, input: "5", match: "5")
+    // FIXME: \d shouldn't match a digit composed with a non-digit character
+    matchTest(#"\d"#, input: "5\u{305}", match: nil,
+              xfail: true)
+    // \p{Number}
+    matchTest(#"\p{Number}"#, input: "5", match: "5")
+    // FIXME: \p{Number} shouldn't match a number composed with a non-number character
+    matchTest(#"\p{Number}"#, input: "5\u{305}", match: nil,
+              xfail: true)
+    
+    // \s
+    matchTest(#"\s"#, input: " ", match: " ")
+    // FIXME: \s shouldn't match a number composed with a non-number character
+    matchTest(#"\s\u{305}"#, input: " ", match: nil,
+              xfail: true)
+    // \p{Whitespace}
+    matchTest(#"\s"#, input: " ", match: " ")
+    // FIXME: \p{Whitespace} shouldn't match whitespace composed with a non-whitespace character
+    matchTest(#"\s\u{305}"#, input: " ", match: nil,
+              xfail: true)
+  }
+  
+  func testCanonicalEquivalenceCustomCharacterClass() throws {
+    // Expectation: Concatenations with custom character classes should be able
+    // to match within a grapheme cluster. That is, a regex should be able to
+    // match the scalar values that comprise a grapheme cluster in separate,
+    // or repeated, custom character classes.
+    
+    matchTests(
+      #"[áéíóú]$"#,
+      (eComposed, eComposed),
+      (eDecomposed, eDecomposed))
+
+    // FIXME: Custom char classes don't use canonical equivalence with composed characters
+    matchTest(#"e[\u{301}]$"#, input: eComposed, match: eComposed,
+              xfail: true)
+    matchTest(#"e[\u{300}-\u{320}]$"#, input: eComposed, match: eComposed,
+              xfail: true)
+    matchTest(#"[a-z][\u{300}-\u{320}]$"#, input: eComposed, match: eComposed,
+              xfail: true)
+
+    // FIXME: Custom char classes don't match decomposed characters
+    matchTest(#"e[\u{301}]$"#, input: eDecomposed, match: eDecomposed,
+              xfail: true)
+    matchTest(#"e[\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed,
+              xfail: true)
+    matchTest(#"[a-z][\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed,
+              xfail: true)
+
+    let flag = "🇰🇷"
+    matchTest(#"🇰🇷"#, input: flag, match: flag)
+    matchTest(#"[🇰🇷]"#, input: flag, match: flag)
+    matchTest(#"\u{1F1F0}\u{1F1F7}"#, input: flag, match: flag)
+    
+    // First Unicode scalar followed by CCC of regional indicators
+    matchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag)
+
+    // FIXME: CCC of Regional Indicator doesn't match with both parts of a flag character
+    // A CCC of regional indicators x 2
+    matchTest(#"[\u{1F1E6}-\u{1F1FF}]{2}"#, input: flag, match: flag,
+              xfail: true)
+
+    // FIXME: A single CCC of regional indicators matches the whole flag character
+    // A CCC of regional indicators followed by the second Unicode scalar
+    matchTest(#"[\u{1F1E6}-\u{1F1FF}]\u{1F1F7}"#, input: flag, match: flag,
+              xfail: true)
+    // A single CCC of regional indicators
+    matchTest(#"[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: nil,
+              xfail: true)
+  }
+  
+  func testAnyChar() throws {
+    // Expectation: \X and, in grapheme cluster mode, `.` should consume an
+    // entire character, regardless of how it's spelled. \O should consume only
+    // a single Unicode scalar value, leaving any other grapheme scalar
+    // components to be matched.
+    
+    matchTests(
+      #".\u{301}"#,
+      (eComposed, nil),
+      (eDecomposed, nil))
+    matchTests(
+      #"\X\u{301}"#,
+      (eComposed, nil),
+      (eDecomposed, nil))
+    
+    // FIXME: \O is unsupported
+    matchTest(#"\O\u{301}"#, input: eDecomposed, match: eDecomposed,
+              xfail: true)
+    matchTest(#"e\O"#, input: eDecomposed, match: eDecomposed,
+              xfail: true)
+    // TODO: Should these two match or not?
+    matchTest(#"\O\u{301}"#, input: eComposed, match: eComposed,
+              xfail: true)
+    matchTest(#"e\O"#, input: eComposed, match: nil,
+              xfail: true)
+
+    // FIXME: Unicode scalar semantic flag (?U) doesn't change behavior of `.`
+    matchTests(
+      #"(?U).\u{301}"#,
+      (eComposed, eComposed),
+      (eDecomposed, eDecomposed),
+      xfail: true)
+  }
 }
 
