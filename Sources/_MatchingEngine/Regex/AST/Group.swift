@@ -27,7 +27,7 @@ extension AST {
       case nonCaptureReset
 
       // (?>...)
-      case atomicNonCapturing // TODO: is Oniguruma capturing?
+      case atomicNonCapturing
 
       // (?=...)
       case lookahead

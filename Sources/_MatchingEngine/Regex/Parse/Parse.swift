@@ -252,8 +252,6 @@ extension Parser {
   mutating func parseCCCMembers(
     into members: inout Array<CustomCC.Member>
   ) throws {
-    // FIXME: Track source locations
-
     // Parse members until we see the end of the custom char class or an
     // operator.
     while source.peek() != "]" && source.peekCCBinOp() == nil {

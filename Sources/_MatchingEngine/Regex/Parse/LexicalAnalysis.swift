@@ -514,7 +514,7 @@ extension Source {
   /// Try to lex a sequence of matching options.
   ///
   ///     MatchingOptionSeq -> '^' MatchingOption* | MatchingOption+
-  ///                        | MatchingOption* '-' MatchingOption+
+  ///                        | MatchingOption* '-' MatchingOption*
   ///
   mutating func lexMatchingOptionSequence(
   ) throws -> AST.MatchingOptionSequence? {
@@ -527,8 +527,8 @@ extension Source {
       adding.append(opt)
     }
 
-    // If the sequence begun with a caret '^', options can be added, so we're
-    // done.
+    // If the sequence begun with a caret '^', options can only be added, so
+    // we're done.
     if ateCaret.value {
       return .init(caretLoc: ateCaret.location, adding: adding, minusLoc: nil,
                    removing: [])
