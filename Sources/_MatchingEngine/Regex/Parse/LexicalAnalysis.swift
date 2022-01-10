@@ -231,7 +231,7 @@ extension Source {
   ///     UniScalar -> 'u{' HexDigit{1...} '}'
   ///                | 'u'  HexDigit{4}
   ///                | 'x{' HexDigit{1...} '}'
-  ///                | 'x'  HexDigit{2}
+  ///                | 'x'  HexDigit{0...2}
   ///                | 'U'  HexDigit{8}
   ///                | 'o{' OctalDigit{1...} '}'
   ///                | OctalDigit{1...3}
@@ -240,15 +240,26 @@ extension Source {
     escapedCharacter base: Character
   ) throws -> Located<Unicode.Scalar> {
     try recordLoc { src in
+      // TODO: PCRE offers a different behavior if PCRE2_ALT_BSUX is set.
       switch base {
       // Hex numbers.
-      case "u", "x":
-        if src.tryEat("{") {
-          let str = try src.lexUntil(eating: "}").value
-          return try Source.validateUnicodeScalar(str, .hex)
+      case "u" where src.tryEat("{"), "x" where src.tryEat("{"):
+        let str = try src.lexUntil(eating: "}").value
+        return try Source.validateUnicodeScalar(str, .hex)
+
+      case "x":
+        // \x expects *up to* 2 digits.
+        guard let digits = src.tryEatPrefix(maxLength: 2, \.isHexDigit) else {
+          // In PCRE, \x without any valid hex digits is \u{0}.
+          // TODO: This doesn't appear to be followed by ICU or Oniguruma, so
+          // could be changed to throw an error if we had a parsing mode for
+          // them.
+          return Unicode.Scalar(0)
         }
-        let numDigits = base == "u" ? 4 : 2
-        return try src.expectUnicodeScalar(numDigits: numDigits).value
+        return try Source.validateUnicodeScalar(digits.string, .hex)
+
+      case "u":
+        return try src.expectUnicodeScalar(numDigits: 4).value
       case "U":
         return try src.expectUnicodeScalar(numDigits: 8).value
 
@@ -514,7 +525,7 @@ extension Source {
   /// Try to lex a sequence of matching options.
   ///
   ///     MatchingOptionSeq -> '^' MatchingOption* | MatchingOption+
-  ///                        | MatchingOption* '-' MatchingOption+
+  ///                        | MatchingOption* '-' MatchingOption*
   ///
   mutating func lexMatchingOptionSequence(
   ) throws -> AST.MatchingOptionSequence? {
@@ -527,8 +538,8 @@ extension Source {
       adding.append(opt)
     }
 
-    // If the sequence begun with a caret '^', options can be added, so we're
-    // done.
+    // If the sequence begun with a caret '^', options can only be added, so
+    // we're done.
     if ateCaret.value {
       return .init(caretLoc: ateCaret.location, adding: adding, minusLoc: nil,
                    removing: [])

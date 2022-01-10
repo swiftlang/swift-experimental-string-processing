@@ -240,8 +240,8 @@ extension Unicode {
     case spaceSeparator = "Zs"
   }
 
-  // A list of unicode properties that can either be true or false.
-  // https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt
+  /// A list of unicode properties that can either be true or false.
+  /// https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt
   public enum BinaryProperty: String, Hashable {
     case asciiHexDigit = "ASCII_Hex_Digit"
     case alphabetic = "Alphabetic"
@@ -313,7 +313,9 @@ extension Unicode {
   }
 }
 
-// Oniguruma properties that are not covered by the above.
+/// Oniguruma properties that are not covered by Unicode spellings.
+/// TODO: These should become aliases for the Block (blk) Unicode character
+/// property.
 public enum OnigurumaSpecialProperty: String, Hashable {
   case inBasicLatin = "In_Basic_Latin"
   case inLatin1Supplement = "In_Latin_1_Supplement"
