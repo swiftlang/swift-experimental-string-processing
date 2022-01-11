@@ -8,6 +8,7 @@ extension Unicode {
   /// but is defined by https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt.
   /// We may want to split it out, as it's the only case that is a union of
   /// other script types.
+  @frozen
   public enum Script: String, Hashable {
     case adlam = "Adlam"
     case ahom = "Ahom"
@@ -176,6 +177,7 @@ extension Unicode {
 
   /// POSIX character properties not already covered by general categories or
   /// binary properties.
+  @frozen
   public enum POSIXProperty: String, Hashable {
     case alnum = "alnum"
     case blank = "blank"
@@ -193,6 +195,7 @@ extension Unicode {
 
   /// Unicode.GeneralCategory + cases for "meta categories" such as "L", which
   /// encompasses Lu | Ll | Lt | Lm | Lo.
+  @frozen
   public enum ExtendedGeneralCategory: String, Hashable {
     case other = "C"
     case control = "Cc"
@@ -242,6 +245,7 @@ extension Unicode {
 
   /// A list of unicode properties that can either be true or false.
   /// https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt
+  @frozen
   public enum BinaryProperty: String, Hashable {
     case asciiHexDigit = "ASCII_Hex_Digit"
     case alphabetic = "Alphabetic"
@@ -316,6 +320,7 @@ extension Unicode {
 /// Oniguruma properties that are not covered by Unicode spellings.
 /// TODO: These should become aliases for the Block (blk) Unicode character
 /// property.
+@frozen
 public enum OnigurumaSpecialProperty: String, Hashable {
   case inBasicLatin = "In_Basic_Latin"
   case inLatin1Supplement = "In_Latin_1_Supplement"

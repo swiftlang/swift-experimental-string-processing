@@ -1,4 +1,5 @@
 /// A regex abstract syntax tree
+@frozen
 public indirect enum AST:
   Hashable/*, _ASTPrintable ASTValue, ASTAction*/
 {

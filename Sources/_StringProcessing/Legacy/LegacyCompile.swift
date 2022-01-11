@@ -252,7 +252,6 @@ func compile(
     case .atom(let a) where a.characterClass != nil:
       fatalError("unreachable")
     }
-
   }
 
   try compileNode(ast)
