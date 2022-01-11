@@ -277,7 +277,7 @@ extension Source {
         return try Source.validateUnicodeScalar(str, .octal)
 
       default:
-        throw ParseError.misc("TODO: Or is this an assert?")
+        fatalError("Unexpected scalar start")
       }
     }
   }
