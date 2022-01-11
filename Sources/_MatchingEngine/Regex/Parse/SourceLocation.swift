@@ -76,6 +76,10 @@ extension Source {
       // externally?
       self.init(v, .fake)
     }
+
+    public func map<U>(_ fn: (T) throws -> U) rethrows -> Located<U> {
+      Located<U>(try fn(value), location)
+    }
   }
 }
 extension AST {
