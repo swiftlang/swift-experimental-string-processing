@@ -100,16 +100,33 @@ extension Source {
     }
   }
 
-  mutating func tryEatNonEmpty(_ c: Char) throws -> Bool {
-    guard !isEmpty else { throw ParseError.expected(String(c)) }
-    return tryEat(c)
-  }
-
   mutating func tryEatNonEmpty<C: Collection>(sequence c: C) throws -> Bool
     where C.Element == Char
   {
-    guard !isEmpty else { throw ParseError.expected(String(c)) }
+    _ = try recordLoc { src in
+      guard !src.isEmpty else { throw ParseError.expected(String(c)) }
+    }
     return tryEat(sequence: c)
+  }
+
+  mutating func tryEatNonEmpty(_ c: Char) throws -> Bool {
+    try tryEatNonEmpty(sequence: String(c))
+  }
+
+  /// Attempt to make a series of lexing steps in `body`, returning `nil` if
+  /// unsuccesful, which will revert the source back to its previous state. If
+  /// an error is thrown, the source will not be reverted.
+  mutating func tryEating<T>(
+    _ body: (inout Source) throws -> T?
+  ) rethrows -> T? {
+    // We don't revert the source if an error is thrown, as it's useful to
+    // maintain the source location in that case.
+    let current = self
+    guard let result = try body(&self) else {
+      self = current
+      return nil
+    }
+    return result
   }
 
   /// Throws an expected ASCII character error if not matched
@@ -277,7 +294,7 @@ extension Source {
         return try Source.validateUnicodeScalar(str, .octal)
 
       default:
-        throw ParseError.misc("TODO: Or is this an assert?")
+        fatalError("Unexpected scalar start")
       }
     }
   }
@@ -295,16 +312,11 @@ extension Source {
       if src.tryEat("+") { return .oneOrMore }
       if src.tryEat("?") { return .zeroOrOne }
 
-      // FIXME: Actually, PCRE treats empty as literal `{}`...
-      // But Java 8 errors out?
-      if src.tryEat("{") {
-        // FIXME: Erm, PCRE parses as literal if no lowerbound...
-        let amt = try src.expectRange()
-        try src.expect("}")
-        return amt.value // FIXME: track actual range...
+      return try src.tryEating { src in
+        guard src.tryEat("{"), let range = try src.lexRange(), src.tryEat("}")
+        else { return nil }
+        return range.value
       }
-
-      return nil
     }
     guard let amt = amt else { return nil }
 
@@ -317,56 +329,56 @@ extension Source {
     return (amt, kind)
   }
 
-  /// Consume a range
+  /// Try to consume a range, returning `nil` if unsuccessful.
   ///
   ///     Range       -> ',' <Int> | <Int> ',' <Int>? | <Int>
   ///                  | ExpRange
   ///     ExpRange    -> '..<' <Int> | '...' <Int>
   ///                  | <Int> '..<' <Int> | <Int> '...' <Int>?
-  mutating func expectRange() throws -> Located<Quant.Amount> {
+  mutating func lexRange() throws -> Located<Quant.Amount>? {
     try recordLoc { src in
-      // TODO: lex positive numbers, more specifically...
+      try src.tryEating { src in
+        let lowerOpt = try src.lexNumber()
 
-      let lowerOpt = try src.lexNumber()
-
-      // ',' or '...' or '..<' or nothing
-      let closedRange: Bool?
-      if src.tryEat(",") {
-        closedRange = true
-      } else if src.experimentalRanges && src.tryEat(".") {
-        try src.expect(".")
-        if src.tryEat(".") {
+        // ',' or '...' or '..<' or nothing
+        // TODO: We ought to try and consume whitespace here and emit a
+        // diagnostic for the user warning them that it would cause the range to
+        // be treated as literal.
+        let closedRange: Bool?
+        if src.tryEat(",") {
           closedRange = true
+        } else if src.experimentalRanges && src.tryEat(".") {
+          try src.expect(".")
+          if src.tryEat(".") {
+            closedRange = true
+          } else {
+            try src.expect("<")
+            closedRange = false
+          }
         } else {
-          try src.expect("<")
-          closedRange = false
+          closedRange = nil
         }
-      } else {
-        closedRange = nil
-      }
-      // FIXME: wait, why `try!` ?
-      let upperOpt: Located<Int>?
-      if let u = try! src.lexNumber() {
-        upperOpt = (closedRange == true) ? u : Located(u.value-1, u.location)
-      } else {
-        upperOpt = nil
-      }
 
-      switch (lowerOpt, closedRange, upperOpt) {
-      case let (l?, nil, nil):
-        return .exactly(l)
-      case let (l?, true, nil):
-        return .nOrMore(l)
-      case let (nil, _, u?):
-        return .upToN(u)
-      case let (l?, _, u?):
-        // FIXME: source location tracking
-        return .range(l, u)
+        let upperOpt = try src.lexNumber()?.map { upper in
+          // If we have an open range, the upper bound should be adjusted down.
+          closedRange == true ? upper : upper - 1
+        }
 
-      case let (nil, nil, u) where u != nil:
-        fatalError("Not possible")
-      default:
-        throw ParseError.misc("Invalid range")
+        switch (lowerOpt, closedRange, upperOpt) {
+        case let (l?, nil, nil):
+          return .exactly(l)
+        case let (l?, true, nil):
+          return .nOrMore(l)
+        case let (nil, _?, u?):
+          return .upToN(u)
+        case let (l?, _?, u?):
+          return .range(l, u)
+
+        case (nil, nil, _?):
+          fatalError("Didn't lex lower bound, but lexed upper bound?")
+        default:
+          return nil
+        }
       }
     }
   }
@@ -393,12 +405,24 @@ extension Source {
     try lexUntil(eating: String(end))
   }
 
-  /// Expect a linear run of non-nested non-empty content
+  /// Expect a linear run of non-nested non-empty content ending with a given
+  /// delimiter. If `ignoreEscaped` is true, escaped characters will not be
+  /// considered for the ending delimiter.
   private mutating func expectQuoted(
-    endingWith end: String
+    endingWith end: String, ignoreEscaped: Bool = false
   ) throws -> Located<String> {
     try recordLoc { src in
-      let result = try src.lexUntil(eating: end).value
+      let result = try src.lexUntil { src in
+        if try src.tryEatNonEmpty(sequence: end) {
+          return true
+        }
+        // Ignore escapes if we're allowed to. lexUntil will consume the next
+        // character.
+        if ignoreEscaped, src.tryEat("\\") {
+          try src.expectNonEmpty()
+        }
+        return false
+      }.value
       guard !result.isEmpty else {
         throw ParseError.misc("Expected non-empty contents")
       }
@@ -412,7 +436,7 @@ extension Source {
   ///
   /// With `SyntaxOptions.experimentalQuotes`, also accepts
   ///
-  ///     ExpQuote -> '"' [^"]* '"'
+  ///     ExpQuote -> '"' ('\"' | [^"])* '"'
   ///
   /// Future: Experimental quotes are full fledged Swift string literals
   ///
@@ -424,8 +448,7 @@ extension Source {
         return try src.expectQuoted(endingWith: #"\E"#).value
       }
       if src.experimentalQuotes, src.tryEat("\"") {
-        // TODO: escaped `"`, etc...
-        return try src.expectQuoted(endingWith: "\"").value
+        return try src.expectQuoted(endingWith: "\"", ignoreEscaped: true).value
       }
       return nil
     }

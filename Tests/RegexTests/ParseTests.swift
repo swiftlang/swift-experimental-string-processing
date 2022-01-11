@@ -414,6 +414,14 @@ extension RegexTests {
       #"a\Q \Q \\.\Eb"#,
       concat("a", quote(#" \Q \\."#), "b"))
 
+    parseTest(#"a" ."b"#, concat("a", quote(" ."), "b"),
+              syntax: .experimental)
+    parseTest(#"a" .""b""#, concat("a", quote(" ."), quote("b")),
+              syntax: .experimental)
+    parseTest(#"a" .\"\"b""#, concat("a", quote(" .\"\"b")),
+              syntax: .experimental)
+    parseTest(#""\"""#, quote("\""), syntax: .experimental)
+
     // MARK: Comments
 
     parseTest(
@@ -440,6 +448,34 @@ extension RegexTests {
     parseTest(
       #"a{1,2}?"#,
       quantRange(.reluctant, 1...2, "a"))
+    parseTest(
+      #"a{0}"#,
+      exactly(.eager, 0, "a"))
+    parseTest(
+      #"a{0,0}"#,
+      quantRange(.eager, 0...0, "a"))
+
+    // Make sure ranges get treated as literal if invalid.
+    parseTest("{", "{")
+    parseTest("{,", concat("{", ","))
+    parseTest("{}", concat("{", "}"))
+    parseTest("{,}", concat("{", ",", "}"))
+    parseTest("{,6", concat("{", ",", "6"))
+    parseTest("{6", concat("{", "6"))
+    parseTest("{6,", concat("{", "6", ","))
+    parseTest("{+", oneOrMore(.eager, "{"))
+    parseTest("{6,+", concat("{", "6", oneOrMore(.eager, ",")))
+    parseTest("x{", concat("x", "{"))
+    parseTest("x{}", concat("x", "{", "}"))
+    parseTest("x{,}", concat("x", "{", ",", "}"))
+    parseTest("x{,6", concat("x", "{", ",", "6"))
+    parseTest("x{6", concat("x", "{", "6"))
+    parseTest("x{6,", concat("x", "{", "6", ","))
+    parseTest("x{+", concat("x", oneOrMore(.eager, "{")))
+    parseTest("x{6,+", concat("x", "{", "6", oneOrMore(.eager, ",")))
+
+    // TODO: We should emit a diagnostic for this.
+    parseTest("x{3, 5}", concat("x", "{", "3", ",", " ", "5", "}"))
 
     // MARK: Groups
 

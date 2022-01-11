@@ -181,6 +181,10 @@ extension RegexTests {
       #"a{1,2}?"#, input: "123aaaxyz", match: "a")
     matchTest(
       #"a{1,2}?x"#, input: "123aaaxyz", match: "aax")
+    matchTest(
+      #"xa{0}y"#, input: "123aaaxyz", match: "xy")
+    matchTest(
+      #"xa{0,0}y"#, input: "123aaaxyz", match: "xy")
 
     matchTest("a.*", input: "dcba", match: "a")
 
