@@ -837,6 +837,30 @@ extension RegexTests {
   var eComposed: String { "é" }
   var eDecomposed: String { "e\u{301}" }
   
+  func testIndividualScalars() {
+    // Expectation: A standalone Unicode scalar value in a regex literal
+    // can match either that specific scalar value or participate in matching
+    // as a character.
+    
+    matchTest(#"\u{65}\u{301}$"#, input: eDecomposed, match: eDecomposed)
+    // FIXME: Decomposed character in regex literal doesn't match an equivalent character
+    matchTest(#"\u{65}\u{301}$"#, input: eComposed, match: eComposed,
+      xfail: true)
+
+    matchTest(#"\u{65}"#, input: eDecomposed, match: "e")
+    matchTest(#"\u{65}$"#, input: eDecomposed, match: nil)
+    // FIXME: \y is unsupported
+    matchTest(#"\u{65}\y"#, input: eDecomposed, match: nil,
+      xfail: true)
+
+    // FIXME: Unicode scalars are only matched at the start of a grapheme cluster
+    matchTest(#"\u{301}"#, input: eDecomposed, match: "\u{301}",
+      xfail: true)
+    // FIXME: \y is unsupported
+    matchTest(#"\y\u{301}"#, input: eDecomposed, match: nil,
+      xfail: true)
+  }
+
   func testCanonicalEquivalence() throws {
     // Expectation: Matching should use canonical equivalence whenever comparing
     // characters, so a user can write characters using any equivalent spelling
@@ -846,20 +870,20 @@ extension RegexTests {
       #"é$"#,
       (eComposed, eComposed),
       (eDecomposed, eDecomposed))
-    
+
     // FIXME: Decomposed character in regex literal doesn't match an equivalent character
     matchTests(
       #"e\u{301}$"#,
       (eComposed, eComposed),
       (eDecomposed, eDecomposed),
       xfail: true)
-    
+
     matchTests(
       #"e$"#,
       (eComposed, nil),
       (eDecomposed, nil))
   }
-  
+
   func testCanonicalEquivalenceCharacterClass() throws {
     // Expectation: Character classes should match equivalent characters to the
     // same degree, regardless of how they are spelled. Unicode "property
@@ -980,8 +1004,7 @@ extension RegexTests {
               xfail: true)
     matchTest(#"e\O"#, input: eDecomposed, match: eDecomposed,
               xfail: true)
-    // TODO: Should these two match or not?
-    matchTest(#"\O\u{301}"#, input: eComposed, match: eComposed,
+    matchTest(#"\O\u{301}"#, input: eComposed, match: nil,
               xfail: true)
     matchTest(#"e\O"#, input: eComposed, match: nil,
               xfail: true)
@@ -993,5 +1016,9 @@ extension RegexTests {
       (eDecomposed, eDecomposed),
       xfail: true)
   }
+  
+  // TODO: Add test for implied grapheme cluster requirement at group boundaries
+  
+  // TODO: Add test for grapheme boundaries at start/end of match
 }
 
