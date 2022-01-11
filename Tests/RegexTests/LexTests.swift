@@ -133,6 +133,12 @@ extension RegexTests {
       _ = try $0.lexGroupStart()
     }
 
+    diagnose(#"\Qab"#, expecting: .expected("\\E")) { _ = try $0.lexQuote() }
+    diagnose(#"\Qab\"#, expecting: .expected("\\E")) { _ = try $0.lexQuote() }
+    diagnose(#""ab"#, expecting: .expected("\""), .experimental) { _ = try $0.lexQuote() }
+    diagnose(#""ab\""#, expecting: .expected("\""), .experimental) { _ = try $0.lexQuote() }
+    diagnose(#""ab\"#, expecting: .unexpectedEndOfInput, .experimental) { _ = try $0.lexQuote() }
+
     // TODO: want to dummy print out source ranges, etc, test that.
   }
 

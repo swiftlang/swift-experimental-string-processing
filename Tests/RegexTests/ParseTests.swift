@@ -414,6 +414,14 @@ extension RegexTests {
       #"a\Q \Q \\.\Eb"#,
       concat("a", quote(#" \Q \\."#), "b"))
 
+    parseTest(#"a" ."b"#, concat("a", quote(" ."), "b"),
+              syntax: .experimental)
+    parseTest(#"a" .""b""#, concat("a", quote(" ."), quote("b")),
+              syntax: .experimental)
+    parseTest(#"a" .\"\"b""#, concat("a", quote(" .\"\"b")),
+              syntax: .experimental)
+    parseTest(#""\"""#, quote("\""), syntax: .experimental)
+
     // MARK: Comments
 
     parseTest(

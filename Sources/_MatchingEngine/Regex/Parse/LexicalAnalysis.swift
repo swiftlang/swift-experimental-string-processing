@@ -394,12 +394,24 @@ extension Source {
     try lexUntil(eating: String(end))
   }
 
-  /// Expect a linear run of non-nested non-empty content
+  /// Expect a linear run of non-nested non-empty content ending with a given
+  /// delimiter. If `ignoreEscaped` is true, escaped characters will not be
+  /// considered for the ending delimiter.
   private mutating func expectQuoted(
-    endingWith end: String
+    endingWith end: String, ignoreEscaped: Bool = false
   ) throws -> Located<String> {
     try recordLoc { src in
-      let result = try src.lexUntil(eating: end).value
+      let result = try src.lexUntil { src in
+        if try src.tryEatNonEmpty(sequence: end) {
+          return true
+        }
+        // Ignore escapes if we're allowed to. lexUntil will consume the next
+        // character.
+        if ignoreEscaped, src.tryEat("\\") {
+          try src.expectNonEmpty()
+        }
+        return false
+      }.value
       guard !result.isEmpty else {
         throw ParseError.misc("Expected non-empty contents")
       }
@@ -413,7 +425,7 @@ extension Source {
   ///
   /// With `SyntaxOptions.experimentalQuotes`, also accepts
   ///
-  ///     ExpQuote -> '"' [^"]* '"'
+  ///     ExpQuote -> '"' ('\"' | [^"])* '"'
   ///
   /// Future: Experimental quotes are full fledged Swift string literals
   ///
@@ -425,8 +437,7 @@ extension Source {
         return try src.expectQuoted(endingWith: #"\E"#).value
       }
       if src.experimentalQuotes, src.tryEat("\"") {
-        // TODO: escaped `"`, etc...
-        return try src.expectQuoted(endingWith: "\"").value
+        return try src.expectQuoted(endingWith: "\"", ignoreEscaped: true).value
       }
       return nil
     }
