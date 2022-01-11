@@ -100,16 +100,17 @@ extension Source {
     }
   }
 
-  mutating func tryEatNonEmpty(_ c: Char) throws -> Bool {
-    guard !isEmpty else { throw ParseError.expected(String(c)) }
-    return tryEat(c)
-  }
-
   mutating func tryEatNonEmpty<C: Collection>(sequence c: C) throws -> Bool
     where C.Element == Char
   {
-    guard !isEmpty else { throw ParseError.expected(String(c)) }
+    _ = try recordLoc { src in
+      guard !src.isEmpty else { throw ParseError.expected(String(c)) }
+    }
     return tryEat(sequence: c)
+  }
+
+  mutating func tryEatNonEmpty(_ c: Char) throws -> Bool {
+    try tryEatNonEmpty(sequence: String(c))
   }
 
   /// Throws an expected ASCII character error if not matched
