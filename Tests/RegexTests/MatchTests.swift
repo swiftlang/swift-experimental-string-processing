@@ -888,6 +888,11 @@ extension RegexTests {
     matchTest(#"\p{Number}"#, input: "5\u{305}", match: nil,
               xfail: true)
     
+    // Should this match the '5' but not the ZWJ, or should it treat '5'+ZWJ
+    // as one entity and fail to match altogether?
+    matchTest(#"^\d"#, input: "5\u{200d}0", match: "5",
+              xfail: true)
+    
     // \s
     matchTest(#"\s"#, input: " ", match: " ")
     // FIXME: \s shouldn't match a number composed with a non-number character
@@ -947,6 +952,12 @@ extension RegexTests {
     // A single CCC of regional indicators
     matchTest(#"[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: nil,
               xfail: true)
+    
+    // A single CCC of actual flag emojis / combined regional indicators
+    matchTest(#"[🇦🇫-🇿🇼]"#, input: flag, match: flag)
+    // This succeeds (correctly) because \u{1F1F0} is lexicographically
+    // within the CCC range
+    matchTest(#"[🇦🇫-🇿🇼]"#, input: "\u{1F1F0}abc", match: "\u{1F1F0}")
   }
   
   func testAnyChar() throws {
