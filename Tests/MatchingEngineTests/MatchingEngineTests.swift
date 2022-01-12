@@ -96,14 +96,14 @@ fileprivate struct Test: ExpressibleByStringLiteral {
     let output: String
     let outputFromSlice: String
 
-    if let idx = engine.consume(input) {
+    if let (idx, _) = engine.consume(input) {
       output = String(input[idx...])
     } else {
       output = input
     }
 
     let (outerInput, range) = slicedInput
-    if let idx = engine.consume(outerInput, in: range) {
+    if let (idx, _) = engine.consume(outerInput, in: range) {
       outputFromSlice = String(outerInput[idx..<range.upperBound])
     } else {
       outputFromSlice = input

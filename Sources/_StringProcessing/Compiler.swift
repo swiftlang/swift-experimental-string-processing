@@ -101,8 +101,14 @@ class Compiler {
           .lookbehind, .negativeLookbehind:
         fatalError("unreachable")
 
+      case .capture, .namedCapture:
+        let cap = builder.makeCapture()
+        builder.buildBeginCapture(cap)
+        try emit(g.child)
+        builder.buildEndCapture(cap)
+
       default:
-        // FIXME: This can't be right...
+        // FIXME: Other kinds...
         try emit(g.child)
       }
 
@@ -122,8 +128,28 @@ class Compiler {
     case .atom(let a) where a.assertionKind != nil:
       try emitAssertion(a.assertionKind!)
 
-    case .customCharacterClass, .atom:
-      throw unsupported(node._dumpBase)
+    case .atom(let a):
+      switch a.kind {
+      case .backreference(let r):
+        if r.recursesWholePattern {
+          // TODO: A recursive call isn't a backreference, but
+          // we could in theory match the whole match so far...
+          throw unsupported(node.renderAsCanonical())
+        }
+
+        switch r.kind {
+        case .absolute(let i):
+          // Backreferences number starting at 1
+          builder.buildBackreference(.init(i-1))
+        case .relative, .named:
+          throw unsupported(node.renderAsCanonical())
+        }
+      default:
+        throw unsupported(node.renderAsCanonical())
+      }
+
+    case .customCharacterClass:
+      throw unsupported(node.renderAsCanonical())
     }
   }
 

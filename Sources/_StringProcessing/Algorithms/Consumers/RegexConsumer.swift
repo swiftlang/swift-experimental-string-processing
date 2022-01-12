@@ -15,12 +15,13 @@ public struct RegexConsumer<Consumed: BidirectionalCollection>
   where Consumed.SubSequence == Substring
 {
   // TODO: consider let, for now lets us toggle tracing
-    var vm: Executor
+  var vm: Executor
 
   // FIXME: Possibility of fatal error isn't user friendly
   public init<Capture>(_ regex: Regex<Capture>) {
     do {
-      self.vm = .init(program: try Compiler(ast: regex.ast).emit())
+      self.vm = .init(
+        program: try Compiler(ast: regex.ast).emit())
     } catch {
       fatalError("error: \(error)")
     }

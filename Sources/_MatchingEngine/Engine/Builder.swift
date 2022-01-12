@@ -27,6 +27,7 @@ extension Program where Input.Element: Hashable {
     var nextBoolRegister = BoolRegister(0)
     var nextIntRegister = IntRegister(0)
     var nextPositionRegister = PositionRegister(0)
+    var nextCaptureRegister = CaptureRegister(0)
 
     // Special addresses or instructions
     var failAddressToken: AddressToken? = nil
@@ -81,8 +82,7 @@ extension Program.Builder {
   public mutating func buildMoveImmediate(
     _ value: Int, into: IntRegister
   ) {
-    let uint = UInt64(truncatingIfNeeded: value)
-    assert(uint == value)
+    let uint = UInt64(asserting: value)
     buildMoveImmediate(uint, into: into)
   }
 
@@ -207,6 +207,27 @@ extension Program.Builder {
     instructions.append(.init(.print, .init(string: s)))
   }
 
+  public mutating func buildBeginCapture(
+    _ cap: CaptureRegister
+  ) {
+    instructions.append(
+      .init(.beginCapture, .init(capture: cap)))
+  }
+
+  public mutating func buildEndCapture(
+    _ cap: CaptureRegister
+  ) {
+    instructions.append(
+      .init(.endCapture, .init(capture: cap)))
+  }
+
+  public mutating func buildBackreference(
+    _ cap: CaptureRegister
+  ) {
+    instructions.append(
+      .init(.backreference, .init(capture: cap)))
+  }
+
   // TODO: Mutating because of fail address fixup, drop when
   // that's removed
   public mutating func assemble() -> Program {
@@ -263,6 +284,7 @@ extension Program.Builder {
     regInfo.positions = nextPositionRegister.rawValue
     regInfo.consumeFunctions = consumeFunctions.count
     regInfo.assertionFunctions = assertionFunctions.count
+    regInfo.captures = nextCaptureRegister.rawValue
 
     return Program(
       instructions: InstructionList(instructions),
@@ -341,6 +363,11 @@ extension Program.Builder {
 
 // Register helpers
 extension Program.Builder {
+  public mutating func makeCapture() -> CaptureRegister {
+    defer { nextCaptureRegister.rawValue += 1 }
+    return nextCaptureRegister
+  }
+
   public mutating func makeBoolRegister() -> BoolRegister {
     defer { nextBoolRegister.rawValue += 1 }
     return nextBoolRegister

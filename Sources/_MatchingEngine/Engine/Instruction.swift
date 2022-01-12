@@ -228,6 +228,24 @@ extension Instruction {
     ///
     case splitSaving
 
+    /// Begin the given capture
+    ///
+    ///     beginCapture(_:CapReg)
+    ///
+    case beginCapture
+
+    /// End the given capture
+    ///
+    ///     endCapture(_:CapReg)
+    ///
+    case endCapture
+
+    /// Match a previously captured value
+    ///
+    ///     backreference(_:CapReg)
+    ///
+    case backreference
+
     // MARK: Matching: State transitions
 
     // TODO: State transitions need more work. We want

@@ -52,6 +52,7 @@ extension Instruction.Payload {
     case consumer(ConsumeFunctionRegister)
     case assertion(AssertionFunctionRegister)
     case addr(InstructionAddress)
+    case capture(CaptureRegister)
 
     case packedImmInt(Int, IntRegister)
     case packedAddrBool(InstructionAddress, BoolRegister)
@@ -121,6 +122,7 @@ extension Instruction.Payload {
     // TODO: We'd like to use shadow bits to assert on kind
     return TypedInt(rawValue)
   }
+
   private func interpretPair<👻>(
     secondAs: TypedInt<👻>.Type = TypedInt<👻>.self
   ) -> (UInt64, TypedInt<👻>) {
@@ -209,6 +211,13 @@ extension Instruction.Payload {
     self.init(addr)
   }
   var addr: InstructionAddress {
+    interpret()
+  }
+
+  init(capture: CaptureRegister) {
+    self.init(capture)
+  }
+  var capture: CaptureRegister {
     interpret()
   }
 

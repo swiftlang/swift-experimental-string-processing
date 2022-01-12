@@ -22,8 +22,12 @@ extension Engine {
       matchMode: matchMode,
       isTracingEnabled: enableTracing)
   }
+}
 
-  public func consume(_ input: Input) -> Input.Index? {
+extension Engine where Input == String {
+  public func consume(
+    _ input: Input
+  ) -> (Input.Index, CaptureList)? {
     consume(input, in: input.startIndex ..< input.endIndex)
   }
 
@@ -31,7 +35,7 @@ extension Engine {
     _ input: Input,
     in range: Range<Input.Index>,
     matchMode: MatchMode = .prefix
-  ) -> Input.Index? {
+  ) -> (Input.Index, CaptureList)? {
     if enableTracing {
       print("Consume: \(input)")
     }
@@ -56,7 +60,10 @@ extension Engine {
         print("Result: nil")
       }
     }
-    return result
+    guard let result = result else { return nil }
+
+    let capList = cpu.storedCaptures.map { $0.history }
+    return (result, CaptureList(caps: capList))
   }
 }
 

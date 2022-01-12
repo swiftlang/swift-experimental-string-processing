@@ -138,6 +138,8 @@ extension Program {
     var classStackAddresses = 0
     var positionStackAddresses = 0
     var savePointAddresses = 0
+    var captures = 0
+
   }
 }
 

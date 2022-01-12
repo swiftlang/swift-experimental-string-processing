@@ -17,7 +17,7 @@ struct Unsupported: Error, CustomStringConvertible {
   var line: Int
 
   var description: String { """
-    Unsupported: \(message)
+    Unsupported: '\(message)'
       \(file):\(line)
     """
   }
