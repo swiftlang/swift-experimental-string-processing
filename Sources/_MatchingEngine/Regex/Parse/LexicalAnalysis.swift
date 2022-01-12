@@ -1014,7 +1014,7 @@ extension Source {
           return .subpattern(try src.expectNamedReference(endingWith: ")"))
         }
 
-        // Whole-pattern recursion.
+        // Whole-pattern recursion, which is equivalent to (?0).
         if src.tryEat("R") {
           let loc = Location(_start ..< src.currentPosition)
           try src.expect(")")

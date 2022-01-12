@@ -400,8 +400,8 @@ extension AST.Atom {
       // (?(<name>)... (?('name')... (?(name)...
       case named(String)
 
-      // ?(R) (?(R)...
-      case recurseWholePattern
+      /// (?R), (?(R)..., which are equivalent to (?0), (?(0)...
+      static var recurseWholePattern: Kind { .absolute(0) }
     }
     public var kind: Kind
 
@@ -413,6 +413,10 @@ extension AST.Atom {
       self.kind = kind
       self.innerLoc = innerLoc
     }
+
+    /// Whether this is a reference that recurses the whole pattern, rather than
+    /// a group.
+    public var recursesWholePattern: Bool { kind == .recurseWholePattern }
   }
 }
 
