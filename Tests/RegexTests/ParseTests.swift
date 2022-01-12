@@ -586,6 +586,9 @@ extension RegexTests {
       matchingOptions(adding: .extraExtended, .extended),
       isIsolated: true, empty())
     )
+    parseTest("(?P)", changeMatchingOptions(
+      matchingOptions(adding: .asciiOnlyPOSIXProps), isIsolated: true, empty())
+    )
     parseTest("(?-i)", changeMatchingOptions(
       matchingOptions(removing: .caseInsensitive),
       isIsolated: true, empty())
@@ -611,6 +614,9 @@ extension RegexTests {
     parseTest("(?-i:)", changeMatchingOptions(
       matchingOptions(removing: .caseInsensitive),
       isIsolated: false, empty())
+    )
+    parseTest("(?P:)", changeMatchingOptions(
+      matchingOptions(adding: .asciiOnlyPOSIXProps), isIsolated: false, empty())
     )
 
     parseTest("(?^)", changeMatchingOptions(
@@ -800,6 +806,20 @@ extension RegexTests {
     parseTest(#"\k{a0}"#, backreference(.named("a0")))
     parseTest(#"\k<bc>"#, backreference(.named("bc")))
     parseTest(#"\g{abc}"#, backreference(.named("abc")))
+    parseTest(#"(?P=abc)"#, backreference(.named("abc")))
+
+    parseTest(#"(?R)"#, subpattern(.recurseWholePattern))
+    parseTest(#"(?1)"#, subpattern(.absolute(1)))
+    parseTest(#"(?+12)"#, subpattern(.relative(12)))
+    parseTest(#"(?-2)"#, subpattern(.relative(-2)))
+    parseTest(#"(?&hello)"#, subpattern(.named("hello")))
+    parseTest(#"(?P>P)"#, subpattern(.named("P")))
+
+    // TODO: Should we enforce that names only use certain characters?
+    parseTest(#"(?&&)"#, subpattern(.named("&")))
+    parseTest(#"(?&-1)"#, subpattern(.named("-1")))
+    parseTest(#"(?P>+1)"#, subpattern(.named("+1")))
+    parseTest(#"(?P=+1)"#, backreference(.named("+1")))
 
     parseTest(#"\g<1>"#, subpattern(.absolute(1)))
     parseTest(#"\g<001>"#, subpattern(.absolute(1)))
@@ -952,6 +972,12 @@ extension RegexTests {
     parseNotEqualTest("|", "||")
     parseNotEqualTest("a|", "|")
     parseNotEqualTest("a|b", "|")
+
+    parseNotEqualTest(#"\1"#, #"\2"#)
+    parseNotEqualTest(#"\k'a'"#, #"\k'b'"#)
+    parseNotEqualTest(#"(?1)"#, #"(?2)"#)
+    parseNotEqualTest(#"(?+1)"#, #"(?1)"#)
+    parseNotEqualTest(#"(?&a)"#, #"(?&b)"#)
 
     // TODO: failure tests
   }

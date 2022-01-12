@@ -32,6 +32,11 @@ enum ParseError: Error, Hashable {
 
   case expectedNonEmptyContents
 
+  case unknownGroupKind(String)
+
+  case invalidMatchingOption(Character)
+  case cannotRemoveMatchingOptionsAfterCaret
+
   case expectedCustomCharacterClassMembers
   case invalidCharacterClassRangeOperand
 
@@ -65,6 +70,12 @@ extension ParseError: CustomStringConvertible {
       return s
     case .expectedNonEmptyContents:
       return "expected non-empty contents"
+    case let .unknownGroupKind(str):
+      return "unknown group kind '(\(str)'"
+    case let .invalidMatchingOption(c):
+      return "invalid matching option '\(c)'"
+    case .cannotRemoveMatchingOptionsAfterCaret:
+      return "cannot remove matching options with '^' specifier"
     case let .expectedASCII(c):
       return "expected ASCII for '\(c)'"
     case .expectedCustomCharacterClassMembers:
