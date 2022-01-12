@@ -974,6 +974,14 @@ extension RegexTests {
       ("abcbcbcd", ["c", nil]),
       ("abce", [nil, "a"]),
       ("abcbbd", ["b", nil]))
+    captureTest(
+      #"a(b+|c+)d|(a)bce"#,
+      ("abbbd", ["bbb", nil]),
+      ("acccd", ["ccc", nil]),
+      ("abce", [nil, "a"]),
+      ("abbbe", nil),
+      ("accce", nil),
+      ("abcbbd", nil))
   }
 
   func testMatchReferences() {
