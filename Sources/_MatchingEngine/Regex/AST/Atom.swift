@@ -19,6 +19,7 @@ extension AST {
       self.location = loc
     }
 
+    @frozen
     public enum Kind: Hashable {
       /// Just a character
       ///
@@ -79,6 +80,7 @@ extension AST.Atom {
 
   // Characters, character types, literals, etc., derived from
   // an escape sequence.
+  @frozen
   public enum EscapedBuiltin: Hashable {
     // TOOD: better doc comments
 
@@ -331,6 +333,7 @@ extension AST.Atom {
 }
 
 extension AST.Atom.CharacterProperty {
+  @frozen
   public enum Kind: Hashable {
     /// Matches any character, equivalent to Oniguruma's '\O'.
     case any
@@ -369,6 +372,7 @@ extension AST.Atom.CharacterProperty {
   }
 
   // TODO: erm, separate out or fold into something? splat it in?
+  @frozen
   public enum PCRESpecialCategory: String, Hashable {
     case alphanumeric     = "Xan"
     case posixSpace       = "Xps"
@@ -382,6 +386,7 @@ extension AST.Atom.CharacterProperty {
 // TODO: I haven't thought through this a bunch; this seems like
 // a sensible type to have and break down this way. But it could
 // easily get folded in with the kind of reference
+@frozen
 public enum Reference: Hashable {
   // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
   // Oniguruma: \k<n>, \k'n'
@@ -408,6 +413,7 @@ public enum Reference: Hashable {
 
 extension AST.Atom {
   /// Anchors and other built-in zero-width assertions
+  @frozen
   public enum AssertionKind: String {
     /// \A
     case startOfSubject = #"\A"#

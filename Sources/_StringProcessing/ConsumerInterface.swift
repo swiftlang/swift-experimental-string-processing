@@ -50,7 +50,6 @@ extension AST {
       return try a.generateConsumer(opts)
     case .customCharacterClass(let ccc):
       return try ccc.generateConsumer(opts)
-
     case .alternation, .concatenation, .group,
         .quantification, .quote, .trivia, .empty,
         .groupTransform: return nil
@@ -524,9 +523,9 @@ extension Unicode.POSIXProperty {
 
     case .xdigit:
       return consumeScalarProp(\.isHexDigit) // or number
+
     }
   }
-
 }
 
 extension Unicode.ExtendedGeneralCategory {

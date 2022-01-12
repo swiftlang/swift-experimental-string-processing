@@ -27,6 +27,7 @@ extension AST {
       self.location = sr
     }
 
+    @frozen
     public enum Member: Hashable {
       /// A nested custom character class `[[ab][cd]]`
       case custom(CustomCharacterClass)
@@ -51,14 +52,15 @@ extension AST {
         self.rhs = rhs
       }
     }
+    @frozen
     public enum SetOp: String, Hashable {
       case subtraction = "--"
       case intersection = "&&"
       case symmetricDifference = "~~"
     }
+    @frozen
     public enum Start: String {
       case normal = "["
-
       case inverted = "[^"
     }
   }
