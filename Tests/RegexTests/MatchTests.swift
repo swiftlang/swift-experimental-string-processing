@@ -1046,6 +1046,33 @@ extension RegexTests {
       ("cat", false),
       xfail: true
     )
+
+    // HTML tags
+    matchTest(
+      #"<([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>.*?</\1>"#,
+      ("<html> a b c </html>", true),
+      (#"<table style="float:right"> a b c </table>"#, true),
+      ("<html> a b c </htm>", false),
+      ("<htm> a b c </html>", false),
+      (#"<table style="float:right"> a b c </tab>"#, false)
+    )
+
+    // Doubled words
+    captureTest(
+      #"\b(\w+)\s+\1\b"#,
+      ("this does have one one in it", ["one"]),
+      ("pass me the the kettle", ["the"]),
+      ("this doesn't have any", nil)
+    )
+
+    // Floats
+    captureTest(
+      #"^([-+])?([0-9]*)(?:\.([0-9]+))?(?:[eE]([-+]?[0-9]+))?$"#,
+      ("123.45", [nil, "123", "45", nil]),
+      ("-123e12", ["-", "123", nil, "12"]),
+      ("+123.456E-12", ["+", "123", "456", "-12"]),
+      ("-123e1.2", nil)
+    )
   }
 }
 
