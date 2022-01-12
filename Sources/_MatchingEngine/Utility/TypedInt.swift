@@ -29,7 +29,7 @@ public struct TypedInt<👻>: RawRepresentable, Hashable {
   @_alwaysEmitIntoClient
   public init(_ uint: UInt64) {
     assert(uint.leadingZeroBitCount > 0)
-    self.init(Int(truncatingIfNeeded: uint))
+    self.init(Int(asserting: uint))
   }
 }
 extension TypedInt: Comparable {
@@ -70,7 +70,7 @@ extension TypedInt {
 
   @_alwaysEmitIntoClient
   public var bits: UInt64 {
-    UInt64(truncatingIfNeeded: self.rawValue)
+    UInt64(asserting: self.rawValue)
   }
 }
 
@@ -173,6 +173,9 @@ public enum _FloatRegister {}
 /// serve NFA-simulation style execution models
 public typealias PositionRegister = TypedInt<_PositionRegister>
 public enum _PositionRegister {}
+
+public typealias CaptureRegister = TypedInt<_CaptureRegister>
+public enum _CaptureRegister {}
 
 /// UNIMPLEMENTED
 public typealias InstructionAddressRegister = TypedInt<_InstructionAddressRegister>

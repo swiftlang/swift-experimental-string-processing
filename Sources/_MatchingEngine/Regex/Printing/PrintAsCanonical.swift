@@ -14,10 +14,14 @@
 extension AST {
   /// Render using Swift's preferred regex literal syntax
   public func renderAsCanonical(
-    showDelimiters delimiters: Bool = false
+    showDelimiters delimiters: Bool = false,
+    terminateLine: Bool = false
   ) -> String {
     var printer = PrettyPrinter()
-    printer.printAsCanonical(self, delimiters: delimiters)
+    printer.printAsCanonical(
+       self,
+       delimiters: delimiters,
+       terminateLine: terminateLine)
     return printer.finish()
   }
 }
@@ -26,13 +30,17 @@ extension PrettyPrinter {
   /// Will output `ast` in canonical form, taking care to
   /// also indent and terminate the line (updating internal state)
   mutating func printAsCanonical(
-    _ ast: AST, delimiters: Bool = false
+    _ ast: AST,
+    delimiters: Bool = false,
+    terminateLine terminate: Bool = true
   ) {
     indent()
     if delimiters { output("'/") }
     outputAsCanonical(ast)
     if delimiters { output("/'") }
-    terminateLine()
+    if terminate {
+      terminateLine()
+    }
   }
 
   /// Output the `ast` in canonical form, does not indent, terminate,
@@ -164,9 +172,30 @@ extension AST.Atom {
     switch self.kind {
     case .escaped(let e):
       return "\\\(e.character)"
+    case .backreference(let br):
+       return br._canonicalBase
 
     default:
       return "/* TODO: atom \(self) */"
+    }
+  }
+}
+
+extension /*AST.Atom.*/Reference {
+  var _canonicalBase: String {
+    switch self {
+    case .absolute(let i):
+      // TODO: Honestly, I wouldn't mind saying that a clearer
+      // syntax like `\g{n}`, though that's also problematic
+      // because in Oniguruma every except `{` would mean
+      // re-evaluate group
+      return "\\\(i)"
+    case .relative:
+      return "/* TODO: relative reference \(self) */"
+    case .named:
+      return "/* TODO: named reference \(self) */"
+    case .recurseWholePattern:
+      return "/* TODO: recursive reference \(self) */"
     }
   }
 }

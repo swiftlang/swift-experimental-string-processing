@@ -13,7 +13,124 @@ import XCTest
 @testable import _MatchingEngine
 @testable import _StringProcessing
 
+extension Executor {
+  func _firstMatch(
+    _ regex: String, input: String,
+    syntax: SyntaxOptions = .traditional,
+    enableTracing: Bool = false
+  ) throws -> (match: Substring, captures: [Substring?]) {
+    // TODO: This should be a CollectionMatcher API to call...
+    // Consumer -> searcher algorithm
+    var start = input.startIndex
+    while true {
+      if let (range, caps) = self.executeFlat(
+        input: input,
+        in: start..<input.endIndex,
+        mode: .partialFromFront
+      ) {
+        let matched = input[range]
+        return (matched, caps.latest(from: input))
+      } else if start == input.endIndex {
+        throw "match not found for \(regex) in \(input)"
+      } else {
+        input.formIndex(after: &start)
+      }
+    }
+  }
+}
+
+func _firstMatch(
+  _ regex: String,
+  input: String,
+  syntax: SyntaxOptions = .traditional,
+  enableTracing: Bool = false
+) throws -> (String, [String?]) {
+  var executor = try _compileRegex(regex, syntax)
+  executor.engine.enableTracing = enableTracing
+  let (str, caps) = try executor._firstMatch(
+    regex, input: input, enableTracing: enableTracing)
+  let capStrs = caps.map { $0 == nil ? nil : String($0!) }
+  return (String(str), capStrs)
+}
+
+// TODO: multiple-capture variant
+// TODO: unify with firstMatch below, etc.
+func captureTest(
+  _ regex: String,
+  _ tests: (input: String, expect: [String?]?)...,
+  syntax: SyntaxOptions = .traditional,
+  enableTracing: Bool = false,
+  dumpAST: Bool = false,
+  xfail: Bool = false
+) {
+  for (test, expect) in tests {
+    do {
+      guard let (_, caps) = try? _firstMatch(
+        regex,
+        input: test,
+        syntax: syntax,
+        enableTracing: enableTracing
+      ) else {
+        if expect == nil {
+          continue
+        } else {
+          throw "Match failed"
+        }
+      }
+      guard let expect = expect else {
+        throw "Match succeeded where failure expected"
+      }
+      let capStrs = caps.map { $0 == nil ? nil : String($0!) }
+      guard expect.count == capStrs.count else {
+        throw """
+          Capture count mismatch:
+            \(expect)
+            \(capStrs)
+          """
+      }
+
+      guard expect.elementsEqual(capStrs) else {
+        throw """
+          Capture mismatch:
+            \(expect)
+            \(capStrs)
+          """
+      }
+    } catch {
+      if !xfail {
+        XCTFail("\(error)")
+      }
+    }
+  }
+}
+
+/// Test whether a string matches or not
+///
+/// TODO: Configuration for whole vs partial string matching...
 func matchTest(
+  _ regex: String,
+  _ tests: (input: String, expect: Bool)...,
+  syntax: SyntaxOptions = .traditional,
+  enableTracing: Bool = false,
+  dumpAST: Bool = false,
+  xfail: Bool = false
+) {
+  for (test, expect) in tests {
+    firstMatchTest(
+      regex,
+      input: test,
+      match: expect ? test : nil,
+      syntax: syntax,
+      enableTracing: enableTracing,
+      dumpAST: dumpAST,
+      xfail: xfail)
+  }
+}
+
+// TODO: Adjust below to also check captures
+
+/// Test the first match in a string, via `firstRange(of:)`
+func firstMatchTest(
   _ regex: String,
   input: String,
   match: String?,
@@ -25,29 +142,26 @@ func matchTest(
   line: UInt = #line
 ) {
   do {
-    var consumer = try RegexConsumer<String>(parsing: regex)
-    consumer.vm.engine.enableTracing = enableTracing
-    guard let range = input.firstRange(of: consumer) else {
-      if match == nil {
-        return
-      }
-      throw "match not found for \(regex) in \(input)"
-    }
+    let (found, _) = try _firstMatch(
+      regex,
+      input: input,
+      syntax: syntax,
+      enableTracing: enableTracing)
 
     if xfail {
-      XCTAssertNotEqual(String(input[range]), match, file: file, line: line)
+      XCTAssertNotEqual(found, match, file: file, line: line)
     } else {
-      XCTAssertEqual(String(input[range]), match, file: file, line: line)
+      XCTAssertEqual(found, match, file: file, line: line)
     }
   } catch {
-    if !xfail {
+    if !xfail && match != nil {
       XCTFail("\(error)", file: file, line: line)
     }
     return
   }
 }
 
-func matchTests(
+func firstMatchTests(
   _ regex: String,
   _ tests: (input: String, match: String?)...,
   syntax: SyntaxOptions = .traditional,
@@ -56,7 +170,7 @@ func matchTests(
   xfail: Bool = false
 ) {
   for (input, match) in tests {
-    matchTest(
+    firstMatchTest(
       regex,
       input: input,
       match: match,
@@ -69,204 +183,204 @@ func matchTests(
 
 extension RegexTests {
   func testMatch() {
-    matchTest(
+    firstMatchTest(
       "abc", input: "123abcxyz", match: "abc")
-    matchTest(
+    firstMatchTest(
       #"abc\+d*"#, input: "123abc+xyz", match: "abc+")
-    matchTest(
+    firstMatchTest(
       #"abc\+d*"#, input: "123abc+dddxyz", match: "abc+ddd")
-    matchTest(
+    firstMatchTest(
       "a(b)", input: "123abcxyz", match: "ab")
 
-    matchTest(
+    firstMatchTest(
       "(.)*(.*)", input: "123abcxyz", match: "123abcxyz")
-    matchTest(
+    firstMatchTest(
       #"abc\d"#, input: "xyzabc123", match: "abc1")
 
     // MARK: Alternations
 
-    matchTest(
+    firstMatchTest(
       "abc(?:de)+fghi*k|j", input: "123abcdefghijxyz", match: "j")
-    matchTest(
+    firstMatchTest(
       "abc(?:de)+fghi*k|j", input: "123abcdedefghkxyz", match: "abcdedefghk")
-    matchTest(
+    firstMatchTest(
       "a(?:b|c)?d", input: "123adxyz", match: "ad")
-    matchTest(
+    firstMatchTest(
       "a(?:b|c)?d", input: "123abdxyz", match: "abd")
-    matchTest(
+    firstMatchTest(
       "a(?:b|c)?d", input: "123acdxyz", match: "acd")
-    matchTest(
+    firstMatchTest(
       "a?b??c+d+?e*f*?", input: "123abcdefxyz", match: "abcde")
-    matchTest(
+    firstMatchTest(
       "a?b??c+d+?e*f*?", input: "123bcddefxyz", match: "bcd")
-    matchTest(
+    firstMatchTest(
       "a|b?c", input: "123axyz", match: "a")
-    matchTest(
+    firstMatchTest(
       "a|b?c", input: "123bcxyz", match: "bc")
-    matchTest(
+    firstMatchTest(
       "(a|b)c", input: "123abcxyz", match: "bc")
 
     // Alternations with empty branches are permitted.
-    matchTest("|", input: "ab", match: "")
-    matchTest("(|)", input: "ab", match: "")
-    matchTest("a|", input: "ab", match: "a")
-    matchTest("a|", input: "ba", match: "")
-    matchTest("|b", input: "ab", match: "")
-    matchTest("|b", input: "ba", match: "")
-    matchTest("|b|", input: "ab", match: "")
-    matchTest("|b|", input: "ba", match: "")
-    matchTest("a|b|", input: "ab", match: "a")
-    matchTest("a|b|", input: "ba", match: "b")
-    matchTest("a|b|", input: "ca", match: "")
-    matchTest("||c|", input: "ab", match: "")
-    matchTest("||c|", input: "cb", match: "")
-    matchTest("|||", input: "ab", match: "")
-    matchTest("a|||d", input: "bc", match: "")
-    matchTest("a|||d", input: "abc", match: "a")
-    matchTest("a|||d", input: "d", match: "")
+    firstMatchTest("|", input: "ab", match: "")
+    firstMatchTest("(|)", input: "ab", match: "")
+    firstMatchTest("a|", input: "ab", match: "a")
+    firstMatchTest("a|", input: "ba", match: "")
+    firstMatchTest("|b", input: "ab", match: "")
+    firstMatchTest("|b", input: "ba", match: "")
+    firstMatchTest("|b|", input: "ab", match: "")
+    firstMatchTest("|b|", input: "ba", match: "")
+    firstMatchTest("a|b|", input: "ab", match: "a")
+    firstMatchTest("a|b|", input: "ba", match: "b")
+    firstMatchTest("a|b|", input: "ca", match: "")
+    firstMatchTest("||c|", input: "ab", match: "")
+    firstMatchTest("||c|", input: "cb", match: "")
+    firstMatchTest("|||", input: "ab", match: "")
+    firstMatchTest("a|||d", input: "bc", match: "")
+    firstMatchTest("a|||d", input: "abc", match: "a")
+    firstMatchTest("a|||d", input: "d", match: "")
 
     // MARK: Unicode scalars
 
-    matchTest(
+    firstMatchTest(
       #"a\u0065b\u{00000065}c\x65d\U00000065"#,
       input: "123aebecedexyz", match: "aebecede")
 
-    matchTest(
+    firstMatchTest(
       #"\u{00000000000000000000000000A}"#,
       input: "123\nxyz", match: "\n")
-    matchTest(
+    firstMatchTest(
       #"\x{00000000000000000000000000A}"#,
       input: "123\nxyz", match: "\n")
-    matchTest(
+    firstMatchTest(
       #"\o{000000000000000000000000007}"#,
       input: "123\u{7}xyz", match: "\u{7}")
 
-    matchTest(#"\o{70}"#, input: "1238xyz", match: "8")
-    matchTest(#"\0"#, input: "123\0xyz", match: "\0")
-    matchTest(#"\01"#, input: "123\u{1}xyz", match: "\u{1}")
-    matchTest(#"\070"#, input: "1238xyz", match: "8")
-    matchTest(#"\07A"#, input: "123\u{7}Axyz", match: "\u{7}A")
-    matchTest(#"\08"#, input: "123\08xyz", match: "\08")
-    matchTest(#"\0707"#, input: "12387xyz", match: "87")
+    firstMatchTest(#"\o{70}"#, input: "1238xyz", match: "8")
+    firstMatchTest(#"\0"#, input: "123\0xyz", match: "\0")
+    firstMatchTest(#"\01"#, input: "123\u{1}xyz", match: "\u{1}")
+    firstMatchTest(#"\070"#, input: "1238xyz", match: "8")
+    firstMatchTest(#"\07A"#, input: "123\u{7}Axyz", match: "\u{7}A")
+    firstMatchTest(#"\08"#, input: "123\08xyz", match: "\08")
+    firstMatchTest(#"\0707"#, input: "12387xyz", match: "87")
 
     // code point sequence
-    matchTest(#"\u{61 62 63}"#, input: "123abcxyz", match: "abc", xfail: true)
+    firstMatchTest(#"\u{61 62 63}"#, input: "123abcxyz", match: "abc", xfail: true)
 
 
     // MARK: Quotes
 
-    matchTest(
+    firstMatchTest(
       #"a\Q .\Eb"#,
       input: "123a .bxyz", match: "a .b")
-    matchTest(
+    firstMatchTest(
       #"a\Q \Q \\.\Eb"#,
       input: #"123a \Q \\.bxyz"#, match: #"a \Q \\.b"#)
-    matchTest(
+    firstMatchTest(
       #"\d\Q...\E"#,
       input: "Countdown: 3... 2... 1...", match: "3...")
 
     // MARK: Comments
 
-    matchTest(
+    firstMatchTest(
       #"a(?#comment)b"#, input: "123abcxyz", match: "ab")
-    matchTest(
+    firstMatchTest(
       #"a(?#. comment)b"#, input: "123abcxyz", match: "ab")
   }
 
   func testMatchQuantification() {
     // MARK: Quantification
 
-    matchTest(
+    firstMatchTest(
       #"a{1,2}"#, input: "123aaaxyz", match: "aa")
-    matchTest(
+    firstMatchTest(
       #"a{,2}"#, input: "123aaaxyz", match: "")
-    matchTest(
+    firstMatchTest(
       #"a{,2}x"#, input: "123aaaxyz", match: "aax")
-    matchTest(
+    firstMatchTest(
       #"a{,2}x"#, input: "123xyz", match: "x")
-    matchTest(
+    firstMatchTest(
       #"a{2,}"#, input: "123aaaxyz", match: "aaa")
-    matchTest(
+    firstMatchTest(
       #"a{1}"#, input: "123aaaxyz", match: "a")
-    matchTest(
+    firstMatchTest(
       #"a{1,2}?"#, input: "123aaaxyz", match: "a")
-    matchTest(
+    firstMatchTest(
       #"a{1,2}?x"#, input: "123aaaxyz", match: "aax")
-    matchTest(
+    firstMatchTest(
       #"xa{0}y"#, input: "123aaaxyz", match: "xy")
-    matchTest(
+    firstMatchTest(
       #"xa{0,0}y"#, input: "123aaaxyz", match: "xy")
 
-    matchTest("a.*", input: "dcba", match: "a")
+    firstMatchTest("a.*", input: "dcba", match: "a")
 
-    matchTest("a*", input: "", match: "")
-    matchTest("a*", input: "a", match: "a")
-    matchTest("a*", input: "aaa", match: "aaa")
+    firstMatchTest("a*", input: "", match: "")
+    firstMatchTest("a*", input: "a", match: "a")
+    firstMatchTest("a*", input: "aaa", match: "aaa")
 
-    matchTest("a*?", input: "", match: "")
-    matchTest("a*?", input: "a", match: "")
-    matchTest("a*?a", input: "aaa", match: "a")
-    matchTest("xa*?x", input: "_xx__", match: "xx")
-    matchTest("xa*?x", input: "_xax__", match: "xax")
-    matchTest("xa*?x", input: "_xaax__", match: "xaax")
+    firstMatchTest("a*?", input: "", match: "")
+    firstMatchTest("a*?", input: "a", match: "")
+    firstMatchTest("a*?a", input: "aaa", match: "a")
+    firstMatchTest("xa*?x", input: "_xx__", match: "xx")
+    firstMatchTest("xa*?x", input: "_xax__", match: "xax")
+    firstMatchTest("xa*?x", input: "_xaax__", match: "xaax")
 
-    matchTest("a+", input: "", match: nil)
-    matchTest("a+", input: "a", match: "a")
-    matchTest("a+", input: "aaa", match: "aaa")
+    firstMatchTest("a+", input: "", match: nil)
+    firstMatchTest("a+", input: "a", match: "a")
+    firstMatchTest("a+", input: "aaa", match: "aaa")
 
-    matchTest("a+?", input: "", match: nil)
-    matchTest("a+?", input: "a", match: "a")
-    matchTest("a+?a", input: "aaa", match: "aa")
-    matchTest("xa+?x", input: "_xx__", match: nil)
-    matchTest("xa+?x", input: "_xax__", match: "xax")
-    matchTest("xa+?x", input: "_xaax__", match: "xaax")
+    firstMatchTest("a+?", input: "", match: nil)
+    firstMatchTest("a+?", input: "a", match: "a")
+    firstMatchTest("a+?a", input: "aaa", match: "aa")
+    firstMatchTest("xa+?x", input: "_xx__", match: nil)
+    firstMatchTest("xa+?x", input: "_xax__", match: "xax")
+    firstMatchTest("xa+?x", input: "_xaax__", match: "xaax")
 
-    matchTest("a??", input: "", match: "")
-    matchTest("a??", input: "a", match: "")
-    matchTest("a??a", input: "aaa", match: "a")
-    matchTest("xa??x", input: "_xx__", match: "xx")
-    matchTest("xa??x", input: "_xax__", match: "xax")
-    matchTest("xa??x", input: "_xaax__", match: nil)
+    firstMatchTest("a??", input: "", match: "")
+    firstMatchTest("a??", input: "a", match: "")
+    firstMatchTest("a??a", input: "aaa", match: "a")
+    firstMatchTest("xa??x", input: "_xx__", match: "xx")
+    firstMatchTest("xa??x", input: "_xax__", match: "xax")
+    firstMatchTest("xa??x", input: "_xaax__", match: nil)
 
     // Possessive .* will consume entire input
-    matchTests(
+    firstMatchTests(
       ".*+x",
       ("abc", nil), ("abcx", nil), ("", nil))
 
-    matchTests(
+    firstMatchTests(
       "a+b",
       ("abc", "ab"),
       ("aaabc", "aaab"),
       ("b", nil))
-    matchTests(
+    firstMatchTests(
       "a++b",
       ("abc", "ab"),
       ("aaabc", "aaab"),
       ("b", nil))
-    matchTests(
+    firstMatchTests(
       "a+?b",
       ("abc", "ab"),
       ("aaabc", "aaab"), // firstRange will match from front
       ("b", nil))
 
-    matchTests(
+    firstMatchTests(
       "a+a",
       ("babc", nil),
       ("baaabc", "aaa"),
       ("bb", nil))
-    matchTests(
+    firstMatchTests(
       "a++a",
       ("babc", nil),
       ("baaabc", nil),
       ("bb", nil))
-    matchTests(
+    firstMatchTests(
       "a+?a",
       ("babc", nil),
       ("baaabc", "aa"),
       ("bb", nil))
 
 
-    matchTests(
+    firstMatchTests(
       "a{2,4}a",
       ("babc", nil),
       ("baabc", nil),
@@ -274,7 +388,7 @@ extension RegexTests {
       ("baaaaabc", "aaaaa"),
       ("baaaaaaaabc", "aaaaa"),
       ("bb", nil))
-    matchTests(
+    firstMatchTests(
       "a{,4}a",
       ("babc", "a"),
       ("baabc", "aa"),
@@ -282,7 +396,7 @@ extension RegexTests {
       ("baaaaabc", "aaaaa"),
       ("baaaaaaaabc", "aaaaa"),
       ("bb", nil))
-    matchTests(
+    firstMatchTests(
       "a{2,}a",
       ("babc", nil),
       ("baabc", nil),
@@ -291,7 +405,7 @@ extension RegexTests {
       ("baaaaaaaabc", "aaaaaaaa"),
       ("bb", nil))
 
-    matchTests(
+    firstMatchTests(
       "a{2,4}?a",
       ("babc", nil),
       ("baabc", nil),
@@ -299,7 +413,7 @@ extension RegexTests {
       ("baaaaabc", "aaa"),
       ("baaaaaaaabc", "aaa"),
       ("bb", nil))
-    matchTests(
+    firstMatchTests(
       "a{,4}?a",
       ("babc", "a"),
       ("baabc", "a"),
@@ -307,7 +421,7 @@ extension RegexTests {
       ("baaaaabc", "a"),
       ("baaaaaaaabc", "a"),
       ("bb", nil))
-    matchTests(
+    firstMatchTests(
       "a{2,}?a",
       ("babc", nil),
       ("baabc", nil),
@@ -316,7 +430,7 @@ extension RegexTests {
       ("baaaaaaaabc", "aaa"),
       ("bb", nil))
 
-    matchTests(
+    firstMatchTests(
       "a{2,4}+a",
       ("babc", nil),
       ("baabc", nil),
@@ -324,7 +438,7 @@ extension RegexTests {
       ("baaaaabc", "aaaaa"),
       ("baaaaaaaabc", "aaaaa"),
       ("bb", nil))
-    matchTests(
+    firstMatchTests(
       "a{,4}+a",
       ("babc", nil),
       ("baabc", nil),
@@ -332,7 +446,7 @@ extension RegexTests {
       ("baaaaabc", "aaaaa"),
       ("baaaaaaaabc", "aaaaa"),
       ("bb", nil))
-    matchTests(
+    firstMatchTests(
       "a{2,}+a",
       ("babc", nil),
       ("baabc", nil),
@@ -342,7 +456,7 @@ extension RegexTests {
       ("bb", nil))
 
 
-    matchTests(
+    firstMatchTests(
       "(?:a{2,4}?b)+",
       ("aab", "aab"),
       ("aabaabaab", "aabaabaab"),
@@ -356,343 +470,343 @@ extension RegexTests {
   func testMatchCharacterClasses() {
     // MARK: Character classes
 
-    matchTest(#"abc\d"#, input: "xyzabc123", match: "abc1")
+    firstMatchTest(#"abc\d"#, input: "xyzabc123", match: "abc1")
 
-    matchTest(
+    firstMatchTest(
       "[-|$^:?+*())(*-+-]", input: "123(abc)xyz", match: "(")
-    matchTest(
+    firstMatchTest(
       "[-|$^:?+*())(*-+-]", input: "123-abcxyz", match: "-")
-    matchTest(
+    firstMatchTest(
       "[-|$^:?+*())(*-+-]", input: "123^abcxyz", match: "^")
 
-    matchTest(
+    firstMatchTest(
       "[a-b-c]", input: "123abcxyz", match: "a")
-    matchTest(
+    firstMatchTest(
       "[a-b-c]", input: "123-abcxyz", match: "-")
 
-    matchTest("[-a-]", input: "123abcxyz", match: "a")
-    matchTest("[-a-]", input: "123-abcxyz", match: "-")
+    firstMatchTest("[-a-]", input: "123abcxyz", match: "a")
+    firstMatchTest("[-a-]", input: "123-abcxyz", match: "-")
 
-    matchTest("[a-z]", input: "123abcxyz", match: "a")
-    matchTest("[a-z]", input: "123ABCxyz", match: "x")
-    matchTest("[a-z]", input: "123-abcxyz", match: "a")
+    firstMatchTest("[a-z]", input: "123abcxyz", match: "a")
+    firstMatchTest("[a-z]", input: "123ABCxyz", match: "x")
+    firstMatchTest("[a-z]", input: "123-abcxyz", match: "a")
 
     // Character class subtraction
-    matchTest("[a-d--a-c]", input: "123abcdxyz", match: "d")
+    firstMatchTest("[a-d--a-c]", input: "123abcdxyz", match: "d")
 
-    matchTest("[-]", input: "123-abcxyz", match: "-")
+    firstMatchTest("[-]", input: "123-abcxyz", match: "-")
 
     // These are metacharacters in certain contexts, but normal characters
     // otherwise.
-    matchTest(":-]", input: "123:-]xyz", match: ":-]")
+    firstMatchTest(":-]", input: "123:-]xyz", match: ":-]")
 
-    matchTest(
+    firstMatchTest(
       "[^abc]", input: "123abcxyz", match: "1")
-    matchTest(
+    firstMatchTest(
       "[a^]", input: "123abcxyz", match: "a")
 
-    matchTest(
+    firstMatchTest(
       #"\D\S\W"#, input: "123ab-xyz", match: "ab-")
 
-    matchTest(
+    firstMatchTest(
       #"[\dd]"#, input: "xyzabc123", match: "1")
-    matchTest(
+    firstMatchTest(
       #"[\dd]"#, input: "xyzabcd123", match: "d")
 
-    matchTest(
+    firstMatchTest(
       #"[^[\D]]"#, input: "xyzabc123", match: "1")
-    matchTest(
+    firstMatchTest(
       "[[ab][bc]]", input: "123abcxyz", match: "a")
-    matchTest(
+    firstMatchTest(
       "[[ab][bc]]", input: "123cbaxyz", match: "c")
-    matchTest(
+    firstMatchTest(
       "[[ab]c[de]]", input: "123abcxyz", match: "a")
-    matchTest(
+    firstMatchTest(
       "[[ab]c[de]]", input: "123cbaxyz", match: "c")
 
-    matchTest(
+    firstMatchTest(
       #"[ab[:space:]\d[:^upper:]cd]"#,
       input: "123abcxyz", match: "1")
-    matchTest(
+    firstMatchTest(
       #"[ab[:space:]\d[:^upper:]cd]"#,
       input: "xyzabc123", match: "x")
-    matchTest(
+    firstMatchTest(
       #"[ab[:space:]\d[:^upper:]cd]"#,
       input: "XYZabc123", match: "a")
-    matchTest(
+    firstMatchTest(
       #"[ab[:space:]\d[:^upper:]cd]"#,
       input: "XYZ abc123", match: " ")
 
-    matchTest("[[[:space:]]]", input: "123 abc xyz", match: " ")
+    firstMatchTest("[[[:space:]]]", input: "123 abc xyz", match: " ")
 
-    matchTest("[[:alnum:]]", input: "[[:alnum:]]", match: "a")
-    matchTest("[[:blank:]]", input: "123\tabc xyz", match: "\t")
+    firstMatchTest("[[:alnum:]]", input: "[[:alnum:]]", match: "a")
+    firstMatchTest("[[:blank:]]", input: "123\tabc xyz", match: "\t")
 
-    matchTest(
+    firstMatchTest(
       "[[:graph:]]",
       input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
-    matchTest(
+    firstMatchTest(
       "[[:print:]]",
       input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: " ")
 
-    matchTest(
+    firstMatchTest(
       "[[:word:]]",
       input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
-    matchTest(
+    firstMatchTest(
       "[[:xdigit:]]",
       input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
 
-    matchTest("[[:isALNUM:]]", input: "[[:alnum:]]", match: "a")
-    matchTest("[[:AL_NUM:]]", input: "[[:alnum:]]", match: "a")
+    firstMatchTest("[[:isALNUM:]]", input: "[[:alnum:]]", match: "a")
+    firstMatchTest("[[:AL_NUM:]]", input: "[[:alnum:]]", match: "a")
 
     // Unfortunately, scripts are not part of stdlib...
-    matchTest(
+    firstMatchTest(
       "[[:script=Greek:]]", input: "123αβγxyz", match: "α",
       xfail: true)
 
     // MARK: Operators
 
-    matchTest(
+    firstMatchTest(
       #"[a[bc]de&&[^bc]\d]+"#, input: "123bcdxyz", match: "d")
 
     // Empty intersection never matches, should this be a compile time error?
     // matchTest("[a&&b]", input: "123abcxyz", match: "")
 
-    matchTest(
+    firstMatchTest(
       "[abc--def]", input: "123abcxyz", match: "a")
 
     // We left-associate for chained operators.
-    matchTest(
+    firstMatchTest(
       "[ab&&b~~cd]", input: "123abcxyz", match: "b")
-    matchTest(
+    firstMatchTest(
       "[ab&&b~~cd]", input: "123acdxyz", match: "c") // this doesn't match NSRegularExpression's behavior
 
     // Operators are only valid in custom character classes.
-    matchTest(
+    firstMatchTest(
       "a&&b", input: "123a&&bcxyz", match: "a&&b")
-    matchTest(
+    firstMatchTest(
       "&?", input: "123a&&bcxyz", match: "")
-    matchTest(
+    firstMatchTest(
       "&&?", input: "123a&&bcxyz", match: "&&")
-    matchTest(
+    firstMatchTest(
       "--+", input: "123---xyz", match: "---")
-    matchTest(
+    firstMatchTest(
       "~~*", input: "123~~~xyz", match: "~~~")
   }
 
   func testCharacterProperties() {
     // MARK: Character names.
 
-    matchTest(#"\N{ASTERISK}"#, input: "123***xyz", match: "*")
-    matchTest(#"[\N{ASTERISK}]"#, input: "123***xyz", match: "*")
-    matchTest(
+    firstMatchTest(#"\N{ASTERISK}"#, input: "123***xyz", match: "*")
+    firstMatchTest(#"[\N{ASTERISK}]"#, input: "123***xyz", match: "*")
+    firstMatchTest(
       #"\N{ASTERISK}+"#, input: "123***xyz", match: "***")
-    matchTest(
+    firstMatchTest(
       #"\N {2}"#, input: "123  xyz", match: "3  ")
 
-    matchTest(#"\N{U+2C}"#, input: "123,xyz", match: ",")
-    matchTest(#"\N{U+1F4BF}"#, input: "123💿xyz", match: "💿")
-    matchTest(#"\N{U+00001F4BF}"#, input: "123💿xyz", match: "💿")
+    firstMatchTest(#"\N{U+2C}"#, input: "123,xyz", match: ",")
+    firstMatchTest(#"\N{U+1F4BF}"#, input: "123💿xyz", match: "💿")
+    firstMatchTest(#"\N{U+00001F4BF}"#, input: "123💿xyz", match: "💿")
 
     // MARK: Character properties.
 
-    matchTest(#"\p{L}"#, input: "123abcXYZ", match: "a")
-    matchTest(#"\p{gc=L}"#, input: "123abcXYZ", match: "a")
-    matchTest(#"\p{Lu}"#, input: "123abcXYZ", match: "X")
+    firstMatchTest(#"\p{L}"#, input: "123abcXYZ", match: "a")
+    firstMatchTest(#"\p{gc=L}"#, input: "123abcXYZ", match: "a")
+    firstMatchTest(#"\p{Lu}"#, input: "123abcXYZ", match: "X")
 
-    matchTest(
+    firstMatchTest(
       #"\P{Cc}"#, input: "\n\n\nXYZ", match: "X")
-    matchTest(
+    firstMatchTest(
       #"\P{Z}"#, input: "   XYZ", match: "X")
 
-    matchTest(#"[\p{C}]"#, input: "123\n\n\nXYZ", match: "\n")
-    matchTest(#"\p{C}+"#, input: "123\n\n\nXYZ", match: "\n\n\n")
+    firstMatchTest(#"[\p{C}]"#, input: "123\n\n\nXYZ", match: "\n")
+    firstMatchTest(#"\p{C}+"#, input: "123\n\n\nXYZ", match: "\n\n\n")
 
     // UAX44-LM3 means all of the below are equivalent.
-    matchTest(#"\p{ll}"#, input: "123abcXYZ", match: "a")
-    matchTest(#"\p{gc=ll}"#, input: "123abcXYZ", match: "a")
-    matchTest(
+    firstMatchTest(#"\p{ll}"#, input: "123abcXYZ", match: "a")
+    firstMatchTest(#"\p{gc=ll}"#, input: "123abcXYZ", match: "a")
+    firstMatchTest(
       #"\p{General_Category=Ll}"#, input: "123abcXYZ", match: "a")
-    matchTest(
+    firstMatchTest(
       #"\p{General-Category=isLl}"#,
       input: "123abcXYZ", match: "a")
-    matchTest(#"\p{  __l_ l  _ }"#, input: "123abcXYZ", match: "a")
-    matchTest(
+    firstMatchTest(#"\p{  __l_ l  _ }"#, input: "123abcXYZ", match: "a")
+    firstMatchTest(
       #"\p{ g_ c =-  __l_ l  _ }"#, input: "123abcXYZ", match: "a")
-    matchTest(
+    firstMatchTest(
       #"\p{ general ca-tegory =  __l_ l  _ }"#,
       input: "123abcXYZ", match: "a")
-    matchTest(
+    firstMatchTest(
       #"\p{- general category =  is__l_ l  _ }"#,
       input: "123abcXYZ", match: "a")
-    matchTest(
+    firstMatchTest(
       #"\p{ general category -=  IS__l_ l  _ }"#,
       input: "123abcXYZ", match: "a")
 
-    matchTest(#"\p{Any}"#, input: "123abcXYZ", match: "1")
-    matchTest(#"\p{Assigned}"#, input: "123abcXYZ", match: "1")
-    matchTest(#"\p{ascii}"#, input: "123abcXYZ", match: "1")
-    matchTest(#"\p{isAny}"#, input: "123abcXYZ", match: "1")
+    firstMatchTest(#"\p{Any}"#, input: "123abcXYZ", match: "1")
+    firstMatchTest(#"\p{Assigned}"#, input: "123abcXYZ", match: "1")
+    firstMatchTest(#"\p{ascii}"#, input: "123abcXYZ", match: "1")
+    firstMatchTest(#"\p{isAny}"#, input: "123abcXYZ", match: "1")
 
     // Unfortunately, scripts are not part of stdlib...
-    matchTest(
+    firstMatchTest(
       #"\p{sc=grek}"#, input: "123αβγxyz", match: "α",
       xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\p{sc=isGreek}"#, input: "123αβγxyz", match: "α",
       xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\p{Greek}"#, input: "123αβγxyz", match: "α",
       xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\p{isGreek}"#, input: "123αβγxyz", match: "α",
       xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\P{Script=Latn}"#, input: "abcαβγxyz", match: "α",
       xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\p{script=Greek}"#, input: "123αβγxyz", match: "α",
       xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\p{ISscript=isGreek}"#, input: "123αβγxyz", match: "α",
       xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\p{scx=bamum}"#, input: "123ꚠꚡꚢxyz", match: "ꚠ",
       xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\p{ISBAMUM}"#, input: "123ꚠꚡꚢxyz", match: "ꚠ",
       xfail: true)
 
-    matchTest(#"\p{alpha}"#, input: "123abcXYZ", match: "a")
-    matchTest(#"\P{alpha}"#, input: "123abcXYZ", match: "1")
-    matchTest(
+    firstMatchTest(#"\p{alpha}"#, input: "123abcXYZ", match: "a")
+    firstMatchTest(#"\P{alpha}"#, input: "123abcXYZ", match: "1")
+    firstMatchTest(
       #"\p{alphabetic=True}"#, input: "123abcXYZ", match: "a")
 
     // This is actually available-ed...
-    matchTest(
+    firstMatchTest(
       #"\p{emoji=t}"#, input: "123💿xyz", match: "a",
       xfail: true)
 
-    matchTest(#"\p{Alpha=no}"#, input: "123abcXYZ", match: "1")
-    matchTest(#"\P{Alpha=no}"#, input: "123abcXYZ", match: "a")
-    matchTest(#"\p{isAlphabetic}"#, input: "123abcXYZ", match: "a")
-    matchTest(
+    firstMatchTest(#"\p{Alpha=no}"#, input: "123abcXYZ", match: "1")
+    firstMatchTest(#"\P{Alpha=no}"#, input: "123abcXYZ", match: "a")
+    firstMatchTest(#"\p{isAlphabetic}"#, input: "123abcXYZ", match: "a")
+    firstMatchTest(
       #"\p{isAlpha=isFalse}"#, input: "123abcXYZ", match: "1")
 
     // Oniguruma special support not in stdlib
-    matchTest(
+    firstMatchTest(
       #"\p{In_Runic}"#, input: "123ᚠᚡᚢXYZ", match: "ᚠ",
     xfail: true)
 
     // TODO: PCRE special
-    matchTest(
+    firstMatchTest(
       #"\p{Xan}"#, input: "[[:alnum:]]", match: "a",
       xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\p{Xps}"#, input: "123 abc xyz", match: " ",
       xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\p{Xsp}"#, input: "123 abc xyz", match: " ",
       xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\p{Xuc}"#, input: "$var", match: "$",
       xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\p{Xwd}"#, input: "[[:alnum:]]", match: "a",
       xfail: true)
 
-    matchTest(#"\p{alnum}"#, input: "[[:alnum:]]", match: "a")
-    matchTest(#"\p{is_alnum}"#, input: "[[:alnum:]]", match: "a")
+    firstMatchTest(#"\p{alnum}"#, input: "[[:alnum:]]", match: "a")
+    firstMatchTest(#"\p{is_alnum}"#, input: "[[:alnum:]]", match: "a")
 
-    matchTest(#"\p{blank}"#, input: "123\tabc xyz", match: "\t")
-    matchTest(
+    firstMatchTest(#"\p{blank}"#, input: "123\tabc xyz", match: "\t")
+    firstMatchTest(
       #"\p{graph}"#,
       input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
 
-    matchTest(
+    firstMatchTest(
       #"\p{print}"#,
       input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: " ")
-    matchTest(
+    firstMatchTest(
       #"\p{word}"#,
       input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
-    matchTest(
+    firstMatchTest(
       #"\p{xdigit}"#,
       input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
 
-    matchTest("[[:alnum:]]", input: "[[:alnum:]]", match: "a")
-    matchTest("[[:blank:]]", input: "123\tabc xyz", match: "\t")
-    matchTest("[[:graph:]]",
+    firstMatchTest("[[:alnum:]]", input: "[[:alnum:]]", match: "a")
+    firstMatchTest("[[:blank:]]", input: "123\tabc xyz", match: "\t")
+    firstMatchTest("[[:graph:]]",
       input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
-    matchTest("[[:print:]]",
+    firstMatchTest("[[:print:]]",
       input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: " ")
-    matchTest("[[:word:]]",
+    firstMatchTest("[[:word:]]",
       input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
-    matchTest("[[:xdigit:]]",
+    firstMatchTest("[[:xdigit:]]",
       input: "\u{7}\u{1b}\u{a}\n\r\t abc", match: "a")
   }
 
   func testAssertions() {
     // MARK: Assertions
-    matchTest(
+    firstMatchTest(
       #"\d+(?= dollars)"#,
       input: "Price: 100 dollars", match: "100")
-    matchTest(
+    firstMatchTest(
       #"\d+(?= pesos)"#,
       input: "Price: 100 dollars", match: nil)
-    matchTest(
+    firstMatchTest(
       #"(?=\d+ dollars)\d+"#,
       input: "Price: 100 dollars", match: "100",
       xfail: true) // TODO
 
-    matchTest(
+    firstMatchTest(
       #"\d+(*pla: dollars)"#,
       input: "Price: 100 dollars", match: "100")
-    matchTest(
+    firstMatchTest(
       #"\d+(*positive_lookahead: dollars)"#,
       input: "Price: 100 dollars", match: "100")
 
-    matchTest(
+    firstMatchTest(
       #"\d+(?! dollars)"#,
       input: "Price: 100 pesos", match: "100")
-    matchTest(
+    firstMatchTest(
       #"\d+(?! dollars)"#,
       input: "Price: 100 dollars", match: "10")
-    matchTest(
+    firstMatchTest(
       #"(?!\d+ dollars)\d+"#,
       input: "Price: 100 pesos", match: "100")
-    matchTest(
+    firstMatchTest(
       #"\d+(*nla: dollars)"#,
       input: "Price: 100 pesos", match: "100")
-    matchTest(
+    firstMatchTest(
       #"\d+(*negative_lookahead: dollars)"#,
       input: "Price: 100 pesos", match: "100")
 
-    matchTest(
+    firstMatchTest(
       #"(?<=USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
-    matchTest(
+    firstMatchTest(
       #"(*plb:USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
-    matchTest(
+    firstMatchTest(
       #"(*positive_lookbehind:USD)\d+"#,
       input: "Price: USD100", match: "100", xfail: true)
     // engines generally enforce that lookbehinds are fixed width
-    matchTest(
+    firstMatchTest(
       #"\d{3}(?<=USD\d{3})"#, input: "Price: USD100", match: "100", xfail: true)
 
-    matchTest(
+    firstMatchTest(
       #"(?<!USD)\d+"#, input: "Price: JYP100", match: "100", xfail: true)
-    matchTest(
+    firstMatchTest(
       #"(*nlb:USD)\d+"#, input: "Price: JYP100", match: "100", xfail: true)
-    matchTest(
+    firstMatchTest(
       #"(*negative_lookbehind:USD)\d+"#,
       input: "Price: JYP100", match: "100", xfail: true)
     // engines generally enforce that lookbehinds are fixed width
-    matchTest(
+    firstMatchTest(
       #"\d{3}(?<!USD\d{3})"#, input: "Price: JYP100", match: "100", xfail: true)
   }
 
   func testMatchAnchors() {
     // MARK: Anchors
-    matchTests(
+    firstMatchTests(
       #"^\d+"#,
       ("123", "123"),
       (" 123", nil),
@@ -700,7 +814,7 @@ extension RegexTests {
       (" 123 \n456", "456"),
       (" \n123 \n456", "123"))
 
-    matchTests(
+    firstMatchTests(
       #"\d+$"#,
       ("123", "123"),
       (" 123", "123"),
@@ -708,7 +822,7 @@ extension RegexTests {
       (" 123\n456", "123"),
       ("123 456", "456"))
 
-    matchTests(
+    firstMatchTests(
       #"\A\d+"#,
       ("123", "123"),
       (" 123", nil),
@@ -716,7 +830,7 @@ extension RegexTests {
       (" 123\n456", nil),
       ("123 456", "123"))
 
-    matchTests(
+    firstMatchTests(
       #"\d+\Z"#,
       ("123", "123"),
       (" 123", "123"),
@@ -728,7 +842,7 @@ extension RegexTests {
       ("123 456", "456"))
 
 
-    matchTests(
+    firstMatchTests(
       #"\d+\z"#,
       ("123", "123"),
       (" 123", "123"),
@@ -739,18 +853,18 @@ extension RegexTests {
       (" 123\n456\n", nil),
       ("123 456", "456"))
 
-    matchTests(
+    firstMatchTests(
       #"\d+\b"#,
       ("123", "123"),
       (" 123", "123"),
       ("123 456", "123"))
-    matchTests(
+    firstMatchTests(
       #"\d+\b\s\b\d+"#,
       ("123", nil),
       (" 123", nil),
       ("123 456", "123 456"))
 
-    matchTests(
+    firstMatchTests(
       #"\B\d+"#,
       ("123", "23"),
       (" 123", "23"),
@@ -766,85 +880,172 @@ extension RegexTests {
     // MARK: Groups
 
     // Named captures
-    matchTest(
+    firstMatchTest(
       #"a(?<label>b)c"#, input: "123abcxyz", match: "abc")
-    matchTest(
+    firstMatchTest(
       #"a(?'label'b)c"#, input: "123abcxyz", match: "abc")
-    matchTest(
+    firstMatchTest(
       #"a(?P<label>b)c"#, input: "123abcxyz", match: "abc")
 
     // Other groups
-    matchTest(
+    firstMatchTest(
       #"a(?:b)c"#, input: "123abcxyz", match: "abc")
-    matchTest(
+    firstMatchTest(
       "(?|(a)|(b)|(c))", input: "123abcxyz", match: "a")
 
-    matchTest(
+    firstMatchTest(
       #"(?:a|.b)c"#, input: "123abcacxyz", match: "abc")
-    matchTest(
+    firstMatchTest(
       #"(?>a|.b)c"#, input: "123abcacxyz", match: "ac", xfail: true)
-    matchTest(
+    firstMatchTest(
       "(*atomic:a|.b)c", input: "123abcacxyz", match: "ac", xfail: true)
-    matchTest(
+    firstMatchTest(
       #"(?:a+)[a-z]c"#, input: "123aacacxyz", match: "aac")
-    matchTest(
+    firstMatchTest(
       #"(?>a+)[a-z]c"#, input: "123aacacxyz", match: "ac", xfail: true)
 
 
     // TODO: Test example where non-atomic is significant
-    matchTest(
+    firstMatchTest(
       #"\d+(?* dollars)"#,
       input: "Price: 100 dollars", match: "100", xfail: true)
-    matchTest(
+    firstMatchTest(
       #"(?*\d+ dollars)\d+"#,
       input: "Price: 100 dollars", match: "100", xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\d+(*napla: dollars)"#,
       input: "Price: 100 dollars", match: "100", xfail: true)
-    matchTest(
+    firstMatchTest(
       #"\d+(*non_atomic_positive_lookahead: dollars)"#,
       input: "Price: 100 dollars", match: "100", xfail: true)
 
     // TODO: Test example where non-atomic is significant
-    matchTest(
+    firstMatchTest(
       #"(?<*USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
-    matchTest(
+    firstMatchTest(
       #"(*naplb:USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
-    matchTest(
+    firstMatchTest(
       #"(*non_atomic_positive_lookbehind:USD)\d+"#,
       input: "Price: USD100", match: "100", xfail: true)
     // engines generally enforce that lookbehinds are fixed width
-    matchTest(
+    firstMatchTest(
       #"\d{3}(?<*USD\d{3})"#, input: "Price: USD100", match: "100", xfail: true)
 
     // https://www.effectiveperlprogramming.com/2019/03/match-only-the-same-unicode-script/
-    matchTest(
+    firstMatchTest(
       #"abc(*sr:\d+)xyz"#, input: "abc۵۲۸528੫੨੮xyz", match: "۵۲۸", xfail: true)
-    matchTest(
+    firstMatchTest(
       #"abc(*script_run:\d+)xyz"#,
       input: "abc۵۲۸528੫੨੮xyz", match: "۵۲۸", xfail: true)
 
     // TODO: Test example where atomic is significant
-    matchTest(
+    firstMatchTest(
       #"abc(*asr:\d+)xyz"#, input: "abc۵۲۸528੫੨੮xyz", match: "۵۲۸", xfail: true)
-    matchTest(
+    firstMatchTest(
       #"abc(*atomic_script_run:\d+)xyz"#,
       input: "abc۵۲۸528੫੨੮xyz", match: "۵۲۸", xfail: true)
 
+  }
 
+  func testMatchCaptureBehavior() {
+    captureTest(
+      #"a(b)c|abe"#,
+      ("abc", ["b"]),
+      ("abe", [nil]),
+      ("axbe", nil))
+    captureTest(
+      #"a(bc)d|abce"#,
+      ("abcd", ["bc"]),
+      ("abce", [nil]),
+      ("abxce", nil))
+    captureTest(
+      #"a(bc)+d|abce"#,
+      ("abcbcbcd", ["bc"]),
+      ("abcbce", nil),
+      ("abce", [nil]),
+      ("abcbbd", nil))
+    captureTest(
+      #"a(bc)+d|(a)bce"#,
+      ("abcbcbcd", ["bc", nil]),
+      ("abce", [nil, "a"]),
+      ("abcbbd", nil))
+    captureTest(
+      #"a(b|c)+d|(a)bce"#,
+      ("abcbcbcd", ["c", nil]),
+      ("abce", [nil, "a"]),
+      ("abcbbd", ["b", nil]))
   }
 
   func testMatchReferences() {
     // TODO: Implement backreference/subpattern matching.
-    matchTest(#"(.)\1"#, input: "112", match: "11", xfail: true)
-    matchTest(#"(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)\10"#,
-              input: "aaaaaaaaabbc", match: "aaaaaaaaabb", xfail: true)
-    matchTest(#"(.)\10"#, input: "a\u{8}b", match: "a\u{8}")
+    firstMatchTest(
+      #"(.)\1"#,
+      input: "112", match: "11")
+    firstMatchTest(
+      #"(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)\10"#,
+      input: "aaaaaaaaabbc", match: "aaaaaaaaabb")
+    firstMatchTest(
+      #"(.)\10"#,
+      input: "a\u{8}b", match: "a\u{8}")
 
-    matchTest(#"(.)\g001"#, input: "112", match: "11", xfail: true)
-    matchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
-    matchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba", xfail: true)
-    matchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
+    firstMatchTest(
+      #"(.)\g001"#,
+      input: "112", match: "11")
+
+    firstMatchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
+    firstMatchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba", xfail: true)
+    firstMatchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
+  }
+  
+  func testMatchExamples() {
+    // Backreferences
+    matchTest(
+      #"(sens|respons)e and \1ibility"#,
+      ("sense and sensibility", true),
+      ("response and responsibility", true),
+      ("response and sensibility", false),
+      ("sense and responsibility", false))
+    matchTest(
+      #"a(?'name'b(c))d\1\2|abce"#,
+      ("abcdbcc", true),
+      ("abcdbc", false),
+      ("abce", true)
+    )
+
+    // Subpatterns
+    matchTest(
+      #"(sens|respons)e and (?1)ibility"#,
+      ("sense and sensibility", true),
+      ("response and responsibility", true),
+      ("response and sensibility", true),
+      ("sense and responsibility", true),
+      xfail: true)
+
+    // Palindromes
+    matchTest(
+      #"(\w)(?:(?R)|\w?)\1"#,
+      ("abccba", true),
+      ("abcba", true),
+      ("abba", true),
+      ("stackcats", true),
+      ("racecar", true),
+      ("a anna c", true), // OK: Partial match
+      ("abc", false),
+      ("cat", false),
+      xfail: true
+    )
+    matchTest(
+      #"^((\w)(?:(?1)|\w?)\2)$"#,
+      ("abccba", true),
+      ("abcba", true),
+      ("abba", true),
+      ("stackcats", true),
+      ("racecar", true),
+      ("a anna c", false), // FAIL: Not whole line
+      ("abc", false),
+      ("cat", false),
+      xfail: true
+    )
   }
 }
 

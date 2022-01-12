@@ -51,30 +51,14 @@ struct Processor<
 
   var isTracingEnabled: Bool
 
-  var start: Position { bounds.lowerBound }
-  var end: Position { bounds.upperBound }
+  var storedCaptures: Array<_StoredCapture>
 }
-
 
 extension Processor {
   typealias Position = Input.Index
 
-  // TODO: What all do we want to save? Configurable?
-  // TODO: Do we need to save any registers?
-  // TODO: Is this the right place to do function stack unwinding?
-  struct SavePoint {
-    var pc: InstructionAddress
-    var pos: Position?
-    var stackEnd: Int
-
-    var destructure: (
-      pc: InstructionAddress,
-      pos: Position?,
-      stackEnd: Int
-    ) {
-      (pc, pos, stackEnd)
-    }
-  }
+  var start: Position { bounds.lowerBound }
+  var end: Position { bounds.upperBound }
 }
 
 extension Processor {
@@ -94,6 +78,8 @@ extension Processor {
     self.currentPosition = bounds.lowerBound
 
     self.registers = Registers(program, bounds.upperBound)
+    self.storedCaptures = Array(
+       repeating: .init(), count: program.registerInfo.captures)
 
     _checkInvariants()
   }
@@ -171,15 +157,19 @@ extension Processor {
   }
 
   mutating func signalFailure() {
-    guard let (pc, pos, stackEnd) = savePoints.popLast()?.destructure
+    guard let (pc, pos, stackEnd, capEnds) =
+            savePoints.popLast()?.destructure
     else {
       state = .fail
       return
     }
-    assert(stackEnd <= callStack.count)
+    assert(stackEnd.rawValue <= callStack.count)
+    assert(capEnds.count == storedCaptures.count)
+
     controller.pc = pc
     currentPosition = pos ?? currentPosition
-    callStack.removeLast(callStack.count - stackEnd)
+    callStack.removeLast(callStack.count - stackEnd.rawValue)
+      storedCaptures = capEnds
   }
 
   mutating func tryAccept() {
@@ -227,8 +217,7 @@ extension Processor {
 
     case .moveImmediate:
       let (imm, reg) = payload.pairedImmediateInt
-      // TODO: Consider UInt64 regs, which may subsume Bool
-      let int = Int(bitPattern: UInt(truncatingIfNeeded: imm))
+      let int = Int(asserting: imm)
       assert(int == imm)
 
       registers[reg] = int
@@ -260,25 +249,21 @@ extension Processor {
       }
 
     case .save:
-      savePoints.append(SavePoint(
-        pc: payload.addr,
-        pos: currentPosition,
-        stackEnd: callStack.count))
+      let resumeAddr = payload.addr
+      let sp = makeSavePoint(resumeAddr)
+      savePoints.append(sp)
       controller.step()
 
     case .saveAddress:
-      savePoints.append(SavePoint(
-        pc: payload.addr,
-        pos: nil,
-        stackEnd: callStack.count))
+      let resumeAddr = payload.addr
+      let sp = makeSavePoint(resumeAddr, addressOnly: true)
+      savePoints.append(sp)
       controller.step()
 
     case .splitSaving:
-      let (nextPC, saveAddr) = payload.pairedAddrAddr
-      savePoints.append(SavePoint(
-        pc: saveAddr,
-        pos: currentPosition,
-        stackEnd: callStack.count))
+      let (nextPC, resumeAddr) = payload.pairedAddrAddr
+      let sp = makeSavePoint(resumeAddr)
+      savePoints.append(sp)
       controller.pc = nextPC
 
     case .clear:
@@ -382,6 +367,39 @@ extension Processor {
       }
       registers[cond] = result
       controller.step()
+
+    case .backreference:
+      let capNum = Int(
+        asserting: payload.capture.rawValue)
+      guard capNum < storedCaptures.count else {
+        fatalError("Should this be an assert?")
+      }
+      // TODO:
+      //   Should we assert it's not finished yet?
+      //   What's the behavior there?
+      let cap = storedCaptures[capNum]
+      guard let range = cap.latest else {
+        signalFailure()
+        return
+      }
+      matchSeq(input[range])
+
+    case .beginCapture:
+      let capNum = Int(
+        asserting: payload.capture.rawValue)
+
+       let sp = makeSavePoint(self.currentPC)
+       storedCaptures[capNum].startCapture(
+         currentPosition, initial: sp)
+       controller.step()
+
+     case .endCapture:
+      let capNum = Int(
+        asserting: payload.capture.rawValue)
+
+       storedCaptures[capNum].endCapture(currentPosition)
+       controller.step()
+
     }
   }
 }

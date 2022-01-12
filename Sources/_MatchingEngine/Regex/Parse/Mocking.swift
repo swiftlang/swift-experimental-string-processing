@@ -90,7 +90,7 @@ func lexRegex(
 
   func ascii(_ s: Unicode.Scalar) -> UInt8 {
     assert(s.value <= 0x7F)
-    return UInt8(truncatingIfNeeded: s.value)
+    return UInt8(asserting: s.value)
   }
   func load(offset: Int) -> UInt8? {
     guard current + offset < end else { return nil }
