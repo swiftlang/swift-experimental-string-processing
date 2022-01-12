@@ -9,13 +9,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-
 extension FixedWidthInteger {
   var hexStr: String {
     String(self, radix: 16, uppercase: true)
   }
 }
 
+// TODO: Replace all fatal error unreachables with these calls.
+// We will likely want to convert them to unhandleable throws
+// or something similar.
 func unreachable(_ s: @autoclosure () -> String) -> Never {
   fatalError("unreachable \(s())")
 }
@@ -23,68 +25,14 @@ func unreachable() -> Never {
   fatalError("unreachable")
 }
 
-// From Algorithms...
-extension Array /* for enumerated */ {
-  /// Returns a collection of subsequences of this collection, chunked by the
-  /// given predicate.
-  ///
-  /// - Complexity: O(*n*), where *n* is the length of this collection.
-  public func chunked(
-    by belongInSameGroup: (Element, Element) throws -> Bool
-  ) rethrows -> [SubSequence] {
-    guard !isEmpty else { return [] }
-    var result: [SubSequence] = []
-
-    var start = startIndex
-    var current = self[start]
-
-    for (index, element) in enumerated().dropFirst() {
-      if try !belongInSameGroup(current, element) {
-        result.append(self[start..<index])
-        start = index
-      }
-      current = element
-    }
-
-    if start != endIndex {
-      result.append(self[start...])
-    }
-
-    return result
-  }
-}
-
 extension Substring {
   var string: String { String(self) }
 }
-
 
 extension CustomStringConvertible {
   @_alwaysEmitIntoClient
   public var halfWidthCornerQuoted: String {
     "｢\(self)｣"
-  }
-}
-
-//extension String: Error {}
-
-extension Array {
-  @_alwaysEmitIntoClient
-  public init(singleElement e: Element) {
-    self.init(repeating: e, count: 1)
-  }
-}
-
-@_alwaysEmitIntoClient
-public func joined<T>(_ elements: [[T]]) -> [T] {
-  Array(elements.joined())
-}
-
-extension Array {
-  @_alwaysEmitIntoClient
-  public init(reservingCapacity cap: Int) {
-    self.init()
-    self.reserveCapacity(cap)
   }
 }
 
@@ -194,6 +142,7 @@ extension String {
 
 
 extension BinaryInteger {
+  @_alwaysEmitIntoClient
   public init<T: BinaryInteger>(asserting i: T) {
     self.init(truncatingIfNeeded: i)
     assert(self == i)
