@@ -233,14 +233,14 @@ func scalar_m(_ s: Unicode.Scalar) -> AST.CustomCharacterClass.Member {
   atom_m(.scalar(s))
 }
 
-func backreference(_ r: Reference) -> AST {
-  atom(.backreference(r))
+func backreference(_ r: AST.Atom.Reference.Kind) -> AST {
+  atom(.backreference(.init(r, innerLoc: .fake)))
 }
-func subpattern(_ r: Reference) -> AST {
-  atom(.subpattern(r))
+func subpattern(_ r: AST.Atom.Reference.Kind) -> AST {
+  atom(.subpattern(.init(r, innerLoc: .fake)))
 }
-func condition(_ r: Reference) -> AST {
-  atom(.condition(r))
+func condition(_ r: AST.Atom.Reference.Kind) -> AST {
+  atom(.condition(.init(r, innerLoc: .fake)))
 }
 
 func prop(
