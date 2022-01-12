@@ -408,6 +408,11 @@ extension AST.CustomCharacterClass {
           } else {
             return nil
           }
+
+        case .quote(let q):
+          // Decompose quoted literal into literal characters.
+          result += q.literal.map { .character($0) }
+
         case .setOperation(let lhs, let op, let rhs):
           // FIXME: CharacterClass wasn't designed for set operations with
           // multiple components in each operand, we should fix that. For now,

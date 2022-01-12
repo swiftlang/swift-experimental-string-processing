@@ -214,6 +214,9 @@ func charClass(
 func quote(_ s: String) -> AST {
   .quote(.init(s, .fake))
 }
+func quote_m(_ s: String) -> AST.CustomCharacterClass.Member {
+  .quote(.init(s, .fake))
+}
 
 // MARK: - Atoms
 

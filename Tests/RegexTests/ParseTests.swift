@@ -433,6 +433,16 @@ extension RegexTests {
               syntax: .experimental)
     parseTest(#""\"""#, quote("\""), syntax: .experimental)
 
+    // Quotes in character classes.
+    parseTest(#"[\Q-\E]"#, charClass(quote_m("-")))
+    parseTest(#"[\Qa-b[[*+\\E]"#, charClass(quote_m(#"a-b[[*+\"#)))
+
+    parseTest(#"["-"]"#, charClass(quote_m("-")), syntax: .experimental)
+    parseTest(#"["a-b[[*+\""]"#, charClass(quote_m(#"a-b[[*+""#)),
+              syntax: .experimental)
+
+    parseTest(#"["-"]"#, charClass(range_m("\"", "\"")))
+
     // MARK: Comments
 
     parseTest(
@@ -978,6 +988,9 @@ extension RegexTests {
     parseNotEqualTest(#"(?1)"#, #"(?2)"#)
     parseNotEqualTest(#"(?+1)"#, #"(?1)"#)
     parseNotEqualTest(#"(?&a)"#, #"(?&b)"#)
+
+    parseNotEqualTest(#"\Qabc\E"#, #"\Qdef\E"#)
+    parseNotEqualTest(#""abc""#, #""def""#)
 
     // TODO: failure tests
   }

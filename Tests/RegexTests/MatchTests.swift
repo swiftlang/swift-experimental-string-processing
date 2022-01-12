@@ -592,6 +592,21 @@ extension RegexTests {
       "--+", input: "123---xyz", match: "---")
     firstMatchTest(
       "~~*", input: "123~~~xyz", match: "~~~")
+
+
+    // Quotes in character classes.
+    firstMatchTest(#"[\Qabc\E]"#, input: "QEa", match: "a")
+    firstMatchTest(#"[\Qabc\E]"#, input: "cxx", match: "c")
+    firstMatchTest(#"[\Qabc\E]+"#, input: "cba", match: "cba")
+    firstMatchTest(#"[\Qa-c\E]+"#, input: "a-c", match: "a-c")
+
+    firstMatchTest(#"["a-c"]+"#, input: "abc", match: "a",
+                   syntax: .experimental)
+    firstMatchTest(#"["abc"]+"#, input: "cba", match: "cba",
+                   syntax: .experimental)
+    firstMatchTest(#"["abc"]+"#, input: #""abc""#, match: "abc",
+                   syntax: .experimental)
+    firstMatchTest(#"["abc"]+"#, input: #""abc""#, match: #""abc""#)
   }
 
   func testCharacterProperties() {
