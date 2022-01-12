@@ -107,11 +107,17 @@ extension AST.Atom {
     case .endOfLine:   return "$"
 
     case .backreference(let r), .subpattern(let r), .condition(let r):
-      return "\(r)"
+      return "\(r._dumpBase)"
 
     case .char, .scalar:
       fatalError("Unreachable")
     }
+  }
+}
+
+extension AST.Atom.Reference: _ASTPrintable {
+  public var _dumpBase: String {
+    "\(kind)"
   }
 }
 

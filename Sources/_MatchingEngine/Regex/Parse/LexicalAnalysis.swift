@@ -825,8 +825,8 @@ extension Source {
   ///     NumberRef -> ('+' | '-')? <Decimal Number>
   ///
   private mutating func lexNumberedReference(
-  ) throws -> Located<Reference>? {
-    try recordLoc { src in
+  ) throws -> AST.Atom.Reference? {
+    let kind = try recordLoc { src -> AST.Atom.Reference.Kind? in
       if src.tryEat("+") {
         return .relative(try src.expectNumber().value)
       }
@@ -838,13 +838,16 @@ extension Source {
       }
       return nil
     }
+    guard let kind = kind else { return nil }
+    return .init(kind.value, innerLoc: kind.location)
   }
 
   /// Eat a named reference up to a given closing delimiter.
   private mutating func expectNamedReference(
     endingWith end: String
-  ) throws -> Reference {
-    .named(try expectQuoted(endingWith: end).value)
+  ) throws -> AST.Atom.Reference {
+    let str = try expectQuoted(endingWith: end)
+    return .init(.named(str.value), innerLoc: str.location)
   }
 
   /// Try to lex a numbered reference, or otherwise a named reference.
@@ -853,10 +856,10 @@ extension Source {
   ///
   private mutating func expectNamedOrNumberedReference(
     endingWith ending: String
-  ) throws -> Reference {
+  ) throws -> AST.Atom.Reference {
     if let numbered = try lexNumberedReference() {
       try expect(sequence: ending)
-      return numbered.value
+      return numbered
     }
     return try expectNamedReference(endingWith: ending)
   }
@@ -904,7 +907,7 @@ extension Source {
 
         // PCRE allows \g followed by a bare numeric reference.
         if let ref = try src.lexNumberedReference() {
-          return .backreference(ref.value)
+          return .backreference(ref)
         }
 
         // Fallback to a literal character. We need to return here as we've
@@ -942,8 +945,10 @@ extension Source {
         let num = try Source.validateNumber(digits.string, Int.self, .decimal)
         if num < 10 || digits.first == "8" || digits.first == "9" ||
             num <= priorGroupCount {
+          let _start = src.currentPosition
           src.advance(digits.count)
-          return .backreference(.absolute(num))
+          return .backreference(
+            .init(.absolute(num), innerLoc: Location(_start ..< src.currentPosition)))
         }
       }
       return nil

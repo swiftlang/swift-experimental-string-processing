@@ -382,34 +382,39 @@ extension AST.Atom.CharacterProperty {
   }
 }
 
+extension AST.Atom {
+  public struct Reference: Hashable {
+    @frozen
+    public enum Kind: Hashable {
+      // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
+      // Oniguruma: \k<n>, \k'n'
+      case absolute(Int)
 
-// TODO: I haven't thought through this a bunch; this seems like
-// a sensible type to have and break down this way. But it could
-// easily get folded in with the kind of reference
-@frozen
-public enum Reference: Hashable {
-  // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
-  // Oniguruma: \k<n>, \k'n'
-  case absolute(Int)
+      // \g{-n} \g<+n> \g'+n' \g<-n> \g'-n' (?+n) (?-n)
+      // (?(+n)... (?(-n)...
+      // Oniguruma: \k<-n> \k<+n> \k'-n' \k'+n'
+      case relative(Int)
 
-  // \g{-n} \g<+n> \g'+n' \g<-n> \g'-n' (?+n) (?-n)
-  // (?(+n)... (?(-n)...
-  // Oniguruma: \k<-n> \k<+n> \k'-n' \k'+n'
-  case relative(Int)
+      // \k<name> \k'name' \g{name} \k{name} (?P=name)
+      // \g<name> \g'name' (?&name) (?P>name)
+      // (?(<name>)... (?('name')... (?(name)...
+      case named(String)
 
-  // \k<name> \k'name' \g{name} \k{name} (?P=name)
-  // \g<name> \g'name' (?&name) (?P>name)
-  // (?(<name>)... (?('name')... (?(name)...
-  case named(String)
+      // ?(R) (?(R)...
+      case recurseWholePattern
+    }
+    public var kind: Kind
 
-  // TODO: I'm not sure the below goes here
-  //
-  // ?(R) (?(R)...
-  case recurseWholePattern
+    /// The location of the inner numeric or textual reference, e.g the location
+    /// of '-2' in '\g{-2}'.
+    public var innerLoc: SourceLocation
+
+    public init(_ kind: Kind, innerLoc: SourceLocation) {
+      self.kind = kind
+      self.innerLoc = innerLoc
+    }
+  }
 }
-
-
-
 
 extension AST.Atom {
   /// Anchors and other built-in zero-width assertions
