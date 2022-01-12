@@ -181,21 +181,19 @@ extension AST.Atom {
   }
 }
 
-extension /*AST.Atom.*/Reference {
+extension AST.Atom.Reference {
   var _canonicalBase: String {
-    switch self {
+    if self.recursesWholePattern {
+      return "(?R)"
+    }
+    switch kind {
     case .absolute(let i):
-      // TODO: Honestly, I wouldn't mind saying that a clearer
-      // syntax like `\g{n}`, though that's also problematic
-      // because in Oniguruma every except `{` would mean
-      // re-evaluate group
+      // TODO: Which should we prefer, this or `\g{n}`?
       return "\\\(i)"
     case .relative:
       return "/* TODO: relative reference \(self) */"
     case .named:
       return "/* TODO: named reference \(self) */"
-    case .recurseWholePattern:
-      return "/* TODO: recursive reference \(self) */"
     }
   }
 }

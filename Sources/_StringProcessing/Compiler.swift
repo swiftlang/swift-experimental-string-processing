@@ -131,11 +131,17 @@ class Compiler {
     case .atom(let a):
       switch a.kind {
       case .backreference(let r):
-        switch r {
+        if r.recursesWholePattern {
+          // TODO: A recursive call isn't a backreference, but
+          // we could in theory match the whole match so far...
+          throw unsupported(node.renderAsCanonical())
+        }
+
+        switch r.kind {
         case .absolute(let i):
           // Backreferences number starting at 1
           builder.buildBackreference(.init(i-1))
-        case .relative, .named, .recurseWholePattern:
+        case .relative, .named:
           throw unsupported(node.renderAsCanonical())
         }
       default:
