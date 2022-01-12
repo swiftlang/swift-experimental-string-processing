@@ -30,6 +30,8 @@ enum ParseError: Error, Hashable {
 
   case expectedASCII(Character)
 
+  case expectedNonEmptyContents
+
   case expectedCustomCharacterClassMembers
   case invalidCharacterClassRangeOperand
 
@@ -61,6 +63,8 @@ extension ParseError: CustomStringConvertible {
       return "unexpected end of input"
     case let .misc(s):
       return s
+    case .expectedNonEmptyContents:
+      return "expected non-empty contents"
     case let .expectedASCII(c):
       return "expected ASCII for '\(c)'"
     case .expectedCustomCharacterClassMembers:

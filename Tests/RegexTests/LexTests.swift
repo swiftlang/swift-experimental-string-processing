@@ -150,6 +150,8 @@ extension RegexTests {
     diagnose(#""ab\""#, expecting: .expected("\""), .experimental) { _ = try $0.lexQuote() }
     diagnose(#""ab\"#, expecting: .unexpectedEndOfInput, .experimental) { _ = try $0.lexQuote() }
 
+    diagnose(#"\k''"#, expecting: .expectedNonEmptyContents) { _ = try $0.lexBasicAtom() }
+
     // TODO: want to dummy print out source ranges, etc, test that.
   }
 

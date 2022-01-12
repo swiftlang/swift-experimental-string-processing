@@ -799,7 +799,6 @@ extension RegexTests {
 
     parseTest(#"\k{a0}"#, backreference(.named("a0")))
     parseTest(#"\k<bc>"#, backreference(.named("bc")))
-    parseTest(#"\k''"#, backreference(.named("")))
     parseTest(#"\g{abc}"#, backreference(.named("abc")))
 
     parseTest(#"\g<1>"#, subpattern(.absolute(1)))

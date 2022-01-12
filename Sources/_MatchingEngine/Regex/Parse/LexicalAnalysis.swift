@@ -435,7 +435,7 @@ extension Source {
         return false
       }.value
       guard !result.isEmpty else {
-        throw ParseError.misc("Expected non-empty contents")
+        throw ParseError.expectedNonEmptyContents
       }
       return result
     }
@@ -840,20 +840,25 @@ extension Source {
     }
   }
 
+  /// Eat a named reference up to a given closing delimiter.
+  private mutating func expectNamedReference(
+    endingWith end: String
+  ) throws -> Reference {
+    .named(try expectQuoted(endingWith: end).value)
+  }
+
   /// Try to lex a numbered reference, or otherwise a named reference.
   ///
   ///     NameOrNumberRef -> NumberRef | <String>
   ///
   private mutating func expectNamedOrNumberedReference(
     endingWith ending: String
-  ) throws -> Located<Reference> {
-    try recordLoc { src in
-      if let numbered = try src.lexNumberedReference() {
-        try src.expect(sequence: ending)
-        return numbered.value
-      }
-      return .named(try src.lexUntil(eating: ending).value)
+  ) throws -> Reference {
+    if let numbered = try lexNumberedReference() {
+      try expect(sequence: ending)
+      return numbered.value
     }
+    return try expectNamedReference(endingWith: ending)
   }
 
   private static func getClosingDelimiter(
@@ -886,15 +891,14 @@ extension Source {
       if src.tryEat("g") {
         // PCRE-style backreferences.
         if src.tryEat("{") {
-          let ref = try src.expectNamedOrNumberedReference(
-            endingWith: "}").value
+          let ref = try src.expectNamedOrNumberedReference(endingWith: "}")
           return .backreference(ref)
         }
 
         // Oniguruma-style subpatterns.
         if let openChar = src.tryEat(anyOf: "<", "'") {
           let ref = try src.expectNamedOrNumberedReference(
-            endingWith: String(Source.getClosingDelimiter(for: openChar))).value
+            endingWith: String(Source.getClosingDelimiter(for: openChar)))
           return .subpattern(ref)
         }
 
@@ -911,9 +915,9 @@ extension Source {
       if src.tryEat("k") {
         // Perl/.NET-style backreferences.
         if let openChar = src.tryEat(anyOf: "<", "'", "{") {
-          let closingChar = Source.getClosingDelimiter(for: openChar)
-          return .backreference(.named(
-            try src.lexUntil(eating: closingChar).value))
+          let closing = String(Source.getClosingDelimiter(for: openChar))
+          return .backreference(
+            try src.expectNamedReference(endingWith: closing))
         }
         // Fallback to a literal character. We need to return here as we've
         // already eaten the 'k'.
