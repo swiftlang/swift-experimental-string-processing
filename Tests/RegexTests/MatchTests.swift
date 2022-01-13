@@ -1098,6 +1098,11 @@ extension RegexTests {
     )
   }
   
+  func testSingleLineMode() {
+    firstMatchTest(#".+"#, input: "a\nb", match: "a")
+    firstMatchTest(#"(?s:.+)"#, input: "a\nb", match: "a\nb")
+  }
+  
   // MARK: Character Semantics
   
   var eComposed: String { "é" }
@@ -1256,8 +1261,7 @@ extension RegexTests {
     // a single Unicode scalar value, leaving any other grapheme scalar
     // components to be matched.
     
-    firstMatchTest(#"(?u:.)"#, input: eDecomposed, match: "e",
-              xfail: true)
+    firstMatchTest(#"(?u:.)"#, input: eDecomposed, match: "e")
 
     matchTest(
       #".\u{301}"#,

@@ -338,8 +338,6 @@ extension AST.Atom {
     switch kind {
     case let .escaped(b): return b.characterClass
 
-    case .any: return .any
-
     case .property:
       // TODO: Would our model type for character classes include
       // this? Or does grapheme-semantic mode complicate that?

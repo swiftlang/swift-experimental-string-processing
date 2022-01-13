@@ -18,18 +18,17 @@ struct RegexProgram {
 
 class Compiler {
   let ast: AST
-  let matchLevel: CharacterClass.MatchLevel
-  let options: REOptions
+  private var optionStack: MatchingOptionSetStack
   private var builder = RegexProgram.Program.Builder()
 
+  private var currentOptions: AST.MatchingOptionSet { optionStack.top }
+  
   init(
     ast: AST,
-    matchLevel: CharacterClass.MatchLevel = .graphemeCluster,
-    options: REOptions = []
+    options: AST.MatchingOptionSet = [.init(.graphemeClusterSemantics)]
   ) {
     self.ast = ast
-    self.matchLevel = matchLevel
-    self.options = options
+    self.optionStack = MatchingOptionSetStack(options)
   }
 
   __consuming func emit() throws -> RegexProgram {
@@ -102,6 +101,17 @@ class Compiler {
         try emit(g.child)
         builder.buildEndCapture(cap)
 
+      case .changeMatchingOptions(let optionSequence, isIsolated: let isIsolated):
+        let updated = optionSequence.options(merging: currentOptions)
+        optionStack.push(updated)
+        
+        try emit(g.child)
+        if !isIsolated {
+          optionStack.pop()
+        }
+        
+        // TODO: `optionStack.pop()` whenever a group ends
+
       default:
         // FIXME: Other kinds...
         try emit(g.child)
@@ -113,8 +123,8 @@ class Compiler {
     // For now, we model sets and atoms as consumers.
     // This lets us rapidly expand support, and we can better
     // design the actual instruction set with real examples
-    case _ where try node.generateConsumer(matchLevel) != nil:
-      try builder.buildConsume(by: node.generateConsumer(matchLevel)!)
+    case _ where try node.generateConsumer(optionStack.top) != nil:
+      try builder.buildConsume(by: node.generateConsumer(optionStack.top)!)
 
     case .quote(let q):
       // We stick quoted content into read-only constant strings
@@ -465,6 +475,43 @@ class Compiler {
 
     default:
       fatalError("unreachable")
+    }
+  }
+}
+
+/// A stack of MatchingOptionSets that never pops its initial element.
+fileprivate struct MatchingOptionSetStack {
+  internal var stack: [AST.MatchingOptionSet]
+  
+  init(_ initial: AST.MatchingOptionSet) {
+    self.stack = [initial]
+  }
+  
+  var top: AST.MatchingOptionSet { stack.last.unsafelyUnwrapped }
+  
+  mutating func push(_ set: AST.MatchingOptionSet) {
+    stack.append(set)
+  }
+  
+  mutating func pop() {
+    if stack.count > 1 {
+      _ = stack.removeLast()
+    }
+  }
+}
+
+// Deprecated matchLevel-based initializer
+extension Compiler {
+  @available(*, deprecated)
+  convenience init(
+    ast: AST,
+    matchLevel: CharacterClass.MatchLevel,
+    options: REOptions = []
+  ) {
+    if matchLevel == .graphemeCluster {
+      self.init(ast: ast, options: .init(.graphemeClusterSemantics))
+    } else {
+      self.init(ast: ast, options: .init(.unicodeScalarSemantics))
     }
   }
 }

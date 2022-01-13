@@ -154,14 +154,14 @@ private func performTest<Capture>(
 
 extension RegexTests {
   func testLegacyCompile() {
-    func performTest(_ input: String, _ expecting: RECode) {
+    func performTest(_ input: String, _ expecting: RECode, line: UInt = #line) {
       let recode = try! compile(input)
       guard recode == expecting else {
         XCTFail("""
 
                   Expected: \(expecting)
                   Found:    \(recode)
-                  """)
+                  """, line: line)
         return
       }
     }
@@ -292,7 +292,7 @@ extension RegexTests {
       recode(
         label(0), split(disfavoring: 1),
         .beginGroup,
-        label(2), split(disfavoring: 3), .characterClass(.any), goto(label: 2),
+        label(2), split(disfavoring: 3), .any, goto(label: 2),
         label(3),
         .endGroup,
         goto(label: 0),
@@ -302,7 +302,7 @@ extension RegexTests {
       "a.*?b+?c??",
       recode("a",
              label(0), split(disfavoring: 1), goto(label: 2),
-             label(1), .characterClass(.any), goto(label: 0),
+             label(1), .any, goto(label: 0),
              label(2),
              label(3), "b", split(disfavoring: 3),
              split(disfavoring: 4), goto(label: 5),
