@@ -148,7 +148,7 @@ private func performTest<Capture>(
   guard !ast.hasCapture else {
     return
   }
-  let program = try! Compiler(ast: ast).emit()
+  let program = try! Compiler().compile(ast)
   run(Executor(program: program), name: "Matching Engine")
 }
 
@@ -426,12 +426,12 @@ extension RegexTests {
 
     for (regex, characterInputs, scalarInputs) in tests {
       let ast = try parse(regex, .traditional)
-      let program = try Compiler(ast: ast).emit()
+      let program = try Compiler().compile(ast)
       let executor = Executor(program: program)
 
       let scalarProgram = try Compiler(
-        ast: ast, matchLevel: .unicodeScalar
-      ).emit()
+        matchLevel: .unicodeScalar
+      ).compile(ast)
       let scalarExecutor = Executor(
         program: scalarProgram, enablesTracing: false)
 

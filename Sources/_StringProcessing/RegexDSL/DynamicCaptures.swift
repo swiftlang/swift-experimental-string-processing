@@ -13,7 +13,7 @@ import _MatchingEngine
 
 extension Regex where Match == Tuple2<Substring, DynamicCaptures> {
   public init(_ pattern: String) throws {
-    self.init(ast: try parse(pattern, .traditional))
+    self.init(literalAST: try parse(pattern, .traditional))
   }
 }
 

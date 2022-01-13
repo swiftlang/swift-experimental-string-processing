@@ -83,6 +83,8 @@ private func graphemeBreakPropertyData(
 private func graphemeBreakPropertyDataLiteral(
   forLine line: String
 ) -> GraphemeBreakEntry? {
+  // TODO: Hook up to MatchingEngine
+
   return graphemeBreakPropertyData(
     forLine: line,
     using: r(#"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,

@@ -13,13 +13,24 @@ import _MatchingEngine
 
 // MARK: - Primitives
 
+private func concat(
+  _ asts: RegexDSLAST...
+) -> RegexDSLAST {
+  .concatenation(asts)
+}
+private func atom(_ kind: AST.Atom.Kind) -> RegexDSLAST {
+  .literal(atom(kind))
+}
+
 extension String: RegexProtocol {
   public typealias Capture = EmptyCapture
   public typealias Match = Substring
 
   public var regex: Regex<Match> {
-    let atoms = self.map { atom(.char($0)) }
-    return .init(ast: concat(atoms))
+    let atoms = self.map {
+      RegexDSLAST.literal(atom(.char($0)))
+    }
+    return .init(ast: .concatenation(atoms))
   }
 }
 
@@ -37,10 +48,11 @@ extension CharacterClass: RegexProtocol {
   public typealias Match = Substring
 
   public var regex: Regex<Match> {
+    // TODO: predicate-based version
     guard let ast = self.makeAST() else {
       fatalError("FIXME: extended AST?")
     }
-    return Regex(ast: ast)
+    return Regex(literalAST: ast)
   }
 }
 
@@ -59,6 +71,14 @@ extension CharacterClass: RegexProtocol {
 
 // MARK: Repetition
 
+private func quant(
+  _ amount: AST.Quantification.Amount,
+  _ child: RegexDSLAST,
+  _ kind: AST.Quantification.Kind = .eager
+) -> RegexDSLAST {
+  .quantification(amount, kind, child)
+}
+
 /// A regular expression.
 public struct OneOrMore<Component: RegexProtocol>: RegexProtocol {
   public typealias Match = Tuple2<Substring, [Component.Match.Capture]>
@@ -66,9 +86,8 @@ public struct OneOrMore<Component: RegexProtocol>: RegexProtocol {
   public let regex: Regex<Match>
 
   public init(_ component: Component) {
-    self.regex = .init(ast:
-      oneOrMore(.eager, component.regex.ast)
-    )
+    self.regex = .init(
+      ast: quant(.oneOrMore, component.regex.ast))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
@@ -92,8 +111,8 @@ public struct Repeat<
   public let regex: Regex<Match>
 
   public init(_ component: Component) {
-    self.regex = .init(ast:
-      zeroOrMore(.eager, component.regex.ast))
+    self.regex = .init(
+      ast: quant(.zeroOrMore, component.regex.ast))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
@@ -116,7 +135,7 @@ public struct Optionally<Component: RegexProtocol>: RegexProtocol {
 
   public init(_ component: Component) {
     self.regex = .init(ast:
-      zeroOrOne(.eager, component.regex.ast))
+      quant(.zeroOrOne, component.regex.ast))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
@@ -141,9 +160,8 @@ public struct Alternation<
   public let regex: Regex<Match>
 
   public init(_ first: Component1, _ second: Component2) {
-    regex = .init(ast: alt(
-      first.regex.ast, second.regex.ast
-    ))
+    regex = .init(
+      ast: .alternation([first.regex.ast, second.regex.ast]))
   }
 
   public init(
@@ -167,20 +185,22 @@ public struct CapturingGroup<Match: MatchProtocol>: RegexProtocol {
   init<Component: RegexProtocol>(
     _ component: Component
   ) {
-    self.regex = .init(ast:
-      group(.capture, component.regex.ast)
-    )
+    self.regex = .init(
+      ast: .group(.capture, component.regex.ast))
   }
 
   init<NewCapture, Component: RegexProtocol>(
     _ component: Component,
     transform: @escaping (Substring) -> NewCapture
   ) {
-    self.regex = .init(ast:
-      .groupTransform(
-        .init(.init(faking: .capture), component.regex.ast, .fake),
-        transform: CaptureTransform {
-          transform($0) as Any
-        }))
+
+    fatalError("FIXME: Now's the time to move it off the AST")
+
+//    self.regex = .init(ast:
+//      .groupTransform(
+//        .init(.init(faking: .capture), component.regex.ast, .fake),
+//        transform: CaptureTransform {
+//          transform($0) as Any
+//        }))
   }
 }

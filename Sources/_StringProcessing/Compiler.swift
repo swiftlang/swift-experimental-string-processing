@@ -17,30 +17,34 @@ struct RegexProgram {
 }
 
 class Compiler {
-  let ast: AST
   let matchLevel: CharacterClass.MatchLevel
   let options: REOptions
   private var builder = RegexProgram.Program.Builder()
 
   init(
-    ast: AST,
     matchLevel: CharacterClass.MatchLevel = .graphemeCluster,
     options: REOptions = []
   ) {
-    self.ast = ast
     self.matchLevel = matchLevel
     self.options = options
   }
 
-  __consuming func emit() throws -> RegexProgram {
+  __consuming func compile(_ ast: AST) throws -> RegexProgram {
     try emit(ast)
     builder.buildAccept()
     let program = builder.assemble()
     return RegexProgram(program: program)
   }
 
-  func emit(_ node: AST) throws {
+  __consuming func compile(
+    _ ast: RegexDSLAST
+  ) throws -> RegexProgram {
+    fatalError()
+  }
+}
 
+extension Compiler {
+  fileprivate func emit(_ node: AST) throws {
     switch node {
     // Any: .
     //     consume 1
@@ -478,7 +482,7 @@ public func _compileRegex(
   _ regex: String, _ syntax: SyntaxOptions = .traditional
 ) throws -> Executor {
   let ast = try parse(regex, .traditional)
-  let program = try Compiler(ast: ast).emit()
+  let program = try Compiler().compile(ast)
   return Executor(program: program)
 }
 

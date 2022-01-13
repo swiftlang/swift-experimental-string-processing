@@ -13,6 +13,12 @@
 
 import _MatchingEngine
 
+
+private func concat(
+  _ asts: RegexDSLAST...
+) -> RegexDSLAST {
+  .concatenation(asts)
+}
 @frozen @dynamicMemberLookup
 public struct Tuple2<_0, _1> {
   public typealias Tuple = (_0, _1)

@@ -123,6 +123,12 @@ struct VariadicsGenerator: ParsableCommand {
       import _MatchingEngine
 
 
+      private func concat(
+        _ asts: RegexDSLAST...
+      ) -> RegexDSLAST {
+        .concatenation(asts)
+      }
+
       """)
 
     for arity in 2...maxArity+1 {

@@ -21,7 +21,7 @@ public struct RegexConsumer<Consumed: BidirectionalCollection>
   public init<Capture>(_ regex: Regex<Capture>) {
     do {
       self.vm = .init(
-        program: try Compiler(ast: regex.ast).emit())
+        program: try Compiler().compile(regex.ast))
     } catch {
       fatalError("error: \(error)")
     }

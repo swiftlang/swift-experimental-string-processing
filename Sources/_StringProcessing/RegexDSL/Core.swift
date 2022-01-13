@@ -33,34 +33,49 @@ public struct Regex<Match: MatchProtocol>: RegexProtocol {
   /// execution.
   internal class Program {
     /// The underlying AST.
-    let ast: AST
+    let ast: RegexDSLAST
     /// The legacy `RECode` for execution with a legacy VM.
     lazy private(set) var legacyLoweredProgram: RECode = {
       do {
-        return try compile(ast)
+        switch ast {
+        case .literal(let lit): return try compile(lit)
+        default:
+          fatalError("Legacy VM dont support DSL AST")
+        }
       } catch {
         fatalError("Regex engine internal error: \(String(describing: error))")
       }
     }()
     /// The program for execution with the matching engine.
-    lazy private(set) var loweredProgram = try! Compiler(ast: ast).emit()
+    lazy private(set) var loweredProgram =
+      try! Compiler().compile(ast)
 
-    init(ast: AST) {
+    init(ast: RegexDSLAST) {
       self.ast = ast
+    }
+    convenience init(literalAST ast: AST) {
+      self.init(ast: .literal(ast))
     }
   }
 
   let program: Program
-  var ast: AST { program.ast }
 
-  init(ast: AST) {
+  var ast: RegexDSLAST { program.ast }
+
+  init(ast: RegexDSLAST) {
     self.program = Program(ast: ast)
   }
+
+  init(literalAST ast: AST) {
+    self.program = Program(literalAST: ast)
+  }
+
+  var literalAST: AST? { ast.literalAST }
 
   // Compiler interface. Do not change independently.
   @usableFromInline
   init(_regexString pattern: String) {
-    self.init(ast: try! parse(pattern, .traditional))
+    self.init(literalAST: try! parse(pattern, .traditional))
   }
 
   // Compiler interface. Do not change independently.
@@ -69,7 +84,7 @@ public struct Regex<Match: MatchProtocol>: RegexProtocol {
     assert(version == currentRegexLiteralFormatVersion)
     // The version argument is passed by the compiler using the value defined
     // in libswiftParseRegexLiteral.
-    self.init(ast: try! parseWithDelimiters(pattern))
+    self.init(literalAST: try! parseWithDelimiters(pattern))
   }
 
   public init<Content: RegexProtocol>(
@@ -157,7 +172,7 @@ public struct MockRegexLiteral<Match: MatchProtocol>: RegexProtocol {
     _ syntax: SyntaxOptions = .traditional,
     matching: Match.Type = Match.self
   ) throws {
-    regex = Regex(ast: try parse(string, syntax))
+    regex = Regex(literalAST: try parse(string, syntax))
   }
 }
 
