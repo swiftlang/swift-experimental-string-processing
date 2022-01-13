@@ -831,6 +831,10 @@ extension RegexTests {
     parseTest(#"(?P>+1)"#, subpattern(.named("+1")))
     parseTest(#"(?P=+1)"#, backreference(.named("+1")))
 
+    parseTest(#"[(?R)]"#, charClass("(", "?", "R", ")"))
+    parseTest(#"[(?&a)]"#, charClass("(", "?", "&", "a", ")"))
+    parseTest(#"[(?1)]"#, charClass("(", "?", "1", ")"))
+
     parseTest(#"\g<1>"#, subpattern(.absolute(1)))
     parseTest(#"\g<001>"#, subpattern(.absolute(1)))
     parseTest(#"\g'52'"#, subpattern(.absolute(52)))
