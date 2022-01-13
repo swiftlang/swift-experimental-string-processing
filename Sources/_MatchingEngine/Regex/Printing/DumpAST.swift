@@ -71,7 +71,7 @@ extension AST.Concatenation {
 }
 
 extension AST.Quote {
-  public var _dumpBase: String { "quote" }
+  public var _dumpBase: String { "quote \"\(literal)\"" }
 }
 
 extension AST.Trivia {
@@ -203,6 +203,7 @@ extension AST.CustomCharacterClass.Member: _ASTPrintable {
     case .custom(let cc): return "\(cc)"
     case .atom(let a): return "\(a)"
     case .range(let r): return "\(r)"
+    case .quote(let q): return "\(q)"
     case .setOperation(let lhs, let op, let rhs):
       return "op \(lhs) \(op.value) \(rhs)"
     }

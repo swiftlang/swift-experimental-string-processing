@@ -151,6 +151,20 @@ extension AST.CustomCharacterClass.Member {
       }
       return gen
 
+    case .quote(let q):
+      // TODO: Not optimal.
+      let consumers = try q.literal.map {
+        try AST.Atom(.char($0), .fake).generateConsumer(opts)!
+      }
+      return { input, bounds in
+        for consumer in consumers {
+          if let idx = consumer(input, bounds) {
+            return idx
+          }
+        }
+        return nil
+      }
+
     case .setOperation(let lhs, let op, let rhs):
       // TODO: We should probably have a component type
       // instead of a members array... for now we reconstruct

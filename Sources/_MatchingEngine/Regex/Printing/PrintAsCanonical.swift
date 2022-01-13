@@ -67,8 +67,7 @@ extension PrettyPrinter {
       output(q.kind.value._canonicalBase)
 
     case let .quote(q):
-      // TODO: Is this really what we want?
-      output("\\Q\(q.literal)\\E")
+      output(q._canonicalBase)
 
     case let .trivia(t):
       // TODO: We might want to output comments...
@@ -110,9 +109,18 @@ extension PrettyPrinter {
       output(r.rhs._canonicalBase)
     case .atom(let a):
       output(a._canonicalBase)
+    case .quote(let q):
+      output(q._canonicalBase)
     case .setOperation:
       output("/* TODO: set operation \(self) */")
     }
+  }
+}
+
+extension AST.Quote {
+  var _canonicalBase: String {
+    // TODO: Is this really what we want?
+    "\\Q\(literal)\\E"
   }
 }
 

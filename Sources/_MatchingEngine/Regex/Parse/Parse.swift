@@ -146,7 +146,7 @@ extension Parser {
 
       //     Quote      -> `lexQuote`
       if let quote = try source.lexQuote() {
-        result.append(.quote(.init(quote.value, loc(_start))))
+        result.append(.quote(quote))
         continue
       }
       //     Quantification  -> QuantOperand Quantifier?
@@ -270,6 +270,12 @@ extension Parser {
       // Nested custom character class.
       if let cccStart = try source.lexCustomCCStart() {
         members.append(.custom(try parseCustomCharacterClass(cccStart)))
+        continue
+      }
+
+      // Quoted sequence.
+      if let quote = try source.lexQuote() {
+        members.append(.quote(quote))
         continue
       }
 

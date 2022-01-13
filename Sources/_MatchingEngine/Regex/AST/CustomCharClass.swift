@@ -38,6 +38,10 @@ extension AST {
       /// A single character or escape
       case atom(Atom)
 
+      /// A quoted sequence. Inside a custom character class this just means
+      /// the contents should be interpreted literally.
+      case quote(Quote)
+
       /// A binary operator applied to sets of members `abc&&def`
       case setOperation([Member], Located<SetOp>, [Member])
     }
@@ -76,6 +80,7 @@ extension CustomCC.Member {
     case .custom(let c): return c
     case .range(let r): return r
     case .atom(let a): return a
+    case .quote(let q): return q
     case .setOperation(let lhs, let op, let rhs): return (lhs, op, rhs)
     }
   }

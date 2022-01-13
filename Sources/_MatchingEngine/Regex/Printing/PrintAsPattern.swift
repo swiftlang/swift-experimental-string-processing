@@ -167,6 +167,8 @@ extension PrettyPrinter {
       } else {
         print(a._patternBase)
       }
+    case .quote(let q):
+      print("// TODO: quote \(q.literal._quoted) in custom character classes (should we split it?)")
     case .setOperation:
       print("// TODO: Set operation: \(member)")
     }

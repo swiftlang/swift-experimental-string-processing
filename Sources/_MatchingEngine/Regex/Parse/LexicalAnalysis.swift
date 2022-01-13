@@ -453,8 +453,8 @@ extension Source {
   ///
   /// TODO: Need to support some escapes
   ///
-  mutating func lexQuote() throws -> Located<String>? {
-    try recordLoc { src in
+  mutating func lexQuote() throws -> AST.Quote? {
+    let str = try recordLoc { src -> String? in
       if src.tryEat(sequence: #"\Q"#) {
         return try src.expectQuoted(endingWith: #"\E"#).value
       }
@@ -463,6 +463,8 @@ extension Source {
       }
       return nil
     }
+    guard let str = str else { return nil }
+    return AST.Quote(str.value, str.location)
   }
 
   /// Try to consume a comment
