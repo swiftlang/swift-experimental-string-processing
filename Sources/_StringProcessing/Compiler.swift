@@ -57,20 +57,24 @@ extension Compiler {
     case .consumerValidator:
       throw unsupported("\(node)")
 
-    case .alternation(_):
-      throw unsupported("\(node)")
+    case .alternation(let children):
+      try emitAlternation(
+        children, emitChild: { try emit($0) })
 
-    case .concatenation(_):
-      throw unsupported("\(node)")
+    case .concatenation(let children):
+      try children.forEach(emit)
 
-    case .quantification(_, _, _):
-      throw unsupported("\(node)")
+    case let .quantification(amount, kind, child):
+      try emitQuantification(
+        amount, kind, emitChild: { try emit(child) })
 
     case .customCharacterClass(_):
       throw unsupported("\(node)")
 
-    case .group(_, _):
-      throw unsupported("\(node)")
+    case let .group(kind, child):
+      // TODO: Detect lookaround assertions
+      try emitGroup(
+        kind, emitChild: { try emit(child) })
 
     case .groupTransform(_, _, _):
       throw unsupported("\(node)")
@@ -88,33 +92,9 @@ extension Compiler {
     case .atom(let a) where a.singleCharacter != nil :
       builder.buildMatch(a.singleCharacter!)
 
-    // Alternation: p0 | p1 | ... | pn
-    //     save next_p1
-    //     <code for p0>
-    //     branch done
-    //   next_p1:
-    //     save next_p2
-    //     <code for p1>
-    //     branch done
-    //   next_p2:
-    //     save next_p...
-    //     <code for p2>
-    //     branch done
-    //   ...
-    //   next_pn:
-    //     <code for pn>
-    //   done:
     case .alternation(let alt):
-      let done = builder.makeAddress()
-      for component in alt.children.dropLast() {
-        let next = builder.makeAddress()
-        builder.buildSave(next)
-        try emit(component)
-        builder.buildBranch(to: done)
-        builder.label(next)
-      }
-      try emit(alt.children.last!)
-      builder.label(done)
+      try emitAlternation(
+        alt.children, emitChild: { try emit($0) })
 
     case .concatenation(let concat):
       try concat.children.forEach(emit)
@@ -127,25 +107,14 @@ extension Compiler {
         try emitLookaround(lookaround, g.child)
         return
       }
-
-      switch g.kind.value {
-      case .lookahead, .negativeLookahead,
-          .lookbehind, .negativeLookbehind:
-        fatalError("unreachable")
-
-      case .capture, .namedCapture:
-        let cap = builder.makeCapture()
-        builder.buildBeginCapture(cap)
-        try emit(g.child)
-        builder.buildEndCapture(cap)
-
-      default:
-        // FIXME: Other kinds...
-        try emit(g.child)
-      }
+      try emitGroup(
+        g.kind.value, emitChild: { try emit(g.child) })
 
     case .quantification(let quant):
-      try emitQuantification(quant)
+      try emitQuantification(
+        quant.amount.value,
+        quant.kind.value,
+        emitChild: { try emit(quant.child) })
 
     // For now, we model sets and atoms as consumers.
     // This lets us rapidly expand support, and we can better
@@ -303,12 +272,13 @@ extension Compiler {
     builder.label(success)
   }
 
-
+  // TODO: Some way to make `child` generic while sharing same
+  // algorithm
   func compileQuantification(
     low: Int,
     high: Int?,
     kind: AST.Quantification.Kind,
-    child: AST
+    emitChild: () throws -> ()
   ) throws {
     // Compiler and/or parser should enforce these invariants
     // before we are called
@@ -441,7 +411,7 @@ extension Compiler {
     //   <subexpression>
     //   branch min-trip-count
     builder.label(loopBody)
-    try emit(child)
+    try emitChild()
     if minTrips <= 1 {
       // fallthrough
     } else {
@@ -482,11 +452,65 @@ extension Compiler {
     builder.label(exit)
   }
 
-  func emitQuantification(_ quant: AST.Quantification) throws {
-    let child = quant.child
-    let kind = quant.kind.value
+  // Alternation: p0 | p1 | ... | pn
+  //     save next_p1
+  //     <code for p0>
+  //     branch done
+  //   next_p1:
+  //     save next_p2
+  //     <code for p1>
+  //     branch done
+  //   next_p2:
+  //     save next_p...
+  //     <code for p2>
+  //     branch done
+  //   ...
+  //   next_pn:
+  //     <code for pn>
+  //   done:
+  func emitAlternation<T>(
+    _ children: [T],
+    emitChild: (T) throws -> ()
+  ) rethrows {
+    let done = builder.makeAddress()
+    for component in children.dropLast() {
+      let next = builder.makeAddress()
+      builder.buildSave(next)
+      try emitChild(component)
+      builder.buildBranch(to: done)
+      builder.label(next)
+    }
+    try emitChild(children.last!)
+    builder.label(done)
+  }
 
-    switch quant.amount.value.bounds {
+  func emitGroup(
+    _ kind: AST.Group.Kind,
+    emitChild: () throws -> ()
+  ) rethrows {
+    switch kind {
+    case .lookahead, .negativeLookahead,
+        .lookbehind, .negativeLookbehind:
+      fatalError("unreachable")
+
+    case .capture, .namedCapture:
+      let cap = builder.makeCapture()
+      builder.buildBeginCapture(cap)
+      try emitChild()
+      builder.buildEndCapture(cap)
+
+    default:
+      // FIXME: Other kinds...
+      try emitChild()
+    }
+  }
+
+  func emitQuantification(
+    _ amount: AST.Quantification.Amount,
+    _ kind: AST.Quantification.Kind,
+    emitChild: () throws -> ()
+  ) throws {
+    switch amount.bounds {
     case (_, atMost: 0):
       // TODO: Parser should warn
       return
@@ -497,7 +521,7 @@ extension Compiler {
 
     case let (atLeast: n, atMost: m) where m == nil || n <= m!:
       try compileQuantification(
-        low: n, high: m, kind: kind, child: child)
+        low: n, high: m, kind: kind, emitChild: emitChild)
       return
 
     default:
