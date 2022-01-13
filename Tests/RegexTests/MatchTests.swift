@@ -1108,22 +1108,22 @@ extension RegexTests {
     // can match either that specific scalar value or participate in matching
     // as a character.
     
-    matchTest(#"\u{65}\u{301}$"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(#"\u{65}\u{301}$"#, input: eDecomposed, match: eDecomposed)
     // FIXME: Decomposed character in regex literal doesn't match an equivalent character
-    matchTest(#"\u{65}\u{301}$"#, input: eComposed, match: eComposed,
+    firstMatchTest(#"\u{65}\u{301}$"#, input: eComposed, match: eComposed,
       xfail: true)
 
-    matchTest(#"\u{65}"#, input: eDecomposed, match: "e")
-    matchTest(#"\u{65}$"#, input: eDecomposed, match: nil)
+    firstMatchTest(#"\u{65}"#, input: eDecomposed, match: "e")
+    firstMatchTest(#"\u{65}$"#, input: eDecomposed, match: nil)
     // FIXME: \y is unsupported
-    matchTest(#"\u{65}\y"#, input: eDecomposed, match: nil,
+    firstMatchTest(#"\u{65}\y"#, input: eDecomposed, match: nil,
       xfail: true)
 
     // FIXME: Unicode scalars are only matched at the start of a grapheme cluster
-    matchTest(#"\u{301}"#, input: eDecomposed, match: "\u{301}",
+    firstMatchTest(#"\u{301}"#, input: eDecomposed, match: "\u{301}",
       xfail: true)
     // FIXME: \y is unsupported
-    matchTest(#"\y\u{301}"#, input: eDecomposed, match: nil,
+    firstMatchTest(#"\y\u{301}"#, input: eDecomposed, match: nil,
       xfail: true)
   }
 
@@ -1132,22 +1132,22 @@ extension RegexTests {
     // characters, so a user can write characters using any equivalent spelling
     // in either a regex literal or the string targeted for matching.
     
-    matchTests(
+    matchTest(
       #"é$"#,
-      (eComposed, eComposed),
-      (eDecomposed, eDecomposed))
+      (eComposed, true),
+      (eDecomposed, true))
 
     // FIXME: Decomposed character in regex literal doesn't match an equivalent character
-    matchTests(
+    matchTest(
       #"e\u{301}$"#,
-      (eComposed, eComposed),
-      (eDecomposed, eDecomposed),
+      (eComposed, true),
+      (eDecomposed, true),
       xfail: true)
 
-    matchTests(
+    matchTest(
       #"e$"#,
-      (eComposed, nil),
-      (eDecomposed, nil))
+      (eComposed, false),
+      (eDecomposed, false))
   }
 
   func testCanonicalEquivalenceCharacterClass() throws {
@@ -1157,41 +1157,41 @@ extension RegexTests {
     // the character are members of the property class.
     
     // \w
-    matchTests(
+    matchTest(
       #"^\w$"#,
-      (eComposed, eComposed),
-      (eDecomposed, eDecomposed))
+      (eComposed, true),
+      (eDecomposed, true))
     // \p{Letter}
-    matchTest(#"\p{Letter}$"#, input: eComposed, match: eComposed)
+    firstMatchTest(#"\p{Letter}$"#, input: eComposed, match: eComposed)
     // FIXME: \p{Letter} doesn't match a decomposed character
-    matchTest(#"\p{Letter}$"#, input: eDecomposed, match: eDecomposed,
+    firstMatchTest(#"\p{Letter}$"#, input: eDecomposed, match: eDecomposed,
               xfail: true)
     
     // \d
-    matchTest(#"\d"#, input: "5", match: "5")
+    firstMatchTest(#"\d"#, input: "5", match: "5")
     // FIXME: \d shouldn't match a digit composed with a non-digit character
-    matchTest(#"\d"#, input: "5\u{305}", match: nil,
+    firstMatchTest(#"\d"#, input: "5\u{305}", match: nil,
               xfail: true)
     // \p{Number}
-    matchTest(#"\p{Number}"#, input: "5", match: "5")
+    firstMatchTest(#"\p{Number}"#, input: "5", match: "5")
     // FIXME: \p{Number} shouldn't match a number composed with a non-number character
-    matchTest(#"\p{Number}"#, input: "5\u{305}", match: nil,
+    firstMatchTest(#"\p{Number}"#, input: "5\u{305}", match: nil,
               xfail: true)
     
     // Should this match the '5' but not the ZWJ, or should it treat '5'+ZWJ
     // as one entity and fail to match altogether?
-    matchTest(#"^\d"#, input: "5\u{200d}0", match: "5",
+    firstMatchTest(#"^\d"#, input: "5\u{200d}0", match: "5",
               xfail: true)
     
     // \s
-    matchTest(#"\s"#, input: " ", match: " ")
+    firstMatchTest(#"\s"#, input: " ", match: " ")
     // FIXME: \s shouldn't match a number composed with a non-number character
-    matchTest(#"\s\u{305}"#, input: " ", match: nil,
+    firstMatchTest(#"\s\u{305}"#, input: " ", match: nil,
               xfail: true)
     // \p{Whitespace}
-    matchTest(#"\s"#, input: " ", match: " ")
+    firstMatchTest(#"\s"#, input: " ", match: " ")
     // FIXME: \p{Whitespace} shouldn't match whitespace composed with a non-whitespace character
-    matchTest(#"\s\u{305}"#, input: " ", match: nil,
+    firstMatchTest(#"\s\u{305}"#, input: " ", match: nil,
               xfail: true)
   }
   
@@ -1201,53 +1201,53 @@ extension RegexTests {
     // match the scalar values that comprise a grapheme cluster in separate,
     // or repeated, custom character classes.
     
-    matchTests(
+    matchTest(
       #"[áéíóú]$"#,
-      (eComposed, eComposed),
-      (eDecomposed, eDecomposed))
+      (eComposed, true),
+      (eDecomposed, true))
 
     // FIXME: Custom char classes don't use canonical equivalence with composed characters
-    matchTest(#"e[\u{301}]$"#, input: eComposed, match: eComposed,
+    firstMatchTest(#"e[\u{301}]$"#, input: eComposed, match: eComposed,
               xfail: true)
-    matchTest(#"e[\u{300}-\u{320}]$"#, input: eComposed, match: eComposed,
+    firstMatchTest(#"e[\u{300}-\u{320}]$"#, input: eComposed, match: eComposed,
               xfail: true)
-    matchTest(#"[a-z][\u{300}-\u{320}]$"#, input: eComposed, match: eComposed,
+    firstMatchTest(#"[a-z][\u{300}-\u{320}]$"#, input: eComposed, match: eComposed,
               xfail: true)
 
     // FIXME: Custom char classes don't match decomposed characters
-    matchTest(#"e[\u{301}]$"#, input: eDecomposed, match: eDecomposed,
+    firstMatchTest(#"e[\u{301}]$"#, input: eDecomposed, match: eDecomposed,
               xfail: true)
-    matchTest(#"e[\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed,
+    firstMatchTest(#"e[\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed,
               xfail: true)
-    matchTest(#"[a-z][\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed,
+    firstMatchTest(#"[a-z][\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed,
               xfail: true)
 
     let flag = "🇰🇷"
-    matchTest(#"🇰🇷"#, input: flag, match: flag)
-    matchTest(#"[🇰🇷]"#, input: flag, match: flag)
-    matchTest(#"\u{1F1F0}\u{1F1F7}"#, input: flag, match: flag)
+    firstMatchTest(#"🇰🇷"#, input: flag, match: flag)
+    firstMatchTest(#"[🇰🇷]"#, input: flag, match: flag)
+    firstMatchTest(#"\u{1F1F0}\u{1F1F7}"#, input: flag, match: flag)
     
     // First Unicode scalar followed by CCC of regional indicators
-    matchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag)
+    firstMatchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag)
 
     // FIXME: CCC of Regional Indicator doesn't match with both parts of a flag character
     // A CCC of regional indicators x 2
-    matchTest(#"[\u{1F1E6}-\u{1F1FF}]{2}"#, input: flag, match: flag,
+    firstMatchTest(#"[\u{1F1E6}-\u{1F1FF}]{2}"#, input: flag, match: flag,
               xfail: true)
 
     // FIXME: A single CCC of regional indicators matches the whole flag character
     // A CCC of regional indicators followed by the second Unicode scalar
-    matchTest(#"[\u{1F1E6}-\u{1F1FF}]\u{1F1F7}"#, input: flag, match: flag,
+    firstMatchTest(#"[\u{1F1E6}-\u{1F1FF}]\u{1F1F7}"#, input: flag, match: flag,
               xfail: true)
     // A single CCC of regional indicators
-    matchTest(#"[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: nil,
+    firstMatchTest(#"[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: nil,
               xfail: true)
     
     // A single CCC of actual flag emojis / combined regional indicators
-    matchTest(#"[🇦🇫-🇿🇼]"#, input: flag, match: flag)
+    firstMatchTest(#"[🇦🇫-🇿🇼]"#, input: flag, match: flag)
     // This succeeds (correctly) because \u{1F1F0} is lexicographically
     // within the CCC range
-    matchTest(#"[🇦🇫-🇿🇼]"#, input: "\u{1F1F0}abc", match: "\u{1F1F0}")
+    firstMatchTest(#"[🇦🇫-🇿🇼]"#, input: "\u{1F1F0}abc", match: "\u{1F1F0}")
   }
   
   func testAnyChar() throws {
@@ -1256,33 +1256,33 @@ extension RegexTests {
     // a single Unicode scalar value, leaving any other grapheme scalar
     // components to be matched.
     
-    matchTest(#"(?u:.)"#, input: eDecomposed, match: "e",
+    firstMatchTest(#"(?u:.)"#, input: eDecomposed, match: "e",
               xfail: true)
 
-    matchTests(
+    matchTest(
       #".\u{301}"#,
-      (eComposed, nil),
-      (eDecomposed, nil))
-    matchTests(
+      (eComposed, false),
+      (eDecomposed, false))
+    matchTest(
       #"\X\u{301}"#,
-      (eComposed, nil),
-      (eDecomposed, nil))
+      (eComposed, false),
+      (eDecomposed, false))
     
     // FIXME: \O is unsupported
-    matchTest(#"\O\u{301}"#, input: eDecomposed, match: eDecomposed,
+    firstMatchTest(#"\O\u{301}"#, input: eDecomposed, match: eDecomposed,
               xfail: true)
-    matchTest(#"e\O"#, input: eDecomposed, match: eDecomposed,
+    firstMatchTest(#"e\O"#, input: eDecomposed, match: eDecomposed,
               xfail: true)
-    matchTest(#"\O\u{301}"#, input: eComposed, match: nil,
+    firstMatchTest(#"\O\u{301}"#, input: eComposed, match: nil,
               xfail: true)
-    matchTest(#"e\O"#, input: eComposed, match: nil,
+    firstMatchTest(#"e\O"#, input: eComposed, match: nil,
               xfail: true)
 
     // FIXME: Unicode scalar semantic flag (?U) doesn't change behavior of `.`
-    matchTests(
+    matchTest(
       #"(?U).\u{301}"#,
-      (eComposed, eComposed),
-      (eDecomposed, eDecomposed),
+      (eComposed, true),
+      (eDecomposed, true),
       xfail: true)
   }
   
