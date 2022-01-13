@@ -12,7 +12,7 @@
 extension AST {
   /// An option written in source that changes matching semantics.
   public struct MatchingOption: Hashable {
-    public enum Kind {
+    public enum Kind: Int {
       // PCRE options
       case caseInsensitive          // i
       case allowDuplicateGroupNames // J
@@ -36,6 +36,11 @@ extension AST {
       // be unset, only flipped between)
       case textSegmentGraphemeMode  // y{g}
       case textSegmentWordMode      // y{w}
+      
+      // Swift semantic matching level
+      case graphemeClusterSemantics // X
+      case unicodeScalarSemantics   // u
+      case byteSemantics            // b
     }
     public var kind: Kind
     public var location: SourceLocation
@@ -48,6 +53,15 @@ extension AST {
     public var isTextSegmentMode: Bool {
       switch kind {
       case .textSegmentGraphemeMode, .textSegmentWordMode:
+        return true
+      default:
+        return false
+      }
+    }
+    
+    public var isSemanticMatchingLevel: Bool {
+      switch kind {
+      case .graphemeClusterSemantics, .unicodeScalarSemantics, .byteSemantics:
         return true
       default:
         return false
@@ -78,6 +92,74 @@ extension AST {
       self.adding = adding
       self.minusLoc = minusLoc
       self.removing = removing
+    }
+    
+    public func options(merging optionSet: MatchingOptionSet = []) -> MatchingOptionSet {
+      var result = optionSet
+      for opt in adding {
+        if opt.isSemanticMatchingLevel {
+          result.remove(.semanticMatchingLevels)
+        }
+        if opt.isTextSegmentMode {
+          result.remove(.textSegmentOptions)
+        }
+        
+        result.insert(.init(opt.kind))
+      }
+      for opt in removing {
+        result.remove(.init(opt.kind))
+      }
+      return result
+    }
+  }
+  
+  /// A set of matching options.
+  public struct MatchingOptionSet: OptionSet {
+    public var rawValue: UInt32
+    
+    public init(rawValue: UInt32) {
+      self.rawValue = rawValue
+    }
+    
+    public init(_ kind: AST.MatchingOption.Kind) {
+      self.rawValue = 1 << kind.rawValue
+    }
+        
+    // PCRE options
+    public static var caseInsensitive: Self { .init(.caseInsensitive) }
+    public static var allowDuplicateGroupNames: Self { .init(.allowDuplicateGroupNames) }
+    public static var multiline: Self { .init(.multiline) }
+    public static var noAutoCapture: Self { .init(.noAutoCapture) }
+    public static var singleLine: Self { .init(.singleLine) }
+    public static var reluctantByDefault: Self { .init(.reluctantByDefault) }
+    public static var extended: Self { .init(.extended) }
+    public static var extraExtended: Self { .init(.extraExtended) }
+
+    // ICU options
+    public static var unicodeWordBoundaries: Self { .init(.unicodeWordBoundaries) }
+
+    // Oniguruma options
+    public static var asciiOnlyDigit: Self { .init(.asciiOnlyDigit) }
+    public static var asciiOnlyPOSIXProps: Self { .init(.asciiOnlyPOSIXProps) }
+    public static var asciiOnlySpace: Self { .init(.asciiOnlySpace) }
+    public static var asciiOnlyWord: Self { .init(.asciiOnlyWord) }
+
+    // Oniguruma text segment options (these are mutually exclusive and cannot
+    // be unset, only flipped between)
+    public static var textSegmentGraphemeMode: Self { .init(.textSegmentGraphemeMode) }
+    public static var textSegmentWordMode: Self { .init(.textSegmentWordMode) }
+
+    public static var textSegmentOptions: Self {
+      [.textSegmentGraphemeMode, .textSegmentWordMode]
+    }
+    
+    // Swift semantic matching level
+    public static var graphemeClusterSemantics: Self { .init(.graphemeClusterSemantics) }
+    public static var unicodeScalarSemantics: Self { .init(.unicodeScalarSemantics) }
+    public static var byteSemantics: Self { .init(.byteSemantics) }
+    
+    public static var semanticMatchingLevels: Self {
+      [.graphemeClusterSemantics, .unicodeScalarSemantics, .byteSemantics]
     }
   }
 }

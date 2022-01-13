@@ -550,6 +550,11 @@ extension Source {
         try src.expect("}")
         return opt
 
+      // Swift semantic level options
+      case "X": return advanceAndReturn(.graphemeClusterSemantics)
+      case "u": return advanceAndReturn(.unicodeScalarSemantics)
+      case "b": return advanceAndReturn(.byteSemantics)
+        
       default:
         return nil
       }
