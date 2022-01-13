@@ -1136,7 +1136,7 @@ extension Source {
       }
 
       // References that look like groups, e.g (?R), (?1), ...
-      if let ref = try src.lexGroupLikeReference() {
+      if !customCC, let ref = try src.lexGroupLikeReference() {
         return ref.value
       }
 
