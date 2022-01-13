@@ -990,6 +990,9 @@ extension RegexTests {
     // a single Unicode scalar value, leaving any other grapheme scalar
     // components to be matched.
     
+    matchTest(#"(?u:.)"#, input: eDecomposed, match: "e",
+              xfail: true)
+
     matchTests(
       #".\u{301}"#,
       (eComposed, nil),
