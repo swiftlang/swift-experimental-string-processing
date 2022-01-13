@@ -17,7 +17,7 @@ import XCTest
 extension AST: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
-    self = _StringProcessing.atom(.char(value))
+    self = .atom(.init(.char(value), .fake))
   }
 }
 extension AST.Atom: ExpressibleByExtendedGraphemeClusterLiteral {

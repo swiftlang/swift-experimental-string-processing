@@ -256,58 +256,6 @@ extension CharacterClass: CustomStringConvertible {
   }
 }
 
-extension CharacterClass {
-  public func makeAST() -> AST? {
-    let inv = isInverted
-
-    func esc(_ b: AST.Atom.EscapedBuiltin) -> AST {
-      escaped(b)
-    }
-
-    switch cc {
-    case .any: return atom(.any)
-
-    case .digit:
-      return esc(inv ? .notDecimalDigit : .decimalDigit)
-
-    case .horizontalWhitespace:
-      return esc(
-        inv ? .notHorizontalWhitespace : .horizontalWhitespace)
-
-    // FIXME: newline sequence is not same as \n
-    case .newlineSequence:
-      return esc(inv ? .notNewline : .newline)
-
-    case .whitespace:
-      return esc(inv ? .notWhitespace : .whitespace)
-
-    case .verticalWhitespace:
-      return esc(inv ? .notVerticalTab : .verticalTab)
-
-    case .word:
-      return esc(inv ? .notWordCharacter : .wordCharacter)
-
-    case .anyGrapheme:
-      return esc(.graphemeCluster)
-
-    case .hexDigit:
-      let members: [AST.CustomCharacterClass.Member] = [
-        range_m(.char("a"), .char("f")),
-        range_m(.char("A"), .char("F")),
-        range_m(.char("0"), .char("9")),
-      ]
-      let ccc = AST.CustomCharacterClass(
-        .init(faking: inv ? .inverted : .normal),
-        members,
-        .fake)
-
-      return .customCharacterClass(ccc)
-
-    default: return nil
-    }
-  }
-}
-
 extension AST {
   /// If this has a character class representation, whether built-in or custom, return it.
   ///

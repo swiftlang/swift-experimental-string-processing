@@ -19,7 +19,7 @@ private func concat(
   .concatenation(asts)
 }
 private func atom(_ kind: AST.Atom.Kind) -> RegexDSLAST {
-  .literal(atom(kind))
+  .literal(.atom(.init(kind, .fake)))
 }
 
 extension String: RegexProtocol {
@@ -27,9 +27,7 @@ extension String: RegexProtocol {
   public typealias Match = Substring
 
   public var regex: Regex<Match> {
-    let atoms = self.map {
-      RegexDSLAST.literal(atom(.char($0)))
-    }
+    let atoms = self.map { atom(.char($0)) }
     return .init(ast: .concatenation(atoms))
   }
 }
@@ -48,11 +46,11 @@ extension CharacterClass: RegexProtocol {
   public typealias Match = Substring
 
   public var regex: Regex<Match> {
-    // TODO: predicate-based version
-    guard let ast = self.makeAST() else {
-      fatalError("FIXME: extended AST?")
-    }
-    return Regex(literalAST: ast)
+    // TODO: Do we want this to be a character predicate?
+    return Regex(ast: .consumer({ str, bounds in
+      // TODO: Bounds check?
+      self.matches(in: str, at: bounds.lowerBound)
+    }))
   }
 }
 
