@@ -1103,6 +1103,27 @@ extension RegexTests {
     firstMatchTest(#"(?s:.+)"#, input: "a\nb", match: "a\nb")
   }
   
+  func testMatchingOptionsScope() {
+    // `.` only matches newlines when the 's' option (single-line mode)
+    // is turned on. Standalone option-setting groups (e.g. `(?s)`) are
+    // scoped only to the current group.
+    
+    firstMatchTest(#"(?s)a.b"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"((?s)a.)b"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"(?-s)((?s)a.)b"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"(?-s)(?s:a.)b"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"((?s)a).b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"((?s))a.b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"(?:(?s))a.b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"((?s)a(?s)).b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"(?s)a(?-s).b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"(?s)a(?-s:.b)"#, input: "a\nb", match: nil)
+    firstMatchTest(#"(?:(?s)a).b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"(((?s)a)).b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"(?s)(((?-s)a)).b"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"(?s)((?-s)((?i)a)).b"#, input: "a\nb", match: "a\nb")
+  }
+  
   // MARK: Character Semantics
   
   var eComposed: String { "é" }

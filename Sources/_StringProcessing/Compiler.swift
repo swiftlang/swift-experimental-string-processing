@@ -21,7 +21,12 @@ class Compiler {
   private var optionStack: MatchingOptionSetStack
   private var builder = RegexProgram.Program.Builder()
 
-  private var currentOptions: AST.MatchingOptionSet { optionStack.top }
+  private var currentOptions: AST.MatchingOptionSet {
+    guard let top = optionStack.top else {
+      fatalError("Unbalanced matching options removal")
+    }
+    return top
+  }
   
   init(
     ast: AST,
@@ -85,6 +90,9 @@ class Compiler {
       break
 
     case .group(let g):
+      optionStack.push(currentOptions)
+      defer { optionStack.pop() }
+      
       if let lookaround = g.lookaroundKind {
         try emitLookaround(lookaround, g.child)
         return
@@ -103,14 +111,15 @@ class Compiler {
 
       case .changeMatchingOptions(let optionSequence, isIsolated: let isIsolated):
         let updated = optionSequence.options(merging: currentOptions)
-        optionStack.push(updated)
         
-        try emit(g.child)
-        if !isIsolated {
+        if isIsolated {
+          optionStack.replaceTop(updated)
+          try emit(g.child)
+        } else {
+          optionStack.push(updated)
+          try emit(g.child)
           optionStack.pop()
         }
-        
-        // TODO: `optionStack.pop()` whenever a group ends
 
       default:
         // FIXME: Other kinds...
@@ -123,8 +132,8 @@ class Compiler {
     // For now, we model sets and atoms as consumers.
     // This lets us rapidly expand support, and we can better
     // design the actual instruction set with real examples
-    case _ where try node.generateConsumer(optionStack.top) != nil:
-      try builder.buildConsume(by: node.generateConsumer(optionStack.top)!)
+    case _ where try node.generateConsumer(currentOptions) != nil:
+      try builder.buildConsume(by: node.generateConsumer(currentOptions)!)
 
     case .quote(let q):
       // We stick quoted content into read-only constant strings
@@ -479,7 +488,7 @@ class Compiler {
   }
 }
 
-/// A stack of MatchingOptionSets that never pops its initial element.
+/// A stack of `MatchingOptionSet`s.
 fileprivate struct MatchingOptionSetStack {
   internal var stack: [AST.MatchingOptionSet]
   
@@ -487,16 +496,20 @@ fileprivate struct MatchingOptionSetStack {
     self.stack = [initial]
   }
   
-  var top: AST.MatchingOptionSet { stack.last.unsafelyUnwrapped }
+  var top: AST.MatchingOptionSet? { stack.last }
   
   mutating func push(_ set: AST.MatchingOptionSet) {
     stack.append(set)
   }
   
-  mutating func pop() {
-    if stack.count > 1 {
-      _ = stack.removeLast()
-    }
+  mutating func replaceTop(_ set: AST.MatchingOptionSet) {
+    stack.removeLast()
+    stack.append(set)
+  }
+  
+  @discardableResult
+  mutating func pop() -> AST.MatchingOptionSet {
+    stack.removeLast()
   }
 }
 
