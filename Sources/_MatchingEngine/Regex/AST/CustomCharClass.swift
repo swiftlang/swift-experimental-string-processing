@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 
 extension AST {
   public struct CustomCharacterClass: Hashable {
@@ -16,6 +27,7 @@ extension AST {
       self.location = sr
     }
 
+    @frozen
     public enum Member: Hashable {
       /// A nested custom character class `[[ab][cd]]`
       case custom(CustomCharacterClass)
@@ -25,6 +37,10 @@ extension AST {
 
       /// A single character or escape
       case atom(Atom)
+
+      /// A quoted sequence. Inside a custom character class this just means
+      /// the contents should be interpreted literally.
+      case quote(Quote)
 
       /// A binary operator applied to sets of members `abc&&def`
       case setOperation([Member], Located<SetOp>, [Member])
@@ -40,14 +56,15 @@ extension AST {
         self.rhs = rhs
       }
     }
+    @frozen
     public enum SetOp: String, Hashable {
       case subtraction = "--"
       case intersection = "&&"
       case symmetricDifference = "~~"
     }
+    @frozen
     public enum Start: String {
       case normal = "["
-
       case inverted = "[^"
     }
   }
@@ -63,6 +80,7 @@ extension CustomCC.Member {
     case .custom(let c): return c
     case .range(let r): return r
     case .atom(let a): return a
+    case .quote(let q): return q
     case .setOperation(let lhs, let op, let rhs): return (lhs, op, rhs)
     }
   }

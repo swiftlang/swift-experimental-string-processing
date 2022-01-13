@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 extension AST {
   public struct Atom: Hashable, _ASTNode {
     public let kind: Kind
@@ -8,6 +19,7 @@ extension AST {
       self.location = loc
     }
 
+    @frozen
     public enum Kind: Hashable {
       /// Just a character
       ///
@@ -68,6 +80,7 @@ extension AST.Atom {
 
   // Characters, character types, literals, etc., derived from
   // an escape sequence.
+  @frozen
   public enum EscapedBuiltin: Hashable {
     // TOOD: better doc comments
 
@@ -320,6 +333,7 @@ extension AST.Atom {
 }
 
 extension AST.Atom.CharacterProperty {
+  @frozen
   public enum Kind: Hashable {
     /// Matches any character, equivalent to Oniguruma's '\O'.
     case any
@@ -358,6 +372,7 @@ extension AST.Atom.CharacterProperty {
   }
 
   // TODO: erm, separate out or fold into something? splat it in?
+  @frozen
   public enum PCRESpecialCategory: String, Hashable {
     case alphanumeric     = "Xan"
     case posixSpace       = "Xps"
@@ -367,36 +382,47 @@ extension AST.Atom.CharacterProperty {
   }
 }
 
+extension AST.Atom {
+  public struct Reference: Hashable {
+    @frozen
+    public enum Kind: Hashable {
+      // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
+      // Oniguruma: \k<n>, \k'n'
+      case absolute(Int)
 
-// TODO: I haven't thought through this a bunch; this seems like
-// a sensible type to have and break down this way. But it could
-// easily get folded in with the kind of reference
-public enum Reference: Hashable {
-  // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
-  // Oniguruma: \k<n>, \k'n'
-  case absolute(Int)
+      // \g{-n} \g<+n> \g'+n' \g<-n> \g'-n' (?+n) (?-n)
+      // (?(+n)... (?(-n)...
+      // Oniguruma: \k<-n> \k<+n> \k'-n' \k'+n'
+      case relative(Int)
 
-  // \g{-n} \g<+n> \g'+n' \g<-n> \g'-n' (?+n) (?-n)
-  // (?(+n)... (?(-n)...
-  // Oniguruma: \k<-n> \k<+n> \k'-n' \k'+n'
-  case relative(Int)
+      // \k<name> \k'name' \g{name} \k{name} (?P=name)
+      // \g<name> \g'name' (?&name) (?P>name)
+      // (?(<name>)... (?('name')... (?(name)...
+      case named(String)
 
-  // \k<name> \k'name' \g{name} \k{name} (?P=name)
-  // \g<name> \g'name' (?&name) (?P>name)
-  // (?(<name>)... (?('name')... (?(name)...
-  case named(String)
+      /// (?R), (?(R)..., which are equivalent to (?0), (?(0)...
+      static var recurseWholePattern: Kind { .absolute(0) }
+    }
+    public var kind: Kind
 
-  // TODO: I'm not sure the below goes here
-  //
-  // ?(R) (?(R)...
-  case recurseWholePattern
+    /// The location of the inner numeric or textual reference, e.g the location
+    /// of '-2' in '\g{-2}'.
+    public var innerLoc: SourceLocation
+
+    public init(_ kind: Kind, innerLoc: SourceLocation) {
+      self.kind = kind
+      self.innerLoc = innerLoc
+    }
+
+    /// Whether this is a reference that recurses the whole pattern, rather than
+    /// a group.
+    public var recursesWholePattern: Bool { kind == .recurseWholePattern }
+  }
 }
-
-
-
 
 extension AST.Atom {
   /// Anchors and other built-in zero-width assertions
+  @frozen
   public enum AssertionKind: String {
     /// \A
     case startOfSubject = #"\A"#

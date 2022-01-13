@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 var checkComments = true
 
 extension Engine {
@@ -11,8 +22,12 @@ extension Engine {
       matchMode: matchMode,
       isTracingEnabled: enableTracing)
   }
+}
 
-  public func consume(_ input: Input) -> Input.Index? {
+extension Engine where Input == String {
+  public func consume(
+    _ input: Input
+  ) -> (Input.Index, CaptureList)? {
     consume(input, in: input.startIndex ..< input.endIndex)
   }
 
@@ -20,7 +35,7 @@ extension Engine {
     _ input: Input,
     in range: Range<Input.Index>,
     matchMode: MatchMode = .prefix
-  ) -> Input.Index? {
+  ) -> (Input.Index, CaptureList)? {
     if enableTracing {
       print("Consume: \(input)")
     }
@@ -45,7 +60,10 @@ extension Engine {
         print("Result: nil")
       }
     }
-    return result
+    guard let result = result else { return nil }
+
+    let capList = cpu.storedCaptures.map { $0.history }
+    return (result, CaptureList(caps: capList))
   }
 }
 

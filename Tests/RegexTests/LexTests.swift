@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 @testable import _MatchingEngine
 
 import XCTest
@@ -20,7 +31,7 @@ func diagnose(
       XCTFail("""
 
         Expected: \(expected)
-        Actual: \(e.error)")
+        Actual: \(e.error)
       """)
       return
     }
@@ -83,9 +94,6 @@ extension RegexTests {
       _ = scalars
     }
 
-// FIXME:
-//    diagnoseUniScalar(
-//      "12ab", base: "x", expectedDigits: 2)
     diagnoseUniScalar(
       "12", base: "u", expectedDigits: 4)
     diagnoseUniScalar(
@@ -122,19 +130,43 @@ extension RegexTests {
 
     diagnose(#"(?^"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
     diagnose(#"(?^i"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
-    diagnose(#"(?^-"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
-    diagnose(#"(?^-)"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
-    diagnose(#"(?^i-"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
-    diagnose(#"(?^i-m)"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
+
+    diagnose(#"(?^-"#, expecting: .cannotRemoveMatchingOptionsAfterCaret) {
+      _ = try $0.lexGroupStart()
+    }
+    diagnose(#"(?^-)"#, expecting: .cannotRemoveMatchingOptionsAfterCaret) {
+      _ = try $0.lexGroupStart()
+    }
+    diagnose(#"(?^i-"#, expecting: .cannotRemoveMatchingOptionsAfterCaret) {
+      _ = try $0.lexGroupStart()
+    }
+    diagnose(#"(?^i-m)"#, expecting: .cannotRemoveMatchingOptionsAfterCaret) {
+      _ = try $0.lexGroupStart()
+    }
 
     diagnose(#"(?y)"#, expecting: .expected("{")) { _ = try $0.lexGroupStart() }
     diagnose(#"(?y{)"#, expecting: .expected("g")) { _ = try $0.lexGroupStart() }
     diagnose(#"(?y{g)"#, expecting: .expected("}")) { _ = try $0.lexGroupStart() }
     diagnose(#"(?y{x})"#, expecting: .expected("g")) { _ = try $0.lexGroupStart() }
 
-    diagnose(#"(?k)"#, expecting: .misc("Unknown group kind '(?k'")) {
+    diagnose(#"(?k)"#, expecting: .unknownGroupKind("?k")) {
       _ = try $0.lexGroupStart()
     }
+    diagnose(#"(?P#)"#, expecting: .invalidMatchingOption("#")) {
+      _ = try $0.lexGroupStart()
+    }
+    diagnose(#"(?P"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
+    diagnose(#"(?R"#, expecting: .expected(")")) { _ = try $0.lexBasicAtom() }
+
+    diagnose(#"\Qab"#, expecting: .expected("\\E")) { _ = try $0.lexQuote() }
+    diagnose(#"\Qab\"#, expecting: .expected("\\E")) { _ = try $0.lexQuote() }
+    diagnose(#""ab"#, expecting: .expected("\""), .experimental) { _ = try $0.lexQuote() }
+    diagnose(#""ab\""#, expecting: .expected("\""), .experimental) { _ = try $0.lexQuote() }
+    diagnose(#""ab\"#, expecting: .unexpectedEndOfInput, .experimental) { _ = try $0.lexQuote() }
+
+    diagnose(#"\k''"#, expecting: .expectedNonEmptyContents) { _ = try $0.lexBasicAtom() }
+    diagnose(#"(?&)"#, expecting: .expectedNonEmptyContents) { _ = try $0.lexBasicAtom() }
+    diagnose(#"(?P>)"#, expecting: .expectedNonEmptyContents) { _ = try $0.lexBasicAtom() }
 
     // TODO: want to dummy print out source ranges, etc, test that.
   }

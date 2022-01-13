@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 
 // TODO: mock up multi-line soon
 
@@ -79,7 +90,7 @@ func lexRegex(
 
   func ascii(_ s: Unicode.Scalar) -> UInt8 {
     assert(s.value <= 0x7F)
-    return UInt8(truncatingIfNeeded: s.value)
+    return UInt8(asserting: s.value)
   }
   func load(offset: Int) -> UInt8? {
     guard current + offset < end else { return nil }

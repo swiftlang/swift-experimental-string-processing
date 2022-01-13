@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 import _MatchingEngine
 
 public struct Executor {
@@ -15,8 +26,21 @@ public struct Executor {
   ) -> MatchResult? {
     engine.consume(
       input, in: range, matchMode: mode.loweredMatchMode
-    ).map { endIndex in
-      MatchResult(range.lowerBound..<endIndex, .void)
+    ).map { endIndex, capture in
+      _ = capture // TODO: construct structure
+      return MatchResult(range.lowerBound..<endIndex, .void)
+    }
+  }
+
+  public func executeFlat(
+    input: String,
+    in range: Range<String.Index>,
+    mode: MatchMode = .wholeString
+  ) -> (Range<String.Index>, CaptureList)? {
+    engine.consume(
+      input, in: range, matchMode: mode.loweredMatchMode
+    ).map { endIndex, capture in
+      (range.lowerBound..<endIndex, capture)
     }
   }
 }

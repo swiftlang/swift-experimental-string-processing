@@ -1,15 +1,27 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 import _MatchingEngine
 
 public struct RegexConsumer<Consumed: BidirectionalCollection>
   where Consumed.SubSequence == Substring
 {
   // TODO: consider let, for now lets us toggle tracing
-    var vm: Executor
+  var vm: Executor
 
   // FIXME: Possibility of fatal error isn't user friendly
   public init<Capture>(_ regex: Regex<Capture>) {
     do {
-      self.vm = .init(program: try Compiler(ast: regex.ast).emit())
+      self.vm = .init(
+        program: try Compiler(ast: regex.ast).emit())
     } catch {
       fatalError("error: \(error)")
     }

@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 @testable import _MatchingEngine
 
 import XCTest
@@ -270,6 +281,13 @@ extension RegexTests {
     parseTest(#"[\7777]"#, charClass(scalar_m("\u{1FF}"), "7"))
     parseTest(#"[\181]"#, charClass(scalar_m("\u{1}"), "8", "1"))
 
+    // We take *up to* the first two valid digits for \x. No valid digits is 0.
+    parseTest(#"\x"#, scalar("\u{0}"))
+    parseTest(#"\x5"#, scalar("\u{5}"))
+    parseTest(#"\xX"#, concat(scalar("\u{0}"), "X"))
+    parseTest(#"\x5X"#, concat(scalar("\u{5}"), "X"))
+    parseTest(#"\x12ab"#, concat(scalar("\u{12}"), "a", "b"))
+
     // MARK: Character classes
 
     parseTest(#"abc\d"#, concat("a", "b", "c", escaped(.decimalDigit)))
@@ -407,6 +425,24 @@ extension RegexTests {
       #"a\Q \Q \\.\Eb"#,
       concat("a", quote(#" \Q \\."#), "b"))
 
+    parseTest(#"a" ."b"#, concat("a", quote(" ."), "b"),
+              syntax: .experimental)
+    parseTest(#"a" .""b""#, concat("a", quote(" ."), quote("b")),
+              syntax: .experimental)
+    parseTest(#"a" .\"\"b""#, concat("a", quote(" .\"\"b")),
+              syntax: .experimental)
+    parseTest(#""\"""#, quote("\""), syntax: .experimental)
+
+    // Quotes in character classes.
+    parseTest(#"[\Q-\E]"#, charClass(quote_m("-")))
+    parseTest(#"[\Qa-b[[*+\\E]"#, charClass(quote_m(#"a-b[[*+\"#)))
+
+    parseTest(#"["-"]"#, charClass(quote_m("-")), syntax: .experimental)
+    parseTest(#"["a-b[[*+\""]"#, charClass(quote_m(#"a-b[[*+""#)),
+              syntax: .experimental)
+
+    parseTest(#"["-"]"#, charClass(range_m("\"", "\"")))
+
     // MARK: Comments
 
     parseTest(
@@ -433,6 +469,34 @@ extension RegexTests {
     parseTest(
       #"a{1,2}?"#,
       quantRange(.reluctant, 1...2, "a"))
+    parseTest(
+      #"a{0}"#,
+      exactly(.eager, 0, "a"))
+    parseTest(
+      #"a{0,0}"#,
+      quantRange(.eager, 0...0, "a"))
+
+    // Make sure ranges get treated as literal if invalid.
+    parseTest("{", "{")
+    parseTest("{,", concat("{", ","))
+    parseTest("{}", concat("{", "}"))
+    parseTest("{,}", concat("{", ",", "}"))
+    parseTest("{,6", concat("{", ",", "6"))
+    parseTest("{6", concat("{", "6"))
+    parseTest("{6,", concat("{", "6", ","))
+    parseTest("{+", oneOrMore(.eager, "{"))
+    parseTest("{6,+", concat("{", "6", oneOrMore(.eager, ",")))
+    parseTest("x{", concat("x", "{"))
+    parseTest("x{}", concat("x", "{", "}"))
+    parseTest("x{,}", concat("x", "{", ",", "}"))
+    parseTest("x{,6", concat("x", "{", ",", "6"))
+    parseTest("x{6", concat("x", "{", "6"))
+    parseTest("x{6,", concat("x", "{", "6", ","))
+    parseTest("x{+", concat("x", oneOrMore(.eager, "{")))
+    parseTest("x{6,+", concat("x", "{", "6", oneOrMore(.eager, ",")))
+
+    // TODO: We should emit a diagnostic for this.
+    parseTest("x{3, 5}", concat("x", "{", "3", ",", " ", "5", "}"))
 
     // MARK: Groups
 
@@ -532,6 +596,9 @@ extension RegexTests {
       matchingOptions(adding: .extraExtended, .extended),
       isIsolated: true, empty())
     )
+    parseTest("(?P)", changeMatchingOptions(
+      matchingOptions(adding: .asciiOnlyPOSIXProps), isIsolated: true, empty())
+    )
     parseTest("(?-i)", changeMatchingOptions(
       matchingOptions(removing: .caseInsensitive),
       isIsolated: true, empty())
@@ -557,6 +624,9 @@ extension RegexTests {
     parseTest("(?-i:)", changeMatchingOptions(
       matchingOptions(removing: .caseInsensitive),
       isIsolated: false, empty())
+    )
+    parseTest("(?P:)", changeMatchingOptions(
+      matchingOptions(adding: .asciiOnlyPOSIXProps), isIsolated: false, empty())
     )
 
     parseTest("(?^)", changeMatchingOptions(
@@ -745,8 +815,21 @@ extension RegexTests {
 
     parseTest(#"\k{a0}"#, backreference(.named("a0")))
     parseTest(#"\k<bc>"#, backreference(.named("bc")))
-    parseTest(#"\k''"#, backreference(.named("")))
     parseTest(#"\g{abc}"#, backreference(.named("abc")))
+    parseTest(#"(?P=abc)"#, backreference(.named("abc")))
+
+    parseTest(#"(?R)"#, subpattern(.recurseWholePattern))
+    parseTest(#"(?1)"#, subpattern(.absolute(1)))
+    parseTest(#"(?+12)"#, subpattern(.relative(12)))
+    parseTest(#"(?-2)"#, subpattern(.relative(-2)))
+    parseTest(#"(?&hello)"#, subpattern(.named("hello")))
+    parseTest(#"(?P>P)"#, subpattern(.named("P")))
+
+    // TODO: Should we enforce that names only use certain characters?
+    parseTest(#"(?&&)"#, subpattern(.named("&")))
+    parseTest(#"(?&-1)"#, subpattern(.named("-1")))
+    parseTest(#"(?P>+1)"#, subpattern(.named("+1")))
+    parseTest(#"(?P=+1)"#, backreference(.named("+1")))
 
     parseTest(#"\g<1>"#, subpattern(.absolute(1)))
     parseTest(#"\g<001>"#, subpattern(.absolute(1)))
@@ -899,6 +982,15 @@ extension RegexTests {
     parseNotEqualTest("|", "||")
     parseNotEqualTest("a|", "|")
     parseNotEqualTest("a|b", "|")
+
+    parseNotEqualTest(#"\1"#, #"\2"#)
+    parseNotEqualTest(#"\k'a'"#, #"\k'b'"#)
+    parseNotEqualTest(#"(?1)"#, #"(?2)"#)
+    parseNotEqualTest(#"(?+1)"#, #"(?1)"#)
+    parseNotEqualTest(#"(?&a)"#, #"(?&b)"#)
+
+    parseNotEqualTest(#"\Qabc\E"#, #"\Qdef\E"#)
+    parseNotEqualTest(#""abc""#, #""def""#)
 
     // TODO: failure tests
   }

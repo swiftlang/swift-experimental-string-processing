@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 /*
 
 These functions are temporary AST construction helpers. As
@@ -203,6 +214,9 @@ func charClass(
 func quote(_ s: String) -> AST {
   .quote(.init(s, .fake))
 }
+func quote_m(_ s: String) -> AST.CustomCharacterClass.Member {
+  .quote(.init(s, .fake))
+}
 
 // MARK: - Atoms
 
@@ -222,14 +236,14 @@ func scalar_m(_ s: Unicode.Scalar) -> AST.CustomCharacterClass.Member {
   atom_m(.scalar(s))
 }
 
-func backreference(_ r: Reference) -> AST {
-  atom(.backreference(r))
+func backreference(_ r: AST.Atom.Reference.Kind) -> AST {
+  atom(.backreference(.init(r, innerLoc: .fake)))
 }
-func subpattern(_ r: Reference) -> AST {
-  atom(.subpattern(r))
+func subpattern(_ r: AST.Atom.Reference.Kind) -> AST {
+  atom(.subpattern(.init(r, innerLoc: .fake)))
 }
-func condition(_ r: Reference) -> AST {
-  atom(.condition(r))
+func condition(_ r: AST.Atom.Reference.Kind) -> AST {
+  atom(.condition(.init(r, innerLoc: .fake)))
 }
 
 func prop(

@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 // MARK: - Parse errors
 
 enum ParseError: Error, Hashable {
@@ -18,6 +29,13 @@ enum ParseError: Error, Hashable {
   case misc(String)
 
   case expectedASCII(Character)
+
+  case expectedNonEmptyContents
+
+  case unknownGroupKind(String)
+
+  case invalidMatchingOption(Character)
+  case cannotRemoveMatchingOptionsAfterCaret
 
   case expectedCustomCharacterClassMembers
   case invalidCharacterClassRangeOperand
@@ -50,6 +68,14 @@ extension ParseError: CustomStringConvertible {
       return "unexpected end of input"
     case let .misc(s):
       return s
+    case .expectedNonEmptyContents:
+      return "expected non-empty contents"
+    case let .unknownGroupKind(str):
+      return "unknown group kind '(\(str)'"
+    case let .invalidMatchingOption(c):
+      return "invalid matching option '\(c)'"
+    case .cannotRemoveMatchingOptionsAfterCaret:
+      return "cannot remove matching options with '^' specifier"
     case let .expectedASCII(c):
       return "expected ASCII for '\(c)'"
     case .expectedCustomCharacterClassMembers:

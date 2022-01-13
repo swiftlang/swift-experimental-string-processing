@@ -31,13 +31,19 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "_MatchingEngine",
-            dependencies: [/*"_Unicode"*/]),
+            dependencies: [/*"_Unicode"*/],
+            swiftSettings: [
+                .unsafeFlags(["-enable-library-evolution"])
+            ]),
         .testTarget(
             name: "MatchingEngineTests",
             dependencies: ["_MatchingEngine"]),
         .target(
             name: "_StringProcessing",
-            dependencies: ["_MatchingEngine"]),
+            dependencies: ["_MatchingEngine"],
+            swiftSettings: [
+                .unsafeFlags(["-enable-library-evolution"])
+            ]),
         .target(
             name: "_Unicode",
             dependencies: []),

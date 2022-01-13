@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 /// Wraps a searcher that searches for a given pattern. If the pattern is empty, falls back on matching every empty index range exactly once.
 public struct PatternOrEmpty<Searcher: CollectionSearcher> {
   let searcher: Searcher?

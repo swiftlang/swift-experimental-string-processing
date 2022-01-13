@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 import _MatchingEngine
 
 struct Unsupported: Error, CustomStringConvertible {
@@ -6,7 +17,7 @@ struct Unsupported: Error, CustomStringConvertible {
   var line: Int
 
   var description: String { """
-    Unsupported: \(message)
+    Unsupported: '\(message)'
       \(file):\(line)
     """
   }
@@ -39,7 +50,6 @@ extension AST {
       return try a.generateConsumer(opts)
     case .customCharacterClass(let ccc):
       return try ccc.generateConsumer(opts)
-
     case .alternation, .concatenation, .group,
         .quantification, .quote, .trivia, .empty,
         .groupTransform: return nil
@@ -140,6 +150,20 @@ extension AST.CustomCharacterClass.Member {
         throw unsupported("TODO")
       }
       return gen
+
+    case .quote(let q):
+      // TODO: Not optimal.
+      let consumers = try q.literal.map {
+        try AST.Atom(.char($0), .fake).generateConsumer(opts)!
+      }
+      return { input, bounds in
+        for consumer in consumers {
+          if let idx = consumer(input, bounds) {
+            return idx
+          }
+        }
+        return nil
+      }
 
     case .setOperation(let lhs, let op, let rhs):
       // TODO: We should probably have a component type
@@ -513,9 +537,9 @@ extension Unicode.POSIXProperty {
 
     case .xdigit:
       return consumeScalarProp(\.isHexDigit) // or number
+
     }
   }
-
 }
 
 extension Unicode.ExtendedGeneralCategory {

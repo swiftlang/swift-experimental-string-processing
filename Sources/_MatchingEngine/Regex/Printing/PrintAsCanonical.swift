@@ -1,12 +1,27 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 // TODO: Round-tripping tests
 
 extension AST {
   /// Render using Swift's preferred regex literal syntax
   public func renderAsCanonical(
-    showDelimiters delimiters: Bool = false
+    showDelimiters delimiters: Bool = false,
+    terminateLine: Bool = false
   ) -> String {
     var printer = PrettyPrinter()
-    printer.printAsCanonical(self, delimiters: delimiters)
+    printer.printAsCanonical(
+       self,
+       delimiters: delimiters,
+       terminateLine: terminateLine)
     return printer.finish()
   }
 }
@@ -15,13 +30,17 @@ extension PrettyPrinter {
   /// Will output `ast` in canonical form, taking care to
   /// also indent and terminate the line (updating internal state)
   mutating func printAsCanonical(
-    _ ast: AST, delimiters: Bool = false
+    _ ast: AST,
+    delimiters: Bool = false,
+    terminateLine terminate: Bool = true
   ) {
     indent()
     if delimiters { output("'/") }
     outputAsCanonical(ast)
     if delimiters { output("/'") }
-    terminateLine()
+    if terminate {
+      terminateLine()
+    }
   }
 
   /// Output the `ast` in canonical form, does not indent, terminate,
@@ -48,8 +67,7 @@ extension PrettyPrinter {
       output(q.kind.value._canonicalBase)
 
     case let .quote(q):
-      // TODO: Is this really what we want?
-      output("\\Q\(q.literal)\\E")
+      output(q._canonicalBase)
 
     case let .trivia(t):
       // TODO: We might want to output comments...
@@ -91,9 +109,18 @@ extension PrettyPrinter {
       output(r.rhs._canonicalBase)
     case .atom(let a):
       output(a._canonicalBase)
+    case .quote(let q):
+      output(q._canonicalBase)
     case .setOperation:
       output("/* TODO: set operation \(self) */")
     }
+  }
+}
+
+extension AST.Quote {
+  var _canonicalBase: String {
+    // TODO: Is this really what we want?
+    "\\Q\(literal)\\E"
   }
 }
 
@@ -153,9 +180,28 @@ extension AST.Atom {
     switch self.kind {
     case .escaped(let e):
       return "\\\(e.character)"
+    case .backreference(let br):
+       return br._canonicalBase
 
     default:
       return "/* TODO: atom \(self) */"
+    }
+  }
+}
+
+extension AST.Atom.Reference {
+  var _canonicalBase: String {
+    if self.recursesWholePattern {
+      return "(?R)"
+    }
+    switch kind {
+    case .absolute(let i):
+      // TODO: Which should we prefer, this or `\g{n}`?
+      return "\\\(i)"
+    case .relative:
+      return "/* TODO: relative reference \(self) */"
+    case .named:
+      return "/* TODO: named reference \(self) */"
     }
   }
 }

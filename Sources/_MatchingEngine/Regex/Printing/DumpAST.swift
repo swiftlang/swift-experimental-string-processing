@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 /// AST entities can be pretty-printed or dumped
 ///
 /// Alternative: just use `description` for pretty-print
@@ -60,7 +71,7 @@ extension AST.Concatenation {
 }
 
 extension AST.Quote {
-  public var _dumpBase: String { "quote" }
+  public var _dumpBase: String { "quote \"\(literal)\"" }
 }
 
 extension AST.Trivia {
@@ -96,11 +107,17 @@ extension AST.Atom {
     case .endOfLine:   return "$"
 
     case .backreference(let r), .subpattern(let r), .condition(let r):
-      return "\(r)"
+      return "\(r._dumpBase)"
 
     case .char, .scalar:
       fatalError("Unreachable")
     }
+  }
+}
+
+extension AST.Atom.Reference: _ASTPrintable {
+  public var _dumpBase: String {
+    "\(kind)"
   }
 }
 
@@ -186,6 +203,7 @@ extension AST.CustomCharacterClass.Member: _ASTPrintable {
     case .custom(let cc): return "\(cc)"
     case .atom(let a): return "\(a)"
     case .range(let r): return "\(r)"
+    case .quote(let q): return "\(q)"
     case .setOperation(let lhs, let op, let rhs):
       return "op \(lhs) \(op.value) \(rhs)"
     }

@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 /*
 
 Syntactic structure of a regular expression
@@ -135,7 +146,7 @@ extension Parser {
 
       //     Quote      -> `lexQuote`
       if let quote = try source.lexQuote() {
-        result.append(.quote(.init(quote.value, loc(_start))))
+        result.append(.quote(quote))
         continue
       }
       //     Quantification  -> QuantOperand Quantifier?
@@ -252,8 +263,6 @@ extension Parser {
   mutating func parseCCCMembers(
     into members: inout Array<CustomCC.Member>
   ) throws {
-    // FIXME: Track source locations
-
     // Parse members until we see the end of the custom char class or an
     // operator.
     while source.peek() != "]" && source.peekCCBinOp() == nil {
@@ -261,6 +270,12 @@ extension Parser {
       // Nested custom character class.
       if let cccStart = try source.lexCustomCCStart() {
         members.append(.custom(try parseCustomCharacterClass(cccStart)))
+        continue
+      }
+
+      // Quoted sequence.
+      if let quote = try source.lexQuote() {
+        members.append(.quote(quote))
         continue
       }
 

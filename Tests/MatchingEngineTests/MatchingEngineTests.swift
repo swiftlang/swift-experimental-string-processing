@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 import XCTest
 
 @testable import _MatchingEngine
@@ -85,14 +96,14 @@ fileprivate struct Test: ExpressibleByStringLiteral {
     let output: String
     let outputFromSlice: String
 
-    if let idx = engine.consume(input) {
+    if let (idx, _) = engine.consume(input) {
       output = String(input[idx...])
     } else {
       output = input
     }
 
     let (outerInput, range) = slicedInput
-    if let idx = engine.consume(outerInput, in: range) {
+    if let (idx, _) = engine.consume(outerInput, in: range) {
       outputFromSlice = String(outerInput[idx..<range.upperBound])
     } else {
       outputFromSlice = input

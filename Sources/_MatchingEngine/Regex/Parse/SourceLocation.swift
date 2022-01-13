@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 extension Source {
   /// The location in the input of a parsed entity, presented as a region over the input
   public struct Location: Hashable {
@@ -75,6 +86,10 @@ extension Source {
       // TODO: any way to assert or guarantee this is called
       // externally?
       self.init(v, .fake)
+    }
+
+    public func map<U>(_ fn: (T) throws -> U) rethrows -> Located<U> {
+      Located<U>(try fn(value), location)
     }
   }
 }

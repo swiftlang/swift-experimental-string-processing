@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 import _MatchingEngine
 
 // NOTE: This is a model type. We want to be able to get one from
@@ -397,6 +408,11 @@ extension AST.CustomCharacterClass {
           } else {
             return nil
           }
+
+        case .quote(let q):
+          // Decompose quoted literal into literal characters.
+          result += q.literal.map { .character($0) }
+
         case .setOperation(let lhs, let op, let rhs):
           // FIXME: CharacterClass wasn't designed for set operations with
           // multiple components in each operand, we should fix that. For now,

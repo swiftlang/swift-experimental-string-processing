@@ -1,3 +1,14 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 extension AST {
   public struct Quantification: Hashable {
     public let amount: Located<Amount>
@@ -18,6 +29,7 @@ extension AST {
       self.location = r
     }
 
+    @frozen
     public enum Amount: Hashable {
       case zeroOrMore              // *
       case oneOrMore               // +
@@ -28,6 +40,7 @@ extension AST {
       case range(Located<Int>, Located<Int>) // {n,m}
     }
 
+    @frozen
     public enum Kind: String, Hashable {
       case eager      = ""
       case reluctant  = "?"
