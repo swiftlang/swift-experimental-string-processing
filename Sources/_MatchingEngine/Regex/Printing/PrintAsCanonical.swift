@@ -83,9 +83,6 @@ extension PrettyPrinter {
 
     case .empty:
       output("")
-
-    case .groupTransform:
-      output("/* TODO: get groupTransform out of AST */")
     }
   }
 

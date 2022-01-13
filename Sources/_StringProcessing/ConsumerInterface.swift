@@ -51,8 +51,8 @@ extension AST {
     case .customCharacterClass(let ccc):
       return try ccc.generateConsumer(opts)
     case .alternation, .concatenation, .group,
-        .quantification, .quote, .trivia, .empty,
-        .groupTransform: return nil
+        .quantification, .quote, .trivia, .empty:
+      return nil
     }
   }
 }

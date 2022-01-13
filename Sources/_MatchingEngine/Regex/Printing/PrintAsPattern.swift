@@ -126,8 +126,6 @@ extension PrettyPrinter {
       printAsPattern(ccc)
 
     case .empty: print("")
-    case .groupTransform:
-      print("// FIXME: get group transform out of here!")
     }
   }
 

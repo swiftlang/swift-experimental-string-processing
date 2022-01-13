@@ -52,8 +52,6 @@ extension AST {
         quantification.amount.value == .zeroOrOne
           ? CaptureStructure.optional
           : CaptureStructure.array)
-    case .groupTransform:
-      fatalError("Unreachable. Case will be removed later.")
     case .quote, .trivia, .atom, .customCharacterClass, .empty:
       return .empty
     }

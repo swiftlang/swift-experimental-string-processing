@@ -66,14 +66,14 @@ func compile(
         throw unsupported("Unsupported group \(g.kind.value) \(g)")
       }
 
-    case let .groupTransform(g, transform: t) where g.kind.value == .capture:
-      instructions.append(.beginCapture)
-      try compileNode(g.child)
-      instructions.append(.endCapture(transform: t))
-      return
-
-    case .groupTransform(let g, _):
-      throw unsupported("Unsupported group \(g)")
+//    case let .groupTransform(g, transform: t) where g.kind.value == .capture:
+//      instructions.append(.beginCapture)
+//      try compileNode(g.child)
+//      instructions.append(.endCapture(transform: t))
+//      return
+//
+//    case .groupTransform(let g, _):
+//      throw unsupported("Unsupported group \(g)")
 
     case .concatenation(let concat):
       let children = concat.children

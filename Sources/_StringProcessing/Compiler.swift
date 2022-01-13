@@ -39,11 +39,44 @@ class Compiler {
   __consuming func compile(
     _ ast: RegexDSLAST
   ) throws -> RegexProgram {
-    fatalError()
+    try emit(ast)
+    builder.buildAccept()
+    let program = builder.assemble()
+    return RegexProgram(program: program)
   }
 }
 
 extension Compiler {
+  fileprivate func emit(_ node: RegexDSLAST) throws {
+    switch node {
+
+    case let .literal(l): try emit(l)
+    case .consumer(let c):
+      builder.buildConsume(by: c)
+
+    case .consumerValidator:
+      throw unsupported("\(node)")
+
+    case .alternation(_):
+      throw unsupported("\(node)")
+
+    case .concatenation(_):
+      throw unsupported("\(node)")
+
+    case .quantification(_, _, _):
+      throw unsupported("\(node)")
+
+    case .customCharacterClass(_):
+      throw unsupported("\(node)")
+
+    case .group(_, _):
+      throw unsupported("\(node)")
+
+    case .groupTransform(_, _, _):
+      throw unsupported("\(node)")
+    }
+  }
+
   fileprivate func emit(_ node: AST) throws {
     switch node {
     // Any: .
@@ -82,11 +115,6 @@ extension Compiler {
       }
       try emit(alt.children.last!)
       builder.label(done)
-
-    // FIXME: Wait, how does this work?
-    case .groupTransform(let g, _):
-      try emit(g.child)
-
 
     case .concatenation(let concat):
       try concat.children.forEach(emit)
