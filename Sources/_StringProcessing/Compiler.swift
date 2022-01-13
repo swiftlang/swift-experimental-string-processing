@@ -42,11 +42,6 @@ class Compiler {
   func emit(_ node: AST) throws {
 
     switch node {
-    // Any: .
-    //     consume 1
-    case .atom(let a) where a.kind == .any && matchLevel == .graphemeCluster:
-      builder.buildAdvance(1)
-
     // Single characters we just match
     case .atom(let a) where a.singleCharacter != nil :
       builder.buildMatch(a.singleCharacter!)
