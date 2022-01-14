@@ -155,6 +155,32 @@ func rangeTest(
   }
 }
 
+func diagnosticTest(
+  _ input: String, _ expected: ParseError,
+  syntax: SyntaxOptions = .traditional,
+  file: StaticString = #file, line: UInt = #line
+) {
+  do {
+    let ast = try parse(input, syntax)
+    XCTFail("""
+
+      Passed \(ast)
+      But expected error: \(expected)
+    """, file: file, line: line)
+  } catch let e as Source.LocatedError<ParseError> {
+    guard e.error == expected else {
+      XCTFail("""
+
+        Expected: \(expected)
+        Actual: \(e.error)
+      """, file: file, line: line)
+      return
+    }
+  } catch let e {
+    XCTFail("Error without source location: \(e)", file: file, line: line)
+  }
+}
+
 extension RegexTests {
   func testParse() {
     parseTest(
@@ -435,7 +461,7 @@ extension RegexTests {
 
     // Quotes in character classes.
     parseTest(#"[\Q-\E]"#, charClass(quote_m("-")))
-    parseTest(#"[\Qa-b[[*+\\E]"#, charClass(quote_m(#"a-b[[*+\"#)))
+    parseTest(#"[\Qa-b[[*+\\E]"#, charClass(quote_m("a-b[[*+\\")))
 
     parseTest(#"["-"]"#, charClass(quote_m("-")), syntax: .experimental)
     parseTest(#"["a-b[[*+\""]"#, charClass(quote_m(#"a-b[[*+""#)),
@@ -1038,17 +1064,59 @@ extension RegexTests {
   }
 
   func testParseErrors() {
+    // MARK: Closing delimiters.
 
-    func performErrorTest(_ input: String, _ expecting: String) {
-      //      // Quick pattern match against AST to extract error nodes
-      //      let ast = parse2(input)
-      //      print(ast)
-    }
+    diagnosticTest("(", .expected(")"))
 
-    performErrorTest("(", "")
+    diagnosticTest(#"\u{5"#, .expected("}"))
+    diagnosticTest(#"\x{5"#, .expected("}"))
+    diagnosticTest(#"\N{A"#, .expected("}"))
+    diagnosticTest(#"\N{U+A"#, .expected("}"))
+    diagnosticTest(#"\p{a"#, .expected("}"))
+    diagnosticTest(#"\p{a="#, .expected("}"))
+    diagnosticTest(#"(?#"#, .expected(")"))
+    diagnosticTest(#"(?x"#, .expected(")"))
 
+    diagnosticTest(#"(?"#, .expectedGroupSpecifier)
+    diagnosticTest(#"(?^"#, .expected(")"))
+    diagnosticTest(#"(?^i"#, .expected(")"))
 
+    diagnosticTest(#"(?y)"#, .expected("{"))
+    diagnosticTest(#"(?y{)"#, .expected("g"))
+    diagnosticTest(#"(?y{g)"#, .expected("}"))
+    diagnosticTest(#"(?y{x})"#, .expected("g"))
+
+    diagnosticTest(#"(?P"#, .expected(")"))
+    diagnosticTest(#"(?R"#, .expected(")"))
+
+    diagnosticTest(#"\Qab"#, .expected("\\E"))
+    diagnosticTest("\\Qab\\", .expected("\\E"))
+    diagnosticTest(#""ab"#, .expected("\""), syntax: .experimental)
+    diagnosticTest(#""ab\""#, .expected("\""), syntax: .experimental)
+
+    // MARK: Text Segment options
+
+    diagnosticTest("(?-y{g})", .cannotRemoveTextSegmentOptions)
+    diagnosticTest("(?-y{w})", .cannotRemoveTextSegmentOptions)
+
+    // MARK: Group specifiers
+
+    diagnosticTest(#"(*"#, .misc("Quantifier '*' must follow operand"))
+
+    diagnosticTest(#"(?k)"#, .unknownGroupKind("?k"))
+    diagnosticTest(#"(?P#)"#, .invalidMatchingOption("#"))
+
+    // MARK: Matching options
+
+    diagnosticTest(#"(?^-"#, .cannotRemoveMatchingOptionsAfterCaret)
+    diagnosticTest(#"(?^-)"#, .cannotRemoveMatchingOptionsAfterCaret)
+    diagnosticTest(#"(?^i-"#, .cannotRemoveMatchingOptionsAfterCaret)
+    diagnosticTest(#"(?^i-m)"#, .cannotRemoveMatchingOptionsAfterCaret)
+
+    // MARK: Quotes
+
+    diagnosticTest(#"\k''"#, .expectedNonEmptyContents)
+    diagnosticTest(#"(?&)"#, .expectedNonEmptyContents)
+    diagnosticTest(#"(?P>)"#, .expectedNonEmptyContents)
   }
-
 }
-
