@@ -485,3 +485,12 @@ extension DSLTree.Node {
     }
   }
 }
+
+extension DSLTree.Node {
+  func appending(_ newNode: DSLTree.Node) -> DSLTree.Node {
+    if case .concatenation(let components) = self {
+      return .concatenation(components + [newNode])
+    }
+    return .concatenation([self, newNode])
+  }
+}

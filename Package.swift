@@ -42,14 +42,18 @@ let package = Package(
             name: "_StringProcessing",
             dependencies: ["_MatchingEngine"],
             swiftSettings: [
-                .unsafeFlags(["-enable-library-evolution"])
+                .unsafeFlags(["-enable-library-evolution"]),
+                .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
             ]),
         .target(
             name: "_Unicode",
             dependencies: []),
         .testTarget(
             name: "RegexTests",
-            dependencies: ["_StringProcessing"]),
+            dependencies: ["_StringProcessing"],
+            swiftSettings: [
+                .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
+            ]),
         .target(
             name: "Prototypes",
             dependencies: ["_MatchingEngine"]),
@@ -74,7 +78,10 @@ let package = Package(
         // MARK: Exercises
         .target(
           name: "Exercises",
-          dependencies: ["_MatchingEngine", "Prototypes", "_StringProcessing"]),
+          dependencies: ["_MatchingEngine", "Prototypes", "_StringProcessing"],
+          swiftSettings: [
+              .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
+          ]),
         .testTarget(
           name: "ExercisesTests",
           dependencies: ["Exercises"]),
