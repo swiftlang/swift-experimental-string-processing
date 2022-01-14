@@ -98,6 +98,14 @@ extension AST.Group.Kind {
       return false
     }
   }
+
+  /// If this is a named group, its name, `nil` otherwise.
+  public var name: String? {
+    switch self {
+    case .namedCapture(let name): return name.value
+    default: return nil
+    }
+  }
 }
 
 extension AST.Group {

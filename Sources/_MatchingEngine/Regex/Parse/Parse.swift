@@ -51,16 +51,44 @@ Lexical analysis provides the following:
 
 */
 
-private struct Parser {
-  var source: Source
-
-  /// Tracks the number of parent custom character classes to allow us to
-  /// determine whether or not to lex with custom character class syntax.
-  fileprivate var customCharacterClassDepth = 0
+struct ParsingContext {
+  /// Whether we're currently parsing in a custom character class.
+  var isInCustomCharacterClass = false
 
   /// Tracks the number of group openings we've seen, to disambiguate the '\n'
   /// syntax as a backreference or an octal sequence.
   fileprivate var priorGroupCount = 0
+
+  /// A set of used group names.
+  fileprivate var usedGroupNames = Set<String>()
+
+  fileprivate mutating func recordGroup(_ g: AST.Group.Kind) {
+    // TODO: Needs to track group number resets (?|...).
+    priorGroupCount += 1
+    if let name = g.name {
+      usedGroupNames.insert(name)
+    }
+  }
+
+  private init() {}
+  static var none: ParsingContext { .init() }
+
+  /// Check whether a given reference refers to a prior group.
+  func isPriorGroupRef(_ ref: AST.Atom.Reference.Kind) -> Bool {
+    switch ref {
+    case .absolute(let i):
+      return i <= priorGroupCount
+    case .relative(let i):
+      return i < 0
+    case .named(let str):
+      return usedGroupNames.contains(str)
+    }
+  }
+}
+
+private struct Parser {
+  var source: Source
+  var context: ParsingContext = .none
 
   init(_ source: Source) {
     self.source = source
@@ -69,10 +97,6 @@ private struct Parser {
 
 // Diagnostics
 extension Parser {
-  private var isInCustomCharacterClass: Bool {
-    customCharacterClassDepth > 0
-  }
-
   mutating func report(
     _ str: String, _ function: String = #function, _ line: Int = #line
   ) throws -> Never {
@@ -172,6 +196,20 @@ extension Parser {
     return .concatenation(.init(result, loc(_start)))
   }
 
+  /// Perform a recursive parse for the body of a group.
+  mutating func parseGroupBody(
+    start: Source.Position, _ kind: AST.Located<AST.Group.Kind>
+  ) throws -> AST.Group {
+    context.recordGroup(kind.value)
+
+    let child = try parse()
+    // An implicit scoped group has already consumed its closing paren.
+    if !kind.value.hasImplicitScope {
+      try source.expect(")")
+    }
+    return .init(kind, child, loc(start))
+  }
+
   /// Parse a (potentially quantified) component
   ///
   ///     QuantOperand -> Group | CustomCharClass | Atom
@@ -182,24 +220,18 @@ extension Parser {
 
     let _start = source.currentPosition
 
+    // Check if we have the start of a group '('.
     if let kind = try source.lexGroupStart() {
-      priorGroupCount += 1
-      let child = try parse()
-      // An implicit scoped group has already consumed its closing paren.
-      if !kind.value.hasImplicitScope {
-        try source.expect(")")
-      }
-      return .group(.init(kind, child, loc(_start)))
+      return .group(try parseGroupBody(start: _start, kind))
     }
+
+    // Check if we have the start of a custom character class '['.
     if let cccStart = try source.lexCustomCCStart() {
       return .customCharacterClass(
         try parseCustomCharacterClass(cccStart))
     }
 
-    if let atom = try source.lexAtom(
-      isInCustomCharacterClass: isInCustomCharacterClass,
-      priorGroupCount: priorGroupCount
-    ) {
+    if let atom = try source.lexAtom(context: context) {
       // TODO: track source locations
       return .atom(atom)
     }
@@ -224,6 +256,10 @@ extension Parser {
   mutating func parseCustomCharacterClass(
     _ start: Source.Located<CustomCC.Start>
   ) throws -> CustomCC {
+    let alreadyInCCC = context.isInCustomCharacterClass
+    context.isInCustomCharacterClass = true
+    defer { context.isInCustomCharacterClass = alreadyInCCC }
+
     typealias Member = CustomCC.Member
     try source.expectNonEmpty()
 
@@ -279,14 +315,11 @@ extension Parser {
         continue
       }
 
-      guard let atom = try source.lexAtom(
-        isInCustomCharacterClass: true, priorGroupCount: priorGroupCount)
-      else { break }
+      guard let atom = try source.lexAtom(context: context) else { break }
 
       // Range between atoms.
-      if let (dashLoc, rhs) = try source.lexCustomCharClassRangeEnd(
-        priorGroupCount: priorGroupCount
-      ) {
+      if let (dashLoc, rhs) =
+          try source.lexCustomCharClassRangeEnd(context: context) {
         guard atom.literalCharacterValue != nil &&
               rhs.literalCharacterValue != nil else {
           throw ParseError.invalidCharacterClassRangeOperand

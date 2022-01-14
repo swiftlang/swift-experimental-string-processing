@@ -936,7 +936,7 @@ extension Source {
   ///                       | [1-9] [0-9]+
   ///
   private mutating func lexEscapedReference(
-    priorGroupCount: Int
+    context: ParsingContext
   ) throws -> Located<AST.Atom.Kind>? {
     try recordLoc { src in
       try src.tryEating { src in
@@ -989,7 +989,7 @@ extension Source {
           let num = numAndLoc.value
           let loc = numAndLoc.location
           if num < 10 || firstChar == "8" || firstChar == "9" ||
-              num <= priorGroupCount {
+              context.isPriorGroupRef(.absolute(num)) {
             return .backreference(.init(.absolute(num), innerLoc: loc))
           }
           return nil
@@ -1066,9 +1066,11 @@ extension Source {
   ///                       | EscapedReference
   ///
   mutating func expectEscaped(
-    isInCustomCharacterClass ccc: Bool, priorGroupCount: Int
+    context: ParsingContext
   ) throws -> Located<AST.Atom.Kind> {
     try recordLoc { src in
+      let ccc = context.isInCustomCharacterClass
+
       // Keyboard control/meta
       if src.tryEat("c") || src.tryEat(sequence: "C-") {
         return .keyboardControl(try src.expectASCII().value)
@@ -1092,9 +1094,7 @@ extension Source {
 
       // References using escape syntax, e.g \1, \g{1}, \k<...>, ...
       // These are not valid inside custom character classes.
-      if !ccc, let ref = try src.lexEscapedReference(
-        priorGroupCount: priorGroupCount
-      )?.value {
+      if !ccc, let ref = try src.lexEscapedReference(context: context)?.value {
         return ref
       }
 
@@ -1132,9 +1132,8 @@ extension Source {
   ///
   ///     ExpGroupStart -> '(_:'
   ///
-  mutating func lexAtom(
-    isInCustomCharacterClass customCC: Bool, priorGroupCount: Int
-  ) throws -> AST.Atom? {
+  mutating func lexAtom(context: ParsingContext) throws -> AST.Atom? {
+    let customCC = context.isInCustomCharacterClass
     let kind: Located<AST.Atom.Kind>? = try recordLoc { src in
       // Check for not-an-atom, e.g. parser recursion termination
       if src.isEmpty { return nil }
@@ -1168,9 +1167,7 @@ extension Source {
       case "$": return customCC ? .char("$") : .endOfLine
 
       // Escaped
-      case "\\": return try src.expectEscaped(
-        isInCustomCharacterClass: customCC,
-        priorGroupCount: priorGroupCount).value
+      case "\\": return try src.expectEscaped(context: context).value
 
       case "]":
         assert(!customCC, "parser should have prevented this")
@@ -1186,7 +1183,7 @@ extension Source {
   /// Try to lex the end of a range in a custom character class, which consists
   /// of a '-' character followed by an atom.
   mutating func lexCustomCharClassRangeEnd(
-    priorGroupCount: Int
+    context: ParsingContext
   ) throws -> (dashLoc: SourceLocation, AST.Atom)? {
     // Make sure we don't have a binary operator e.g '--', and the '-' is not
     // ending the custom character class (in which case it is literal).
@@ -1195,8 +1192,7 @@ extension Source {
       return nil
     }
     let dashLoc = Location(start ..< currentPosition)
-    guard let end = try lexAtom(isInCustomCharacterClass: true,
-                                priorGroupCount: priorGroupCount) else {
+    guard let end = try lexAtom(context: context) else {
       return nil
     }
     return (dashLoc, end)
