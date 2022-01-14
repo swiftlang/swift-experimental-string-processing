@@ -420,13 +420,15 @@ extension Source {
   /// delimiter. If `ignoreEscaped` is true, escaped characters will not be
   /// considered for the ending delimiter.
   private mutating func expectQuoted(
-    endingWith end: String, ignoreEscaped: Bool = false
+    endingWith end: String, ignoreEscaped: Bool = false, eatEnding: Bool = true
   ) throws -> Located<String> {
-    try recordLoc { src in
-      let result = try src.lexUntil { src in
-        if try src.tryEatNonEmpty(sequence: end) {
+    let result = try recordLoc { src -> String in
+      try src.lexUntil { src in
+        if src.starts(with: end) {
           return true
         }
+        try src.expectNonEmpty(.expected(end))
+
         // Ignore escapes if we're allowed to. lexUntil will consume the next
         // character.
         if ignoreEscaped, src.tryEat("\\") {
@@ -434,11 +436,14 @@ extension Source {
         }
         return false
       }.value
-      guard !result.isEmpty else {
-        throw ParseError.expectedNonEmptyContents
-      }
-      return result
     }
+    guard !result.value.isEmpty else {
+      throw ParseError.expectedNonEmptyContents
+    }
+    if eatEnding {
+      try expect(sequence: end)
+    }
+    return result
   }
 
   /// Try to consume quoted content
