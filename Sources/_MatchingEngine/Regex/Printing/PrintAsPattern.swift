@@ -103,6 +103,9 @@ extension PrettyPrinter {
         printer.printAsPattern(g.child)
       }
 
+    case let .conditional(c):
+      print("/*TODO: conditional \(c)*/")
+
     case let .quantification(q):
       let amount = q.amount.value._patternBase
       let kind = q.kind.value._patternBase
@@ -263,9 +266,6 @@ extension AST.Atom {
 
     case .subpattern:
       return " /* TODO: subpattern */"
-
-    case .condition:
-      return " /* TODO: condition */"
     }
   }
 }

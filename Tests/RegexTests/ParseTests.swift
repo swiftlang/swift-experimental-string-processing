@@ -845,6 +845,7 @@ extension RegexTests {
     parseTest(#"(?P=abc)"#, backreference(.named("abc")))
 
     parseTest(#"(?R)"#, subpattern(.recurseWholePattern))
+    parseTest(#"(?0)"#, subpattern(.recurseWholePattern))
     parseTest(#"(?1)"#, subpattern(.absolute(1)))
     parseTest(#"(?+12)"#, subpattern(.relative(12)))
     parseTest(#"(?-2)"#, subpattern(.relative(-2)))
@@ -972,12 +973,130 @@ extension RegexTests {
     parseTest(#"\p{word}"#,  prop(.posix(.word)))
     parseTest(#"\p{xdigit}"#, prop(.posix(.xdigit)))
 
+    // MARK: Conditionals
+
+    parseTest(#"(?(1))"#, conditional(
+      .groupMatched(ref(1)), trueBranch: empty(), falseBranch: empty()))
+    parseTest(#"(?(1)|)"#, conditional(
+      .groupMatched(ref(1)), trueBranch: empty(), falseBranch: empty()))
+    parseTest(#"(?(1)a)"#, conditional(
+      .groupMatched(ref(1)), trueBranch: "a", falseBranch: empty()))
+    parseTest(#"(?(1)a|)"#, conditional(
+      .groupMatched(ref(1)), trueBranch: "a", falseBranch: empty()))
+    parseTest(#"(?(1)|b)"#, conditional(
+      .groupMatched(ref(1)), trueBranch: empty(), falseBranch: "b"))
+    parseTest(#"(?(1)a|b)"#, conditional(
+      .groupMatched(ref(1)), trueBranch: "a", falseBranch: "b"))
+
+    parseTest(#"(?(1)(a|b|c)|d)"#, conditional(
+      .groupMatched(ref(1)),
+      trueBranch: capture(alt("a", "b", "c")),
+      falseBranch: "d"
+    ), captures: .optional(.atom()))
+
+    parseTest(#"(?(+3))"#, conditional(
+      .groupMatched(ref(plus: 3)), trueBranch: empty(), falseBranch: empty()))
+    parseTest(#"(?(-21))"#, conditional(
+      .groupMatched(ref(minus: 21)), trueBranch: empty(), falseBranch: empty()))
+
+    parseTest(#"(?(1))?"#, zeroOrOne(.eager, conditional(
+      .groupMatched(ref(1)), trueBranch: empty(), falseBranch: empty())))
+
+    parseTest(#"(?(R)a|b)"#, conditional(
+      .recursionCheck, trueBranch: "a", falseBranch: "b"))
+    parseTest(#"(?(R1))"#, conditional(
+      .groupRecursionCheck(ref(1)), trueBranch: empty(), falseBranch: empty()))
+    parseTest(#"(?(R&abc)a|b)"#, conditional(
+      .groupRecursionCheck(ref("abc")), trueBranch: "a", falseBranch: "b"))
+
+    parseTest(#"(?(<abc>)a|b)"#, conditional(
+      .groupMatched(ref("abc")), trueBranch: "a", falseBranch: "b"))
+    parseTest(#"(?('abc')a|b)"#, conditional(
+      .groupMatched(ref("abc")), trueBranch: "a", falseBranch: "b"))
+
+    parseTest(#"(?(abc)a|b)"#, conditional(
+      groupCondition(.capture, concat("a", "b", "c")),
+      trueBranch: "a", falseBranch: "b"
+    ), captures: .atom())
+
+    parseTest(#"(?(?:abc)a|b)"#, conditional(
+      groupCondition(.nonCapture, concat("a", "b", "c")),
+      trueBranch: "a", falseBranch: "b"
+    ))
+
+    parseTest(#"(?(?=abc)a|b)"#, conditional(
+      groupCondition(.lookahead, concat("a", "b", "c")),
+      trueBranch: "a", falseBranch: "b"
+    ))
+    parseTest(#"(?(?!abc)a|b)"#, conditional(
+      groupCondition(.negativeLookahead, concat("a", "b", "c")),
+      trueBranch: "a", falseBranch: "b"
+    ))
+    parseTest(#"(?(?<=abc)a|b)"#, conditional(
+      groupCondition(.lookbehind, concat("a", "b", "c")),
+      trueBranch: "a", falseBranch: "b"
+    ))
+    parseTest(#"(?(?<!abc)a|b)"#, conditional(
+      groupCondition(.negativeLookbehind, concat("a", "b", "c")),
+      trueBranch: "a", falseBranch: "b"
+    ))
+
+    parseTest(#"(?((a)?(b))(a)+|b)"#, conditional(
+      groupCondition(.capture, concat(
+        zeroOrOne(.eager, capture("a")), capture("b")
+      )),
+      trueBranch: oneOrMore(.eager, capture("a")),
+      falseBranch: "b"
+    ), captures: .tuple([
+      .atom(), .optional(.atom()), .atom(), .optional(.array(.atom()))
+    ]))
+
+    parseTest(#"(?(?:(a)?(b))(a)+|b)"#, conditional(
+      groupCondition(.nonCapture, concat(
+        zeroOrOne(.eager, capture("a")), capture("b")
+      )),
+      trueBranch: oneOrMore(.eager, capture("a")),
+      falseBranch: "b"
+    ), captures: .tuple([
+      .optional(.atom()), .atom(), .optional(.array(.atom()))
+    ]))
+
+    parseTest(#"(?<xxx>y)(?(xxx)a|b)"#, concat(
+      namedCapture("xxx", "y"),
+      conditional(.groupMatched(ref("xxx")), trueBranch: "a", falseBranch: "b")
+    ), captures: .atom(name: "xxx"))
+
+    parseTest(#"(?(1)(?(2)(?(3)))|a)"#, conditional(
+      .groupMatched(ref(1)),
+      trueBranch: conditional(.groupMatched(ref(2)),
+                              trueBranch: conditional(.groupMatched(ref(3)),
+                                                      trueBranch: empty(),
+                                                      falseBranch: empty()),
+                              falseBranch: empty()),
+      falseBranch: "a"))
+
+    parseTest(#"(?(DEFINE))"#, conditional(
+      .defineGroup, trueBranch: empty(), falseBranch: empty()))
+
+    parseTest(#"(?(VERSION>=3.1))"#, conditional(
+      pcreVersionCheck(.greaterThanOrEqual, 3, 1),
+      trueBranch: empty(), falseBranch: empty())
+    )
+    parseTest(#"(?(VERSION=0.1))"#, conditional(
+      pcreVersionCheck(.equal, 0, 1),
+      trueBranch: empty(), falseBranch: empty())
+    )
+
+    // MARK: Parse with delimiters
+
     parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
     parseWithDelimitersTest("'|a b|'", concat("a", "b"))
 
     parseWithDelimitersTest("'|||'", alt(empty(), empty()))
     parseWithDelimitersTest("'||||'", alt(empty(), empty(), empty()))
     parseWithDelimitersTest("'|a||'", alt("a", empty()))
+
+    // MARK: Parse not-equal
 
     // Make sure dumping output correctly reflects differences in AST.
     parseNotEqualTest(#"abc"#, #"abd"#)
@@ -1022,6 +1141,15 @@ extension RegexTests {
     parseNotEqualTest(#"\Qabc\E"#, #"\Qdef\E"#)
     parseNotEqualTest(#""abc""#, #""def""#)
 
+    parseNotEqualTest(#"(?(1)a|)"#, #"(?(1)b|)"#)
+    parseNotEqualTest(#"(?(1)|)"#, #"(?(1)b|)"#)
+    parseNotEqualTest(#"(?(1)|a)"#, #"(?(1)|b)"#)
+    parseNotEqualTest(#"(?(2)|)"#, #"(?(1)|)"#)
+    parseNotEqualTest(#"(?(R1)|)"#, #"(?(R2)|)"#)
+    parseNotEqualTest(#"(?(R&abc)|)"#, #"(?(R&def)|)"#)
+    parseNotEqualTest(#"(?(VERSION=0.1))"#, #"(?(VERSION=0.2))"#)
+    parseNotEqualTest(#"(?(VERSION=0.1))"#, #"(?(VERSION>=0.1))"#)
+
     // TODO: failure tests
   }
 
@@ -1060,6 +1188,25 @@ extension RegexTests {
 
     rangeTest("[a-z]", range(2 ..< 3), at: {
       $0.as(CustomCC.self)!.members[0].as(CustomCC.Range.self)!.dashLoc
+    })
+
+    // MARK: Conditionals
+
+    rangeTest("(?(1))", entireRange)
+    rangeTest("(?(1)a|)", entireRange)
+
+    rangeTest("(?(1)|)", range(5 ..< 6), at: {
+      $0.as(AST.Conditional.self)!.pipe!
+    })
+
+    rangeTest("(?(1))", range(3 ..< 4), at: {
+      $0.as(AST.Conditional.self)!.condition.location
+    })
+    rangeTest("(?(VERSION>=4.1))", range(3 ..< 15), at: {
+      $0.as(AST.Conditional.self)!.condition.location
+    })
+    rangeTest("(?(xxx))", range(2 ..< 7), at: {
+      $0.as(AST.Conditional.self)!.condition.location
     })
   }
 
@@ -1123,5 +1270,11 @@ extension RegexTests {
     // MARK: References
 
     diagnosticTest(#"\g{0}"#, .cannotReferToWholePattern)
+    diagnosticTest(#"(?(0))"#, .cannotReferToWholePattern)
+
+    // MARK: Conditionals
+
+    diagnosticTest(#"(?(1)a|b|c)"#, .tooManyBranchesInConditional(3))
+    diagnosticTest(#"(?(1)||)"#, .tooManyBranchesInConditional(3))
   }
 }

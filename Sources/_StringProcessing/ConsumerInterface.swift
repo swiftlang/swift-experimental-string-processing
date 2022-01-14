@@ -50,7 +50,7 @@ extension AST {
       return try a.generateConsumer(opts)
     case .customCharacterClass(let ccc):
       return try ccc.generateConsumer(opts)
-    case .alternation, .concatenation, .group,
+    case .alternation, .conditional, .concatenation, .group,
         .quantification, .quote, .trivia, .empty,
         .groupTransform: return nil
     }
@@ -112,7 +112,7 @@ extension AST.Atom {
 
     case .escaped, .keyboardControl, .keyboardMeta, .keyboardMetaControl,
         .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .condition:
+        .backreference, .subpattern:
       // FIXME: implement
       return nil
     }

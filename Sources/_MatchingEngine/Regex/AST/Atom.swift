@@ -66,7 +66,6 @@ extension AST {
       // References
       case backreference(Reference)
       case subpattern(Reference)
-      case condition(Reference)
     }
   }
 }
@@ -383,44 +382,6 @@ extension AST.Atom.CharacterProperty {
 }
 
 extension AST.Atom {
-  public struct Reference: Hashable {
-    @frozen
-    public enum Kind: Hashable {
-      // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
-      // Oniguruma: \k<n>, \k'n'
-      case absolute(Int)
-
-      // \g{-n} \g<+n> \g'+n' \g<-n> \g'-n' (?+n) (?-n)
-      // (?(+n)... (?(-n)...
-      // Oniguruma: \k<-n> \k<+n> \k'-n' \k'+n'
-      case relative(Int)
-
-      // \k<name> \k'name' \g{name} \k{name} (?P=name)
-      // \g<name> \g'name' (?&name) (?P>name)
-      // (?(<name>)... (?('name')... (?(name)...
-      case named(String)
-
-      /// (?R), (?(R)..., which are equivalent to (?0), (?(0)...
-      static var recurseWholePattern: Kind { .absolute(0) }
-    }
-    public var kind: Kind
-
-    /// The location of the inner numeric or textual reference, e.g the location
-    /// of '-2' in '\g{-2}'.
-    public var innerLoc: SourceLocation
-
-    public init(_ kind: Kind, innerLoc: SourceLocation) {
-      self.kind = kind
-      self.innerLoc = innerLoc
-    }
-
-    /// Whether this is a reference that recurses the whole pattern, rather than
-    /// a group.
-    public var recursesWholePattern: Bool { kind == .recurseWholePattern }
-  }
-}
-
-extension AST.Atom {
   /// Anchors and other built-in zero-width assertions
   @frozen
   public enum AssertionKind: String {
@@ -497,7 +458,7 @@ extension AST.Atom {
       fallthrough
 
     case .property, .escaped, .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .condition, .namedCharacter:
+        .backreference, .subpattern, .namedCharacter:
       return nil
     }
   }
@@ -522,7 +483,7 @@ extension AST.Atom {
       return "\\M-\\C-\(x)"
 
     case .property, .escaped, .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .condition, .namedCharacter:
+        .backreference, .subpattern, .namedCharacter:
       return nil
     }
   }
@@ -534,8 +495,8 @@ extension AST {
     case .atom(let a): return a.literalStringValue
 
     case .alternation, .concatenation, .group,
-        .quantification, .quote, .trivia,
-        .customCharacterClass, .empty,
+        .conditional, .quantification, .quote,
+        .trivia, .customCharacterClass, .empty,
         .groupTransform:
       return nil
     }

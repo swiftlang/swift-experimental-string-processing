@@ -74,7 +74,7 @@ struct ParsingContext {
   static var none: ParsingContext { .init() }
 
   /// Check whether a given reference refers to a prior group.
-  func isPriorGroupRef(_ ref: AST.Atom.Reference.Kind) -> Bool {
+  func isPriorGroupRef(_ ref: AST.Reference.Kind) -> Bool {
     switch ref {
     case .absolute(let i):
       return i <= priorGroupCount
@@ -196,6 +196,38 @@ extension Parser {
     return .concatenation(.init(result, loc(_start)))
   }
 
+  /// Perform a recursive parse for the branches of a conditional.
+  mutating func parseConditionalBranches(
+    start: Source.Position, _ cond: AST.Conditional.Condition
+  ) throws -> AST {
+    let child = try parse()
+    let trueBranch: AST, falseBranch: AST, pipe: SourceLocation?
+    switch child {
+    case .alternation(let a):
+      // If we have an alternation child, we only accept 2 branches.
+      let numBranches = a.children.count
+      guard numBranches == 2 else {
+        // TODO: Better API for the parser to throw located errors.
+        throw Source.LocatedError(
+          ParseError.tooManyBranchesInConditional(numBranches), child.location
+        )
+      }
+      trueBranch = a.children[0]
+      falseBranch = a.children[1]
+      pipe = a.pipes[0]
+    default:
+      // If there's no alternation, the child is assumed to be the true
+      // branch, with the false branch matching anything.
+      trueBranch = child
+      falseBranch = .empty(.init(loc(source.currentPosition)))
+      pipe = nil
+    }
+    try source.expect(")")
+    return .conditional(.init(
+      cond, trueBranch: trueBranch, pipe: pipe, falseBranch: falseBranch,
+      loc(start)))
+  }
+
   /// Perform a recursive parse for the body of a group.
   mutating func parseGroupBody(
     start: Source.Position, _ kind: AST.Located<AST.Group.Kind>
@@ -212,13 +244,27 @@ extension Parser {
 
   /// Parse a (potentially quantified) component
   ///
-  ///     QuantOperand -> Group | CustomCharClass | Atom
+  ///     QuantOperand -> Conditional | Group | CustomCharClass | Atom
   ///     Group        -> GroupStart Regex ')'
-  ///     
+  ///     Conditional  -> ConditionalStart Concatenation ('|' Concatenation)? ')'
+  ///     ConditionalStart -> KnownConditionalStart | GroupConditionalStart
+  ///
   mutating func parseQuantifierOperand() throws -> AST? {
     assert(!source.isEmpty)
 
     let _start = source.currentPosition
+
+    // Check if we have the start of a conditional '(?(cond)', which can either
+    // be a known condition, or an arbitrary group condition.
+    if let cond = try source.lexKnownConditionalStart(context: context) {
+      return try parseConditionalBranches(start: _start, cond)
+    }
+    if let kind = try source.lexGroupConditionalStart() {
+      let groupStart = kind.location.start
+      let group = try parseGroupBody(start: groupStart, kind)
+      return try parseConditionalBranches(
+        start: _start, .init(.group(group), group.location))
+    }
 
     // Check if we have the start of a group '('.
     if let kind = try source.lexGroupStart() {

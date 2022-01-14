@@ -743,6 +743,143 @@ extension Source {
     }
   }
 
+  /// Consume a PCRE version number.
+  ///
+  ///     PCREVersionNumber -> <Int>.<Int>
+  ///
+  private mutating func expectPCREVersionNumber(
+  ) throws -> AST.Conditional.Condition.PCREVersionNumber {
+    let nums = try recordLoc { src -> (major: Int, minor: Int) in
+      let major = try src.expectNumber().value
+      try src.expect(".")
+      let minor = try src.expectNumber().value
+      return (major, minor)
+    }
+    return .init(major: nums.value.major, minor: nums.value.minor,
+                 nums.location)
+  }
+
+  /// Consume a PCRE version check suffix.
+  ///
+  ///     PCREVersionCheck -> '>'? '=' PCREVersionNumber
+  ///
+  private mutating func expectPCREVersionCheck(
+  ) throws -> AST.Conditional.Condition.Kind {
+    typealias Kind = AST.Conditional.Condition.PCREVersionCheck.Kind
+    let kind = try recordLoc { src -> Kind in
+      let greaterThan = src.tryEat(">")
+      try src.expect("=")
+      return greaterThan ? .greaterThanOrEqual : .equal
+    }
+    return .pcreVersionCheck(.init(kind, try expectPCREVersionNumber()))
+  }
+
+  /// Try to lex a known condition (excluding group conditions).
+  ///
+  ///     KnownCondition -> 'R'
+  ///                     | 'R' NumberRef
+  ///                     | 'R&' <String> !')'
+  ///                     | '<' NameRef '>'
+  ///                     | "'" NameRef "'"
+  ///                     | 'DEFINE'
+  ///                     | 'VERSION' VersionCheck
+  ///                     | NumberRef
+  ///                     | NameRef
+  ///
+  private mutating func lexKnownCondition(
+    context: ParsingContext
+  ) throws -> AST.Conditional.Condition? {
+    typealias ConditionKind = AST.Conditional.Condition.Kind
+
+    let kind = try recordLoc { src -> ConditionKind? in
+      try src.tryEating { src in
+
+        // PCRE recursion check.
+        if src.tryEat("R") {
+          if src.tryEat("&") {
+            return .groupRecursionCheck(
+              try src.expectNamedReference(endingWith: ")", eatEnding: false))
+          }
+          if let num = try src.lexNumber() {
+            return .groupRecursionCheck(
+              .init(.absolute(num.value), innerLoc: num.location))
+          }
+          return .recursionCheck
+        }
+
+        // TODO: Oniguruma can also parse an additional recursion level for
+        // group-matched checks.
+        if let open = src.tryEat(anyOf: "<", "'") {
+          // In PCRE, this can only be a named reference. In Oniguruma, it can
+          // also be a numbered reference.
+          let closing = String(Source.getClosingDelimiter(for: open))
+          return .groupMatched(
+            try src.expectNamedOrNumberedReference(endingWith: closing))
+        }
+
+        // PCRE group definition and version check.
+        if src.tryEat(sequence: "DEFINE") {
+          return .defineGroup
+        }
+        if src.tryEat(sequence: "VERSION") {
+          return try src.expectPCREVersionCheck()
+        }
+
+        // If we have a numbered reference, this is a check to see if a group
+        // matched.
+        if let numRef = try src.lexNumberedReference() {
+          return .groupMatched(numRef)
+        }
+
+        // PCRE and .NET also allow a named reference to be parsed here. PCRE
+        // always treats it as a named reference, whereas .NET only treats it
+        // as such if a group exists with that name. For now, just check if a
+        // prior group exists with that name.
+        // FIXME: This should apply to future groups too.
+        // TODO: We should probably advise users to use the more explicit
+        // syntax.
+        let nameRef = try src.expectNamedReference(
+          endingWith: ")", eatEnding: false)
+        if context.isPriorGroupRef(nameRef.kind) {
+          return .groupMatched(nameRef)
+        }
+        return nil
+      }
+    }
+    guard let kind = kind else { return nil }
+    return .init(kind.value, kind.location)
+  }
+
+  /// Attempt to lex a known conditional start (excluding group conditions).
+  ///
+  ///     KnownConditionalStart -> '(?(' KnownCondition ')'
+  ///
+  mutating func lexKnownConditionalStart(
+    context: ParsingContext
+  ) throws -> AST.Conditional.Condition? {
+    try tryEating { src in
+      guard src.tryEat(sequence: "(?("),
+            let cond = try src.lexKnownCondition(context: context)
+      else { return nil }
+      try src.expect(")")
+      return cond
+    }
+  }
+
+  /// Attempt to lex the start of a group conditional.
+  ///
+  ///     GroupConditionalStart -> '(?' GroupStart
+  ///
+  mutating func lexGroupConditionalStart() throws -> Located<AST.Group.Kind>? {
+    try tryEating { src in
+      guard src.tryEat(sequence: "(?"),
+            let group = try src.lexGroupStart(),
+            !group.value.hasImplicitScope
+      else { return nil }
+      return group
+    }
+  }
+
   mutating func lexCustomCCStart(
   ) throws -> Located<CustomCC.Start>? {
     recordLoc { src in
@@ -855,8 +992,8 @@ extension Source {
   ///
   private mutating func lexNumberedReference(
     allowWholePatternRef: Bool = false
-  ) throws -> AST.Atom.Reference? {
-    let kind = try recordLoc { src -> AST.Atom.Reference.Kind? in
+  ) throws -> AST.Reference? {
+    let kind = try recordLoc { src -> AST.Reference.Kind? in
       // Note this logic should match canLexNumberedReference.
       if src.tryEat("+") {
         return .relative(try src.expectNumber().value)
@@ -887,7 +1024,7 @@ extension Source {
   /// Eat a named reference up to a given closing delimiter.
   private mutating func expectNamedReference(
     endingWith end: String, eatEnding: Bool = true
-  ) throws -> AST.Atom.Reference {
+  ) throws -> AST.Reference {
     // TODO: Group name validation, see comment in lexGroupStart.
     let str = try expectQuoted(endingWith: end, eatEnding: eatEnding)
     return .init(.named(str.value), innerLoc: str.location)
@@ -900,7 +1037,7 @@ extension Source {
   private mutating func expectNamedOrNumberedReference(
     endingWith ending: String, eatEnding: Bool = true,
     allowWholePatternRef: Bool = false
-  ) throws -> AST.Atom.Reference {
+  ) throws -> AST.Reference {
     if let numbered = try lexNumberedReference(
       allowWholePatternRef: allowWholePatternRef
     ) {
@@ -942,6 +1079,8 @@ extension Source {
       try src.tryEating { src in
         guard let firstChar = src.peek() else { return nil }
 
+        // TODO: Oniguruma can parse an additional recursion level for
+        // backreferences.
         if src.tryEat("g") {
           // PCRE-style backreferences.
           if src.tryEat("{") {
