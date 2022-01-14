@@ -1119,5 +1119,9 @@ extension RegexTests {
     diagnosticTest(#"\k''"#, .expectedNonEmptyContents)
     diagnosticTest(#"(?&)"#, .expectedNonEmptyContents)
     diagnosticTest(#"(?P>)"#, .expectedNonEmptyContents)
+
+    // MARK: References
+
+    diagnosticTest(#"\g{0}"#, .cannotReferToWholePattern)
   }
 }

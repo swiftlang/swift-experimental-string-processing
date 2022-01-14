@@ -854,6 +854,7 @@ extension Source {
   ///     NumberRef -> ('+' | '-')? <Decimal Number>
   ///
   private mutating func lexNumberedReference(
+    allowWholePatternRef: Bool = false
   ) throws -> AST.Atom.Reference? {
     let kind = try recordLoc { src -> AST.Atom.Reference.Kind? in
       // Note this logic should match canLexNumberedReference.
@@ -869,6 +870,9 @@ extension Source {
       return nil
     }
     guard let kind = kind else { return nil }
+    guard allowWholePatternRef || kind.value != .recurseWholePattern else {
+      throw ParseError.cannotReferToWholePattern
+    }
     return .init(kind.value, innerLoc: kind.location)
   }
 
@@ -882,10 +886,10 @@ extension Source {
 
   /// Eat a named reference up to a given closing delimiter.
   private mutating func expectNamedReference(
-    endingWith end: String
+    endingWith end: String, eatEnding: Bool = true
   ) throws -> AST.Atom.Reference {
     // TODO: Group name validation, see comment in lexGroupStart.
-    let str = try expectQuoted(endingWith: end)
+    let str = try expectQuoted(endingWith: end, eatEnding: eatEnding)
     return .init(.named(str.value), innerLoc: str.location)
   }
 
@@ -894,13 +898,18 @@ extension Source {
   ///     NameOrNumberRef -> NumberRef | <String>
   ///
   private mutating func expectNamedOrNumberedReference(
-    endingWith ending: String
+    endingWith ending: String, eatEnding: Bool = true,
+    allowWholePatternRef: Bool = false
   ) throws -> AST.Atom.Reference {
-    if let numbered = try lexNumberedReference() {
-      try expect(sequence: ending)
+    if let numbered = try lexNumberedReference(
+      allowWholePatternRef: allowWholePatternRef
+    ) {
+      if eatEnding {
+        try expect(sequence: ending)
+      }
       return numbered
     }
-    return try expectNamedReference(endingWith: ending)
+    return try expectNamedReference(endingWith: ending, eatEnding: eatEnding)
   }
 
   private static func getClosingDelimiter(
@@ -943,8 +952,8 @@ extension Source {
           // Oniguruma-style subpatterns.
           if let openChar = src.tryEat(anyOf: "<", "'") {
             let closing = String(Source.getClosingDelimiter(for: openChar))
-            return .subpattern(
-              try src.expectNamedOrNumberedReference(endingWith: closing))
+            return .subpattern(try src.expectNamedOrNumberedReference(
+              endingWith: closing, allowWholePatternRef: true))
           }
 
           // PCRE allows \g followed by a bare numeric reference.
@@ -1029,7 +1038,7 @@ extension Source {
         }
 
         // Numbered subpattern reference.
-        if let ref = try src.lexNumberedReference() {
+        if let ref = try src.lexNumberedReference(allowWholePatternRef: true) {
           try src.expect(")")
           return .subpattern(ref)
         }
