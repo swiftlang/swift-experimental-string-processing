@@ -21,16 +21,13 @@ class Compiler {
   private var optionStack: MatchingOptionSetStack
   private var builder = RegexProgram.Program.Builder()
 
-  private var currentOptions: AST.MatchingOptionSet {
-    guard let top = optionStack.top else {
-      fatalError("Unbalanced matching options removal")
-    }
-    return top
+  private var currentOptions: MatchingOptionSet {
+    return optionStack.top
   }
   
   init(
     ast: AST,
-    options: AST.MatchingOptionSet = [.init(.graphemeClusterSemantics)]
+    options: MatchingOptionSet = .default
   ) {
     self.ast = ast
     self.optionStack = MatchingOptionSetStack(options)
@@ -109,17 +106,9 @@ class Compiler {
         try emit(g.child)
         builder.buildEndCapture(cap)
 
-      case .changeMatchingOptions(let optionSequence, isIsolated: let isIsolated):
-        let updated = optionSequence.options(merging: currentOptions)
-        
-        if isIsolated {
-          optionStack.replaceTop(updated)
-          try emit(g.child)
-        } else {
-          optionStack.push(updated)
-          try emit(g.child)
-          optionStack.pop()
-        }
+      case .changeMatchingOptions(let optionSequence, _):
+        optionStack.replaceTop(currentOptions.merging(optionSequence))
+        try emit(g.child)
 
       default:
         // FIXME: Other kinds...
@@ -485,31 +474,6 @@ class Compiler {
     default:
       fatalError("unreachable")
     }
-  }
-}
-
-/// A stack of `MatchingOptionSet`s.
-fileprivate struct MatchingOptionSetStack {
-  internal var stack: [AST.MatchingOptionSet]
-  
-  init(_ initial: AST.MatchingOptionSet) {
-    self.stack = [initial]
-  }
-  
-  var top: AST.MatchingOptionSet? { stack.last }
-  
-  mutating func push(_ set: AST.MatchingOptionSet) {
-    stack.append(set)
-  }
-  
-  mutating func replaceTop(_ set: AST.MatchingOptionSet) {
-    stack.removeLast()
-    stack.append(set)
-  }
-  
-  @discardableResult
-  mutating func pop() -> AST.MatchingOptionSet {
-    stack.removeLast()
   }
 }
 
