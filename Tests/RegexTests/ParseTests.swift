@@ -1093,6 +1093,7 @@ extension RegexTests {
     diagnosticTest("\\Qab\\", .expected("\\E"))
     diagnosticTest(#""ab"#, .expected("\""), syntax: .experimental)
     diagnosticTest(#""ab\""#, .expected("\""), syntax: .experimental)
+    diagnosticTest("\"ab\\", .expectedEscape, syntax: .experimental)
 
     // MARK: Text Segment options
 

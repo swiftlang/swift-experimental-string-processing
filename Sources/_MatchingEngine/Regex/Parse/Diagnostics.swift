@@ -31,6 +31,7 @@ enum ParseError: Error, Hashable {
   case expectedASCII(Character)
 
   case expectedNonEmptyContents
+  case expectedEscape
 
   case unknownGroupKind(String)
 
@@ -70,6 +71,8 @@ extension ParseError: CustomStringConvertible {
       return s
     case .expectedNonEmptyContents:
       return "expected non-empty contents"
+    case .expectedEscape:
+      return "expected escape sequence"
     case let .unknownGroupKind(str):
       return "unknown group kind '(\(str)'"
     case let .invalidMatchingOption(c):

@@ -105,18 +105,18 @@ extension Source {
   /// Throws an unexpected end of input error if not matched
   ///
   /// Note: much of the time, but not always, we can vend a more specific error.
-  mutating func expectNonEmpty() throws {
+  mutating func expectNonEmpty(
+    _ error: ParseError = .unexpectedEndOfInput
+  ) throws {
     _ = try recordLoc { src in
-      if src.isEmpty { throw ParseError.unexpectedEndOfInput }
+      if src.isEmpty { throw error }
     }
   }
 
   mutating func tryEatNonEmpty<C: Collection>(sequence c: C) throws -> Bool
     where C.Element == Char
   {
-    _ = try recordLoc { src in
-      guard !src.isEmpty else { throw ParseError.expected(String(c)) }
-    }
+    try expectNonEmpty(.expected(String(c)))
     return tryEat(sequence: c)
   }
 
@@ -430,7 +430,7 @@ extension Source {
         // Ignore escapes if we're allowed to. lexUntil will consume the next
         // character.
         if ignoreEscaped, src.tryEat("\\") {
-          try src.expectNonEmpty()
+          try src.expectNonEmpty(.expectedEscape)
         }
         return false
       }.value
