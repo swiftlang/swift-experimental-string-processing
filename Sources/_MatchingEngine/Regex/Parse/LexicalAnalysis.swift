@@ -872,10 +872,16 @@ extension Source {
   ///
   mutating func lexGroupConditionalStart() throws -> Located<AST.Group.Kind>? {
     try tryEating { src in
-      guard src.tryEat(sequence: "(?"),
-            let group = try src.lexGroupStart(),
-            !group.value.hasImplicitScope
+      guard src.tryEat(sequence: "(?"), let group = try src.lexGroupStart()
       else { return nil }
+
+      // Implicitly scoped groups are not supported here.
+      guard !group.value.hasImplicitScope else {
+        throw LocatedError(
+          ParseError.unsupportedCondition("implicitly scoped group"),
+          group.location
+        )
+      }
       return group
     }
   }

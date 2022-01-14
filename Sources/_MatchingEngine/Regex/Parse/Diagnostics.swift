@@ -29,6 +29,7 @@ enum ParseError: Error, Hashable {
   case misc(String)
 
   case tooManyBranchesInConditional(Int)
+  case unsupportedCondition(String)
 
   case expectedASCII(Character)
 
@@ -81,6 +82,8 @@ extension ParseError: CustomStringConvertible {
       return "cannot refer to whole pattern here"
     case let .tooManyBranchesInConditional(i):
       return "expected 2 branches in conditional, have \(i)"
+    case let .unsupportedCondition(str):
+      return "\(str) cannot be used as condition"
     case let .unknownGroupKind(str):
       return "unknown group kind '(\(str)'"
     case let .invalidMatchingOption(c):

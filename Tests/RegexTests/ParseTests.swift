@@ -1276,5 +1276,6 @@ extension RegexTests {
 
     diagnosticTest(#"(?(1)a|b|c)"#, .tooManyBranchesInConditional(3))
     diagnosticTest(#"(?(1)||)"#, .tooManyBranchesInConditional(3))
+    diagnosticTest(#"(?(?i))"#, .unsupportedCondition("implicitly scoped group"))
   }
 }
