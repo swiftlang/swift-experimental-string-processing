@@ -113,31 +113,42 @@ public func oneOrMore(_ cc: CharacterClass) -> _OneOrMore_0<CharacterClass> {
 
 // MARK: Alternation
 
-// TODO: Support heterogeneous capture alternation.
-public struct Alternation<
-  Component1: RegexProtocol, Component2: RegexProtocol
->: RegexProtocol {
-  public typealias Match = Component1.Match
+// TODO: Variadic generics
+// @resultBuilder
+// struct AlternationBuilder {
+//   @_disfavoredOverload
+//   func buildBlock<R: RegexProtocol>(_ regex: R) -> R
+//   func buildBlock<
+//     R: RegexProtocol, W0, C0...
+//   >(
+//     _ regex: R
+//   ) -> R where R.Match == (W, C...)
+// }
 
-  public let regex: Regex<Match>
-
-  public init(_ first: Component1, _ second: Component2) {
-    regex = .init(node: .alternation([
-      first.regex.root, second.regex.root
-    ]))
+@resultBuilder
+public struct AlternationBuilder {
+  @_disfavoredOverload
+  public static func buildBlock<R: RegexProtocol>(_ regex: R) -> R {
+    regex
   }
 
-  public init(
-    @RegexBuilder _ content: () -> Alternation<Component1, Component2>
-  ) {
-    self = content()
+  public static func buildExpression<R: RegexProtocol>(_ regex: R) -> R {
+    regex
+  }
+
+  public static func buildEither<R: RegexProtocol>(first component: R) -> R {
+    component
+  }
+
+  public static func buildEither<R: RegexProtocol>(second component: R) -> R {
+    component
   }
 }
 
-public func | <Component1, Component2>(
-  lhs: Component1, rhs: Component2
-) -> Alternation<Component1, Component2> {
-  .init(lhs, rhs)
+public func oneOf<R: RegexProtocol>(
+  @AlternationBuilder builder: () -> R
+) -> R {
+  builder()
 }
 
 // MARK: - Capture

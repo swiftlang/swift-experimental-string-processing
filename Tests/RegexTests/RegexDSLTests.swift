@@ -43,6 +43,71 @@ class RegexDSLTests: XCTestCase {
     XCTAssertTrue(match.match == ("a c", " ", "c"))
   }
 
+  func testAlternation() throws {
+    do {
+      let regex = oneOf {
+        "aaa"
+      }
+      XCTAssertTrue("aaa".match(regex)?.match == "aaa")
+      XCTAssertNil("aab".match(regex)?.match)
+    }
+    do {
+      let regex = oneOf {
+        "aaa"
+        "bbb"
+        "ccc"
+      }
+      XCTAssertTrue("aaa".match(regex)?.match == "aaa")
+      XCTAssertNil("aab".match(regex)?.match)
+      XCTAssertTrue("bbb".match(regex)?.match == "bbb")
+      XCTAssertTrue("ccc".match(regex)?.match == "ccc")
+    }
+    do {
+      let regex = Regex {
+        "ab"
+        oneOf {
+          "c"
+          "def"
+        }.capture().+
+      }
+      XCTAssertTrue(
+        try XCTUnwrap("abc".match(regex)?.match) == ("abc", ["c"]))
+    }
+    do {
+      let regex = oneOf {
+        "aaa"
+        "bbb"
+        "ccc"
+      }
+      XCTAssertTrue("aaa".match(regex)?.match == "aaa")
+      XCTAssertNil("aab".match(regex)?.match)
+      XCTAssertTrue("bbb".match(regex)?.match == "bbb")
+      XCTAssertTrue("ccc".match(regex)?.match == "ccc")
+    }
+    do {
+      let regex = oneOf {
+        "aaa".capture()
+      }
+      XCTAssertTrue(
+        try XCTUnwrap("aaa".match(regex)?.match) == ("aaa", "aaa"))
+      XCTAssertNil("aab".match(regex)?.match)
+    }
+    do {
+      let regex = oneOf {
+        "aaa".capture()
+        "bbb".capture()
+        "ccc".capture()
+      }
+      XCTAssertTrue(
+        try XCTUnwrap("aaa".match(regex)?.match) == ("aaa", "aaa", nil, nil))
+      XCTAssertTrue(
+        try XCTUnwrap("bbb".match(regex)?.match) == ("bbb", nil, "bbb", nil))
+      XCTAssertTrue(
+        try XCTUnwrap("ccc".match(regex)?.match) == ("ccc", nil, nil, "ccc"))
+      XCTAssertNil("aab".match(regex)?.match)
+    }
+  }
+
   func testCombinators() throws {
     let regex = Regex {
       "a".+
@@ -51,15 +116,20 @@ class RegexDSLTests: XCTestCase {
       CharacterClass.hexDigit.capture().* // [Substring]
       "e".?
       ("t" | "k").capture() // Substring
+      oneOf { "k".capture(); "j".capture() } // (Substring?, Substring?)
     }
     // Assert the inferred capture type.
-    let _: (Substring, Substring, Substring, [Substring], Substring).Type
+    let _: (Substring, Substring, Substring, [Substring], Substring, Substring?, Substring?).Type
       = type(of: regex).Match.self
-    let maybeMatch = "aaaabccccdddk".match(regex)
-    let match = try XCTUnwrap(maybeMatch)
-    XCTAssertTrue(
-      match.match
-        == ("aaaabccccdddk", "b", "cccc", ["d", "d", "d"], "k"))
+    let maybeMatch = "aaaabccccdddkj".match(regex)
+    let match = try XCTUnwrap(maybeMatch).match
+    XCTAssertEqual(match.0, "aaaabccccdddkj")
+    XCTAssertEqual(match.1, "b")
+    XCTAssertEqual(match.2, "cccc")
+    XCTAssertEqual(match.3, ["d", "d", "d"])
+    XCTAssertEqual(match.4, "k")
+    XCTAssertEqual(match.5, .none)
+    XCTAssertEqual(match.6, .some("j"))
   }
 
   func testNestedGroups() throws {

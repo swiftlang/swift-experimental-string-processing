@@ -240,22 +240,54 @@ func compile(
       //       E.g. `a` falls-through to the rest of the program and the
       //       other cases branch back.
       //
-      assert(!children.isEmpty)
-      guard children.count > 1 else {
-        return try compileNode(children[0])
+      
+      // For every capturing child after the child at the given index, emit a
+      // nil capture. This is used for skipping the remaining alternation
+      // cases after a succesful match.
+      func nullifyRest(after index: Int) {
+        for child in children.suffix(from: index + 1) where child.hasCapture {
+          instructions.append(contentsOf: [
+            .beginGroup,
+            .captureNil(childType: child.captureStructure.type),
+            .endGroup,
+          ])
+        }
       }
 
       let last = children.last!
       let middle = children.dropLast()
       let done = createLabel()
-      for child in middle {
+      for (childIndex, child) in middle.enumerated() {
         let nextLabel = createLabel()
+        if child.hasCapture {
+          instructions.append(.beginGroup)
+        }
         instructions.append(.split(disfavoring: nextLabel.label!))
         try compileNode(child)
-        instructions.append(.goto(label: done.label!))
-        instructions.append(nextLabel)
+        if child.hasCapture {
+          instructions.append(.captureSome)
+          instructions.append(.endGroup)
+        }
+        nullifyRest(after: childIndex)
+        instructions.append(contentsOf: [
+          .goto(label: done.label!),
+          nextLabel
+        ])
+        if child.hasCapture {
+          instructions.append(contentsOf: [
+            .captureNil(childType: child.captureStructure.type),
+            .endGroup
+          ])
+        }
+      }
+      if last.hasCapture {
+        instructions.append(.beginGroup)
       }
       try compileNode(last)
+      if last.hasCapture {
+        instructions.append(.captureSome)
+        instructions.append(.endGroup)
+      }
       instructions.append(done)
       return
 

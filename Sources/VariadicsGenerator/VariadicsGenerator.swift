@@ -160,6 +160,20 @@ struct VariadicsGenerator: ParsableCommand {
       print(to: &standardError)
     }
 
+    print("Generating alternation overloads...", to: &standardError)
+    for (leftArity, rightArity) in Permutations(totalArity: maxArity) {
+      print(
+        "  Left arity: \(leftArity)  Right arity: \(rightArity)",
+        to: &standardError)
+      emitAlternation(leftArity: leftArity, rightArity: rightArity)
+    }
+
+    print("Generating 'AlternationBuilder.buildBlock(_:)' overloads...", to: &standardError)
+    for arity in 1..<maxArity {
+      print("  Capture arity: \(arity)", to: &standardError)
+      emitUnaryAlternationBuildBlock(arity: arity)
+    }
+
     output("\n\n")
 
     output("// END AUTO-GENERATED CONTENT\n")
@@ -442,6 +456,92 @@ struct VariadicsGenerator: ParsableCommand {
         }
         """ : "")
 
+      """)
+  }
+
+  func emitAlternation(leftArity: Int, rightArity: Int) {
+    let typeName = "_Alternation_\(leftArity)_\(rightArity)"
+    let leftGenParams: String = {
+      if leftArity == 0 {
+        return "R0"
+      }
+      return "R0, W0, " + (0..<leftArity).map { "C\($0)" }.joined(separator: ", ")
+    }()
+    let rightGenParams: String = {
+      if rightArity == 0 {
+        return "R1"
+      }
+      return "R1, W1, " + (leftArity..<leftArity+rightArity).map { "C\($0)" }.joined(separator: ", ")
+    }()
+    let genericParams = leftGenParams + ", " + rightGenParams
+    let whereClause: String = {
+      var result = "where R0: \(regexProtocolName), R1: \(regexProtocolName)"
+      if leftArity > 0 {
+        result += ", R0.\(matchAssociatedTypeName) == (W0, \((0..<leftArity).map { "C\($0)" }.joined(separator: ", ")))"
+      }
+      if rightArity > 0 {
+        result += ", R1.\(matchAssociatedTypeName) == (W1, \((leftArity..<leftArity+rightArity).map { "C\($0)" }.joined(separator: ", ")))"
+      }
+      return result
+    }()
+    let resultCaptures: String = {
+      var result = (0..<leftArity).map { "C\($0)" }.joined(separator: ", ")
+      if leftArity > 0, rightArity > 0 {
+        result += ", "
+      }
+      result += (leftArity..<leftArity+rightArity).map { "C\($0)?" }.joined(separator: ", ")
+      return result
+    }()
+    let matchType: String = {
+      if leftArity == 0, rightArity == 0 {
+        return baseMatchTypeName
+      }
+      return "(\(baseMatchTypeName), \(resultCaptures))"
+    }()
+    output("""
+      public struct \(typeName)<\(genericParams)>: \(regexProtocolName) \(whereClause) {
+        public typealias Match = \(matchType)
+        public let regex: Regex<Match>
+
+        public init(_ left: R0, _ right: R1) {
+          self.regex = .init(node: left.regex.root.appendingAlternationCase(right.regex.root))
+        }
+      }
+
+      extension AlternationBuilder {
+        public static func buildBlock<\(genericParams)>(combining next: R1, into combined: R0) -> \(typeName)<\(genericParams)> {
+          .init(combined, next)
+        }
+      }
+
+      public func | <\(genericParams)>(lhs: R0, rhs: R1) -> \(typeName)<\(genericParams)> {
+        .init(lhs, rhs)
+      }
+
+      """)
+  }
+
+  func emitUnaryAlternationBuildBlock(arity: Int) {
+    assert(arity > 0)
+    let captures = (0..<arity).map { "C\($0)" }.joined(separator: ", ")
+    let genericParams: String = {
+      if arity == 0 {
+        return "R"
+      }
+      return "R, W, " + captures
+    }()
+    let whereClause: String = """
+      where R: \(regexProtocolName), \
+      R.\(matchAssociatedTypeName) == (W, \(captures))
+      """
+    let resultCaptures = (0..<arity).map { "C\($0)?" }.joined(separator: ", ")
+    output("""
+      extension AlternationBuilder {
+        public static func buildBlock<\(genericParams)>(_ regex: R) -> Regex<(W, \(resultCaptures))> \(whereClause) {
+          .init(node: .alternation([regex.regex.root]))
+        }
+      }
+      
       """)
   }
 }

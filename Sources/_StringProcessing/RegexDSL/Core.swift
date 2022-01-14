@@ -130,12 +130,6 @@ extension RegexProtocol {
     in inputRange: Range<String.Index>,
     mode: MatchMode = .wholeString
   ) -> RegexMatch<Match>? {
-    // Casts a Swift tuple to the custom `Tuple<n>`, assuming their memory
-    // layout is compatible.
-    func bitCastToMatch<T>(_ x: T) -> Match {
-      assert(MemoryLayout<T>.size == MemoryLayout<Match>.size)
-      return unsafeBitCast(x, to: Match.self)
-    }
     // TODO: Remove this branch when the matching engine supports captures.
     if regex.hasCapture {
       let vm = HareVM(program: regex.program.legacyLoweredProgram)
@@ -151,7 +145,7 @@ extension RegexProtocol {
         let typeErasedMatch = captures.matchValue(
           withWholeMatch: input[range]
         )
-        convertedMatch = _openExistential(typeErasedMatch, do: bitCastToMatch)
+        convertedMatch = typeErasedMatch as! Match
       }
       return RegexMatch(range: range, match: convertedMatch)
     }
