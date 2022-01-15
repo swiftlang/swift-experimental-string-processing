@@ -464,6 +464,20 @@ extension RegexTests {
       // TODO: Nested reluctant reentrant example, xfailed
     )
 
+    // Reluctant by default - '*/+/.' and '*?/+?/.?' are swapped
+    firstMatchTest("(?U)a*", input: "aaa", match: "")
+    firstMatchTest("(?U)a*a", input: "aaa", match: "a")
+    firstMatchTest("(?U)a*?", input: "aaa", match: "aaa")
+    firstMatchTest("(?U)a*?a", input: "aaa", match: "aaa")
+
+    firstMatchTest("(?U)a+", input: "aaa", match: "a")
+    firstMatchTest("(?U)a+?", input: "aaa", match: "aaa")
+
+    firstMatchTest("(?U)a?", input: "a", match: "")
+    firstMatchTest("(?U)a?a", input: "aaa", match: "a")
+    firstMatchTest("(?U)a??", input: "a", match: "a")
+    firstMatchTest("(?U)a??a", input: "aaa", match: "aa")
+
     // TODO: After captures, easier to test these
   }
 

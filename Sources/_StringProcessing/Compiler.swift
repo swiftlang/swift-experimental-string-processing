@@ -455,7 +455,18 @@ class Compiler {
 
   func emitQuantification(_ quant: AST.Quantification) throws {
     let child = quant.child
-    let kind = quant.kind.value
+    
+    // If in reluctant-by-default mode, eager and reluctant need to be switched.
+    let kind: AST.Quantification.Kind
+    if currentOptions.contains(.reluctantByDefault)
+        && quant.kind.value != .possessive
+    {
+      kind = quant.kind.value == .eager
+        ? .reluctant
+        : .eager
+    } else {
+      kind = quant.kind.value
+    }
 
     switch quant.amount.value.bounds {
     case (_, atMost: 0):
