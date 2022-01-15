@@ -599,6 +599,10 @@ extension Source {
         if opt.isTextSegmentMode {
           throw ParseError.cannotRemoveTextSegmentOptions
         }
+        // Matching semantics options can only be added, not removed.
+        if opt.isSemanticMatchingLevel {
+          throw ParseError.cannotRemoveSemanticsOptions
+        }
         removing.append(opt)
       }
       return .init(caretLoc: nil, adding: adding, minusLoc: ateMinus.location,

@@ -18,7 +18,9 @@ import XCTest
 extension RegexTests {
 
   private func testCompilationEquivalence(
-    _ equivs: [String]
+    _ equivs: [String],
+    file: StaticString = #file,
+    line: UInt = #line
   ) throws {
     assert(!equivs.isEmpty)
     let progs = try equivs.map {
@@ -33,7 +35,8 @@ extension RegexTests {
           \(ref)
           Current:
           \(prog)
-          """)
+          """,
+          file: file, line: line)
           continue
         }
     }
@@ -70,7 +73,12 @@ extension RegexTests {
        "(*positive_lookahead: assert)"],
       ["(?! assert)",
        "(*nla: assert)",
-       "(*negative_lookahead: assert)"]
+       "(*negative_lookahead: assert)"],
+      
+      ["(?i) case-insensitive",
+       "(?i: case-insensitive)"],
+      ["(?i) case-insensitive(?-i) post",
+       "(?i: case-insensitive) post"],
     ]
 
     for row in equivalents {

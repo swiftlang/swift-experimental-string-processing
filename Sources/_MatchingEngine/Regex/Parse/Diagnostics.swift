@@ -45,6 +45,7 @@ enum ParseError: Error, Hashable {
 
   case expectedGroupSpecifier
   case cannotRemoveTextSegmentOptions
+  case cannotRemoveSemanticsOptions
 }
 
 extension ParseError: CustomStringConvertible {
@@ -90,6 +91,8 @@ extension ParseError: CustomStringConvertible {
       return "expected group specifier"
     case .cannotRemoveTextSegmentOptions:
       return "text segment mode cannot be unset, only changed"
+    case .cannotRemoveSemanticsOptions:
+      return "matching semantics cannot be unset, only changed"
     }
   }
 }
