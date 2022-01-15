@@ -57,6 +57,10 @@ extension MatchingOptionSet {
   
   func merging(_ sequence: AST.MatchingOptionSequence) -> MatchingOptionSet {
     var result = self
+    if sequence.caretLoc != nil {
+      result = .default
+    }
+    
     for opt in sequence.adding {
       if opt.isSemanticMatchingLevel {
         result.remove(.semanticMatchingLevels)

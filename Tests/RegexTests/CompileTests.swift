@@ -27,7 +27,7 @@ extension RegexTests {
       try _compileRegex($0).engine.program
     }
     let ref = progs.first!
-    for prog in progs.dropFirst() {
+    for (prog, equiv) in zip(progs, equivs).dropFirst() {
       guard ref.instructions.elementsEqual(
         prog.instructions) else {
           XCTFail("""
@@ -35,6 +35,8 @@ extension RegexTests {
           \(ref)
           Current:
           \(prog)
+          Compiled from:
+          \(equiv)
           """,
           file: file, line: line)
           continue
@@ -75,10 +77,12 @@ extension RegexTests {
        "(*nla: assert)",
        "(*negative_lookahead: assert)"],
       
-      ["(?i) case-insensitive",
-       "(?i: case-insensitive)"],
-      ["(?i) case-insensitive(?-i) post",
-       "(?i: case-insensitive) post"],
+      ["a+?",
+       "(?U)a+",
+       "(?U:a+)"],
+      ["a+",
+       "(?U)(?-U)a+",
+       "(?U)(?^s)a+"],
     ]
 
     for row in equivalents {
