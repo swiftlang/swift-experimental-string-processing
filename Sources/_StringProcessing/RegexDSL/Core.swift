@@ -27,6 +27,28 @@ public protocol RegexProtocol {
   var regex: Regex<Match> { get }
 }
 
+/// A `RegexProtocol` that has a single component child.
+///
+/// This protocol adds an init supporting static lookup for character classes
+public protocol RegexProtocolWithComponent: RegexProtocol {
+  associatedtype Component: RegexProtocol
+
+  // Label needed for disambiguation
+  init(component: Component)
+}
+extension RegexProtocolWithComponent
+where Component == CharacterClass {
+  // This gives us static member lookup
+  public init(_ component: Component) {
+    self.init(component: component)
+  }
+}
+extension RegexProtocolWithComponent {
+  public init(_ component: Component) {
+    self.init(component: component)
+  }
+}
+
 /// A regular expression.
 public struct Regex<Match: MatchProtocol>: RegexProtocol {
   /// A program representation that caches any lowered representation for
