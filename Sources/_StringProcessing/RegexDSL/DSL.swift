@@ -60,12 +60,12 @@ extension CharacterClass: RegexProtocol {
 // MARK: Repetition
 
 /// A regular expression.
-public struct OneOrMore<Component: RegexProtocol>: RegexProtocol {
+public struct OneOrMore<Component: RegexProtocol>: RegexProtocolWithComponent {
   public typealias Match = Tuple2<Substring, [Component.Match.Capture]>
 
   public let regex: Regex<Match>
 
-  public init(_ component: Component) {
+  public init(component: Component) {
     self.regex = .init(ast:
       oneOrMore(.eager, component.regex.ast)
     )
@@ -86,12 +86,12 @@ public postfix func .+ <R: RegexProtocol>(
 
 public struct Repeat<
   Component: RegexProtocol
->: RegexProtocol {
+>: RegexProtocolWithComponent {
   public typealias Match = Tuple2<Substring, [Component.Match.Capture]>
 
   public let regex: Regex<Match>
 
-  public init(_ component: Component) {
+  public init(component: Component) {
     self.regex = .init(ast:
       zeroOrMore(.eager, component.regex.ast))
   }
@@ -109,12 +109,12 @@ public postfix func .* <R: RegexProtocol>(
   .init(lhs)
 }
 
-public struct Optionally<Component: RegexProtocol>: RegexProtocol {
+public struct Optionally<Component: RegexProtocol>: RegexProtocolWithComponent {
   public typealias Match = Tuple2<Substring, Component.Match.Capture?>
 
   public let regex: Regex<Match>
 
-  public init(_ component: Component) {
+  public init(component: Component) {
     self.regex = .init(ast:
       zeroOrOne(.eager, component.regex.ast))
   }
