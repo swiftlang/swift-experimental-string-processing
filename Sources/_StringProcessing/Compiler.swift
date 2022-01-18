@@ -18,19 +18,13 @@ struct RegexProgram {
 
 class Compiler {
   let ast: AST
-  private var optionStack: MatchingOptionSetStack
+  private var options = MatchingOptions()
   private var builder = RegexProgram.Program.Builder()
 
-  private var currentOptions: MatchingOptionSet {
-    return optionStack.top
-  }
-  
   init(
-    ast: AST,
-    options: MatchingOptionSet = .default
+    ast: AST
   ) {
     self.ast = ast
-    self.optionStack = MatchingOptionSetStack(options)
   }
 
   __consuming func emit() throws -> RegexProgram {
@@ -43,6 +37,9 @@ class Compiler {
   func emit(_ node: AST) throws {
 
     switch node {
+    case .atom(let a) where a.kind == .any:
+      try emitAny()
+      
     // Single characters we just match
     case .atom(let a) where a.singleCharacter != nil :
       builder.buildMatch(a.singleCharacter!)
@@ -87,8 +84,8 @@ class Compiler {
       break
 
     case .group(let g):
-      optionStack.push(currentOptions)
-      defer { optionStack.pop() }
+      options.beginScope()
+      defer { options.endScope() }
       
       if let lookaround = g.lookaroundKind {
         try emitLookaround(lookaround, g.child)
@@ -107,7 +104,7 @@ class Compiler {
         builder.buildEndCapture(cap)
 
       case .changeMatchingOptions(let optionSequence, _):
-        optionStack.replaceTop(currentOptions.merging(optionSequence))
+        options.replaceCurrent(optionSequence)
         try emit(g.child)
 
       default:
@@ -121,8 +118,8 @@ class Compiler {
     // For now, we model sets and atoms as consumers.
     // This lets us rapidly expand support, and we can better
     // design the actual instruction set with real examples
-    case _ where try node.generateConsumer(currentOptions) != nil:
-      try builder.buildConsume(by: node.generateConsumer(currentOptions)!)
+    case _ where try node.generateConsumer(options) != nil:
+      try builder.buildConsume(by: node.generateConsumer(options)!)
 
     case .quote(let q):
       // We stick quoted content into read-only constant strings
@@ -153,6 +150,31 @@ class Compiler {
 
     case .customCharacterClass:
       throw unsupported(node.renderAsCanonical())
+    }
+  }
+  
+  func emitAny() throws {
+    switch (options.semanticLevel, options.dotMatchesNewline) {
+    case (.graphemeCluster, true):
+      builder.buildAdvance(1)
+    case (.graphemeCluster, false):
+      builder.buildConsume { input, bounds in
+        input[bounds.lowerBound].isNewline
+          ? nil
+          : input.index(after: bounds.lowerBound)
+      }
+
+    case (.unicodeScalar, true):
+      // TODO: builder.buildAdvanceUnicodeScalar(1)
+      builder.buildConsume { input, bounds in
+        input.unicodeScalars.index(after: bounds.lowerBound)
+      }
+    case (.unicodeScalar, false):
+      builder.buildConsume { input, bounds in
+        input[bounds.lowerBound].isNewline
+          ? nil
+          : input.unicodeScalars.index(after: bounds.lowerBound)
+      }
     }
   }
 
@@ -458,7 +480,7 @@ class Compiler {
     
     // If in reluctant-by-default mode, eager and reluctant need to be switched.
     let kind: AST.Quantification.Kind
-    if currentOptions.contains(.reluctantByDefault)
+    if options.isReluctantByDefault
         && quant.kind.value != .possessive
     {
       kind = quant.kind.value == .eager
@@ -496,11 +518,8 @@ extension Compiler {
     matchLevel: CharacterClass.MatchLevel,
     options: REOptions = []
   ) {
-    if matchLevel == .graphemeCluster {
-      self.init(ast: ast, options: .init(.graphemeClusterSemantics))
-    } else {
-      self.init(ast: ast, options: .init(.unicodeScalarSemantics))
-    }
+    self.init(ast: ast)
+    self.options.replaceMatchLevel(matchLevel)
   }
 }
 
