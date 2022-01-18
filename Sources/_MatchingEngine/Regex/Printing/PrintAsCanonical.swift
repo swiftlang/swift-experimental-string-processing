@@ -61,6 +61,13 @@ extension PrettyPrinter {
       outputAsCanonical(g.child)
       output(")")
 
+    case let .conditional(c):
+      output("(")
+      outputAsCanonical(c.condition)
+      outputAsCanonical(c.trueBranch)
+      output("|")
+      outputAsCanonical(c.falseBranch)
+
     case let .quantification(q):
       outputAsCanonical(q.child)
       output(q.amount.value._canonicalBase)
@@ -114,6 +121,10 @@ extension PrettyPrinter {
     case .setOperation:
       output("/* TODO: set operation \(self) */")
     }
+  }
+
+  mutating func outputAsCanonical(_ condition: AST.Conditional.Condition) {
+    output("(/*TODO: conditional \(condition) */)")
   }
 }
 
@@ -189,7 +200,7 @@ extension AST.Atom {
   }
 }
 
-extension AST.Atom.Reference {
+extension AST.Reference {
   var _canonicalBase: String {
     if self.recursesWholePattern {
       return "(?R)"

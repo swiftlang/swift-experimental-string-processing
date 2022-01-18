@@ -85,6 +85,30 @@ extension AST.Empty {
   public var _dumpBase: String { "" }
 }
 
+extension AST.Conditional {
+  public var _dumpBase: String {
+    "if \(condition) then \(trueBranch) else \(falseBranch)"
+  }
+}
+
+extension AST.Conditional.Condition: _ASTPrintable {
+  public var _dumpBase: String { return "\(kind)" }
+}
+extension AST.Conditional.Condition.PCREVersionCheck.Kind: _ASTPrintable {
+  public var _dumpBase: String {
+    switch self {
+    case .equal:              return "="
+    case .greaterThanOrEqual: return ">="
+    }
+  }
+}
+extension AST.Conditional.Condition.PCREVersionNumber: _ASTPrintable {
+  public var _dumpBase: String { "\(major).\(minor)" }
+}
+extension AST.Conditional.Condition.PCREVersionCheck: _ASTPrintable {
+  public var _dumpBase: String { "VERSION\(kind.value)\(num)" }
+}
+
 extension AST.Atom {
   public var _dumpBase: String {
     if let lit = self.literalStringValue {
@@ -106,7 +130,7 @@ extension AST.Atom {
     case .startOfLine: return "^"
     case .endOfLine:   return "$"
 
-    case .backreference(let r), .subpattern(let r), .condition(let r):
+    case .backreference(let r), .subpattern(let r):
       return "\(r._dumpBase)"
 
     case .char, .scalar:
@@ -115,7 +139,7 @@ extension AST.Atom {
   }
 }
 
-extension AST.Atom.Reference: _ASTPrintable {
+extension AST.Reference: _ASTPrintable {
   public var _dumpBase: String {
     "\(kind)"
   }

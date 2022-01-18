@@ -257,6 +257,9 @@ func compile(
       instructions.append(done)
       return
 
+    case .conditional:
+      throw unsupported(ast.renderAsCanonical())
+
     case .customCharacterClass:
       fatalError("unreachable")
 

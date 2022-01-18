@@ -23,6 +23,9 @@ public indirect enum AST:
   /// (...)
   case group(Group)
 
+  /// (?(cond) true-branch | false-branch)
+  case conditional(Conditional)
+
   case quantification(Quantification)
 
   /// \Q...\E
@@ -55,6 +58,7 @@ extension AST {
     case let .alternation(v):          return v
     case let .concatenation(v):        return v
     case let .group(v):                return v
+    case let .conditional(v):          return v
     case let .quantification(v):       return v
     case let .quote(v):                return v
     case let .trivia(v):               return v
@@ -162,6 +166,42 @@ extension AST {
     public init(_ location: SourceLocation) {
       self.location = location
     }
+  }
+
+  public struct Reference: Hashable {
+    @frozen
+    public enum Kind: Hashable {
+      // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
+      // Oniguruma: \k<n>, \k'n'
+      case absolute(Int)
+
+      // \g{-n} \g<+n> \g'+n' \g<-n> \g'-n' (?+n) (?-n)
+      // (?(+n)... (?(-n)...
+      // Oniguruma: \k<-n> \k<+n> \k'-n' \k'+n'
+      case relative(Int)
+
+      // \k<name> \k'name' \g{name} \k{name} (?P=name)
+      // \g<name> \g'name' (?&name) (?P>name)
+      // (?(<name>)... (?('name')... (?(name)...
+      case named(String)
+
+      /// (?R), (?(R)..., which are equivalent to (?0), (?(0)...
+      static var recurseWholePattern: Kind { .absolute(0) }
+    }
+    public var kind: Kind
+
+    /// The location of the inner numeric or textual reference, e.g the location
+    /// of '-2' in '\g{-2}'.
+    public var innerLoc: SourceLocation
+
+    public init(_ kind: Kind, innerLoc: SourceLocation) {
+      self.kind = kind
+      self.innerLoc = innerLoc
+    }
+
+    /// Whether this is a reference that recurses the whole pattern, rather than
+    /// a group.
+    public var recursesWholePattern: Bool { kind == .recurseWholePattern }
   }
 }
 

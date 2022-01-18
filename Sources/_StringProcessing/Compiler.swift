@@ -79,6 +79,9 @@ class Compiler {
       try emit(alt.children.last!)
       builder.label(done)
 
+    case .conditional:
+      throw unsupported(node.renderAsCanonical())
+
     // FIXME: Wait, how does this work?
     case .groupTransform(let g, _):
       try emit(g.child)
