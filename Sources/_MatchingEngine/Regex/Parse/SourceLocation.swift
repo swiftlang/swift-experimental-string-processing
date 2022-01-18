@@ -66,7 +66,7 @@ extension Source {
   /// Note: source location is part of value identity, so that the same
   /// e.g. `Character` appearing twice can be stored in a data structure
   /// distinctly. To ignore source locations, use `.value` directly.
-  public struct Located<T: Hashable>: Hashable {
+  public struct Located<T> {
     public var value: T
     public var location: SourceLocation
 
@@ -96,4 +96,5 @@ extension Source {
 extension AST {
   public typealias Located = Source.Located
 }
-
+extension AST.Located: Equatable where T: Equatable {}
+extension AST.Located: Hashable where T: Hashable {}

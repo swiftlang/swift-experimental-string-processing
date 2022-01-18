@@ -133,6 +133,38 @@ func unsetMatchingOptions(
   unsetMatchingOptions(adding: adding)
 }
 
+func ref(_ i: Int) -> AST.Reference {
+  .init(.absolute(i), innerLoc: .fake)
+}
+func ref(plus n: Int) -> AST.Reference {
+  .init(.relative(n), innerLoc: .fake)
+}
+func ref(minus n: Int) -> AST.Reference {
+  .init(.relative(-n), innerLoc: .fake)
+}
+func ref(_ s: String) -> AST.Reference {
+  .init(.named(s), innerLoc: .fake)
+}
+func conditional(
+  _ cond: AST.Conditional.Condition.Kind, trueBranch: AST, falseBranch: AST
+) -> AST {
+  .conditional(.init(.init(cond, .fake), trueBranch: trueBranch, pipe: .fake,
+                     falseBranch: falseBranch, .fake))
+}
+func pcreVersionCheck(
+  _ kind: AST.Conditional.Condition.PCREVersionCheck.Kind,
+  _ major: Int, _ minor: Int
+) -> AST.Conditional.Condition.Kind {
+  .pcreVersionCheck(.init(
+    .init(faking: kind), .init(major: major, minor: minor, .fake)
+  ))
+}
+func groupCondition(
+  _ kind: AST.Group.Kind, _ child: AST
+) -> AST.Conditional.Condition.Kind {
+  .group(.init(.init(faking: kind), child, .fake))
+}
+
 func quant(
   _ amount: AST.Quantification.Amount,
   _ kind: AST.Quantification.Kind = .eager,
@@ -236,14 +268,11 @@ func scalar_m(_ s: Unicode.Scalar) -> AST.CustomCharacterClass.Member {
   atom_m(.scalar(s))
 }
 
-func backreference(_ r: AST.Atom.Reference.Kind) -> AST {
+func backreference(_ r: AST.Reference.Kind) -> AST {
   atom(.backreference(.init(r, innerLoc: .fake)))
 }
-func subpattern(_ r: AST.Atom.Reference.Kind) -> AST {
+func subpattern(_ r: AST.Reference.Kind) -> AST {
   atom(.subpattern(.init(r, innerLoc: .fake)))
-}
-func condition(_ r: AST.Atom.Reference.Kind) -> AST {
-  atom(.condition(.init(r, innerLoc: .fake)))
 }
 
 func prop(

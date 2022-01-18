@@ -105,18 +105,18 @@ extension Source {
   /// Throws an unexpected end of input error if not matched
   ///
   /// Note: much of the time, but not always, we can vend a more specific error.
-  mutating func expectNonEmpty() throws {
+  mutating func expectNonEmpty(
+    _ error: ParseError = .unexpectedEndOfInput
+  ) throws {
     _ = try recordLoc { src in
-      if src.isEmpty { throw ParseError.unexpectedEndOfInput }
+      if src.isEmpty { throw error }
     }
   }
 
   mutating func tryEatNonEmpty<C: Collection>(sequence c: C) throws -> Bool
     where C.Element == Char
   {
-    _ = try recordLoc { src in
-      guard !src.isEmpty else { throw ParseError.expected(String(c)) }
-    }
+    try expectNonEmpty(.expected(String(c)))
     return tryEat(sequence: c)
   }
 
@@ -420,25 +420,30 @@ extension Source {
   /// delimiter. If `ignoreEscaped` is true, escaped characters will not be
   /// considered for the ending delimiter.
   private mutating func expectQuoted(
-    endingWith end: String, ignoreEscaped: Bool = false
+    endingWith end: String, ignoreEscaped: Bool = false, eatEnding: Bool = true
   ) throws -> Located<String> {
-    try recordLoc { src in
-      let result = try src.lexUntil { src in
-        if try src.tryEatNonEmpty(sequence: end) {
+    let result = try recordLoc { src -> String in
+      try src.lexUntil { src in
+        if src.starts(with: end) {
           return true
         }
+        try src.expectNonEmpty(.expected(end))
+
         // Ignore escapes if we're allowed to. lexUntil will consume the next
         // character.
         if ignoreEscaped, src.tryEat("\\") {
-          try src.expectNonEmpty()
+          try src.expectNonEmpty(.expectedEscape)
         }
         return false
       }.value
-      guard !result.isEmpty else {
-        throw ParseError.expectedNonEmptyContents
-      }
-      return result
     }
+    guard !result.value.isEmpty else {
+      throw ParseError.expectedNonEmptyContents
+    }
+    if eatEnding {
+      try expect(sequence: end)
+    }
+    return result
   }
 
   /// Try to consume quoted content
@@ -747,6 +752,149 @@ extension Source {
     }
   }
 
+  /// Consume a PCRE version number.
+  ///
+  ///     PCREVersionNumber -> <Int>.<Int>
+  ///
+  private mutating func expectPCREVersionNumber(
+  ) throws -> AST.Conditional.Condition.PCREVersionNumber {
+    let nums = try recordLoc { src -> (major: Int, minor: Int) in
+      let major = try src.expectNumber().value
+      try src.expect(".")
+      let minor = try src.expectNumber().value
+      return (major, minor)
+    }
+    return .init(major: nums.value.major, minor: nums.value.minor,
+                 nums.location)
+  }
+
+  /// Consume a PCRE version check suffix.
+  ///
+  ///     PCREVersionCheck -> '>'? '=' PCREVersionNumber
+  ///
+  private mutating func expectPCREVersionCheck(
+  ) throws -> AST.Conditional.Condition.Kind {
+    typealias Kind = AST.Conditional.Condition.PCREVersionCheck.Kind
+    let kind = try recordLoc { src -> Kind in
+      let greaterThan = src.tryEat(">")
+      try src.expect("=")
+      return greaterThan ? .greaterThanOrEqual : .equal
+    }
+    return .pcreVersionCheck(.init(kind, try expectPCREVersionNumber()))
+  }
+
+  /// Try to lex a known condition (excluding group conditions).
+  ///
+  ///     KnownCondition -> 'R'
+  ///                     | 'R' NumberRef
+  ///                     | 'R&' <String> !')'
+  ///                     | '<' NameRef '>'
+  ///                     | "'" NameRef "'"
+  ///                     | 'DEFINE'
+  ///                     | 'VERSION' VersionCheck
+  ///                     | NumberRef
+  ///                     | NameRef
+  ///
+  private mutating func lexKnownCondition(
+    context: ParsingContext
+  ) throws -> AST.Conditional.Condition? {
+    typealias ConditionKind = AST.Conditional.Condition.Kind
+
+    let kind = try recordLoc { src -> ConditionKind? in
+      try src.tryEating { src in
+
+        // PCRE recursion check.
+        if src.tryEat("R") {
+          if src.tryEat("&") {
+            return .groupRecursionCheck(
+              try src.expectNamedReference(endingWith: ")", eatEnding: false))
+          }
+          if let num = try src.lexNumber() {
+            return .groupRecursionCheck(
+              .init(.absolute(num.value), innerLoc: num.location))
+          }
+          return .recursionCheck
+        }
+
+        // TODO: Oniguruma can also parse an additional recursion level for
+        // group-matched checks.
+        if let open = src.tryEat(anyOf: "<", "'") {
+          // In PCRE, this can only be a named reference. In Oniguruma, it can
+          // also be a numbered reference.
+          let closing = String(Source.getClosingDelimiter(for: open))
+          return .groupMatched(
+            try src.expectNamedOrNumberedReference(endingWith: closing))
+        }
+
+        // PCRE group definition and version check.
+        if src.tryEat(sequence: "DEFINE") {
+          return .defineGroup
+        }
+        if src.tryEat(sequence: "VERSION") {
+          return try src.expectPCREVersionCheck()
+        }
+
+        // If we have a numbered reference, this is a check to see if a group
+        // matched.
+        if let numRef = try src.lexNumberedReference() {
+          return .groupMatched(numRef)
+        }
+
+        // PCRE and .NET also allow a named reference to be parsed here. PCRE
+        // always treats it as a named reference, whereas .NET only treats it
+        // as such if a group exists with that name. For now, just check if a
+        // prior group exists with that name.
+        // FIXME: This should apply to future groups too.
+        // TODO: We should probably advise users to use the more explicit
+        // syntax.
+        let nameRef = try src.expectNamedReference(
+          endingWith: ")", eatEnding: false)
+        if context.isPriorGroupRef(nameRef.kind) {
+          return .groupMatched(nameRef)
+        }
+        return nil
+      }
+    }
+    guard let kind = kind else { return nil }
+    return .init(kind.value, kind.location)
+  }
+
+  /// Attempt to lex a known conditional start (excluding group conditions).
+  ///
+  ///     KnownConditionalStart -> '(?(' KnownCondition ')'
+  ///
+  mutating func lexKnownConditionalStart(
+    context: ParsingContext
+  ) throws -> AST.Conditional.Condition? {
+    try tryEating { src in
+      guard src.tryEat(sequence: "(?("),
+            let cond = try src.lexKnownCondition(context: context)
+      else { return nil }
+      try src.expect(")")
+      return cond
+    }
+  }
+
+  /// Attempt to lex the start of a group conditional.
+  ///
+  ///     GroupConditionalStart -> '(?' GroupStart
+  ///
+  mutating func lexGroupConditionalStart() throws -> Located<AST.Group.Kind>? {
+    try tryEating { src in
+      guard src.tryEat(sequence: "(?"), let group = try src.lexGroupStart()
+      else { return nil }
+
+      // Implicitly scoped groups are not supported here.
+      guard !group.value.hasImplicitScope else {
+        throw LocatedError(
+          ParseError.unsupportedCondition("implicitly scoped group"),
+          group.location
+        )
+      }
+      return group
+    }
+  }
+
   mutating func lexCustomCCStart(
   ) throws -> Located<CustomCC.Start>? {
     recordLoc { src in
@@ -858,8 +1006,9 @@ extension Source {
   ///     NumberRef -> ('+' | '-')? <Decimal Number>
   ///
   private mutating func lexNumberedReference(
-  ) throws -> AST.Atom.Reference? {
-    let kind = try recordLoc { src -> AST.Atom.Reference.Kind? in
+    allowWholePatternRef: Bool = false
+  ) throws -> AST.Reference? {
+    let kind = try recordLoc { src -> AST.Reference.Kind? in
       // Note this logic should match canLexNumberedReference.
       if src.tryEat("+") {
         return .relative(try src.expectNumber().value)
@@ -873,6 +1022,9 @@ extension Source {
       return nil
     }
     guard let kind = kind else { return nil }
+    guard allowWholePatternRef || kind.value != .recurseWholePattern else {
+      throw ParseError.cannotReferToWholePattern
+    }
     return .init(kind.value, innerLoc: kind.location)
   }
 
@@ -886,10 +1038,10 @@ extension Source {
 
   /// Eat a named reference up to a given closing delimiter.
   private mutating func expectNamedReference(
-    endingWith end: String
-  ) throws -> AST.Atom.Reference {
+    endingWith end: String, eatEnding: Bool = true
+  ) throws -> AST.Reference {
     // TODO: Group name validation, see comment in lexGroupStart.
-    let str = try expectQuoted(endingWith: end)
+    let str = try expectQuoted(endingWith: end, eatEnding: eatEnding)
     return .init(.named(str.value), innerLoc: str.location)
   }
 
@@ -898,13 +1050,18 @@ extension Source {
   ///     NameOrNumberRef -> NumberRef | <String>
   ///
   private mutating func expectNamedOrNumberedReference(
-    endingWith ending: String
-  ) throws -> AST.Atom.Reference {
-    if let numbered = try lexNumberedReference() {
-      try expect(sequence: ending)
+    endingWith ending: String, eatEnding: Bool = true,
+    allowWholePatternRef: Bool = false
+  ) throws -> AST.Reference {
+    if let numbered = try lexNumberedReference(
+      allowWholePatternRef: allowWholePatternRef
+    ) {
+      if eatEnding {
+        try expect(sequence: ending)
+      }
       return numbered
     }
-    return try expectNamedReference(endingWith: ending)
+    return try expectNamedReference(endingWith: ending, eatEnding: eatEnding)
   }
 
   private static func getClosingDelimiter(
@@ -931,12 +1088,14 @@ extension Source {
   ///                       | [1-9] [0-9]+
   ///
   private mutating func lexEscapedReference(
-    priorGroupCount: Int
+    context: ParsingContext
   ) throws -> Located<AST.Atom.Kind>? {
     try recordLoc { src in
       try src.tryEating { src in
         guard let firstChar = src.peek() else { return nil }
 
+        // TODO: Oniguruma can parse an additional recursion level for
+        // backreferences.
         if src.tryEat("g") {
           // PCRE-style backreferences.
           if src.tryEat("{") {
@@ -947,8 +1106,8 @@ extension Source {
           // Oniguruma-style subpatterns.
           if let openChar = src.tryEat(anyOf: "<", "'") {
             let closing = String(Source.getClosingDelimiter(for: openChar))
-            return .subpattern(
-              try src.expectNamedOrNumberedReference(endingWith: closing))
+            return .subpattern(try src.expectNamedOrNumberedReference(
+              endingWith: closing, allowWholePatternRef: true))
           }
 
           // PCRE allows \g followed by a bare numeric reference.
@@ -984,7 +1143,7 @@ extension Source {
           let num = numAndLoc.value
           let loc = numAndLoc.location
           if num < 10 || firstChar == "8" || firstChar == "9" ||
-              num <= priorGroupCount {
+              context.isPriorGroupRef(.absolute(num)) {
             return .backreference(.init(.absolute(num), innerLoc: loc))
           }
           return nil
@@ -1033,7 +1192,7 @@ extension Source {
         }
 
         // Numbered subpattern reference.
-        if let ref = try src.lexNumberedReference() {
+        if let ref = try src.lexNumberedReference(allowWholePatternRef: true) {
           try src.expect(")")
           return .subpattern(ref)
         }
@@ -1061,9 +1220,11 @@ extension Source {
   ///                       | EscapedReference
   ///
   mutating func expectEscaped(
-    isInCustomCharacterClass ccc: Bool, priorGroupCount: Int
+    context: ParsingContext
   ) throws -> Located<AST.Atom.Kind> {
     try recordLoc { src in
+      let ccc = context.isInCustomCharacterClass
+
       // Keyboard control/meta
       if src.tryEat("c") || src.tryEat(sequence: "C-") {
         return .keyboardControl(try src.expectASCII().value)
@@ -1087,9 +1248,7 @@ extension Source {
 
       // References using escape syntax, e.g \1, \g{1}, \k<...>, ...
       // These are not valid inside custom character classes.
-      if !ccc, let ref = try src.lexEscapedReference(
-        priorGroupCount: priorGroupCount
-      )?.value {
+      if !ccc, let ref = try src.lexEscapedReference(context: context)?.value {
         return ref
       }
 
@@ -1127,9 +1286,8 @@ extension Source {
   ///
   ///     ExpGroupStart -> '(_:'
   ///
-  mutating func lexAtom(
-    isInCustomCharacterClass customCC: Bool, priorGroupCount: Int
-  ) throws -> AST.Atom? {
+  mutating func lexAtom(context: ParsingContext) throws -> AST.Atom? {
+    let customCC = context.isInCustomCharacterClass
     let kind: Located<AST.Atom.Kind>? = try recordLoc { src in
       // Check for not-an-atom, e.g. parser recursion termination
       if src.isEmpty { return nil }
@@ -1163,9 +1321,7 @@ extension Source {
       case "$": return customCC ? .char("$") : .endOfLine
 
       // Escaped
-      case "\\": return try src.expectEscaped(
-        isInCustomCharacterClass: customCC,
-        priorGroupCount: priorGroupCount).value
+      case "\\": return try src.expectEscaped(context: context).value
 
       case "]":
         assert(!customCC, "parser should have prevented this")
@@ -1181,7 +1337,7 @@ extension Source {
   /// Try to lex the end of a range in a custom character class, which consists
   /// of a '-' character followed by an atom.
   mutating func lexCustomCharClassRangeEnd(
-    priorGroupCount: Int
+    context: ParsingContext
   ) throws -> (dashLoc: SourceLocation, AST.Atom)? {
     // Make sure we don't have a binary operator e.g '--', and the '-' is not
     // ending the custom character class (in which case it is literal).
@@ -1190,8 +1346,7 @@ extension Source {
       return nil
     }
     let dashLoc = Location(start ..< currentPosition)
-    guard let end = try lexAtom(isInCustomCharacterClass: true,
-                                priorGroupCount: priorGroupCount) else {
+    guard let end = try lexAtom(context: context) else {
       return nil
     }
     return (dashLoc, end)

@@ -47,6 +47,21 @@ extension AST {
       default:
         return innerCaptures
       }
+    case .conditional(let c):
+      // A conditional's capture structure is effectively that of an alternation
+      // between the true and false branches. However the condition may also
+      // have captures in the case of a group condition.
+      var captures = CaptureStructure.empty
+      switch c.condition.kind {
+      case .group(let g):
+        captures = captures + AST.group(g).captureStructure
+      default:
+        break
+      }
+      let branchCaptures = c.trueBranch.captureStructure +
+                           c.falseBranch.captureStructure
+      return captures + branchCaptures.map(CaptureStructure.optional)
+
     case .quantification(let quantification):
       return quantification.child.captureStructure.map(
         quantification.amount.value == .zeroOrOne

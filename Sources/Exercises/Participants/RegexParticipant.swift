@@ -67,16 +67,16 @@ private func graphemeBreakPropertyData(
   forLine line: String
 ) -> GraphemeBreakEntry? {
   graphemeBreakPropertyData(forLine: line, using: Regex {
-    OneOrMore(CharacterClass.hexDigit).capture()
+    OneOrMore(.hexDigit).capture()
     Optionally {
       ".."
-      OneOrMore(CharacterClass.hexDigit).capture()
+      OneOrMore(.hexDigit).capture()
     }
-    OneOrMore(CharacterClass.whitespace)
+    OneOrMore(.whitespace)
     ";"
-    OneOrMore(CharacterClass.whitespace)
-    OneOrMore(CharacterClass.word).capture()
-    Repeat(CharacterClass.any)
+    OneOrMore(.whitespace)
+    OneOrMore(.word).capture()
+    Repeat(.any)
   })
 }
 

@@ -28,9 +28,15 @@ enum ParseError: Error, Hashable {
   // Something happened, fall-back for now
   case misc(String)
 
+  case tooManyBranchesInConditional(Int)
+  case unsupportedCondition(String)
+
   case expectedASCII(Character)
 
   case expectedNonEmptyContents
+  case expectedEscape
+
+  case cannotReferToWholePattern
 
   case unknownGroupKind(String)
 
@@ -71,6 +77,14 @@ extension ParseError: CustomStringConvertible {
       return s
     case .expectedNonEmptyContents:
       return "expected non-empty contents"
+    case .expectedEscape:
+      return "expected escape sequence"
+    case .cannotReferToWholePattern:
+      return "cannot refer to whole pattern here"
+    case let .tooManyBranchesInConditional(i):
+      return "expected 2 branches in conditional, have \(i)"
+    case let .unsupportedCondition(str):
+      return "\(str) cannot be used as condition"
     case let .unknownGroupKind(str):
       return "unknown group kind '(\(str)'"
     case let .invalidMatchingOption(c):

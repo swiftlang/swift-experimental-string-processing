@@ -42,13 +42,6 @@ func diagnose(
   }
 }
 
-extension Source {
-  @discardableResult
-  fileprivate mutating func lexBasicAtom() throws -> AST.Atom? {
-    try lexAtom(isInCustomCharacterClass: false, priorGroupCount: 0)
-  }
-}
-
 extension RegexTests {
   func testLexicalAnalysis() {
     diagnose("a", expecting: .expected("b")) { src in
@@ -102,84 +95,6 @@ extension RegexTests {
       "12", base: "U", expectedDigits: 8)
     diagnoseUniScalarOverflow("{123456789}", base: "u")
     diagnoseUniScalarOverflow("{123456789}", base: "x")
-
-    // Text segment options
-    diagnose("(?-y{g})", expecting: .cannotRemoveTextSegmentOptions) {
-      _ = try $0.lexGroupStart()
-    }
-    diagnose("(?-y{w})", expecting: .cannotRemoveTextSegmentOptions) {
-      _ = try $0.lexGroupStart()
-    }
-    
-    // Semantic level options
-    diagnose("(?-X)", expecting: .cannotRemoveSemanticsOptions) {
-      _ = try $0.lexGroupStart()
-    }
-    diagnose("(?-u)", expecting: .cannotRemoveSemanticsOptions) {
-      _ = try $0.lexGroupStart()
-    }
-    diagnose("(?-b)", expecting: .cannotRemoveSemanticsOptions) {
-      _ = try $0.lexGroupStart()
-    }
-
-    // Test expected group.
-    diagnose(#"(*"#, expecting: .misc("Quantifier '*' must follow operand")) {
-      _ = try $0.lexGroupStart()
-    }
-
-    // Test expected closing delimiters.
-    diagnose(#"\u{5"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
-    diagnose(#"\x{5"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
-    diagnose(#"\N{A"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
-    diagnose(#"\N{U+A"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
-    diagnose(#"\p{a"#, expecting: .expected("}")) { try $0.lexBasicAtom() }
-    diagnose(#"\p{a="#, expecting: .expected("}")) { try $0.lexBasicAtom() }
-    diagnose(#"(?#"#, expecting: .expected(")")) { _ = try $0.lexComment() }
-    diagnose(#"(?x"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
-
-    diagnose(#"(?"#, expecting: .expectedGroupSpecifier) {
-      _ = try $0.lexGroupStart()
-    }
-
-    diagnose(#"(?^"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
-    diagnose(#"(?^i"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
-
-    diagnose(#"(?^-"#, expecting: .cannotRemoveMatchingOptionsAfterCaret) {
-      _ = try $0.lexGroupStart()
-    }
-    diagnose(#"(?^-)"#, expecting: .cannotRemoveMatchingOptionsAfterCaret) {
-      _ = try $0.lexGroupStart()
-    }
-    diagnose(#"(?^i-"#, expecting: .cannotRemoveMatchingOptionsAfterCaret) {
-      _ = try $0.lexGroupStart()
-    }
-    diagnose(#"(?^i-m)"#, expecting: .cannotRemoveMatchingOptionsAfterCaret) {
-      _ = try $0.lexGroupStart()
-    }
-
-    diagnose(#"(?y)"#, expecting: .expected("{")) { _ = try $0.lexGroupStart() }
-    diagnose(#"(?y{)"#, expecting: .expected("g")) { _ = try $0.lexGroupStart() }
-    diagnose(#"(?y{g)"#, expecting: .expected("}")) { _ = try $0.lexGroupStart() }
-    diagnose(#"(?y{x})"#, expecting: .expected("g")) { _ = try $0.lexGroupStart() }
-
-    diagnose(#"(?k)"#, expecting: .unknownGroupKind("?k")) {
-      _ = try $0.lexGroupStart()
-    }
-    diagnose(#"(?P#)"#, expecting: .invalidMatchingOption("#")) {
-      _ = try $0.lexGroupStart()
-    }
-    diagnose(#"(?P"#, expecting: .expected(")")) { _ = try $0.lexGroupStart() }
-    diagnose(#"(?R"#, expecting: .expected(")")) { _ = try $0.lexBasicAtom() }
-
-    diagnose(#"\Qab"#, expecting: .expected("\\E")) { _ = try $0.lexQuote() }
-    diagnose(#"\Qab\"#, expecting: .expected("\\E")) { _ = try $0.lexQuote() }
-    diagnose(#""ab"#, expecting: .expected("\""), .experimental) { _ = try $0.lexQuote() }
-    diagnose(#""ab\""#, expecting: .expected("\""), .experimental) { _ = try $0.lexQuote() }
-    diagnose(#""ab\"#, expecting: .unexpectedEndOfInput, .experimental) { _ = try $0.lexQuote() }
-
-    diagnose(#"\k''"#, expecting: .expectedNonEmptyContents) { _ = try $0.lexBasicAtom() }
-    diagnose(#"(?&)"#, expecting: .expectedNonEmptyContents) { _ = try $0.lexBasicAtom() }
-    diagnose(#"(?P>)"#, expecting: .expectedNonEmptyContents) { _ = try $0.lexBasicAtom() }
 
     // TODO: want to dummy print out source ranges, etc, test that.
   }
