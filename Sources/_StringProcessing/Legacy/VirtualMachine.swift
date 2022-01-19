@@ -56,7 +56,18 @@ extension VirtualMachine {
   func execute(
     input: String, mode: MatchMode = .wholeString
   ) -> MatchResult? {
-    execute(input: input, in: input.startIndex..<input.endIndex, mode: mode)
+    execute(
+      input: input,
+      in: input.startIndex..<input.endIndex,
+      mode: mode)
+  }
+  func execute(
+    input: Substring, mode: MatchMode = .wholeString
+  ) -> MatchResult? {
+    execute(
+      input: input.base,
+      in: input.startIndex ..< input.endIndex,
+      mode: mode)
   }
 }
 

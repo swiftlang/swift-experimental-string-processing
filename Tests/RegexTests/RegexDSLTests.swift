@@ -23,7 +23,12 @@ class RegexDSLTests: XCTestCase {
     let _: Tuple3<Substring, Substring, Int>.Type = type(of: regex).Match.self
     let maybeMatch = "ab1".match(regex)
     let match = try XCTUnwrap(maybeMatch)
-    XCTAssertTrue(match.match == Tuple3("ab1", "b", 1))
+    XCTAssertEqual(match.match, Tuple3("ab1", "b", 1))
+
+    let substring = "ab1"[...]
+    let substringMatch = try XCTUnwrap(
+      substring.match(regex))
+    XCTAssertEqual(match.match, substringMatch.match)
   }
 
   func testCharacterClasses() throws {

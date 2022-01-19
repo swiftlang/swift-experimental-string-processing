@@ -112,10 +112,22 @@ public struct Regex<Match: MatchProtocol>: RegexProtocol {
 }
 
 extension RegexProtocol {
+  public func match(in input: String) -> RegexMatch<Match>? {
+    _match(
+      input, in: input.startIndex..<input.endIndex)
+  }
+  public func match(in input: Substring) -> RegexMatch<Match>? {
+    _match(
+      input.base, in: input.startIndex..<input.endIndex)
+  }
+
   // FIXME: This is mostly hacky because we go down two different paths based on
   // whether there are captures. This will be cleaned up once we deprecate the
   // legacy virtual machines.
-  public func match(in input: String) -> RegexMatch<Match>? {
+  func _match(
+    _ input: String,
+    in inputRange: Range<String.Index>
+  ) -> RegexMatch<Match>? {
     // Casts a Swift tuple to the custom `Tuple<n>`, assuming their memory
     // layout is compatible.
     func bitCastToMatch<T>(_ x: T) -> Match {
@@ -125,7 +137,9 @@ extension RegexProtocol {
     // TODO: Remove this branch when the matching engine supports captures.
     if regex.ast.hasCapture {
       let vm = HareVM(program: regex.program.legacyLoweredProgram)
-      guard let (range, captures) = vm.execute(input: input)?.destructure else {
+      guard let (range, captures) = vm.execute(
+        input: input, in: inputRange, mode: .wholeString
+      )?.destructure else {
         return nil
       }
       let convertedMatch: Match
@@ -142,7 +156,9 @@ extension RegexProtocol {
       return RegexMatch(range: range, match: convertedMatch)
     }
     let executor = Executor(program: regex.program.loweredProgram)
-    guard let result = executor.execute(input: input) else {
+    guard let result = executor.execute(
+      input: input, in: inputRange, mode: .wholeString
+    ) else {
       return nil
     }
     let convertedMatch: Match
@@ -169,7 +185,17 @@ extension String {
     match(content())
   }
 }
+extension Substring {
+  public func match<R: RegexProtocol>(_ regex: R) -> RegexMatch<R.Match>? {
+    regex.match(in: self)
+  }
 
+  public func match<R: RegexProtocol>(
+    @RegexBuilder _ content: () -> R
+  ) -> RegexMatch<R.Match>? {
+    match(content())
+  }
+}
 public struct MockRegexLiteral<Match: MatchProtocol>: RegexProtocol {
   public typealias MatchValue = Substring
   public let regex: Regex<Match>
