@@ -31,6 +31,15 @@ public struct Executor {
       return MatchResult(range.lowerBound..<endIndex, .void)
     }
   }
+  public func execute(
+    input: Substring,
+    mode: MatchMode = .wholeString
+  ) -> MatchResult? {
+    self.execute(
+      input: input.base,
+      in: input.startIndex..<input.endIndex,
+      mode: mode)
+  }
 
   public func executeFlat(
     input: String,
