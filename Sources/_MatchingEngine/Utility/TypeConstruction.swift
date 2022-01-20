@@ -128,13 +128,13 @@ public enum TypeConstruction {
         // Open existential on each element type.
         func initializeElement<T>(_ element: T) {
           currentElementAddressUnaligned =
-          currentElementAddressUnaligned.roundedUp(toAlignmentOf: T.self)
+            currentElementAddressUnaligned.roundedUp(toAlignmentOf: T.self)
           currentElementAddressUnaligned.bindMemory(
             to: T.self, capacity: MemoryLayout<T>.size
           ).initialize(to: element)
           // Advance to the next element (unaligned).
           currentElementAddressUnaligned =
-          currentElementAddressUnaligned.advanced(by: MemoryLayout<T>.stride)
+            currentElementAddressUnaligned.advanced(by: MemoryLayout<T>.size)
         }
         _openExistential(element, do: initializeElement)
       }
