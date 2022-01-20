@@ -17,7 +17,7 @@ class RegexDSLTests: XCTestCase {
     let regex = Regex {
       "a"
       Character("b").capture() // Character
-      "1".capture { Int($0)! } // Int
+      "1".tryCapture { Int($0) } // Int
     }
     // Assert the inferred capture type.
     let _: Tuple3<Substring, Substring, Int>.Type = type(of: regex).Match.self
@@ -150,7 +150,7 @@ class RegexDSLTests: XCTestCase {
     let regex2 = Regex {
       "a".+
       Regex {
-        "b".capture { Int($0)! }.*
+        "b".tryCapture { Int($0) }.*
         "e".?
       }.capture()
     }
@@ -159,8 +159,8 @@ class RegexDSLTests: XCTestCase {
     let regex3 = Regex {
       "a".+
       Regex {
-        "b".capture { Int($0)! }
-        "c".capture { Double($0)! }.*
+        "b".tryCapture { Int($0) }
+        "c".tryCapture { Double($0) }.*
         "e".?
       }.capture()
     }
@@ -256,6 +256,33 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(propertyString, "Extend")
     }
 
+    let regexWithTryCapture = Regex {
+      OneOrMore(CharacterClass.hexDigit).tryCapture(Unicode.Scalar.init(hex:))
+      Optionally {
+        ".."
+        OneOrMore(CharacterClass.hexDigit).tryCapture(Unicode.Scalar.init(hex:))
+      }
+      OneOrMore(CharacterClass.whitespace)
+      ";"
+      OneOrMore(CharacterClass.whitespace)
+      OneOrMore(CharacterClass.word).capture()
+      Repeat(CharacterClass.any)
+    } // Regex<(Substring, Unicode.Scalar, Unicode.Scalar?, Substring)>
+    do {
+      // Assert the inferred capture type.
+      typealias ExpectedMatch = Tuple4<
+        Substring, Unicode.Scalar, Unicode.Scalar?, Substring
+      >
+      let _: ExpectedMatch.Type = type(of: regexWithTryCapture).Match.self
+      let maybeMatchResult = line.match(regexWithTryCapture)
+      let matchResult = try XCTUnwrap(maybeMatchResult)
+      let (wholeMatch, lower, upper, propertyString) = matchResult.match.tuple
+      XCTAssertEqual(wholeMatch, Substring(line))
+      XCTAssertEqual(lower, Unicode.Scalar(0xA6F0))
+      XCTAssertEqual(upper, Unicode.Scalar(0xA6F1))
+      XCTAssertEqual(propertyString, "Extend")
+    }
+
     do {
       let regexLiteral = try MockRegexLiteral(
         #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
@@ -297,7 +324,7 @@ class RegexDSLTests: XCTestCase {
 
 extension Unicode.Scalar {
   // Convert a hexadecimal string to a scalar
-  public init?<S: StringProtocol>(hex: S) {
+  init?<S: StringProtocol>(hex: S) {
     guard let val = UInt32(hex, radix: 16), let scalar = Self(val) else {
       return nil
     }

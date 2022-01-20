@@ -43,6 +43,8 @@ struct RegexLiteralParticipant: Participant {
   }
 }
 
+// MARK: - Regex literal
+
 private func extractFromCaptures(
   _ match: Tuple4<Substring, Substring, Substring?, Substring>
 ) -> GraphemeBreakEntry? {
@@ -63,23 +65,6 @@ private func graphemeBreakPropertyData<RP: RegexProtocol>(
   line.match(regex).map(\.match).flatMap(extractFromCaptures)
 }
 
-private func graphemeBreakPropertyData(
-  forLine line: String
-) -> GraphemeBreakEntry? {
-  graphemeBreakPropertyData(forLine: line, using: Regex {
-    OneOrMore(.hexDigit).capture()
-    Optionally {
-      ".."
-      OneOrMore(.hexDigit).capture()
-    }
-    OneOrMore(.whitespace)
-    ";"
-    OneOrMore(.whitespace)
-    OneOrMore(.word).capture()
-    Repeat(.any)
-  })
-}
-
 private func graphemeBreakPropertyDataLiteral(
   forLine line: String
 ) -> GraphemeBreakEntry? {
@@ -87,4 +72,26 @@ private func graphemeBreakPropertyDataLiteral(
     forLine: line,
     using: r(#"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
              matching: Tuple4<Substring, Substring, Substring?, Substring>.self))
+}
+
+// MARK: - Builder DSL
+
+private func graphemeBreakPropertyData(
+  forLine line: String
+) -> GraphemeBreakEntry? {
+  line.match {
+    OneOrMore(.hexDigit).tryCapture(Unicode.Scalar.init(hex:))
+    Optionally {
+      ".."
+      OneOrMore(.hexDigit).tryCapture(Unicode.Scalar.init(hex:))
+    }
+    OneOrMore(.whitespace)
+    ";"
+    OneOrMore(.whitespace)
+    OneOrMore(.word).tryCapture(Unicode.GraphemeBreakProperty.init)
+    Repeat(.any)
+  }.map {
+    let (_, lower, upper, property) = $0.match.tuple
+    return GraphemeBreakEntry(lower...(upper ?? lower), property)
+  }
 }

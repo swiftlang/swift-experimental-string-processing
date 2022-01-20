@@ -39,7 +39,12 @@ class ExercisesTests: XCTestCase {
         let result = f(line)
         guard ref == result else {
           pass = false
-          XCTFail("Participant \(participant.name) failed")
+          XCTFail("""
+            Participant \(participant.name) failed
+            - Input: \(line)
+            - Expected: \(String(describing: ref))
+            - Result: \(String(describing: result))
+            """)
           break
         }
       }
