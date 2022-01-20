@@ -140,6 +140,14 @@ extension Source {
     return result
   }
 
+  /// Attempt to eat the given character, returning its source location if
+  /// successful, `nil` otherwise.
+  mutating func tryEatWithLoc(_ c: Character) -> SourceLocation? {
+    let start = currentPosition
+    guard tryEat(c) else { return nil }
+    return .init(start ..< currentPosition)
+  }
+
   /// Throws an expected ASCII character error if not matched
   mutating func expectASCII() throws -> Located<Character> {
     try recordLoc { src in
@@ -1475,15 +1483,13 @@ extension Source {
   ) throws -> (dashLoc: SourceLocation, AST.Atom)? {
     // Make sure we don't have a binary operator e.g '--', and the '-' is not
     // ending the custom character class (in which case it is literal).
-    let start = currentPosition
-    guard peekCCBinOp() == nil && !starts(with: "-]") && tryEat("-") else {
+    guard peekCCBinOp() == nil, !starts(with: "-]"),
+          let dash = tryEatWithLoc("-"),
+          let end = try lexAtom(context: context)
+    else {
       return nil
     }
-    let dashLoc = Location(start ..< currentPosition)
-    guard let end = try lexAtom(context: context) else {
-      return nil
-    }
-    return (dashLoc, end)
+    return (dash, end)
   }
 }
 
