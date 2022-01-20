@@ -114,6 +114,20 @@ class RegexConsumerTests: XCTestCase {
     expectReplace("aab", "a+", "X", "Xb")
     expectReplace("aab", "a*", "X", "XXbX")
   }
+  
+  func testMatches() {
+    let regex = Regex(OneOrMore(.digit).capture { 2 * Int($0)! })
+    let str = "foo 160 bar 99 baz"
+    XCTAssertEqual(str.matches(of: regex).map(\.0.1), [320, 198])
+  }
+  
+  func testMatchReplace() {
+    let regex = Regex(OneOrMore(.digit).capture { Int($0)! })
+    let str = "foo 160 bar 99 baz"
+    XCTAssertEqual(
+      str.replacing(regex, with: { match, _ in String(match.1, radix: 8) }),
+      "foo 240 bar 143 baz")
+  }
 
   func testAdHoc() {
     let r = try! Regex("a|b+")

@@ -34,6 +34,8 @@ public struct RegexConsumer<
 // well, taking advantage of the fact that the captures can be ignored
 
 extension RegexConsumer: MatchingCollectionConsumer {
+  public typealias Match = Capture
+  
   public func matchingConsuming(
     _ consumed: Consumed, in range: Range<Consumed.Index>
   ) -> (Capture, String.Index)? {
@@ -76,12 +78,12 @@ extension RegexConsumer: MatchingStatelessCollectionSearcher {
 }
 
 // TODO: Bake in search-back to engine too
-extension RegexConsumer: BackwardStatelessCollectionSearcher {
+extension RegexConsumer: BackwardMatchingStatelessCollectionSearcher {
   public typealias BackwardSearched = Consumed
   
-  public func searchBack(
+  public func matchingSearchBack(
     _ searched: BackwardSearched, in range: Range<Searched.Index>
-  ) -> Range<String.Index>? {
-    ConsumerSearcher(consumer: self).searchBack(searched, in: range)
+  ) -> (Capture, Range<String.Index>)? {
+    ConsumerSearcher(consumer: self).matchingSearchBack(searched, in: range)
   }
 }

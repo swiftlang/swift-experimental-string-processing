@@ -63,7 +63,7 @@ extension MatchesCollection: Collection {
   // TODO: Custom `SubSequence` for the sake of more efficient slice iteration
   
   public struct Index {
-    var match: (value: Searcher.Match, range: Range<Searcher.Searched.Index>)?
+    var match: (value: Searcher.Match, range: Range<Base.Index>)?
     var state: Searcher.State
   }
 
@@ -157,4 +157,38 @@ extension ReversedMatchesCollection: Sequence {
   }
 }
 
-//// TODO: `Collection` conformance
+// TODO: `Collection` conformance
+
+// MARK: `CollectionSearcher` algorithms
+
+extension Collection {
+  public func matches<S: MatchingCollectionSearcher>(
+    of searcher: S
+  ) -> MatchesCollection<S> where S.Searched == Self {
+    MatchesCollection(base: self, searcher: searcher)
+  }
+}
+
+extension BidirectionalCollection {
+  public func matchesFromBack<S: BackwardMatchingCollectionSearcher>(
+    of searcher: S
+  ) -> ReversedMatchesCollection<S> where S.BackwardSearched == Self {
+    ReversedMatchesCollection(base: self, searcher: searcher)
+  }
+}
+
+// MARK: Regex algorithms
+
+extension BidirectionalCollection where SubSequence == Substring {
+  public func matches<Capture>(
+    of regex: Regex<Capture>
+  ) -> MatchesCollection<RegexConsumer<Self, Capture>> {
+    matches(of: RegexConsumer(regex))
+  }
+  
+  public func matchesFromBack<Capture>(
+    of regex: Regex<Capture>
+  ) -> ReversedMatchesCollection<RegexConsumer<Self, Capture>> {
+    matchesFromBack(of: RegexConsumer(regex))
+  }
+}

@@ -50,11 +50,13 @@ extension RangeReplaceableCollection {
       maxReplacements: maxReplacements)
   }
   
-  public mutating func replace<Searcher: CollectionSearcher, R: Collection>(
+  public mutating func replace<
+    Searcher: CollectionSearcher, Replacement: Collection
+  >(
     _ searcher: Searcher,
-    with replacement: R,
+    with replacement: Replacement,
     maxReplacements: Int = .max
-  ) where Searcher.Searched == SubSequence, R.Element == Element {
+  ) where Searcher.Searched == SubSequence, Replacement.Element == Element {
     self = replacing(
       searcher,
       with: replacement,

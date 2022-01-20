@@ -36,7 +36,8 @@ public protocol MatchingStatelessCollectionSearcher:
 }
 
 extension MatchingStatelessCollectionSearcher {
-  // for disambiguation
+  // for disambiguation between the `MatchingCollectionSearcher` and
+  // `StatelessCollectionSearcher` overloads
   public func search(
     _ searched: Searched,
     _ state: inout State
@@ -96,6 +97,13 @@ public protocol BackwardMatchingStatelessCollectionSearcher:
 }
 
 extension BackwardMatchingStatelessCollectionSearcher {
+  public func searchBack(
+    _ searched: BackwardSearched,
+    in range: Range<BackwardSearched.Index>
+  ) -> Range<BackwardSearched.Index>? {
+    matchingSearchBack(searched, in: range)?.1
+  }
+  
   public func matchingSearchBack(
     _ searched: BackwardSearched,
     _ state: inout BackwardState) -> (Match, Range<BackwardSearched.Index>)?
