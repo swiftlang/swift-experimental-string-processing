@@ -165,6 +165,10 @@ func groupCondition(
   .group(.init(.init(faking: kind), child, .fake))
 }
 
+func callout(_ arg: AST.Atom.Callout.Argument) -> AST {
+  atom(.callout(.init(.init(faking: arg))))
+}
+
 func quant(
   _ amount: AST.Quantification.Amount,
   _ kind: AST.Quantification.Kind = .eager,

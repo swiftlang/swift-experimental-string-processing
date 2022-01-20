@@ -133,10 +133,16 @@ extension AST.Atom {
     case .backreference(let r), .subpattern(let r):
       return "\(r._dumpBase)"
 
+    case .callout(let c): return "\(c)"
+
     case .char, .scalar:
       fatalError("Unreachable")
     }
   }
+}
+
+extension AST.Atom.Callout: _ASTPrintable {
+  public var _dumpBase: String { "callout <\(arg.value)>" }
 }
 
 extension AST.Reference: _ASTPrintable {

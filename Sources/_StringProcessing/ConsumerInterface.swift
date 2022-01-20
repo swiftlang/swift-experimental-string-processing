@@ -112,7 +112,7 @@ extension AST.Atom {
 
     case .escaped, .keyboardControl, .keyboardMeta, .keyboardMetaControl,
         .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern:
+        .backreference, .subpattern, .callout:
       // FIXME: implement
       return nil
     }

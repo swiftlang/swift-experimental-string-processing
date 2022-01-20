@@ -631,8 +631,15 @@ extension Source {
   ) throws -> Located<AST.Group.Kind>? {
     try recordLoc { src in
       try src.tryEating { src in
-        guard src.tryEat("(") else { return nil }
+        // There are some atoms that syntactically look like groups, bail here
+        // if we see any. Care needs to be taken here as e.g a group starting
+        // with '(?-' is a subpattern if the next character is a digit,
+        // otherwise a matching option specifier. Conversely, '(?P' can be the
+        // start of a matching option sequence, or a reference if it is followed
+        // by '=' or '<'.
+        guard !src.shouldLexGroupLikeAtom() else { return nil }
 
+        guard src.tryEat("(") else { return nil }
         if src.tryEat("?") {
           if src.tryEat(":") { return .nonCapture }
           if src.tryEat("|") { return .nonCaptureReset }
@@ -656,15 +663,6 @@ extension Source {
           if src.tryEat("'") {
             let name = try src.expectQuoted(endingWith: "'")
             return .namedCapture(name)
-          }
-
-          // Check if we can lex a group-like reference. Do this before matching
-          // options to avoid ambiguity with a group starting with (?-, which
-          // is a subpattern if the next character is a digit, otherwise a
-          // matching option specifier. In addition, we need to be careful with
-          // (?P, which can also be the start of a matching option sequence.
-          if src.canLexGroupLikeReference() {
-            return nil
           }
 
           // Matching option changing group (?iJmnsUxxxDPSWy{..}-iJmnsUxxxDPSW:).
@@ -1059,11 +1057,11 @@ extension Source {
     for openChar: Character
   ) -> Character {
     switch openChar {
+      // Identically-balanced delimiters.
+      case "'", "\"", "`", "^", "%", "#", "$": return openChar
       case "<": return ">"
-      case "'": return "'"
       case "{": return "}"
-      default:
-        fatalError("Not implemented")
+      default: fatalError("Not implemented")
     }
   }
 
@@ -1204,6 +1202,24 @@ extension Source {
     return src.canLexNumberedReference()
   }
 
+  /// Whether a group specifier should be lexed as an atom instead of a group.
+  private func shouldLexGroupLikeAtom() -> Bool {
+    var src = self
+    guard src.tryEat("(") else { return false }
+
+    if src.tryEat("?") {
+      // The start of a reference '(?P=', '(?R', ...
+      if src.canLexGroupLikeReference() { return true }
+
+      // The start of a callout.
+      if src.tryEat("C") { return true }
+
+      return false
+    }
+
+    return false
+  }
+
   /// Consume an escaped atom, starting from after the backslash
   ///
   ///     Escaped          -> KeyboardModified | Builtin
@@ -1265,6 +1281,78 @@ extension Source {
     }
   }
 
+  /// Try to consume a callout.
+  ///
+  ///     Callout     -> '(?C' CalloutBody ')'
+  ///     CalloutBody -> '' | <Number>
+  ///                  | '`' <String> '`'
+  ///                  | "'" <String> "'"
+  ///                  | '"' <String> '"'
+  ///                  | '^' <String> '^'
+  ///                  | '%' <String> '%'
+  ///                  | '#' <String> '#'
+  ///                  | '$' <String> '$'
+  ///                  | '{' <String> '}'
+  ///
+  mutating func lexCallout() throws -> AST.Atom.Callout? {
+    guard tryEat(sequence: "(?C") else { return nil }
+    let arg = try recordLoc { src -> AST.Atom.Callout.Argument in
+      // Parse '(?C' followed by a number.
+      if let num = try src.lexNumber() {
+        return .number(num.value)
+      }
+      // '(?C)' is implicitly '(?C0)'.
+      if src.peek() == ")" {
+        return .number(0)
+      }
+      // Parse '(C?' followed by a set of balanced delimiters as defined by
+      // http://pcre.org/current/doc/html/pcre2pattern.html#SEC28
+      if let open = src.tryEat(anyOf: "`", "'", "\"", "^", "%", "#", "$", "{") {
+        let closing = String(Source.getClosingDelimiter(for: open))
+        return .string(try src.expectQuoted(endingWith: closing).value)
+      }
+      // If we don't know what this syntax is, consume up to the ending ')' and
+      // emit an error.
+      let remaining = src.lexUntil { $0.isEmpty || $0.tryEat(")") }.value
+      if remaining.isEmpty {
+        throw ParseError.expected(")")
+      }
+      throw ParseError.unknownCalloutKind("(?C\(remaining))")
+    }
+    try expect(")")
+    return .init(arg)
+  }
+
+  /// Consume a group-like atom, throwing an error if an atom could not be
+  /// produced.
+  ///
+  ///     GroupLikeAtom -> GroupLikeReference | Callout | BacktrackingDirective
+  ///
+  mutating func expectGroupLikeAtom() throws -> AST.Atom.Kind {
+    try recordLoc { src in
+      // References that look like groups, e.g (?R), (?1), ...
+      if let ref = try src.lexGroupLikeReference() {
+        return ref.value
+      }
+
+      // (?C)
+      if let callout = try src.lexCallout() {
+        return .callout(callout)
+      }
+
+      // If we didn't produce an atom, consume up until a reasonable end-point
+      // and throw an error.
+      try src.expect("(")
+      let remaining = src.lexUntil {
+        $0.isEmpty || $0.tryEat(anyOf: ":", ")") != nil
+      }.value
+      if remaining.isEmpty {
+        throw ParseError.expected(")")
+      }
+      throw ParseError.unknownGroupKind(remaining)
+    }.value
+  }
+
 
   /// Try to consume an Atom.
   ///
@@ -1293,9 +1381,10 @@ extension Source {
         return .property(prop)
       }
 
-      // References that look like groups, e.g (?R), (?1), ...
-      if !customCC, let ref = try src.lexGroupLikeReference() {
-        return ref.value
+      // If we have group syntax that was skipped over in lexGroupStart, we
+      // need to handle it as an atom, or throw an error.
+      if !customCC && src.shouldLexGroupLikeAtom() {
+        return try src.expectGroupLikeAtom()
       }
 
       let char = src.eat()

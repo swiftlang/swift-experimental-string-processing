@@ -60,7 +60,7 @@ extension Source {
 
   var isEmpty: Bool { _slice.isEmpty }
 
-  mutating func peek() -> Char? { _slice.first }
+  func peek() -> Char? { _slice.first }
 
   mutating func advance() {
     assert(!isEmpty)

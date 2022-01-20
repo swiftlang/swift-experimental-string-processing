@@ -1087,6 +1087,17 @@ extension RegexTests {
       trueBranch: empty(), falseBranch: empty())
     )
 
+    // MARK: Callouts
+
+    parseTest(#"(?C)"#, callout(.number(0)))
+    parseTest(#"(?C0)"#, callout(.number(0)))
+    parseTest(#"(?C20)"#, callout(.number(20)))
+    parseTest("(?C{abc})", callout(.string("abc")))
+
+    for delim in ["`", "'", "\"", "^", "%", "#", "$"] {
+      parseTest("(?C\(delim)hello\(delim))", callout(.string("hello")))
+    }
+
     // MARK: Parse with delimiters
 
     parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
@@ -1149,6 +1160,9 @@ extension RegexTests {
     parseNotEqualTest(#"(?(R&abc)|)"#, #"(?(R&def)|)"#)
     parseNotEqualTest(#"(?(VERSION=0.1))"#, #"(?(VERSION=0.2))"#)
     parseNotEqualTest(#"(?(VERSION=0.1))"#, #"(?(VERSION>=0.1))"#)
+
+    parseNotEqualTest("(?C0)", "(?C1)")
+    parseNotEqualTest("(?C0)", "(?C'hello')")
 
     // TODO: failure tests
   }
@@ -1242,6 +1256,8 @@ extension RegexTests {
     diagnosticTest(#""ab\""#, .expected("\""), syntax: .experimental)
     diagnosticTest("\"ab\\", .expectedEscape, syntax: .experimental)
 
+    diagnosticTest("(?C", .expected(")"))
+
     // MARK: Text Segment options
 
     diagnosticTest("(?-y{g})", .cannotRemoveTextSegmentOptions)
@@ -1277,5 +1293,10 @@ extension RegexTests {
     diagnosticTest(#"(?(1)a|b|c)"#, .tooManyBranchesInConditional(3))
     diagnosticTest(#"(?(1)||)"#, .tooManyBranchesInConditional(3))
     diagnosticTest(#"(?(?i))"#, .unsupportedCondition("implicitly scoped group"))
+
+    // MARK: Callouts
+
+    diagnosticTest("(?C-1)", .unknownCalloutKind("(?C-1)"))
+    diagnosticTest("(?C-1", .unknownCalloutKind("(?C-1)"))
   }
 }

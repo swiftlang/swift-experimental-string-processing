@@ -39,6 +39,7 @@ enum ParseError: Error, Hashable {
   case cannotReferToWholePattern
 
   case unknownGroupKind(String)
+  case unknownCalloutKind(String)
 
   case invalidMatchingOption(Character)
   case cannotRemoveMatchingOptionsAfterCaret
@@ -86,6 +87,8 @@ extension ParseError: CustomStringConvertible {
       return "\(str) cannot be used as condition"
     case let .unknownGroupKind(str):
       return "unknown group kind '(\(str)'"
+    case let .unknownCalloutKind(str):
+      return "unknown callout kind '\(str)'"
     case let .invalidMatchingOption(c):
       return "invalid matching option '\(c)'"
     case .cannotRemoveMatchingOptionsAfterCaret:

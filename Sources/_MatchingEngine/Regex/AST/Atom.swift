@@ -66,6 +66,9 @@ extension AST {
       // References
       case backreference(Reference)
       case subpattern(Reference)
+
+      // (?C)
+      case callout(Callout)
     }
   }
 }
@@ -444,6 +447,19 @@ extension AST.Atom {
 }
 
 extension AST.Atom {
+  public struct Callout: Hashable {
+    public enum Argument: Hashable {
+      case number(Int)
+      case string(String)
+    }
+    public var arg: AST.Located<Argument>
+    public init(_ arg: AST.Located<Argument>) {
+      self.arg = arg
+    }
+  }
+}
+
+extension AST.Atom {
   /// Retrieve the character value of the atom if it represents a literal
   /// character or unicode scalar, nil otherwise.
   public var literalCharacterValue: Character? {
@@ -458,7 +474,7 @@ extension AST.Atom {
       fallthrough
 
     case .property, .escaped, .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .namedCharacter:
+        .backreference, .subpattern, .namedCharacter, .callout:
       return nil
     }
   }
@@ -483,7 +499,7 @@ extension AST.Atom {
       return "\\M-\\C-\(x)"
 
     case .property, .escaped, .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .namedCharacter:
+        .backreference, .subpattern, .namedCharacter, .callout:
       return nil
     }
   }

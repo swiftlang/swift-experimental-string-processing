@@ -266,6 +266,9 @@ extension AST.Atom {
 
     case .subpattern:
       return " /* TODO: subpattern */"
+
+    case .callout:
+      return " /* TODO: callout */"
     }
   }
 }
