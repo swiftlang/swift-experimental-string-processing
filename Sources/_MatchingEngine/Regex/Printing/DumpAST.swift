@@ -135,6 +135,8 @@ extension AST.Atom {
 
     case .callout(let c): return "\(c)"
 
+    case .backtrackingDirective(let d): return "\(d)"
+
     case .char, .scalar:
       fatalError("Unreachable")
     }
@@ -243,5 +245,15 @@ extension AST.CustomCharacterClass.Member: _ASTPrintable {
 extension AST.CustomCharacterClass.Range: _ASTPrintable {
   public var _dumpBase: String {
     "\(lhs)-\(rhs)"
+  }
+}
+
+extension AST.Atom.BacktrackingDirective: _ASTPrintable {
+  public var _dumpBase: String {
+    var result = "\(kind.value)"
+    if let name = name {
+      result += ": \(name.value)"
+    }
+    return result
   }
 }

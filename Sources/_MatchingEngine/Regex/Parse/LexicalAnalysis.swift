@@ -608,6 +608,49 @@ extension Source {
     return .init(caretLoc: nil, adding: adding, minusLoc: nil, removing: [])
   }
 
+  /// Try to consume explicitly spelled-out PCRE2 group syntax.
+  mutating func lexExplicitPCRE2GroupStart() -> AST.Group.Kind? {
+    tryEating { src in
+      guard src.tryEat(sequence: "(*") else { return nil }
+
+      if src.tryEat(sequence: "atomic:") {
+        return .atomicNonCapturing
+      }
+      if src.tryEat(sequence: "pla:") ||
+          src.tryEat(sequence: "positive_lookahead:") {
+        return .lookahead
+      }
+      if src.tryEat(sequence: "nla:") ||
+          src.tryEat(sequence: "negative_lookahead:") {
+        return .negativeLookahead
+      }
+      if src.tryEat(sequence: "plb:") ||
+          src.tryEat(sequence: "positive_lookbehind:") {
+        return .lookbehind
+      }
+      if src.tryEat(sequence: "nlb:") ||
+          src.tryEat(sequence: "negative_lookbehind:") {
+        return .negativeLookbehind
+      }
+      if src.tryEat(sequence: "napla:") ||
+          src.tryEat(sequence: "non_atomic_positive_lookahead:") {
+        return .nonAtomicLookahead
+      }
+      if src.tryEat(sequence: "naplb:") ||
+          src.tryEat(sequence: "non_atomic_positive_lookbehind:") {
+        return .nonAtomicLookbehind
+      }
+      if src.tryEat(sequence: "sr:") || src.tryEat(sequence: "script_run:") {
+        return .scriptRun
+      }
+      if src.tryEat(sequence: "asr:") ||
+          src.tryEat(sequence: "atomic_script_run:") {
+        return .atomicScriptRun
+      }
+      return nil
+    }
+  }
+
   /// Try to consume the start of a group
   ///
   ///     GroupStart -> '(?' GroupKind | '('
@@ -631,6 +674,11 @@ extension Source {
   ) throws -> Located<AST.Group.Kind>? {
     try recordLoc { src in
       try src.tryEating { src in
+        // Explicitly spelled out PRCE2 syntax for some groups. This needs to be
+        // done before group-like atoms, as it uses the '(*' syntax, which is
+        // otherwise a group-like atom.
+        if let g = src.lexExplicitPCRE2GroupStart() { return g }
+
         // There are some atoms that syntactically look like groups, bail here
         // if we see any. Care needs to be taken here as e.g a group starting
         // with '(?-' is a subpattern if the next character is a digit,
@@ -689,45 +737,6 @@ extension Source {
             throw ParseError.expectedGroupSpecifier
           }
           throw ParseError.unknownGroupKind("?\(next)")
-        }
-
-        // Explicitly spelled out PRCE2 syntax for some groups.
-        if src.tryEat("*") {
-          if src.tryEat(sequence: "atomic:") { return .atomicNonCapturing }
-
-          if src.tryEat(sequence: "pla:") ||
-              src.tryEat(sequence: "positive_lookahead:") {
-            return .lookahead
-          }
-          if src.tryEat(sequence: "nla:") ||
-              src.tryEat(sequence: "negative_lookahead:") {
-            return .negativeLookahead
-          }
-          if src.tryEat(sequence: "plb:") ||
-              src.tryEat(sequence: "positive_lookbehind:") {
-            return .lookbehind
-          }
-          if src.tryEat(sequence: "nlb:") ||
-              src.tryEat(sequence: "negative_lookbehind:") {
-            return .negativeLookbehind
-          }
-          if src.tryEat(sequence: "napla:") ||
-              src.tryEat(sequence: "non_atomic_positive_lookahead:") {
-            return .nonAtomicLookahead
-          }
-          if src.tryEat(sequence: "naplb:") ||
-              src.tryEat(sequence: "non_atomic_positive_lookbehind:") {
-            return .nonAtomicLookbehind
-          }
-          if src.tryEat(sequence: "sr:") || src.tryEat(sequence: "script_run:") {
-            return .scriptRun
-          }
-          if src.tryEat(sequence: "asr:") ||
-              src.tryEat(sequence: "atomic_script_run:") {
-            return .atomicScriptRun
-          }
-
-          throw ParseError.misc("Quantifier '*' must follow operand")
         }
 
         // (_:)
@@ -1216,6 +1225,8 @@ extension Source {
 
       return false
     }
+    // The start of a backreference directive.
+    if src.tryEat("*") { return true }
 
     return false
   }
@@ -1323,6 +1334,44 @@ extension Source {
     return .init(arg)
   }
 
+  /// Try to consume a backtracking directive.
+  ///
+  ///     BacktrackingDirective     -> '(*' BacktrackingDirectiveKind (':' <String>)? ')'
+  ///     BacktrackingDirectiveKind -> 'ACCEPT' | 'FAIL' | 'F' | 'MARK' | ''
+  ///                                | 'COMMIT' | 'PRUNE' | 'SKIP' | 'THEN'
+  ///
+  mutating func lexBacktrackingDirective(
+  ) throws -> AST.Atom.BacktrackingDirective? {
+    try tryEating { src in
+      guard src.tryEat(sequence: "(*") else { return nil }
+      let kind = src.recordLoc { src -> AST.Atom.BacktrackingDirective.Kind? in
+        if src.tryEat(sequence: "ACCEPT") { return .accept }
+        if src.tryEat(sequence: "FAIL") || src.tryEat("F") { return .fail }
+        if src.tryEat(sequence: "MARK") || src.peek() == ":" { return .mark }
+        if src.tryEat(sequence: "COMMIT") { return .commit }
+        if src.tryEat(sequence: "PRUNE") { return .prune }
+        if src.tryEat(sequence: "SKIP") { return .skip }
+        if src.tryEat(sequence: "THEN") { return .then }
+        return nil
+      }
+      guard let kind = kind else { return nil }
+      var name: Located<String>?
+      if src.tryEat(":") {
+        // TODO: PCRE allows escaped delimiters or '\Q...\E' sequences in the
+        // name under PCRE2_ALT_VERBNAMES.
+        name = try src.expectQuoted(endingWith: ")", eatEnding: false)
+      }
+      try src.expect(")")
+
+      // MARK directives must be named.
+      if name == nil && kind.value == .mark {
+        throw ParseError.backtrackingDirectiveMustHaveName(
+          String(src[kind.location.range]))
+      }
+      return .init(kind, name: name)
+    }
+  }
+
   /// Consume a group-like atom, throwing an error if an atom could not be
   /// produced.
   ///
@@ -1338,6 +1387,11 @@ extension Source {
       // (?C)
       if let callout = try src.lexCallout() {
         return .callout(callout)
+      }
+
+      // (*ACCEPT), (*FAIL), (*MARK), ...
+      if let b = try src.lexBacktrackingDirective() {
+        return .backtrackingDirective(b)
       }
 
       // If we didn't produce an atom, consume up until a reasonable end-point

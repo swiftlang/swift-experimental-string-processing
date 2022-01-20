@@ -269,6 +269,9 @@ extension AST.Atom {
 
     case .callout:
       return " /* TODO: callout */"
+
+    case .backtrackingDirective:
+      return " /* TODO: backtracking directive */"
     }
   }
 }

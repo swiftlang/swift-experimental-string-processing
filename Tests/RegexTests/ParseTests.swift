@@ -1098,6 +1098,22 @@ extension RegexTests {
       parseTest("(?C\(delim)hello\(delim))", callout(.string("hello")))
     }
 
+    // MARK: Backtracking directives
+
+    parseTest("(*ACCEPT)?", zeroOrOne(.eager, backtrackingDirective(.accept)))
+    parseTest(
+      "(*ACCEPT:a)??",
+      zeroOrOne(.reluctant, backtrackingDirective(.accept, name: "a"))
+    )
+    parseTest("(*:a)", backtrackingDirective(.mark, name: "a"))
+    parseTest("(*MARK:a)", backtrackingDirective(.mark, name: "a"))
+    parseTest("(*F)", backtrackingDirective(.fail))
+    parseTest("(*COMMIT)", backtrackingDirective(.commit))
+    parseTest("(*SKIP)", backtrackingDirective(.skip))
+    parseTest("(*SKIP:SKIP)", backtrackingDirective(.skip, name: "SKIP"))
+    parseTest("(*PRUNE)", backtrackingDirective(.prune))
+    parseTest("(*THEN)", backtrackingDirective(.then))
+
     // MARK: Parse with delimiters
 
     parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
@@ -1163,6 +1179,11 @@ extension RegexTests {
 
     parseNotEqualTest("(?C0)", "(?C1)")
     parseNotEqualTest("(?C0)", "(?C'hello')")
+
+    parseNotEqualTest("(*ACCEPT)", "(*ACCEPT:a)")
+    parseNotEqualTest("(*MARK:a)", "(*MARK:b)")
+    parseNotEqualTest("(*:a)", "(*:b)")
+    parseNotEqualTest("(*FAIL)", "(*SKIP)")
 
     // TODO: failure tests
   }
@@ -1265,7 +1286,8 @@ extension RegexTests {
 
     // MARK: Group specifiers
 
-    diagnosticTest(#"(*"#, .misc("Quantifier '*' must follow operand"))
+    diagnosticTest(#"(*"#, .unknownGroupKind("*"))
+    diagnosticTest("(*X)", .unknownGroupKind("*X"))
 
     diagnosticTest(#"(?k)"#, .unknownGroupKind("?k"))
     diagnosticTest(#"(?P#)"#, .invalidMatchingOption("#"))
@@ -1298,5 +1320,17 @@ extension RegexTests {
 
     diagnosticTest("(?C-1)", .unknownCalloutKind("(?C-1)"))
     diagnosticTest("(?C-1", .unknownCalloutKind("(?C-1)"))
+
+    // MARK: Backtracking directives
+
+    diagnosticTest("(*MARK)", .backtrackingDirectiveMustHaveName("MARK"))
+    diagnosticTest("(*:)", .expectedNonEmptyContents)
+    diagnosticTest("(*MARK:a)?", .notQuantifiable)
+    diagnosticTest("(*FAIL)+", .notQuantifiable)
+    diagnosticTest("(*COMMIT:b)*", .notQuantifiable)
+    diagnosticTest("(*PRUNE:a)??", .notQuantifiable)
+    diagnosticTest("(*SKIP:a)*?", .notQuantifiable)
+    diagnosticTest("(*F)+?", .notQuantifiable)
+    diagnosticTest("(*:a){2}", .notQuantifiable)
   }
 }

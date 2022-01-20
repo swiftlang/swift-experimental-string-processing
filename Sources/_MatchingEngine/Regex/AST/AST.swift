@@ -100,6 +100,20 @@ extension AST {
 
     return self.children?.any(\.hasCapture) ?? false
   }
+
+  /// Whether this AST node may be used as the operand of a quantifier such as
+  /// `?`, `+` or `*`.
+  public var isQuantifiable: Bool {
+    switch self {
+    case .atom(let a):
+      return a.isQuantifiable
+    case .group, .conditional, .customCharacterClass:
+      return true
+    case .alternation, .concatenation, .quantification, .quote, .trivia,
+        .empty, .groupTransform:
+      return false
+    }
+  }
 }
 
 // MARK: - AST types

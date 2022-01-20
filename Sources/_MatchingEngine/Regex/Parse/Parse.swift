@@ -176,8 +176,11 @@ extension Parser {
       //     Quantification  -> QuantOperand Quantifier?
       if let operand = try parseQuantifierOperand() {
         if let (amt, kind) = try source.lexQuantifier() {
-           result.append(.quantification(.init(
-            amt, kind, operand, loc(_start))))
+          let location = loc(_start)
+          guard operand.isQuantifiable else {
+            throw Source.LocatedError(ParseError.notQuantifiable, location)
+          }
+          result.append(.quantification(.init(amt, kind, operand, location)))
         } else {
           result.append(operand)
         }

@@ -169,6 +169,14 @@ func callout(_ arg: AST.Atom.Callout.Argument) -> AST {
   atom(.callout(.init(.init(faking: arg))))
 }
 
+func backtrackingDirective(
+  _ kind: AST.Atom.BacktrackingDirective.Kind, name: String? = nil
+) -> AST {
+  atom(.backtrackingDirective(
+    .init(.init(faking: kind), name: name.map { .init(faking: $0) })
+  ))
+}
+
 func quant(
   _ amount: AST.Quantification.Amount,
   _ kind: AST.Quantification.Kind = .eager,
