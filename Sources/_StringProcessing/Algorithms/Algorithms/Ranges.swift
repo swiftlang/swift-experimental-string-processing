@@ -218,13 +218,13 @@ extension BidirectionalCollection where Element: Comparable {
 extension BidirectionalCollection where SubSequence == Substring {
   public func ranges<Capture>(
     of regex: Regex<Capture>
-  ) -> RangesCollection<RegexConsumer<Self>> {
+  ) -> RangesCollection<RegexConsumer<Self, Capture>> {
     ranges(of: RegexConsumer(regex))
   }
   
   public func rangesFromBack<Capture>(
     of regex: Regex<Capture>
-  ) -> ReversedRangesCollection<RegexConsumer<Self>> {
+  ) -> ReversedRangesCollection<RegexConsumer<Self, Capture>> {
     rangesFromBack(of: RegexConsumer(regex))
   }
 }

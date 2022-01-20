@@ -282,7 +282,7 @@ extension RangeReplaceableCollection
   }
   
   public mutating func trim<Capture>(_ regex: Regex<Capture>) {
-    let consumer = RegexConsumer<Self>(regex)
+    let consumer = RegexConsumer<Self, Capture>(regex)
     trimPrefix(consumer)
     trimSuffix(consumer)
   }
@@ -298,7 +298,7 @@ extension Substring {
   }
   
   public mutating func trim<Capture>(_ regex: Regex<Capture>) {
-    let consumer = RegexConsumer<Self>(regex)
+    let consumer = RegexConsumer<Self, Capture>(regex)
     trimPrefix(consumer)
     trimSuffix(consumer)
   }
