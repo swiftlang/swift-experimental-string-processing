@@ -68,6 +68,12 @@ func namedCapture(
 ) -> AST {
   group(.namedCapture(.init(faking: name)), child)
 }
+func balancedCapture(name: String?, priorName: String, _ child: AST) -> AST {
+  group(.balancedCapture(
+    .init(name: name.map { .init(faking: $0) }, dash: .fake,
+          priorName: .init(faking: priorName))
+  ), child)
+}
 func nonCaptureReset(
   _ child: AST
 ) -> AST {

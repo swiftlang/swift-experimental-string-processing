@@ -31,6 +31,9 @@ extension AST {
       // (?<name>...) (?'name'...) (?P<name>...)
       case namedCapture(Located<String>)
 
+      // (?<name-priorName>) (?'name-priorName')
+      case balancedCapture(BalancedCapture)
+
       // (?:...)
       case nonCapture
 
@@ -79,7 +82,7 @@ extension AST {
 extension AST.Group.Kind {
   public var isCapturing: Bool {
     switch self {
-    case .capture, .namedCapture: return true
+    case .capture, .namedCapture, .balancedCapture: return true
     default: return false
     }
   }
@@ -103,6 +106,7 @@ extension AST.Group.Kind {
   public var name: String? {
     switch self {
     case .namedCapture(let name): return name.value
+    case .balancedCapture(let b): return b.name?.value
     default: return nil
     }
   }
@@ -121,5 +125,26 @@ extension AST.Group {
     default: return nil
     }
   }
+}
 
+extension AST.Group {
+  public struct BalancedCapture: Hashable {
+    /// The name of the group, or nil if the group has no name.
+    public var name: AST.Located<String>?
+
+    /// The location of the `-` in the group.
+    public var dash: SourceLocation
+
+    /// The name of the prior group that the balancing group references.
+    public var priorName: AST.Located<String>
+
+    public init(
+      name: AST.Located<String>?, dash: SourceLocation,
+      priorName: AST.Located<String>
+    ) {
+      self.name = name
+      self.dash = dash
+      self.priorName = priorName
+    }
+  }
 }

@@ -659,13 +659,61 @@ extension Source {
     }
   }
 
+  /// Consume a group name.
+  private mutating func expectGroupName(
+    endingWith ending: String, eatEnding: Bool = true
+  ) throws -> Located<String> {
+    let str = try recordLoc { src -> String in
+      if src.isEmpty || src.tryEat(sequence: ending) {
+        throw ParseError.expectedGroupName
+      }
+      if src.peek()!.isNumber {
+        throw ParseError.groupNameCannotStartWithNumber
+      }
+      guard let str = src.tryEatPrefix(\.isWordCharacter)?.string else {
+        throw ParseError.groupNameMustBeAlphaNumeric
+      }
+      return str
+    }
+    if eatEnding {
+      try expect(sequence: ending)
+    }
+    return str
+  }
+
+  /// Consume a named group field, producing either a named capture or balanced
+  /// capture.
+  ///
+  ///     NamedGroup    -> 'P<' GroupNameBody '>'
+  ///                    | '<' GroupNameBody '>'
+  ///                    | "'" GroupNameBody "'"
+  ///     GroupNameBody -> \w+ | \w* '-' \w+
+  ///
+  private mutating func expectNamedGroup(
+    endingWith ending: String
+  ) throws -> AST.Group.Kind {
+    func lexBalanced(_ lhs: Located<String>? = nil) throws -> AST.Group.Kind? {
+      // If we have a '-', this is a .NET-style 'balanced group'.
+      guard let dash = tryEatWithLoc("-") else { return nil }
+      let rhs = try expectGroupName(endingWith: ending)
+      return .balancedCapture(.init(name: lhs, dash: dash, priorName: rhs))
+    }
+
+    // Lex a group name, trying to lex a '-rhs' for a balanced capture group
+    // both before and after.
+    if let b = try lexBalanced() { return b }
+    let name = try expectGroupName(endingWith: ending, eatEnding: false)
+    if let b = try lexBalanced(name) { return b }
+
+    try expect(sequence: ending)
+    return .namedCapture(name)
+  }
+
   /// Try to consume the start of a group
   ///
   ///     GroupStart -> '(?' GroupKind | '('
-  ///     GroupKind  -> Named | ':' | '|' | '>' | '=' | '!' | '*' | '<=' | '<!'
-  ///                 | '<*' | MatchingOptionSeq (':' | ')')
-  ///     Named      -> '<' [^'>']+ '>' | 'P<' [^'>']+ '>'
-  ///                 | '\'' [^'\'']+ '\''
+  ///     GroupKind  -> ':' | '|' | '>' | '=' | '!' | '*' | '<=' | '<!' | '<*'
+  ///                 | NamedGroup | MatchingOptionSeq (':' | ')')
   ///
   /// If `SyntaxOptions.experimentalGroups` is enabled, also accepts:
   ///
@@ -709,16 +757,11 @@ extension Source {
           if src.tryEat(sequence: "<*") { return .nonAtomicLookbehind }
 
           // Named
-          // TODO: Group name validation, PCRE (and ICU + Oniguruma as far as I
-          // can tell), enforce word characters only, with the first character
-          // being a non-digit.
           if src.tryEat("<") || src.tryEat(sequence: "P<") {
-            let name = try src.expectQuoted(endingWith: ">")
-            return .namedCapture(name)
+            return try src.expectNamedGroup(endingWith: ">")
           }
           if src.tryEat("'") {
-            let name = try src.expectQuoted(endingWith: "'")
-            return .namedCapture(name)
+            return try src.expectNamedGroup(endingWith: "'")
           }
 
           // Matching option changing group (?iJmnsUxxxDPSWy{..}-iJmnsUxxxDPSW:).
@@ -853,9 +896,9 @@ extension Source {
         // FIXME: This should apply to future groups too.
         // TODO: We should probably advise users to use the more explicit
         // syntax.
-        let nameRef = try src.expectNamedReference(
-          endingWith: ")", eatEnding: false)
-        if context.isPriorGroupRef(nameRef.kind) {
+        if let nameRef = src.lexNamedReference(endingWith: ")",
+                                               eatEnding: false),
+           context.isPriorGroupRef(nameRef.kind) {
           return .groupMatched(nameRef)
         }
         return nil
@@ -1046,9 +1089,18 @@ extension Source {
   private mutating func expectNamedReference(
     endingWith end: String, eatEnding: Bool = true
   ) throws -> AST.Reference {
-    // TODO: Group name validation, see comment in lexGroupStart.
-    let str = try expectQuoted(endingWith: end, eatEnding: eatEnding)
+    let str = try expectGroupName(endingWith: end, eatEnding: eatEnding)
     return .init(.named(str.value), innerLoc: str.location)
+  }
+
+  /// Try to consume a named reference up to a closing delimiter, returning
+  /// `nil` if the characters aren't valid for a named reference.
+  private mutating func lexNamedReference(
+    endingWith end: String, eatEnding: Bool = true
+  ) -> AST.Reference? {
+    tryEating { src in
+      try? src.expectNamedReference(endingWith: end, eatEnding: eatEnding)
+    }
   }
 
   /// Try to lex a numbered reference, or otherwise a named reference.

@@ -549,6 +549,14 @@ extension RegexTests {
       concat("a", namedCapture("label", "b"), "c"),
       captures: .atom(name: "label"))
 
+    // Balanced captures
+    parseTest(#"(?<a-c>)"#, balancedCapture(name: "a", priorName: "c", empty()),
+              captures: .atom(name: "a"))
+    parseTest(#"(?<-c>)"#, balancedCapture(name: nil, priorName: "c", empty()),
+              captures: .atom())
+    parseTest(#"(?'a-b'c)"#, balancedCapture(name: "a", priorName: "b", "c"),
+              captures: .atom(name: "a"))
+
     // Other groups
     parseTest(
       #"a(?:b)c"#,
@@ -851,12 +859,6 @@ extension RegexTests {
     parseTest(#"(?-2)"#, subpattern(.relative(-2)))
     parseTest(#"(?&hello)"#, subpattern(.named("hello")))
     parseTest(#"(?P>P)"#, subpattern(.named("P")))
-
-    // TODO: Should we enforce that names only use certain characters?
-    parseTest(#"(?&&)"#, subpattern(.named("&")))
-    parseTest(#"(?&-1)"#, subpattern(.named("-1")))
-    parseTest(#"(?P>+1)"#, subpattern(.named("+1")))
-    parseTest(#"(?P=+1)"#, backreference(.named("+1")))
 
     parseTest(#"[(?R)]"#, charClass("(", "?", "R", ")"))
     parseTest(#"[(?&a)]"#, charClass("(", "?", "&", "a", ")"))
@@ -1185,6 +1187,10 @@ extension RegexTests {
     parseNotEqualTest("(*:a)", "(*:b)")
     parseNotEqualTest("(*FAIL)", "(*SKIP)")
 
+    parseNotEqualTest("(?<a-b>)", "(?<a-c>)")
+    parseNotEqualTest("(?<c-b>)", "(?<a-b>)")
+    parseNotEqualTest("(?<-b>)", "(?<a-b>)")
+
     // TODO: failure tests
   }
 
@@ -1279,6 +1285,13 @@ extension RegexTests {
 
     diagnosticTest("(?C", .expected(")"))
 
+    diagnosticTest("(?<", .expectedGroupName)
+    diagnosticTest("(?<a", .expected(">"))
+    diagnosticTest("(?<a-", .expectedGroupName)
+    diagnosticTest("(?<a--", .groupNameMustBeAlphaNumeric)
+    diagnosticTest("(?<a-b", .expected(">"))
+    diagnosticTest("(?<a-b>", .expected(")"))
+
     // MARK: Text Segment options
 
     diagnosticTest("(?-y{g})", .cannotRemoveTextSegmentOptions)
@@ -1292,6 +1305,13 @@ extension RegexTests {
     diagnosticTest(#"(?k)"#, .unknownGroupKind("?k"))
     diagnosticTest(#"(?P#)"#, .invalidMatchingOption("#"))
 
+    diagnosticTest(#"(?<#>)"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?'1A')"#, .groupNameCannotStartWithNumber)
+
+    diagnosticTest(#"(?'-')"#, .expectedGroupName)
+    diagnosticTest(#"(?'--')"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?'a-b-c')"#, .expected("'"))
+
     // MARK: Matching options
 
     diagnosticTest(#"(?^-"#, .cannotRemoveMatchingOptionsAfterCaret)
@@ -1299,16 +1319,24 @@ extension RegexTests {
     diagnosticTest(#"(?^i-"#, .cannotRemoveMatchingOptionsAfterCaret)
     diagnosticTest(#"(?^i-m)"#, .cannotRemoveMatchingOptionsAfterCaret)
 
-    // MARK: Quotes
-
-    diagnosticTest(#"\k''"#, .expectedNonEmptyContents)
-    diagnosticTest(#"(?&)"#, .expectedNonEmptyContents)
-    diagnosticTest(#"(?P>)"#, .expectedNonEmptyContents)
-
     // MARK: References
+
+    diagnosticTest(#"\k''"#, .expectedGroupName)
+    diagnosticTest(#"(?&)"#, .expectedGroupName)
+    diagnosticTest(#"(?P>)"#, .expectedGroupName)
 
     diagnosticTest(#"\g{0}"#, .cannotReferToWholePattern)
     diagnosticTest(#"(?(0))"#, .cannotReferToWholePattern)
+
+    diagnosticTest(#"(?&&)"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?&-1)"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?P>+1)"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?P=+1)"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"\k'#'"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?&#)"#, .groupNameMustBeAlphaNumeric)
+
+    diagnosticTest(#"\k'1'"#, .groupNameCannotStartWithNumber)
+    diagnosticTest(#"(?P>1)"#, .groupNameCannotStartWithNumber)
 
     // MARK: Conditionals
 

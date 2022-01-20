@@ -657,5 +657,7 @@ public enum OnigurumaSpecialProperty: String, Hashable {
 }
 
 extension Character {
-  var isOctalDigit: Bool { ("0"..."7").contains(self) }
+  public var isOctalDigit: Bool { ("0"..."7").contains(self) }
+
+  public var isWordCharacter: Bool { isLetter || isNumber || self == "_" }
 }

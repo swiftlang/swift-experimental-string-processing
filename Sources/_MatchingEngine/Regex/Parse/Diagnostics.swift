@@ -55,6 +55,9 @@ enum ParseError: Error, Hashable {
   case emptyProperty
 
   case expectedGroupSpecifier
+  case expectedGroupName
+  case groupNameMustBeAlphaNumeric
+  case groupNameCannotStartWithNumber
   case cannotRemoveTextSegmentOptions
 }
 
@@ -113,6 +116,12 @@ extension ParseError: CustomStringConvertible {
       return "empty property"
     case .expectedGroupSpecifier:
       return "expected group specifier"
+    case .expectedGroupName:
+      return "expected group name"
+    case .groupNameMustBeAlphaNumeric:
+      return "group name must only contain alphanumeric characters"
+    case .groupNameCannotStartWithNumber:
+      return "group name must not start with number"
     case .cannotRemoveTextSegmentOptions:
       return "text segment mode cannot be unset, only changed"
     }

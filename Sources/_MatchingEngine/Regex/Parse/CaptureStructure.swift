@@ -44,7 +44,10 @@ extension AST {
         return .atom() + innerCaptures
       case .namedCapture(let name):
         return .atom(name: name.value) + innerCaptures
+      case .balancedCapture(let b):
+        return .atom(name: b.name?.value) + innerCaptures
       default:
+        precondition(!group.kind.value.isCapturing)
         return innerCaptures
       }
     case .conditional(let c):

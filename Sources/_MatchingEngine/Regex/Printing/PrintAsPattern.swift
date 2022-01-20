@@ -286,6 +286,9 @@ extension AST.Group.Kind {
     case .namedCapture(let n):
       return "name: \"\(n)\""
 
+    case .balancedCapture:
+      return "/* TODO: balanced captures */"
+
     case .nonCapture: return ""
 
     case .nonCaptureReset:
