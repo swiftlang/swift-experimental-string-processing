@@ -80,6 +80,55 @@ class RegexDSLTests: XCTestCase {
         == Tuple3("b", "cccc", ["d", "d", "d"]))
   }
 
+  func testQuantificationWithTransformedCapture() throws {
+    // This test is to make sure transformed capture type information is
+    // correctly propagated from the DSL into the bytecode and that the engine
+    // is reconstructing the right types upon quantification (both empty and
+    // non-empty).
+    enum Word: Int32 {
+      case apple
+      case orange
+
+      init?(_ string: Substring) {
+        switch string {
+        case "apple": self = .apple
+        case "orange": self = .orange
+        default: return nil
+        }
+      }
+    }
+    let regex = Regex {
+      "a".+
+      OneOrMore(.whitespace)
+      Optionally {
+        OneOrMore(.digit).capture { Int($0)! }
+      }
+      Repeat {
+        OneOrMore(.whitespace)
+        OneOrMore(.word).capture { Word($0)! }
+      }
+    }
+    // Assert the inferred capture type.
+    let _: Tuple3<Substring, Int?, [Word]>.Type
+      = type(of: regex).Match.self
+    do {
+      let input = "aaa 123 apple orange apple"
+      let match = input.match(regex)?.match.tuple
+      let (whole, number, words) = try XCTUnwrap(match)
+      XCTAssertTrue(whole == input)
+      XCTAssertEqual(number, 123)
+      XCTAssertEqual(words, [.apple, .orange, .apple])
+    }
+    do {
+      let input = "aaa   "
+      let match = input.match(regex)?.match.tuple
+      let (whole, number, words) = try XCTUnwrap(match)
+      XCTAssertTrue(whole == input)
+      XCTAssertEqual(number, nil)
+      XCTAssertTrue(words.isEmpty)
+    }
+  }
+
   // Note: Types of nested captures should be flat, but are currently nested
   // due to the lack of variadic generics. Without it, we cannot effectively
   // express type constraints to concatenate splatted tuples.
@@ -174,27 +223,39 @@ class RegexDSLTests: XCTestCase {
     let line = """
       A6F0..A6F1    ; Extend # Mn   [2] BAMUM COMBINING MARK KOQNDON..BAMUM COMBINING MARK TUKWENTIS
       """
-    let regex = Regex {
-      OneOrMore(CharacterClass.hexDigit).capture()
+    
+    let regexWithCapture = Regex {
+      OneOrMore(CharacterClass.hexDigit).capture(Unicode.Scalar.init(hex:))
       Optionally {
         ".."
-        OneOrMore(CharacterClass.hexDigit).capture()
+        OneOrMore(CharacterClass.hexDigit).capture(Unicode.Scalar.init(hex:))
       }
       OneOrMore(CharacterClass.whitespace)
       ";"
       OneOrMore(CharacterClass.whitespace)
       OneOrMore(CharacterClass.word).capture()
       Repeat(CharacterClass.any)
+    } // Regex<(Substring, Unicode.Scalar?, Unicode.Scalar??, Substring)>
+    do {
+      // Assert the inferred capture type.
+      typealias ExpectedMatch = Tuple4<
+        Substring, Unicode.Scalar?, Unicode.Scalar??, Substring
+      >
+      let _: ExpectedMatch.Type = type(of: regexWithCapture).Match.self
+      let maybeMatchResult = line.match(regexWithCapture)
+      let matchResult = try XCTUnwrap(maybeMatchResult)
+      let (wholeMatch, lower, upper, propertyString) = matchResult.match.tuple
+      XCTAssertEqual(wholeMatch, Substring(line))
+      XCTAssertEqual(lower, Unicode.Scalar(0xA6F0))
+      XCTAssertEqual(upper, Unicode.Scalar(0xA6F1))
+      XCTAssertEqual(propertyString, "Extend")
     }
-    // Assert the inferred capture type.
-    typealias ExpectedMatch = Tuple4<
-      Substring, Substring, Substring?, Substring
-    >
-    let _: ExpectedMatch.Type = type(of: regex).Match.self
-    func run<R: RegexProtocol>(
-      _ regex: R
-    ) throws where R.Match == ExpectedMatch {
-      let maybeMatchResult = line.match(regex)
+
+    do {
+      let regexLiteral = try MockRegexLiteral(
+        #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
+        matching: Tuple4<Substring, Substring, Substring?, Substring>.self)
+      let maybeMatchResult = line.match(regexLiteral)
       let matchResult = try XCTUnwrap(maybeMatchResult)
       let (wholeMatch, lower, upper, propertyString) = matchResult.match.tuple
       XCTAssertEqual(wholeMatch, Substring(line))
@@ -202,11 +263,6 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(upper, "A6F1")
       XCTAssertEqual(propertyString, "Extend")
     }
-    let regexLiteral = try MockRegexLiteral(
-      #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
-      matching: Tuple4<Substring, Substring, Substring?, Substring>.self)
-    try run(regex)
-    try run(regexLiteral)
   }
 
   func testDynamicCaptures() throws {
@@ -231,5 +287,15 @@ class RegexDSLTests: XCTestCase {
           .optional(.substring("A6F1")),
           .substring("Extend")]))
     }
+  }
+}
+
+extension Unicode.Scalar {
+  // Convert a hexadecimal string to a scalar
+  public init?<S: StringProtocol>(hex: S) {
+    guard let val = UInt32(hex, radix: 16), let scalar = Self(val) else {
+      return nil
+    }
+    self = scalar
   }
 }

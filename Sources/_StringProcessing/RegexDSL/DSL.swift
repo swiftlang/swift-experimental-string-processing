@@ -179,7 +179,7 @@ public struct CapturingGroup<Match: MatchProtocol>: RegexProtocol {
     self.regex = .init(ast:
       .groupTransform(
         .init(.init(faking: .capture), component.regex.ast, .fake),
-        transform: CaptureTransform {
+        transform: CaptureTransform(resultType: NewCapture.self) {
           transform($0) as Any
         }))
   }

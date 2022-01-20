@@ -51,7 +51,10 @@ extension Capture {
       }
       return _openExistential(childType.base, do: helper)
     case .some(let subcapture):
-      return subcapture.value
+      func helper<T>(_ value: T) -> Any {
+        Optional(value) as Any
+      }
+      return _openExistential(subcapture.value, do: helper)
     case .none(let childType):
       func helper<T>(_: T.Type) -> Any {
         nil as T? as Any
