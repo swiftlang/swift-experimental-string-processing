@@ -82,7 +82,7 @@ extension RegexConsumer: StatelessCollectionSearcher {
 }
 
 // TODO: Bake in search-back to engine too
-extension RegexConsumer: StatelessBackwardCollectionSearcher {
+extension RegexConsumer: BackwardStatelessCollectionSearcher {
   public typealias BackwardSearched = Consumed
   
   public func searchBack(

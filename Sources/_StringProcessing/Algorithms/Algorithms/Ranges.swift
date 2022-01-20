@@ -33,16 +33,6 @@ public struct RangesCollection<Searcher: CollectionSearcher> {
   }
 }
 
-extension RangesCollection where Searcher: BidirectionalCollectionSearcher {
-  public func reversed() -> ReversedRangesCollection<Searcher> {
-    ReversedRangesCollection(base: base, searcher: searcher)
-  }
-  
-  public var last: Range<Base.Index>? {
-    base.lastRange(of: searcher)
-  }
-}
-
 public struct RangesIterator<Searcher: CollectionSearcher>: IteratorProtocol {
   public typealias Base = Searcher.Searched
   
@@ -136,18 +126,6 @@ public struct ReversedRangesCollection<Searcher: BackwardCollectionSearcher> {
   init(base: Base, searcher: Searcher) {
     self.base = base
     self.searcher = searcher
-  }
-}
-
-extension ReversedRangesCollection
-  where Searcher: BidirectionalCollectionSearcher
-{
-  public func reversed() -> RangesCollection<Searcher> {
-    RangesCollection(base: base, searcher: searcher)
-  }
-  
-  public var last: Range<Base.Index>? {
-    base.firstRange(of: searcher)
   }
 }
 

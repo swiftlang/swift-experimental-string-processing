@@ -35,7 +35,7 @@ extension ConsumerSearcher: StatelessCollectionSearcher {
 }
 
 extension ConsumerSearcher: BackwardCollectionSearcher,
-                            StatelessBackwardCollectionSearcher
+                            BackwardStatelessCollectionSearcher
   where Consumer: BidirectionalCollectionConsumer
 {
   typealias BackwardSearched = Consumer.Consumed
@@ -49,6 +49,56 @@ extension ConsumerSearcher: BackwardCollectionSearcher,
       if let start = consumer.consumingBack(
         searched, in: range.lowerBound..<end) {
         return start..<end
+      } else if end == searched.startIndex {
+        return nil
+      } else {
+        searched.formIndex(before: &end)
+      }
+    }
+  }
+}
+
+extension ConsumerSearcher: MatchingCollectionSearcher,
+                            MatchingStatelessCollectionSearcher
+  where Consumer: MatchingCollectionConsumer
+{
+  typealias Match = Consumer.Match
+  
+  func matchingSearch(
+    _ searched: Searched,
+    in range: Range<Searched.Index>
+  ) -> (Consumer.Match, Range<Searched.Index>)? {
+    var start = range.lowerBound
+    while true {
+      if let (value, end) = consumer.matchingConsuming(
+        searched,
+        in: start..<range.upperBound
+      ) {
+        return (value, start..<end)
+      } else if start == range.upperBound {
+        return nil
+      } else {
+        searched.formIndex(after: &start)
+      }
+    }
+  }
+}
+
+extension ConsumerSearcher: BackwardMatchingCollectionSearcher,
+                            BackwardMatchingStatelessCollectionSearcher
+  where Consumer: BidirectionalMatchingCollectionConsumer
+{
+  typealias Match = Consumer.Match
+  
+  func matchingSearchBack(
+    _ searched: BackwardSearched,
+    in range: Range<Searched.Index>
+  ) -> (Match, Range<Searched.Index>)? {
+    var end = range.upperBound
+    while true {
+      if let (value, start) = consumer.matchingConsumingBack(
+        searched, in: range.lowerBound..<end) {
+        return (value, start..<end)
       } else if end == searched.startIndex {
         return nil
       } else {

@@ -51,7 +51,7 @@ extension NaivePatternSearcher: StatelessCollectionSearcher {
 }
 
 extension NaivePatternSearcher: BackwardCollectionSearcher,
-                                StatelessBackwardCollectionSearcher
+                                BackwardStatelessCollectionSearcher
   where Searched: BidirectionalCollection, Pattern: BidirectionalCollection
 {
   typealias BackwardSearched = Searched

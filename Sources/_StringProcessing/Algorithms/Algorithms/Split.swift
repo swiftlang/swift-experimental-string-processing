@@ -25,12 +25,6 @@ public struct SplitCollection<Searcher: CollectionSearcher> {
   }
 }
 
-extension SplitCollection where Searcher: BidirectionalCollectionSearcher {
-  public func reversed() -> ReversedSplitCollection<Searcher> {
-    ReversedSplitCollection(ranges: ranges.reversed())
-  }
-}
-
 extension SplitCollection: Sequence {
   public struct Iterator: IteratorProtocol {
     let base: Base
@@ -141,14 +135,6 @@ public struct ReversedSplitCollection<Searcher: BackwardCollectionSearcher> {
 
   init(base: Base, searcher: Searcher) {
     self.ranges = base.rangesFromBack(of: searcher)
-  }
-}
-
-extension ReversedSplitCollection
-  where Searcher: BidirectionalCollectionSearcher
-{
-  public func reversed() -> SplitCollection<Searcher> {
-    SplitCollection(ranges: ranges.reversed())
   }
 }
 
