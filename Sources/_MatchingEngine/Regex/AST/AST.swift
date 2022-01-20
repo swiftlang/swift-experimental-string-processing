@@ -94,10 +94,13 @@ extension AST {
 
   /// Whether this node has nested somewhere inside it a capture
   public var hasCapture: Bool {
-    if case let .group(g) = self, g.kind.value.isCapturing {
+    switch self {
+    case .group(let g) where g.kind.value.isCapturing,
+         .groupTransform(let g, _) where g.kind.value.isCapturing:
       return true
+    default:
+      break
     }
-
     return self.children?.any(\.hasCapture) ?? false
   }
 }
@@ -207,14 +210,18 @@ extension AST {
 
 // FIXME: Get this out of here
 public struct CaptureTransform: Equatable, Hashable, CustomStringConvertible {
+  public let resultType: Any.Type
   public let closure: (Substring) -> Any
 
-  public init(_ closure: @escaping (Substring) -> Any) {
+  public init(resultType: Any.Type, _ closure: @escaping (Substring) -> Any) {
+    self.resultType = resultType
     self.closure = closure
   }
 
   public func callAsFunction(_ input: Substring) -> Any {
-    closure(input)
+    let result = closure(input)
+    assert(type(of: result) == resultType)
+    return result
   }
 
   public static func == (lhs: CaptureTransform, rhs: CaptureTransform) -> Bool {
@@ -229,7 +236,6 @@ public struct CaptureTransform: Equatable, Hashable, CustomStringConvertible {
   }
 
   public var description: String {
-    "<transform>"
+    "<transform result_type=\(resultType)>"
   }
 }
-

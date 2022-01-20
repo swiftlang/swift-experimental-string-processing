@@ -149,3 +149,19 @@ extension BinaryInteger {
   }
 }
 
+/// A wrapper of an existential metatype, equatable and hashable by reference.
+public struct AnyType: Equatable, Hashable {
+  public var base: Any.Type
+
+  public init(_ type: Any.Type) {
+    base = type
+  }
+
+  public static func == (lhs: AnyType, rhs: AnyType) -> Bool {
+    lhs.base == rhs.base
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(ObjectIdentifier(base))
+  }
+}
