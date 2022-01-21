@@ -1176,11 +1176,22 @@ extension Source {
         }
 
         if src.tryEat("k") {
-          // Perl/.NET-style backreferences.
-          if let openChar = src.tryEat(anyOf: "<", "'", "{") {
+          // Perl/.NET/Oniguruma-style backreferences.
+          if let openChar = src.tryEat(anyOf: "<", "'") {
             let closing = String(Source.getClosingDelimiter(for: openChar))
+
+            // Perl only accept named references here, but Oniguruma and .NET
+            // also accepts numbered references. This shouldn't be an ambiguity
+            // as named references may not begin with a digit, '-', or '+'.
+            let ref = try src.expectNamedOrNumberedReference(
+              endingWith: closing)
+
+            return .backreference(ref)
+          }
+          // Perl/.NET also allow a named references with the '{' delimiter.
+          if src.tryEat("{") {
             return .backreference(
-              try src.expectNamedReference(endingWith: closing))
+              try src.expectNamedReference(endingWith: "}"))
           }
           return nil
         }
@@ -1225,7 +1236,6 @@ extension Source {
     try recordLoc { src in
       try src.tryEating { src in
         guard src.tryEat(sequence: "(?") else { return nil }
-        let _start = src.currentPosition
 
         // Note the below should be covered by canLexGroupLikeReference.
 
@@ -1243,8 +1253,7 @@ extension Source {
         }
 
         // Whole-pattern recursion, which is equivalent to (?0).
-        if src.tryEat("R") {
-          let loc = Location(_start ..< src.currentPosition)
+        if let loc = src.tryEatWithLoc("R") {
           try src.expect(")")
           return .subpattern(.init(.recurseWholePattern, innerLoc: loc))
         }
