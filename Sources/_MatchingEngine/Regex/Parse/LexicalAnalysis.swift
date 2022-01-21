@@ -140,6 +140,14 @@ extension Source {
     return result
   }
 
+  /// Attempt to eat the given character, returning its source location if
+  /// successful, `nil` otherwise.
+  mutating func tryEatWithLoc(_ c: Character) -> SourceLocation? {
+    let start = currentPosition
+    guard tryEat(c) else { return nil }
+    return .init(start ..< currentPosition)
+  }
+
   /// Throws an expected ASCII character error if not matched
   mutating func expectASCII() throws -> Located<Character> {
     try recordLoc { src in
@@ -608,13 +616,104 @@ extension Source {
     return .init(caretLoc: nil, adding: adding, minusLoc: nil, removing: [])
   }
 
+  /// Try to consume explicitly spelled-out PCRE2 group syntax.
+  mutating func lexExplicitPCRE2GroupStart() -> AST.Group.Kind? {
+    tryEating { src in
+      guard src.tryEat(sequence: "(*") else { return nil }
+
+      if src.tryEat(sequence: "atomic:") {
+        return .atomicNonCapturing
+      }
+      if src.tryEat(sequence: "pla:") ||
+          src.tryEat(sequence: "positive_lookahead:") {
+        return .lookahead
+      }
+      if src.tryEat(sequence: "nla:") ||
+          src.tryEat(sequence: "negative_lookahead:") {
+        return .negativeLookahead
+      }
+      if src.tryEat(sequence: "plb:") ||
+          src.tryEat(sequence: "positive_lookbehind:") {
+        return .lookbehind
+      }
+      if src.tryEat(sequence: "nlb:") ||
+          src.tryEat(sequence: "negative_lookbehind:") {
+        return .negativeLookbehind
+      }
+      if src.tryEat(sequence: "napla:") ||
+          src.tryEat(sequence: "non_atomic_positive_lookahead:") {
+        return .nonAtomicLookahead
+      }
+      if src.tryEat(sequence: "naplb:") ||
+          src.tryEat(sequence: "non_atomic_positive_lookbehind:") {
+        return .nonAtomicLookbehind
+      }
+      if src.tryEat(sequence: "sr:") || src.tryEat(sequence: "script_run:") {
+        return .scriptRun
+      }
+      if src.tryEat(sequence: "asr:") ||
+          src.tryEat(sequence: "atomic_script_run:") {
+        return .atomicScriptRun
+      }
+      return nil
+    }
+  }
+
+  /// Consume a group name.
+  private mutating func expectGroupName(
+    endingWith ending: String, eatEnding: Bool = true
+  ) throws -> Located<String> {
+    let str = try recordLoc { src -> String in
+      if src.isEmpty || src.tryEat(sequence: ending) {
+        throw ParseError.expectedGroupName
+      }
+      if src.peek()!.isNumber {
+        throw ParseError.groupNameCannotStartWithNumber
+      }
+      guard let str = src.tryEatPrefix(\.isWordCharacter)?.string else {
+        throw ParseError.groupNameMustBeAlphaNumeric
+      }
+      return str
+    }
+    if eatEnding {
+      try expect(sequence: ending)
+    }
+    return str
+  }
+
+  /// Consume a named group field, producing either a named capture or balanced
+  /// capture.
+  ///
+  ///     NamedGroup    -> 'P<' GroupNameBody '>'
+  ///                    | '<' GroupNameBody '>'
+  ///                    | "'" GroupNameBody "'"
+  ///     GroupNameBody -> \w+ | \w* '-' \w+
+  ///
+  private mutating func expectNamedGroup(
+    endingWith ending: String
+  ) throws -> AST.Group.Kind {
+    func lexBalanced(_ lhs: Located<String>? = nil) throws -> AST.Group.Kind? {
+      // If we have a '-', this is a .NET-style 'balanced group'.
+      guard let dash = tryEatWithLoc("-") else { return nil }
+      let rhs = try expectGroupName(endingWith: ending)
+      return .balancedCapture(.init(name: lhs, dash: dash, priorName: rhs))
+    }
+
+    // Lex a group name, trying to lex a '-rhs' for a balanced capture group
+    // both before and after.
+    if let b = try lexBalanced() { return b }
+    let name = try expectGroupName(endingWith: ending, eatEnding: false)
+    if let b = try lexBalanced(name) { return b }
+
+    try expect(sequence: ending)
+    return .namedCapture(name)
+  }
+
   /// Try to consume the start of a group
   ///
   ///     GroupStart -> '(?' GroupKind | '('
-  ///     GroupKind  -> Named | ':' | '|' | '>' | '=' | '!' | '*' | '<=' | '<!'
-  ///                 | '<*' | MatchingOptionSeq (':' | ')')
-  ///     Named      -> '<' [^'>']+ '>' | 'P<' [^'>']+ '>'
-  ///                 | '\'' [^'\'']+ '\''
+  ///     GroupKind  -> ':' | '|' | '>' | '=' | '!' | '*' | '<=' | '<!' | '<*'
+  ///                 | NamedGroup | MatchingOptionSeq (':' | ')')
   ///
   /// If `SyntaxOptions.experimentalGroups` is enabled, also accepts:
   ///
@@ -631,8 +730,20 @@ extension Source {
   ) throws -> Located<AST.Group.Kind>? {
     try recordLoc { src in
       try src.tryEating { src in
-        guard src.tryEat("(") else { return nil }
+        // Explicitly spelled out PRCE2 syntax for some groups. This needs to be
+        // done before group-like atoms, as it uses the '(*' syntax, which is
+        // otherwise a group-like atom.
+        if let g = src.lexExplicitPCRE2GroupStart() { return g }
 
+        // There are some atoms that syntactically look like groups, bail here
+        // if we see any. Care needs to be taken here as e.g a group starting
+        // with '(?-' is a subpattern if the next character is a digit,
+        // otherwise a matching option specifier. Conversely, '(?P' can be the
+        // start of a matching option sequence, or a reference if it is followed
+        // by '=' or '<'.
+        guard !src.shouldLexGroupLikeAtom() else { return nil }
+
+        guard src.tryEat("(") else { return nil }
         if src.tryEat("?") {
           if src.tryEat(":") { return .nonCapture }
           if src.tryEat("|") { return .nonCaptureReset }
@@ -646,25 +757,11 @@ extension Source {
           if src.tryEat(sequence: "<*") { return .nonAtomicLookbehind }
 
           // Named
-          // TODO: Group name validation, PCRE (and ICU + Oniguruma as far as I
-          // can tell), enforce word characters only, with the first character
-          // being a non-digit.
           if src.tryEat("<") || src.tryEat(sequence: "P<") {
-            let name = try src.expectQuoted(endingWith: ">")
-            return .namedCapture(name)
+            return try src.expectNamedGroup(endingWith: ">")
           }
           if src.tryEat("'") {
-            let name = try src.expectQuoted(endingWith: "'")
-            return .namedCapture(name)
-          }
-
-          // Check if we can lex a group-like reference. Do this before matching
-          // options to avoid ambiguity with a group starting with (?-, which
-          // is a subpattern if the next character is a digit, otherwise a
-          // matching option specifier. In addition, we need to be careful with
-          // (?P, which can also be the start of a matching option sequence.
-          if src.canLexGroupLikeReference() {
-            return nil
+            return try src.expectNamedGroup(endingWith: "'")
           }
 
           // Matching option changing group (?iJmnsUxxxDPSWy{..}-iJmnsUxxxDPSW:).
@@ -691,45 +788,6 @@ extension Source {
             throw ParseError.expectedGroupSpecifier
           }
           throw ParseError.unknownGroupKind("?\(next)")
-        }
-
-        // Explicitly spelled out PRCE2 syntax for some groups.
-        if src.tryEat("*") {
-          if src.tryEat(sequence: "atomic:") { return .atomicNonCapturing }
-
-          if src.tryEat(sequence: "pla:") ||
-              src.tryEat(sequence: "positive_lookahead:") {
-            return .lookahead
-          }
-          if src.tryEat(sequence: "nla:") ||
-              src.tryEat(sequence: "negative_lookahead:") {
-            return .negativeLookahead
-          }
-          if src.tryEat(sequence: "plb:") ||
-              src.tryEat(sequence: "positive_lookbehind:") {
-            return .lookbehind
-          }
-          if src.tryEat(sequence: "nlb:") ||
-              src.tryEat(sequence: "negative_lookbehind:") {
-            return .negativeLookbehind
-          }
-          if src.tryEat(sequence: "napla:") ||
-              src.tryEat(sequence: "non_atomic_positive_lookahead:") {
-            return .nonAtomicLookahead
-          }
-          if src.tryEat(sequence: "naplb:") ||
-              src.tryEat(sequence: "non_atomic_positive_lookbehind:") {
-            return .nonAtomicLookbehind
-          }
-          if src.tryEat(sequence: "sr:") || src.tryEat(sequence: "script_run:") {
-            return .scriptRun
-          }
-          if src.tryEat(sequence: "asr:") ||
-              src.tryEat(sequence: "atomic_script_run:") {
-            return .atomicScriptRun
-          }
-
-          throw ParseError.misc("Quantifier '*' must follow operand")
         }
 
         // (_:)
@@ -838,9 +896,9 @@ extension Source {
         // FIXME: This should apply to future groups too.
         // TODO: We should probably advise users to use the more explicit
         // syntax.
-        let nameRef = try src.expectNamedReference(
-          endingWith: ")", eatEnding: false)
-        if context.isPriorGroupRef(nameRef.kind) {
+        if let nameRef = src.lexNamedReference(endingWith: ")",
+                                               eatEnding: false),
+           context.isPriorGroupRef(nameRef.kind) {
           return .groupMatched(nameRef)
         }
         return nil
@@ -1031,9 +1089,18 @@ extension Source {
   private mutating func expectNamedReference(
     endingWith end: String, eatEnding: Bool = true
   ) throws -> AST.Reference {
-    // TODO: Group name validation, see comment in lexGroupStart.
-    let str = try expectQuoted(endingWith: end, eatEnding: eatEnding)
+    let str = try expectGroupName(endingWith: end, eatEnding: eatEnding)
     return .init(.named(str.value), innerLoc: str.location)
+  }
+
+  /// Try to consume a named reference up to a closing delimiter, returning
+  /// `nil` if the characters aren't valid for a named reference.
+  private mutating func lexNamedReference(
+    endingWith end: String, eatEnding: Bool = true
+  ) -> AST.Reference? {
+    tryEating { src in
+      try? src.expectNamedReference(endingWith: end, eatEnding: eatEnding)
+    }
   }
 
   /// Try to lex a numbered reference, or otherwise a named reference.
@@ -1059,11 +1126,11 @@ extension Source {
     for openChar: Character
   ) -> Character {
     switch openChar {
+      // Identically-balanced delimiters.
+      case "'", "\"", "`", "^", "%", "#", "$": return openChar
       case "<": return ">"
-      case "'": return "'"
       case "{": return "}"
-      default:
-        fatalError("Not implemented")
+      default: fatalError("Not implemented")
     }
   }
 
@@ -1204,6 +1271,26 @@ extension Source {
     return src.canLexNumberedReference()
   }
 
+  /// Whether a group specifier should be lexed as an atom instead of a group.
+  private func shouldLexGroupLikeAtom() -> Bool {
+    var src = self
+    guard src.tryEat("(") else { return false }
+
+    if src.tryEat("?") {
+      // The start of a reference '(?P=', '(?R', ...
+      if src.canLexGroupLikeReference() { return true }
+
+      // The start of a callout.
+      if src.tryEat("C") { return true }
+
+      return false
+    }
+    // The start of a backreference directive.
+    if src.tryEat("*") { return true }
+
+    return false
+  }
+
   /// Consume an escaped atom, starting from after the backslash
   ///
   ///     Escaped          -> KeyboardModified | Builtin
@@ -1265,6 +1352,121 @@ extension Source {
     }
   }
 
+  /// Try to consume a callout.
+  ///
+  ///     Callout     -> '(?C' CalloutBody ')'
+  ///     CalloutBody -> '' | <Number>
+  ///                  | '`' <String> '`'
+  ///                  | "'" <String> "'"
+  ///                  | '"' <String> '"'
+  ///                  | '^' <String> '^'
+  ///                  | '%' <String> '%'
+  ///                  | '#' <String> '#'
+  ///                  | '$' <String> '$'
+  ///                  | '{' <String> '}'
+  ///
+  mutating func lexCallout() throws -> AST.Atom.Callout? {
+    guard tryEat(sequence: "(?C") else { return nil }
+    let arg = try recordLoc { src -> AST.Atom.Callout.Argument in
+      // Parse '(?C' followed by a number.
+      if let num = try src.lexNumber() {
+        return .number(num.value)
+      }
+      // '(?C)' is implicitly '(?C0)'.
+      if src.peek() == ")" {
+        return .number(0)
+      }
+      // Parse '(C?' followed by a set of balanced delimiters as defined by
+      // http://pcre.org/current/doc/html/pcre2pattern.html#SEC28
+      if let open = src.tryEat(anyOf: "`", "'", "\"", "^", "%", "#", "$", "{") {
+        let closing = String(Source.getClosingDelimiter(for: open))
+        return .string(try src.expectQuoted(endingWith: closing).value)
+      }
+      // If we don't know what this syntax is, consume up to the ending ')' and
+      // emit an error.
+      let remaining = src.lexUntil { $0.isEmpty || $0.tryEat(")") }.value
+      if remaining.isEmpty {
+        throw ParseError.expected(")")
+      }
+      throw ParseError.unknownCalloutKind("(?C\(remaining))")
+    }
+    try expect(")")
+    return .init(arg)
+  }
+
+  /// Try to consume a backtracking directive.
+  ///
+  ///     BacktrackingDirective     -> '(*' BacktrackingDirectiveKind (':' <String>)? ')'
+  ///     BacktrackingDirectiveKind -> 'ACCEPT' | 'FAIL' | 'F' | 'MARK' | ''
+  ///                                | 'COMMIT' | 'PRUNE' | 'SKIP' | 'THEN'
+  ///
+  mutating func lexBacktrackingDirective(
+  ) throws -> AST.Atom.BacktrackingDirective? {
+    try tryEating { src in
+      guard src.tryEat(sequence: "(*") else { return nil }
+      let kind = src.recordLoc { src -> AST.Atom.BacktrackingDirective.Kind? in
+        if src.tryEat(sequence: "ACCEPT") { return .accept }
+        if src.tryEat(sequence: "FAIL") || src.tryEat("F") { return .fail }
+        if src.tryEat(sequence: "MARK") || src.peek() == ":" { return .mark }
+        if src.tryEat(sequence: "COMMIT") { return .commit }
+        if src.tryEat(sequence: "PRUNE") { return .prune }
+        if src.tryEat(sequence: "SKIP") { return .skip }
+        if src.tryEat(sequence: "THEN") { return .then }
+        return nil
+      }
+      guard let kind = kind else { return nil }
+      var name: Located<String>?
+      if src.tryEat(":") {
+        // TODO: PCRE allows escaped delimiters or '\Q...\E' sequences in the
+        // name under PCRE2_ALT_VERBNAMES.
+        name = try src.expectQuoted(endingWith: ")", eatEnding: false)
+      }
+      try src.expect(")")
+
+      // MARK directives must be named.
+      if name == nil && kind.value == .mark {
+        throw ParseError.backtrackingDirectiveMustHaveName(
+          String(src[kind.location.range]))
+      }
+      return .init(kind, name: name)
+    }
+  }
+
+  /// Consume a group-like atom, throwing an error if an atom could not be
+  /// produced.
+  ///
+  ///     GroupLikeAtom -> GroupLikeReference | Callout | BacktrackingDirective
+  ///
+  mutating func expectGroupLikeAtom() throws -> AST.Atom.Kind {
+    try recordLoc { src in
+      // References that look like groups, e.g (?R), (?1), ...
+      if let ref = try src.lexGroupLikeReference() {
+        return ref.value
+      }
+
+      // (?C)
+      if let callout = try src.lexCallout() {
+        return .callout(callout)
+      }
+
+      // (*ACCEPT), (*FAIL), (*MARK), ...
+      if let b = try src.lexBacktrackingDirective() {
+        return .backtrackingDirective(b)
+      }
+
+      // If we didn't produce an atom, consume up until a reasonable end-point
+      // and throw an error.
+      try src.expect("(")
+      let remaining = src.lexUntil {
+        $0.isEmpty || $0.tryEat(anyOf: ":", ")") != nil
+      }.value
+      if remaining.isEmpty {
+        throw ParseError.expected(")")
+      }
+      throw ParseError.unknownGroupKind(remaining)
+    }.value
+  }
+
 
   /// Try to consume an Atom.
   ///
@@ -1293,9 +1495,10 @@ extension Source {
         return .property(prop)
       }
 
-      // References that look like groups, e.g (?R), (?1), ...
-      if !customCC, let ref = try src.lexGroupLikeReference() {
-        return ref.value
+      // If we have group syntax that was skipped over in lexGroupStart, we
+      // need to handle it as an atom, or throw an error.
+      if !customCC && src.shouldLexGroupLikeAtom() {
+        return try src.expectGroupLikeAtom()
       }
 
       let char = src.eat()
@@ -1332,15 +1535,13 @@ extension Source {
   ) throws -> (dashLoc: SourceLocation, AST.Atom)? {
     // Make sure we don't have a binary operator e.g '--', and the '-' is not
     // ending the custom character class (in which case it is literal).
-    let start = currentPosition
-    guard peekCCBinOp() == nil && !starts(with: "-]") && tryEat("-") else {
+    guard peekCCBinOp() == nil, !starts(with: "-]"),
+          let dash = tryEatWithLoc("-"),
+          let end = try lexAtom(context: context)
+    else {
       return nil
     }
-    let dashLoc = Location(start ..< currentPosition)
-    guard let end = try lexAtom(context: context) else {
-      return nil
-    }
-    return (dashLoc, end)
+    return (dash, end)
   }
 }
 

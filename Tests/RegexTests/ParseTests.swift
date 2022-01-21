@@ -549,6 +549,14 @@ extension RegexTests {
       concat("a", namedCapture("label", "b"), "c"),
       captures: .atom(name: "label"))
 
+    // Balanced captures
+    parseTest(#"(?<a-c>)"#, balancedCapture(name: "a", priorName: "c", empty()),
+              captures: .atom(name: "a"))
+    parseTest(#"(?<-c>)"#, balancedCapture(name: nil, priorName: "c", empty()),
+              captures: .atom())
+    parseTest(#"(?'a-b'c)"#, balancedCapture(name: "a", priorName: "b", "c"),
+              captures: .atom(name: "a"))
+
     // Other groups
     parseTest(
       #"a(?:b)c"#,
@@ -852,12 +860,6 @@ extension RegexTests {
     parseTest(#"(?&hello)"#, subpattern(.named("hello")))
     parseTest(#"(?P>P)"#, subpattern(.named("P")))
 
-    // TODO: Should we enforce that names only use certain characters?
-    parseTest(#"(?&&)"#, subpattern(.named("&")))
-    parseTest(#"(?&-1)"#, subpattern(.named("-1")))
-    parseTest(#"(?P>+1)"#, subpattern(.named("+1")))
-    parseTest(#"(?P=+1)"#, backreference(.named("+1")))
-
     parseTest(#"[(?R)]"#, charClass("(", "?", "R", ")"))
     parseTest(#"[(?&a)]"#, charClass("(", "?", "&", "a", ")"))
     parseTest(#"[(?1)]"#, charClass("(", "?", "1", ")"))
@@ -1087,6 +1089,33 @@ extension RegexTests {
       trueBranch: empty(), falseBranch: empty())
     )
 
+    // MARK: Callouts
+
+    parseTest(#"(?C)"#, callout(.number(0)))
+    parseTest(#"(?C0)"#, callout(.number(0)))
+    parseTest(#"(?C20)"#, callout(.number(20)))
+    parseTest("(?C{abc})", callout(.string("abc")))
+
+    for delim in ["`", "'", "\"", "^", "%", "#", "$"] {
+      parseTest("(?C\(delim)hello\(delim))", callout(.string("hello")))
+    }
+
+    // MARK: Backtracking directives
+
+    parseTest("(*ACCEPT)?", zeroOrOne(.eager, backtrackingDirective(.accept)))
+    parseTest(
+      "(*ACCEPT:a)??",
+      zeroOrOne(.reluctant, backtrackingDirective(.accept, name: "a"))
+    )
+    parseTest("(*:a)", backtrackingDirective(.mark, name: "a"))
+    parseTest("(*MARK:a)", backtrackingDirective(.mark, name: "a"))
+    parseTest("(*F)", backtrackingDirective(.fail))
+    parseTest("(*COMMIT)", backtrackingDirective(.commit))
+    parseTest("(*SKIP)", backtrackingDirective(.skip))
+    parseTest("(*SKIP:SKIP)", backtrackingDirective(.skip, name: "SKIP"))
+    parseTest("(*PRUNE)", backtrackingDirective(.prune))
+    parseTest("(*THEN)", backtrackingDirective(.then))
+
     // MARK: Parse with delimiters
 
     parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
@@ -1149,6 +1178,18 @@ extension RegexTests {
     parseNotEqualTest(#"(?(R&abc)|)"#, #"(?(R&def)|)"#)
     parseNotEqualTest(#"(?(VERSION=0.1))"#, #"(?(VERSION=0.2))"#)
     parseNotEqualTest(#"(?(VERSION=0.1))"#, #"(?(VERSION>=0.1))"#)
+
+    parseNotEqualTest("(?C0)", "(?C1)")
+    parseNotEqualTest("(?C0)", "(?C'hello')")
+
+    parseNotEqualTest("(*ACCEPT)", "(*ACCEPT:a)")
+    parseNotEqualTest("(*MARK:a)", "(*MARK:b)")
+    parseNotEqualTest("(*:a)", "(*:b)")
+    parseNotEqualTest("(*FAIL)", "(*SKIP)")
+
+    parseNotEqualTest("(?<a-b>)", "(?<a-c>)")
+    parseNotEqualTest("(?<c-b>)", "(?<a-b>)")
+    parseNotEqualTest("(?<-b>)", "(?<a-b>)")
 
     // TODO: failure tests
   }
@@ -1242,6 +1283,15 @@ extension RegexTests {
     diagnosticTest(#""ab\""#, .expected("\""), syntax: .experimental)
     diagnosticTest("\"ab\\", .expectedEscape, syntax: .experimental)
 
+    diagnosticTest("(?C", .expected(")"))
+
+    diagnosticTest("(?<", .expectedGroupName)
+    diagnosticTest("(?<a", .expected(">"))
+    diagnosticTest("(?<a-", .expectedGroupName)
+    diagnosticTest("(?<a--", .groupNameMustBeAlphaNumeric)
+    diagnosticTest("(?<a-b", .expected(">"))
+    diagnosticTest("(?<a-b>", .expected(")"))
+
     // MARK: Text Segment options
 
     diagnosticTest("(?-y{g})", .cannotRemoveTextSegmentOptions)
@@ -1249,10 +1299,18 @@ extension RegexTests {
 
     // MARK: Group specifiers
 
-    diagnosticTest(#"(*"#, .misc("Quantifier '*' must follow operand"))
+    diagnosticTest(#"(*"#, .unknownGroupKind("*"))
+    diagnosticTest("(*X)", .unknownGroupKind("*X"))
 
     diagnosticTest(#"(?k)"#, .unknownGroupKind("?k"))
     diagnosticTest(#"(?P#)"#, .invalidMatchingOption("#"))
+
+    diagnosticTest(#"(?<#>)"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?'1A')"#, .groupNameCannotStartWithNumber)
+
+    diagnosticTest(#"(?'-')"#, .expectedGroupName)
+    diagnosticTest(#"(?'--')"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?'a-b-c')"#, .expected("'"))
 
     // MARK: Matching options
 
@@ -1261,21 +1319,46 @@ extension RegexTests {
     diagnosticTest(#"(?^i-"#, .cannotRemoveMatchingOptionsAfterCaret)
     diagnosticTest(#"(?^i-m)"#, .cannotRemoveMatchingOptionsAfterCaret)
 
-    // MARK: Quotes
-
-    diagnosticTest(#"\k''"#, .expectedNonEmptyContents)
-    diagnosticTest(#"(?&)"#, .expectedNonEmptyContents)
-    diagnosticTest(#"(?P>)"#, .expectedNonEmptyContents)
-
     // MARK: References
+
+    diagnosticTest(#"\k''"#, .expectedGroupName)
+    diagnosticTest(#"(?&)"#, .expectedGroupName)
+    diagnosticTest(#"(?P>)"#, .expectedGroupName)
 
     diagnosticTest(#"\g{0}"#, .cannotReferToWholePattern)
     diagnosticTest(#"(?(0))"#, .cannotReferToWholePattern)
+
+    diagnosticTest(#"(?&&)"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?&-1)"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?P>+1)"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?P=+1)"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"\k'#'"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?&#)"#, .groupNameMustBeAlphaNumeric)
+
+    diagnosticTest(#"\k'1'"#, .groupNameCannotStartWithNumber)
+    diagnosticTest(#"(?P>1)"#, .groupNameCannotStartWithNumber)
 
     // MARK: Conditionals
 
     diagnosticTest(#"(?(1)a|b|c)"#, .tooManyBranchesInConditional(3))
     diagnosticTest(#"(?(1)||)"#, .tooManyBranchesInConditional(3))
     diagnosticTest(#"(?(?i))"#, .unsupportedCondition("implicitly scoped group"))
+
+    // MARK: Callouts
+
+    diagnosticTest("(?C-1)", .unknownCalloutKind("(?C-1)"))
+    diagnosticTest("(?C-1", .unknownCalloutKind("(?C-1)"))
+
+    // MARK: Backtracking directives
+
+    diagnosticTest("(*MARK)", .backtrackingDirectiveMustHaveName("MARK"))
+    diagnosticTest("(*:)", .expectedNonEmptyContents)
+    diagnosticTest("(*MARK:a)?", .notQuantifiable)
+    diagnosticTest("(*FAIL)+", .notQuantifiable)
+    diagnosticTest("(*COMMIT:b)*", .notQuantifiable)
+    diagnosticTest("(*PRUNE:a)??", .notQuantifiable)
+    diagnosticTest("(*SKIP:a)*?", .notQuantifiable)
+    diagnosticTest("(*F)+?", .notQuantifiable)
+    diagnosticTest("(*:a){2}", .notQuantifiable)
   }
 }
