@@ -36,6 +36,12 @@ extension Source {
     }
     public var isFake: Bool { self == Self.fake }
     public var isReal: Bool { !isFake }
+
+    /// Returns the smallest location that contains both this location and
+    /// another.
+    public func union(with other: Location) -> SourceLocation {
+      .init(min(start, other.start) ..< max(end, other.end))
+    }
   }
 }
 public typealias SourceLocation = Source.Location
