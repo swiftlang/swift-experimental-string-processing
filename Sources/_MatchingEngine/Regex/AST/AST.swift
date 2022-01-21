@@ -207,12 +207,19 @@ extension AST {
     }
     public var kind: Kind
 
+    /// An additional specifier supported by Oniguruma that specifies what
+    /// recursion level the group being referenced belongs to.
+    public var recursionLevel: Located<Int>?
+
     /// The location of the inner numeric or textual reference, e.g the location
-    /// of '-2' in '\g{-2}'.
+    /// of '-2' in '\g{-2}'. Note this includes the recursion level for e.g
+    /// '\k<a+2>'.
     public var innerLoc: SourceLocation
 
-    public init(_ kind: Kind, innerLoc: SourceLocation) {
+    public init(_ kind: Kind, recursionLevel: Located<Int>? = nil,
+                innerLoc: SourceLocation) {
       self.kind = kind
+      self.recursionLevel = recursionLevel
       self.innerLoc = innerLoc
     }
 

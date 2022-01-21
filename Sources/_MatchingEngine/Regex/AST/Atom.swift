@@ -77,6 +77,32 @@ extension AST {
 }
 
 extension AST.Atom {
+  private var _associatedValue: Any? {
+    switch kind {
+    case .char(let v):                  return v
+    case .scalar(let v):                return v
+    case .property(let v):              return v
+    case .escaped(let v):               return v
+    case .keyboardControl(let v):       return v
+    case .keyboardMeta(let v):          return v
+    case .keyboardMetaControl(let v):   return v
+    case .namedCharacter(let v):        return v
+    case .backreference(let v):         return v
+    case .subpattern(let v):            return v
+    case .callout(let v):               return v
+    case .backtrackingDirective(let v): return v
+    case .any:                          return nil
+    case .startOfLine:                  return nil
+    case .endOfLine:                    return nil
+    }
+  }
+
+  func `as`<T>(_ t: T.Type = T.self) -> T? {
+    _associatedValue as? T
+  }
+}
+
+extension AST.Atom {
 
   // TODO: We might scrap this and break out a few categories so
   // we can pull in `^`, `$`, and `.`, but we probably want to

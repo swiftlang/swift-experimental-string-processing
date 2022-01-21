@@ -139,17 +139,21 @@ func unsetMatchingOptions(
   unsetMatchingOptions(adding: adding)
 }
 
-func ref(_ i: Int) -> AST.Reference {
-  .init(.absolute(i), innerLoc: .fake)
+func ref(_ i: Int, recursionLevel: Int? = nil) -> AST.Reference {
+  .init(.absolute(i), recursionLevel: recursionLevel.map { .init(faking: $0) },
+        innerLoc: .fake)
 }
-func ref(plus n: Int) -> AST.Reference {
-  .init(.relative(n), innerLoc: .fake)
+func ref(plus n: Int, recursionLevel: Int? = nil) -> AST.Reference {
+  .init(.relative(n), recursionLevel: recursionLevel.map { .init(faking: $0) },
+        innerLoc: .fake)
 }
-func ref(minus n: Int) -> AST.Reference {
-  .init(.relative(-n), innerLoc: .fake)
+func ref(minus n: Int, recursionLevel: Int? = nil) -> AST.Reference {
+  .init(.relative(-n), recursionLevel: recursionLevel.map { .init(faking: $0) },
+        innerLoc: .fake)
 }
-func ref(_ s: String) -> AST.Reference {
-  .init(.named(s), innerLoc: .fake)
+func ref(_ s: String, recursionLevel: Int? = nil) -> AST.Reference {
+  .init(.named(s), recursionLevel: recursionLevel.map { .init(faking: $0) },
+        innerLoc: .fake)
 }
 func conditional(
   _ cond: AST.Conditional.Condition.Kind, trueBranch: AST, falseBranch: AST
@@ -286,8 +290,10 @@ func scalar_m(_ s: Unicode.Scalar) -> AST.CustomCharacterClass.Member {
   atom_m(.scalar(s))
 }
 
-func backreference(_ r: AST.Reference.Kind) -> AST {
-  atom(.backreference(.init(r, innerLoc: .fake)))
+func backreference(_ r: AST.Reference.Kind, recursionLevel: Int? = nil) -> AST {
+  atom(.backreference(.init(
+    r, recursionLevel: recursionLevel.map { .init(faking: $0) }, innerLoc: .fake
+  )))
 }
 func subpattern(_ r: AST.Reference.Kind) -> AST {
   atom(.subpattern(.init(r, innerLoc: .fake)))
