@@ -846,6 +846,10 @@ extension RegexTests {
     parseTest(#"\g{52}"#, backreference(.absolute(52)))
     parseTest(#"\g{-01}"#, backreference(.relative(-1)))
     parseTest(#"\g{+30}"#, backreference(.relative(30)))
+    parseTest(#"\k<+4>"#, backreference(.relative(4)))
+    parseTest(#"\k<2>"#, backreference(.absolute(2)))
+    parseTest(#"\k'-3'"#, backreference(.relative(-3)))
+    parseTest(#"\k'1'"#, backreference(.absolute(1)))
 
     parseTest(#"\k{a0}"#, backreference(.named("a0")))
     parseTest(#"\k<bc>"#, backreference(.named("bc")))
@@ -1335,8 +1339,8 @@ extension RegexTests {
     diagnosticTest(#"\k'#'"#, .groupNameMustBeAlphaNumeric)
     diagnosticTest(#"(?&#)"#, .groupNameMustBeAlphaNumeric)
 
-    diagnosticTest(#"\k'1'"#, .groupNameCannotStartWithNumber)
     diagnosticTest(#"(?P>1)"#, .groupNameCannotStartWithNumber)
+    diagnosticTest(#"\k{1}"#, .groupNameCannotStartWithNumber)
 
     // MARK: Conditionals
 
