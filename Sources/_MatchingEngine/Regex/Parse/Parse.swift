@@ -116,10 +116,27 @@ extension Parser {
 extension Parser {
   /// Parse a regular expression
   ///
-  ///     Regex        -> '' | Alternation
-  ///     Alternation  -> Concatenation ('|' Concatenation)*
+  ///     Regex        -> GlobalMatchingOption* RecursiveRegex
   ///
   mutating func parse() throws -> AST {
+    var opts = [AST.GlobalMatchingOption]()
+    while let opt = try source.lexGlobalMatchingOption() {
+      opts.append(opt)
+    }
+    let ast = try parseRecursive()
+    if !opts.isEmpty {
+      return .globalMatchingOptions(.init(ast, options: opts))
+    }
+    return ast
+  }
+
+  /// Parse a recursive regular expression. Unlike a top-level parse, this
+  /// does not include matching directives that may only appear at the start.
+  ///
+  ///     RecursiveRegex        -> '' | Alternation
+  ///     Alternation  -> Concatenation ('|' Concatenation)*
+  ///
+  mutating func parseRecursive() throws -> AST {
     let _start = source.currentPosition
 
     if source.isEmpty { return .empty(.init(loc(_start))) }
@@ -203,7 +220,7 @@ extension Parser {
   mutating func parseConditionalBranches(
     start: Source.Position, _ cond: AST.Conditional.Condition
   ) throws -> AST {
-    let child = try parse()
+    let child = try parseRecursive()
     let trueBranch: AST, falseBranch: AST, pipe: SourceLocation?
     switch child {
     case .alternation(let a):
@@ -237,7 +254,7 @@ extension Parser {
   ) throws -> AST.Group {
     context.recordGroup(kind.value)
 
-    let child = try parse()
+    let child = try parseRecursive()
     // An implicit scoped group has already consumed its closing paren.
     if !kind.value.hasImplicitScope {
       try source.expect(")")

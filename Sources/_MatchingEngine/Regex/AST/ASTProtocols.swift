@@ -40,3 +40,6 @@ extension AST.Group: _ASTParent {
 extension AST.Quantification: _ASTParent {
   var children: [AST] { [child] }
 }
+extension AST.GlobalMatchingOptions: _ASTParent {
+  var children: [AST] { [ast] }
+}

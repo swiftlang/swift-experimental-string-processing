@@ -594,7 +594,7 @@ extension AST {
     case .alternation, .concatenation, .group,
         .conditional, .quantification, .quote,
         .trivia, .customCharacterClass, .empty,
-        .groupTransform:
+        .groupTransform, .globalMatchingOptions:
       return nil
     }
   }

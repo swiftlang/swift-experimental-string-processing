@@ -47,6 +47,12 @@ extension PrettyPrinter {
   /// or affect internal state
   mutating func outputAsCanonical(_ ast: AST) {
     switch ast {
+    case let .globalMatchingOptions(o):
+      for opt in o.options {
+        outputAsCanonical(opt)
+      }
+      outputAsCanonical(o.ast)
+
     case let .alternation(a):
       for idx in a.children.indices {
         outputAsCanonical(a.children[idx])
@@ -125,6 +131,10 @@ extension PrettyPrinter {
 
   mutating func outputAsCanonical(_ condition: AST.Conditional.Condition) {
     output("(/*TODO: conditional \(condition) */)")
+  }
+
+  mutating func outputAsCanonical(_ opt: AST.GlobalMatchingOption) {
+    output(opt._canonicalBase)
   }
 }
 
@@ -226,4 +236,50 @@ extension AST.Group.BalancedCapture {
   var _canonicalBase: String {
     "\(name?.value ?? "")-\(priorName.value)"
   }
+}
+
+extension AST.GlobalMatchingOption.NewlineMatching {
+  var _canonicalBase: String {
+    switch self {
+    case .carriageReturnOnly:          return "CR"
+    case .linefeedOnly:                return "LF"
+    case .carriageAndLinefeedOnly:     return "CRLF"
+    case .anyCarriageReturnOrLinefeed: return "ANYCRLF"
+    case .anyUnicode:                  return "ANY"
+    case .nulCharacter:                return "NUL"
+    }
+  }
+}
+
+extension AST.GlobalMatchingOption.NewlineSequenceMatching {
+  var _canonicalBase: String {
+    switch self {
+    case .anyCarriageReturnOrLinefeed: return "BSR_ANYCRLF"
+    case .anyUnicode:                  return "BSR_UNICODE"
+    }
+  }
+}
+
+extension AST.GlobalMatchingOption.Kind {
+  var _canonicalBase: String {
+    switch self {
+    case .limitDepth(let i):              return "LIMIT_DEPTH=\(i.value)"
+    case .limitHeap(let i):               return "LIMIT_HEAP=\(i.value)"
+    case .limitMatch(let i):              return "LIMIT_MATCH=\(i.value)"
+    case .notEmpty:                       return "NOTEMPTY"
+    case .notEmptyAtStart:                return "NOTEMPTY_ATSTART"
+    case .noAutoPossess:                  return "NO_AUTO_POSSESS"
+    case .noDotStarAnchor:                return "NO_DOTSTAR_ANCHOR"
+    case .noJIT:                          return "NO_JIT"
+    case .noStartOpt:                     return "NO_START_OPT"
+    case .utfMode:                        return "UTF"
+    case .unicodeProperties:              return "UCP"
+    case .newlineMatching(let m):         return m._canonicalBase
+    case .newlineSequenceMatching(let m): return m._canonicalBase
+    }
+  }
+}
+
+extension AST.GlobalMatchingOption {
+  var _canonicalBase: String { "(*\(kind))"}
 }

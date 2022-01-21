@@ -91,3 +91,90 @@ extension AST.MatchingOptionSequence: _ASTPrintable {
     "adding: \(adding), removing: \(removing), hasCaret: \(caretLoc != nil)"
   }
 }
+
+extension AST {
+  /// Global matching option specifiers. Unlike `MatchingOptionSequence`,
+  /// these must appear at the start of the pattern, and apply globally.
+  public struct GlobalMatchingOption: _ASTNode, Hashable {
+    /// Determines what the definition of a newline for the '.' character class.
+    public enum NewlineMatching: Hashable {
+      /// (*CR*)
+      case carriageReturnOnly
+      
+      /// (*LF)
+      case linefeedOnly
+
+      /// (*CRLF)
+      case carriageAndLinefeedOnly
+
+      /// (*ANYCRLF)
+      case anyCarriageReturnOrLinefeed
+
+      /// (*ANY)
+      case anyUnicode
+
+      /// (*NUL)
+      case nulCharacter
+    }
+    /// Determines what `\R` matches.
+    public enum NewlineSequenceMatching: Hashable {
+      /// (*BSR_ANYCRLF)
+      case anyCarriageReturnOrLinefeed
+
+      /// (*BSR_UNICODE)
+      case anyUnicode
+    }
+    public enum Kind: Hashable {
+      /// (*LIMIT_DEPTH=d)
+      case limitDepth(Located<Int>)
+
+      /// (*LIMIT_HEAP=d)
+      case limitHeap(Located<Int>)
+
+      /// (*LIMIT_MATCH=d)
+      case limitMatch(Located<Int>)
+
+      /// (*NOTEMPTY)
+      case notEmpty
+
+      /// (*NOTEMPTY_ATSTART)
+      case notEmptyAtStart
+
+      /// (*NO_AUTO_POSSESS)
+      case noAutoPossess
+
+      /// (*NO_DOTSTAR_ANCHOR)
+      case noDotStarAnchor
+
+      /// (*NO_JIT)
+      case noJIT
+
+      /// (*NO_START_OPT)
+      case noStartOpt
+
+      /// (*UTF)
+      case utfMode
+
+      /// (*UCP)
+      case unicodeProperties
+
+      case newlineMatching(NewlineMatching)
+      case newlineSequenceMatching(NewlineSequenceMatching)
+    }
+    public var kind: Kind
+    public var location: SourceLocation
+
+    public init(_ kind: Kind, _ location: SourceLocation) {
+      self.kind = kind
+      self.location = location
+    }
+  }
+}
+
+extension AST.GlobalMatchingOption: _ASTPrintable {
+  public var _dumpBase: String { "\(kind)" }
+}
+
+extension AST.GlobalMatchingOption.Kind: _ASTPrintable {
+  public var _dumpBase: String { _canonicalBase }
+}

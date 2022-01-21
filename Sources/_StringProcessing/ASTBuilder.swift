@@ -47,6 +47,12 @@ func empty() -> AST {
   .empty(.init(.fake))
 }
 
+func globalMatchingOptions(
+  _ opts: [AST.GlobalMatchingOption.Kind], _ child: AST
+) -> AST {
+  .globalMatchingOptions(.init(child, options: opts.map { .init($0, .fake) }))
+}
+
 func group(
   _ kind: AST.Group.Kind, _ child: AST
 ) -> AST {

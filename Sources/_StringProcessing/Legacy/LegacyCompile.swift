@@ -28,6 +28,11 @@ func compile(
     }
 
     switch ast {
+    case .globalMatchingOptions(let o):
+      // TODO: Global matching options?
+      try compileNode(o.ast)
+      return
+
     case .trivia, .empty: return
 
     case .quote(let s):

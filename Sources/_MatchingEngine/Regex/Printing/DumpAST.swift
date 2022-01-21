@@ -268,3 +268,10 @@ extension AST.Group.BalancedCapture: _ASTPrintable {
    "\(name?.value ?? "")-\(priorName.value)"
   }
 }
+
+extension AST.GlobalMatchingOptions: _ASTPrintable {
+  public var _dumpBase: String {
+    if options.isEmpty { return "\(ast)" }
+    return "globalMatchingOptions<options: \(options)> \(ast)"
+  }
+}

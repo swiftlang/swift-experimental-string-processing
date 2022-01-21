@@ -42,6 +42,10 @@ class Compiler {
   func emit(_ node: AST) throws {
 
     switch node {
+    case .globalMatchingOptions(let o):
+      // TODO: Global matching options
+      try emit(o.ast)
+
     // Any: .
     //     consume 1
     case .atom(let a) where a.kind == .any && matchLevel == .graphemeCluster:

@@ -29,6 +29,8 @@ extension AST {
   public var captureStructure: CaptureStructure {
     // Note: This implementation could be more optimized.
     switch self {
+    case .globalMatchingOptions(let o):
+      return o.ast.captureStructure
     case .alternation(let alternation):
       assert(alternation.children.count > 1)
       return alternation.children

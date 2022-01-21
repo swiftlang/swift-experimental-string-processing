@@ -38,6 +38,8 @@ public indirect enum AST:
 
   case customCharacterClass(CustomCharacterClass)
 
+  case globalMatchingOptions(GlobalMatchingOptions)
+
   case empty(Empty)
 
   // FIXME: Move off the regex literal AST
@@ -55,16 +57,17 @@ extension AST {
   // over `self` _everywhere_ we want to do anything.
   var _associatedValue: _ASTNode {
     switch self {
-    case let .alternation(v):          return v
-    case let .concatenation(v):        return v
-    case let .group(v):                return v
-    case let .conditional(v):          return v
-    case let .quantification(v):       return v
-    case let .quote(v):                return v
-    case let .trivia(v):               return v
-    case let .atom(v):                 return v
-    case let .customCharacterClass(v): return v
-    case let .empty(v):                return v
+    case let .alternation(v):           return v
+    case let .concatenation(v):         return v
+    case let .group(v):                 return v
+    case let .conditional(v):           return v
+    case let .quantification(v):        return v
+    case let .quote(v):                 return v
+    case let .trivia(v):                return v
+    case let .atom(v):                  return v
+    case let .customCharacterClass(v):  return v
+    case let .empty(v):                 return v
+    case let .globalMatchingOptions(v): return v
 
     case let .groupTransform(g, _):
       return g // FIXME: get this out of here
@@ -113,7 +116,7 @@ extension AST {
     case .group, .conditional, .customCharacterClass:
       return true
     case .alternation, .concatenation, .quantification, .quote, .trivia,
-        .empty, .groupTransform:
+        .empty, .groupTransform, .globalMatchingOptions:
       return false
     }
   }
@@ -226,6 +229,23 @@ extension AST {
     /// Whether this is a reference that recurses the whole pattern, rather than
     /// a group.
     public var recursesWholePattern: Bool { kind == .recurseWholePattern }
+  }
+
+  /// An AST node containing global matching options along with a child that
+  /// uses those options.
+  /// TODO: Should this be subsumed into a top-level AST type?
+  public struct GlobalMatchingOptions: Hashable, _ASTNode {
+    public var options: [AST.GlobalMatchingOption]
+    public var ast: AST
+
+    public init(_ ast: AST, options: [AST.GlobalMatchingOption]) {
+      self.ast = ast
+      self.options = options
+    }
+
+    public var location: SourceLocation {
+      options.first?.location.union(with: ast.location) ?? ast.location
+    }
   }
 }
 

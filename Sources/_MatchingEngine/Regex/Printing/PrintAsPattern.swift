@@ -48,6 +48,10 @@ extension PrettyPrinter {
     }
 
     switch ast {
+    case let .globalMatchingOptions(o):
+      // TODO: Global options.
+      printAsPattern(o.ast)
+
     case let .alternation(a):
       printBlock("Alternation") { printer in
         a.children.forEach { printer.printAsPattern($0) }

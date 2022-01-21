@@ -1164,6 +1164,48 @@ extension RegexTests {
     parseTest("(*PRUNE)", backtrackingDirective(.prune))
     parseTest("(*THEN)", backtrackingDirective(.then))
 
+    // MARK: Global matching options
+
+    parseTest(
+      "(*CR)(*UTF)(*LIMIT_DEPTH=3)",
+      globalMatchingOptions([
+        .newlineMatching(.carriageReturnOnly), .utfMode,
+        .limitDepth(.init(faking: 3))
+      ], empty()))
+
+    parseTest(
+      "(*BSR_UNICODE)3", globalMatchingOptions(
+        [.newlineSequenceMatching(.anyUnicode)], "3")
+    )
+    parseTest(
+      "(*BSR_ANYCRLF)", globalMatchingOptions(
+        [.newlineSequenceMatching(.anyCarriageReturnOrLinefeed)], empty())
+    )
+
+    // TODO: Diagnose on multiple line matching modes?
+    parseTest(
+      "(*CR)(*LF)(*CRLF)(*ANYCRLF)(*ANY)(*NUL)",
+      globalMatchingOptions([
+        .carriageReturnOnly, .linefeedOnly, .carriageAndLinefeedOnly,
+        .anyCarriageReturnOrLinefeed, .anyUnicode, .nulCharacter
+      ].map { .newlineMatching($0) }, empty()))
+
+    parseTest(
+      """
+      (*LIMIT_DEPTH=3)(*LIMIT_HEAP=1)(*LIMIT_MATCH=2)(*NOTEMPTY)\
+      (*NOTEMPTY_ATSTART)(*NO_AUTO_POSSESS)(*NO_DOTSTAR_ANCHOR)(*NO_JIT)\
+      (*NO_START_OPT)(*UTF)(*UCP)a
+      """,
+      globalMatchingOptions([
+        .limitDepth(.init(faking: 3)), .limitHeap(.init(faking: 1)),
+        .limitMatch(.init(faking: 2)), .notEmpty, .notEmptyAtStart,
+        .noAutoPossess, .noDotStarAnchor, .noJIT, .noStartOpt, .utfMode,
+        .unicodeProperties
+      ], "a")
+    )
+
+    parseTest("[(*CR)]", charClass("(", "*", "C", "R", ")"))
+
     // MARK: Parse with delimiters
 
     parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
@@ -1240,6 +1282,11 @@ extension RegexTests {
     parseNotEqualTest("(?<a-b>)", "(?<a-c>)")
     parseNotEqualTest("(?<c-b>)", "(?<a-b>)")
     parseNotEqualTest("(?<-b>)", "(?<a-b>)")
+
+    parseNotEqualTest("(*CR)", "(*LF)")
+    parseNotEqualTest("(*LIMIT_DEPTH=3)", "(*LIMIT_DEPTH=1)")
+    parseNotEqualTest("(*UTF)", "(*LF)")
+    parseNotEqualTest("(*LF)", "(*BSR_ANYCRLF)")
   }
 
   func testParseSourceLocations() throws {
@@ -1428,5 +1475,15 @@ extension RegexTests {
     diagnosticTest("(*SKIP:a)*?", .notQuantifiable)
     diagnosticTest("(*F)+?", .notQuantifiable)
     diagnosticTest("(*:a){2}", .notQuantifiable)
+
+    // MARK: Global matching options
+
+    diagnosticTest("a(*CR)", .globalMatchingOptionNotAtStart("(*CR)"))
+    diagnosticTest("(*CR)a(*LF)", .globalMatchingOptionNotAtStart("(*LF)"))
+    diagnosticTest("(*LIMIT_HEAP)", .expected("="))
+    diagnosticTest("(*LIMIT_DEPTH=", .expectedNumber("", kind: .decimal))
+
+    // TODO: This diagnostic could be better.
+    diagnosticTest("(*LIMIT_DEPTH=-1", .expectedNumber("", kind: .decimal))
   }
 }

@@ -46,6 +46,9 @@ extension AST {
     _ opts: CharacterClass.MatchLevel
   ) throws -> Program<String>.ConsumeFunction? {
     switch self {
+    case .globalMatchingOptions(let o):
+      // TODO: Handle global options.
+      return try o.ast.generateConsumer(opts)
     case .atom(let a):
       return try a.generateConsumer(opts)
     case .customCharacterClass(let ccc):
