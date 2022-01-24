@@ -148,7 +148,7 @@ public struct CharacterClass: Hashable {
       case .newlineSequence: matched = c.isNewline
       case .verticalWhitespace: fatalError("Not implemented")
       case .whitespace: matched = c.isWhitespace
-      case .word: matched = c.isLetter || c.isNumber || c == "_"
+      case .word: matched = c.isWordCharacter
       case .custom(let set): matched = set.any { $0.matches(c) }
       }
       if isInverted {

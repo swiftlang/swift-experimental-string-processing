@@ -68,6 +68,12 @@ func namedCapture(
 ) -> AST {
   group(.namedCapture(.init(faking: name)), child)
 }
+func balancedCapture(name: String?, priorName: String, _ child: AST) -> AST {
+  group(.balancedCapture(
+    .init(name: name.map { .init(faking: $0) }, dash: .fake,
+          priorName: .init(faking: priorName))
+  ), child)
+}
 func nonCaptureReset(
   _ child: AST
 ) -> AST {
@@ -163,6 +169,18 @@ func groupCondition(
   _ kind: AST.Group.Kind, _ child: AST
 ) -> AST.Conditional.Condition.Kind {
   .group(.init(.init(faking: kind), child, .fake))
+}
+
+func callout(_ arg: AST.Atom.Callout.Argument) -> AST {
+  atom(.callout(.init(.init(faking: arg))))
+}
+
+func backtrackingDirective(
+  _ kind: AST.Atom.BacktrackingDirective.Kind, name: String? = nil
+) -> AST {
+  atom(.backtrackingDirective(
+    .init(.init(faking: kind), name: name.map { .init(faking: $0) })
+  ))
 }
 
 func quant(

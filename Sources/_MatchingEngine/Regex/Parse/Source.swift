@@ -27,6 +27,8 @@ public struct Source {
     self.bounds = str.startIndex ..< str.endIndex
     self.syntax = syntax
   }
+
+  subscript(_ range: Range<Input.Index>) -> Input.SubSequence { input[range] }
 }
 
 // MARK: - Prototype uses String
@@ -60,7 +62,7 @@ extension Source {
 
   var isEmpty: Bool { _slice.isEmpty }
 
-  mutating func peek() -> Char? { _slice.first }
+  func peek() -> Char? { _slice.first }
 
   mutating func advance() {
     assert(!isEmpty)

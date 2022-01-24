@@ -9,7 +9,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-import XCTest
 extension PEG {
   struct Grammar {
     var environment: Dictionary<String, Pattern>

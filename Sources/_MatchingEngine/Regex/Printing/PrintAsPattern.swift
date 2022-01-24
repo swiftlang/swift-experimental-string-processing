@@ -266,6 +266,12 @@ extension AST.Atom {
 
     case .subpattern:
       return " /* TODO: subpattern */"
+
+    case .callout:
+      return " /* TODO: callout */"
+
+    case .backtrackingDirective:
+      return " /* TODO: backtracking directive */"
     }
   }
 }
@@ -279,6 +285,9 @@ extension AST.Group.Kind {
 
     case .namedCapture(let n):
       return "name: \"\(n)\""
+
+    case .balancedCapture:
+      return "/* TODO: balanced captures */"
 
     case .nonCapture: return ""
 

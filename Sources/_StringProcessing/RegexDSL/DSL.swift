@@ -172,15 +172,46 @@ public struct CapturingGroup<Match: MatchProtocol>: RegexProtocol {
     )
   }
 
+  init<Component: RegexProtocol>(
+    _ component: Component,
+    transform: CaptureTransform
+  ) {
+    self.regex = .init(
+      ast: .groupTransform(
+        .init(.init(faking: .capture), component.regex.ast, .fake),
+        transform: transform))
+  }
+
   init<NewCapture, Component: RegexProtocol>(
     _ component: Component,
     transform: @escaping (Substring) -> NewCapture
   ) {
-    self.regex = .init(ast:
-      .groupTransform(
-        .init(.init(faking: .capture), component.regex.ast, .fake),
-        transform: CaptureTransform {
-          transform($0) as Any
-        }))
+    self.init(
+      component,
+      transform: CaptureTransform(resultType: NewCapture.self) {
+        transform($0) as Any
+      })
+  }
+
+  init<NewCapture, Component: RegexProtocol>(
+    _ component: Component,
+    transform: @escaping (Substring) throws -> NewCapture
+  ) {
+    self.init(
+      component,
+      transform: CaptureTransform(resultType: NewCapture.self) {
+        try transform($0) as Any
+      })
+  }
+
+  init<NewCapture, Component: RegexProtocol>(
+    _ component: Component,
+    transform: @escaping (Substring) -> NewCapture?
+  ) {
+    self.init(
+      component,
+      transform: CaptureTransform(resultType: NewCapture.self) {
+        transform($0) as Any?
+      })
   }
 }

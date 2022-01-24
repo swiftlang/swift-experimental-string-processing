@@ -66,6 +66,12 @@ extension AST {
       // References
       case backreference(Reference)
       case subpattern(Reference)
+
+      // (?C)
+      case callout(Callout)
+
+      // (*ACCEPT), (*FAIL), ...
+      case backtrackingDirective(BacktrackingDirective)
     }
   }
 }
@@ -444,6 +450,59 @@ extension AST.Atom {
 }
 
 extension AST.Atom {
+  public struct Callout: Hashable {
+    public enum Argument: Hashable {
+      case number(Int)
+      case string(String)
+    }
+    public var arg: AST.Located<Argument>
+    public init(_ arg: AST.Located<Argument>) {
+      self.arg = arg
+    }
+  }
+}
+
+extension AST.Atom {
+  public struct BacktrackingDirective: Hashable {
+    public enum Kind: Hashable {
+      /// (*ACCEPT)
+      case accept
+
+      /// (*FAIL)
+      case fail
+
+      /// (*MARK:NAME)
+      case mark
+
+      /// (*COMMIT)
+      case commit
+
+      /// (*PRUNE)
+      case prune
+
+      /// (*SKIP)
+      case skip
+
+      /// (*THEN)
+      case then
+    }
+    public var kind: AST.Located<Kind>
+    public var name: AST.Located<String>?
+
+    public init(_ kind: AST.Located<Kind>, name: AST.Located<String>?) {
+      self.kind = kind
+      self.name = name
+    }
+
+    public var isQuantifiable: Bool {
+      // As per http://pcre.org/current/doc/html/pcre2pattern.html#SEC29, only
+      // (*ACCEPT) is quantifiable.
+      kind.value == .accept
+    }
+  }
+}
+
+extension AST.Atom {
   /// Retrieve the character value of the atom if it represents a literal
   /// character or unicode scalar, nil otherwise.
   public var literalCharacterValue: Character? {
@@ -458,7 +517,8 @@ extension AST.Atom {
       fallthrough
 
     case .property, .escaped, .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .namedCharacter:
+        .backreference, .subpattern, .namedCharacter, .callout,
+        .backtrackingDirective:
       return nil
     }
   }
@@ -483,8 +543,19 @@ extension AST.Atom {
       return "\\M-\\C-\(x)"
 
     case .property, .escaped, .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .namedCharacter:
+        .backreference, .subpattern, .namedCharacter, .callout,
+        .backtrackingDirective:
       return nil
+    }
+  }
+
+  public var isQuantifiable: Bool {
+    switch kind {
+    case .backtrackingDirective(let b):
+      return b.isQuantifiable
+    // TODO: Are callouts quantifiable?
+    default:
+      return true
     }
   }
 }

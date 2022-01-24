@@ -11,7 +11,7 @@
 
 // A tree representing the type of some captures.
 public enum CaptureStructure: Equatable {
-  case atom(name: String? = nil)
+  case atom(name: String? = nil, type: AnyType? = nil)
   indirect case array(CaptureStructure)
   indirect case optional(CaptureStructure)
   indirect case tuple([CaptureStructure])
@@ -44,6 +44,20 @@ extension AST {
         return .atom() + innerCaptures
       case .namedCapture(let name):
         return .atom(name: name.value) + innerCaptures
+      case .balancedCapture(let b):
+        return .atom(name: b.name?.value) + innerCaptures
+      default:
+        precondition(!group.kind.value.isCapturing)
+        return innerCaptures
+      }
+    case .groupTransform(let group, let transform):
+      let innerCaptures = group.child.captureStructure
+      switch group.kind.value {
+      case .capture:
+        return .atom(type: AnyType(transform.resultType)) + innerCaptures
+      case .namedCapture(let name):
+        return .atom(name: name.value, type: AnyType(transform.resultType))
+          + innerCaptures
       default:
         return innerCaptures
       }
@@ -67,8 +81,6 @@ extension AST {
         quantification.amount.value == .zeroOrOne
           ? CaptureStructure.optional
           : CaptureStructure.array)
-    case .groupTransform:
-      fatalError("Unreachable. Case will be removed later.")
     case .quote, .trivia, .atom, .customCharacterClass, .empty:
       return .empty
     }
@@ -135,8 +147,10 @@ extension CaptureStructure {
 
   public func type(withAtomType atomType: Any.Type) -> Any.Type {
     switch self {
-    case .atom:
+    case .atom(_, type: nil):
       return atomType
+    case .atom(_, type: let type?):
+      return type.base
     case .array(let child):
       return TypeConstruction.arrayType(of: child.type(withAtomType: atomType))
     case .optional(let child):
@@ -213,16 +227,18 @@ extension CaptureStructure {
     func encode(_ node: CaptureStructure, isTopLevel: Bool = false) {
       switch node {
       // 〚`T` (atom)〛 ==> .atom
-      case .atom(name: nil):
+      case .atom(name: nil, type: nil):
         append(.atom)
       // 〚`name: T` (atom)〛 ==> .atom, `name`, '\0'
-      case .atom(name: let name?):
+      case .atom(name: let name?, type: nil):
         append(.namedAtom)
         let nameCString = name.utf8CString
         let nameSlot = UnsafeMutableRawBufferPointer(
           rebasing: buffer[offset ..< offset+nameCString.count])
         nameCString.withUnsafeBytes(nameSlot.copyMemory(from:))
         offset += nameCString.count
+      case .atom(_, _?):
+        fatalError("Cannot encode a capture structure with explicit types")
       // 〚`[T]`〛 ==> 〚`T`〛, .formArray
       case .array(let child):
         encode(child)

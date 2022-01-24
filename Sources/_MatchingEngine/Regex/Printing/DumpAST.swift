@@ -133,10 +133,18 @@ extension AST.Atom {
     case .backreference(let r), .subpattern(let r):
       return "\(r._dumpBase)"
 
+    case .callout(let c): return "\(c)"
+
+    case .backtrackingDirective(let d): return "\(d)"
+
     case .char, .scalar:
       fatalError("Unreachable")
     }
   }
+}
+
+extension AST.Atom.Callout: _ASTPrintable {
+  public var _dumpBase: String { "callout <\(arg.value)>" }
 }
 
 extension AST.Reference: _ASTPrintable {
@@ -148,19 +156,20 @@ extension AST.Reference: _ASTPrintable {
 extension AST.Group.Kind: _ASTPrintable {
   public var _dumpBase: String {
     switch self {
-    case .capture:               return "capture"
-    case .namedCapture(let s):   return "capture<\(s.value)>"
-    case .nonCapture:            return "nonCapture"
-    case .nonCaptureReset:       return "nonCaptureReset"
-    case .atomicNonCapturing:    return "atomicNonCapturing"
-    case .lookahead:             return "lookahead"
-    case .negativeLookahead:     return "negativeLookahead"
-    case .nonAtomicLookahead:    return "nonAtomicLookahead"
-    case .lookbehind:            return "lookbehind"
-    case .negativeLookbehind:    return "negativeLookbehind"
-    case .nonAtomicLookbehind:   return "nonAtomicLookbehind"
-    case .scriptRun:             return "scriptRun"
-    case .atomicScriptRun:       return "atomicScriptRun"
+    case .capture:                return "capture"
+    case .namedCapture(let s):    return "capture<\(s.value)>"
+    case .balancedCapture(let b): return "balanced capture \(b)"
+    case .nonCapture:             return "nonCapture"
+    case .nonCaptureReset:        return "nonCaptureReset"
+    case .atomicNonCapturing:     return "atomicNonCapturing"
+    case .lookahead:              return "lookahead"
+    case .negativeLookahead:      return "negativeLookahead"
+    case .nonAtomicLookahead:     return "nonAtomicLookahead"
+    case .lookbehind:             return "lookbehind"
+    case .negativeLookbehind:     return "negativeLookbehind"
+    case .nonAtomicLookbehind:    return "nonAtomicLookbehind"
+    case .scriptRun:              return "scriptRun"
+    case .atomicScriptRun:        return "atomicScriptRun"
     case .changeMatchingOptions(let seq, let isIsolated):
       return "changeMatchingOptions<\(seq), \(isIsolated)>"
     }
@@ -237,5 +246,21 @@ extension AST.CustomCharacterClass.Member: _ASTPrintable {
 extension AST.CustomCharacterClass.Range: _ASTPrintable {
   public var _dumpBase: String {
     "\(lhs)-\(rhs)"
+  }
+}
+
+extension AST.Atom.BacktrackingDirective: _ASTPrintable {
+  public var _dumpBase: String {
+    var result = "\(kind.value)"
+    if let name = name {
+      result += ": \(name.value)"
+    }
+    return result
+  }
+}
+
+extension AST.Group.BalancedCapture: _ASTPrintable {
+  public var _dumpBase: String {
+   "\(name?.value ?? "")-\(priorName.value)"
   }
 }

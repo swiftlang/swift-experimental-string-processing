@@ -25,18 +25,43 @@ class UtilTests: XCTestCase {
   }
 
   func testTypeErasedTupleConstruction() throws {
-    let tuple0Erased = TypeConstruction.tuple(of: [1, 2, 3])
-    let tuple0 = try XCTUnwrap(tuple0Erased as? (Int, Int, Int))
-    XCTAssertEqual(tuple0.0, 1)
-    XCTAssertEqual(tuple0.1, 2)
-    XCTAssertEqual(tuple0.2, 3)
+    do {
+      let tupleErased = TypeConstruction.tuple(of: [1, 2, 3])
+      let tuple = try XCTUnwrap(tupleErased as? (Int, Int, Int))
+      XCTAssertEqual(tuple.0, 1)
+      XCTAssertEqual(tuple.1, 2)
+      XCTAssertEqual(tuple.2, 3)
+    }
 
-    let tuple1Erased = TypeConstruction.tuple(
-      of: [[1, 2], [true, false], [3.0, 4.0]])
-    XCTAssertTrue(type(of: tuple1Erased) == ([Int], [Bool], [Double]).self)
-    let tuple1 = try XCTUnwrap(tuple1Erased as? ([Int], [Bool], [Double]))
-    XCTAssertEqual(tuple1.0, [1, 2])
-    XCTAssertEqual(tuple1.1, [true, false])
-    XCTAssertEqual(tuple1.2, [3.0, 4.0])
+    do {
+      let tupleErased = TypeConstruction.tuple(
+        of: [[1, 2], [true, false], [3.0, 4.0]])
+      XCTAssertTrue(type(of: tupleErased) == ([Int], [Bool], [Double]).self)
+      let tuple = try XCTUnwrap(tupleErased as? ([Int], [Bool], [Double]))
+      XCTAssertEqual(tuple.0, [1, 2])
+      XCTAssertEqual(tuple.1, [true, false])
+      XCTAssertEqual(tuple.2, [3.0, 4.0])
+    }
+
+    // Reproducer for a memory corruption bug with transformed captures.
+    do {
+      enum GraphemeBreakProperty: UInt32 {
+        case control = 0
+        case prepend = 1
+      }
+      let tupleErased = TypeConstruction.tuple(of: [
+        "a"[...],                        // Substring
+        Unicode.Scalar(0xA6F0)!,         // Unicode.Scalar
+        Unicode.Scalar(0xA6F0) as Any,   // Unicode.Scalar?
+        GraphemeBreakProperty.prepend    // GraphemeBreakProperty
+      ])
+      let tuple = try XCTUnwrap(
+        tupleErased as?
+          (Substring, Unicode.Scalar, Unicode.Scalar, GraphemeBreakProperty))
+      XCTAssertEqual(tuple.0, "a")
+      XCTAssertEqual(tuple.1, Unicode.Scalar(0xA6F0)!)
+      XCTAssertEqual(tuple.2, Unicode.Scalar(0xA6F0)!)
+      XCTAssertEqual(tuple.3, .prepend)
+    }
   }
 }

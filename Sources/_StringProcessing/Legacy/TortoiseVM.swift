@@ -108,8 +108,11 @@ extension TortoiseVM {
           hatchling.core.beginCapture(sp)
           hatchling.plod()
         case .endCapture(let transform):
-          hatchling.core.endCapture(sp, transform: transform)
-          hatchling.plod()
+          if hatchling.core.endCapture(sp, transform: transform) {
+            hatchling.plod()
+          } else {
+            hatchling.plod(to: code.endIndex)
+          }
         case .beginGroup:
           hatchling.core.beginGroup()
           hatchling.plod()

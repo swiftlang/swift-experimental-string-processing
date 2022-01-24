@@ -56,7 +56,18 @@ extension VirtualMachine {
   func execute(
     input: String, mode: MatchMode = .wholeString
   ) -> MatchResult? {
-    execute(input: input, in: input.startIndex..<input.endIndex, mode: mode)
+    execute(
+      input: input,
+      in: input.startIndex..<input.endIndex,
+      mode: mode)
+  }
+  func execute(
+    input: Substring, mode: MatchMode = .wholeString
+  ) -> MatchResult? {
+    execute(
+      input: input.base,
+      in: input.startIndex ..< input.endIndex,
+      mode: mode)
   }
 }
 
@@ -106,11 +117,25 @@ extension RECode {
       captureState.start(at: index)
     }
 
-    mutating func endCapture(_ endIndex: String.Index, transform: CaptureTransform?) {
+    /// Ends the current capture at the given index and applies the given
+    /// transform if available. Returns true on success. Returns false if the
+    /// trasnform failed.
+    mutating func endCapture(
+      _ endIndex: String.Index, transform: CaptureTransform?
+    ) -> Bool {
       let range = captureState.end(at: endIndex)
       let substring = input[range]
-      let value = transform?(substring) ?? substring
+      let value: Any
+      if let transform = transform {
+        guard let transformed = transform(substring) else {
+          return false
+        }
+        value = transformed
+      } else {
+        value = substring
+      }
       topLevelCaptures.append(.atom(value))
+      return true
     }
 
     mutating func beginGroup() {

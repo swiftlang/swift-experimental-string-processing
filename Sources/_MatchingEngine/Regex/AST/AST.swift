@@ -94,11 +94,28 @@ extension AST {
 
   /// Whether this node has nested somewhere inside it a capture
   public var hasCapture: Bool {
-    if case let .group(g) = self, g.kind.value.isCapturing {
+    switch self {
+    case .group(let g) where g.kind.value.isCapturing,
+         .groupTransform(let g, _) where g.kind.value.isCapturing:
       return true
+    default:
+      break
     }
-
     return self.children?.any(\.hasCapture) ?? false
+  }
+
+  /// Whether this AST node may be used as the operand of a quantifier such as
+  /// `?`, `+` or `*`.
+  public var isQuantifiable: Bool {
+    switch self {
+    case .atom(let a):
+      return a.isQuantifiable
+    case .group, .conditional, .customCharacterClass:
+      return true
+    case .alternation, .concatenation, .quantification, .quote, .trivia,
+        .empty, .groupTransform:
+      return false
+    }
   }
 }
 
@@ -207,14 +224,61 @@ extension AST {
 
 // FIXME: Get this out of here
 public struct CaptureTransform: Equatable, Hashable, CustomStringConvertible {
-  public let closure: (Substring) -> Any
+  public enum Closure {
+    case nonfailable((Substring) -> Any)
+    case failable((Substring) -> Any?)
+    case throwing((Substring) throws -> Any)
+  }
+  public let resultType: Any.Type
+  public let closure: Closure
 
-  public init(_ closure: @escaping (Substring) -> Any) {
+  public init(resultType: Any.Type, closure: Closure) {
+    self.resultType = resultType
     self.closure = closure
   }
 
-  public func callAsFunction(_ input: Substring) -> Any {
-    closure(input)
+  public init(
+    resultType: Any.Type,
+    _ closure: @escaping (Substring) -> Any
+  ) {
+    self.init(resultType: resultType, closure: .nonfailable(closure))
+  }
+
+  public init(
+    resultType: Any.Type,
+    _ closure: @escaping (Substring) -> Any?
+  ) {
+    self.init(resultType: resultType, closure: .failable(closure))
+  }
+
+  public init(
+    resultType: Any.Type,
+    _ closure: @escaping (Substring) throws -> Any
+  ) {
+    self.init(resultType: resultType, closure: .throwing(closure))
+  }
+
+  public func callAsFunction(_ input: Substring) -> Any? {
+    switch closure {
+    case .nonfailable(let closure):
+      let result = closure(input)
+      assert(type(of: result) == resultType)
+      return result
+    case .failable(let closure):
+      guard let result = closure(input) else {
+        return nil
+      }
+      assert(type(of: result) == resultType)
+      return result
+    case .throwing(let closure):
+      do {
+        let result = try closure(input)
+        assert(type(of: result) == resultType)
+        return result
+      } catch {
+        return nil
+      }
+    }
   }
 
   public static func == (lhs: CaptureTransform, rhs: CaptureTransform) -> Bool {
@@ -229,7 +293,6 @@ public struct CaptureTransform: Equatable, Hashable, CustomStringConvertible {
   }
 
   public var description: String {
-    "<transform>"
+    "<transform result_type=\(resultType)>"
   }
 }
-

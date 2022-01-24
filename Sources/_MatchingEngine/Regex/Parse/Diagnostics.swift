@@ -38,7 +38,12 @@ enum ParseError: Error, Hashable {
 
   case cannotReferToWholePattern
 
+  case notQuantifiable
+
+  case backtrackingDirectiveMustHaveName(String)
+
   case unknownGroupKind(String)
+  case unknownCalloutKind(String)
 
   case invalidMatchingOption(Character)
   case cannotRemoveMatchingOptionsAfterCaret
@@ -50,6 +55,9 @@ enum ParseError: Error, Hashable {
   case emptyProperty
 
   case expectedGroupSpecifier
+  case expectedGroupName
+  case groupNameMustBeAlphaNumeric
+  case groupNameCannotStartWithNumber
   case cannotRemoveTextSegmentOptions
   case cannotRemoveSemanticsOptions
 }
@@ -81,12 +89,18 @@ extension ParseError: CustomStringConvertible {
       return "expected escape sequence"
     case .cannotReferToWholePattern:
       return "cannot refer to whole pattern here"
+    case .notQuantifiable:
+      return "expression is not quantifiable"
+    case .backtrackingDirectiveMustHaveName(let b):
+      return "backtracking directive '\(b)' must include name"
     case let .tooManyBranchesInConditional(i):
       return "expected 2 branches in conditional, have \(i)"
     case let .unsupportedCondition(str):
       return "\(str) cannot be used as condition"
     case let .unknownGroupKind(str):
       return "unknown group kind '(\(str)'"
+    case let .unknownCalloutKind(str):
+      return "unknown callout kind '\(str)'"
     case let .invalidMatchingOption(c):
       return "invalid matching option '\(c)'"
     case .cannotRemoveMatchingOptionsAfterCaret:
@@ -103,6 +117,12 @@ extension ParseError: CustomStringConvertible {
       return "empty property"
     case .expectedGroupSpecifier:
       return "expected group specifier"
+    case .expectedGroupName:
+      return "expected group name"
+    case .groupNameMustBeAlphaNumeric:
+      return "group name must only contain alphanumeric characters"
+    case .groupNameCannotStartWithNumber:
+      return "group name must not start with number"
     case .cannotRemoveTextSegmentOptions:
       return "text segment mode cannot be unset, only changed"
     case .cannotRemoveSemanticsOptions:

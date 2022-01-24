@@ -138,19 +138,20 @@ extension AST.Quote {
 extension AST.Group.Kind {
   var _canonicalBase: String {
     switch self {
-    case .capture:              return "("
-    case .namedCapture(let n):  return "(?<\(n.value)>"
-    case .nonCapture:           return "(?:"
-    case .nonCaptureReset:      return "(?|"
-    case .atomicNonCapturing:   return "(?>"
-    case .lookahead:            return "(?="
-    case .negativeLookahead:    return "(?!"
-    case .nonAtomicLookahead:   return "(?*"
-    case .lookbehind:           return "(?<="
-    case .negativeLookbehind:   return "(?<!"
-    case .nonAtomicLookbehind:  return "(?<*"
-    case .scriptRun:            return "(*sr:"
-    case .atomicScriptRun:      return "(*asr:"
+    case .capture:                return "("
+    case .namedCapture(let n):    return "(?<\(n.value)>"
+    case .balancedCapture(let b): return "(?<\(b._canonicalBase)>"
+    case .nonCapture:             return "(?:"
+    case .nonCaptureReset:        return "(?|"
+    case .atomicNonCapturing:     return "(?>"
+    case .lookahead:              return "(?="
+    case .negativeLookahead:      return "(?!"
+    case .nonAtomicLookahead:     return "(?*"
+    case .lookbehind:             return "(?<="
+    case .negativeLookbehind:     return "(?<!"
+    case .nonAtomicLookbehind:    return "(?<*"
+    case .scriptRun:              return "(*sr:"
+    case .atomicScriptRun:        return "(*asr:"
 
     case .changeMatchingOptions:
       return "(/* TODO: matchign options in canonical form */"
@@ -219,4 +220,10 @@ extension AST.Reference {
 
 extension AST.CustomCharacterClass.Start {
   var _canonicalBase: String { self.rawValue }
+}
+
+extension AST.Group.BalancedCapture {
+  var _canonicalBase: String {
+    "\(name?.value ?? "")-\(priorName.value)"
+  }
 }

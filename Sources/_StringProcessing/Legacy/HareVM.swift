@@ -188,7 +188,9 @@ struct HareVM: VirtualMachine {
         bunny.hop()
 
       case let .endCapture(transform):
-        bunny.core.endCapture(bunny.sp, transform: transform)
+        guard bunny.core.endCapture(bunny.sp, transform: transform) else {
+          return nil
+        }
         bunny.hop()
 
       case .beginGroup:
