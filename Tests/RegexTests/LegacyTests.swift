@@ -419,34 +419,6 @@ extension RegexTests {
 //      expecting: .init(captures: "aaaa", capturesEqual: ==))
   }
 
-  func testLegacyMatchLevel() throws {
-    let tests: Array<(String, chars: [String], unicodes: [String])> = [
-      ("..", ["e\u{301}e\u{301}"], ["e\u{301}"]),
-    ]
-
-    for (regex, characterInputs, scalarInputs) in tests {
-      let ast = try parse(regex, .traditional)
-      let program = try Compiler(ast: ast).emit()
-      let executor = Executor(program: program)
-
-      let scalarProgram = try Compiler(
-        ast: ast, matchLevel: .unicodeScalar
-      ).emit()
-      let scalarExecutor = Executor(
-        program: scalarProgram, enablesTracing: false)
-
-      for input in characterInputs {
-        XCTAssertNotNil(executor.execute(input: input))
-        XCTAssertNil(scalarExecutor.execute(input: input))
-      }
-
-      for input in scalarInputs {
-        XCTAssertNotNil(scalarExecutor.execute(input: input))
-        XCTAssertNil(executor.execute(input: input))
-      }
-    }
-  }
-
   func testLegacyPartialMatches() {
     let tests: Array<(String, pass: [(String, matched: String)], fail: [String])> = [
       ("a+",

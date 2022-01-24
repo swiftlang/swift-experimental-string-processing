@@ -1317,12 +1317,31 @@ extension RegexTests {
     firstMatchTest(#"e\O"#, input: eComposed, match: nil,
               xfail: true)
 
-    // FIXME: Unicode scalar semantic flag (?U) doesn't change behavior of `.`
     matchTest(
-      #"(?U).\u{301}"#,
-      (eComposed, true),
-      (eDecomposed, true),
-      xfail: true)
+      #"(?u).\u{301}"#,
+      (eComposed, false),
+      (eDecomposed, true))
+    firstMatchTest(#"(?u).$"#, input: eComposed, match: eComposed)
+    
+    // Option permutations for 'u' and 's'
+    matchTest(
+      #"...."#,
+      ("e\u{301}ab", false),
+      ("e\u{301}abc", true),
+      ("e\u{301}\nab", false))
+    matchTest(
+      #"(?s)...."#,
+      ("e\u{301}ab", false),
+      ("e\u{301}abc", true),
+      ("e\u{301}\nab", true))
+    matchTest(
+      #"(?u)...."#,
+      ("e\u{301}ab", true),
+      ("e\u{301}\na", false))
+    matchTest(
+      #"(?us)...."#,
+      ("e\u{301}ab", true),
+      ("e\u{301}\na", true))
   }
   
   // TODO: Add test for implied grapheme cluster requirement at group boundaries

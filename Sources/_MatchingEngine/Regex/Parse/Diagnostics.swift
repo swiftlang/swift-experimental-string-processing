@@ -106,7 +106,7 @@ extension ParseError: CustomStringConvertible {
     case .cannotRemoveTextSegmentOptions:
       return "text segment mode cannot be unset, only changed"
     case .cannotRemoveSemanticsOptions:
-      return "matching semantics cannot be unset, only changed"
+      return "semantic level cannot be unset, only changed"
     }
   }
 }

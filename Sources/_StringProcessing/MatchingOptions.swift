@@ -18,28 +18,38 @@ struct MatchingOptions {
   fileprivate struct Representation: OptionSet, RawRepresentable {
     var rawValue: UInt32
 
+    // Text segmentation options
+    static var textSegmentGraphemeMode: Self { .init(.textSegmentGraphemeMode) }
+    static var textSegmentWordMode: Self { .init(.textSegmentWordMode) }
+    
     /// Options that comprise the mutually exclusive test segmentation group.
     static var textSegmentOptions: Self {
-      Self(unchecked: .textSegmentGraphemeMode, .textSegmentWordMode)
+      [.textSegmentGraphemeMode, .textSegmentWordMode]
     }
+
+    // Semantic matching level options
+    static var graphemeClusterSemantics: Self { .init(.graphemeClusterSemantics) }
+    static var unicodeScalarSemantics: Self { .init(.unicodeScalarSemantics) }
+    static var byteSemantics: Self { .init(.byteSemantics) }
 
     /// Options that comprise the mutually exclusive semantic matching level
     /// group.
     static var semanticMatchingLevels: Self {
-      Self(unchecked: .graphemeClusterSemantics, .unicodeScalarSemantics, .byteSemantics)
+      [.graphemeClusterSemantics, .unicodeScalarSemantics, .byteSemantics]
     }
 
     /// The default set of options.
     static var `default`: Self {
-      Self(unchecked: .graphemeClusterSemantics, .textSegmentGraphemeMode)
+      [.graphemeClusterSemantics, .textSegmentGraphemeMode]
     }
 
+    /// Tests to see if the option denoted by `kind` is a member of this set.
     func contains(_ kind: AST.MatchingOption.Kind) -> Bool {
       self.rawValue & (1 << kind.rawValue) != 0
     }
     
-    /// Merges `sequence` with this option set, preserving the
-    mutating func merge(with sequence: AST.MatchingOptionSequence) {
+    /// Applies the changes described by `sequence` to this set of options.
+    mutating func apply(_ sequence: AST.MatchingOptionSequence) {
       if sequence.caretLoc != nil {
         self = .default
       }
@@ -66,6 +76,10 @@ struct MatchingOptions {
   
   fileprivate func _invariantCheck() {
     assert(!stack.isEmpty, "Unbalanced call to endScope")
+    
+    // Must contain exactly one of each mutually exclusive group
+    assert(stack.last!.intersection(.textSegmentOptions).rawValue.nonzeroBitCount == 1)
+    assert(stack.last!.intersection(.semanticMatchingLevels).rawValue.nonzeroBitCount == 1)
   }
 }
 
@@ -74,10 +88,12 @@ extension MatchingOptions {
   /// Creates an instance with the default options.
   init() {
     self.stack = [.default]
+    _invariantCheck()
   }
 
   mutating func beginScope() {
     stack.append(stack.last!)
+    _invariantCheck()
   }
   
   mutating func endScope() {
@@ -85,8 +101,9 @@ extension MatchingOptions {
     _invariantCheck()
   }
 
-  mutating func replaceCurrent(_ sequence: AST.MatchingOptionSequence) {
-    stack[stack.count - 1].merge(with: sequence)
+  mutating func apply(_ sequence: AST.MatchingOptionSequence) {
+    stack[stack.count - 1].apply(sequence)
+    _invariantCheck()
   }
 
   var isReluctantByDefault: Bool {
@@ -114,19 +131,6 @@ extension MatchingOptions {
 // Deprecated CharacterClass.MatchLevel API
 extension MatchingOptions {
   @available(*, deprecated)
-  mutating func replaceMatchLevel(_ matchLevel: CharacterClass.MatchLevel) {
-    var result = stack.last!
-    result.remove(.semanticMatchingLevels)
-    switch matchLevel {
-    case .graphemeCluster:
-      result.insert(.init(.graphemeClusterSemantics))
-    case .unicodeScalar:
-      result.insert(.init(.unicodeScalarSemantics))
-    }
-    stack[stack.count - 1] = result
-  }
-  
-  @available(*, deprecated)
   var matchLevel: CharacterClass.MatchLevel {
     switch semanticLevel {
     case .graphemeCluster:
@@ -140,12 +144,5 @@ extension MatchingOptions {
 extension MatchingOptions.Representation {
   fileprivate init(_ kind: AST.MatchingOption.Kind) {
     self.rawValue = 1 << kind.rawValue
-  }
-  
-  fileprivate init(unchecked kinds: AST.MatchingOption.Kind...) {
-    self.rawValue = 0
-    for kind in kinds {
-      self.rawValue |= 1 << kind.rawValue
-    }
   }
 }

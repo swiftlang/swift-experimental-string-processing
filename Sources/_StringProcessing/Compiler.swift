@@ -107,7 +107,7 @@ class Compiler {
         builder.buildEndCapture(cap)
 
       case .changeMatchingOptions(let optionSequence, _):
-        options.replaceCurrent(optionSequence)
+        options.apply(optionSequence)
         try emit(g.child)
 
       default:
@@ -510,19 +510,6 @@ class Compiler {
     default:
       fatalError("unreachable")
     }
-  }
-}
-
-// Deprecated matchLevel-based initializer
-extension Compiler {
-  @available(*, deprecated)
-  convenience init(
-    ast: AST,
-    matchLevel: CharacterClass.MatchLevel,
-    options: REOptions = []
-  ) {
-    self.init(ast: ast)
-    self.options.replaceMatchLevel(matchLevel)
   }
 }
 
