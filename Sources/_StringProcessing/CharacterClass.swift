@@ -342,6 +342,10 @@ extension AST.Atom {
       // TODO: Would our model type for character classes include
       // this? Or does grapheme-semantic mode complicate that?
       return nil
+      
+    case .any:
+      // 'any' is handled by Compiler.emitAny(), not `CharacterClass`
+      return nil
 
     default: return nil
 

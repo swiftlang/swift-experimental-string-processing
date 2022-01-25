@@ -37,7 +37,16 @@ struct MatchingOptions {
     static var semanticMatchingLevels: Self {
       [.graphemeClusterSemantics, .unicodeScalarSemantics, .byteSemantics]
     }
+    
+    // Extended whitespace literal options
+    static var extended: Self { .init(.extended) }
+    static var extraExtended: Self { .init(.extraExtended) }
 
+    /// Options that affect whitespace in literals
+    static var literalWhitespaceOptions: Self {
+      [.extended, .extraExtended]
+    }
+    
     /// The default set of options.
     static var `default`: Self {
       [.graphemeClusterSemantics, .textSegmentGraphemeMode]
@@ -57,17 +66,25 @@ struct MatchingOptions {
       for opt in sequence.adding {
         // If opt is in one of the mutually exclusive groups, clear out the
         // group before inserting.
-        if opt.isSemanticMatchingLevel {
+        if Self.semanticMatchingLevels.contains(opt.kind) {
           remove(.semanticMatchingLevels)
         }
-        if opt.isTextSegmentMode {
+        if Self.textSegmentOptions.contains(opt.kind) {
           remove(.textSegmentOptions)
+        }
+        if Self.literalWhitespaceOptions.contains(opt.kind) {
+          remove(.literalWhitespaceOptions)
         }
         
         insert(.init(opt.kind))
       }
       for opt in sequence.removing {
         remove(.init(opt.kind))
+        
+        // Removing either extended whitespace option removes both
+        if Self.literalWhitespaceOptions.contains(opt.kind) {
+          remove(.literalWhitespaceOptions)
+        }
       }
     }
   }
