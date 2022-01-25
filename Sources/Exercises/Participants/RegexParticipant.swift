@@ -46,7 +46,7 @@ struct RegexLiteralParticipant: Participant {
 // MARK: - Regex literal
 
 private func extractFromCaptures(
-  _ match: Tuple4<Substring, Substring, Substring?, Substring>
+  _ match: (Substring, Substring, Substring?, Substring)
 ) -> GraphemeBreakEntry? {
   guard let lowerScalar = Unicode.Scalar(hex: match.1),
         let upperScalar = match.2.map(Unicode.Scalar.init(hex:)) ?? lowerScalar,
@@ -61,7 +61,7 @@ private func extractFromCaptures(
 private func graphemeBreakPropertyData<RP: RegexProtocol>(
   forLine line: String,
   using regex: RP
-) -> GraphemeBreakEntry? where RP.Match == Tuple4<Substring, Substring, Substring?, Substring> {
+) -> GraphemeBreakEntry? where RP.Match == (Substring, Substring, Substring?, Substring) {
   line.match(regex).map(\.match).flatMap(extractFromCaptures)
 }
 
@@ -71,7 +71,7 @@ private func graphemeBreakPropertyDataLiteral(
   return graphemeBreakPropertyData(
     forLine: line,
     using: r(#"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
-             matching: Tuple4<Substring, Substring, Substring?, Substring>.self))
+             matching: (Substring, Substring, Substring?, Substring).self))
 }
 
 // MARK: - Builder DSL
@@ -91,7 +91,7 @@ private func graphemeBreakPropertyData(
     oneOrMore(.word).tryCapture(Unicode.GraphemeBreakProperty.init)
     many(.any)
   }.map {
-    let (_, lower, upper, property) = $0.match.tuple
+    let (_, lower, upper, property) = $0.match
     return GraphemeBreakEntry(lower...(upper ?? lower), property)
   }
 }

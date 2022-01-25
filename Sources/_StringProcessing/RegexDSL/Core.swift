@@ -23,12 +23,12 @@ public struct RegexMatch<Match> {
 
 /// A type that represents a regular expression.
 public protocol RegexProtocol {
-  associatedtype Match: MatchProtocol
+  associatedtype Match
   var regex: Regex<Match> { get }
 }
 
 /// A regular expression.
-public struct Regex<Match: MatchProtocol>: RegexProtocol {
+public struct Regex<Match>: RegexProtocol {
   /// A program representation that caches any lowered representation for
   /// execution.
   internal class Program {
@@ -145,10 +145,8 @@ extension RegexProtocol {
         return nil
       }
       let convertedMatch: Match
-      if Match.self == Tuple2<Substring, DynamicCaptures>.self {
-        convertedMatch = Tuple2(
-          input[range], DynamicCaptures(captures)
-        ) as! Match
+      if Match.self == (Substring, DynamicCaptures).self {
+        convertedMatch = (input[range], DynamicCaptures(captures)) as! Match
       } else {
         let typeErasedMatch = captures.matchValue(
           withWholeMatch: input[range]
@@ -165,10 +163,8 @@ extension RegexProtocol {
       return nil
     }
     let convertedMatch: Match
-    if Match.self == Tuple2<Substring, DynamicCaptures>.self {
-      convertedMatch = Tuple2(
-        input[result.range], DynamicCaptures.empty
-      ) as! Match
+    if Match.self == (Substring, DynamicCaptures).self {
+      convertedMatch = (input[result.range], DynamicCaptures.empty) as! Match
     } else {
       assert(Match.self == Substring.self)
       convertedMatch = input[result.range] as! Match
@@ -199,7 +195,7 @@ extension Substring {
     match(content())
   }
 }
-public struct MockRegexLiteral<Match: MatchProtocol>: RegexProtocol {
+public struct MockRegexLiteral<Match>: RegexProtocol {
   public typealias MatchValue = Substring
   public let regex: Regex<Match>
 
@@ -219,16 +215,3 @@ public func r<Match>(
 }
 
 fileprivate typealias DefaultEngine = TortoiseVM
-
-public protocol EmptyCaptureProtocol {}
-public struct EmptyCapture: EmptyCaptureProtocol {}
-extension Array: EmptyCaptureProtocol where Element: EmptyCaptureProtocol {}
-extension Optional: EmptyCaptureProtocol where Wrapped: EmptyCaptureProtocol {}
-
-public protocol MatchProtocol {
-  associatedtype Capture
-}
-extension Substring: MatchProtocol {
-  public typealias Capture = EmptyCapture
-}
-
