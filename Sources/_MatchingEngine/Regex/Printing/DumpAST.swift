@@ -149,7 +149,11 @@ extension AST.Atom.Callout: _ASTPrintable {
 
 extension AST.Reference: _ASTPrintable {
   public var _dumpBase: String {
-    "\(kind)"
+    var result = "\(kind)"
+    if let recursionLevel = recursionLevel {
+      result += "\(recursionLevel.value)"
+    }
+    return result
   }
 }
 

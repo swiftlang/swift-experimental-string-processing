@@ -865,8 +865,6 @@ extension Source {
           return .recursionCheck
         }
 
-        // TODO: Oniguruma can also parse an additional recursion level for
-        // group-matched checks.
         if let open = src.tryEat(anyOf: "<", "'") {
           // In PCRE, this can only be a named reference. In Oniguruma, it can
           // also be a numbered reference.
@@ -884,9 +882,9 @@ extension Source {
         }
 
         // If we have a numbered reference, this is a check to see if a group
-        // matched.
-        if let numRef = try src.lexNumberedReference() {
-          return .groupMatched(numRef)
+        // matched. Oniguruma also permits a recursion level here.
+        if let num = try src.lexNumberedReference(allowRecursionLevel: true) {
+          return .groupMatched(num)
         }
 
         // PCRE and .NET also allow a named reference to be parsed here. PCRE
@@ -896,9 +894,9 @@ extension Source {
         // FIXME: This should apply to future groups too.
         // TODO: We should probably advise users to use the more explicit
         // syntax.
-        if let nameRef = src.lexNamedReference(endingWith: ")",
-                                               eatEnding: false),
-           context.isPriorGroupRef(nameRef.kind) {
+        let nameRef = src.lexNamedReference(
+          endingWith: ")", eatEnding: false, allowRecursionLevel: true)
+        if let nameRef = nameRef, context.isPriorGroupRef(nameRef.kind) {
           return .groupMatched(nameRef)
         }
         return nil
@@ -1052,10 +1050,10 @@ extension Source {
 
   /// Try to lex an absolute or relative numbered reference.
   ///
-  ///     NumberRef -> ('+' | '-')? <Decimal Number>
+  ///     NumberRef -> ('+' | '-')? <Decimal Number> RecursionLevel?
   ///
   private mutating func lexNumberedReference(
-    allowWholePatternRef: Bool = false
+    allowWholePatternRef: Bool = false, allowRecursionLevel: Bool = false
   ) throws -> AST.Reference? {
     let kind = try recordLoc { src -> AST.Reference.Kind? in
       // Note this logic should match canLexNumberedReference.
@@ -1074,7 +1072,22 @@ extension Source {
     guard allowWholePatternRef || kind.value != .recurseWholePattern else {
       throw ParseError.cannotReferToWholePattern
     }
-    return .init(kind.value, innerLoc: kind.location)
+    let recLevel = allowRecursionLevel ? try lexRecursionLevel() : nil
+    let loc = recLevel?.location.union(with: kind.location) ?? kind.location
+    return .init(kind.value, recursionLevel: recLevel, innerLoc: loc)
+  }
+
+  /// Try to consume a recursion level for a group reference.
+  ///
+  ///     RecursionLevel -> '+' <Int> | '-' <Int>
+  ///
+  private mutating func lexRecursionLevel(
+  ) throws -> Located<Int>? {
+    try recordLoc { src in
+      if src.tryEat("+") { return try src.expectNumber().value }
+      if src.tryEat("-") { return try -src.expectNumber().value }
+      return nil
+    }
   }
 
   /// Checks whether a numbered reference can be lexed.
@@ -1087,19 +1100,34 @@ extension Source {
 
   /// Eat a named reference up to a given closing delimiter.
   private mutating func expectNamedReference(
-    endingWith end: String, eatEnding: Bool = true
+    endingWith end: String, eatEnding: Bool = true,
+    allowRecursionLevel: Bool = false
   ) throws -> AST.Reference {
-    let str = try expectGroupName(endingWith: end, eatEnding: eatEnding)
-    return .init(.named(str.value), innerLoc: str.location)
+    // Note we don't want to eat the ending as we may also want to parse a
+    // recursion level.
+    let str = try expectGroupName(endingWith: end, eatEnding: false)
+
+    // If we're allowed to, try parse a recursion level.
+    let recLevel = allowRecursionLevel ? try lexRecursionLevel() : nil
+    let loc = recLevel?.location.union(with: str.location) ?? str.location
+
+    if eatEnding {
+      try expect(sequence: end)
+    }
+    return .init(.named(str.value), recursionLevel: recLevel, innerLoc: loc)
   }
 
   /// Try to consume a named reference up to a closing delimiter, returning
   /// `nil` if the characters aren't valid for a named reference.
   private mutating func lexNamedReference(
-    endingWith end: String, eatEnding: Bool = true
+    endingWith end: String, eatEnding: Bool = true,
+    allowRecursionLevel: Bool = false
   ) -> AST.Reference? {
     tryEating { src in
-      try? src.expectNamedReference(endingWith: end, eatEnding: eatEnding)
+      try? src.expectNamedReference(
+        endingWith: end, eatEnding: eatEnding,
+        allowRecursionLevel: allowRecursionLevel
+      )
     }
   }
 
@@ -1109,17 +1137,22 @@ extension Source {
   ///
   private mutating func expectNamedOrNumberedReference(
     endingWith ending: String, eatEnding: Bool = true,
-    allowWholePatternRef: Bool = false
+    allowWholePatternRef: Bool = false, allowRecursionLevel: Bool = false
   ) throws -> AST.Reference {
-    if let numbered = try lexNumberedReference(
-      allowWholePatternRef: allowWholePatternRef
-    ) {
+    let num = try lexNumberedReference(
+      allowWholePatternRef: allowWholePatternRef,
+      allowRecursionLevel: allowRecursionLevel
+    )
+    if let num = num {
       if eatEnding {
         try expect(sequence: ending)
       }
-      return numbered
+      return num
     }
-    return try expectNamedReference(endingWith: ending, eatEnding: eatEnding)
+    return try expectNamedReference(
+      endingWith: ending, eatEnding: eatEnding,
+      allowRecursionLevel: allowRecursionLevel
+    )
   }
 
   private static func getClosingDelimiter(
@@ -1176,11 +1209,21 @@ extension Source {
         }
 
         if src.tryEat("k") {
-          // Perl/.NET-style backreferences.
-          if let openChar = src.tryEat(anyOf: "<", "'", "{") {
+          // Perl/.NET/Oniguruma-style backreferences.
+          if let openChar = src.tryEat(anyOf: "<", "'") {
             let closing = String(Source.getClosingDelimiter(for: openChar))
+
+            // Perl only accept named references here, but Oniguruma and .NET
+            // also accepts numbered references. This shouldn't be an ambiguity
+            // as named references may not begin with a digit, '-', or '+'.
+            // Oniguruma also allows a recursion level to be specified.
+            return .backreference(try src.expectNamedOrNumberedReference(
+              endingWith: closing, allowRecursionLevel: true))
+          }
+          // Perl/.NET also allow a named references with the '{' delimiter.
+          if src.tryEat("{") {
             return .backreference(
-              try src.expectNamedReference(endingWith: closing))
+              try src.expectNamedReference(endingWith: "}"))
           }
           return nil
         }
@@ -1199,10 +1242,10 @@ extension Source {
         // here.
         if firstChar != "0", let numAndLoc = try src.lexNumber() {
           let num = numAndLoc.value
-          let loc = numAndLoc.location
+          let ref = AST.Reference(.absolute(num), innerLoc: numAndLoc.location)
           if num < 10 || firstChar == "8" || firstChar == "9" ||
-              context.isPriorGroupRef(.absolute(num)) {
-            return .backreference(.init(.absolute(num), innerLoc: loc))
+              context.isPriorGroupRef(ref.kind) {
+            return .backreference(ref)
           }
           return nil
         }
@@ -1225,7 +1268,6 @@ extension Source {
     try recordLoc { src in
       try src.tryEating { src in
         guard src.tryEat(sequence: "(?") else { return nil }
-        let _start = src.currentPosition
 
         // Note the below should be covered by canLexGroupLikeReference.
 
@@ -1243,8 +1285,7 @@ extension Source {
         }
 
         // Whole-pattern recursion, which is equivalent to (?0).
-        if src.tryEat("R") {
-          let loc = Location(_start ..< src.currentPosition)
+        if let loc = src.tryEatWithLoc("R") {
           try src.expect(")")
           return .subpattern(.init(.recurseWholePattern, innerLoc: loc))
         }
