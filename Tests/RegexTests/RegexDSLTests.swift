@@ -47,8 +47,8 @@ class RegexDSLTests: XCTestCase {
   func testCombinators() throws {
     let regex = Regex {
       "a".+
-      OneOrMore(Character("b")).capture() // Substring
-      Repeat("c").capture() // Substring
+      oneOrMore(Character("b")).capture() // Substring
+      many("c").capture() // Substring
       CharacterClass.hexDigit.capture().* // [Substring]
       "e".?
       ("t" | "k").capture() // Substring
@@ -66,9 +66,9 @@ class RegexDSLTests: XCTestCase {
   func testNestedGroups() throws {
     let regex = Regex {
       "a".+
-      OneOrMore {
-        OneOrMore("b").capture()
-        Repeat("c").capture()
+      oneOrMore {
+        oneOrMore("b").capture()
+        many("c").capture()
         "d".capture().*
         "e".?
       }
@@ -83,6 +83,19 @@ class RegexDSLTests: XCTestCase {
     XCTAssertTrue(
       match.match.1[0]
         == Tuple3("b", "cccc", ["d", "d", "d"]))
+  }
+
+  func testCapturelessQuantification() throws {
+    // This test is to make sure that a captureless quantification, when used
+    // straight out of the quantifier (without being wrapped in a builder), is
+    // able to produce a regex whose `Match` type does not contain any sort of
+    // void.
+    let regex = many(.digit)
+    // Assert the inferred capture type.
+    let _: Substring.Type = type(of: regex).Match.self
+    let input = "123123"
+    let match = try XCTUnwrap(input.match(regex)?.match)
+    XCTAssertTrue(match == input)
   }
 
   func testQuantificationWithTransformedCapture() throws {
@@ -104,18 +117,17 @@ class RegexDSLTests: XCTestCase {
     }
     let regex = Regex {
       "a".+
-      OneOrMore(.whitespace)
-      Optionally {
-        OneOrMore(.digit).capture { Int($0)! }
+      oneOrMore(.whitespace)
+      optionally {
+        oneOrMore(.digit).capture { Int($0)! }
       }
-      Repeat {
-        OneOrMore(.whitespace)
-        OneOrMore(.word).capture { Word($0)! }
+      many {
+        oneOrMore(.whitespace)
+        oneOrMore(.word).capture { Word($0)! }
       }
     }
     // Assert the inferred capture type.
-    let _: Tuple3<Substring, Int?, [Word]>.Type
-      = type(of: regex).Match.self
+    let _: Tuple3<Substring, Int?, [Word]>.Type = type(of: regex).Match.self
     do {
       let input = "aaa 123 apple orange apple"
       let match = input.match(regex)?.match.tuple
@@ -138,7 +150,7 @@ class RegexDSLTests: XCTestCase {
     let regex1 = Regex {
       "a".+
       Regex {
-        OneOrMore("b").capture()
+        oneOrMore("b").capture()
         "e".?
       }.capture()
     }
@@ -165,9 +177,9 @@ class RegexDSLTests: XCTestCase {
       = type(of: regex3).Match.self
     let regex4 = Regex {
       "a".+
-      OneOrMore {
-        OneOrMore("b").capture()
-        Repeat("c").capture()
+      oneOrMore {
+        oneOrMore("b").capture()
+        many("c").capture()
         "d".capture().*
         "e".?
       }.capture()
@@ -179,13 +191,13 @@ class RegexDSLTests: XCTestCase {
 
   func testUnicodeScalarPostProcessing() throws {
     let spaces = Regex {
-      Repeat {
+      many {
         CharacterClass.whitespace
       }
     }
 
     let unicodeScalar = Regex {
-      OneOrMore {
+      oneOrMore {
         CharacterClass.hexDigit
       }
       spaces
@@ -193,7 +205,7 @@ class RegexDSLTests: XCTestCase {
 
     let unicodeData = Regex {
       unicodeScalar
-      Optionally {
+      optionally {
         ".."
         unicodeScalar
       }
@@ -201,11 +213,11 @@ class RegexDSLTests: XCTestCase {
       ";"
       spaces
 
-      OneOrMore {
+      oneOrMore {
         CharacterClass.word
       }.capture()
 
-      Repeat {
+      many {
         CharacterClass.any
       }
     }
@@ -226,16 +238,16 @@ class RegexDSLTests: XCTestCase {
       """
     
     let regexWithCapture = Regex {
-      OneOrMore(CharacterClass.hexDigit).capture(Unicode.Scalar.init(hex:))
-      Optionally {
+      oneOrMore(CharacterClass.hexDigit).capture(Unicode.Scalar.init(hex:))
+      optionally {
         ".."
-        OneOrMore(CharacterClass.hexDigit).capture(Unicode.Scalar.init(hex:))
+        oneOrMore(CharacterClass.hexDigit).capture(Unicode.Scalar.init(hex:))
       }
-      OneOrMore(CharacterClass.whitespace)
+      oneOrMore(CharacterClass.whitespace)
       ";"
-      OneOrMore(CharacterClass.whitespace)
-      OneOrMore(CharacterClass.word).capture()
-      Repeat(CharacterClass.any)
+      oneOrMore(CharacterClass.whitespace)
+      oneOrMore(CharacterClass.word).capture()
+      many(CharacterClass.any)
     } // Regex<(Substring, Unicode.Scalar?, Unicode.Scalar??, Substring)>
     do {
       // Assert the inferred capture type.
@@ -253,16 +265,16 @@ class RegexDSLTests: XCTestCase {
     }
 
     let regexWithTryCapture = Regex {
-      OneOrMore(CharacterClass.hexDigit).tryCapture(Unicode.Scalar.init(hex:))
-      Optionally {
+      oneOrMore(CharacterClass.hexDigit).tryCapture(Unicode.Scalar.init(hex:))
+      optionally {
         ".."
-        OneOrMore(CharacterClass.hexDigit).tryCapture(Unicode.Scalar.init(hex:))
+        oneOrMore(CharacterClass.hexDigit).tryCapture(Unicode.Scalar.init(hex:))
       }
-      OneOrMore(CharacterClass.whitespace)
+      oneOrMore(CharacterClass.whitespace)
       ";"
-      OneOrMore(CharacterClass.whitespace)
-      OneOrMore(CharacterClass.word).capture()
-      Repeat(CharacterClass.any)
+      oneOrMore(CharacterClass.whitespace)
+      oneOrMore(CharacterClass.word).capture()
+      many(CharacterClass.any)
     } // Regex<(Substring, Unicode.Scalar, Unicode.Scalar?, Substring)>
     do {
       // Assert the inferred capture type.

@@ -89,7 +89,7 @@ struct StandardErrorStream: TextOutputStream {
 var standardError = StandardErrorStream()
 
 typealias Counter = Int64
-let patternProtocolName = "RegexProtocol"
+let regexProtocolName = "RegexProtocol"
 let concatenationStructTypeBaseName = "Concatenate"
 let capturingGroupTypeBaseName = "CapturingGroup"
 let matchAssociatedTypeName = "Match"
@@ -132,9 +132,10 @@ struct VariadicsGenerator: ParsableCommand {
       emitTupleStruct(arity: arity)
     }
 
+    print("Generating concatenation overloads...", to: &standardError)
     for (leftArity, rightArity) in Permutations(totalArity: maxArity) {
       print(
-        "Left arity: \(leftArity)  Right arity: \(rightArity)",
+        "  Left arity: \(leftArity)  Right arity: \(rightArity)",
         to: &standardError)
       emitConcatenation(leftArity: leftArity, rightArity: rightArity)
     }
@@ -144,7 +145,20 @@ struct VariadicsGenerator: ParsableCommand {
     }
 
     output("\n\n")
-    output("// END AUTO-GENERATED CONTENT")
+
+    print("Generating quantifiers...", to: &standardError)
+    for arity in 0..<maxArity {
+      print("  Arity \(arity): ", terminator: "", to: &standardError)
+      for kind in QuantifierKind.allCases {
+        print("\(kind.rawValue) ", terminator: "", to: &standardError)
+        emitQuantifier(kind: kind, arity: arity)
+      }
+      print(to: &standardError)
+    }
+
+    output("\n\n")
+
+    output("// END AUTO-GENERATED CONTENT\n")
 
     print("Done!", to: &standardError)
   }
@@ -231,7 +245,7 @@ struct VariadicsGenerator: ParsableCommand {
       }
       output(", ")
       if withConstraints {
-        output("R0: \(patternProtocolName), R1: \(patternProtocolName)")
+        output("R0: \(regexProtocolName), R1: \(regexProtocolName)")
       } else {
         output("R0, R1")
       }
@@ -268,7 +282,7 @@ struct VariadicsGenerator: ParsableCommand {
     let typeName = "\(concatenationStructTypeBaseName)_\(leftArity)_\(rightArity)"
     output("public struct \(typeName)<\n  ")
     emitGenericParameters(withConstraints: true)
-    output("\n>: \(patternProtocolName)")
+    output("\n>: \(regexProtocolName)")
     output(" where ")
     output("R0.Match == ")
     if leftArity == 0 {
@@ -343,7 +357,7 @@ struct VariadicsGenerator: ParsableCommand {
       ", C\($0)"
     }
     output("""
-      , R0: \(patternProtocolName), R1: \(patternProtocolName)>(
+      , R0: \(regexProtocolName), R1: \(regexProtocolName)>(
           combining next: R1, into combined: R0
         ) -> Regex<
       """)
@@ -371,6 +385,108 @@ struct VariadicsGenerator: ParsableCommand {
           .init(node: combined.regex.root.appending(next.regex.root))
         }
       }
+
+      """)
+  }
+
+  enum QuantifierKind: String, CaseIterable {
+    case zeroOrOne = "optionally"
+    case zeroOrMore = "many"
+    case oneOrMore = "oneOrMore"
+
+    var typeName: String {
+      switch self {
+      case .zeroOrOne: return "_ZeroOrOne"
+      case .zeroOrMore: return "_ZeroOrMore"
+      case .oneOrMore: return "_OneOrMore"
+      }
+    }
+
+    var operatorName: String {
+      switch self {
+      case .zeroOrOne: return ".?"
+      case .zeroOrMore: return ".+"
+      case .oneOrMore: return ".*"
+      }
+    }
+
+    var astQuantifierAmount: String {
+      switch self {
+      case .zeroOrOne: return "zeroOrOne"
+      case .zeroOrMore: return "zeroOrMore"
+      case .oneOrMore: return "oneOrMore"
+      }
+    }
+  }
+
+  func emitQuantifier(kind: QuantifierKind, arity: Int) {
+    assert(arity >= 0)
+    func genericParameters(withConstraints: Bool) -> String {
+      var result = ""
+      if arity > 0 {
+        result += "W"
+        result += (0..<arity).map { ", C\($0)" }.joined()
+        result += ", "
+      }
+      result += "Component"
+      if withConstraints {
+        result += ": \(regexProtocolName)"
+      }
+      return result
+    }
+    let captures = (0..<arity).map { "C\($0)" }.joined(separator: ", ")
+    let capturesTupled = arity == 1 ? captures : "Tuple\(arity)<\(captures)>"
+    let componentConstraint: String = arity == 0 ? "" :
+      "where Component.Match == Tuple\(arity+1)<W, \(captures)>"
+    let quantifiedCaptures: String = {
+      switch kind {
+      case .zeroOrOne:
+        return "\(capturesTupled)?"
+      case .zeroOrMore, .oneOrMore:
+        return "[\(capturesTupled)]"
+      }
+    }()
+    let matchType = arity == 0 ? baseMatchTypeName : "Tuple2<\(baseMatchTypeName), \(quantifiedCaptures)>"
+    output("""
+      public struct \(kind.typeName)_\(arity)<\(genericParameters(withConstraints: true))>: \(regexProtocolName) \(componentConstraint) {
+        public typealias \(matchAssociatedTypeName) = \(matchType)
+        public let regex: Regex<\(matchAssociatedTypeName)>
+        public init(component: Component) {
+          self.regex = .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component.regex.root))
+        }
+      }
+
+      \(arity == 0 ? "@_disfavoredOverload" : "")
+      public func \(kind.rawValue)<\(genericParameters(withConstraints: true))>(
+        _ component: Component
+      ) -> \(kind.typeName)_\(arity)<\(genericParameters(withConstraints: false))> {
+        .init(component: component)
+      }
+
+      \(arity == 0 ? "@_disfavoredOverload" : "")
+      public func \(kind.rawValue)<\(genericParameters(withConstraints: true))>(
+        @RegexBuilder _ component: () -> Component
+      ) -> \(kind.typeName)_\(arity)<\(genericParameters(withConstraints: false))> {
+        \(kind.rawValue)(component())
+      }
+
+      \(arity == 0 ? "@_disfavoredOverload" : "")
+      public postfix func \(kind.operatorName)<\(genericParameters(withConstraints: true))>(
+        _ component: Component
+      ) -> \(kind.typeName)_\(arity)<\(genericParameters(withConstraints: false))> {
+        \(kind.rawValue)(component)
+      }
+
+      \(kind == .zeroOrOne ?
+        """
+        extension RegexBuilder {
+          public static func buildLimitedAvailability<\(genericParameters(withConstraints: true))>(
+            _ component: Component
+          ) -> \(kind.typeName)_\(arity)<\(genericParameters(withConstraints: false))> {
+            \(kind.rawValue)(component)
+          }
+        }
+        """ : "")
 
       """)
   }
