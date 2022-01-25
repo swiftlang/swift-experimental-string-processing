@@ -847,11 +847,25 @@ extension RegexTests {
     parseTest(#"\g{52}"#, backreference(.absolute(52)))
     parseTest(#"\g{-01}"#, backreference(.relative(-1)))
     parseTest(#"\g{+30}"#, backreference(.relative(30)))
+    parseTest(#"\k<+4>"#, backreference(.relative(4)))
+    parseTest(#"\k<2>"#, backreference(.absolute(2)))
+    parseTest(#"\k'-3'"#, backreference(.relative(-3)))
+    parseTest(#"\k'1'"#, backreference(.absolute(1)))
 
     parseTest(#"\k{a0}"#, backreference(.named("a0")))
     parseTest(#"\k<bc>"#, backreference(.named("bc")))
     parseTest(#"\g{abc}"#, backreference(.named("abc")))
     parseTest(#"(?P=abc)"#, backreference(.named("abc")))
+
+    // Oniguruma recursion levels.
+    parseTest(#"\k<bc-0>"#, backreference(.named("bc"), recursionLevel: 0))
+    parseTest(#"\k<a+0>"#, backreference(.named("a"), recursionLevel: 0))
+    parseTest(#"\k<1+1>"#, backreference(.absolute(1), recursionLevel: 1))
+    parseTest(#"\k<3-8>"#, backreference(.absolute(3), recursionLevel: -8))
+    parseTest(#"\k'-3-8'"#, backreference(.relative(-3), recursionLevel: -8))
+    parseTest(#"\k'bc-8'"#, backreference(.named("bc"), recursionLevel: -8))
+    parseTest(#"\k'+3-8'"#, backreference(.relative(3), recursionLevel: -8))
+    parseTest(#"\k'+3+8'"#, backreference(.relative(3), recursionLevel: 8))
 
     parseTest(#"(?R)"#, subpattern(.recurseWholePattern))
     parseTest(#"(?0)"#, subpattern(.recurseWholePattern))
@@ -1001,6 +1015,40 @@ extension RegexTests {
       .groupMatched(ref(plus: 3)), trueBranch: empty(), falseBranch: empty()))
     parseTest(#"(?(-21))"#, conditional(
       .groupMatched(ref(minus: 21)), trueBranch: empty(), falseBranch: empty()))
+
+    // Oniguruma recursion levels.
+    parseTest(#"(?(1+1))"#, conditional(
+      .groupMatched(ref(1, recursionLevel: 1)),
+      trueBranch: empty(), falseBranch: empty())
+    )
+    parseTest(#"(?(-1+1))"#, conditional(
+      .groupMatched(ref(minus: 1, recursionLevel: 1)),
+      trueBranch: empty(), falseBranch: empty())
+    )
+    parseTest(#"(?(1-3))"#, conditional(
+      .groupMatched(ref(1, recursionLevel: -3)),
+      trueBranch: empty(), falseBranch: empty())
+    )
+    parseTest(#"(?(+1-3))"#, conditional(
+      .groupMatched(ref(plus: 1, recursionLevel: -3)),
+      trueBranch: empty(), falseBranch: empty())
+    )
+    parseTest(
+      #"(?<a>)(?(a+5))"#,
+      concat(namedCapture("a", empty()), conditional(
+        .groupMatched(ref("a", recursionLevel: 5)),
+        trueBranch: empty(), falseBranch: empty()
+      )),
+      captures: .atom(name: "a")
+    )
+    parseTest(
+      #"(?<a1>)(?(a1-5))"#,
+      concat(namedCapture("a1", empty()), conditional(
+        .groupMatched(ref("a1", recursionLevel: -5)),
+        trueBranch: empty(), falseBranch: empty()
+      )),
+      captures: .atom(name: "a1")
+    )
 
     parseTest(#"(?(1))?"#, zeroOrOne(.eager, conditional(
       .groupMatched(ref(1)), trueBranch: empty(), falseBranch: empty())))
@@ -1167,6 +1215,8 @@ extension RegexTests {
     parseNotEqualTest(#"(?1)"#, #"(?2)"#)
     parseNotEqualTest(#"(?+1)"#, #"(?1)"#)
     parseNotEqualTest(#"(?&a)"#, #"(?&b)"#)
+    parseNotEqualTest(#"\k<a-1>"#, #"\k<a-2>"#)
+    parseNotEqualTest(#"\k<a>"#, #"\k<a-2>"#)
 
     parseNotEqualTest(#"\Qabc\E"#, #"\Qdef\E"#)
     parseNotEqualTest(#""abc""#, #""def""#)
@@ -1191,8 +1241,6 @@ extension RegexTests {
     parseNotEqualTest("(?<a-b>)", "(?<a-c>)")
     parseNotEqualTest("(?<c-b>)", "(?<a-b>)")
     parseNotEqualTest("(?<-b>)", "(?<a-b>)")
-
-    // TODO: failure tests
   }
 
   func testParseSourceLocations() throws {
@@ -1232,6 +1280,15 @@ extension RegexTests {
       $0.as(CustomCC.self)!.members[0].as(CustomCC.Range.self)!.dashLoc
     })
 
+    // MARK: References
+
+    rangeTest(#"\k<a+2>"#, range(3 ..< 6), at: {
+      $0.as(AST.Atom.self)!.as(AST.Reference.self)!.innerLoc
+    })
+    rangeTest(#"\k<-1+2>"#, range(3 ..< 7), at: {
+      $0.as(AST.Atom.self)!.as(AST.Reference.self)!.innerLoc
+    })
+
     // MARK: Conditionals
 
     rangeTest("(?(1))", entireRange)
@@ -1242,6 +1299,9 @@ extension RegexTests {
     })
 
     rangeTest("(?(1))", range(3 ..< 4), at: {
+      $0.as(AST.Conditional.self)!.condition.location
+    })
+    rangeTest("(?(-1+2))", range(3 ..< 7), at: {
       $0.as(AST.Conditional.self)!.condition.location
     })
     rangeTest("(?(VERSION>=4.1))", range(3 ..< 15), at: {
@@ -1342,8 +1402,16 @@ extension RegexTests {
     diagnosticTest(#"\k'#'"#, .groupNameMustBeAlphaNumeric)
     diagnosticTest(#"(?&#)"#, .groupNameMustBeAlphaNumeric)
 
-    diagnosticTest(#"\k'1'"#, .groupNameCannotStartWithNumber)
     diagnosticTest(#"(?P>1)"#, .groupNameCannotStartWithNumber)
+    diagnosticTest(#"\k{1}"#, .groupNameCannotStartWithNumber)
+
+    diagnosticTest(#"\g<1-1>"#, .expected(">"))
+    diagnosticTest(#"\g{1-1}"#, .expected("}"))
+    diagnosticTest(#"\k{a-1}"#, .expected("}"))
+    diagnosticTest(#"\k{a-}"#, .expected("}"))
+
+    diagnosticTest(#"\k<a->"#, .expectedNumber("", kind: .decimal))
+    diagnosticTest(#"\k<1+>"#, .expectedNumber("", kind: .decimal))
 
     // MARK: Conditionals
 
