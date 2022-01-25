@@ -10,17 +10,17 @@
 //===----------------------------------------------------------------------===//
 
 /// Track and handle state relevant to pretty-printing ASTs.
-struct PrettyPrinter {
+public struct PrettyPrinter {
   // Configuration
 
   /// Cut off pattern conversion after this many levels
-  var maxTopDownLevels: Int?
+  public var maxTopDownLevels: Int?
 
   /// Cut off pattern conversion after this tree height
-  var minBottomUpLevels: Int?
+  public var minBottomUpLevels: Int?
 
   /// How many spaces to indent with ("tab-width")
-  var indentWidth = 2
+  public var indentWidth = 2
 
   // Internal state
 
@@ -38,7 +38,7 @@ struct PrettyPrinter {
 extension PrettyPrinter {
   // This might be necessary if `fileprivate` above suppresses
   // default struct inits.
-  init(
+  public init(
     maxTopDownLevels: Int? = nil,
     minBottomUpLevels: Int? = nil
   ) {
@@ -53,19 +53,19 @@ extension PrettyPrinter {
   ///
   /// NOTE: If `s` includes a newline, even at the end,
   /// this function will not update any tracking state.
-  mutating func output(_ s: String) {
+  public mutating func output(_ s: String) {
     result += s
   }
 
   /// Terminate a line, updating any relevant state
-  mutating func terminateLine() {
+  public mutating func terminateLine() {
     output("\n")
     startOfLine = true
   }
 
   /// Indent a new line, if at the start of a line, otherwise
   /// does nothing. Updates internal state.
-  mutating func indent() {
+  public mutating func indent() {
     guard startOfLine else { return }
     let numCols = indentLevel * indentWidth
     output(String(repeating: " ", count: numCols))
@@ -73,12 +73,12 @@ extension PrettyPrinter {
   }
 
   // Finish, flush, and clear. Returns the rendered output
-  mutating func finish() -> String {
+  public mutating func finish() -> String {
     defer { result = "" }
     return result
   }
 
-  var depth: Int { indentLevel }
+  public var depth: Int { indentLevel }
 }
 
 // MARK: - Pretty-print interface
@@ -87,7 +87,7 @@ extension PrettyPrinter {
   ///
   /// This will property indent `s`, update any internal state,
   /// and will also terminate the current line.
-  mutating func print(_ s: String) {
+  public mutating func print(_ s: String) {
     indent()
     output("\(s)")
     terminateLine()
@@ -97,7 +97,7 @@ extension PrettyPrinter {
   ///
   /// This will property indent, update any internal state,
   /// and will also terminate the current line.
-  mutating func printLine(_ f: () -> String?) {
+  public mutating func printLine(_ f: () -> String?) {
     // TODO: What should we do if `f` never returns non-nil?
     indent()
     while let s = f() {
@@ -107,7 +107,7 @@ extension PrettyPrinter {
   }
 
   /// Execute `f` at one increased level of indentation
-  mutating func printIndented(
+  public mutating func printIndented(
     _ f: (inout Self) -> ()
   ) {
     self.indentLevel += 1
@@ -117,7 +117,7 @@ extension PrettyPrinter {
 
   /// Execute `f` inside an indented "block", which has a header
   /// and delimiters.
-  mutating func printBlock(
+  public mutating func printBlock(
     _ header: String,
     startDelimiter: String = "{",
     endDelimiter: String = "}",

@@ -33,7 +33,7 @@ extension AST {
   /// A node in the regex AST.
   @frozen
   public indirect enum Node:
-    Hashable/*, _ASTPrintable ASTValue, ASTAction*/
+    Hashable, _TreeNode //, _ASTPrintable ASTValue, ASTAction
   {
     /// ... | ... | ...
     case alternation(Alternation)
@@ -94,7 +94,7 @@ extension AST.Node {
     }
   }
 
-  func `as`<T: _ASTNode>(_ t: T.Type = T.self) -> T? {
+  public func `as`<T: _ASTNode>(_ t: T.Type = T.self) -> T? {
     _associatedValue as? T
   }
 

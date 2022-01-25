@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+import _MatchingEngine
+
 // TODO: Add an expansion level, both from top to bottom.
 //       After `printAsCanonical` is fleshed out, these two
 //       printers can call each other. This would enable
@@ -31,7 +33,9 @@ extension AST {
 
 extension PrettyPrinter {
   /// If pattern printing should back off, prints the regex literal and returns true
-  mutating func patternBackoff(_ ast: AST.Node) -> Bool {
+  mutating func patternBackoff<T: _TreeNode>(
+    _ ast: T
+  ) -> Bool {
     if let max = maxTopDownLevels, depth >= max {
       return true
     }
@@ -41,149 +45,164 @@ extension PrettyPrinter {
     return false
   }
 
-  mutating func printAsPattern(_ ast: AST) {
-    // TODO: Global matching options?
-    printAsPattern(ast.root)
+  mutating func printBackoff(_ node: DSLTree.Node) {
+    precondition(node.astNode != nil, "unconverted node")
+    printAsCanonical(
+      .init(node.astNode!, globalOptions: nil),
+      delimiters: true)
   }
 
-  mutating func printAsPattern(_ ast: AST.Node) {
-    if patternBackoff(ast) {
-      printAsCanonical(.init(ast, globalOptions: nil), delimiters: true)
+  mutating func printAsPattern(_ ast: AST) {
+    // TODO: Handle global options...
+    let node = ast.root.dslTreeNode
+    printAsPattern(convertedFromAST: node)
+  }
+
+  // FIXME: Use of back-offs like height and depth
+  // imply that this DSLTree node has a corresponding
+  // AST. That's not always true, and it would be nice
+  // to have a non-backing-off pretty-printer that this
+  // can defer to.
+  private mutating func printAsPattern(
+    convertedFromAST node: DSLTree.Node
+  ) {
+    if patternBackoff(node) {
+      printBackoff(node)
       return
     }
 
-    switch ast {
+    switch node {
+
     case let .alternation(a):
       printBlock("Alternation") { printer in
-        a.children.forEach { printer.printAsPattern($0) }
+        a.forEach {
+          printer.printAsPattern(convertedFromAST: $0)
+        }
       }
 
     case let .concatenation(c):
-      // Coalesce adjacent children who can produce a
-      // string literal representation
-      func coalesce(
-        _ idx: inout Array<AST>.Index
-      ) -> String? {
-        let col = c.children
-        var result = ""
-        while idx < col.endIndex {
-          let atom: AST.Atom? = col[idx].as()
-          guard let str = atom?.literalStringValue else {
-            break
-          }
-          result += str
-          col.formIndex(after: &idx)
-        }
-        return result.isEmpty ? nil : result._quoted
-      }
-
-      // No need to nest single children concatenations
-      if c.children.count == 1 {
-        printAsPattern(c.children.first!)
-        return
-      }
-
-      // Check for a single child post-coalescing
-      var idx = c.children.startIndex
-      if let s = coalesce(&idx), idx == c.children.endIndex {
-        print(s)
-        return
-      }
-
       printBlock("Concatenation") { printer in
-        var curIdx = c.children.startIndex
-        while curIdx < c.children.endIndex {
-          if let str = coalesce(&curIdx) {
-            printer.print(str)
-          } else {
-            printer.printAsPattern(c.children[curIdx])
-            c.children.formIndex(after: &curIdx)
-          }
+        c.forEach {
+          printer.printAsPattern(convertedFromAST: $0)
         }
       }
 
-    case let .group(g):
-      let kind = g.kind.value._patternBase
+    case let .group(kind, child):
+      let kind = kind._patternBase
       printBlock("Group(\(kind))") { printer in
-        printer.printAsPattern(g.child)
+        printer.printAsPattern(convertedFromAST: child)
       }
 
-    case let .conditional(c):
-      print("/*TODO: conditional \(c)*/")
+    case .conditional:
+      print("/* TODO: conditional */")
 
-    case let .quantification(q):
-      let amount = q.amount.value._patternBase
-      let kind = q.kind.value._patternBase
+    case let .quantification(amount, kind, child):
+      let amount = amount._patternBase
+      let kind = kind._patternBase
       printBlock("\(amount)(\(kind))") { printer in
-        printer.printAsPattern(q.child)
+        printer.printAsPattern(convertedFromAST: child)
       }
-
-    case let .quote(q):
-      // FIXME: Count number of `#` in literal...
-      print("#\"\(q.literal)\"#")
-
-    case let .trivia(t):
-      // TODO: We might want to output comments...
-      _ = t
-      return
 
     case let .atom(a):
-      printAsPattern(a)
+      switch a {
+      case .any:
+        print(".any")
+
+      case let .char(c):
+        print(String(c)._quoted)
+
+      case let .scalar(s):
+        let hex = String(s.value, radix: 16, uppercase: true)
+        print("\\u{\(hex)}"._quoted)
+
+      case let .unconverted(a):
+        // TODO: is this always right?
+        // TODO: Convert built-in character classes
+        print(a._patternBase)
+
+      case .assertion:
+        print("/* TOOD: assertions */")
+      case .backreference:
+        print("/* TOOD: backreferences */")
+      }
+
+    case .trivia:
+      // What should we do? Maybe keep comments, etc?
+      print("")
+
+    case .empty:
+      print("")
+
+    case let .stringLiteral(v):
+      print(v._quoted)
+
+    case .regexLiteral:
+      printBackoff(node)
+
+    case let .convertedRegexLiteral(n, _):
+      // FIXME: This recursion coordinates with back-off
+      // check above, so it shoud work out. Need a
+      // cleaner way to do this. This means the argument
+      // label is a lie.
+      printAsPattern(convertedFromAST: n)
 
     case let .customCharacterClass(ccc):
       printAsPattern(ccc)
 
-    case let .absentFunction(abs):
-      print("/*TODO: absent function \(abs)*/")
-
-    case .empty: print("")
     case .groupTransform:
-      print("// FIXME: get group transform out of here!")
+      print("/* TODO: group transforms */")
+    case .consumer:
+      print("/* TODO: consumers */")
+    case .consumerValidator:
+      print("/* TODO: consumer validators */")
+    case .characterPredicate:
+      print("/* TODO: character predicates */")
+
+    case .absentFunction:
+      print("/* TODO: absent function */")
     }
   }
 
-  mutating func printAsPattern(_ a: AST.Atom) {
-    if let s = a.literalStringValue {
-      print(s._quoted)
-    } else {
-      print(a._patternBase)
-    }
-  }
-
-  mutating func printAsPattern(_ ccc: AST.CustomCharacterClass) {
+  // TODO: Some way to integrate this with conversion...
+  mutating func printAsPattern(
+    _ ccc: DSLTree.CustomCharacterClass
+  ) {
     let inv = ccc.isInverted ? "inverted: true" : ""
     printBlock("CharacterClass(\(inv))") { printer in
       ccc.members.forEach { printer.printAsPattern($0) }
     }
   }
 
-  mutating func printAsPattern(_ member: AST.CustomCharacterClass.Member) {
+  // TODO: Some way to integrate this with conversion...
+  mutating func printAsPattern(
+    _ member: DSLTree.CustomCharacterClass.Member
+  ) {
     switch member {
-    case .custom(let ccc):
+    case let .custom(ccc):
       printAsPattern(ccc)
-    case .range(let r):
-      if let lhs = r.lhs.literalStringValue,
-         let rhs = r.rhs.literalStringValue {
+    case let .range(lhs, rhs):
+      if case let .char(lhs) = lhs,
+         case let .char(rhs) = rhs {
         indent()
-        output(lhs._quoted)
+        output(String(lhs)._quoted)
         output("...")
-        output(rhs._quoted)
+        output(String(rhs)._quoted)
         terminateLine()
       } else {
-        print("// TODO: Range \(r.lhs) to \(r.rhs)")
+        print("// TODO: Range \(lhs) to \(rhs)")
       }
-    case .atom(let a):
-      if let s = a.literalStringValue {
-        print(s._quoted)
+    case let .atom(a):
+      if case let .char(c) = a {
+        print(String(c)._quoted)
       } else {
-        print(a._patternBase)
+        print(" // TODO: Atom \(a) ")
       }
     case .quote(let q):
       print("// TODO: quote \(q.literal._quoted) in custom character classes (should we split it?)")
     case .trivia(let t):
       // TODO: We might want to output comments...
       _ = t
-    case .setOperation:
+case .symmetricDifference, .intersection, .subtraction:
       print("// TODO: Set operation: \(member)")
     }
   }
@@ -195,6 +214,7 @@ extension String {
 }
 
 extension AST.Atom.AssertionKind {
+  // TODO: Some way to integrate this with conversion...
   var _patternBase: String {
     switch self {
     case .startOfSubject:    return "Anchor(.startOfSubject)"
@@ -217,11 +237,13 @@ extension AST.Atom.AssertionKind {
 }
 
 extension AST.Atom.CharacterProperty {
+  // TODO: Some way to integrate this with conversion...
   var _patternBase: String {
     "Property(\(kind._patternBase)\(isInverted ? ", inverted: true" : ""))"
   }
 }
 extension AST.Atom.CharacterProperty.Kind {
+  // TODO: Some way to integrate this with conversion...
   var _patternBase: String {
     "/* TODO: character properties */"
   }
@@ -234,6 +256,8 @@ extension AST.Atom {
   ///
   /// TODO: We want to coalesce adjacent atoms, likely in
   /// caller, but we might want to be parameterized at that point.
+  ///
+  /// TODO: Some way to integrate this with conversion...
   var _patternBase: String {
     if let anchor = self.assertionKind {
       return anchor._patternBase
@@ -325,6 +349,9 @@ extension AST.Group.Kind {
       return "/* TODO: atomicScriptRun */"
     case .changeMatchingOptions:
       return "/* TODO: changeMatchingOptions */"
+
+    @unknown default:
+      fatalError()
     }
   }
 }
@@ -350,19 +377,5 @@ extension AST.Quantification.Kind {
     case .reluctant: return ".reluctant"
     case .possessive: return ".possessive"
     }
-  }
-}
-
-extension AST.Node {
-  var height: Int {
-    // FIXME: Is this right for custom char classes?
-    // How do we count set operations?
-    guard let children = self.children else {
-      return 1
-    }
-    guard let max = children.lazy.map(\.height).max() else {
-      return 1
-    }
-    return 1 + max
   }
 }
