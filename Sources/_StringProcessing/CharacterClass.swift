@@ -344,8 +344,11 @@ extension AST.Atom {
       return nil
       
     case .any:
-      // 'any' is handled by Compiler.emitAny(), not `CharacterClass`
-      return nil
+      // 'any' is handled by Compiler.emitAny(), not `CharacterClass`, to
+      // provide lower level instructions than the CharacterClass-generated
+      // consumer closure
+      // TODO: throw an error instead of trapping here
+      fatalError(".any is handled in Compiler.emitAny()")
 
     default: return nil
 
