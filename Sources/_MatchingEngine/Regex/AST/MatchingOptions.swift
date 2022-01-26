@@ -12,7 +12,7 @@
 extension AST {
   /// An option written in source that changes matching semantics.
   public struct MatchingOption: Hashable {
-    public enum Kind: Int {
+    public enum Kind {
       // PCRE options
       case caseInsensitive          // i
       case allowDuplicateGroupNames // J

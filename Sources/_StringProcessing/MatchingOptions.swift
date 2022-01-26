@@ -14,81 +14,6 @@ import _MatchingEngine
 /// A type that represents the current state of regex matching options, with
 /// stack-based scoping.
 struct MatchingOptions {
-  /// A set of matching options. 
-  fileprivate struct Representation: OptionSet, RawRepresentable {
-    var rawValue: UInt32
-
-    // Text segmentation options
-    static var textSegmentGraphemeMode: Self { .init(.textSegmentGraphemeMode) }
-    static var textSegmentWordMode: Self { .init(.textSegmentWordMode) }
-    
-    /// Options that comprise the mutually exclusive test segmentation group.
-    static var textSegmentOptions: Self {
-      [.textSegmentGraphemeMode, .textSegmentWordMode]
-    }
-
-    // Semantic matching level options
-    static var graphemeClusterSemantics: Self { .init(.graphemeClusterSemantics) }
-    static var unicodeScalarSemantics: Self { .init(.unicodeScalarSemantics) }
-    static var byteSemantics: Self { .init(.byteSemantics) }
-
-    /// Options that comprise the mutually exclusive semantic matching level
-    /// group.
-    static var semanticMatchingLevels: Self {
-      [.graphemeClusterSemantics, .unicodeScalarSemantics, .byteSemantics]
-    }
-    
-    // Extended whitespace literal options
-    static var extended: Self { .init(.extended) }
-    static var extraExtended: Self { .init(.extraExtended) }
-
-    /// Options that affect whitespace in literals
-    static var literalWhitespaceOptions: Self {
-      [.extended, .extraExtended]
-    }
-    
-    /// The default set of options.
-    static var `default`: Self {
-      [.graphemeClusterSemantics, .textSegmentGraphemeMode]
-    }
-
-    /// Tests to see if the option denoted by `kind` is a member of this set.
-    func contains(_ kind: AST.MatchingOption.Kind) -> Bool {
-      self.rawValue & (1 << kind.rawValue) != 0
-    }
-    
-    /// Applies the changes described by `sequence` to this set of options.
-    mutating func apply(_ sequence: AST.MatchingOptionSequence) {
-      if sequence.caretLoc != nil {
-        self = .default
-      }
-      
-      for opt in sequence.adding {
-        // If opt is in one of the mutually exclusive groups, clear out the
-        // group before inserting.
-        if Self.semanticMatchingLevels.contains(opt.kind) {
-          remove(.semanticMatchingLevels)
-        }
-        if Self.textSegmentOptions.contains(opt.kind) {
-          remove(.textSegmentOptions)
-        }
-        if Self.literalWhitespaceOptions.contains(opt.kind) {
-          remove(.literalWhitespaceOptions)
-        }
-        
-        insert(.init(opt.kind))
-      }
-      for opt in sequence.removing {
-        remove(.init(opt.kind))
-        
-        // Removing either extended whitespace option removes both
-        if Self.literalWhitespaceOptions.contains(opt.kind) {
-          remove(.literalWhitespaceOptions)
-        }
-      }
-    }
-  }
-
   fileprivate var stack: [Representation]
   
   fileprivate func _invariantCheck() {
@@ -108,16 +33,20 @@ extension MatchingOptions {
     _invariantCheck()
   }
 
+  /// Starts a new scope with the current options.
   mutating func beginScope() {
     stack.append(stack.last!)
     _invariantCheck()
   }
   
+  /// Ends the current scope.
   mutating func endScope() {
     _ = stack.removeLast()
     _invariantCheck()
   }
 
+  /// Updates the options in the current scope with the changes described by
+  /// `sequence`.
   mutating func apply(_ sequence: AST.MatchingOptionSequence) {
     stack[stack.count - 1].apply(sequence)
     _invariantCheck()
@@ -158,8 +87,163 @@ extension MatchingOptions {
   }
 }
 
+extension MatchingOptions {
+  /// An option that changes the behavior of a regular expression.
+  fileprivate enum Option: Int {
+    // PCRE options
+    case caseInsensitive
+    case allowDuplicateGroupNames
+    case multiline
+    case noAutoCapture
+    case singleLine
+    case reluctantByDefault
+
+    // ICU options
+    case unicodeWordBoundaries
+
+    // NSRegularExpression compatibility options
+    // Not available via regex literal flags
+    case transparentBounds
+    case withoutAnchoringBounds
+
+    // Oniguruma options
+    case asciiOnlyDigit
+    case asciiOnlyPOSIXProps
+    case asciiOnlySpace
+    case asciiOnlyWord
+
+    // Oniguruma text segment options (these are mutually exclusive and cannot
+    // be unset, only flipped between)
+    case textSegmentGraphemeMode
+    case textSegmentWordMode
+    
+    // Swift semantic matching level
+    case graphemeClusterSemantics
+    case unicodeScalarSemantics
+    case byteSemantics
+    
+    init?(_ astKind: AST.MatchingOption.Kind) {
+      switch astKind {
+      case .caseInsensitive:
+        self = .caseInsensitive
+      case .allowDuplicateGroupNames:
+        self = .allowDuplicateGroupNames
+      case .multiline:
+        self = .multiline
+      case .noAutoCapture:
+        self = .noAutoCapture
+      case .singleLine:
+        self = .singleLine
+      case .reluctantByDefault:
+        self = .reluctantByDefault
+      case .unicodeWordBoundaries:
+        self = .unicodeWordBoundaries
+      case .asciiOnlyDigit:
+        self = .asciiOnlyDigit
+      case .asciiOnlyPOSIXProps:
+        self = .asciiOnlyPOSIXProps
+      case .asciiOnlySpace:
+        self = .asciiOnlySpace
+      case .asciiOnlyWord:
+        self = .asciiOnlyWord
+      case .textSegmentGraphemeMode:
+        self = .textSegmentGraphemeMode
+      case .textSegmentWordMode:
+        self = .textSegmentWordMode
+      case .graphemeClusterSemantics:
+        self = .graphemeClusterSemantics
+      case .unicodeScalarSemantics:
+        self = .unicodeScalarSemantics
+      case .byteSemantics:
+        self = .byteSemantics
+        
+      // Whitespace options are only relevant during parsing, not compilation.
+      case .extended, .extraExtended:
+        return nil
+      @unknown default:
+        // Ignore unknown 
+        return nil
+      }
+    }
+    
+    fileprivate var representation: Representation {
+      return .init(self)
+    }
+  }
+}
+
+extension MatchingOptions {
+  /// A set of matching options.
+  fileprivate struct Representation: OptionSet, RawRepresentable {
+    var rawValue: UInt32
+
+    /// Returns `true` if the option denoted by `kind` is a member of this set.
+    func contains(_ kind: Option) -> Bool {
+      contains(.init(kind))
+    }
+    
+    /// Applies the changes described by `sequence` to this set of options.
+    mutating func apply(_ sequence: AST.MatchingOptionSequence) {
+      // Replace entirely if the sequence includes a caret, e.g. `(?^is)`.
+      if sequence.caretLoc != nil {
+        self = .default
+      }
+      
+      for opt in sequence.adding {
+        guard let opt = Option(opt.kind)?.representation else {
+          continue
+        }
+        
+        // If opt is in one of the mutually exclusive groups, clear out the
+        // group before inserting.
+        if Self.semanticMatchingLevels.contains(opt) {
+          remove(.semanticMatchingLevels)
+        }
+        if Self.textSegmentOptions.contains(opt) {
+          remove(.textSegmentOptions)
+        }
+
+        insert(opt)
+      }
+      
+      for opt in sequence.removing {
+        guard let opt = Option(opt.kind)?.representation else {
+          continue
+        }
+
+        remove(opt)
+      }
+    }
+  }
+}
+
 extension MatchingOptions.Representation {
-  fileprivate init(_ kind: AST.MatchingOption.Kind) {
+  fileprivate init(_ kind: MatchingOptions.Option) {
     self.rawValue = 1 << kind.rawValue
+  }
+  
+  // Text segmentation options
+  static var textSegmentGraphemeMode: Self { .init(.textSegmentGraphemeMode) }
+  static var textSegmentWordMode: Self { .init(.textSegmentWordMode) }
+  
+  /// Options that comprise the mutually exclusive test segmentation group.
+  static var textSegmentOptions: Self {
+    [.textSegmentGraphemeMode, .textSegmentWordMode]
+  }
+
+  // Semantic matching level options
+  static var graphemeClusterSemantics: Self { .init(.graphemeClusterSemantics) }
+  static var unicodeScalarSemantics: Self { .init(.unicodeScalarSemantics) }
+  static var byteSemantics: Self { .init(.byteSemantics) }
+
+  /// Options that comprise the mutually exclusive semantic matching level
+  /// group.
+  static var semanticMatchingLevels: Self {
+    [.graphemeClusterSemantics, .unicodeScalarSemantics, .byteSemantics]
+  }
+    
+  /// The default set of options.
+  static var `default`: Self {
+    [.graphemeClusterSemantics, .textSegmentGraphemeMode]
   }
 }
