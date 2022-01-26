@@ -58,6 +58,12 @@ extension _ASTPrintable {
 
 extension AST: _ASTPrintable {
   public var _dumpBase: String {
+    root._dumpBase
+  }
+}
+
+extension AST.Node: _ASTPrintable {
+  public var _dumpBase: String {
     _associatedValue._dumpBase
   }
 }

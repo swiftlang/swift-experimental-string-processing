@@ -9,47 +9,64 @@
 //
 //===----------------------------------------------------------------------===//
 
-/// A regex abstract syntax tree
-@frozen
-public indirect enum AST:
-  Hashable/*, _ASTPrintable ASTValue, ASTAction*/
-{
-  /// ... | ... | ...
-  case alternation(Alternation)
-
-  /// ... ...
-  case concatenation(Concatenation)
-
-  /// (...)
-  case group(Group)
-
-  /// (?(cond) true-branch | false-branch)
-  case conditional(Conditional)
-
-  case quantification(Quantification)
-
-  /// \Q...\E
-  case quote(Quote)
-
-  /// Comments, non-semantic whitespace, etc
-  case trivia(Trivia)
-
-  case atom(Atom)
-
-  case customCharacterClass(CustomCharacterClass)
-
-  case absentFunction(AbsentFunction)
-
-  case empty(Empty)
-
-  // FIXME: Move off the regex literal AST
-  case groupTransform(
-    Group, transform: CaptureTransform)
+/// A regex abstract syntax tree. This is a top-level type that stores the root
+/// node.
+public struct AST: Hashable {
+  public var root: AST.Node
+  public init(_ root: AST.Node) {
+    self.root = root
+  }
 }
 
-// TODO: Do we want something that holds the AST and stored global options?
+extension AST {
+  /// Whether this AST tree has nested somewhere inside it a capture.
+  public var hasCapture: Bool { root.hasCapture }
+
+  /// The capture structure of this AST tree.
+  public var captureStructure: CaptureStructure { root.captureStructure }
+}
 
 extension AST {
+  /// A node in the regex AST.
+  @frozen
+  public indirect enum Node:
+    Hashable/*, _ASTPrintable ASTValue, ASTAction*/
+  {
+    /// ... | ... | ...
+    case alternation(Alternation)
+
+    /// ... ...
+    case concatenation(Concatenation)
+
+    /// (...)
+    case group(Group)
+
+    /// (?(cond) true-branch | false-branch)
+    case conditional(Conditional)
+
+    case quantification(Quantification)
+
+    /// \Q...\E
+    case quote(Quote)
+
+    /// Comments, non-semantic whitespace, etc
+    case trivia(Trivia)
+
+    case atom(Atom)
+
+    case customCharacterClass(CustomCharacterClass)
+
+    case absentFunction(AbsentFunction)
+
+    case empty(Empty)
+
+    // FIXME: Move off the regex literal AST
+    case groupTransform(
+      Group, transform: CaptureTransform)
+  }
+}
+
+extension AST.Node {
   // :-(
   //
   // Existential-based programming is highly prone to silent
