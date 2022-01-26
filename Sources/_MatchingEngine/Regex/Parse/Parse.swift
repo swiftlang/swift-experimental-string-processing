@@ -114,12 +114,29 @@ extension Parser {
 }
 
 extension Parser {
-  /// Parse a regular expression
+  /// Parse a top-level regular expression. Do not use for recursive calls, use
+  /// `parseNode()` instead.
   ///
-  ///     Regex        -> '' | Alternation
-  ///     Alternation  -> Concatenation ('|' Concatenation)*
+  ///     Regex -> RegexNode
   ///
   mutating func parse() throws -> AST {
+    let ast = try parseNode()
+    guard source.isEmpty else {
+      if let loc = source.tryEatWithLoc(")") {
+        throw Source.LocatedError(ParseError.unbalancedEndOfGroup, loc)
+      }
+      fatalError("Unhandled termination condition")
+    }
+    return ast
+  }
+
+  /// Parse a regular expression node. This should be used instead of `parse()`
+  /// for recursive calls.
+  ///
+  ///     RegexNode    -> '' | Alternation
+  ///     Alternation  -> Concatenation ('|' Concatenation)*
+  ///
+  mutating func parseNode() throws -> AST {
     let _start = source.currentPosition
 
     if source.isEmpty { return .empty(.init(loc(_start))) }
@@ -203,7 +220,7 @@ extension Parser {
   mutating func parseConditionalBranches(
     start: Source.Position, _ cond: AST.Conditional.Condition
   ) throws -> AST {
-    let child = try parse()
+    let child = try parseNode()
     let trueBranch: AST, falseBranch: AST, pipe: SourceLocation?
     switch child {
     case .alternation(let a):
@@ -237,7 +254,7 @@ extension Parser {
   ) throws -> AST.Group {
     context.recordGroup(kind.value)
 
-    let child = try parse()
+    let child = try parseNode()
     // An implicit scoped group has already consumed its closing paren.
     if !kind.value.hasImplicitScope {
       try source.expect(")")

@@ -1312,9 +1312,12 @@ extension RegexTests {
   }
 
   func testParseErrors() {
-    // MARK: Closing delimiters.
+    // MARK: Unbalanced delimiters.
 
     diagnosticTest("(", .expected(")"))
+    diagnosticTest(")", .unbalancedEndOfGroup)
+    diagnosticTest(")))", .unbalancedEndOfGroup)
+    diagnosticTest("())()", .unbalancedEndOfGroup)
 
     diagnosticTest(#"\u{5"#, .expected("}"))
     diagnosticTest(#"\x{5"#, .expected("}"))

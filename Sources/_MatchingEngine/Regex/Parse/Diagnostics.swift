@@ -55,9 +55,11 @@ enum ParseError: Error, Hashable {
   case emptyProperty
 
   case expectedGroupSpecifier
+  case unbalancedEndOfGroup
   case expectedGroupName
   case groupNameMustBeAlphaNumeric
   case groupNameCannotStartWithNumber
+
   case cannotRemoveTextSegmentOptions
 }
 
@@ -116,6 +118,8 @@ extension ParseError: CustomStringConvertible {
       return "empty property"
     case .expectedGroupSpecifier:
       return "expected group specifier"
+    case .unbalancedEndOfGroup:
+      return "closing ')' does not balance any groups openings"
     case .expectedGroupName:
       return "expected group name"
     case .groupNameMustBeAlphaNumeric:
