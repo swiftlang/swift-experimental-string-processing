@@ -87,6 +87,9 @@ extension PrettyPrinter {
     case let .customCharacterClass(ccc):
       outputAsCanonical(ccc)
 
+    case let .absentFunction(abs):
+      outputAsCanonical(abs)
+
     case .empty:
       output("")
 
@@ -125,6 +128,25 @@ extension PrettyPrinter {
 
   mutating func outputAsCanonical(_ condition: AST.Conditional.Condition) {
     output("(/*TODO: conditional \(condition) */)")
+  }
+
+  mutating func outputAsCanonical(_ abs: AST.AbsentFunction) {
+    output("(?~")
+    switch abs.kind {
+    case .repeater(let a):
+      outputAsCanonical(a)
+    case .expression(let a, _, let child):
+      output("|")
+      outputAsCanonical(a)
+      output("|")
+      outputAsCanonical(child)
+    case .stopper(let a):
+      output("|")
+      outputAsCanonical(a)
+    case .clearer:
+      output("|")
+    }
+    output(")")
   }
 }
 

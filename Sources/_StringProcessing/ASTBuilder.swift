@@ -179,6 +179,23 @@ func pcreCallout(_ arg: AST.Atom.Callout.PCRE.Argument) -> AST {
   atom(.callout(.pcre(.init(.init(faking: arg)))))
 }
 
+func absentRepeater(_ child: AST) -> AST {
+  .absentFunction(.init(.repeater(child), start: .fake, location: .fake))
+}
+func absentExpression(_ absentee: AST, _ child: AST) -> AST {
+  .absentFunction(.init(
+    .expression(absentee: absentee, pipe: .fake, expr: child),
+    start: .fake, location: .fake
+  ))
+}
+func absentStopper(_ absentee: AST) -> AST {
+  .absentFunction(.init(.stopper(absentee), start: .fake, location: .fake))
+
+}
+func absentRangeClear() -> AST {
+  .absentFunction(.init(.clearer, start: .fake, location: .fake))
+}
+
 func onigurumaNamedCallout(
   _ name: String, tag: String? = nil, args: String...
 ) -> AST {

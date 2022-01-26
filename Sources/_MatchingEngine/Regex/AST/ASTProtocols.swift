@@ -40,3 +40,12 @@ extension AST.Group: _ASTParent {
 extension AST.Quantification: _ASTParent {
   var children: [AST] { [child] }
 }
+extension AST.AbsentFunction: _ASTParent {
+  var children: [AST] {
+    switch kind {
+    case .repeater(let a), .stopper(let a): return [a]
+    case .expression(let a, _, let c):      return [a, c]
+    case .clearer:                          return []
+    }
+  }
+}

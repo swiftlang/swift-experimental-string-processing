@@ -93,6 +93,9 @@ class Compiler {
     case .trivia, .empty:
       break
 
+    case .absentFunction:
+      throw unsupported(node.renderAsCanonical())
+
     case .group(let g):
       if let lookaround = g.lookaroundKind {
         try emitLookaround(lookaround, g.child)

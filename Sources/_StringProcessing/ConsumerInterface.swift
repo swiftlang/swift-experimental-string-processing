@@ -52,7 +52,7 @@ extension AST {
       return try ccc.generateConsumer(opts)
     case .alternation, .conditional, .concatenation, .group,
         .quantification, .quote, .trivia, .empty,
-        .groupTransform: return nil
+        .groupTransform, .absentFunction: return nil
     }
   }
 }

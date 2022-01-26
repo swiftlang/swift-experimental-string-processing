@@ -967,6 +967,19 @@ extension Source {
     }
   }
 
+  /// Try to consume the start of an absent function.
+  ///
+  ///     AbsentFunctionStart -> '(?~' '|'?
+  ///
+  mutating func lexAbsentFunctionStart(
+  ) -> Located<AST.AbsentFunction.Start>? {
+    recordLoc { src in
+      if src.tryEat(sequence: "(?~|") { return .withPipe }
+      if src.tryEat(sequence: "(?~") { return .withoutPipe }
+      return nil
+    }
+  }
+
   mutating func lexCustomCCStart(
   ) throws -> Located<CustomCC.Start>? {
     recordLoc { src in

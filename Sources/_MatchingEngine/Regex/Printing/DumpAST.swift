@@ -314,3 +314,24 @@ extension AST.Group.BalancedCapture: _ASTPrintable {
    "\(name?.value ?? "")-\(priorName.value)"
   }
 }
+
+extension AST.AbsentFunction.Kind {
+  public var _dumpBase: String {
+    switch self {
+    case .repeater:
+      return "repeater"
+    case .expression:
+      return "expression"
+    case .stopper:
+      return "stopper"
+    case .clearer:
+      return "clearer"
+    }
+  }
+}
+
+extension AST.AbsentFunction {
+  public var _dumpBase: String {
+    "absent function \(kind._dumpBase)"
+  }
+}
