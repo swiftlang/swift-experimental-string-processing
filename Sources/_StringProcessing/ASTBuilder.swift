@@ -175,8 +175,29 @@ func groupCondition(
   .group(.init(.init(faking: kind), child, .fake))
 }
 
-func callout(_ arg: AST.Atom.Callout.Argument) -> AST {
-  atom(.callout(.init(.init(faking: arg))))
+func pcreCallout(_ arg: AST.Atom.Callout.PCRE.Argument) -> AST {
+  atom(.callout(.pcre(.init(.init(faking: arg)))))
+}
+
+func onigurumaNamedCallout(
+  _ name: String, tag: String? = nil, args: String...
+) -> AST {
+  atom(.callout(.onigurumaNamed(.init(
+    .init(faking: name),
+    tag: tag.map { .init(.fake, .init(faking: $0), .fake) },
+    args: args.isEmpty ? nil : .init(.fake, args.map { .init(faking: $0) }, .fake)
+  ))))
+}
+
+func onigurumaCalloutOfContents(
+  _ contents: String, tag: String? = nil,
+  direction: AST.Atom.Callout.OnigurumaOfContents.Direction = .inProgress
+) -> AST {
+  atom(.callout(.onigurumaOfContents(.init(
+    .fake, .init(faking: contents), .fake,
+    tag: tag.map { .init(.fake, .init(faking: $0), .fake) },
+    direction: .init(faking: direction)
+  ))))
 }
 
 func backtrackingDirective(

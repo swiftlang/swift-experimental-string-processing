@@ -144,7 +144,53 @@ extension AST.Atom {
 }
 
 extension AST.Atom.Callout: _ASTPrintable {
-  public var _dumpBase: String { "callout <\(arg.value)>" }
+  public var _dumpBase: String {
+    switch self {
+    case .pcre(let p):                  return "\(p)"
+    case .onigurumaNamed(let o):        return "\(o)"
+    case .onigurumaOfContents(let o):   return "\(o)"
+    }
+  }
+}
+
+extension AST.Atom.Callout.PCRE: _ASTPrintable {
+  public var _dumpBase: String {
+    "PCRE callout \(arg.value)"
+  }
+}
+
+extension AST.Atom.Callout.OnigurumaTag: _ASTPrintable {
+  public var _dumpBase: String { "[\(name.value)]" }
+}
+
+extension AST.Atom.Callout.OnigurumaNamed.ArgList: _ASTPrintable {
+  public var _dumpBase: String {
+    "{\(args.map { $0.value }.joined(separator: ","))}"
+  }
+}
+
+extension AST.Atom.Callout.OnigurumaNamed: _ASTPrintable {
+  public var _dumpBase: String {
+    var result = "named oniguruma callout \(name.value)"
+    if let tag = tag {
+      result += "\(tag)"
+    }
+    if let args = args {
+      result += "\(args)"
+    }
+    return result
+  }
+}
+
+extension AST.Atom.Callout.OnigurumaOfContents: _ASTPrintable {
+  public var _dumpBase: String {
+    var result = "oniguruma callout of contents {\(contents.value)}"
+    if let tag = tag {
+      result += "\(tag)"
+    }
+    result += " \(direction.value)"
+    return result
+  }
 }
 
 extension AST.Reference: _ASTPrintable {

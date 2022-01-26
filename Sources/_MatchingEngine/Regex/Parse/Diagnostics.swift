@@ -56,11 +56,24 @@ enum ParseError: Error, Hashable {
 
   case expectedGroupSpecifier
   case unbalancedEndOfGroup
-  case expectedGroupName
-  case groupNameMustBeAlphaNumeric
-  case groupNameCannotStartWithNumber
+
+  // Identifier diagnostics.
+  case expectedIdentifier(IdentifierKind)
+  case identifierMustBeAlphaNumeric(IdentifierKind)
+  case identifierCannotStartWithNumber(IdentifierKind)
 
   case cannotRemoveTextSegmentOptions
+  case expectedCalloutArgument
+}
+
+extension IdentifierKind {
+  fileprivate var diagDescription: String {
+    switch self {
+    case .groupName:            return "group name"
+    case .onigurumaCalloutName: return "callout name"
+    case .onigurumaCalloutTag:  return "callout tag"
+    }
+  }
 }
 
 extension ParseError: CustomStringConvertible {
@@ -120,14 +133,16 @@ extension ParseError: CustomStringConvertible {
       return "expected group specifier"
     case .unbalancedEndOfGroup:
       return "closing ')' does not balance any groups openings"
-    case .expectedGroupName:
-      return "expected group name"
-    case .groupNameMustBeAlphaNumeric:
-      return "group name must only contain alphanumeric characters"
-    case .groupNameCannotStartWithNumber:
-      return "group name must not start with number"
+    case .expectedIdentifier(let i):
+      return "expected \(i.diagDescription)"
+    case .identifierMustBeAlphaNumeric(let i):
+      return "\(i.diagDescription) must only contain alphanumeric characters"
+    case .identifierCannotStartWithNumber(let i):
+      return "\(i.diagDescription) must not start with number"
     case .cannotRemoveTextSegmentOptions:
       return "text segment mode cannot be unset, only changed"
+    case .expectedCalloutArgument:
+      return "expected argument to callout"
     }
   }
 }
