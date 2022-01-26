@@ -1139,14 +1139,39 @@ extension RegexTests {
 
     // MARK: Callouts
 
-    parseTest(#"(?C)"#, callout(.number(0)))
-    parseTest(#"(?C0)"#, callout(.number(0)))
-    parseTest(#"(?C20)"#, callout(.number(20)))
-    parseTest("(?C{abc})", callout(.string("abc")))
+    // PCRE callouts
+
+    parseTest(#"(?C)"#, pcreCallout(.number(0)))
+    parseTest(#"(?C0)"#, pcreCallout(.number(0)))
+    parseTest(#"(?C20)"#, pcreCallout(.number(20)))
+    parseTest("(?C{abc})", pcreCallout(.string("abc")))
 
     for delim in ["`", "'", "\"", "^", "%", "#", "$"] {
-      parseTest("(?C\(delim)hello\(delim))", callout(.string("hello")))
+      parseTest("(?C\(delim)hello\(delim))", pcreCallout(.string("hello")))
     }
+
+    // Oniguruma named callouts
+
+    parseTest("(*X)", onigurumaNamedCallout("X"))
+    parseTest("(*foo[t])", onigurumaNamedCallout("foo", tag: "t"))
+    parseTest("(*foo[a0]{b})", onigurumaNamedCallout("foo", tag: "a0", args: "b"))
+    parseTest("(*foo{b})", onigurumaNamedCallout("foo", args: "b"))
+    parseTest("(*foo[a]{a,b,c})", onigurumaNamedCallout("foo", tag: "a", args: "a", "b", "c"))
+    parseTest("(*foo{a,b,c})", onigurumaNamedCallout("foo", args: "a", "b", "c"))
+    parseTest("(*foo{%%$,!!,>>})", onigurumaNamedCallout("foo", args: "%%$", "!!", ">>"))
+    parseTest("(*foo{a, b, c})", onigurumaNamedCallout("foo", args: "a", " b", " c"))
+
+    // Oniguruma 'of contents' callouts
+
+    parseTest("(?{x})", onigurumaCalloutOfContents("x"))
+    parseTest("(?{{{x}}y}}})", onigurumaCalloutOfContents("x}}y"))
+    parseTest("(?{{{x}}})", onigurumaCalloutOfContents("x"))
+    parseTest("(?{x}[tag])", onigurumaCalloutOfContents("x", tag: "tag"))
+    parseTest("(?{x}[tag]<)", onigurumaCalloutOfContents("x", tag: "tag", direction: .inRetraction))
+    parseTest("(?{x}X)", onigurumaCalloutOfContents("x", direction: .both))
+    parseTest("(?{x}>)", onigurumaCalloutOfContents("x"))
+    parseTest("(?{\\x})", onigurumaCalloutOfContents("\\x"))
+    parseTest("(?{\\})", onigurumaCalloutOfContents("\\"))
 
     // MARK: Backtracking directives
 
@@ -1163,6 +1188,37 @@ extension RegexTests {
     parseTest("(*SKIP:SKIP)", backtrackingDirective(.skip, name: "SKIP"))
     parseTest("(*PRUNE)", backtrackingDirective(.prune))
     parseTest("(*THEN)", backtrackingDirective(.then))
+
+    // MARK: Oniguruma absent functions
+
+    parseTest("(?~)", absentRepeater(empty()))
+    parseTest("(?~abc)", absentRepeater(concat("a", "b", "c")))
+    parseTest("(?~a+)", absentRepeater(oneOrMore(.eager, "a")))
+    parseTest("(?~~)", absentRepeater("~"))
+    parseTest("(?~a|b|c)", absentRepeater(alt("a", "b", "c")))
+    parseTest("(?~(a))", absentRepeater(capture("a")), captures: .empty)
+    parseTest("(?~)*", zeroOrMore(.eager, absentRepeater(empty())))
+
+    parseTest("(?~|abc)", absentStopper(concat("a", "b", "c")))
+    parseTest("(?~|a+)", absentStopper(oneOrMore(.eager, "a")))
+    parseTest("(?~|~)", absentStopper("~"))
+    parseTest("(?~|(a))", absentStopper(capture("a")), captures: .empty)
+    parseTest("(?~|a){2}", exactly(.eager, 2, absentStopper("a")))
+
+    parseTest("(?~|a|b)", absentExpression("a", "b"))
+    parseTest("(?~|~|~)", absentExpression("~", "~"))
+    parseTest("(?~|(a)|(?:b))", absentExpression(capture("a"), nonCapture("b")),
+              captures: .empty)
+    parseTest("(?~|(a)|(?:(b)|c))", absentExpression(
+      capture("a"), nonCapture(alt(capture("b"), "c"))
+    ), captures: .optional(.atom()))
+    parseTest("(?~|a|b)?", zeroOrOne(.eager, absentExpression("a", "b")))
+
+    parseTest("(?~|)", absentRangeClear())
+
+    // TODO: It's not really clear what this means, but Oniguruma parses it...
+    // Maybe we should diagnose it?
+    parseTest("(?~|)+", oneOrMore(.eager, absentRangeClear()))
 
     // MARK: Parse with delimiters
 
@@ -1232,6 +1288,19 @@ extension RegexTests {
     parseNotEqualTest("(?C0)", "(?C1)")
     parseNotEqualTest("(?C0)", "(?C'hello')")
 
+    parseNotEqualTest("(*X)", "(*Y)")
+    parseNotEqualTest("(*X[a])", "(*X[b])")
+    parseNotEqualTest("(*X[a]{a})", "(*X[a]{b})")
+    parseNotEqualTest("(*X[a]{a})", "(*X[a])")
+    parseNotEqualTest("(*X{a})", "(*X[a]{a})")
+    parseNotEqualTest("(*X{a})", "(*X{a,b})")
+
+    parseNotEqualTest("(?{a})", "(?{b})")
+    parseNotEqualTest("(?{a}[a])", "(?{a}[b])")
+    parseNotEqualTest("(?{a})", "(?{a}[a])")
+    parseNotEqualTest("(?{a}X)", "(?{a})")
+    parseNotEqualTest("(?{a}<)", "(?{a}X)")
+
     parseNotEqualTest("(*ACCEPT)", "(*ACCEPT:a)")
     parseNotEqualTest("(*MARK:a)", "(*MARK:b)")
     parseNotEqualTest("(*:a)", "(*:b)")
@@ -1240,6 +1309,14 @@ extension RegexTests {
     parseNotEqualTest("(?<a-b>)", "(?<a-c>)")
     parseNotEqualTest("(?<c-b>)", "(?<a-b>)")
     parseNotEqualTest("(?<-b>)", "(?<a-b>)")
+
+    parseNotEqualTest("(?~|)", "(?~|a)")
+    parseNotEqualTest("(?~|a)", "(?~|b)")
+    parseNotEqualTest("(?~|a)", "(?~|a|)")
+    parseNotEqualTest("(?~|a|b)", "(?~|a|)")
+    parseNotEqualTest("(?~|a|b)", "(?~|a|c)")
+    parseNotEqualTest("(?~)", "(?~|)")
+    parseNotEqualTest("(?~a)", "(?~b)")
   }
 
   func testParseSourceLocations() throws {
@@ -1288,6 +1365,69 @@ extension RegexTests {
       $0.as(AST.Atom.self)!.as(AST.Reference.self)!.innerLoc
     })
 
+    // MARK: Callout
+
+    typealias Callout = AST.Atom.Callout
+
+    rangeTest(#"(?C0)"#, range(3 ..< 4), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.PCRE.self)!.arg.location
+    })
+    rangeTest(#"(?C)"#, range(3 ..< 3), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.PCRE.self)!.arg.location
+    })
+
+    rangeTest(#"(*abc[ta]{a,b})"#, range(2 ..< 5), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.OnigurumaNamed.self)!.name.location
+    })
+    rangeTest(#"(*abc[ta]{a,b})"#, range(5 ..< 6), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.OnigurumaNamed.self)!.tag!.leftBracket
+    })
+    rangeTest(#"(*abc[ta]{a,b})"#, range(8 ..< 9), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.OnigurumaNamed.self)!.tag!.rightBracket
+    })
+    rangeTest(#"(*abc[ta]{a,b})"#, range(9 ..< 10), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.OnigurumaNamed.self)!.args!.leftBrace
+    })
+    rangeTest(#"(*abc[ta]{a,b})"#, range(12 ..< 13), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.OnigurumaNamed.self)!.args!.args[1].location
+    })
+    rangeTest(#"(*abc[ta]{a,b})"#, range(13 ..< 14), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.OnigurumaNamed.self)!.args!.rightBrace
+    })
+
+    rangeTest(#"(?{{{abc}}}[t]X)"#, range(2 ..< 5), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.OnigurumaOfContents.self)!.openBraces
+    })
+    rangeTest(#"(?{{{abc}}}[t]X)"#, range(8 ..< 11), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.OnigurumaOfContents.self)!.closeBraces
+    })
+    rangeTest(#"(?{{{abc}}}[t]X)"#, range(11 ..< 12), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.OnigurumaOfContents.self)!.tag!.leftBracket
+    })
+    rangeTest(#"(?{{{abc}}}[t]X)"#, range(13 ..< 14), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.OnigurumaOfContents.self)!.tag!.rightBracket
+    })
+    rangeTest(#"(?{{{abc}}}[t]X)"#, range(14 ..< 15), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.OnigurumaOfContents.self)!.direction.location
+    })
+    rangeTest(#"(?{a})"#, range(5 ..< 5), at: {
+      $0.as(AST.Atom.self)!.as(Callout.self)!
+        .as(Callout.OnigurumaOfContents.self)!.direction.location
+    })
+
     // MARK: Conditionals
 
     rangeTest("(?(1))", entireRange)
@@ -1309,12 +1449,22 @@ extension RegexTests {
     rangeTest("(?(xxx))", range(2 ..< 7), at: {
       $0.as(AST.Conditional.self)!.condition.location
     })
+
+    // MARK: Absent functions
+
+    rangeTest("(?~a)", entireRange)
+    rangeTest("(?~|)", entireRange)
+    rangeTest("(?~|a)", entireRange)
+    rangeTest("(?~|a|b)", entireRange)
   }
 
   func testParseErrors() {
-    // MARK: Closing delimiters.
+    // MARK: Unbalanced delimiters.
 
     diagnosticTest("(", .expected(")"))
+    diagnosticTest(")", .unbalancedEndOfGroup)
+    diagnosticTest(")))", .unbalancedEndOfGroup)
+    diagnosticTest("())()", .unbalancedEndOfGroup)
 
     diagnosticTest(#"\u{5"#, .expected("}"))
     diagnosticTest(#"\x{5"#, .expected("}"))
@@ -1345,10 +1495,10 @@ extension RegexTests {
 
     diagnosticTest("(?C", .expected(")"))
 
-    diagnosticTest("(?<", .expectedGroupName)
+    diagnosticTest("(?<", .expectedIdentifier(.groupName))
     diagnosticTest("(?<a", .expected(">"))
-    diagnosticTest("(?<a-", .expectedGroupName)
-    diagnosticTest("(?<a--", .groupNameMustBeAlphaNumeric)
+    diagnosticTest("(?<a-", .expectedIdentifier(.groupName))
+    diagnosticTest("(?<a--", .identifierMustBeAlphaNumeric(.groupName))
     diagnosticTest("(?<a-b", .expected(">"))
     diagnosticTest("(?<a-b>", .expected(")"))
 
@@ -1360,16 +1510,15 @@ extension RegexTests {
     // MARK: Group specifiers
 
     diagnosticTest(#"(*"#, .unknownGroupKind("*"))
-    diagnosticTest("(*X)", .unknownGroupKind("*X"))
 
     diagnosticTest(#"(?k)"#, .unknownGroupKind("?k"))
     diagnosticTest(#"(?P#)"#, .invalidMatchingOption("#"))
 
-    diagnosticTest(#"(?<#>)"#, .groupNameMustBeAlphaNumeric)
-    diagnosticTest(#"(?'1A')"#, .groupNameCannotStartWithNumber)
+    diagnosticTest(#"(?<#>)"#, .identifierMustBeAlphaNumeric(.groupName))
+    diagnosticTest(#"(?'1A')"#, .identifierCannotStartWithNumber(.groupName))
 
-    diagnosticTest(#"(?'-')"#, .expectedGroupName)
-    diagnosticTest(#"(?'--')"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?'-')"#, .expectedIdentifier(.groupName))
+    diagnosticTest(#"(?'--')"#, .identifierMustBeAlphaNumeric(.groupName))
     diagnosticTest(#"(?'a-b-c')"#, .expected("'"))
 
     // MARK: Matching options
@@ -1381,22 +1530,22 @@ extension RegexTests {
 
     // MARK: References
 
-    diagnosticTest(#"\k''"#, .expectedGroupName)
-    diagnosticTest(#"(?&)"#, .expectedGroupName)
-    diagnosticTest(#"(?P>)"#, .expectedGroupName)
+    diagnosticTest(#"\k''"#, .expectedIdentifier(.groupName))
+    diagnosticTest(#"(?&)"#, .expectedIdentifier(.groupName))
+    diagnosticTest(#"(?P>)"#, .expectedIdentifier(.groupName))
 
     diagnosticTest(#"\g{0}"#, .cannotReferToWholePattern)
     diagnosticTest(#"(?(0))"#, .cannotReferToWholePattern)
 
-    diagnosticTest(#"(?&&)"#, .groupNameMustBeAlphaNumeric)
-    diagnosticTest(#"(?&-1)"#, .groupNameMustBeAlphaNumeric)
-    diagnosticTest(#"(?P>+1)"#, .groupNameMustBeAlphaNumeric)
-    diagnosticTest(#"(?P=+1)"#, .groupNameMustBeAlphaNumeric)
-    diagnosticTest(#"\k'#'"#, .groupNameMustBeAlphaNumeric)
-    diagnosticTest(#"(?&#)"#, .groupNameMustBeAlphaNumeric)
+    diagnosticTest(#"(?&&)"#, .identifierMustBeAlphaNumeric(.groupName))
+    diagnosticTest(#"(?&-1)"#, .identifierMustBeAlphaNumeric(.groupName))
+    diagnosticTest(#"(?P>+1)"#, .identifierMustBeAlphaNumeric(.groupName))
+    diagnosticTest(#"(?P=+1)"#, .identifierMustBeAlphaNumeric(.groupName))
+    diagnosticTest(#"\k'#'"#, .identifierMustBeAlphaNumeric(.groupName))
+    diagnosticTest(#"(?&#)"#, .identifierMustBeAlphaNumeric(.groupName))
 
-    diagnosticTest(#"(?P>1)"#, .groupNameCannotStartWithNumber)
-    diagnosticTest(#"\k{1}"#, .groupNameCannotStartWithNumber)
+    diagnosticTest(#"(?P>1)"#, .identifierCannotStartWithNumber(.groupName))
+    diagnosticTest(#"\k{1}"#, .identifierCannotStartWithNumber(.groupName))
 
     diagnosticTest(#"\g<1-1>"#, .expected(">"))
     diagnosticTest(#"\g{1-1}"#, .expected("}"))
@@ -1414,8 +1563,30 @@ extension RegexTests {
 
     // MARK: Callouts
 
+    // PCRE callouts
     diagnosticTest("(?C-1)", .unknownCalloutKind("(?C-1)"))
     diagnosticTest("(?C-1", .unknownCalloutKind("(?C-1)"))
+
+    // Oniguruma named callouts
+    diagnosticTest("(*bar[", .expectedIdentifier(.onigurumaCalloutTag))
+    diagnosticTest("(*bar[%", .identifierMustBeAlphaNumeric(.onigurumaCalloutTag))
+    diagnosticTest("(*bar{", .expectedCalloutArgument)
+    diagnosticTest("(*bar}", .expected(")"))
+    diagnosticTest("(*bar]", .expected(")"))
+
+    // Oniguruma 'of contents' callouts
+    diagnosticTest("(?{", .expected("}"))
+    diagnosticTest("(?{}", .expectedNonEmptyContents)
+    diagnosticTest("(?{x}", .expected(")"))
+    diagnosticTest("(?{x}}", .expected(")"))
+    diagnosticTest("(?{{x}}", .expected(")"))
+    diagnosticTest("(?{{x}", .expected("}"))
+    diagnosticTest("(?{x}[", .expectedIdentifier(.onigurumaCalloutTag))
+    diagnosticTest("(?{x}[%", .identifierMustBeAlphaNumeric(.onigurumaCalloutTag))
+    diagnosticTest("(?{x}[a]", .expected(")"))
+    diagnosticTest("(?{x}[a]K", .expected(")"))
+    diagnosticTest("(?{x}[a]X", .expected(")"))
+    diagnosticTest("(?{{x}y}", .expected("}"))
 
     // MARK: Backtracking directives
 
@@ -1428,5 +1599,12 @@ extension RegexTests {
     diagnosticTest("(*SKIP:a)*?", .notQuantifiable)
     diagnosticTest("(*F)+?", .notQuantifiable)
     diagnosticTest("(*:a){2}", .notQuantifiable)
+
+    // MARK: Oniguruma absent functions
+
+    diagnosticTest("(?~", .expected(")"))
+    diagnosticTest("(?~|", .expected(")"))
+    diagnosticTest("(?~|a|b|c)", .tooManyAbsentExpressionChildren(3))
+    diagnosticTest("(?~||||)", .tooManyAbsentExpressionChildren(4))
   }
 }

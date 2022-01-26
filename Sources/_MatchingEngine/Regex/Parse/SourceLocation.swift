@@ -27,6 +27,9 @@ extension Source {
     ) where R.Bound == Source.Position {
       self.init(r.relative(to: input.input))
     }
+    public init(from sub: Input.SubSequence) {
+      self.init(sub.startIndex ..< sub.endIndex)
+    }
 
     /// NOTE: This is a temporary measure to unblock DSL efforts and
     /// incremental source location tracking. This shouldn't be called from
@@ -36,6 +39,9 @@ extension Source {
     }
     public var isFake: Bool { self == Self.fake }
     public var isReal: Bool { !isFake }
+
+    /// Whether this location covers an empty range. This includes `isFake`.
+    public var isEmpty: Bool { start == end }
 
     /// Returns the smallest location that contains both this location and
     /// another.

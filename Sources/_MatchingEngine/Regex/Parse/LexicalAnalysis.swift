@@ -62,12 +62,14 @@ extension Source {
 
   /// Record source loc before processing and return
   /// or throw the value/error with source locations.
+  @discardableResult
   fileprivate mutating func recordLoc(
     _ f: (inout Self) throws -> ()
-  ) rethrows {
+  ) rethrows -> SourceLocation {
     let start = currentPosition
     do {
       try f(&self)
+      return SourceLocation(start..<currentPosition)
     } catch let e as Source.LocatedError<ParseError> {
       throw e
     } catch let e as ParseError {
@@ -83,8 +85,9 @@ extension Source {
   typealias Quant = AST.Quantification
 
   /// Throws an expected character error if not matched
-  mutating func expect(_ c: Character) throws {
-    _ = try recordLoc { src in
+  @discardableResult
+  mutating func expect(_ c: Character) throws -> SourceLocation {
+    try recordLoc { src in
       guard src.tryEat(c) else {
         throw ParseError.expected(String(c))
       }
@@ -180,6 +183,12 @@ enum RadixKind {
     case .hex:     return 16
     }
   }
+}
+
+enum IdentifierKind {
+  case groupName
+  case onigurumaCalloutName
+  case onigurumaCalloutTag
 }
 
 extension Source {
@@ -428,14 +437,16 @@ extension Source {
   /// delimiter. If `ignoreEscaped` is true, escaped characters will not be
   /// considered for the ending delimiter.
   private mutating func expectQuoted(
-    endingWith end: String, ignoreEscaped: Bool = false, eatEnding: Bool = true
+    endingWith endSingle: String, count: Int = 1, ignoreEscaped: Bool = false,
+    eatEnding: Bool = true
   ) throws -> Located<String> {
+    let end = String(repeating: endSingle, count: count)
     let result = try recordLoc { src -> String in
       try src.lexUntil { src in
         if src.starts(with: end) {
           return true
         }
-        try src.expectNonEmpty(.expected(end))
+        try src.expectNonEmpty(.expected(endSingle))
 
         // Ignore escapes if we're allowed to. lexUntil will consume the next
         // character.
@@ -659,19 +670,22 @@ extension Source {
     }
   }
 
-  /// Consume a group name.
-  private mutating func expectGroupName(
-    endingWith ending: String, eatEnding: Bool = true
+  /// Consume an identifier.
+  ///
+  ///     Identifier -> [\w--\d] \w*
+  ///
+  private mutating func expectIdentifier(
+    _ kind: IdentifierKind, endingWith ending: String, eatEnding: Bool = true
   ) throws -> Located<String> {
     let str = try recordLoc { src -> String in
       if src.isEmpty || src.tryEat(sequence: ending) {
-        throw ParseError.expectedGroupName
+        throw ParseError.expectedIdentifier(kind)
       }
       if src.peek()!.isNumber {
-        throw ParseError.groupNameCannotStartWithNumber
+        throw ParseError.identifierCannotStartWithNumber(kind)
       }
       guard let str = src.tryEatPrefix(\.isWordCharacter)?.string else {
-        throw ParseError.groupNameMustBeAlphaNumeric
+        throw ParseError.identifierMustBeAlphaNumeric(kind)
       }
       return str
     }
@@ -681,13 +695,22 @@ extension Source {
     return str
   }
 
+  /// Try to consume an identifier, returning `nil` if unsuccessful.
+  private mutating func lexIdentifier(
+    _ kind: IdentifierKind, endingWith end: String, eatEnding: Bool = true
+  ) -> Located<String>? {
+    tryEating { src in
+      try? src.expectIdentifier(kind, endingWith: end, eatEnding: eatEnding)
+    }
+  }
+
   /// Consume a named group field, producing either a named capture or balanced
   /// capture.
   ///
   ///     NamedGroup    -> 'P<' GroupNameBody '>'
   ///                    | '<' GroupNameBody '>'
   ///                    | "'" GroupNameBody "'"
-  ///     GroupNameBody -> \w+ | \w* '-' \w+
+  ///     GroupNameBody -> Identifier | Identifier? '-' Identifier
   ///
   private mutating func expectNamedGroup(
     endingWith ending: String
@@ -695,14 +718,16 @@ extension Source {
     func lexBalanced(_ lhs: Located<String>? = nil) throws -> AST.Group.Kind? {
       // If we have a '-', this is a .NET-style 'balanced group'.
       guard let dash = tryEatWithLoc("-") else { return nil }
-      let rhs = try expectGroupName(endingWith: ending)
+      let rhs = try expectIdentifier(.groupName, endingWith: ending)
       return .balancedCapture(.init(name: lhs, dash: dash, priorName: rhs))
     }
 
     // Lex a group name, trying to lex a '-rhs' for a balanced capture group
     // both before and after.
     if let b = try lexBalanced() { return b }
-    let name = try expectGroupName(endingWith: ending, eatEnding: false)
+    let name = try expectIdentifier(
+      .groupName, endingWith: ending, eatEnding: false
+    )
     if let b = try lexBalanced(name) { return b }
 
     try expect(sequence: ending)
@@ -942,6 +967,19 @@ extension Source {
     }
   }
 
+  /// Try to consume the start of an absent function.
+  ///
+  ///     AbsentFunctionStart -> '(?~' '|'?
+  ///
+  mutating func lexAbsentFunctionStart(
+  ) -> Located<AST.AbsentFunction.Start>? {
+    recordLoc { src in
+      if src.tryEat(sequence: "(?~|") { return .withPipe }
+      if src.tryEat(sequence: "(?~") { return .withoutPipe }
+      return nil
+    }
+  }
+
   mutating func lexCustomCCStart(
   ) throws -> Located<CustomCC.Start>? {
     recordLoc { src in
@@ -1105,7 +1143,8 @@ extension Source {
   ) throws -> AST.Reference {
     // Note we don't want to eat the ending as we may also want to parse a
     // recursion level.
-    let str = try expectGroupName(endingWith: end, eatEnding: false)
+    let str = try expectIdentifier(
+      .groupName, endingWith: end, eatEnding: false)
 
     // If we're allowed to, try parse a recursion level.
     let recLevel = allowRecursionLevel ? try lexRecursionLevel() : nil
@@ -1321,12 +1360,15 @@ extension Source {
       // The start of a reference '(?P=', '(?R', ...
       if src.canLexGroupLikeReference() { return true }
 
-      // The start of a callout.
+      // The start of a PCRE callout.
       if src.tryEat("C") { return true }
+
+      // The start of an Oniguruma 'of-contents' callout.
+      if src.tryEat("{") { return true }
 
       return false
     }
-    // The start of a backreference directive.
+    // The start of a backreference directive or Oniguruma named callout.
     if src.tryEat("*") { return true }
 
     return false
@@ -1393,22 +1435,22 @@ extension Source {
     }
   }
 
-  /// Try to consume a callout.
+  /// Try to consume a PCRE callout.
   ///
-  ///     Callout     -> '(?C' CalloutBody ')'
-  ///     CalloutBody -> '' | <Number>
-  ///                  | '`' <String> '`'
-  ///                  | "'" <String> "'"
-  ///                  | '"' <String> '"'
-  ///                  | '^' <String> '^'
-  ///                  | '%' <String> '%'
-  ///                  | '#' <String> '#'
-  ///                  | '$' <String> '$'
-  ///                  | '{' <String> '}'
+  ///     PCRECallout     -> '(?C' CalloutBody ')'
+  ///     PCRECalloutBody -> '' | <Number>
+  ///                      | '`' <String> '`'
+  ///                      | "'" <String> "'"
+  ///                      | '"' <String> '"'
+  ///                      | '^' <String> '^'
+  ///                      | '%' <String> '%'
+  ///                      | '#' <String> '#'
+  ///                      | '$' <String> '$'
+  ///                      | '{' <String> '}'
   ///
-  mutating func lexCallout() throws -> AST.Atom.Callout? {
+  mutating func lexPCRECallout() throws -> AST.Atom.Callout? {
     guard tryEat(sequence: "(?C") else { return nil }
-    let arg = try recordLoc { src -> AST.Atom.Callout.Argument in
+    let arg = try recordLoc { src -> AST.Atom.Callout.PCRE.Argument in
       // Parse '(?C' followed by a number.
       if let num = try src.lexNumber() {
         return .number(num.value)
@@ -1432,7 +1474,104 @@ extension Source {
       throw ParseError.unknownCalloutKind("(?C\(remaining))")
     }
     try expect(")")
-    return .init(arg)
+    return .pcre(.init(arg))
+  }
+
+  /// Consume a list of arguments for an Oniguruma callout.
+  ///
+  ///     OnigurumaCalloutArgList -> OnigurumaCalloutArg (',' OnigurumaCalloutArgList)*
+  ///     OnigurumaCalloutArg -> [^,}]+
+  ///
+  mutating func expectOnigurumaCalloutArgList(
+    leftBrace: SourceLocation
+  ) throws -> AST.Atom.Callout.OnigurumaNamed.ArgList {
+    var args: [Located<String>] = []
+    while true {
+      let arg = try recordLoc { src -> String in
+        // TODO: Warn about whitespace being included?
+        guard let arg = src.tryEatPrefix({ $0 != "," && $0 != "}" }) else {
+          throw ParseError.expectedCalloutArgument
+        }
+        return arg.string
+      }
+      args.append(arg)
+
+      if peek() == "}" { break }
+      try expect(",")
+    }
+    let rightBrace = try expect("}")
+    return .init(leftBrace, args,  rightBrace)
+  }
+
+  /// Try to consume an Oniguruma callout tag.
+  ///
+  ///     OnigurumaTag -> '[' Identifier ']'
+  ///
+  mutating func lexOnigurumaCalloutTag(
+  ) throws -> AST.Atom.Callout.OnigurumaTag? {
+    guard let leftBracket = tryEatWithLoc("[") else { return nil }
+    let name = try expectIdentifier(
+      .onigurumaCalloutTag, endingWith: "]", eatEnding: false
+    )
+    let rightBracket = try expect("]")
+    return .init(leftBracket, name, rightBracket)
+  }
+
+  /// Try to consume a named Oniguruma callout.
+  ///
+  ///     OnigurumaNamedCallout -> '(*' Identifier OnigurumaTag? Args? ')'
+  ///     Args                  -> '{' OnigurumaCalloutArgList '}'
+  ///
+  mutating func lexOnigurumaNamedCallout() throws -> AST.Atom.Callout? {
+    try tryEating { src in
+      guard src.tryEat(sequence: "(*") else { return nil }
+      guard let name = src.lexIdentifier(
+        .onigurumaCalloutName, endingWith: ")", eatEnding: false)
+      else { return nil }
+
+      let tag = try src.lexOnigurumaCalloutTag()
+
+      let args = try src.tryEatWithLoc("{").map {
+        try src.expectOnigurumaCalloutArgList(leftBrace: $0)
+      }
+      try src.expect(")")
+      return .onigurumaNamed(.init(name, tag: tag, args: args))
+    }
+  }
+
+  /// Try to consume an Oniguruma callout 'of contents'.
+  ///
+  ///     OnigurumaCalloutOfContents -> '(?' '{'+ Contents '}'+ OnigurumaTag? Direction? ')'
+  ///     Contents                   -> <String>
+  ///     Direction                  -> 'X' | '<' | '>'
+  ///
+  mutating func lexOnigurumaCalloutOfContents() throws -> AST.Atom.Callout? {
+    try tryEating { src in
+      guard src.tryEat(sequence: "(?"),
+            let openBraces = src.tryEatPrefix({ $0 == "{" })
+      else { return nil }
+
+      let contents = try src.expectQuoted(
+        endingWith: "}", count: openBraces.count)
+      let closeBraces = SourceLocation(
+        contents.location.end ..< src.currentPosition)
+
+      let tag = try src.lexOnigurumaCalloutTag()
+
+      typealias Direction = AST.Atom.Callout.OnigurumaOfContents.Direction
+      let direction = src.recordLoc { src -> Direction in
+        if src.tryEat(">") { return .inProgress }
+        if src.tryEat("<") { return .inRetraction }
+        if src.tryEat("X") { return .both }
+        // The default is in-progress.
+        return .inProgress
+      }
+      try src.expect(")")
+
+      let openBracesLoc = SourceLocation(from: openBraces)
+      return .onigurumaOfContents(.init(
+        openBracesLoc, contents, closeBraces, tag: tag, direction: direction))
+    }
   }
 
   /// Try to consume a backtracking directive.
@@ -1485,14 +1624,25 @@ extension Source {
         return ref.value
       }
 
-      // (?C)
-      if let callout = try src.lexCallout() {
-        return .callout(callout)
-      }
-
       // (*ACCEPT), (*FAIL), (*MARK), ...
       if let b = try src.lexBacktrackingDirective() {
         return .backtrackingDirective(b)
+      }
+
+      // (?C)
+      if let callout = try src.lexPCRECallout() {
+        return .callout(callout)
+      }
+
+      // Try to consume an Oniguruma named callout '(*name)', which should be
+      // done after backtracking directives and global options.
+      if let callout = try src.lexOnigurumaNamedCallout() {
+        return .callout(callout)
+      }
+
+      // (?{...})
+      if let callout = try src.lexOnigurumaCalloutOfContents() {
+        return .callout(callout)
       }
 
       // If we didn't produce an atom, consume up until a reasonable end-point

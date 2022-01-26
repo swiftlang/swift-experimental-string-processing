@@ -128,6 +128,9 @@ extension PrettyPrinter {
     case let .customCharacterClass(ccc):
       printAsPattern(ccc)
 
+    case let .absentFunction(abs):
+      print("/*TODO: absent function \(abs)*/")
+
     case .empty: print("")
     case .groupTransform:
       print("// FIXME: get group transform out of here!")
