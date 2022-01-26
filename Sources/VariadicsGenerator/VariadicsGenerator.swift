@@ -255,7 +255,7 @@ struct VariadicsGenerator: ParsableCommand {
     outputForEach(
       0..<arity, separator: ", ", lineTerminator: ""
     ) { i in
-      "x\(i).\(patternProtocolRequirementName).ast"
+      "x\(i).\(patternProtocolRequirementName).ast.root"
     }
     output("))\n")
     output("  }\n}\n\n")

@@ -14,13 +14,13 @@ extension AST {
     public let amount: Located<Amount>
     public let kind: Located<Kind>
 
-    public let child: AST
+    public let child: AST.Node
     public let location: SourceLocation
 
     public init(
       _ amount: Located<Amount>,
       _ kind: Located<Kind>,
-      _ child: AST,
+      _ child: AST.Node,
       _ r: SourceLocation
     ) {
       self.amount = amount

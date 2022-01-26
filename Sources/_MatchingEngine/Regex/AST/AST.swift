@@ -96,7 +96,7 @@ extension AST.Node {
   }
 
   /// If this node is a parent node, access its children
-  public var children: [AST]? {
+  public var children: [AST.Node]? {
     return (_associatedValue as? _ASTParent)?.children
   }
 
@@ -144,10 +144,10 @@ extension AST.Node {
 extension AST {
 
   public struct Alternation: Hashable, _ASTNode {
-    public let children: [AST]
+    public let children: [AST.Node]
     public let pipes: [SourceLocation]
 
-    public init(_ mems: [AST], pipes: [SourceLocation]) {
+    public init(_ mems: [AST.Node], pipes: [SourceLocation]) {
       // An alternation must have at least two branches (though the branches
       // may be empty AST nodes), and n - 1 pipes.
       precondition(mems.count >= 2)
@@ -163,10 +163,10 @@ extension AST {
   }
 
   public struct Concatenation: Hashable, _ASTNode {
-    public let children: [AST]
+    public let children: [AST.Node]
     public let location: SourceLocation
 
-    public init(_ mems: [AST], _ location: SourceLocation) {
+    public init(_ mems: [AST.Node], _ location: SourceLocation) {
       self.children = mems
       self.location = location
     }
@@ -218,16 +218,16 @@ extension AST {
     public enum Kind: Hashable {
       /// An absent repeater `(?~absent)`. This is equivalent to `(?~|absent|.*)`
       /// and therefore matches as long as the pattern `absent` is not matched.
-      case repeater(AST)
+      case repeater(AST.Node)
 
       /// An absent expression `(?~|absent|expr)`, which defines an `absent`
       /// pattern which must not be matched against while the pattern `expr` is
       /// matched.
-      case expression(absentee: AST, pipe: SourceLocation, expr: AST)
+      case expression(absentee: AST.Node, pipe: SourceLocation, expr: AST.Node)
 
       /// An absent stopper `(?~|absent)`, which prevents matching against
       /// `absent` until the end of the regex, or until it is cleared.
-      case stopper(AST)
+      case stopper(AST.Node)
 
       /// An absent clearer `(?~|)` which cancels the effect of an absent
       /// stopper.

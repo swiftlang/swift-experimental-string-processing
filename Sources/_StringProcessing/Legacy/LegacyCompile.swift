@@ -20,7 +20,7 @@ func compile(
     return .label(currentLabel)
   }
   var instructions = RECode.InstructionList()
-  func compileNode(_ ast: AST) throws {
+  func compileNode(_ ast: AST.Node) throws {
 
     if let cc = ast.characterClass {
       instructions.append(.characterClass(cc))
@@ -271,7 +271,7 @@ func compile(
     }
   }
 
-  try compileNode(ast)
+  try compileNode(ast.root)
   instructions.append(.accept)
 
   // TODO: Just remember them as we compile

@@ -67,7 +67,7 @@ public struct OneOrMore<Component: RegexProtocol>: RegexProtocolWithComponent {
 
   public init(component: Component) {
     self.regex = .init(ast:
-      oneOrMore(.eager, component.regex.ast)
+      oneOrMore(.eager, component.regex.ast.root)
     )
   }
 
@@ -93,7 +93,7 @@ public struct Repeat<
 
   public init(component: Component) {
     self.regex = .init(ast:
-      zeroOrMore(.eager, component.regex.ast))
+      zeroOrMore(.eager, component.regex.ast.root))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
@@ -116,7 +116,7 @@ public struct Optionally<Component: RegexProtocol>: RegexProtocolWithComponent {
 
   public init(component: Component) {
     self.regex = .init(ast:
-      zeroOrOne(.eager, component.regex.ast))
+      zeroOrOne(.eager, component.regex.ast.root))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
@@ -142,7 +142,7 @@ public struct Alternation<
 
   public init(_ first: Component1, _ second: Component2) {
     regex = .init(ast: alt(
-      first.regex.ast, second.regex.ast
+      first.regex.ast.root, second.regex.ast.root
     ))
   }
 
@@ -168,7 +168,7 @@ public struct CapturingGroup<Match: MatchProtocol>: RegexProtocol {
     _ component: Component
   ) {
     self.regex = .init(ast:
-      group(.capture, component.regex.ast)
+      group(.capture, component.regex.ast.root)
     )
   }
 
@@ -178,7 +178,7 @@ public struct CapturingGroup<Match: MatchProtocol>: RegexProtocol {
   ) {
     self.regex = .init(
       ast: .groupTransform(
-        .init(.init(faking: .capture), component.regex.ast, .fake),
+        .init(.init(faking: .capture), component.regex.ast.root, .fake),
         transform: transform))
   }
 

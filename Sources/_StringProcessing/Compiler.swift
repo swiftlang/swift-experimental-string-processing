@@ -33,13 +33,13 @@ class Compiler {
   }
 
   __consuming func emit() throws -> RegexProgram {
-    try emit(ast)
+    try emit(ast.root)
     builder.buildAccept()
     let program = builder.assemble()
     return RegexProgram(program: program)
   }
 
-  func emit(_ node: AST) throws {
+  func emit(_ node: AST.Node) throws {
 
     switch node {
     // Any: .
@@ -233,7 +233,7 @@ class Compiler {
 
   func emitLookaround(
     _ kind: (forwards: Bool, positive: Bool),
-    _ child: AST
+    _ child: AST.Node
   ) throws {
     guard kind.forwards else {
       throw unsupported("backwards assertions")
@@ -282,7 +282,7 @@ class Compiler {
     low: Int,
     high: Int?,
     kind: AST.Quantification.Kind,
-    child: AST
+    child: AST.Node
   ) throws {
     // Compiler and/or parser should enforce these invariants
     // before we are called

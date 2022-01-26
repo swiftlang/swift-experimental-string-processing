@@ -14,7 +14,7 @@
 import XCTest
 @testable import _StringProcessing
 
-extension AST: ExpressibleByExtendedGraphemeClusterLiteral {
+extension AST.Node: ExpressibleByExtendedGraphemeClusterLiteral {
   public typealias ExtendedGraphemeClusterLiteralType = Character
   public init(extendedGraphemeClusterLiteral value: Character) {
     self = _StringProcessing.atom(.char(value))
@@ -37,25 +37,25 @@ extension AST.CustomCharacterClass.Member: ExpressibleByExtendedGraphemeClusterL
 class RegexTests: XCTestCase {}
 
 func parseTest(
-  _ input: String, _ expectedAST: AST,
+  _ input: String, _ expectedAST: AST.Node,
   syntax: SyntaxOptions = .traditional,
   captures expectedCaptures: CaptureStructure = .empty,
   file: StaticString = #file,
   line: UInt = #line
 ) {
   let ast = try! parse(input, syntax)
-  guard ast == expectedAST
-          || ast._dump() == expectedAST._dump() // EQ workaround
+  guard ast.root == expectedAST
+          || ast.root._dump() == expectedAST._dump() // EQ workaround
   else {
     XCTFail("""
 
               Expected: \(expectedAST._dump())
-              Found:    \(ast._dump())
+              Found:    \(ast.root._dump())
               """,
             file: file, line: line)
     return
   }
-  let captures = ast.captureStructure
+  let captures = ast.root.captureStructure
   guard captures == expectedCaptures else {
     XCTFail("""
 
@@ -91,7 +91,7 @@ func parseTest(
 }
 
 func parseWithDelimitersTest(
-  _ input: String, _ expecting: AST,
+  _ input: String, _ expecting: AST.Node,
   file: StaticString = #file, line: UInt = #line
 ) {
   // First try lexing.
@@ -106,7 +106,7 @@ func parseWithDelimitersTest(
   }
 
   let orig = try! parseWithDelimiters(input)
-  let ast = orig
+  let ast = orig.root
   guard ast == expecting
           || ast._dump() == expecting._dump() // EQ workaround
   else {
@@ -125,8 +125,8 @@ func parseNotEqualTest(
   syntax: SyntaxOptions = .traditional,
   file: StaticString = #file, line: UInt = #line
 ) {
-  let lhsAST = try! parse(lhs, syntax)
-  let rhsAST = try! parse(rhs, syntax)
+  let lhsAST = try! parse(lhs, syntax).root
+  let rhsAST = try! parse(rhs, syntax).root
   if lhsAST == rhsAST || lhsAST._dump() == rhsAST._dump() {
     XCTFail("""
               AST: \(lhsAST._dump())
@@ -138,10 +138,10 @@ func parseNotEqualTest(
 func rangeTest(
   _ input: String, syntax: SyntaxOptions = .traditional,
   _ expectedRange: (String) -> Range<Int>,
-  at locFn: (AST) -> SourceLocation = \.location,
+  at locFn: (AST.Node) -> SourceLocation = \.location,
   file: StaticString = #file, line: UInt = #line
 ) {
-  let ast = try! parse(input, syntax)
+  let ast = try! parse(input, syntax).root
   let range = input.offsets(of: locFn(ast).range)
   let expected = expectedRange(input)
 

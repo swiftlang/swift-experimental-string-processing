@@ -27,90 +27,92 @@ AST.
 
 import _MatchingEngine
 
-func alt(_ asts: [AST]) -> AST {
+func alt(_ asts: [AST.Node]) -> AST.Node {
   return .alternation(
     .init(asts, pipes: Array(repeating: .fake, count: asts.count - 1))
   )
 }
-func alt(_ asts: AST...) -> AST {
+func alt(_ asts: AST.Node...) -> AST.Node {
   alt(asts)
 }
 
-func concat(_ asts: [AST]) -> AST {
+func concat(_ asts: [AST.Node]) -> AST.Node {
   .concatenation(.init(asts, .fake))
 }
-func concat(_ asts: AST...) -> AST {
+func concat(_ asts: AST.Node...) -> AST.Node {
   concat(asts)
 }
 
-func empty() -> AST {
+func empty() -> AST.Node {
   .empty(.init(.fake))
 }
 
 func group(
-  _ kind: AST.Group.Kind, _ child: AST
-) -> AST {
+  _ kind: AST.Group.Kind, _ child: AST.Node
+) -> AST.Node {
   .group(.init(.init(faking: kind), child, .fake))
 }
 func capture(
-  _ child: AST
-) -> AST {
+  _ child: AST.Node
+) -> AST.Node {
   group(.capture, child)
 }
 func nonCapture(
-  _ child: AST
-) -> AST {
+  _ child: AST.Node
+) -> AST.Node {
   group(.nonCapture, child)
 }
 func namedCapture(
   _ name: String,
-  _ child: AST
-) -> AST {
+  _ child: AST.Node
+) -> AST.Node {
   group(.namedCapture(.init(faking: name)), child)
 }
-func balancedCapture(name: String?, priorName: String, _ child: AST) -> AST {
+func balancedCapture(
+  name: String?, priorName: String, _ child: AST.Node
+) -> AST.Node {
   group(.balancedCapture(
     .init(name: name.map { .init(faking: $0) }, dash: .fake,
           priorName: .init(faking: priorName))
   ), child)
 }
 func nonCaptureReset(
-  _ child: AST
-) -> AST {
+  _ child: AST.Node
+) -> AST.Node {
   group(.nonCaptureReset, child)
 }
 func atomicNonCapturing(
-  _ child: AST
-) -> AST {
+  _ child: AST.Node
+) -> AST.Node {
   group(.atomicNonCapturing, child)
 }
-func lookahead(_ child: AST) -> AST {
+func lookahead(_ child: AST.Node) -> AST.Node {
   group(.lookahead, child)
 }
-func lookbehind(_ child: AST) -> AST {
+func lookbehind(_ child: AST.Node) -> AST.Node {
   group(.lookbehind, child)
 }
-func negativeLookahead(_ child: AST) -> AST {
+func negativeLookahead(_ child: AST.Node) -> AST.Node {
   group(.negativeLookahead, child)
 }
-func negativeLookbehind(_ child: AST) -> AST {
+func negativeLookbehind(_ child: AST.Node) -> AST.Node {
   group(.negativeLookbehind, child)
 }
-public func nonAtomicLookahead(_ child: AST) -> AST {
+public func nonAtomicLookahead(_ child: AST.Node) -> AST.Node {
   group(.nonAtomicLookahead, child)
 }
-public func nonAtomicLookbehind(_ child: AST) -> AST {
+public func nonAtomicLookbehind(_ child: AST.Node) -> AST.Node {
   group(.nonAtomicLookbehind, child)
 }
-public func scriptRun(_ child: AST) -> AST {
+public func scriptRun(_ child: AST.Node) -> AST.Node {
   group(.scriptRun, child)
 }
-public func atomicScriptRun(_ child: AST) -> AST {
+public func atomicScriptRun(_ child: AST.Node) -> AST.Node {
   group(.atomicScriptRun, child)
 }
 func changeMatchingOptions(
-  _ seq: AST.MatchingOptionSequence, isIsolated: Bool, _ child: AST
-) -> AST {
+  _ seq: AST.MatchingOptionSequence, isIsolated: Bool, _ child: AST.Node
+) -> AST.Node {
   group(.changeMatchingOptions(seq, isIsolated: isIsolated), child)
 }
 
@@ -156,8 +158,9 @@ func ref(_ s: String, recursionLevel: Int? = nil) -> AST.Reference {
         innerLoc: .fake)
 }
 func conditional(
-  _ cond: AST.Conditional.Condition.Kind, trueBranch: AST, falseBranch: AST
-) -> AST {
+  _ cond: AST.Conditional.Condition.Kind, trueBranch: AST.Node,
+  falseBranch: AST.Node
+) -> AST.Node {
   .conditional(.init(.init(cond, .fake), trueBranch: trueBranch, pipe: .fake,
                      falseBranch: falseBranch, .fake))
 }
@@ -170,35 +173,35 @@ func pcreVersionCheck(
   ))
 }
 func groupCondition(
-  _ kind: AST.Group.Kind, _ child: AST
+  _ kind: AST.Group.Kind, _ child: AST.Node
 ) -> AST.Conditional.Condition.Kind {
   .group(.init(.init(faking: kind), child, .fake))
 }
 
-func pcreCallout(_ arg: AST.Atom.Callout.PCRE.Argument) -> AST {
+func pcreCallout(_ arg: AST.Atom.Callout.PCRE.Argument) -> AST.Node {
   atom(.callout(.pcre(.init(.init(faking: arg)))))
 }
 
-func absentRepeater(_ child: AST) -> AST {
+func absentRepeater(_ child: AST.Node) -> AST.Node {
   .absentFunction(.init(.repeater(child), start: .fake, location: .fake))
 }
-func absentExpression(_ absentee: AST, _ child: AST) -> AST {
+func absentExpression(_ absentee: AST.Node, _ child: AST.Node) -> AST.Node {
   .absentFunction(.init(
     .expression(absentee: absentee, pipe: .fake, expr: child),
     start: .fake, location: .fake
   ))
 }
-func absentStopper(_ absentee: AST) -> AST {
+func absentStopper(_ absentee: AST.Node) -> AST.Node {
   .absentFunction(.init(.stopper(absentee), start: .fake, location: .fake))
 
 }
-func absentRangeClear() -> AST {
+func absentRangeClear() -> AST.Node {
   .absentFunction(.init(.clearer, start: .fake, location: .fake))
 }
 
 func onigurumaNamedCallout(
   _ name: String, tag: String? = nil, args: String...
-) -> AST {
+) -> AST.Node {
   atom(.callout(.onigurumaNamed(.init(
     .init(faking: name),
     tag: tag.map { .init(.fake, .init(faking: $0), .fake) },
@@ -209,7 +212,7 @@ func onigurumaNamedCallout(
 func onigurumaCalloutOfContents(
   _ contents: String, tag: String? = nil,
   direction: AST.Atom.Callout.OnigurumaOfContents.Direction = .inProgress
-) -> AST {
+) -> AST.Node {
   atom(.callout(.onigurumaOfContents(.init(
     .fake, .init(faking: contents), .fake,
     tag: tag.map { .init(.fake, .init(faking: $0), .fake) },
@@ -219,7 +222,7 @@ func onigurumaCalloutOfContents(
 
 func backtrackingDirective(
   _ kind: AST.Atom.BacktrackingDirective.Kind, name: String? = nil
-) -> AST {
+) -> AST.Node {
   atom(.backtrackingDirective(
     .init(.init(faking: kind), name: name.map { .init(faking: $0) })
   ))
@@ -228,55 +231,55 @@ func backtrackingDirective(
 func quant(
   _ amount: AST.Quantification.Amount,
   _ kind: AST.Quantification.Kind = .eager,
-  _ child: AST
-) -> AST {
+  _ child: AST.Node
+) -> AST.Node {
   .quantification(.init(
     .init(faking: amount), .init(faking: kind), child, .fake))
 }
 func zeroOrMore(
   _ kind: AST.Quantification.Kind = .eager,
-  _ child: AST
-) -> AST {
+  _ child: AST.Node
+) -> AST.Node {
   quant(.zeroOrMore, kind, child)
 }
 func zeroOrOne(
   _ kind: AST.Quantification.Kind = .eager,
-  _ child: AST
-) -> AST {
+  _ child: AST.Node
+) -> AST.Node {
   quant(.zeroOrOne, kind, child)
 }
 func oneOrMore(
   _ kind: AST.Quantification.Kind = .eager,
-  _ child: AST
-) -> AST {
+  _ child: AST.Node
+) -> AST.Node {
   quant(.oneOrMore, kind, child)
 }
 func exactly(
   _ kind: AST.Quantification.Kind = .eager,
   _ i: Int,
-  _ child: AST
-) -> AST {
+  _ child: AST.Node
+) -> AST.Node {
   quant(.exactly(.init(faking: i)), kind, child)
 }
 func nOrMore(
   _ kind: AST.Quantification.Kind = .eager,
   _ i: Int,
-  _ child: AST
-) -> AST {
+  _ child: AST.Node
+) -> AST.Node {
   quant(.nOrMore(.init(faking: i)), kind, child)
 }
 func upToN(
   _ kind: AST.Quantification.Kind = .eager,
   _ i: Int,
-  _ child: AST
-) -> AST {
+  _ child: AST.Node
+) -> AST.Node {
   quant(.upToN(.init(faking: i)), kind, child)
 }
 func quantRange(
   _ kind: AST.Quantification.Kind = .eager,
   _ r: ClosedRange<Int>,
-  _ child: AST
-) -> AST {
+  _ child: AST.Node
+) -> AST.Node {
   let lower = AST.Located(faking: r.lowerBound)
   let upper = AST.Located(faking: r.upperBound)
   return quant(.range(lower, upper), kind, child)
@@ -285,7 +288,7 @@ func quantRange(
 func charClass(
   _ members: AST.CustomCharacterClass.Member...,
   inverted: Bool = false
-) -> AST {
+) -> AST.Node {
   let cc = AST.CustomCharacterClass(
     .init(faking: inverted ? .inverted : .normal),
     members,
@@ -303,7 +306,7 @@ func charClass(
   return .custom(cc)
 }
 
-func quote(_ s: String) -> AST {
+func quote(_ s: String) -> AST.Node {
   .quote(.init(s, .fake))
 }
 func quote_m(_ s: String) -> AST.CustomCharacterClass.Member {
@@ -312,35 +315,35 @@ func quote_m(_ s: String) -> AST.CustomCharacterClass.Member {
 
 // MARK: - Atoms
 
-func atom(_ k: AST.Atom.Kind) -> AST {
+func atom(_ k: AST.Atom.Kind) -> AST.Node {
   .atom(.init(k, .fake))
 }
 
 func escaped(
   _ e: AST.Atom.EscapedBuiltin
-) -> AST {
+) -> AST.Node {
   atom(.escaped(e))
 }
-func scalar(_ s: Unicode.Scalar) -> AST {
+func scalar(_ s: Unicode.Scalar) -> AST.Node {
   atom(.scalar(s))
 }
 func scalar_m(_ s: Unicode.Scalar) -> AST.CustomCharacterClass.Member {
   atom_m(.scalar(s))
 }
 
-func backreference(_ r: AST.Reference.Kind, recursionLevel: Int? = nil) -> AST {
+func backreference(_ r: AST.Reference.Kind, recursionLevel: Int? = nil) -> AST.Node {
   atom(.backreference(.init(
     r, recursionLevel: recursionLevel.map { .init(faking: $0) }, innerLoc: .fake
   )))
 }
-func subpattern(_ r: AST.Reference.Kind) -> AST {
+func subpattern(_ r: AST.Reference.Kind) -> AST.Node {
   atom(.subpattern(.init(r, innerLoc: .fake)))
 }
 
 func prop(
   _ kind: AST.Atom.CharacterProperty.Kind,
   inverted: Bool = false
-) -> AST {
+) -> AST.Node {
   atom(.property(.init(kind, isInverted: inverted, isPOSIX: false)))
 }
 

@@ -26,11 +26,36 @@ extension AST {
   }
 }
 
+extension AST.Node {
+  /// Render using Swift's preferred regex literal syntax
+  public func renderAsCanonical(
+    showDelimiters delimiters: Bool = false,
+    terminateLine: Bool = false
+  ) -> String {
+    var printer = PrettyPrinter()
+    printer.printAsCanonical(
+       self,
+       delimiters: delimiters,
+       terminateLine: terminateLine)
+    return printer.finish()
+  }
+}
+
 extension PrettyPrinter {
   /// Will output `ast` in canonical form, taking care to
   /// also indent and terminate the line (updating internal state)
   mutating func printAsCanonical(
     _ ast: AST,
+    delimiters: Bool = false,
+    terminateLine terminate: Bool = true
+  ) {
+    printAsCanonical(ast.root, delimiters: delimiters, terminateLine: terminate)
+  }
+
+  /// Will output `ast` in canonical form, taking care to
+  /// also indent and terminate the line (updating internal state)
+  mutating func printAsCanonical(
+    _ ast: AST.Node,
     delimiters: Bool = false,
     terminateLine terminate: Bool = true
   ) {
@@ -45,7 +70,7 @@ extension PrettyPrinter {
 
   /// Output the `ast` in canonical form, does not indent, terminate,
   /// or affect internal state
-  mutating func outputAsCanonical(_ ast: AST) {
+  mutating func outputAsCanonical(_ ast: AST.Node) {
     switch ast {
     case let .alternation(a):
       for idx in a.children.indices {

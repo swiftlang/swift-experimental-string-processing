@@ -12,12 +12,12 @@
 extension AST {
   public struct Group: Hashable {
     public let kind: Located<Kind>
-    public let child: AST
+    public let child: AST.Node
 
     public let location: SourceLocation
 
     public init(
-      _ kind: Located<Kind>, _ child: AST, _ r: SourceLocation
+      _ kind: Located<Kind>, _ child: AST.Node, _ r: SourceLocation
     ) {
       self.kind = kind
       self.child = child

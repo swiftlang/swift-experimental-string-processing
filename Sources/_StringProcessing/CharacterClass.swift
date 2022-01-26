@@ -257,10 +257,10 @@ extension CharacterClass: CustomStringConvertible {
 }
 
 extension CharacterClass {
-  public func makeAST() -> AST? {
+  public func makeAST() -> AST.Node? {
     let inv = isInverted
 
-    func esc(_ b: AST.Atom.EscapedBuiltin) -> AST {
+    func esc(_ b: AST.Atom.EscapedBuiltin) -> AST.Node {
       escaped(b)
     }
 
@@ -308,7 +308,7 @@ extension CharacterClass {
   }
 }
 
-extension AST {
+extension AST.Node {
   /// If this has a character class representation, whether built-in or custom, return it.
   ///
   /// TODO: Not sure if this the right model type, but I suspect we'll want to produce
