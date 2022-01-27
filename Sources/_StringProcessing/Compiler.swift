@@ -86,6 +86,9 @@ class Compiler {
     case .trivia, .empty:
       break
 
+    case .absentFunction:
+      throw unsupported(node.renderAsCanonical())
+
     case .group(let g):
       options.beginScope()
       defer { options.endScope() }

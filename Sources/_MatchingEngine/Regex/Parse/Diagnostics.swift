@@ -31,6 +31,8 @@ enum ParseError: Error, Hashable {
   case tooManyBranchesInConditional(Int)
   case unsupportedCondition(String)
 
+  case tooManyAbsentExpressionChildren(Int)
+
   case expectedASCII(Character)
 
   case expectedNonEmptyContents
@@ -55,11 +57,26 @@ enum ParseError: Error, Hashable {
   case emptyProperty
 
   case expectedGroupSpecifier
-  case expectedGroupName
-  case groupNameMustBeAlphaNumeric
-  case groupNameCannotStartWithNumber
+  case unbalancedEndOfGroup
+
+  // Identifier diagnostics.
+  case expectedIdentifier(IdentifierKind)
+  case identifierMustBeAlphaNumeric(IdentifierKind)
+  case identifierCannotStartWithNumber(IdentifierKind)
+
   case cannotRemoveTextSegmentOptions
   case cannotRemoveSemanticsOptions
+  case expectedCalloutArgument
+}
+
+extension IdentifierKind {
+  fileprivate var diagDescription: String {
+    switch self {
+    case .groupName:            return "group name"
+    case .onigurumaCalloutName: return "callout name"
+    case .onigurumaCalloutTag:  return "callout tag"
+    }
+  }
 }
 
 extension ParseError: CustomStringConvertible {
@@ -97,6 +114,8 @@ extension ParseError: CustomStringConvertible {
       return "expected 2 branches in conditional, have \(i)"
     case let .unsupportedCondition(str):
       return "\(str) cannot be used as condition"
+    case let .tooManyAbsentExpressionChildren(i):
+      return "expected 2 expressions in absent expression, have \(i)"
     case let .unknownGroupKind(str):
       return "unknown group kind '(\(str)'"
     case let .unknownCalloutKind(str):
@@ -117,16 +136,20 @@ extension ParseError: CustomStringConvertible {
       return "empty property"
     case .expectedGroupSpecifier:
       return "expected group specifier"
-    case .expectedGroupName:
-      return "expected group name"
-    case .groupNameMustBeAlphaNumeric:
-      return "group name must only contain alphanumeric characters"
-    case .groupNameCannotStartWithNumber:
-      return "group name must not start with number"
+    case .unbalancedEndOfGroup:
+      return "closing ')' does not balance any groups openings"
+    case .expectedIdentifier(let i):
+      return "expected \(i.diagDescription)"
+    case .identifierMustBeAlphaNumeric(let i):
+      return "\(i.diagDescription) must only contain alphanumeric characters"
+    case .identifierCannotStartWithNumber(let i):
+      return "\(i.diagDescription) must not start with number"
     case .cannotRemoveTextSegmentOptions:
       return "text segment mode cannot be unset, only changed"
     case .cannotRemoveSemanticsOptions:
       return "semantic level cannot be unset, only changed"
+    case .expectedCalloutArgument:
+      return "expected argument to callout"
     }
   }
 }

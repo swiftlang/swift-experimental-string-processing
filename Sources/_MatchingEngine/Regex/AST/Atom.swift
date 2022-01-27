@@ -476,14 +476,117 @@ extension AST.Atom {
 }
 
 extension AST.Atom {
-  public struct Callout: Hashable {
-    public enum Argument: Hashable {
-      case number(Int)
-      case string(String)
+  public enum Callout: Hashable {
+    /// A PCRE callout written `(?C...)`
+    public struct PCRE: Hashable {
+      public enum Argument: Hashable {
+        case number(Int)
+        case string(String)
+      }
+      public var arg: AST.Located<Argument>
+
+      public init(_ arg: AST.Located<Argument>) {
+        self.arg = arg
+      }
+
+      /// Whether the argument isn't written explicitly in the source, e.g
+      /// `(?C)` which is implicitly `(?C0)`.
+      public var isImplicit: Bool { arg.location.isEmpty }
     }
-    public var arg: AST.Located<Argument>
-    public init(_ arg: AST.Located<Argument>) {
-      self.arg = arg
+
+    /// A named Oniguruma callout written `(*name[tag]{args, ...})`
+    public struct OnigurumaNamed: Hashable {
+      public struct ArgList: Hashable {
+        public var leftBrace: SourceLocation
+        public var args: [AST.Located<String>]
+        public var rightBrace: SourceLocation
+
+        public init(
+          _ leftBrace: SourceLocation,
+          _ args: [AST.Located<String>],
+          _ rightBrace: SourceLocation
+        ) {
+          self.leftBrace = leftBrace
+          self.args = args
+          self.rightBrace = rightBrace
+        }
+      }
+
+      public var name: AST.Located<String>
+      public var tag: OnigurumaTag?
+      public var args: ArgList?
+
+      public init(
+        _ name: AST.Located<String>, tag: OnigurumaTag?, args: ArgList?
+      ) {
+        self.name = name
+        self.tag = tag
+        self.args = args
+      }
+    }
+
+    /// An Oniguruma callout 'of contents', written `(?{...}[tag]D)`
+    public struct OnigurumaOfContents: Hashable {
+      public enum Direction: Hashable {
+        case inProgress   // > (the default)
+        case inRetraction // <
+        case both         // X
+      }
+      public var openBraces: SourceLocation
+      public var contents: AST.Located<String>
+      public var closeBraces: SourceLocation
+      public var tag: OnigurumaTag?
+      public var direction: AST.Located<Direction>
+
+      public init(
+        _ openBraces: SourceLocation, _ contents: AST.Located<String>,
+        _ closeBraces: SourceLocation, tag: OnigurumaTag?,
+        direction: AST.Located<Direction>
+      ) {
+        self.openBraces = openBraces
+        self.contents = contents
+        self.closeBraces = closeBraces
+        self.tag = tag
+        self.direction = direction
+      }
+
+      /// Whether the direction flag isn't written explicitly in the
+      /// source, e.g `(?{x})` which is implicitly `(?{x}>)`.
+      public var isDirectionImplicit: Bool { direction.location.isEmpty }
+    }
+    case pcre(PCRE)
+    case onigurumaNamed(OnigurumaNamed)
+    case onigurumaOfContents(OnigurumaOfContents)
+
+    private var _associatedValue: Any {
+      switch self {
+      case .pcre(let v):                return v
+      case .onigurumaNamed(let v):      return v
+      case .onigurumaOfContents(let v): return v
+      }
+    }
+
+    func `as`<T>(_ t: T.Type = T.self) -> T? {
+      _associatedValue as? T
+    }
+  }
+}
+
+extension AST.Atom.Callout {
+  /// A tag specifier `[...]` which may appear in an Oniguruma callout.
+  public struct OnigurumaTag: Hashable {
+    public var leftBracket: SourceLocation
+    public var name: AST.Located<String>
+    public var rightBracket: SourceLocation
+
+    public init(
+      _ leftBracket: SourceLocation,
+      _ name: AST.Located<String>,
+      _ rightBracket: SourceLocation
+    ) {
+      self.leftBracket = leftBracket
+      self.name = name
+      self.rightBracket = rightBracket
     }
   }
 }
@@ -594,7 +697,7 @@ extension AST {
     case .alternation, .concatenation, .group,
         .conditional, .quantification, .quote,
         .trivia, .customCharacterClass, .empty,
-        .groupTransform:
+        .groupTransform, .absentFunction:
       return nil
     }
   }

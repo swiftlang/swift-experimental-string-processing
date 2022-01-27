@@ -260,6 +260,9 @@ func compile(
     case .conditional:
       throw unsupported(ast.renderAsCanonical())
 
+    case .absentFunction:
+      throw unsupported(ast.renderAsCanonical())
+
     case .customCharacterClass:
       fatalError("unreachable")
 

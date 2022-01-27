@@ -114,12 +114,29 @@ extension Parser {
 }
 
 extension Parser {
-  /// Parse a regular expression
+  /// Parse a top-level regular expression. Do not use for recursive calls, use
+  /// `parseNode()` instead.
   ///
-  ///     Regex        -> '' | Alternation
-  ///     Alternation  -> Concatenation ('|' Concatenation)*
+  ///     Regex -> RegexNode
   ///
   mutating func parse() throws -> AST {
+    let ast = try parseNode()
+    guard source.isEmpty else {
+      if let loc = source.tryEatWithLoc(")") {
+        throw Source.LocatedError(ParseError.unbalancedEndOfGroup, loc)
+      }
+      fatalError("Unhandled termination condition")
+    }
+    return ast
+  }
+
+  /// Parse a regular expression node. This should be used instead of `parse()`
+  /// for recursive calls.
+  ///
+  ///     RegexNode    -> '' | Alternation
+  ///     Alternation  -> Concatenation ('|' Concatenation)*
+  ///
+  mutating func parseNode() throws -> AST {
     let _start = source.currentPosition
 
     if source.isEmpty { return .empty(.init(loc(_start))) }
@@ -203,7 +220,7 @@ extension Parser {
   mutating func parseConditionalBranches(
     start: Source.Position, _ cond: AST.Conditional.Condition
   ) throws -> AST {
-    let child = try parse()
+    let child = try parseNode()
     let trueBranch: AST, falseBranch: AST, pipe: SourceLocation?
     switch child {
     case .alternation(let a):
@@ -237,7 +254,7 @@ extension Parser {
   ) throws -> AST.Group {
     context.recordGroup(kind.value)
 
-    let child = try parse()
+    let child = try parseNode()
     // An implicit scoped group has already consumed its closing paren.
     if !kind.value.hasImplicitScope {
       try source.expect(")")
@@ -245,11 +262,58 @@ extension Parser {
     return .init(kind, child, loc(start))
   }
 
+  /// Consume the body of an absent function.
+  ///
+  ///     AbsentFunction -> '(?~' RegexNode ')'
+  ///                     | '(?~|' Concatenation '|' Concatenation ')'
+  ///                     | '(?~|' Concatenation ')'
+  ///                     | '(?~|)'
+  ///
+  mutating func parseAbsentFunctionBody(
+    _ start: AST.Located<AST.AbsentFunction.Start>
+  ) throws -> AST.AbsentFunction {
+    let startLoc = start.location
+
+    // TODO: Diagnose on nested absent functions, which Oniguruma states is
+    // undefined behavior.
+    let kind: AST.AbsentFunction.Kind
+    switch start.value {
+    case .withoutPipe:
+      // Must be a repeater.
+      kind = .repeater(try parseNode())
+    case .withPipe where source.peek() == ")":
+      kind = .clearer
+    case .withPipe:
+      // Can either be an expression or stopper depending on whether we have a
+      // any additional '|'s.
+      let child = try parseNode()
+      switch child {
+      case .alternation(let alt):
+        // A pipe, so an expression.
+        let numChildren = alt.children.count
+        guard numChildren == 2 else {
+          throw Source.LocatedError(
+            ParseError.tooManyAbsentExpressionChildren(numChildren),
+            child.location
+          )
+        }
+        kind = .expression(
+          absentee: alt.children[0], pipe: alt.pipes[0], expr: alt.children[1])
+      default:
+        // No pipes, so a stopper.
+        kind = .stopper(child)
+      }
+    }
+    try source.expect(")")
+    return .init(kind, start: startLoc, location: loc(startLoc.start))
+  }
+
   /// Parse a (potentially quantified) component
   ///
-  ///     QuantOperand -> Conditional | Group | CustomCharClass | Atom
-  ///     Group        -> GroupStart Regex ')'
-  ///     Conditional  -> ConditionalStart Concatenation ('|' Concatenation)? ')'
+  ///     QuantOperand     -> Conditional | Group | CustomCharClass | Atom
+  ///                       | AbsentFunction
+  ///     Group            -> GroupStart RecursiveRegex ')'
+  ///     Conditional      -> ConditionalStart Concatenation ('|' Concatenation)? ')'
   ///     ConditionalStart -> KnownConditionalStart | GroupConditionalStart
   ///
   mutating func parseQuantifierOperand() throws -> AST? {
@@ -267,6 +331,11 @@ extension Parser {
       let group = try parseGroupBody(start: groupStart, kind)
       return try parseConditionalBranches(
         start: _start, .init(.group(group), group.location))
+    }
+
+    // Check if we have an Oniguruma absent function.
+    if let start = source.lexAbsentFunctionStart() {
+      return .absentFunction(try parseAbsentFunctionBody(start))
     }
 
     // Check if we have the start of a group '('.

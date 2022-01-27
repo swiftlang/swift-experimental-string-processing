@@ -81,6 +81,15 @@ extension AST {
         quantification.amount.value == .zeroOrOne
           ? CaptureStructure.optional
           : CaptureStructure.array)
+    case .absentFunction(let abs):
+      // Only the child of an expression absent function is relevant, as the
+      // other expressions don't actually get matched against.
+      switch abs.kind {
+      case .expression(_, _, let child):
+        return child.captureStructure
+      case .clearer, .repeater, .stopper:
+        return .empty
+      }
     case .quote, .trivia, .atom, .customCharacterClass, .empty:
       return .empty
     }

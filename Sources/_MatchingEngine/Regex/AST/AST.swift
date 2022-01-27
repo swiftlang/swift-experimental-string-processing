@@ -38,6 +38,8 @@ public indirect enum AST:
 
   case customCharacterClass(CustomCharacterClass)
 
+  case absentFunction(AbsentFunction)
+
   case empty(Empty)
 
   // FIXME: Move off the regex literal AST
@@ -55,16 +57,17 @@ extension AST {
   // over `self` _everywhere_ we want to do anything.
   var _associatedValue: _ASTNode {
     switch self {
-    case let .alternation(v):          return v
-    case let .concatenation(v):        return v
-    case let .group(v):                return v
-    case let .conditional(v):          return v
-    case let .quantification(v):       return v
-    case let .quote(v):                return v
-    case let .trivia(v):               return v
-    case let .atom(v):                 return v
-    case let .customCharacterClass(v): return v
-    case let .empty(v):                return v
+    case let .alternation(v):           return v
+    case let .concatenation(v):         return v
+    case let .group(v):                 return v
+    case let .conditional(v):           return v
+    case let .quantification(v):        return v
+    case let .quote(v):                 return v
+    case let .trivia(v):                return v
+    case let .atom(v):                  return v
+    case let .customCharacterClass(v):  return v
+    case let .empty(v):                 return v
+    case let .absentFunction(v):        return v
 
     case let .groupTransform(g, _):
       return g // FIXME: get this out of here
@@ -110,7 +113,7 @@ extension AST {
     switch self {
     case .atom(let a):
       return a.isQuantifiable
-    case .group, .conditional, .customCharacterClass:
+    case .group, .conditional, .customCharacterClass, .absentFunction:
       return true
     case .alternation, .concatenation, .quantification, .quote, .trivia,
         .empty, .groupTransform:
@@ -181,6 +184,50 @@ extension AST {
     public let location: SourceLocation
 
     public init(_ location: SourceLocation) {
+      self.location = location
+    }
+  }
+
+  /// An Oniguruma absent function. This is used to model a pattern which should
+  /// not be matched against across varying scopes.
+  public struct AbsentFunction: Hashable, _ASTNode {
+    public enum Start: Hashable {
+      /// `(?~|`
+      case withPipe
+
+      /// `(?~`
+      case withoutPipe
+    }
+    public enum Kind: Hashable {
+      /// An absent repeater `(?~absent)`. This is equivalent to `(?~|absent|.*)`
+      /// and therefore matches as long as the pattern `absent` is not matched.
+      case repeater(AST)
+
+      /// An absent expression `(?~|absent|expr)`, which defines an `absent`
+      /// pattern which must not be matched against while the pattern `expr` is
+      /// matched.
+      case expression(absentee: AST, pipe: SourceLocation, expr: AST)
+
+      /// An absent stopper `(?~|absent)`, which prevents matching against
+      /// `absent` until the end of the regex, or until it is cleared.
+      case stopper(AST)
+
+      /// An absent clearer `(?~|)` which cancels the effect of an absent
+      /// stopper.
+      case clearer
+    }
+    /// The location of `(?~` or `(?~|`
+    public var start: SourceLocation
+
+    public var kind: Kind
+
+    public var location: SourceLocation
+
+    public init(
+      _ kind: Kind, start: SourceLocation, location: SourceLocation
+    ) {
+      self.kind = kind
+      self.start = start
       self.location = location
     }
   }
