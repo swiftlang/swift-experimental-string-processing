@@ -689,7 +689,7 @@ extension AST.Atom {
   }
 }
 
-extension AST {
+extension AST.Node {
   public var literalStringValue: String? {
     switch self {
     case .atom(let a): return a.literalStringValue

@@ -31,7 +31,7 @@ extension AST {
 
 extension PrettyPrinter {
   /// If pattern printing should back off, prints the regex literal and returns true
-  mutating func patternBackoff(_ ast: AST) -> Bool {
+  mutating func patternBackoff(_ ast: AST.Node) -> Bool {
     if let max = maxTopDownLevels, depth >= max {
       return true
     }
@@ -42,6 +42,10 @@ extension PrettyPrinter {
   }
 
   mutating func printAsPattern(_ ast: AST) {
+    printAsPattern(ast.root)
+  }
+
+  mutating func printAsPattern(_ ast: AST.Node) {
     if patternBackoff(ast) {
       printAsCanonical(ast, delimiters: true)
       return
@@ -345,7 +349,7 @@ extension AST.Quantification.Kind {
   }
 }
 
-extension AST {
+extension AST.Node {
   var height: Int {
     // FIXME: Is this right for custom char classes?
     // How do we count set operations?

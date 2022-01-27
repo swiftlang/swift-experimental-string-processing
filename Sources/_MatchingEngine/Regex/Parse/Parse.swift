@@ -127,7 +127,7 @@ extension Parser {
       }
       fatalError("Unhandled termination condition")
     }
-    return ast
+    return .init(ast)
   }
 
   /// Parse a regular expression node. This should be used instead of `parse()`
@@ -136,7 +136,7 @@ extension Parser {
   ///     RegexNode    -> '' | Alternation
   ///     Alternation  -> Concatenation ('|' Concatenation)*
   ///
-  mutating func parseNode() throws -> AST {
+  mutating func parseNode() throws -> AST.Node {
     let _start = source.currentPosition
 
     if source.isEmpty { return .empty(.init(loc(_start))) }
@@ -163,8 +163,8 @@ extension Parser {
   ///     ConcatComponent -> Trivia | Quote | Quantification
   ///     Quantification  -> QuantOperand Quantifier?
   ///
-  mutating func parseConcatenation() throws -> AST {
-    var result = Array<AST>()
+  mutating func parseConcatenation() throws -> AST.Node {
+    var result = [AST.Node]()
     let _start = source.currentPosition
 
     while true {
@@ -219,9 +219,9 @@ extension Parser {
   /// Perform a recursive parse for the branches of a conditional.
   mutating func parseConditionalBranches(
     start: Source.Position, _ cond: AST.Conditional.Condition
-  ) throws -> AST {
+  ) throws -> AST.Node {
     let child = try parseNode()
-    let trueBranch: AST, falseBranch: AST, pipe: SourceLocation?
+    let trueBranch: AST.Node, falseBranch: AST.Node, pipe: SourceLocation?
     switch child {
     case .alternation(let a):
       // If we have an alternation child, we only accept 2 branches.
@@ -316,7 +316,7 @@ extension Parser {
   ///     Conditional      -> ConditionalStart Concatenation ('|' Concatenation)? ')'
   ///     ConditionalStart -> KnownConditionalStart | GroupConditionalStart
   ///
-  mutating func parseQuantifierOperand() throws -> AST? {
+  mutating func parseQuantifierOperand() throws -> AST.Node? {
     assert(!source.isEmpty)
 
     let _start = source.currentPosition

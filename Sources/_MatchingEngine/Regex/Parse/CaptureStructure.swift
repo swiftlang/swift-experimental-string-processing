@@ -25,7 +25,7 @@ public enum CaptureStructure: Equatable {
   }
 }
 
-extension AST {
+extension AST.Node {
   public var captureStructure: CaptureStructure {
     // Note: This implementation could be more optimized.
     switch self {
@@ -68,7 +68,7 @@ extension AST {
       var captures = CaptureStructure.empty
       switch c.condition.kind {
       case .group(let g):
-        captures = captures + AST.group(g).captureStructure
+        captures = captures + AST.Node.group(g).captureStructure
       default:
         break
       }

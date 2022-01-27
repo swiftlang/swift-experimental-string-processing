@@ -28,20 +28,20 @@ extension _ASTNode {
 }
 
 protocol _ASTParent: _ASTNode {
-  var children: [AST] { get }
+  var children: [AST.Node] { get }
 }
 
 extension AST.Concatenation: _ASTParent {}
 extension AST.Alternation: _ASTParent {}
 
 extension AST.Group: _ASTParent {
-  var children: [AST] { [child] }
+  var children: [AST.Node] { [child] }
 }
 extension AST.Quantification: _ASTParent {
-  var children: [AST] { [child] }
+  var children: [AST.Node] { [child] }
 }
 extension AST.AbsentFunction: _ASTParent {
-  var children: [AST] {
+  var children: [AST.Node] {
     switch kind {
     case .repeater(let a), .stopper(let a): return [a]
     case .expression(let a, _, let c):      return [a, c]

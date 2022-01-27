@@ -9,47 +9,64 @@
 //
 //===----------------------------------------------------------------------===//
 
-/// A regex abstract syntax tree
-@frozen
-public indirect enum AST:
-  Hashable/*, _ASTPrintable ASTValue, ASTAction*/
-{
-  /// ... | ... | ...
-  case alternation(Alternation)
-
-  /// ... ...
-  case concatenation(Concatenation)
-
-  /// (...)
-  case group(Group)
-
-  /// (?(cond) true-branch | false-branch)
-  case conditional(Conditional)
-
-  case quantification(Quantification)
-
-  /// \Q...\E
-  case quote(Quote)
-
-  /// Comments, non-semantic whitespace, etc
-  case trivia(Trivia)
-
-  case atom(Atom)
-
-  case customCharacterClass(CustomCharacterClass)
-
-  case absentFunction(AbsentFunction)
-
-  case empty(Empty)
-
-  // FIXME: Move off the regex literal AST
-  case groupTransform(
-    Group, transform: CaptureTransform)
+/// A regex abstract syntax tree. This is a top-level type that stores the root
+/// node.
+public struct AST: Hashable {
+  public var root: AST.Node
+  public init(_ root: AST.Node) {
+    self.root = root
+  }
 }
 
-// TODO: Do we want something that holds the AST and stored global options?
+extension AST {
+  /// Whether this AST tree has nested somewhere inside it a capture.
+  public var hasCapture: Bool { root.hasCapture }
+
+  /// The capture structure of this AST tree.
+  public var captureStructure: CaptureStructure { root.captureStructure }
+}
 
 extension AST {
+  /// A node in the regex AST.
+  @frozen
+  public indirect enum Node:
+    Hashable/*, _ASTPrintable ASTValue, ASTAction*/
+  {
+    /// ... | ... | ...
+    case alternation(Alternation)
+
+    /// ... ...
+    case concatenation(Concatenation)
+
+    /// (...)
+    case group(Group)
+
+    /// (?(cond) true-branch | false-branch)
+    case conditional(Conditional)
+
+    case quantification(Quantification)
+
+    /// \Q...\E
+    case quote(Quote)
+
+    /// Comments, non-semantic whitespace, etc
+    case trivia(Trivia)
+
+    case atom(Atom)
+
+    case customCharacterClass(CustomCharacterClass)
+
+    case absentFunction(AbsentFunction)
+
+    case empty(Empty)
+
+    // FIXME: Move off the regex literal AST
+    case groupTransform(
+      Group, transform: CaptureTransform)
+  }
+}
+
+extension AST.Node {
   // :-(
   //
   // Existential-based programming is highly prone to silent
@@ -79,7 +96,7 @@ extension AST {
   }
 
   /// If this node is a parent node, access its children
-  public var children: [AST]? {
+  public var children: [AST.Node]? {
     return (_associatedValue as? _ASTParent)?.children
   }
 
@@ -127,10 +144,10 @@ extension AST {
 extension AST {
 
   public struct Alternation: Hashable, _ASTNode {
-    public let children: [AST]
+    public let children: [AST.Node]
     public let pipes: [SourceLocation]
 
-    public init(_ mems: [AST], pipes: [SourceLocation]) {
+    public init(_ mems: [AST.Node], pipes: [SourceLocation]) {
       // An alternation must have at least two branches (though the branches
       // may be empty AST nodes), and n - 1 pipes.
       precondition(mems.count >= 2)
@@ -146,10 +163,10 @@ extension AST {
   }
 
   public struct Concatenation: Hashable, _ASTNode {
-    public let children: [AST]
+    public let children: [AST.Node]
     public let location: SourceLocation
 
-    public init(_ mems: [AST], _ location: SourceLocation) {
+    public init(_ mems: [AST.Node], _ location: SourceLocation) {
       self.children = mems
       self.location = location
     }
@@ -201,16 +218,16 @@ extension AST {
     public enum Kind: Hashable {
       /// An absent repeater `(?~absent)`. This is equivalent to `(?~|absent|.*)`
       /// and therefore matches as long as the pattern `absent` is not matched.
-      case repeater(AST)
+      case repeater(AST.Node)
 
       /// An absent expression `(?~|absent|expr)`, which defines an `absent`
       /// pattern which must not be matched against while the pattern `expr` is
       /// matched.
-      case expression(absentee: AST, pipe: SourceLocation, expr: AST)
+      case expression(absentee: AST.Node, pipe: SourceLocation, expr: AST.Node)
 
       /// An absent stopper `(?~|absent)`, which prevents matching against
       /// `absent` until the end of the regex, or until it is cleared.
-      case stopper(AST)
+      case stopper(AST.Node)
 
       /// An absent clearer `(?~|)` which cancels the effect of an absent
       /// stopper.

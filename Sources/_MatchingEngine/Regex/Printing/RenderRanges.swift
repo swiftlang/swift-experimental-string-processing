@@ -10,15 +10,27 @@
 //===----------------------------------------------------------------------===//
 
 // Useful for testing, debugging, etc.
-extension AST {
-  func _postOrder() -> Array<AST> {
-    var nodes = Array<AST>()
+extension AST.Node {
+  func _postOrder() -> Array<AST.Node> {
+    var nodes = Array<AST.Node>()
     _postOrder(into: &nodes)
     return nodes
   }
-  func _postOrder(into array: inout Array<AST>) {
+  func _postOrder(into array: inout Array<AST.Node>) {
     children?.forEach { $0._postOrder(into: &array) }
     array.append(self)
+  }
+
+  // Produce a textually "rendered" range
+  //
+  // NOTE: `input` must be the string from which a
+  // source range was derived.
+  func _renderRange(
+    count: Int, into output: inout String
+  ) {
+    guard count > 0 else { return }
+    let repl = String(repeating: "-", count: count-1) + "^"
+    output.replaceSubrange(location.range, with: repl)
   }
 
   // We render from top-to-bottom, coalescing siblings
@@ -46,16 +58,10 @@ extension AST {
 
     return lines.first!.all(\.isWhitespace) ? [] : lines
   }
-
-  // Produce a textually "rendered" rane
-  //
-  // NOTE: `input` must be the string from which a
-  // source range was derived.
-  func _renderRange(
-    count: Int, into output: inout String
-  ) {
-    guard count > 0 else { return }
-    let repl = String(repeating: "-", count: count-1) + "^"
-    output.replaceSubrange(location.range, with: repl)
+}
+extension AST {
+  // We render from top-to-bottom, coalescing siblings
+  public func _render(in input: String) -> [String] {
+    root._render(in: input)
   }
 }

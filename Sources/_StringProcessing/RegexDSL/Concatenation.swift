@@ -174,8 +174,8 @@ public struct Concatenate2_TT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root
     ))
   }
 }
@@ -195,8 +195,8 @@ public struct Concatenate2_TV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root
     ))
   }
 }
@@ -216,8 +216,8 @@ public struct Concatenate2_VT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root
     ))
   }
 }
@@ -237,8 +237,8 @@ public struct Concatenate2_VV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root
     ))
   }
 }
@@ -260,9 +260,9 @@ public struct Concatenate3_TTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root
     ))
   }
 }
@@ -282,9 +282,9 @@ public struct Concatenate3_TTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root
     ))
   }
 }
@@ -304,9 +304,9 @@ public struct Concatenate3_TVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root
     ))
   }
 }
@@ -326,9 +326,9 @@ public struct Concatenate3_TVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root
     ))
   }
 }
@@ -348,9 +348,9 @@ public struct Concatenate3_VTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root
     ))
   }
 }
@@ -370,9 +370,9 @@ public struct Concatenate3_VTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root
     ))
   }
 }
@@ -392,9 +392,9 @@ public struct Concatenate3_VVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root
     ))
   }
 }
@@ -414,9 +414,9 @@ public struct Concatenate3_VVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root
     ))
   }
 }
@@ -438,10 +438,10 @@ public struct Concatenate4_TTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -461,10 +461,10 @@ public struct Concatenate4_TTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -484,10 +484,10 @@ public struct Concatenate4_TTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -507,10 +507,10 @@ public struct Concatenate4_TTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -530,10 +530,10 @@ public struct Concatenate4_TVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -553,10 +553,10 @@ public struct Concatenate4_TVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -576,10 +576,10 @@ public struct Concatenate4_TVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -599,10 +599,10 @@ public struct Concatenate4_TVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -622,10 +622,10 @@ public struct Concatenate4_VTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -645,10 +645,10 @@ public struct Concatenate4_VTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -668,10 +668,10 @@ public struct Concatenate4_VTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -691,10 +691,10 @@ public struct Concatenate4_VTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -714,10 +714,10 @@ public struct Concatenate4_VVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -737,10 +737,10 @@ public struct Concatenate4_VVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -760,10 +760,10 @@ public struct Concatenate4_VVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -783,10 +783,10 @@ public struct Concatenate4_VVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root
     ))
   }
 }
@@ -808,11 +808,11 @@ public struct Concatenate5_TTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -832,11 +832,11 @@ public struct Concatenate5_TTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -856,11 +856,11 @@ public struct Concatenate5_TTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -880,11 +880,11 @@ public struct Concatenate5_TTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -904,11 +904,11 @@ public struct Concatenate5_TTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -928,11 +928,11 @@ public struct Concatenate5_TTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -952,11 +952,11 @@ public struct Concatenate5_TTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -976,11 +976,11 @@ public struct Concatenate5_TTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1000,11 +1000,11 @@ public struct Concatenate5_TVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1024,11 +1024,11 @@ public struct Concatenate5_TVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1048,11 +1048,11 @@ public struct Concatenate5_TVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1072,11 +1072,11 @@ public struct Concatenate5_TVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1096,11 +1096,11 @@ public struct Concatenate5_TVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1120,11 +1120,11 @@ public struct Concatenate5_TVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1144,11 +1144,11 @@ public struct Concatenate5_TVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1168,11 +1168,11 @@ public struct Concatenate5_TVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1192,11 +1192,11 @@ public struct Concatenate5_VTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1216,11 +1216,11 @@ public struct Concatenate5_VTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1240,11 +1240,11 @@ public struct Concatenate5_VTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1264,11 +1264,11 @@ public struct Concatenate5_VTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1288,11 +1288,11 @@ public struct Concatenate5_VTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1312,11 +1312,11 @@ public struct Concatenate5_VTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1336,11 +1336,11 @@ public struct Concatenate5_VTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1360,11 +1360,11 @@ public struct Concatenate5_VTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1384,11 +1384,11 @@ public struct Concatenate5_VVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1408,11 +1408,11 @@ public struct Concatenate5_VVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1432,11 +1432,11 @@ public struct Concatenate5_VVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1456,11 +1456,11 @@ public struct Concatenate5_VVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1480,11 +1480,11 @@ public struct Concatenate5_VVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1504,11 +1504,11 @@ public struct Concatenate5_VVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1528,11 +1528,11 @@ public struct Concatenate5_VVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1552,11 +1552,11 @@ public struct Concatenate5_VVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root
     ))
   }
 }
@@ -1578,12 +1578,12 @@ public struct Concatenate6_TTTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1603,12 +1603,12 @@ public struct Concatenate6_TTTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1628,12 +1628,12 @@ public struct Concatenate6_TTTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1653,12 +1653,12 @@ public struct Concatenate6_TTTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1678,12 +1678,12 @@ public struct Concatenate6_TTTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1703,12 +1703,12 @@ public struct Concatenate6_TTTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1728,12 +1728,12 @@ public struct Concatenate6_TTTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1753,12 +1753,12 @@ public struct Concatenate6_TTTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1778,12 +1778,12 @@ public struct Concatenate6_TTVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1803,12 +1803,12 @@ public struct Concatenate6_TTVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1828,12 +1828,12 @@ public struct Concatenate6_TTVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1853,12 +1853,12 @@ public struct Concatenate6_TTVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1878,12 +1878,12 @@ public struct Concatenate6_TTVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1903,12 +1903,12 @@ public struct Concatenate6_TTVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1928,12 +1928,12 @@ public struct Concatenate6_TTVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1953,12 +1953,12 @@ public struct Concatenate6_TTVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -1978,12 +1978,12 @@ public struct Concatenate6_TVTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2003,12 +2003,12 @@ public struct Concatenate6_TVTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2028,12 +2028,12 @@ public struct Concatenate6_TVTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2053,12 +2053,12 @@ public struct Concatenate6_TVTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2078,12 +2078,12 @@ public struct Concatenate6_TVTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2103,12 +2103,12 @@ public struct Concatenate6_TVTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2128,12 +2128,12 @@ public struct Concatenate6_TVTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2153,12 +2153,12 @@ public struct Concatenate6_TVTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2178,12 +2178,12 @@ public struct Concatenate6_TVVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2203,12 +2203,12 @@ public struct Concatenate6_TVVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2228,12 +2228,12 @@ public struct Concatenate6_TVVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2253,12 +2253,12 @@ public struct Concatenate6_TVVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2278,12 +2278,12 @@ public struct Concatenate6_TVVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2303,12 +2303,12 @@ public struct Concatenate6_TVVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2328,12 +2328,12 @@ public struct Concatenate6_TVVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2353,12 +2353,12 @@ public struct Concatenate6_TVVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2378,12 +2378,12 @@ public struct Concatenate6_VTTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2403,12 +2403,12 @@ public struct Concatenate6_VTTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2428,12 +2428,12 @@ public struct Concatenate6_VTTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2453,12 +2453,12 @@ public struct Concatenate6_VTTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2478,12 +2478,12 @@ public struct Concatenate6_VTTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2503,12 +2503,12 @@ public struct Concatenate6_VTTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2528,12 +2528,12 @@ public struct Concatenate6_VTTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2553,12 +2553,12 @@ public struct Concatenate6_VTTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2578,12 +2578,12 @@ public struct Concatenate6_VTVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2603,12 +2603,12 @@ public struct Concatenate6_VTVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2628,12 +2628,12 @@ public struct Concatenate6_VTVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2653,12 +2653,12 @@ public struct Concatenate6_VTVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2678,12 +2678,12 @@ public struct Concatenate6_VTVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2703,12 +2703,12 @@ public struct Concatenate6_VTVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2728,12 +2728,12 @@ public struct Concatenate6_VTVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2753,12 +2753,12 @@ public struct Concatenate6_VTVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2778,12 +2778,12 @@ public struct Concatenate6_VVTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2803,12 +2803,12 @@ public struct Concatenate6_VVTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2828,12 +2828,12 @@ public struct Concatenate6_VVTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2853,12 +2853,12 @@ public struct Concatenate6_VVTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2878,12 +2878,12 @@ public struct Concatenate6_VVTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2903,12 +2903,12 @@ public struct Concatenate6_VVTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2928,12 +2928,12 @@ public struct Concatenate6_VVTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2953,12 +2953,12 @@ public struct Concatenate6_VVTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -2978,12 +2978,12 @@ public struct Concatenate6_VVVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -3003,12 +3003,12 @@ public struct Concatenate6_VVVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -3028,12 +3028,12 @@ public struct Concatenate6_VVVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -3053,12 +3053,12 @@ public struct Concatenate6_VVVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -3078,12 +3078,12 @@ public struct Concatenate6_VVVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -3103,12 +3103,12 @@ public struct Concatenate6_VVVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -3128,12 +3128,12 @@ public struct Concatenate6_VVVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -3153,12 +3153,12 @@ public struct Concatenate6_VVVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root
     ))
   }
 }
@@ -3180,13 +3180,13 @@ public struct Concatenate7_TTTTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3206,13 +3206,13 @@ public struct Concatenate7_TTTTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3232,13 +3232,13 @@ public struct Concatenate7_TTTTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3258,13 +3258,13 @@ public struct Concatenate7_TTTTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3284,13 +3284,13 @@ public struct Concatenate7_TTTTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3310,13 +3310,13 @@ public struct Concatenate7_TTTTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3336,13 +3336,13 @@ public struct Concatenate7_TTTTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3362,13 +3362,13 @@ public struct Concatenate7_TTTTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3388,13 +3388,13 @@ public struct Concatenate7_TTTVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3414,13 +3414,13 @@ public struct Concatenate7_TTTVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3440,13 +3440,13 @@ public struct Concatenate7_TTTVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3466,13 +3466,13 @@ public struct Concatenate7_TTTVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3492,13 +3492,13 @@ public struct Concatenate7_TTTVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3518,13 +3518,13 @@ public struct Concatenate7_TTTVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3544,13 +3544,13 @@ public struct Concatenate7_TTTVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3570,13 +3570,13 @@ public struct Concatenate7_TTTVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3596,13 +3596,13 @@ public struct Concatenate7_TTVTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3622,13 +3622,13 @@ public struct Concatenate7_TTVTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3648,13 +3648,13 @@ public struct Concatenate7_TTVTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3674,13 +3674,13 @@ public struct Concatenate7_TTVTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3700,13 +3700,13 @@ public struct Concatenate7_TTVTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3726,13 +3726,13 @@ public struct Concatenate7_TTVTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3752,13 +3752,13 @@ public struct Concatenate7_TTVTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3778,13 +3778,13 @@ public struct Concatenate7_TTVTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3804,13 +3804,13 @@ public struct Concatenate7_TTVVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3830,13 +3830,13 @@ public struct Concatenate7_TTVVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3856,13 +3856,13 @@ public struct Concatenate7_TTVVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3882,13 +3882,13 @@ public struct Concatenate7_TTVVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3908,13 +3908,13 @@ public struct Concatenate7_TTVVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3934,13 +3934,13 @@ public struct Concatenate7_TTVVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3960,13 +3960,13 @@ public struct Concatenate7_TTVVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -3986,13 +3986,13 @@ public struct Concatenate7_TTVVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4012,13 +4012,13 @@ public struct Concatenate7_TVTTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4038,13 +4038,13 @@ public struct Concatenate7_TVTTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4064,13 +4064,13 @@ public struct Concatenate7_TVTTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4090,13 +4090,13 @@ public struct Concatenate7_TVTTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4116,13 +4116,13 @@ public struct Concatenate7_TVTTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4142,13 +4142,13 @@ public struct Concatenate7_TVTTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4168,13 +4168,13 @@ public struct Concatenate7_TVTTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4194,13 +4194,13 @@ public struct Concatenate7_TVTTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4220,13 +4220,13 @@ public struct Concatenate7_TVTVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4246,13 +4246,13 @@ public struct Concatenate7_TVTVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4272,13 +4272,13 @@ public struct Concatenate7_TVTVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4298,13 +4298,13 @@ public struct Concatenate7_TVTVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4324,13 +4324,13 @@ public struct Concatenate7_TVTVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4350,13 +4350,13 @@ public struct Concatenate7_TVTVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4376,13 +4376,13 @@ public struct Concatenate7_TVTVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4402,13 +4402,13 @@ public struct Concatenate7_TVTVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4428,13 +4428,13 @@ public struct Concatenate7_TVVTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4454,13 +4454,13 @@ public struct Concatenate7_TVVTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4480,13 +4480,13 @@ public struct Concatenate7_TVVTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4506,13 +4506,13 @@ public struct Concatenate7_TVVTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4532,13 +4532,13 @@ public struct Concatenate7_TVVTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4558,13 +4558,13 @@ public struct Concatenate7_TVVTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4584,13 +4584,13 @@ public struct Concatenate7_TVVTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4610,13 +4610,13 @@ public struct Concatenate7_TVVTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4636,13 +4636,13 @@ public struct Concatenate7_TVVVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4662,13 +4662,13 @@ public struct Concatenate7_TVVVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4688,13 +4688,13 @@ public struct Concatenate7_TVVVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4714,13 +4714,13 @@ public struct Concatenate7_TVVVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4740,13 +4740,13 @@ public struct Concatenate7_TVVVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4766,13 +4766,13 @@ public struct Concatenate7_TVVVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4792,13 +4792,13 @@ public struct Concatenate7_TVVVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4818,13 +4818,13 @@ public struct Concatenate7_TVVVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4844,13 +4844,13 @@ public struct Concatenate7_VTTTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4870,13 +4870,13 @@ public struct Concatenate7_VTTTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4896,13 +4896,13 @@ public struct Concatenate7_VTTTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4922,13 +4922,13 @@ public struct Concatenate7_VTTTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4948,13 +4948,13 @@ public struct Concatenate7_VTTTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -4974,13 +4974,13 @@ public struct Concatenate7_VTTTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5000,13 +5000,13 @@ public struct Concatenate7_VTTTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5026,13 +5026,13 @@ public struct Concatenate7_VTTTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5052,13 +5052,13 @@ public struct Concatenate7_VTTVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5078,13 +5078,13 @@ public struct Concatenate7_VTTVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5104,13 +5104,13 @@ public struct Concatenate7_VTTVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5130,13 +5130,13 @@ public struct Concatenate7_VTTVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5156,13 +5156,13 @@ public struct Concatenate7_VTTVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5182,13 +5182,13 @@ public struct Concatenate7_VTTVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5208,13 +5208,13 @@ public struct Concatenate7_VTTVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5234,13 +5234,13 @@ public struct Concatenate7_VTTVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5260,13 +5260,13 @@ public struct Concatenate7_VTVTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5286,13 +5286,13 @@ public struct Concatenate7_VTVTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5312,13 +5312,13 @@ public struct Concatenate7_VTVTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5338,13 +5338,13 @@ public struct Concatenate7_VTVTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5364,13 +5364,13 @@ public struct Concatenate7_VTVTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5390,13 +5390,13 @@ public struct Concatenate7_VTVTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5416,13 +5416,13 @@ public struct Concatenate7_VTVTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5442,13 +5442,13 @@ public struct Concatenate7_VTVTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5468,13 +5468,13 @@ public struct Concatenate7_VTVVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5494,13 +5494,13 @@ public struct Concatenate7_VTVVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5520,13 +5520,13 @@ public struct Concatenate7_VTVVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5546,13 +5546,13 @@ public struct Concatenate7_VTVVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5572,13 +5572,13 @@ public struct Concatenate7_VTVVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5598,13 +5598,13 @@ public struct Concatenate7_VTVVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5624,13 +5624,13 @@ public struct Concatenate7_VTVVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5650,13 +5650,13 @@ public struct Concatenate7_VTVVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5676,13 +5676,13 @@ public struct Concatenate7_VVTTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5702,13 +5702,13 @@ public struct Concatenate7_VVTTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5728,13 +5728,13 @@ public struct Concatenate7_VVTTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5754,13 +5754,13 @@ public struct Concatenate7_VVTTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5780,13 +5780,13 @@ public struct Concatenate7_VVTTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5806,13 +5806,13 @@ public struct Concatenate7_VVTTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5832,13 +5832,13 @@ public struct Concatenate7_VVTTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5858,13 +5858,13 @@ public struct Concatenate7_VVTTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5884,13 +5884,13 @@ public struct Concatenate7_VVTVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5910,13 +5910,13 @@ public struct Concatenate7_VVTVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5936,13 +5936,13 @@ public struct Concatenate7_VVTVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5962,13 +5962,13 @@ public struct Concatenate7_VVTVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -5988,13 +5988,13 @@ public struct Concatenate7_VVTVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6014,13 +6014,13 @@ public struct Concatenate7_VVTVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6040,13 +6040,13 @@ public struct Concatenate7_VVTVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6066,13 +6066,13 @@ public struct Concatenate7_VVTVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6092,13 +6092,13 @@ public struct Concatenate7_VVVTTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6118,13 +6118,13 @@ public struct Concatenate7_VVVTTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6144,13 +6144,13 @@ public struct Concatenate7_VVVTTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6170,13 +6170,13 @@ public struct Concatenate7_VVVTTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6196,13 +6196,13 @@ public struct Concatenate7_VVVTVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6222,13 +6222,13 @@ public struct Concatenate7_VVVTVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6248,13 +6248,13 @@ public struct Concatenate7_VVVTVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6274,13 +6274,13 @@ public struct Concatenate7_VVVTVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6300,13 +6300,13 @@ public struct Concatenate7_VVVVTTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6326,13 +6326,13 @@ public struct Concatenate7_VVVVTTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6352,13 +6352,13 @@ public struct Concatenate7_VVVVTVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6378,13 +6378,13 @@ public struct Concatenate7_VVVVTVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6404,13 +6404,13 @@ public struct Concatenate7_VVVVVTT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6430,13 +6430,13 @@ public struct Concatenate7_VVVVVTV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6456,13 +6456,13 @@ public struct Concatenate7_VVVVVVT<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }
@@ -6482,13 +6482,13 @@ public struct Concatenate7_VVVVVVV<
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
     regex = .init(ast: concat(
-      x0.regex.ast, 
-      x1.regex.ast, 
-      x2.regex.ast, 
-      x3.regex.ast, 
-      x4.regex.ast, 
-      x5.regex.ast, 
-      x6.regex.ast
+      x0.regex.ast.root, 
+      x1.regex.ast.root, 
+      x2.regex.ast.root, 
+      x3.regex.ast.root, 
+      x4.regex.ast.root, 
+      x5.regex.ast.root, 
+      x6.regex.ast.root
     ))
   }
 }

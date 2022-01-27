@@ -36,7 +36,7 @@ func unsupported(
     message: s, file: fStr, line: Int(line))
 }
 
-extension AST {
+extension AST.Node {
   /// Attempt to generate a consumer from this AST node
   ///
   /// A consumer is a Swift closure that matches against

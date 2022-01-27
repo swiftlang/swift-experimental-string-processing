@@ -26,11 +26,11 @@ extension _ASTPrintable {
   public var description: String { _print() }
   public var debugDescription: String { _dump() }
 
-  var _children: [AST]? {
+  var _children: [AST.Node]? {
     if let children = (self as? _ASTParent)?.children {
       return children
     }
-    if let children = (self as? AST)?.children {
+    if let children = (self as? AST.Node)?.children {
       return children
     }
     return nil
@@ -57,6 +57,12 @@ extension _ASTPrintable {
 }
 
 extension AST: _ASTPrintable {
+  public var _dumpBase: String {
+    root._dumpBase
+  }
+}
+
+extension AST.Node: _ASTPrintable {
   public var _dumpBase: String {
     _associatedValue._dumpBase
   }

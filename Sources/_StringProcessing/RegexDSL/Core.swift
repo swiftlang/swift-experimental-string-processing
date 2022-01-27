@@ -78,6 +78,9 @@ public struct Regex<Match: MatchProtocol>: RegexProtocol {
   init(ast: AST) {
     self.program = Program(ast: ast)
   }
+  init(ast: AST.Node) {
+    self.program = Program(ast: .init(ast))
+  }
 
   // Compiler interface. Do not change independently.
   @usableFromInline

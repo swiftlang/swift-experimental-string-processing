@@ -14,13 +14,13 @@ extension AST {
     public var location: SourceLocation
     public var condition: Condition
 
-    public var trueBranch: AST
+    public var trueBranch: AST.Node
     public var pipe: SourceLocation?
-    public var falseBranch: AST
+    public var falseBranch: AST.Node
 
     public init(
-      _ condition: Condition, trueBranch: AST, pipe: SourceLocation?,
-      falseBranch: AST, _ location: SourceLocation
+      _ condition: Condition, trueBranch: AST.Node, pipe: SourceLocation?,
+      falseBranch: AST.Node, _ location: SourceLocation
     ) {
       self.location = location
       self.condition = condition
