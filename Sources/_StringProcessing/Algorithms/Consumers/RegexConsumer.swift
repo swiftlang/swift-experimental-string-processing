@@ -10,23 +10,25 @@
 //===----------------------------------------------------------------------===//
 
 public struct RegexConsumer<
-  Consumed: BidirectionalCollection, Capture: MatchProtocol
+  R: RegexProtocol, Consumed: BidirectionalCollection
 > where Consumed.SubSequence == Substring {
   // TODO: Should `Regex` itself implement these protocols?
-  let regex: Regex<Capture>
+  let regex: R
 
-  public init(_ regex: Regex<Capture>) {
+  public init(_ regex: R) {
     self.regex = regex
   }
-  
+}
+
+extension RegexConsumer {
   func _matchingConsuming(
     _ consumed: Substring, in range: Range<String.Index>
-  ) -> (Capture, String.Index)? {
+  ) -> (upperBound: String.Index, match: Match)? {
     guard let result = regex._match(
       consumed.base,
       in: range, mode: .partialFromFront
     ) else { return nil }
-    return (result.match, result.range.upperBound)
+    return (result.range.upperBound, result.match)
   }
 }
 
@@ -34,11 +36,11 @@ public struct RegexConsumer<
 // well, taking advantage of the fact that the captures can be ignored
 
 extension RegexConsumer: MatchingCollectionConsumer {
-  public typealias Match = Capture
+  public typealias Match = R.Match
   
   public func matchingConsuming(
     _ consumed: Consumed, in range: Range<Consumed.Index>
-  ) -> (Capture, String.Index)? {
+  ) -> (upperBound: String.Index, match: Match)? {
     _matchingConsuming(consumed[...], in: range)
   }
 }
@@ -47,14 +49,14 @@ extension RegexConsumer: MatchingCollectionConsumer {
 extension RegexConsumer: BidirectionalMatchingCollectionConsumer {
   public func matchingConsumingBack(
     _ consumed: Consumed, in range: Range<Consumed.Index>
-  ) -> (Capture, String.Index)? {
+  ) -> (lowerBound: String.Index, match: Match)? {
     var i = range.lowerBound
     while true {
-      if let (capture, end) = _matchingConsuming(
+      if let (end, capture) = _matchingConsuming(
         consumed[...],
         in: i..<range.upperBound
       ), end == range.upperBound {
-        return (capture, i)
+        return (i, capture)
       } else if i == range.upperBound {
         return nil
       } else {
@@ -72,7 +74,7 @@ extension RegexConsumer: MatchingStatelessCollectionSearcher {
   // its own internal state
   public func matchingSearch(
     _ searched: Searched, in range: Range<Searched.Index>
-  ) -> (Capture, Range<String.Index>)? {
+  ) -> (range: Range<String.Index>, match: Match)? {
     ConsumerSearcher(consumer: self).matchingSearch(searched, in: range)
   }
 }
@@ -83,7 +85,7 @@ extension RegexConsumer: BackwardMatchingStatelessCollectionSearcher {
   
   public func matchingSearchBack(
     _ searched: BackwardSearched, in range: Range<Searched.Index>
-  ) -> (Capture, Range<String.Index>)? {
+  ) -> (range: Range<String.Index>, match: Match)? {
     ConsumerSearcher(consumer: self).matchingSearchBack(searched, in: range)
   }
 }

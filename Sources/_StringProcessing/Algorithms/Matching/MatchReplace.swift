@@ -16,11 +16,10 @@ extension RangeReplaceableCollection {
     Searcher: MatchingCollectionSearcher, Replacement: Collection
   >(
     _ searcher: Searcher,
-    with replacement: (Searcher.Match,
-                       Range<Searcher.Searched.Index>) -> Replacement,
+    with replacement: (_MatchResult<Searcher>) throws -> Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max
-  ) -> Self where Searcher.Searched == SubSequence,
+  ) rethrows -> Self where Searcher.Searched == SubSequence,
                   Replacement.Element == Element
   {
     precondition(maxReplacements >= 0)
@@ -29,12 +28,12 @@ extension RangeReplaceableCollection {
     var result = Self()
     result.append(contentsOf: self[..<index])
 
-    for (match, range) in self[subrange].matches(of: searcher)
+    for match in self[subrange].matches(of: searcher)
           .prefix(maxReplacements)
     {
-      result.append(contentsOf: self[index..<range.lowerBound])
-      result.append(contentsOf: replacement(match, range))
-      index = range.upperBound
+      result.append(contentsOf: self[index..<match.range.lowerBound])
+      result.append(contentsOf: try replacement(match))
+      index = match.range.upperBound
     }
 
     result.append(contentsOf: self[index...])
@@ -45,13 +44,12 @@ extension RangeReplaceableCollection {
     Searcher: MatchingCollectionSearcher, Replacement: Collection
   >(
     _ searcher: Searcher,
-    with replacement: (Searcher.Match,
-                       Range<Searcher.Searched.Index>) -> Replacement,
+    with replacement: (_MatchResult<Searcher>) throws -> Replacement,
     maxReplacements: Int = .max
-  ) -> Self where Searcher.Searched == SubSequence,
-                  Replacement.Element == Element
+  ) rethrows -> Self where Searcher.Searched == SubSequence,
+                           Replacement.Element == Element
   {
-    replacing(
+    try replacing(
       searcher,
       with: replacement,
       subrange: startIndex..<endIndex,
@@ -62,11 +60,12 @@ extension RangeReplaceableCollection {
     Searcher: MatchingCollectionSearcher, Replacement: Collection
   >(
     _ searcher: Searcher,
-    with replacement: (Searcher.Match,
-                       Range<Searcher.Searched.Index>) -> Replacement,
+    with replacement: (_MatchResult<Searcher>) throws -> Replacement,
     maxReplacements: Int = .max
-  ) where Searcher.Searched == SubSequence, Replacement.Element == Element {
-    self = replacing(
+  ) rethrows where Searcher.Searched == SubSequence,
+                   Replacement.Element == Element
+  {
+    self = try replacing(
       searcher,
       with: replacement,
       maxReplacements: maxReplacements)
@@ -76,37 +75,37 @@ extension RangeReplaceableCollection {
 // MARK: Regex algorithms
 
 extension RangeReplaceableCollection where SubSequence == Substring {
-  public func replacing<Capture, Replacement: Collection>(
-    _ regex: Regex<Capture>,
-    with replacement: (Capture, Range<String.Index>) -> Replacement,
+  public func replacing<R: RegexProtocol, Replacement: Collection>(
+    _ regex: R,
+    with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max
-  ) -> Self where Replacement.Element == Element {
-    replacing(
+  ) rethrows -> Self where Replacement.Element == Element {
+    try replacing(
       RegexConsumer(regex),
       with: replacement,
       subrange: subrange,
       maxReplacements: maxReplacements)
   }
   
-  public func replacing<Capture, Replacement: Collection>(
-    _ regex: Regex<Capture>,
-    with replacement: (Capture, Range<String.Index>) -> Replacement,
+  public func replacing<R: RegexProtocol, Replacement: Collection>(
+    _ regex: R,
+    with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
     maxReplacements: Int = .max
-  ) -> Self where Replacement.Element == Element {
-    replacing(
+  ) rethrows -> Self where Replacement.Element == Element {
+    try replacing(
       regex,
       with: replacement,
       subrange: startIndex..<endIndex,
       maxReplacements: maxReplacements)
   }
   
-  public mutating func replace<Capture, Replacement: Collection>(
-    _ regex: Regex<Capture>,
-    with replacement: (Capture, Range<String.Index>) -> Replacement,
+  public mutating func replace<R: RegexProtocol, Replacement: Collection>(
+    _ regex: R,
+    with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
     maxReplacements: Int = .max
-  ) where Replacement.Element == Element {
-    self = replacing(
+  ) rethrows where Replacement.Element == Element {
+    self = try replacing(
       regex,
       with: replacement,
       maxReplacements: maxReplacements)

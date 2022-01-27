@@ -48,8 +48,10 @@ public struct MatchesIterator<
     self.state = searcher.state(for: base, in: base.startIndex..<base.endIndex)
   }
 
-  public mutating func next() -> (Searcher.Match, Range<Base.Index>)? {
-    searcher.matchingSearch(base, &state)
+  public mutating func next() -> _MatchResult<Searcher>? {
+    searcher.matchingSearch(base, &state).map { range, result in
+      _MatchResult(match: base[range], result: result)
+    }
   }
 }
 
@@ -63,7 +65,7 @@ extension MatchesCollection: Collection {
   // TODO: Custom `SubSequence` for the sake of more efficient slice iteration
   
   public struct Index {
-    var match: (value: Searcher.Match, range: Range<Base.Index>)?
+    var match: (range: Range<Base.Index>, match: Searcher.Match)?
     var state: Searcher.State
   }
 
@@ -85,11 +87,11 @@ extension MatchesCollection: Collection {
     return index
   }
 
-  public subscript(index: Index) -> (Searcher.Match, Range<Base.Index>) {
-    guard let match = index.match else {
+  public subscript(index: Index) -> _MatchResult<Searcher> {
+    guard let (range, result) = index.match else {
       fatalError("Cannot subscript using endIndex")
     }
-    return match
+    return _MatchResult(match: base[range], result: result)
   }
 }
 
@@ -147,8 +149,10 @@ extension ReversedMatchesCollection: Sequence {
         for: base, in: base.startIndex..<base.endIndex)
     }
 
-    public mutating func next() -> (Searcher.Match, Range<Base.Index>)? {
-      searcher.matchingSearchBack(base, &state)
+    public mutating func next() -> _BackwardMatchResult<Searcher>? {
+      searcher.matchingSearchBack(base, &state).map { range, result in
+        _BackwardMatchResult(match: base[range], result: result)
+      }
     }
   }
 
@@ -180,15 +184,15 @@ extension BidirectionalCollection {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func matches<Capture>(
-    of regex: Regex<Capture>
-  ) -> MatchesCollection<RegexConsumer<Self, Capture>> {
+  public func matches<R: RegexProtocol>(
+    of regex: R
+  ) -> MatchesCollection<RegexConsumer<R, Self>> {
     matches(of: RegexConsumer(regex))
   }
   
-  public func matchesFromBack<Capture>(
-    of regex: Regex<Capture>
-  ) -> ReversedMatchesCollection<RegexConsumer<Self, Capture>> {
+  public func matchesFromBack<R: RegexProtocol>(
+    of regex: R
+  ) -> ReversedMatchesCollection<RegexConsumer<R, Self>> {
     matchesFromBack(of: RegexConsumer(regex))
   }
 }

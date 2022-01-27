@@ -67,14 +67,14 @@ extension ConsumerSearcher: MatchingCollectionSearcher,
   func matchingSearch(
     _ searched: Searched,
     in range: Range<Searched.Index>
-  ) -> (Consumer.Match, Range<Searched.Index>)? {
+  ) -> (range: Range<Searched.Index>, match: Consumer.Match)? {
     var start = range.lowerBound
     while true {
-      if let (value, end) = consumer.matchingConsuming(
+      if let (end, value) = consumer.matchingConsuming(
         searched,
         in: start..<range.upperBound
       ) {
-        return (value, start..<end)
+        return (start..<end, value)
       } else if start == range.upperBound {
         return nil
       } else {
@@ -93,12 +93,12 @@ extension ConsumerSearcher: BackwardMatchingCollectionSearcher,
   func matchingSearchBack(
     _ searched: BackwardSearched,
     in range: Range<Searched.Index>
-  ) -> (Match, Range<Searched.Index>)? {
+  ) -> (range: Range<Searched.Index>, match: Match)? {
     var end = range.upperBound
     while true {
-      if let (value, start) = consumer.matchingConsumingBack(
+      if let (start, value) = consumer.matchingConsumingBack(
         searched, in: range.lowerBound..<end) {
-        return (value, start..<end)
+        return (start..<end, value)
       } else if end == searched.startIndex {
         return nil
       } else {

@@ -40,7 +40,7 @@ extension BidirectionalCollection where Element: Comparable {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func contains<Capture>(_ regex: Regex<Capture>) -> Bool {
+  public func contains<R: RegexProtocol>(_ regex: R) -> Bool {
     contains(RegexConsumer(regex))
   }
 }

@@ -14,7 +14,7 @@ public protocol MatchingCollectionSearcher: CollectionSearcher {
   func matchingSearch(
     _ searched: Searched,
     _ state: inout State
-  ) -> (Match, Range<Searched.Index>)?
+  ) -> (range: Range<Searched.Index>, match: Match)?
 }
 
 extension MatchingCollectionSearcher {
@@ -22,7 +22,7 @@ extension MatchingCollectionSearcher {
     _ searched: Searched,
     _ state: inout State
   ) -> Range<Searched.Index>? {
-    matchingSearch(searched, &state)?.1
+    matchingSearch(searched, &state)?.range
   }
 }
 
@@ -32,7 +32,7 @@ public protocol MatchingStatelessCollectionSearcher:
   func matchingSearch(
     _ searched: Searched,
     in range: Range<Searched.Index>
-  ) -> (Match, Range<Searched.Index>)?
+  ) -> (range: Range<Searched.Index>, match: Match)?
 }
 
 extension MatchingStatelessCollectionSearcher {
@@ -42,18 +42,18 @@ extension MatchingStatelessCollectionSearcher {
     _ searched: Searched,
     _ state: inout State
   ) -> Range<Searched.Index>? {
-    matchingSearch(searched, &state)?.1
+    matchingSearch(searched, &state)?.range
   }
   
   public func matchingSearch(
     _ searched: Searched,
     _ state: inout State
-  ) -> (Match, Range<Searched.Index>)? {
+  ) -> (range: Range<Searched.Index>, match: Match)? {
     // TODO: deduplicate this logic with `StatelessCollectionSearcher`?
     
     guard
       case .index(let index) = state.position,
-      let (value, range) = matchingSearch(searched, in: index..<state.end)
+      let (range, value) = matchingSearch(searched, in: index..<state.end)
     else { return nil }
     
     if range.isEmpty {
@@ -66,14 +66,14 @@ extension MatchingStatelessCollectionSearcher {
       state.position = .index(range.upperBound)
     }
     
-    return (value, range)
+    return (range, value)
   }
   
   public func search(
     _ searched: Searched,
     in range: Range<Searched.Index>
   ) -> Range<Searched.Index>? {
-    matchingSearch(searched, in: range)?.1
+    matchingSearch(searched, in: range)?.range
   }
 }
 
@@ -84,7 +84,7 @@ public protocol BackwardMatchingCollectionSearcher: BackwardCollectionSearcher {
   func matchingSearchBack(
     _ searched: BackwardSearched,
     _ state: inout BackwardState
-  ) -> (Match, Range<BackwardSearched.Index>)?
+  ) -> (range: Range<BackwardSearched.Index>, match: Match)?
 }
 
 public protocol BackwardMatchingStatelessCollectionSearcher:
@@ -93,7 +93,7 @@ public protocol BackwardMatchingStatelessCollectionSearcher:
   func matchingSearchBack(
     _ searched: BackwardSearched,
     in range: Range<BackwardSearched.Index>
-  ) -> (Match, Range<BackwardSearched.Index>)?
+  ) -> (range: Range<BackwardSearched.Index>, match: Match)?
 }
 
 extension BackwardMatchingStatelessCollectionSearcher {
@@ -101,18 +101,18 @@ extension BackwardMatchingStatelessCollectionSearcher {
     _ searched: BackwardSearched,
     in range: Range<BackwardSearched.Index>
   ) -> Range<BackwardSearched.Index>? {
-    matchingSearchBack(searched, in: range)?.1
+    matchingSearchBack(searched, in: range)?.range
   }
   
   public func matchingSearchBack(
     _ searched: BackwardSearched,
-    _ state: inout BackwardState) -> (Match, Range<BackwardSearched.Index>)?
+    _ state: inout BackwardState) -> (range: Range<BackwardSearched.Index>, match: Match)?
   {
     // TODO: deduplicate this logic with `StatelessBackwardCollectionSearcher`?
     
     guard
       case .index(let index) = state.position,
-      let (value, range) = matchingSearchBack(searched, in: state.end..<index)
+      let (range, value) = matchingSearchBack(searched, in: state.end..<index)
     else { return nil }
     
     
@@ -126,6 +126,6 @@ extension BackwardMatchingStatelessCollectionSearcher {
       state.position = .index(range.lowerBound)
     }
     
-    return (value, range)
+    return (range, value)
   }
 }

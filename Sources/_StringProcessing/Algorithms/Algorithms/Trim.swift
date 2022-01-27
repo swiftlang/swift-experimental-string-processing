@@ -257,15 +257,15 @@ extension RangeReplaceableCollection
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func trimmingPrefix<Capture>(_ regex: Regex<Capture>) -> SubSequence {
+  public func trimmingPrefix<R: RegexProtocol>(_ regex: R) -> SubSequence {
     trimmingPrefix(RegexConsumer(regex))
   }
   
-  public func trimmingSuffix<Capture>(_ regex: Regex<Capture>) -> SubSequence {
+  public func trimmingSuffix<R: RegexProtocol>(_ regex: R) -> SubSequence {
     trimmingSuffix(RegexConsumer(regex))
   }
   
-  public func trimming<Capture>(_ regex: Regex<Capture>) -> SubSequence {
+  public func trimming<R: RegexProtocol>(_ regex: R) -> SubSequence {
     trimming(RegexConsumer(regex))
   }
 }
@@ -273,32 +273,32 @@ extension BidirectionalCollection where SubSequence == Substring {
 extension RangeReplaceableCollection
   where Self: BidirectionalCollection, SubSequence == Substring
 {
-  public mutating func trimPrefix<Capture>(_ regex: Regex<Capture>) {
+  public mutating func trimPrefix<R: RegexProtocol>(_ regex: R) {
     trimPrefix(RegexConsumer(regex))
   }
   
-  public mutating func trimSuffix<Capture>(_ regex: Regex<Capture>) {
+  public mutating func trimSuffix<R: RegexProtocol>(_ regex: R) {
     trimSuffix(RegexConsumer(regex))
   }
   
-  public mutating func trim<Capture>(_ regex: Regex<Capture>) {
-    let consumer = RegexConsumer<Self, Capture>(regex)
+  public mutating func trim<R: RegexProtocol>(_ regex: R) {
+    let consumer = RegexConsumer<R, Self>(regex)
     trimPrefix(consumer)
     trimSuffix(consumer)
   }
 }
 
 extension Substring {
-  public mutating func trimPrefix<Capture>(_ regex: Regex<Capture>) {
+  public mutating func trimPrefix<R: RegexProtocol>(_ regex: R) {
     trimPrefix(RegexConsumer(regex))
   }
   
-  public mutating func trimSuffix<Capture>(_ regex: Regex<Capture>) {
+  public mutating func trimSuffix<R: RegexProtocol>(_ regex: R) {
     trimSuffix(RegexConsumer(regex))
   }
   
-  public mutating func trim<Capture>(_ regex: Regex<Capture>) {
-    let consumer = RegexConsumer<Self, Capture>(regex)
+  public mutating func trim<R: RegexProtocol>(_ regex: R) {
+    let consumer = RegexConsumer<R, Self>(regex)
     trimPrefix(consumer)
     trimSuffix(consumer)
   }

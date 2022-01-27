@@ -14,35 +14,39 @@
 extension Collection {
   public func firstMatch<S: MatchingCollectionSearcher>(
     of searcher: S
-  ) -> (S.Match, Range<S.Searched.Index>)? where S.Searched == Self {
+  ) -> _MatchResult<S>? where S.Searched == Self {
     var state = searcher.state(for: self, in: startIndex..<endIndex)
-    return searcher.matchingSearch(self, &state)
+    return searcher.matchingSearch(self, &state).map { range, result in
+      _MatchResult(match: self[range], result: result)
+    }
   }
 }
 
 extension BidirectionalCollection {
   public func lastMatch<S: BackwardMatchingCollectionSearcher>(
     of searcher: S
-  ) -> (S.Match, Range<S.BackwardSearched.Index>)?
+  ) -> _BackwardMatchResult<S>?
     where S.BackwardSearched == Self
   {
     var state = searcher.backwardState(for: self, in: startIndex..<endIndex)
-    return searcher.matchingSearchBack(self, &state)
+    return searcher.matchingSearchBack(self, &state).map { range, result in
+      _BackwardMatchResult(match: self[range], result: result)
+    }
   }
 }
 
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func firstMatch<Capture>(
-    of regex: Regex<Capture>
-  ) -> (Capture, Range<String.Index>)? {
+  public func firstMatch<R: RegexProtocol>(
+    of regex: R
+  ) -> _MatchResult<RegexConsumer<R, Self>>? {
     firstMatch(of: RegexConsumer(regex))
   }
   
-  public func lastMatch<Capture>(
-    of regex: Regex<Capture>
-  ) -> (Capture, Range<String.Index>)? {
+  public func lastMatch<R: RegexProtocol>(
+    of regex: R
+  ) -> _BackwardMatchResult<RegexConsumer<R, Self>>? {
     lastMatch(of: RegexConsumer(regex))
   }
 }

@@ -14,7 +14,7 @@ public protocol MatchingCollectionConsumer: CollectionConsumer {
   func matchingConsuming(
     _ consumed: Consumed,
     in range: Range<Consumed.Index>
-  ) -> (Match, Consumed.Index)?
+  ) -> (upperBound: Consumed.Index, match: Match)?
 }
 
 extension MatchingCollectionConsumer {
@@ -22,7 +22,7 @@ extension MatchingCollectionConsumer {
     _ consumed: Consumed,
     in range: Range<Consumed.Index>
   ) -> Consumed.Index? {
-    matchingConsuming(consumed, in: range)?.1
+    matchingConsuming(consumed, in: range)?.upperBound
   }
 }
 
@@ -34,7 +34,7 @@ public protocol BidirectionalMatchingCollectionConsumer:
   func matchingConsumingBack(
     _ consumed: Consumed,
     in range: Range<Consumed.Index>
-  ) -> (Match, Consumed.Index)?
+  ) -> (lowerBound: Consumed.Index, match: Match)?
 }
 
 extension BidirectionalMatchingCollectionConsumer {
@@ -42,7 +42,7 @@ extension BidirectionalMatchingCollectionConsumer {
     _ consumed: Consumed,
     in range: Range<Consumed.Index>
   ) -> Consumed.Index? {
-    matchingConsumingBack(consumed, in: range)?.1
+    matchingConsumingBack(consumed, in: range)?.lowerBound
   }
 }
 
