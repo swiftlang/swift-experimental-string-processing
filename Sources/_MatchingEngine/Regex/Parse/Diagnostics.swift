@@ -33,6 +33,8 @@ enum ParseError: Error, Hashable {
 
   case tooManyAbsentExpressionChildren(Int)
 
+  case globalMatchingOptionNotAtStart(String)
+
   case expectedASCII(Character)
 
   case expectedNonEmptyContents
@@ -116,6 +118,8 @@ extension ParseError: CustomStringConvertible {
       return "\(str) cannot be used as condition"
     case let .tooManyAbsentExpressionChildren(i):
       return "expected 2 expressions in absent expression, have \(i)"
+    case let .globalMatchingOptionNotAtStart(opt):
+      return "matching option '\(opt)' may only appear at the start of the regex"
     case let .unknownGroupKind(str):
       return "unknown group kind '(\(str)'"
     case let .unknownCalloutKind(str):

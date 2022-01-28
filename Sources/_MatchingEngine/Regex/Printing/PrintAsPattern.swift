@@ -42,12 +42,13 @@ extension PrettyPrinter {
   }
 
   mutating func printAsPattern(_ ast: AST) {
+    // TODO: Global matching options?
     printAsPattern(ast.root)
   }
 
   mutating func printAsPattern(_ ast: AST.Node) {
     if patternBackoff(ast) {
-      printAsCanonical(ast, delimiters: true)
+      printAsCanonical(.init(ast, globalOptions: nil), delimiters: true)
       return
     }
 

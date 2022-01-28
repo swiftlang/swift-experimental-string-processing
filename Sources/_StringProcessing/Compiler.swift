@@ -28,6 +28,7 @@ class Compiler {
   }
 
   __consuming func emit() throws -> RegexProgram {
+    // TODO: Global matching options?
     try emit(ast.root)
     builder.buildAccept()
     let program = builder.assemble()

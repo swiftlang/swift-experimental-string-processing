@@ -43,19 +43,32 @@ func parseTest(
   file: StaticString = #file,
   line: UInt = #line
 ) {
+  parseTest(
+    input, .init(expectedAST, globalOptions: nil), syntax: syntax,
+    captures: expectedCaptures, file: file, line: line
+  )
+}
+
+func parseTest(
+  _ input: String, _ expectedAST: AST,
+  syntax: SyntaxOptions = .traditional,
+  captures expectedCaptures: CaptureStructure = .empty,
+  file: StaticString = #file,
+  line: UInt = #line
+) {
   let ast = try! parse(input, syntax)
-  guard ast.root == expectedAST
-          || ast.root._dump() == expectedAST._dump() // EQ workaround
+  guard ast == expectedAST
+          || ast._dump() == expectedAST._dump() // EQ workaround
   else {
     XCTFail("""
 
               Expected: \(expectedAST._dump())
-              Found:    \(ast.root._dump())
+              Found:    \(ast._dump())
               """,
             file: file, line: line)
     return
   }
-  let captures = ast.root.captureStructure
+  let captures = ast.captureStructure
   guard captures == expectedCaptures else {
     XCTFail("""
 
@@ -125,13 +138,14 @@ func parseNotEqualTest(
   syntax: SyntaxOptions = .traditional,
   file: StaticString = #file, line: UInt = #line
 ) {
-  let lhsAST = try! parse(lhs, syntax).root
-  let rhsAST = try! parse(rhs, syntax).root
+  let lhsAST = try! parse(lhs, syntax)
+  let rhsAST = try! parse(rhs, syntax)
   if lhsAST == rhsAST || lhsAST._dump() == rhsAST._dump() {
     XCTFail("""
               AST: \(lhsAST._dump())
               Should not be equal to: \(rhsAST._dump())
-              """)
+              """,
+            file: file, line: line)
   }
 }
 
@@ -1221,6 +1235,43 @@ extension RegexTests {
     // Maybe we should diagnose it?
     parseTest("(?~|)+", oneOrMore(.eager, absentRangeClear()))
 
+    // MARK: Global matching options
+
+    parseTest("(*CR)(*UTF)(*LIMIT_DEPTH=3)", ast(
+      empty(), opts: .newlineMatching(.carriageReturnOnly), .utfMode,
+      .limitDepth(.init(faking: 3))
+    ))
+
+    parseTest(
+      "(*BSR_UNICODE)3", ast("3", opts: .newlineSequenceMatching(.anyUnicode)))
+    parseTest(
+      "(*BSR_ANYCRLF)", ast(
+        empty(), opts: .newlineSequenceMatching(.anyCarriageReturnOrLinefeed)))
+
+    // TODO: Diagnose on multiple line matching modes?
+    parseTest(
+      "(*CR)(*LF)(*CRLF)(*ANYCRLF)(*ANY)(*NUL)",
+      ast(empty(), opts: [
+        .carriageReturnOnly, .linefeedOnly, .carriageAndLinefeedOnly,
+        .anyCarriageReturnOrLinefeed, .anyUnicode, .nulCharacter
+      ].map { .newlineMatching($0) }))
+
+    parseTest(
+      """
+      (*LIMIT_DEPTH=3)(*LIMIT_HEAP=1)(*LIMIT_MATCH=2)(*NOTEMPTY)\
+      (*NOTEMPTY_ATSTART)(*NO_AUTO_POSSESS)(*NO_DOTSTAR_ANCHOR)(*NO_JIT)\
+      (*NO_START_OPT)(*UTF)(*UCP)a
+      """,
+      ast("a", opts:
+        .limitDepth(.init(faking: 3)), .limitHeap(.init(faking: 1)),
+        .limitMatch(.init(faking: 2)), .notEmpty, .notEmptyAtStart,
+        .noAutoPossess, .noDotStarAnchor, .noJIT, .noStartOpt, .utfMode,
+        .unicodeProperties
+      )
+    )
+
+    parseTest("[(*CR)]", charClass("(", "*", "C", "R", ")"))
+
     // MARK: Parse with delimiters
 
     parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
@@ -1318,6 +1369,11 @@ extension RegexTests {
     parseNotEqualTest("(?~|a|b)", "(?~|a|c)")
     parseNotEqualTest("(?~)", "(?~|)")
     parseNotEqualTest("(?~a)", "(?~b)")
+
+    parseNotEqualTest("(*CR)", "(*LF)")
+    parseNotEqualTest("(*LIMIT_DEPTH=3)", "(*LIMIT_DEPTH=1)")
+    parseNotEqualTest("(*UTF)", "(*LF)")
+    parseNotEqualTest("(*LF)", "(*BSR_ANYCRLF)")
   }
 
   func testParseSourceLocations() throws {
@@ -1613,5 +1669,15 @@ extension RegexTests {
     diagnosticTest("(?~|", .expected(")"))
     diagnosticTest("(?~|a|b|c)", .tooManyAbsentExpressionChildren(3))
     diagnosticTest("(?~||||)", .tooManyAbsentExpressionChildren(4))
+
+    // MARK: Global matching options
+
+    diagnosticTest("a(*CR)", .globalMatchingOptionNotAtStart("(*CR)"))
+    diagnosticTest("(*CR)a(*LF)", .globalMatchingOptionNotAtStart("(*LF)"))
+    diagnosticTest("(*LIMIT_HEAP)", .expected("="))
+    diagnosticTest("(*LIMIT_DEPTH=", .expectedNumber("", kind: .decimal))
+
+    // TODO: This diagnostic could be better.
+    diagnosticTest("(*LIMIT_DEPTH=-1", .expectedNumber("", kind: .decimal))
   }
 }

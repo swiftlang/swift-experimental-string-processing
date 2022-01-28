@@ -1638,6 +1638,12 @@ extension Source {
         return .backtrackingDirective(b)
       }
 
+      // Global matching options can only appear at the very start.
+      if let opt = try src.lexGlobalMatchingOption() {
+        throw ParseError.globalMatchingOptionNotAtStart(
+          String(src[opt.location.range]))
+      }
+
       // (?C)
       if let callout = try src.lexPCRECallout() {
         return .callout(callout)
@@ -1742,6 +1748,116 @@ extension Source {
       return nil
     }
     return (dash, end)
+  }
+
+  /// Try to consume a newline sequence matching option kind.
+  ///
+  ///     NewlineSequenceKind -> 'BSR_ANYCRLF' | 'BSR_UNICODE'
+  ///
+  private mutating func lexNewlineSequenceMatchingOption(
+  ) throws -> AST.GlobalMatchingOption.NewlineSequenceMatching? {
+    if tryEat(sequence: "BSR_ANYCRLF") { return .anyCarriageReturnOrLinefeed }
+    if tryEat(sequence: "BSR_UNICODE") { return .anyUnicode }
+    return nil
+  }
+
+  /// Try to consume a newline matching option kind.
+  ///
+  ///     NewlineKind -> 'CRLF' | 'CR' | 'ANYCRLF' | 'ANY' | 'LF' | 'NUL'
+  ///
+  private mutating func lexNewlineMatchingOption(
+  ) throws -> AST.GlobalMatchingOption.NewlineMatching? {
+    // The ordering here is important: CRLF needs to precede CR, and ANYCRLF
+    // needs to precede ANY to ensure we don't short circuit on the wrong one.
+    if tryEat(sequence: "CRLF") { return .carriageAndLinefeedOnly }
+    if tryEat(sequence: "CR") { return .carriageReturnOnly }
+    if tryEat(sequence: "ANYCRLF") { return .anyCarriageReturnOrLinefeed }
+    if tryEat(sequence: "ANY") { return .anyUnicode }
+
+    if tryEat(sequence: "LF") { return .linefeedOnly }
+    if tryEat(sequence: "NUL") { return .nulCharacter }
+    return nil
+  }
+
+  /// Try to consume a global matching option kind, returning `nil` if
+  /// unsuccessful.
+  ///
+  ///     GlobalMatchingOptionKind -> LimitOptionKind '=' <Int>
+  ///                               | NewlineKind | NewlineSequenceKind
+  ///                               | 'NOTEMPTY_ATSTART' | 'NOTEMPTY'
+  ///                               | 'NO_AUTO_POSSESS' | 'NO_DOTSTAR_ANCHOR'
+  ///                               | 'NO_JIT' | 'NO_START_OPT' | 'UTF' | 'UCP'
+  ///
+  ///     LimitOptionKind          -> 'LIMIT_DEPTH' | 'LIMIT_HEAP'
+  ///                               | 'LIMIT_MATCH'
+  ///
+  private mutating func lexGlobalMatchingOptionKind(
+  ) throws -> Located<AST.GlobalMatchingOption.Kind>? {
+    try recordLoc { src in
+      if let opt = try src.lexNewlineSequenceMatchingOption() {
+        return .newlineSequenceMatching(opt)
+      }
+      if let opt = try src.lexNewlineMatchingOption() {
+        return .newlineMatching(opt)
+      }
+      if src.tryEat(sequence: "LIMIT_DEPTH") {
+        try src.expect("=")
+        return .limitDepth(try src.expectNumber())
+      }
+      if src.tryEat(sequence: "LIMIT_HEAP") {
+        try src.expect("=")
+        return .limitHeap(try src.expectNumber())
+      }
+      if src.tryEat(sequence: "LIMIT_MATCH") {
+        try src.expect("=")
+        return .limitMatch(try src.expectNumber())
+      }
+
+      // The ordering here is important: NOTEMPTY_ATSTART needs to precede
+      // NOTEMPTY to ensure we don't short circuit on the wrong one.
+      if src.tryEat(sequence: "NOTEMPTY_ATSTART") { return .notEmptyAtStart }
+      if src.tryEat(sequence: "NOTEMPTY") { return .notEmpty }
+
+      if src.tryEat(sequence: "NO_AUTO_POSSESS") { return .noAutoPossess }
+      if src.tryEat(sequence: "NO_DOTSTAR_ANCHOR") { return .noDotStarAnchor }
+      if src.tryEat(sequence: "NO_JIT") { return .noJIT }
+      if src.tryEat(sequence: "NO_START_OPT") { return .noStartOpt }
+      if src.tryEat(sequence: "UTF") { return .utfMode }
+      if src.tryEat(sequence: "UCP") { return .unicodeProperties }
+      return nil
+    }
+  }
+
+  /// Try to consume a global matching option, returning `nil` if unsuccessful.
+  ///
+  ///     GlobalMatchingOption -> '(*' GlobalMatchingOptionKind ')'
+  ///
+  mutating func lexGlobalMatchingOption(
+  ) throws -> AST.GlobalMatchingOption? {
+    let kind = try recordLoc { src -> AST.GlobalMatchingOption.Kind? in
+      try src.tryEating { src in
+        guard src.tryEat(sequence: "(*"),
+              let kind = try src.lexGlobalMatchingOptionKind()?.value
+        else { return nil }
+        try src.expect(")")
+        return kind
+      }
+    }
+    guard let kind = kind else { return nil }
+    return .init(kind.value, kind.location)
+  }
+
+  /// Try to consume a sequence of global matching options.
+  ///
+  ///     GlobalMatchingOptionSequence -> GlobalMatchingOption+
+  ///
+  mutating func lexGlobalMatchingOptionSequence(
+  ) throws -> AST.GlobalMatchingOptionSequence? {
+    var opts: [AST.GlobalMatchingOption] = []
+    while let opt = try lexGlobalMatchingOption() {
+      opts.append(opt)
+    }
+    return .init(opts)
   }
 }
 
