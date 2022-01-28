@@ -347,6 +347,9 @@ extension AST.Atom {
       // `.any` is handled in the matching engine by Compiler.emitAny() and in
       // the legacy compiler by the `.any` instruction, which can provide lower
       // level instructions than the CharacterClass-generated consumer closure
+      //
+      // FIXME: We shouldn't be returning `nil` here, but instead fixing the call
+      // site to check for any before trying to construct a character class.
       return nil
 
     default: return nil
