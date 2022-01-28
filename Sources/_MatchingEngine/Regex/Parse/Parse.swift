@@ -117,17 +117,24 @@ extension Parser {
   /// Parse a top-level regular expression. Do not use for recursive calls, use
   /// `parseNode()` instead.
   ///
-  ///     Regex -> RegexNode
+  ///     Regex -> GlobalMatchingOptionSequence? RegexNode
   ///
   mutating func parse() throws -> AST {
+    // First parse any global matching options if present.
+    let opts = try source.lexGlobalMatchingOptionSequence()
+
+    // Then parse the root AST node.
     let ast = try parseNode()
     guard source.isEmpty else {
+      // parseConcatenation() terminates on encountering a ')' to enable
+      // recursive parses of a group body. However for a top-level parse, this
+      // means we have an unmatched closing paren, so let's diagnose.
       if let loc = source.tryEatWithLoc(")") {
         throw Source.LocatedError(ParseError.unbalancedEndOfGroup, loc)
       }
       fatalError("Unhandled termination condition")
     }
-    return .init(ast)
+    return .init(ast, globalOptions: opts)
   }
 
   /// Parse a regular expression node. This should be used instead of `parse()`

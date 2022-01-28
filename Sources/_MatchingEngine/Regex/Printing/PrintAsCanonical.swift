@@ -32,12 +32,8 @@ extension AST.Node {
     showDelimiters delimiters: Bool = false,
     terminateLine: Bool = false
   ) -> String {
-    var printer = PrettyPrinter()
-    printer.printAsCanonical(
-       self,
-       delimiters: delimiters,
-       terminateLine: terminateLine)
-    return printer.finish()
+    AST(self, globalOptions: nil).renderAsCanonical(
+      showDelimiters: delimiters, terminateLine: terminateLine)
   }
 }
 
@@ -49,19 +45,12 @@ extension PrettyPrinter {
     delimiters: Bool = false,
     terminateLine terminate: Bool = true
   ) {
-    printAsCanonical(ast.root, delimiters: delimiters, terminateLine: terminate)
-  }
-
-  /// Will output `ast` in canonical form, taking care to
-  /// also indent and terminate the line (updating internal state)
-  mutating func printAsCanonical(
-    _ ast: AST.Node,
-    delimiters: Bool = false,
-    terminateLine terminate: Bool = true
-  ) {
     indent()
     if delimiters { output("'/") }
-    outputAsCanonical(ast)
+    if let opts = ast.globalOptions {
+      outputAsCanonical(opts)
+    }
+    outputAsCanonical(ast.root)
     if delimiters { output("/'") }
     if terminate {
       terminateLine()
@@ -173,6 +162,12 @@ extension PrettyPrinter {
     }
     output(")")
   }
+
+  mutating func outputAsCanonical(_ opts: AST.GlobalMatchingOptionSequence) {
+    for opt in opts.options {
+      output(opt._canonicalBase)
+    }
+  }
 }
 
 extension AST.Quote {
@@ -273,4 +268,50 @@ extension AST.Group.BalancedCapture {
   var _canonicalBase: String {
     "\(name?.value ?? "")-\(priorName.value)"
   }
+}
+
+extension AST.GlobalMatchingOption.NewlineMatching {
+  var _canonicalBase: String {
+    switch self {
+    case .carriageReturnOnly:          return "CR"
+    case .linefeedOnly:                return "LF"
+    case .carriageAndLinefeedOnly:     return "CRLF"
+    case .anyCarriageReturnOrLinefeed: return "ANYCRLF"
+    case .anyUnicode:                  return "ANY"
+    case .nulCharacter:                return "NUL"
+    }
+  }
+}
+
+extension AST.GlobalMatchingOption.NewlineSequenceMatching {
+  var _canonicalBase: String {
+    switch self {
+    case .anyCarriageReturnOrLinefeed: return "BSR_ANYCRLF"
+    case .anyUnicode:                  return "BSR_UNICODE"
+    }
+  }
+}
+
+extension AST.GlobalMatchingOption.Kind {
+  var _canonicalBase: String {
+    switch self {
+    case .limitDepth(let i):              return "LIMIT_DEPTH=\(i.value)"
+    case .limitHeap(let i):               return "LIMIT_HEAP=\(i.value)"
+    case .limitMatch(let i):              return "LIMIT_MATCH=\(i.value)"
+    case .notEmpty:                       return "NOTEMPTY"
+    case .notEmptyAtStart:                return "NOTEMPTY_ATSTART"
+    case .noAutoPossess:                  return "NO_AUTO_POSSESS"
+    case .noDotStarAnchor:                return "NO_DOTSTAR_ANCHOR"
+    case .noJIT:                          return "NO_JIT"
+    case .noStartOpt:                     return "NO_START_OPT"
+    case .utfMode:                        return "UTF"
+    case .unicodeProperties:              return "UCP"
+    case .newlineMatching(let m):         return m._canonicalBase
+    case .newlineSequenceMatching(let m): return m._canonicalBase
+    }
+  }
+}
+
+extension AST.GlobalMatchingOption {
+  var _canonicalBase: String { "(*\(kind._canonicalBase))"}
 }

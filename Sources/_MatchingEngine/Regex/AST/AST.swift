@@ -13,8 +13,11 @@
 /// node.
 public struct AST: Hashable {
   public var root: AST.Node
-  public init(_ root: AST.Node) {
+  public var globalOptions: GlobalMatchingOptionSequence?
+
+  public init(_ root: AST.Node, globalOptions: GlobalMatchingOptionSequence?) {
     self.root = root
+    self.globalOptions = globalOptions
   }
 }
 
@@ -290,6 +293,20 @@ extension AST {
     /// Whether this is a reference that recurses the whole pattern, rather than
     /// a group.
     public var recursesWholePattern: Bool { kind == .recurseWholePattern }
+  }
+
+  /// A set of global matching options in a regular expression literal.
+  public struct GlobalMatchingOptionSequence: Hashable {
+    public var options: [AST.GlobalMatchingOption]
+
+    public init?(_ options: [AST.GlobalMatchingOption]) {
+      guard !options.isEmpty else { return nil }
+      self.options = options
+    }
+
+    public var location: SourceLocation {
+      options.first!.location.union(with: options.last!.location)
+    }
   }
 }
 

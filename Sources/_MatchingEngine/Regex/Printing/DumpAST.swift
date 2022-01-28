@@ -58,7 +58,12 @@ extension _ASTPrintable {
 
 extension AST: _ASTPrintable {
   public var _dumpBase: String {
-    root._dumpBase
+    var result = ""
+    if let opts = globalOptions {
+      result += "\(opts) "
+    }
+    result += root._dump()
+    return result
   }
 }
 
@@ -339,5 +344,19 @@ extension AST.AbsentFunction.Kind {
 extension AST.AbsentFunction {
   public var _dumpBase: String {
     "absent function \(kind._dumpBase)"
+  }
+}
+
+extension AST.GlobalMatchingOption.Kind: _ASTPrintable {
+  public var _dumpBase: String { _canonicalBase }
+}
+
+extension AST.GlobalMatchingOption: _ASTPrintable {
+  public var _dumpBase: String { "\(kind._dumpBase)" }
+}
+
+extension AST.GlobalMatchingOptionSequence: _ASTPrintable {
+  public var _dumpBase: String {
+    "GlobalMatchingOptionSequence<\(options)>"
   }
 }

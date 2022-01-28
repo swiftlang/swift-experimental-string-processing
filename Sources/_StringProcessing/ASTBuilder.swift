@@ -47,6 +47,14 @@ func empty() -> AST.Node {
   .empty(.init(.fake))
 }
 
+func ast(_ root: AST.Node, opts: [AST.GlobalMatchingOption.Kind]) -> AST {
+  .init(root, globalOptions: .init(opts.map { .init($0, .fake) }))
+}
+
+func ast(_ root: AST.Node, opts: AST.GlobalMatchingOption.Kind...) -> AST {
+  ast(root, opts: opts)
+}
+
 func group(
   _ kind: AST.Group.Kind, _ child: AST.Node
 ) -> AST.Node {

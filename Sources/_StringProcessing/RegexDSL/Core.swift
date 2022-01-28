@@ -79,7 +79,7 @@ public struct Regex<Match: MatchProtocol>: RegexProtocol {
     self.program = Program(ast: ast)
   }
   init(ast: AST.Node) {
-    self.program = Program(ast: .init(ast))
+    self.program = Program(ast: .init(ast, globalOptions: nil))
   }
 
   // Compiler interface. Do not change independently.
