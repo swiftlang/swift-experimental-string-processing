@@ -50,11 +50,13 @@ extension RangeReplaceableCollection {
       maxReplacements: maxReplacements)
   }
   
-  public mutating func replace<Searcher: CollectionSearcher, R: Collection>(
+  public mutating func replace<
+    Searcher: CollectionSearcher, Replacement: Collection
+  >(
     _ searcher: Searcher,
-    with replacement: R,
+    with replacement: Replacement,
     maxReplacements: Int = .max
-  ) where Searcher.Searched == SubSequence, R.Element == Element {
+  ) where Searcher.Searched == SubSequence, Replacement.Element == Element {
     self = replacing(
       searcher,
       with: replacement,
@@ -147,8 +149,8 @@ extension RangeReplaceableCollection
 // MARK: Regex algorithms
 
 extension RangeReplaceableCollection where SubSequence == Substring {
-  public func replacing<Capture, Replacement: Collection>(
-    _ regex: Regex<Capture>,
+  public func replacing<R: RegexProtocol, Replacement: Collection>(
+    _ regex: R,
     with replacement: Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max
@@ -160,8 +162,8 @@ extension RangeReplaceableCollection where SubSequence == Substring {
       maxReplacements: maxReplacements)
   }
   
-  public func replacing<Capture, Replacement: Collection>(
-    _ regex: Regex<Capture>,
+  public func replacing<R: RegexProtocol, Replacement: Collection>(
+    _ regex: R,
     with replacement: Replacement,
     maxReplacements: Int = .max
   ) -> Self where Replacement.Element == Element {
@@ -172,8 +174,8 @@ extension RangeReplaceableCollection where SubSequence == Substring {
       maxReplacements: maxReplacements)
   }
   
-  public mutating func replace<Capture, Replacement: Collection>(
-    _ regex: Regex<Capture>,
+  public mutating func replace<R: RegexProtocol, Replacement: Collection>(
+    _ regex: R,
     with replacement: Replacement,
     maxReplacements: Int = .max
   ) where Replacement.Element == Element {

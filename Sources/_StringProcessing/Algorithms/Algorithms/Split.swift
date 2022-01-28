@@ -25,12 +25,6 @@ public struct SplitCollection<Searcher: CollectionSearcher> {
   }
 }
 
-extension SplitCollection where Searcher: BidirectionalCollectionSearcher {
-  public func reversed() -> ReversedSplitCollection<Searcher> {
-    ReversedSplitCollection(ranges: ranges.reversed())
-  }
-}
-
 extension SplitCollection: Sequence {
   public struct Iterator: IteratorProtocol {
     let base: Base
@@ -141,14 +135,6 @@ public struct ReversedSplitCollection<Searcher: BackwardCollectionSearcher> {
 
   init(base: Base, searcher: Searcher) {
     self.ranges = base.rangesFromBack(of: searcher)
-  }
-}
-
-extension ReversedSplitCollection
-  where Searcher: BidirectionalCollectionSearcher
-{
-  public func reversed() -> SplitCollection<Searcher> {
-    SplitCollection(ranges: ranges.reversed())
   }
 }
 
@@ -289,15 +275,15 @@ extension BidirectionalCollection where Element: Comparable {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func split<Capture>(
-    by separator: Regex<Capture>
-  ) -> SplitCollection<RegexConsumer<Self>> {
+  public func split<R: RegexProtocol>(
+    by separator: R
+  ) -> SplitCollection<RegexConsumer<R, Self>> {
     split(by: RegexConsumer(separator))
   }
   
-  public func splitFromBack<Capture>(
-    by separator: Regex<Capture>
-  ) -> ReversedSplitCollection<RegexConsumer<Self>> {
+  public func splitFromBack<R: RegexProtocol>(
+    by separator: R
+  ) -> ReversedSplitCollection<RegexConsumer<R, Self>> {
     splitFromBack(by: RegexConsumer(separator))
   }
 }

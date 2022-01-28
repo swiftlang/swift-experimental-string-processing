@@ -129,7 +129,8 @@ extension RegexProtocol {
   // legacy virtual machines.
   func _match(
     _ input: String,
-    in inputRange: Range<String.Index>
+    in inputRange: Range<String.Index>,
+    mode: MatchMode = .wholeString
   ) -> RegexMatch<Match>? {
     // Casts a Swift tuple to the custom `Tuple<n>`, assuming their memory
     // layout is compatible.
@@ -141,7 +142,7 @@ extension RegexProtocol {
     if regex.ast.hasCapture {
       let vm = HareVM(program: regex.program.legacyLoweredProgram)
       guard let (range, captures) = vm.execute(
-        input: input, in: inputRange, mode: .wholeString
+        input: input, in: inputRange, mode: mode
       )?.destructure else {
         return nil
       }
@@ -160,7 +161,7 @@ extension RegexProtocol {
     }
     let executor = Executor(program: regex.program.loweredProgram)
     guard let result = executor.execute(
-      input: input, in: inputRange, mode: .wholeString
+      input: input, in: inputRange, mode: mode
     ) else {
       return nil
     }

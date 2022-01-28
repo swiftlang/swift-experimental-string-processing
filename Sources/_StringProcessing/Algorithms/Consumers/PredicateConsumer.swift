@@ -56,7 +56,7 @@ extension PredicateConsumer: StatelessCollectionSearcher {
 }
 
 extension PredicateConsumer: BackwardCollectionSearcher,
-                             StatelessBackwardCollectionSearcher
+                             BackwardStatelessCollectionSearcher
   where Searched: BidirectionalCollection
 {
   public typealias BackwardSearched = Consumed

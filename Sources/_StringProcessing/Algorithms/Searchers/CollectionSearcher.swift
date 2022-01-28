@@ -55,7 +55,6 @@ extension StatelessCollectionSearcher {
       let range = search(searched, in: index..<state.end)
     else { return nil }
     
-    
     if range.isEmpty {
       if range.upperBound == searched.endIndex {
         state.position = .done
@@ -85,7 +84,7 @@ public protocol BackwardCollectionSearcher {
   ) -> Range<BackwardSearched.Index>?
 }
 
-public protocol StatelessBackwardCollectionSearcher: BackwardCollectionSearcher
+public protocol BackwardStatelessCollectionSearcher: BackwardCollectionSearcher
   where BackwardState == DefaultSearcherState<BackwardSearched>
 {
   func searchBack(
@@ -94,7 +93,7 @@ public protocol StatelessBackwardCollectionSearcher: BackwardCollectionSearcher
   ) -> Range<BackwardSearched.Index>?
 }
 
-extension StatelessBackwardCollectionSearcher {
+extension BackwardStatelessCollectionSearcher {
   public func backwardState(
     for searched: BackwardSearched,
     in range: Range<BackwardSearched.Index>
@@ -124,7 +123,3 @@ extension StatelessBackwardCollectionSearcher {
     return range
   }
 }
-
-public protocol BidirectionalCollectionSearcher: CollectionSearcher,
-                                                 BackwardCollectionSearcher
-  where Searched == BackwardSearched {}

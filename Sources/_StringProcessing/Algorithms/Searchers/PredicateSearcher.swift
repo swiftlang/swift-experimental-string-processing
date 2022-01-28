@@ -26,7 +26,7 @@ extension PredicateSearcher: StatelessCollectionSearcher {
 }
 
 extension PredicateSearcher: BackwardCollectionSearcher,
-                             StatelessBackwardCollectionSearcher
+                             BackwardStatelessCollectionSearcher
   where Searched: BidirectionalCollection
 {
   typealias BackwardSearched = Searched
@@ -42,5 +42,3 @@ extension PredicateSearcher: BackwardCollectionSearcher,
   }
 }
 
-extension PredicateSearcher: BidirectionalCollectionSearcher
-  where Searched: BidirectionalCollection {}
