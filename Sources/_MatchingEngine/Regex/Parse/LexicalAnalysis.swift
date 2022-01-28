@@ -574,6 +574,11 @@ extension Source {
         try src.expect("}")
         return opt
 
+      // Swift semantic level options
+      case "X": return advanceAndReturn(.graphemeClusterSemantics)
+      case "u": return advanceAndReturn(.unicodeScalarSemantics)
+      case "b": return advanceAndReturn(.byteSemantics)
+        
       default:
         return nil
       }
@@ -617,6 +622,10 @@ extension Source {
         // with (?-), they should instead be set to a different mode.
         if opt.isTextSegmentMode {
           throw ParseError.cannotRemoveTextSegmentOptions
+        }
+        // Matching semantics options can only be added, not removed.
+        if opt.isSemanticMatchingLevel {
+          throw ParseError.cannotRemoveSemanticsOptions
         }
         removing.append(opt)
       }

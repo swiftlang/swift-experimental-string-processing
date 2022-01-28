@@ -18,21 +18,23 @@ func diagnose(
   _ input: String,
   expecting expected: ParseError,
   _ syntax: SyntaxOptions = .traditional,
-  _ f: (inout Source) throws -> ()
+  _ f: (inout Source) throws -> (),
+  file: StaticString = #file,
+  line: UInt = #line
 ) {
   var src = Source(input, syntax)
   do {
     try f(&src)
     XCTFail("""
       Passed, but expected error: \(expected)
-    """)
+    """, file: file, line: line)
   } catch let e as Source.LocatedError<ParseError> {
     guard e.error == expected else {
       XCTFail("""
 
         Expected: \(expected)
         Actual: \(e.error)
-      """)
+      """, file: file, line: line)
       return
     }
   } catch let e {

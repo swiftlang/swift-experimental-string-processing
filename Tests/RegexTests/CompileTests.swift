@@ -18,14 +18,16 @@ import XCTest
 extension RegexTests {
 
   private func testCompilationEquivalence(
-    _ equivs: [String]
+    _ equivs: [String],
+    file: StaticString = #file,
+    line: UInt = #line
   ) throws {
     assert(!equivs.isEmpty)
     let progs = try equivs.map {
       try _compileRegex($0).engine.program
     }
     let ref = progs.first!
-    for prog in progs.dropFirst() {
+    for (prog, equiv) in zip(progs, equivs).dropFirst() {
       guard ref.instructions.elementsEqual(
         prog.instructions) else {
           XCTFail("""
@@ -33,7 +35,10 @@ extension RegexTests {
           \(ref)
           Current:
           \(prog)
-          """)
+          Compiled from:
+          \(equiv)
+          """,
+          file: file, line: line)
           continue
         }
     }
@@ -70,7 +75,14 @@ extension RegexTests {
        "(*positive_lookahead: assert)"],
       ["(?! assert)",
        "(*nla: assert)",
-       "(*negative_lookahead: assert)"]
+       "(*negative_lookahead: assert)"],
+      
+      ["a+?",
+       "(?U)a+",
+       "(?U:a+)"],
+      ["a+",
+       "(?U)(?-U)a+",
+       "(?U)(?^s)a+"],
     ]
 
     for row in equivalents {

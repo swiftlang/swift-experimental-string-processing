@@ -154,14 +154,14 @@ private func performTest<Capture>(
 
 extension RegexTests {
   func testLegacyCompile() {
-    func performTest(_ input: String, _ expecting: RECode) {
+    func performTest(_ input: String, _ expecting: RECode, line: UInt = #line) {
       let recode = try! compile(input)
       guard recode == expecting else {
         XCTFail("""
 
                   Expected: \(expecting)
                   Found:    \(recode)
-                  """)
+                  """, line: line)
         return
       }
     }
@@ -292,7 +292,7 @@ extension RegexTests {
       recode(
         label(0), split(disfavoring: 1),
         .beginGroup,
-        label(2), split(disfavoring: 3), .characterClass(.any), goto(label: 2),
+        label(2), split(disfavoring: 3), .any, goto(label: 2),
         label(3),
         .endGroup,
         goto(label: 0),
@@ -302,7 +302,7 @@ extension RegexTests {
       "a.*?b+?c??",
       recode("a",
              label(0), split(disfavoring: 1), goto(label: 2),
-             label(1), .characterClass(.any), goto(label: 0),
+             label(1), .any, goto(label: 0),
              label(2),
              label(3), "b", split(disfavoring: 3),
              split(disfavoring: 4), goto(label: 5),
@@ -417,34 +417,6 @@ extension RegexTests {
 //      regex: "(?a*)*", input: "aaaa",
 //      expectedCaptureType: Substring.self,
 //      expecting: .init(captures: "aaaa", capturesEqual: ==))
-  }
-
-  func testLegacyMatchLevel() throws {
-    let tests: Array<(String, chars: [String], unicodes: [String])> = [
-      ("..", ["e\u{301}e\u{301}"], ["e\u{301}"]),
-    ]
-
-    for (regex, characterInputs, scalarInputs) in tests {
-      let ast = try parse(regex, .traditional)
-      let program = try Compiler(ast: ast).emit()
-      let executor = Executor(program: program)
-
-      let scalarProgram = try Compiler(
-        ast: ast, matchLevel: .unicodeScalar
-      ).emit()
-      let scalarExecutor = Executor(
-        program: scalarProgram, enablesTracing: false)
-
-      for input in characterInputs {
-        XCTAssertNotNil(executor.execute(input: input))
-        XCTAssertNil(scalarExecutor.execute(input: input))
-      }
-
-      for input in scalarInputs {
-        XCTAssertNotNil(scalarExecutor.execute(input: input))
-        XCTAssertNil(executor.execute(input: input))
-      }
-    }
   }
 
   func testLegacyPartialMatches() {

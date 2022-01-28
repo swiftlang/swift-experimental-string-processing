@@ -18,18 +18,13 @@ struct RegexProgram {
 
 class Compiler {
   let ast: AST
-  let matchLevel: CharacterClass.MatchLevel
-  let options: REOptions
+  private var options = MatchingOptions()
   private var builder = RegexProgram.Program.Builder()
 
   init(
-    ast: AST,
-    matchLevel: CharacterClass.MatchLevel = .graphemeCluster,
-    options: REOptions = []
+    ast: AST
   ) {
     self.ast = ast
-    self.matchLevel = matchLevel
-    self.options = options
   }
 
   __consuming func emit() throws -> RegexProgram {
@@ -42,11 +37,9 @@ class Compiler {
   func emit(_ node: AST.Node) throws {
 
     switch node {
-    // Any: .
-    //     consume 1
-    case .atom(let a) where a.kind == .any && matchLevel == .graphemeCluster:
-      builder.buildAdvance(1)
-
+    case .atom(let a) where a.kind == .any:
+      try emitAny()
+      
     // Single characters we just match
     case .atom(let a) where a.singleCharacter != nil :
       builder.buildMatch(a.singleCharacter!)
@@ -97,6 +90,9 @@ class Compiler {
       throw unsupported(node.renderAsCanonical())
 
     case .group(let g):
+      options.beginScope()
+      defer { options.endScope() }
+      
       if let lookaround = g.lookaroundKind {
         try emitLookaround(lookaround, g.child)
         return
@@ -113,6 +109,10 @@ class Compiler {
         try emit(g.child)
         builder.buildEndCapture(cap)
 
+      case .changeMatchingOptions(let optionSequence, _):
+        options.apply(optionSequence)
+        try emit(g.child)
+
       default:
         // FIXME: Other kinds...
         try emit(g.child)
@@ -124,8 +124,8 @@ class Compiler {
     // For now, we model sets and atoms as consumers.
     // This lets us rapidly expand support, and we can better
     // design the actual instruction set with real examples
-    case _ where try node.generateConsumer(matchLevel) != nil:
-      try builder.buildConsume(by: node.generateConsumer(matchLevel)!)
+    case _ where try node.generateConsumer(options) != nil:
+      try builder.buildConsume(by: node.generateConsumer(options)!)
 
     case .quote(let q):
       // We stick quoted content into read-only constant strings
@@ -156,6 +156,31 @@ class Compiler {
 
     case .customCharacterClass:
       throw unsupported(node.renderAsCanonical())
+    }
+  }
+  
+  func emitAny() throws {
+    switch (options.semanticLevel, options.dotMatchesNewline) {
+    case (.graphemeCluster, true):
+      builder.buildAdvance(1)
+    case (.graphemeCluster, false):
+      builder.buildConsume { input, bounds in
+        input[bounds.lowerBound].isNewline
+          ? nil
+          : input.index(after: bounds.lowerBound)
+      }
+
+    case (.unicodeScalar, true):
+      // TODO: builder.buildAdvanceUnicodeScalar(1)
+      builder.buildConsume { input, bounds in
+        input.unicodeScalars.index(after: bounds.lowerBound)
+      }
+    case (.unicodeScalar, false):
+      builder.buildConsume { input, bounds in
+        input[bounds.lowerBound].isNewline
+          ? nil
+          : input.unicodeScalars.index(after: bounds.lowerBound)
+      }
     }
   }
 
@@ -458,7 +483,18 @@ class Compiler {
 
   func emitQuantification(_ quant: AST.Quantification) throws {
     let child = quant.child
-    let kind = quant.kind.value
+    
+    // If in reluctant-by-default mode, eager and reluctant need to be switched.
+    let kind: AST.Quantification.Kind
+    if options.isReluctantByDefault
+        && quant.kind.value != .possessive
+    {
+      kind = quant.kind.value == .eager
+        ? .reluctant
+        : .eager
+    } else {
+      kind = quant.kind.value
+    }
 
     switch quant.amount.value.bounds {
     case (_, atMost: 0):

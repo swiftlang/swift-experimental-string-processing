@@ -689,19 +689,20 @@ extension RegexTests {
       .singleLine, .reluctantByDefault, .extraExtended, .extended,
       .unicodeWordBoundaries, .asciiOnlyDigit, .asciiOnlyPOSIXProps,
       .asciiOnlySpace, .asciiOnlyWord, .textSegmentGraphemeMode,
-      .textSegmentWordMode
+      .textSegmentWordMode, .graphemeClusterSemantics, .unicodeScalarSemantics,
+      .byteSemantics
     ]
-    parseTest("(?iJmnsUxxxwDPSWy{g}y{w}-iJmnsUxxxwDPSW)", changeMatchingOptions(
+    parseTest("(?iJmnsUxxxwDPSWy{g}y{w}Xub-iJmnsUxxxwDPSW)", changeMatchingOptions(
       matchingOptions(
         adding: allOptions,
-        removing: allOptions.dropLast(2)
+        removing: allOptions.dropLast(5)
       ),
       isIsolated: true, empty())
     )
-    parseTest("(?iJmnsUxxxwDPSWy{g}y{w}-iJmnsUxxxwDPSW:)", changeMatchingOptions(
+    parseTest("(?iJmnsUxxxwDPSWy{g}y{w}Xub-iJmnsUxxxwDPSW:)", changeMatchingOptions(
       matchingOptions(
         adding: allOptions,
-        removing: allOptions.dropLast(2)
+        removing: allOptions.dropLast(5)
       ),
       isIsolated: false, empty())
     )
@@ -1506,6 +1507,12 @@ extension RegexTests {
 
     diagnosticTest("(?-y{g})", .cannotRemoveTextSegmentOptions)
     diagnosticTest("(?-y{w})", .cannotRemoveTextSegmentOptions)
+
+    // MARK: Semantic Level options
+
+    diagnosticTest("(?-X)", .cannotRemoveSemanticsOptions)
+    diagnosticTest("(?-u)", .cannotRemoveSemanticsOptions)
+    diagnosticTest("(?-b)", .cannotRemoveSemanticsOptions)
 
     // MARK: Group specifiers
 

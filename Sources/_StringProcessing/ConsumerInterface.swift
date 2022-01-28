@@ -28,12 +28,8 @@ func unsupported(
   file: StaticString = #file,
   line: UInt = #line
 ) -> Unsupported {
-  // TODO: how do we not have a public init for this?
-  let fStr = file.withUTF8Buffer {
-    String(decoding: $0, as: UTF8.self)
-  }
   return Unsupported(
-    message: s, file: fStr, line: Int(line))
+    message: s, file: String(describing: file), line: Int(line))
 }
 
 extension AST.Node {
@@ -42,8 +38,7 @@ extension AST.Node {
   /// A consumer is a Swift closure that matches against
   /// the front of an input range
   func generateConsumer(
-    // TODO: Better option modeling
-    _ opts: CharacterClass.MatchLevel
+    _ opts: MatchingOptions
   ) throws -> Program<String>.ConsumeFunction? {
     switch self {
     case .atom(let a):
@@ -77,10 +72,10 @@ extension AST.Atom {
   }
 
   func generateConsumer(
-    _ opts: CharacterClass.MatchLevel
+    _ opts: MatchingOptions
   ) throws -> Program<String>.ConsumeFunction? {
     // TODO: Wean ourselves off of this type...
-    if let cc = self.characterClass?.withMatchLevel(opts) {
+    if let cc = self.characterClass?.withMatchLevel(opts.matchLevel) {
       return { input, bounds in
         // FIXME: should we worry about out of bounds?
         cc.matches(in: input, at: bounds.lowerBound)
@@ -109,10 +104,16 @@ extension AST.Atom {
         // TODO: alias? casing?
         $0.name == name || $0.nameAlias == name
       }
+      
+    case .any:
+      fatalError(".atom(.any) is handled in emitAny")
 
+    case .startOfLine, .endOfLine:
+      // handled in emitAssertion
+      return nil
+      
     case .escaped, .keyboardControl, .keyboardMeta, .keyboardMetaControl,
-        .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .callout, .backtrackingDirective:
+      .backreference, .subpattern, .callout, .backtrackingDirective:
       // FIXME: implement
       return nil
     }
@@ -121,7 +122,7 @@ extension AST.Atom {
 
 extension AST.CustomCharacterClass.Member {
   func generateConsumer(
-    _ opts: CharacterClass.MatchLevel
+    _ opts: MatchingOptions
   ) throws -> Program<String>.ConsumeFunction {
     switch self {
     case .custom(let ccc):
@@ -212,7 +213,7 @@ extension AST.CustomCharacterClass.Member {
 
 extension AST.CustomCharacterClass {
   func generateConsumer(
-    _ opts: CharacterClass.MatchLevel
+    _ opts: MatchingOptions
   ) throws -> Program<String>.ConsumeFunction {
     // NOTE: Easy way to implement, obviously not performant
     let consumers = try members.map {
@@ -265,7 +266,7 @@ private func consumeScalar(
 
 extension AST.Atom.CharacterProperty {
   func generateConsumer(
-    _ opts: CharacterClass.MatchLevel
+    _ opts: MatchingOptions
   ) throws -> Program<String>.ConsumeFunction {
     // Handle inversion for us, albeit not efficiently
     func invert(
@@ -335,7 +336,7 @@ extension AST.Atom.CharacterProperty {
 extension Unicode.BinaryProperty {
   // FIXME: Semantic level, vet for precise defs
   func generateConsumer(
-    _ opts: CharacterClass.MatchLevel
+    _ opts: MatchingOptions
   ) throws -> Program<String>.ConsumeFunction {
     switch self {
 
@@ -499,7 +500,7 @@ extension Unicode.BinaryProperty {
 extension Unicode.POSIXProperty {
   // FIXME: Semantic level, vet for precise defs
   func generateConsumer(
-    _ opts: CharacterClass.MatchLevel
+    _ opts: MatchingOptions
   ) -> Program<String>.ConsumeFunction {
     // FIXME: semantic levels, modes, etc
     switch self {
@@ -545,7 +546,7 @@ extension Unicode.POSIXProperty {
 extension Unicode.ExtendedGeneralCategory {
   // FIXME: Semantic level
   func generateConsumer(
-    _ opts: CharacterClass.MatchLevel
+    _ opts: MatchingOptions
   ) throws -> Program<String>.ConsumeFunction {
     switch self {
     case .letter:

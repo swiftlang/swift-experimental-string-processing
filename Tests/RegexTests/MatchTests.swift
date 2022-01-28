@@ -464,6 +464,20 @@ extension RegexTests {
       // TODO: Nested reluctant reentrant example, xfailed
     )
 
+    // Reluctant by default - '*/+/.' and '*?/+?/.?' are swapped
+    firstMatchTest("(?U)a*", input: "aaa", match: "")
+    firstMatchTest("(?U)a*a", input: "aaa", match: "a")
+    firstMatchTest("(?U)a*?", input: "aaa", match: "aaa")
+    firstMatchTest("(?U)a*?a", input: "aaa", match: "aaa")
+
+    firstMatchTest("(?U)a+", input: "aaa", match: "a")
+    firstMatchTest("(?U)a+?", input: "aaa", match: "aaa")
+
+    firstMatchTest("(?U)a?", input: "a", match: "")
+    firstMatchTest("(?U)a?a", input: "aaa", match: "a")
+    firstMatchTest("(?U)a??", input: "a", match: "a")
+    firstMatchTest("(?U)a??a", input: "aaa", match: "aa")
+
     // TODO: After captures, easier to test these
   }
 
@@ -1098,6 +1112,32 @@ extension RegexTests {
     )
   }
   
+  func testSingleLineMode() {
+    firstMatchTest(#".+"#, input: "a\nb", match: "a")
+    firstMatchTest(#"(?s:.+)"#, input: "a\nb", match: "a\nb")
+  }
+  
+  func testMatchingOptionsScope() {
+    // `.` only matches newlines when the 's' option (single-line mode)
+    // is turned on. Standalone option-setting groups (e.g. `(?s)`) are
+    // scoped only to the current group.
+    
+    firstMatchTest(#"(?s)a.b"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"((?s)a.)b"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"(?-s)((?s)a.)b"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"(?-s)(?s:a.)b"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"((?s)a).b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"((?s))a.b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"(?:(?s))a.b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"((?s)a(?s)).b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"(?s)a(?-s).b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"(?s)a(?-s:.b)"#, input: "a\nb", match: nil)
+    firstMatchTest(#"(?:(?s)a).b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"(((?s)a)).b"#, input: "a\nb", match: nil)
+    firstMatchTest(#"(?s)(((?-s)a)).b"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"(?s)((?-s)((?i)a)).b"#, input: "a\nb", match: "a\nb")
+  }
+  
   // MARK: Character Semantics
   
   var eComposed: String { "é" }
@@ -1256,8 +1296,7 @@ extension RegexTests {
     // a single Unicode scalar value, leaving any other grapheme scalar
     // components to be matched.
     
-    firstMatchTest(#"(?u:.)"#, input: eDecomposed, match: "e",
-              xfail: true)
+    firstMatchTest(#"(?u:.)"#, input: eDecomposed, match: "e")
 
     matchTest(
       #".\u{301}"#,
@@ -1278,12 +1317,31 @@ extension RegexTests {
     firstMatchTest(#"e\O"#, input: eComposed, match: nil,
               xfail: true)
 
-    // FIXME: Unicode scalar semantic flag (?U) doesn't change behavior of `.`
     matchTest(
-      #"(?U).\u{301}"#,
-      (eComposed, true),
-      (eDecomposed, true),
-      xfail: true)
+      #"(?u).\u{301}"#,
+      (eComposed, false),
+      (eDecomposed, true))
+    firstMatchTest(#"(?u).$"#, input: eComposed, match: eComposed)
+    
+    // Option permutations for 'u' and 's'
+    matchTest(
+      #"...."#,
+      ("e\u{301}ab", false),
+      ("e\u{301}abc", true),
+      ("e\u{301}\nab", false))
+    matchTest(
+      #"(?s)...."#,
+      ("e\u{301}ab", false),
+      ("e\u{301}abc", true),
+      ("e\u{301}\nab", true))
+    matchTest(
+      #"(?u)...."#,
+      ("e\u{301}ab", true),
+      ("e\u{301}\na", false))
+    matchTest(
+      #"(?us)...."#,
+      ("e\u{301}ab", true),
+      ("e\u{301}\na", true))
   }
   
   // TODO: Add test for implied grapheme cluster requirement at group boundaries

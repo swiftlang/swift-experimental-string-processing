@@ -65,6 +65,7 @@ enum ParseError: Error, Hashable {
   case identifierCannotStartWithNumber(IdentifierKind)
 
   case cannotRemoveTextSegmentOptions
+  case cannotRemoveSemanticsOptions
   case expectedCalloutArgument
 }
 
@@ -145,6 +146,8 @@ extension ParseError: CustomStringConvertible {
       return "\(i.diagDescription) must not start with number"
     case .cannotRemoveTextSegmentOptions:
       return "text segment mode cannot be unset, only changed"
+    case .cannotRemoveSemanticsOptions:
+      return "semantic level cannot be unset, only changed"
     case .expectedCalloutArgument:
       return "expected argument to callout"
     }

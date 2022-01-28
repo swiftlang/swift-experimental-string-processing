@@ -36,6 +36,11 @@ extension AST {
       // be unset, only flipped between)
       case textSegmentGraphemeMode  // y{g}
       case textSegmentWordMode      // y{w}
+      
+      // Swift semantic matching level
+      case graphemeClusterSemantics // X
+      case unicodeScalarSemantics   // u
+      case byteSemantics            // b
     }
     public var kind: Kind
     public var location: SourceLocation
@@ -48,6 +53,15 @@ extension AST {
     public var isTextSegmentMode: Bool {
       switch kind {
       case .textSegmentGraphemeMode, .textSegmentWordMode:
+        return true
+      default:
+        return false
+      }
+    }
+    
+    public var isSemanticMatchingLevel: Bool {
+      switch kind {
+      case .graphemeClusterSemantics, .unicodeScalarSemantics, .byteSemantics:
         return true
       default:
         return false
