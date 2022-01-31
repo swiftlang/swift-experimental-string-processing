@@ -26,10 +26,31 @@ struct Unsupported: Error, CustomStringConvertible {
 func unsupported(
   _ s: String,
   file: StaticString = #file,
-  line: UInt = #line
+  line: Int = #line
 ) -> Unsupported {
   return Unsupported(
-    message: s, file: String(describing: file), line: Int(line))
+    message: s, file: String(describing: file), line: line)
+}
+
+struct Unreachable: Error, CustomStringConvertible {
+  var message: String
+  var file: String
+  var line: Int
+
+  var description: String { """
+    Unreachable: '\(message)'
+      \(file):\(line)
+    """
+  }
+}
+
+func unreachable(
+  _ s: String,
+  file: StaticString = #file,
+  line: Int = #line
+) -> Unreachable {
+  return Unreachable(
+    message: s, file: String(describing: file), line: line)
 }
 
 extension AST.Node {
@@ -166,6 +187,9 @@ extension AST.CustomCharacterClass.Member {
         return nil
       }
 
+    case .trivia:
+      throw unreachable("Should have been stripped by caller")
+
     case .setOperation(let lhs, let op, let rhs):
       // TODO: We should probably have a component type
       // instead of a members array... for now we reconstruct
@@ -216,7 +240,7 @@ extension AST.CustomCharacterClass {
     _ opts: MatchingOptions
   ) throws -> Program<String>.ConsumeFunction {
     // NOTE: Easy way to implement, obviously not performant
-    let consumers = try members.map {
+    let consumers = try strippingTriviaShallow.members.map {
       try $0.generateConsumer(opts)
     }
     return { input, bounds in

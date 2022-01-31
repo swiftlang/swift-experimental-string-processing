@@ -106,6 +106,7 @@ extension ParsingContext {
   var experimentalQuotes: Bool { syntax.contains(.experimentalQuotes) }
   var experimentalComments: Bool { syntax.contains(.experimentalComments) }
   var ignoreWhitespace: Bool { syntax.contains(.nonSemanticWhitespace) }
+  var endOfLineComments: Bool { syntax.contains(.endOfLineComments) }
 }
 
 // Diagnostics
@@ -208,12 +209,14 @@ extension Parser {
       }
       //     Quantification  -> QuantOperand Quantifier?
       if let operand = try parseQuantifierOperand() {
-        if let (amt, kind) = try source.lexQuantifier(context: context) {
+        if let (amt, kind, trivia) =
+            try source.lexQuantifier(context: context) {
           let location = loc(_start)
           guard operand.isQuantifiable else {
             throw Source.LocatedError(ParseError.notQuantifiable, location)
           }
-          result.append(.quantification(.init(amt, kind, operand, location)))
+          result.append(.quantification(
+            .init(amt, kind, operand, location, trivia: trivia)))
         } else {
           result.append(operand)
         }
@@ -269,6 +272,28 @@ extension Parser {
     start: Source.Position, _ kind: AST.Located<AST.Group.Kind>
   ) throws -> AST.Group {
     context.recordGroup(kind.value)
+
+    // Check if we're introducing or removing extended syntax.
+    // TODO: PCRE differentiates between (?x) and (?xx) where only the latter
+    // handles non-semantic whitespace in a custom character class. Other
+    // engines such as Oniguruma, Java, and ICU do this under (?x). Therefore,
+    // treat (?x) and (?xx) as the same option here. If we ever get a strict
+    // PCRE mode, we will need to change this to handle that.
+    let currentSyntax = context.syntax
+    if case .changeMatchingOptions(let c, isIsolated: _) = kind.value {
+      if c.resetsCurrentOptions {
+        context.syntax.remove(.extendedSyntax)
+      }
+      if c.adding.contains(where: \.isAnyExtended) {
+        context.syntax.insert(.extendedSyntax)
+      }
+      if c.removing.contains(where: \.isAnyExtended) {
+        context.syntax.remove(.extendedSyntax)
+      }
+    }
+    defer {
+      context.syntax = currentSyntax
+    }
 
     let child = try parseNode()
     // An implicit scoped group has already consumed its closing paren.
@@ -446,6 +471,14 @@ extension Parser {
       // Quoted sequence.
       if let quote = try source.lexQuote(context: context) {
         members.append(.quote(quote))
+        continue
+      }
+
+      // Lex non-semantic whitespace if we're allowed.
+      // TODO: ICU allows end-of-line comments in custom character classes,
+      // which we ought to support if we want to support multi-line regex.
+      if let trivia = try source.lexNonSemanticWhitespace(context: context) {
+        members.append(.trivia(trivia))
         continue
       }
 

@@ -332,9 +332,15 @@ extension Source {
   ///     Quantifier -> ('*' | '+' | '?' | '{' Range '}') QuantKind?
   ///     QuantKind  -> '?' | '+'
   ///
-  mutating func lexQuantifier(context: ParsingContext) throws -> (
-    Located<Quant.Amount>, Located<Quant.Kind>
-  )? {
+  mutating func lexQuantifier(
+    context: ParsingContext
+  ) throws -> (Located<Quant.Amount>, Located<Quant.Kind>, [AST.Trivia])? {
+    var trivia: [AST.Trivia] = []
+
+    if let t = try lexNonSemanticWhitespace(context: context) {
+      trivia.append(t)
+    }
+
     let amt: Located<Quant.Amount>? = try recordLoc { src in
       if src.tryEat("*") { return .zeroOrMore }
       if src.tryEat("+") { return .oneOrMore }
@@ -350,13 +356,18 @@ extension Source {
     }
     guard let amt = amt else { return nil }
 
+    // PCRE allows non-semantic whitespace here in extended syntax mode.
+    if let t = try lexNonSemanticWhitespace(context: context) {
+      trivia.append(t)
+    }
+
     let kind: Located<Quant.Kind> = recordLoc { src in
       if src.tryEat("?") { return .reluctant  }
       if src.tryEat("+") { return .possessive }
       return .eager
     }
 
-    return (amt, kind)
+    return (amt, kind, trivia)
   }
 
   /// Try to consume a range, returning `nil` if unsuccessful.
@@ -501,6 +512,10 @@ extension Source {
   ///
   ///     ExpComment -> '/*' (!'*/' .)* '*/'
   ///
+  /// With `SyntaxOptions.endOfLineComments`
+  ///
+  ///     EndOfLineComment -> '#' .*
+  ///
   /// TODO: Swift-style nested comments, line-ending comments, etc
   ///
   mutating func lexComment(context: ParsingContext) throws -> AST.Trivia? {
@@ -511,6 +526,13 @@ extension Source {
       if context.experimentalComments, src.tryEat(sequence: "/*") {
         return try src.expectQuoted(endingWith: "*/").value
       }
+      if context.endOfLineComments, src.tryEat("#") {
+        // TODO: If we ever support multi-line regex literals, this will need
+        // to be updated to stop at a newline. Note though that PCRE specifies
+        // that the newline it matches against can be controlled by the global
+        // matching options e.g `(*CR)`, `(*ANY)`, ...
+        return src.lexUntil(\.isEmpty).value
+      }
       return nil
     }
     guard let trivia = trivia else { return nil }
@@ -519,15 +541,36 @@ extension Source {
 
   /// Try to consume non-semantic whitespace as trivia
   ///
-  ///     Whitespace -> ' '+
+  ///     Whitespace -> WhitespaceChar+
   ///
   /// Does nothing unless `SyntaxOptions.nonSemanticWhitespace` is set
   mutating func lexNonSemanticWhitespace(
     context: ParsingContext
   ) throws -> AST.Trivia? {
     guard context.ignoreWhitespace else { return nil }
+
+    func isWhitespace(_ c: Character) -> Bool {
+      // This is a list of characters that PCRE treats as whitespace when
+      // compiled with Unicode support. It is a subset of the characters with
+      // the `.isWhitespace` property. ICU appears to also follow this list.
+      // Oniguruma and .NET follow a subset of this list.
+      //
+      // FIXME: PCRE only treats space and tab characters as whitespace when
+      // inside a custom character class (and only treats whitespace as
+      // non-semantic there for the extra-extended `(?xx)` mode). If we get a
+      // strict-PCRE mode, we'll need to add a case for that.
+      switch c {
+      case " ", "\u{9}"..."\u{D}", // space, \t, \n, vertical tab, \f, \r
+           "\u{85}", "\u{200E}",   // next line, left-to-right mark
+           "\u{200F}", "\u{2028}", // right-to-left-mark, line separator
+           "\u{2029}":             // paragraph separator
+        return true
+      default:
+        return false
+      }
+    }
     let trivia: Located<String>? = recordLoc { src in
-      src.tryEatPrefix { $0 == " " }?.string
+      src.tryEatPrefix(isWhitespace)?.string
     }
     guard let trivia = trivia else { return nil }
     return AST.Trivia(trivia)
@@ -1631,7 +1674,7 @@ extension Source {
       var name: Located<String>?
       if src.tryEat(":") {
         // TODO: PCRE allows escaped delimiters or '\Q...\E' sequences in the
-        // name under PCRE2_ALT_VERBNAMES.
+        // name under PCRE2_ALT_VERBNAMES. It also allows whitespace under (?x).
         name = try src.expectQuoted(endingWith: ")", eatEnding: false)
       }
       try src.expect(")")

@@ -1272,10 +1272,166 @@ extension RegexTests {
 
     parseTest("[(*CR)]", charClass("(", "*", "C", "R", ")"))
 
+    // MARK: Trivia
+
+    parseTest("[(?#abc)]", charClass("(", "?", "#", "a", "b", "c", ")"))
+    parseTest("# abc", concat("#", " ", "a", "b", "c"))
+
+    parseTest("(?x) # hello", changeMatchingOptions(matchingOptions(
+      adding: .extended), isIsolated: true, empty()))
+    parseTest("(?xx) # hello", changeMatchingOptions(matchingOptions(
+      adding: .extraExtended), isIsolated: true, empty()))
+    parseTest("(?x) \\# abc", changeMatchingOptions(matchingOptions(
+      adding: .extended), isIsolated: true, concat("#", "a", "b", "c")))
+    parseTest("(?xx) \\ ", changeMatchingOptions(matchingOptions(
+      adding: .extraExtended), isIsolated: true, concat(" ")))
+
+    // End of line comments aren't applicable in custom char classes.
+    // TODO: ICU supports this.
+    parseTest(
+      "(?x)[ # abc]", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        charClass("#", "a", "b", "c"))
+    )
+
+    parseTest(
+      "(?x)a b c[d e f]", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "b", "c", charClass("d", "e", "f")))
+    )
+    parseTest(
+      "(?xx)a b c[d e f]", changeMatchingOptions(
+        matchingOptions(adding: .extraExtended), isIsolated: true,
+        concat("a", "b", "c", charClass("d", "e", "f")))
+    )
+    parseTest(
+      "(?x)a b c(?-x)d e f", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "b", "c",
+               changeMatchingOptions(matchingOptions(removing: .extended),
+                                     isIsolated: true, concat("d", " ", "e", " ", "f"))))
+    )
+    parseTest(
+      "(?x)a b c(?-xx)d e f", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "b", "c",
+               changeMatchingOptions(matchingOptions(removing: .extraExtended),
+                                     isIsolated: true, concat("d", " ", "e", " ", "f"))))
+    )
+    parseTest(
+      "(?xx)a b c(?-x)d e f", changeMatchingOptions(
+        matchingOptions(adding: .extraExtended), isIsolated: true,
+        concat("a", "b", "c",
+               changeMatchingOptions(matchingOptions(removing: .extended),
+                                     isIsolated: true, concat("d", " ", "e", " ", "f"))))
+    )
+    parseTest(
+      "(?x)a b c(?^i)d e f", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "b", "c",
+               changeMatchingOptions(unsetMatchingOptions(adding: .caseInsensitive),
+                                     isIsolated: true, concat("d", " ", "e", " ", "f"))))
+    )
+    parseTest(
+      "(?x)a b c(?^x)d e f", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "b", "c",
+               changeMatchingOptions(unsetMatchingOptions(adding: .extended),
+                                     isIsolated: true, concat("d", "e", "f"))))
+    )
+    parseTest(
+      "(?:(?x)a b c)d e f", concat(nonCapture(changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "b", "c"))), "d", " ", "e", " ", "f")
+    )
+    parseTest(
+      "(?x:a b c)# hi", concat(changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: false,
+        concat("a", "b", "c")), "#", " ", "h", "i")
+    )
+
+    parseTest(
+      "(?x-x)a b c", changeMatchingOptions(
+        matchingOptions(adding: .extended, removing: .extended), isIsolated: true,
+        concat("a", " ", "b", " ", "c"))
+    )
+    parseTest(
+      "(?xxx-x)a b c", changeMatchingOptions(
+        matchingOptions(adding: .extraExtended, .extended, removing: .extended), isIsolated: true,
+        concat("a", " ", "b", " ", "c"))
+    )
+    parseTest(
+      "(?xx-i)a b c", changeMatchingOptions(
+        matchingOptions(adding: .extraExtended, removing: .caseInsensitive), isIsolated: true,
+        concat("a", "b", "c"))
+    )
+
+    // PCRE states that whitespace seperating quantifiers is permitted under
+    // extended syntax http://pcre.org/current/doc/html/pcre2api.html#SEC20
+    parseTest(
+      "(?x)a *",
+      changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        zeroOrMore(.eager, "a"))
+    )
+    parseTest(
+      "(?x)a + ?",
+      changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        oneOrMore(.reluctant, "a"))
+    )
+    parseTest(
+      "(?x)a {2,4}",
+      changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        quantRange(.eager, 2 ... 4, "a"))
+    )
+
+    // PCRE states that whitespace won't be ignored within a range.
+    // http://pcre.org/current/doc/html/pcre2api.html#SEC20
+    // TODO: We ought to warn on this, and produce a range anyway.
+    parseTest(
+      "(?x)a{1, 3}",
+      changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "{", "1", ",", "3", "}"))
+    )
+
+    // Test that we cover the list of whitespace characters covered by PCRE.
+    parseTest(
+      "(?x)a\t\u{A}\u{B}\u{C}\u{D}\u{85}\u{200E}\u{200F}\u{2028}\u{2029} b",
+      changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true, concat("a", "b"))
+    )
+    parseTest(
+      "(?x)[a\t\u{A}\u{B}\u{C}\u{D}\u{85}\u{200E}\u{200F}\u{2028}\u{2029} b]",
+      changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true, charClass("a", "b"))
+    )
+
     // MARK: Parse with delimiters
 
     parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
     parseWithDelimitersTest("'|a b|'", concat("a", "b"))
+
+    parseWithDelimitersTest("'|[a b]|'", charClass("a", "b"))
+    parseWithDelimitersTest(
+      "'|(?-x)[a b]|'", changeMatchingOptions(
+        matchingOptions(removing: .extended), isIsolated: true,
+        charClass("a", " ", "b"))
+    )
+    parseWithDelimitersTest("'|[[a ] b]|'", charClass(charClass("a"), "b"))
+
+    // Non-semantic whitespace between quantifier characters for consistency
+    // with PCRE.
+    parseWithDelimitersTest("'|a * ?|'", zeroOrMore(.reluctant, "a"))
+
+    // End-of-line comments aren't enabled by default in experimental syntax.
+    parseWithDelimitersTest("'|#abc|'", concat("#", "a", "b", "c"))
+    parseWithDelimitersTest("'|(?x)#abc|'", changeMatchingOptions(
+      matchingOptions(adding: .extended), isIsolated: true,
+      empty())
+    )
 
     parseWithDelimitersTest("'|||'", alt(empty(), empty()))
     parseWithDelimitersTest("'||||'", alt(empty(), empty(), empty()))
@@ -1285,6 +1441,7 @@ extension RegexTests {
 
     // Make sure dumping output correctly reflects differences in AST.
     parseNotEqualTest(#"abc"#, #"abd"#)
+    parseNotEqualTest(#" "#, #""#)
 
     parseNotEqualTest(#"[\p{Any}]"#, #"[[:Any:]]"#)
 
@@ -1302,6 +1459,8 @@ extension RegexTests {
 
     parseNotEqualTest(#"([a-c&&e]*)+"#,
                       #"([a-d&&e]*)+"#)
+
+    parseNotEqualTest(#"[abc]"#, #"[a b c]"#)
 
     parseNotEqualTest(#"\1"#, #"\10"#)
 
@@ -1583,6 +1742,8 @@ extension RegexTests {
     diagnosticTest(#"(?'-')"#, .expectedIdentifier(.groupName))
     diagnosticTest(#"(?'--')"#, .identifierMustBeAlphaNumeric(.groupName))
     diagnosticTest(#"(?'a-b-c')"#, .expected("'"))
+
+    diagnosticTest("(?x)(? : )", .unknownGroupKind("? "))
 
     // MARK: Matching options
 

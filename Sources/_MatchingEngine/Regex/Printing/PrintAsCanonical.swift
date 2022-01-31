@@ -91,9 +91,7 @@ extension PrettyPrinter {
       output(q._canonicalBase)
 
     case let .trivia(t):
-      // TODO: We might want to output comments...
-      _ = t
-      output("")
+      output(t._canonicalBase)
 
     case let .atom(a):
       output(a._canonicalBase)
@@ -135,6 +133,8 @@ extension PrettyPrinter {
       output(a._canonicalBase)
     case .quote(let q):
       output(q._canonicalBase)
+    case .trivia(let t):
+      output(t._canonicalBase)
     case .setOperation:
       output("/* TODO: set operation \(self) */")
     }
@@ -314,4 +314,11 @@ extension AST.GlobalMatchingOption.Kind {
 
 extension AST.GlobalMatchingOption {
   var _canonicalBase: String { "(*\(kind._canonicalBase))"}
+}
+
+extension AST.Trivia {
+  var _canonicalBase: String {
+    // TODO: We might want to output comments...
+    ""
+  }
 }

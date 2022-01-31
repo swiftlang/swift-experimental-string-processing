@@ -17,16 +17,23 @@ extension AST {
     public let child: AST.Node
     public let location: SourceLocation
 
+    /// Any trivia intermixed between the operand and the quantifier, as well
+    /// as between the quantifier characters themselves. This can occur in
+    /// extended syntax mode where PCRE permits e.g `x * +`.
+    public let trivia: [AST.Trivia]
+
     public init(
       _ amount: Located<Amount>,
       _ kind: Located<Kind>,
       _ child: AST.Node,
-      _ r: SourceLocation
+      _ r: SourceLocation,
+      trivia: [AST.Trivia]
     ) {
       self.amount = amount
       self.kind = kind
       self.child = child
       self.location = r
+      self.trivia = trivia
     }
 
     @frozen
