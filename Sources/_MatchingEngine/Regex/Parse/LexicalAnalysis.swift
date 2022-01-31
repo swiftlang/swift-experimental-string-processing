@@ -1774,6 +1774,13 @@ extension Source {
         return try src.expectGroupLikeAtom()
       }
 
+      // A quantifier here is invalid.
+      if !customCC,
+         let q = try src.recordLoc({ try $0.lexQuantifier(context: context) }) {
+        throw ParseError.quantifierRequiresOperand(
+          String(src[q.location.range]))
+      }
+
       let char = src.eat()
       switch char {
       case ")", "|":

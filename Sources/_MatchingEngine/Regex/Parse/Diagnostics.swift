@@ -43,6 +43,7 @@ enum ParseError: Error, Hashable {
   case cannotReferToWholePattern
 
   case notQuantifiable
+  case quantifierRequiresOperand(String)
 
   case backtrackingDirectiveMustHaveName(String)
 
@@ -110,6 +111,8 @@ extension ParseError: CustomStringConvertible {
       return "cannot refer to whole pattern here"
     case .notQuantifiable:
       return "expression is not quantifiable"
+    case .quantifierRequiresOperand(let q):
+      return "quantifier '\(q)' must appear after expression"
     case .backtrackingDirectiveMustHaveName(let b):
       return "backtracking directive '\(b)' must include name"
     case let .tooManyBranchesInConditional(i):

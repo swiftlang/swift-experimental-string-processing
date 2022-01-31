@@ -415,6 +415,9 @@ extension RegexTests {
     parseTest("[[:AL_NUM:]]", charClass(posixProp_m(.posix(.alnum))))
     parseTest("[[:script=Greek:]]", charClass(posixProp_m(.script(.greek))))
 
+    parseTest("[*]", charClass("*"))
+    parseTest("[{0}]", charClass("{", "0", "}"))
+
     // MARK: Operators
 
     parseTest(
@@ -494,6 +497,9 @@ extension RegexTests {
 
     // MARK: Quantification
 
+    parseTest("a*", zeroOrMore(of: "a"))
+    parseTest(" +", oneOrMore(of: " "))
+
     parseTest(
       #"a{1,2}"#,
       quantRange(1...2, of: "a"))
@@ -537,6 +543,8 @@ extension RegexTests {
 
     // TODO: We should emit a diagnostic for this.
     parseTest("x{3, 5}", concat("x", "{", "3", ",", " ", "5", "}"))
+    parseTest("{3, 5}", concat("{", "3", ",", " ", "5", "}"))
+    parseTest("{3 }", concat("{", "3", " ", "}"))
 
     // MARK: Groups
 
@@ -1741,6 +1749,15 @@ extension RegexTests {
     diagnosticTest(#"(?'a-b-c')"#, .expected("'"))
 
     diagnosticTest("(?x)(? : )", .unknownGroupKind("? "))
+
+    // MARK: Quantifiers
+
+    diagnosticTest("*", .quantifierRequiresOperand("*"))
+    diagnosticTest("+", .quantifierRequiresOperand("+"))
+    diagnosticTest("?", .quantifierRequiresOperand("?"))
+    diagnosticTest("*?", .quantifierRequiresOperand("*?"))
+    diagnosticTest("{5}", .quantifierRequiresOperand("{5}"))
+    diagnosticTest("{1,3}", .quantifierRequiresOperand("{1,3}"))
 
     // MARK: Matching options
 
