@@ -133,7 +133,7 @@ extension PrettyPrinter {
     case .empty:
       print("")
 
-    case let .stringLiteral(v):
+    case let .quotedLiteral(v):
       print(v._quoted)
 
     case .regexLiteral:

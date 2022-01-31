@@ -251,13 +251,13 @@ struct VariadicsGenerator: ParsableCommand {
     output("  init(")
     outputForEach(0..<arity, separator: ", ") { "_ x\($0): T\($0)" }
     output(") {\n")
-    output("    \(patternProtocolRequirementName) = .init(ast: concat(\n      ")
+    output("    \(patternProtocolRequirementName) = .init(node: .concatenation([\n      ")
     outputForEach(
       0..<arity, separator: ", ", lineTerminator: ""
     ) { i in
-      "x\(i).\(patternProtocolRequirementName).ast.root"
+      "x\(i).\(patternProtocolRequirementName).root"
     }
-    output("))\n")
+    output("]))\n")
     output("  }\n}\n\n")
 
     // Emit concatenation builders.

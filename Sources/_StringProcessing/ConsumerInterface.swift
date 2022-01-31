@@ -78,7 +78,7 @@ extension DSLTree.Node {
     case .customCharacterClass(let ccc):
       return try ccc.generateConsumer(opts)
 
-    case .stringLiteral:
+    case .quotedLiteral:
       // TODO: Should we handle this here?
       return nil
 

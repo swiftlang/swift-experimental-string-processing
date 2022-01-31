@@ -17,19 +17,23 @@ struct RegexProgram {
 }
 
 class Compiler {
-  let ast: AST
+  let tree: DSLTree
+
+  // TODO: Or are these stored on the tree?
   var options = MatchingOptions()
 
   init(ast: AST) {
-    self.ast = ast
+    self.tree = ast.dslTree
+  }
+
+  init(tree: DSLTree) {
+    self.tree = tree
   }
 
   __consuming func emit() throws -> RegexProgram {
     // TODO: Handle global options
-    let converted = ast.root.dslTreeNode
-
     var codegen = ByteCodeGen(options: options)
-    try codegen.emitNode(converted)
+    try codegen.emitNode(tree.root)
     let program = codegen.finish()
     return RegexProgram(program: program)
   }

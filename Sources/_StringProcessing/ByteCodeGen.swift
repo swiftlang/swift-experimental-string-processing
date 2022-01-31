@@ -287,11 +287,13 @@ extension Compiler.ByteCodeGen {
     let (low, high) = amount.bounds
     switch (low, high) {
     case (_, 0):
-      throw Unsupported(
-        "TODO: Should error out earlier, maybe DSL and parser has validation logic?")
+      // TODO: Should error out earlier, maybe DSL and parser
+      // has validation logic?
+      return
     case let (n, m?) where n > m:
-      throw Unsupported(
-        "TODO: Should error out earlier, maybe DSL and parser has validation logic?")
+      // TODO: Should error out earlier, maybe DSL and parser
+      // has validation logic?
+      return
 
     case let (n, m) where m == nil || n <= m!:
       // Ok
@@ -505,7 +507,7 @@ extension Compiler.ByteCodeGen {
     case let .atom(a):
       try emitAtom(a)
 
-    case let .stringLiteral(s):
+    case let .quotedLiteral(s):
       // TODO: Should this incorporate options?
       builder.buildMatchSequence(s)
 

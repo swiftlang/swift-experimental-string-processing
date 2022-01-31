@@ -11,7 +11,15 @@
 
 import _MatchingEngine
 
-struct DSLTree {}
+struct DSLTree {
+  var root: Node
+  var options: Options?
+
+  init(_ r: Node, options: Options?) {
+    self.root = r
+    self.options = options
+  }
+}
 
 extension DSLTree {
   indirect enum Node: _TreeNode {
@@ -45,7 +53,7 @@ extension DSLTree {
 
     case empty
 
-    case stringLiteral(String)
+    case quotedLiteral(String)
 
     /// An embedded literal
     case regexLiteral(AST.Node)
@@ -148,7 +156,7 @@ extension DSLTree.Node {
 
     case let .conditional(_, t, f): return [t,f]
 
-    case .trivia, .empty, .stringLiteral, .regexLiteral,
+    case .trivia, .empty, .quotedLiteral, .regexLiteral,
         .consumer, .consumerValidator, .characterPredicate,
         .customCharacterClass, .atom:
       return []
@@ -175,7 +183,9 @@ extension AST.Node {
     func wrap(_ node: DSLTree.Node) -> DSLTree.Node {
       switch node {
       case .convertedRegexLiteral:
-        assertionFailure("Double wrapping?")
+        // FIXME: how can this happen?
+//        assertionFailure("Double wrapping?")
+        return node
       default:
         break
       }
@@ -197,18 +207,23 @@ extension AST.Node {
         // string literal representation
         let astChildren = v.children
         func coalesce(
-          _ idx: inout Array<AST>.Index
-        ) -> String? {
+          _ idx: Array<AST>.Index
+        ) -> (Array<AST>.Index, String)? {
           var result = ""
+          var idx = idx
           while idx < astChildren.endIndex {
             let atom: AST.Atom? = astChildren[idx].as()
-            guard let str = atom?.literalStringValue else {
+
+            // TODO: For printing, nice to coalesce
+            // scalars literals too. We likely need a different
+            // approach even before we have a better IR.
+            guard let char = atom?.singleCharacter else {
               break
             }
-            result += str
+            result.append(char)
             astChildren.formIndex(after: &idx)
           }
-          return result.isEmpty ? nil : result
+          return result.count <= 1 ? nil : (idx, result)
         }
 
         // No need to nest single children concatenations
@@ -217,20 +232,20 @@ extension AST.Node {
         }
 
         // Check for a single child post-coalescing
-        var idx = astChildren.startIndex
-        if let str = coalesce(&idx),
+        if let (idx, str) = coalesce(astChildren.startIndex),
            idx == astChildren.endIndex
         {
-          return .stringLiteral(str)
+          return .quotedLiteral(str)
         }
 
         // Coalesce adjacent string children
         var curIdx = astChildren.startIndex
         var children = Array<DSLTree.Node>()
         while curIdx < astChildren.endIndex {
-          if let str = coalesce(&curIdx) {
+          if let (nextIdx, str) = coalesce(curIdx) {
             // TODO: Track source info...
-            children.append(.stringLiteral(str))
+            children.append(.quotedLiteral(str))
+            curIdx = nextIdx
           } else {
             children.append(astChildren[curIdx].dslTreeNode)
             children.formIndex(after: &curIdx)
@@ -254,15 +269,12 @@ extension AST.Node {
           v.amount.value, v.kind.value, child)
 
       case let .quote(v):
-        return .stringLiteral(v.literal)
+        return .quotedLiteral(v.literal)
 
       case let .trivia(v):
         return .trivia(v.contents)
 
       case let .atom(v):
-        if let str = v.literalStringValue {
-          return .stringLiteral(str)
-        }
         return .atom(v.dslTreeAtom)
 
       case let .customCharacterClass(ccc):
@@ -282,7 +294,8 @@ extension AST.Node {
       }
     }
 
-    return wrap(convert())
+    let converted = convert()
+    return wrap(converted)
   }
 }
 
@@ -359,5 +372,53 @@ extension DSLTree.Atom {
     case let .scalar(s): return Character(s)
     default: return nil
     }
+  }
+}
+
+extension DSLTree {
+  struct Options {
+    // TBD
+  }
+}
+
+extension DSLTree {
+  var ast: AST? {
+    guard let root = root.astNode else {
+      return nil
+    }
+    // TODO: Options mapping
+    return AST(root, globalOptions: nil)
+  }
+}
+
+extension AST.GlobalMatchingOptionSequence {
+  var dslTreeOptions: DSLTree.Options {
+    // TODO: map options
+    return .init()
+  }
+}
+
+extension AST {
+  var dslTree: DSLTree {
+    return DSLTree(
+      root.dslTreeNode, options: globalOptions?.dslTreeOptions)
+  }
+}
+
+extension DSLTree {
+  var hasCapture: Bool {
+    root.hasCapture
+  }
+}
+extension DSLTree.Node {
+  var hasCapture: Bool {
+    switch self {
+    case .group(let k, _) where k.isCapturing,
+         .groupTransform(let k, _, _) where k.isCapturing:
+      return true
+    default:
+      break
+    }
+    return self.children?.any(\.hasCapture) ?? false
   }
 }

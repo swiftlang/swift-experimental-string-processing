@@ -173,10 +173,10 @@ public struct Concatenate2_TT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T1.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root
+    ]))
   }
 }
 
@@ -194,10 +194,10 @@ public struct Concatenate2_TV<
   public typealias Match = Tuple2<Substring, T1.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root
+    ]))
   }
 }
 
@@ -215,10 +215,10 @@ public struct Concatenate2_VT<
   public typealias Match = Tuple2<Substring, T0.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root
+    ]))
   }
 }
 
@@ -236,10 +236,10 @@ public struct Concatenate2_VV<
   public typealias Match = Substring
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root
+    ]))
   }
 }
 
@@ -259,11 +259,11 @@ public struct Concatenate3_TTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root
+    ]))
   }
 }
 
@@ -281,11 +281,11 @@ public struct Concatenate3_TTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root
+    ]))
   }
 }
 
@@ -303,11 +303,11 @@ public struct Concatenate3_TVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root
+    ]))
   }
 }
 
@@ -325,11 +325,11 @@ public struct Concatenate3_TVV<
   public typealias Match = Tuple2<Substring, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root
+    ]))
   }
 }
 
@@ -347,11 +347,11 @@ public struct Concatenate3_VTT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T1.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root
+    ]))
   }
 }
 
@@ -369,11 +369,11 @@ public struct Concatenate3_VTV<
   public typealias Match = Tuple2<Substring, T1.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root
+    ]))
   }
 }
 
@@ -391,11 +391,11 @@ public struct Concatenate3_VVT<
   public typealias Match = Tuple2<Substring, T0.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root
+    ]))
   }
 }
 
@@ -413,11 +413,11 @@ public struct Concatenate3_VVV<
   public typealias Match = Substring
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root
+    ]))
   }
 }
 
@@ -437,12 +437,12 @@ public struct Concatenate4_TTTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -460,12 +460,12 @@ public struct Concatenate4_TTTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -483,12 +483,12 @@ public struct Concatenate4_TTVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -506,12 +506,12 @@ public struct Concatenate4_TTVV<
   public typealias Match = Tuple3<Substring, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -529,12 +529,12 @@ public struct Concatenate4_TVTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -552,12 +552,12 @@ public struct Concatenate4_TVTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -575,12 +575,12 @@ public struct Concatenate4_TVVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -598,12 +598,12 @@ public struct Concatenate4_TVVV<
   public typealias Match = Tuple2<Substring, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -621,12 +621,12 @@ public struct Concatenate4_VTTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -644,12 +644,12 @@ public struct Concatenate4_VTTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -667,12 +667,12 @@ public struct Concatenate4_VTVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -690,12 +690,12 @@ public struct Concatenate4_VTVV<
   public typealias Match = Tuple2<Substring, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -713,12 +713,12 @@ public struct Concatenate4_VVTT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T1.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -736,12 +736,12 @@ public struct Concatenate4_VVTV<
   public typealias Match = Tuple2<Substring, T1.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -759,12 +759,12 @@ public struct Concatenate4_VVVT<
   public typealias Match = Tuple2<Substring, T0.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -782,12 +782,12 @@ public struct Concatenate4_VVVV<
   public typealias Match = Substring
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root
+    ]))
   }
 }
 
@@ -807,13 +807,13 @@ public struct Concatenate5_TTTTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -831,13 +831,13 @@ public struct Concatenate5_TTTTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -855,13 +855,13 @@ public struct Concatenate5_TTTVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -879,13 +879,13 @@ public struct Concatenate5_TTTVV<
   public typealias Match = Tuple4<Substring, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -903,13 +903,13 @@ public struct Concatenate5_TTVTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -927,13 +927,13 @@ public struct Concatenate5_TTVTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -951,13 +951,13 @@ public struct Concatenate5_TTVVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -975,13 +975,13 @@ public struct Concatenate5_TTVVV<
   public typealias Match = Tuple3<Substring, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -999,13 +999,13 @@ public struct Concatenate5_TVTTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1023,13 +1023,13 @@ public struct Concatenate5_TVTTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1047,13 +1047,13 @@ public struct Concatenate5_TVTVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T2.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1071,13 +1071,13 @@ public struct Concatenate5_TVTVV<
   public typealias Match = Tuple3<Substring, T2.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1095,13 +1095,13 @@ public struct Concatenate5_TVVTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1119,13 +1119,13 @@ public struct Concatenate5_TVVTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1143,13 +1143,13 @@ public struct Concatenate5_TVVVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1167,13 +1167,13 @@ public struct Concatenate5_TVVVV<
   public typealias Match = Tuple2<Substring, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1191,13 +1191,13 @@ public struct Concatenate5_VTTTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1215,13 +1215,13 @@ public struct Concatenate5_VTTTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1239,13 +1239,13 @@ public struct Concatenate5_VTTVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1263,13 +1263,13 @@ public struct Concatenate5_VTTVV<
   public typealias Match = Tuple3<Substring, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1287,13 +1287,13 @@ public struct Concatenate5_VTVTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1311,13 +1311,13 @@ public struct Concatenate5_VTVTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1335,13 +1335,13 @@ public struct Concatenate5_VTVVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1359,13 +1359,13 @@ public struct Concatenate5_VTVVV<
   public typealias Match = Tuple2<Substring, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1383,13 +1383,13 @@ public struct Concatenate5_VVTTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1407,13 +1407,13 @@ public struct Concatenate5_VVTTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1431,13 +1431,13 @@ public struct Concatenate5_VVTVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1455,13 +1455,13 @@ public struct Concatenate5_VVTVV<
   public typealias Match = Tuple2<Substring, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1479,13 +1479,13 @@ public struct Concatenate5_VVVTT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T1.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1503,13 +1503,13 @@ public struct Concatenate5_VVVTV<
   public typealias Match = Tuple2<Substring, T1.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1527,13 +1527,13 @@ public struct Concatenate5_VVVVT<
   public typealias Match = Tuple2<Substring, T0.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1551,13 +1551,13 @@ public struct Concatenate5_VVVVV<
   public typealias Match = Substring
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root
+    ]))
   }
 }
 
@@ -1577,14 +1577,14 @@ public struct Concatenate6_TTTTTT<
   public typealias Match = Tuple7<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1602,14 +1602,14 @@ public struct Concatenate6_TTTTTV<
   public typealias Match = Tuple6<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1627,14 +1627,14 @@ public struct Concatenate6_TTTTVT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1652,14 +1652,14 @@ public struct Concatenate6_TTTTVV<
   public typealias Match = Tuple5<Substring, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1677,14 +1677,14 @@ public struct Concatenate6_TTTVTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1702,14 +1702,14 @@ public struct Concatenate6_TTTVTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1727,14 +1727,14 @@ public struct Concatenate6_TTTVVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1752,14 +1752,14 @@ public struct Concatenate6_TTTVVV<
   public typealias Match = Tuple4<Substring, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1777,14 +1777,14 @@ public struct Concatenate6_TTVTTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1802,14 +1802,14 @@ public struct Concatenate6_TTVTTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1827,14 +1827,14 @@ public struct Concatenate6_TTVTVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T2.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1852,14 +1852,14 @@ public struct Concatenate6_TTVTVV<
   public typealias Match = Tuple4<Substring, T2.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1877,14 +1877,14 @@ public struct Concatenate6_TTVVTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1902,14 +1902,14 @@ public struct Concatenate6_TTVVTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1927,14 +1927,14 @@ public struct Concatenate6_TTVVVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1952,14 +1952,14 @@ public struct Concatenate6_TTVVVV<
   public typealias Match = Tuple3<Substring, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -1977,14 +1977,14 @@ public struct Concatenate6_TVTTTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2002,14 +2002,14 @@ public struct Concatenate6_TVTTTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2027,14 +2027,14 @@ public struct Concatenate6_TVTTVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2052,14 +2052,14 @@ public struct Concatenate6_TVTTVV<
   public typealias Match = Tuple4<Substring, T2.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2077,14 +2077,14 @@ public struct Concatenate6_TVTVTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2102,14 +2102,14 @@ public struct Concatenate6_TVTVTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2127,14 +2127,14 @@ public struct Concatenate6_TVTVVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2152,14 +2152,14 @@ public struct Concatenate6_TVTVVV<
   public typealias Match = Tuple3<Substring, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2177,14 +2177,14 @@ public struct Concatenate6_TVVTTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2202,14 +2202,14 @@ public struct Concatenate6_TVVTTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T2.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2227,14 +2227,14 @@ public struct Concatenate6_TVVTVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T2.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2252,14 +2252,14 @@ public struct Concatenate6_TVVTVV<
   public typealias Match = Tuple3<Substring, T2.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2277,14 +2277,14 @@ public struct Concatenate6_TVVVTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2302,14 +2302,14 @@ public struct Concatenate6_TVVVTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2327,14 +2327,14 @@ public struct Concatenate6_TVVVVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2352,14 +2352,14 @@ public struct Concatenate6_TVVVVV<
   public typealias Match = Tuple2<Substring, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2377,14 +2377,14 @@ public struct Concatenate6_VTTTTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2402,14 +2402,14 @@ public struct Concatenate6_VTTTTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2427,14 +2427,14 @@ public struct Concatenate6_VTTTVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2452,14 +2452,14 @@ public struct Concatenate6_VTTTVV<
   public typealias Match = Tuple4<Substring, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2477,14 +2477,14 @@ public struct Concatenate6_VTTVTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2502,14 +2502,14 @@ public struct Concatenate6_VTTVTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2527,14 +2527,14 @@ public struct Concatenate6_VTTVVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2552,14 +2552,14 @@ public struct Concatenate6_VTTVVV<
   public typealias Match = Tuple3<Substring, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2577,14 +2577,14 @@ public struct Concatenate6_VTVTTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2602,14 +2602,14 @@ public struct Concatenate6_VTVTTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2627,14 +2627,14 @@ public struct Concatenate6_VTVTVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T2.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2652,14 +2652,14 @@ public struct Concatenate6_VTVTVV<
   public typealias Match = Tuple3<Substring, T2.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2677,14 +2677,14 @@ public struct Concatenate6_VTVVTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2702,14 +2702,14 @@ public struct Concatenate6_VTVVTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2727,14 +2727,14 @@ public struct Concatenate6_VTVVVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2752,14 +2752,14 @@ public struct Concatenate6_VTVVVV<
   public typealias Match = Tuple2<Substring, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2777,14 +2777,14 @@ public struct Concatenate6_VVTTTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2802,14 +2802,14 @@ public struct Concatenate6_VVTTTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2827,14 +2827,14 @@ public struct Concatenate6_VVTTVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2852,14 +2852,14 @@ public struct Concatenate6_VVTTVV<
   public typealias Match = Tuple3<Substring, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2877,14 +2877,14 @@ public struct Concatenate6_VVTVTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2902,14 +2902,14 @@ public struct Concatenate6_VVTVTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2927,14 +2927,14 @@ public struct Concatenate6_VVTVVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2952,14 +2952,14 @@ public struct Concatenate6_VVTVVV<
   public typealias Match = Tuple2<Substring, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -2977,14 +2977,14 @@ public struct Concatenate6_VVVTTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -3002,14 +3002,14 @@ public struct Concatenate6_VVVTTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -3027,14 +3027,14 @@ public struct Concatenate6_VVVTVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -3052,14 +3052,14 @@ public struct Concatenate6_VVVTVV<
   public typealias Match = Tuple2<Substring, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -3077,14 +3077,14 @@ public struct Concatenate6_VVVVTT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T1.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -3102,14 +3102,14 @@ public struct Concatenate6_VVVVTV<
   public typealias Match = Tuple2<Substring, T1.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -3127,14 +3127,14 @@ public struct Concatenate6_VVVVVT<
   public typealias Match = Tuple2<Substring, T0.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -3152,14 +3152,14 @@ public struct Concatenate6_VVVVVV<
   public typealias Match = Substring
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root
+    ]))
   }
 }
 
@@ -3179,15 +3179,15 @@ public struct Concatenate7_TTTTTTT<
   public typealias Match = Tuple8<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3205,15 +3205,15 @@ public struct Concatenate7_TTTTTTV<
   public typealias Match = Tuple7<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3231,15 +3231,15 @@ public struct Concatenate7_TTTTTVT<
   public typealias Match = Tuple7<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3257,15 +3257,15 @@ public struct Concatenate7_TTTTTVV<
   public typealias Match = Tuple6<Substring, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3283,15 +3283,15 @@ public struct Concatenate7_TTTTVTT<
   public typealias Match = Tuple7<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3309,15 +3309,15 @@ public struct Concatenate7_TTTTVTV<
   public typealias Match = Tuple6<Substring, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3335,15 +3335,15 @@ public struct Concatenate7_TTTTVVT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3361,15 +3361,15 @@ public struct Concatenate7_TTTTVVV<
   public typealias Match = Tuple5<Substring, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3387,15 +3387,15 @@ public struct Concatenate7_TTTVTTT<
   public typealias Match = Tuple7<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3413,15 +3413,15 @@ public struct Concatenate7_TTTVTTV<
   public typealias Match = Tuple6<Substring, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3439,15 +3439,15 @@ public struct Concatenate7_TTTVTVT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T2.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3465,15 +3465,15 @@ public struct Concatenate7_TTTVTVV<
   public typealias Match = Tuple5<Substring, T2.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3491,15 +3491,15 @@ public struct Concatenate7_TTTVVTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3517,15 +3517,15 @@ public struct Concatenate7_TTTVVTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3543,15 +3543,15 @@ public struct Concatenate7_TTTVVVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3569,15 +3569,15 @@ public struct Concatenate7_TTTVVVV<
   public typealias Match = Tuple4<Substring, T4.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3595,15 +3595,15 @@ public struct Concatenate7_TTVTTTT<
   public typealias Match = Tuple7<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3621,15 +3621,15 @@ public struct Concatenate7_TTVTTTV<
   public typealias Match = Tuple6<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3647,15 +3647,15 @@ public struct Concatenate7_TTVTTVT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3673,15 +3673,15 @@ public struct Concatenate7_TTVTTVV<
   public typealias Match = Tuple5<Substring, T2.Match.Capture, T3.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3699,15 +3699,15 @@ public struct Concatenate7_TTVTVTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3725,15 +3725,15 @@ public struct Concatenate7_TTVTVTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T3.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3751,15 +3751,15 @@ public struct Concatenate7_TTVTVVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T3.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3777,15 +3777,15 @@ public struct Concatenate7_TTVTVVV<
   public typealias Match = Tuple4<Substring, T3.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3803,15 +3803,15 @@ public struct Concatenate7_TTVVTTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3829,15 +3829,15 @@ public struct Concatenate7_TTVVTTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T2.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3855,15 +3855,15 @@ public struct Concatenate7_TTVVTVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T2.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3881,15 +3881,15 @@ public struct Concatenate7_TTVVTVV<
   public typealias Match = Tuple4<Substring, T2.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3907,15 +3907,15 @@ public struct Concatenate7_TTVVVTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3933,15 +3933,15 @@ public struct Concatenate7_TTVVVTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3959,15 +3959,15 @@ public struct Concatenate7_TTVVVVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -3985,15 +3985,15 @@ public struct Concatenate7_TTVVVVV<
   public typealias Match = Tuple3<Substring, T5.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4011,15 +4011,15 @@ public struct Concatenate7_TVTTTTT<
   public typealias Match = Tuple7<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4037,15 +4037,15 @@ public struct Concatenate7_TVTTTTV<
   public typealias Match = Tuple6<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4063,15 +4063,15 @@ public struct Concatenate7_TVTTTVT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4089,15 +4089,15 @@ public struct Concatenate7_TVTTTVV<
   public typealias Match = Tuple5<Substring, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4115,15 +4115,15 @@ public struct Concatenate7_TVTTVTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4141,15 +4141,15 @@ public struct Concatenate7_TVTTVTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4167,15 +4167,15 @@ public struct Concatenate7_TVTTVVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T3.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4193,15 +4193,15 @@ public struct Concatenate7_TVTTVVV<
   public typealias Match = Tuple4<Substring, T3.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4219,15 +4219,15 @@ public struct Concatenate7_TVTVTTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4245,15 +4245,15 @@ public struct Concatenate7_TVTVTTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4271,15 +4271,15 @@ public struct Concatenate7_TVTVTVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T2.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4297,15 +4297,15 @@ public struct Concatenate7_TVTVTVV<
   public typealias Match = Tuple4<Substring, T2.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4323,15 +4323,15 @@ public struct Concatenate7_TVTVVTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4349,15 +4349,15 @@ public struct Concatenate7_TVTVVTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4375,15 +4375,15 @@ public struct Concatenate7_TVTVVVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4401,15 +4401,15 @@ public struct Concatenate7_TVTVVVV<
   public typealias Match = Tuple3<Substring, T4.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4427,15 +4427,15 @@ public struct Concatenate7_TVVTTTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4453,15 +4453,15 @@ public struct Concatenate7_TVVTTTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4479,15 +4479,15 @@ public struct Concatenate7_TVVTTVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4505,15 +4505,15 @@ public struct Concatenate7_TVVTTVV<
   public typealias Match = Tuple4<Substring, T2.Match.Capture, T3.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4531,15 +4531,15 @@ public struct Concatenate7_TVVTVTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4557,15 +4557,15 @@ public struct Concatenate7_TVVTVTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T3.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4583,15 +4583,15 @@ public struct Concatenate7_TVVTVVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T3.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4609,15 +4609,15 @@ public struct Concatenate7_TVVTVVV<
   public typealias Match = Tuple3<Substring, T3.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4635,15 +4635,15 @@ public struct Concatenate7_TVVVTTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4661,15 +4661,15 @@ public struct Concatenate7_TVVVTTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T2.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4687,15 +4687,15 @@ public struct Concatenate7_TVVVTVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T2.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4713,15 +4713,15 @@ public struct Concatenate7_TVVVTVV<
   public typealias Match = Tuple3<Substring, T2.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4739,15 +4739,15 @@ public struct Concatenate7_TVVVVTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4765,15 +4765,15 @@ public struct Concatenate7_TVVVVTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4791,15 +4791,15 @@ public struct Concatenate7_TVVVVVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4817,15 +4817,15 @@ public struct Concatenate7_TVVVVVV<
   public typealias Match = Tuple2<Substring, T6.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4843,15 +4843,15 @@ public struct Concatenate7_VTTTTTT<
   public typealias Match = Tuple7<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4869,15 +4869,15 @@ public struct Concatenate7_VTTTTTV<
   public typealias Match = Tuple6<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4895,15 +4895,15 @@ public struct Concatenate7_VTTTTVT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4921,15 +4921,15 @@ public struct Concatenate7_VTTTTVV<
   public typealias Match = Tuple5<Substring, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4947,15 +4947,15 @@ public struct Concatenate7_VTTTVTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4973,15 +4973,15 @@ public struct Concatenate7_VTTTVTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -4999,15 +4999,15 @@ public struct Concatenate7_VTTTVVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5025,15 +5025,15 @@ public struct Concatenate7_VTTTVVV<
   public typealias Match = Tuple4<Substring, T3.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5051,15 +5051,15 @@ public struct Concatenate7_VTTVTTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5077,15 +5077,15 @@ public struct Concatenate7_VTTVTTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5103,15 +5103,15 @@ public struct Concatenate7_VTTVTVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T2.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5129,15 +5129,15 @@ public struct Concatenate7_VTTVTVV<
   public typealias Match = Tuple4<Substring, T2.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5155,15 +5155,15 @@ public struct Concatenate7_VTTVVTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5181,15 +5181,15 @@ public struct Concatenate7_VTTVVTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5207,15 +5207,15 @@ public struct Concatenate7_VTTVVVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5233,15 +5233,15 @@ public struct Concatenate7_VTTVVVV<
   public typealias Match = Tuple3<Substring, T4.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5259,15 +5259,15 @@ public struct Concatenate7_VTVTTTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5285,15 +5285,15 @@ public struct Concatenate7_VTVTTTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5311,15 +5311,15 @@ public struct Concatenate7_VTVTTVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5337,15 +5337,15 @@ public struct Concatenate7_VTVTTVV<
   public typealias Match = Tuple4<Substring, T2.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5363,15 +5363,15 @@ public struct Concatenate7_VTVTVTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5389,15 +5389,15 @@ public struct Concatenate7_VTVTVTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5415,15 +5415,15 @@ public struct Concatenate7_VTVTVVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5441,15 +5441,15 @@ public struct Concatenate7_VTVTVVV<
   public typealias Match = Tuple3<Substring, T3.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5467,15 +5467,15 @@ public struct Concatenate7_VTVVTTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5493,15 +5493,15 @@ public struct Concatenate7_VTVVTTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T2.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5519,15 +5519,15 @@ public struct Concatenate7_VTVVTVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T2.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5545,15 +5545,15 @@ public struct Concatenate7_VTVVTVV<
   public typealias Match = Tuple3<Substring, T2.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5571,15 +5571,15 @@ public struct Concatenate7_VTVVVTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5597,15 +5597,15 @@ public struct Concatenate7_VTVVVTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5623,15 +5623,15 @@ public struct Concatenate7_VTVVVVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5649,15 +5649,15 @@ public struct Concatenate7_VTVVVVV<
   public typealias Match = Tuple2<Substring, T5.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5675,15 +5675,15 @@ public struct Concatenate7_VVTTTTT<
   public typealias Match = Tuple6<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5701,15 +5701,15 @@ public struct Concatenate7_VVTTTTV<
   public typealias Match = Tuple5<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5727,15 +5727,15 @@ public struct Concatenate7_VVTTTVT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5753,15 +5753,15 @@ public struct Concatenate7_VVTTTVV<
   public typealias Match = Tuple4<Substring, T2.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5779,15 +5779,15 @@ public struct Concatenate7_VVTTVTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5805,15 +5805,15 @@ public struct Concatenate7_VVTTVTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5831,15 +5831,15 @@ public struct Concatenate7_VVTTVVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5857,15 +5857,15 @@ public struct Concatenate7_VVTTVVV<
   public typealias Match = Tuple3<Substring, T3.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5883,15 +5883,15 @@ public struct Concatenate7_VVTVTTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5909,15 +5909,15 @@ public struct Concatenate7_VVTVTTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T2.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5935,15 +5935,15 @@ public struct Concatenate7_VVTVTVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T2.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5961,15 +5961,15 @@ public struct Concatenate7_VVTVTVV<
   public typealias Match = Tuple3<Substring, T2.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -5987,15 +5987,15 @@ public struct Concatenate7_VVTVVTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6013,15 +6013,15 @@ public struct Concatenate7_VVTVVTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6039,15 +6039,15 @@ public struct Concatenate7_VVTVVVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6065,15 +6065,15 @@ public struct Concatenate7_VVTVVVV<
   public typealias Match = Tuple2<Substring, T4.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6091,15 +6091,15 @@ public struct Concatenate7_VVVTTTT<
   public typealias Match = Tuple5<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6117,15 +6117,15 @@ public struct Concatenate7_VVVTTTV<
   public typealias Match = Tuple4<Substring, T1.Match.Capture, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6143,15 +6143,15 @@ public struct Concatenate7_VVVTTVT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6169,15 +6169,15 @@ public struct Concatenate7_VVVTTVV<
   public typealias Match = Tuple3<Substring, T2.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6195,15 +6195,15 @@ public struct Concatenate7_VVVTVTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6221,15 +6221,15 @@ public struct Concatenate7_VVVTVTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6247,15 +6247,15 @@ public struct Concatenate7_VVVTVVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6273,15 +6273,15 @@ public struct Concatenate7_VVVTVVV<
   public typealias Match = Tuple2<Substring, T3.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6299,15 +6299,15 @@ public struct Concatenate7_VVVVTTT<
   public typealias Match = Tuple4<Substring, T0.Match.Capture, T1.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6325,15 +6325,15 @@ public struct Concatenate7_VVVVTTV<
   public typealias Match = Tuple3<Substring, T1.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6351,15 +6351,15 @@ public struct Concatenate7_VVVVTVT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6377,15 +6377,15 @@ public struct Concatenate7_VVVVTVV<
   public typealias Match = Tuple2<Substring, T2.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6403,15 +6403,15 @@ public struct Concatenate7_VVVVVTT<
   public typealias Match = Tuple3<Substring, T0.Match.Capture, T1.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6429,15 +6429,15 @@ public struct Concatenate7_VVVVVTV<
   public typealias Match = Tuple2<Substring, T1.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6455,15 +6455,15 @@ public struct Concatenate7_VVVVVVT<
   public typealias Match = Tuple2<Substring, T0.Match.Capture>
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
@@ -6481,15 +6481,15 @@ public struct Concatenate7_VVVVVVV<
   public typealias Match = Substring
   public let regex: Regex<Match>
   init(_ x0: T0, _ x1: T1, _ x2: T2, _ x3: T3, _ x4: T4, _ x5: T5, _ x6: T6) {
-    regex = .init(ast: concat(
-      x0.regex.ast.root, 
-      x1.regex.ast.root, 
-      x2.regex.ast.root, 
-      x3.regex.ast.root, 
-      x4.regex.ast.root, 
-      x5.regex.ast.root, 
-      x6.regex.ast.root
-    ))
+    regex = .init(node: .concatenation([
+      x0.regex.root, 
+      x1.regex.root, 
+      x2.regex.root, 
+      x3.regex.root, 
+      x4.regex.root, 
+      x5.regex.root, 
+      x6.regex.root
+    ]))
   }
 }
 
