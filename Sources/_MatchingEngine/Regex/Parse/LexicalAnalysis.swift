@@ -332,7 +332,7 @@ extension Source {
   ///     Quantifier -> ('*' | '+' | '?' | '{' Range '}') QuantKind?
   ///     QuantKind  -> '?' | '+'
   ///
-  mutating func lexQuantifier() throws -> (
+  mutating func lexQuantifier(context: ParsingContext) throws -> (
     Located<Quant.Amount>, Located<Quant.Kind>
   )? {
     let amt: Located<Quant.Amount>? = try recordLoc { src in
@@ -341,7 +341,9 @@ extension Source {
       if src.tryEat("?") { return .zeroOrOne }
 
       return try src.tryEating { src in
-        guard src.tryEat("{"), let range = try src.lexRange(), src.tryEat("}")
+        guard src.tryEat("{"),
+              let range = try src.lexRange(context: context),
+              src.tryEat("}")
         else { return nil }
         return range.value
       }
@@ -363,7 +365,7 @@ extension Source {
   ///                  | ExpRange
   ///     ExpRange    -> '..<' <Int> | '...' <Int>
   ///                  | <Int> '..<' <Int> | <Int> '...' <Int>?
-  mutating func lexRange() throws -> Located<Quant.Amount>? {
+  mutating func lexRange(context: ParsingContext) throws -> Located<Quant.Amount>? {
     try recordLoc { src in
       try src.tryEating { src in
         let lowerOpt = try src.lexNumber()
@@ -375,7 +377,7 @@ extension Source {
         let closedRange: Bool?
         if src.tryEat(",") {
           closedRange = true
-        } else if src.experimentalRanges && src.tryEat(".") {
+        } else if context.experimentalRanges && src.tryEat(".") {
           try src.expect(".")
           if src.tryEat(".") {
             closedRange = true
@@ -477,12 +479,12 @@ extension Source {
   ///
   /// TODO: Need to support some escapes
   ///
-  mutating func lexQuote() throws -> AST.Quote? {
+  mutating func lexQuote(context: ParsingContext) throws -> AST.Quote? {
     let str = try recordLoc { src -> String? in
       if src.tryEat(sequence: #"\Q"#) {
         return try src.expectQuoted(endingWith: #"\E"#).value
       }
-      if src.experimentalQuotes, src.tryEat("\"") {
+      if context.experimentalQuotes, src.tryEat("\"") {
         return try src.expectQuoted(endingWith: "\"", ignoreEscaped: true).value
       }
       return nil
@@ -501,12 +503,12 @@ extension Source {
   ///
   /// TODO: Swift-style nested comments, line-ending comments, etc
   ///
-  mutating func lexComment() throws -> AST.Trivia? {
+  mutating func lexComment(context: ParsingContext) throws -> AST.Trivia? {
     let trivia: Located<String>? = try recordLoc { src in
       if src.tryEat(sequence: "(?#") {
         return try src.expectQuoted(endingWith: ")").value
       }
-      if src.experimentalComments, src.tryEat(sequence: "/*") {
+      if context.experimentalComments, src.tryEat(sequence: "/*") {
         return try src.expectQuoted(endingWith: "*/").value
       }
       return nil
@@ -517,14 +519,32 @@ extension Source {
 
   /// Try to consume non-semantic whitespace as trivia
   ///
+  ///     Whitespace -> ' '+
+  ///
   /// Does nothing unless `SyntaxOptions.nonSemanticWhitespace` is set
-  mutating func lexNonSemanticWhitespace() throws -> AST.Trivia? {
-    guard syntax.ignoreWhitespace else { return nil }
+  mutating func lexNonSemanticWhitespace(
+    context: ParsingContext
+  ) throws -> AST.Trivia? {
+    guard context.ignoreWhitespace else { return nil }
     let trivia: Located<String>? = recordLoc { src in
       src.tryEatPrefix { $0 == " " }?.string
     }
     guard let trivia = trivia else { return nil }
     return AST.Trivia(trivia)
+  }
+
+  /// Try to consume trivia.
+  ///
+  ///     Trivia -> Comment | Whitespace
+  ///
+  mutating func lexTrivia(context: ParsingContext) throws -> AST.Trivia? {
+    if let comment = try lexComment(context: context) {
+      return comment
+    }
+    if let whitespace = try lexNonSemanticWhitespace(context: context) {
+      return whitespace
+    }
+    return nil
   }
 
   /// Try to lex a matching option.
@@ -761,6 +781,7 @@ extension Source {
   /// comments, like quotes, cannot be quantified.
   ///
   mutating func lexGroupStart(
+    context: ParsingContext
   ) throws -> Located<AST.Group.Kind>? {
     try recordLoc { src in
       try src.tryEating { src in
@@ -825,7 +846,7 @@ extension Source {
         }
 
         // (_:)
-        if src.experimentalCaptures && src.tryEat(sequence: "_:") {
+        if context.experimentalCaptures && src.tryEat(sequence: "_:") {
           return .nonCapture
         }
         // TODO: (name:)
@@ -960,9 +981,12 @@ extension Source {
   ///
   ///     GroupConditionalStart -> '(?' GroupStart
   ///
-  mutating func lexGroupConditionalStart() throws -> Located<AST.Group.Kind>? {
+  mutating func lexGroupConditionalStart(
+    context: ParsingContext
+  ) throws -> Located<AST.Group.Kind>? {
     try tryEating { src in
-      guard src.tryEat(sequence: "(?"), let group = try src.lexGroupStart()
+      guard src.tryEat(sequence: "(?"),
+            let group = try src.lexGroupStart(context: context)
       else { return nil }
 
       // Implicitly scoped groups are not supported here.

@@ -53,14 +53,17 @@ Lexical analysis provides the following:
 
 struct ParsingContext {
   /// Whether we're currently parsing in a custom character class.
-  var isInCustomCharacterClass = false
+  fileprivate(set) var isInCustomCharacterClass = false
 
   /// Tracks the number of group openings we've seen, to disambiguate the '\n'
   /// syntax as a backreference or an octal sequence.
-  fileprivate var priorGroupCount = 0
+  private var priorGroupCount = 0
 
   /// A set of used group names.
-  fileprivate var usedGroupNames = Set<String>()
+  private var usedGroupNames = Set<String>()
+
+  /// The syntax options currently set.
+  fileprivate(set) var syntax: SyntaxOptions
 
   fileprivate mutating func recordGroup(_ g: AST.Group.Kind) {
     // TODO: Needs to track group number resets (?|...).
@@ -70,8 +73,9 @@ struct ParsingContext {
     }
   }
 
-  private init() {}
-  static var none: ParsingContext { .init() }
+  init(syntax: SyntaxOptions) {
+    self.syntax = syntax
+  }
 
   /// Check whether a given reference refers to a prior group.
   func isPriorGroupRef(_ ref: AST.Reference.Kind) -> Bool {
@@ -88,11 +92,20 @@ struct ParsingContext {
 
 private struct Parser {
   var source: Source
-  var context: ParsingContext = .none
+  var context: ParsingContext
 
-  init(_ source: Source) {
+  init(_ source: Source, syntax: SyntaxOptions) {
     self.source = source
+    self.context = ParsingContext(syntax: syntax)
   }
+}
+
+extension ParsingContext {
+  var experimentalRanges: Bool { syntax.contains(.experimentalRanges) }
+  var experimentalCaptures: Bool { syntax.contains(.experimentalCaptures) }
+  var experimentalQuotes: Bool { syntax.contains(.experimentalQuotes) }
+  var experimentalComments: Bool { syntax.contains(.experimentalComments) }
+  var ignoreWhitespace: Bool { syntax.contains(.nonSemanticWhitespace) }
 }
 
 // Diagnostics
@@ -182,24 +195,20 @@ extension Parser {
       // TODO: refactor loop body into function
       let _start = source.currentPosition
 
-      //     Trivia -> `lexComment` | `lexNonSemanticWhitespace`
-      if let triv = try source.lexComment() {
-        result.append(.trivia(triv))
-        continue
-      }
-      if let triv = try source.lexNonSemanticWhitespace() {
+      //     Trivia -> `lexTrivia`
+      if let triv = try source.lexTrivia(context: context) {
         result.append(.trivia(triv))
         continue
       }
 
       //     Quote      -> `lexQuote`
-      if let quote = try source.lexQuote() {
+      if let quote = try source.lexQuote(context: context) {
         result.append(.quote(quote))
         continue
       }
       //     Quantification  -> QuantOperand Quantifier?
       if let operand = try parseQuantifierOperand() {
-        if let (amt, kind) = try source.lexQuantifier() {
+        if let (amt, kind) = try source.lexQuantifier(context: context) {
           let location = loc(_start)
           guard operand.isQuantifiable else {
             throw Source.LocatedError(ParseError.notQuantifiable, location)
@@ -333,7 +342,7 @@ extension Parser {
     if let cond = try source.lexKnownConditionalStart(context: context) {
       return try parseConditionalBranches(start: _start, cond)
     }
-    if let kind = try source.lexGroupConditionalStart() {
+    if let kind = try source.lexGroupConditionalStart(context: context) {
       let groupStart = kind.location.start
       let group = try parseGroupBody(start: groupStart, kind)
       return try parseConditionalBranches(
@@ -346,7 +355,7 @@ extension Parser {
     }
 
     // Check if we have the start of a group '('.
-    if let kind = try source.lexGroupStart() {
+    if let kind = try source.lexGroupStart(context: context) {
       return .group(try parseGroupBody(start: _start, kind))
     }
 
@@ -435,7 +444,7 @@ extension Parser {
       }
 
       // Quoted sequence.
-      if let quote = try source.lexQuote() {
+      if let quote = try source.lexQuote(context: context) {
         members.append(.quote(quote))
         continue
       }
@@ -463,8 +472,8 @@ public func parse<S: StringProtocol>(
   _ regex: S, _ syntax: SyntaxOptions
 ) throws -> AST where S.SubSequence == Substring
 {
-  let source = Source(String(regex), syntax)
-  var parser = Parser(source)
+  let source = Source(String(regex))
+  var parser = Parser(source, syntax: syntax)
   return try parser.parse()
 }
 

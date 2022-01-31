@@ -17,15 +17,13 @@
 public struct Source {
   var input: Input
   var bounds: Range<Input.Index>
-  var syntax: SyntaxOptions
 
   // TODO: source should hold outer collection and range, at least
   // for error reporting if nothing else
 
-  init(_ str: Input, _ syntax: SyntaxOptions) {
+  init(_ str: Input) {
     self.input = str
     self.bounds = str.startIndex ..< str.endIndex
-    self.syntax = syntax
   }
 
   subscript(_ range: Range<Input.Index>) -> Input.SubSequence { input[range] }
@@ -41,18 +39,6 @@ extension Source {
 
   /// A precise point in the input, commonly used for bounded ranges
   public typealias Position = String.Index
-}
-
-// MARK: - Syntax
-
-extension Source {
-  var experimentalRanges: Bool { syntax.contains(.experimentalRanges) }
-  var experimentalCaptures: Bool { syntax.contains(.experimentalCaptures) }
-  var experimentalQuotes: Bool { syntax.contains(.experimentalQuotes) }
-  var experimentalComments: Bool { syntax.contains(.experimentalComments) }
-  var nonSemanticWhitespace: Bool {
-    syntax.contains(.nonSemanticWhitespace)
-  }
 }
 
 // MARK: - Source as a peekable consumer

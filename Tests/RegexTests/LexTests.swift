@@ -22,7 +22,7 @@ func diagnose(
   file: StaticString = #file,
   line: UInt = #line
 ) {
-  var src = Source(input, syntax)
+  var src = Source(input)
   do {
     try f(&src)
     XCTFail("""
