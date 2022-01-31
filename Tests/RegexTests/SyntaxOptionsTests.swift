@@ -15,7 +15,7 @@ import XCTest
 
 
 private let dplus = oneOrMore(
-  .eager, atom(.escaped(.decimalDigit)))
+  of: atom(.escaped(.decimalDigit)))
 private let dotAST = concat(
   dplus, ".", dplus, ".", dplus, ".", dplus)
 private let dotASTQuoted = concat(
@@ -61,34 +61,34 @@ extension RegexTests {
   func testExperimentalRanges() {
     parseTest(
       #"a{1,2}"#,
-      quantRange(.eager, 1...2, "a"))
+      quantRange(1...2, of: "a"))
     parseTest(
       #"a{1...2}"#,
-      quantRange(.eager, 1...2, "a"),
+      quantRange(1...2, of: "a"),
       syntax: .experimentalRanges)
     parseTest(
       #"a{1..<3}"#,
-      quantRange(.eager, 1...2, "a"),
+      quantRange(1...2, of: "a"),
       syntax: .experimentalRanges)
 
     parseTest(
       #"a{,2}"#,
-      upToN(.eager, 2, "a"))
+      upToN(2, of: "a"))
     parseTest(
       #"a{...2}"#,
-      upToN(.eager, 2, "a"),
+      upToN(2, of: "a"),
       syntax: .experimental)
     parseTest(
       #"a{..<3}"#,
-      upToN(.eager, 2, "a"),
+      upToN(2, of: "a"),
       syntax: .experimental)
 
     parseTest(
       #"a{1,}"#,
-      nOrMore(.eager, 1, "a"))
+      nOrMore(1, of: "a"))
     parseTest(
       #"a{1...}"#,
-      nOrMore(.eager, 1, "a"),
+      nOrMore(1, of: "a"),
       syntax: .experimental)
   }
 

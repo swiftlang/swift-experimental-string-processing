@@ -67,7 +67,7 @@ public struct OneOrMore<Component: RegexProtocol>: RegexProtocolWithComponent {
 
   public init(component: Component) {
     self.regex = .init(ast:
-      oneOrMore(.eager, component.regex.ast.root)
+      oneOrMore(of: component.regex.ast.root)
     )
   }
 
@@ -93,7 +93,7 @@ public struct Repeat<
 
   public init(component: Component) {
     self.regex = .init(ast:
-      zeroOrMore(.eager, component.regex.ast.root))
+      zeroOrMore(of: component.regex.ast.root))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
@@ -116,7 +116,7 @@ public struct Optionally<Component: RegexProtocol>: RegexProtocolWithComponent {
 
   public init(component: Component) {
     self.regex = .init(ast:
-      zeroOrOne(.eager, component.regex.ast.root))
+      zeroOrOne(of: component.regex.ast.root))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
