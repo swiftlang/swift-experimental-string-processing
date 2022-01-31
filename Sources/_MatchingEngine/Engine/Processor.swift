@@ -93,6 +93,12 @@ extension Processor {
 }
 
 extension Processor {
+  var slice: Input.SubSequence {
+    // TODO: Should we whole-scale switch to slices, or
+    // does that depend on options for some anchors?
+    input[bounds]
+  }
+
   // Advance in our input
   //
   // Returns whether the advance succeeded. On failure, our
@@ -125,7 +131,7 @@ extension Processor {
     currentPosition < end ? input[currentPosition] : nil
   }
   func load(count: Int) -> Input.SubSequence? {
-    let slice = input[currentPosition...].prefix(count)
+    let slice = self.slice[currentPosition...].prefix(count)
     guard slice.count == count else { return nil }
     return slice
   }
