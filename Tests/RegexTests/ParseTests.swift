@@ -195,6 +195,26 @@ func diagnosticTest(
   }
 }
 
+func libswiftDiagnosticMessageTest(
+  _ input: String, _ expectedErr: String, file: StaticString = #file,
+  line: UInt = #line
+) {
+  var errPtr: UnsafePointer<CChar>?
+  var version: CUnsignedInt = 0
+
+  libswiftParseRegexLiteral(
+    input, &errPtr, &version, /*captureStructure*/ nil,
+    /*captureStructureSize*/ 0
+  )
+
+  guard let errPtr = errPtr else {
+    XCTFail("Unexpected test pass", file: file, line: line)
+    return
+  }
+  let err = String(cString: errPtr)
+  XCTAssertEqual(expectedErr, err, file: file, line: line)
+}
+
 extension RegexTests {
   func testParse() {
     parseTest(
@@ -1854,5 +1874,10 @@ extension RegexTests {
 
     // TODO: This diagnostic could be better.
     diagnosticTest("(*LIMIT_DEPTH=-1", .expectedNumber("", kind: .decimal))
+  }
+
+  func testlibswiftDiagnostics() {
+    libswiftDiagnosticMessageTest(
+      "'/[x*/'", "cannot parse regular expression: expected ']'")
   }
 }
