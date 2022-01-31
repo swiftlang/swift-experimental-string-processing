@@ -332,21 +332,34 @@ extension Source {
   ///     Quantifier -> ('*' | '+' | '?' | '{' Range '}') QuantKind?
   ///     QuantKind  -> '?' | '+'
   ///
-  mutating func lexQuantifier() throws -> (
-    Located<Quant.Amount>, Located<Quant.Kind>
-  )? {
+  mutating func lexQuantifier(
+    context: ParsingContext
+  ) throws -> (Located<Quant.Amount>, Located<Quant.Kind>, [AST.Trivia])? {
+    var trivia: [AST.Trivia] = []
+
+    if let t = try lexNonSemanticWhitespace(context: context) {
+      trivia.append(t)
+    }
+
     let amt: Located<Quant.Amount>? = try recordLoc { src in
       if src.tryEat("*") { return .zeroOrMore }
       if src.tryEat("+") { return .oneOrMore }
       if src.tryEat("?") { return .zeroOrOne }
 
       return try src.tryEating { src in
-        guard src.tryEat("{"), let range = try src.lexRange(), src.tryEat("}")
+        guard src.tryEat("{"),
+              let range = try src.lexRange(context: context),
+              src.tryEat("}")
         else { return nil }
         return range.value
       }
     }
     guard let amt = amt else { return nil }
+
+    // PCRE allows non-semantic whitespace here in extended syntax mode.
+    if let t = try lexNonSemanticWhitespace(context: context) {
+      trivia.append(t)
+    }
 
     let kind: Located<Quant.Kind> = recordLoc { src in
       if src.tryEat("?") { return .reluctant  }
@@ -354,7 +367,7 @@ extension Source {
       return .eager
     }
 
-    return (amt, kind)
+    return (amt, kind, trivia)
   }
 
   /// Try to consume a range, returning `nil` if unsuccessful.
@@ -363,7 +376,7 @@ extension Source {
   ///                  | ExpRange
   ///     ExpRange    -> '..<' <Int> | '...' <Int>
   ///                  | <Int> '..<' <Int> | <Int> '...' <Int>?
-  mutating func lexRange() throws -> Located<Quant.Amount>? {
+  mutating func lexRange(context: ParsingContext) throws -> Located<Quant.Amount>? {
     try recordLoc { src in
       try src.tryEating { src in
         let lowerOpt = try src.lexNumber()
@@ -375,7 +388,7 @@ extension Source {
         let closedRange: Bool?
         if src.tryEat(",") {
           closedRange = true
-        } else if src.experimentalRanges && src.tryEat(".") {
+        } else if context.experimentalRanges && src.tryEat(".") {
           try src.expect(".")
           if src.tryEat(".") {
             closedRange = true
@@ -477,12 +490,12 @@ extension Source {
   ///
   /// TODO: Need to support some escapes
   ///
-  mutating func lexQuote() throws -> AST.Quote? {
+  mutating func lexQuote(context: ParsingContext) throws -> AST.Quote? {
     let str = try recordLoc { src -> String? in
       if src.tryEat(sequence: #"\Q"#) {
         return try src.expectQuoted(endingWith: #"\E"#).value
       }
-      if src.experimentalQuotes, src.tryEat("\"") {
+      if context.experimentalQuotes, src.tryEat("\"") {
         return try src.expectQuoted(endingWith: "\"", ignoreEscaped: true).value
       }
       return nil
@@ -499,15 +512,26 @@ extension Source {
   ///
   ///     ExpComment -> '/*' (!'*/' .)* '*/'
   ///
+  /// With `SyntaxOptions.endOfLineComments`
+  ///
+  ///     EndOfLineComment -> '#' .*
+  ///
   /// TODO: Swift-style nested comments, line-ending comments, etc
   ///
-  mutating func lexComment() throws -> AST.Trivia? {
+  mutating func lexComment(context: ParsingContext) throws -> AST.Trivia? {
     let trivia: Located<String>? = try recordLoc { src in
       if src.tryEat(sequence: "(?#") {
         return try src.expectQuoted(endingWith: ")").value
       }
-      if src.experimentalComments, src.tryEat(sequence: "/*") {
+      if context.experimentalComments, src.tryEat(sequence: "/*") {
         return try src.expectQuoted(endingWith: "*/").value
+      }
+      if context.endOfLineComments, src.tryEat("#") {
+        // TODO: If we ever support multi-line regex literals, this will need
+        // to be updated to stop at a newline. Note though that PCRE specifies
+        // that the newline it matches against can be controlled by the global
+        // matching options e.g `(*CR)`, `(*ANY)`, ...
+        return src.lexUntil(\.isEmpty).value
       }
       return nil
     }
@@ -517,14 +541,53 @@ extension Source {
 
   /// Try to consume non-semantic whitespace as trivia
   ///
+  ///     Whitespace -> WhitespaceChar+
+  ///
   /// Does nothing unless `SyntaxOptions.nonSemanticWhitespace` is set
-  mutating func lexNonSemanticWhitespace() throws -> AST.Trivia? {
-    guard syntax.ignoreWhitespace else { return nil }
+  mutating func lexNonSemanticWhitespace(
+    context: ParsingContext
+  ) throws -> AST.Trivia? {
+    guard context.ignoreWhitespace else { return nil }
+
+    func isWhitespace(_ c: Character) -> Bool {
+      // This is a list of characters that PCRE treats as whitespace when
+      // compiled with Unicode support. It is a subset of the characters with
+      // the `.isWhitespace` property. ICU appears to also follow this list.
+      // Oniguruma and .NET follow a subset of this list.
+      //
+      // FIXME: PCRE only treats space and tab characters as whitespace when
+      // inside a custom character class (and only treats whitespace as
+      // non-semantic there for the extra-extended `(?xx)` mode). If we get a
+      // strict-PCRE mode, we'll need to add a case for that.
+      switch c {
+      case " ", "\u{9}"..."\u{D}", // space, \t, \n, vertical tab, \f, \r
+           "\u{85}", "\u{200E}",   // next line, left-to-right mark
+           "\u{200F}", "\u{2028}", // right-to-left-mark, line separator
+           "\u{2029}":             // paragraph separator
+        return true
+      default:
+        return false
+      }
+    }
     let trivia: Located<String>? = recordLoc { src in
-      src.tryEatPrefix { $0 == " " }?.string
+      src.tryEatPrefix(isWhitespace)?.string
     }
     guard let trivia = trivia else { return nil }
     return AST.Trivia(trivia)
+  }
+
+  /// Try to consume trivia.
+  ///
+  ///     Trivia -> Comment | Whitespace
+  ///
+  mutating func lexTrivia(context: ParsingContext) throws -> AST.Trivia? {
+    if let comment = try lexComment(context: context) {
+      return comment
+    }
+    if let whitespace = try lexNonSemanticWhitespace(context: context) {
+      return whitespace
+    }
+    return nil
   }
 
   /// Try to lex a matching option.
@@ -761,6 +824,7 @@ extension Source {
   /// comments, like quotes, cannot be quantified.
   ///
   mutating func lexGroupStart(
+    context: ParsingContext
   ) throws -> Located<AST.Group.Kind>? {
     try recordLoc { src in
       try src.tryEating { src in
@@ -825,7 +889,7 @@ extension Source {
         }
 
         // (_:)
-        if src.experimentalCaptures && src.tryEat(sequence: "_:") {
+        if context.experimentalCaptures && src.tryEat(sequence: "_:") {
           return .nonCapture
         }
         // TODO: (name:)
@@ -960,9 +1024,12 @@ extension Source {
   ///
   ///     GroupConditionalStart -> '(?' GroupStart
   ///
-  mutating func lexGroupConditionalStart() throws -> Located<AST.Group.Kind>? {
+  mutating func lexGroupConditionalStart(
+    context: ParsingContext
+  ) throws -> Located<AST.Group.Kind>? {
     try tryEating { src in
-      guard src.tryEat(sequence: "(?"), let group = try src.lexGroupStart()
+      guard src.tryEat(sequence: "(?"),
+            let group = try src.lexGroupStart(context: context)
       else { return nil }
 
       // Implicitly scoped groups are not supported here.
@@ -1607,7 +1674,7 @@ extension Source {
       var name: Located<String>?
       if src.tryEat(":") {
         // TODO: PCRE allows escaped delimiters or '\Q...\E' sequences in the
-        // name under PCRE2_ALT_VERBNAMES.
+        // name under PCRE2_ALT_VERBNAMES. It also allows whitespace under (?x).
         name = try src.expectQuoted(endingWith: ")", eatEnding: false)
       }
       try src.expect(")")

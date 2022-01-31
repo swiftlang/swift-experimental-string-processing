@@ -23,11 +23,19 @@ public struct SyntaxOptions: OptionSet {
   /// `'a \. b' == '/a\.b/'`
   public static var nonSemanticWhitespace: Self { Self(1 << 0) }
 
+  /// `abc # comment`
+  public static var endOfLineComments: Self { Self(1 << 1) }
+
+  /// `(?x)` `(?xx)`
+  public static var extendedSyntax: Self {
+    [.endOfLineComments, .nonSemanticWhitespace]
+  }
+
   /// `'a "." b' == '/a\Q.\Eb/'`
   ///
   /// NOTE: Currently, this means we have raw quotes.
   /// Better would be to have real Swift string delimiter parsing logic.
-  public static var experimentalQuotes: Self { Self(1 << 1) }
+  public static var experimentalQuotes: Self { Self(1 << 2) }
 
   /// `'a /* comment */ b' == '/a(?#. comment )b/'`
   ///
@@ -35,7 +43,7 @@ public struct SyntaxOptions: OptionSet {
   /// Traditional comments can't have `)`, not even escaped in them either, we
   /// can. Traditional comments can have `*/` in them, we can't without
   /// escaping. We don't currently do escaping.
-  public static var experimentalComments: Self { Self(1 << 2) }
+  public static var experimentalComments: Self { Self(1 << 3) }
 
   /// ```
   ///   'a{n...m}' == '/a{n,m}/'
@@ -44,11 +52,11 @@ public struct SyntaxOptions: OptionSet {
   ///   'a{...m}'  == '/a{,m}/'
   ///   'a{..<m}'  == '/a{,m-1}/'
   /// ```
-  public static var experimentalRanges: Self { Self(1 << 3) }
+  public static var experimentalRanges: Self { Self(1 << 4) }
 
   /// `(name: .*)` == `(?<name>.*)`
   ///  `(_: .*)` == `(?:.*)`
-  public static var experimentalCaptures: Self { Self(1 << 4) }
+  public static var experimentalCaptures: Self { Self(1 << 5) }
 
   /*
 
@@ -59,10 +67,9 @@ public struct SyntaxOptions: OptionSet {
 
   public static var traditional: Self { Self(0) }
 
-  public static var experimental: Self { Self(~0) }
-
-  public var ignoreWhitespace: Bool {
-    contains(.nonSemanticWhitespace)
+  public static var experimental: Self {
+    // Experimental syntax enables everything except end-of-line comments.
+    Self(~0).subtracting(.endOfLineComments)
   }
 
   // TODO: Probably want to model strict-PCRE etc. options too.

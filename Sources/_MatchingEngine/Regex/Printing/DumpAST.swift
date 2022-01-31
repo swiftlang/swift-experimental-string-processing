@@ -52,6 +52,9 @@ extension _ASTPrintable {
       if $0.isTrivia { return nil }
       return $0._dump()
     }.joined(separator: ",")
+    if sub.isEmpty {
+      return "\(_dumpBase)"
+    }
     return "\(_dumpBase)(\(sub))"
   }
 }
@@ -287,7 +290,11 @@ extension AST.Quantification: _ASTPrintable {
 
 extension AST.CustomCharacterClass: _ASTNode {
   public var _dumpBase: String {
-    "customCharacterClass(\(members))"
+    // Exclude trivia for now, as we don't want it to appear when performing
+    // comparisons of dumped output in tests.
+    // TODO: We should eventually have some way of filtering out trivia for
+    // tests, so that it can appear in regular dumps.
+    return "customCharacterClass(\(strippingTriviaShallow.members))"
   }
 }
 
@@ -298,6 +305,7 @@ extension AST.CustomCharacterClass.Member: _ASTPrintable {
     case .atom(let a): return "\(a)"
     case .range(let r): return "\(r)"
     case .quote(let q): return "\(q)"
+    case .trivia(let t): return "\(t)"
     case .setOperation(let lhs, let op, let rhs):
       return "op \(lhs) \(op.value) \(rhs)"
     }

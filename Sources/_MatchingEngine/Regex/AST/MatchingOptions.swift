@@ -50,6 +50,16 @@ extension AST {
       self.location = location
     }
 
+    /// If this is either the regular or extra extended syntax option.
+    public var isAnyExtended: Bool {
+      switch kind {
+      case .extended, .extraExtended:
+        return true
+      default:
+        return false
+      }
+    }
+
     public var isTextSegmentMode: Bool {
       switch kind {
       case .textSegmentGraphemeMode, .textSegmentWordMode:
@@ -93,6 +103,10 @@ extension AST {
       self.minusLoc = minusLoc
       self.removing = removing
     }
+
+    /// Whether this set of matching options first resets the options before
+    /// adding onto them.
+    public var resetsCurrentOptions: Bool { caretLoc != nil }
   }
 }
 
@@ -102,7 +116,10 @@ extension AST.MatchingOption: _ASTPrintable {
 
 extension AST.MatchingOptionSequence: _ASTPrintable {
   public var _dumpBase: String {
-    "adding: \(adding), removing: \(removing), hasCaret: \(caretLoc != nil)"
+    """
+    adding: \(adding), removing: \(removing), \
+    resetsCurrentOptions: \(resetsCurrentOptions)
+    """
   }
 }
 

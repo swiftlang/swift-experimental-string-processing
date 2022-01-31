@@ -420,6 +420,10 @@ extension AST.CustomCharacterClass {
           // Decompose quoted literal into literal characters.
           result += q.literal.map { .character($0) }
 
+        case .trivia:
+          // Not semantically important.
+          break
+
         case .setOperation(let lhs, let op, let rhs):
           // FIXME: CharacterClass wasn't designed for set operations with
           // multiple components in each operand, we should fix that. For now,

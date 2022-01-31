@@ -180,6 +180,9 @@ extension PrettyPrinter {
       }
     case .quote(let q):
       print("// TODO: quote \(q.literal._quoted) in custom character classes (should we split it?)")
+    case .trivia(let t):
+      // TODO: We might want to output comments...
+      _ = t
     case .setOperation:
       print("// TODO: Set operation: \(member)")
     }

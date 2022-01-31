@@ -242,51 +242,51 @@ func quant(
   _ child: AST.Node
 ) -> AST.Node {
   .quantification(.init(
-    .init(faking: amount), .init(faking: kind), child, .fake))
+    .init(faking: amount), .init(faking: kind), child, .fake, trivia: []))
 }
 func zeroOrMore(
   _ kind: AST.Quantification.Kind = .eager,
-  _ child: AST.Node
+  of child: AST.Node
 ) -> AST.Node {
   quant(.zeroOrMore, kind, child)
 }
 func zeroOrOne(
   _ kind: AST.Quantification.Kind = .eager,
-  _ child: AST.Node
+  of child: AST.Node
 ) -> AST.Node {
   quant(.zeroOrOne, kind, child)
 }
 func oneOrMore(
   _ kind: AST.Quantification.Kind = .eager,
-  _ child: AST.Node
+  of child: AST.Node
 ) -> AST.Node {
   quant(.oneOrMore, kind, child)
 }
 func exactly(
-  _ kind: AST.Quantification.Kind = .eager,
   _ i: Int,
-  _ child: AST.Node
+  _ kind: AST.Quantification.Kind = .eager,
+  of child: AST.Node
 ) -> AST.Node {
   quant(.exactly(.init(faking: i)), kind, child)
 }
 func nOrMore(
-  _ kind: AST.Quantification.Kind = .eager,
   _ i: Int,
-  _ child: AST.Node
+  _ kind: AST.Quantification.Kind = .eager,
+  of child: AST.Node
 ) -> AST.Node {
   quant(.nOrMore(.init(faking: i)), kind, child)
 }
 func upToN(
-  _ kind: AST.Quantification.Kind = .eager,
   _ i: Int,
-  _ child: AST.Node
+  _ kind: AST.Quantification.Kind = .eager,
+  of child: AST.Node
 ) -> AST.Node {
   quant(.upToN(.init(faking: i)), kind, child)
 }
 func quantRange(
-  _ kind: AST.Quantification.Kind = .eager,
   _ r: ClosedRange<Int>,
-  _ child: AST.Node
+  _ kind: AST.Quantification.Kind = .eager,
+  of child: AST.Node
 ) -> AST.Node {
   let lower = AST.Located(faking: r.lowerBound)
   let upper = AST.Located(faking: r.upperBound)

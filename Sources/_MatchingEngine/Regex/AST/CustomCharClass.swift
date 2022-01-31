@@ -42,6 +42,9 @@ extension AST {
       /// the contents should be interpreted literally.
       case quote(Quote)
 
+      /// Trivia such as non-semantic whitespace.
+      case trivia(Trivia)
+
       /// A binary operator applied to sets of members `abc&&def`
       case setOperation([Member], Located<SetOp>, [Member])
     }
@@ -81,11 +84,27 @@ extension CustomCC.Member {
     case .range(let r): return r
     case .atom(let a): return a
     case .quote(let q): return q
+    case .trivia(let t): return t
     case .setOperation(let lhs, let op, let rhs): return (lhs, op, rhs)
     }
   }
 
   func `as`<T>(_ t: T.Type = T.self) -> T? {
     _associatedValue as? T
+  }
+
+  public var isTrivia: Bool {
+    if case .trivia = self { return true }
+    return false
+  }
+}
+
+extension AST.CustomCharacterClass {
+  /// Strip trivia from the character class members. This does not recurse into
+  /// nested custom character classes.
+  public var strippingTriviaShallow: Self {
+    var copy = self
+    copy.members = copy.members.filter { !$0.isTrivia }
+    return copy
   }
 }

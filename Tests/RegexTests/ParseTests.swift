@@ -201,7 +201,7 @@ extension RegexTests {
       "abc", concat("a", "b", "c"))
     parseTest(
       #"abc\+d*"#,
-      concat("a", "b", "c", "+", zeroOrMore(.eager, "d")))
+      concat("a", "b", "c", "+", zeroOrMore(of: "d")))
     parseTest(
       "a(b)", concat("a", capture("b")),
       captures: .atom())
@@ -211,31 +211,31 @@ extension RegexTests {
         concat(
           "a", "b", "c",
           oneOrMore(
-            .eager, nonCapture(concat("d", "e"))),
-          "f", "g", "h", zeroOrMore(.eager, "i"), "k"),
+            of: nonCapture(concat("d", "e"))),
+          "f", "g", "h", zeroOrMore(of: "i"), "k"),
         "j"))
     parseTest(
       "a(?:b|c)?d",
       concat("a", zeroOrOne(
-        .eager, nonCapture(alt("b", "c"))), "d"))
+        of: nonCapture(alt("b", "c"))), "d"))
     parseTest(
       "a?b??c+d+?e*f*?",
       concat(
-        zeroOrOne(.eager, "a"), zeroOrOne(.reluctant, "b"),
-        oneOrMore(.eager, "c"), oneOrMore(.reluctant, "d"),
-        zeroOrMore(.eager, "e"), zeroOrMore(.reluctant, "f")))
+        zeroOrOne(of: "a"), zeroOrOne(.reluctant, of: "b"),
+        oneOrMore(of: "c"), oneOrMore(.reluctant, of: "d"),
+        zeroOrMore(of: "e"), zeroOrMore(.reluctant, of: "f")))
 
     parseTest(
       "(.)*(.*)",
       concat(
-        zeroOrMore(.eager, capture(atom(.any))),
-        capture(zeroOrMore(.eager, atom(.any)))),
+        zeroOrMore(of: capture(atom(.any))),
+        capture(zeroOrMore(of: atom(.any)))),
       captures: .tuple([.array(.atom()), .atom()]))
     parseTest(
       "((.))*((.)?)",
       concat(
-        zeroOrMore(.eager, capture(capture(atom(.any)))),
-        capture(zeroOrOne(.eager, capture(atom(.any))))),
+        zeroOrMore(of: capture(capture(atom(.any)))),
+        capture(zeroOrOne(of: capture(atom(.any))))),
       captures: .tuple([
         .array(.atom()), .array(.atom()), .atom(), .optional(.atom())
       ]))
@@ -247,7 +247,7 @@ extension RegexTests {
 
     parseTest(
       "a|b?c",
-      alt("a", concat(zeroOrOne(.eager, "b"), "c")))
+      alt("a", concat(zeroOrOne(of: "b"), "c")))
     parseTest(
       "(a|b)c",
       concat(capture(alt("a", "b")), "c"),
@@ -419,7 +419,7 @@ extension RegexTests {
 
     parseTest(
       #"[a[bc]de&&[^bc]\d]+"#,
-      oneOrMore(.eager, charClass(
+      oneOrMore(of: charClass(
         .setOperation(
           ["a", charClass("b", "c"), "d", "e"],
           .init(faking: .intersection),
@@ -448,13 +448,13 @@ extension RegexTests {
     parseTest(
       "a&&b", concat("a", "&", "&", "b"))
     parseTest(
-      "&?", zeroOrOne(.eager, "&"))
+      "&?", zeroOrOne(of: "&"))
     parseTest(
-      "&&?", concat("&", zeroOrOne(.eager, "&")))
+      "&&?", concat("&", zeroOrOne(of: "&")))
     parseTest(
-      "--+", concat("-", oneOrMore(.eager, "-")))
+      "--+", concat("-", oneOrMore(of: "-")))
     parseTest(
-      "~~*", concat("~", zeroOrMore(.eager, "~")))
+      "~~*", concat("~", zeroOrMore(of: "~")))
 
     // MARK: Quotes
 
@@ -496,25 +496,25 @@ extension RegexTests {
 
     parseTest(
       #"a{1,2}"#,
-      quantRange(.eager, 1...2, "a"))
+      quantRange(1...2, of: "a"))
     parseTest(
       #"a{,2}"#,
-      upToN(.eager, 2, "a"))
+      upToN(2, of: "a"))
     parseTest(
       #"a{2,}"#,
-      nOrMore(.eager, 2, "a"))
+      nOrMore(2, of: "a"))
     parseTest(
       #"a{1}"#,
-      exactly(.eager, 1, "a"))
+      exactly(1, of: "a"))
     parseTest(
       #"a{1,2}?"#,
-      quantRange(.reluctant, 1...2, "a"))
+      quantRange(1...2, .reluctant, of: "a"))
     parseTest(
       #"a{0}"#,
-      exactly(.eager, 0, "a"))
+      exactly(0, of: "a"))
     parseTest(
       #"a{0,0}"#,
-      quantRange(.eager, 0...0, "a"))
+      quantRange(0...0, of: "a"))
 
     // Make sure ranges get treated as literal if invalid.
     parseTest("{", "{")
@@ -524,16 +524,16 @@ extension RegexTests {
     parseTest("{,6", concat("{", ",", "6"))
     parseTest("{6", concat("{", "6"))
     parseTest("{6,", concat("{", "6", ","))
-    parseTest("{+", oneOrMore(.eager, "{"))
-    parseTest("{6,+", concat("{", "6", oneOrMore(.eager, ",")))
+    parseTest("{+", oneOrMore(of: "{"))
+    parseTest("{6,+", concat("{", "6", oneOrMore(of: ",")))
     parseTest("x{", concat("x", "{"))
     parseTest("x{}", concat("x", "{", "}"))
     parseTest("x{,}", concat("x", "{", ",", "}"))
     parseTest("x{,6", concat("x", "{", ",", "6"))
     parseTest("x{6", concat("x", "{", "6"))
     parseTest("x{6,", concat("x", "{", "6", ","))
-    parseTest("x{+", concat("x", oneOrMore(.eager, "{")))
-    parseTest("x{6,+", concat("x", "{", "6", oneOrMore(.eager, ",")))
+    parseTest("x{+", concat("x", oneOrMore(of: "{")))
+    parseTest("x{6,+", concat("x", "{", "6", oneOrMore(of: ",")))
 
     // TODO: We should emit a diagnostic for this.
     parseTest("x{3, 5}", concat("x", "{", "3", ",", " ", "5", "}"))
@@ -915,14 +915,11 @@ extension RegexTests {
 
     parseTest(#"\N{abc}"#, atom(.namedCharacter("abc")))
     parseTest(#"[\N{abc}]"#, charClass(atom_m(.namedCharacter("abc"))))
-    parseTest(
-      #"\N{abc}+"#,
-      oneOrMore(.eager,
-                atom(.namedCharacter("abc"))))
+    parseTest(#"\N{abc}+"#, oneOrMore(of: atom(.namedCharacter("abc"))))
     parseTest(
       #"\N {2}"#,
-      concat(atom(.escaped(.notNewline)),
-             exactly(.eager, 2, " ")))
+      concat(atom(.escaped(.notNewline)), exactly(2, of: " "))
+    )
 
     parseTest(#"\N{AA}"#, atom(.namedCharacter("AA")))
     parseTest(#"\N{U+AA}"#, scalar("\u{AA}"))
@@ -945,7 +942,7 @@ extension RegexTests {
     parseTest(#"[\p{C}]"#, charClass(prop_m(.generalCategory(.other))))
     parseTest(
       #"\p{C}+"#,
-      oneOrMore(.eager, prop(.generalCategory(.other))))
+      oneOrMore(of: prop(.generalCategory(.other))))
 
     parseTest(#"\p{Lx}"#, prop(.other(key: nil, value: "Lx")))
     parseTest(#"\p{gcL}"#, prop(.other(key: nil, value: "gcL")))
@@ -1064,7 +1061,7 @@ extension RegexTests {
       captures: .atom(name: "a1")
     )
 
-    parseTest(#"(?(1))?"#, zeroOrOne(.eager, conditional(
+    parseTest(#"(?(1))?"#, zeroOrOne(of: conditional(
       .groupMatched(ref(1)), trueBranch: empty(), falseBranch: empty())))
 
     parseTest(#"(?(R)a|b)"#, conditional(
@@ -1108,9 +1105,9 @@ extension RegexTests {
 
     parseTest(#"(?((a)?(b))(a)+|b)"#, conditional(
       groupCondition(.capture, concat(
-        zeroOrOne(.eager, capture("a")), capture("b")
+        zeroOrOne(of: capture("a")), capture("b")
       )),
-      trueBranch: oneOrMore(.eager, capture("a")),
+      trueBranch: oneOrMore(of: capture("a")),
       falseBranch: "b"
     ), captures: .tuple([
       .atom(), .optional(.atom()), .atom(), .optional(.array(.atom()))
@@ -1118,9 +1115,9 @@ extension RegexTests {
 
     parseTest(#"(?(?:(a)?(b))(a)+|b)"#, conditional(
       groupCondition(.nonCapture, concat(
-        zeroOrOne(.eager, capture("a")), capture("b")
+        zeroOrOne(of: capture("a")), capture("b")
       )),
-      trueBranch: oneOrMore(.eager, capture("a")),
+      trueBranch: oneOrMore(of: capture("a")),
       falseBranch: "b"
     ), captures: .tuple([
       .optional(.atom()), .atom(), .optional(.array(.atom()))
@@ -1190,10 +1187,10 @@ extension RegexTests {
 
     // MARK: Backtracking directives
 
-    parseTest("(*ACCEPT)?", zeroOrOne(.eager, backtrackingDirective(.accept)))
+    parseTest("(*ACCEPT)?", zeroOrOne(of: backtrackingDirective(.accept)))
     parseTest(
       "(*ACCEPT:a)??",
-      zeroOrOne(.reluctant, backtrackingDirective(.accept, name: "a"))
+      zeroOrOne(.reluctant, of: backtrackingDirective(.accept, name: "a"))
     )
     parseTest("(*:a)", backtrackingDirective(.mark, name: "a"))
     parseTest("(*MARK:a)", backtrackingDirective(.mark, name: "a"))
@@ -1208,17 +1205,17 @@ extension RegexTests {
 
     parseTest("(?~)", absentRepeater(empty()))
     parseTest("(?~abc)", absentRepeater(concat("a", "b", "c")))
-    parseTest("(?~a+)", absentRepeater(oneOrMore(.eager, "a")))
+    parseTest("(?~a+)", absentRepeater(oneOrMore(of: "a")))
     parseTest("(?~~)", absentRepeater("~"))
     parseTest("(?~a|b|c)", absentRepeater(alt("a", "b", "c")))
     parseTest("(?~(a))", absentRepeater(capture("a")), captures: .empty)
-    parseTest("(?~)*", zeroOrMore(.eager, absentRepeater(empty())))
+    parseTest("(?~)*", zeroOrMore(of: absentRepeater(empty())))
 
     parseTest("(?~|abc)", absentStopper(concat("a", "b", "c")))
-    parseTest("(?~|a+)", absentStopper(oneOrMore(.eager, "a")))
+    parseTest("(?~|a+)", absentStopper(oneOrMore(of: "a")))
     parseTest("(?~|~)", absentStopper("~"))
     parseTest("(?~|(a))", absentStopper(capture("a")), captures: .empty)
-    parseTest("(?~|a){2}", exactly(.eager, 2, absentStopper("a")))
+    parseTest("(?~|a){2}", exactly(2, of: absentStopper("a")))
 
     parseTest("(?~|a|b)", absentExpression("a", "b"))
     parseTest("(?~|~|~)", absentExpression("~", "~"))
@@ -1227,13 +1224,13 @@ extension RegexTests {
     parseTest("(?~|(a)|(?:(b)|c))", absentExpression(
       capture("a"), nonCapture(alt(capture("b"), "c"))
     ), captures: .optional(.atom()))
-    parseTest("(?~|a|b)?", zeroOrOne(.eager, absentExpression("a", "b")))
+    parseTest("(?~|a|b)?", zeroOrOne(of: absentExpression("a", "b")))
 
     parseTest("(?~|)", absentRangeClear())
 
     // TODO: It's not really clear what this means, but Oniguruma parses it...
     // Maybe we should diagnose it?
-    parseTest("(?~|)+", oneOrMore(.eager, absentRangeClear()))
+    parseTest("(?~|)+", oneOrMore(of: absentRangeClear()))
 
     // MARK: Global matching options
 
@@ -1272,10 +1269,166 @@ extension RegexTests {
 
     parseTest("[(*CR)]", charClass("(", "*", "C", "R", ")"))
 
+    // MARK: Trivia
+
+    parseTest("[(?#abc)]", charClass("(", "?", "#", "a", "b", "c", ")"))
+    parseTest("# abc", concat("#", " ", "a", "b", "c"))
+
+    parseTest("(?x) # hello", changeMatchingOptions(matchingOptions(
+      adding: .extended), isIsolated: true, empty()))
+    parseTest("(?xx) # hello", changeMatchingOptions(matchingOptions(
+      adding: .extraExtended), isIsolated: true, empty()))
+    parseTest("(?x) \\# abc", changeMatchingOptions(matchingOptions(
+      adding: .extended), isIsolated: true, concat("#", "a", "b", "c")))
+    parseTest("(?xx) \\ ", changeMatchingOptions(matchingOptions(
+      adding: .extraExtended), isIsolated: true, concat(" ")))
+
+    // End of line comments aren't applicable in custom char classes.
+    // TODO: ICU supports this.
+    parseTest(
+      "(?x)[ # abc]", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        charClass("#", "a", "b", "c"))
+    )
+
+    parseTest(
+      "(?x)a b c[d e f]", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "b", "c", charClass("d", "e", "f")))
+    )
+    parseTest(
+      "(?xx)a b c[d e f]", changeMatchingOptions(
+        matchingOptions(adding: .extraExtended), isIsolated: true,
+        concat("a", "b", "c", charClass("d", "e", "f")))
+    )
+    parseTest(
+      "(?x)a b c(?-x)d e f", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "b", "c",
+               changeMatchingOptions(matchingOptions(removing: .extended),
+                                     isIsolated: true, concat("d", " ", "e", " ", "f"))))
+    )
+    parseTest(
+      "(?x)a b c(?-xx)d e f", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "b", "c",
+               changeMatchingOptions(matchingOptions(removing: .extraExtended),
+                                     isIsolated: true, concat("d", " ", "e", " ", "f"))))
+    )
+    parseTest(
+      "(?xx)a b c(?-x)d e f", changeMatchingOptions(
+        matchingOptions(adding: .extraExtended), isIsolated: true,
+        concat("a", "b", "c",
+               changeMatchingOptions(matchingOptions(removing: .extended),
+                                     isIsolated: true, concat("d", " ", "e", " ", "f"))))
+    )
+    parseTest(
+      "(?x)a b c(?^i)d e f", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "b", "c",
+               changeMatchingOptions(unsetMatchingOptions(adding: .caseInsensitive),
+                                     isIsolated: true, concat("d", " ", "e", " ", "f"))))
+    )
+    parseTest(
+      "(?x)a b c(?^x)d e f", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "b", "c",
+               changeMatchingOptions(unsetMatchingOptions(adding: .extended),
+                                     isIsolated: true, concat("d", "e", "f"))))
+    )
+    parseTest(
+      "(?:(?x)a b c)d e f", concat(nonCapture(changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "b", "c"))), "d", " ", "e", " ", "f")
+    )
+    parseTest(
+      "(?x:a b c)# hi", concat(changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: false,
+        concat("a", "b", "c")), "#", " ", "h", "i")
+    )
+
+    parseTest(
+      "(?x-x)a b c", changeMatchingOptions(
+        matchingOptions(adding: .extended, removing: .extended), isIsolated: true,
+        concat("a", " ", "b", " ", "c"))
+    )
+    parseTest(
+      "(?xxx-x)a b c", changeMatchingOptions(
+        matchingOptions(adding: .extraExtended, .extended, removing: .extended), isIsolated: true,
+        concat("a", " ", "b", " ", "c"))
+    )
+    parseTest(
+      "(?xx-i)a b c", changeMatchingOptions(
+        matchingOptions(adding: .extraExtended, removing: .caseInsensitive), isIsolated: true,
+        concat("a", "b", "c"))
+    )
+
+    // PCRE states that whitespace seperating quantifiers is permitted under
+    // extended syntax http://pcre.org/current/doc/html/pcre2api.html#SEC20
+    parseTest(
+      "(?x)a *",
+      changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        zeroOrMore(of: "a"))
+    )
+    parseTest(
+      "(?x)a + ?",
+      changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        oneOrMore(.reluctant, of: "a"))
+    )
+    parseTest(
+      "(?x)a {2,4}",
+      changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        quantRange(2 ... 4, of: "a"))
+    )
+
+    // PCRE states that whitespace won't be ignored within a range.
+    // http://pcre.org/current/doc/html/pcre2api.html#SEC20
+    // TODO: We ought to warn on this, and produce a range anyway.
+    parseTest(
+      "(?x)a{1, 3}",
+      changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat("a", "{", "1", ",", "3", "}"))
+    )
+
+    // Test that we cover the list of whitespace characters covered by PCRE.
+    parseTest(
+      "(?x)a\t\u{A}\u{B}\u{C}\u{D}\u{85}\u{200E}\u{200F}\u{2028}\u{2029} b",
+      changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true, concat("a", "b"))
+    )
+    parseTest(
+      "(?x)[a\t\u{A}\u{B}\u{C}\u{D}\u{85}\u{200E}\u{200F}\u{2028}\u{2029} b]",
+      changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true, charClass("a", "b"))
+    )
+
     // MARK: Parse with delimiters
 
     parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
     parseWithDelimitersTest("'|a b|'", concat("a", "b"))
+
+    parseWithDelimitersTest("'|[a b]|'", charClass("a", "b"))
+    parseWithDelimitersTest(
+      "'|(?-x)[a b]|'", changeMatchingOptions(
+        matchingOptions(removing: .extended), isIsolated: true,
+        charClass("a", " ", "b"))
+    )
+    parseWithDelimitersTest("'|[[a ] b]|'", charClass(charClass("a"), "b"))
+
+    // Non-semantic whitespace between quantifier characters for consistency
+    // with PCRE.
+    parseWithDelimitersTest("'|a * ?|'", zeroOrMore(.reluctant, of: "a"))
+
+    // End-of-line comments aren't enabled by default in experimental syntax.
+    parseWithDelimitersTest("'|#abc|'", concat("#", "a", "b", "c"))
+    parseWithDelimitersTest("'|(?x)#abc|'", changeMatchingOptions(
+      matchingOptions(adding: .extended), isIsolated: true,
+      empty())
+    )
 
     parseWithDelimitersTest("'|||'", alt(empty(), empty()))
     parseWithDelimitersTest("'||||'", alt(empty(), empty(), empty()))
@@ -1285,6 +1438,7 @@ extension RegexTests {
 
     // Make sure dumping output correctly reflects differences in AST.
     parseNotEqualTest(#"abc"#, #"abd"#)
+    parseNotEqualTest(#" "#, #""#)
 
     parseNotEqualTest(#"[\p{Any}]"#, #"[[:Any:]]"#)
 
@@ -1302,6 +1456,8 @@ extension RegexTests {
 
     parseNotEqualTest(#"([a-c&&e]*)+"#,
                       #"([a-d&&e]*)+"#)
+
+    parseNotEqualTest(#"[abc]"#, #"[a b c]"#)
 
     parseNotEqualTest(#"\1"#, #"\10"#)
 
@@ -1583,6 +1739,8 @@ extension RegexTests {
     diagnosticTest(#"(?'-')"#, .expectedIdentifier(.groupName))
     diagnosticTest(#"(?'--')"#, .identifierMustBeAlphaNumeric(.groupName))
     diagnosticTest(#"(?'a-b-c')"#, .expected("'"))
+
+    diagnosticTest("(?x)(? : )", .unknownGroupKind("? "))
 
     // MARK: Matching options
 
