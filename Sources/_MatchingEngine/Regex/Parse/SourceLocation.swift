@@ -110,3 +110,11 @@ extension AST {
 }
 extension AST.Located: Equatable where T: Equatable {}
 extension AST.Located: Hashable where T: Hashable {}
+
+extension Source.LocatedError: CustomStringConvertible {
+  public var description: String {
+    // Just return the underlying error's description, which is currently how
+    // we present the message to the compiler.
+    "\(error)"
+  }
+}
