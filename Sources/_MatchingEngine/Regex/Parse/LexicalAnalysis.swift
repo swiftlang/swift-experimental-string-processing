@@ -1300,8 +1300,6 @@ extension Source {
       try src.tryEating { src in
         guard let firstChar = src.peek() else { return nil }
 
-        // TODO: Oniguruma can parse an additional recursion level for
-        // backreferences.
         if src.tryEat("g") {
           // PCRE-style backreferences.
           if src.tryEat("{") {
