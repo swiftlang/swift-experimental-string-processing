@@ -2,6 +2,8 @@
 
 public protocol _TreeNode {
   var children: [Self]? { get }
+
+  var captureStructure: CaptureStructure { get }
 }
 
 extension _TreeNode {

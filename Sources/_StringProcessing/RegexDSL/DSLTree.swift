@@ -33,6 +33,8 @@ extension DSLTree {
     case group(AST.Group.Kind, Node)
 
     /// (?(cond) true-branch | false-branch)
+    ///
+    /// TODO: Consider splitting off grouped conditions, or have our own kind
     case conditional(
       AST.Conditional.Condition.Kind, Node, Node)
 
@@ -59,6 +61,8 @@ extension DSLTree {
     case regexLiteral(AST.Node)
 
     // TODO: What should we do here?
+    ///
+    /// TODO: Consider splitting off expression functions, or have our own kind
     case absentFunction(AST.AbsentFunction)
 
     // MARK: - Tree conversions
@@ -420,5 +424,56 @@ extension DSLTree.Node {
       break
     }
     return self.children?.any(\.hasCapture) ?? false
+  }
+}
+
+extension DSLTree {
+  var captureStructure: CaptureStructure {
+    root.captureStructure
+  }
+}
+extension DSLTree.Node {
+  var captureStructure: CaptureStructure {
+    switch self {
+    case let .alternation(children):
+      return CaptureStructure(alternating: children)
+
+    case let .concatenation(children):
+      return CaptureStructure(concatenating: children)
+
+    case let .group(kind, child):
+      return CaptureStructure(grouping: child, as: kind)
+
+    case let .groupTransform(kind, child, transform):
+      return CaptureStructure(
+        grouping: child, as: kind, withTransform: transform)
+
+    case let .conditional(cond, trueBranch, falseBranch):
+      return CaptureStructure(
+        condition: cond,
+        trueBranch: trueBranch,
+        falseBranch: falseBranch)
+
+    case let .quantification(amount, _, child):
+      return CaptureStructure(
+        quantifying: child, amount: amount)
+
+    case let .regexLiteral(re):
+      return re.captureStructure
+
+    case let .absentFunction(abs):
+      return CaptureStructure(absent: abs.kind)
+
+    case let .convertedRegexLiteral(n, _):
+      return n.captureStructure
+
+    case .consumerValidator:
+      // FIXME: This is where we make a capture!
+      return .empty
+
+    case .customCharacterClass, .atom, .trivia, .empty,
+        .quotedLiteral, .consumer, .characterPredicate:
+      return .empty
+    }
   }
 }
