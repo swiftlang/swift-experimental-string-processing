@@ -40,7 +40,7 @@ extension AST.Node {
 extension PrettyPrinter {
   /// Will output `ast` in canonical form, taking care to
   /// also indent and terminate the line (updating internal state)
-  mutating func printAsCanonical(
+  public mutating func printAsCanonical(
     _ ast: AST,
     delimiters: Bool = false,
     terminateLine terminate: Bool = true

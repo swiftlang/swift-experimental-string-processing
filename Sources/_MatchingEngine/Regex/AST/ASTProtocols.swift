@@ -19,7 +19,7 @@
 
 // MARK: - AST parent/child
 
-protocol _ASTNode: _ASTPrintable {
+public protocol _ASTNode: _ASTPrintable {
   var location: SourceLocation { get }
 }
 extension _ASTNode {
@@ -41,7 +41,7 @@ extension AST.Quantification: _ASTParent {
   var children: [AST.Node] { [child] }
 }
 extension AST.AbsentFunction: _ASTParent {
-  var children: [AST.Node] {
+  public var children: [AST.Node] {
     switch kind {
     case .repeater(let a), .stopper(let a): return [a]
     case .expression(let a, _, let c):      return [a, c]

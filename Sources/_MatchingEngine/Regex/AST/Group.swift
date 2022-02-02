@@ -112,12 +112,12 @@ extension AST.Group.Kind {
   }
 }
 
-extension AST.Group {
+extension AST.Group.Kind {
   /// If this group is a lookaround assertion, return its direction
   /// and whether it is positive or negative. Otherwise returns
   /// `nil`.
   public var lookaroundKind: (forwards: Bool, positive: Bool)? {
-    switch self.kind.value {
+    switch self {
     case .lookahead:         return (true, true)
     case .negativeLookahead: return (true, false)
     case .lookbehind:         return (false, true)

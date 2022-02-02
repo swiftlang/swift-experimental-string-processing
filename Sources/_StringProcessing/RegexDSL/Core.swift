@@ -54,32 +54,52 @@ public struct Regex<Match: MatchProtocol>: RegexProtocol {
   /// A program representation that caches any lowered representation for
   /// execution.
   internal class Program {
-    /// The underlying AST.
-    let ast: AST
+    /// The underlying IR.
+    ///
+    /// FIXME: If Regex is the unit of composition, then it should be a Node instead,
+    /// and we should have a separate type that handled both global options and,
+    /// likely, compilation/caching.
+    let tree: DSLTree
+
     /// The legacy `RECode` for execution with a legacy VM.
     lazy private(set) var legacyLoweredProgram: RECode = {
       do {
-        return try compile(ast)
+        return try compile(tree)
       } catch {
         fatalError("Regex engine internal error: \(String(describing: error))")
       }
     }()
     /// The program for execution with the matching engine.
-    lazy private(set) var loweredProgram = try! Compiler(ast: ast).emit()
+    lazy private(set) var loweredProgram = try! Compiler(tree: tree).emit()
 
     init(ast: AST) {
-      self.ast = ast
+      self.tree = ast.dslTree
+    }
+    init(tree: DSLTree) {
+      self.tree = tree
     }
   }
 
   let program: Program
-  var ast: AST { program.ast }
+//  var ast: AST { program.ast }
+
+  var root: DSLTree.Node {
+    program.tree.root
+  }
+
+  var hasCapture: Bool {
+    program.tree.hasCapture
+  }
 
   init(ast: AST) {
     self.program = Program(ast: ast)
   }
   init(ast: AST.Node) {
     self.program = Program(ast: .init(ast, globalOptions: nil))
+  }
+
+  init(node: DSLTree.Node) {
+    self.program = Program(tree: .init(node, options: nil))
   }
 
   // Compiler interface. Do not change independently.
@@ -139,7 +159,7 @@ extension RegexProtocol {
       return unsafeBitCast(x, to: Match.self)
     }
     // TODO: Remove this branch when the matching engine supports captures.
-    if regex.ast.hasCapture {
+    if regex.hasCapture {
       let vm = HareVM(program: regex.program.legacyLoweredProgram)
       guard let (range, captures) = vm.execute(
         input: input, in: inputRange, mode: mode
@@ -159,6 +179,7 @@ extension RegexProtocol {
       }
       return RegexMatch(range: range, match: convertedMatch)
     }
+
     let executor = Executor(program: regex.program.loweredProgram)
     guard let result = executor.execute(
       input: input, in: inputRange, mode: mode

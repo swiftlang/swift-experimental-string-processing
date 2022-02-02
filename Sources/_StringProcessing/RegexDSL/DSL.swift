@@ -66,8 +66,8 @@ public struct OneOrMore<Component: RegexProtocol>: RegexProtocolWithComponent {
   public let regex: Regex<Match>
 
   public init(component: Component) {
-    self.regex = .init(ast:
-      oneOrMore(of: component.regex.ast.root)
+    self.regex = .init(node: .quantification(
+      .oneOrMore, .eager, component.regex.root)
     )
   }
 
@@ -92,8 +92,8 @@ public struct Repeat<
   public let regex: Regex<Match>
 
   public init(component: Component) {
-    self.regex = .init(ast:
-      zeroOrMore(of: component.regex.ast.root))
+    self.regex = .init(node: .quantification(
+      .zeroOrMore, .eager, component.regex.root))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
@@ -115,8 +115,8 @@ public struct Optionally<Component: RegexProtocol>: RegexProtocolWithComponent {
   public let regex: Regex<Match>
 
   public init(component: Component) {
-    self.regex = .init(ast:
-      zeroOrOne(of: component.regex.ast.root))
+    self.regex = .init(node: .quantification(
+      .zeroOrOne, .eager, component.regex.root))
   }
 
   public init(@RegexBuilder _ content: () -> Component) {
@@ -141,9 +141,9 @@ public struct Alternation<
   public let regex: Regex<Match>
 
   public init(_ first: Component1, _ second: Component2) {
-    regex = .init(ast: alt(
-      first.regex.ast.root, second.regex.ast.root
-    ))
+    regex = .init(node: .alternation([
+      first.regex.root, second.regex.root
+    ]))
   }
 
   public init(
@@ -167,19 +167,18 @@ public struct CapturingGroup<Match: MatchProtocol>: RegexProtocol {
   init<Component: RegexProtocol>(
     _ component: Component
   ) {
-    self.regex = .init(ast:
-      group(.capture, component.regex.ast.root)
-    )
+    self.regex = .init(node: .group(
+      .capture, component.regex.root))
   }
 
   init<Component: RegexProtocol>(
     _ component: Component,
     transform: CaptureTransform
   ) {
-    self.regex = .init(
-      ast: .groupTransform(
-        .init(.init(faking: .capture), component.regex.ast.root, .fake),
-        transform: transform))
+    self.regex = .init(node: .groupTransform(
+      .capture,
+      component.regex.root,
+      transform))
   }
 
   init<NewCapture, Component: RegexProtocol>(

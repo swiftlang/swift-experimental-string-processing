@@ -21,15 +21,25 @@ struct Unsupported: Error, CustomStringConvertible {
       \(file):\(line)
     """
   }
+
+  init(
+    _ s: String,
+    file: StaticString = #file,
+    line: UInt = #line
+  ) {
+    self.message = s
+    self.file = file.description
+    self.line = Int(asserting: line)
+  }
 }
 
+// TODO: Remove
 func unsupported(
   _ s: String,
   file: StaticString = #file,
-  line: Int = #line
+  line: UInt = #line
 ) -> Unsupported {
-  return Unsupported(
-    message: s, file: String(describing: file), line: line)
+  return Unsupported(s, file: file, line: line)
 }
 
 struct Unreachable: Error, CustomStringConvertible {
@@ -53,7 +63,7 @@ func unreachable(
     message: s, file: String(describing: file), line: line)
 }
 
-extension AST.Node {
+extension DSLTree.Node {
   /// Attempt to generate a consumer from this AST node
   ///
   /// A consumer is a Swift closure that matches against
@@ -66,12 +76,72 @@ extension AST.Node {
       return try a.generateConsumer(opts)
     case .customCharacterClass(let ccc):
       return try ccc.generateConsumer(opts)
+
+    case .quotedLiteral:
+      // TODO: Should we handle this here?
+      return nil
+
+    case .regexLiteral:
+      fatalError(
+        "unreachable: We should only ask atoms")
+
+    case let .convertedRegexLiteral(n, _):
+      return try n.generateConsumer(opts)
+
     case .alternation, .conditional, .concatenation, .group,
-        .quantification, .quote, .trivia, .empty,
+        .quantification, .trivia, .empty,
         .groupTransform, .absentFunction: return nil
+
+    case .consumer:
+      fatalError("FIXME: Is this where we handle them?")
+    case .consumerValidator:
+      fatalError("FIXME: Is this where we handle them?")
+    case .characterPredicate:
+      fatalError("FIXME: Is this where we handle them?")
     }
   }
 }
+
+extension DSLTree.Atom {
+  // TODO: If ByteCodeGen switches first, then this is
+  // unnecessary...
+  func generateConsumer(
+    _ opts: MatchingOptions
+  ) throws -> Program<String>.ConsumeFunction? {
+    switch self {
+
+    case let .char(c):
+      // TODO: Match level?
+      return { input, bounds in
+        let low = bounds.lowerBound
+        guard input[low] == c else {
+          return nil
+        }
+        return input.index(after: low)
+      }
+    case let .scalar(s):
+      return consumeScalar { $0 == s }
+
+    case .any:
+      // FIXME: Should this be a total ordering?
+      fatalError(
+        "unreachable: emitAny() should be called isntead")
+
+    case .assertion:
+      // TODO: We could handle, should this be total?
+      return nil
+
+    case .backreference:
+      // TODO: Should we handle?
+      return nil
+
+    case let .unconverted(a):
+      return try a.generateConsumer(opts)
+    }
+
+  }
+}
+
 
 // TODO: This is basically an AST interpreter, which would
 // be good or interesting to build regardless, and serves
@@ -96,7 +166,9 @@ extension AST.Atom {
     _ opts: MatchingOptions
   ) throws -> Program<String>.ConsumeFunction? {
     // TODO: Wean ourselves off of this type...
-    if let cc = self.characterClass?.withMatchLevel(opts.matchLevel) {
+    if let cc = self.characterClass?.withMatchLevel(
+      opts.matchLevel
+    ) {
       return { input, bounds in
         // FIXME: should we worry about out of bounds?
         cc.matches(in: input, at: bounds.lowerBound)
@@ -105,9 +177,14 @@ extension AST.Atom {
 
     switch kind {
     case let .scalar(s):
+      assertionFailure(
+        "Should have been handled by tree conversion")
       return consumeScalar { $0 == s }
 
     case let .char(c):
+      assertionFailure(
+        "Should have been handled by tree conversion")
+
       // TODO: Match level?
       return { input, bounds in
         let low = bounds.lowerBound
@@ -127,17 +204,104 @@ extension AST.Atom {
       }
       
     case .any:
+      assertionFailure(
+        "Should have been handled by tree conversion")
       fatalError(".atom(.any) is handled in emitAny")
 
     case .startOfLine, .endOfLine:
       // handled in emitAssertion
       return nil
-      
+
     case .escaped, .keyboardControl, .keyboardMeta, .keyboardMetaControl,
       .backreference, .subpattern, .callout, .backtrackingDirective:
       // FIXME: implement
       return nil
     }
+  }
+}
+
+extension DSLTree.CustomCharacterClass.Member {
+  func generateConsumer(
+    _ opts: MatchingOptions
+  ) throws -> Program<String>.ConsumeFunction {
+    switch self {
+    case let .atom(a):
+      guard let c = try a.generateConsumer(opts) else {
+        throw Unsupported("Consumer for \(a)")
+      }
+      return c
+    case let .range(low, high):
+      // TODO:
+      guard let lhs = low.literalCharacterValue else {
+        throw unsupported("\(low) in range")
+      }
+      guard let rhs = high.literalCharacterValue else {
+        throw unsupported("\(high) in range")
+      }
+
+      return { input, bounds in
+        // TODO: check for out of bounds?
+        let curIdx = bounds.lowerBound
+        if (lhs...rhs).contains(input[curIdx]) {
+          // TODO: semantic level
+          return input.index(after: curIdx)
+        }
+        return nil
+      }
+
+    case let .custom(ccc):
+      return try ccc.generateConsumer(opts)
+
+    case let .intersection(lhs, rhs):
+      let lhs = try lhs.generateConsumer(opts)
+      let rhs = try rhs.generateConsumer(opts)
+      return { input, bounds in
+        if let lhsIdx = lhs(input, bounds),
+           let rhsIdx = rhs(input, bounds)
+        {
+          guard lhsIdx == rhsIdx else {
+            fatalError("TODO: What should we do here?")
+          }
+          return lhsIdx
+        }
+        return nil
+      }
+
+    case let .subtraction(lhs, rhs):
+      let lhs = try lhs.generateConsumer(opts)
+      let rhs = try rhs.generateConsumer(opts)
+      return { input, bounds in
+        if let lhsIdx = lhs(input, bounds),
+           rhs(input, bounds) == nil
+        {
+          return lhsIdx
+        }
+        return nil
+      }
+
+    case let .symmetricDifference(lhs, rhs):
+      let lhs = try lhs.generateConsumer(opts)
+      let rhs = try rhs.generateConsumer(opts)
+      return { input, bounds in
+        if let lhsIdx = lhs(input, bounds) {
+          return rhs(input, bounds) == nil ? lhsIdx : nil
+        }
+        return rhs(input, bounds)
+      }
+    case .quotedLiteral(let s):
+      return { input, bounds in
+        guard s.contains(input[bounds.lowerBound]) else {
+          return nil
+        }
+        return input.index(after: bounds.lowerBound)
+      }
+    case .trivia:
+      // TODO: Should probably strip this earlier...
+      return { _, bounds in
+        return bounds.lowerBound
+      }
+    }
+
   }
 }
 
@@ -235,6 +399,29 @@ extension AST.CustomCharacterClass.Member {
   }
 }
 
+extension DSLTree.CustomCharacterClass {
+  func generateConsumer(
+    _ opts: MatchingOptions
+  ) throws -> Program<String>.ConsumeFunction {
+    // NOTE: Easy way to implement, obviously not performant
+    let consumers = try members.map {
+      try $0.generateConsumer(opts)
+    }
+    return { input, bounds in
+      for consumer in consumers {
+        if let idx = consumer(input, bounds) {
+          return isInverted ? nil : idx
+        }
+      }
+      if isInverted {
+        // FIXME: semantic level
+        return input.index(after: bounds.lowerBound)
+      }
+      return nil
+    }
+  }
+}
+
 extension AST.CustomCharacterClass {
   func generateConsumer(
     _ opts: MatchingOptions
@@ -274,7 +461,7 @@ private func consumeScalarProp(
 ) -> Program<String>.ConsumeFunction {
   consumeScalar { p($0.properties) }
 }
-private func consumeScalar(
+func consumeScalar(
   _ p: @escaping (Unicode.Scalar) -> Bool
 ) -> Program<String>.ConsumeFunction {
   { input, bounds in

@@ -1147,7 +1147,7 @@ extension RegexTests {
     // Expectation: A standalone Unicode scalar value in a regex literal
     // can match either that specific scalar value or participate in matching
     // as a character.
-    
+
     firstMatchTest(#"\u{65}\u{301}$"#, input: eDecomposed, match: eDecomposed)
     // FIXME: Decomposed character in regex literal doesn't match an equivalent character
     firstMatchTest(#"\u{65}\u{301}$"#, input: eComposed, match: eComposed,

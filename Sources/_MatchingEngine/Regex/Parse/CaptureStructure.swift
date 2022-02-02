@@ -25,71 +25,138 @@ public enum CaptureStructure: Equatable {
   }
 }
 
+extension CaptureStructure {
+  public init<C: Collection>(
+    alternating children: C
+  ) where C.Element: _TreeNode {
+    assert(children.count > 1)
+    self = children
+      .map(\.captureStructure)
+      .reduce(.empty, +)
+      .map(CaptureStructure.optional)
+  }
+  public init<C: Collection>(
+    concatenating children: C
+  ) where C.Element: _TreeNode {
+    self = children.map(\.captureStructure).reduce(.empty, +)
+  }
+
+  public init<T: _TreeNode>(
+    grouping child: T, as kind: AST.Group.Kind
+  ) {
+    let innerCaptures = child.captureStructure
+    switch kind {
+    case .capture:
+      self = .atom() + innerCaptures
+    case .namedCapture(let name):
+      self = .atom(name: name.value) + innerCaptures
+    case .balancedCapture(let b):
+      self = .atom(name: b.name?.value) + innerCaptures
+    default:
+      precondition(!kind.isCapturing)
+      self = innerCaptures
+    }
+  }
+
+  public init<T: _TreeNode>(
+    grouping child: T,
+    as kind: AST.Group.Kind,
+    withTransform transform: CaptureTransform
+  ) {
+    let innerCaptures = child.captureStructure
+    switch kind {
+    case .capture:
+      self = .atom(type: AnyType(transform.resultType)) + innerCaptures
+    case .namedCapture(let name):
+      self = .atom(name: name.value, type: AnyType(transform.resultType))
+        + innerCaptures
+    default:
+      self = innerCaptures
+    }
+  }
+
+  // TODO: We'll likely want/need a generalization of
+  // conditional's condition kind.
+  public init<T: _TreeNode>(
+    condition: AST.Conditional.Condition.Kind,
+    trueBranch: T,
+    falseBranch: T
+  ) {
+    // A conditional's capture structure is effectively that of an alternation
+    // between the true and false branches. However the condition may also
+    // have captures in the case of a group condition.
+    var captures = CaptureStructure.empty
+    switch condition {
+    case .group(let g):
+      captures = captures + AST.Node.group(g).captureStructure
+    default:
+      break
+    }
+    let branchCaptures = trueBranch.captureStructure +
+                         falseBranch.captureStructure
+    self = captures + branchCaptures.map(
+      CaptureStructure.optional)
+  }
+
+  public init<T: _TreeNode>(
+    quantifying child: T, amount: AST.Quantification.Amount
+  ) {
+    self = child.captureStructure.map(
+      amount == .zeroOrOne
+        ? CaptureStructure.optional
+        : CaptureStructure.array)
+  }
+
+  // TODO: Will need to adjust for DSLTree support, and
+  // "absent" isn't the best name for these.
+  public init(
+    absent kind: AST.AbsentFunction.Kind
+  ) {
+    // Only the child of an expression absent function is relevant, as the
+    // other expressions don't actually get matched against.
+    switch kind {
+    case .expression(_, _, let child):
+      self = child.captureStructure
+    case .clearer, .repeater, .stopper:
+      self = .empty
+    }
+  }
+
+}
+
 extension AST.Node {
   public var captureStructure: CaptureStructure {
     // Note: This implementation could be more optimized.
     switch self {
-    case .alternation(let alternation):
-      assert(alternation.children.count > 1)
-      return alternation.children
-        .map(\.captureStructure)
-        .reduce(.empty, +)
-        .map(CaptureStructure.optional)
-    case .concatenation(let concatenation):
-      return concatenation.children.map(\.captureStructure).reduce(.empty, +)
-    case .group(let group):
-      let innerCaptures = group.child.captureStructure
-      switch group.kind.value {
-      case .capture:
-        return .atom() + innerCaptures
-      case .namedCapture(let name):
-        return .atom(name: name.value) + innerCaptures
-      case .balancedCapture(let b):
-        return .atom(name: b.name?.value) + innerCaptures
-      default:
-        precondition(!group.kind.value.isCapturing)
-        return innerCaptures
-      }
-    case .groupTransform(let group, let transform):
-      let innerCaptures = group.child.captureStructure
-      switch group.kind.value {
-      case .capture:
-        return .atom(type: AnyType(transform.resultType)) + innerCaptures
-      case .namedCapture(let name):
-        return .atom(name: name.value, type: AnyType(transform.resultType))
-          + innerCaptures
-      default:
-        return innerCaptures
-      }
-    case .conditional(let c):
-      // A conditional's capture structure is effectively that of an alternation
-      // between the true and false branches. However the condition may also
-      // have captures in the case of a group condition.
-      var captures = CaptureStructure.empty
-      switch c.condition.kind {
-      case .group(let g):
-        captures = captures + AST.Node.group(g).captureStructure
-      default:
-        break
-      }
-      let branchCaptures = c.trueBranch.captureStructure +
-                           c.falseBranch.captureStructure
-      return captures + branchCaptures.map(CaptureStructure.optional)
+    case let .alternation(a):
+      return CaptureStructure(alternating: a.children)
 
-    case .quantification(let quantification):
-      return quantification.child.captureStructure.map(
-        quantification.amount.value == .zeroOrOne
-          ? CaptureStructure.optional
-          : CaptureStructure.array)
+    case let .concatenation(c):
+      return CaptureStructure(concatenating: c.children)
+
+    case let .group(g):
+      return CaptureStructure(
+        grouping: g.child, as: g.kind.value)
+
+    case .groupTransform(let g, let transform):
+      return CaptureStructure(
+        grouping: g.child,
+        as: g.kind.value,
+        withTransform: transform)
+
+    case .conditional(let c):
+      return CaptureStructure(
+        condition: c.condition.kind,
+        trueBranch: c.trueBranch,
+        falseBranch: c.falseBranch)
+
+    case .quantification(let q):
+      return CaptureStructure(
+        quantifying: q.child, amount: q.amount.value)
+
     case .absentFunction(let abs):
-      // Only the child of an expression absent function is relevant, as the
-      // other expressions don't actually get matched against.
-      switch abs.kind {
-      case .expression(_, _, let child):
-        return child.captureStructure
-      case .clearer, .repeater, .stopper:
-        return .empty
-      }
+      return CaptureStructure(absent: abs.kind)
+
     case .quote, .trivia, .atom, .customCharacterClass, .empty:
       return .empty
     }

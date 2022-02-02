@@ -323,6 +323,22 @@ extension AST.Node {
   }
 }
 
+extension DSLTree.Node {
+  var characterClass: CharacterClass? {
+    switch self {
+    case let .customCharacterClass(ccc):
+      return ccc.modelCharacterClass
+    case let .atom(a):
+      return a.characterClass
+    case .characterPredicate:
+      // FIXME: Do we make one from this?
+      return nil
+    default:
+      return nil
+    }
+  }
+}
+
 extension CharacterClass {
   public func withMatchLevel(
     _ level: CharacterClass.MatchLevel
@@ -330,6 +346,17 @@ extension CharacterClass {
     var cc = self
     cc.matchLevel = level
     return cc
+  }
+}
+
+extension DSLTree.Atom {
+  var characterClass: CharacterClass? {
+    switch self {
+    case let .unconverted(a):
+      return a.characterClass
+
+    default: return nil
+    }
   }
 }
 
@@ -386,6 +413,81 @@ extension AST.Atom.EscapedBuiltin {
     default:
       return nil
     }
+  }
+}
+
+extension DSLTree.CustomCharacterClass {
+  // TODO: Refactor a bit, and... can we drop this type?
+  var modelCharacterClass: CharacterClass? {
+    var result =
+      Array<CharacterClass.CharacterSetComponent>()
+    for m in members {
+      switch m {
+      case let .atom(a):
+        if let cc = a.characterClass {
+          result.append(.characterClass(cc))
+        } else if let c = a.literalCharacterValue {
+          result.append(.character(c))
+        } else {
+          return nil
+        }
+      case let .range(low, high):
+        guard let lhs = low.literalCharacterValue,
+              let rhs = high.literalCharacterValue
+        else {
+          return nil
+        }
+        result.append(.range(lhs...rhs))
+
+      case let .custom(ccc):
+        guard let cc = ccc.modelCharacterClass else {
+          return nil
+        }
+        result.append(.characterClass(cc))
+
+      case let .intersection(lhs, rhs):
+        guard let lhs = lhs.modelCharacterClass,
+              let rhs = rhs.modelCharacterClass
+        else {
+          return nil
+        }
+        result.append(.setOperation(
+          lhs: .characterClass(lhs),
+          op: .intersection,
+          rhs: .characterClass(rhs)))
+
+      case let .subtraction(lhs, rhs):
+        guard let lhs = lhs.modelCharacterClass,
+              let rhs = rhs.modelCharacterClass
+        else {
+          return nil
+        }
+        result.append(.setOperation(
+          lhs: .characterClass(lhs),
+          op: .subtraction,
+          rhs: .characterClass(rhs)))
+
+      case let .symmetricDifference(lhs, rhs):
+        guard let lhs = lhs.modelCharacterClass,
+              let rhs = rhs.modelCharacterClass
+        else {
+          return nil
+        }
+        result.append(.setOperation(
+          lhs: .characterClass(lhs),
+          op: .symmetricDifference,
+          rhs: .characterClass(rhs)))
+
+      case let .quotedLiteral(s):
+        // Decompose quoted literal into literal characters.
+        result += s.map { .character($0) }
+
+      case .trivia:
+        break
+      }
+    }
+    let cc = CharacterClass.custom(result)
+    return isInverted ? cc.inverted : cc
   }
 }
 

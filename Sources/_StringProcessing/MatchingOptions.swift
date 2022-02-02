@@ -247,3 +247,13 @@ extension MatchingOptions.Representation {
     [.graphemeClusterSemantics, .textSegmentGraphemeMode]
   }
 }
+
+extension AST.Quantification.Kind {
+  func applying(_ options: MatchingOptions) -> Self {
+    if options.isReluctantByDefault && self != .possessive {
+      return self == .eager ? .reluctant : .eager
+    }
+
+    return self
+  }
+}

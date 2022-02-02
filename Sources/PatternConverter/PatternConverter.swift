@@ -13,6 +13,7 @@
 
 import ArgumentParser
 import _MatchingEngine
+import _StringProcessing
 
 @main
 struct PatternConverter: ParsableCommand {
