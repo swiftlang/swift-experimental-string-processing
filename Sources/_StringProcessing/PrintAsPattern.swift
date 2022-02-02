@@ -197,12 +197,12 @@ extension PrettyPrinter {
       } else {
         print(" // TODO: Atom \(a) ")
       }
-    case .quote(let q):
-      print("// TODO: quote \(q.literal._quoted) in custom character classes (should we split it?)")
+    case .quotedLiteral(let s):
+      print("// TODO: quote \(s._quoted) in custom character classes (should we split it?)")
     case .trivia(let t):
       // TODO: We might want to output comments...
       _ = t
-case .symmetricDifference, .intersection, .subtraction:
+    case .symmetricDifference, .intersection, .subtraction:
       print("// TODO: Set operation: \(member)")
     }
   }

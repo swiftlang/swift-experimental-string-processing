@@ -99,6 +99,10 @@ extension DSLTree {
       case range(Atom, Atom)
       case custom(CustomCharacterClass)
 
+      case quotedLiteral(String)
+
+      case trivia(String)
+
       indirect case intersection(CustomCharacterClass, CustomCharacterClass)
       indirect case subtraction(CustomCharacterClass, CustomCharacterClass)
       indirect case symmetricDifference(CustomCharacterClass, CustomCharacterClass)
@@ -321,10 +325,7 @@ extension AST.CustomCharacterClass {
         return .atom(a.dslTreeAtom)
 
       case let .quote(q):
-        // TODO: Probably should flatten instead of nest
-        return .custom(.init(
-          members: q.literal.map { .atom(.char($0)) },
-          isInverted: false))
+        return .quotedLiteral(q.literal)
 
       case let .setOperation(lhs, op, rhs):
         let lhs = DSLTree.CustomCharacterClass(
@@ -342,6 +343,8 @@ extension AST.CustomCharacterClass {
         case .symmetricDifference:
           return .symmetricDifference(lhs, rhs)
         }
+      case let .trivia(t):
+        return .trivia(t.contents)
       }
     }
 

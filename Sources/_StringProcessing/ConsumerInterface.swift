@@ -37,10 +37,9 @@ struct Unsupported: Error, CustomStringConvertible {
 func unsupported(
   _ s: String,
   file: StaticString = #file,
-  line: Int = #line
+  line: UInt = #line
 ) -> Unsupported {
-  return Unsupported(
-    message: s, file: String(describing: file), line: line)
+  return Unsupported(s, file: file, line: line)
 }
 
 struct Unreachable: Error, CustomStringConvertible {
@@ -288,6 +287,19 @@ extension DSLTree.CustomCharacterClass.Member {
           return rhs(input, bounds) == nil ? lhsIdx : nil
         }
         return rhs(input, bounds)
+      }
+    case .quotedLiteral(let s):
+      return { input, bounds in
+        guard input[bounds].starts(with: s) else {
+          return nil
+        }
+        // TODO: Don't double count
+        return input.index(bounds.lowerBound, offsetBy: s.count)
+      }
+    case .trivia:
+      // TODO: Should probably strip this earlier...
+      return { _, bounds in
+        return bounds.lowerBound
       }
     }
 

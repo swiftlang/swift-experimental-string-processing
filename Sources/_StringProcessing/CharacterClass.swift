@@ -477,6 +477,13 @@ extension DSLTree.CustomCharacterClass {
           lhs: .characterClass(lhs),
           op: .symmetricDifference,
           rhs: .characterClass(rhs)))
+
+      case let .quotedLiteral(s):
+        // Decompose quoted literal into literal characters.
+        result += s.map { .character($0) }
+
+      case .trivia:
+        break
       }
     }
     let cc = CharacterClass.custom(result)
