@@ -1785,7 +1785,7 @@ extension Source {
         if customCC {
           return .char(char)
         }
-        fatalError("unreachable")
+        throw Unreachable("TODO: reason")
 
       // (sometimes) special metacharacters
       case ".": return customCC ? .char(".") : .any

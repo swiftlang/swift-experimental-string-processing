@@ -15,16 +15,6 @@ extension FixedWidthInteger {
   }
 }
 
-// TODO: Replace all fatal error unreachables with these calls.
-// We will likely want to convert them to unhandleable throws
-// or something similar.
-func unreachable(_ s: @autoclosure () -> String) -> Never {
-  fatalError("unreachable \(s())")
-}
-func unreachable() -> Never {
-  fatalError("unreachable")
-}
-
 extension Substring {
   var string: String { String(self) }
 }

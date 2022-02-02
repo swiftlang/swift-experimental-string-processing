@@ -13,7 +13,7 @@ import _MatchingEngine
 
 extension PEG.VM {
   typealias MEProgram = _MatchingEngine.Program<Input>
-  func transpile() -> MEProgram {
+  func transpile() throws -> MEProgram {
     typealias Builder = MEProgram.Builder
     var builder = MEProgram.Builder()
 
@@ -106,14 +106,14 @@ extension PEG.VM {
       }
     }
 
-    return builder.assemble()
+    return try builder.assemble()
   }
 }
 
 extension PEG.Program {
   public func transpile<Input: Collection>(
     for input: Input.Type = Input.self
-  ) -> Engine<Input> where Input.Element == Element {
-    Engine(compile(for: input).vm.transpile())
+  ) throws -> Engine<Input> where Input.Element == Element {
+    try Engine(compile(for: input).vm.transpile())
   }
 }
