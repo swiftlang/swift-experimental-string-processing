@@ -14,14 +14,19 @@ import _MatchingEngine
 func compile(
   _ ast: AST, options: REOptions = .none
 ) throws -> RECode {
+  try compile(ast.dslTree, options: options)
+}
+
+func compile(
+  _ ast: DSLTree, options: REOptions = .none
+) throws -> RECode {
   var currentLabel = 0
   func createLabel() -> RECode.Instruction {
     defer { currentLabel += 1}
     return .label(currentLabel)
   }
   var instructions = RECode.InstructionList()
-  func compileNode(_ ast: AST.Node) throws {
-
+  func compileNode(_ ast: DSLTree.Node) throws {
     if let cc = ast.characterClass {
       instructions.append(.characterClass(cc))
       return
@@ -30,12 +35,12 @@ func compile(
     switch ast {
     case .trivia, .empty: return
 
-    case .quote(let s):
-      s.literal.forEach { instructions.append(.character($0)) }
+    case let .quotedLiteral(s):
+      s.forEach { instructions.append(.character($0)) }
       return
 
-    case .atom(let a):
-      switch a.kind {
+    case let .atom(a):
+      switch a {
       case .char(let c):
         instructions.append(.character(c))
         return
@@ -46,37 +51,36 @@ func compile(
         instructions.append(.any)
         return
       default:
-        throw unsupported("Unsupported: \(a._dumpBase)")
+        throw unsupported("Unsupported: \(a)")
       }
 
-    case .group(let g):
-      switch g.kind.value {
+    case let .group(kind, child):
+      switch kind {
       case .nonCapture:
         instructions.append(.beginGroup)
-        try compileNode(g.child)
+        try compileNode(child)
         instructions.append(.endGroup)
         return
       case .capture:
         instructions.append(.beginCapture)
-        try compileNode(g.child)
+        try compileNode(child)
         instructions.append(.endCapture())
         return
 
       default:
-        throw unsupported("Unsupported group \(g.kind.value) \(g)")
+        throw unsupported("Unsupported group \(kind)")
       }
 
-    case let .groupTransform(g, transform: t) where g.kind.value == .capture:
+    case let .groupTransform(kind, child, transform) where kind == .capture:
       instructions.append(.beginCapture)
-      try compileNode(g.child)
-      instructions.append(.endCapture(transform: t))
+      try compileNode(child)
+      instructions.append(.endCapture(transform: transform))
       return
 
-    case .groupTransform(let g, _):
-      throw unsupported("Unsupported group \(g)")
+    case let .groupTransform(kind, _, _):
+      throw unsupported("Unsupported group transform \(kind)")
 
-    case .concatenation(let concat):
-      let children = concat.children
+    case let .concatenation(children):
       let childrenHaveCaptures = children.any(\.hasCapture)
       if childrenHaveCaptures {
         instructions.append(.beginGroup)
@@ -87,9 +91,8 @@ func compile(
       }
       return
 
-    case .quantification(let quant):
-      let child = quant.child
-      switch (quant.amount.value, quant.kind.value) {
+    case let .quantification(amount, kind, child):
+      switch (amount, kind) {
       case (.zeroOrMore, .eager):
         // a* ==> L_START, <split L_DONE>, a, goto L_START, L_DONE
         let childHasCaptures = child.hasCapture
@@ -221,10 +224,10 @@ func compile(
         }
         return
       default:
-        throw unsupported("Unsupported: \(quant._dumpBase)")
+        throw unsupported("Unsupported: \((amount, kind))")
       }
 
-    case .alternation(let alt):
+    case let .alternation(children):
       // a|b ==> <split L_B>, a, goto L_DONE, L_B, b, L_DONE
       // a|b|c ==> <split L_B>, a, goto L_DONE,
       //           L_B, <split L_C>, b, goto L_DONE, L_C, c, L_DONE
@@ -237,7 +240,6 @@ func compile(
       //       E.g. `a` falls-through to the rest of the program and the
       //       other cases branch back.
       //
-      let children = alt.children
       assert(!children.isEmpty)
       guard children.count > 1 else {
         return try compileNode(children[0])
@@ -258,16 +260,25 @@ func compile(
       return
 
     case .conditional:
-      throw unsupported(ast.renderAsCanonical())
+      throw unsupported("Conditionals")
 
     case .absentFunction:
-      throw unsupported(ast.renderAsCanonical())
+      throw unsupported("Absent functions")
 
     case .customCharacterClass:
       fatalError("unreachable")
 
-    case .atom(let a) where a.characterClass != nil:
+    case let .atom(a) where a.characterClass != nil:
       fatalError("unreachable")
+
+    case let .convertedRegexLiteral(node, _):
+      try compileNode(node)
+
+    case .characterPredicate, .consumer, .consumerValidator:
+      throw unsupported("DSL extensions")
+
+    case let .regexLiteral(re):
+      try compileNode(re.dslTreeNode)
     }
   }
 

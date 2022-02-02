@@ -417,9 +417,14 @@ extension DSLTree {
 extension DSLTree.Node {
   var hasCapture: Bool {
     switch self {
-    case .group(let k, _) where k.isCapturing,
-         .groupTransform(let k, _, _) where k.isCapturing:
+    case let .group(k, _) where k.isCapturing,
+         let .groupTransform(k, _, _) where k.isCapturing:
       return true
+    case let .convertedRegexLiteral(n, re):
+      assert(n.hasCapture == re.hasCapture)
+      return n.hasCapture
+    case let .regexLiteral(re):
+      return re.hasCapture
     default:
       break
     }

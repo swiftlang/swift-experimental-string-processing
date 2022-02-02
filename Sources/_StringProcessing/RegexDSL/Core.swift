@@ -64,10 +64,7 @@ public struct Regex<Match: MatchProtocol>: RegexProtocol {
     /// The legacy `RECode` for execution with a legacy VM.
     lazy private(set) var legacyLoweredProgram: RECode = {
       do {
-        guard let ast = tree.ast else {
-          throw "Extended support unavailable in legacy VM"
-        }
-        return try compile(ast)
+        return try compile(tree)
       } catch {
         fatalError("Regex engine internal error: \(String(describing: error))")
       }
@@ -182,6 +179,7 @@ extension RegexProtocol {
       }
       return RegexMatch(range: range, match: convertedMatch)
     }
+
     let executor = Executor(program: regex.program.loweredProgram)
     guard let result = executor.execute(
       input: input, in: inputRange, mode: mode
