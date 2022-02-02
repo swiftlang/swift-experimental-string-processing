@@ -290,11 +290,10 @@ extension DSLTree.CustomCharacterClass.Member {
       }
     case .quotedLiteral(let s):
       return { input, bounds in
-        guard input[bounds].starts(with: s) else {
+        guard s.contains(input[bounds.lowerBound]) else {
           return nil
         }
-        // TODO: Don't double count
-        return input.index(bounds.lowerBound, offsetBy: s.count)
+        return input.index(after: bounds.lowerBound)
       }
     case .trivia:
       // TODO: Should probably strip this earlier...
