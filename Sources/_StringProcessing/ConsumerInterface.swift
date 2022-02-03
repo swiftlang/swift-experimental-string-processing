@@ -18,7 +18,7 @@ extension DSLTree.Node {
   /// the front of an input range
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> Program<String>.ConsumeFunction? {
+  ) throws -> MEProgram<String>.ConsumeFunction? {
     switch self {
     case .atom(let a):
       return try a.generateConsumer(opts)
@@ -55,7 +55,7 @@ extension DSLTree.Atom {
   // unnecessary...
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> Program<String>.ConsumeFunction? {
+  ) throws -> MEProgram<String>.ConsumeFunction? {
     switch self {
 
     case let .char(c):
@@ -112,7 +112,7 @@ extension AST.Atom {
 
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> Program<String>.ConsumeFunction? {
+  ) throws -> MEProgram<String>.ConsumeFunction? {
     // TODO: Wean ourselves off of this type...
     if let cc = self.characterClass?.withMatchLevel(
       opts.matchLevel
@@ -171,7 +171,7 @@ extension AST.Atom {
 extension DSLTree.CustomCharacterClass.Member {
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> Program<String>.ConsumeFunction {
+  ) throws -> MEProgram<String>.ConsumeFunction {
     switch self {
     case let .atom(a):
       guard let c = try a.generateConsumer(opts) else {
@@ -256,7 +256,7 @@ extension DSLTree.CustomCharacterClass.Member {
 extension AST.CustomCharacterClass.Member {
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> Program<String>.ConsumeFunction {
+  ) throws -> MEProgram<String>.ConsumeFunction {
     switch self {
     case .custom(let ccc):
       return try ccc.generateConsumer(opts)
@@ -351,7 +351,7 @@ extension AST.CustomCharacterClass.Member {
 extension DSLTree.CustomCharacterClass {
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> Program<String>.ConsumeFunction {
+  ) throws -> MEProgram<String>.ConsumeFunction {
     // NOTE: Easy way to implement, obviously not performant
     let consumers = try members.map {
       try $0.generateConsumer(opts)
@@ -374,7 +374,7 @@ extension DSLTree.CustomCharacterClass {
 extension AST.CustomCharacterClass {
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> Program<String>.ConsumeFunction {
+  ) throws -> MEProgram<String>.ConsumeFunction {
     // NOTE: Easy way to implement, obviously not performant
     let consumers = try strippingTriviaShallow.members.map {
       try $0.generateConsumer(opts)
@@ -397,22 +397,22 @@ extension AST.CustomCharacterClass {
 // NOTE: Conveniences, though not most performant
 private func consumeScalarGC(
   _ gc: Unicode.GeneralCategory
-) -> Program<String>.ConsumeFunction {
+) -> MEProgram<String>.ConsumeFunction {
   consumeScalar { gc == $0.properties.generalCategory }
 }
 private func consumeScalarGCs(
   _ gcs: [Unicode.GeneralCategory]
-) -> Program<String>.ConsumeFunction {
+) -> MEProgram<String>.ConsumeFunction {
   consumeScalar { gcs.contains($0.properties.generalCategory) }
 }
 private func consumeScalarProp(
   _ p: @escaping (Unicode.Scalar.Properties) -> Bool
-) -> Program<String>.ConsumeFunction {
+) -> MEProgram<String>.ConsumeFunction {
   consumeScalar { p($0.properties) }
 }
 func consumeScalar(
   _ p: @escaping (Unicode.Scalar) -> Bool
-) -> Program<String>.ConsumeFunction {
+) -> MEProgram<String>.ConsumeFunction {
   { input, bounds in
     // TODO: bounds check?
     let curIdx = bounds.lowerBound
@@ -427,11 +427,11 @@ func consumeScalar(
 extension AST.Atom.CharacterProperty {
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> Program<String>.ConsumeFunction {
+  ) throws -> MEProgram<String>.ConsumeFunction {
     // Handle inversion for us, albeit not efficiently
     func invert(
-      _ p: @escaping Program<String>.ConsumeFunction
-    ) -> Program<String>.ConsumeFunction {
+      _ p: @escaping MEProgram<String>.ConsumeFunction
+    ) -> MEProgram<String>.ConsumeFunction {
       return { input, bounds in
         if p(input, bounds) != nil { return nil }
         // TODO: semantic level
@@ -444,7 +444,7 @@ extension AST.Atom.CharacterProperty {
     // FIXME: Below is largely scalar based, for convenience,
     // but we want a comprehensive treatment to semantic mode
     // switching.
-    let preInversion: Program<String>.ConsumeFunction =
+    let preInversion: MEProgram<String>.ConsumeFunction =
     try {
       switch kind {
         // TODO: is this modeled differently?
@@ -498,7 +498,7 @@ extension Unicode.BinaryProperty {
   // FIXME: Semantic level, vet for precise defs
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> Program<String>.ConsumeFunction {
+  ) throws -> MEProgram<String>.ConsumeFunction {
     switch self {
 
     case .asciiHexDigit:
@@ -664,7 +664,7 @@ extension Unicode.POSIXProperty {
   // FIXME: Semantic level, vet for precise defs
   func generateConsumer(
     _ opts: MatchingOptions
-  ) -> Program<String>.ConsumeFunction {
+  ) -> MEProgram<String>.ConsumeFunction {
     // FIXME: semantic levels, modes, etc
     switch self {
     case .alnum:
@@ -710,7 +710,7 @@ extension Unicode.ExtendedGeneralCategory {
   // FIXME: Semantic level
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> Program<String>.ConsumeFunction {
+  ) throws -> MEProgram<String>.ConsumeFunction {
     switch self {
     case .letter:
       return consumeScalarGCs([

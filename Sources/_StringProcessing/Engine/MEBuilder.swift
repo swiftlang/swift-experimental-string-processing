@@ -9,7 +9,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-extension Program where Input.Element: Hashable {
+import _MatchingEngine // For errors
+
+extension MEProgram where Input.Element: Hashable {
   public struct Builder {
     var instructions: [Instruction] = []
 
@@ -36,7 +38,7 @@ extension Program where Input.Element: Hashable {
   }
 }
 
-extension Program.Builder {
+extension MEProgram.Builder {
   struct AddressFixup {
     var first: AddressToken
     var second: AddressToken? = nil
@@ -49,7 +51,7 @@ extension Program.Builder {
   }
 }
 
-extension Program.Builder {
+extension MEProgram.Builder {
   // TODO: We want a better strategy for fixups, leaving
   // the operand in a differenet form isn't great...
 
@@ -179,14 +181,14 @@ extension Program.Builder {
   }
 
   public mutating func buildConsume(
-    by p: @escaping Program.ConsumeFunction
+    by p: @escaping MEProgram.ConsumeFunction
   ) {
     instructions.append(.init(
       .consumeBy, .init(consumer: makeConsumeFunction(p))))
   }
 
   public mutating func buildAssert(
-    by p: @escaping Program.AssertionFunction
+    by p: @escaping MEProgram.AssertionFunction
   ) {
     instructions.append(.init(
       .assertBy, .init(assertion: makeAssertionFunction(p))))
@@ -230,7 +232,7 @@ extension Program.Builder {
 
   // TODO: Mutating because of fail address fixup, drop when
   // that's removed
-  public mutating func assemble() throws -> Program {
+  public mutating func assemble() throws -> MEProgram {
     // TODO: This will add a fail instruction at the end every
     // time it's assembled. Better to do to the local instruction
     // list copy, but that complicates logic. It's possible we
@@ -275,7 +277,7 @@ extension Program.Builder {
         inst.opcode, payload)
     }
 
-    var regInfo = Program.RegisterInfo()
+    var regInfo = MEProgram.RegisterInfo()
     regInfo.elements = elements.count
     regInfo.sequences = sequences.count
     regInfo.strings = strings.count
@@ -286,7 +288,7 @@ extension Program.Builder {
     regInfo.assertionFunctions = assertionFunctions.count
     regInfo.captures = nextCaptureRegister.rawValue
 
-    return Program(
+    return MEProgram(
       instructions: InstructionList(instructions),
       staticElements: elements.stored,
       staticSequences: sequences.stored,
@@ -300,7 +302,7 @@ extension Program.Builder {
 }
 
 // Address-agnostic interfaces for label-like support
-extension Program.Builder {
+extension MEProgram.Builder {
   public enum _AddressToken {}
   public typealias AddressToken = TypedInt<_AddressToken>
 
@@ -362,7 +364,7 @@ extension Program.Builder {
 }
 
 // Register helpers
-extension Program.Builder {
+extension MEProgram.Builder {
   public mutating func makeCapture() -> CaptureRegister {
     defer { nextCaptureRegister.rawValue += 1 }
     return nextCaptureRegister
@@ -420,13 +422,13 @@ extension Program.Builder {
   // registers without monotonicity required
 
   public mutating func makeConsumeFunction(
-    _ f: @escaping Program.ConsumeFunction
+    _ f: @escaping MEProgram.ConsumeFunction
   ) -> ConsumeFunctionRegister {
     defer { consumeFunctions.append(f) }
     return ConsumeFunctionRegister(consumeFunctions.count)
   }
   public mutating func makeAssertionFunction(
-    _ f: @escaping Program.AssertionFunction
+    _ f: @escaping MEProgram.AssertionFunction
   ) -> AssertionFunctionRegister {
     defer { assertionFunctions.append(f) }
     return AssertionFunctionRegister(assertionFunctions.count)

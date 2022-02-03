@@ -40,7 +40,7 @@ private func graphemeBreakPropertyData(forLine line: String) -> GraphemeBreakEnt
   let program = PEG.Program(start: "Entry", environment: ["Entry": entry])
 
   let vm = program.compile(for: String.self)
-  let engine = try! program.transpile(for: String.self)
+  let engine = try! program.transpile()
   _ = (vm, engine)
 
   fatalError("Unsupported")

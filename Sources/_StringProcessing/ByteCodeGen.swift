@@ -3,10 +3,10 @@ import _MatchingEngine
 extension Compiler {
   struct ByteCodeGen {
     var options: MatchingOptions
-    var builder = _MatchingEngine.Program<String>.Builder()
+    var builder = Program.Builder()
 
     mutating func finish(
-    ) throws -> _MatchingEngine.Program<String> {
+    ) throws -> Program {
       builder.buildAccept()
       return try builder.assemble()
     }

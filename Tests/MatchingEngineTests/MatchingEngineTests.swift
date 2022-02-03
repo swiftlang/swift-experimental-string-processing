@@ -11,7 +11,7 @@
 
 import XCTest
 
-@testable import _MatchingEngine
+@testable import _StringProcessing
 
 /// Hold context and run variety of ad-hoc tests
 ///
@@ -140,9 +140,9 @@ func show(_ s: CustomStringConvertible) {
 }
 
 func makeEngine(
-  _ constructor: (inout Program<String>.Builder) -> ()
+  _ constructor: (inout Program.Builder) -> ()
 ) -> Engine<String> {
-  var builder = Program<String>.Builder()
+  var builder = Program.Builder()
   constructor(&builder)
   let program = try! builder.assemble()
   let engine = Engine<String>(program)

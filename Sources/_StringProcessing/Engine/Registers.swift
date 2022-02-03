@@ -24,10 +24,10 @@ extension Processor {
     var bools: [Bool] // TODO: bitset
 
     // currently, these are static readonly
-    var consumeFunctions: [Program<Input>.ConsumeFunction]
+    var consumeFunctions: [MEProgram<Input>.ConsumeFunction]
 
     // currently, these are static readonly
-    var assertionFunctions: [Program<Input>.AssertionFunction]
+    var assertionFunctions: [MEProgram<Input>.AssertionFunction]
 
     // currently, these are for comments and abort messages
     var strings: [String]
@@ -74,10 +74,10 @@ extension Processor {
     subscript(_ i: ElementRegister) -> Element {
       elements[i.rawValue]
     }
-    subscript(_ i: ConsumeFunctionRegister) -> Program<Input>.ConsumeFunction {
+    subscript(_ i: ConsumeFunctionRegister) -> MEProgram<Input>.ConsumeFunction {
       consumeFunctions[i.rawValue]
     }
-    subscript(_ i: AssertionFunctionRegister) -> Program<Input>.AssertionFunction {
+    subscript(_ i: AssertionFunctionRegister) -> MEProgram<Input>.AssertionFunction {
       assertionFunctions[i.rawValue]
     }
   }
@@ -85,7 +85,7 @@ extension Processor {
 
 extension Processor.Registers {
   init(
-    _ program: Program<Input>,
+    _ program: MEProgram<Input>,
     _ sentinel: Input.Index
   ) {
     let info = program.registerInfo
@@ -123,7 +123,7 @@ extension Processor.Registers {
   }
 }
 
-extension Program {
+extension MEProgram {
   struct RegisterInfo {
     var elements = 0
     var sequences = 0

@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-public struct Program<Input: Collection> where Input.Element: Equatable {
+public struct MEProgram<Input: Collection> where Input.Element: Equatable {
   public typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?
   public typealias AssertionFunction =
     (Input, Input.Index, Range<Input.Index>) -> Bool
@@ -26,7 +26,7 @@ public struct Program<Input: Collection> where Input.Element: Equatable {
   var enableTracing: Bool = false
 }
 
-extension Program: CustomStringConvertible {
+extension MEProgram: CustomStringConvertible {
   public var description: String {
     var result = """
     Elements: \(staticElements)
