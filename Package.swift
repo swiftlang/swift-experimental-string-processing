@@ -37,8 +37,11 @@ let package = Package(
             dependencies: [
               "_MatchingEngine", "_StringProcessing"]),
         .target(
+            name: "_CUnicode",
+            dependencies: []),
+        .target(
             name: "_StringProcessing",
-            dependencies: ["_MatchingEngine"],
+            dependencies: ["_MatchingEngine", "_CUnicode"],
             swiftSettings: [
                 .unsafeFlags(["-enable-library-evolution"]),
                 .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
