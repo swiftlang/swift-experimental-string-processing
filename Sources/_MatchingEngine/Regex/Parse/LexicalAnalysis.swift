@@ -1022,7 +1022,7 @@ extension Source {
 
   /// Attempt to lex the start of a group conditional.
   ///
-  ///     GroupConditionalStart -> '(?' GroupStart
+  ///     GroupCondStart -> '(?' GroupStart
   ///
   mutating func lexGroupConditionalStart(
     context: ParsingContext
