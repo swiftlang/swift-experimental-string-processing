@@ -66,7 +66,7 @@ struct PatternConverter: ParsableCommand {
     }
 
     print()
-    let render = ast.renderAsPattern(
+    let render = ast.renderAsBuilderDSL(
       maxTopDownLevels: topDownConversionLimit,
       minBottomUpLevels: bottomUpConversionLimit
     )

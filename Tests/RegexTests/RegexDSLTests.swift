@@ -134,9 +134,6 @@ class RegexDSLTests: XCTestCase {
     }
   }
 
-  // Note: Types of nested captures should be flat, but are currently nested
-  // due to the lack of variadic generics. Without it, we cannot effectively
-  // express type constraints to concatenate splatted tuples.
   func testNestedCaptureTypes() throws {
     let regex1 = Regex {
       "a".+
@@ -145,7 +142,7 @@ class RegexDSLTests: XCTestCase {
         "e".?
       }.capture()
     }
-    let _: Tuple2<Substring, Tuple2<Substring, Substring>>.Type
+    let _: Tuple3<Substring, Substring, Substring>.Type
       = type(of: regex1).Match.self
     let regex2 = Regex {
       "a".+
@@ -154,7 +151,7 @@ class RegexDSLTests: XCTestCase {
         "e".?
       }.capture()
     }
-    let _: Tuple2<Substring, Tuple2<Substring, [Int]>>.Type
+    let _: Tuple3<Substring, Substring, [Int]>.Type
       = type(of: regex2).Match.self
     let regex3 = Regex {
       "a".+
@@ -164,7 +161,7 @@ class RegexDSLTests: XCTestCase {
         "e".?
       }.capture()
     }
-    let _: Tuple2<Substring, Tuple3<Substring, Int, [Double]>>.Type
+    let _: Tuple4<Substring, Substring, Int, [Double]>.Type
       = type(of: regex3).Match.self
     let regex4 = Regex {
       "a".+
@@ -175,9 +172,8 @@ class RegexDSLTests: XCTestCase {
         "e".?
       }.capture()
     }
-    let _: Tuple2<
-      Substring, Tuple2<
-        Substring, [Tuple3<Substring, Substring, [Substring]>]>>.Type
+    let _: Tuple3<
+      Substring, Substring, [Tuple3<Substring, Substring, [Substring]>]>.Type
       = type(of: regex4).Match.self
   }
 

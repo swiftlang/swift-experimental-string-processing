@@ -19,7 +19,7 @@ import _MatchingEngine
 
 extension AST {
   /// Render as a Pattern DSL
-  public func renderAsPattern(
+  public func renderAsBuilderDSL(
     maxTopDownLevels: Int? = nil,
     minBottomUpLevels: Int? = nil
   ) -> String {

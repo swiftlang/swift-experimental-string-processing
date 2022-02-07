@@ -12,60 +12,49 @@
 // swift run VariadicsGenerator --max-arity 7 > Sources/_StringProcessing/RegexDSL/Concatenation.swift
 
 import ArgumentParser
+#if os(macOS)
+import Darwin
+#elseif os(Linux)
+import Glibc
+#elseif os(Windows)
+import CRT
+#endif
 
-struct Permutation {
-  let arity: Int
-  // 1 -> no extra constraint
-  // 0 -> where T.Match: NoCaptureProtocol
-  let bits: Int64
-
-  func isCaptureless(at index: Int) -> Bool {
-    bits & (1 << index) != 0
-  }
-
-  var hasCaptureless: Bool {
-    bits != 0
-  }
-
-  func hasCaptureless(beyond index: Int) -> Bool {
-    bits >> (index + 1) != 0
-  }
-
-  var identifier: String {
-    var result = ""
-    for i in 0..<arity {
-      result.append(isCaptureless(at: i) ? "V" : "T")
-    }
-    return String(result.reversed())
-  }
-
-  var capturelessIndices: [Int] {
-    (0..<arity).filter { isCaptureless(at: $0) }
-  }
-
-  var captureIndices: [Int] {
-    (0..<arity).filter { !isCaptureless(at: $0) }
-  }
-}
-
+// (T), (T)
+// (T), (T, T)
+// …
+// (T), (T, T, T, T, T, T, T)
+// (T, T), (T)
+// (T, T), (T, T)
+// …
+// (T, T), (T, T, T, T, T, T)
+// …
 struct Permutations: Sequence {
-  let arity: Int
+  let totalArity: Int
 
   struct Iterator: IteratorProtocol {
-    let arity: Int
-    var counter = Int64(0)
+    let totalArity: Int
+    var leftArity: Int = 0
+    var rightArity: Int = 0
 
-    mutating func next() -> Permutation? {
-      guard counter & (1 << arity) == 0 else {
+    mutating func next() -> (combinedArity: Int, nextArity: Int)? {
+      guard leftArity < totalArity else {
         return nil
       }
-      defer { counter += 1 }
-      return Permutation(arity: arity, bits: counter)
+      defer {
+        if leftArity + rightArity >= totalArity {
+          leftArity += 1
+          rightArity = 0
+        } else {
+          rightArity += 1
+        }
+      }
+      return (leftArity, rightArity)
     }
   }
 
   public func makeIterator() -> Iterator {
-    Iterator(arity: arity)
+    Iterator(totalArity: totalArity)
   }
 }
 
@@ -75,15 +64,15 @@ func output(_ content: String) {
 
 func outputForEach<C: Collection>(
   _ elements: C,
-  separator: String,
+  separator: String? = nil,
   lineTerminator: String? = nil,
   _ content: (C.Element) -> String
 ) {
   for i in elements.indices {
     output(content(elements[i]))
     let needsSep = elements.index(after: i) != elements.endIndex
-    if needsSep {
-      output(separator)
+    if needsSep, let sep = separator {
+      output(sep)
     }
     if let lt = lineTerminator {
       let indent = needsSep ? "      " : "    "
@@ -91,6 +80,13 @@ func outputForEach<C: Collection>(
     }
   }
 }
+
+struct StandardErrorStream: TextOutputStream {
+  func write(_ string: String) {
+    fputs(string, stderr)
+  }
+}
+var standardError = StandardErrorStream()
 
 typealias Counter = Int64
 let patternProtocolName = "RegexProtocol"
@@ -106,18 +102,25 @@ let baseMatchTypeName = "Substring"
 
 @main
 struct VariadicsGenerator: ParsableCommand {
-  @Option(help: "The minimum arity of declarations to generate.")
-  var minArity: Int = 2
-
   @Option(help: "The maximum arity of declarations to generate.")
   var maxArity: Int
 
   func run() throws {
-    precondition(minArity > 0)
     precondition(maxArity > 1)
     precondition(maxArity < Counter.bitWidth)
 
     output("""
+      //===----------------------------------------------------------------------===//
+      //
+      // This source file is part of the Swift.org open source project
+      //
+      // Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+      // Licensed under Apache License v2.0 with Runtime Library Exception
+      //
+      // See https://swift.org/LICENSE.txt for license information
+      //
+      //===----------------------------------------------------------------------===//
+
       // BEGIN AUTO-GENERATED CONTENT
 
       import _MatchingEngine
@@ -129,14 +132,29 @@ struct VariadicsGenerator: ParsableCommand {
       emitTupleStruct(arity: arity)
     }
 
-    for arity in minArity...maxArity {
-      for permutation in Permutations(arity: arity) {
-        emitConcatenation(permutation: permutation)
-      }
-      output("\n\n")
+    for (leftArity, rightArity) in Permutations(totalArity: maxArity) {
+      print(
+        "Left arity: \(leftArity)  Right arity: \(rightArity)",
+        to: &standardError)
+      emitConcatenation(leftArity: leftArity, rightArity: rightArity)
     }
 
+    for arity in 0..<maxArity {
+      emitConcatenationWithEmpty(leftArity: arity)
+    }
+
+    output("\n\n")
     output("// END AUTO-GENERATED CONTENT")
+
+    print("Done!", to: &standardError)
+  }
+
+  func tupleType(arity: Int, genericParameters: () -> String) -> String {
+    assert(arity >= 0)
+    if arity == 0 {
+      return genericParameters()
+    }
+    return "Tuple\(arity)<\(genericParameters())>"
   }
 
   func emitTupleStruct(arity: Int) {
@@ -205,72 +223,155 @@ struct VariadicsGenerator: ParsableCommand {
     output("}\n")
   }
 
-  func emitConcatenation(permutation: Permutation) {
-    let arity = permutation.arity
-
+  func emitConcatenation(leftArity: Int, rightArity: Int) {
     func emitGenericParameters(withConstraints: Bool) {
-      outputForEach(0..<arity, separator: ", ") {
-        var base = "T\($0)"
-        if withConstraints {
-          base += ": \(patternProtocolName)"
-        }
-        return base
+      output("W0, W1")
+      outputForEach(0..<leftArity+rightArity) {
+        ", C\($0)"
+      }
+      output(", ")
+      if withConstraints {
+        output("R0: \(patternProtocolName), R1: \(patternProtocolName)")
+      } else {
+        output("R0, R1")
       }
     }
 
-    // Emit concatenation type declarations.
-    //   public struct Concatenation{n}_{perm}<...>: RegexProtocol {
+    // Emit concatenation type declaration.
+
+    // public struct Concatenation2<W0, W1, C0, C1, R0: RegexProtocol, R1: RegexProtocol>: RegexProtocol
+    // where R0.Match == Tuple2<W0, C0>, R1.Match == Tuple2<W1, C1>
+    // {
+    //   public typealias Match = Tuple3<Substring, C0, C1>
+    //
+    //   public let regex: Regex<Tuple3<Substring, C0, C1>>
+    //
+    //   public init(_ r0: R0, _ r1: R1) {
+    //     self.regex = .init(node: r0.regex.root.appending(r1.regex.root))
+    //   }
+    // }
+    //
+    // extension RegexBuilder {
+    //   static func buildBlock<W0, W1, C0, C1, Combined: RegexProtocol, Next: RegexProtocol>(
+    //     combining next: Next, into combined: Combined
+    //   ) -> Concatenation2<W0, W1, C0, C1, Combined, Next> {
+    //     .init(combined, next)
+    //   }
+    // }
+
+    //   public struct Concatenation{n}<...>: RegexProtocol {
     //     public typealias Match = ...
     //     public let regex: Regex<Match>
     //     public init(...) { ... }
     //   }
-    let typeName =
-      "\(concatenationStructTypeBaseName)\(arity)_\(permutation.identifier)"
+
+    let typeName = "\(concatenationStructTypeBaseName)_\(leftArity)_\(rightArity)"
     output("public struct \(typeName)<\n  ")
     emitGenericParameters(withConstraints: true)
     output("\n>: \(patternProtocolName)")
-    if permutation.hasCaptureless {
-      output(" where ")
-      outputForEach(permutation.capturelessIndices, separator: ", ") {
-        "T\($0).\(matchAssociatedTypeName).\(captureAssociatedTypeName): \(emptyProtocolName)"
+    output(" where ")
+    output("R0.Match == ")
+    if leftArity == 0 {
+      output("W0")
+    } else {
+      output("Tuple\(leftArity+1)<W0")
+      outputForEach(0..<leftArity) {
+        ", C\($0)"
       }
+      output(">")
+    }
+    output(", R1.Match == ")
+    if rightArity == 0 {
+      output("W1")
+    } else {
+      output("Tuple\(rightArity+1)<W1")
+      outputForEach(leftArity..<leftArity+rightArity) {
+        ", C\($0)"
+      }
+      output(">")
     }
     output(" {\n")
-    let captureIndices = permutation.captureIndices
     output("  public typealias \(matchAssociatedTypeName) = ")
-    let captureElements = captureIndices
-      .map { "T\($0).\(matchAssociatedTypeName).\(captureAssociatedTypeName)" }
-    if captureElements.isEmpty {
+    if leftArity+rightArity == 0 {
       output(baseMatchTypeName)
     } else {
-      let count = captureElements.count + 1
-      output("Tuple\(count)<\(baseMatchTypeName), \(captureElements.joined(separator: ", "))>")
+      output("Tuple\(leftArity+rightArity+1)<\(baseMatchTypeName), ")
+      outputForEach(0..<leftArity+rightArity, separator: ", ") {
+        "C\($0)"
+      }
+      output(">")
     }
     output("\n")
     output("  public let \(patternProtocolRequirementName): \(PatternTypeBaseName)<\(matchAssociatedTypeName)>\n")
-    output("  init(")
-    outputForEach(0..<arity, separator: ", ") { "_ x\($0): T\($0)" }
-    output(") {\n")
-    output("    \(patternProtocolRequirementName) = .init(node: .concatenation([\n      ")
-    outputForEach(
-      0..<arity, separator: ", ", lineTerminator: ""
-    ) { i in
-      "x\(i).\(patternProtocolRequirementName).root"
-    }
-    output("]))\n")
-    output("  }\n}\n\n")
+    output("""
+        init(_ r0: R0, _ r1: R1) {
+          self.regex = .init(node: r0.regex.root.appending(r1.regex.root))
+        }
+      }
 
-    // Emit concatenation builders.
+      """)
+
+    // Emit concatenation builder.
     output("extension \(patternBuilderTypeName) {\n")
-    output("  public static func buildBlock<")
+    output("""
+          @_disfavoredOverload
+          public static func buildBlock<
+        """)
     emitGenericParameters(withConstraints: true)
-    output(">(\n    ")
-    outputForEach(0..<arity, separator: ", ") { "_ x\($0): T\($0)" }
-    output("\n  ) -> \(typeName)<")
+    output("""
+      >(
+          combining next: R1, into combined: R0
+        ) -> \(typeName)<
+      """)
     emitGenericParameters(withConstraints: false)
-    output("> {\n")
-    output("    \(typeName)(")
-    outputForEach(0..<arity, separator: ", ") { "x\($0)" }
-    output(")\n  }\n}\n\n")
+    output("""
+      > {
+          .init(combined, next)
+        }
+      }
+
+      """)
+  }
+
+  func emitConcatenationWithEmpty(leftArity: Int) {
+    // T + () = T
+    output("""
+       extension RegexBuilder {
+         public static func buildBlock<W0
+       """)
+    outputForEach(0..<leftArity) {
+      ", C\($0)"
+    }
+    output("""
+      , R0: \(patternProtocolName), R1: \(patternProtocolName)>(
+          combining next: R1, into combined: R0
+        ) -> Regex<
+      """)
+    if leftArity == 0 {
+      output(baseMatchTypeName)
+    } else {
+      output("Tuple\(leftArity+1)<\(baseMatchTypeName)")
+      outputForEach(0..<leftArity) {
+        ", C\($0)"
+      }
+      output(">")
+    }
+    output("> where R0.\(matchAssociatedTypeName) == ")
+    if leftArity == 0 {
+      output("W0")
+    } else {
+      output("Tuple\(leftArity+1)<W0")
+      outputForEach(0..<leftArity) {
+        ", C\($0)"
+      }
+      output(">")
+    }
+    output("""
+      , R1.\(matchAssociatedTypeName): \(emptyProtocolName) {
+          .init(node: combined.regex.root.appending(next.regex.root))
+        }
+      }
+
+      """)
   }
 }
