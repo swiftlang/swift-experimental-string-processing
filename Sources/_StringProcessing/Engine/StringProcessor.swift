@@ -9,6 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+import _MatchingEngine
 typealias Program = MEProgram<String>
 
 public struct MatchResult {

@@ -159,6 +159,10 @@ public enum _ConsumeFunctionRegister {}
 public typealias AssertionFunctionRegister = TypedInt<_AssertionFunctionRegister>
 public enum _AssertionFunctionRegister {}
 
+/// Used for capture transforms, etc
+public typealias TransformRegister = TypedInt<_TransformRegister>
+public enum _TransformRegister {}
+
 /// UNIMPLEMENTED
 public typealias IntRegister = TypedInt<_IntRegister>
 public enum _IntRegister {}

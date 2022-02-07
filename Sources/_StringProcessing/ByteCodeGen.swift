@@ -248,13 +248,13 @@ extension Compiler.ByteCodeGen {
 
   mutating func emitGroup(
     _ kind: AST.Group.Kind, _ child: DSLTree.Node
-  ) throws {
+  ) throws -> CaptureRegister? {
     options.beginScope()
     defer { options.endScope() }
 
     if let lookaround = kind.lookaroundKind {
       try emitLookaround(lookaround, child)
-      return
+      return nil
     }
 
     switch kind {
@@ -267,14 +267,17 @@ extension Compiler.ByteCodeGen {
       builder.buildBeginCapture(cap)
       try emitNode(child)
       builder.buildEndCapture(cap)
+      return cap
 
     case .changeMatchingOptions(let optionSequence, _):
       options.apply(optionSequence)
       try emitNode(child)
+      return nil
 
     default:
       // FIXME: Other kinds...
       try emitNode(child)
+      return nil
     }
   }
 
@@ -494,7 +497,7 @@ extension Compiler.ByteCodeGen {
       }
 
     case let .group(kind, child):
-      try emitGroup(kind, child)
+      _ = try emitGroup(kind, child)
 
     case .conditional:
       throw Unsupported("Conditionals")
@@ -518,9 +521,21 @@ extension Compiler.ByteCodeGen {
     case let .convertedRegexLiteral(n, _):
       try emitNode(n)
 
-    case let .groupTransform(kind, child, _):
-      try emitGroup(kind, child)
-      // FIXME: Transforms
+    case let .groupTransform(kind, child, t):
+      guard let cap = try emitGroup(kind, child) else {
+        assertionFailure("""
+          What does it mean to not have a capture to transform?
+          """)
+        return
+      }
+
+      // FIXME: Is this how we want to do it?
+      let transform = builder.makeTransformFunction {
+        input, range in
+        t(input[range])
+      }
+
+      builder.buildTransformCapture(cap, transform)
 
     case .absentFunction:
       throw Unsupported("absent function")

@@ -406,6 +406,23 @@ extension Processor {
        storedCaptures[capNum].endCapture(currentPosition)
        controller.step()
 
+    case .transformCapture:
+      let (cap, trans) = payload.pairedCaptureTransform
+      let transform = registers[trans]
+      let capNum = Int(asserting: cap.rawValue)
+
+      guard let range = storedCaptures[capNum].latest else {
+        fatalError(
+          "Unreachable: transforming without a capture")
+      }
+      // FIXME: Pass input or the slice?
+      guard let value = transform(input, range) else {
+        signalFailure()
+        return
+      }
+      storedCaptures[capNum].registerValue(value)
+
+      controller.step()
     }
   }
 }

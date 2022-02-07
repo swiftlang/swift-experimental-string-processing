@@ -18,8 +18,10 @@ extension MEProgram where Input.Element: Hashable {
     var elements = TypedSetVector<Input.Element, _ElementRegister>()
     var sequences = TypedSetVector<[Input.Element], _SequenceRegister>()
     var strings = TypedSetVector<String, _StringRegister>()
+
     var consumeFunctions: [ConsumeFunction] = []
     var assertionFunctions: [AssertionFunction] = []
+    var transformFunctions: [TransformFunction] = []
 
     // Map tokens to actual addresses
     var addressTokens: [InstructionAddress?] = []
@@ -33,6 +35,10 @@ extension MEProgram where Input.Element: Hashable {
 
     // Special addresses or instructions
     var failAddressToken: AddressToken? = nil
+
+    // TODO: Should we have better API for building this up
+    // as we compile?
+    var captureStructure: CaptureStructure = .empty
 
     public init() {}
   }
@@ -223,6 +229,14 @@ extension MEProgram.Builder {
       .init(.endCapture, .init(capture: cap)))
   }
 
+  public mutating func buildTransformCapture(
+    _ cap: CaptureRegister, _ trans: TransformRegister
+  ) {
+    instructions.append(.init(
+      .transformCapture,
+      .init(capture: cap, transform: trans)))
+  }
+
   public mutating func buildBackreference(
     _ cap: CaptureRegister
   ) {
@@ -286,6 +300,7 @@ extension MEProgram.Builder {
     regInfo.positions = nextPositionRegister.rawValue
     regInfo.consumeFunctions = consumeFunctions.count
     regInfo.assertionFunctions = assertionFunctions.count
+    regInfo.transformFunctions = transformFunctions.count
     regInfo.captures = nextCaptureRegister.rawValue
 
     return MEProgram(
@@ -295,7 +310,9 @@ extension MEProgram.Builder {
       staticStrings: strings.stored,
       staticConsumeFunctions: consumeFunctions,
       staticAssertionFunctions: assertionFunctions,
-      registerInfo: regInfo)
+      staticTransformFunctions: transformFunctions,
+      registerInfo: regInfo,
+      captureStructure: captureStructure)
   }
 
   public mutating func reset() { self = Self() }
@@ -432,6 +449,12 @@ extension MEProgram.Builder {
   ) -> AssertionFunctionRegister {
     defer { assertionFunctions.append(f) }
     return AssertionFunctionRegister(assertionFunctions.count)
+  }
+  public mutating func makeTransformFunction(
+    _ f: @escaping MEProgram.TransformFunction
+  ) -> TransformRegister {
+    defer { transformFunctions.append(f) }
+    return TransformRegister(transformFunctions.count)
   }
 }
 
