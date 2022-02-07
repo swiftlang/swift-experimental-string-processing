@@ -411,8 +411,8 @@ extension CaptureStructure: CustomStringConvertible {
   private func _print(_ printer: inout PrettyPrinter) {
     switch self {
     case let .atom(name, type):
-      let name = name ?? "<unnamed>"
-      let type = type == nil ? "<untyped>"
+      let name = name ?? "_"
+      let type = type == nil ? "_"
                              : String(describing: type)
       printer.print("Atom(\(name): \(type))")
 
@@ -427,6 +427,10 @@ extension CaptureStructure: CustomStringConvertible {
       }
 
     case let .tuple(cs):
+      if cs.count == 0 {
+        printer.print("Tuple()")
+        return
+      }
       printer.printBlock("Tuple") { printer in
         for c in cs {
           c._print(&printer)
