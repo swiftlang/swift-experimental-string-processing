@@ -44,93 +44,79 @@ extension CharacterClass: RegexProtocol {
   }
 }
 
+
 // MARK: - Combinators
 
-// TODO: We want variadic generics!
-// Overloads are auto-generated in Concatenation.swift.
-//
-// public struct Concatenate<R...: RegexContent>: RegexContent {
-//   public let regex: Regex<(R...).filter { $0 != Void.self }>
-//
-//   public init(_ components: R...) {
-//     regex = .init(ast: .concatenation([#splat(components...)]))
+// MARK: Concatenation
+
+// Note: Concatenation overloads are currently gyb'd.
+
+// TODO: Variadic generics
+// struct Concatenation<W0, C0..., R0: RegexProtocol, W1, C1..., R1: RegexProtocol>
+// where R0.Match == (W0, C0...), R1.Match == (W1, C1...)
+// {
+//   typealias Match = (Substring, C0..., C1...)
+//   let regex: Regex<Match>
+//   init(_ first: R0, _ second: R1) {
+//     regex = .init(concat(r0, r1))
 //   }
 // }
 
-// MARK: Repetition
+// MARK: Quantification
 
-/// A regular expression.
-public struct OneOrMore<Component: RegexProtocol>: RegexProtocolWithComponent {
-  public typealias Match = Tuple2<Substring, [Component.Match.Capture]>
+// Note: Quantifiers are currently gyb'd.
 
-  public let regex: Regex<Match>
+// TODO: Variadic generics
+// struct _OneOrMore<W, C..., Component: RegexProtocol>
+// where R.Match == (W, C...)
+// {
+//   typealias Match = (Substring, [(C...)])
+//   let regex: Regex<Match>
+//   init(_ component: Component) {
+//     regex = .init(oneOrMore(r0))
+//   }
+// }
+//
+// struct _OneOrMoreNonCapturing<Component: RegexProtocol> {
+//   typealias Match = Substring
+//   let regex: Regex<Match>
+//   init(_ component: Component) {
+//     regex = .init(oneOrMore(r0))
+//   }
+// }
+//
+// func oneOrMore<W, C..., Component: RegexProtocol>(
+//   _ component: Component
+// ) -> <R: RegexProtocol where R.Match == (Substring, [(C...)])> R {
+//   _OneOrMore(component)
+// }
+//
+// @_disfavoredOverload
+// func oneOrMore<Component: RegexProtocol>(
+//   _ component: Component
+// ) -> <R: RegexProtocol where R.Match == Substring> R {
+//   _OneOrMoreNonCapturing(component)
+// }
 
-  public init(component: Component) {
-    self.regex = .init(node: .quantification(
-      .oneOrMore, .eager, component.regex.root)
-    )
-  }
-
-  public init(@RegexBuilder _ content: () -> Component) {
-    self.init(content())
-  }
-}
-
-postfix operator .+
-
-public postfix func .+ <R: RegexProtocol>(
-  lhs: R
-) -> OneOrMore<R> {
-  .init(lhs)
-}
-
-public struct Repeat<
-  Component: RegexProtocol
->: RegexProtocolWithComponent {
-  public typealias Match = Tuple2<Substring, [Component.Match.Capture]>
-
-  public let regex: Regex<Match>
-
-  public init(component: Component) {
-    self.regex = .init(node: .quantification(
-      .zeroOrMore, .eager, component.regex.root))
-  }
-
-  public init(@RegexBuilder _ content: () -> Component) {
-    self.init(content())
-  }
-}
-
-postfix operator .*
-
-public postfix func .* <R: RegexProtocol>(
-  lhs: R
-) -> Repeat<R> {
-  .init(lhs)
-}
-
-public struct Optionally<Component: RegexProtocol>: RegexProtocolWithComponent {
-  public typealias Match = Tuple2<Substring, Component.Match.Capture?>
-
-  public let regex: Regex<Match>
-
-  public init(component: Component) {
-    self.regex = .init(node: .quantification(
-      .zeroOrOne, .eager, component.regex.root))
-  }
-
-  public init(@RegexBuilder _ content: () -> Component) {
-    self.init(content())
-  }
-}
 
 postfix operator .?
+postfix operator .*
+postfix operator .+
 
-public postfix func .? <R: RegexProtocol>(
-  lhs: R
-) -> Optionally<R> {
-  .init(lhs)
+// Overloads for quantifying over a character class.
+public func zeroOrOne(_ cc: CharacterClass) -> _ZeroOrOne_0<CharacterClass> {
+  .init(component: cc)
 }
+
+public func many(_ cc: CharacterClass) -> _ZeroOrMore_0<CharacterClass> {
+  .init(component: cc)
+}
+
+public func oneOrMore(_ cc: CharacterClass) -> _OneOrMore_0<CharacterClass> {
+  .init(component: cc)
+}
+
+// MARK: Alternation
 
 // TODO: Support heterogeneous capture alternation.
 public struct Alternation<

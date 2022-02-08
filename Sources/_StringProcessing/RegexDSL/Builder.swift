@@ -33,10 +33,4 @@ public enum RegexBuilder {
   public static func buildEither<R: RegexProtocol>(second component: R) -> R {
     component
   }
-
-  public static func buildLimitedAvailability<R: RegexProtocol>(
-    _ component: R
-  ) -> Optionally<R> {
-    .init(component)
-  }
 }
