@@ -16,12 +16,6 @@ public enum RegexBuilder {
     r0
   }
 
-  public static func buildBlock<R0: RegexProtocol>(
-    _ r0: R0
-  ) -> Regex<Substring> where R0.Match: EmptyCaptureProtocol {
-    .init(node: r0.regex.root)
-  }
-
   public static func buildExpression<R: RegexProtocol>(_ regex: R) -> R {
     regex
   }

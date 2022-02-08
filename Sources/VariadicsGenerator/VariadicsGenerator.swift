@@ -97,7 +97,6 @@ let captureAssociatedTypeName = "Capture"
 let patternBuilderTypeName = "RegexBuilder"
 let patternProtocolRequirementName = "regex"
 let PatternTypeBaseName = "Regex"
-let emptyProtocolName = "EmptyCaptureProtocol"
 let baseMatchTypeName = "Substring"
 
 @main
@@ -128,12 +127,17 @@ struct VariadicsGenerator: ParsableCommand {
 
       """)
 
-    for arity in 2...maxArity+1 {
-      emitTupleStruct(arity: arity)
+    print("Generating 'buildBlock(_:)' overloads...", to: &standardError)
+    for arity in 1..<maxArity {
+      print("  Capture arity: \(arity)", to: &standardError)
+      emitUnaryBuildBlock(arity: arity)
     }
 
     print("Generating concatenation overloads...", to: &standardError)
     for (leftArity, rightArity) in Permutations(totalArity: maxArity) {
+      guard rightArity != 0 else {
+        continue
+      }
       print(
         "  Left arity: \(leftArity)  Right arity: \(rightArity)",
         to: &standardError)
@@ -168,73 +172,22 @@ struct VariadicsGenerator: ParsableCommand {
     if arity == 0 {
       return genericParameters()
     }
-    return "Tuple\(arity)<\(genericParameters())>"
+    return "(\(genericParameters()))"
   }
 
-  func emitTupleStruct(arity: Int) {
+  func emitUnaryBuildBlock(arity: Int) {
+    assert(arity > 0)
+    let captureTypes = (0..<arity).map { "C\($0)" }.joined(separator: ", ")
     output("""
-      @frozen @dynamicMemberLookup
-      public struct Tuple\(arity)<
-      """)
-    outputForEach(0..<arity, separator: ", ") {
-      "_\($0)"
-    }
-    output("> {")
-    // `public typealias Tuple = (_0, ...)`
-    output("\n  public typealias Tuple = (")
-    outputForEach(0..<arity, separator: ", ") { "_\($0)" }
-    output(")")
-    // `public var tuple: Tuple`
-    output("\n  public var tuple: Tuple\n")
-    // `subscript(dynamicMember:)`
-    output("""
-        public subscript<T>(dynamicMember keyPath: WritableKeyPath<Tuple, T>) -> T {
-          get { tuple[keyPath: keyPath] }
-          _modify { yield &tuple[keyPath: keyPath] }
+      extension RegexBuilder {
+        public static func buildBlock<R: RegexProtocol, W, \(captureTypes)>(_ regex: R) -> R
+        where R.Match == (W, \(captureTypes))
+        {
+          regex
         }
-      """)
-    output("\n}\n")
-    output("extension Tuple\(arity): \(emptyProtocolName) where ")
-    outputForEach(1..<arity, separator: ", ") {
-      "_\($0): \(emptyProtocolName)"
-    }
-    output(" {}\n")
-    output("extension Tuple\(arity): MatchProtocol {\n")
-    output("  public typealias Capture = ")
-    if arity == 2 {
-      output("_1")
-    } else {
-      output("Tuple\(arity-1)<")
-      outputForEach(1..<arity, separator: ", ") {
-        "_\($0)"
       }
-      output(">")
-    }
-    output("\n  public init(_ tuple: Tuple) { self.tuple = tuple }")
-    // `public init(_0: _0, ...) { ... }`
-    output("\n  public init(")
-    outputForEach(0..<arity, separator: ", ") {
-      "_ _\($0): _\($0)"
-    }
-    output(") {\n")
-    output("    self.init((")
-    outputForEach(0..<arity, separator: ", ") { "_\($0)" }
-    output("))\n")
-    output("  }")
-    output("\n}\n")
-    // Equatable
-    output("extension Tuple\(arity): Equatable where ")
-    outputForEach(0..<arity, separator: ", ") {
-      "_\($0): Equatable"
-    }
-    output(" {\n")
-    output("  public static func == (lhs: Self, rhs: Self) -> Bool {\n")
-    output("    ")
-    outputForEach(0..<arity, separator: " && ") {
-      "lhs.tuple.\($0) == rhs.tuple.\($0)"
-    }
-    output("\n  }\n")
-    output("}\n")
+
+      """)
   }
 
   func emitConcatenation(leftArity: Int, rightArity: Int) {
@@ -254,11 +207,11 @@ struct VariadicsGenerator: ParsableCommand {
     // Emit concatenation type declaration.
 
     // public struct Concatenation2<W0, W1, C0, C1, R0: RegexProtocol, R1: RegexProtocol>: RegexProtocol
-    // where R0.Match == Tuple2<W0, C0>, R1.Match == Tuple2<W1, C1>
+    // where R0.Match == (W0, C0), R1.Match == (W1, C1)
     // {
-    //   public typealias Match = Tuple3<Substring, C0, C1>
+    //   public typealias Match = (Substring, C0, C1)
     //
-    //   public let regex: Regex<Tuple3<Substring, C0, C1>>
+    //   public let regex: Regex<(Substring, C0, C1)>
     //
     //   public init(_ r0: R0, _ r1: R1) {
     //     self.regex = .init(node: r0.regex.root.appending(r1.regex.root))
@@ -288,32 +241,32 @@ struct VariadicsGenerator: ParsableCommand {
     if leftArity == 0 {
       output("W0")
     } else {
-      output("Tuple\(leftArity+1)<W0")
+      output("(W0")
       outputForEach(0..<leftArity) {
         ", C\($0)"
       }
-      output(">")
+      output(")")
     }
     output(", R1.Match == ")
     if rightArity == 0 {
       output("W1")
     } else {
-      output("Tuple\(rightArity+1)<W1")
+      output("(W1")
       outputForEach(leftArity..<leftArity+rightArity) {
         ", C\($0)"
       }
-      output(">")
+      output(")")
     }
     output(" {\n")
     output("  public typealias \(matchAssociatedTypeName) = ")
     if leftArity+rightArity == 0 {
       output(baseMatchTypeName)
     } else {
-      output("Tuple\(leftArity+rightArity+1)<\(baseMatchTypeName), ")
+      output("(\(baseMatchTypeName), ")
       outputForEach(0..<leftArity+rightArity, separator: ", ") {
         "C\($0)"
       }
-      output(">")
+      output(")")
     }
     output("\n")
     output("  public let \(patternProtocolRequirementName): \(PatternTypeBaseName)<\(matchAssociatedTypeName)>\n")
@@ -351,6 +304,7 @@ struct VariadicsGenerator: ParsableCommand {
     // T + () = T
     output("""
        extension RegexBuilder {
+         @_disfavoredOverload
          public static func buildBlock<W0
        """)
     outputForEach(0..<leftArity) {
@@ -364,24 +318,24 @@ struct VariadicsGenerator: ParsableCommand {
     if leftArity == 0 {
       output(baseMatchTypeName)
     } else {
-      output("Tuple\(leftArity+1)<\(baseMatchTypeName)")
+      output("(\(baseMatchTypeName)")
       outputForEach(0..<leftArity) {
         ", C\($0)"
       }
-      output(">")
+      output(")")
     }
     output("> where R0.\(matchAssociatedTypeName) == ")
     if leftArity == 0 {
       output("W0")
     } else {
-      output("Tuple\(leftArity+1)<W0")
+      output("(W0")
       outputForEach(0..<leftArity) {
         ", C\($0)"
       }
-      output(">")
+      output(")")
     }
     output("""
-      , R1.\(matchAssociatedTypeName): \(emptyProtocolName) {
+        {
           .init(node: combined.regex.root.appending(next.regex.root))
         }
       }
@@ -435,9 +389,9 @@ struct VariadicsGenerator: ParsableCommand {
       return result
     }
     let captures = (0..<arity).map { "C\($0)" }.joined(separator: ", ")
-    let capturesTupled = arity == 1 ? captures : "Tuple\(arity)<\(captures)>"
+    let capturesTupled = arity == 1 ? captures : "(\(captures))"
     let componentConstraint: String = arity == 0 ? "" :
-      "where Component.Match == Tuple\(arity+1)<W, \(captures)>"
+      "where Component.Match == (W, \(captures))"
     let quantifiedCaptures: String = {
       switch kind {
       case .zeroOrOne:
@@ -446,7 +400,7 @@ struct VariadicsGenerator: ParsableCommand {
         return "[\(capturesTupled)]"
       }
     }()
-    let matchType = arity == 0 ? baseMatchTypeName : "Tuple2<\(baseMatchTypeName), \(quantifiedCaptures)>"
+    let matchType = arity == 0 ? baseMatchTypeName : "(\(baseMatchTypeName), \(quantifiedCaptures))"
     output("""
       public struct \(kind.typeName)_\(arity)<\(genericParameters(withConstraints: true))>: \(regexProtocolName) \(componentConstraint) {
         public typealias \(matchAssociatedTypeName) = \(matchType)

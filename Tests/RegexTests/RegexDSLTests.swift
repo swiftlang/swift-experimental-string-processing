@@ -20,15 +20,14 @@ class RegexDSLTests: XCTestCase {
       "1".tryCapture { Int($0) } // Int
     }
     // Assert the inferred capture type.
-    let _: Tuple3<Substring, Substring, Int>.Type = type(of: regex).Match.self
+    let _: (Substring, Substring, Int).Type = type(of: regex).Match.self
     let maybeMatch = "ab1".match(regex)
     let match = try XCTUnwrap(maybeMatch)
-    XCTAssertEqual(match.match, Tuple3("ab1", "b", 1))
+    XCTAssertTrue(match.match == ("ab1", "b", 1))
 
     let substring = "ab1"[...]
-    let substringMatch = try XCTUnwrap(
-      substring.match(regex))
-    XCTAssertEqual(match.match, substringMatch.match)
+    let substringMatch = try XCTUnwrap(substring.match(regex))
+    XCTAssertTrue(match.match == substringMatch.match)
   }
 
   func testCharacterClasses() throws {
@@ -38,10 +37,10 @@ class RegexDSLTests: XCTestCase {
       "c".capture() // Substring
     }
     // Assert the inferred capture type.
-    let _: Tuple3<Substring, Substring, Substring>.Type = type(of: regex).Match.self
+    let _: (Substring, Substring, Substring).Type = type(of: regex).Match.self
     let maybeMatch = "a c".match(regex)
     let match = try XCTUnwrap(maybeMatch)
-    XCTAssertTrue(match.match == Tuple3("a c", " ", "c"))
+    XCTAssertTrue(match.match == ("a c", " ", "c"))
   }
 
   func testCombinators() throws {
@@ -54,13 +53,13 @@ class RegexDSLTests: XCTestCase {
       ("t" | "k").capture() // Substring
     }
     // Assert the inferred capture type.
-    let _: Tuple5<Substring, Substring, Substring, [Substring], Substring>.Type
+    let _: (Substring, Substring, Substring, [Substring], Substring).Type
       = type(of: regex).Match.self
     let maybeMatch = "aaaabccccdddk".match(regex)
     let match = try XCTUnwrap(maybeMatch)
     XCTAssertTrue(
       match.match
-        == Tuple5("aaaabccccdddk", "b", "cccc", ["d", "d", "d"], "k"))
+        == ("aaaabccccdddk", "b", "cccc", ["d", "d", "d"], "k"))
   }
 
   func testNestedGroups() throws {
@@ -74,7 +73,7 @@ class RegexDSLTests: XCTestCase {
       }
     }
     // Assert the inferred capture type.
-    let _: Tuple2<Substring, [Tuple3<Substring, Substring, [Substring]>]>.Type
+    let _: (Substring, [(Substring, Substring, [Substring])]).Type
       = type(of: regex).Match.self
     let maybeMatch = "aaaabccccddd".match(regex)
     let match = try XCTUnwrap(maybeMatch)
@@ -82,7 +81,7 @@ class RegexDSLTests: XCTestCase {
     XCTAssertEqual(match.match.0, "aaaabccccddd")
     XCTAssertTrue(
       match.match.1[0]
-        == Tuple3("b", "cccc", ["d", "d", "d"]))
+        == ("b", "cccc", ["d", "d", "d"]))
   }
 
   func testCapturelessQuantification() throws {
@@ -127,10 +126,10 @@ class RegexDSLTests: XCTestCase {
       }
     }
     // Assert the inferred capture type.
-    let _: Tuple3<Substring, Int?, [Word]>.Type = type(of: regex).Match.self
+    let _: (Substring, Int?, [Word]).Type = type(of: regex).Match.self
     do {
       let input = "aaa 123 apple orange apple"
-      let match = input.match(regex)?.match.tuple
+      let match = input.match(regex)?.match
       let (whole, number, words) = try XCTUnwrap(match)
       XCTAssertTrue(whole == input)
       XCTAssertEqual(number, 123)
@@ -138,7 +137,7 @@ class RegexDSLTests: XCTestCase {
     }
     do {
       let input = "aaa   "
-      let match = input.match(regex)?.match.tuple
+      let match = input.match(regex)?.match
       let (whole, number, words) = try XCTUnwrap(match)
       XCTAssertTrue(whole == input)
       XCTAssertEqual(number, nil)
@@ -154,7 +153,7 @@ class RegexDSLTests: XCTestCase {
         "e".?
       }.capture()
     }
-    let _: Tuple3<Substring, Substring, Substring>.Type
+    let _: (Substring, Substring, Substring).Type
       = type(of: regex1).Match.self
     let regex2 = Regex {
       "a".+
@@ -163,7 +162,7 @@ class RegexDSLTests: XCTestCase {
         "e".?
       }.capture()
     }
-    let _: Tuple3<Substring, Substring, [Int]>.Type
+    let _: (Substring, Substring, [Int]).Type
       = type(of: regex2).Match.self
     let regex3 = Regex {
       "a".+
@@ -173,7 +172,7 @@ class RegexDSLTests: XCTestCase {
         "e".?
       }.capture()
     }
-    let _: Tuple4<Substring, Substring, Int, [Double]>.Type
+    let _: (Substring, Substring, Int, [Double]).Type
       = type(of: regex3).Match.self
     let regex4 = Regex {
       "a".+
@@ -184,8 +183,8 @@ class RegexDSLTests: XCTestCase {
         "e".?
       }.capture()
     }
-    let _: Tuple3<
-      Substring, Substring, [Tuple3<Substring, Substring, [Substring]>]>.Type
+    let _: (
+      Substring, Substring, [(Substring, Substring, [Substring])]).Type
       = type(of: regex4).Match.self
   }
 
@@ -223,7 +222,7 @@ class RegexDSLTests: XCTestCase {
     }
 
     // Assert the inferred capture type.
-    let _: Tuple2<Substring, Substring>.Type = type(of: unicodeData).Match.self
+    let _: (Substring, Substring).Type = type(of: unicodeData).Match.self
 
     let unicodeLine =
       "1BCA0..1BCA3  ; Control # Cf   [4] SHORTHAND FORMAT LETTER OVERLAP..SHORTHAND FORMAT UP STEP"
@@ -251,13 +250,13 @@ class RegexDSLTests: XCTestCase {
     } // Regex<(Substring, Unicode.Scalar?, Unicode.Scalar??, Substring)>
     do {
       // Assert the inferred capture type.
-      typealias ExpectedMatch = Tuple4<
+      typealias ExpectedMatch = (
         Substring, Unicode.Scalar?, Unicode.Scalar??, Substring
-      >
+      )
       let _: ExpectedMatch.Type = type(of: regexWithCapture).Match.self
       let maybeMatchResult = line.match(regexWithCapture)
       let matchResult = try XCTUnwrap(maybeMatchResult)
-      let (wholeMatch, lower, upper, propertyString) = matchResult.match.tuple
+      let (wholeMatch, lower, upper, propertyString) = matchResult.match
       XCTAssertEqual(wholeMatch, Substring(line))
       XCTAssertEqual(lower, Unicode.Scalar(0xA6F0))
       XCTAssertEqual(upper, Unicode.Scalar(0xA6F1))
@@ -278,13 +277,13 @@ class RegexDSLTests: XCTestCase {
     } // Regex<(Substring, Unicode.Scalar, Unicode.Scalar?, Substring)>
     do {
       // Assert the inferred capture type.
-      typealias ExpectedMatch = Tuple4<
+      typealias ExpectedMatch = (
         Substring, Unicode.Scalar, Unicode.Scalar?, Substring
-      >
+      )
       let _: ExpectedMatch.Type = type(of: regexWithTryCapture).Match.self
       let maybeMatchResult = line.match(regexWithTryCapture)
       let matchResult = try XCTUnwrap(maybeMatchResult)
-      let (wholeMatch, lower, upper, propertyString) = matchResult.match.tuple
+      let (wholeMatch, lower, upper, propertyString) = matchResult.match
       XCTAssertEqual(wholeMatch, Substring(line))
       XCTAssertEqual(lower, Unicode.Scalar(0xA6F0))
       XCTAssertEqual(upper, Unicode.Scalar(0xA6F1))
@@ -294,10 +293,10 @@ class RegexDSLTests: XCTestCase {
     do {
       let regexLiteral = try MockRegexLiteral(
         #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
-        matching: Tuple4<Substring, Substring, Substring?, Substring>.self)
+        matching: (Substring, Substring, Substring?, Substring).self)
       let maybeMatchResult = line.match(regexLiteral)
       let matchResult = try XCTUnwrap(maybeMatchResult)
-      let (wholeMatch, lower, upper, propertyString) = matchResult.match.tuple
+      let (wholeMatch, lower, upper, propertyString) = matchResult.match
       XCTAssertEqual(wholeMatch, Substring(line))
       XCTAssertEqual(lower, "A6F0")
       XCTAssertEqual(upper, "A6F1")

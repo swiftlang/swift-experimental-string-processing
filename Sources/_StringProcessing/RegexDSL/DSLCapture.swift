@@ -10,93 +10,97 @@
 //===----------------------------------------------------------------------===//
 
 extension RegexProtocol {
-  public func capture() -> CapturingGroup<Tuple2<Substring, Substring>> where Match.Capture: EmptyCaptureProtocol {
+  @_disfavoredOverload
+  public func capture() -> CapturingGroup<(Substring, Substring)> {
     .init(self)
   }
 
+  @_disfavoredOverload
   public func capture<NewCapture>(
     _ transform: @escaping (Substring) -> NewCapture
-  ) -> CapturingGroup<Tuple2<Substring, NewCapture>> where Match.Capture: EmptyCaptureProtocol {
+  ) -> CapturingGroup<(Substring, NewCapture)> {
     .init(self, transform: transform)
   }
 
+  @_disfavoredOverload
   public func tryCapture<NewCapture>(
     _ transform: @escaping (Substring) throws -> NewCapture
-  ) -> CapturingGroup<Tuple2<Substring, NewCapture>> where Match.Capture: EmptyCaptureProtocol {
+  ) -> CapturingGroup<(Substring, NewCapture)> {
     .init(self, transform: transform)
   }
 
+  @_disfavoredOverload
   public func tryCapture<NewCapture>(
     _ transform: @escaping (Substring) -> NewCapture?
-  ) -> CapturingGroup<Tuple2<Substring, NewCapture>> where Match.Capture: EmptyCaptureProtocol {
+  ) -> CapturingGroup<(Substring, NewCapture)> {
     .init(self, transform: transform)
   }
 
-  public func capture<C0>() -> CapturingGroup<Tuple3<Substring, Substring, C0>>
-  where Match.Capture == C0 {
+  public func capture<W, C0>() -> CapturingGroup<(Substring, Substring, C0)>
+  where Match == (W, C0) {
     .init(self)
   }
 
-  public func capture<NewCapture, C0>(
+  public func capture<NewCapture, W, C0>(
     _ transform: @escaping (Substring) -> NewCapture
-  ) -> CapturingGroup<Tuple3<Substring, NewCapture, C0>> where Match.Capture == C0 {
+  ) -> CapturingGroup<(Substring, NewCapture, C0)> where Match == (W, C0) {
     .init(self, transform: transform)
   }
 
-  public func tryCapture<NewCapture, C0>(
+  public func tryCapture<NewCapture, W, C0>(
     _ transform: @escaping (Substring) throws -> NewCapture
-  ) -> CapturingGroup<Tuple3<Substring, NewCapture, C0>> where Match.Capture == C0 {
+  ) -> CapturingGroup<(Substring, NewCapture, C0)> where Match == (W, C0) {
     .init(self, transform: transform)
   }
 
-  public func tryCapture<NewCapture, C0>(
+  public func tryCapture<NewCapture, W, C0>(
     _ transform: @escaping (Substring) -> NewCapture?
-  ) -> CapturingGroup<Tuple3<Substring, NewCapture, C0>> where Match.Capture == C0 {
+  ) -> CapturingGroup<(Substring, NewCapture, C0)> where Match == (W, C0) {
     .init(self, transform: transform)
   }
 
-  public func capture<C0, C1>() -> CapturingGroup<Tuple4<Substring, Substring, C0, C1>> where Match.Capture == Tuple2<C0, C1> {
+  public func capture<W, C0, C1>() -> CapturingGroup<(Substring, Substring, C0, C1)> where Match == (W, C0, C1) {
     .init(self)
   }
 
-  public func capture<NewCapture, C0, C1>(
+  public func capture<NewCapture, W, C0, C1>(
     _ transform: @escaping (Substring) -> NewCapture
-  ) -> CapturingGroup<Tuple4<Substring, NewCapture, C0, C1>> where Match.Capture == Tuple2<C0, C1> {
+  ) -> CapturingGroup<(Substring, NewCapture, C0, C1)> where Match == (W, C0, C1) {
     .init(self, transform: transform)
   }
 
-  public func tryCapture<NewCapture, C0, C1>(
+  public func tryCapture<NewCapture, W, C0, C1>(
     _ transform: @escaping (Substring) throws -> NewCapture
-  ) -> CapturingGroup<Tuple4<Substring, NewCapture, C0, C1>> where Match.Capture == Tuple2<C0, C1> {
+  ) -> CapturingGroup<(Substring, NewCapture, C0, C1)> where Match == (W, C0, C1) {
     .init(self, transform: transform)
   }
 
-  public func tryCapture<NewCapture, C0, C1>(
+  public func tryCapture<NewCapture, W, C0, C1>(
     _ transform: @escaping (Substring) -> NewCapture?
-  ) -> CapturingGroup<Tuple4<Substring, NewCapture, C0, C1>> where Match.Capture == Tuple2<C0, C1> {
+  ) -> CapturingGroup<(Substring, NewCapture, C0, C1)> where Match == (W, C0, C1) {
     .init(self, transform: transform)
   }
 
-  public func capture<C0, C1, C2>() -> CapturingGroup<Tuple5<Substring, Substring, C0, C1, C2>>
-  where Match.Capture == Tuple3<C0, C1, C2> {
+  public func capture<W, C0, C1, C2>() -> CapturingGroup<(Substring, Substring, C0, C1, C2)>
+  where Match == (W, C0, C1, C2) {
     .init(self)
   }
 
-  public func capture<NewCapture, C0, C1, C2>(
+  public func capture<NewCapture, W, C0, C1, C2>(
     _ transform: @escaping (Substring) -> NewCapture
-  ) -> CapturingGroup<Tuple5<Substring, NewCapture, C0, C1, C2>> where Match.Capture == Tuple3<C0, C1, C2> {
+  ) -> CapturingGroup<(Substring, NewCapture, C0, C1, C2)> where Match == (W, C0, C1, C2) {
     .init(self, transform: transform)
   }
 
-  public func tryCapture<NewCapture, C0, C1, C2>(
+  public func tryCapture<NewCapture, W, C0, C1, C2>(
     _ transform: @escaping (Substring) throws -> NewCapture
-  ) -> CapturingGroup<Tuple5<Substring, NewCapture, C0, C1, C2>> where Match.Capture == Tuple3<C0, C1, C2> {
+  ) -> CapturingGroup<(Substring, NewCapture, C0, C1, C2)> where Match == (W, C0, C1, C2) {
     .init(self, transform: transform)
   }
 
-  public func tryCapture<NewCapture, C0, C1, C2>(
+  public func tryCapture<NewCapture, W, C0, C1, C2>(
     _ transform: @escaping (Substring) -> NewCapture?
-  ) -> CapturingGroup<Tuple5<Substring, NewCapture, C0, C1, C2>> where Match.Capture == Tuple3<C0, C1, C2> {
+  ) -> CapturingGroup<(Substring, NewCapture, C0, C1, C2)> where Match == (W, C0, C1, C2) {
     .init(self, transform: transform)
   }
 }

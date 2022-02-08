@@ -11,7 +11,7 @@
 
 import _MatchingEngine
 
-extension Regex where Match == Tuple2<Substring, DynamicCaptures> {
+extension Regex where Match == (Substring, DynamicCaptures) {
   public init(_ pattern: String) throws {
     self.init(ast: try parse(pattern, .traditional))
   }
