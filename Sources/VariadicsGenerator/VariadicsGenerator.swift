@@ -538,52 +538,65 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       // MARK: - Non-builder capture arity \(arity)
 
-      public func capture<\(genericParams)>(_ component: R) -> \(regexTypeName)<\(newMatchType(newCaptureType: "W"))> \(whereClause) {
-        .init(node: .group(.capture, component.regex.root))
+      public func capture<\(genericParams)>(
+        _ component: R, as reference: Reference? = nil
+      ) -> \(regexTypeName)<\(newMatchType(newCaptureType: "W"))> \(whereClause) {
+        .init(node: .group(.capture, component.regex.root, reference?.id))
       }
 
       public func capture<\(genericParams), NewCapture>(
-        _ component: R, transform: @escaping (Substring) -> NewCapture
+        _ component: R,
+        as reference: Reference? = nil,
+        transform: @escaping (Substring) -> NewCapture
       ) -> \(regexTypeName)<\(newMatchType(newCaptureType: "NewCapture"))> \(whereClause) {
         .init(node: .groupTransform(
           .capture,
           component.regex.root,
           CaptureTransform(resultType: NewCapture.self) {
             transform($0) as Any
-          }))
+          },
+          reference?.id))
       }
 
       public func tryCapture<\(genericParams), NewCapture>(
-        _ component: R, transform: @escaping (Substring) throws -> NewCapture
+        _ component: R,
+        as reference: Reference? = nil,
+        transform: @escaping (Substring) throws -> NewCapture
       ) -> \(regexTypeName)<\(newMatchType(newCaptureType: "NewCapture"))> \(whereClause) {
         .init(node: .groupTransform(
           .capture,
           component.regex.root,
           CaptureTransform(resultType: NewCapture.self) {
             try transform($0) as Any
-          }))
+          },
+          reference?.id))
       }
 
       public func tryCapture<\(genericParams), NewCapture>(
-        _ component: R, transform: @escaping (Substring) -> NewCapture?
+        _ component: R,
+        as reference: Reference? = nil,
+        transform: @escaping (Substring) -> NewCapture?
       ) -> \(regexTypeName)<\(newMatchType(newCaptureType: "NewCapture"))> \(whereClause) {
         .init(node: .groupTransform(
           .capture,
           component.regex.root,
           CaptureTransform(resultType: NewCapture.self) {
             transform($0) as Any?
-          }))
+          },
+          reference?.id))
       }
 
       // MARK: - Builder capture arity \(arity)
 
       public func capture<\(genericParams)>(
+        as reference: Reference? = nil,
         @RegexBuilder _ component: () -> R
       ) -> \(regexTypeName)<\(newMatchType(newCaptureType: "W"))> \(whereClause) {
-        .init(node: .group(.capture, component().regex.root))
+        .init(node: .group(.capture, component().regex.root, reference?.id))
       }
 
       public func capture<\(genericParams), NewCapture>(
+        as reference: Reference? = nil,
         @RegexBuilder _ component: () -> R,
         transform: @escaping (Substring) -> NewCapture
       ) -> \(regexTypeName)<\(newMatchType(newCaptureType: "NewCapture"))> \(whereClause) {
@@ -592,10 +605,12 @@ struct VariadicsGenerator: ParsableCommand {
           component().regex.root,
           CaptureTransform(resultType: NewCapture.self) {
             transform($0) as Any
-          }))
+          },
+          reference?.id))
       }
 
       public func tryCapture<\(genericParams), NewCapture>(
+        as reference: Reference? = nil,
         @RegexBuilder _ component: () -> R,
         transform: @escaping (Substring) throws -> NewCapture
       ) -> \(regexTypeName)<\(newMatchType(newCaptureType: "NewCapture"))> \(whereClause) {
@@ -604,10 +619,12 @@ struct VariadicsGenerator: ParsableCommand {
           component().regex.root,
           CaptureTransform(resultType: NewCapture.self) {
             try transform($0) as Any
-          }))
+          },
+          reference?.id))
       }
 
       public func tryCapture<\(genericParams), NewCapture>(
+        as reference: Reference? = nil,
         @RegexBuilder _ component: () -> R,
         transform: @escaping (Substring) -> NewCapture?
       ) -> \(regexTypeName)<\(newMatchType(newCaptureType: "NewCapture"))> \(whereClause) {
@@ -616,7 +633,8 @@ struct VariadicsGenerator: ParsableCommand {
           component().regex.root,
           CaptureTransform(resultType: NewCapture.self) {
             transform($0) as Any?
-          }))
+          },
+          reference?.id))
       }
 
       """)

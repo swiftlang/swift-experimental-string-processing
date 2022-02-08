@@ -87,9 +87,10 @@ extension PrettyPrinter {
         }
       }
 
-    case let .group(kind, child):
+    case let .group(kind, child, referenceID):
       let kind = kind._patternBase
-      printBlock("Group(\(kind))") { printer in
+      let refIDString = referenceID.map { ", referenceID: \($0)" } ?? ""
+      printBlock("Group(\(kind)\(refIDString)") { printer in
         printer.printAsPattern(convertedFromAST: child)
       }
 
@@ -123,7 +124,9 @@ extension PrettyPrinter {
       case .assertion:
         print("/* TODO: assertions */")
       case .backreference:
-        print("/* TODO: backreferences */")
+        print("/* TOOD: backreferences */")
+      case .symbolicReference:
+        print("/* TOOD: symbolic references */")
       }
 
     case .trivia:

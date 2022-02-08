@@ -93,6 +93,10 @@ extension DSLTree.Atom {
       // TODO: Should we handle?
       return nil
 
+    case .symbolicReference:
+      // TODO: Should we handle?
+      return nil
+
     case let .unconverted(a):
       return try a.generateConsumer(opts)
     }

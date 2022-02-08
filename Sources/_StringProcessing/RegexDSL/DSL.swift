@@ -184,3 +184,25 @@ public func choiceOf<R: RegexProtocol>(
 ) -> R {
   builder()
 }
+
+// MARK: - Backreference
+
+public struct Reference: RegexProtocol {
+  // FIXME: Public for prototypes.
+  public struct ID: Hashable, Equatable {
+    private static var counter: Int = 0
+    var base: Int
+    init() {
+      base = ID.counter
+      ID.counter += 1
+    }
+  }
+
+  let id = ID()
+  
+  public init() {}
+
+  public var regex: Regex<Substring> {
+    .init(node: .atom(.symbolicReference(id)))
+  }
+}
