@@ -131,6 +131,29 @@ class RegexDSLTests: XCTestCase {
     XCTAssertEqual(match.5, .none)
     XCTAssertEqual(match.6, .some("j"))
   }
+  
+  func testAssertions() throws {
+    let regex = Regex {
+      Assertion.startOfLine
+      "a".+
+      "b"
+      Assertion.endOfLine
+    }
+    let _: Substring.Type = type(of: regex).Match.self
+    XCTAssertNotNil("aaaaab".match(regex))
+    XCTAssertNil("caaaaab".match(regex))
+    XCTAssertNil("aaaaabc".match(regex))
+    
+    let regex2 = Regex {
+      "a".+
+      Assertion.lookahead(CharacterClass.digit)
+      CharacterClass.word
+    }
+    let _: Substring.Type = type(of: regex2).Match.self
+    XCTAssertNotNil("aaaaa1".match(regex2))
+    XCTAssertNil("aaaaa".match(regex2))
+    XCTAssertNil("aaaaab".match(regex2))
+  }
 
   func testNestedGroups() throws {
     let regex = Regex {

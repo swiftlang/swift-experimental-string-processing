@@ -206,3 +206,67 @@ public struct CapturingGroup<Match>: RegexProtocol {
       })
   }
 }
+
+// MARK: - Assertions
+
+public struct Assertion: RegexProtocol {
+  public var regex: Regex<Substring>
+  
+  public static var startOfSubject: Assertion {
+    Assertion(regex: Regex(node: .atom(.assertion(.startOfSubject))))
+  }
+
+  public static var endOfSubjectBeforeNewline: Assertion {
+    Assertion(regex: Regex(node: .atom(.assertion(.endOfSubjectBeforeNewline))))
+  }
+
+  public static var endOfSubject: Assertion {
+    Assertion(regex: Regex(node: .atom(.assertion(.endOfSubject))))
+  }
+
+  public static var resetStartOfMatch: Assertion {
+    Assertion(regex: Regex(node: .atom(.assertion(.resetStartOfMatch))))
+  }
+
+  public static var firstMatchingPositionInSubject: Assertion {
+    Assertion(regex: Regex(node: .atom(.assertion(.firstMatchingPositionInSubject))))
+  }
+
+  public static var textSegmentBoundary: Assertion {
+    Assertion(regex: Regex(node: .atom(.assertion(.textSegment))))
+  }
+  
+  public static var notTextSegmentBoundary: Assertion {
+    Assertion(regex: Regex(node: .atom(.assertion(.notTextSegment))))
+  }
+
+  public static var startOfLine: Assertion {
+    Assertion(regex: Regex(node: .atom(.assertion(.startOfLine))))
+  }
+
+  public static var endOfLine: Assertion {
+    Assertion(regex: Regex(node: .atom(.assertion(.endOfLine))))
+  }
+
+  public static var wordBoundary: Assertion {
+    Assertion(regex: Regex(node: .atom(.assertion(.wordBoundary))))
+  }
+
+  public static var notWordBoundary: Assertion {
+    Assertion(regex: Regex(node: .atom(.assertion(.notWordBoundary))))
+  }
+}
+
+extension Assertion {
+  public static func lookahead<R: RegexProtocol>(
+    @RegexBuilder _ content: () -> R
+  ) -> Assertion {
+    lookahead(content())
+  }
+  
+  public static func lookahead<R: RegexProtocol>(_ component: R) -> Assertion {
+    Assertion(regex: Regex(node: .group(.lookahead, component.regex.root)))
+  }
+}
+
+
