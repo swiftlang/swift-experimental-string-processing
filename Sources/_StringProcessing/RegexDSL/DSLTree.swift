@@ -493,4 +493,11 @@ extension DSLTree.Node {
     }
     return .concatenation([self, newNode])
   }
+
+  func appendingAlternationCase(_ newNode: DSLTree.Node) -> DSLTree.Node {
+    if case .alternation(let components) = self {
+      return .alternation(components + [newNode])
+    }
+    return .alternation([self, newNode])
+  }
 }
