@@ -129,7 +129,7 @@ extension RECode {
       topLevelCaptures = top
     }
 
-    mutating func captureNil(childType: AnyCaptureType) {
+    mutating func captureNil(childType: AnyType) {
       topLevelCaptures = [.none(childType: childType)]
     }
 
@@ -137,7 +137,7 @@ extension RECode {
       topLevelCaptures = [.some(.tupleOrAtom(topLevelCaptures))]
     }
 
-    mutating func captureArray(childType: AnyCaptureType) {
+    mutating func captureArray(childType: AnyType) {
       topLevelCaptures = [.array(topLevelCaptures, childType: childType)]
     }
 

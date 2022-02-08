@@ -17,15 +17,15 @@ enum Capture {
   case atom(Any)
   indirect case tuple([Capture])
   indirect case some(Capture)
-  case none(childType: AnyCaptureType)
-  indirect case array([Capture], childType: AnyCaptureType)
+  case none(childType: AnyType)
+  indirect case array([Capture], childType: AnyType)
 
   static func none(childType: Any.Type) -> Capture {
-    .none(childType: AnyCaptureType(childType))
+    .none(childType: AnyType(childType))
   }
 
   static func array(_ children: [Capture], childType: Any.Type) -> Capture {
-    .array(children, childType: AnyCaptureType(childType))
+    .array(children, childType: AnyType(childType))
   }
 }
 
@@ -77,19 +77,44 @@ extension Capture {
   }
 }
 
-/// A wrapper of an existential metatype, equatable and hashable by reference.
-struct AnyCaptureType: Equatable, Hashable {
-  var base: Any.Type
-
-  init(_ type: Any.Type) {
-    base = type
+extension Capture: CustomStringConvertible {
+  public var description: String {
+    var printer = PrettyPrinter()
+    _print(&printer)
+    return printer.finish()
   }
 
-  static func == (lhs: AnyCaptureType, rhs: AnyCaptureType) -> Bool {
-    lhs.base == rhs.base
-  }
+  private func _print(_ printer: inout PrettyPrinter) {
+    switch self {
+    case let .atom(n):
+      printer.print("Atom(\(n))")
+    case let .tuple(ns):
+      if ns.isEmpty {
+        printer.print("Tuple()")
+        return
+      }
 
-  func hash(into hasher: inout Hasher) {
-    hasher.combine(ObjectIdentifier(base))
+      printer.printBlock("Tuple") { printer in
+        for n in ns {
+          n._print(&printer)
+        }
+      }
+
+    case let .some(n):
+      printer.printBlock("Tuple") { printer in
+        n._print(&printer)
+      }
+
+    case let .none(childType):
+      printer.print("None(\(childType))")
+
+    case let .array(ns, childType):
+      printer.printBlock("Array(\(childType))") { printer in
+        for n in ns {
+          n._print(&printer)
+        }
+      }
+
+    }
   }
 }
