@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// swift run VariadicsGenerator --max-arity 7 > Sources/_StringProcessing/RegexDSL/Concatenation.swift
+// swift run VariadicsGenerator --max-arity 10 > Sources/_StringProcessing/RegexDSL/Variadics.swift
 
 import ArgumentParser
 #if os(macOS)
@@ -96,7 +96,7 @@ let matchAssociatedTypeName = "Match"
 let captureAssociatedTypeName = "Capture"
 let patternBuilderTypeName = "RegexBuilder"
 let patternProtocolRequirementName = "regex"
-let PatternTypeBaseName = "Regex"
+let regexTypeName = "Regex"
 let baseMatchTypeName = "Substring"
 
 @main
@@ -205,111 +205,62 @@ struct VariadicsGenerator: ParsableCommand {
   }
 
   func emitConcatenation(leftArity: Int, rightArity: Int) {
-    func emitGenericParameters(withConstraints: Bool) {
-      output("W0, W1")
-      outputForEach(0..<leftArity+rightArity) {
+    func genericParameters(withConstraints: Bool) -> String {
+      var result = "W0, W1"
+      result += (0..<leftArity+rightArity).map {
         ", C\($0)"
-      }
-      output(", ")
+      }.joined()
+      result += ", "
       if withConstraints {
-        output("R0: \(regexProtocolName), R1: \(regexProtocolName)")
+        result += "R0: \(regexProtocolName), R1: \(regexProtocolName)"
       } else {
-        output("R0, R1")
+        result += "R0, R1"
       }
+      return result
     }
 
     // Emit concatenation type declaration.
 
-    // public struct Concatenation2<W0, W1, C0, C1, R0: RegexProtocol, R1: RegexProtocol>: RegexProtocol
-    // where R0.Match == (W0, C0), R1.Match == (W1, C1)
-    // {
-    //   public typealias Match = (Substring, C0, C1)
-    //
-    //   public let regex: Regex<(Substring, C0, C1)>
-    //
-    //   public init(_ r0: R0, _ r1: R1) {
-    //     self.regex = .init(node: r0.regex.root.appending(r1.regex.root))
-    //   }
-    // }
-    //
-    // extension RegexBuilder {
-    //   static func buildBlock<W0, W1, C0, C1, Combined: RegexProtocol, Next: RegexProtocol>(
-    //     combining next: Next, into combined: Combined
-    //   ) -> Concatenation2<W0, W1, C0, C1, Combined, Next> {
-    //     .init(combined, next)
-    //   }
-    // }
+    let whereClause: String = {
+      var result = " where R0.Match == "
+      if leftArity == 0 {
+        result += "W0"
+      } else {
+        result += "(W0"
+        result += (0..<leftArity).map { ", C\($0)" }.joined()
+        result += ")"
+      }
+      result += ", R1.Match == "
+      if rightArity == 0 {
+        result += "W1"
+      } else {
+        result += "(W1"
+        result += (leftArity..<leftArity+rightArity).map { ", C\($0)" }.joined()
+        result += ")"
+      }
+      return result
+    }()
 
-    //   public struct Concatenation{n}<...>: RegexProtocol {
-    //     public typealias Match = ...
-    //     public let regex: Regex<Match>
-    //     public init(...) { ... }
-    //   }
-
-    let typeName = "\(concatenationStructTypeBaseName)_\(leftArity)_\(rightArity)"
-    output("public struct \(typeName)<\n  ")
-    emitGenericParameters(withConstraints: true)
-    output("\n>: \(regexProtocolName)")
-    output(" where ")
-    output("R0.Match == ")
-    if leftArity == 0 {
-      output("W0")
-    } else {
-      output("(W0")
-      outputForEach(0..<leftArity) {
-        ", C\($0)"
+    let matchType: String = {
+      if leftArity+rightArity == 0 {
+        return baseMatchTypeName
+      } else {
+        return "(\(baseMatchTypeName), "
+          + (0..<leftArity+rightArity).map { "C\($0)" }.joined(separator: ", ")
+          + ")"
       }
-      output(")")
-    }
-    output(", R1.Match == ")
-    if rightArity == 0 {
-      output("W1")
-    } else {
-      output("(W1")
-      outputForEach(leftArity..<leftArity+rightArity) {
-        ", C\($0)"
-      }
-      output(")")
-    }
-    output(" {\n")
-    output("  public typealias \(matchAssociatedTypeName) = ")
-    if leftArity+rightArity == 0 {
-      output(baseMatchTypeName)
-    } else {
-      output("(\(baseMatchTypeName), ")
-      outputForEach(0..<leftArity+rightArity, separator: ", ") {
-        "C\($0)"
-      }
-      output(")")
-    }
-    output("\n")
-    output("  public let \(patternProtocolRequirementName): \(PatternTypeBaseName)<\(matchAssociatedTypeName)>\n")
-    output("""
-        init(_ r0: R0, _ r1: R1) {
-          self.regex = .init(node: r0.regex.root.appending(r1.regex.root))
-        }
-      }
-
-      """)
+    }()
 
     // Emit concatenation builder.
     output("extension \(patternBuilderTypeName) {\n")
     output("""
           @_disfavoredOverload
-          public static func buildBlock<
-        """)
-    emitGenericParameters(withConstraints: true)
-    output("""
-      >(
-          combining next: R1, into combined: R0
-        ) -> \(typeName)<
-      """)
-    emitGenericParameters(withConstraints: false)
-    output("""
-      > {
-          .init(combined, next)
+          public static func buildBlock<\(genericParameters(withConstraints: true))>(
+            combining next: R1, into combined: R0
+          ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+            .init(node: combined.regex.root.appending(next.regex.root))
+          }
         }
-      }
 
       """)
   }
@@ -327,7 +278,7 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       , R0: \(regexProtocolName), R1: \(regexProtocolName)>(
           combining next: R1, into combined: R0
-        ) -> Regex<
+        ) -> \(regexTypeName)<
       """)
     if leftArity == 0 {
       output(baseMatchTypeName)
@@ -361,14 +312,6 @@ struct VariadicsGenerator: ParsableCommand {
     case zeroOrOne = "optionally"
     case zeroOrMore = "many"
     case oneOrMore = "oneOrMore"
-
-    var typeName: String {
-      switch self {
-      case .zeroOrOne: return "_ZeroOrOne"
-      case .zeroOrMore: return "_ZeroOrMore"
-      case .oneOrMore: return "_OneOrMore"
-      }
-    }
 
     var operatorName: String {
       switch self {
@@ -404,7 +347,7 @@ struct VariadicsGenerator: ParsableCommand {
     }
     let captures = (0..<arity).map { "C\($0)" }.joined(separator: ", ")
     let capturesTupled = arity == 1 ? captures : "(\(captures))"
-    let componentConstraint: String = arity == 0 ? "" :
+    let whereClause: String = arity == 0 ? "" :
       "where Component.Match == (W, \(captures))"
     let quantifiedCaptures: String = {
       switch kind {
@@ -416,33 +359,25 @@ struct VariadicsGenerator: ParsableCommand {
     }()
     let matchType = arity == 0 ? baseMatchTypeName : "(\(baseMatchTypeName), \(quantifiedCaptures))"
     output("""
-      public struct \(kind.typeName)_\(arity)<\(genericParameters(withConstraints: true))>: \(regexProtocolName) \(componentConstraint) {
-        public typealias \(matchAssociatedTypeName) = \(matchType)
-        public let regex: Regex<\(matchAssociatedTypeName)>
-        public init(component: Component) {
-          self.regex = .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component.regex.root))
-        }
-      }
-
       \(arity == 0 ? "@_disfavoredOverload" : "")
       public func \(kind.rawValue)<\(genericParameters(withConstraints: true))>(
         _ component: Component
-      ) -> \(kind.typeName)_\(arity)<\(genericParameters(withConstraints: false))> {
-        .init(component: component)
+      ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+        .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component.regex.root))
       }
 
       \(arity == 0 ? "@_disfavoredOverload" : "")
       public func \(kind.rawValue)<\(genericParameters(withConstraints: true))>(
         @RegexBuilder _ component: () -> Component
-      ) -> \(kind.typeName)_\(arity)<\(genericParameters(withConstraints: false))> {
-        \(kind.rawValue)(component())
+      ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+        .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component().regex.root))
       }
 
       \(arity == 0 ? "@_disfavoredOverload" : "")
       public postfix func \(kind.operatorName)<\(genericParameters(withConstraints: true))>(
         _ component: Component
-      ) -> \(kind.typeName)_\(arity)<\(genericParameters(withConstraints: false))> {
-        \(kind.rawValue)(component)
+      ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+        .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component.regex.root))
       }
 
       \(kind == .zeroOrOne ?
@@ -450,8 +385,8 @@ struct VariadicsGenerator: ParsableCommand {
         extension RegexBuilder {
           public static func buildLimitedAvailability<\(genericParameters(withConstraints: true))>(
             _ component: Component
-          ) -> \(kind.typeName)_\(arity)<\(genericParameters(withConstraints: false))> {
-            \(kind.rawValue)(component)
+          ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+            .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component.regex.root))
           }
         }
         """ : "")
@@ -460,7 +395,6 @@ struct VariadicsGenerator: ParsableCommand {
   }
 
   func emitAlternation(leftArity: Int, rightArity: Int) {
-    let typeName = "_Alternation_\(leftArity)_\(rightArity)"
     let leftGenParams: String = {
       if leftArity == 0 {
         return "R0"
@@ -499,23 +433,16 @@ struct VariadicsGenerator: ParsableCommand {
       return "(\(baseMatchTypeName), \(resultCaptures))"
     }()
     output("""
-      public struct \(typeName)<\(genericParams)>: \(regexProtocolName) \(whereClause) {
-        public typealias Match = \(matchType)
-        public let regex: Regex<Match>
-
-        public init(_ left: R0, _ right: R1) {
-          self.regex = .init(node: left.regex.root.appendingAlternationCase(right.regex.root))
-        }
-      }
-
       extension AlternationBuilder {
-        public static func buildBlock<\(genericParams)>(combining next: R1, into combined: R0) -> \(typeName)<\(genericParams)> {
-          .init(combined, next)
+        public static func buildBlock<\(genericParams)>(
+          combining next: R1, into combined: R0
+        ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+          .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
         }
       }
 
-      public func | <\(genericParams)>(lhs: R0, rhs: R1) -> \(typeName)<\(genericParams)> {
-        .init(lhs, rhs)
+      public func | <\(genericParams)>(lhs: R0, rhs: R1) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+        .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
       }
 
       """)
@@ -537,7 +464,7 @@ struct VariadicsGenerator: ParsableCommand {
     let resultCaptures = (0..<arity).map { "C\($0)?" }.joined(separator: ", ")
     output("""
       extension AlternationBuilder {
-        public static func buildBlock<\(genericParams)>(_ regex: R) -> Regex<(W, \(resultCaptures))> \(whereClause) {
+        public static func buildBlock<\(genericParams)>(_ regex: R) -> \(regexTypeName)<(W, \(resultCaptures))> \(whereClause) {
           .init(node: .alternation([regex.regex.root]))
         }
       }
