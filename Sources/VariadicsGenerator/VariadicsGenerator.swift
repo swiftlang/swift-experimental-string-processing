@@ -174,6 +174,12 @@ struct VariadicsGenerator: ParsableCommand {
       emitUnaryAlternationBuildBlock(arity: arity)
     }
 
+    print("Generating 'capture' and 'tryCapture' overloads...", to: &standardError)
+    for arity in 0..<maxArity {
+      print("  Capture arity: \(arity)", to: &standardError)
+      emitCapture(arity: arity)
+    }
+
     output("\n\n")
 
     output("// END AUTO-GENERATED CONTENT\n")
@@ -469,6 +475,107 @@ struct VariadicsGenerator: ParsableCommand {
         }
       }
       
+      """)
+  }
+
+  func emitCapture(arity: Int) {
+    let genericParams = arity == 0
+      ? "R: \(regexProtocolName), W"
+      : "R: \(regexProtocolName), W, " + (0..<arity).map { "C\($0)" }.joined(separator: ", ")
+    let matchType = arity == 0
+      ? "W"
+      : "(W, " + (0..<arity).map { "C\($0)" }.joined(separator: ", ") + ")"
+    func newMatchType(transformed: Bool) -> String {
+      let newCaptureType = transformed ? "NewCapture" : baseMatchTypeName
+      return arity == 0
+        ? "(W, \(newCaptureType))"
+        : "(W, \(newCaptureType), " + (0..<arity).map { "C\($0)" }.joined(separator: ", ") + ")"
+    }
+    let whereClause = "where R.\(matchAssociatedTypeName) == \(matchType)"
+    output("""
+      // MARK: - Non-builder capture arity \(arity)
+
+      public func capture<\(genericParams)>(_ component: R) -> \(regexTypeName)<\(newMatchType(transformed: false))> \(whereClause) {
+        .init(node: .group(.capture, component.regex.root))
+      }
+
+      public func capture<\(genericParams), NewCapture>(
+        _ component: R, transform: @escaping (Substring) -> NewCapture
+      ) -> \(regexTypeName)<\(newMatchType(transformed: true))> \(whereClause) {
+        .init(node: .groupTransform(
+          .capture,
+          component.regex.root,
+          CaptureTransform(resultType: NewCapture.self) {
+            transform($0) as Any
+          }))
+      }
+
+      public func tryCapture<\(genericParams), NewCapture>(
+        _ component: R, transform: @escaping (Substring) throws -> NewCapture
+      ) -> \(regexTypeName)<\(newMatchType(transformed: true))> \(whereClause) {
+        .init(node: .groupTransform(
+          .capture,
+          component.regex.root,
+          CaptureTransform(resultType: NewCapture.self) {
+            try transform($0) as Any
+          }))
+      }
+
+      public func tryCapture<\(genericParams), NewCapture>(
+        _ component: R, transform: @escaping (Substring) -> NewCapture?
+      ) -> \(regexTypeName)<\(newMatchType(transformed: true))> \(whereClause) {
+        .init(node: .groupTransform(
+          .capture,
+          component.regex.root,
+          CaptureTransform(resultType: NewCapture.self) {
+            transform($0) as Any?
+          }))
+      }
+
+      // MARK: - Builder capture arity \(arity)
+
+      public func capture<\(genericParams)>(
+        @RegexBuilder _ component: () -> R
+      ) -> \(regexTypeName)<\(newMatchType(transformed: false))> \(whereClause) {
+        .init(node: .group(.capture, component().regex.root))
+      }
+
+      public func capture<\(genericParams), NewCapture>(
+        @RegexBuilder _ component: () -> R,
+        transform: @escaping (Substring) -> NewCapture
+      ) -> \(regexTypeName)<\(newMatchType(transformed: true))> \(whereClause) {
+        .init(node: .groupTransform(
+          .capture,
+          component().regex.root,
+          CaptureTransform(resultType: NewCapture.self) {
+            transform($0) as Any
+          }))
+      }
+
+      public func tryCapture<\(genericParams), NewCapture>(
+        @RegexBuilder _ component: () -> R,
+        transform: @escaping (Substring) throws -> NewCapture
+      ) -> \(regexTypeName)<\(newMatchType(transformed: true))> \(whereClause) {
+        .init(node: .groupTransform(
+          .capture,
+          component().regex.root,
+          CaptureTransform(resultType: NewCapture.self) {
+            try transform($0) as Any
+          }))
+      }
+
+      public func tryCapture<\(genericParams), NewCapture>(
+        @RegexBuilder _ component: () -> R,
+        transform: @escaping (Substring) -> NewCapture?
+      ) -> \(regexTypeName)<\(newMatchType(transformed: true))> \(whereClause) {
+        .init(node: .groupTransform(
+          .capture,
+          component().regex.root,
+          CaptureTransform(resultType: NewCapture.self) {
+            transform($0) as Any?
+          }))
+      }
+
       """)
   }
 }
