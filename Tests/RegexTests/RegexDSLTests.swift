@@ -144,6 +144,40 @@ class RegexDSLTests: XCTestCase {
       oneOf { "k".capture(); "j".capture() } // (Substring?, Substring?)
     }
   }
+  
+  func testQuantificationKind() throws {
+    try _testDSLCaptures(
+      ("abc1def2", ("abc1def2", ["2"])),
+      captureType: (Substring, [Substring]).self, ==)
+    {
+      oneOrMore {
+        oneOrMore(.word)
+        CharacterClass.digit.capture()
+      }
+    }
+
+    try _testDSLCaptures(
+      ("abc1def2", ("abc1def2", ["1", "2"])),
+      captureType: (Substring, [Substring]).self, ==)
+    {
+      oneOrMore {
+        oneOrMore(.word, .reluctant)
+        CharacterClass.digit.capture()
+      }
+    }
+
+    try _testDSLCaptures(
+      ("abc1def2", ("abc1def2", ["1", "2"])),
+      captureType: (Substring, [Substring]).self, ==)
+    {
+      oneOrMore {
+        oneOrMore(.reluctant) {
+          CharacterClass.word
+        }
+        CharacterClass.digit.capture()
+      }
+    }
+  }
 
   func testNestedGroups() throws {
     try _testDSLCaptures(

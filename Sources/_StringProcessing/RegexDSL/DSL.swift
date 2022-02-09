@@ -62,6 +62,44 @@ extension CharacterClass: RegexProtocol {
 
 // Note: Quantifiers are currently gyb'd.
 
+/// Specifies how much to attempt to match when using a quantifier.
+public struct QuantificationKind {
+  internal enum Kind {
+    case eager
+    case reluctant
+    case possessive
+  }
+  
+  var kind: Kind
+  
+  internal var astKind: AST.Quantification.Kind {
+    switch kind {
+    case .eager: return .eager
+    case .reluctant: return .reluctant
+    case .possessive: return .possessive
+    }
+  }
+}
+
+extension QuantificationKind {
+  /// Match as much of the input string as possible, backtracking when
+  /// necessary.
+  public static var eager: QuantificationKind {
+    .init(kind: .eager)
+  }
+  
+  /// Match as little of the input string as possible, expanding the matched
+  /// region as necessary to complete a match.
+  public static var reluctant: QuantificationKind {
+    .init(kind: .reluctant)
+  }
+  
+  /// Match as much of the input string as possible, performing no backtracking.
+  public static var possessive: QuantificationKind {
+    .init(kind: .possessive)
+  }
+}
+
 // TODO: Variadic generics
 // struct _OneOrMore<W, C..., Component: RegexProtocol>
 // where R.Match == (W, C...)
@@ -99,16 +137,25 @@ postfix operator .*
 postfix operator .+
 
 // Overloads for quantifying over a character class.
-public func zeroOrOne(_ cc: CharacterClass) -> Regex<Substring> {
-  .init(node: .quantification(.zeroOrOne, .eager, cc.regex.root))
+public func zeroOrOne(
+  _ cc: CharacterClass,
+  _ kind: QuantificationKind = .eager
+) -> Regex<Substring> {
+  .init(node: .quantification(.zeroOrOne, kind.astKind, cc.regex.root))
 }
 
-public func many(_ cc: CharacterClass) -> Regex<Substring> {
-  .init(node: .quantification(.zeroOrMore, .eager, cc.regex.root))
+public func many(
+  _ cc: CharacterClass,
+  _ kind: QuantificationKind = .eager
+) -> Regex<Substring> {
+  .init(node: .quantification(.zeroOrMore, kind.astKind, cc.regex.root))
 }
 
-public func oneOrMore(_ cc: CharacterClass) -> Regex<Substring> {
-  .init(node: .quantification(.oneOrMore, .eager, cc.regex.root))
+public func oneOrMore(
+  _ cc: CharacterClass,
+  _ kind: QuantificationKind = .eager
+) -> Regex<Substring> {
+  .init(node: .quantification(.oneOrMore, kind.astKind, cc.regex.root))
 }
 
 // MARK: Alternation

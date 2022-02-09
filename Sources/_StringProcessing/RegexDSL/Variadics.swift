@@ -600,16 +600,18 @@ extension RegexBuilder {
 
 @_disfavoredOverload
 public func optionally<Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<Substring>  {
-  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component.regex.root))
 }
 
 @_disfavoredOverload
 public func optionally<Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<Substring>  {
-  .init(node: .quantification(.zeroOrOne, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component().regex.root))
 }
 
 @_disfavoredOverload
@@ -628,16 +630,18 @@ extension RegexBuilder {
 }
 @_disfavoredOverload
 public func many<Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<Substring>  {
-  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component.regex.root))
 }
 
 @_disfavoredOverload
 public func many<Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<Substring>  {
-  .init(node: .quantification(.zeroOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component().regex.root))
 }
 
 @_disfavoredOverload
@@ -650,16 +654,18 @@ public postfix func .+<Component: RegexProtocol>(
 
 @_disfavoredOverload
 public func oneOrMore<Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<Substring>  {
-  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component.regex.root))
 }
 
 @_disfavoredOverload
 public func oneOrMore<Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<Substring>  {
-  .init(node: .quantification(.oneOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component().regex.root))
 }
 
 @_disfavoredOverload
@@ -672,16 +678,18 @@ public postfix func .*<Component: RegexProtocol>(
 
 
 public func optionally<W, C0, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, C0?)> where Component.Match == (W, C0) {
-  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component.regex.root))
 }
 
 
 public func optionally<W, C0, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, C0?)> where Component.Match == (W, C0) {
-  .init(node: .quantification(.zeroOrOne, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component().regex.root))
 }
 
 
@@ -700,16 +708,18 @@ extension RegexBuilder {
 }
 
 public func many<W, C0, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [C0])> where Component.Match == (W, C0) {
-  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func many<W, C0, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [C0])> where Component.Match == (W, C0) {
-  .init(node: .quantification(.zeroOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -722,16 +732,18 @@ public postfix func .+<W, C0, Component: RegexProtocol>(
 
 
 public func oneOrMore<W, C0, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [C0])> where Component.Match == (W, C0) {
-  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func oneOrMore<W, C0, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [C0])> where Component.Match == (W, C0) {
-  .init(node: .quantification(.oneOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -744,16 +756,18 @@ public postfix func .*<W, C0, Component: RegexProtocol>(
 
 
 public func optionally<W, C0, C1, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, (C0, C1)?)> where Component.Match == (W, C0, C1) {
-  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component.regex.root))
 }
 
 
 public func optionally<W, C0, C1, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, (C0, C1)?)> where Component.Match == (W, C0, C1) {
-  .init(node: .quantification(.zeroOrOne, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component().regex.root))
 }
 
 
@@ -772,16 +786,18 @@ extension RegexBuilder {
 }
 
 public func many<W, C0, C1, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1) {
-  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func many<W, C0, C1, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1) {
-  .init(node: .quantification(.zeroOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -794,16 +810,18 @@ public postfix func .+<W, C0, C1, Component: RegexProtocol>(
 
 
 public func oneOrMore<W, C0, C1, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1) {
-  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func oneOrMore<W, C0, C1, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1) {
-  .init(node: .quantification(.oneOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -816,16 +834,18 @@ public postfix func .*<W, C0, C1, Component: RegexProtocol>(
 
 
 public func optionally<W, C0, C1, C2, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, (C0, C1, C2)?)> where Component.Match == (W, C0, C1, C2) {
-  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component.regex.root))
 }
 
 
 public func optionally<W, C0, C1, C2, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, (C0, C1, C2)?)> where Component.Match == (W, C0, C1, C2) {
-  .init(node: .quantification(.zeroOrOne, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component().regex.root))
 }
 
 
@@ -844,16 +864,18 @@ extension RegexBuilder {
 }
 
 public func many<W, C0, C1, C2, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2) {
-  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func many<W, C0, C1, C2, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2) {
-  .init(node: .quantification(.zeroOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -866,16 +888,18 @@ public postfix func .+<W, C0, C1, C2, Component: RegexProtocol>(
 
 
 public func oneOrMore<W, C0, C1, C2, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2) {
-  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func oneOrMore<W, C0, C1, C2, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2) {
-  .init(node: .quantification(.oneOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -888,16 +912,18 @@ public postfix func .*<W, C0, C1, C2, Component: RegexProtocol>(
 
 
 public func optionally<W, C0, C1, C2, C3, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, (C0, C1, C2, C3)?)> where Component.Match == (W, C0, C1, C2, C3) {
-  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component.regex.root))
 }
 
 
 public func optionally<W, C0, C1, C2, C3, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, (C0, C1, C2, C3)?)> where Component.Match == (W, C0, C1, C2, C3) {
-  .init(node: .quantification(.zeroOrOne, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component().regex.root))
 }
 
 
@@ -916,16 +942,18 @@ extension RegexBuilder {
 }
 
 public func many<W, C0, C1, C2, C3, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3) {
-  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func many<W, C0, C1, C2, C3, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3) {
-  .init(node: .quantification(.zeroOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -938,16 +966,18 @@ public postfix func .+<W, C0, C1, C2, C3, Component: RegexProtocol>(
 
 
 public func oneOrMore<W, C0, C1, C2, C3, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3) {
-  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func oneOrMore<W, C0, C1, C2, C3, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3) {
-  .init(node: .quantification(.oneOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -960,16 +990,18 @@ public postfix func .*<W, C0, C1, C2, C3, Component: RegexProtocol>(
 
 
 public func optionally<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, (C0, C1, C2, C3, C4)?)> where Component.Match == (W, C0, C1, C2, C3, C4) {
-  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component.regex.root))
 }
 
 
 public func optionally<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, (C0, C1, C2, C3, C4)?)> where Component.Match == (W, C0, C1, C2, C3, C4) {
-  .init(node: .quantification(.zeroOrOne, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component().regex.root))
 }
 
 
@@ -988,16 +1020,18 @@ extension RegexBuilder {
 }
 
 public func many<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4) {
-  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func many<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4) {
-  .init(node: .quantification(.zeroOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -1010,16 +1044,18 @@ public postfix func .+<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
 
 
 public func oneOrMore<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4) {
-  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func oneOrMore<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4) {
-  .init(node: .quantification(.oneOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -1032,16 +1068,18 @@ public postfix func .*<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
 
 
 public func optionally<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, (C0, C1, C2, C3, C4, C5)?)> where Component.Match == (W, C0, C1, C2, C3, C4, C5) {
-  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component.regex.root))
 }
 
 
 public func optionally<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, (C0, C1, C2, C3, C4, C5)?)> where Component.Match == (W, C0, C1, C2, C3, C4, C5) {
-  .init(node: .quantification(.zeroOrOne, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component().regex.root))
 }
 
 
@@ -1060,16 +1098,18 @@ extension RegexBuilder {
 }
 
 public func many<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5) {
-  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func many<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5) {
-  .init(node: .quantification(.zeroOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -1082,16 +1122,18 @@ public postfix func .+<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
 
 
 public func oneOrMore<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5) {
-  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func oneOrMore<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5) {
-  .init(node: .quantification(.oneOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -1104,16 +1146,18 @@ public postfix func .*<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
 
 
 public func optionally<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, (C0, C1, C2, C3, C4, C5, C6)?)> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
-  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component.regex.root))
 }
 
 
 public func optionally<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, (C0, C1, C2, C3, C4, C5, C6)?)> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
-  .init(node: .quantification(.zeroOrOne, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component().regex.root))
 }
 
 
@@ -1132,16 +1176,18 @@ extension RegexBuilder {
 }
 
 public func many<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
-  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func many<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
-  .init(node: .quantification(.zeroOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -1154,16 +1200,18 @@ public postfix func .+<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
 
 
 public func oneOrMore<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
-  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func oneOrMore<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
-  .init(node: .quantification(.oneOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -1176,16 +1224,18 @@ public postfix func .*<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
 
 
 public func optionally<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, (C0, C1, C2, C3, C4, C5, C6, C7)?)> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component.regex.root))
 }
 
 
 public func optionally<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, (C0, C1, C2, C3, C4, C5, C6, C7)?)> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-  .init(node: .quantification(.zeroOrOne, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component().regex.root))
 }
 
 
@@ -1204,16 +1254,18 @@ extension RegexBuilder {
 }
 
 public func many<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func many<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-  .init(node: .quantification(.zeroOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -1226,16 +1278,18 @@ public postfix func .+<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtoc
 
 
 public func oneOrMore<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func oneOrMore<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-  .init(node: .quantification(.oneOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -1248,16 +1302,18 @@ public postfix func .*<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtoc
 
 
 public func optionally<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, (C0, C1, C2, C3, C4, C5, C6, C7, C8)?)> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component.regex.root))
 }
 
 
 public func optionally<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, (C0, C1, C2, C3, C4, C5, C6, C7, C8)?)> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-  .init(node: .quantification(.zeroOrOne, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrOne, kind.astKind, component().regex.root))
 }
 
 
@@ -1276,16 +1332,18 @@ extension RegexBuilder {
 }
 
 public func many<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func many<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-  .init(node: .quantification(.zeroOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.zeroOrMore, kind.astKind, component().regex.root))
 }
 
 
@@ -1298,16 +1356,18 @@ public postfix func .+<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexPr
 
 
 public func oneOrMore<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
-  _ component: Component
+  _ component: Component,
+  _ kind: QuantificationKind = .eager
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component.regex.root))
 }
 
 
 public func oneOrMore<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
+  _ kind: QuantificationKind = .eager,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-  .init(node: .quantification(.oneOrMore, .eager, component().regex.root))
+  .init(node: .quantification(.oneOrMore, kind.astKind, component().regex.root))
 }
 
 
