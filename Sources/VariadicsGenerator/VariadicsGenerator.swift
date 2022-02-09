@@ -354,14 +354,14 @@ struct VariadicsGenerator: ParsableCommand {
       \(arity == 0 ? "@_disfavoredOverload" : "")
       public func \(kind.rawValue)<\(genericParams)>(
         _ component: Component,
-        _ kind: QuantificationKind = .eager
+        _ kind: QuantificationBehavior = .eagerly
       ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
         .init(node: .quantification(.\(kind.astQuantifierAmount), kind.astKind, component.regex.root))
       }
 
       \(arity == 0 ? "@_disfavoredOverload" : "")
       public func \(kind.rawValue)<\(genericParams)>(
-        _ kind: QuantificationKind = .eager,
+        _ kind: QuantificationBehavior = .eagerly,
         @RegexBuilder _ component: () -> Component
       ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
         .init(node: .quantification(.\(kind.astQuantifierAmount), kind.astKind, component().regex.root))

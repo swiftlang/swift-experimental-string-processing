@@ -145,7 +145,7 @@ class RegexDSLTests: XCTestCase {
     }
   }
   
-  func testQuantificationKind() throws {
+  func testQuantificationBehavior() throws {
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", ["2"])),
       captureType: (Substring, [Substring]).self, ==)
@@ -161,7 +161,7 @@ class RegexDSLTests: XCTestCase {
       captureType: (Substring, [Substring]).self, ==)
     {
       oneOrMore {
-        oneOrMore(.word, .reluctant)
+        oneOrMore(.word, .reluctantly)
         CharacterClass.digit.capture()
       }
     }
@@ -171,7 +171,7 @@ class RegexDSLTests: XCTestCase {
       captureType: (Substring, [Substring]).self, ==)
     {
       oneOrMore {
-        oneOrMore(.reluctant) {
+        oneOrMore(.reluctantly) {
           CharacterClass.word
         }
         CharacterClass.digit.capture()

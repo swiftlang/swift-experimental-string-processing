@@ -63,40 +63,40 @@ extension CharacterClass: RegexProtocol {
 // Note: Quantifiers are currently gyb'd.
 
 /// Specifies how much to attempt to match when using a quantifier.
-public struct QuantificationKind {
+public struct QuantificationBehavior {
   internal enum Kind {
-    case eager
-    case reluctant
-    case possessive
+    case eagerly
+    case reluctantly
+    case possessively
   }
   
   var kind: Kind
   
   internal var astKind: AST.Quantification.Kind {
     switch kind {
-    case .eager: return .eager
-    case .reluctant: return .reluctant
-    case .possessive: return .possessive
+    case .eagerly: return .eager
+    case .reluctantly: return .reluctant
+    case .possessively: return .possessive
     }
   }
 }
 
-extension QuantificationKind {
+extension QuantificationBehavior {
   /// Match as much of the input string as possible, backtracking when
   /// necessary.
-  public static var eager: QuantificationKind {
-    .init(kind: .eager)
+  public static var eagerly: QuantificationBehavior {
+    .init(kind: .eagerly)
   }
   
   /// Match as little of the input string as possible, expanding the matched
   /// region as necessary to complete a match.
-  public static var reluctant: QuantificationKind {
-    .init(kind: .reluctant)
+  public static var reluctantly: QuantificationBehavior {
+    .init(kind: .reluctantly)
   }
   
   /// Match as much of the input string as possible, performing no backtracking.
-  public static var possessive: QuantificationKind {
-    .init(kind: .possessive)
+  public static var possessively: QuantificationBehavior {
+    .init(kind: .possessively)
   }
 }
 
@@ -139,21 +139,21 @@ postfix operator .+
 // Overloads for quantifying over a character class.
 public func zeroOrOne(
   _ cc: CharacterClass,
-  _ kind: QuantificationKind = .eager
+  _ kind: QuantificationBehavior = .eagerly
 ) -> Regex<Substring> {
   .init(node: .quantification(.zeroOrOne, kind.astKind, cc.regex.root))
 }
 
 public func many(
   _ cc: CharacterClass,
-  _ kind: QuantificationKind = .eager
+  _ kind: QuantificationBehavior = .eagerly
 ) -> Regex<Substring> {
   .init(node: .quantification(.zeroOrMore, kind.astKind, cc.regex.root))
 }
 
 public func oneOrMore(
   _ cc: CharacterClass,
-  _ kind: QuantificationKind = .eager
+  _ kind: QuantificationBehavior = .eagerly
 ) -> Regex<Substring> {
   .init(node: .quantification(.oneOrMore, kind.astKind, cc.regex.root))
 }
