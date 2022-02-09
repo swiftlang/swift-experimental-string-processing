@@ -249,13 +249,13 @@ struct VariadicsGenerator: ParsableCommand {
     // Emit concatenation builder.
     output("extension \(patternBuilderTypeName) {\n")
     output("""
-          @_disfavoredOverload
-          public static func buildBlock<\(genericParameters(withConstraints: true))>(
-            combining next: R1, into combined: R0
-          ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
-            .init(node: combined.regex.root.appending(next.regex.root))
-          }
+        @_disfavoredOverload
+        public static func buildBlock<\(genericParams)>(
+          combining next: R1, into combined: R0
+        ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+          .init(node: combined.regex.root.appending(next.regex.root))
         }
+      }
 
       """)
   }
