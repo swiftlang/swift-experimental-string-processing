@@ -99,16 +99,16 @@ postfix operator .*
 postfix operator .+
 
 // Overloads for quantifying over a character class.
-public func zeroOrOne(_ cc: CharacterClass) -> _ZeroOrOne_0<CharacterClass> {
-  .init(component: cc)
+public func zeroOrOne(_ cc: CharacterClass) -> Regex<Substring> {
+  .init(node: .quantification(.zeroOrOne, .eager, cc.regex.root))
 }
 
-public func many(_ cc: CharacterClass) -> _ZeroOrMore_0<CharacterClass> {
-  .init(component: cc)
+public func many(_ cc: CharacterClass) -> Regex<Substring> {
+  .init(node: .quantification(.zeroOrMore, .eager, cc.regex.root))
 }
 
-public func oneOrMore(_ cc: CharacterClass) -> _OneOrMore_0<CharacterClass> {
-  .init(component: cc)
+public func oneOrMore(_ cc: CharacterClass) -> Regex<Substring> {
+  .init(node: .quantification(.oneOrMore, .eager, cc.regex.root))
 }
 
 // MARK: Alternation
