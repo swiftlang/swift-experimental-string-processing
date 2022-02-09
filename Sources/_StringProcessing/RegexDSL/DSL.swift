@@ -139,23 +139,23 @@ postfix operator .+
 // Overloads for quantifying over a character class.
 public func zeroOrOne(
   _ cc: CharacterClass,
-  _ kind: QuantificationBehavior = .eagerly
+  _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<Substring> {
-  .init(node: .quantification(.zeroOrOne, kind.astKind, cc.regex.root))
+  .init(node: .quantification(.zeroOrOne, behavior.astKind, cc.regex.root))
 }
 
 public func many(
   _ cc: CharacterClass,
-  _ kind: QuantificationBehavior = .eagerly
+  _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<Substring> {
-  .init(node: .quantification(.zeroOrMore, kind.astKind, cc.regex.root))
+  .init(node: .quantification(.zeroOrMore, behavior.astKind, cc.regex.root))
 }
 
 public func oneOrMore(
   _ cc: CharacterClass,
-  _ kind: QuantificationBehavior = .eagerly
+  _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<Substring> {
-  .init(node: .quantification(.oneOrMore, kind.astKind, cc.regex.root))
+  .init(node: .quantification(.oneOrMore, behavior.astKind, cc.regex.root))
 }
 
 // MARK: Alternation
