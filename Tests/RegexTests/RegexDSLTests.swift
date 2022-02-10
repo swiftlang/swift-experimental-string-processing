@@ -13,6 +13,30 @@ import XCTest
 @testable import _StringProcessing
 
 class RegexDSLTests: XCTestCase {
+  func _testDSLCaptures<Content: RegexProtocol, CaptureType>(
+    _ tests: (input: String, expectedCaptures: CaptureType?)...,
+    captureType: CaptureType.Type,
+    _ equivalence: (CaptureType, CaptureType) -> Bool,
+    file: StaticString = #file,
+    line: UInt = #line,
+    @RegexBuilder _ content: () -> Content
+  ) throws {
+    let regex = Regex(content())
+    for (input, maybeExpectedCaptures) in tests {
+      let maybeMatch = input.match(regex)
+      if let expectedCaptures = maybeExpectedCaptures {
+        let match = try XCTUnwrap(maybeMatch, file: file, line: line)
+        let captures = try XCTUnwrap(match.match as? CaptureType, file: file, line: line)
+        XCTAssertTrue(
+          equivalence(captures, expectedCaptures),
+          "'\(captures)' is not equal to the expected '\(expectedCaptures)'.",
+          file: file, line: line)
+      } else {
+        XCTAssertNil(maybeMatch, file: file, line: line)
+      }
+    }
+  }
+
   func testSimpleStrings() throws {
     let regex = Regex {
       "a"
@@ -31,16 +55,14 @@ class RegexDSLTests: XCTestCase {
   }
 
   func testCharacterClasses() throws {
-    let regex = Regex {
+    try _testDSLCaptures(
+      ("a c", ("a c", " ", "c")),
+      captureType: (Substring, Substring, Substring).self, ==)
+    {
       CharacterClass.any
-      capture(CharacterClass.whitespace) // Character
+      capture(CharacterClass.whitespace) // Substring
       capture("c") // Substring
     }
-    // Assert the inferred capture type.
-    let _: (Substring, Substring, Substring).Type = type(of: regex).Match.self
-    let maybeMatch = "a c".match(regex)
-    let match = try XCTUnwrap(maybeMatch)
-    XCTAssertTrue(match.match == ("a c", " ", "c"))
   }
 
   func testAlternation() throws {
@@ -111,7 +133,10 @@ class RegexDSLTests: XCTestCase {
   }
 
   func testCombinators() throws {
-    let regex = Regex {
+    try _testDSLCaptures(
+      ("aaaabccccdddkj", ("aaaabccccdddkj", "b", "cccc", ["d", "d", "d"], "k", nil, "j")),
+      captureType: (Substring, Substring, Substring, [Substring], Substring, Substring?, Substring?).self, ==)
+    {
       "a".+
       capture(oneOrMore(Character("b"))) // Substring
       capture(many("c")) // Substring
@@ -120,18 +145,40 @@ class RegexDSLTests: XCTestCase {
       capture("t" | "k") // Substring
       oneOf { capture("k"); capture("j") } // (Substring?, Substring?)
     }
-    // Assert the inferred capture type.
-    let _: (Substring, Substring, Substring, [Substring], Substring, Substring?, Substring?).Type
-      = type(of: regex).Match.self
-    let maybeMatch = "aaaabccccdddkj".match(regex)
-    let match = try XCTUnwrap(maybeMatch).match
-    XCTAssertEqual(match.0, "aaaabccccdddkj")
-    XCTAssertEqual(match.1, "b")
-    XCTAssertEqual(match.2, "cccc")
-    XCTAssertEqual(match.3, ["d", "d", "d"])
-    XCTAssertEqual(match.4, "k")
-    XCTAssertEqual(match.5, .none)
-    XCTAssertEqual(match.6, .some("j"))
+  }
+  
+  func testQuantificationBehavior() throws {
+    try _testDSLCaptures(
+      ("abc1def2", ("abc1def2", ["2"])),
+      captureType: (Substring, [Substring]).self, ==)
+    {
+      oneOrMore {
+        oneOrMore(.word)
+        capture(CharacterClass.digit)
+      }
+    }
+
+    try _testDSLCaptures(
+      ("abc1def2", ("abc1def2", ["1", "2"])),
+      captureType: (Substring, [Substring]).self, ==)
+    {
+      oneOrMore {
+        oneOrMore(.word, .reluctantly)
+        capture(CharacterClass.digit)
+      }
+    }
+
+    try _testDSLCaptures(
+      ("abc1def2", ("abc1def2", ["1", "2"])),
+      captureType: (Substring, [Substring]).self, ==)
+    {
+      oneOrMore {
+        oneOrMore(.reluctantly) {
+          CharacterClass.word
+        }
+        capture(CharacterClass.digit)
+      }
+    }
   }
   
   func testAssertions() throws {
@@ -158,7 +205,10 @@ class RegexDSLTests: XCTestCase {
   }
 
   func testNestedGroups() throws {
-    let regex = Regex {
+    try _testDSLCaptures(
+      ("aaaabccccddd", ("aaaabccccddd", [("b", "cccc", ["d", "d", "d"])])),
+      captureType: (Substring, [(Substring, Substring, [Substring])]).self, ==)
+    {
       "a".+
       oneOrMore {
         capture(oneOrMore("b"))
@@ -167,16 +217,6 @@ class RegexDSLTests: XCTestCase {
         "e".?
       }
     }
-    // Assert the inferred capture type.
-    let _: (Substring, [(Substring, Substring, [Substring])]).Type
-      = type(of: regex).Match.self
-    let maybeMatch = "aaaabccccddd".match(regex)
-    let match = try XCTUnwrap(maybeMatch)
-    XCTAssertEqual(match.match.1.count, 1)
-    XCTAssertEqual(match.match.0, "aaaabccccddd")
-    XCTAssertTrue(
-      match.match.1[0]
-        == ("b", "cccc", ["d", "d", "d"]))
   }
 
   func testCapturelessQuantification() throws {
@@ -209,7 +249,11 @@ class RegexDSLTests: XCTestCase {
         }
       }
     }
-    let regex = Regex {
+    try _testDSLCaptures(
+      ("aaa 123 apple orange apple", ("aaa 123 apple orange apple", 123, [.apple, .orange, .apple])),
+      ("aaa     ", ("aaa     ", nil, [])),
+      captureType: (Substring, Int?, [Word]).self, ==)
+    {
       "a".+
       oneOrMore(.whitespace)
       optionally {
@@ -219,24 +263,6 @@ class RegexDSLTests: XCTestCase {
         oneOrMore(.whitespace)
         capture(oneOrMore(.word)) { Word($0)! }
       }
-    }
-    // Assert the inferred capture type.
-    let _: (Substring, Int?, [Word]).Type = type(of: regex).Match.self
-    do {
-      let input = "aaa 123 apple orange apple"
-      let match = input.match(regex)?.match
-      let (whole, number, words) = try XCTUnwrap(match)
-      XCTAssertTrue(whole == input)
-      XCTAssertEqual(number, 123)
-      XCTAssertEqual(words, [.apple, .orange, .apple])
-    }
-    do {
-      let input = "aaa   "
-      let match = input.match(regex)?.match
-      let (whole, number, words) = try XCTUnwrap(match)
-      XCTAssertTrue(whole == input)
-      XCTAssertEqual(number, nil)
-      XCTAssertTrue(words.isEmpty)
     }
   }
 
@@ -450,4 +476,19 @@ extension Unicode.Scalar {
     }
     self = scalar
   }
+}
+
+// MARK: Extra == functions
+
+// (Substring, [(Substring, Substring, [Substring])])
+typealias S_AS = (Substring, [(Substring, Substring, [Substring])])
+
+func ==(lhs: S_AS, rhs: S_AS) -> Bool {
+  lhs.0 == rhs.0 && lhs.1.elementsEqual(rhs.1, by: ==)
+}
+
+func == <T0: Equatable, T1: Equatable, T2: Equatable, T3: Equatable, T4: Equatable, T5: Equatable, T6: Equatable>(
+  l: (T0, T1, T2, T3, T4, T5, T6), r: (T0, T1, T2, T3, T4, T5, T6)
+) -> Bool {
+  l.0 == r.0 && (l.1, l.2, l.3, l.4, l.5, l.6) == (r.1, r.2, r.3, r.4, r.5, r.6)
 }
