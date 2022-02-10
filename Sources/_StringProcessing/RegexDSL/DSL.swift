@@ -22,6 +22,15 @@ extension String: RegexProtocol {
   }
 }
 
+extension Substring: RegexProtocol {
+  public typealias Match = Substring
+
+  public var regex: Regex<Match> {
+    let atoms = self.map { atom(.char($0)) }
+    return .init(ast: concat(atoms))
+  }
+}
+
 extension Character: RegexProtocol {
   public typealias Match = Substring
 
