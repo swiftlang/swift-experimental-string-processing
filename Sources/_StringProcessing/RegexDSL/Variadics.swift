@@ -14,70 +14,6 @@
 import _MatchingEngine
 
 extension RegexBuilder {
-  public static func buildBlock<R: RegexProtocol, W, C0>(_ regex: R) -> R
-  where R.Match == (W, C0)
-  {
-    regex
-  }
-}
-extension RegexBuilder {
-  public static func buildBlock<R: RegexProtocol, W, C0, C1>(_ regex: R) -> R
-  where R.Match == (W, C0, C1)
-  {
-    regex
-  }
-}
-extension RegexBuilder {
-  public static func buildBlock<R: RegexProtocol, W, C0, C1, C2>(_ regex: R) -> R
-  where R.Match == (W, C0, C1, C2)
-  {
-    regex
-  }
-}
-extension RegexBuilder {
-  public static func buildBlock<R: RegexProtocol, W, C0, C1, C2, C3>(_ regex: R) -> R
-  where R.Match == (W, C0, C1, C2, C3)
-  {
-    regex
-  }
-}
-extension RegexBuilder {
-  public static func buildBlock<R: RegexProtocol, W, C0, C1, C2, C3, C4>(_ regex: R) -> R
-  where R.Match == (W, C0, C1, C2, C3, C4)
-  {
-    regex
-  }
-}
-extension RegexBuilder {
-  public static func buildBlock<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5>(_ regex: R) -> R
-  where R.Match == (W, C0, C1, C2, C3, C4, C5)
-  {
-    regex
-  }
-}
-extension RegexBuilder {
-  public static func buildBlock<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6>(_ regex: R) -> R
-  where R.Match == (W, C0, C1, C2, C3, C4, C5, C6)
-  {
-    regex
-  }
-}
-extension RegexBuilder {
-  public static func buildBlock<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7>(_ regex: R) -> R
-  where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7)
-  {
-    regex
-  }
-}
-extension RegexBuilder {
-  public static func buildBlock<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, C8>(_ regex: R) -> R
-  where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8)
-  {
-    regex
-  }
-}
-extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0)>  where R0.Match == W0, R1.Match == (W1, C0) {
@@ -85,7 +21,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1)>  where R0.Match == W0, R1.Match == (W1, C0, C1) {
@@ -93,7 +28,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2) {
@@ -101,7 +35,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3) {
@@ -109,7 +42,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3, C4) {
@@ -117,7 +49,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3, C4, C5) {
@@ -125,7 +56,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3, C4, C5, C6) {
@@ -133,7 +63,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3, C4, C5, C6, C7) {
@@ -141,7 +70,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -149,7 +77,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -157,7 +84,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1)>  where R0.Match == (W0, C0), R1.Match == (W1, C1) {
@@ -165,7 +91,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2) {
@@ -173,7 +98,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3) {
@@ -181,7 +105,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4) {
@@ -189,7 +112,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5) {
@@ -197,7 +119,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5, C6) {
@@ -205,7 +126,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5, C6, C7) {
@@ -213,7 +133,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -221,7 +140,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -229,7 +147,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2) {
@@ -237,7 +154,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3) {
@@ -245,7 +161,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4) {
@@ -253,7 +168,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5) {
@@ -261,7 +175,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5, C6) {
@@ -269,7 +182,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5, C6, C7) {
@@ -277,7 +189,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5, C6, C7, C8) {
@@ -285,7 +196,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -293,7 +203,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3) {
@@ -301,7 +210,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4) {
@@ -309,7 +217,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5) {
@@ -317,7 +224,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5, C6) {
@@ -325,7 +231,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5, C6, C7) {
@@ -333,7 +238,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5, C6, C7, C8) {
@@ -341,7 +245,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5, C6, C7, C8, C9) {
@@ -349,7 +252,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4) {
@@ -357,7 +259,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5) {
@@ -365,7 +266,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5, C6) {
@@ -373,7 +273,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5, C6, C7) {
@@ -381,7 +280,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5, C6, C7, C8) {
@@ -389,7 +287,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5, C6, C7, C8, C9) {
@@ -397,7 +294,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5) {
@@ -405,7 +301,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5, C6) {
@@ -413,7 +308,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5, C6, C7) {
@@ -421,7 +315,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5, C6, C7, C8) {
@@ -429,7 +322,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5, C6, C7, C8, C9) {
@@ -437,7 +329,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5), R1.Match == (W1, C6) {
@@ -445,7 +336,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5), R1.Match == (W1, C6, C7) {
@@ -453,7 +343,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5), R1.Match == (W1, C6, C7, C8) {
@@ -461,7 +350,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5), R1.Match == (W1, C6, C7, C8, C9) {
@@ -469,7 +357,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Match == (W1, C7) {
@@ -477,7 +364,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Match == (W1, C7, C8) {
@@ -485,7 +371,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Match == (W1, C7, C8, C9) {
@@ -493,7 +378,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7), R1.Match == (W1, C8) {
@@ -501,7 +385,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7), R1.Match == (W1, C8, C9) {
@@ -509,7 +392,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8), R1.Match == (W1, C9) {
@@ -517,7 +399,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<Substring> where R0.Match == W0  {
@@ -525,7 +406,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, C0, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0)> where R0.Match == (W0, C0)  {
@@ -533,7 +413,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, C0, C1, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1)> where R0.Match == (W0, C0, C1)  {
@@ -541,7 +420,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, C0, C1, C2, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2)> where R0.Match == (W0, C0, C1, C2)  {
@@ -549,7 +427,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, C0, C1, C2, C3, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3)> where R0.Match == (W0, C0, C1, C2, C3)  {
@@ -557,7 +434,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, C0, C1, C2, C3, C4, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)> where R0.Match == (W0, C0, C1, C2, C3, C4)  {
@@ -565,7 +441,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, C0, C1, C2, C3, C4, C5, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)> where R0.Match == (W0, C0, C1, C2, C3, C4, C5)  {
@@ -573,7 +448,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, C0, C1, C2, C3, C4, C5, C6, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)> where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6)  {
@@ -581,7 +455,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)> where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7)  {
@@ -589,7 +462,6 @@ extension RegexBuilder {
   }
 }
 extension RegexBuilder {
-  @_disfavoredOverload
   public static func buildBlock<W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexProtocol, R1: RegexProtocol>(
     combining next: R1, into combined: R0
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8)  {

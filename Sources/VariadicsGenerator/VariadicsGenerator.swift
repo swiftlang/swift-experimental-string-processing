@@ -127,12 +127,6 @@ struct VariadicsGenerator: ParsableCommand {
 
       """)
 
-    print("Generating 'buildBlock(_:)' overloads...", to: &standardError)
-    for arity in 1..<maxArity {
-      print("  Capture arity: \(arity)", to: &standardError)
-      emitUnaryBuildBlock(arity: arity)
-    }
-
     print("Generating concatenation overloads...", to: &standardError)
     for (leftArity, rightArity) in Permutations(totalArity: maxArity) {
       guard rightArity != 0 else {
@@ -195,21 +189,6 @@ struct VariadicsGenerator: ParsableCommand {
     return "(\(genericParameters()))"
   }
 
-  func emitUnaryBuildBlock(arity: Int) {
-    assert(arity > 0)
-    let captureTypes = (0..<arity).map { "C\($0)" }.joined(separator: ", ")
-    output("""
-      extension RegexBuilder {
-        public static func buildBlock<R: RegexProtocol, W, \(captureTypes)>(_ regex: R) -> R
-        where R.Match == (W, \(captureTypes))
-        {
-          regex
-        }
-      }
-
-      """)
-  }
-
   func emitConcatenation(leftArity: Int, rightArity: Int) {
     let genericParams: String = {
       var result = "W0, W1"
@@ -255,7 +234,6 @@ struct VariadicsGenerator: ParsableCommand {
     // Emit concatenation builder.
     output("extension \(patternBuilderTypeName) {\n")
     output("""
-        @_disfavoredOverload
         public static func buildBlock<\(genericParams)>(
           combining next: R1, into combined: R0
         ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
@@ -270,7 +248,6 @@ struct VariadicsGenerator: ParsableCommand {
     // T + () = T
     output("""
        extension RegexBuilder {
-         @_disfavoredOverload
          public static func buildBlock<W0
        """)
     outputForEach(0..<leftArity) {
