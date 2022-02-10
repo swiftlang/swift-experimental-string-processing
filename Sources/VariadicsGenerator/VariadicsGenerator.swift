@@ -211,19 +211,14 @@ struct VariadicsGenerator: ParsableCommand {
   }
 
   func emitConcatenation(leftArity: Int, rightArity: Int) {
-    func genericParameters(withConstraints: Bool) -> String {
+    let genericParams: String = {
       var result = "W0, W1"
       result += (0..<leftArity+rightArity).map {
         ", C\($0)"
       }.joined()
-      result += ", "
-      if withConstraints {
-        result += "R0: \(regexProtocolName), R1: \(regexProtocolName)"
-      } else {
-        result += "R0, R1"
-      }
+      result += ", R0: \(regexProtocolName), R1: \(regexProtocolName)"
       return result
-    }
+    }()
 
     // Emit concatenation type declaration.
 
@@ -260,13 +255,13 @@ struct VariadicsGenerator: ParsableCommand {
     // Emit concatenation builder.
     output("extension \(patternBuilderTypeName) {\n")
     output("""
-          @_disfavoredOverload
-          public static func buildBlock<\(genericParameters(withConstraints: true))>(
-            combining next: R1, into combined: R0
-          ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
-            .init(node: combined.regex.root.appending(next.regex.root))
-          }
+        @_disfavoredOverload
+        public static func buildBlock<\(genericParams)>(
+          combining next: R1, into combined: R0
+        ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+          .init(node: combined.regex.root.appending(next.regex.root))
         }
+      }
 
       """)
   }
@@ -338,19 +333,16 @@ struct VariadicsGenerator: ParsableCommand {
 
   func emitQuantifier(kind: QuantifierKind, arity: Int) {
     assert(arity >= 0)
-    func genericParameters(withConstraints: Bool) -> String {
+    let genericParams: String = {
       var result = ""
       if arity > 0 {
         result += "W"
         result += (0..<arity).map { ", C\($0)" }.joined()
         result += ", "
       }
-      result += "Component"
-      if withConstraints {
-        result += ": \(regexProtocolName)"
-      }
+      result += "Component: \(regexProtocolName)"
       return result
-    }
+    }()
     let captures = (0..<arity).map { "C\($0)" }.joined(separator: ", ")
     let capturesTupled = arity == 1 ? captures : "(\(captures))"
     let whereClause: String = arity == 0 ? "" :
@@ -366,21 +358,23 @@ struct VariadicsGenerator: ParsableCommand {
     let matchType = arity == 0 ? baseMatchTypeName : "(\(baseMatchTypeName), \(quantifiedCaptures))"
     output("""
       \(arity == 0 ? "@_disfavoredOverload" : "")
-      public func \(kind.rawValue)<\(genericParameters(withConstraints: true))>(
-        _ component: Component
+      public func \(kind.rawValue)<\(genericParams)>(
+        _ component: Component,
+        _ behavior: QuantificationBehavior = .eagerly
       ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
-        .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component.regex.root))
+        .init(node: .quantification(.\(kind.astQuantifierAmount), behavior.astKind, component.regex.root))
       }
 
       \(arity == 0 ? "@_disfavoredOverload" : "")
-      public func \(kind.rawValue)<\(genericParameters(withConstraints: true))>(
+      public func \(kind.rawValue)<\(genericParams)>(
+        _ behavior: QuantificationBehavior = .eagerly,
         @RegexBuilder _ component: () -> Component
       ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
-        .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component().regex.root))
+        .init(node: .quantification(.\(kind.astQuantifierAmount), behavior.astKind, component().regex.root))
       }
 
       \(arity == 0 ? "@_disfavoredOverload" : "")
-      public postfix func \(kind.operatorName)<\(genericParameters(withConstraints: true))>(
+      public postfix func \(kind.operatorName)<\(genericParams)>(
         _ component: Component
       ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
         .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component.regex.root))
@@ -389,7 +383,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(kind == .zeroOrOne ?
         """
         extension RegexBuilder {
-          public static func buildLimitedAvailability<\(genericParameters(withConstraints: true))>(
+          public static func buildLimitedAvailability<\(genericParams)>(
             _ component: Component
           ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
             .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component.regex.root))
