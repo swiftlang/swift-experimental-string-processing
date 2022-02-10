@@ -182,26 +182,28 @@ class RegexDSLTests: XCTestCase {
   }
   
   func testAssertions() throws {
-    let regex = Regex {
+    try _testDSLCaptures(
+      ("aaaaab", "aaaaab"),
+      ("caaaaab", nil),
+      ("aaaaabc", nil),
+      captureType: Substring.self, ==)
+    {
       Assertion.startOfLine
       "a".+
       "b"
       Assertion.endOfLine
     }
-    let _: Substring.Type = type(of: regex).Match.self
-    XCTAssertNotNil("aaaaab".match(regex))
-    XCTAssertNil("caaaaab".match(regex))
-    XCTAssertNil("aaaaabc".match(regex))
     
-    let regex2 = Regex {
+    try _testDSLCaptures(
+      ("aaaaa1", "aaaaa1"),
+      ("aaaaa", nil),
+      ("aaaaab", nil),
+      captureType: Substring.self, ==)
+    {
       "a".+
       Assertion.lookahead(CharacterClass.digit)
       CharacterClass.word
     }
-    let _: Substring.Type = type(of: regex2).Match.self
-    XCTAssertNotNil("aaaaa1".match(regex2))
-    XCTAssertNil("aaaaa".match(regex2))
-    XCTAssertNil("aaaaab".match(regex2))
   }
 
   func testNestedGroups() throws {
