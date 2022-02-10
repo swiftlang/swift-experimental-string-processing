@@ -2138,6 +2138,826 @@ extension AlternationBuilder {
     .init(node: .alternation([regex.regex.root]))
   }
 }
+// MARK: - Non-builder capture arity 0
+
+public func capture<R: RegexProtocol, W>(_ component: R) -> Regex<(W, Substring)> where R.Match == W {
+  .init(node: .group(.capture, component.regex.root))
+}
+
+public func capture<R: RegexProtocol, W, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture)> where R.Match == W {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, NewCapture>(
+  _ component: R, transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture)> where R.Match == W {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture)> where R.Match == W {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+
+// MARK: - Builder capture arity 0
+
+public func capture<R: RegexProtocol, W>(
+  @RegexBuilder _ component: () -> R
+) -> Regex<(W, Substring)> where R.Match == W {
+  .init(node: .group(.capture, component().regex.root))
+}
+
+public func capture<R: RegexProtocol, W, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture)> where R.Match == W {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture)> where R.Match == W {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture)> where R.Match == W {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+// MARK: - Non-builder capture arity 1
+
+public func capture<R: RegexProtocol, W, C0>(_ component: R) -> Regex<(W, Substring, C0)> where R.Match == (W, C0) {
+  .init(node: .group(.capture, component.regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0)> where R.Match == (W, C0) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, NewCapture>(
+  _ component: R, transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0)> where R.Match == (W, C0) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0)> where R.Match == (W, C0) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+
+// MARK: - Builder capture arity 1
+
+public func capture<R: RegexProtocol, W, C0>(
+  @RegexBuilder _ component: () -> R
+) -> Regex<(W, Substring, C0)> where R.Match == (W, C0) {
+  .init(node: .group(.capture, component().regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0)> where R.Match == (W, C0) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0)> where R.Match == (W, C0) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0)> where R.Match == (W, C0) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+// MARK: - Non-builder capture arity 2
+
+public func capture<R: RegexProtocol, W, C0, C1>(_ component: R) -> Regex<(W, Substring, C0, C1)> where R.Match == (W, C0, C1) {
+  .init(node: .group(.capture, component.regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1)> where R.Match == (W, C0, C1) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, NewCapture>(
+  _ component: R, transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1)> where R.Match == (W, C0, C1) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1)> where R.Match == (W, C0, C1) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+
+// MARK: - Builder capture arity 2
+
+public func capture<R: RegexProtocol, W, C0, C1>(
+  @RegexBuilder _ component: () -> R
+) -> Regex<(W, Substring, C0, C1)> where R.Match == (W, C0, C1) {
+  .init(node: .group(.capture, component().regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1)> where R.Match == (W, C0, C1) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1)> where R.Match == (W, C0, C1) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1)> where R.Match == (W, C0, C1) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+// MARK: - Non-builder capture arity 3
+
+public func capture<R: RegexProtocol, W, C0, C1, C2>(_ component: R) -> Regex<(W, Substring, C0, C1, C2)> where R.Match == (W, C0, C1, C2) {
+  .init(node: .group(.capture, component.regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2)> where R.Match == (W, C0, C1, C2) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, NewCapture>(
+  _ component: R, transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2)> where R.Match == (W, C0, C1, C2) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2)> where R.Match == (W, C0, C1, C2) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+
+// MARK: - Builder capture arity 3
+
+public func capture<R: RegexProtocol, W, C0, C1, C2>(
+  @RegexBuilder _ component: () -> R
+) -> Regex<(W, Substring, C0, C1, C2)> where R.Match == (W, C0, C1, C2) {
+  .init(node: .group(.capture, component().regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2)> where R.Match == (W, C0, C1, C2) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2)> where R.Match == (W, C0, C1, C2) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2)> where R.Match == (W, C0, C1, C2) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+// MARK: - Non-builder capture arity 4
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3>(_ component: R) -> Regex<(W, Substring, C0, C1, C2, C3)> where R.Match == (W, C0, C1, C2, C3) {
+  .init(node: .group(.capture, component.regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3)> where R.Match == (W, C0, C1, C2, C3) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, NewCapture>(
+  _ component: R, transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3)> where R.Match == (W, C0, C1, C2, C3) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2, C3)> where R.Match == (W, C0, C1, C2, C3) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+
+// MARK: - Builder capture arity 4
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3>(
+  @RegexBuilder _ component: () -> R
+) -> Regex<(W, Substring, C0, C1, C2, C3)> where R.Match == (W, C0, C1, C2, C3) {
+  .init(node: .group(.capture, component().regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3)> where R.Match == (W, C0, C1, C2, C3) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3)> where R.Match == (W, C0, C1, C2, C3) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2, C3)> where R.Match == (W, C0, C1, C2, C3) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+// MARK: - Non-builder capture arity 5
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4>(_ component: R) -> Regex<(W, Substring, C0, C1, C2, C3, C4)> where R.Match == (W, C0, C1, C2, C3, C4) {
+  .init(node: .group(.capture, component.regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4)> where R.Match == (W, C0, C1, C2, C3, C4) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, NewCapture>(
+  _ component: R, transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4)> where R.Match == (W, C0, C1, C2, C3, C4) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4)> where R.Match == (W, C0, C1, C2, C3, C4) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+
+// MARK: - Builder capture arity 5
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4>(
+  @RegexBuilder _ component: () -> R
+) -> Regex<(W, Substring, C0, C1, C2, C3, C4)> where R.Match == (W, C0, C1, C2, C3, C4) {
+  .init(node: .group(.capture, component().regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4)> where R.Match == (W, C0, C1, C2, C3, C4) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4)> where R.Match == (W, C0, C1, C2, C3, C4) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4)> where R.Match == (W, C0, C1, C2, C3, C4) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+// MARK: - Non-builder capture arity 6
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5>(_ component: R) -> Regex<(W, Substring, C0, C1, C2, C3, C4, C5)> where R.Match == (W, C0, C1, C2, C3, C4, C5) {
+  .init(node: .group(.capture, component.regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5)> where R.Match == (W, C0, C1, C2, C3, C4, C5) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, NewCapture>(
+  _ component: R, transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5)> where R.Match == (W, C0, C1, C2, C3, C4, C5) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5)> where R.Match == (W, C0, C1, C2, C3, C4, C5) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+
+// MARK: - Builder capture arity 6
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5>(
+  @RegexBuilder _ component: () -> R
+) -> Regex<(W, Substring, C0, C1, C2, C3, C4, C5)> where R.Match == (W, C0, C1, C2, C3, C4, C5) {
+  .init(node: .group(.capture, component().regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5)> where R.Match == (W, C0, C1, C2, C3, C4, C5) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5)> where R.Match == (W, C0, C1, C2, C3, C4, C5) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5)> where R.Match == (W, C0, C1, C2, C3, C4, C5) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+// MARK: - Non-builder capture arity 7
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6>(_ component: R) -> Regex<(W, Substring, C0, C1, C2, C3, C4, C5, C6)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
+  .init(node: .group(.capture, component.regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, NewCapture>(
+  _ component: R, transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+
+// MARK: - Builder capture arity 7
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6>(
+  @RegexBuilder _ component: () -> R
+) -> Regex<(W, Substring, C0, C1, C2, C3, C4, C5, C6)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
+  .init(node: .group(.capture, component().regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+// MARK: - Non-builder capture arity 8
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7>(_ component: R) -> Regex<(W, Substring, C0, C1, C2, C3, C4, C5, C6, C7)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: .group(.capture, component.regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  _ component: R, transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+
+// MARK: - Builder capture arity 8
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7>(
+  @RegexBuilder _ component: () -> R
+) -> Regex<(W, Substring, C0, C1, C2, C3, C4, C5, C6, C7)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: .group(.capture, component().regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+// MARK: - Non-builder capture arity 9
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, C8>(_ component: R) -> Regex<(W, Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: .group(.capture, component.regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  _ component: R, transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  _ component: R, transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: .groupTransform(
+    .capture,
+    component.regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
+
+// MARK: - Builder capture arity 9
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, C8>(
+  @RegexBuilder _ component: () -> R
+) -> Regex<(W, Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: .group(.capture, component().regex.root))
+}
+
+public func capture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) throws -> NewCapture
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      try transform($0) as Any
+    }))
+}
+
+public func tryCapture<R: RegexProtocol, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  @RegexBuilder _ component: () -> R,
+  transform: @escaping (Substring) -> NewCapture?
+) -> Regex<(W, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: .groupTransform(
+    .capture,
+    component().regex.root,
+    CaptureTransform(resultType: NewCapture.self) {
+      transform($0) as Any?
+    }))
+}
 
 
 // END AUTO-GENERATED CONTENT
