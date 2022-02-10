@@ -154,7 +154,7 @@ class RegexDSLTests: XCTestCase {
     {
       oneOrMore {
         oneOrMore(.word)
-        CharacterClass.digit.capture()
+        capture(CharacterClass.digit)
       }
     }
 
@@ -164,7 +164,7 @@ class RegexDSLTests: XCTestCase {
     {
       oneOrMore {
         oneOrMore(.word, .reluctantly)
-        CharacterClass.digit.capture()
+        capture(CharacterClass.digit)
       }
     }
 
@@ -176,7 +176,7 @@ class RegexDSLTests: XCTestCase {
         oneOrMore(.reluctantly) {
           CharacterClass.word
         }
-        CharacterClass.digit.capture()
+        capture(CharacterClass.digit)
       }
     }
   }
