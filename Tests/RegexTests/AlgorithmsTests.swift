@@ -116,7 +116,7 @@ class RegexConsumerTests: XCTestCase {
   }
   
   func testMatches() {
-    let regex = Regex(oneOrMore(.digit).capture { 2 * Int($0)! })
+    let regex = capture(oneOrMore(.digit)) { 2 * Int($0)! }
     let str = "foo 160 bar 99 baz"
     XCTAssertEqual(str.matches(of: regex).map(\.result.1), [320, 198])
   }
@@ -133,7 +133,7 @@ class RegexConsumerTests: XCTestCase {
       XCTAssertEqual(input.replacing(regex, with: replace), result)
     }
     
-    let int = oneOrMore(.digit).capture { Int($0)! }
+    let int = capture(oneOrMore(.digit)) { Int($0)! }
     
     replaceTest(
       int,

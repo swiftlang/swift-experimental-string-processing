@@ -80,15 +80,15 @@ private func graphemeBreakPropertyData(
   forLine line: String
 ) -> GraphemeBreakEntry? {
   line.match {
-    oneOrMore(.hexDigit).tryCapture(Unicode.Scalar.init(hex:))
+    tryCapture(oneOrMore(.hexDigit)) { Unicode.Scalar(hex: $0) }
     optionally {
       ".."
-      oneOrMore(.hexDigit).tryCapture(Unicode.Scalar.init(hex:))
+      tryCapture(oneOrMore(.hexDigit)) { Unicode.Scalar(hex: $0) }
     }
     oneOrMore(.whitespace)
     ";"
     oneOrMore(.whitespace)
-    oneOrMore(.word).tryCapture(Unicode.GraphemeBreakProperty.init)
+    tryCapture(oneOrMore(.word)) { Unicode.GraphemeBreakProperty($0) }
     many(.any)
   }.map {
     let (_, lower, upper, property) = $0.match

@@ -16,8 +16,8 @@ class RegexDSLTests: XCTestCase {
   func testSimpleStrings() throws {
     let regex = Regex {
       "a"
-      Character("b").capture() // Character
-      "1".tryCapture { Int($0) } // Int
+      capture(Character("b")) // Character
+      tryCapture("1") { Int($0) } // Int
     }
     // Assert the inferred capture type.
     let _: (Substring, Substring, Int).Type = type(of: regex).Match.self
@@ -33,8 +33,8 @@ class RegexDSLTests: XCTestCase {
   func testCharacterClasses() throws {
     let regex = Regex {
       CharacterClass.any
-      CharacterClass.whitespace.capture() // Character
-      "c".capture() // Substring
+      capture(CharacterClass.whitespace) // Character
+      capture("c") // Substring
     }
     // Assert the inferred capture type.
     let _: (Substring, Substring, Substring).Type = type(of: regex).Match.self
@@ -65,10 +65,12 @@ class RegexDSLTests: XCTestCase {
     do {
       let regex = Regex {
         "ab"
-        oneOf {
-          "c"
-          "def"
-        }.capture().+
+        capture {
+          oneOf {
+            "c"
+            "def"
+          }
+        }.+
       }
       XCTAssertTrue(
         try XCTUnwrap("abc".match(regex)?.match) == ("abc", ["c"]))
@@ -86,7 +88,7 @@ class RegexDSLTests: XCTestCase {
     }
     do {
       let regex = oneOf {
-        "aaa".capture()
+        capture("aaa")
       }
       XCTAssertTrue(
         try XCTUnwrap("aaa".match(regex)?.match) == ("aaa", "aaa"))
@@ -94,9 +96,9 @@ class RegexDSLTests: XCTestCase {
     }
     do {
       let regex = oneOf {
-        "aaa".capture()
-        "bbb".capture()
-        "ccc".capture()
+        capture("aaa")
+        capture("bbb")
+        capture("ccc")
       }
       XCTAssertTrue(
         try XCTUnwrap("aaa".match(regex)?.match) == ("aaa", "aaa", nil, nil))
@@ -111,12 +113,12 @@ class RegexDSLTests: XCTestCase {
   func testCombinators() throws {
     let regex = Regex {
       "a".+
-      oneOrMore(Character("b")).capture() // Substring
-      many("c").capture() // Substring
-      CharacterClass.hexDigit.capture().* // [Substring]
+      capture(oneOrMore(Character("b"))) // Substring
+      capture(many("c")) // Substring
+      capture(CharacterClass.hexDigit).* // [Substring]
       "e".?
-      ("t" | "k").capture() // Substring
-      oneOf { "k".capture(); "j".capture() } // (Substring?, Substring?)
+      capture("t" | "k") // Substring
+      oneOf { capture("k"); capture("j") } // (Substring?, Substring?)
     }
     // Assert the inferred capture type.
     let _: (Substring, Substring, Substring, [Substring], Substring, Substring?, Substring?).Type
@@ -159,9 +161,9 @@ class RegexDSLTests: XCTestCase {
     let regex = Regex {
       "a".+
       oneOrMore {
-        oneOrMore("b").capture()
-        many("c").capture()
-        "d".capture().*
+        capture(oneOrMore("b"))
+        capture(many("c"))
+        capture("d").*
         "e".?
       }
     }
@@ -211,11 +213,11 @@ class RegexDSLTests: XCTestCase {
       "a".+
       oneOrMore(.whitespace)
       optionally {
-        oneOrMore(.digit).capture { Int($0)! }
+        capture(oneOrMore(.digit)) { Int($0)! }
       }
       many {
         oneOrMore(.whitespace)
-        oneOrMore(.word).capture { Word($0)! }
+        capture(oneOrMore(.word)) { Word($0)! }
       }
     }
     // Assert the inferred capture type.
@@ -241,40 +243,44 @@ class RegexDSLTests: XCTestCase {
   func testNestedCaptureTypes() throws {
     let regex1 = Regex {
       "a".+
-      Regex {
-        oneOrMore("b").capture()
+      capture {
+        capture(oneOrMore("b"))
         "e".?
-      }.capture()
+      }
     }
     let _: (Substring, Substring, Substring).Type
       = type(of: regex1).Match.self
     let regex2 = Regex {
       "a".+
-      Regex {
-        "b".tryCapture { Int($0) }.*
+      capture {
+        tryCapture("b") { Int($0) }.*
         "e".?
-      }.capture()
+      }
     }
     let _: (Substring, Substring, [Int]).Type
       = type(of: regex2).Match.self
     let regex3 = Regex {
       "a".+
-      Regex {
-        "b".tryCapture { Int($0) }
-        "c".tryCapture { Double($0) }.*
+      capture {
+        tryCapture("b") { Int($0) }
+        many {
+          tryCapture("c") { Double($0) }
+        }
         "e".?
-      }.capture()
+      }
     }
     let _: (Substring, Substring, Int, [Double]).Type
       = type(of: regex3).Match.self
     let regex4 = Regex {
       "a".+
-      oneOrMore {
-        oneOrMore("b").capture()
-        many("c").capture()
-        "d".capture().*
-        "e".?
-      }.capture()
+      capture {
+        oneOrMore {
+          capture(oneOrMore("b"))
+          capture(many("c"))
+          capture("d").*
+          "e".?
+        }
+      }
     }
     let _: (
       Substring, Substring, [(Substring, Substring, [Substring])]).Type
@@ -305,9 +311,11 @@ class RegexDSLTests: XCTestCase {
       ";"
       spaces
 
-      oneOrMore {
-        CharacterClass.word
-      }.capture()
+      capture {
+        oneOrMore {
+          CharacterClass.word
+        }
+      }
 
       many {
         CharacterClass.any
@@ -330,15 +338,19 @@ class RegexDSLTests: XCTestCase {
       """
     
     let regexWithCapture = Regex {
-      oneOrMore(CharacterClass.hexDigit).capture(Unicode.Scalar.init(hex:))
+      capture {
+        oneOrMore(CharacterClass.hexDigit)
+      } transform: { Unicode.Scalar(hex: $0) }
       optionally {
         ".."
-        oneOrMore(CharacterClass.hexDigit).capture(Unicode.Scalar.init(hex:))
+        capture {
+          oneOrMore(CharacterClass.hexDigit)
+        } transform: { Unicode.Scalar(hex: $0) }
       }
       oneOrMore(CharacterClass.whitespace)
       ";"
       oneOrMore(CharacterClass.whitespace)
-      oneOrMore(CharacterClass.word).capture()
+      capture(oneOrMore(CharacterClass.word))
       many(CharacterClass.any)
     } // Regex<(Substring, Unicode.Scalar?, Unicode.Scalar??, Substring)>
     do {
@@ -357,15 +369,23 @@ class RegexDSLTests: XCTestCase {
     }
 
     let regexWithTryCapture = Regex {
-      oneOrMore(CharacterClass.hexDigit).tryCapture(Unicode.Scalar.init(hex:))
+      tryCapture {
+        oneOrMore(CharacterClass.hexDigit)
+      } transform: {
+        Unicode.Scalar(hex: $0)
+      }
       optionally {
         ".."
-        oneOrMore(CharacterClass.hexDigit).tryCapture(Unicode.Scalar.init(hex:))
+        tryCapture {
+          oneOrMore(CharacterClass.hexDigit)
+        } transform: {
+          Unicode.Scalar(hex: $0)
+        }
       }
       oneOrMore(CharacterClass.whitespace)
       ";"
       oneOrMore(CharacterClass.whitespace)
-      oneOrMore(CharacterClass.word).capture()
+      capture(oneOrMore(CharacterClass.word))
       many(CharacterClass.any)
     } // Regex<(Substring, Unicode.Scalar, Unicode.Scalar?, Substring)>
     do {
