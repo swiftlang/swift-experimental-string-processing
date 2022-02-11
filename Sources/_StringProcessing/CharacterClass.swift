@@ -178,7 +178,7 @@ public struct CharacterClass: Hashable {
   }
 }
 
-extension CharacterClass {
+extension RegexProtocol where Self == CharacterClass {
   public static var any: CharacterClass {
     .init(cc: .any, matchLevel: .graphemeCluster)
   }
@@ -216,7 +216,7 @@ extension CharacterClass {
   }
 
   public static func custom(
-    _ components: [CharacterSetComponent]
+    _ components: [CharacterClass.CharacterSetComponent]
   ) -> CharacterClass {
     .init(cc: .custom(components), matchLevel: .graphemeCluster)
   }

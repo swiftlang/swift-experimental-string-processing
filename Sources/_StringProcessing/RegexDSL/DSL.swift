@@ -145,28 +145,6 @@ postfix operator .?
 postfix operator .*
 postfix operator .+
 
-// Overloads for quantifying over a character class.
-public func zeroOrOne(
-  _ cc: CharacterClass,
-  _ behavior: QuantificationBehavior = .eagerly
-) -> Regex<Substring> {
-  .init(node: .quantification(.zeroOrOne, behavior.astKind, cc.regex.root))
-}
-
-public func many(
-  _ cc: CharacterClass,
-  _ behavior: QuantificationBehavior = .eagerly
-) -> Regex<Substring> {
-  .init(node: .quantification(.zeroOrMore, behavior.astKind, cc.regex.root))
-}
-
-public func oneOrMore(
-  _ cc: CharacterClass,
-  _ behavior: QuantificationBehavior = .eagerly
-) -> Regex<Substring> {
-  .init(node: .quantification(.oneOrMore, behavior.astKind, cc.regex.root))
-}
-
 // MARK: Alternation
 
 // TODO: Variadic generics
