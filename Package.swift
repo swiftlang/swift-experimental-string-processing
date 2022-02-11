@@ -16,9 +16,6 @@ let package = Package(
         .library(
             name: "_MatchingEngine",
             targets: ["_MatchingEngine"]),
-        .library(
-            name: "_Unicode",
-            targets: ["_Unicode"]),
         .executable(
             name: "VariadicsGenerator",
             targets: ["VariadicsGenerator"])
@@ -31,7 +28,7 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "_MatchingEngine",
-            dependencies: [/*"_Unicode"*/],
+            dependencies: [],
             swiftSettings: [
                 .unsafeFlags(["-enable-library-evolution"])
             ]),
@@ -45,9 +42,6 @@ let package = Package(
                 .unsafeFlags(["-enable-library-evolution"]),
                 .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
             ]),
-        .target(
-            name: "_Unicode",
-            dependencies: []),
         .testTarget(
             name: "RegexTests",
             dependencies: ["_StringProcessing"],
@@ -57,9 +51,6 @@ let package = Package(
         .target(
             name: "Prototypes",
             dependencies: ["_MatchingEngine"]),
-        .testTarget(
-          name: "UnicodeTests",
-          dependencies: ["_Unicode"]),
 
         // MARK: Scripts
         .executableTarget(
