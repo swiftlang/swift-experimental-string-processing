@@ -144,7 +144,7 @@ func makeEngine(
 ) -> Engine<String> {
   var builder = Program<String>.Builder()
   constructor(&builder)
-  let program = builder.assemble()
+  let program = try! builder.assemble()
   let engine = Engine<String>(program)
   show(engine)
   return engine

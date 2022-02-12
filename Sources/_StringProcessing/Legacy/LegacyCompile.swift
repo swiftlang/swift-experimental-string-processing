@@ -51,7 +51,7 @@ func compile(
         instructions.append(.any)
         return
       default:
-        throw unsupported("Unsupported: \(a)")
+        throw Unsupported("Unsupported: \(a)")
       }
 
     case let .group(kind, child):
@@ -68,7 +68,7 @@ func compile(
         return
 
       default:
-        throw unsupported("Unsupported group \(kind)")
+        throw Unsupported("Unsupported group \(kind)")
       }
 
     case let .groupTransform(kind, child, transform) where kind == .capture:
@@ -78,7 +78,8 @@ func compile(
       return
 
     case let .groupTransform(kind, _, _):
-      throw unsupported("Unsupported group transform \(kind)")
+      throw Unsupported(
+        "Unsupported group transform \(kind)")
 
     case let .concatenation(children):
       let childrenHaveCaptures = children.any(\.hasCapture)
@@ -224,7 +225,8 @@ func compile(
         }
         return
       default:
-        throw unsupported("Unsupported: \((amount, kind))")
+        throw Unsupported(
+          "Unsupported: \((amount, kind))")
       }
 
     case let .alternation(children):
@@ -292,22 +294,22 @@ func compile(
       return
 
     case .conditional:
-      throw unsupported("Conditionals")
+      throw Unsupported("Conditionals")
 
     case .absentFunction:
-      throw unsupported("Absent functions")
+      throw Unsupported("Absent functions")
 
     case .customCharacterClass:
-      fatalError("unreachable")
+      throw Unreachable("TODO: reason")
 
     case let .atom(a) where a.characterClass != nil:
-      fatalError("unreachable")
+      throw Unreachable("TODO: reason")
 
     case let .convertedRegexLiteral(node, _):
       try compileNode(node)
 
     case .characterPredicate, .consumer, .consumerValidator:
-      throw unsupported("DSL extensions")
+      throw Unsupported("DSL extensions")
 
     case let .regexLiteral(re):
       try compileNode(re.dslTreeNode)

@@ -230,7 +230,7 @@ extension Program.Builder {
 
   // TODO: Mutating because of fail address fixup, drop when
   // that's removed
-  public mutating func assemble() -> Program {
+  public mutating func assemble() throws -> Program {
     // TODO: This will add a fail instruction at the end every
     // time it's assembled. Better to do to the local instruction
     // list copy, but that complicates logic. It's possible we
@@ -262,12 +262,12 @@ extension Program.Builder {
 
       case .splitSaving:
         guard let fix2 = tok.second else {
-          fatalError("unreachable")
+          throw Unreachable("TODO: reason")
         }
         let saving = addressTokens[fix2.rawValue]!
         payload = .init(addr: addr, addr2: saving)
 
-      default: fatalError("unreachable")
+      default: throw Unreachable("TODO: reason")
 
       }
 

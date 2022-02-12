@@ -223,7 +223,7 @@ extension Parser {
         continue
       }
 
-      fatalError("unreachable?")
+      throw Unreachable("TODO: reason")
     }
     guard !result.isEmpty else {
       return .empty(.init(loc(_start)))

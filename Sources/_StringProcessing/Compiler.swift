@@ -34,7 +34,7 @@ class Compiler {
     // TODO: Handle global options
     var codegen = ByteCodeGen(options: options)
     try codegen.emitNode(tree.root)
-    let program = codegen.finish()
+    let program = try codegen.finish()
     return RegexProgram(program: program)
   }
 }
