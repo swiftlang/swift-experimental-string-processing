@@ -34,7 +34,7 @@ extension Engine where Input == String {
   public func consume(
     _ input: Input,
     in range: Range<Input.Index>,
-    matchMode: MatchMode = .prefix
+    matchMode: MatchMode = .partialFromFront
   ) -> (Input.Index, CaptureList)? {
     if enableTracing {
       print("Consume: \(input)")

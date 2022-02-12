@@ -13,7 +13,7 @@
 // But, we can play around with this.
 public struct Engine<Input: BidirectionalCollection> where Input.Element: Hashable {
 
-  var program: Program<Input>
+  var program: MEProgram<Input>
 
   // TODO: Pre-allocated register banks
 
@@ -25,7 +25,7 @@ public struct Engine<Input: BidirectionalCollection> where Input.Element: Hashab
   }
 
   public init(
-    _ program: Program<Input>,
+    _ program: MEProgram<Input>,
     enableTracing: Bool? = nil
   ) {
     var program = program

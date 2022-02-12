@@ -34,7 +34,8 @@ let package = Package(
             ]),
         .testTarget(
             name: "MatchingEngineTests",
-            dependencies: ["_MatchingEngine"]),
+            dependencies: [
+              "_MatchingEngine", "_StringProcessing"]),
         .target(
             name: "_StringProcessing",
             dependencies: ["_MatchingEngine"],
@@ -50,7 +51,7 @@ let package = Package(
             ]),
         .target(
             name: "Prototypes",
-            dependencies: ["_MatchingEngine"]),
+            dependencies: ["_MatchingEngine", "_StringProcessing"]),
 
         // MARK: Scripts
         .executableTarget(

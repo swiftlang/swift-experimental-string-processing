@@ -10,12 +10,13 @@
 //===----------------------------------------------------------------------===//
 
 import _MatchingEngine
+import _StringProcessing
 
-extension PEG.VM {
-  typealias MEProgram = _MatchingEngine.Program<Input>
-  func transpile() throws -> MEProgram {
-    typealias Builder = MEProgram.Builder
-    var builder = MEProgram.Builder()
+extension PEG.VM where Input == String {
+  typealias MEProg = MEProgram<String>
+  func transpile() throws -> MEProg {
+    typealias Builder = MEProg.Builder
+    var builder = MEProg.Builder()
 
     // Address token info
     //
@@ -110,10 +111,9 @@ extension PEG.VM {
   }
 }
 
-extension PEG.Program {
-  public func transpile<Input: Collection>(
-    for input: Input.Type = Input.self
-  ) throws -> Engine<Input> where Input.Element == Element {
-    try Engine(compile(for: input).vm.transpile())
+extension PEG.Program where Element == Character {
+  public func transpile(
+  ) throws -> Engine<String> {
+    try Engine(compile(for: String.self).vm.transpile())
   }
 }

@@ -10,8 +10,8 @@
 //===----------------------------------------------------------------------===//
 
 public enum MatchMode {
-  case full
-  case `prefix`
+  case wholeString
+  case partialFromFront
 }
 
 /// A concrete CU. Somehow will run the concrete logic and
@@ -63,7 +63,7 @@ extension Processor {
 
 extension Processor {
   init(
-    program: Program<Input>,
+    program: MEProgram<Input>,
     input: Input,
     bounds: Range<Position>,
     matchMode: MatchMode,
@@ -182,12 +182,12 @@ extension Processor {
     switch (currentPosition, matchMode) {
     // When reaching the end of the match bounds or when we are only doing a
     // prefix match, transition to accept.
-    case (bounds.upperBound, _), (_, .prefix):
+    case (bounds.upperBound, _), (_, .partialFromFront):
       state = .accept
 
     // When we are doing a full match but did not reach the end of the match
     // bounds, backtrack if possible.
-    case (_, .full):
+    case (_, .wholeString):
       signalFailure()
     }
   }

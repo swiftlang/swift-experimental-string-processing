@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _MatchingEngine
+import _StringProcessing
 
 extension PEG.VM {
   typealias InIndex = Input.Index

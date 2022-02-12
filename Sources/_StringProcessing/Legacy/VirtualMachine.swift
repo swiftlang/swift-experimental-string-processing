@@ -11,29 +11,6 @@
 
 import _MatchingEngine
 
-public enum MatchMode {
-  case wholeString
-  case partialFromFront
-}
-
-public struct MatchResult {
-  public var range: Range<String.Index>
-  var captures: Capture
-
-  var destructure: (
-    matched: Range<String.Index>, captures: Capture
-  ) {
-    (range, captures)
-  }
-
-  init(
-    _ matched: Range<String.Index>, _ captures: Capture
-  ) {
-    self.range = matched
-    self.captures = captures
-  }
-}
-
 protocol VirtualMachine {
   associatedtype Program
 

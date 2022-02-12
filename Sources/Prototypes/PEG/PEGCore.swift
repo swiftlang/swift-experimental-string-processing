@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _MatchingEngine
+import _StringProcessing
 let emitComments = true
 
 struct PEGCore<
