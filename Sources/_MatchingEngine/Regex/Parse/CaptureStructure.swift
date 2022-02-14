@@ -400,3 +400,39 @@ extension CaptureStructure {
     self = currentScope.count == 1 ? currentScope[0] : .tuple(currentScope)
   }
 }
+
+extension CaptureStructure: CustomStringConvertible {
+  public var description: String {
+    var printer = PrettyPrinter()
+    _print(&printer)
+    return printer.finish()
+  }
+
+  private func _print(_ printer: inout PrettyPrinter) {
+    switch self {
+    case let .atom(name, type):
+      let name = name ?? "<unnamed>"
+      let type = type == nil ? "<untyped>"
+                             : String(describing: type)
+      printer.print("Atom(\(name): \(type))")
+
+    case let .array(c):
+      printer.printBlock("Array") { printer in
+        c._print(&printer)
+      }
+
+    case let .optional(c):
+      printer.printBlock("Optional") { printer in
+        c._print(&printer)
+      }
+
+    case let .tuple(cs):
+      printer.printBlock("Tuple") { printer in
+        for c in cs {
+          c._print(&printer)
+        }
+      }
+
+    }
+  }
+}

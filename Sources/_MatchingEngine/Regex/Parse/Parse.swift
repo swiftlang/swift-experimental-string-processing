@@ -13,25 +13,33 @@
 
 Syntactic structure of a regular expression
 
- Regex           -> '' | Alternation
+ Regex           -> GlobalMatchingOptionSequence? RegexNode
+ RegexNode       -> '' | Alternation
  Alternation     -> Concatenation ('|' Concatenation)*
  Concatenation   -> (!'|' !')' ConcatComponent)*
  ConcatComponent -> Trivia | Quote | Quantification
  Quantification  -> QuantOperand Quantifier?
- QuantOperand    -> Group | CustomCharClass | Atom
- Group           -> GroupStart Regex ')'
+ QuantOperand    -> Conditional | Group | CustomCharClass
+                  | Atom | AbsentFunction
+
+ Conditional -> CondStart Concatenation ('|' Concatenation)? ')'
+ CondStart   -> KnownCondStart | GroupCondStart
+
+ Group       -> GroupStart RegexNode ')'
 
 Custom character classes are a mini-language to their own. We
 support UTS#18 set operators and nested character classes. The
 meaning of some atoms, such as `\b` changes inside a custom
-chararacter class. Below, we have a grammar "scope", that is we say
-"SetOp" to mean "CustomCharactetClass.SetOp", so we don't have to
-abbreviate/obfuscate/disambiguate with ugly names like "CCCSetOp".
+chararacter class. Below, we have a grammar "scope", that is we
+say "SetOp" to mean "CustomCharactetClass.SetOp", so we don't
+have to abbreviate/obfuscate/disambiguate with ugly names like
+"CCCSetOp".
 
 Also, PCRE lets you end in `&&`, but not Oniguruma as it's a set
-operator. We probably want a rule similar to how you can end in `-`
-and that's just the character. Perhaps we also have syntax options
-in case we need a compatibilty mode (it's easy to add here and now)
+operator. We probably want a rule similar to how you can end in
+`-` and that's just the character. Perhaps we also have syntax
+options in case we need a compatibilty mode (it's easy to add
+here and now)
 
  CustomCharClass -> Start Set (SetOp Set)* ']'
  Set             -> Member+
@@ -45,6 +53,9 @@ Lexical analysis provides the following:
  Quote      -> `lexQuote`
  Quantifier -> `lexQuantifier`
  GroupStart -> `lexGroupStart`
+
+ GroupCondStart -> `lexGroupConditionalStart`
+ KnownCondStart -> `lexKnownCondition`
 
  CustomCharacterClass.Start -> `lexCustomCCStart`
  CustomCharacterClass.SetOp -> `lexCustomCCBinOp`
@@ -353,9 +364,9 @@ extension Parser {
   ///
   ///     QuantOperand     -> Conditional | Group | CustomCharClass | Atom
   ///                       | AbsentFunction
-  ///     Group            -> GroupStart RecursiveRegex ')'
-  ///     Conditional      -> ConditionalStart Concatenation ('|' Concatenation)? ')'
-  ///     ConditionalStart -> KnownConditionalStart | GroupConditionalStart
+  ///     Group            -> GroupStart RegexNode ')'
+  ///     Conditional      -> CondStart Concatenation ('|' Concatenation)? ')'
+  ///     CondStart        -> KnownCondStart | GroupCondStart
   ///
   mutating func parseQuantifierOperand() throws -> AST.Node? {
     assert(!source.isEmpty)

@@ -30,6 +30,12 @@ struct PatternConverter: ParsableCommand {
   @Flag(help: "Whether to show canonical regex literal")
   var showCanonical: Bool = false
 
+  @Flag(help: "Whether to show capture structure")
+  var showCaptureStructure: Bool = false
+
+  @Flag(help: "Whether to skip result builder DSL")
+  var skipDSL: Bool = false
+
   @Option(help: "Limit (from top-down) the conversion levels")
   var topDownConversionLimit: Int?
 
@@ -65,12 +71,21 @@ struct PatternConverter: ParsableCommand {
       print()
     }
 
+    if showCaptureStructure {
+      print("Capture structure:")
+      print()
+      print(ast.captureStructure)
+      print()
+    }
+
     print()
-    let render = ast.renderAsBuilderDSL(
-      maxTopDownLevels: topDownConversionLimit,
-      minBottomUpLevels: bottomUpConversionLimit
-    )
-    print(render)
+    if !skipDSL {
+      let render = ast.renderAsBuilderDSL(
+        maxTopDownLevels: topDownConversionLimit,
+        minBottomUpLevels: bottomUpConversionLimit
+      )
+      print(render)
+    }
 
     return
   }
