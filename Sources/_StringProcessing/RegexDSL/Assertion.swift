@@ -11,7 +11,7 @@
 
 import _MatchingEngine
 
-public struct Assertion {
+public struct Anchor {
   internal enum Kind {
     case startOfSubject
     case endOfSubjectBeforeNewline
@@ -21,15 +21,14 @@ public struct Assertion {
     case startOfLine
     case endOfLine
     case wordBoundary
-    case lookahead(DSLTree.Node)
   }
   
   var kind: Kind
   var isInverted: Bool = false
 }
 
-extension Assertion: RegexProtocol {
-  var astAssertion: AST.Atom.AssertionKind? {
+extension Anchor: RegexProtocol {
+  var astAssertion: AST.Atom.AssertionKind {
     if !isInverted {
       switch kind {
       case .startOfSubject: return .startOfSubject
@@ -40,7 +39,6 @@ extension Assertion: RegexProtocol {
       case .startOfLine: return .startOfLine
       case .endOfLine: return .endOfLine
       case .wordBoundary: return .wordBoundary
-      default: return nil
       }
     } else {
       switch kind {
@@ -52,83 +50,72 @@ extension Assertion: RegexProtocol {
       case .startOfLine: fatalError("Not yet supported")
       case .endOfLine: fatalError("Not yet supported")
       case .wordBoundary: return .notWordBoundary
-      default: return nil
       }
     }
   }
   
   public var regex: Regex<Substring> {
-    if let assertionKind = astAssertion {
-      return Regex(node: .atom(.assertion(assertionKind)))
-    }
-    
-    switch (kind, isInverted) {
-    case let (.lookahead(node), false):
-      return Regex(node: .group(.lookahead, node))
-    case let (.lookahead(node), true):
-      return Regex(node: .group(.negativeLookahead, node))
-
-    default:
-      fatalError("Unsupported assertion")
-    }
+    Regex(node: .atom(.assertion(astAssertion)))
   }
 }
 
 // MARK: - Public API
 
-extension Assertion {
-  public static var startOfSubject: Assertion {
-    Assertion(kind: .startOfSubject)
+extension Anchor {
+  public static var startOfSubject: Anchor {
+    Anchor(kind: .startOfSubject)
   }
 
-  public static var endOfSubjectBeforeNewline: Assertion {
-    Assertion(kind: .endOfSubjectBeforeNewline)
+  public static var endOfSubjectBeforeNewline: Anchor {
+    Anchor(kind: .endOfSubjectBeforeNewline)
   }
 
-  public static var endOfSubject: Assertion {
-    Assertion(kind: .endOfSubject)
+  public static var endOfSubject: Anchor {
+    Anchor(kind: .endOfSubject)
   }
 
   // TODO: Are we supporting this?
-//  public static var resetStartOfMatch: Assertion {
-//    Assertion(kind: resetStartOfMatch)
+//  public static var resetStartOfMatch: Anchor {
+//    Anchor(kind: resetStartOfMatch)
 //  }
 
-  public static var firstMatchingPositionInSubject: Assertion {
-    Assertion(kind: .firstMatchingPositionInSubject)
+  public static var firstMatchingPositionInSubject: Anchor {
+    Anchor(kind: .firstMatchingPositionInSubject)
   }
 
-  public static var textSegmentBoundary: Assertion {
-    Assertion(kind: .textSegmentBoundary)
+  public static var textSegmentBoundary: Anchor {
+    Anchor(kind: .textSegmentBoundary)
   }
   
-  public static var startOfLine: Assertion {
-    Assertion(kind: .startOfLine)
+  public static var startOfLine: Anchor {
+    Anchor(kind: .startOfLine)
   }
 
-  public static var endOfLine: Assertion {
-    Assertion(kind: .endOfLine)
+  public static var endOfLine: Anchor {
+    Anchor(kind: .endOfLine)
   }
 
-  public static var wordBoundary: Assertion {
-    Assertion(kind: .wordBoundary)
+  public static var wordBoundary: Anchor {
+    Anchor(kind: .wordBoundary)
   }
   
-  public var inverted: Assertion {
+  public var inverted: Anchor {
     var result = self
     result.isInverted.toggle()
     return result
   }
 }
 
-extension Assertion {
-  public static func lookahead<R: RegexProtocol>(
-    @RegexBuilder _ content: () -> R
-  ) -> Assertion {
-    lookahead(content())
-  }
+public func lookahead<R: RegexProtocol>(
+  isNegative: Bool = false,
+  @RegexBuilder _ content: () -> R
+) -> Regex<R.Match> {
+  Regex(node: .group(isNegative ? .negativeLookahead : .lookahead, content().regex.root))
+}
   
-  public static func lookahead<R: RegexProtocol>(_ component: R) -> Assertion {
-    Assertion(kind: .lookahead(component.regex.root))
-  }
+public func lookahead<R: RegexProtocol>(
+  _ component: R,
+  isNegative: Bool = false
+) -> Regex<R.Match> {
+  Regex(node: .group(isNegative ? .negativeLookahead : .lookahead, component.regex.root))
 }

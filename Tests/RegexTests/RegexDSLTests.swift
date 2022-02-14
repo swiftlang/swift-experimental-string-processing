@@ -188,10 +188,10 @@ class RegexDSLTests: XCTestCase {
       ("aaaaabc", nil),
       captureType: Substring.self, ==)
     {
-      Assertion.startOfLine
+      Anchor.startOfLine
       "a".+
       "b"
-      Assertion.endOfLine
+      Anchor.endOfLine
     }
     
     try _testDSLCaptures(
@@ -201,7 +201,7 @@ class RegexDSLTests: XCTestCase {
       captureType: Substring.self, ==)
     {
       "a".+
-      Assertion.lookahead(CharacterClass.digit)
+      lookahead(CharacterClass.digit)
       CharacterClass.word
     }
   }
