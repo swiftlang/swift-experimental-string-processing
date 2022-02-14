@@ -288,7 +288,7 @@ struct VariadicsGenerator: ParsableCommand {
 
   enum QuantifierKind: String, CaseIterable {
     case zeroOrOne = "optionally"
-    case zeroOrMore = "many"
+    case zeroOrMore = "zeroOrMore"
     case oneOrMore = "oneOrMore"
 
     var operatorName: String {

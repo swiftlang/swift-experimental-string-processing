@@ -501,7 +501,7 @@ extension RegexBuilder {
   }
 }
 @_disfavoredOverload
-public func many<Component: RegexProtocol>(
+public func zeroOrMore<Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<Substring>  {
@@ -509,7 +509,7 @@ public func many<Component: RegexProtocol>(
 }
 
 @_disfavoredOverload
-public func many<Component: RegexProtocol>(
+public func zeroOrMore<Component: RegexProtocol>(
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<Substring>  {
@@ -579,7 +579,7 @@ extension RegexBuilder {
   }
 }
 
-public func many<W, C0, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [C0])> where Component.Match == (W, C0) {
@@ -587,7 +587,7 @@ public func many<W, C0, Component: RegexProtocol>(
 }
 
 
-public func many<W, C0, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, Component: RegexProtocol>(
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [C0])> where Component.Match == (W, C0) {
@@ -657,7 +657,7 @@ extension RegexBuilder {
   }
 }
 
-public func many<W, C0, C1, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1) {
@@ -665,7 +665,7 @@ public func many<W, C0, C1, Component: RegexProtocol>(
 }
 
 
-public func many<W, C0, C1, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, Component: RegexProtocol>(
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1) {
@@ -735,7 +735,7 @@ extension RegexBuilder {
   }
 }
 
-public func many<W, C0, C1, C2, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2) {
@@ -743,7 +743,7 @@ public func many<W, C0, C1, C2, Component: RegexProtocol>(
 }
 
 
-public func many<W, C0, C1, C2, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, Component: RegexProtocol>(
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2) {
@@ -813,7 +813,7 @@ extension RegexBuilder {
   }
 }
 
-public func many<W, C0, C1, C2, C3, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, C3, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3) {
@@ -821,7 +821,7 @@ public func many<W, C0, C1, C2, C3, Component: RegexProtocol>(
 }
 
 
-public func many<W, C0, C1, C2, C3, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, C3, Component: RegexProtocol>(
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3) {
@@ -891,7 +891,7 @@ extension RegexBuilder {
   }
 }
 
-public func many<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4) {
@@ -899,7 +899,7 @@ public func many<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
 }
 
 
-public func many<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4) {
@@ -969,7 +969,7 @@ extension RegexBuilder {
   }
 }
 
-public func many<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5) {
@@ -977,7 +977,7 @@ public func many<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
 }
 
 
-public func many<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5) {
@@ -1047,7 +1047,7 @@ extension RegexBuilder {
   }
 }
 
-public func many<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
@@ -1055,7 +1055,7 @@ public func many<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
 }
 
 
-public func many<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
@@ -1125,7 +1125,7 @@ extension RegexBuilder {
   }
 }
 
-public func many<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
@@ -1133,7 +1133,7 @@ public func many<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
 }
 
 
-public func many<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
@@ -1203,7 +1203,7 @@ extension RegexBuilder {
   }
 }
 
-public func many<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -1211,7 +1211,7 @@ public func many<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol
 }
 
 
-public func many<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
+public func zeroOrMore<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {

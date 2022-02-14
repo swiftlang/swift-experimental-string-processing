@@ -179,7 +179,7 @@ public struct AlternationBuilder {
   }
 }
 
-public func oneOf<R: RegexProtocol>(
+public func choiceOf<R: RegexProtocol>(
   @AlternationBuilder builder: () -> R
 ) -> R {
   builder()

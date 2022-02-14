@@ -67,14 +67,14 @@ class RegexDSLTests: XCTestCase {
 
   func testAlternation() throws {
     do {
-      let regex = oneOf {
+      let regex = choiceOf {
         "aaa"
       }
       XCTAssertTrue("aaa".match(regex)?.match == "aaa")
       XCTAssertNil("aab".match(regex)?.match)
     }
     do {
-      let regex = oneOf {
+      let regex = choiceOf {
         "aaa"
         "bbb"
         "ccc"
@@ -88,7 +88,7 @@ class RegexDSLTests: XCTestCase {
       let regex = Regex {
         "ab"
         capture {
-          oneOf {
+          choiceOf {
             "c"
             "def"
           }
@@ -98,7 +98,7 @@ class RegexDSLTests: XCTestCase {
         try XCTUnwrap("abc".match(regex)?.match) == ("abc", ["c"]))
     }
     do {
-      let regex = oneOf {
+      let regex = choiceOf {
         "aaa"
         "bbb"
         "ccc"
@@ -109,7 +109,7 @@ class RegexDSLTests: XCTestCase {
       XCTAssertTrue("ccc".match(regex)?.match == "ccc")
     }
     do {
-      let regex = oneOf {
+      let regex = choiceOf {
         capture("aaa")
       }
       XCTAssertTrue(
@@ -117,7 +117,7 @@ class RegexDSLTests: XCTestCase {
       XCTAssertNil("aab".match(regex)?.match)
     }
     do {
-      let regex = oneOf {
+      let regex = choiceOf {
         capture("aaa")
         capture("bbb")
         capture("ccc")
@@ -139,11 +139,11 @@ class RegexDSLTests: XCTestCase {
     {
       "a".+
       capture(oneOrMore(Character("b"))) // Substring
-      capture(many("c")) // Substring
+      capture(zeroOrMore("c")) // Substring
       capture(.hexDigit).* // [Substring]
       "e".?
       capture("t" | "k") // Substring
-      oneOf { capture("k"); capture("j") } // (Substring?, Substring?)
+      choiceOf { capture("k"); capture("j") } // (Substring?, Substring?)
     }
   }
   
@@ -189,7 +189,7 @@ class RegexDSLTests: XCTestCase {
       "a".+
       oneOrMore {
         capture(oneOrMore("b"))
-        capture(many("c"))
+        capture(zeroOrMore("c"))
         capture("d").*
         "e".?
       }
@@ -201,7 +201,7 @@ class RegexDSLTests: XCTestCase {
     // straight out of the quantifier (without being wrapped in a builder), is
     // able to produce a regex whose `Match` type does not contain any sort of
     // void.
-    let regex = many(.digit)
+    let regex = zeroOrMore(.digit)
     // Assert the inferred capture type.
     let _: Substring.Type = type(of: regex).Match.self
     let input = "123123"
@@ -236,7 +236,7 @@ class RegexDSLTests: XCTestCase {
       optionally {
         capture(oneOrMore(.digit)) { Int($0)! }
       }
-      many {
+      zeroOrMore {
         oneOrMore(.whitespace)
         capture(oneOrMore(.word)) { Word($0)! }
       }
@@ -266,7 +266,7 @@ class RegexDSLTests: XCTestCase {
       "a".+
       capture {
         tryCapture("b") { Int($0) }
-        many {
+        zeroOrMore {
           tryCapture("c") { Double($0) }
         }
         "e".?
@@ -279,7 +279,7 @@ class RegexDSLTests: XCTestCase {
       capture {
         oneOrMore {
           capture(oneOrMore("b"))
-          capture(many("c"))
+          capture(zeroOrMore("c"))
           capture("d").*
           "e".?
         }
@@ -292,7 +292,7 @@ class RegexDSLTests: XCTestCase {
 
   func testUnicodeScalarPostProcessing() throws {
     let spaces = Regex {
-      many {
+      zeroOrMore {
         .whitespace
       }
     }
@@ -320,7 +320,7 @@ class RegexDSLTests: XCTestCase {
         }
       }
 
-      many {
+      zeroOrMore {
         .any
       }
     }
@@ -354,7 +354,7 @@ class RegexDSLTests: XCTestCase {
       ";"
       oneOrMore(.whitespace)
       capture(oneOrMore(.word))
-      many(.any)
+      zeroOrMore(.any)
     } // Regex<(Substring, Unicode.Scalar?, Unicode.Scalar??, Substring)>
     do {
       // Assert the inferred capture type.
@@ -389,7 +389,7 @@ class RegexDSLTests: XCTestCase {
       ";"
       oneOrMore(.whitespace)
       capture(oneOrMore(.word))
-      many(.any)
+      zeroOrMore(.any)
     } // Regex<(Substring, Unicode.Scalar, Unicode.Scalar?, Substring)>
     do {
       // Assert the inferred capture type.
