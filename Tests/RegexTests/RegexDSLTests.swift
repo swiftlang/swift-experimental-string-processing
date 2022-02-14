@@ -184,8 +184,8 @@ class RegexDSLTests: XCTestCase {
       ("abc1def2", "abc1def2"),
       captureType: Substring.self, ==)
     {
-      oneOrMore {
-        repeating(exactly: 3) {
+      repeatMatch(2...) {
+        repeatMatch(count: 3) {
           CharacterClass.word
         }
         CharacterClass.digit
@@ -202,12 +202,12 @@ class RegexDSLTests: XCTestCase {
       ("aaabbbcccdddeee", "aaabbbcccdddeee"),
       captureType: Substring.self, ==)
     {
-      repeating(exactly: 3) { "a" }
-      repeating(1...) { "b" }
-      repeating(2...5) { "c" }
-      repeating(..<5) { "d" }
-      repeating(2...) { "e" }
-      repeating(0...) { "f" }
+      repeatMatch(count: 3) { "a" }
+      repeatMatch(1...) { "b" }
+      repeatMatch(2...5) { "c" }
+      repeatMatch(..<5) { "d" }
+      repeatMatch(2...) { "e" }
+      repeatMatch(0...) { "f" }
     }
   }
 

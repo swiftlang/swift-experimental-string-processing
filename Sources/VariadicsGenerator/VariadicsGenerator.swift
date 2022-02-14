@@ -391,33 +391,33 @@ struct VariadicsGenerator: ParsableCommand {
   
   func emitRepeating(arity: Int) {
     assert(arity >= 0)
-    // `repeating(..<5)` has the same generic semantics as zeroOrMore
+    // `repeatMatch(..<5)` has the same generic semantics as zeroOrMore
     let rangeParams = QuantifierParameters(kind: .zeroOrMore, arity: arity)
-    // `repeating(exactly:)` has the same generic semantics as oneOrMore
+    // `repeatMatch(count:)` has the same generic semantics as oneOrMore
     let exactlyParams = QuantifierParameters(kind: .zeroOrMore, arity: arity)
     output("""
       \(arity == 0 ? "@_disfavoredOverload" : "")
-      public func repeating<\(exactlyParams.genericParams)>(
+      public func repeatMatch<\(exactlyParams.genericParams)>(
         _ component: Component,
-        exactly count: Int
+        count: Int
       ) -> \(regexTypeName)<\(exactlyParams.matchType)> \(exactlyParams.whereClause) {
         assert(count > 0, "Must specify a positive count")
-        // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+        // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
         return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
       }
 
       \(arity == 0 ? "@_disfavoredOverload" : "")
-      public func repeating<\(exactlyParams.genericParams)>(
-        exactly count: Int,
+      public func repeatMatch<\(exactlyParams.genericParams)>(
+        count: Int,
         @RegexBuilder _ component: () -> Component
       ) -> \(regexTypeName)<\(exactlyParams.matchType)> \(exactlyParams.whereClause) {
         assert(count > 0, "Must specify a positive count")
-        // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+        // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
         return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
       }
       
       \(arity == 0 ? "@_disfavoredOverload" : "")
-      public func repeating<\(rangeParams.genericParams), R: RangeExpression>(
+      public func repeatMatch<\(rangeParams.genericParams), R: RangeExpression>(
         _ component: Component,
         _ expression: R,
         _ behavior: QuantificationBehavior = .eagerly
@@ -427,7 +427,7 @@ struct VariadicsGenerator: ParsableCommand {
       }
 
       \(arity == 0 ? "@_disfavoredOverload" : "")
-      public func repeating<\(rangeParams.genericParams), R: RangeExpression>(
+      public func repeatMatch<\(rangeParams.genericParams), R: RangeExpression>(
         _ expression: R,
         _ behavior: QuantificationBehavior = .eagerly,
         @RegexBuilder _ component: () -> Component
