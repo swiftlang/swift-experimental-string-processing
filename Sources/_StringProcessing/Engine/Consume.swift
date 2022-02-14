@@ -62,7 +62,7 @@ extension Engine where Input == String {
     }
     guard let result = result else { return nil }
 
-    let capList = cpu.storedCaptures.map { $0.history }
+    let capList = cpu.storedCaptures
     return (result, CaptureList(caps: capList))
   }
 }

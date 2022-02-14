@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+import _MatchingEngine
+
 /*
 
  TODO: Specialized data structure for all captures:
@@ -45,15 +47,25 @@ extension Processor {
     //
     fileprivate var stack: Array<Range<Position>> = []
 
+    // Also save entire history of captured values -_-
+    //
+    // We will need to really zoom in on performance here...
+    fileprivate var valueStack: Array<Any> = []
+
     // An in-progress capture start
     fileprivate var currentCaptureBegin: Position? = nil
 
     fileprivate func _invariantCheck() {
       if startState == nil {
         assert(stack.isEmpty)
+        assert(valueStack.isEmpty)
         assert(currentCaptureBegin == nil)
       } else {
         assert(!stack.isEmpty || currentCaptureBegin != nil)
+      }
+      if hasValues {
+        // FIXME: how?
+        // assert(valueStack.count == stack.count)
       }
     }
 
@@ -61,11 +73,18 @@ extension Processor {
 
     var isEmpty: Bool { stack.isEmpty }
 
+    var hasValues: Bool { !valueStack.isEmpty }
+
     var history: Array<Range<Position>> {
       stack
     }
+    var valueHistory: Array<Any> {
+      valueStack
+    }
 
     var latest: Range<Position>? { stack.last }
+
+    var latestValue: Any? { valueStack.last }
 
     /// Start a new capture. If the previously started one was un-ended,
     /// will clear it and restart. If this is the first start, will save `initial`.
@@ -89,6 +108,14 @@ extension Processor {
       stack.append(currentCaptureBegin! ..< idx)
     }
 
+    mutating func registerValue(
+      _ value: Any
+    ) {
+      _invariantCheck()
+      defer { _invariantCheck() }
+      valueStack.append(value)
+    }
+
     mutating func fail(truncatingAt stackIdx: Int) {
       _invariantCheck()
       assert(stackIdx <= stack.endIndex)
@@ -102,15 +129,28 @@ extension Processor {
   }
 }
 
-public struct CaptureList {
-  var caps: Array<Array<Range<String.Index>>>
-
-  func extract(from s: String) -> Array<Array<Substring>> {
-    caps.map { $0.map { s[$0] }  }
+extension Processor._StoredCapture: CustomStringConvertible {
+  var description: String {
+    if hasValues {
+      return String(describing: valueStack)
+    }
+    return String(describing: history)
   }
+}
 
-  func latest(from s: String) -> Array<Substring?> {
-    // TODO: If empty, probably need empty range or something...
-    extract(from: s).map { $0.last }
+public struct CaptureList {
+  var caps: Array<Processor<String>._StoredCapture>
+
+//  func extract(from s: String) -> Array<Array<Substring>> {
+//    caps.map { $0.map { s[$0] }  }
+//  }
+//
+  func latestUntyped(from s: String) -> Array<Substring?> {
+    caps.map {
+      guard let last = $0.latest else {
+        return nil
+      }
+      return s[last]
+    }
   }
 }

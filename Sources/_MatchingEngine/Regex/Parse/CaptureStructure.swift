@@ -25,83 +25,102 @@ public enum CaptureStructure: Equatable {
   }
 }
 
+// TODO: Below are all flattening constructors. Instead create
+// a builder/visitor that can store the structuralization
+// approach
+
 extension CaptureStructure {
-  public init<C: Collection>(
-    alternating children: C
-  ) where C.Element: _TreeNode {
-    assert(children.count > 1)
-    self = children
-      .map(\.captureStructure)
-      .reduce(.empty, +)
-      .map(CaptureStructure.optional)
+  public struct Constructor {
+    var strategy: Strategy
+
+    public init(_ strategy: Strategy = .flatten) {
+      guard strategy == .flatten else {
+        fatalError("TODO: adjust creator methods")
+      }
+      self.strategy = strategy
+    }
   }
-  public init<C: Collection>(
-    concatenating children: C
-  ) where C.Element: _TreeNode {
-    self = children.map(\.captureStructure).reduce(.empty, +)
+}
+
+extension CaptureStructure.Constructor {
+  public mutating func alternating<C: Collection>(
+    _ children: C
+  ) -> CaptureStructure where C.Element: _TreeNode {
+//    assert(children.count > 1)
+    return children.map {
+      $0._captureStructure(&self)
+    }.reduce(.empty, +)
+     .map(CaptureStructure.optional)
+  }
+  public mutating func concatenating<C: Collection>(
+    _ children: C
+  ) -> CaptureStructure where C.Element: _TreeNode {
+    return children.map {
+      $0._captureStructure(&self)
+    }.reduce(.empty, +)
   }
 
-  public init<T: _TreeNode>(
-    grouping child: T, as kind: AST.Group.Kind
-  ) {
-    let innerCaptures = child.captureStructure
+  public mutating func grouping<T: _TreeNode>(
+    _ child: T, as kind: AST.Group.Kind
+  ) -> CaptureStructure {
+    let innerCaptures = child._captureStructure(&self)
     switch kind {
     case .capture:
-      self = .atom() + innerCaptures
+      return .atom() + innerCaptures
     case .namedCapture(let name):
-      self = .atom(name: name.value) + innerCaptures
+      return .atom(name: name.value) + innerCaptures
     case .balancedCapture(let b):
-      self = .atom(name: b.name?.value) + innerCaptures
+      return .atom(name: b.name?.value) + innerCaptures
     default:
       precondition(!kind.isCapturing)
-      self = innerCaptures
+      return innerCaptures
     }
   }
 
-  public init<T: _TreeNode>(
-    grouping child: T,
+  public mutating func grouping<T: _TreeNode>(
+    _ child: T,
     as kind: AST.Group.Kind,
     withTransform transform: CaptureTransform
-  ) {
-    let innerCaptures = child.captureStructure
+  ) -> CaptureStructure {
+    let innerCaptures = child._captureStructure(&self)
     switch kind {
     case .capture:
-      self = .atom(type: AnyType(transform.resultType)) + innerCaptures
+      return .atom(type: AnyType(transform.resultType)) + innerCaptures
     case .namedCapture(let name):
-      self = .atom(name: name.value, type: AnyType(transform.resultType))
+      return .atom(name: name.value, type: AnyType(transform.resultType))
         + innerCaptures
     default:
-      self = innerCaptures
+      return innerCaptures
     }
   }
 
   // TODO: We'll likely want/need a generalization of
   // conditional's condition kind.
-  public init<T: _TreeNode>(
-    condition: AST.Conditional.Condition.Kind,
+  public mutating func condition<T: _TreeNode>(
+    _ condition: AST.Conditional.Condition.Kind,
     trueBranch: T,
     falseBranch: T
-  ) {
+  ) -> CaptureStructure {
     // A conditional's capture structure is effectively that of an alternation
     // between the true and false branches. However the condition may also
     // have captures in the case of a group condition.
     var captures = CaptureStructure.empty
     switch condition {
     case .group(let g):
-      captures = captures + AST.Node.group(g).captureStructure
+      captures = captures + AST.Node.group(g)._captureStructure(&self)
     default:
       break
     }
-    let branchCaptures = trueBranch.captureStructure +
-                         falseBranch.captureStructure
-    self = captures + branchCaptures.map(
+    let branchCaptures = trueBranch._captureStructure(&self) +
+                         falseBranch._captureStructure(&self)
+    return captures + branchCaptures.map(
       CaptureStructure.optional)
   }
 
-  public init<T: _TreeNode>(
-    quantifying child: T, amount: AST.Quantification.Amount
-  ) {
-    self = child.captureStructure.map(
+  public mutating func quantifying<T: _TreeNode>(
+    _ child: T, amount: AST.Quantification.Amount
+  ) -> CaptureStructure {
+    return child._captureStructure(&self).map(
       amount == .zeroOrOne
         ? CaptureStructure.optional
         : CaptureStructure.array)
@@ -109,53 +128,58 @@ extension CaptureStructure {
 
   // TODO: Will need to adjust for DSLTree support, and
   // "absent" isn't the best name for these.
-  public init(
-    absent kind: AST.AbsentFunction.Kind
-  ) {
+  public mutating func absent(
+    _ kind: AST.AbsentFunction.Kind
+  ) -> CaptureStructure {
     // Only the child of an expression absent function is relevant, as the
     // other expressions don't actually get matched against.
     switch kind {
     case .expression(_, _, let child):
-      self = child.captureStructure
+      return child._captureStructure(&self)
     case .clearer, .repeater, .stopper:
-      self = .empty
+      return .empty
     }
   }
 
 }
 
 extension AST.Node {
-  public var captureStructure: CaptureStructure {
+  public func _captureStructure(
+    _ constructor: inout CaptureStructure.Constructor
+  ) -> CaptureStructure {
+    guard constructor.strategy == .flatten else {
+      fatalError("TODO")
+    }
+
     // Note: This implementation could be more optimized.
     switch self {
     case let .alternation(a):
-      return CaptureStructure(alternating: a.children)
+      return constructor.alternating(a.children)
 
     case let .concatenation(c):
-      return CaptureStructure(concatenating: c.children)
+      return constructor.concatenating(c.children)
 
     case let .group(g):
-      return CaptureStructure(
-        grouping: g.child, as: g.kind.value)
+      return constructor.grouping(g.child, as: g.kind.value)
 
     case .groupTransform(let g, let transform):
-      return CaptureStructure(
-        grouping: g.child,
+      return constructor.grouping(
+        g.child,
         as: g.kind.value,
         withTransform: transform)
 
     case .conditional(let c):
-      return CaptureStructure(
-        condition: c.condition.kind,
+      return constructor.condition(
+        c.condition.kind,
         trueBranch: c.trueBranch,
         falseBranch: c.falseBranch)
 
     case .quantification(let q):
-      return CaptureStructure(
-        quantifying: q.child, amount: q.amount.value)
+      return constructor.quantifying(
+        q.child, amount: q.amount.value)
 
     case .absentFunction(let abs):
-      return CaptureStructure(absent: abs.kind)
+      return constructor.absent(abs.kind)
 
     case .quote, .trivia, .atom, .customCharacterClass, .empty:
       return .empty
@@ -434,5 +458,13 @@ extension CaptureStructure: CustomStringConvertible {
       }
 
     }
+  }
+}
+
+extension CaptureStructure.Constructor {
+  public enum Strategy {
+    case flatten
+    case nest
+    // case drop(after: Int)...
   }
 }
