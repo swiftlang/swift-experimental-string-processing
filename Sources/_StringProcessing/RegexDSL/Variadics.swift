@@ -548,6 +548,45 @@ public postfix func .*<Component: RegexProtocol>(
 }
 
 
+@_disfavoredOverload
+public func repeating<Component: RegexProtocol>(
+  _ component: Component,
+  exactly count: Int
+) -> Regex<Substring>  {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+}
+
+@_disfavoredOverload
+public func repeating<Component: RegexProtocol>(
+  exactly count: Int,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<Substring>  {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+}
+
+@_disfavoredOverload
+public func repeating<Component: RegexProtocol, R: RangeExpression>(
+  _ component: Component,
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly
+) -> Regex<Substring> where R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+}
+
+@_disfavoredOverload
+public func repeating<Component: RegexProtocol, R: RangeExpression>(
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<Substring> where R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+}
 
 public func optionally<W, C0, Component: RegexProtocol>(
   _ component: Component,
@@ -627,6 +666,45 @@ public postfix func .*<W, C0, Component: RegexProtocol>(
 
 
 
+public func repeating<W, C0, Component: RegexProtocol>(
+  _ component: Component,
+  exactly count: Int
+) -> Regex<(Substring, [C0])> where Component.Match == (W, C0) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+}
+
+
+public func repeating<W, C0, Component: RegexProtocol>(
+  exactly count: Int,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [C0])> where Component.Match == (W, C0) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+}
+
+
+public func repeating<W, C0, Component: RegexProtocol, R: RangeExpression>(
+  _ component: Component,
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly
+) -> Regex<(Substring, [C0])> where Component.Match == (W, C0), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+}
+
+
+public func repeating<W, C0, Component: RegexProtocol, R: RangeExpression>(
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [C0])> where Component.Match == (W, C0), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+}
+
 public func optionally<W, C0, C1, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
@@ -704,6 +782,45 @@ public postfix func .*<W, C0, C1, Component: RegexProtocol>(
 }
 
 
+
+public func repeating<W, C0, C1, Component: RegexProtocol>(
+  _ component: Component,
+  exactly count: Int
+) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, Component: RegexProtocol>(
+  exactly count: Int,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+}
+
+
+public func repeating<W, C0, C1, Component: RegexProtocol, R: RangeExpression>(
+  _ component: Component,
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly
+) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, Component: RegexProtocol, R: RangeExpression>(
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+}
 
 public func optionally<W, C0, C1, C2, Component: RegexProtocol>(
   _ component: Component,
@@ -783,6 +900,45 @@ public postfix func .*<W, C0, C1, C2, Component: RegexProtocol>(
 
 
 
+public func repeating<W, C0, C1, C2, Component: RegexProtocol>(
+  _ component: Component,
+  exactly count: Int
+) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, Component: RegexProtocol>(
+  exactly count: Int,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, Component: RegexProtocol, R: RangeExpression>(
+  _ component: Component,
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly
+) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, Component: RegexProtocol, R: RangeExpression>(
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+}
+
 public func optionally<W, C0, C1, C2, C3, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
@@ -860,6 +1016,45 @@ public postfix func .*<W, C0, C1, C2, C3, Component: RegexProtocol>(
 }
 
 
+
+public func repeating<W, C0, C1, C2, C3, Component: RegexProtocol>(
+  _ component: Component,
+  exactly count: Int
+) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, Component: RegexProtocol>(
+  exactly count: Int,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, Component: RegexProtocol, R: RangeExpression>(
+  _ component: Component,
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly
+) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, Component: RegexProtocol, R: RangeExpression>(
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+}
 
 public func optionally<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
   _ component: Component,
@@ -939,6 +1134,45 @@ public postfix func .*<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
 
 
 
+public func repeating<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
+  _ component: Component,
+  exactly count: Int
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
+  exactly count: Int,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, Component: RegexProtocol, R: RangeExpression>(
+  _ component: Component,
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, Component: RegexProtocol, R: RangeExpression>(
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+}
+
 public func optionally<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
@@ -1016,6 +1250,45 @@ public postfix func .*<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
 }
 
 
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
+  _ component: Component,
+  exactly count: Int
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
+  exactly count: Int,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol, R: RangeExpression>(
+  _ component: Component,
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol, R: RangeExpression>(
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+}
 
 public func optionally<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
   _ component: Component,
@@ -1095,6 +1368,45 @@ public postfix func .*<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
 
 
 
+public func repeating<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
+  _ component: Component,
+  exactly count: Int
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
+  exactly count: Int,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol, R: RangeExpression>(
+  _ component: Component,
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol, R: RangeExpression>(
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+}
+
 public func optionally<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
@@ -1173,6 +1485,45 @@ public postfix func .*<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtoc
 
 
 
+public func repeating<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
+  _ component: Component,
+  exactly count: Int
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
+  exactly count: Int,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol, R: RangeExpression>(
+  _ component: Component,
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol, R: RangeExpression>(
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+}
+
 public func optionally<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
   _ component: Component,
   _ behavior: QuantificationBehavior = .eagerly
@@ -1250,6 +1601,45 @@ public postfix func .*<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexPr
 }
 
 
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
+  _ component: Component,
+  exactly count: Int
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
+  exactly count: Int,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  assert(count > 0, "Must specify a positive count")
+  // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+  return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol, R: RangeExpression>(
+  _ component: Component,
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+}
+
+
+public func repeating<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol, R: RangeExpression>(
+  _ expression: R,
+  _ behavior: QuantificationBehavior = .eagerly,
+  @RegexBuilder _ component: () -> Component
+) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8), R.Bound == Int {
+  .init(node:
+    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+}
 extension AlternationBuilder {
   public static func buildBlock<R0, R1>(
     combining next: R1, into combined: R0

@@ -151,6 +151,8 @@ struct VariadicsGenerator: ParsableCommand {
         print("\(kind.rawValue) ", terminator: "", to: &standardError)
         emitQuantifier(kind: kind, arity: arity)
       }
+      print("repeating ", terminator: "", to: &standardError)
+      emitRepeating(arity: arity)
       print(to: &standardError)
     }
 
@@ -307,67 +309,133 @@ struct VariadicsGenerator: ParsableCommand {
       }
     }
   }
+  
+  struct QuantifierParameters {
+    var genericParams: String
+    var captures: String
+    var capturesTupled: String
+    var whereClause: String
+    var quantifiedCaptures: String
+    var matchType: String
+    
+    var repeatingWhereClause: String {
+      whereClause.isEmpty
+        ? "where R.Bound == Int"
+        : whereClause + ", R.Bound == Int"
+    }
+    
+    init(kind: QuantifierKind, arity: Int) {
+      self.genericParams = {
+        var result = ""
+        if arity > 0 {
+          result += "W"
+          result += (0..<arity).map { ", C\($0)" }.joined()
+          result += ", "
+        }
+        result += "Component: \(regexProtocolName)"
+        return result
+      }()
+      self.captures = (0..<arity).map { "C\($0)" }.joined(separator: ", ")
+      self.capturesTupled = arity == 1 ? captures : "(\(captures))"
+      self.whereClause = arity == 0 ? "" :
+        "where Component.Match == (W, \(captures))"
+      self.quantifiedCaptures = kind == .zeroOrOne
+        ? "\(capturesTupled)?"
+        : "[\(capturesTupled)]"
+      self.matchType = arity == 0
+        ? baseMatchTypeName
+        : "(\(baseMatchTypeName), \(quantifiedCaptures))"
+    }
+  }
 
   func emitQuantifier(kind: QuantifierKind, arity: Int) {
     assert(arity >= 0)
-    let genericParams: String = {
-      var result = ""
-      if arity > 0 {
-        result += "W"
-        result += (0..<arity).map { ", C\($0)" }.joined()
-        result += ", "
-      }
-      result += "Component: \(regexProtocolName)"
-      return result
-    }()
-    let captures = (0..<arity).map { "C\($0)" }.joined(separator: ", ")
-    let capturesTupled = arity == 1 ? captures : "(\(captures))"
-    let whereClause: String = arity == 0 ? "" :
-      "where Component.Match == (W, \(captures))"
-    let quantifiedCaptures: String = {
-      switch kind {
-      case .zeroOrOne:
-        return "\(capturesTupled)?"
-      case .zeroOrMore, .oneOrMore:
-        return "[\(capturesTupled)]"
-      }
-    }()
-    let matchType = arity == 0 ? baseMatchTypeName : "(\(baseMatchTypeName), \(quantifiedCaptures))"
+    let params = QuantifierParameters(kind: kind, arity: arity)
     output("""
       \(arity == 0 ? "@_disfavoredOverload" : "")
-      public func \(kind.rawValue)<\(genericParams)>(
+      public func \(kind.rawValue)<\(params.genericParams)>(
         _ component: Component,
         _ behavior: QuantificationBehavior = .eagerly
-      ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+      ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
         .init(node: .quantification(.\(kind.astQuantifierAmount), behavior.astKind, component.regex.root))
       }
 
       \(arity == 0 ? "@_disfavoredOverload" : "")
-      public func \(kind.rawValue)<\(genericParams)>(
+      public func \(kind.rawValue)<\(params.genericParams)>(
         _ behavior: QuantificationBehavior = .eagerly,
         @RegexBuilder _ component: () -> Component
-      ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+      ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
         .init(node: .quantification(.\(kind.astQuantifierAmount), behavior.astKind, component().regex.root))
       }
 
       \(arity == 0 ? "@_disfavoredOverload" : "")
-      public postfix func \(kind.operatorName)<\(genericParams)>(
+      public postfix func \(kind.operatorName)<\(params.genericParams)>(
         _ component: Component
-      ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+      ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
         .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component.regex.root))
       }
 
       \(kind == .zeroOrOne ?
         """
         extension RegexBuilder {
-          public static func buildLimitedAvailability<\(genericParams)>(
+          public static func buildLimitedAvailability<\(params.genericParams)>(
             _ component: Component
-          ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+          ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
             .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component.regex.root))
           }
         }
         """ : "")
 
+      """)
+  }
+  
+  func emitRepeating(arity: Int) {
+    assert(arity >= 0)
+    // `repeating(..<5)` has the same generic semantics as zeroOrMore
+    let rangeParams = QuantifierParameters(kind: .zeroOrMore, arity: arity)
+    // `repeating(exactly:)` has the same generic semantics as oneOrMore
+    let exactlyParams = QuantifierParameters(kind: .zeroOrMore, arity: arity)
+    output("""
+      \(arity == 0 ? "@_disfavoredOverload" : "")
+      public func repeating<\(exactlyParams.genericParams)>(
+        _ component: Component,
+        exactly count: Int
+      ) -> \(regexTypeName)<\(exactlyParams.matchType)> \(exactlyParams.whereClause) {
+        assert(count > 0, "Must specify a positive count")
+        // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+        return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+      }
+
+      \(arity == 0 ? "@_disfavoredOverload" : "")
+      public func repeating<\(exactlyParams.genericParams)>(
+        exactly count: Int,
+        @RegexBuilder _ component: () -> Component
+      ) -> \(regexTypeName)<\(exactlyParams.matchType)> \(exactlyParams.whereClause) {
+        assert(count > 0, "Must specify a positive count")
+        // TODO: Emit a warning about `repeating(exactly: 0)` or `repeating(exactly: 1)`
+        return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+      }
+      
+      \(arity == 0 ? "@_disfavoredOverload" : "")
+      public func repeating<\(rangeParams.genericParams), R: RangeExpression>(
+        _ component: Component,
+        _ expression: R,
+        _ behavior: QuantificationBehavior = .eagerly
+      ) -> \(regexTypeName)<\(rangeParams.matchType)> \(rangeParams.repeatingWhereClause) {
+        .init(node:
+          _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+      }
+
+      \(arity == 0 ? "@_disfavoredOverload" : "")
+      public func repeating<\(rangeParams.genericParams), R: RangeExpression>(
+        _ expression: R,
+        _ behavior: QuantificationBehavior = .eagerly,
+        @RegexBuilder _ component: () -> Component
+      ) -> \(regexTypeName)<\(rangeParams.matchType)> \(rangeParams.repeatingWhereClause) {
+        .init(node:
+          _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+      }
+      
       """)
   }
 
