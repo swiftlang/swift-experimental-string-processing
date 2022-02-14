@@ -23,6 +23,22 @@ func _internalInvariant(
   assert(b(), s)
 }
 
+extension Optional {
+  internal var _unsafelyUnwrappedUnchecked: Wrapped {
+    self.unsafelyUnwrapped
+  }
+
+  internal mutating func _take() -> Wrapped? {
+    switch self {
+    case .some(let thing):
+      self = nil
+      return thing
+    case .none:
+      return nil
+    }
+  }
+}
+
 // Don't use UnsafeRawBufferPointer for anything important
 public struct UnsafeByteBuffer {
   var pointer: UnsafeRawPointer
@@ -42,9 +58,19 @@ public struct UnsafeByteBuffer {
   }
 }
 
+extension UnsafeBufferPointer where Element == UInt8 {
+  var byteBuffer: UnsafeByteBuffer {
+    UnsafeByteBuffer(pointer: baseAddress.unsafelyUnwrapped, count: count)
+  }
+}
+
 extension Unicode.Scalar {
   init(_unchecked v: UInt32) {
     self.init(v)!
+  }
+
+  init(_value v: UInt32) {
+    self = unsafeBitCast(v, to: Self.self)
   }
 }
 
@@ -60,5 +86,16 @@ extension UTF16 {
     return Unicode.Scalar(
       _unchecked: 0x10000 +
       (UInt32(lead & 0x03ff) &<< 10 | UInt32(trail & 0x03ff)))
+  }
+}
+
+extension String.Index {
+  internal var _encodedOffset: Int {
+    // The encoded offset is found in the top 48 bits.
+    Int(unsafeBitCast(self, to: UInt64.self) >> 16)
+  }
+
+  internal init(_encodedOffset offset: Int) {
+    self = unsafeBitCast(offset << 16, to: Self.self)
   }
 }
