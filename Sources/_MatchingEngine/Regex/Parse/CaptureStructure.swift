@@ -46,7 +46,7 @@ extension CaptureStructure.Constructor {
   public mutating func alternating<C: Collection>(
     _ children: C
   ) -> CaptureStructure where C.Element: _TreeNode {
-    assert(children.count > 1)
+//    assert(children.count > 1)
     return children.map {
       $0._captureStructure(&self)
     }.reduce(.empty, +)

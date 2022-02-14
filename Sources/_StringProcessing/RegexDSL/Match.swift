@@ -29,48 +29,54 @@ extension RegexProtocol {
       input.base, in: input.startIndex..<input.endIndex)
   }
 
-  // FIXME: This is mostly hacky because we go down two different paths based on
-  // whether there are captures. This will be cleaned up once we deprecate the
-  // legacy virtual machines.
+  // TODO: Should we expose parameters for testing?
+  // Currently, tests just use the execution interface directly.
+  func _performLegacyMatch(
+    _ input: String,
+    in inputRange: Range<String.Index>,
+    mode: MatchMode
+  ) -> RegexMatch<Match>? {
+    let vm = HareVM(program: regex.program.legacyLoweredProgram)
+    guard let (range, captures) = vm.execute(
+      input: input, in: inputRange, mode: mode
+    )?.destructure else {
+      return nil
+    }
+    let convertedMatch: Match
+    if Match.self == (Substring, DynamicCaptures).self {
+      convertedMatch = (input[range], DynamicCaptures(captures)) as! Match
+    } else {
+      let typeErasedMatch = captures.matchValue(
+        withWholeMatch: input[range]
+      )
+      convertedMatch = typeErasedMatch as! Match
+    }
+    return RegexMatch(range: range, match: convertedMatch)
+  }
+
   func _match(
     _ input: String,
     in inputRange: Range<String.Index>,
     mode: MatchMode = .wholeString
   ) -> RegexMatch<Match>? {
-    // TODO: Remove this branch when the matching engine supports captures.
-    if regex.hasCapture {
-      let vm = HareVM(program: regex.program.legacyLoweredProgram)
-      guard let (range, captures) = vm.execute(
-        input: input, in: inputRange, mode: mode
-      )?.destructure else {
-        return nil
-      }
-      let convertedMatch: Match
-      if Match.self == (Substring, DynamicCaptures).self {
-        convertedMatch = (input[range], DynamicCaptures(captures)) as! Match
-      } else {
-        let typeErasedMatch = captures.matchValue(
-          withWholeMatch: input[range]
-        )
-        convertedMatch = typeErasedMatch as! Match
-      }
-      return RegexMatch(range: range, match: convertedMatch)
-    }
-
     let executor = Executor(program: regex.program.loweredProgram)
-    guard let result = executor.execute(
+    guard let (range, captures) = executor.execute(
       input: input, in: inputRange, mode: mode
-    ) else {
+    )?.destructure else {
       return nil
     }
     let convertedMatch: Match
     if Match.self == (Substring, DynamicCaptures).self {
-      convertedMatch = (input[result.range], DynamicCaptures.empty) as! Match
+      convertedMatch = (input[range], DynamicCaptures(captures)) as! Match
+    } else if Match.self == Substring.self {
+      convertedMatch = input[range] as! Match
     } else {
-      assert(Match.self == Substring.self)
-      convertedMatch = input[result.range] as! Match
+      let typeErasedMatch = captures.matchValue(
+        withWholeMatch: input[range]
+      )
+      convertedMatch = typeErasedMatch as! Match
     }
-    return RegexMatch(range: result.range, match: convertedMatch)
+    return RegexMatch(range: range, match: convertedMatch)
   }
 }
 
