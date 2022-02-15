@@ -95,7 +95,7 @@ class RegexDSLTests: XCTestCase {
         }.+
       }
       XCTAssertTrue(
-        try XCTUnwrap("abc".match(regex)?.match) == ("abc", ["c"]))
+        try XCTUnwrap("abc".match(regex)?.match) == ("abc", "c"))
     }
     do {
       let regex = choiceOf {
@@ -134,8 +134,8 @@ class RegexDSLTests: XCTestCase {
 
   func testCombinators() throws {
     try _testDSLCaptures(
-      ("aaaabccccdddkj", ("aaaabccccdddkj", "b", "cccc", ["d", "d", "d"], "k", nil, "j")),
-      captureType: (Substring, Substring, Substring, [Substring], Substring, Substring?, Substring?).self, ==)
+      ("aaaabccccdddkj", ("aaaabccccdddkj", "b", "cccc", "d", "k", nil, "j")),
+      captureType: (Substring, Substring, Substring, Substring, Substring, Substring?, Substring?).self, ==)
     {
       "a".+
       capture(oneOrMore(Character("b"))) // Substring
@@ -149,8 +149,8 @@ class RegexDSLTests: XCTestCase {
   
   func testQuantificationBehavior() throws {
     try _testDSLCaptures(
-      ("abc1def2", ("abc1def2", ["2"])),
-      captureType: (Substring, [Substring]).self, ==)
+      ("abc1def2", ("abc1def2", "2")),
+      captureType: (Substring, Substring).self, ==)
     {
       oneOrMore {
         oneOrMore(.word)
@@ -159,8 +159,8 @@ class RegexDSLTests: XCTestCase {
     }
 
     try _testDSLCaptures(
-      ("abc1def2", ("abc1def2", ["1", "2"])),
-      captureType: (Substring, [Substring]).self, ==)
+      ("abc1def2", ("abc1def2", "2")),
+      captureType: (Substring, Substring).self, ==)
     {
       oneOrMore {
         oneOrMore(.word, .reluctantly)
@@ -169,8 +169,8 @@ class RegexDSLTests: XCTestCase {
     }
 
     try _testDSLCaptures(
-      ("abc1def2", ("abc1def2", ["1", "2"])),
-      captureType: (Substring, [Substring]).self, ==)
+      ("abc1def2", ("abc1def2", "2")),
+      captureType: (Substring, Substring).self, ==)
     {
       oneOrMore {
         oneOrMore(.reluctantly) {
@@ -233,9 +233,9 @@ class RegexDSLTests: XCTestCase {
       }
     }
     try _testDSLCaptures(
-      ("aaa 123 apple orange apple", ("aaa 123 apple orange apple", 123, [.apple, .orange, .apple])),
-      ("aaa     ", ("aaa     ", nil, [])),
-      captureType: (Substring, Int?, [Word]).self, ==)
+      ("aaa 123 apple orange apple", ("aaa 123 apple orange apple", 123, .apple)),
+      ("aaa     ", ("aaa     ", nil, nil)),
+      captureType: (Substring, Int?, Word?).self, ==)
     {
       "a".+
       oneOrMore(.whitespace)
@@ -266,7 +266,7 @@ class RegexDSLTests: XCTestCase {
         "e".?
       }
     }
-    let _: (Substring, Substring, [Int]).Type
+    let _: (Substring, Substring, Int?).Type
       = type(of: regex2).Match.self
     let regex3 = Regex {
       "a".+
@@ -278,7 +278,7 @@ class RegexDSLTests: XCTestCase {
         "e".?
       }
     }
-    let _: (Substring, Substring, Int, [Double]).Type
+    let _: (Substring, Substring, Int, Double?).Type
       = type(of: regex3).Match.self
     let regex4 = Regex {
       "a".+
@@ -292,7 +292,7 @@ class RegexDSLTests: XCTestCase {
       }
     }
     let _: (
-      Substring, Substring, [(Substring, Substring, [Substring])]).Type
+      Substring, Substring, Substring, Substring, Substring?).Type
       = type(of: regex4).Match.self
   }
 

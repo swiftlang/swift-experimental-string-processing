@@ -294,8 +294,8 @@ struct VariadicsGenerator: ParsableCommand {
     var operatorName: String {
       switch self {
       case .zeroOrOne: return ".?"
-      case .zeroOrMore: return ".+"
-      case .oneOrMore: return ".*"
+      case .zeroOrMore: return ".*"
+      case .oneOrMore: return ".+"
       }
     }
 
@@ -320,16 +320,16 @@ struct VariadicsGenerator: ParsableCommand {
       result += "Component: \(regexProtocolName)"
       return result
     }()
-    let captures = (0..<arity).map { "C\($0)" }.joined(separator: ", ")
-    let capturesTupled = arity == 1 ? captures : "(\(captures))"
+    let captures = (0..<arity).map { "C\($0)" }
+    let capturesJoined = captures.joined(separator: ", ")
     let whereClause: String = arity == 0 ? "" :
-      "where Component.Match == (W, \(captures))"
+      "where Component.Match == (W, \(capturesJoined))"
     let quantifiedCaptures: String = {
       switch kind {
-      case .zeroOrOne:
-        return "\(capturesTupled)?"
-      case .zeroOrMore, .oneOrMore:
-        return "[\(capturesTupled)]"
+      case .zeroOrOne, .zeroOrMore:
+        return captures.map { "\($0)?" }.joined(separator: ", ")
+      case .oneOrMore:
+        return capturesJoined
       }
     }()
     let matchType = arity == 0 ? baseMatchTypeName : "(\(baseMatchTypeName), \(quantifiedCaptures))"

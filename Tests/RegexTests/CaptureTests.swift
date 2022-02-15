@@ -54,7 +54,9 @@ func captureTest(
   _ expected: CaptureStructure,
   _ tests: (input: String, output: Capture)...,
   skipEngine: Bool = false,
-  skipLegacy: Bool = false
+  skipLegacy: Bool = false,
+  file: StaticString = #file,
+  line: UInt = #line
 ) {
 
   let ast = try! parse(regex, .traditional)
@@ -65,7 +67,9 @@ func captureTest(
         \(expected)
         Actual:
         \(capStructure)
-        """)
+        """,
+        file: file,
+        line: line)
     return
   }
 
@@ -78,7 +82,9 @@ func captureTest(
       \(capStructure)
       DSLTree:
       \(dslCapStructure)
-      """)
+      """,
+      file: file,
+      line: line)
     return
   }
 
@@ -95,16 +101,18 @@ func captureTest(
 
       guard isEqual(cap, output) else {
         XCTFail("""
-      regex: \(regex), input: "\(input)"
-      Structure:
-      \(capStructure)
-      Capture list:
-      \(capFlat.latestUntyped(from: input))
-      Expected:
-      \(output)
-      Actual:
-      \(cap)
-      """)
+          regex: \(regex), input: "\(input)"
+          Structure:
+          \(capStructure)
+          Capture list:
+          \(capFlat.latestUntyped(from: input))
+          Expected:
+          \(output)
+          Actual:
+          \(cap)
+          """,
+        file: file,
+        line: line)
         continue
       }
     }
@@ -115,12 +123,14 @@ func captureTest(
 
       guard isEqual(vmCap, output) else {
         XCTFail("""
-      regex: \(regex), input: "\(input)"
-      Capture Structure:
-      \(capStructure)
-      Legacy VM Capture:
-      \(vmCap)
-      """)
+          regex: \(regex), input: "\(input)"
+          Capture Structure:
+          \(capStructure)
+          Legacy VM Capture:
+          \(vmCap)
+          """,
+          file: file,
+          line: line)
         continue
       }
     }
@@ -174,16 +184,18 @@ extension RegexTests {
 
     captureTest(
       "a(b)*c",
-      .array(.atom()),
-      ("abc", array("b")),
-      ("ac", array("")),
-      ("abbc", array("b", "b")))
+      .optional(.atom()),
+      ("abc", some("b")),
+      ("ac", none),
+      ("abbc", some("b")),
+      skipLegacy: true)
 
     captureTest(
       "a(b)+c",
-      .array(.atom()),
-      ("abc", array("b")),
-      ("abbc", array("b", "b")))
+      .atom(),
+      ("abc", "b"),
+      ("abbc", "b"),
+      skipLegacy: true)
 
     captureTest(
       "a(b)?c",
@@ -230,19 +242,19 @@ extension RegexTests {
     captureTest(
       "((a)|(b))*",
       .tuple(
-        .array(.atom()),
-        .array(.optional(.atom())),
-        .array(.optional(.atom()))),
-      ("a", tuple(array("a"), array(some("a")), array(none))),
+        .optional(.atom()),
+        .optional(.optional(.atom())),
+        .optional(.optional(.atom()))),
+      ("a", tuple(some("a"), some(some("a")), none)),
       skipEngine: true,
       skipLegacy: true)
 
     captureTest(
       "((a)|(b))+",
       .tuple(
-        .array(.atom()),
-        .array(.optional(.atom())),
-        .array(.optional(.atom()))),
+        .atom(),
+        .optional(.atom()),
+        .optional(.atom())),
       // TODO: test cases
       skipEngine: true,
       skipLegacy: true)
@@ -251,9 +263,9 @@ extension RegexTests {
       "(((a)|(b))*)",
       .tuple(
         .atom(),
-        .array(.atom()),
-        .array(.optional(.atom())),
-        .array(.optional(.atom()))),
+        .optional(.atom()),
+        .optional(.optional(.atom())),
+        .optional(.optional(.atom()))),
       // TODO: test cases
       skipEngine: true,
       skipLegacy: true)
@@ -293,9 +305,9 @@ extension RegexTests {
       "((((a)*)?)*)?",
       .tuple([
         .optional(.atom()),
-        .optional(.array(.atom())),
-        .optional(.array(.optional(.atom()))),
-        .optional(.array(.optional(.array(.atom())))),
+        .optional(.optional(.atom())),
+        .optional(.optional(.optional(.atom()))),
+        .optional(.optional(.optional(.optional(.atom())))),
       ]),
       // TODO: test cases
       skipEngine: true,
@@ -313,7 +325,7 @@ extension RegexTests {
 
     captureTest(
       "a|(b)*",
-      .optional(.array(.atom())),
+      .optional(.optional(.atom())),
       ("a", none),
       ("", someArray()),
       ("b", someArray("b")),
@@ -323,7 +335,7 @@ extension RegexTests {
 
     captureTest(
       "a|(b)+",
-      .optional(.array(.atom())),
+      .optional(.atom()),
       ("a", noArray),
       ("b", someArray("b")),
       ("bbb", someArray("b", "b", "b")),
@@ -357,7 +369,7 @@ extension RegexTests {
 
     captureTest(
       "a|(b|c)*",
-      .optional(.array(.atom())),
+      .optional(.optional(.atom())),
       ("a", noArray),
       ("", noArray),
       ("b", someArray("b")),
@@ -392,10 +404,10 @@ extension RegexTests {
 
     captureTest(
       "a(b(c)*)",
-      .tuple(.atom(), .array(.atom())),
-      ("ab", tuple("b", array(""))),
-      ("abc", tuple("bc", array("c"))),
-      ("abcc", tuple("bcc", array("c", "c"))),
+      .tuple(.atom(), .optional(.atom())),
+      ("ab", tuple("b", none)),
+      ("abc", tuple("bc", some("c"))),
+      ("abcc", tuple("bcc", some("c"))),
       skipLegacy: true)
 
     captureTest(
@@ -408,10 +420,10 @@ extension RegexTests {
 
     captureTest(
       "a(b(c))*",
-      .tuple(.array(.atom()), .array(.atom())),
-      ("a", tuple(array(""), array(""))),
-      ("abc", tuple(array("bc"), array("c"))),
-      ("abcbc", tuple(array("bc", "bc"), array("c", "c"))),
+      .tuple(.optional(.atom()), .optional(.atom())),
+      ("a", tuple(none, none)),
+      ("abc", tuple(some("bc"), some("c"))),
+      ("abcbc", tuple(some("bc"), some("c"))),
       skipLegacy: true)
 
     captureTest(
