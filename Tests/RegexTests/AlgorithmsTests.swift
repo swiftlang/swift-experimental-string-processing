@@ -146,12 +146,13 @@ class RegexConsumerTests: XCTestCase {
       input: "9+16, 0+3, 5+5, 99+1",
       result: "25, 3, 10, 100",
       { match in "\(match.result.1 + match.result.2)" })
-    
-    replaceTest(
-      oneOrMore { int; "," },
-      input: "3,5,8,0, 1,0,2,-5,x8,8,",
-      result: "16 3-5x16",
-      { match in "\(match.result.1.reduce(0, +))" })
+
+    // TODO: Need to support capture history
+    // replaceTest(
+    //   oneOrMore { int; "," },
+    //   input: "3,5,8,0, 1,0,2,-5,x8,8,",
+    //   result: "16 3-5x16",
+    //   { match in "\(match.result.1.reduce(0, +))" })
     
     replaceTest(
       Regex { int; "x"; int; optionally { "x"; int } },

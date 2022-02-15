@@ -250,14 +250,14 @@ extension RegexTests {
       concat(
         zeroOrMore(of: capture(atom(.any))),
         capture(zeroOrMore(of: atom(.any)))),
-      captures: .tuple([.array(.atom()), .atom()]))
+      captures: .tuple([.optional(.atom()), .atom()]))
     parseTest(
       "((.))*((.)?)",
       concat(
         zeroOrMore(of: capture(capture(atom(.any)))),
         capture(zeroOrOne(of: capture(atom(.any))))),
       captures: .tuple([
-        .array(.atom()), .array(.atom()), .atom(), .optional(.atom())
+        .optional(.atom()), .optional(.atom()), .atom(), .optional(.atom())
       ]))
     parseTest(
       #"abc\d"#,
@@ -289,7 +289,7 @@ extension RegexTests {
       concat(quant(
         .zeroOrMore, .reluctant,
         nonCapture(capture(capture(alt("a", "b"))))), "c"),
-      captures: .tuple(.array(.atom()), .array(.atom())))
+      captures: .tuple(.optional(.atom()), .optional(.atom())))
     parseTest(
       "(a)|b|(c)d",
       alt(capture("a"), "b", concat(capture("c"), "d")),
@@ -1138,7 +1138,7 @@ extension RegexTests {
       trueBranch: oneOrMore(of: capture("a")),
       falseBranch: "b"
     ), captures: .tuple([
-      .atom(), .optional(.atom()), .atom(), .optional(.array(.atom()))
+      .atom(), .optional(.atom()), .atom(), .optional(.atom())
     ]))
 
     parseTest(#"(?(?:(a)?(b))(a)+|b)"#, conditional(
@@ -1148,7 +1148,7 @@ extension RegexTests {
       trueBranch: oneOrMore(of: capture("a")),
       falseBranch: "b"
     ), captures: .tuple([
-      .optional(.atom()), .atom(), .optional(.array(.atom()))
+      .optional(.atom()), .atom(), .optional(.atom())
     ]))
 
     parseTest(#"(?<xxx>y)(?(xxx)a|b)"#, concat(
