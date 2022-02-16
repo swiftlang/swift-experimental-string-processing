@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+import _MatchingEngine
+
 extension Processor {
   /// Our register file
   struct Registers {
@@ -28,6 +30,9 @@ extension Processor {
 
     // currently, these are static readonly
     var assertionFunctions: [MEProgram<Input>.AssertionFunction]
+
+    // Captured-value constructors
+    var transformFunctions: [MEProgram<Input>.TransformFunction]
 
     // currently, these are for comments and abort messages
     var strings: [String]
@@ -80,6 +85,9 @@ extension Processor {
     subscript(_ i: AssertionFunctionRegister) -> MEProgram<Input>.AssertionFunction {
       assertionFunctions[i.rawValue]
     }
+    subscript(_ i: TransformRegister) -> MEProgram<Input>.TransformFunction {
+      transformFunctions[i.rawValue]
+    }
   }
 }
 
@@ -101,6 +109,9 @@ extension Processor.Registers {
 
     self.assertionFunctions = program.staticAssertionFunctions
     assert(assertionFunctions.count == info.assertionFunctions)
+
+    self.transformFunctions = program.staticTransformFunctions
+    assert(transformFunctions.count == info.transformFunctions)
 
     self.strings = program.staticStrings
     assert(strings.count == info.strings)
@@ -131,6 +142,7 @@ extension MEProgram {
     var strings = 0
     var consumeFunctions = 0
     var assertionFunctions = 0
+    var transformFunctions = 0
     var ints = 0
     var floats = 0
     var positions = 0

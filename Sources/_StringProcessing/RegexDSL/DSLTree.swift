@@ -237,43 +237,49 @@ extension DSLTree.Node {
 
 extension DSLTree {
   var captureStructure: CaptureStructure {
-    root.captureStructure
+    // TODO: nesting
+    var constructor = CaptureStructure.Constructor(.flatten)
+    return root._captureStructure(&constructor)
   }
 }
 extension DSLTree.Node {
-  var captureStructure: CaptureStructure {
+  public func _captureStructure(
+    _ constructor: inout CaptureStructure.Constructor
+  ) -> CaptureStructure {
     switch self {
     case let .alternation(children):
-      return CaptureStructure(alternating: children)
+      return constructor.alternating(children)
 
     case let .concatenation(children):
-      return CaptureStructure(concatenating: children)
+      return constructor.concatenating(children)
 
     case let .group(kind, child):
-      return CaptureStructure(grouping: child, as: kind)
+      return constructor.grouping(child, as: kind)
 
     case let .groupTransform(kind, child, transform):
-      return CaptureStructure(
-        grouping: child, as: kind, withTransform: transform)
+      return constructor.grouping(
+        child, as: kind, withTransform: transform)
 
     case let .conditional(cond, trueBranch, falseBranch):
-      return CaptureStructure(
-        condition: cond,
+      return constructor.condition(
+        cond,
         trueBranch: trueBranch,
         falseBranch: falseBranch)
 
     case let .quantification(amount, _, child):
-      return CaptureStructure(
-        quantifying: child, amount: amount)
+      return constructor.quantifying(
+        child, amount: amount)
 
     case let .regexLiteral(re):
-      return re.captureStructure
+      // TODO: Force a re-nesting?
+      return re._captureStructure(&constructor)
 
     case let .absentFunction(abs):
-      return CaptureStructure(absent: abs.kind)
+      return constructor.absent(abs.kind)
 
     case let .convertedRegexLiteral(n, _):
-      return n.captureStructure
+      // TODO: Switch nesting strategy?
+      return n._captureStructure(&constructor)
 
     case .consumerValidator:
       // FIXME: This is where we make a capture!

@@ -61,6 +61,7 @@ extension Instruction.Payload {
     case packedBoolInt(BoolRegister, IntRegister)
     case packedEltBool(ElementRegister, BoolRegister)
     case packedPosPos(PositionRegister, PositionRegister)
+    case packedCapTran(CaptureRegister, TransformRegister)
   }
 }
 
@@ -280,5 +281,13 @@ extension Instruction.Payload {
     interpretPair()
   }
 
+  init(capture: CaptureRegister, transform: TransformRegister) {
+    self.init(capture, transform)
+  }
+  var pairedCaptureTransform: (
+    CaptureRegister, TransformRegister
+  ) {
+    interpretPair()
+  }
 }
 

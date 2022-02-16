@@ -9,10 +9,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+import _MatchingEngine
+
 public struct MEProgram<Input: Collection> where Input.Element: Equatable {
   public typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?
   public typealias AssertionFunction =
     (Input, Input.Index, Range<Input.Index>) -> Bool
+  public typealias TransformFunction =
+    (Input, Range<Input.Index>) -> Any?
+
   var instructions: InstructionList<Instruction>
 
   var staticElements: [Input.Element]
@@ -20,10 +25,13 @@ public struct MEProgram<Input: Collection> where Input.Element: Equatable {
   var staticStrings: [String]
   var staticConsumeFunctions: [ConsumeFunction]
   var staticAssertionFunctions: [AssertionFunction]
+  var staticTransformFunctions: [TransformFunction]
 
   var registerInfo: RegisterInfo
 
   var enableTracing: Bool = false
+
+  let captureStructure: CaptureStructure
 }
 
 extension MEProgram: CustomStringConvertible {

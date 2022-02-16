@@ -24,12 +24,14 @@ public struct Executor {
     in range: Range<String.Index>,
     mode: MatchMode = .wholeString
   ) -> MatchResult? {
-    engine.consume(
+    guard let (endIdx, capList) = engine.consume(
       input, in: range, matchMode: mode
-    ).map { endIndex, capture in
-      _ = capture // TODO: construct structure
-      return MatchResult(range.lowerBound..<endIndex, .void)
+    ) else {
+      return nil
     }
+    let capStruct = engine.program.captureStructure
+    let caps = try! capStruct.structuralize(capList, input)
+    return MatchResult(range.lowerBound..<endIdx, caps)
   }
   public func execute(
     input: Substring,

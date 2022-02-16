@@ -296,8 +296,8 @@ struct VariadicsGenerator: ParsableCommand {
     var operatorName: String {
       switch self {
       case .zeroOrOne: return ".?"
-      case .zeroOrMore: return ".+"
-      case .oneOrMore: return ".*"
+      case .zeroOrMore: return ".*"
+      case .oneOrMore: return ".+"
       }
     }
 
@@ -311,9 +311,8 @@ struct VariadicsGenerator: ParsableCommand {
   }
   
   struct QuantifierParameters {
+    var disfavored: String
     var genericParams: String
-    var captures: String
-    var capturesTupled: String
     var whereClause: String
     var quantifiedCaptures: String
     var matchType: String
@@ -325,6 +324,7 @@ struct VariadicsGenerator: ParsableCommand {
     }
     
     init(kind: QuantifierKind, arity: Int) {
+      self.disfavored = arity == 0 ? "@_disfavoredOverload\n" : ""
       self.genericParams = {
         var result = ""
         if arity > 0 {
@@ -335,13 +335,19 @@ struct VariadicsGenerator: ParsableCommand {
         result += "Component: \(regexProtocolName)"
         return result
       }()
-      self.captures = (0..<arity).map { "C\($0)" }.joined(separator: ", ")
-      self.capturesTupled = arity == 1 ? captures : "(\(captures))"
+      
+      let captures = (0..<arity).map { "C\($0)" }
+      let capturesJoined = captures.joined(separator: ", ")
       self.whereClause = arity == 0 ? "" :
-        "where Component.Match == (W, \(captures))"
-      self.quantifiedCaptures = kind == .zeroOrOne
-        ? "\(capturesTupled)?"
-        : "[\(capturesTupled)]"
+        "where Component.Match == (W, \(capturesJoined))"
+      self.quantifiedCaptures = {
+        switch kind {
+        case .zeroOrOne, .zeroOrMore:
+          return captures.map { "\($0)?" }.joined(separator: ", ")
+        case .oneOrMore:
+          return capturesJoined
+        }
+      }()
       self.matchType = arity == 0
         ? baseMatchTypeName
         : "(\(baseMatchTypeName), \(quantifiedCaptures))"
@@ -352,7 +358,7 @@ struct VariadicsGenerator: ParsableCommand {
     assert(arity >= 0)
     let params = QuantifierParameters(kind: kind, arity: arity)
     output("""
-      \(arity == 0 ? "@_disfavoredOverload" : "")
+      \(params.disfavored)\
       public func \(kind.rawValue)<\(params.genericParams)>(
         _ component: Component,
         _ behavior: QuantificationBehavior = .eagerly
@@ -360,7 +366,7 @@ struct VariadicsGenerator: ParsableCommand {
         .init(node: .quantification(.\(kind.astQuantifierAmount), behavior.astKind, component.regex.root))
       }
 
-      \(arity == 0 ? "@_disfavoredOverload" : "")
+      \(params.disfavored)\
       public func \(kind.rawValue)<\(params.genericParams)>(
         _ behavior: QuantificationBehavior = .eagerly,
         @RegexBuilder _ component: () -> Component
@@ -368,7 +374,7 @@ struct VariadicsGenerator: ParsableCommand {
         .init(node: .quantification(.\(kind.astQuantifierAmount), behavior.astKind, component().regex.root))
       }
 
-      \(arity == 0 ? "@_disfavoredOverload" : "")
+      \(params.disfavored)\
       public postfix func \(kind.operatorName)<\(params.genericParams)>(
         _ component: Component
       ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
@@ -396,11 +402,9 @@ struct VariadicsGenerator: ParsableCommand {
     // TODO: Could `repeat(count:)` have the same generic semantics as oneOrMore?
     // We would need to prohibit `repeat(count: 0)`; can only happen at runtime
     
-    let disfavored = arity == 0 ? "@_disfavoredOverload\n" : ""
-    
     output("""
-      \(disfavored)\
-      public func repeat<\(params.genericParams)>(
+      \(params.disfavored)\
+      public func repeating<\(params.genericParams)>(
         _ component: Component,
         count: Int
       ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
@@ -409,8 +413,8 @@ struct VariadicsGenerator: ParsableCommand {
         return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
       }
 
-      \(disfavored)\
-      public func repeat<\(params.genericParams)>(
+      \(params.disfavored)\
+      public func repeating<\(params.genericParams)>(
         count: Int,
         @RegexBuilder _ component: () -> Component
       ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
@@ -419,8 +423,8 @@ struct VariadicsGenerator: ParsableCommand {
         return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
       }
       
-      \(disfavored)\
-      public func repeat<\(params.genericParams), R: RangeExpression>(
+      \(params.disfavored)\
+      public func repeating<\(params.genericParams), R: RangeExpression>(
         _ component: Component,
         _ expression: R,
         _ behavior: QuantificationBehavior = .eagerly
@@ -428,8 +432,8 @@ struct VariadicsGenerator: ParsableCommand {
         .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
       }
 
-      \(disfavored)\
-      public func repeat<\(params.genericParams), R: RangeExpression>(
+      \(params.disfavored)\
+      public func repeating<\(params.genericParams), R: RangeExpression>(
         _ expression: R,
         _ behavior: QuantificationBehavior = .eagerly,
         @RegexBuilder _ component: () -> Component

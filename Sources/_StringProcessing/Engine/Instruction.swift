@@ -240,6 +240,12 @@ extension Instruction {
     ///
     case endCapture
 
+    /// Transform a captured value, saving the built value
+    ///
+    ///     transformCapture(_:CapReg, _:TransformReg)
+    ///
+    case transformCapture
+
     /// Match a previously captured value
     ///
     ///     backreference(_:CapReg)

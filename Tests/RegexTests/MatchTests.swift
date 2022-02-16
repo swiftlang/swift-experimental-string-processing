@@ -29,7 +29,7 @@ extension Executor {
         mode: .partialFromFront
       ) {
         let matched = input[range]
-        return (matched, caps.latest(from: input))
+        return (matched, caps.latestUntyped(from: input))
       } else if start == input.endIndex {
         throw "match not found for \(regex) in \(input)"
       } else {
@@ -55,7 +55,7 @@ func _firstMatch(
 
 // TODO: multiple-capture variant
 // TODO: unify with firstMatch below, etc.
-func captureTest(
+func flatCaptureTest(
   _ regex: String,
   _ tests: (input: String, expect: [String?]?)...,
   syntax: SyntaxOptions = .traditional,
@@ -977,33 +977,33 @@ extension RegexTests {
   }
 
   func testMatchCaptureBehavior() {
-    captureTest(
+    flatCaptureTest(
       #"a(b)c|abe"#,
       ("abc", ["b"]),
       ("abe", [nil]),
       ("axbe", nil))
-    captureTest(
+    flatCaptureTest(
       #"a(bc)d|abce"#,
       ("abcd", ["bc"]),
       ("abce", [nil]),
       ("abxce", nil))
-    captureTest(
+    flatCaptureTest(
       #"a(bc)+d|abce"#,
       ("abcbcbcd", ["bc"]),
       ("abcbce", nil),
       ("abce", [nil]),
       ("abcbbd", nil))
-    captureTest(
+    flatCaptureTest(
       #"a(bc)+d|(a)bce"#,
       ("abcbcbcd", ["bc", nil]),
       ("abce", [nil, "a"]),
       ("abcbbd", nil))
-    captureTest(
+    flatCaptureTest(
       #"a(b|c)+d|(a)bce"#,
       ("abcbcbcd", ["c", nil]),
       ("abce", [nil, "a"]),
       ("abcbbd", ["b", nil]))
-    captureTest(
+    flatCaptureTest(
       #"a(b+|c+)d|(a)bce"#,
       ("abbbd", ["bbb", nil]),
       ("acccd", ["ccc", nil]),
@@ -1095,7 +1095,7 @@ extension RegexTests {
     )
 
     // Doubled words
-    captureTest(
+    flatCaptureTest(
       #"\b(\w+)\s+\1\b"#,
       ("this does have one one in it", ["one"]),
       ("pass me the the kettle", ["the"]),
@@ -1103,7 +1103,7 @@ extension RegexTests {
     )
 
     // Floats
-    captureTest(
+    flatCaptureTest(
       #"^([-+])?([0-9]*)(?:\.([0-9]+))?(?:[eE]([-+]?[0-9]+))?$"#,
       ("123.45", [nil, "123", "45", nil]),
       ("-123e12", ["-", "123", nil, "12"]),

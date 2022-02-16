@@ -26,7 +26,10 @@ extension AST {
   public var hasCapture: Bool { root.hasCapture }
 
   /// The capture structure of this AST tree.
-  public var captureStructure: CaptureStructure { root.captureStructure }
+  public var captureStructure: CaptureStructure {
+    var constructor = CaptureStructure.Constructor(.flatten)
+    return root._captureStructure(&constructor)
+  }
 }
 
 extension AST {

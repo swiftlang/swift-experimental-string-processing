@@ -108,7 +108,10 @@ func compile(
         instructions.append(.goto(label: start.label!))
         instructions.append(done)
         if childHasCaptures {
-          instructions.append(.captureArray(childType: child.captureStructure.type))
+          var constructor = CaptureStructure.Constructor(
+            .flatten)
+          let type = child._captureStructure(&constructor).type
+          instructions.append(.captureArray(childType: type))
           instructions.append(.endGroup)
         }
         return
@@ -131,7 +134,10 @@ func compile(
         instructions.append(.goto(label: start.label!))
         instructions.append(done)
         if childHasCaptures {
-          instructions.append(.captureArray(childType: child.captureStructure.type))
+          var constructor = CaptureStructure.Constructor(
+            .flatten)
+          let type = child._captureStructure(&constructor).type
+          instructions.append(.captureArray(childType: type))
           instructions.append(.endGroup)
         }
         return
@@ -144,11 +150,16 @@ func compile(
           let done = createLabel()
           instructions.append(.split(disfavoring: nilCase.label!))
           try compileNode(child)
+
+          var constructor = CaptureStructure.Constructor(
+            .flatten)
+          let type = child._captureStructure(&constructor).type
+
           instructions += [
             .captureSome,
             .goto(label: done.label!),
             nilCase,
-            .captureNil(childType: child.captureStructure.type),
+            .captureNil(childType: type),
             done,
             .endGroup
           ]
@@ -170,12 +181,18 @@ func compile(
           instructions.append(.split(disfavoring: element.label!))
           instructions.append(.goto(label: nilCase.label!))
           instructions.append(element)
+
           try compileNode(child)
+
+          var constructor = CaptureStructure.Constructor(
+            .flatten)
+          let type = child._captureStructure(&constructor).type
+
           instructions += [
             .captureSome,
             .goto(label: done.label!),
             nilCase,
-            .captureNil(childType: child.captureStructure.type),
+            .captureNil(childType: type),
             done,
             .endGroup
           ]
@@ -204,7 +221,10 @@ func compile(
         instructions.append(.goto(label: start.label!))
         instructions.append(done)
         if childHasCaptures {
-          instructions.append(.captureArray(childType: child.captureStructure.type))
+          var constructor = CaptureStructure.Constructor(
+            .flatten)
+          let type = child._captureStructure(&constructor).type
+          instructions.append(.captureArray(childType: type))
           instructions.append(.endGroup)
         }
         return
@@ -220,7 +240,10 @@ func compile(
         try compileNode(child)
         instructions.append(.split(disfavoring: start.label!))
         if childHasCaptures {
-          instructions.append(.captureArray(childType: child.captureStructure.type))
+          var constructor = CaptureStructure.Constructor(
+            .flatten)
+          let type = child._captureStructure(&constructor).type
+          instructions.append(.captureArray(childType: type))
           instructions.append(.endGroup)
         }
         return
@@ -248,9 +271,12 @@ func compile(
       // cases after a succesful match.
       func nullifyRest(after index: Int) {
         for child in children.suffix(from: index + 1) where child.hasCapture {
+          var constructor = CaptureStructure.Constructor(
+            .flatten)
+          let type = child._captureStructure(&constructor).type
           instructions.append(contentsOf: [
             .beginGroup,
-            .captureNil(childType: child.captureStructure.type),
+            .captureNil(childType: type),
             .endGroup,
           ])
         }
@@ -276,8 +302,11 @@ func compile(
           nextLabel
         ])
         if child.hasCapture {
+          var constructor = CaptureStructure.Constructor(
+            .flatten)
+          let type = child._captureStructure(&constructor).type
           instructions.append(contentsOf: [
-            .captureNil(childType: child.captureStructure.type),
+            .captureNil(childType: type),
             .endGroup
           ])
         }

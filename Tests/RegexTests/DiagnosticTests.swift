@@ -101,8 +101,12 @@ extension RegexTests {
   func testErrors() {
     // Note: These don't really "test" anything, but good to
     // see our output...
-    print("\(ParseError.emptyProperty)")
-    print("\(ParseError.expectedNumber("abc", kind: .decimal))")
-    print("\(ParseError.expectedNumber("abc", kind: .hex))")
+    //
+    // FIXME: Convert to stringy tests
+    if enablePrinting {
+      print("\(ParseError.emptyProperty)")
+      print("\(ParseError.expectedNumber("abc", kind: .decimal))")
+      print("\(ParseError.expectedNumber("abc", kind: .hex))")
+    }
   }
 }
