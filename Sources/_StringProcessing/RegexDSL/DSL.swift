@@ -145,34 +145,6 @@ postfix operator .?
 postfix operator .*
 postfix operator .+
 
-/// Generates a DSLTree node for a repeated range of the given DSLTree node.
-/// Individual public API functions are in the generated Variadics.swift file.
-internal func _repeatingNode(
-  _ range: Range<Int>,
-  _ behavior: QuantificationBehavior,
-  _ node: DSLTree.Node
-) -> DSLTree.Node {
-  // TODO: Throw these as errors
-  assert(range.lowerBound >= 0, "Cannot specify a negative lower bound")
-  assert(!range.isEmpty, "Cannot specify an empty range")
-  
-  switch (range.lowerBound, range.upperBound) {
-  case (0, Int.max): // 0...
-    return .quantification(.zeroOrMore, behavior.astKind, node)
-  case (1, Int.max): // 1...
-    return .quantification(.oneOrMore, behavior.astKind, node)
-  case _ where range.count == 1: // ..<1 or ...0 or any range with count == 1
-    // Note: `behavior` is ignored in this case
-    return .quantification(.exactly(.init(faking: range.lowerBound)), .eager, node)
-  case (0, _): // 0..<n or 0...n or ..<n or ...n
-    return .quantification(.upToN(.init(faking: range.upperBound)), behavior.astKind, node)
-  case (_, Int.max): // n...
-    return .quantification(.nOrMore(.init(faking: range.lowerBound)), behavior.astKind, node)
-  default: // any other range
-    return .quantification(.range(.init(faking: range.lowerBound), .init(faking: range.upperBound)), behavior.astKind, node)
-  }
-}
-
 // MARK: Alternation
 
 // TODO: Variadic generics

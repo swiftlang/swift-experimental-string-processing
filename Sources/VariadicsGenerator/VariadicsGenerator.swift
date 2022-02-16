@@ -391,49 +391,50 @@ struct VariadicsGenerator: ParsableCommand {
   
   func emitRepeating(arity: Int) {
     assert(arity >= 0)
-    // `repeatMatch(..<5)` has the same generic semantics as zeroOrMore
-    let rangeParams = QuantifierParameters(kind: .zeroOrMore, arity: arity)
-    // `repeatMatch(count:)` has the same generic semantics as oneOrMore
-    let exactlyParams = QuantifierParameters(kind: .zeroOrMore, arity: arity)
+    // `repeat(..<5)` has the same generic semantics as zeroOrMore
+    let params = QuantifierParameters(kind: .zeroOrMore, arity: arity)
+    // TODO: Could `repeat(count:)` have the same generic semantics as oneOrMore?
+    // We would need to prohibit `repeat(count: 0)`; can only happen at runtime
+    
+    let disfavored = arity == 0 ? "@_disfavoredOverload\n" : ""
+    
     output("""
-      \(arity == 0 ? "@_disfavoredOverload" : "")
-      public func repeatMatch<\(exactlyParams.genericParams)>(
+      \(disfavored)\
+      public func repeat<\(params.genericParams)>(
         _ component: Component,
         count: Int
-      ) -> \(regexTypeName)<\(exactlyParams.matchType)> \(exactlyParams.whereClause) {
+      ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
         assert(count > 0, "Must specify a positive count")
         // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
         return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
       }
 
-      \(arity == 0 ? "@_disfavoredOverload" : "")
-      public func repeatMatch<\(exactlyParams.genericParams)>(
+      \(disfavored)\
+      public func repeat<\(params.genericParams)>(
         count: Int,
         @RegexBuilder _ component: () -> Component
-      ) -> \(regexTypeName)<\(exactlyParams.matchType)> \(exactlyParams.whereClause) {
+      ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
         assert(count > 0, "Must specify a positive count")
         // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
         return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
       }
       
-      \(arity == 0 ? "@_disfavoredOverload" : "")
-      public func repeatMatch<\(rangeParams.genericParams), R: RangeExpression>(
+      \(disfavored)\
+      public func repeat<\(params.genericParams), R: RangeExpression>(
         _ component: Component,
         _ expression: R,
         _ behavior: QuantificationBehavior = .eagerly
-      ) -> \(regexTypeName)<\(rangeParams.matchType)> \(rangeParams.repeatingWhereClause) {
-        .init(node:
-          _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+      ) -> \(regexTypeName)<\(params.matchType)> \(params.repeatingWhereClause) {
+        .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
       }
 
-      \(arity == 0 ? "@_disfavoredOverload" : "")
-      public func repeatMatch<\(rangeParams.genericParams), R: RangeExpression>(
+      \(disfavored)\
+      public func repeat<\(params.genericParams), R: RangeExpression>(
         _ expression: R,
         _ behavior: QuantificationBehavior = .eagerly,
         @RegexBuilder _ component: () -> Component
-      ) -> \(regexTypeName)<\(rangeParams.matchType)> \(rangeParams.repeatingWhereClause) {
-        .init(node:
-          _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+      ) -> \(regexTypeName)<\(params.matchType)> \(params.repeatingWhereClause) {
+        .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
       }
       
       """)

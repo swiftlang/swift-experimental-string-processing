@@ -549,7 +549,7 @@ public postfix func .*<Component: RegexProtocol>(
 
 
 @_disfavoredOverload
-public func repeatMatch<Component: RegexProtocol>(
+public func repeat<Component: RegexProtocol>(
   _ component: Component,
   count: Int
 ) -> Regex<Substring>  {
@@ -559,7 +559,7 @@ public func repeatMatch<Component: RegexProtocol>(
 }
 
 @_disfavoredOverload
-public func repeatMatch<Component: RegexProtocol>(
+public func repeat<Component: RegexProtocol>(
   count: Int,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<Substring>  {
@@ -569,23 +569,21 @@ public func repeatMatch<Component: RegexProtocol>(
 }
 
 @_disfavoredOverload
-public func repeatMatch<Component: RegexProtocol, R: RangeExpression>(
+public func repeat<Component: RegexProtocol, R: RangeExpression>(
   _ component: Component,
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<Substring> where R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
 }
 
 @_disfavoredOverload
-public func repeatMatch<Component: RegexProtocol, R: RangeExpression>(
+public func repeat<Component: RegexProtocol, R: RangeExpression>(
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<Substring> where R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
 }
 
 public func optionally<W, C0, Component: RegexProtocol>(
@@ -665,8 +663,7 @@ public postfix func .*<W, C0, Component: RegexProtocol>(
 }
 
 
-
-public func repeatMatch<W, C0, Component: RegexProtocol>(
+public func repeat<W, C0, Component: RegexProtocol>(
   _ component: Component,
   count: Int
 ) -> Regex<(Substring, [C0])> where Component.Match == (W, C0) {
@@ -675,8 +672,7 @@ public func repeatMatch<W, C0, Component: RegexProtocol>(
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, Component: RegexProtocol>(
+public func repeat<W, C0, Component: RegexProtocol>(
   count: Int,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [C0])> where Component.Match == (W, C0) {
@@ -685,24 +681,20 @@ public func repeatMatch<W, C0, Component: RegexProtocol>(
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
 }
 
-
-public func repeatMatch<W, C0, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, Component: RegexProtocol, R: RangeExpression>(
   _ component: Component,
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [C0])> where Component.Match == (W, C0), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, Component: RegexProtocol, R: RangeExpression>(
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [C0])> where Component.Match == (W, C0), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
 }
 
 public func optionally<W, C0, C1, Component: RegexProtocol>(
@@ -782,8 +774,7 @@ public postfix func .*<W, C0, C1, Component: RegexProtocol>(
 }
 
 
-
-public func repeatMatch<W, C0, C1, Component: RegexProtocol>(
+public func repeat<W, C0, C1, Component: RegexProtocol>(
   _ component: Component,
   count: Int
 ) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1) {
@@ -792,8 +783,7 @@ public func repeatMatch<W, C0, C1, Component: RegexProtocol>(
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, Component: RegexProtocol>(
+public func repeat<W, C0, C1, Component: RegexProtocol>(
   count: Int,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1) {
@@ -802,24 +792,20 @@ public func repeatMatch<W, C0, C1, Component: RegexProtocol>(
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, Component: RegexProtocol, R: RangeExpression>(
   _ component: Component,
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, Component: RegexProtocol, R: RangeExpression>(
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1)])> where Component.Match == (W, C0, C1), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
 }
 
 public func optionally<W, C0, C1, C2, Component: RegexProtocol>(
@@ -899,8 +885,7 @@ public postfix func .*<W, C0, C1, C2, Component: RegexProtocol>(
 }
 
 
-
-public func repeatMatch<W, C0, C1, C2, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, Component: RegexProtocol>(
   _ component: Component,
   count: Int
 ) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2) {
@@ -909,8 +894,7 @@ public func repeatMatch<W, C0, C1, C2, Component: RegexProtocol>(
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, Component: RegexProtocol>(
   count: Int,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2) {
@@ -919,24 +903,20 @@ public func repeatMatch<W, C0, C1, C2, Component: RegexProtocol>(
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, Component: RegexProtocol, R: RangeExpression>(
   _ component: Component,
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, Component: RegexProtocol, R: RangeExpression>(
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2)])> where Component.Match == (W, C0, C1, C2), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
 }
 
 public func optionally<W, C0, C1, C2, C3, Component: RegexProtocol>(
@@ -1016,8 +996,7 @@ public postfix func .*<W, C0, C1, C2, C3, Component: RegexProtocol>(
 }
 
 
-
-public func repeatMatch<W, C0, C1, C2, C3, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, C3, Component: RegexProtocol>(
   _ component: Component,
   count: Int
 ) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3) {
@@ -1026,8 +1005,7 @@ public func repeatMatch<W, C0, C1, C2, C3, Component: RegexProtocol>(
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, C3, Component: RegexProtocol>(
   count: Int,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3) {
@@ -1036,24 +1014,20 @@ public func repeatMatch<W, C0, C1, C2, C3, Component: RegexProtocol>(
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, C3, Component: RegexProtocol, R: RangeExpression>(
   _ component: Component,
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, C3, Component: RegexProtocol, R: RangeExpression>(
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3)])> where Component.Match == (W, C0, C1, C2, C3), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
 }
 
 public func optionally<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
@@ -1133,8 +1107,7 @@ public postfix func .*<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
 }
 
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
   _ component: Component,
   count: Int
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4) {
@@ -1143,8 +1116,7 @@ public func repeatMatch<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
   count: Int,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4) {
@@ -1153,24 +1125,20 @@ public func repeatMatch<W, C0, C1, C2, C3, C4, Component: RegexProtocol>(
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, C3, C4, Component: RegexProtocol, R: RangeExpression>(
   _ component: Component,
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, C3, C4, Component: RegexProtocol, R: RangeExpression>(
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4)])> where Component.Match == (W, C0, C1, C2, C3, C4), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
 }
 
 public func optionally<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
@@ -1250,8 +1218,7 @@ public postfix func .*<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
 }
 
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
   _ component: Component,
   count: Int
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5) {
@@ -1260,8 +1227,7 @@ public func repeatMatch<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
   count: Int,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5) {
@@ -1270,24 +1236,20 @@ public func repeatMatch<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol>(
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol, R: RangeExpression>(
   _ component: Component,
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, Component: RegexProtocol, R: RangeExpression>(
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
 }
 
 public func optionally<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
@@ -1367,8 +1329,7 @@ public postfix func .*<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
 }
 
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
   _ component: Component,
   count: Int
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
@@ -1377,8 +1338,7 @@ public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>(
   count: Int,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
@@ -1387,24 +1347,20 @@ public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol>
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol, R: RangeExpression>(
   _ component: Component,
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexProtocol, R: RangeExpression>(
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
 }
 
 public func optionally<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
@@ -1484,8 +1440,7 @@ public postfix func .*<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtoc
 }
 
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
   _ component: Component,
   count: Int
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
@@ -1494,8 +1449,7 @@ public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProto
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol>(
   count: Int,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
@@ -1504,24 +1458,20 @@ public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProto
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol, R: RangeExpression>(
   _ component: Component,
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexProtocol, R: RangeExpression>(
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
 }
 
 public func optionally<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
@@ -1601,8 +1551,7 @@ public postfix func .*<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexPr
 }
 
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
   _ component: Component,
   count: Int
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -1611,8 +1560,7 @@ public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexP
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol>(
   count: Int,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -1621,24 +1569,20 @@ public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexP
   return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol, R: RangeExpression>(
   _ component: Component,
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
 }
 
-
-public func repeatMatch<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol, R: RangeExpression>(
+public func repeat<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexProtocol, R: RangeExpression>(
   _ expression: R,
   _ behavior: QuantificationBehavior = .eagerly,
   @RegexBuilder _ component: () -> Component
 ) -> Regex<(Substring, [(C0, C1, C2, C3, C4, C5, C6, C7, C8)])> where Component.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8), R.Bound == Int {
-  .init(node:
-    _repeatingNode(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+  .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
 }
 extension AlternationBuilder {
   public static func buildBlock<R0, R1>(
