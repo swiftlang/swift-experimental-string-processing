@@ -93,6 +93,23 @@ extension CaptureStructure.Constructor {
     }
   }
 
+  public mutating func grouping<T: _TreeNode>(
+    _ child: T,
+    as kind: AST.Group.Kind,
+    withType type: AnyType
+  ) -> CaptureStructure {
+    let innerCaptures = child._captureStructure(&self)
+    switch kind {
+    case .capture:
+      return .atom(type: type) + innerCaptures
+    case .namedCapture(let name):
+      return .atom(name: name.value, type: type)
+            + innerCaptures
+    default:
+      return innerCaptures
+    }
+  }
+
   // TODO: We'll likely want/need a generalization of
   // conditional's condition kind.
   public mutating func condition<T: _TreeNode>(

@@ -22,6 +22,7 @@ extension MEProgram where Input.Element: Hashable {
     var consumeFunctions: [ConsumeFunction] = []
     var assertionFunctions: [AssertionFunction] = []
     var transformFunctions: [TransformFunction] = []
+    var matcherFunctions: [MatcherFunction] = []
 
     // Map tokens to actual addresses
     var addressTokens: [InstructionAddress?] = []
@@ -32,6 +33,7 @@ extension MEProgram where Input.Element: Hashable {
     var nextIntRegister = IntRegister(0)
     var nextPositionRegister = PositionRegister(0)
     var nextCaptureRegister = CaptureRegister(0)
+    var nextValueRegister = ValueRegister(0)
 
     // Special addresses or instructions
     var failAddressToken: AddressToken? = nil
@@ -237,6 +239,22 @@ extension MEProgram.Builder {
       .init(capture: cap, transform: trans)))
   }
 
+  public mutating func buildMatcher(
+    _ fun: MatcherRegister, into reg: ValueRegister
+  ) {
+    instructions.append(.init(
+      .matchBy,
+      .init(matcher: fun, value: reg)))
+  }
+
+  public mutating func buildMove(
+    _ value: ValueRegister, into capture: CaptureRegister
+  ) {
+    instructions.append(.init(
+      .captureValue,
+      .init(value: value, capture: capture)))
+  }
+
   public mutating func buildBackreference(
     _ cap: CaptureRegister
   ) {
@@ -298,9 +316,11 @@ extension MEProgram.Builder {
     regInfo.bools = nextBoolRegister.rawValue
     regInfo.ints = nextIntRegister.rawValue
     regInfo.positions = nextPositionRegister.rawValue
+    regInfo.values = nextValueRegister.rawValue
     regInfo.consumeFunctions = consumeFunctions.count
     regInfo.assertionFunctions = assertionFunctions.count
     regInfo.transformFunctions = transformFunctions.count
+    regInfo.matcherFunctions = matcherFunctions.count
     regInfo.captures = nextCaptureRegister.rawValue
 
     return MEProgram(
@@ -311,6 +331,7 @@ extension MEProgram.Builder {
       staticConsumeFunctions: consumeFunctions,
       staticAssertionFunctions: assertionFunctions,
       staticTransformFunctions: transformFunctions,
+      staticMatcherFunctions: matcherFunctions,
       registerInfo: regInfo,
       captureStructure: captureStructure)
   }
@@ -399,6 +420,10 @@ extension MEProgram.Builder {
     defer { nextPositionRegister.rawValue += 1 }
     return nextPositionRegister
   }
+  public mutating func makeValueRegister() -> ValueRegister {
+    defer { nextValueRegister.rawValue += 1 }
+    return nextValueRegister
+  }
 
   // Allocate and initialize a register
   public mutating func makeIntRegister(
@@ -455,6 +480,12 @@ extension MEProgram.Builder {
   ) -> TransformRegister {
     defer { transformFunctions.append(f) }
     return TransformRegister(transformFunctions.count)
+  }
+  public mutating func makeMatcherFunction(
+    _ f: @escaping MEProgram.MatcherFunction
+  ) -> MatcherRegister {
+    defer { matcherFunctions.append(f) }
+    return MatcherRegister(matcherFunctions.count)
   }
 }
 

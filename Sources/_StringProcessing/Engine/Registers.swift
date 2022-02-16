@@ -11,6 +11,10 @@
 
 import _MatchingEngine
 
+struct SentinelValue: Hashable, CustomStringConvertible {
+  var description: String { "<value sentinel>" }
+}
+
 extension Processor {
   /// Our register file
   struct Registers {
@@ -34,6 +38,9 @@ extension Processor {
     // Captured-value constructors
     var transformFunctions: [MEProgram<Input>.TransformFunction]
 
+    // Value-constructing matchers
+    var matcherFunctions: [MEProgram<Input>.MatcherFunction]
+
     // currently, these are for comments and abort messages
     var strings: [String]
 
@@ -45,6 +52,8 @@ extension Processor {
 
     // Currently, used for `movePosition` and `matchSlice`
     var positions: [Position] = []
+
+    var values: [Any]
 
     // unused
     var instructionAddresses: [InstructionAddress] = []
@@ -76,6 +85,19 @@ extension Processor {
       get { positions[i.rawValue] }
       set { positions[i.rawValue] = newValue }
     }
+    subscript(_ i: ValueRegister) -> Any {
+      get { values[i.rawValue] }
+      set {
+        print("""
+          values: \(values)
+          i: \(i)
+          newValue: \(newValue)
+        """)
+        print(values)
+        print(i)
+        values[i.rawValue] = newValue
+      }
+    }
     subscript(_ i: ElementRegister) -> Element {
       elements[i.rawValue]
     }
@@ -87,6 +109,9 @@ extension Processor {
     }
     subscript(_ i: TransformRegister) -> MEProgram<Input>.TransformFunction {
       transformFunctions[i.rawValue]
+    }
+    subscript(_ i: MatcherRegister) -> MEProgram<Input>.MatcherFunction {
+      matcherFunctions[i.rawValue]
     }
   }
 }
@@ -113,6 +138,9 @@ extension Processor.Registers {
     self.transformFunctions = program.staticTransformFunctions
     assert(transformFunctions.count == info.transformFunctions)
 
+    self.matcherFunctions = program.staticMatcherFunctions
+    assert(matcherFunctions.count == info.matcherFunctions)
+
     self.strings = program.staticStrings
     assert(strings.count == info.strings)
 
@@ -123,6 +151,9 @@ extension Processor.Registers {
     self.floats = Array(repeating: 0, count: info.floats)
 
     self.positions = Array(repeating: sentinel, count: info.positions)
+
+    self.values = Array(
+      repeating: SentinelValue(), count: info.values)
 
     self.instructionAddresses = Array(repeating: 0, count: info.instructionAddresses)
 
@@ -143,9 +174,11 @@ extension MEProgram {
     var consumeFunctions = 0
     var assertionFunctions = 0
     var transformFunctions = 0
+    var matcherFunctions = 0
     var ints = 0
     var floats = 0
     var positions = 0
+    var values = 0
     var instructionAddresses = 0
     var classStackAddresses = 0
     var positionStackAddresses = 0

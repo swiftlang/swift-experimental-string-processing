@@ -30,8 +30,12 @@ public struct Executor {
       return nil
     }
     let capStruct = engine.program.captureStructure
-    let caps = try! capStruct.structuralize(capList, input)
-    return MatchResult(range.lowerBound..<endIdx, caps)
+    do {
+      let caps = try capStruct.structuralize(capList, input)
+      return MatchResult(range.lowerBound..<endIdx, caps)
+    } catch {
+      fatalError(String(describing: error))
+    }
   }
   public func execute(
     input: Substring,

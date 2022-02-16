@@ -358,6 +358,19 @@ extension Processor {
       }
       controller.step()
 
+    case .matchBy:
+      let (matcherReg, valReg) = payload.pairedMatcherValue
+      let matcher = registers[matcherReg]
+      guard let (nextIdx, val) = matcher(
+        input, currentPosition..<bounds.upperBound
+      ) else {
+        signalFailure()
+        return
+      }
+      registers[valReg] = val
+      advance(to: nextIdx)
+      controller.step()
+
     case .print:
       // TODO: Debug stream
       doPrint(registers[payload.string])
@@ -423,6 +436,16 @@ extension Processor {
       storedCaptures[capNum].registerValue(value)
 
       controller.step()
+
+    case .captureValue:
+      let (val, cap) = payload.pairedValueCapture
+      let value = registers[val]
+      let capNum = Int(asserting: cap.rawValue)
+      let sp = makeSavePoint(self.currentPC)
+      storedCaptures[capNum].registerValue(
+        value, overwriteInitial: sp)
+      controller.step()
     }
+
   }
 }

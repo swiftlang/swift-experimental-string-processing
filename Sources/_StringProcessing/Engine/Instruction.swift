@@ -167,6 +167,8 @@ extension Instruction {
     /// compare against.
     case assertion
 
+    // MARK: Extension points
+
     /// Advance the input position based on the result by calling the consume
     /// function.
     ///
@@ -176,15 +178,27 @@ extension Instruction {
     /// Custom lookaround assertion operation.
     /// Triggers a failure if customFunction returns false.
     ///
-    ///     assert(
-    ///       _ customFunction: (
-    ///         input: Input,
-    ///         currentPos: Position,
-    ///         bounds: Range<Position>) -> Bool
-    ///     )
+    ///     assert(_ customFunction: (
+    ///       input: Input,
+    ///       currentPos: Position,
+    ///       bounds: Range<Position>
+    ///     ) -> Bool)
     ///
     /// Operands: destination bool register, assert hook register
     case assertBy
+
+    /// Custom value-creating consume operation.
+    ///
+    ///     match(
+    ///       _ matchFunction: (
+    ///         input: Input,
+    ///         bounds: Range<Position>
+    ///       ) -> (Position, Any),
+    ///       into: ValueReg
+    ///     )
+    ///
+    ///
+    case matchBy
 
     // MARK: Matching: Save points
 
@@ -246,6 +260,11 @@ extension Instruction {
     ///
     case transformCapture
 
+    /// Save a value into a capture register
+    ///
+    ///     captureValue(_: ValReg, into _: CapReg)
+    case captureValue
+
     /// Match a previously captured value
     ///
     ///     backreference(_:CapReg)
@@ -273,6 +292,8 @@ extension Instruction {
 
     // TODO: Fused assertions. It seems like we often want to
     // branch based on assertion fail or success.
+
+
   }
 }
 

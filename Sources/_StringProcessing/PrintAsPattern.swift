@@ -153,7 +153,7 @@ extension PrettyPrinter {
       print("/* TODO: group transforms */")
     case .consumer:
       print("/* TODO: consumers */")
-    case .consumerValidator:
+    case .matcher:
       print("/* TODO: consumer validators */")
     case .characterPredicate:
       print("/* TODO: character predicates */")
