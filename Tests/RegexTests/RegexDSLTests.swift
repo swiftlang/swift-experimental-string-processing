@@ -179,6 +179,36 @@ class RegexDSLTests: XCTestCase {
         capture(.digit)
       }
     }
+    
+    try _testDSLCaptures(
+      ("abc1def2", "abc1def2"),
+      captureType: Substring.self, ==)
+    {
+      repeating(2...) {
+        repeating(count: 3) {
+          CharacterClass.word
+        }
+        CharacterClass.digit
+      }
+    }
+    
+    try _testDSLCaptures(
+      ("aaabbbcccdddeeefff", "aaabbbcccdddeeefff"),
+      ("aaaabbbcccdddeeefff", nil),
+      ("aaacccdddeeefff", nil),
+      ("aaabbbcccccccdddeeefff", nil),
+      ("aaabbbcccddddddeeefff", nil),
+      ("aaabbbcccdddefff", nil),
+      ("aaabbbcccdddeee", "aaabbbcccdddeee"),
+      captureType: Substring.self, ==)
+    {
+      repeating(count: 3) { "a" }
+      repeating(1...) { "b" }
+      repeating(2...5) { "c" }
+      repeating(..<5) { "d" }
+      repeating(2...) { "e" }
+      repeating(0...) { "f" }
+    }
   }
 
   func testNestedGroups() throws {
