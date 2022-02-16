@@ -17,6 +17,14 @@ public struct RegexMatch<Match> {
   public subscript<T>(dynamicMember keyPath: KeyPath<Match, T>) -> T {
     match[keyPath: keyPath]
   }
+
+  // Allows `.0` when `Match` is not a tuple.
+  @_disfavoredOverload
+  public subscript(
+    dynamicMember keyPath: KeyPath<(Match, _doNotUse: ()), Match>
+  ) -> Match {
+    match
+  }
 }
 
 extension RegexProtocol {

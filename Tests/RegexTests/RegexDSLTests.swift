@@ -65,6 +65,11 @@ class RegexDSLTests: XCTestCase {
     }
   }
 
+  func testMatchResultDotZeroWithoutCapture() throws {
+    let match = try XCTUnwrap("aaa".match { oneOrMore { "a" } })
+    XCTAssertEqual(match.0, "aaa")
+  }
+
   func testAlternation() throws {
     do {
       let regex = choiceOf {
