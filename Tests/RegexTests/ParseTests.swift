@@ -1436,31 +1436,33 @@ extension RegexTests {
 
     // MARK: Parse with delimiters
 
-    parseWithDelimitersTest("'/a b/'", concat("a", " ", "b"))
-    parseWithDelimitersTest("'|a b|'", concat("a", "b"))
+    parseWithDelimitersTest("#/a b/#", concat("a", " ", "b"))
+    parseWithDelimitersTest("#|a b|#", concat("a", "b"))
 
-    parseWithDelimitersTest("'|[a b]|'", charClass("a", "b"))
+    parseWithDelimitersTest("#|[a b]|#", charClass("a", "b"))
     parseWithDelimitersTest(
-      "'|(?-x)[a b]|'", changeMatchingOptions(
+      "#|(?-x)[a b]|#", changeMatchingOptions(
         matchingOptions(removing: .extended), isIsolated: true,
         charClass("a", " ", "b"))
     )
-    parseWithDelimitersTest("'|[[a ] b]|'", charClass(charClass("a"), "b"))
+    parseWithDelimitersTest("#|[[a ] b]|#", charClass(charClass("a"), "b"))
 
     // Non-semantic whitespace between quantifier characters for consistency
     // with PCRE.
-    parseWithDelimitersTest("'|a * ?|'", zeroOrMore(.reluctant, of: "a"))
+    parseWithDelimitersTest("#|a * ?|#", zeroOrMore(.reluctant, of: "a"))
 
     // End-of-line comments aren't enabled by default in experimental syntax.
-    parseWithDelimitersTest("'|#abc|'", concat("#", "a", "b", "c"))
-    parseWithDelimitersTest("'|(?x)#abc|'", changeMatchingOptions(
+    parseWithDelimitersTest("#|#abc|#", concat("#", "a", "b", "c"))
+    parseWithDelimitersTest("#|(?x)#abc|#", changeMatchingOptions(
       matchingOptions(adding: .extended), isIsolated: true,
       empty())
     )
 
-    parseWithDelimitersTest("'|||'", alt(empty(), empty()))
-    parseWithDelimitersTest("'||||'", alt(empty(), empty(), empty()))
-    parseWithDelimitersTest("'|a||'", alt("a", empty()))
+    parseWithDelimitersTest("#|||#", alt(empty(), empty()))
+    parseWithDelimitersTest("#||||#", alt(empty(), empty(), empty()))
+    parseWithDelimitersTest("#|a||#", alt("a", empty()))
+
+    parseWithDelimitersTest("re'x*'", zeroOrMore(of: "x"))
 
     // MARK: Parse not-equal
 
@@ -1878,6 +1880,6 @@ extension RegexTests {
 
   func testlibswiftDiagnostics() {
     libswiftDiagnosticMessageTest(
-      "'/[x*/'", "cannot parse regular expression: expected ']'")
+      "#/[x*/#", "cannot parse regular expression: expected ']'")
   }
 }

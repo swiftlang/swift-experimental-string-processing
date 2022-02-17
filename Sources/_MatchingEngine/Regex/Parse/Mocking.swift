@@ -15,11 +15,13 @@
 enum Delimiter: Hashable, CaseIterable {
   case traditional
   case experimental
+  case reSingleQuote
 
   var openingAndClosing: (opening: String, closing: String) {
     switch self {
-    case .traditional: return ("'/", "/'")
-    case .experimental: return ("'|", "|'")
+    case .traditional: return ("#/", "/#")
+    case .experimental: return ("#|", "|#")
+    case .reSingleQuote: return ("re'", "'")
     }
   }
   var opening: String { openingAndClosing.opening }
@@ -28,8 +30,10 @@ enum Delimiter: Hashable, CaseIterable {
   /// The default set of syntax options that the delimiter indicates.
   var defaultSyntaxOptions: SyntaxOptions {
     switch self {
-    case .traditional: return .traditional
-    case .experimental: return .experimental
+    case .traditional, .reSingleQuote:
+      return .traditional
+    case .experimental:
+      return .experimental
     }
   }
 }

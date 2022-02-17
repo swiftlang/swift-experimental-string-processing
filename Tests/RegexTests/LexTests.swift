@@ -102,23 +102,26 @@ extension RegexTests {
 
   func testCompilerInterface() {
     let testCases: [(String, (String, Delimiter)?)] = [
-      ("'/abc/'", ("abc", .traditional)),
-      ("'|abc|'", ("abc", .experimental)),
+      ("#/abc/#", ("abc", .traditional)),
+      ("#|abc|#", ("abc", .experimental)),
 
       // TODO: Null characters are lexically valid, similar to string literals,
       // but we ought to warn the user about them.
-      ("'|ab\0c|'", ("ab\0c", .experimental)),
+      ("#|ab\0c|#", ("ab\0c", .experimental)),
       ("'abc'", nil),
-      ("'/abc/def/'", ("abc/def", .traditional)),
-      ("'|abc|def|'", ("abc|def", .experimental)),
-      ("'/abc\\/'def/'", ("abc\\/'def", .traditional)),
-      ("'|abc\\|'def|'", ("abc\\|'def", .experimental)),
-      ("'/abc|'def/'", ("abc|'def", .traditional)),
-      ("'|abc/'def|'", ("abc/'def", .experimental)),
-      ("'/abc|'def/", nil),
-      ("'|abc/'def'", nil),
-      ("'/abc\n/'", nil),
-      ("'/abc\r/'", nil),
+      ("#/abc/def/#", ("abc/def", .traditional)),
+      ("#|abc|def|#", ("abc|def", .experimental)),
+      ("#/abc\\/#def/#", ("abc\\/#def", .traditional)),
+      ("#|abc\\|#def|#", ("abc\\|#def", .experimental)),
+      ("#/abc|#def/#", ("abc|#def", .traditional)),
+      ("#|abc/#def|#", ("abc/#def", .experimental)),
+      ("#/abc|#def/", nil),
+      ("#|abc/#def#", nil),
+      ("#/abc\n/#", nil),
+      ("#/abc\r/#", nil),
+
+      (#"re'abcre\''"#, (#"abcre\'"#, .reSingleQuote)),
+      (#"re'\'"#, nil)
     ]
 
     for (input, expected) in testCases {
