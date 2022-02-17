@@ -325,7 +325,7 @@ extension RegexTests {
     parseTest(#"\070"#, scalar("\u{38}"))
     parseTest(#"\07A"#, concat(scalar("\u{7}"), "A"))
     parseTest(#"\08"#, concat(scalar("\u{0}"), "8"))
-    parseTest(#"\0707"#, concat(scalar("\u{38}"), "7"))
+    parseTest(#"\0707"#, scalar("\u{1C7}"))
 
     parseTest(#"[\0]"#, charClass(scalar_m("\u{0}")))
     parseTest(#"[\01]"#, charClass(scalar_m("\u{1}")))
@@ -333,13 +333,15 @@ extension RegexTests {
 
     parseTest(#"[\07A]"#, charClass(scalar_m("\u{7}"), "A"))
     parseTest(#"[\08]"#, charClass(scalar_m("\u{0}"), "8"))
-    parseTest(#"[\0707]"#, charClass(scalar_m("\u{38}"), "7"))
+    parseTest(#"[\0707]"#, charClass(scalar_m("\u{1C7}")))
 
-    parseTest(#"[\1]"#, charClass(scalar_m("\u{1}")))
-    parseTest(#"[\123]"#, charClass(scalar_m("\u{53}")))
-    parseTest(#"[\101]"#, charClass(scalar_m("\u{41}")))
-    parseTest(#"[\7777]"#, charClass(scalar_m("\u{1FF}"), "7"))
-    parseTest(#"[\181]"#, charClass(scalar_m("\u{1}"), "8", "1"))
+    // TODO: These are treated as octal sequences by PCRE, we should warn and
+    // suggest user prefix with 0.
+    parseTest(#"[\1]"#, charClass("1"))
+    parseTest(#"[\123]"#, charClass("1", "2", "3"))
+    parseTest(#"[\101]"#, charClass("1", "0", "1"))
+    parseTest(#"[\7777]"#, charClass("7", "7", "7", "7"))
+    parseTest(#"[\181]"#, charClass("1", "8", "1"))
 
     // We take *up to* the first two valid digits for \x. No valid digits is 0.
     parseTest(#"\x"#, scalar("\u{0}"))
@@ -797,11 +799,9 @@ extension RegexTests {
       )
     }
 
-    // TODO: Some of these behaviors are unintuitive, we should likely warn on
-    // some of them.
-    parseTest(#"\10"#, scalar("\u{8}"))
-    parseTest(#"\18"#, concat(scalar("\u{1}"), "8"))
-    parseTest(#"\7777"#, concat(scalar("\u{1FF}"), "7"))
+    parseTest(#"\10"#, backreference(.absolute(10)))
+    parseTest(#"\18"#, backreference(.absolute(18)))
+    parseTest(#"\7777"#, backreference(.absolute(7777)))
     parseTest(#"\91"#, backreference(.absolute(91)))
 
     parseTest(
@@ -813,12 +813,13 @@ extension RegexTests {
     parseTest(
       #"()()()()()()()()()\10()"#,
       concat(Array(repeating: capture(empty()), count: 9)
-             + [scalar("\u{8}"), capture(empty())]),
+             + [backreference(.absolute(10)), capture(empty())]),
       captures: .tuple(Array(repeating: .atom(), count: 10))
     )
-    parseTest(#"()()\10"#,
-              concat(capture(empty()), capture(empty()), scalar("\u{8}")),
-              captures: .tuple(.atom(), .atom()))
+    parseTest(#"()()\10"#, concat(
+      capture(empty()), capture(empty()), backreference(.absolute(10))),
+              captures: .tuple(.atom(), .atom())
+    )
 
     // A capture of three empty captures.
     let fourCaptures = capture(
@@ -826,8 +827,8 @@ extension RegexTests {
     )
     parseTest(
       // There are 9 capture groups in total here.
-      #"((()()())(()()()))\10"#,
-      concat(capture(concat(fourCaptures, fourCaptures)), scalar("\u{8}")),
+      #"((()()())(()()()))\10"#, concat(capture(concat(
+        fourCaptures, fourCaptures)), backreference(.absolute(10))),
       captures: .tuple(Array(repeating: .atom(), count: 9))
     )
     parseTest(
@@ -852,7 +853,7 @@ extension RegexTests {
       concat(Array(repeating: capture(empty()), count: 40) + [scalar(" ")]),
       captures: .tuple(Array(repeating: .atom(), count: 40))
     )
-    parseTest(#"\40"#, scalar(" "))
+    parseTest(#"\40"#, backreference(.absolute(40)))
     parseTest(
       String(repeating: "()", count: 40) + #"\40"#,
       concat(Array(repeating: capture(empty()), count: 40)
@@ -862,7 +863,7 @@ extension RegexTests {
 
     parseTest(#"\7"#, backreference(.absolute(7)))
 
-    parseTest(#"\11"#, scalar("\u{9}"))
+    parseTest(#"\11"#, backreference(.absolute(11)))
     parseTest(
       String(repeating: "()", count: 11) + #"\11"#,
       concat(Array(repeating: capture(empty()), count: 11)
@@ -876,11 +877,10 @@ extension RegexTests {
       captures: .tuple(Array(repeating: .atom(), count: 11))
     )
 
-    parseTest(#"\0113"#, concat(scalar("\u{9}"), "3"))
-    parseTest(#"\113"#, scalar("\u{4B}"))
-    parseTest(#"\377"#, scalar("\u{FF}"))
+    parseTest(#"\0113"#, scalar("\u{4B}"))
+    parseTest(#"\113"#, backreference(.absolute(113)))
+    parseTest(#"\377"#, backreference(.absolute(377)))
     parseTest(#"\81"#, backreference(.absolute(81)))
-
 
     parseTest(#"\g1"#, backreference(.absolute(1)))
     parseTest(#"\g001"#, backreference(.absolute(1)))
