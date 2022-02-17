@@ -152,6 +152,51 @@ class RegexDSLTests: XCTestCase {
     }
   }
   
+  func testOptions() throws {
+    try _testDSLCaptures(
+      ("abc", "abc"),
+      ("ABC", "ABC"),
+      ("abcabc", "abcabc"),
+      ("abcABCaBc", "abcABCaBc"),
+      captureType: Substring.self, ==) {
+        oneOrMore {
+          "abc"
+        }.caseSensitive(false)
+      }
+    
+    // Multiple options on one component wrap successively, but do not
+    // override - equivalent to each option attached to a wrapping `Regex`.
+    try _testDSLCaptures(
+      ("abc", "abc"),
+      ("ABC", "ABC"),
+      ("abcabc", "abcabc"),
+      ("abcABCaBc", "abcABCaBc"),
+      captureType: Substring.self, ==) {
+        oneOrMore {
+          "abc"
+        }
+        .caseSensitive(false)
+        .caseSensitive(true)
+      }
+
+    // An option on an outer component doesn't override an option set on an
+    // inner component.
+    try _testDSLCaptures(
+      ("abc", "abc"),
+      ("ABC", "ABC"),
+      ("ABCde", "ABCde"),
+      ("ABCDE", nil),
+      ("abcabc", "abcabc"),
+      ("abcdeABCdeaBcde", "abcdeABCdeaBcde"),
+      captureType: Substring.self, ==) {
+        oneOrMore {
+          "abc".caseSensitive(false)
+          optionally("de")
+        }
+        .caseSensitive(true)
+      }
+  }
+  
   func testQuantificationBehavior() throws {
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "2")),
@@ -524,13 +569,6 @@ extension Unicode.Scalar {
 }
 
 // MARK: Extra == functions
-
-// (Substring, [(Substring, Substring, [Substring])])
-typealias S_AS = (Substring, [(Substring, Substring, [Substring])])
-
-func ==(lhs: S_AS, rhs: S_AS) -> Bool {
-  lhs.0 == rhs.0 && lhs.1.elementsEqual(rhs.1, by: ==)
-}
 
 func == <T0: Equatable, T1: Equatable, T2: Equatable, T3: Equatable, T4: Equatable, T5: Equatable, T6: Equatable>(
   l: (T0, T1, T2, T3, T4, T5, T6), r: (T0, T1, T2, T3, T4, T5, T6)
