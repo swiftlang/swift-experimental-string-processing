@@ -25,7 +25,7 @@ struct MatchingOptions {
   }
 }
 
-// Compiler API
+// MARK: Compilation API
 extension MatchingOptions {
   /// Creates an instance with the default options.
   init() {
@@ -51,7 +51,14 @@ extension MatchingOptions {
     stack[stack.count - 1].apply(sequence)
     _invariantCheck()
   }
+}
 
+// MARK: Matching behavior API
+extension MatchingOptions {
+  var isCaseSensitive: Bool {
+    !stack.last!.contains(.caseInsensitive)
+  }
+  
   var isReluctantByDefault: Bool {
     stack.last!.contains(.reluctantByDefault)
   }

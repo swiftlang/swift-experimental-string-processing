@@ -1117,6 +1117,31 @@ extension RegexTests {
     firstMatchTest(#"(?s:.+)"#, input: "a\nb", match: "a\nb")
   }
   
+  func testCaseSensitivity() {
+    matchTest(
+      #"c..e"#,
+      ("cafe", true),
+      ("Cafe", false))
+    matchTest(
+      #"(?i)c.f."#,
+      ("cafe", true),
+      ("Cafe", true),
+      ("caFe", true))
+    matchTest(
+      #"(?i)cafe"#,
+      ("cafe", true),
+      ("Cafe", true),
+      ("caFe", true))
+    matchTest(
+      #"(?i)café"#,
+      ("café", true),
+      ("CafÉ", true))
+    matchTest(
+      #"(?i)\u{63}af\u{e9}"#,
+      ("café", true),
+      ("CafÉ", true))
+  }
+  
   func testMatchingOptionsScope() {
     // `.` only matches newlines when the 's' option (single-line mode)
     // is turned on. Standalone option-setting groups (e.g. `(?s)`) are
