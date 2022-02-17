@@ -488,6 +488,10 @@ extension RegexTests {
       #"a\Q \Q \\.\Eb"#,
       concat("a", quote(#" \Q \\."#), "b"))
 
+    // These follow the PCRE behavior.
+    parseTest(#"\Q\\E"#, quote("\\"))
+    parseTest(#"\E"#, "E")
+
     parseTest(#"a" ."b"#, concat("a", quote(" ."), "b"),
               syntax: .experimental)
     parseTest(#"a" .""b""#, concat("a", quote(" ."), quote("b")),
