@@ -61,7 +61,9 @@ func flatCaptureTest(
   syntax: SyntaxOptions = .traditional,
   enableTracing: Bool = false,
   dumpAST: Bool = false,
-  xfail: Bool = false
+  xfail: Bool = false,
+  file: StaticString = #file,
+  line: UInt = #line
 ) {
   for (test, expect) in tests {
     do {
@@ -78,7 +80,7 @@ func flatCaptureTest(
         }
       }
       guard let expect = expect else {
-        throw "Match succeeded where failure expected"
+        throw "Match of \(test) succeeded where failure expected in \(regex)"
       }
       let capStrs = caps.map { $0 == nil ? nil : String($0!) }
       guard expect.count == capStrs.count else {
@@ -98,7 +100,7 @@ func flatCaptureTest(
       }
     } catch {
       if !xfail {
-        XCTFail("\(error)")
+        XCTFail("\(error)", file: file, line: line)
       }
     }
   }
@@ -1011,6 +1013,13 @@ extension RegexTests {
       ("abbbe", nil),
       ("accce", nil),
       ("abcbbd", nil))
+    flatCaptureTest(
+      #"(?:\w\1|:(\w):)+"#,
+      (":a:bacada", ["a"]),
+      (":a:baca:o:boco", ["o"]),
+      ("bacada", nil),
+      (":a:boco", ["a"])          // this matches only the ':a:' prefix
+    )
   }
 
   func testMatchReferences() {
