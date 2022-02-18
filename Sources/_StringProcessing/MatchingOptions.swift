@@ -55,8 +55,8 @@ extension MatchingOptions {
 
 // MARK: Matching behavior API
 extension MatchingOptions {
-  var isCaseSensitive: Bool {
-    !stack.last!.contains(.caseInsensitive)
+  var isCaseInsensitive: Bool {
+    stack.last!.contains(.caseInsensitive)
   }
   
   var isReluctantByDefault: Bool {

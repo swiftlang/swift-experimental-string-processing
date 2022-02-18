@@ -134,23 +134,21 @@ extension Compiler.ByteCodeGen {
   
   mutating func emitScalar(_ s: UnicodeScalar) throws {
     // TODO: Native instruction buildMatchScalar(s)
-    if options.isCaseSensitive {
-      builder.buildConsume(by: consumeScalar {
-        $0 == s
-      })
-    } else {
+    if options.isCaseInsensitive {
       // TODO: e.g. buildCaseInsensitiveMatchScalar(s)
       builder.buildConsume(by: consumeScalar {
         $0.properties.lowercaseMapping == s.properties.lowercaseMapping
+      })
+    } else {
+      builder.buildConsume(by: consumeScalar {
+        $0 == s
       })
     }
   }
   
   mutating func emitCharacter(_ c: Character) throws {
     // FIXME: Does semantic level matter?
-    if options.isCaseSensitive || !c.isCased {
-      builder.buildMatch(c)
-    } else {
+    if options.isCaseInsensitive && c.isCased {
       // TODO: buildCaseInsensitiveMatch(c) or buildMatch(c, caseInsensitive: true)
       builder.buildConsume { input, bounds in
         let inputChar = input[bounds.lowerBound].lowercased()
@@ -159,6 +157,8 @@ extension Compiler.ByteCodeGen {
           ? input.index(after: bounds.lowerBound)
           : nil
       }
+    } else {
+      builder.buildMatch(c)
     }
   }
 
@@ -539,9 +539,7 @@ extension Compiler.ByteCodeGen {
 
     case let .quotedLiteral(s):
       // TODO: Should this incorporate options?
-      if options.isCaseSensitive {
-        builder.buildMatchSequence(s)
-      } else {
+      if options.isCaseInsensitive {
         // TODO: buildCaseInsensitiveMatchSequence(c) or alternative
         builder.buildConsume { input, bounds in
           var iterator = s.makeIterator()
@@ -554,6 +552,8 @@ extension Compiler.ByteCodeGen {
           }
           return currentIndex
         }
+      } else {
+        builder.buildMatchSequence(s)
       }
 
     case let .regexLiteral(l):
