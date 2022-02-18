@@ -362,7 +362,7 @@ extension Processor {
       let (matcherReg, valReg) = payload.pairedMatcherValue
       let matcher = registers[matcherReg]
       guard let (nextIdx, val) = matcher(
-        input, currentPosition..<bounds.upperBound
+        input, currentPosition, bounds
       ) else {
         signalFailure()
         return
