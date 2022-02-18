@@ -138,7 +138,7 @@ GroupNameBody -> Identifier | BalancingGroupBody
 Identifier -> [\w--\d] \w*
 ```
 
-Groups define a new scope within which a recursive regular expression pattern may occur. Groups have different semantics depending on how they are introduced, some may capture the nested match, some may match against the input without advancing, some may change the matching options set in the new scope, etc.
+Groups define a new scope within which a recursive regular expression pattern may occur. Groups have different semantics depending on how they are introduced.
 
 Groups may be named, the characters of which may be any letter or number characters (or `_`). However the name must not start with a number. This restriction follows the behavior of other regex engines and avoids ambiguities when it comes to named and numeric group references.
 
@@ -146,6 +146,11 @@ Groups may be used to change the matching options present within their scope, se
 
 Note there are additional constructs that may syntactically appear similar to groups, but are distinct. See the *group-like atoms* section.
 
+#### Basic group kinds
+
+- `()`: A capturing group.
+- `(?:)`: A non-capturing group.
+- `(?|)`: A group that, for a direct child alternation, resets the numbering of groups at each branch of that alternation. See *group numbering*.
 
 #### Lookahead and lookbehind
 
@@ -153,6 +158,8 @@ Note there are additional constructs that may syntactically appear similar to gr
 - `(?!` specifies a negative lookahead that ensures the group body does not match, and does not advance.
 - `(?<=` specifies a lookbehind that attempts to match the group body against the input before the current position. Does not advance the input.
 - `(?!<` specifies a negative lookbehind that ensures the group body does not match the input before the current position. Does not advance the input.
+
+**TODO: Non-atomic variants**
 
 PCRE2 defines explicitly spelled out versions of the syntax, e.g `(*negative_lookbehind:)`.
 
@@ -340,7 +347,13 @@ PropertyContents -> PropertyName ('=' PropertyName)?
 PropertyName     -> [\s\w-]+
 ```
 
-A character property specifies a particular Unicode or POSIX property to match against. Fuzzy matching is used when parsing the property name, and is done according to rules set out by [UAX44-LM3]. This means that the following property names are considered equivalent:
+A character property specifies a particular Unicode or POSIX property to match against. We intend on parsing:
+
+- The full range of Unicode character properties.
+- The POSIX properties `alnum`, `blank`, `graph`, `print`, `word`, `xdigit` (note that `alpha`, `lower`, `upper`, `space`, `punct`, `digit`, and `cntrl` are covered by Unicode properties).
+- The UTS#18 special properties `any`, `assigned`, `ascii`.
+
+We intend on following [UTS#18][uts18]'s guidance for character properties. This includes the use of fuzzy matching for property name parsing. This is done according to rules set out by [UAX44-LM3]. This means that the following property names are considered equivalent:
 
 - `whitespace`
 - `isWhitespace`
@@ -348,7 +361,9 @@ A character property specifies a particular Unicode or POSIX property to match a
 - `iSwHiTeSpaCe`
 - `i s w h i t e s p a c e`
 
-Unicode properties consist of both a key and a value, e.g `General_Category=Whitespace`. However there are some properties where the key or value may be inferred. These include:
+Unicode properties consist of both a key and a value, e.g `General_Category=Whitespace`. Each component follows the fuzzy matching rule, and additionally may have an alternative alias spelling, as defined by Unicode in [PropertyAliases.txt][unicode-prop-key-aliases] and [PropertyValueAliases.txt][unicode-prop-value-aliases].
+
+There are some Unicode properties where the key or value may be inferred. These include:
 
 - General category properties e.g `\p{Whitespace}` is inferred as `\p{General_Category=Whitespace}`.
 - Script properties e.g `\p{Greek}` is inferred as `\p{Script=Greek}`.
@@ -360,8 +375,6 @@ For non-Unicode properties, only a value is required. These include:
 
 - The special properties `any`, `assigned`, `ascii`.
 - The POSIX compatibility properties `alnum`, `blank`, `graph`, `print`, `word`, `xdigit`. The remaining POSIX properties are already covered by boolean Unicode property spellings. 
-
-**TODO: Spell out the properties we recognize while parsing vs. those we just parse as String?**
 
 Note that the internal `PropertyContents` syntax is shared by both the `\p{...}` and POSIX-style `[:...:]` syntax, allowing e.g `[:script=Latin:]` as well as `\p{alnum}`.
 
@@ -412,7 +425,25 @@ RecursionLevel -> '+' <Int> | '-' <Int>
 
 A reference is an abstract identifier for a particular capturing group in a regular expression. It can either be named or numbered, and in the latter case may be specified relative to the current group. For example `-2` refers to the capture group `N - 2` where `N` is the number of the next capture group. References may refer to groups ahead of the current position e.g `+3`, or the name of a future group. These may be useful in recursive cases where the group being referenced has been matched in a prior iteration.
 
-**TODO: Describe how capture groups are numbered? Including nesting & resets?**
+#### Group numbering
+
+Capturing groups are implicitly numbered according to the position of their opening `(` in the regex. For example:
+
+```
+( ((?:a)(?<b>b)c)(d)e)
+^ ^     ^        ^
+1 2     3        4
+```
+
+Non-capturing groups are skipped over when counting.
+
+Branch reset groups can alter this numbering, as they reset the numbering in the branches of an alternation child, for example:
+
+```
+( ()(?|(a)(b)|(?:c)|(d)))()
+^ ^    ^  ^         ^    ^
+1 2    3  4         3    5
+```
 
 #### Backreferences
 
@@ -690,6 +721,10 @@ Different regex engines also have different rules around what characters are con
 
 This is a subset of the scalars matched by `UnicodeScalar.isWhitespace`. Additionally, in a custom character class, PCRE only considers the space and tab characters as whitespace. Other engines do not differentiate between whitespace characters inside and outside custom character classes, and appear to follow a subset of this list. Therefore we intend to support exactly the characters in this list for the purposes of non-semantic whitespace.
 
+### Group numbering
+
+**TODO: Discuss how .NET numbers its groups differently**
+
 ## Canonical representations
 
 Many engines have different spellings for the same regex features, and as such we need to decide on a preferred canonical syntax.
@@ -717,3 +752,5 @@ We plan on choosing the canonical spelling **TODO: decide**.
 [uts18]: https://www.unicode.org/reports/tr18/
 [.net-syntax]: https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expressions
 [UAX44-LM3]: https://www.unicode.org/reports/tr44/#UAX44-LM3
+[unicode-prop-key-aliases]: https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt
+[unicode-prop-value-aliases]: https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt
