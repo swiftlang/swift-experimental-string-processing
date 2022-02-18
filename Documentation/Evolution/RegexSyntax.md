@@ -301,23 +301,34 @@ Set             -> Member+
 Member          -> CustomCharClass | Quote | Range | Atom
 Range           -> RangeElt `-` RangeElt
 RangeElt        -> <Char> | UniScalar | EscapeSequence
-SetOp           -> '&&' | '--' | '~~'
+SetOp           -> '&&' | '--' | '~~' | '-'
 ```
 
 Custom characters classes introduce their own language, in which most regular expression metacharacters become literal. The basic element in a custom character class is an `Atom`, though only a few atoms are considered valid:
 
-- Builtin character classes, except `.`, `\O`, and `\X`
+- Builtin character classes, except `.`, `\O`, `\X`, and `\N`.
 - Escape sequences, including `\b` which becomes the backspace character (rather than a word boundary)
 - Unicode scalars
 - Named characters
 - Character properties
 - Plain literal characters
 
-Ranges of characters may be specified with `-`, e.g `[a-z]` matches against the letters from `a` to `z`. Only unicode scalars and literal characters are valid range operands. If `-` does not appear in a valid position, it is interpreted as literal, e.g `[-a]` is the character class of `-` and `a`. **TODO: .NET's use of it for subtraction**
+Atoms may be used to compose other character class members, including ranges, quoted sequences, and even nested custom character classes `[[ab]c\d]`. Adjacent members form an implicit union of character classes, e.g `[[ab]c\d]` is the union of the characters `a`, `b`, `c`, and digit characters.
 
-Custom character classes may be nested within each other, and may be used with set operations. The supported set operations are intersection `&&`, subtraction `--`, and symmetric difference `~~`.
+Quoted sequences may be used to escape the contained characters, e.g `[\Q]\E]` is the character class of the literal character `[`.
 
-Quoted sequences may appear with custom character classes, e.g `[\Q]\E]`, and escape the contained characters.
+Ranges of characters may be specified with `-`, e.g `[a-z]` matches against the letters from `a` to `z`. Only unicode scalars and literal characters are valid range operands. If `-` appears at the start or end of a custom character class, it is interpreted as literal, e.g `[-a-]` is the character class of `-` and `a`.
+
+Operators may be used to apply set operations to character class members. The operators supported are:
+
+- `&&`: Intersection of the LHS and RHS
+- `--`: Subtraction of the RHS from the LHS
+- `~~`: Symmetric difference of the RHS and LHS
+- `-`: .NET's spelling of subtracting the RHS from the LHS.
+
+These operators have a lower precedence than the implicit union of members, e.g `[ac-d&&a[d]]` is an intersection of the character classes `[ac-d]` and `[ad]`.
+
+To avoid ambiguity between .NET's subtraction syntax and range syntax, .NET specifies that a subtraction will only be parsed if the right-hand-side is a nested custom character class. We intend to follow this behavior.
 
 ### Character properties
 
@@ -583,7 +594,7 @@ Another conflict arises with .NET's support of using the `-` character in a cust
 
 We intend to support the operators `&&`, `--`, and `~~`. This means that any regex literal containing these sequences in a custom character class while being written for an engine not supporting that operation will have a different semantic meaning in our engine. However this ought not to be a common occurrence, as specifying a character multiple times in a custom character class is redundant.
 
-We also intend on supporting the `-` operator (**TODO: Justify**).
+In the interests of compatibility, we also intend on supporting the `-` operator, though we likely want to emit a warning and encourage users to switch to `--`.
 
 ### Nested custom character classes
 
@@ -639,7 +650,7 @@ PCRE and Oniguruma both support changing the active matching options through an 
 
 These sound similar, but have different semantics around alternations, e.g for `a(?i)b|c|d`, in Oniguruma this becomes `a(?i:b|c|d)`, where `a` is no longer part of the alternation. However in PCRE it becomes `a(?i:b)|(?i:c)|(?i:d)`, where `a` remains a child of the alternation.
 
-We aim to support the Oniguruma behavior. **TODO: The PCRE behavior is more complex for the parser, but seems less surprising, maybe that should become the default?**
+We aim to support the PCRE behavior.
 
 ### Backreference condition kinds
 
@@ -659,9 +670,7 @@ PCRE supports `\N` meaning "not a newline", however there are engines that treat
 
 ### Extended character property syntax
 
-**TODO: Can this be conflicting?**
-
-ICU (**TODO: any others?**) unifies the character property syntax `\p{...}` with the syntax for POSIX character classes `[:...:]`, such that they follow the same internal grammar, which allows referencing any Unicode character property in addition to the POSIX properties.
+ICU unifies the character property syntax `\p{...}` with the syntax for POSIX character classes `[:...:]`, such that they follow the same internal grammar, which allows referencing any Unicode character property in addition to the POSIX properties. We intend to support this, though it is a purely additive feature, and therefore should not conflict with regex engines that implement a more limited POSIX syntax.
 
 ### Extended syntax modes
 
