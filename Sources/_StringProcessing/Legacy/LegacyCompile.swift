@@ -337,7 +337,7 @@ func compile(
     case let .convertedRegexLiteral(node, _):
       try compileNode(node)
 
-    case .characterPredicate, .consumer, .consumerValidator:
+    case .characterPredicate, .consumer, .matcher:
       throw Unsupported("DSL extensions")
 
     case let .regexLiteral(re):

@@ -42,7 +42,7 @@ extension DSLTree.Node {
 
     case .consumer:
       fatalError("FIXME: Is this where we handle them?")
-    case .consumerValidator:
+    case .matcher:
       fatalError("FIXME: Is this where we handle them?")
     case .characterPredicate:
       fatalError("FIXME: Is this where we handle them?")

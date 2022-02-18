@@ -75,6 +75,9 @@ extension DSLTree {
     // MARK: - Extensibility points
 
     /// A capturing group (TODO: is it?) with a transformation function
+    ///
+    /// TODO: Consider as a validator or constructor nested in a
+    /// group, or split capturing off of group.
     case groupTransform(
       AST.Group.Kind,
       Node,
@@ -82,7 +85,7 @@ extension DSLTree {
 
     case consumer(_ConsumerInterface)
 
-    case consumerValidator(_ConsumerValidatorInterface)
+    case matcher(AnyType, _MatcherInterface)
 
     // TODO: Would this just boil down to a consumer?
     case characterPredicate(_CharacterPredicateInterface)
@@ -127,9 +130,10 @@ typealias _ConsumerInterface = (
 ) -> String.Index?
 
 // Type producing consume
-typealias _ConsumerValidatorInterface = (
+// TODO: better name
+typealias _MatcherInterface = (
   String, Range<String.Index>
-) -> (Any, Any.Type, String.Index)?
+) -> (String.Index, Any)?
 
 // Character-set (post grapheme segmentation)
 typealias _CharacterPredicateInterface = (
@@ -165,7 +169,7 @@ extension DSLTree.Node {
     case let .conditional(_, t, f): return [t,f]
 
     case .trivia, .empty, .quotedLiteral, .regexLiteral,
-        .consumer, .consumerValidator, .characterPredicate,
+        .consumer, .matcher, .characterPredicate,
         .customCharacterClass, .atom:
       return []
 
@@ -254,6 +258,10 @@ extension DSLTree.Node {
       return constructor.concatenating(children)
 
     case let .group(kind, child):
+      if let type = child.matcherCaptureType {
+        return constructor.grouping(
+          child, as: kind, withType: type)
+      }
       return constructor.grouping(child, as: kind)
 
     case let .groupTransform(kind, child, transform):
@@ -281,13 +289,21 @@ extension DSLTree.Node {
       // TODO: Switch nesting strategy?
       return n._captureStructure(&constructor)
 
-    case .consumerValidator:
-      // FIXME: This is where we make a capture!
+    case .matcher:
       return .empty
 
     case .customCharacterClass, .atom, .trivia, .empty,
         .quotedLiteral, .consumer, .characterPredicate:
       return .empty
+    }
+  }
+
+  // TODO: Unify with group transform
+  var matcherCaptureType: AnyType? {
+    switch self {
+    case let .matcher(t, _):
+      return t
+    default: return nil
     }
   }
 }

@@ -62,6 +62,8 @@ extension Instruction.Payload {
     case packedEltBool(ElementRegister, BoolRegister)
     case packedPosPos(PositionRegister, PositionRegister)
     case packedCapTran(CaptureRegister, TransformRegister)
+    case packedMatchVal(MatcherRegister, ValueRegister)
+    case packedValueCapture(ValueRegister, CaptureRegister)
   }
 }
 
@@ -286,6 +288,24 @@ extension Instruction.Payload {
   }
   var pairedCaptureTransform: (
     CaptureRegister, TransformRegister
+  ) {
+    interpretPair()
+  }
+
+  init(value: ValueRegister, capture: CaptureRegister) {
+    self.init(value, capture)
+  }
+  var pairedValueCapture: (
+    ValueRegister, CaptureRegister
+  ) {
+    interpretPair()
+  }
+
+  init(matcher: MatcherRegister, value: ValueRegister) {
+    self.init(matcher, value)
+  }
+  var pairedMatcherValue: (
+    MatcherRegister, ValueRegister
   ) {
     interpretPair()
   }

@@ -163,6 +163,10 @@ public enum _AssertionFunctionRegister {}
 public typealias TransformRegister = TypedInt<_TransformRegister>
 public enum _TransformRegister {}
 
+/// Used for value-producing matchers
+public typealias MatcherRegister = TypedInt<_MatcherRegister>
+public enum _MatcherRegister {}
+
 /// UNIMPLEMENTED
 public typealias IntRegister = TypedInt<_IntRegister>
 public enum _IntRegister {}
@@ -177,6 +181,9 @@ public enum _FloatRegister {}
 /// serve NFA-simulation style execution models
 public typealias PositionRegister = TypedInt<_PositionRegister>
 public enum _PositionRegister {}
+
+public typealias ValueRegister = TypedInt<_ValueRegister>
+public enum _ValueRegister {}
 
 public typealias CaptureRegister = TypedInt<_CaptureRegister>
 public enum _CaptureRegister {}

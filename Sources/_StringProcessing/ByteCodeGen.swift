@@ -246,11 +246,41 @@ extension Compiler.ByteCodeGen {
     builder.label(success)
   }
 
+  mutating func emitMatcher(
+    _ matcher: @escaping _MatcherInterface,
+    into capture: CaptureRegister? = nil
+  ) {
+
+    // TODO: Consider emitting consumer interface if
+    // not captured. This may mean we should store
+    // an existential instead of a closure...
+
+    let matcher = builder.makeMatcherFunction(matcher)
+
+    let valReg = builder.makeValueRegister()
+    builder.buildMatcher(matcher, into: valReg)
+
+    // TODO: Instruction to store directly
+    if let cap = capture {
+      builder.buildMove(valReg, into: cap)
+    }
+  }
+
   mutating func emitGroup(
     _ kind: AST.Group.Kind, _ child: DSLTree.Node
   ) throws -> CaptureRegister? {
     options.beginScope()
     defer { options.endScope() }
+
+    // If we have a strong type, write result directly into
+    // the capture register.
+    //
+    // FIXME: Unify with .groupTransform
+    if kind.isCapturing, case let .matcher(_, m) = child {
+      let cap = builder.makeCapture()
+      emitMatcher(m, into: cap)
+      return cap
+    }
 
     if let lookaround = kind.lookaroundKind {
       try emitLookaround(lookaround, child)
@@ -541,8 +571,10 @@ extension Compiler.ByteCodeGen {
       throw Unsupported("absent function")
     case .consumer:
       throw Unsupported("consumer")
-    case .consumerValidator:
-      throw Unsupported("consumer validator")
+
+    case let .matcher(_, f):
+      emitMatcher(f)
+
     case .characterPredicate:
       throw Unsupported("character predicates")
 

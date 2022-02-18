@@ -60,8 +60,8 @@ extension Processor {
         assert(stack.isEmpty)
         assert(valueStack.isEmpty)
         assert(currentCaptureBegin == nil)
-      } else {
-        assert(!stack.isEmpty || currentCaptureBegin != nil)
+      } else if currentCaptureBegin == nil {
+        assert(!stack.isEmpty || !valueStack.isEmpty)
       }
       if hasValues {
         // FIXME: how?
@@ -109,10 +109,14 @@ extension Processor {
     }
 
     mutating func registerValue(
-      _ value: Any
+      _ value: Any,
+      overwriteInitial: SavePoint? = nil
     ) {
       _invariantCheck()
       defer { _invariantCheck() }
+      if let sp = overwriteInitial {
+        self.startState = sp
+      }
       valueStack.append(value)
     }
 
