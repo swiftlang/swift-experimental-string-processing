@@ -1,26 +1,38 @@
-# Regular Expression Syntax
+<!--
+Hello, we want to issue an update to [Regular Expression Literals](https://forums.swift.org/t/pitch-regular-expression-literals/52820) and prepare for a formal proposal. The great delimiter delibration continues to unfold, so in the meantime, we have a significant amount of surface area to present for review/feedback: the syntax _inside_ a regex literal.
+-->
+
+# Regex Literal Interior Syntax
 
 - Authors: Hamish Knight, Michael Ilseman
 
 ## Introduction
 
-We aim to parse a superset of the syntax accepted by a variety of popular regular expression engines.
+Regex literals declare a string processing algorithm using syntax familiar across a variety of languages and tools throughout programming history. Formalizing regex literals in Swift requires choosing a delimiter strategy (e.g. `#/.../#` or `re'...'`), detailing the syntax accepted in between the delimiters ("interior syntax"), and specifying actual types and any relevant protocols for the literal itself.
 
-**TODO(Michael): Elaborate**
+This proposal-component focuses on the interior syntax, which is large enough for its own targeted discussion ahead of the full proposal. Regex literal interior syntax will be part of Swift's source-compatibility story (and to some extent binary compatibility), so we present a detailed and comprehensive design.
 
-## Engines supported
+## Motivation
 
-We aim to implement a syntactic superset of:
+Swift aims to be a pragmatic programming language, balancing (TODO: prose). Rather than pursue a novel interior syntax, (TODO: prose).
 
-- [PCRE 2][pcre2-syntax], an "industry standard" of sorts, and a rough superset of Perl, Python, etc.
-- [Oniguruma][oniguruma-syntax], an internationalization-oriented engine with some modern features
+Regex interior syntax is part of a larger [proposal](https://forums.swift.org/t/pitch-regular-expression-literals/52820), which in turn is part of a larger [string processing effort](https://forums.swift.org/t/declarative-string-processing-overview/52459).
+
+## Proposed Solution
+
+We propose accepting a syntactic "superset" of the following existing regular expression engines:
+
+- [PCRE 2][pcre2-syntax], an "industry standard" and a rough superset of Perl, Python, etc.
+- [Oniguruma][oniguruma-syntax], a modern engine with additional features.
 - [ICU][icu-syntax], used by NSRegularExpression, a Unicode-focused engine.
-- [.NET][.net-syntax]'s regular expressions, which support delimiter-balancing and some interesting minor details on conditional patterns.
-- **TODO: List Java here? It doesn't really add any more syntax than the above other than `\p{javaLowerCase}`**
+- [.NET][.net-syntax], which adds delimiter-balancing and some interesting minor details around conditional patterns.
 
-We also intend to achieve at least Level 1 (**TODO: do we want to promise Level 2?**) [UTS#18][uts18] conformance, which specifies regular expression matching semantics without mandating any particular syntax. However we can infer syntactic feature sets from its guidance.
+To our knowledge, all other popular regex engines support a subset of the above syntaxes.
 
-**TODO(Michael): Rework and expand prose**
+We also support [UTS#18][uts18]'s full set of character class operators (to our knowledge no other engine does). Beyond that, UTS#18 deals with semantics rather than syntax, and what syntax it uses is covered by the above list. We also parse `\p{javaLowerCase}`, meaning we support a superset of Java 8 as well.
+
+Note that there are minor syntactic incompatibilities and ambiguities involved in this approach. Each is addressed in the relevant sections below
+
 
 ## Detailed Design
 
