@@ -96,7 +96,7 @@ extension RECode {
 
     /// Ends the current capture at the given index and applies the given
     /// transform if available. Returns true on success. Returns false if the
-    /// trasnform failed.
+    /// transform failed.
     mutating func endCapture(
       _ endIndex: String.Index, transform: CaptureTransform?
     ) -> Bool {

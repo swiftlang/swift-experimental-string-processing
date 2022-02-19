@@ -69,7 +69,7 @@ extension DSLTree {
 
     /// The target of AST conversion.
     ///
-    /// Keeps original AST around for rich syntatic and source information
+    /// Keeps original AST around for rich syntactic and source information
     case convertedRegexLiteral(Node, AST.Node)
 
     // MARK: - Extensibility points

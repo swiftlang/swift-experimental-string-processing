@@ -400,7 +400,7 @@ extension PTCaRet.Formula {
     _ a: Formula,
     during b: Formula
   ) -> Formula {
-    // Note: More effient to implement directly
+    // Note: More efficient to implement directly
     .and(
       .implies(b, a),
       .implies(.not(b), .since(.previously(.implies(b, a)), b)))
@@ -429,7 +429,7 @@ extension PTCaRet.Formula {
     .atFunctionBegin(.previously(a))
   }
 
-  /// `a` has held true at every occurence of `filterA` since the
+  /// `a` has held true at every occurrence of `filterA` since the
   /// most recent occurrence of both `b` and `filterB`.
   ///
   ///     (filterA → a) S (filterB ∧ b)
@@ -441,7 +441,7 @@ extension PTCaRet.Formula {
     .since(.implies(filterA, a), .and(filterB, b))
   }
 
-  /// `a` has held true at every occurence of `filterA` since the
+  /// `a` has held true at every occurrence of `filterA` since the
   /// most recent occurrence of both `b` and `filterB`.
   ///
   ///     (filterA → a) S̅ (filterB ∧ b)

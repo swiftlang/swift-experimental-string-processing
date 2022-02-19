@@ -61,7 +61,7 @@ extension MEProgram.Builder {
 
 extension MEProgram.Builder {
   // TODO: We want a better strategy for fixups, leaving
-  // the operand in a differenet form isn't great...
+  // the operand in a different form isn't great...
 
   public init<S: Sequence>(staticElements: S) where S.Element == Input.Element {
     staticElements.forEach { elements.store($0) }

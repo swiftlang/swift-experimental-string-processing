@@ -113,7 +113,7 @@ extension AST.Atom {
   // an escape sequence.
   @frozen
   public enum EscapedBuiltin: Hashable {
-    // TOOD: better doc comments
+    // TODO: better doc comments
 
     // Literal single characters
 

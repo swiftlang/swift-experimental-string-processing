@@ -121,9 +121,9 @@ extension PrettyPrinter {
         print(a._patternBase)
 
       case .assertion:
-        print("/* TOOD: assertions */")
+        print("/* TODO: assertions */")
       case .backreference:
-        print("/* TOOD: backreferences */")
+        print("/* TODO: backreferences */")
       }
 
     case .trivia:
@@ -141,7 +141,7 @@ extension PrettyPrinter {
 
     case let .convertedRegexLiteral(n, _):
       // FIXME: This recursion coordinates with back-off
-      // check above, so it shoud work out. Need a
+      // check above, so it should work out. Need a
       // cleaner way to do this. This means the argument
       // label is a lie.
       printAsPattern(convertedFromAST: n)
@@ -315,7 +315,7 @@ extension AST.Group.Kind {
   var _patternBase: String {
     switch self {
     case .capture:
-      // TODO: We probably want this to be a prperty after group
+      // TODO: We probably want this to be a property after group
       return ".capture"
 
     case .namedCapture(let n):
