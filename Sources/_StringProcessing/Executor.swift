@@ -59,13 +59,3 @@ public struct Executor {
     }
   }
 }
-
-// Backward compatibility layer. To be removed when we deprecate legacy
-// components.
-extension Executor: VirtualMachine {
-  static let motto = "Executor"
-
-  init(program: Program) {
-    self.init(program: program, enablesTracing: false)
-  }
-}
