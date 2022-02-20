@@ -110,7 +110,7 @@ Multi-line comments use the `/*` delimiter. As such, a regex literal starting wi
 
 #### On custom infix operators using the `/` character
 
-Choosing `/` as the delimiter means there will a conflict for infix operators containing `/` in cases where whitespace isn't used, for example:
+Choosing `/` as the delimiter means there will be a conflict for infix operators containing `/` in cases where whitespace isn't used, for example:
 
 ```swift
 x+/y/+z

@@ -33,7 +33,7 @@ extension RECode {
     /// NOP (currently unused).
     case nop
 
-    /// Denote a sucessful match. (currently used only at the end of a program).
+    /// Denote a successful match. (currently used only at the end of a program).
     case accept
 
     /// Consume and try to match a unit of input.
@@ -105,7 +105,7 @@ extension RECode.Instruction {
     return id
   }
 
-  /// Whether this instruction particpcates in matching
+  /// Whether this instruction participates in matching
   var isMatching: Bool {
     switch self {
     case .accept: return true
