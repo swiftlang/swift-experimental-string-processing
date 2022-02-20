@@ -30,14 +30,6 @@ public struct Regex<Match>: RegexProtocol {
     /// likely, compilation/caching.
     let tree: DSLTree
 
-    /// The legacy `RECode` for execution with a legacy VM.
-    lazy private(set) var legacyLoweredProgram: RECode = {
-      do {
-        return try compile(tree)
-      } catch {
-        fatalError("Regex engine internal error: \(String(describing: error))")
-      }
-    }()
     /// The program for execution with the matching engine.
     lazy private(set) var loweredProgram = try! Compiler(tree: tree).emit()
 
@@ -122,5 +114,3 @@ public func r<Match>(
 ) -> MockRegexLiteral<Match> {
   try! MockRegexLiteral(s, matching: matchType)
 }
-
-fileprivate typealias DefaultEngine = TortoiseVM

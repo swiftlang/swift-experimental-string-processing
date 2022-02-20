@@ -37,31 +37,6 @@ extension RegexProtocol {
       input.base, in: input.startIndex..<input.endIndex)
   }
 
-  // TODO: Should we expose parameters for testing?
-  // Currently, tests just use the execution interface directly.
-  func _performLegacyMatch(
-    _ input: String,
-    in inputRange: Range<String.Index>,
-    mode: MatchMode
-  ) -> RegexMatch<Match>? {
-    let vm = HareVM(program: regex.program.legacyLoweredProgram)
-    guard let (range, captures) = vm.execute(
-      input: input, in: inputRange, mode: mode
-    )?.destructure else {
-      return nil
-    }
-    let convertedMatch: Match
-    if Match.self == (Substring, DynamicCaptures).self {
-      convertedMatch = (input[range], DynamicCaptures(captures)) as! Match
-    } else {
-      let typeErasedMatch = captures.matchValue(
-        withWholeMatch: input[range]
-      )
-      convertedMatch = typeErasedMatch as! Match
-    }
-    return RegexMatch(range: range, match: convertedMatch)
-  }
-
   func _match(
     _ input: String,
     in inputRange: Range<String.Index>,
