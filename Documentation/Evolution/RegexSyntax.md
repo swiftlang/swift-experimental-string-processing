@@ -140,7 +140,7 @@ Identifier -> [\w--\d] \w*
 
 Groups define a new scope within which a recursive regular expression pattern may occur. Groups have different semantics depending on how they are introduced.
 
-Groups may be named, the characters of which may be any letter or number characters (or `_`). However the name must not start with a number. This restriction follows the behavior of other regex engines and avoids ambiguities when it comes to named and numeric group references.
+Groups may be named, the characters of which may be any letter or number characters or the character `_`. However the name must not start with a number. This restriction follows the behavior of other regex engines and avoids ambiguities when it comes to named and numeric group references.
 
 Groups may be used to change the matching options present within their scope, see the *Matching options* section.
 
@@ -152,20 +152,23 @@ Note there are additional constructs that may syntactically appear similar to gr
 - `(?:)`: A non-capturing group.
 - `(?|)`: A group that, for a direct child alternation, resets the numbering of groups at each branch of that alternation. See *group numbering*.
 
-#### Lookahead and lookbehind
-
-- `(?=` specifies a lookahead that attempts to match against the group body, but does not advance.
-- `(?!` specifies a negative lookahead that ensures the group body does not match, and does not advance.
-- `(?<=` specifies a lookbehind that attempts to match the group body against the input before the current position. Does not advance the input.
-- `(?!<` specifies a negative lookbehind that ensures the group body does not match the input before the current position. Does not advance the input.
-
-**TODO: Non-atomic variants**
-
-PCRE2 defines explicitly spelled out versions of the syntax, e.g `(*negative_lookbehind:)`.
-
 #### Atomic groups
 
 An atomic group e.g `(?>...)` specifies that its contents should not be re-evaluated for backtracking. This the same semantics as a possessive quantifier, but applies more generally to any regex pattern.
+
+#### Lookahead and lookbehind
+
+- `(?=`: A lookahead that attempts to match against the group body, but does not advance.
+- `(?!`: A negative lookahead that ensures the group body does not match, and does not advance.
+- `(?<=`: A lookbehind that attempts to match the group body against the input before the current position. Does not advance the input.
+- `(?!<`: A negative lookbehind that ensures the group body does not match the input before the current position. Does not advance the input.
+
+These groups are all atomic, meaning that they will not be re-evaluated for backtracking. There are however also non-atomic variants:
+
+- `(?*`: A non-atomic lookahead.
+- `(?<*`: A non-atomic lookbehind.
+
+PCRE2 also defines explicitly spelled out versions of the above syntax, e.g `(*non_atomic_positive_lookahead` and `(*negative_lookbehind:)`.
 
 #### Script runs
 
@@ -430,17 +433,17 @@ A reference is an abstract identifier for a particular capturing group in a regu
 Capturing groups are implicitly numbered according to the position of their opening `(` in the regex. For example:
 
 ```
-( ((?:a)(?<b>b)c)(d)e)
+(a((?:b)(?<c>c)d)(e)f)
 ^ ^     ^        ^
 1 2     3        4
 ```
 
 Non-capturing groups are skipped over when counting.
 
-Branch reset groups can alter this numbering, as they reset the numbering in the branches of an alternation child, for example:
+Branch reset groups can alter this numbering, as they reset the numbering in the branches of an alternation child. Outside the alternation, numbering resumes at the next available number not used in one of the branches. For example:
 
 ```
-( ()(?|(a)(b)|(?:c)|(d)))()
+(a()(?|(b)(c)|(?:d)|(e)))(f)
 ^ ^    ^  ^         ^    ^
 1 2    3  4         3    5
 ```
@@ -503,7 +506,7 @@ A condition may be:
 
 - A reference to a capture group, which checks whether the group matched successfully.
 - A recursion check on either a particular group or the entire regex. In the former case, this checks to see if the last recursive call is through that group. In the latter case, it checks if the match is currently taking place in any kind of recursive call.
-- An arbitrary recursive regular expression, which is matched against, and evaluates to true if the match is successful. (**TODO: Clarify whether it introduces captures**)
+- An arbitrary recursive regular expression, which is matched against, and evaluates to true if the match is successful. It may contain capture groups that add captures to the match.
 - A PCRE version check.
 
 The `DEFINE` keyword is not used as a condition, but rather a way in which to define a group which is not evaluated, but may be referenced by a subpattern.
@@ -723,7 +726,17 @@ This is a subset of the scalars matched by `UnicodeScalar.isWhitespace`. Additio
 
 ### Group numbering
 
-**TODO: Discuss how .NET numbers its groups differently**
+In PCRE, groups are numbered according to the position of their opening parenthesis. .NET also follows this rule, with the exception that named groups are numbered after unnamed groups. For example:
+
+```
+(a(?<x>x)b)(?<y>y)(z)
+^ ^        ^      ^
+1 3        4      2
+```
+
+The `(z)` group gets numbered before the named groups get numbered.
+
+We intend on matching the PCRE behavior where groups are numbered purely based on order.
 
 ## Canonical representations
 
