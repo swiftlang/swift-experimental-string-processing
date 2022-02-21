@@ -196,12 +196,14 @@ class RegexDSLTests: XCTestCase {
     
     try _testDSLCaptures(
       ("aaaaa1", "aaaaa1"),
+      ("aaaaa2", nil),
       ("aaaaa", nil),
       ("aaaaab", nil),
       captureType: Substring.self, ==)
     {
       "a".+
       lookahead(CharacterClass.digit)
+      lookahead("2", negative: true)
       CharacterClass.word
     }
   }

@@ -107,15 +107,15 @@ extension Anchor {
 }
 
 public func lookahead<R: RegexProtocol>(
-  isNegative: Bool = false,
+  negative: Bool = false,
   @RegexBuilder _ content: () -> R
 ) -> Regex<R.Match> {
-  Regex(node: .group(isNegative ? .negativeLookahead : .lookahead, content().regex.root))
+  Regex(node: .group(negative ? .negativeLookahead : .lookahead, content().regex.root))
 }
   
 public func lookahead<R: RegexProtocol>(
   _ component: R,
-  isNegative: Bool = false
+  negative: Bool = false
 ) -> Regex<R.Match> {
-  Regex(node: .group(isNegative ? .negativeLookahead : .lookahead, component.regex.root))
+  Regex(node: .group(negative ? .negativeLookahead : .lookahead, component.regex.root))
 }
