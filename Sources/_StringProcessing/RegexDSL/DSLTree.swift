@@ -132,7 +132,7 @@ typealias _ConsumerInterface = (
 // Type producing consume
 // TODO: better name
 typealias _MatcherInterface = (
-  String, Range<String.Index>
+  String, String.Index, Range<String.Index>
 ) -> (String.Index, Any)?
 
 // Character-set (post grapheme segmentation)

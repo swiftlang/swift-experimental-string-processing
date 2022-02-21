@@ -18,7 +18,7 @@ public struct MEProgram<Input: Collection> where Input.Element: Equatable {
   public typealias TransformFunction =
     (Input, Range<Input.Index>) -> Any?
   public typealias MatcherFunction =
-    (Input, Range<Input.Index>) -> (Input.Index, Any)?
+    (Input, Input.Index, Range<Input.Index>) -> (Input.Index, Any)?
 
   var instructions: InstructionList<Instruction>
 

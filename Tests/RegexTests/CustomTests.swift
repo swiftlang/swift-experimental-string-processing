@@ -2,28 +2,21 @@ import _StringProcessing
 import XCTest
 
 // A nibbler processes a single character from a string
-private protocol Nibbler:
-  MatchingCollectionConsumer, RegexProtocol
-where Consumed == String {
+private protocol Nibbler: CustomRegexComponent {
   func nibble(_: Character) -> Match?
 }
 
 extension Nibbler {
   // Default implementation, just feed the character in
-  func matchingConsuming(
-    _ consumed: Consumed,
-    in range: Range<Consumed.Index>
-  ) -> (upperBound: Consumed.Index, match: Match)? {
-    guard !range.isEmpty else {
-      // FIXME: Do we have a full story here?
+  func match(
+    _ input: String,
+    startingAt index: String.Index,
+    in bounds: Range<String.Index>
+  ) -> (upperBound: String.Index, match: Match)? {
+    guard index != bounds.upperBound, let res = nibble(input[index]) else {
       return nil
     }
-    let idx = range.lowerBound
-
-    guard let res = nibble(consumed[idx]) else {
-      return nil
-    }
-    return (consumed.index(after: idx), res)
+    return (input.index(after: index), res)
   }
 }
 

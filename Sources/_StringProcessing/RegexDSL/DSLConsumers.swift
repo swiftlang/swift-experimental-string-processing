@@ -9,24 +9,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-extension MatchingCollectionConsumer where Consumed == String {
+public protocol CustomRegexComponent: RegexProtocol {
+  func match(
+    _ input: String,
+    startingAt index: String.Index,
+    in bounds: Range<String.Index>
+  ) -> (upperBound: String.Index, match: Match)?
+}
+
+extension CustomRegexComponent {
   public var regex: Regex<Match> {
-    Regex(node: .matcher(.init(Match.self)) {
-      self.matchingConsuming($0, in: $1)
-    })
+    Regex(node: .matcher(.init(Match.self), { input, index, bounds in
+      match(input, startingAt: index, in: bounds)
+    }))
   }
 }
-
-extension CollectionConsumer where Consumed == String {
-  public var regex: Regex<Void> {
-    Regex(node: .consumer {
-      self.consuming($0, in: $1)
-    })
-  }
-}
-
-// TODO: How can/should the DSL choose between them? Need to
-// know whether value is captured or not. Should this be
-// done via how we declare API or should this be part of
-// compilation / DSLTree logic?
-
