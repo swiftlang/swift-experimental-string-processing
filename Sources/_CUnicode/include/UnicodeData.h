@@ -58,5 +58,14 @@ uint8_t _swift_stdlib_getGraphemeBreakProperty(uint32_t scalar);
 SWIFT_CC
 _Bool _swift_stdlib_isLinkingConsonant(uint32_t scalar);
 
+//===----------------------------------------------------------------------===//
+// Scalar Props
+//===----------------------------------------------------------------------===//
+
+SWIFT_CC
+uint8_t _swift_stdlib_getScript(uint32_t scalar);
+
+SWIFT_CC
+const uint8_t * const _swift_stdlib_getScriptExtensions(uint32_t scalar, uint8_t *count);
 
 #endif // SWIFT_STDLIB_SHIMS_UNICODEDATA_H

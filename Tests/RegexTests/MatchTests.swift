@@ -573,10 +573,7 @@ extension RegexTests {
     firstMatchTest("[[:isALNUM:]]", input: "[[:alnum:]]", match: "a")
     firstMatchTest("[[:AL_NUM:]]", input: "[[:alnum:]]", match: "a")
 
-    // Unfortunately, scripts are not part of stdlib...
-    firstMatchTest(
-      "[[:script=Greek:]]", input: "123αβγxyz", match: "α",
-      xfail: true)
+    firstMatchTest("[[:script=Greek:]]", input: "123αβγxyz", match: "α")
 
     // MARK: Operators
 
@@ -677,34 +674,17 @@ extension RegexTests {
     firstMatchTest(#"\p{ascii}"#, input: "123abcXYZ", match: "1")
     firstMatchTest(#"\p{isAny}"#, input: "123abcXYZ", match: "1")
 
-    // Unfortunately, scripts are not part of stdlib...
-    firstMatchTest(
-      #"\p{sc=grek}"#, input: "123αβγxyz", match: "α",
-      xfail: true)
-    firstMatchTest(
-      #"\p{sc=isGreek}"#, input: "123αβγxyz", match: "α",
-      xfail: true)
-    firstMatchTest(
-      #"\p{Greek}"#, input: "123αβγxyz", match: "α",
-      xfail: true)
-    firstMatchTest(
-      #"\p{isGreek}"#, input: "123αβγxyz", match: "α",
-      xfail: true)
-    firstMatchTest(
-      #"\P{Script=Latn}"#, input: "abcαβγxyz", match: "α",
-      xfail: true)
-    firstMatchTest(
-      #"\p{script=Greek}"#, input: "123αβγxyz", match: "α",
-      xfail: true)
-    firstMatchTest(
-      #"\p{ISscript=isGreek}"#, input: "123αβγxyz", match: "α",
-      xfail: true)
-    firstMatchTest(
-      #"\p{scx=bamum}"#, input: "123ꚠꚡꚢxyz", match: "ꚠ",
-      xfail: true)
-    firstMatchTest(
-      #"\p{ISBAMUM}"#, input: "123ꚠꚡꚢxyz", match: "ꚠ",
-      xfail: true)
+    firstMatchTest(#"\p{sc=grek}"#, input: "123αβγxyz", match: "α")
+    firstMatchTest(#"\p{sc=isGreek}"#, input: "123αβγxyz", match: "α")
+    firstMatchTest(#"\p{Greek}"#, input: "123αβγxyz", match: "α")
+    firstMatchTest(#"\p{isGreek}"#, input: "123αβγxyz", match: "α")
+    firstMatchTest(#"\P{Script=Latn}"#, input: "abcαβγxyz", match: "α")
+    firstMatchTest(#"\p{script=Greek}"#, input: "123αβγxyz", match: "α")
+    firstMatchTest(#"\p{ISscript=isGreek}"#, input: "123αβγxyz", match: "α")
+    firstMatchTest(#"\p{scx=bamum}"#, input: "123ꚠꚡꚢxyz", match: "ꚠ")
+    firstMatchTest(#"\p{ISBAMUM}"#, input: "123ꚠꚡꚢxyz", match: "ꚠ")
+    firstMatchTest(#"\p{Script=Unknown}"#, input: "\u{10FFFF}", match: "\u{10FFFF}")
+    firstMatchTest(#"\p{scx=Gujr}"#, input: "\u{a839}", match: "\u{a839}")
 
     firstMatchTest(#"\p{alpha}"#, input: "123abcXYZ", match: "a")
     firstMatchTest(#"\P{alpha}"#, input: "123abcXYZ", match: "1")
