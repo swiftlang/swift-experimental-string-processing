@@ -12,7 +12,6 @@
 // A tree representing the type of some captures.
 public enum CaptureStructure: Equatable {
   case atom(name: String? = nil, type: AnyType? = nil)
-  indirect case array(CaptureStructure)
   indirect case optional(CaptureStructure)
   indirect case tuple([CaptureStructure])
 
@@ -265,8 +264,6 @@ extension CaptureStructure {
       return atomType
     case .atom(_, type: let type?):
       return type.base
-    case .array(let child):
-      return TypeConstruction.arrayType(of: child.type(withAtomType: atomType))
     case .optional(let child):
       return TypeConstruction.optionalType(of: child.type(withAtomType: atomType))
     case .tuple(let children):
@@ -281,6 +278,20 @@ extension CaptureStructure {
   public var type: Any.Type {
     type(withAtomType: DefaultAtomType.self)
   }
+
+  public var atomType: AnyType {
+    switch self {
+    case .atom(_, type: nil):
+      return .init(Substring.self)
+    case .atom(_, type: let type?):
+      return type
+    case .optional(let child):
+      return child.atomType
+    case .tuple:
+      fatalError("Recursive nesting has no single atom type")
+    }
+
+  }
 }
 
 // MARK: - Serialization
@@ -291,7 +302,7 @@ extension CaptureStructure {
     case end           = 0
     case atom          = 1
     case namedAtom     = 2
-    case formArray     = 3
+//    case formArray     = 3
     case formOptional  = 4
     case beginTuple    = 5
     case endTuple      = 6
@@ -314,7 +325,6 @@ extension CaptureStructure {
   /// encode(〚`T`〛) ==> <version>, 〚`T`〛, .end
   /// 〚`T` (atom)〛 ==> .atom
   /// 〚`name: T` (atom)〛 ==> .atom, `name`, '\0'
-  /// 〚`[T]`〛 ==> 〚`T`〛, .formArray
   /// 〚`T?`〛 ==> 〚`T`〛, .formOptional
   /// 〚`(T0, T1, ...)` (top level)〛 ==> 〚`T0`〛, 〚`T1`〛, ...
   /// 〚`(T0, T1, ...)`〛 ==> .beginTuple, 〚`T0`〛, 〚`T1`〛, ..., .endTuple
@@ -334,7 +344,8 @@ extension CaptureStructure {
     var offset = MemoryLayout<SerializationVersion>.stride
     /// Appends a code to the buffer, advancing the offset to the next position.
     func append(_ code: Code) {
-      buffer.storeBytes(of: code, toByteOffset: offset, as: Code.self)
+      buffer.storeBytes(
+        of: code.rawValue, toByteOffset: offset, as: UInt8.self)
       offset += MemoryLayout<Code>.stride
     }
     /// Recursively encode the node to the buffer.
@@ -353,10 +364,6 @@ extension CaptureStructure {
         offset += nameCString.count
       case .atom(_, _?):
         fatalError("Cannot encode a capture structure with explicit types")
-      // 〚`[T]`〛 ==> 〚`T`〛, .formArray
-      case .array(let child):
-        encode(child)
-        append(.formArray)
       // 〚`T?`〛 ==> 〚`T`〛, .formOptional
       case .optional(let child):
         encode(child)
@@ -419,9 +426,6 @@ extension CaptureStructure {
         let name = String(cString: stringAddress)
         offset += name.utf8CString.count
         currentScope.append(.atom(name: name))
-      case .formArray:
-        let lastIndex = currentScope.endIndex - 1
-        currentScope[lastIndex] = .array(currentScope[lastIndex])
       case .formOptional:
         let lastIndex = currentScope.endIndex - 1
         currentScope[lastIndex] = .optional(currentScope[lastIndex])
@@ -453,11 +457,6 @@ extension CaptureStructure: CustomStringConvertible {
       let type = type == nil ? "<untyped>"
                              : String(describing: type)
       printer.print("Atom(\(name): \(type))")
-
-    case let .array(c):
-      printer.printBlock("Array") { printer in
-        c._print(&printer)
-      }
 
     case let .optional(c):
       printer.printBlock("Optional") { printer in

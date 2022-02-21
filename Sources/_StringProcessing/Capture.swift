@@ -11,112 +11,57 @@
 
 import _MatchingEngine
 
-// TODO: what here should be in the compile-time module?
+/// A structured capture
+struct StructuredCapture {
+  /// The `.optional` height of the result
+  var numOptionals = 0
 
-enum Capture {
-  case atom(Any)
-  indirect case tuple([Capture])
-  indirect case some(Capture)
-  case none(childType: AnyType)
-  indirect case array([Capture], childType: AnyType)
-}
+  var storedCapture: StoredCapture?
 
-extension Capture {
-  static func none(childType: Any.Type) -> Capture {
-    .none(childType: AnyType(childType))
-  }
-
-  static func array(_ children: [Capture], childType: Any.Type) -> Capture {
-    .array(children, childType: AnyType(childType))
+  var numSomes: Int {
+    storedCapture == nil ? numOptionals - 1 : numOptionals
   }
 }
 
-extension Capture {
-  static func tupleOrAtom(_ elements: [Capture]) -> Self {
-    elements.count == 1 ? elements[0] : .tuple(elements)
-  }
+/// A storage form for a successful capture
+struct StoredCapture {
+  // TODO: drop optional when engine tracks all ranges
+  var range: Range<String.Index>?
 
-  static var void: Capture {
-    .tuple([])
-  }
+  // If strongly typed, value is set
+  var value: Any? = nil
+}
 
-  var value: Any {
-    switch self {
-    case .atom(let atom):
-      return atom
-    case .tuple(let elements):
-      return TypeConstruction.tuple(
-        of: elements.map(\.value))
-    case .array(let elements, let childType):
-      func helper<T>(_: T.Type) -> Any {
-        elements.map { $0.value as! T }
-      }
-      return _openExistential(childType.base, do: helper)
-    case .some(let subcapture):
-      func helper<T>(_ value: T) -> Any {
-        Optional(value) as Any
-      }
-      return _openExistential(subcapture.value, do: helper)
-    case .none(let childType):
-      func helper<T>(_: T.Type) -> Any {
-        nil as T? as Any
-      }
-      return _openExistential(childType.base, do: helper)
+extension StructuredCapture {
+  func extractExistentialMatchComponent(
+    from input: Substring
+  ) -> Any {
+    var underlying: Any
+    if let cap = self.storedCapture {
+      underlying = cap.value ?? input[cap.range!]
+    } else {
+      // Ok since we Any-box every step up the ladder
+      underlying = Optional<Any>(nil) as Any
     }
-  }
-
-  private func prepending(_ newElement: Any) -> Self {
-    switch self {
-    case .atom, .some, .none, .array:
-      return .tuple([.atom(newElement), self])
-    case .tuple(let elements):
-      return .tuple([.atom(newElement)] + elements)
+    for _ in 0..<numSomes {
+      underlying = Optional(underlying) as Any
     }
-  }
-
-  func matchValue(withWholeMatch wholeMatch: Substring) -> Any {
-    prepending(wholeMatch).value
+    return underlying
   }
 }
 
-extension Capture: CustomStringConvertible {
-  public var description: String {
-    var printer = PrettyPrinter()
-    _print(&printer)
-    return printer.finish()
-  }
-
-  private func _print(_ printer: inout PrettyPrinter) {
-    switch self {
-    case let .atom(n):
-      printer.print("Atom(\(n))")
-    case let .tuple(ns):
-      if ns.isEmpty {
-        printer.print("Tuple()")
-        return
-      }
-
-      printer.printBlock("Tuple") { printer in
-        for n in ns {
-          n._print(&printer)
-        }
-      }
-
-    case let .some(n):
-      printer.printBlock("Some") { printer in
-        n._print(&printer)
-      }
-
-    case let .none(childType):
-      printer.print("None(\(childType))")
-
-    case let .array(ns, childType):
-      printer.printBlock("Array(\(childType))") { printer in
-        for n in ns {
-          n._print(&printer)
-        }
-      }
-
-    }
+extension Sequence where Element == StructuredCapture {
+  // FIXME: This is a stop gap where we still slice the input
+  // and traffic through existentials
+  func extractExistentialMatch(
+    from input: Substring
+  ) -> Any {
+    var caps = Array<Any>()
+    caps.append(input)
+    caps.append(contentsOf: self.map {
+      $0.extractExistentialMatchComponent(from: input)
+    })
+    return TypeConstruction.tuple(of: caps)
   }
 }
+

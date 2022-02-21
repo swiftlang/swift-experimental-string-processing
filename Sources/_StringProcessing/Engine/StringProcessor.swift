@@ -14,16 +14,18 @@ typealias Program = MEProgram<String>
 
 public struct MatchResult {
   public var range: Range<String.Index>
-  var captures: Capture
+  var captures: [StructuredCapture]
 
   var destructure: (
-    matched: Range<String.Index>, captures: Capture
+    matched: Range<String.Index>,
+    captures: [StructuredCapture]
   ) {
     (range, captures)
   }
 
   init(
-    _ matched: Range<String.Index>, _ captures: Capture
+    _ matched: Range<String.Index>,
+    _ captures: [StructuredCapture]
   ) {
     self.range = matched
     self.captures = captures

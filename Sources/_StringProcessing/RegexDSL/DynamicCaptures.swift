@@ -17,28 +17,36 @@ extension Regex where Match == (Substring, DynamicCaptures) {
   }
 }
 
-public enum DynamicCaptures: Equatable {
-  case substring(Substring)
-  indirect case tuple([DynamicCaptures])
-  indirect case optional(DynamicCaptures?)
-  indirect case array([DynamicCaptures])
+public struct DynamicCapture: Hashable {
+  var numOptionals = 0
 
-  public static var empty: Self {
-    .tuple([])
-  }
+  // TODO: replace with a range
+  var slice: Substring?
 
-  internal init(_ capture: Capture) {
-    switch capture {
-    case .atom(let atom):
-      self = .substring(atom as! Substring)
-    case .tuple(let components):
-      self = .tuple(components.map(Self.init))
-    case .some(let component):
-      self = .optional(Self(component))
-    case .none:
-      self = .optional(nil)
-    case .array(let components, _):
-      self = .array(components.map(Self.init))
-    }
+  init(_ slice: Substring?, numOptionals: Int) {
+    self.slice = slice
+    self.numOptionals = numOptionals
   }
 }
+
+extension DynamicCapture {
+  init(
+    _ cap: StructuredCapture,
+    in input: String
+  ) {
+    self.numOptionals = cap.numOptionals
+    guard let stored = cap.storedCapture else {
+      self.slice = nil
+      return
+    }
+    assert(stored.value == nil, "Dynamic typed?")
+    guard let r = stored.range else {
+      fatalError("FIXME: unreachable")
+    }
+    self.slice = input[r]
+  }
+}
+
+// TODO: Probably worth a separate type
+public typealias DynamicCaptures = Array<DynamicCapture>
+

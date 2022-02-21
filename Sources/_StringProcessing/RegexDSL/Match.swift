@@ -50,12 +50,16 @@ extension RegexProtocol {
     }
     let convertedMatch: Match
     if Match.self == (Substring, DynamicCaptures).self {
-      convertedMatch = (input[range], DynamicCaptures(captures)) as! Match
-    } else if Match.self == Substring.self {
+      let dynCaps = captures.map {
+        DynamicCapture($0, in: input)
+      }
+      convertedMatch = (input[range], dynCaps) as! Match
+    } else
+    if Match.self == Substring.self {
       convertedMatch = input[range] as! Match
     } else {
-      let typeErasedMatch = captures.matchValue(
-        withWholeMatch: input[range]
+      let typeErasedMatch = captures.extractExistentialMatch(
+        from: input[range]
       )
       convertedMatch = typeErasedMatch as! Match
     }

@@ -12,6 +12,12 @@
 import XCTest
 @testable import _StringProcessing
 
+func dynCap(
+  _ s: String, optional: Bool = false
+) -> DynamicCapture {
+  DynamicCapture(s[...], numOptionals: optional ? 1 : 0)
+}
+
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexProtocol, CaptureType>(
     _ tests: (input: String, expectedCaptures: CaptureType?)...,
@@ -466,9 +472,10 @@ class RegexDSLTests: XCTestCase {
       let regex = try Regex("aabcc.")
       let line = "aabccd"
       let captures = try XCTUnwrap(line.match(regex)?.1)
-      XCTAssertEqual(captures, .empty)
+      XCTAssertEqual(captures, [])
     }
     do {
+
       let regex = try Regex(
         #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#)
       let line = """
@@ -478,10 +485,11 @@ class RegexDSLTests: XCTestCase {
       let captures = try XCTUnwrap(line.match(regex)?.1)
       XCTAssertEqual(
         captures,
-        .tuple([
-          .substring("A6F0"),
-          .optional(.substring("A6F1")),
-          .substring("Extend")]))
+        [
+          dynCap("A6F0"),
+          dynCap("A6F1", optional: true),
+          dynCap("Extend"),
+        ])
     }
   }
 }
