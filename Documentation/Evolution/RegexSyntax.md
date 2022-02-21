@@ -103,10 +103,15 @@ Atom -> Anchor
       | NamedCharacter
       | Subpattern
       | UniScalar
+      | '\K'
       | '\'? <Character>
 ```
 
-Atoms are the smallest units of regular expression syntax. They include escape sequences e.g `\b`, `\d`, as well as meta-characters such as `.` and `$`. They also include some larger syntactic constructs such as backreferences and callouts. The most basic form of atom is a literal character. A meta-character may be treated as literal by preceding it with a backslash. Other characters may also be preceded with a backslash, but it has no effect, e.g `\I` is literal `I`.
+Atoms are the smallest units of regular expression syntax. They include escape sequences e.g `\b`, `\d`, as well as meta-characters such as `.` and `$`. They also include some larger syntactic constructs such as backreferences and callouts. The most basic form of atom is a literal character. A meta-character may be treated as literal by preceding it with a backslash. Other characters may also be preceded with a backslash, but it has no effect if they are unknown escape sequences, e.g `\I` is literal `I`.
+
+#### `\K`
+
+The `\K` escape sequence is used to drop any previously matched characters from the final matching result. It does not however interfere with captures, e.g `a(b)\Kc` when matching against `abc` will return a match of `c`, but with a capture of `b`.
 
 ### Groups
 
@@ -261,7 +266,7 @@ HexDigit   -> [0-9a-zA-Z]
 OctalDigit -> [0-7]
 ```
 
-These sequences define a unicode scalar value to be matched against. There is both syntax for specifying the scalar value in hex notation, as well as octal notation.
+These sequences define a unicode scalar value to be matched against. There is both syntax for specifying the scalar value in hex notation, as well as octal notation. Note that `\x` that is not followed by any hexadecimal digit characters is treated as `\0`, which matches PCRE's behavior.
 
 ### Escape sequences
 
@@ -283,10 +288,11 @@ These escape sequences denote a specific character.
 ### Builtin character classes
 
 ```
-BuiltinCharClass -> '.' | '\d' | '\D' | '\h' | '\H' | '\N' | '\O' | '\R' | '\s' | '\S' | '\v' | '\V' | '\w' | '\W' | '\X'
+BuiltinCharClass -> '.' | '\C' | '\d' | '\D' | '\h' | '\H' | '\N' | '\O' | '\R' | '\s' | '\S' | '\v' | '\V' | '\w' | '\W' | '\X'
 ```
 
 - `.`: Any character excluding newlines
+- `\C`: A single UTF code unit
 - `\d`: Digit character
 - `\D`: Non-digit character
 - `\h`: Horizontal space character
@@ -316,7 +322,7 @@ SetOp           -> '&&' | '--' | '~~' | '-'
 
 Custom characters classes introduce their own language, in which most regular expression metacharacters become literal. The basic element in a custom character class is an `Atom`, though only a few atoms are considered valid:
 
-- Builtin character classes, except `.`, `\O`, `\X`, and `\N`.
+- Builtin character classes except `.`, `\R`, `\O`, `\X`, `\C`, and `\N`.
 - Escape sequences, including `\b` which becomes the backspace character (rather than a word boundary)
 - Unicode scalars
 - Named characters
@@ -325,9 +331,11 @@ Custom characters classes introduce their own language, in which most regular ex
 
 Atoms may be used to compose other character class members, including ranges, quoted sequences, and even nested custom character classes `[[ab]c\d]`. Adjacent members form an implicit union of character classes, e.g `[[ab]c\d]` is the union of the characters `a`, `b`, `c`, and digit characters.
 
+Custom character classes may not be empty, e.g `[]` is forbidden. A custom character class may begin with the `]` character, in which case it is treated as literal, e.g `[]a]` is the custom character class of `]` and `a`.
+
 Quoted sequences may be used to escape the contained characters, e.g `[\Q]\E]` is the character class of the literal character `[`.
 
-Ranges of characters may be specified with `-`, e.g `[a-z]` matches against the letters from `a` to `z`. Only unicode scalars and literal characters are valid range operands. If `-` appears at the start or end of a custom character class, it is interpreted as literal, e.g `[-a-]` is the character class of `-` and `a`.
+Ranges of characters may be specified with `-`, e.g `[a-z]` matches against the letters from `a` to `z`. Only unicode scalars and literal characters are valid range operands. If `-` cannot be used to form a range, it is interpreted as literal, e.g `[-a-]` is the character class of `-` and `a`. `[a-c-d]` is the character class of `a`...`c`, `-`, and `d`.
 
 Operators may be used to apply set operations to character class members. The operators supported are:
 
@@ -350,11 +358,12 @@ PropertyContents -> PropertyName ('=' PropertyName)?
 PropertyName     -> [\s\w-]+
 ```
 
-A character property specifies a particular Unicode or POSIX property to match against. We intend on parsing:
+A character property specifies a particular Unicode, POSIX, or PCRE property to match against. We intend on parsing:
 
 - The full range of Unicode character properties.
 - The POSIX properties `alnum`, `blank`, `graph`, `print`, `word`, `xdigit` (note that `alpha`, `lower`, `upper`, `space`, `punct`, `digit`, and `cntrl` are covered by Unicode properties).
 - The UTS#18 special properties `any`, `assigned`, `ascii`.
+- The special PCRE2 properties `Xan`, `Xps`, `Xsp`, `Xuc`, `Xwd`.
 
 We intend on following [UTS#18][uts18]'s guidance for character properties. This includes the use of fuzzy matching for property name parsing. This is done according to rules set out by [UAX44-LM3]. This means that the following property names are considered equivalent:
 
@@ -369,8 +378,9 @@ Unicode properties consist of both a key and a value, e.g `General_Category=Whit
 There are some Unicode properties where the key or value may be inferred. These include:
 
 - General category properties e.g `\p{Whitespace}` is inferred as `\p{General_Category=Whitespace}`.
-- Script properties e.g `\p{Greek}` is inferred as `\p{Script=Greek}`.
+- Script properties e.g `\p{Greek}` is inferred as `\p{Script=Greek}`. **TODO: Infer as `\p{scx=Greek}` instead?**
 - Boolean properties that are inferred to have a `True` value, e.g `\p{Lowercase}` is inferred as `\p{Lowercase=True}`.
+- Block properties that begin with the prefix `in`, e.g `\p{inBasicLatin}` is inferred to be `\p{Block=Basic_Latin}`.
 
 Other Unicode properties however must specify both a key and value.
 
@@ -388,7 +398,7 @@ NamedCharacter -> '\N{' CharName '}'
 CharName -> 'U+' HexDigit{1...8} | [\s\w-]+
 ```
 
-Allows a specific Unicode scalar to be specified by name or code point.
+Allows a specific Unicode scalar to be specified by name or hexadecimal code point.
 
 **TODO: Should this be called "named scalar" or similar?**
 
@@ -696,7 +706,7 @@ PCRE and .NET allow for conditional patterns to reference a group by its name, e
 
 where `y` will only be matched if `(?<group1>x)` was matched. PCRE will always treat such syntax as a backreference condition, however .NET will only treat it as such if a group with that name exists somewhere in the regex (including after the conditional). Otherwise, .NET interprets `group1` as an arbitrary regular expression condition to try match against. 
 
-We intend to always parse such conditions as an arbitrary regular expression condition, and will emit a warning asking users to explicitly use the syntax `(?('group1')y)` if they want a backreference condition. This more explicit syntax is supported by PCRE.
+We intend to always parse such conditions as an arbitrary regular expression condition, and will emit a warning asking users to explicitly use the syntax `(?(<group1>)y)` if they want a backreference condition. This more explicit syntax is supported by PCRE. **TODO: Is the opposite more common?**
 
 ### `\N`
 
@@ -742,6 +752,16 @@ We intend on matching the PCRE behavior where groups are numbered purely based o
 
 Many engines have different spellings for the same regex features, and as such we need to decide on a preferred canonical syntax.
 
+### Unicode scalars
+
+### Character properties
+
+### Groups
+
+#### Named
+
+#### Lookaheads and lookbehinds
+
 ### Backreferences
 
 There are a variety of backreference spellings accepted by different engines
@@ -757,6 +777,12 @@ Backreference -> '\g{' NameOrNumberRef '}'
 ```
 
 We plan on choosing the canonical spelling **TODO: decide**.
+
+### Subpattern
+
+### Conditional references
+
+### Callouts
 
 
 [pcre2-syntax]: https://www.pcre.org/current/doc/html/pcre2syntax.html
