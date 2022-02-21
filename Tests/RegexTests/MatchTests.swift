@@ -115,7 +115,9 @@ func matchTest(
   syntax: SyntaxOptions = .traditional,
   enableTracing: Bool = false,
   dumpAST: Bool = false,
-  xfail: Bool = false
+  xfail: Bool = false,
+  file: StaticString = #file,
+  line: UInt = #line
 ) {
   for (test, expect) in tests {
     firstMatchTest(
@@ -125,7 +127,9 @@ func matchTest(
       syntax: syntax,
       enableTracing: enableTracing,
       dumpAST: dumpAST,
-      xfail: xfail)
+      xfail: xfail,
+      file: file,
+      line: line)
   }
 }
 
@@ -1124,6 +1128,43 @@ extension RegexTests {
   func testSingleLineMode() {
     firstMatchTest(#".+"#, input: "a\nb", match: "a")
     firstMatchTest(#"(?s:.+)"#, input: "a\nb", match: "a\nb")
+  }
+  
+  func testCaseSensitivity() {
+    matchTest(
+      #"c..e"#,
+      ("cafe", true),
+      ("Cafe", false))
+    matchTest(
+      #"(?i)c.f."#,
+      ("cafe", true),
+      ("Cafe", true),
+      ("caFe", true))
+    matchTest(
+      #"(?i)cafe"#,
+      ("cafe", true),
+      ("Cafe", true),
+      ("caFe", true))
+    matchTest(
+      #"(?i)café"#,
+      ("café", true),
+      ("CafÉ", true))
+    matchTest(
+      #"(?i)\u{63}af\u{e9}"#,
+      ("café", true),
+      ("CafÉ", true))
+    
+    matchTest(
+      #"[caFE]{4}"#,
+      ("cafe", false),
+      ("CAFE", false),
+      ("caFE", true),
+      ("EFac", true))
+    matchTest(
+      #"(?i)[caFE]{4}"#,
+      ("cafe", true),
+      ("CaFe", true),
+      ("EfAc", true))
   }
   
   func testMatchingOptionsScope() {

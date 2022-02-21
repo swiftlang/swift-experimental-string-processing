@@ -51,24 +51,34 @@ extension DSLTree.Node {
 }
 
 extension DSLTree.Atom {
-  // TODO: If ByteCodeGen switches first, then this is
-  // unnecessary...
+  // TODO: If ByteCodeGen switches first, then this is unnecessary for
+  // top-level nodes, but it's also invoked for `.atom` members of a custom CC
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram<String>.ConsumeFunction? {
+    let isCaseInsensitive = opts.isCaseInsensitive
+    
     switch self {
-
     case let .char(c):
       // TODO: Match level?
       return { input, bounds in
         let low = bounds.lowerBound
-        guard input[low] == c else {
-          return nil
+        if isCaseInsensitive && c.isCased {
+          return input[low].lowercased() == c.lowercased()
+            ? input.index(after: low)
+            : nil
+        } else {
+          return input[low] == c
+            ? input.index(after: low)
+            : nil
         }
-        return input.index(after: low)
       }
     case let .scalar(s):
-      return consumeScalar { $0 == s }
+      return consumeScalar {
+        isCaseInsensitive
+          ? $0.properties.lowercaseMapping == s.properties.lowercaseMapping
+          : $0 == s
+      }
 
     case .any:
       // FIXME: Should this be a total ordering?
@@ -187,14 +197,30 @@ extension DSLTree.CustomCharacterClass.Member {
         throw Unsupported("\(high) in range")
       }
 
-      return { input, bounds in
-        // TODO: check for out of bounds?
-        let curIdx = bounds.lowerBound
-        if (lhs...rhs).contains(input[curIdx]) {
-          // TODO: semantic level
-          return input.index(after: curIdx)
+      if opts.isCaseInsensitive {
+        let lhsLower = lhs.lowercased()
+        let rhsLower = rhs.lowercased()
+        guard lhsLower <= rhsLower else { throw Unsupported("Invalid range \(lhs)-\(rhs)") }
+        return { input, bounds in
+          // TODO: check for out of bounds?
+          let curIdx = bounds.lowerBound
+          if (lhsLower...rhsLower).contains(input[curIdx].lowercased()) {
+            // TODO: semantic level
+            return input.index(after: curIdx)
+          }
+          return nil
         }
-        return nil
+      } else {
+        guard lhs <= rhs else { throw Unsupported("Invalid range \(lhs)-\(rhs)") }
+        return { input, bounds in
+          // TODO: check for out of bounds?
+          let curIdx = bounds.lowerBound
+          if (lhs...rhs).contains(input[curIdx]) {
+            // TODO: semantic level
+            return input.index(after: curIdx)
+          }
+          return nil
+        }
       }
 
     case let .custom(ccc):
@@ -237,11 +263,20 @@ extension DSLTree.CustomCharacterClass.Member {
         return rhs(input, bounds)
       }
     case .quotedLiteral(let s):
-      return { input, bounds in
-        guard s.contains(input[bounds.lowerBound]) else {
-          return nil
+      if opts.isCaseInsensitive {
+        return { input, bounds in
+          guard s.lowercased().contains(input[bounds.lowerBound].lowercased()) else {
+            return nil
+          }
+          return input.index(after: bounds.lowerBound)
         }
-        return input.index(after: bounds.lowerBound)
+      } else {
+        return { input, bounds in
+          guard s.contains(input[bounds.lowerBound]) else {
+            return nil
+          }
+          return input.index(after: bounds.lowerBound)
+        }
       }
     case .trivia:
       // TODO: Should probably strip this earlier...

@@ -20,15 +20,11 @@ extension Compiler.ByteCodeGen {
       emitAny()
 
     case let .char(c):
-      // FIXME: Does semantic level matter?
-      builder.buildMatch(c)
-
+      try emitCharacter(c)
+      
     case let .scalar(s):
-      // TODO: Native instruction
-      builder.buildConsume(by: consumeScalar {
-        $0 == s
-      })
-
+      try emitScalar(s)
+      
     case let .assertion(kind):
       try emitAssertion(kind)
 
@@ -133,6 +129,36 @@ extension Compiler.ByteCodeGen {
         !CharacterClass.word.isBoundary(
           input, at: pos, bounds: bounds)
       }
+    }
+  }
+  
+  mutating func emitScalar(_ s: UnicodeScalar) throws {
+    // TODO: Native instruction buildMatchScalar(s)
+    if options.isCaseInsensitive {
+      // TODO: e.g. buildCaseInsensitiveMatchScalar(s)
+      builder.buildConsume(by: consumeScalar {
+        $0.properties.lowercaseMapping == s.properties.lowercaseMapping
+      })
+    } else {
+      builder.buildConsume(by: consumeScalar {
+        $0 == s
+      })
+    }
+  }
+  
+  mutating func emitCharacter(_ c: Character) throws {
+    // FIXME: Does semantic level matter?
+    if options.isCaseInsensitive && c.isCased {
+      // TODO: buildCaseInsensitiveMatch(c) or buildMatch(c, caseInsensitive: true)
+      builder.buildConsume { input, bounds in
+        let inputChar = input[bounds.lowerBound].lowercased()
+        let matchChar = c.lowercased()
+        return inputChar == matchChar
+          ? input.index(after: bounds.lowerBound)
+          : nil
+      }
+    } else {
+      builder.buildMatch(c)
     }
   }
 
@@ -543,7 +569,22 @@ extension Compiler.ByteCodeGen {
 
     case let .quotedLiteral(s):
       // TODO: Should this incorporate options?
-      builder.buildMatchSequence(s)
+      if options.isCaseInsensitive {
+        // TODO: buildCaseInsensitiveMatchSequence(c) or alternative
+        builder.buildConsume { input, bounds in
+          var iterator = s.makeIterator()
+          var currentIndex = bounds.lowerBound
+          while let ch = iterator.next() {
+            guard currentIndex < bounds.upperBound,
+                  ch.lowercased() == input[currentIndex].lowercased()
+            else { return nil }
+            input.formIndex(after: &currentIndex)
+          }
+          return currentIndex
+        }
+      } else {
+        builder.buildMatchSequence(s)
+      }
 
     case let .regexLiteral(l):
       try emitNode(l.dslTreeNode)
