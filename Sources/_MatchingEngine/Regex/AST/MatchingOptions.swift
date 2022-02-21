@@ -110,6 +110,16 @@ extension AST {
   }
 }
 
+extension AST.MatchingOptionSequence {
+  public init(adding: [AST.MatchingOption]) {
+    self.init(caretLoc: nil, adding: adding, minusLoc: nil, removing: [])
+  }
+
+  public init(removing: [AST.MatchingOption]) {
+    self.init(caretLoc: nil, adding: [], minusLoc: nil, removing: removing)
+  }
+}
+
 extension AST.MatchingOption: _ASTPrintable {
   public var _dumpBase: String { "\(kind)" }
 }
