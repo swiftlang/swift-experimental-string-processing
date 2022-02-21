@@ -215,6 +215,33 @@ class RegexDSLTests: XCTestCase {
       repeating(0...) { "f" }
     }
   }
+  
+  func testAssertions() throws {
+    try _testDSLCaptures(
+      ("aaaaab", "aaaaab"),
+      ("caaaaab", nil),
+      ("aaaaabc", nil),
+      captureType: Substring.self, ==)
+    {
+      Anchor.startOfLine
+      "a".+
+      "b"
+      Anchor.endOfLine
+    }
+    
+    try _testDSLCaptures(
+      ("aaaaa1", "aaaaa1"),
+      ("aaaaa2", nil),
+      ("aaaaa", nil),
+      ("aaaaab", nil),
+      captureType: Substring.self, ==)
+    {
+      "a".+
+      lookahead(CharacterClass.digit)
+      lookahead("2", negative: true)
+      CharacterClass.word
+    }
+  }
 
   func testNestedGroups() throws {
     return;
