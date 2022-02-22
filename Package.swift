@@ -69,6 +69,11 @@ let package = Package(
               "_MatchingEngine",
               "_StringProcessing"
             ]),
+        .executableTarget(
+            name: "Benchmark",
+            dependencies: [
+              "_StringProcessing"
+            ]),
 
         // MARK: Exercises
         .target(
