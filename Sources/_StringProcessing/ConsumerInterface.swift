@@ -430,6 +430,21 @@ extension AST.CustomCharacterClass {
 }
 
 // NOTE: Conveniences, though not most performant
+private func consumeScalarScript(
+  _ s: Unicode.Script
+) -> MEProgram<String>.ConsumeFunction {
+  consumeScalar {
+    Unicode.Script($0) == s
+  }
+}
+private func consumeScalarScriptExtension(
+  _ s: Unicode.Script
+) -> MEProgram<String>.ConsumeFunction {
+  consumeScalar {
+    let extensions = Unicode.Script.extensions(for: $0)
+    return extensions.contains(s)
+  }
+}
 private func consumeScalarGC(
   _ gc: Unicode.GeneralCategory
 ) -> MEProgram<String>.ConsumeFunction {
@@ -504,10 +519,10 @@ extension AST.Atom.CharacterProperty {
         return value ? cons : invert(cons)
 
       case .script(let s):
-        throw Unsupported("TODO: Map script: \(s)")
+        return consumeScalarScript(s)
 
       case .scriptExtension(let s):
-        throw Unsupported("TODO: Map script: \(s)")
+        return consumeScalarScriptExtension(s)
 
       case .posix(let p):
         return p.generateConsumer(opts)
