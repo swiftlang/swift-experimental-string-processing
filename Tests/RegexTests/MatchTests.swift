@@ -892,7 +892,8 @@ extension RegexTests {
       #"\d+\b"#,
       ("123", "123"),
       (" 123", "123"),
-      ("123 456", "123"))
+      ("123 456", "123"),
+      ("123A 456", "456"))
     firstMatchTests(
       #"\d+\b\s\b\d+"#,
       ("123", nil),
@@ -908,7 +909,18 @@ extension RegexTests {
     // TODO: \G and \K
 
     // TODO: Oniguruma \y and \Y
-
+    firstMatchTests(
+      #"\u{65}"#,             // Scalar 'e' is present in both:
+      ("Cafe\u{301}", "e"),   // composed and
+      ("Sol Cafe", "e"))      // standalone
+    firstMatchTests(
+      #"\u{65}\y"#,           // Grapheme boundary assertion
+      ("Cafe\u{301}", nil),
+      ("Sol Cafe", "e"))
+    firstMatchTests(
+      #"\u{65}\Y"#,           // Grapheme non-boundary assertion
+      ("Cafe\u{301}", "e"),
+      ("Sol Cafe", nil))
   }
 
   func testMatchGroups() {

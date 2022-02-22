@@ -39,6 +39,14 @@ extension Character: RegexProtocol {
   }
 }
 
+extension UnicodeScalar: RegexProtocol {
+  public typealias Match = Substring
+
+  public var regex: Regex<Match> {
+    .init(ast: atom(.scalar(self)))
+  }
+}
+
 extension CharacterClass: RegexProtocol {
   public typealias Match = Substring
 
