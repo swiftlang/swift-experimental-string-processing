@@ -42,6 +42,14 @@ extension MEProgram where Input.Element: Hashable {
     // as we compile?
     var captureStructure: CaptureStructure = .empty
 
+    // Symbolic reference resolution
+    var unresolvedReferences: [Reference.ID: [InstructionAddress]] = [:]
+    var captureOffsets: [Reference.ID: Int] = [:]
+    var captureCount: Int {
+      // We currently deduce the capture count from the capture register number.
+      nextCaptureRegister.rawValue
+    }
+
     public init() {}
   }
 }
@@ -65,6 +73,10 @@ extension MEProgram.Builder {
 
   public init<S: Sequence>(staticElements: S) where S.Element == Input.Element {
     staticElements.forEach { elements.store($0) }
+  }
+
+  var lastInstructionAddress: InstructionAddress {
+    .init(instructions.endIndex - 1)
   }
 
   public mutating func buildNop(_ r: StringRegister? = nil) {
@@ -262,9 +274,16 @@ extension MEProgram.Builder {
       .init(.backreference, .init(capture: cap)))
   }
 
+  public mutating func buildUnresolvedReference(id: Reference.ID) {
+    buildBackreference(.init(0))
+    unresolvedReferences[id, default: []].append(lastInstructionAddress)
+  }
+
   // TODO: Mutating because of fail address fixup, drop when
   // that's removed
   public mutating func assemble() throws -> MEProgram {
+    try resolveReferences()
+
     // TODO: This will add a fail instruction at the end every
     // time it's assembled. Better to do to the local instruction
     // list copy, but that complicates logic. It's possible we
@@ -401,10 +420,31 @@ extension MEProgram.Builder {
 
 }
 
+// Symbolic reference helpers
+fileprivate extension MEProgram.Builder {
+  mutating func resolveReferences() throws {
+    for (id, uses) in unresolvedReferences {
+      guard let offset = captureOffsets[id] else {
+        throw RegexCompilationError.uncapturedReference
+      }
+      for use in uses {
+        instructions[use.rawValue] =
+          Instruction(.backreference, .init(capture: .init(offset)))
+      }
+    }
+  }
+}
+
 // Register helpers
 extension MEProgram.Builder {
-  public mutating func makeCapture() -> CaptureRegister {
+  public mutating func makeCapture(id: Reference.ID?) -> CaptureRegister {
     defer { nextCaptureRegister.rawValue += 1 }
+    // Register the capture for later lookup via symbolic references.
+    if let id = id {
+      let preexistingValue = captureOffsets.updateValue(
+        captureCount, forKey: id)
+      assert(preexistingValue == nil)
+    }
     return nextCaptureRegister
   }
 
