@@ -316,6 +316,10 @@ extension RegexTests {
       #"xa{0}y"#, input: "123aaaxyz", match: "xy")
     firstMatchTest(
       #"xa{0,0}y"#, input: "123aaaxyz", match: "xy")
+    firstMatchTest(
+      #"(a|a){2}a"#, input: "123aaaxyz", match: "aaa")
+    firstMatchTest(
+      #"(a|a){3}a"#, input: "123aaaxyz", match: nil)
 
     firstMatchTest("a.*", input: "dcba", match: "a")
 
