@@ -100,7 +100,7 @@ Atom -> Anchor
       | Callout
       | CharacterProperty
       | EscapeSequence
-      | NamedCharacter
+      | NamedScalar
       | Subpattern
       | UniScalar
       | '\K'
@@ -266,7 +266,7 @@ HexDigit   -> [0-9a-zA-Z]
 OctalDigit -> [0-7]
 ```
 
-These sequences define a unicode scalar value to be matched against. There is both syntax for specifying the scalar value in hex notation, as well as octal notation. Note that `\x` that is not followed by any hexadecimal digit characters is treated as `\0`, which matches PCRE's behavior.
+These sequences define a unicode scalar value to be matched against. There is both syntax for specifying the scalar value in hex notation, as well as octal notation. Note that `\x`, when not followed by any hexadecimal digit characters, is treated as `\0`, matching PCRE's behavior.
 
 ### Escape sequences
 
@@ -325,7 +325,7 @@ Custom characters classes introduce their own language, in which most regular ex
 - Builtin character classes except `.`, `\R`, `\O`, `\X`, `\C`, and `\N`.
 - Escape sequences, including `\b` which becomes the backspace character (rather than a word boundary)
 - Unicode scalars
-- Named characters
+- Named scalars
 - Character properties
 - Plain literal characters
 
@@ -378,7 +378,7 @@ Unicode properties consist of both a key and a value, e.g `General_Category=Whit
 There are some Unicode properties where the key or value may be inferred. These include:
 
 - General category properties e.g `\p{Whitespace}` is inferred as `\p{General_Category=Whitespace}`.
-- Script properties e.g `\p{Greek}` is inferred as `\p{Script=Greek}`. **TODO: Infer as `\p{scx=Greek}` instead?**
+- Script properties e.g `\p{Greek}` is inferred as `\p{Script_Extensions=Greek}`.
 - Boolean properties that are inferred to have a `True` value, e.g `\p{Lowercase}` is inferred as `\p{Lowercase=True}`.
 - Block properties that begin with the prefix `in`, e.g `\p{inBasicLatin}` is inferred to be `\p{Block=Basic_Latin}`.
 
@@ -391,16 +391,14 @@ For non-Unicode properties, only a value is required. These include:
 
 Note that the internal `PropertyContents` syntax is shared by both the `\p{...}` and POSIX-style `[:...:]` syntax, allowing e.g `[:script=Latin:]` as well as `\p{alnum}`.
 
-### Named characters
+### Named scalars
 
 ```
-NamedCharacter -> '\N{' CharName '}'
-CharName -> 'U+' HexDigit{1...8} | [\s\w-]+
+NamedScalar -> '\N{' ScalarName '}'
+ScalarName -> 'U+' HexDigit{1...8} | [\s\w-]+
 ```
 
 Allows a specific Unicode scalar to be specified by name or hexadecimal code point.
-
-**TODO: Should this be called "named scalar" or similar?**
 
 ### Trivia
 
@@ -686,7 +684,7 @@ In PCRE, a bare `\x` denotes the NUL character (`U+00`). In Oniguruma, it denote
 
 ### Whitespace in ranges
 
-In PCRE, `x{2,4}` is a range quantifier meaning that `x` can be matched from 2 to 4 times. However if any whitespace is introduced within the braces, it becomes an invalid range and is then treated as the literal characters instead. We find this behavior to be unintuitive, and therefore intend to parse any intermixed whitespace in the range, but will emit a warning telling users that we're doing so (**TODO: how would they silence? move to modern syntax?**).
+In PCRE, `x{2,4}` is a range quantifier meaning that `x` can be matched from 2 to 4 times. However if any whitespace is introduced within the braces, it becomes an invalid range and is then treated as the literal characters instead. We find this behavior to be unintuitive, and therefore intend to parse any intermixed whitespace in the range.
 
 ### Implicitly-scoped matching option scopes
 
@@ -715,6 +713,12 @@ PCRE supports `\N` meaning "not a newline", however there are engines that treat
 ### Extended character property syntax
 
 ICU unifies the character property syntax `\p{...}` with the syntax for POSIX character classes `[:...:]`, such that they follow the same internal grammar, which allows referencing any Unicode character property in addition to the POSIX properties. We intend to support this, though it is a purely additive feature, and therefore should not conflict with regex engines that implement a more limited POSIX syntax.
+
+### Script properties
+
+Shorthand script property syntax e.g `\p{Latin}` is treated as `\p{Script=Latin}` by PCRE, ICU, Oniguruma, and Java. These use [the Unicode Script property][unicode-scripts], which assigns each scalar a particular script value. However, there are scalars that may appear in multiple scripts, e.g U+3003 DITTO MARK. These often get assigned to the `Common` script to reflect this fact, which is not particularly useful for matching purposes. To provide more fine-grained script matching, Unicode provides [the Script Extension property][unicode-script-extensions], which exposes the set of scripts that a scalar appears in.
+
+As such we feel that the more desirable default behavior of shorthand script property syntax e.g `\p{Latin}` is for it to be treated as `\p{Script_Extension=Latin}`. This matches Perl's default behavior. Plain script properties may still be written using the more explicit syntax e.g `\p{Script=Latin}` and `\p{sc=Latin}`.
 
 ### Extended syntax modes
 
@@ -793,3 +797,5 @@ We plan on choosing the canonical spelling **TODO: decide**.
 [UAX44-LM3]: https://www.unicode.org/reports/tr44/#UAX44-LM3
 [unicode-prop-key-aliases]: https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt
 [unicode-prop-value-aliases]: https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt
+[unicode-scripts]: https://www.unicode.org/reports/tr24/#Script
+[unicode-script-extensions]: https://www.unicode.org/reports/tr24/#Script_Extensions
