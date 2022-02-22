@@ -14,7 +14,7 @@ This proposal-component focuses on the interior syntax, which is large enough fo
 
 ## Motivation
 
-Swift aims to be a pragmatic programming language, balancing (TODO: prose). Rather than pursue a novel interior syntax, (TODO: prose).
+Swift aims to be a pragmatic programming language, balancing (**TODO(Michael)**: prose). Rather than pursue a novel interior syntax, (**TODO(Michael)**: prose).
 
 Regex interior syntax is part of a larger [proposal](https://forums.swift.org/t/pitch-regular-expression-literals/52820), which in turn is part of a larger [string processing effort](https://forums.swift.org/t/declarative-string-processing-overview/52459).
 
@@ -502,7 +502,6 @@ KnownCondition -> 'R'
                 | 'DEFINE'
                 | 'VERSION' VersionCheck
                 | NumberRef
-                | NameRef
                 
 PCREVersionCheck  -> '>'? '=' PCREVersionNumber
 PCREVersionNumber -> <Int> '.' <Int>
@@ -512,10 +511,11 @@ A conditional evaluates a particular condition, and chooses a branch to match ag
 
 A condition may be:
 
-- A reference to a capture group, which checks whether the group matched successfully.
+- A numeric or delimited named reference to a capture group, which checks whether the group matched successfully.
 - A recursion check on either a particular group or the entire regex. In the former case, this checks to see if the last recursive call is through that group. In the latter case, it checks if the match is currently taking place in any kind of recursive call.
-- An arbitrary recursive regular expression, which is matched against, and evaluates to true if the match is successful. It may contain capture groups that add captures to the match.
 - A PCRE version check.
+
+If the condition does not syntactically match any of the above, it is treated as an arbitrary recursive regular expression. This will be matched against, and evaluates to true if the match is successful. It may contain capture groups that add captures to the match.
 
 The `DEFINE` keyword is not used as a condition, but rather a way in which to define a group which is not evaluated, but may be referenced by a subpattern.
 
@@ -616,9 +616,9 @@ An absent function is an Oniguruma feature that allows for the easy inversion of
 
 ## Syntactic differences between engines
 
-**TODO: Intro**
+**TODO(Michael, if you want): Intro**
 
-**TODO: Talk about compatibility modes for different engines being a possible future direction?**
+**TODO(Michael, if you want): Talk about compatibility modes for different engines being a possible future direction?**
 
 ### Character class set operations
 
@@ -696,15 +696,15 @@ We aim to support the PCRE behavior.
 
 ### Backreference condition kinds
 
-PCRE and .NET allow for conditional patterns to reference a group by its name, e.g:
+PCRE and .NET allow for conditional patterns to reference a group by its name without any form of delimiter, e.g:
 
 ```
 (?<group1>x)?(?(group1)y)
 ```
 
-where `y` will only be matched if `(?<group1>x)` was matched. PCRE will always treat such syntax as a backreference condition, however .NET will only treat it as such if a group with that name exists somewhere in the regex (including after the conditional). Otherwise, .NET interprets `group1` as an arbitrary regular expression condition to try match against. 
+where `y` will only be matched if `(?<group1>x)` was matched. PCRE will always treat such syntax as a backreference condition, however .NET will only treat it as such if a group with that name exists somewhere in the regex (including after the conditional). Otherwise, .NET interprets `group1` as an arbitrary regular expression condition to try match against. Oniguruma on the other hand will always treat `group1` as an regex condition to match against.
 
-We intend to always parse such conditions as an arbitrary regular expression condition, and will emit a warning asking users to explicitly use the syntax `(?(<group1>)y)` if they want a backreference condition. This more explicit syntax is supported by PCRE. **TODO: Is the opposite more common?**
+We intend to always parse such conditions as an arbitrary regular expression condition, and will emit a warning asking users to explicitly use the syntax `(?(<group1>)y)` if they want a backreference condition. This more explicit syntax is supported by both PCRE and Oniguruma. 
 
 ### `\N`
 
@@ -716,7 +716,7 @@ ICU unifies the character property syntax `\p{...}` with the syntax for POSIX ch
 
 ### Script properties
 
-Shorthand script property syntax e.g `\p{Latin}` is treated as `\p{Script=Latin}` by PCRE, ICU, Oniguruma, and Java. These use [the Unicode Script property][unicode-scripts], which assigns each scalar a particular script value. However, there are scalars that may appear in multiple scripts, e.g U+3003 DITTO MARK. These often get assigned to the `Common` script to reflect this fact, which is not particularly useful for matching purposes. To provide more fine-grained script matching, Unicode provides [the Script Extension property][unicode-script-extensions], which exposes the set of scripts that a scalar appears in.
+Shorthand script property syntax e.g `\p{Latin}` is treated as `\p{Script=Latin}` by PCRE, ICU, Oniguruma, and Java. These use [the Unicode Script property][unicode-scripts], which assigns each scalar a particular script value. However, there are scalars that may appear in multiple scripts, e.g U+3003 DITTO MARK. These are often assigned to the `Common` script to reflect this fact, which is not particularly useful for matching purposes. To provide more fine-grained script matching, Unicode provides [the Script Extension property][unicode-script-extensions], which exposes the set of scripts that a scalar appears in.
 
 As such we feel that the more desirable default behavior of shorthand script property syntax e.g `\p{Latin}` is for it to be treated as `\p{Script_Extension=Latin}`. This matches Perl's default behavior. Plain script properties may still be written using the more explicit syntax e.g `\p{Script=Latin}` and `\p{sc=Latin}`.
 
