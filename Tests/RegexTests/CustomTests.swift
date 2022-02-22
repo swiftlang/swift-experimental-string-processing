@@ -37,39 +37,65 @@ private struct Asciibbler: Nibbler {
   }
 }
 
+enum MatchCall {
+  case match
+  case firstMatch
+}
+
+func customTest<Match: Equatable>(
+  _ regex: Regex<Match>,
+  _ tests: (input: String, call: MatchCall, match: Match?)...
+) {
+  for (input, call, match) in tests {
+    let result: Match?
+    switch call {
+    case .match:
+      result = input.match(regex)?.match
+    case .firstMatch:
+      result = input.firstMatch(of: regex)?.result
+    }
+    XCTAssertEqual(result, match)
+  }
+}
+
 extension RegexTests {
 
   // TODO: Refactor below into more exhaustive, declarative
   // tests.
-  func testMatchingConsumers() {
-
-    let regex = Regex {
-      Numbler()
-      Asciibbler()
-    }
-
-    guard let result = "4t".match(regex) else {
-      XCTFail()
-      return
-    }
-    XCTAssert(result.match == "4t")
-
-    XCTAssertNil("4".match(regex))
-    XCTAssertNil("t".match(regex))
-    XCTAssertNil("t4".match(regex))
-
-    let regex2 = Regex {
-      oneOrMore {
+  func testCustomRegexComponents() {
+    customTest(
+      Regex {
         Numbler()
-      }
-    }
+        Asciibbler()
+      },
+      ("4t", .match, "4t"),
+      ("4", .match, nil),
+      ("t", .match, nil),
+      ("t x1y z", .firstMatch, "1y"),
+      ("t4", .match, nil))
 
-    guard let res2 = "ab123c".firstMatch(of: regex2) else {
-      XCTFail()
-      return
-    }
+    customTest(
+      Regex {
+        oneOrMore { Numbler() }
+      },
+      ("ab123c", .firstMatch, "123"),
+      ("abc", .firstMatch, nil),
+      ("55z", .match, nil),
+      ("55z", .firstMatch, "55"))
 
-    XCTAssertEqual(res2.match, "123")
+    // FIXME: Requires we return a value instead of a range
+//    customTest(
+//      Regex {
+//        Numbler()
+//      },
+//      ("ab123c", .firstMatch, 1),
+//      ("abc", .firstMatch, nil),
+//      ("55z", .match, nil),
+//      ("55z", .firstMatch, 5))
+
+    // TODO: Convert below tests to better infra. Right now
+    // it's hard because `Match` is constrained to be
+    // `Equatable` which tuples cannot be.
 
     let regex3 = Regex {
       capture {
