@@ -63,7 +63,8 @@ extension Engine where Input == String {
     guard let result = result else { return nil }
 
     let capList = cpu.storedCaptures
-    return (result, CaptureList(caps: capList))
+    return (result, CaptureList(
+      values: capList, referencedCaptureOffsets: program.referencedCaptureOffsets))
   }
 }
 

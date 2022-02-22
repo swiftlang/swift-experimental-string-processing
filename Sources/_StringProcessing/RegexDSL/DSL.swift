@@ -187,22 +187,24 @@ public func choiceOf<R: RegexProtocol>(
 
 // MARK: - Backreference
 
-public struct Reference: RegexProtocol {
-  // FIXME: Public for prototypes.
-  public struct ID: Hashable, Equatable {
-    private static var counter: Int = 0
-    var base: Int
-    init() {
-      base = ID.counter
-      ID.counter += 1
-    }
+
+// FIXME: Public for prototypes.
+public struct ReferenceID: Hashable, Equatable {
+  private static var counter: Int = 0
+  var base: Int
+
+  init() {
+    base = Self.counter
+    Self.counter += 1
   }
+}
 
-  let id = ID()
+public struct Reference<Capture>: RegexProtocol {
+  let id = ReferenceID()
   
-  public init() {}
+  public init(_ captureType: Capture.Type = Capture.self) {}
 
-  public var regex: Regex<Substring> {
+  public var regex: Regex<Capture> {
     .init(node: .atom(.symbolicReference(id)))
   }
 }

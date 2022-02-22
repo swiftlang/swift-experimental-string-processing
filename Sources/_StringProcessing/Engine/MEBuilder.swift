@@ -43,8 +43,8 @@ extension MEProgram where Input.Element: Hashable {
     var captureStructure: CaptureStructure = .empty
 
     // Symbolic reference resolution
-    var unresolvedReferences: [Reference.ID: [InstructionAddress]] = [:]
-    var captureOffsets: [Reference.ID: Int] = [:]
+    var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
+    var referencedCaptureOffsets: [ReferenceID: Int] = [:]
     var captureCount: Int {
       // We currently deduce the capture count from the capture register number.
       nextCaptureRegister.rawValue
@@ -274,7 +274,7 @@ extension MEProgram.Builder {
       .init(.backreference, .init(capture: cap)))
   }
 
-  public mutating func buildUnresolvedReference(id: Reference.ID) {
+  public mutating func buildUnresolvedReference(id: ReferenceID) {
     buildBackreference(.init(0))
     unresolvedReferences[id, default: []].append(lastInstructionAddress)
   }
@@ -352,7 +352,8 @@ extension MEProgram.Builder {
       staticTransformFunctions: transformFunctions,
       staticMatcherFunctions: matcherFunctions,
       registerInfo: regInfo,
-      captureStructure: captureStructure)
+      captureStructure: captureStructure,
+      referencedCaptureOffsets: referencedCaptureOffsets)
   }
 
   public mutating func reset() { self = Self() }
@@ -424,7 +425,7 @@ extension MEProgram.Builder {
 fileprivate extension MEProgram.Builder {
   mutating func resolveReferences() throws {
     for (id, uses) in unresolvedReferences {
-      guard let offset = captureOffsets[id] else {
+      guard let offset = referencedCaptureOffsets[id] else {
         throw RegexCompilationError.uncapturedReference
       }
       for use in uses {
@@ -437,11 +438,11 @@ fileprivate extension MEProgram.Builder {
 
 // Register helpers
 extension MEProgram.Builder {
-  public mutating func makeCapture(id: Reference.ID?) -> CaptureRegister {
+  public mutating func makeCapture(id: ReferenceID?) -> CaptureRegister {
     defer { nextCaptureRegister.rawValue += 1 }
     // Register the capture for later lookup via symbolic references.
     if let id = id {
-      let preexistingValue = captureOffsets.updateValue(
+      let preexistingValue = referencedCaptureOffsets.updateValue(
         captureCount, forKey: id)
       assert(preexistingValue == nil)
     }

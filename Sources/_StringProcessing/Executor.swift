@@ -11,6 +11,7 @@
 
 import _MatchingEngine
 
+  // FIXME: Public for prototype
 public struct Executor {
   // TODO: consider let, for now lets us toggle tracing
   var engine: Engine<String>
@@ -19,11 +20,35 @@ public struct Executor {
     self.engine = Engine(program, enableTracing: enablesTracing)
   }
 
+  // FIXME: Public for prototype
+  public struct Result {
+    public var range: Range<String.Index>
+    var captures: [StructuredCapture]
+    var referencedCaptureOffsets: [ReferenceID: Int]
+
+    var destructure: (
+      matched: Range<String.Index>,
+      captures: [StructuredCapture],
+      referencedCaptureOffsets: [ReferenceID: Int]
+    ) {
+      (range, captures, referencedCaptureOffsets)
+    }
+
+    init(
+      _ matched: Range<String.Index>, _ captures: [StructuredCapture],
+      _ referencedCaptureOffsets: [ReferenceID: Int]
+    ) {
+      self.range = matched
+      self.captures = captures
+      self.referencedCaptureOffsets = referencedCaptureOffsets
+    }
+  }
+
   public func execute(
     input: String,
     in range: Range<String.Index>,
     mode: MatchMode = .wholeString
-  ) -> MatchResult? {
+  ) -> Result? {
     guard let (endIdx, capList) = engine.consume(
       input, in: range, matchMode: mode
     ) else {
@@ -35,7 +60,7 @@ public struct Executor {
 
       let caps = try capStruct.structuralize(
         capList, input)
-      return MatchResult(range, caps)
+      return Result(range, caps, capList.referencedCaptureOffsets)
     } catch {
       fatalError(String(describing: error))
     }
@@ -43,7 +68,7 @@ public struct Executor {
   public func execute(
     input: Substring,
     mode: MatchMode = .wholeString
-  ) -> MatchResult? {
+  ) -> Result? {
     self.execute(
       input: input.base,
       in: input.startIndex..<input.endIndex,

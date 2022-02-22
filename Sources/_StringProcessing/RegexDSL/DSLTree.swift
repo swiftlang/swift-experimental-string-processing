@@ -30,7 +30,7 @@ extension DSLTree {
     case concatenation([Node])
 
     /// (...)
-    case group(AST.Group.Kind, Node, Reference.ID? = nil)
+    case group(AST.Group.Kind, Node, ReferenceID? = nil)
 
     /// (?(cond) true-branch | false-branch)
     ///
@@ -82,7 +82,7 @@ extension DSLTree {
       AST.Group.Kind,
       Node,
       CaptureTransform,
-      Reference.ID? = nil)
+      ReferenceID? = nil)
 
     case consumer(_ConsumerInterface)
 
@@ -120,7 +120,7 @@ extension DSLTree {
 
     case assertion(AST.Atom.AssertionKind)
     case backreference(AST.Reference)
-    case symbolicReference(Reference.ID)
+    case symbolicReference(ReferenceID)
 
     case unconverted(AST.Atom)
   }
