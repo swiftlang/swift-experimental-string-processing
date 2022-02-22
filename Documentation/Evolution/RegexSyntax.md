@@ -461,14 +461,14 @@ Branch reset groups can alter this numbering, as they reset the numbering in the
 ```
 Backreference -> '\g{' NameOrNumberRef '}'
                | '\g' NumberRef
-               | '\k<' Identifier '>'
-               | "\k'" Identifier "'"
+               | '\k<' NameOrNumberRef '>'
+               | "\k'" NameOrNumberRef "'"
                | '\k{' Identifier '}'
                | '\' [1-9] [0-9]+
                | '(?P=' Identifier ')'
 ```
 
-A backreference evaluates to the value last captured by the referenced capturing group.
+A backreference evaluates to the value last captured by the referenced capturing group. If the referenced capture has not been evaluated yet, the match fails.
 
 #### Subpatterns
 
@@ -483,7 +483,7 @@ GroupLikeSubpatternBody -> 'P>' <String>
                          | NumberRef
 ```
 
-A subpattern causes the referenced group to be re-evaluated at the current position. The syntax `(?R)` is equivalent to `(?0)`, and causes the entire pattern to be recursed.
+A subpattern causes the referenced capture group to be re-evaluated at the current position. The syntax `(?R)` is equivalent to `(?0)`, and causes the entire pattern to be recursed.
 
 ### Conditionals
 
@@ -754,39 +754,94 @@ We intend on matching the PCRE behavior where groups are numbered purely based o
 
 ## Canonical representations
 
-Many engines have different spellings for the same regex features, and as such we need to decide on a preferred canonical syntax.
+Many engines have different spellings for the same regex features, we intend to support parsing. However, for the purposes of e.g printing, we need to decide on a canonical syntax for various constructs.
 
 ### Unicode scalars
 
+```
+UniScalar -> '\u{' HexDigit{1...} '}'
+           | '\u'  HexDigit{4}
+           | '\x{' HexDigit{1...} '}'
+           | '\x'  HexDigit{0...2}
+           | '\U'  HexDigit{8}
+           | '\o{' OctalDigit{1...} '}'
+           | '\0' OctalDigit{0...3}
+
+HexDigit   -> [0-9a-zA-Z]
+OctalDigit -> [0-7]
+```
+
+For consistency with String escape syntax, we intend on canonicalizing to `\u{...}`.
+
 ### Character properties
+
+**TODO: Should we canonicalize on e.g `\p{Script_Extensions=Greek}`? Or prefer the shorthand where we can? Or just avoid canonicalizing?**
 
 ### Groups
 
 #### Named
 
+```
+NamedGroup -> 'P<' GroupNameBody '>'
+            | '<' GroupNameBody '>'
+            | "'" GroupNameBody "'"
+```
+
+We intend on canonicalizing to the `(?<...>)` spelling.
+
 #### Lookaheads and lookbehinds
 
-### Backreferences
+We intend on canonicalizing to the short-form versions of these group kinds, e.g `(?=`.
 
-There are a variety of backreference spellings accepted by different engines
+### Backreferences
 
 ```
 Backreference -> '\g{' NameOrNumberRef '}'
                | '\g' NumberRef
-               | '\k<' Identifier '>'
-               | "\k'" Identifier "'"
+               | '\k<' NameOrNumberRef '>'
+               | "\k'" NameOrNumberRef "'"
                | '\k{' Identifier '}'
                | '\' [1-9] [0-9]+
                | '(?P=' Identifier ')'
 ```
 
-We plan on choosing the canonical spelling **TODO: decide**.
+For absolute numeric references, we plan on choosing the canonical spelling `\DDD`, as it is unambiguous with octal sequences. For relative numbered references, as well as named references, we intend on canonicalizing to `\k<...>` to match the group name canonicalization `(?<...>)`. **TODO: How valuable is it to have canonical `\DDD`? Would it be better to just use `\k<...>` for everything?**
 
-### Subpattern
+### Subpatterns
+
+```
+Subpattern -> '\g<' NameOrNumberRef '>' 
+            | "\g'" NameOrNumberRef "'"
+            | '(?' GroupLikeSubpatternBody ')'
+            
+GroupLikeSubpatternBody -> 'P>' <String>
+                         | '&' <String>
+                         | 'R'
+                         | NumberRef
+```
+
+We intend on canonicalizing to the `\g<...>` spelling. **TODO: For `(?R)` too?**
 
 ### Conditional references
 
-### Callouts
+**TODO: Decide**
+
+### PCRE Callouts
+
+```
+PCRECallout -> '(?C' CalloutBody ')'
+PCRECalloutBody -> '' | <Number>
+                 | '`' <String> '`'
+                 | "'" <String> "'"
+                 | '"' <String> '"'
+                 | '^' <String> '^'
+                 | '%' <String> '%'
+                 | '#' <String> '#'
+                 | '$' <String> '$'
+                 | '{' <String> '}'
+```
+
+PCRE accepts a number of alternative delimiters for callout string arguments. We intend to canonicalize to `(?C"...")`. **TODO: May want to alter if we choose `r"..."`, though lexing should be able to handle it by looking for the `(?C` prefix**.
 
 
 [pcre2-syntax]: https://www.pcre.org/current/doc/html/pcre2syntax.html
