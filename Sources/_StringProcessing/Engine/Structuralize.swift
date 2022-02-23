@@ -1,11 +1,11 @@
 import _MatchingEngine
 
 extension CaptureStructure {
-  var numOptionals: Int {
+  var optionalCount: Int {
     switch self {
     case .atom: return 0
     case .optional(let o):
-      return 1 + o.numOptionals
+      return 1 + o.optionalCount
     case .tuple:
       // FIXME: Separate CaptureStructure and a component
       fatalError("Recursive nesting")
@@ -27,7 +27,7 @@ extension CaptureStructure {
     ) -> StructuredCapture {
       // TODO: CaptureList perhaps should store a
       // metatype or relevant info...
-      let numOptionals = cap.numOptionals
+      let optCount = cap.optionalCount
 
       if cap.atomType.base == Substring.self {
         // FIXME: What if a typed capture is Substring?
@@ -35,12 +35,12 @@ extension CaptureStructure {
 
         if let r = storedCap.latest {
           return StructuredCapture(
-            numOptionals: numOptionals,
+            optionalCount: optCount,
             storedCapture: StoredCapture(range: r))
         }
 
         return StructuredCapture(
-          numOptionals: numOptionals,
+          optionalCount: optCount,
           storedCapture: nil)
       }
 
@@ -53,11 +53,11 @@ extension CaptureStructure {
 
       if let v = storedCap.latestValue {
         return StructuredCapture(
-          numOptionals: numOptionals,
+          optionalCount: optCount,
           storedCapture: StoredCapture(range: storedCap.latest, value: v))
       }
       return StructuredCapture(
-        numOptionals: numOptionals,
+        optionalCount: optCount,
         storedCapture: nil)
     }
 

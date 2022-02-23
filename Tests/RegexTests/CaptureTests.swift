@@ -5,13 +5,13 @@ import _MatchingEngine
 
 extension StructuredCapture {
   func formatStringCapture(input: String) -> String {
-    var res = String(repeating: "some(", count: numSomes)
+    var res = String(repeating: "some(", count: someCount)
     if let r = self.storedCapture?.range {
       res += input[r]
     } else {
       res += "none"
     }
-    res += String(repeating: ")", count: numSomes)
+    res += String(repeating: ")", count: someCount)
     return res
   }
 }
@@ -29,37 +29,37 @@ extension Sequence where Element == StructuredCapture {
 
 struct StringCapture {
   var contents: String?
-  var numOptionals: Int
+  var optionalCount: Int
 
-  var numSomes: Int {
-    contents == nil ? numOptionals - 1 : numOptionals
+  var someCount: Int {
+    contents == nil ? optionalCount - 1 : optionalCount
   }
 
   static var none: Self {
-    self.init(contents: nil, numOptionals: 1)
+    self.init(contents: nil, optionalCount: 1)
   }
   static func some(_ s: Self) -> Self {
     self.init(
-      contents: s.contents, numOptionals: s.numOptionals+1)
+      contents: s.contents, optionalCount: s.optionalCount+1)
   }
 }
 
 extension StringCapture: ExpressibleByStringLiteral {
   init(stringLiteral: String) {
     self.contents = stringLiteral
-    self.numOptionals = 0
+    self.optionalCount = 0
   }
 }
 
 extension StringCapture: CustomStringConvertible {
   var description: String {
-    var res = String(repeating: "some(", count: numSomes)
+    var res = String(repeating: "some(", count: someCount)
     if let s = self.contents {
       res += s
     } else {
       res += "none"
     }
-    res += String(repeating: ")", count: numSomes)
+    res += String(repeating: ")", count: someCount)
     return res
   }
 }
@@ -69,7 +69,7 @@ extension StringCapture {
     to structCap: StructuredCapture,
     in input: String
   ) -> Bool {
-    guard numOptionals == structCap.numOptionals else {
+    guard optionalCount == structCap.optionalCount else {
       return false
     }
     guard let r = structCap.storedCapture?.range else {

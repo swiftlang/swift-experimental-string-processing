@@ -14,8 +14,19 @@ import XCTest
 
 func dynCap(
   _ s: String, optional: Bool = false
-) -> DynamicCapture {
-  DynamicCapture(s[...], numOptionals: optional ? 1 : 0)
+) -> StoredDynamicCapture {
+  StoredDynamicCapture(s[...], optionalCount: optional ? 1 : 0)
+}
+
+extension DynamicCaptures: ExpressibleByArrayLiteral {
+  public init(arrayLiteral elements: StoredDynamicCapture...) {
+    self.init(contents: elements)
+  }
+}
+extension DynamicCaptures: Equatable {
+  public static func == (lhs: DynamicCaptures, rhs: DynamicCaptures) -> Bool {
+    lhs.contents == rhs.contents
+  }
 }
 
 class RegexDSLTests: XCTestCase {

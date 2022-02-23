@@ -17,24 +17,29 @@ extension Regex where Match == (Substring, DynamicCaptures) {
   }
 }
 
-public struct DynamicCapture: Hashable {
-  var numOptionals = 0
+// TODO: Empty token type rather than also having storage
+public struct DynamicCaptures {
+  var contents: [StoredDynamicCapture]
+}
+
+struct StoredDynamicCapture: Hashable {
+  var optionalCount = 0
 
   // TODO: replace with a range
   var slice: Substring?
 
-  init(_ slice: Substring?, numOptionals: Int) {
+  init(_ slice: Substring?, optionalCount: Int) {
     self.slice = slice
-    self.numOptionals = numOptionals
+    self.optionalCount = optionalCount
   }
 }
 
-extension DynamicCapture {
+extension StoredDynamicCapture {
   init(
     _ cap: StructuredCapture,
     in input: String
   ) {
-    self.numOptionals = cap.numOptionals
+    self.optionalCount = cap.optionalCount
     guard let stored = cap.storedCapture else {
       self.slice = nil
       return
@@ -46,7 +51,3 @@ extension DynamicCapture {
     self.slice = input[r]
   }
 }
-
-// TODO: Probably worth a separate type
-public typealias DynamicCaptures = Array<DynamicCapture>
-

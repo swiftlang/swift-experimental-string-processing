@@ -14,12 +14,12 @@ import _MatchingEngine
 /// A structured capture
 struct StructuredCapture {
   /// The `.optional` height of the result
-  var numOptionals = 0
+  var optionalCount = 0
 
   var storedCapture: StoredCapture?
 
-  var numSomes: Int {
-    storedCapture == nil ? numOptionals - 1 : numOptionals
+  var someCount: Int {
+    storedCapture == nil ? optionalCount - 1 : optionalCount
   }
 }
 
@@ -33,7 +33,7 @@ struct StoredCapture {
 }
 
 extension StructuredCapture {
-  func extractExistentialMatchComponent(
+  func existentialMatchComponent(
     from input: Substring
   ) -> Any {
     var underlying: Any
@@ -43,7 +43,7 @@ extension StructuredCapture {
       // Ok since we Any-box every step up the ladder
       underlying = Optional<Any>(nil) as Any
     }
-    for _ in 0..<numSomes {
+    for _ in 0..<someCount {
       underlying = Optional(underlying) as Any
     }
     return underlying
@@ -53,13 +53,13 @@ extension StructuredCapture {
 extension Sequence where Element == StructuredCapture {
   // FIXME: This is a stop gap where we still slice the input
   // and traffic through existentials
-  func extractExistentialMatch(
+  func existentialMatch(
     from input: Substring
   ) -> Any {
     var caps = Array<Any>()
     caps.append(input)
     caps.append(contentsOf: self.map {
-      $0.extractExistentialMatchComponent(from: input)
+      $0.existentialMatchComponent(from: input)
     })
     return TypeConstruction.tuple(of: caps)
   }
