@@ -620,9 +620,9 @@ An absent function is an Oniguruma feature that allows for the easy inversion of
 
 ## Syntactic differences between engines
 
-**TODO(Michael, if you want): Intro**
+The above regular expression grammar covers a superset of the syntax accepted by PCRE, ICU, Oniguruma, .NET, and Java. However there are cases where the same syntax is parsed differently by these engines. This section provides a summary of these differences, and specifies the interpretation that will be made by the Swift regex parser.
 
-**TODO(Michael, if you want): Talk about compatibility modes for different engines being a possible future direction?**
+These differences inherently mean that our default parser behavior cannot be fully compatible with these other engines. However, this would not preclude the potential future implementation of different compatibility modes for different engines in which we support their parsing behavior of certain syntax.
 
 ### Character class set operations
 
