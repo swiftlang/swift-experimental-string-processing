@@ -176,12 +176,6 @@ extension AST.Node {
     case let .group(g):
       return constructor.grouping(g.child, as: g.kind.value)
 
-    case .groupTransform(let g, let transform):
-      return constructor.grouping(
-        g.child,
-        as: g.kind.value,
-        withTransform: transform)
-
     case .conditional(let c):
       return constructor.condition(
         c.condition.kind,

@@ -697,7 +697,7 @@ extension AST.Node {
     case .alternation, .concatenation, .group,
         .conditional, .quantification, .quote,
         .trivia, .customCharacterClass, .empty,
-        .groupTransform, .absentFunction:
+        .absentFunction:
       return nil
     }
   }
