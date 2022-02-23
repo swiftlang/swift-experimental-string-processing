@@ -65,10 +65,6 @@ extension AST {
     case absentFunction(AbsentFunction)
 
     case empty(Empty)
-
-    // FIXME: Move off the regex literal AST
-    case groupTransform(
-      Group, transform: CaptureTransform)
   }
 }
 
@@ -91,9 +87,6 @@ extension AST.Node {
     case let .customCharacterClass(v):  return v
     case let .empty(v):                 return v
     case let .absentFunction(v):        return v
-
-    case let .groupTransform(g, _):
-      return g // FIXME: get this out of here
     }
   }
 
@@ -121,8 +114,7 @@ extension AST.Node {
   /// Whether this node has nested somewhere inside it a capture
   public var hasCapture: Bool {
     switch self {
-    case .group(let g) where g.kind.value.isCapturing,
-         .groupTransform(let g, _) where g.kind.value.isCapturing:
+    case .group(let g) where g.kind.value.isCapturing:
       return true
     default:
       break
@@ -139,7 +131,7 @@ extension AST.Node {
     case .group, .conditional, .customCharacterClass, .absentFunction:
       return true
     case .alternation, .concatenation, .quantification, .quote, .trivia,
-        .empty, .groupTransform:
+        .empty:
       return false
     }
   }
