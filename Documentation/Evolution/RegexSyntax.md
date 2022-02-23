@@ -1,5 +1,5 @@
 <!--
-Hello, we want to issue an update to [Regular Expression Literals](https://forums.swift.org/t/pitch-regular-expression-literals/52820) and prepare for a formal proposal. The great delimiter delibration continues to unfold, so in the meantime, we have a significant amount of surface area to present for review/feedback: the syntax _inside_ a regex literal.
+Hello, we want to issue an update to [Regular Expression Literals](https://forums.swift.org/t/pitch-regular-expression-literals/52820) and prepare for a formal proposal. The great delimiter deliberation continues to unfold, so in the meantime, we have a significant amount of surface area to present for review/feedback: the syntax _inside_ a regex literal.
 -->
 
 # Regex Literal Interior Syntax
@@ -62,7 +62,7 @@ Concatenation   -> (!'|' !')' ConcatComponent)*
 ConcatComponent -> Trivia | Quote | Quantification
 ```
 
-Implicitly denoted by adjacent expressions, a concatenation matches against a sequence of regular expression patterns. This has a higher precedence than an alternation, so e.g `abc|def` matches against `abc` or `def`. The `ConcatComponent` token varies across engine, but at least matches some form of trivia, e.g comments, quoted sequences e.g `\Q...\E`, and a potentially quantified expression.
+Implicitly denoted by adjacent expressions, a concatenation matches against a sequence of regular expression nodes. This has a higher precedence than an alternation, so e.g `abc|def` matches against `abc` or `def`. A concatenation may consist of potentially quantified expressions, trivia such as inline comments, and quoted sequences `\Q...\E`.
 
 ### Quantification
 
@@ -76,19 +76,19 @@ Range          -> ',' <Int> | <Int> ',' <Int>? | <Int>
 QuantOperand -> AbsentFunction | Atom | Conditional | CustomCharClass | Group
 ```
 
-A quantification consists of an operand optionally followed by a quantifier that specifier how many times it may be matched. An operand without a quantifier is matched once.
+A quantification consists of an operand optionally followed by a quantifier that specifies how many times it may be matched. An operand without a quantifier is matched once.
 
 The quantifiers supported are:
 
-- `?`: 0 or 1 matches
-- `*`: 0 or more matches
-- `+`: 1 or more matches
-- `{n,m}`: Between `n` and `m` (inclusive) matches
-- `{n,}`: `n` or more matches
-- `{,m}`: Up to `m` matches
-- `{n}`: Exactly `n` matches
+- `?`: 0 or 1 matches.
+- `*`: 0 or more matches.
+- `+`: 1 or more matches.
+- `{n,m}`: Between `n` and `m` (inclusive) matches.
+- `{n,}`: `n` or more matches.
+- `{,m}`: Up to `m` matches.
+- `{n}`: Exactly `n` matches.
 
-A quantifier may optionally be followed by `?` or `+`, which adjust its semantics. If neither are specified, by default the quantification happens *eagerly*, meaning that it will try to maximize the number of matches made. However, if `?` is specified, quantification happens *reluctantly*, meaning that the number of matches will instead be minimized. If `+` is specified, *possessive* matching occurs, which is eager matching with the additional semantic that it may not be backtracked into to try a different number of matches.
+A quantifier may optionally be followed by `?` or `+`, which adjusts its semantics. If neither are specified, by default the quantification happens *eagerly*, meaning that it will try to maximize the number of matches made. However, if `?` is specified, quantification happens *reluctantly*, meaning that the number of matches will instead be minimized. If `+` is specified, *possessive* matching occurs, which is eager matching with the additional semantic that it may not be backtracked into to try a different number of matches.
 
 ### Atom
 
@@ -107,7 +107,7 @@ Atom -> Anchor
       | '\'? <Character>
 ```
 
-Atoms are the smallest units of regular expression syntax. They include escape sequences e.g `\b`, `\d`, as well as meta-characters such as `.` and `$`. They also include some larger syntactic constructs such as backreferences and callouts. The most basic form of atom is a literal character. A meta-character may be treated as literal by preceding it with a backslash. Other characters may also be preceded with a backslash, but it has no effect if they are unknown escape sequences, e.g `\I` is literal `I`.
+Atoms are the smallest units of regular expression syntax. They include escape sequences e.g `\b`, `\d`, as well as metacharacters such as `.` and `$`. They also include some larger syntactic constructs such as backreferences and callouts. The most basic form of atom is a literal character. A metacharacter may be treated as literal by preceding it with a backslash. Other literal characters may also be preceded with a backslash, but it has no effect if they are unknown escape sequences, e.g `\I` is literal `I`.
 
 #### `\K`
 
@@ -143,11 +143,7 @@ GroupNameBody -> Identifier | BalancingGroupBody
 Identifier -> [\w--\d] \w*
 ```
 
-Groups define a new scope within which a recursive regular expression pattern may occur. Groups have different semantics depending on how they are introduced.
-
-Groups may be named, the characters of which may be any letter or number characters or the character `_`. However the name must not start with a number. This restriction follows the behavior of other regex engines and avoids ambiguities when it comes to named and numeric group references.
-
-Groups may be used to change the matching options present within their scope, see the *Matching options* section.
+Groups define a new scope that contains a recursive regular expression pattern. Groups have different semantics depending on how they are introduced, the details of which are laid out in the following sections.
 
 Note there are additional constructs that may syntactically appear similar to groups, but are distinct. See the *group-like atoms* section.
 
@@ -157,18 +153,24 @@ Note there are additional constructs that may syntactically appear similar to gr
 - `(?:)`: A non-capturing group.
 - `(?|)`: A group that, for a direct child alternation, resets the numbering of groups at each branch of that alternation. See *group numbering*.
 
+Capturing groups produce captures, which remember the range of input matched for the scope of that group.
+
+A capturing group may be named using any of the `NamedGroup` syntax. The characters of the group name may be any letter or number characters or the character `_`. However the name must not start with a number. This restriction follows the behavior of other regex engines and avoids ambiguities when it comes to named and numeric group references.
+
 #### Atomic groups
 
-An atomic group e.g `(?>...)` specifies that its contents should not be re-evaluated for backtracking. This the same semantics as a possessive quantifier, but applies more generally to any regex pattern.
+An atomic group e.g `(?>...)` specifies that its contents should not be re-evaluated for backtracking. This has the same semantics as a possessive quantifier, but applies more generally to any regex pattern.
 
 #### Lookahead and lookbehind
 
-- `(?=`: A lookahead that attempts to match against the group body, but does not advance.
-- `(?!`: A negative lookahead that ensures the group body does not match, and does not advance.
-- `(?<=`: A lookbehind that attempts to match the group body against the input before the current position. Does not advance the input.
-- `(?!<`: A negative lookbehind that ensures the group body does not match the input before the current position. Does not advance the input.
+These groups evaluate the input ahead or behind the current matching position, without advancing the input.
 
-These groups are all atomic, meaning that they will not be re-evaluated for backtracking. There are however also non-atomic variants:
+- `(?=`: A lookahead, which matches against the input following the current matching position.
+- `(?!`: A negative lookahead, which ensures a negative match against the input following the current matching position.
+- `(?<=`: A lookbehind, which matches against the input prior to the current matching position.
+- `(?!<`: A negative lookbehind, which ensures a negative match against the input prior to the current matching position.
+
+The above groups are all atomic, meaning that they will not be re-evaluated for backtracking. There are however also non-atomic variants:
 
 - `(?*`: A non-atomic lookahead.
 - `(?<*`: A non-atomic lookbehind.
@@ -187,6 +189,26 @@ BalancingGroupBody -> Identifier? '-' Identifier
 
 Introduced by .NET, balancing groups extend the `GroupNameBody` syntax to support the ability to refer to a prior group. Upon matching, the prior group is deleted, and any intermediate matched input becomes the capture of the current group.
 
+#### Group numbering
+
+Capturing groups are implicitly numbered according to the position of their opening `(` in the regex. For example:
+
+```
+(a((?:b)(?<c>c)d)(e)f)
+^ ^     ^        ^
+1 2     3        4
+```
+
+Non-capturing groups are skipped over when counting.
+
+Branch reset groups can alter this numbering, as they reset the numbering in the branches of an alternation child. Outside the alternation, numbering resumes at the next available number not used in one of the branches. For example:
+
+```
+(a()(?|(b)(c)|(?:d)|(e)))(f)
+^ ^    ^  ^         ^    ^
+1 2    3  4         3    5
+```
+
 ### Matching options
 
 ```
@@ -199,14 +221,16 @@ MatchingOption -> 'i' | 'J' | 'm' | 'n' | 's' | 'U' | 'x' | 'xx' | 'w' | 'D' | '
 
 A matching option sequence may be used as a group specifier, and denotes a change in matching options for the scope of that group. For example `(?x:a b c)` enables extended syntax for `a b c`. A matching option sequence may be part of an "isolated group" which has an implicit scope that wraps the remaining elements of the current group. For example, `(?x)a b c` also enables extended syntax for `a b c`.
 
+If used in the branch of an alternation, an isolated group affects all the following branches of that alternation. For example, `a(?i)b|c|d` is treated as `a(?i:b)|(?i:c)|(?i:d)`.
+
 We support all the matching options accepted by PCRE, ICU, and Oniguruma. In addition, we accept some matching options unique to our matching engine.
 
 #### PCRE options
 
-- `i`: Case insensitive matching
-- `J`: Allows multiple groups to share the same name, which is otherwise forbidden
-- `m`: Enables `^` and `$` to match against the start and end of a line rather than only the start and end of the entire string
-- `n`: Disables capturing of `(...)` groups. Named capture groups must be used instead. 
+- `i`: Case insensitive matching.
+- `J`: Allows multiple groups to share the same name, which is otherwise forbidden.
+- `m`: Enables `^` and `$` to match against the start and end of a line rather than only the start and end of the entire string.
+- `n`: Disables the capturing behavior of `(...)` groups. Named capture groups must be used instead. 
 - `s`: Changes `.` to match any character, including newlines.
 - `U`: Changes quantifiers to be reluctant by default, with the `?` specifier changing to mean greedy.
 - `x`, `xx`: Enables extended syntax mode, which allows non-semantic whitespace and end-of-line comments. See the *trivia* section for more info.
@@ -217,10 +241,10 @@ We support all the matching options accepted by PCRE, ICU, and Oniguruma. In add
 
 #### Oniguruma options
       
-- `D`: Enables ASCII-only digit matching for `\d`, `\p{Digit}`, `[:digit:]`
-- `S`: Enables ASCII-only space matching for `\s`, `\p{Space}`, `[:space:]`
-- `W`: Enables ASCII-only word matching for `\w`, `\p{Word}`, `[:word:]`, and `\b`
-- `P`: Enables ASCII-only for all POSIX properties (including `digit`, `space`, and `word`)
+- `D`: Enables ASCII-only digit matching for `\d`, `\p{Digit}`, `[:digit:]`.
+- `S`: Enables ASCII-only space matching for `\s`, `\p{Space}`, `[:space:]`.
+- `W`: Enables ASCII-only word matching for `\w`, `\p{Word}`, `[:word:]`, and `\b`.
+- `P`: Enables ASCII-only for all POSIX properties (including `digit`, `space`, and `word`).
 - `y{g}`, `y{w}`: Changes the meaning of `\X`, `\y`, `\Y`. These are mutually exclusive options, with `y{g}` specifying extended grapheme cluster mode, and `y{w}` specifying word mode.
 
 #### Swift options
@@ -266,7 +290,7 @@ HexDigit   -> [0-9a-zA-Z]
 OctalDigit -> [0-7]
 ```
 
-These sequences define a unicode scalar value to be matched against. There is both syntax for specifying the scalar value in hex notation, as well as octal notation. Note that `\x`, when not followed by any hexadecimal digit characters, is treated as `\0`, matching PCRE's behavior.
+These sequences define a unicode scalar value to be matched against. There is syntax for both specifying the scalar value in hex notation, as well as octal notation. Note that `\x`, when not followed by any hexadecimal digit characters, is treated as `\0`, matching PCRE's behavior.
 
 ### Escape sequences
 
@@ -274,11 +298,11 @@ These sequences define a unicode scalar value to be matched against. There is bo
 EscapeSequence -> '\a' | '\b' | '\c' <Char> | '\e' | '\f' | '\n' | '\r' | '\t'
 ```
 
-These escape sequences denote a specific character.
+These escape sequences each denote a specific scalar value.
 
 - `\a`: The alert (bell) character `U+7`.
 - `\b`: The backspace character `U+8`. Note this may only be used in a custom character class, otherwise it represents a word boundary.
-- `\c <Char>`: A control character sequence (`U+00` - `U+7F`).
+- `\c <Char>`: A control character sequence, which denotes a scalar from `U+00` - `U+7F` depending on the ASCII character provided.
 - `\e`: The escape character `U+1B`.
 - `\f`: The form-feed character `U+C`.
 - `\n`: The newline character `U+A`.
@@ -291,22 +315,22 @@ These escape sequences denote a specific character.
 BuiltinCharClass -> '.' | '\C' | '\d' | '\D' | '\h' | '\H' | '\N' | '\O' | '\R' | '\s' | '\S' | '\v' | '\V' | '\w' | '\W' | '\X'
 ```
 
-- `.`: Any character excluding newlines
-- `\C`: A single UTF code unit
-- `\d`: Digit character
-- `\D`: Non-digit character
-- `\h`: Horizontal space character
-- `\H`: Non-horizontal-space character
-- `\N`: Non-newline character
+- `.`: Any character excluding newlines.
+- `\C`: A single UTF code unit.
+- `\d`: Digit character.
+- `\D`: Non-digit character.
+- `\h`: Horizontal space character.
+- `\H`: Non-horizontal-space character.
+- `\N`: Non-newline character.
 - `\O`: Any character (including newlines). This is syntax from Oniguruma.
-- `\R`: Newline sequence
-- `\s`: Whitespace character
-- `\S`: Non-whitespace character
-- `\v`: Vertical space character
-- `\V`: Non-vertical-space character
-- `\w`: Word character
-- `\W`: Non-word character
-- `\X`: Any extended grapheme cluster
+- `\R`: Newline sequence.
+- `\s`: Whitespace character.
+- `\S`: Non-whitespace character.
+- `\v`: Vertical space character.
+- `\V`: Non-vertical-space character.
+- `\w`: Word character.
+- `\W`: Non-word character.
+- `\X`: Any extended grapheme cluster.
 
 ### Custom character classes
 
@@ -322,26 +346,26 @@ SetOp           -> '&&' | '--' | '~~' | '-'
 
 Custom characters classes introduce their own language, in which most regular expression metacharacters become literal. The basic element in a custom character class is an `Atom`, though only a few atoms are considered valid:
 
-- Builtin character classes except `.`, `\R`, `\O`, `\X`, `\C`, and `\N`.
-- Escape sequences, including `\b` which becomes the backspace character (rather than a word boundary)
-- Unicode scalars
-- Named scalars
-- Character properties
-- Plain literal characters
+- Builtin character classes, except for `.`, `\R`, `\O`, `\X`, `\C`, and `\N`.
+- Escape sequences, including `\b` which becomes the backspace character (rather than a word boundary).
+- Unicode scalars.
+- Named scalars.
+- Character properties.
+- Plain literal characters.
 
 Atoms may be used to compose other character class members, including ranges, quoted sequences, and even nested custom character classes `[[ab]c\d]`. Adjacent members form an implicit union of character classes, e.g `[[ab]c\d]` is the union of the characters `a`, `b`, `c`, and digit characters.
 
 Custom character classes may not be empty, e.g `[]` is forbidden. A custom character class may begin with the `]` character, in which case it is treated as literal, e.g `[]a]` is the custom character class of `]` and `a`.
 
-Quoted sequences may be used to escape the contained characters, e.g `[\Q]\E]` is the character class of the literal character `[`.
+Quoted sequences may be used to escape the contained characters, e.g `[a\Q]\E]` is also the character class of `[` and `a`.
 
 Ranges of characters may be specified with `-`, e.g `[a-z]` matches against the letters from `a` to `z`. Only unicode scalars and literal characters are valid range operands. If `-` cannot be used to form a range, it is interpreted as literal, e.g `[-a-]` is the character class of `-` and `a`. `[a-c-d]` is the character class of `a`...`c`, `-`, and `d`.
 
 Operators may be used to apply set operations to character class members. The operators supported are:
 
-- `&&`: Intersection of the LHS and RHS
-- `--`: Subtraction of the RHS from the LHS
-- `~~`: Symmetric difference of the RHS and LHS
+- `&&`: Intersection of the LHS and RHS.
+- `--`: Subtraction of the RHS from the LHS.
+- `~~`: Symmetric difference of the RHS and LHS.
 - `-`: .NET's spelling of subtracting the RHS from the LHS.
 
 These operators have a lower precedence than the implicit union of members, e.g `[ac-d&&a[d]]` is an intersection of the character classes `[ac-d]` and `[ad]`.
@@ -435,26 +459,6 @@ RecursionLevel -> '+' <Int> | '-' <Int>
 ```
 
 A reference is an abstract identifier for a particular capturing group in a regular expression. It can either be named or numbered, and in the latter case may be specified relative to the current group. For example `-2` refers to the capture group `N - 2` where `N` is the number of the next capture group. References may refer to groups ahead of the current position e.g `+3`, or the name of a future group. These may be useful in recursive cases where the group being referenced has been matched in a prior iteration.
-
-#### Group numbering
-
-Capturing groups are implicitly numbered according to the position of their opening `(` in the regex. For example:
-
-```
-(a((?:b)(?<c>c)d)(e)f)
-^ ^     ^        ^
-1 2     3        4
-```
-
-Non-capturing groups are skipped over when counting.
-
-Branch reset groups can alter this numbering, as they reset the numbering in the branches of an alternation child. Outside the alternation, numbering resumes at the next available number not used in one of the branches. For example:
-
-```
-(a()(?|(b)(c)|(?:d)|(e)))(f)
-^ ^    ^  ^         ^    ^
-1 2    3  4         3    5
-```
 
 #### Backreferences
 
@@ -824,7 +828,18 @@ We intend on canonicalizing to the `\g<...>` spelling. **TODO: For `(?R)` too?**
 
 ### Conditional references
 
-**TODO: Decide**
+```
+KnownCondition -> 'R'
+                | 'R' NumberRef
+                | 'R&' <String> !')'
+                | '<' NameRef '>'
+                | "'" NameRef "'"
+                | 'DEFINE'
+                | 'VERSION' VersionCheck
+                | NumberRef
+```
+
+For named references in a group condition, there is a choice between `(?('name'))` and `(?(<name>))`. We intend on canonicalizing to `(?(<name>))` to match the group name canonicalization.
 
 ### PCRE Callouts
 
