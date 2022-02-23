@@ -620,9 +620,11 @@ An absent function is an Oniguruma feature that allows for the easy inversion of
 
 ## Syntactic differences between engines
 
-The above regular expression grammar covers a superset of the syntax accepted by PCRE, ICU, Oniguruma, .NET, and Java. However there are cases where the same syntax is parsed differently by these engines. This section provides a summary of these differences, and specifies the interpretation that will be made by the Swift regex parser.
+The proposed "syntactic superset" introduces some minor ambiguities, as each engine supports a slightly different set of features. When a particular engine's parser sees a feature it doesn't support, it typically has a fall-back behavior, such as treating the unknown feature as literal contents.
 
-These differences inherently mean that our default parser behavior cannot be fully compatible with these other engines. However, this would not preclude the potential future implementation of different compatibility modes for different engines in which we support their parsing behavior of certain syntax.
+Explicit compatibility modes, i.e. precisely mimicking emergent behavior from a specific engine's parser, is deferred as future work from this proposal. Conversion from this "syntactic superset" to a particular engine's syntax (e.g. as an AST "pretty printer") is deferred as future work from this proposal.
+
+Below is an exhaustive treatment of every syntactic ambiguity we have encountered.
 
 ### Character class set operations
 
@@ -631,6 +633,7 @@ In a custom character class, some engines allow for binary set operations that t
 | PCRE | ICU | UTS#18 | Oniguruma | .NET | Java |
 |------|-----|--------|-----------|------|------|
 | ❌ | Intersection `&&`, Subtraction `--` | Intersection, Subtraction | Intersection `&&` | Subtraction via `-` | Intersection  `&&` |
+
 
 [UTS#18][uts18] requires intersection and subtraction, and uses the operation spellings `&&` and `--` in its examples, though it doesn't mandate a particular spelling. In particular, conforming implementations could spell the subtraction `[[x]--[y]]` as `[[x]&&[^y]]`. UTS#18 also suggests a symmetric difference operator `~~`, and uses an explicit `||` operator in examples, though doesn't require either.
 
@@ -649,6 +652,7 @@ This allows e.g `[[a]b[c]]`, which is interpreted the same as `[abc]`. It also a
 | PCRE | ICU | UTS#18 | Oniguruma | .NET | Java |
 |------|-----|--------|-----------|------|------|
 | ❌ | ✅ | 💡 | ✅ | ❌ | ✅ |
+
 
 UTS#18 doesn't require this, though it does suggest it as a way to clarify precedence for chains of character class set operations e.g `[\w--\d&&\s]`, which the user could write as `[[\w--\d]&&\s]`.
 
