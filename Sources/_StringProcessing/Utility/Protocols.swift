@@ -13,11 +13,11 @@
 // These currently only drive tracing/formatting, but could drive
 // more
 
-public protocol InstructionProtocol {
+protocol InstructionProtocol {
   var operandPC: InstructionAddress? { get }
 }
 
-public protocol ProcessorProtocol {
+protocol ProcessorProtocol {
   associatedtype Input: Collection
   associatedtype Instruction: InstructionProtocol
   associatedtype SavePoint = ()
@@ -45,12 +45,12 @@ public protocol ProcessorProtocol {
 }
 
 extension ProcessorProtocol {
-  public func fetch() -> Instruction {
+  func fetch() -> Instruction {
     instructions[currentPC]
   }
 
-  public var callStack: Array<InstructionAddress> { [] }
-//  public var savePoints: Array<SavePoint> { [] }
-  public var registers: Array<Registers> { [] }
+  var callStack: Array<InstructionAddress> { [] }
+//  var savePoints: Array<SavePoint> { [] }
+  var registers: Array<Registers> { [] }
 
 }

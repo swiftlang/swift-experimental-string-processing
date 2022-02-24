@@ -12,11 +12,11 @@
 
 // TODO: Place shared formatting and trace infrastructure here
 
-public protocol Traced {
+protocol Traced {
   var isTracingEnabled: Bool { get set }
 }
 
-public protocol TracedProcessor: ProcessorProtocol, Traced {
+protocol TracedProcessor: ProcessorProtocol, Traced {
   // Empty defaulted
   func formatCallStack() -> String // empty default
   func formatSavePoints() -> String // empty default
@@ -36,7 +36,7 @@ func lineNumber(_ pc: InstructionAddress) -> String {
 }
 
 extension TracedProcessor where Registers: Collection{
-  public func formatRegisters() -> String {
+  func formatRegisters() -> String {
     typealias E = ()
     if !registers.isEmpty {
       return "\(registers)\n"
@@ -48,19 +48,19 @@ extension TracedProcessor where Registers: Collection{
 extension TracedProcessor {
   func printTrace() { print(formatTrace()) }
 
-  public func trace() {
+  func trace() {
     if isTracingEnabled { printTrace() }
   }
 
   // Helpers for the conformers
-  public func formatCallStack() -> String {
+  func formatCallStack() -> String {
     if !callStack.isEmpty {
       return "call stack: \(callStack)\n"
     }
     return ""
   }
 
-  public func formatSavePoints() -> String {
+  func formatSavePoints() -> String {
     if !savePoints.isEmpty {
       var result = "save points:\n"
       for point in savePoints {
@@ -71,7 +71,7 @@ extension TracedProcessor {
     return ""
   }
 
-  public func formatRegisters() -> String {
+  func formatRegisters() -> String {
      typealias E = ()
      if Registers.self == E.self {
        return ""
@@ -79,7 +79,7 @@ extension TracedProcessor {
      return "\(registers)\n"
   }
 
-  public func formatInput() -> String {
+  func formatInput() -> String {
     // String override for printing sub-character information.
     if !input.indices.contains(currentPosition) {
       // Format unicode scalars as:
@@ -115,7 +115,7 @@ extension TracedProcessor {
       """
   }
 
-  public func formatInstructionWindow(
+  func formatInstructionWindow(
     windowSize: Int = 12
   ) -> String {
     if isAcceptState { return "ACCEPT" }
@@ -139,7 +139,7 @@ extension TracedProcessor {
     return result
   }
 
-  public func formatTrace() -> String {
+  func formatTrace() -> String {
     var result = "\n--- cycle \(cycleCount) ---\n"
     result += formatCallStack()
     result += formatSavePoints()
@@ -150,7 +150,7 @@ extension TracedProcessor {
     return result
   }
 
-  public func formatInstruction(
+  func formatInstruction(
     _ pc: InstructionAddress,
     depth: Int = 5
   ) -> String {
@@ -160,7 +160,7 @@ extension TracedProcessor {
 }
 
 extension Collection where Element: InstructionProtocol, Index == InstructionAddress {
-  public func formatInstruction(
+  func formatInstruction(
     _ pc: InstructionAddress,
     atCurrent: Bool,
     depth: Int

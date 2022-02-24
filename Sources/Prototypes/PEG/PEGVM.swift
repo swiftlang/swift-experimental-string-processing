@@ -9,7 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _StringProcessing
+
+@testable import _StringProcessing
 
 extension PEG {
 

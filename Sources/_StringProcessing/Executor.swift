@@ -11,8 +11,7 @@
 
 import _MatchingEngine
 
-  // FIXME: Public for prototype
-public struct Executor {
+struct Executor {
   // TODO: consider let, for now lets us toggle tracing
   var engine: Engine<String>
 
@@ -20,9 +19,8 @@ public struct Executor {
     self.engine = Engine(program, enableTracing: enablesTracing)
   }
 
-  // FIXME: Public for prototype
-  public struct Result {
-    public var range: Range<String.Index>
+  struct Result {
+    var range: Range<String.Index>
     var captures: [StructuredCapture]
     var referencedCaptureOffsets: [ReferenceID: Int]
 
@@ -44,7 +42,7 @@ public struct Executor {
     }
   }
 
-  public func execute(
+  func execute(
     input: String,
     in range: Range<String.Index>,
     mode: MatchMode = .wholeString
@@ -65,7 +63,7 @@ public struct Executor {
       fatalError(String(describing: error))
     }
   }
-  public func execute(
+  func execute(
     input: Substring,
     mode: MatchMode = .wholeString
   ) -> Result? {
@@ -75,7 +73,7 @@ public struct Executor {
       mode: mode)
   }
 
-  public func executeFlat(
+  func executeFlat(
     input: String,
     in range: Range<String.Index>,
     mode: MatchMode = .wholeString

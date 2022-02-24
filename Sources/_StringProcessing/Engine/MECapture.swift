@@ -142,7 +142,7 @@ extension Processor._StoredCapture: CustomStringConvertible {
   }
 }
 
-public struct CaptureList {
+struct CaptureList {
   var values: Array<Processor<String>._StoredCapture>
   var referencedCaptureOffsets: [ReferenceID: Int]
 

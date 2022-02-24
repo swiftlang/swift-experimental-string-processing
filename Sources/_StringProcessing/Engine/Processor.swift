@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-public enum MatchMode {
+enum MatchMode {
   case wholeString
   case partialFromFront
 }
