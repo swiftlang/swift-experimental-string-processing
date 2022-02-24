@@ -331,9 +331,10 @@ extension CaptureStructure {
     assert(
       buffer.count >=
         MemoryLayout<SerializationVersion>.stride + MemoryLayout<Code>.stride)
-    // Encode version.
-    buffer.storeBytes(
-      of: Self.currentSerializationVersion, as: SerializationVersion.self)
+    // Encode version (unaligned store).
+    withUnsafeBytes(of: Self.currentSerializationVersion) {
+      buffer.copyMemory(from: $0)
+    }
     // Encode contents.
     var offset = MemoryLayout<SerializationVersion>.stride
     /// Appends a code to the buffer, advancing the offset to the next position.
