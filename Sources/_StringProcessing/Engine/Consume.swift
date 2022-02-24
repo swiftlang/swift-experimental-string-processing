@@ -25,13 +25,13 @@ extension Engine {
 }
 
 extension Engine where Input == String {
-  public func consume(
+  func consume(
     _ input: Input
   ) -> (Input.Index, CaptureList)? {
     consume(input, in: input.startIndex ..< input.endIndex)
   }
 
-  public func consume(
+  func consume(
     _ input: Input,
     in range: Range<Input.Index>,
     matchMode: MatchMode = .partialFromFront

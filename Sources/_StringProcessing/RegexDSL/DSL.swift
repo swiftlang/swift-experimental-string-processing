@@ -187,9 +187,7 @@ public func choiceOf<R: RegexProtocol>(
 
 // MARK: - Backreference
 
-
-// FIXME: Public for prototypes.
-public struct ReferenceID: Hashable, Equatable {
+struct ReferenceID: Hashable, Equatable {
   private static var counter: Int = 0
   var base: Int
 

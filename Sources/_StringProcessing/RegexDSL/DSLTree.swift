@@ -249,7 +249,7 @@ extension DSLTree {
   }
 }
 extension DSLTree.Node {
-  public func _captureStructure(
+  func _captureStructure(
     _ constructor: inout CaptureStructure.Constructor
   ) -> CaptureStructure {
     switch self {
