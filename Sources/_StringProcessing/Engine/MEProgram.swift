@@ -35,6 +35,7 @@ public struct MEProgram<Input: Collection> where Input.Element: Equatable {
   var enableTracing: Bool = false
 
   let captureStructure: CaptureStructure
+  let referencedCaptureOffsets: [ReferenceID: Int]
 }
 
 extension MEProgram: CustomStringConvertible {

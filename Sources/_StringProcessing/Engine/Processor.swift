@@ -14,6 +14,8 @@ public enum MatchMode {
   case partialFromFront
 }
 
+typealias Program = MEProgram<String>
+
 /// A concrete CU. Somehow will run the concrete logic and
 /// feed stuff back to generic code
 struct Controller {

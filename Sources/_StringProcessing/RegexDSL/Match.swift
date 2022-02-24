@@ -11,10 +11,23 @@
 
 @dynamicMemberLookup
 public struct RegexMatch<Match> {
+  let input: String
   public let range: Range<String.Index>
+  let rawCaptures: [StructuredCapture]
+  let referencedCaptureOffsets: [ReferenceID: Int]
 
-  // FIXME: Computed instead of stored
-  public let match: Match
+  public var match: Match {
+    if Match.self == (Substring, DynamicCaptures).self {
+      let dynCaps = rawCaptures.map { StoredDynamicCapture($0, in: input) }
+      return (input[range], dynCaps) as! Match
+    } else if Match.self == Substring.self {
+      // FIXME: Plumb whole match (`.0`) through the matching engine.
+      return input[range] as! Match
+    } else {
+      let typeErasedMatch = rawCaptures.existentialMatch(from: input[range])
+      return typeErasedMatch as! Match
+    }
+  }
 
   public subscript<T>(dynamicMember keyPath: KeyPath<Match, T>) -> T {
     match[keyPath: keyPath]
@@ -26,6 +39,15 @@ public struct RegexMatch<Match> {
     dynamicMember keyPath: KeyPath<(Match, _doNotUse: ()), Match>
   ) -> Match {
     match
+  }
+
+  public subscript<Capture>(_ reference: Reference<Capture>) -> Capture {
+    guard let offset = referencedCaptureOffsets[reference.id] else {
+      preconditionFailure(
+        "Reference did not capture any match in the regex")
+    }
+    return rawCaptures[offset].existentialMatchComponent(from: input[...])
+      as! Capture
   }
 }
 
@@ -45,28 +67,16 @@ extension RegexProtocol {
     mode: MatchMode = .wholeString
   ) -> RegexMatch<Match>? {
     let executor = Executor(program: regex.program.loweredProgram)
-    guard let (range, captures) = executor.execute(
+    guard let (range, captures, captureOffsets) = executor.execute(
       input: input, in: inputRange, mode: mode
     )?.destructure else {
       return nil
     }
-    let convertedMatch: Match
-    if Match.self == (Substring, DynamicCaptures).self {
-      let dynCaps = DynamicCaptures(captures.map {
-        StoredDynamicCapture($0, in: input)
-      })
-      convertedMatch = (input[range], dynCaps) as! Match
-    } else
-    if Match.self == Substring.self {
-      convertedMatch = input[range] as! Match
-    } else {
-      // FIXME: Defer construction until accessed
-      let typeErasedMatch = captures.existentialMatch(
-        from: input[range]
-      )
-      convertedMatch = typeErasedMatch as! Match
-    }
-    return RegexMatch(range: range, match: convertedMatch)
+    return RegexMatch(
+      input: input,
+      range: range,
+      rawCaptures: captures,
+      referencedCaptureOffsets: captureOffsets)
   }
 }
 

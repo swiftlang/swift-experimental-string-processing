@@ -567,11 +567,11 @@ class RegexDSLTests: XCTestCase {
 
   func testBackreference() throws {
     try _testDSLCaptures(
-      ("abc#41#42abc#42#42", ("abc#41#42abc#42#42", "abc", 42, "#42", nil)),
+      ("abc#41#42abcabcabc", ("abc#41#42abcabcabc", "abc", 42, "abc", nil)),
       matchType: (Substring, Substring, Int?, Substring?, Substring?).self, ==)
     {
-      let a = Reference()
-      let b = Reference()
+      let a = Reference(Substring.self)
+      let b = Reference(Int.self)
       capture("abc", as: a)
       zeroOrMore {
         tryCapture(as: b) {
@@ -583,11 +583,40 @@ class RegexDSLTests: XCTestCase {
       }
       a
       zeroOrMore {
-        capture(b)
-      }
-      optionally {
         capture(a)
       }
+      optionally {
+        "b"
+        capture(a)
+      }
+    }
+
+    // Match result referencing a `Reference`.
+    do {
+      let a = Reference(Substring.self)
+      let b = Reference(Int.self)
+      let regex = Regex {
+        capture("abc", as: a)
+        zeroOrMore {
+          tryCapture(as: b) {
+            "#"
+            oneOrMore(.digit)
+          } transform: {
+            Int($0.dropFirst())
+          }
+        }
+        a
+        zeroOrMore {
+          capture(b)
+        }
+        optionally {
+          capture(a)
+        }
+      }
+      let input = "abc#41#42abc#42#42"
+      let result = try XCTUnwrap(input.match(regex))
+      XCTAssertEqual(result[a], "abc")
+      XCTAssertEqual(result[b], 42)
     }
 
     // Post-hoc captured references
@@ -598,7 +627,7 @@ class RegexDSLTests: XCTestCase {
       ==
     ) {
       oneOrMore {
-        let a = Reference()
+        let a = Reference(Substring.self)
         choiceOf {
           Regex {
             .word

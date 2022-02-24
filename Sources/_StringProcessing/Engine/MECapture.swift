@@ -143,14 +143,15 @@ extension Processor._StoredCapture: CustomStringConvertible {
 }
 
 public struct CaptureList {
-  var caps: Array<Processor<String>._StoredCapture>
+  var values: Array<Processor<String>._StoredCapture>
+  var referencedCaptureOffsets: [ReferenceID: Int]
 
 //  func extract(from s: String) -> Array<Array<Substring>> {
 //    caps.map { $0.map { s[$0] }  }
 //  }
 //
   func latestUntyped(from s: String) -> Array<Substring?> {
-    caps.map {
+    values.map {
       guard let last = $0.latest else {
         return nil
       }

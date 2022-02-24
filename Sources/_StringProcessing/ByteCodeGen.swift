@@ -298,7 +298,7 @@ extension Compiler.ByteCodeGen {
   mutating func emitGroup(
     _ kind: AST.Group.Kind,
     _ child: DSLTree.Node,
-    _ referenceID: Reference.ID?
+    _ referenceID: ReferenceID?
   ) throws -> CaptureRegister? {
     guard kind.isCapturing || referenceID == nil else {
       throw Unreachable("Reference ID shouldn't exist for non-capturing groups")

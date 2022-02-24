@@ -52,9 +52,11 @@ func constructExistentialMatchComponent(
     underlying = Optional<Any>(nil) as Any
     someCount = optionalCount - 1
   }
-
   for _ in 0..<someCount {
-    underlying = Optional(underlying) as Any
+    func wrap<T>(_ x: T) {
+      underlying = Optional(x) as Any
+    }
+    _openExistential(underlying, do: wrap)
   }
   return underlying
 }

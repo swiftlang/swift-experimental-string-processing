@@ -62,17 +62,17 @@ extension CaptureStructure {
     }
 
     switch self {
-    case let .tuple(caps):
-      assert(list.caps.count == caps.count)
+    case let .tuple(values):
+      assert(list.values.count == values.count)
       var result = Array<StructuredCapture>()
-      for (cap, storedCap) in zip(caps, list.caps) {
+      for (cap, storedCap) in zip(values, list.values) {
         result.append(mapCap(cap, storedCap))
       }
       return result
 
     default:
-      assert(list.caps.count == 1)
-      return [mapCap(self, list.caps.first!)]
+      assert(list.values.count == 1)
+      return [mapCap(self, list.values.first!)]
     }
   }
 }
