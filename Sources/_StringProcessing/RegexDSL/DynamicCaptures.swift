@@ -17,28 +17,68 @@ extension Regex where Match == (Substring, DynamicCaptures) {
   }
 }
 
-public enum DynamicCaptures: Equatable {
-  case substring(Substring)
-  indirect case tuple([DynamicCaptures])
-  indirect case optional(DynamicCaptures?)
-  indirect case array([DynamicCaptures])
+// FIXME: Separate storage representation from types vending
+// API.
+public typealias DynamicCaptures = Array<StoredDynamicCapture>
 
-  public static var empty: Self {
-    .tuple([])
+// FIXME: Make this internal when we have API types or otherwise
+// disentagle storage from API. In the meantime, this will have
+// the storage name _and_ provide the API.
+public struct StoredDynamicCapture: Hashable {
+  var optionalCount = 0
+
+  // TODO: replace with a range
+  var slice: Substring?
+
+  init(_ slice: Substring?, optionalCount: Int) {
+    self.slice = slice
+    self.optionalCount = optionalCount
+  }
+}
+
+extension StoredDynamicCapture {
+  // TODO: How should we expose optional nesting?
+
+  public var range: Range<String.Index>? {
+    guard let s = slice else {
+      return nil
+    }
+    return s.startIndex..<s.endIndex
   }
 
-  internal init(_ capture: Capture) {
-    switch capture {
-    case .atom(let atom):
-      self = .substring(atom as! Substring)
-    case .tuple(let components):
-      self = .tuple(components.map(Self.init))
-    case .some(let component):
-      self = .optional(Self(component))
-    case .none:
-      self = .optional(nil)
-    case .array(let components, _):
-      self = .array(components.map(Self.init))
+  public var underlyingSubstring: Substring? {
+    slice
+  }
+
+  public var capture: Any {
+    // Ok for now because `existentialMatchComponent`
+    // wont slice the input if there's no range to slice with
+    //
+    // FIXME: This is ugly :-/
+    let input = slice ?? ""
+
+    return constructExistentialMatchComponent(
+      from: input,
+      in: range,
+      value: nil,
+      optionalCount: optionalCount)
+  }
+}
+
+extension StoredDynamicCapture {
+  init(
+    _ cap: StructuredCapture,
+    in input: String
+  ) {
+    self.optionalCount = cap.optionalCount
+    guard let stored = cap.storedCapture else {
+      self.slice = nil
+      return
     }
+    assert(stored.value == nil, "Dynamic typed?")
+    guard let r = stored.range else {
+      fatalError("FIXME: unreachable")
+    }
+    self.slice = input[r]
   }
 }

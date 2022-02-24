@@ -31,8 +31,11 @@ public struct Executor {
     }
     let capStruct = engine.program.captureStructure
     do {
-      let caps = try capStruct.structuralize(capList, input)
-      return MatchResult(range.lowerBound..<endIdx, caps)
+      let range = range.lowerBound..<endIdx
+
+      let caps = try capStruct.structuralize(
+        capList, input)
+      return MatchResult(range, caps)
     } catch {
       fatalError(String(describing: error))
     }

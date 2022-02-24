@@ -3,40 +3,92 @@ import XCTest
 @testable import _StringProcessing
 import _MatchingEngine
 
-extension Capture: ExpressibleByStringLiteral {
-  fileprivate init(_ s: String) {
-    self = .atom(s[...])
-  }
-  public init(stringLiteral: String) {
-    self.init(stringLiteral)
+extension StructuredCapture {
+  func formatStringCapture(input: String) -> String {
+    var res = String(repeating: "some(", count: someCount)
+    if let r = self.storedCapture?.range {
+      res += input[r]
+    } else {
+      res += "none"
+    }
+    res += String(repeating: ")", count: someCount)
+    return res
   }
 }
+
+extension Sequence where Element == StructuredCapture {
+  func formatStringCaptures(input: String) -> String {
+    var res = "["
+    res += self.map {
+      $0.formatStringCapture(input: input)
+    }.joined(separator: ", ")
+    res += "]"
+    return res
+  }
+}
+
+struct StringCapture {
+  var contents: String?
+  var optionalCount: Int
+
+  var someCount: Int {
+    contents == nil ? optionalCount - 1 : optionalCount
+  }
+
+  static var none: Self {
+    self.init(contents: nil, optionalCount: 1)
+  }
+  static func some(_ s: Self) -> Self {
+    self.init(
+      contents: s.contents, optionalCount: s.optionalCount+1)
+  }
+}
+
+extension StringCapture: ExpressibleByStringLiteral {
+  init(stringLiteral: String) {
+    self.contents = stringLiteral
+    self.optionalCount = 0
+  }
+}
+
+extension StringCapture: CustomStringConvertible {
+  var description: String {
+    var res = String(repeating: "some(", count: someCount)
+    if let s = self.contents {
+      res += s
+    } else {
+      res += "none"
+    }
+    res += String(repeating: ")", count: someCount)
+    return res
+  }
+}
+
+extension StringCapture {
+  func isEqual(
+    to structCap: StructuredCapture,
+    in input: String
+  ) -> Bool {
+    guard optionalCount == structCap.optionalCount else {
+      return false
+    }
+    guard let r = structCap.storedCapture?.range else {
+      return contents == nil
+    }
+    guard let s = contents else {
+      return false
+    }
+    return input[r] == s
+  }
+}
+
+// NOTE: These tests are not tests of type-construction logic
+// (e.g. making sure we actually have the right number of
+// Optional wrappers), because we test equivalence a little
+// before that step.
+
 
 // TODO: Move `flatCaptureTest`s over here too...
-
-private func isEqual(_ lhs: Capture, _ rhs: Capture) -> Bool {
-  switch (lhs, rhs) {
-  case let (.atom(a), .atom(b)):
-    // FIXME: Needed because "a" != "a"[...] existentially
-    let lhsStr = String(describing: a)
-    let rhsStr = String(describing: b)
-
-    // :-(
-    return lhsStr == rhsStr
-
-  case let (.tuple(a), .tuple(b)):
-    return zip(a, b).map(isEqual).all({$0})
-  case let (.some(a), .some(b)):
-    return isEqual(a, b)
-  case let (.none(a), .none(b)):
-    return a == b
-  case let (.array(a, tA), .array(b, tB)):
-    let contentsCompare = zip(a, b).map(isEqual).all({$0})
-    return contentsCompare && tA == tB
-
-  default: return false
-  }
-}
 
 func compile(_ ast: AST) -> Executor {
   let tree = ast.dslTree
@@ -48,7 +100,7 @@ func compile(_ ast: AST) -> Executor {
 func captureTest(
   _ regex: String,
   _ expected: CaptureStructure,
-  _ tests: (input: String, output: Capture)...,
+  _ tests: (input: String, output: [StringCapture])...,
   skipEngine: Bool = false,
   file: StaticString = #file,
   line: UInt = #line
@@ -94,22 +146,30 @@ func captureTest(
       input: input, in: inputRange, mode: .wholeString
     )!
 
-    let cap = try! capStructure.structuralize(capFlat, input)
+    let caps = try! capStructure.structuralize(
+      capFlat, input)
 
-    guard isEqual(cap, output) else {
+    guard caps.count == output.count else {
       XCTFail("""
-          regex: \(regex), input: "\(input)"
-          Structure:
-          \(capStructure)
-          Capture list:
-          \(capFlat.latestUntyped(from: input))
-          Expected:
-          \(output)
-          Actual:
-          \(cap)
-          """,
-              file: file,
-              line: line)
+      Mismatch capture count:
+      Expected:
+      \(output)
+      Seen:
+      \(caps.formatStringCaptures(input: input))
+      """)
+      continue
+    }
+
+    guard output.elementsEqual(caps, by: {
+      $0.isEqual(to: $1, in: input)
+    }) else {
+      XCTFail("""
+      Mismatch capture count:
+      Expected:
+      \(output)
+      Seen:
+      \(caps.formatStringCaptures(input: input))
+      """)
       continue
     }
   }
@@ -118,89 +178,64 @@ func captureTest(
 extension RegexTests {
 
   func testLiteralStructuredCaptures() throws {
-    func some(_ c: Capture) -> Capture {
-      .some(c)
-    }
-
-    func array(_ cs: Capture...) -> Capture {
-      .array(cs, childType: Substring.self)
-    }
-    func someArray(_ cs: Capture...) -> Capture {
-      .some(.array(cs, childType: Substring.self))
-    }
-
-    func tuple(_ ss: Capture...) -> Capture {
-      .tuple(ss)
-    }
-
-    var none: Capture {
-      .none(childType: Substring.self)
-    }
-    var noArray: Capture {
-      .none(childType: [Substring].self)
-    }
-    var noOpt: Capture {
-      .none(childType: Substring?.self)
-    }
-
     captureTest(
       "abc",
       .empty,
-      ("abc", .void))
+      ("abc", []))
 
     captureTest(
       "a(b)c",
       .atom(),
-      ("abc", "b"))
+      ("abc", ["b"]))
 
     captureTest(
       "a(b*)c",
       .atom(),
-      ("abc", "b"),
-      ("ac", ""),
-      ("abbc", "bb"))
+      ("abc", ["b"]),
+      ("ac", [""]),
+      ("abbc", ["bb"]))
 
     captureTest(
       "a(b)*c",
       .optional(.atom()),
-      ("abc", some("b")),
-      ("ac", none),
-      ("abbc", some("b")))
+      ("abc", [.some("b")]),
+      ("ac", [.none]),
+      ("abbc", [.some("b")]))
 
     captureTest(
       "a(b)+c",
       .atom(),
-      ("abc", "b"),
-      ("abbc", "b"))
+      ("abc", ["b"]),
+      ("abbc", ["b"]))
 
     captureTest(
       "a(b)?c",
       .optional(.atom()),
-      ("ac", none),
-      ("abc", some("b")))
+      ("ac", [.none]),
+      ("abc", [.some("b")]))
 
     captureTest(
       "(a)(b)(c)",
       .tuple([.atom(),.atom(),.atom()]),
-      ("abc", tuple("a", "b", "c")))
+      ("abc", ["a", "b", "c"]))
 
     captureTest(
       "a|(b)",
       .optional(.atom()),
-      ("a", none),
-      ("b", some("b")))
+      ("a", [.none]),
+      ("b", [.some("b")]))
 
     captureTest(
       "(a)|(b)",
       .tuple(.optional(.atom()), .optional(.atom())),
-      ("a", tuple(some("a"), none)),
-      ("b", tuple(none, some("b"))))
+      ("a", [.some("a"), .none]),
+      ("b", [.none, .some("b")]))
 
     captureTest(
       "((a)|(b))",
       .tuple(.atom(), .optional(.atom()), .optional(.atom())),
-      ("a", tuple("a", some("a"), none)),
-      ("b", tuple("b", none, some("b"))))
+      ("a", ["a", .some("a"), .none]),
+      ("b", ["b", .none, .some("b")]))
 
     captureTest(
       "((a)|(b))?",
@@ -208,8 +243,8 @@ extension RegexTests {
         .optional(.atom()),
         .optional(.optional(.atom())),
         .optional(.optional(.atom()))),
-      ("a", tuple(some("a"), some("a"), none)),
-      ("b", tuple(some("b"), none, some("b"))))
+      ("a", [.some("a"), .some(.some("a")), .some(.none)]),
+      ("b", [.some("b"), .some(.none), .some(.some("b"))]))
 
     captureTest(
       "((a)|(b))*",
@@ -217,7 +252,7 @@ extension RegexTests {
         .optional(.atom()),
         .optional(.optional(.atom())),
         .optional(.optional(.atom()))),
-      ("a", tuple(some("a"), some(some("a")), none)),
+      ("a", [.some("a"), .some(.some("a")), .some(.none)]),
       skipEngine: true)
 
     captureTest(
@@ -253,17 +288,17 @@ extension RegexTests {
     captureTest(
       "(a)",
       .atom(),
-      ("a", "a"))
+      ("a", ["a"]))
 
     captureTest(
       "((a))",
       .tuple([.atom(), .atom()]),
-      ("a", tuple("a", "a")))
+      ("a", ["a", "a"]))
 
     captureTest(
       "(((a)))",
       .tuple([.atom(), .atom(), .atom()]),
-      ("a", tuple("a", "a", "a")))
+      ("a", ["a", "a", "a"]))
 
 
     // broke
@@ -282,110 +317,111 @@ extension RegexTests {
     captureTest(
       "a|(b*)",
       .optional(.atom()),
-      ("a", none),
-      ("", some("")),
-      ("b", some("b")),
-      ("bbb", some("bbb")))
+      ("a", [.none]),
+      ("", [.some("")]),
+      ("b", [.some("b")]),
+      ("bbb", [.some("bbb")]))
 
     captureTest(
       "a|(b)*",
       .optional(.optional(.atom())),
-      ("a", none),
-      ("", someArray()),
-      ("b", someArray("b")),
-      ("bbb", someArray("b", "b", "b")),
+      ("a", [.none]),
+      ("", [.some("")]),
+      ("b", [.some("b")]),
+      ("bbb", [.some("b")]),
       skipEngine: true)
 
     captureTest(
       "a|(b)+",
       .optional(.atom()),
-      ("a", noArray),
-      ("b", someArray("b")),
-      ("bbb", someArray("b", "b", "b")),
+      ("a", [.none]),
+      ("b", [.some("b")]),
+      ("bbb", [.some("b")]),
       skipEngine: true)
 
     captureTest(
       "a|(b)?",
       .optional(.optional(.atom())),
-      ("a", noOpt),
-      ("", noOpt),
-      ("b", .some(some("b"))),
+      ("a", [.none]),
+      ("", [.none]),
+      ("b", [.some(.some("b"))]),
       skipEngine: true)
 
     captureTest(
       "a|(b|c)",
       .optional(.atom()),
-      ("a", none),
-      ("b", some("b")),
-      ("c", some("c")))
+      ("a", [.none]),
+      ("b", [.some("b")]),
+      ("c", [.some("c")]))
 
     captureTest(
       "a|(b*|c)",
       .optional(.atom()),
-      ("a", none),
-      ("b", some("b")),
-      ("c", some("c")))
+      ("a", [.none]),
+      ("b", [.some("b")]),
+      ("c", [.some("c")]))
 
     captureTest(
       "a|(b|c)*",
       .optional(.optional(.atom())),
-      ("a", noArray),
-      ("", noArray),
-      ("b", someArray("b")),
-      ("bbb", someArray("b", "b", "b")),
+      ("a", [.none]),
+      ("", [.some("")]),
+      ("b", [.some("b")]),
+      ("bbb", [.some("b")]),
       skipEngine: true)
 
     captureTest(
       "a|(b|c)?",
       .optional(.optional(.atom())),
-      ("a", noOpt),
-      ("", noOpt),
-      ("b", .some(some("b"))),
-      ("c", .some(some("c"))),
+      ("a", [.none]),
+      ("", [.none]),
+      ("b", [.some(.some("b"))]),
+      ("c", [.some(.some("c"))]),
       skipEngine: true)
 
 
     captureTest(
       "a(b(c))",
       .tuple(.atom(), .atom()),
-      ("abc", tuple("bc", "c")))
+      ("abc", ["bc", "c"]))
 
     captureTest(
       "a(b(c*))",
       .tuple(.atom(), .atom()),
-      ("ab", tuple("b", "")),
-      ("abc", tuple("bc", "c")),
-      ("abcc", tuple("bcc", "cc")))
+      ("ab", ["b", ""]),
+      ("abc", ["bc", "c"]),
+      ("abcc", ["bcc", "cc"]))
 
     captureTest(
       "a(b(c)*)",
       .tuple(.atom(), .optional(.atom())),
-      ("ab", tuple("b", none)),
-      ("abc", tuple("bc", some("c"))),
-      ("abcc", tuple("bcc", some("c"))))
+      ("ab", ["b", .none]),
+      ("abc", ["bc", .some("c")]),
+      ("abcc", ["bcc", .some("c")]))
 
     captureTest(
       "a(b(c)?)",
       .tuple(.atom(), .optional(.atom())),
-      ("ab", tuple("b", none)),
-      ("abc", tuple("bc", some("c"))))
+      ("ab", ["b", .none]),
+      ("abc", ["bc", .some("c")]))
 
 
     captureTest(
       "a(b(c))*",
       .tuple(.optional(.atom()), .optional(.atom())),
-      ("a", tuple(none, none)),
-      ("abc", tuple(some("bc"), some("c"))),
-      ("abcbc", tuple(some("bc"), some("c"))))
+      ("a", [.none, .none]),
+      ("abc", [.some("bc"), .some("c")]),
+      ("abcbc", [.some("bc"), .some("c")]))
 
     captureTest(
       "a(b(c))?",
       .tuple(.optional(.atom()), .optional(.atom())),
-      ("a", tuple(none, none)),
-      ("abc", tuple(some("bc"), some("c"))))
+      ("a", [.none, .none]),
+      ("abc", [.some("bc"), .some("c")]))
 
 //    TODO: "((a|b)*|c)*"
 //    TODO: "((a|b)|c)*"
+
   }
 
 }

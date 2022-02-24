@@ -88,7 +88,11 @@ func parseTest(
   guard let decodedCaptures = CaptureStructure(
     decoding: UnsafeRawBufferPointer(serializedCaptures)
   ) else {
-    XCTFail("Malformed capture structure serialization")
+    XCTFail("""
+      Malformed capture structure serialization
+      Captures: \(captures)
+      Serialization: \(Array(serializedCaptures))
+      """)
     return
   }
   guard decodedCaptures == captures else {

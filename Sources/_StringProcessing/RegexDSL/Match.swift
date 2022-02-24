@@ -12,6 +12,8 @@
 @dynamicMemberLookup
 public struct RegexMatch<Match> {
   public let range: Range<String.Index>
+
+  // FIXME: Computed instead of stored
   public let match: Match
 
   public subscript<T>(dynamicMember keyPath: KeyPath<Match, T>) -> T {
@@ -50,12 +52,17 @@ extension RegexProtocol {
     }
     let convertedMatch: Match
     if Match.self == (Substring, DynamicCaptures).self {
-      convertedMatch = (input[range], DynamicCaptures(captures)) as! Match
-    } else if Match.self == Substring.self {
+      let dynCaps = DynamicCaptures(captures.map {
+        StoredDynamicCapture($0, in: input)
+      })
+      convertedMatch = (input[range], dynCaps) as! Match
+    } else
+    if Match.self == Substring.self {
       convertedMatch = input[range] as! Match
     } else {
-      let typeErasedMatch = captures.matchValue(
-        withWholeMatch: input[range]
+      // FIXME: Defer construction until accessed
+      let typeErasedMatch = captures.existentialMatch(
+        from: input[range]
       )
       convertedMatch = typeErasedMatch as! Match
     }
