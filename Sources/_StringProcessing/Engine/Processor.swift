@@ -163,7 +163,7 @@ extension Processor {
   }
 
   mutating func signalFailure() {
-    guard let (pc, pos, stackEnd, capEnds) =
+    guard let (pc, pos, stackEnd, capEnds, intRegisters) =
             savePoints.popLast()?.destructure
     else {
       state = .fail
@@ -175,7 +175,8 @@ extension Processor {
     controller.pc = pc
     currentPosition = pos ?? currentPosition
     callStack.removeLast(callStack.count - stackEnd.rawValue)
-      storedCaptures = capEnds
+    storedCaptures = capEnds
+    registers.ints = intRegisters
   }
 
   mutating func tryAccept() {
