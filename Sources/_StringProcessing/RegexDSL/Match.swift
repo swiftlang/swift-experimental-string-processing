@@ -52,7 +52,7 @@ extension RegexProtocol {
     }
     let convertedMatch: Match
     if Match.self == (Substring, DynamicCaptures).self {
-      let dynCaps = DynamicCaptures(contents: captures.map {
+      let dynCaps = DynamicCaptures(captures.map {
         StoredDynamicCapture($0, in: input)
       })
       convertedMatch = (input[range], dynCaps) as! Match

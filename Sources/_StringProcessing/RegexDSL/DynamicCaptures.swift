@@ -17,12 +17,14 @@ extension Regex where Match == (Substring, DynamicCaptures) {
   }
 }
 
-// TODO: Empty token type rather than also having storage
-public struct DynamicCaptures {
-  var contents: [StoredDynamicCapture]
-}
+// FIXME: Separate storage representation from types vending
+// API.
+public typealias DynamicCaptures = Array<StoredDynamicCapture>
 
-struct StoredDynamicCapture: Hashable {
+// FIXME: Make this internal when we have API types or otherwise
+// disentagle storage from API. In the meantime, this will have
+// the storage name _and_ provide the API.
+public struct StoredDynamicCapture: Hashable {
   var optionalCount = 0
 
   // TODO: replace with a range
@@ -31,6 +33,35 @@ struct StoredDynamicCapture: Hashable {
   init(_ slice: Substring?, optionalCount: Int) {
     self.slice = slice
     self.optionalCount = optionalCount
+  }
+}
+
+extension StoredDynamicCapture {
+  // TODO: How should we expose optional nesting?
+
+  public var range: Range<String.Index>? {
+    guard let s = slice else {
+      return nil
+    }
+    return s.startIndex..<s.endIndex
+  }
+
+  public var underlyingSubstring: Substring? {
+    slice
+  }
+
+  public var capture: Any {
+    // Ok for now because `existentialMatchComponent`
+    // wont slice the input if there's no range to slice with
+    //
+    // FIXME: This is ugly :-/
+    let input = slice ?? ""
+
+    return constructExistentialMatchComponent(
+      from: input,
+      in: range,
+      value: nil,
+      optionalCount: optionalCount)
   }
 }
 

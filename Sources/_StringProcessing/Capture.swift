@@ -32,21 +32,42 @@ struct StoredCapture {
   var value: Any? = nil
 }
 
+// TODO: Where should this live? Inside TypeConstruction?
+func constructExistentialMatchComponent(
+  from input: Substring,
+  in range: Range<String.Index>?,
+  value: Any?,
+  optionalCount: Int
+) -> Any {
+  let someCount: Int
+  var underlying: Any
+  if let v = value {
+    underlying = v
+    someCount = optionalCount
+  } else if let r = range {
+    underlying = input[r]
+    someCount = optionalCount
+  } else {
+    // Ok since we Any-box every step up the ladder
+    underlying = Optional<Any>(nil) as Any
+    someCount = optionalCount - 1
+  }
+
+  for _ in 0..<someCount {
+    underlying = Optional(underlying) as Any
+  }
+  return underlying
+}
+
 extension StructuredCapture {
   func existentialMatchComponent(
     from input: Substring
   ) -> Any {
-    var underlying: Any
-    if let cap = self.storedCapture {
-      underlying = cap.value ?? input[cap.range!]
-    } else {
-      // Ok since we Any-box every step up the ladder
-      underlying = Optional<Any>(nil) as Any
-    }
-    for _ in 0..<someCount {
-      underlying = Optional(underlying) as Any
-    }
-    return underlying
+    constructExistentialMatchComponent(
+      from: input,
+      in: storedCapture?.range,
+      value: storedCapture?.value,
+      optionalCount: optionalCount)
   }
 }
 

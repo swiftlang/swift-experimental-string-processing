@@ -18,17 +18,6 @@ func dynCap(
   StoredDynamicCapture(s[...], optionalCount: optional ? 1 : 0)
 }
 
-extension DynamicCaptures: ExpressibleByArrayLiteral {
-  public init(arrayLiteral elements: StoredDynamicCapture...) {
-    self.init(contents: elements)
-  }
-}
-extension DynamicCaptures: Equatable {
-  public static func == (lhs: DynamicCaptures, rhs: DynamicCaptures) -> Bool {
-    lhs.contents == rhs.contents
-  }
-}
-
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexProtocol, CaptureType>(
     _ tests: (input: String, expectedCaptures: CaptureType?)...,
