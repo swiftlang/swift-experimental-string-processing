@@ -36,35 +36,47 @@ Note that there are minor syntactic incompatibilities and ambiguities involved i
 
 ## Detailed Design
 
-We're proposing the following regular expression syntactic superset for Swift.
+We propose the following syntax for use inside Swift regex literals.
+
+*TODO:* Disclosure triangle explaining the grammar conventions?
 
 ### Top-level regular expression
 
 ```
 Regex     -> GlobalMatchingOptionSequence? RegexNode
 RegexNode -> '' | Alternation
-```
-
-A top-level regular expression may consist of a sequence of global matching options followed by a `RegexNode`, which is the recursive part of the grammar that may be nested within e.g a group. A regex node may be empty, which is the null pattern that always matches, but does not advance the input.
-
-### Alternation
-
-```
 Alternation -> Concatenation ('|' Concatenation)*
-```
-
-The `|` operator denotes what is formally called an alternation, or a choice between alternatives. Any number of alternatives may appear, including empty alternatives. This operator has the lowest precedence of all operators in a regex literal.
-
-### Concatenation
-
-```
 Concatenation   -> (!'|' !')' ConcatComponent)*
-ConcatComponent -> Trivia | Quote | Quantification
 ```
 
-Implicitly denoted by adjacent expressions, a concatenation matches against a sequence of regular expression nodes. This has a higher precedence than an alternation, so e.g `abc|def` matches against `abc` or `def`. A concatenation may consist of potentially quantified expressions, trivia such as inline comments, and quoted sequences `\Q...\E`.
+A regex literal may be prefixed with a sequence of global matching options(*TODO*: intra-doc link). A literal's contents can be empty or a sequence of alternatives separated by `|`.
 
-### Quantification
+Alternatives are a series of expressions concatenated together. The concatentation ends with either a `|` denoting the end of the alternative or a `)` denoting the end of a recursively parsed group.
+
+Alternation has a lower precedence than concatenation or other operations, so e.g `abc|def` matches against `abc` or `def`..
+
+### Concatenated subexpressions
+
+```
+ConcatComponent -> Trivia | Quote | Quantification
+
+Trivia  -> Comment | NonSemanticWhitespace
+Comment -> '(?#' (!')')* ')' | EndOfLineComment
+
+(extended syntax only) EndOfLineComment      -> '#' .*$
+(extended syntax only) NonSemanticWhitespace -> \s+
+
+Quote -> '\Q' (!'\E' .)* '\E'
+
+```
+
+Each component of a concatenation may be "trivia" (comments and non-semantic whitespace, if applicable), a quoted run of literal content, or a potentially-quantified subexpression.
+
+In-line comments, similarly to C, are lexical and are not recursively nested like normal groups are. A closing `)` cannot be escaped. Quotes are similarly lexical, non-nested, and the `\` before a `\E` cannot be escaped.
+
+For example, `\Q^[xy]+$\E`, is treated as the literal characters `^[xy]+$` rather than an anchored quantified character class. `\Q\\E` is a literal `\`. 
+
+### Quantified subexpressions
 
 ```
 Quantification -> QuantOperand Quantifier?
@@ -453,23 +465,26 @@ The backslash character is also treated as literal within a quoted sequence, and
 ### References
 
 ```
-NamedRef       -> Identifier
-NumberRef      -> ('+' | '-')? <Decimal Number> RecursionLevel?
-RecursionLevel -> '+' <Int> | '-' <Int>
+NamedOrNumberRef -> NamedRef | NumberRef
+NamedRef         -> Identifier RecursionLevel?
+NumberRef        -> ('+' | '-')? <Decimal Number> RecursionLevel?
+RecursionLevel   -> '+' <Int> | '-' <Int>
 ```
 
 A reference is an abstract identifier for a particular capturing group in a regular expression. It can either be named or numbered, and in the latter case may be specified relative to the current group. For example `-2` refers to the capture group `N - 2` where `N` is the number of the next capture group. References may refer to groups ahead of the current position e.g `+3`, or the name of a future group. These may be useful in recursive cases where the group being referenced has been matched in a prior iteration.
 
+A backreference may optionally include a recursion level in certain cases, which is a syntactic element inherited from Oniguruma that allows the reference to specify a capture relative to a given recursion level.
+
 #### Backreferences
 
 ```
-Backreference -> '\g{' NameOrNumberRef '}'
+Backreference -> '\g{' NamedOrNumberRef '}'
                | '\g' NumberRef
-               | '\k<' NameOrNumberRef '>'
-               | "\k'" NameOrNumberRef "'"
-               | '\k{' Identifier '}'
+               | '\k<' NamedOrNumberRef '>'
+               | "\k'" NamedOrNumberRef "'"
+               | '\k{' NamedRef '}'
                | '\' [1-9] [0-9]+
-               | '(?P=' Identifier ')'
+               | '(?P=' NamedRef ')'
 ```
 
 A backreference evaluates to the value last captured by the referenced capturing group. If the referenced capture has not been evaluated yet, the match fails.
@@ -477,12 +492,12 @@ A backreference evaluates to the value last captured by the referenced capturing
 #### Subpatterns
 
 ```
-Subpattern -> '\g<' NameOrNumberRef '>' 
-            | "\g'" NameOrNumberRef "'"
+Subpattern -> '\g<' NamedOrNumberRef '>' 
+            | "\g'" NamedOrNumberRef "'"
             | '(?' GroupLikeSubpatternBody ')'
             
-GroupLikeSubpatternBody -> 'P>' <String>
-                         | '&' <String>
+GroupLikeSubpatternBody -> 'P>' NamedRef
+                         | '&' NamedRef
                          | 'R'
                          | NumberRef
 ```
@@ -500,9 +515,9 @@ GroupConditionalStart -> '(?' GroupStart
 
 KnownCondition -> 'R'
                 | 'R' NumberRef
-                | 'R&' <String> !')'
-                | '<' NameRef '>'
-                | "'" NameRef "'"
+                | 'R&' NamedRef
+                | '<' NamedOrNumberRef '>'
+                | "'" NamedOrNumberRef "'"
                 | 'DEFINE'
                 | 'VERSION' VersionCheck
                 | NumberRef
@@ -806,13 +821,13 @@ We intend on canonicalizing to the short-form versions of these group kinds, e.g
 ### Backreferences
 
 ```
-Backreference -> '\g{' NameOrNumberRef '}'
+Backreference -> '\g{' NamedOrNumberRef '}'
                | '\g' NumberRef
-               | '\k<' NameOrNumberRef '>'
-               | "\k'" NameOrNumberRef "'"
-               | '\k{' Identifier '}'
+               | '\k<' NamedOrNumberRef '>'
+               | "\k'" NamedOrNumberRef "'"
+               | '\k{' NamedRef '}'
                | '\' [1-9] [0-9]+
-               | '(?P=' Identifier ')'
+               | '(?P=' NamedRef ')'
 ```
 
 For absolute numeric references, we plan on choosing the canonical spelling `\DDD`, as it is unambiguous with octal sequences. For relative numbered references, as well as named references, we intend on canonicalizing to `\k<...>` to match the group name canonicalization `(?<...>)`. **TODO: How valuable is it to have canonical `\DDD`? Would it be better to just use `\k<...>` for everything?**
@@ -820,12 +835,12 @@ For absolute numeric references, we plan on choosing the canonical spelling `\DD
 ### Subpatterns
 
 ```
-Subpattern -> '\g<' NameOrNumberRef '>' 
-            | "\g'" NameOrNumberRef "'"
+Subpattern -> '\g<' NamedOrNumberRef '>' 
+            | "\g'" NamedOrNumberRef "'"
             | '(?' GroupLikeSubpatternBody ')'
             
-GroupLikeSubpatternBody -> 'P>' <String>
-                         | '&' <String>
+GroupLikeSubpatternBody -> 'P>' NamedRef
+                         | '&' NamedRef
                          | 'R'
                          | NumberRef
 ```
@@ -837,9 +852,9 @@ We intend on canonicalizing to the `\g<...>` spelling. **TODO: For `(?R)` too?**
 ```
 KnownCondition -> 'R'
                 | 'R' NumberRef
-                | 'R&' <String> !')'
-                | '<' NameRef '>'
-                | "'" NameRef "'"
+                | 'R&' NamedRef
+                | '<' NamedOrNumberRef '>'
+                | "'" NamedOrNumberRef "'"
                 | 'DEFINE'
                 | 'VERSION' VersionCheck
                 | NumberRef
