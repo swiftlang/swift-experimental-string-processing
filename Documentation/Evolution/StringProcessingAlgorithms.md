@@ -4,54 +4,33 @@
 
 The standard library is currently missing a large number of `String` algorithms that do exist in Foundation. We introduce a more coherent set of `Collection` algorithms with a focus on string processing, including support for regular expressions.
 
+
 ## Motivation
 
-TODO
+TODO: Motivation for adding both generic `<r: RegexProtocol>` and non-generic algorithm functions.
 
-## Proposed solution
 
-We introduce internal infrastructure that allows groups of `Collection` algorithms that perform the same operations on different types to share their implementation, leading to a more coherent set of public APIs. This allows us to more easily provide algorithms that work with `RegexProtocol` values, such as
+### Use custom parsers in regex builders and `RegexProtocol` algorithms
 
-```swift
-extension BidirectionalCollection where SubSequence == Substring {
-    public func ranges<R: RegexProtocol>(of regex: R) -> some Collection<Range<Index>>
-}
-```
-
-We also introduce the `CustomRegexComponent` protocol that conveniently lets types from outside the standard library participate in regex builders and `RegexProtocol` algorithms:
-
-```swift
-public protocol CustomRegexComponent: RegexProtocol {
-    /// Match the input string within the specified bounds, beginning at the given index, and return
-    /// the end position (upper bound) of the match and the matched instance.
-    /// - Parameters:
-    ///   - input: The string in which the match is performed.
-    ///   - index: An index of `input` at which to begin matching.
-    ///   - bounds: The bounds in `input` in which the match is performed.
-    /// - Returns: The upper bound where the match terminates and a matched instance, or nil if
-    ///   there isn't a match.
-    func match(
-        _ input: String,
-        startingAt index: String.Index,
-        in bounds: Range<String.Index>
-    ) -> (upperBound: String.Index, match: Match)?
-}
-```
+We want to extend string processing to types from outside the standard library, so that one can incorporate custom parsers in regex builders and `RegexProtocol` algorithms seamlessly. 
 
 Consider parsing an HTTP header to capture the date field as a `Date` type:
 
-```
+```swift
+let header = """
 HTTP/1.1 301 Redirect
 Date: Wed, 16 Feb 2022 23:53:19 GMT
 Connection: close
 Location: https://www.apple.com/
 Content-Type: text/html
 Content-Language: en
+"""
 ```
 
-You are likely going to match a substring that look like a date string (`16 Feb 2022`), and parse the substring as a `Date` with one of Foundation's date parsers:
+You are likely going to match a substring that look like a date string (`16 Feb 2022`), and parse the substring as a `Date` with one of the date parsers in the Foundation framework:
 
 ```swift
+let dateParser = Date.ParseStrategy(format: "\(day: .twoDigits) \(month: .abbreviated) \(year: .padded(4))"
 let regex = Regex {
     capture {
         oneOrMore(.digit)
@@ -63,7 +42,7 @@ let regex = Regex {
 }
 
 if let dateMatch = header.firstMatch(of: regex)?.0 {
-    let date = try? Date(dateMatch, strategy: .fixed(format: "\(day: .twoDigits) \(month: .abbreviated) \(year: .padded(4))", timeZone: TimeZone(identifier: "GMT")!, locale: Locale(identifier: "en_US")))
+    let date = try? Date(dateMatch, strategy: dateParser)
 }
 ```
 
@@ -71,43 +50,16 @@ This works, but wouldn't it be much more approachable if you can directly use th
 
 ```swift
 let regex = Regex {
-    capture { 
-        .date(format: "\(day: .twoDigits) \(month: .abbreviated) \(year: .padded(4))", timeZone: TimeZone(identifier: "GMT")!, locale: Locale(identifier: "en_US")) 
-    }
+    capture(dateParser)
 }
 
-if let match = header.firstMatch(of: regex) {
-    let string = match.0 // "16 Feb 2022"
-    let date = match.1 // 2022-02-16 00:00:00 +0000
-}
+let date = header.firstMatch(of: regex).map(\.result.1) 
+// A `Date` representing 2022-02-16 00:00:00 +0000
 ```
 
-You can do this because Foundation framework's `Date.ParseStrategy` conforms to `CustomRegexComponent`, defined above. You can also conform your custom parser to `CustomRegexComponent`. Conformance is simple: implement the `match` function to return the upper bound of the matched substring, and the type represented by the matched range. It inherits from `RegexProtocol`, so you will be able to use it with all of the string algorithms that take a `RegexProtocol` type.
-
-Foundation framework's `Date.ParseStrategy` conforms to `CustomRegexComponent` this way. It also adds a static function `date(format:timeZone:locale)` as a static member of `RegexProtocol`, so you can refer to it as `.date(format:...)` in the `Regex` result builder. 
+Or consider parsing a bank statement to record all the monetary values in the last column:
 
 ```swift
-extension Date.ParseStrategy : CustomRegexComponent { 
-    func match(
-        _ input: String,
-        startingAt index: String.Index,
-        in bounds: Range<String.Index>
-    ) -> (upperBound: String.Index, match: Date)?
-}
-
-extension RegexProtocol where Self == Date.ParseStrategy {
-    public static func date(
-        format: Date.FormatString, 
-        timeZone: TimeZone, 
-        locale: Locale? = nil
-    ) -> Self  
-}
-```
-
-Here's another example of how you can use `FloatingPointFormatStyle<Double>.Currency` to parse a bank statement and record all the monetary values:
-
-```swift
-
 let statement = """
 CREDIT    04/06/2020    Paypal transfer        $4.99
 DSLIP    04/06/2020    REMOTE ONLINE DEPOSIT  $3,020.85
@@ -116,40 +68,37 @@ DEBIT    04/02/2020    ACH TRNSFR             ($38.25)
 DEBIT    03/31/2020    Payment to BoA card    ($27.44)
 DEBIT    03/24/2020    IRX tax payment        ($52,249.98)
 """
+```
 
+We have already seen that parsing a date string can be tricky since it could contain localized month name (`"Feb"` as seen from above). Parsing a currency string such as `$3,020.85` with regex is not trivial either -- it can contain grouping separators, a decimal separator, and a currency symbol, all of which can be localized. 
+
+The Foundation framework has various parsers for localized strings like these. Delegating this task to dedicated parsers alleviates the need to handle it yourself. In the second part of the pitch, we introduce the `CustomRegexComponent` protocol that conveniently lets types from outside the standard library participate in regex builders and `RegexProtocol` algorithms.
+
+## Proposed solution
+
+We introduce internal infrastructure that allows groups of `Collection` algorithms that perform the same operations on different types to share their implementation, leading to a more coherent set of public APIs. This allows us to more easily provide algorithms that work with `RegexProtocol` values, such as
+
+```swift
+extension BidirectionalCollection where SubSequence == Substring {
+    public func ranges<R: RegexProtocol>(of regex: R) -> some Collection<Range<Index>>
+}
+```
+
+We also introduce the `CustomRegexComponent` protocol that conveniently lets types from outside the standard library participate in regex builders and `RegexProtocol` algorithms.
+
+If Foundation's currency parser, `Foundation.FloatingPointFormatStyle<Double>.Currency`, conformed to `CustomRegexComponent`, you would be able to retrieve the currency from the bank statement above as a list of `Double` values this way:
+
+```swift
 let regex = Regex {
-    capture {
-        .currency(code: "USD").sign(strategy: .accounting)
-    }
+    capture(.localizedCurrency(code: "USD").sign(strategy: .accounting))
 }
 
-let amount = statement.matches(of: regex).map(\.1)
+let amount = statement.matches(of: regex).map(\.result.1)
 // [4.99, 3020.85, 69.73, -38.25, -27.44, -52249.98]
 ```
 
+
 ## Detailed design
-
-### `CustomRegexComponent` protocol
-
-The `CustomRegexComponent` protocol inherits from `RegexProtocol` and satisfies its sole requirement. This enables the usage of types that conform to `CustomRegexComponent` in regex builders and `RegexProtocol` algorithms.
-
-```swift
-public protocol CustomRegexComponent: RegexProtocol {
-    /// Match the input string within the specified bounds, beginning at the given index, and return
-    /// the end position (upper bound) of the match and the matched instance.
-    /// - Parameters:
-    ///   - input: The string in which the match is performed.
-    ///   - index: An index of `input` at which to begin matching.
-    ///   - bounds: The bounds in `input` in which the match is performed.
-    /// - Returns: The upper bound where the match terminates and a matched instance, or nil if
-    ///   there isn't a match.
-    func match(
-        _ input: String,
-        startingAt index: String.Index,
-        in bounds: Range<String.Index>
-    ) -> (upperBound: String.Index, match: Match)?
-}
-```
 
 ### Algorithms
 
@@ -159,11 +108,21 @@ The following algorithms are included in this pitch:
 
 ```swift
 extension Collection where Element: Equatable {
+    /// Returns a Boolean value indicating whether the collection contains the
+    /// given sequence.
+    /// - Parameter other: A sequence to search for within this collection.
+    /// - Returns: `true` if the collection contains the specified sequence,
+    /// otherwise `false`.
     public func contains<S: Sequence>(_ other: S) -> Bool
         where S.Element == Element
 }
 
 extension BidirectionalCollection where SubSequence == Substring {
+    /// Returns a Boolean value indicating whether the collection contains the
+    /// given regex.
+    /// - Parameter regex: A regex to search for within this collection.
+    /// - Returns: `true` if the regex was found in the collection, otherwise
+    /// `false`.
     public func contains<R: RegexProtocol>(_ regex: R) -> Bool
 }
 ```
@@ -172,6 +131,11 @@ extension BidirectionalCollection where SubSequence == Substring {
 
 ```swift
 extension BidirectionalCollection where SubSequence == Substring {
+    /// Returns a Boolean value indicating whether the initial elements of the
+    /// sequence are the same as the elements in the specified regex.
+    /// - Parameter regex: A regex to compare to this sequence.
+    /// - Returns: `true` if the initial elements of the sequence matches the
+    /// beginning of `regex`; otherwise, `false`.
     public func starts<R: RegexProtocol>(with regex: R) -> Bool
 }
 ```
@@ -180,14 +144,31 @@ extension BidirectionalCollection where SubSequence == Substring {
 
 ```swift
 extension Collection {
+    /// Returns a new collection of the same type by removing initial elements
+    /// that satisfy the given predicate from the start
+    /// - Parameter predicate: A closure that takes an element of the sequence
+    /// as its argument and returns a Boolean value indicating whether the
+    /// element should be removed from the collection.
+    /// - Returns: A collection containing the elements of the receiver that are
+    ///  not removed by `predicate`.
     public func trimmingPrefix(while predicate: (Element) -> Bool) -> SubSequence
 }
 
 extension Collection where SubSequence == Self {
+    /// Removes the initial elements that satisfy the given predicate from the
+    /// start of the sequence.
+    /// - Parameter predicate: A closure that takes an element of the sequence
+    /// as its argument and returns a Boolean value indicating whether the
+    /// element should be removed from the collection.
     public mutating func trimPrefix(while predicate: (Element) -> Bool)
 }
 
 extension RangeReplaceableCollection {
+    /// Removes the initial elements that satisfy the given predicate from the
+    /// start of the sequence.
+    /// - Parameter predicate: A closure that takes an element of the sequence
+    /// as its argument and returns a Boolean value indicating whether the
+    /// element should be removed from the collection.
     public mutating func trimPrefix(while predicate: (Element) -> Bool)
 }
 
@@ -341,6 +322,55 @@ extension BidirectionalCollection where SubSequence == Substring {
     public func split<R: RegexProtocol>(by separator: R) -> some Collection<Substring>
 }
 ```
+
+### `CustomRegexComponent` protocol
+
+The `CustomRegexComponent` protocol inherits from `RegexProtocol` and satisfies its sole requirement. This enables the usage of types that conform to `CustomRegexComponent` in regex builders and `RegexProtocol` algorithms.
+
+```swift
+public protocol CustomRegexComponent: RegexProtocol {
+    /// Match the input string within the specified bounds, beginning at the given index, and return
+    /// the end position (upper bound) of the match and the matched instance.
+    /// - Parameters:
+    ///   - input: The string in which the match is performed.
+    ///   - index: An index of `input` at which to begin matching.
+    ///   - bounds: The bounds in `input` in which the match is performed.
+    /// - Returns: The upper bound where the match terminates and a matched instance, or nil if
+    ///   there isn't a match.
+    func match(
+        _ input: String,
+        startingAt index: String.Index,
+        in bounds: Range<String.Index>
+    ) -> (upperBound: String.Index, match: Match)?
+}
+```
+
+You can conform your custom parser to `CustomRegexComponent`. Conformance is simple: implement the `match` function to return the upper bound of the matched substring, and the type represented by the matched range. It inherits from `RegexProtocol`, so you will be able to use it with all of the string algorithms that take a `RegexProtocol` type.
+
+Here, we use Foundation framework's `FloatingPointFormatStyle<Double>.Currency` as an example. `FloatingPointFormatStyle<Double>.Currency` would conform to `CustomRegexComponent` by implementing the `match` function with `Match` being a `Double`. It could also add a static function `.localizedCurrency(code:)` as a member of `RegexProtocol`, so you can refer to it as `.localizedCurrency(code:)` in the `Regex` result builder. 
+
+```swift
+extension FloatingPointFormatStyle<Double>.Currency : CustomRegexComponent { 
+    func match(
+        _ input: String,
+        startingAt index: String.Index,
+        in bounds: Range<String.Index>
+    ) -> (upperBound: String.Index, match: Double)?
+}
+
+extension RegexProtocol where Self == FloatingPointFormatStyle<Double>.Currency {
+    public static func localizedCurrency(code: Locale.Currency) -> Self
+}
+```
+
+Users could specify a pattern to match a localized currency amount such as `"$3,020.85"` simply with the following, and use it in any of the string matching algorithms introduced above.
+
+```swift
+let regex = Regex {
+    capture(.localizedCurreny(code: "USD"))
+}
+```
+
 
 ## Alternatives considered
 
