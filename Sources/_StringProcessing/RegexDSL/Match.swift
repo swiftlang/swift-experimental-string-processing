@@ -18,6 +18,8 @@ public struct RegexMatch<Match> {
 
   public var match: Match {
     if Match.self == (Substring, DynamicCaptures).self {
+      // FIXME(rdar://89449323): Compiler assertion
+      let input = input
       let dynCaps = rawCaptures.map { StoredDynamicCapture($0, in: input) }
       return (input[range], dynCaps) as! Match
     } else if Match.self == Substring.self {
