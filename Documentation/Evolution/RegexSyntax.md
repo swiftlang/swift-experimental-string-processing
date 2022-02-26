@@ -74,7 +74,7 @@ Each component of a concatenation may be "trivia" (comments and non-semantic whi
 
 In-line comments, similarly to C, are lexical and are not recursively nested like normal groups are. A closing `)` cannot be escaped. Quotes are similarly lexical, non-nested, and the `\` before a `\E` cannot be escaped.
 
-For example, `\Q^[xy]+$\E`, is treated as the literal characters `^[xy]+$` rather than an anchored quantified character class. `\Q\\E` is a literal `\`. 
+For example, `\Q^[xy]+$\E`, is treated as the literal characters `^[xy]+$` rather than an anchored quantified character class. `\Q\\E` is a literal `\`.
 
 ### Quantified subexpressions
 
@@ -88,42 +88,173 @@ Range          -> ',' <Int> | <Int> ',' <Int>? | <Int>
 QuantOperand -> AbsentFunction | Atom | Conditional | CustomCharClass | Group
 ```
 
-A quantification consists of an operand optionally followed by a quantifier that specifies how many times it may be matched. An operand without a quantifier is matched once.
+Subexpressions can be quantified, meaning they will be repeated some number of times:
 
-The quantifiers supported are:
+- `?`: 0 or 1 times.
+- `*`: 0 or more times.
+- `+`: 1 or more times.
+- `{n,m}`: Between `n` and `m` (inclusive) times.
+- `{n,}`: `n` or more times.
+- `{,m}`: Up to `m` times.
+- `{n}`: Exactly `n` times.
 
-- `?`: 0 or 1 matches.
-- `*`: 0 or more matches.
-- `+`: 1 or more matches.
-- `{n,m}`: Between `n` and `m` (inclusive) matches.
-- `{n,}`: `n` or more matches.
-- `{,m}`: Up to `m` matches.
-- `{n}`: Exactly `n` matches.
+Behavior can further be refined by a subsequent `?` or `+`:
 
-A quantifier may optionally be followed by `?` or `+`, which adjusts its semantics. If neither are specified, by default the quantification happens *eagerly*, meaning that it will try to maximize the number of matches made. However, if `?` is specified, quantification happens *reluctantly*, meaning that the number of matches will instead be minimized. If `+` is specified, *possessive* matching occurs, which is eager matching with the additional semantic that it may not be backtracked into to try a different number of matches.
+- `x*` _eager_: consume as much of input as possible
+- `x*?` _reluctant_: consume as little of the input as possible
+- `x*+`: _possessive_: eager and never relinquishes any input consumed
 
-### Atom
+### Atoms
 
 ```
 Atom -> Anchor
       | Backreference
       | BacktrackingDirective
-      | BuiltinCharClass
+      | BuiltinCharacterClass
       | Callout
       | CharacterProperty
       | EscapeSequence
       | NamedScalar
       | Subpattern
-      | UniScalar
+      | UnicodeScalar
       | '\K'
       | '\'? <Character>
 ```
 
-Atoms are the smallest units of regular expression syntax. They include escape sequences e.g `\b`, `\d`, as well as metacharacters such as `.` and `$`. They also include some larger syntactic constructs such as backreferences and callouts. The most basic form of atom is a literal character. A metacharacter may be treated as literal by preceding it with a backslash. Other literal characters may also be preceded with a backslash, but it has no effect if they are unknown escape sequences, e.g `\I` is literal `I`.
+Atoms are the smallest units of regex syntax. They include escape sequences, metacharacters, backreferences, etc. The most basic form of atom is a literal character. A metacharacter may be treated as literal by preceding it with a backslash. Other literal characters may also be preceded with a backslash, but it has no effect if they are unknown escape sequences, e.g `\I` is literal `I`.
+
+#### Anchors
+
+```
+Anchor -> '^' | '$' | '\A' | '\b' | '\B' | '\G' | '\y' | '\Y' | '\z' | '\Z'
+```
+
+Anchors match against a certain position in the input rather than on a particular character of the input.
+
+- `^`: Matches at the start of a line.
+- `$`: Matches at the end of a line.
+- `\A`: Matches at the very start of the input string.
+- `\Z`: Matches at the very end of the input string, in addition to before a newline at the very end of the input string.
+- `\z`: Like `\Z`, but only matches at the very end of the input string.
+- `\G`: Like `\A`, but also matches against the start position of where matching resumes in global matching mode (e.g `\Gab` matches twice in `abab`, `\Aab` would only match once).
+- `\b` matches a boundary between a word character and a non-word character. The definitions of which vary depending on matching engine.
+- `\B` matches a non-word-boundary.
+- `\y` matches a text segment boundary, the definition of which varies based on the `y{w}` and `y{g}` matching option.
+- `\Y` matches a non-text-segment-boundary.
+
+#### Escape sequences
+
+```
+EscapeSequence -> '\a' | '\b' | '\c' <Char> | '\e' | '\f' | '\n' | '\r' | '\t'
+```
+
+These escape sequences each denote a specific scalar value.
+
+- `\a`: The alert (bell) character `U+7`.
+- `\b`: The backspace character `U+8`. Note this may only be used in a custom character class, otherwise it represents a word boundary.
+- `\c <Char>`: A control character sequence, which denotes a scalar from `U+00` - `U+7F` depending on the ASCII character provided.
+- `\e`: The escape character `U+1B`.
+- `\f`: The form-feed character `U+C`.
+- `\n`: The newline character `U+A`.
+- `\r`: The carriage return character `U+D`.
+- `\t`: The tab character `U+9`
+
+#### Builtin character classes
+
+```
+BuiltinCharClass -> '.' | '\C' | '\d' | '\D' | '\h' | '\H' | '\N' | '\O' | '\R' | '\s' | '\S' | '\v' | '\V' | '\w' | '\W' | '\X'
+```
+
+- `.`: Any character excluding newlines.
+- `\C`: A single UTF code unit.
+- `\d`: Digit character.
+- `\D`: Non-digit character.
+- `\h`: Horizontal space character.
+- `\H`: Non-horizontal-space character.
+- `\N`: Non-newline character.
+- `\O`: Any character (including newlines). This is syntax from Oniguruma.
+- `\R`: Newline sequence.
+- `\s`: Whitespace character.
+- `\S`: Non-whitespace character.
+- `\v`: Vertical space character.
+- `\V`: Non-vertical-space character.
+- `\w`: Word character.
+- `\W`: Non-word character.
+- `\X`: Any extended grapheme cluster.
+
+Precise definitions of character classes is discussed in (Character Classes for String Processing)[https://forums.swift.org/t/pitch-character-classes-for-string-processing/52920].
+
+#### Unicode scalars
+
+```
+UnicodeScalar -> '\u{' HexDigit{1...} '}'
+           | '\u'  HexDigit{4}
+           | '\x{' HexDigit{1...} '}'
+           | '\x'  HexDigit{0...2}
+           | '\U'  HexDigit{8}
+           | '\o{' OctalDigit{1...} '}'
+           | '\0' OctalDigit{0...3}
+
+HexDigit   -> [0-9a-zA-Z]
+OctalDigit -> [0-7]
+
+NamedScalar -> '\N{' ScalarName '}'
+ScalarName -> 'U+' HexDigit{1...8} | [\s\w-]+
+```
+
+These sequences define a unicode scalar value using hexadecimal or octal notation
+
+`\x`, when not followed by any hexadecimal digit characters, is treated as `\0`, matching PCRE's behavior.
+
+`\N{...}` allows a specific Unicode scalar to be specified by name or hexadecimal code point.
+
+#### Character properties
+
+```
+CharacterProperty      -> '\' ('p' | 'P') '{' PropertyContents '}'
+POSIXCharacterProperty -> '[:' PropertyContents ':]'
+
+PropertyContents -> PropertyName ('=' PropertyName)?
+PropertyName     -> [\s\w-]+
+```
+
+A character property specifies a particular Unicode, POSIX, or PCRE property to match against. We propose supporting:
+
+- The full range of Unicode character properties.
+- The POSIX properties `alnum`, `blank`, `graph`, `print`, `word`, `xdigit` (note that `alpha`, `lower`, `upper`, `space`, `punct`, `digit`, and `cntrl` are covered by Unicode properties).
+- The UTS#18 special properties `any`, `assigned`, `ascii`.
+- The special PCRE2 properties `Xan`, `Xps`, `Xsp`, `Xuc`, `Xwd`.
+- The special Java property `javaLowerCase`
+
+We follow [UTS#18][uts18]'s guidance for character properties, including fuzzy matching for property name parsing, according to rules set out by [UAX44-LM3]. The following property names are equivalent:
+
+- `whitespace`
+- `isWhitespace`
+- `is-White_Space`
+- `iSwHiTeSpaCe`
+- `i s w h i t e s p a c e`
+
+Unicode properties consist of both a key and a value, e.g `General_Category=Whitespace`. Each component follows the fuzzy matching rule, and additionally may have an alternative alias spelling, as defined by Unicode in [PropertyAliases.txt][unicode-prop-key-aliases] and [PropertyValueAliases.txt][unicode-prop-value-aliases].
+
+There are some Unicode properties where the key or value may be inferred. These include:
+
+- General category properties e.g `\p{Whitespace}` is inferred as `\p{General_Category=Whitespace}`.
+- Script properties e.g `\p{Greek}` is inferred as `\p{Script_Extensions=Greek}`.
+- Boolean properties that are inferred to have a `True` value, e.g `\p{Lowercase}` is inferred as `\p{Lowercase=True}`.
+- Block properties that begin with the prefix `in`, e.g `\p{inBasicLatin}` is inferred to be `\p{Block=Basic_Latin}`.
+
+Other Unicode properties however must specify both a key and value.
+
+For non-Unicode properties, only a value is required. These include:
+
+- The special properties `any`, `assigned`, `ascii`.
+- The POSIX compatibility properties `alnum`, `blank`, `graph`, `print`, `word`, `xdigit`. The remaining POSIX properties are already covered by boolean Unicode property spellings.
+
+Note that the internal `PropertyContents` syntax is shared by both the `\p{...}` and POSIX-style `[:...:]` syntax, allowing e.g `[:script=Latin:]` as well as `\p{alnum}`.
 
 #### `\K`
 
-The `\K` escape sequence is used to drop any previously matched characters from the final matching result. It does not however interfere with captures, e.g `a(b)\Kc` when matching against `abc` will return a match of `c`, but with a capture of `b`.
+The `\K` escape sequence is used to drop any previously matched characters from the final matching result. It does not affect captures, e.g `a(b)\Kc` when matching against `abc` will return a match of `c`, but with a capture of `b`.
 
 ### Groups
 
@@ -133,10 +264,10 @@ GroupStart -> '(' GroupKind | '('
 GroupKind  -> '' | '?' BasicGroupKind | '*' PCRE2GroupKind ':'
 
 BasicGroupKind -> ':' | '|' | '>' | '=' | '!' | '*' | '<=' | '<!' | '<*'
-                | NamedGroup 
+                | NamedGroup
                 | MatchingOptionSeq (':' | ')')
-                
-PCRE2GroupKind -> 'atomic' 
+
+PCRE2GroupKind -> 'atomic'
                 | 'pla' | 'positive_lookahead'
                 | 'nla' | 'negative_lookahead'
                 | 'plb' | 'positive_lookbehind'
@@ -155,7 +286,7 @@ GroupNameBody -> Identifier | BalancingGroupBody
 Identifier -> [\w--\d] \w*
 ```
 
-Groups define a new scope that contains a recursive regular expression pattern. Groups have different semantics depending on how they are introduced, the details of which are laid out in the following sections.
+Groups define a new scope that contains a recursively nested regex. Groups have different semantics depending on how they are introduced.
 
 Note there are additional constructs that may syntactically appear similar to groups, but are distinct. See the *group-like atoms* section.
 
@@ -221,129 +352,6 @@ Branch reset groups can alter this numbering, as they reset the numbering in the
 1 2    3  4         3    5
 ```
 
-### Matching options
-
-```
-MatchingOptionSeq -> '^' MatchingOption* 
-                   | MatchingOption+ 
-                   | MatchingOption* '-' MatchingOption*
-
-MatchingOption -> 'i' | 'J' | 'm' | 'n' | 's' | 'U' | 'x' | 'xx' | 'w' | 'D' | 'P' | 'S' | 'W' | 'y{' ('g' | 'w') '}'
-```
-
-A matching option sequence may be used as a group specifier, and denotes a change in matching options for the scope of that group. For example `(?x:a b c)` enables extended syntax for `a b c`. A matching option sequence may be part of an "isolated group" which has an implicit scope that wraps the remaining elements of the current group. For example, `(?x)a b c` also enables extended syntax for `a b c`.
-
-If used in the branch of an alternation, an isolated group affects all the following branches of that alternation. For example, `a(?i)b|c|d` is treated as `a(?i:b)|(?i:c)|(?i:d)`.
-
-We support all the matching options accepted by PCRE, ICU, and Oniguruma. In addition, we accept some matching options unique to our matching engine.
-
-#### PCRE options
-
-- `i`: Case insensitive matching.
-- `J`: Allows multiple groups to share the same name, which is otherwise forbidden.
-- `m`: Enables `^` and `$` to match against the start and end of a line rather than only the start and end of the entire string.
-- `n`: Disables the capturing behavior of `(...)` groups. Named capture groups must be used instead. 
-- `s`: Changes `.` to match any character, including newlines.
-- `U`: Changes quantifiers to be reluctant by default, with the `?` specifier changing to mean greedy.
-- `x`, `xx`: Enables extended syntax mode, which allows non-semantic whitespace and end-of-line comments. See the *trivia* section for more info.
-
-#### ICU options
-
-- `w`: Enables the Unicode interpretation of word boundaries `\b`.
-
-#### Oniguruma options
-      
-- `D`: Enables ASCII-only digit matching for `\d`, `\p{Digit}`, `[:digit:]`.
-- `S`: Enables ASCII-only space matching for `\s`, `\p{Space}`, `[:space:]`.
-- `W`: Enables ASCII-only word matching for `\w`, `\p{Word}`, `[:word:]`, and `\b`.
-- `P`: Enables ASCII-only for all POSIX properties (including `digit`, `space`, and `word`).
-- `y{g}`, `y{w}`: Changes the meaning of `\X`, `\y`, `\Y`. These are mutually exclusive options, with `y{g}` specifying extended grapheme cluster mode, and `y{w}` specifying word mode.
-
-#### Swift options
-
-These options are specific to the Swift regex matching engine and control the semantic level at which matching takes place.
-
-- `X`: Grapheme cluster matching
-- `u`: Unicode scalar matching
-- `b`: Byte matching
-
-
-### Anchors
-
-```
-Anchor -> '^' | '$' | '\A' | '\b' | '\B' | '\G' | '\y' | '\Y' | '\z' | '\Z'
-```
-
-Anchors match against a certain position in the input rather than on a particular character of the input.
-
-- `^`: Matches at the start of a line.
-- `$`: Matches at the end of a line.
-- `\A`: Matches at the very start of the input string.
-- `\Z`: Matches at the very end of the input string, in addition to before a newline at the very end of the input string.
-- `\z`: Like `\Z`, but only matches at the very end of the input string.
-- `\G`: Like `\A`, but also matches against the start position of where matching resumes in global matching mode (e.g `\Gab` matches twice in `abab`, `\Aab` would only match once).
-- `\b` matches a boundary between a word character and a non-word character. The definitions of which vary depending on matching engine.
-- `\B` matches a non-word-boundary. 
-- `\y` matches a text segment boundary, the definition of which varies based on the `y{w}` and `y{g}` matching option.
-- `\Y` matches a non-text-segment-boundary.
-
-### Unicode scalars
-
-```
-UniScalar -> '\u{' HexDigit{1...} '}'
-           | '\u'  HexDigit{4}
-           | '\x{' HexDigit{1...} '}'
-           | '\x'  HexDigit{0...2}
-           | '\U'  HexDigit{8}
-           | '\o{' OctalDigit{1...} '}'
-           | '\0' OctalDigit{0...3}
-
-HexDigit   -> [0-9a-zA-Z]
-OctalDigit -> [0-7]
-```
-
-These sequences define a unicode scalar value to be matched against. There is syntax for both specifying the scalar value in hex notation, as well as octal notation. Note that `\x`, when not followed by any hexadecimal digit characters, is treated as `\0`, matching PCRE's behavior.
-
-### Escape sequences
-
-```
-EscapeSequence -> '\a' | '\b' | '\c' <Char> | '\e' | '\f' | '\n' | '\r' | '\t'
-```
-
-These escape sequences each denote a specific scalar value.
-
-- `\a`: The alert (bell) character `U+7`.
-- `\b`: The backspace character `U+8`. Note this may only be used in a custom character class, otherwise it represents a word boundary.
-- `\c <Char>`: A control character sequence, which denotes a scalar from `U+00` - `U+7F` depending on the ASCII character provided.
-- `\e`: The escape character `U+1B`.
-- `\f`: The form-feed character `U+C`.
-- `\n`: The newline character `U+A`.
-- `\r`: The carriage return character `U+D`.
-- `\t`: The tab character `U+9`
-
-### Builtin character classes
-
-```
-BuiltinCharClass -> '.' | '\C' | '\d' | '\D' | '\h' | '\H' | '\N' | '\O' | '\R' | '\s' | '\S' | '\v' | '\V' | '\w' | '\W' | '\X'
-```
-
-- `.`: Any character excluding newlines.
-- `\C`: A single UTF code unit.
-- `\d`: Digit character.
-- `\D`: Non-digit character.
-- `\h`: Horizontal space character.
-- `\H`: Non-horizontal-space character.
-- `\N`: Non-newline character.
-- `\O`: Any character (including newlines). This is syntax from Oniguruma.
-- `\R`: Newline sequence.
-- `\s`: Whitespace character.
-- `\S`: Non-whitespace character.
-- `\v`: Vertical space character.
-- `\V`: Non-vertical-space character.
-- `\w`: Word character.
-- `\W`: Non-word character.
-- `\X`: Any extended grapheme cluster.
-
 ### Custom character classes
 
 ```
@@ -352,7 +360,7 @@ Start           -> '[' '^'?
 Set             -> Member+
 Member          -> CustomCharClass | Quote | Range | Atom
 Range           -> RangeElt `-` RangeElt
-RangeElt        -> <Char> | UniScalar | EscapeSequence
+RangeElt        -> <Char> | UnicodeScalar | EscapeSequence
 SetOp           -> '&&' | '--' | '~~' | '-'
 ```
 
@@ -384,83 +392,52 @@ These operators have a lower precedence than the implicit union of members, e.g 
 
 To avoid ambiguity between .NET's subtraction syntax and range syntax, .NET specifies that a subtraction will only be parsed if the right-hand-side is a nested custom character class. We intend to follow this behavior.
 
-### Character properties
+
+### Matching options
 
 ```
-CharacterProperty      -> '\' ('p' | 'P') '{' PropertyContents '}'
-POSIXCharacterProperty -> '[:' PropertyContents ':]'
+MatchingOptionSeq -> '^' MatchingOption*
+                   | MatchingOption+
+                   | MatchingOption* '-' MatchingOption*
 
-PropertyContents -> PropertyName ('=' PropertyName)?
-PropertyName     -> [\s\w-]+
+MatchingOption -> 'i' | 'J' | 'm' | 'n' | 's' | 'U' | 'x' | 'xx' | 'w' | 'D' | 'P' | 'S' | 'W' | 'y{' ('g' | 'w') '}'
 ```
 
-A character property specifies a particular Unicode, POSIX, or PCRE property to match against. We intend on parsing:
+A matching option sequence may be used as a group specifier, and denotes a change in matching options for the scope of that group. For example `(?x:a b c)` enables extended syntax for `a b c`. A matching option sequence may be part of an "isolated group" which has an implicit scope that wraps the remaining elements of the current group. For example, `(?x)a b c` also enables extended syntax for `a b c`.
 
-- The full range of Unicode character properties.
-- The POSIX properties `alnum`, `blank`, `graph`, `print`, `word`, `xdigit` (note that `alpha`, `lower`, `upper`, `space`, `punct`, `digit`, and `cntrl` are covered by Unicode properties).
-- The UTS#18 special properties `any`, `assigned`, `ascii`.
-- The special PCRE2 properties `Xan`, `Xps`, `Xsp`, `Xuc`, `Xwd`.
+If used in the branch of an alternation, an isolated group affects all the following branches of that alternation. For example, `a(?i)b|c|d` is treated as `a(?i:b)|(?i:c)|(?i:d)`.
 
-We intend on following [UTS#18][uts18]'s guidance for character properties. This includes the use of fuzzy matching for property name parsing. This is done according to rules set out by [UAX44-LM3]. This means that the following property names are considered equivalent:
+We support all the matching options accepted by PCRE, ICU, and Oniguruma. In addition, we accept some matching options unique to our matching engine.
 
-- `whitespace`
-- `isWhitespace`
-- `is-White_Space`
-- `iSwHiTeSpaCe`
-- `i s w h i t e s p a c e`
+#### PCRE options
 
-Unicode properties consist of both a key and a value, e.g `General_Category=Whitespace`. Each component follows the fuzzy matching rule, and additionally may have an alternative alias spelling, as defined by Unicode in [PropertyAliases.txt][unicode-prop-key-aliases] and [PropertyValueAliases.txt][unicode-prop-value-aliases].
+- `i`: Case insensitive matching.
+- `J`: Allows multiple groups to share the same name, which is otherwise forbidden.
+- `m`: Enables `^` and `$` to match against the start and end of a line rather than only the start and end of the entire string.
+- `n`: Disables the capturing behavior of `(...)` groups. Named capture groups must be used instead.
+- `s`: Changes `.` to match any character, including newlines.
+- `U`: Changes quantifiers to be reluctant by default, with the `?` specifier changing to mean greedy.
+- `x`, `xx`: Enables extended syntax mode, which allows non-semantic whitespace and end-of-line comments. See the *trivia* section for more info.
 
-There are some Unicode properties where the key or value may be inferred. These include:
+#### ICU options
 
-- General category properties e.g `\p{Whitespace}` is inferred as `\p{General_Category=Whitespace}`.
-- Script properties e.g `\p{Greek}` is inferred as `\p{Script_Extensions=Greek}`.
-- Boolean properties that are inferred to have a `True` value, e.g `\p{Lowercase}` is inferred as `\p{Lowercase=True}`.
-- Block properties that begin with the prefix `in`, e.g `\p{inBasicLatin}` is inferred to be `\p{Block=Basic_Latin}`.
+- `w`: Enables the Unicode interpretation of word boundaries `\b`.
 
-Other Unicode properties however must specify both a key and value.
+#### Oniguruma options
 
-For non-Unicode properties, only a value is required. These include:
+- `D`: Enables ASCII-only digit matching for `\d`, `\p{Digit}`, `[:digit:]`.
+- `S`: Enables ASCII-only space matching for `\s`, `\p{Space}`, `[:space:]`.
+- `W`: Enables ASCII-only word matching for `\w`, `\p{Word}`, `[:word:]`, and `\b`.
+- `P`: Enables ASCII-only for all POSIX properties (including `digit`, `space`, and `word`).
+- `y{g}`, `y{w}`: Changes the meaning of `\X`, `\y`, `\Y`. These are mutually exclusive options, with `y{g}` specifying extended grapheme cluster mode, and `y{w}` specifying word mode.
 
-- The special properties `any`, `assigned`, `ascii`.
-- The POSIX compatibility properties `alnum`, `blank`, `graph`, `print`, `word`, `xdigit`. The remaining POSIX properties are already covered by boolean Unicode property spellings. 
+#### Swift options
 
-Note that the internal `PropertyContents` syntax is shared by both the `\p{...}` and POSIX-style `[:...:]` syntax, allowing e.g `[:script=Latin:]` as well as `\p{alnum}`.
+These options are specific to the Swift regex matching engine and control the semantic level at which matching takes place.
 
-### Named scalars
-
-```
-NamedScalar -> '\N{' ScalarName '}'
-ScalarName -> 'U+' HexDigit{1...8} | [\s\w-]+
-```
-
-Allows a specific Unicode scalar to be specified by name or hexadecimal code point.
-
-### Trivia
-
-```
-Trivia  -> Comment | Whitespace
-Comment -> InlineComment | EndOfLineComment
-
-InlineComment    -> '(?#' (!')')* ')'
-EndOfLineComment -> '#' .*$
-
-Whitespace -> \s+
-```
-
-Trivia is consumed by the regular expression parser, but has no semantic meaning. This includes inline PCRE-style comments e.g `(?#comment)`. It also includes non-semantic whitespace and end-of-line comments which may only occur when either of the extended syntax matching options `(?x)`, `(?xx)` are enabled.
-
-### Quotes
-
-```
-Quote -> '\Q' (!'\E' .)* '\E'
-```
-
-A quoted sequence is delimited by `\Q...\E`, and allows the escaping of metacharacters such that they are interpreted literally. For example, `\Q^[xy]+$\E`, is treated as the literal characters `^[xy]+$` rather than an anchored quantified character class.
-
-The backslash character is also treated as literal within a quoted sequence, and may not be used to escape the closing delimiter, e.g `\Q\\E` is a literal `\`.
-
-`\E` may appear without a preceding `\Q`, in which case it is a literal `E`.
+- `X`: Grapheme cluster matching
+- `u`: Unicode scalar matching
+- `b`: Byte matching
 
 ### References
 
@@ -492,10 +469,10 @@ A backreference evaluates to the value last captured by the referenced capturing
 #### Subpatterns
 
 ```
-Subpattern -> '\g<' NamedOrNumberRef '>' 
+Subpattern -> '\g<' NamedOrNumberRef '>'
             | "\g'" NamedOrNumberRef "'"
             | '(?' GroupLikeSubpatternBody ')'
-            
+
 GroupLikeSubpatternBody -> 'P>' NamedRef
                          | '&' NamedRef
                          | 'R'
@@ -521,7 +498,7 @@ KnownCondition -> 'R'
                 | 'DEFINE'
                 | 'VERSION' VersionCheck
                 | NumberRef
-                
+
 PCREVersionCheck  -> '>'? '=' PCREVersionNumber
 PCREVersionNumber -> <Int> '.' <Int>
 ```
@@ -566,7 +543,7 @@ GlobalMatchingOptionKind -> LimitOptionKind '=' <Int>
                           | 'NOTEMPTY_ATSTART' | 'NOTEMPTY'
                           | 'NO_AUTO_POSSESS' | 'NO_DOTSTAR_ANCHOR'
                           | 'NO_JIT' | 'NO_START_OPT' | 'UTF' | 'UCP'
-  
+
 LimitOptionKind     -> 'LIMIT_DEPTH' | 'LIMIT_HEAP' | 'LIMIT_MATCH'
 NewlineKind         -> 'CRLF' | 'CR' | 'ANYCRLF' | 'ANY' | 'LF' | 'NUL'
 NewlineSequenceKind -> 'BSR_ANYCRLF' | 'BSR_UNICODE'
@@ -601,7 +578,7 @@ PCRECalloutBody -> '' | <Number>
                  | '#' <String> '#'
                  | '$' <String> '$'
                  | '{' <String> '}'
-                 
+
 OnigurumaCallout -> OnigurumaNamedCallout | OnigurumaCalloutOfContents
 
 OnigurumaNamedCallout   -> '(*' Identifier OnigurumaTag? OnigurumaCalloutArgs? ')'
@@ -683,7 +660,7 @@ In PCRE, if `PCRE2_ALT_BSUX` or `PCRE2_EXTRA_ALT_BSUX` are specified, `\U` match
 
 ### `{,n}`
 
-This quantifier is supported by Oniguruma, but in PCRE it matches the literal chars. We intend on supporting it as a quantifier.
+This quantifier is supported by Oniguruma, but in PCRE it matches the literal characters `{`, `,`, `n`, and `}` in sequence. We intend on supporting it as a quantifier.
 
 ### `\DDD`
 
@@ -729,7 +706,7 @@ PCRE and .NET allow for conditional patterns to reference a group by its name wi
 
 where `y` will only be matched if `(?<group1>x)` was matched. PCRE will always treat such syntax as a backreference condition, however .NET will only treat it as such if a group with that name exists somewhere in the regex (including after the conditional). Otherwise, .NET interprets `group1` as an arbitrary regular expression condition to try match against. Oniguruma on the other hand will always treat `group1` as an regex condition to match against.
 
-We intend to always parse such conditions as an arbitrary regular expression condition, and will emit a warning asking users to explicitly use the syntax `(?(<group1>)y)` if they want a backreference condition. This more explicit syntax is supported by both PCRE and Oniguruma. 
+We intend to always parse such conditions as an arbitrary regular expression condition, and will emit a warning asking users to explicitly use the syntax `(?(<group1>)y)` if they want a backreference condition. This more explicit syntax is supported by both PCRE and Oniguruma.
 
 ### `\N`
 
@@ -784,7 +761,7 @@ Many engines have different spellings for the same regex features, we intend to 
 ### Unicode scalars
 
 ```
-UniScalar -> '\u{' HexDigit{1...} '}'
+UnicodeScalar -> '\u{' HexDigit{1...} '}'
            | '\u'  HexDigit{4}
            | '\x{' HexDigit{1...} '}'
            | '\x'  HexDigit{0...2}
@@ -835,10 +812,10 @@ For absolute numeric references, we plan on choosing the canonical spelling `\DD
 ### Subpatterns
 
 ```
-Subpattern -> '\g<' NamedOrNumberRef '>' 
+Subpattern -> '\g<' NamedOrNumberRef '>'
             | "\g'" NamedOrNumberRef "'"
             | '(?' GroupLikeSubpatternBody ')'
-            
+
 GroupLikeSubpatternBody -> 'P>' NamedRef
                          | '&' NamedRef
                          | 'R'
