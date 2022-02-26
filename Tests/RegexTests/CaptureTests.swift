@@ -142,13 +142,15 @@ func captureTest(
 
   for (input, output) in tests {
     let inputRange = input.startIndex..<input.endIndex
-    let (_, capFlat) = executor.executeFlat(
-      input: input, in: inputRange, mode: .wholeString
-    )!
 
-    let caps = try! capStructure.structuralize(
-      capFlat, input)
+    guard let result = try! executor.dynamicMatch(
+      input, in: inputRange, .wholeString
+    ) else {
+      XCTFail("No match")
+      return
+    }
 
+    let caps = result.rawCaptures
     guard caps.count == output.count else {
       XCTFail("""
       Mismatch capture count:

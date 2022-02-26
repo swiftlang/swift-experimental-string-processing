@@ -26,15 +26,9 @@ extension Engine {
 
 extension Engine where Input == String {
   func consume(
-    _ input: Input
-  ) -> (Input.Index, CaptureList)? {
-    consume(input, in: input.startIndex ..< input.endIndex)
-  }
-
-  func consume(
     _ input: Input,
     in range: Range<Input.Index>,
-    matchMode: MatchMode = .partialFromFront
+    matchMode: MatchMode
   ) -> (Input.Index, CaptureList)? {
     if enableTracing {
       print("Consume: \(input)")

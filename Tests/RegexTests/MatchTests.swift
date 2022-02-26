@@ -23,13 +23,13 @@ extension Executor {
     // Consumer -> searcher algorithm
     var start = input.startIndex
     while true {
-      if let (range, caps) = self.executeFlat(
-        input: input,
+      if let result = try! self.dynamicMatch(
+        input,
         in: start..<input.endIndex,
-        mode: .partialFromFront
+        .partialFromFront
       ) {
-        let matched = input[range]
-        return (matched, caps.latestUntyped(from: input))
+        let caps = result.rawCaptures.slices(from: input)
+        return (input[result.range], caps)
       } else if start == input.endIndex {
         throw "match not found for \(regex) in \(input)"
       } else {
