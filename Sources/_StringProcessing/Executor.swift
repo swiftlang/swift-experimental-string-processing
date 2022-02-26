@@ -19,69 +19,33 @@ struct Executor {
     self.engine = Engine(program, enableTracing: enablesTracing)
   }
 
-  struct Result {
-    var range: Range<String.Index>
-    var captures: [StructuredCapture]
-    var referencedCaptureOffsets: [ReferenceID: Int]
-
-    var destructure: (
-      matched: Range<String.Index>,
-      captures: [StructuredCapture],
-      referencedCaptureOffsets: [ReferenceID: Int]
-    ) {
-      (range, captures, referencedCaptureOffsets)
-    }
-
-    init(
-      _ matched: Range<String.Index>, _ captures: [StructuredCapture],
-      _ referencedCaptureOffsets: [ReferenceID: Int]
-    ) {
-      self.range = matched
-      self.captures = captures
-      self.referencedCaptureOffsets = referencedCaptureOffsets
-    }
-  }
-
-  func execute(
-    input: String,
-    in range: Range<String.Index>,
-    mode: MatchMode = .wholeString
-  ) -> Result? {
+  func match<Match>(
+    _ input: String,
+    in inputRange: Range<String.Index>,
+    _ mode: MatchMode
+  ) throws -> RegexMatch<Match>? {
     guard let (endIdx, capList) = engine.consume(
-      input, in: range, matchMode: mode
+      input, in: inputRange, matchMode: mode
     ) else {
       return nil
     }
     let capStruct = engine.program.captureStructure
-    do {
-      let range = range.lowerBound..<endIdx
-
-      let caps = try capStruct.structuralize(
+    let range = inputRange.lowerBound..<endIdx
+    let caps = try capStruct.structuralize(
         capList, input)
-      return Result(range, caps, capList.referencedCaptureOffsets)
-    } catch {
-      fatalError(String(describing: error))
-    }
-  }
-  func execute(
-    input: Substring,
-    mode: MatchMode = .wholeString
-  ) -> Result? {
-    self.execute(
-      input: input.base,
-      in: input.startIndex..<input.endIndex,
-      mode: mode)
+
+    return RegexMatch(
+      input: input,
+      range: range,
+      rawCaptures: caps,
+      referencedCaptureOffsets: capList.referencedCaptureOffsets)
   }
 
-  func executeFlat(
-    input: String,
-    in range: Range<String.Index>,
-    mode: MatchMode = .wholeString
-  ) -> (Range<String.Index>, CaptureList)? {
-    engine.consume(
-      input, in: range, matchMode: mode
-    ).map { endIndex, capture in
-      (range.lowerBound..<endIndex, capture)
-    }
+  func dynamicMatch(
+    _ input: String,
+    in inputRange: Range<String.Index>,
+    _ mode: MatchMode
+  ) throws -> RegexMatch<(Substring, DynamicCaptures)>? {
+    try match(input, in: inputRange, mode)
   }
 }

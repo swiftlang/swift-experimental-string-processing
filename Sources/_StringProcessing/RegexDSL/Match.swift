@@ -69,16 +69,11 @@ extension RegexProtocol {
     mode: MatchMode = .wholeString
   ) -> RegexMatch<Match>? {
     let executor = Executor(program: regex.program.loweredProgram)
-    guard let (range, captures, captureOffsets) = executor.execute(
-      input: input, in: inputRange, mode: mode
-    )?.destructure else {
-      return nil
+    do {
+      return try executor.match(input, in: inputRange, mode)
+    } catch {
+      fatalError(String(describing: error))
     }
-    return RegexMatch(
-      input: input,
-      range: range,
-      rawCaptures: captures,
-      referencedCaptureOffsets: captureOffsets)
   }
 }
 
