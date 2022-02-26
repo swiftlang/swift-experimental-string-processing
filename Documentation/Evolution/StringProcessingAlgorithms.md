@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Swift standard library's string processing algorithms are known to be underpowered compared to popular programming and scripting languages. Some of these omissions can be papered over through bridged `NSString` API available through the Foundation framework, but these are still incomplete, and bring in linkage requirements to Foundation.
+The Swift standard library's string processing algorithms are underpowered compared to other popular programming and scripting languages. Some of these omissions can be papered over through bridged `NSString` API available through the Foundation framework, but these are still incomplete and bring in linkage requirements to Foundation.
 
 We propose:
 
@@ -21,7 +21,7 @@ TODO: Comparison for Swift and Python string utilities
 
 ### String algorithm additions
 
-We add frequently used string processing algorithms to the standard library. We also introduce internal infrastructure that allows groups of `Collection` algorithms that perform the same operations on different types to share their implementation, leading to a more coherent set of public APIs. This allows us to more easily provide algorithms that work with `RegexProtocol` values, such as
+We propose adding common string processing algorithms to the standard library. We also propose adding generic versions of these algorithms to collections, when applicable.
 
 ```swift
 extension BidirectionalCollection where SubSequence == Substring {
@@ -31,7 +31,7 @@ extension BidirectionalCollection where SubSequence == Substring {
 
 ### Use custom parsers in regex builders and `RegexProtocol` algorithms
 
-We want to extend string processing to types from outside the standard library, so that one can use custom parsers with the string processing algorithms and incorporate custom parsers in regex builders seamlessly. 
+We propose a mechanism for types outside the standard library to participate in string processing algorithms, allowing custom parsers to intermix with regex builders seamlessly. 
 
 Consider parsing an HTTP header to capture the date field as a `Date` type:
 
@@ -44,7 +44,7 @@ Location: https://www.apple.com/
 """
 ```
 
-You are likely going to match a substring that look like a date string (`16 Feb 2022`), and parse the substring as a `Date` with one of the date parsers in the Foundation framework:
+A common approach is to match a substring that look like a date string (`16 Feb 2022`), and post-process the substring as a `Date` using one of the date parsers in the Foundation framework:
 
 ```swift
 let regex = Regex {
@@ -63,7 +63,7 @@ if let dateMatch = header.firstMatch(of: regex)?.0 {
 }
 ```
 
-This works, but wouldn't it be much more approachable if you can directly use the date parser within the string match function?
+While this approach happens to work for this example, it is fragile and more onerous than just directly using Foundation's date parser directly within the regex.
 
 ```swift
 let regex = Regex {
@@ -85,11 +85,11 @@ DEBIT     03/24/2020    IRX tax payment    ($52,249.98)
 """
 ```
 
-We have already seen that parsing a date string can be tricky since it could contain localized month name (`"Feb"` as seen from above). Parsing a currency string such as `$3,020.85` with regex is not trivial either -- it can contain grouping separators, a decimal separator, and a currency symbol, all of which can be localized. 
+Parsing a date string can be tricky, as it could contain localized information (`"Feb"` as seen from above). Parsing a currency string such as `$3,020.85` with regex is also tricky -- it can contain grouping separators, a decimal separator, and a currency symbol, all of which can be localized. This is why Foundation provides industrial-strength parsers for localized strings like these.
 
-Foundation has various parsers for localized strings like these. Delegating this task to dedicated parsers alleviates the need to handle it yourself. In the second part of the pitch, we introduce the `CustomRegexComponent` protocol that conveniently lets types from outside the standard library participate in regex builders and `RegexProtocol` algorithms.
+ We propose a `CustomRegexComponent` protocol which allows types from outside the standard library participate in regex builders and `RegexProtocol` algorithms.
 
-If `Foundation.FloatingPointFormatStyle<Double>.Currency` conformed to `CustomRegexComponent`, you would be able to retrieve the currency from the bank statement above as a list of `Double` values this way:
+`CustomRegexComponent` allows types, such as `Foundation.FloatingPointFormatStyle<Double>.Currency`, to be used directly within a regex.
 
 ```swift
 let regex = Regex {
@@ -348,7 +348,7 @@ public protocol CustomRegexComponent: RegexProtocol {
 }
 ```
 
-You can conform your custom parser to `CustomRegexComponent`. Conformance is simple: implement the `match` function to return the upper bound of the matched substring, and the type represented by the matched range. It inherits from `RegexProtocol`, so you will be able to use it with all of the string algorithms that take a `RegexProtocol` type.
+Custom parsers can conform by implementing the `match` function to return the upper bound of the matched substring, and the value constructed by the match. Conformers naturally inherit from `RegexProtocol`, so they can be used with all of the string algorithms generic over `RegexProtocol`.
 
 Here, we use Foundation framework's `FloatingPointFormatStyle<Double>.Currency` as an example. `FloatingPointFormatStyle<Double>.Currency` would conform to `CustomRegexComponent` by implementing the `match` function, with `Match` being a `Double`. It could also add a static function `.localizedCurrency(code:)` as a member of `RegexProtocol`, so you can refer to it as `.localizedCurrency(code:)` in the `Regex` result builder. 
 
@@ -366,7 +366,7 @@ extension RegexProtocol where Self == FloatingPointFormatStyle<Double>.Currency 
 }
 ```
 
-Users could specify a pattern to match a localized currency amount such as `"$3,020.85"` simply with the following, and use it in any of the string matching algorithms introduced above.
+Matching and extracting a localized currency amount, such as `"$3,020.85"`, can be done directly within a regex:
 
 ```swift
 let regex = Regex {
