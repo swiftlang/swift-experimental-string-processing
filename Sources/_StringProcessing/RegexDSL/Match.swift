@@ -16,6 +16,8 @@ public struct RegexMatch<Match> {
   let rawCaptures: [StructuredCapture]
   let referencedCaptureOffsets: [ReferenceID: Int]
 
+  let value: Any?
+
   public var match: Match {
     if Match.self == (Substring, DynamicCaptures).self {
       // FIXME(rdar://89449323): Compiler assertion
@@ -25,7 +27,15 @@ public struct RegexMatch<Match> {
     } else if Match.self == Substring.self {
       // FIXME: Plumb whole match (`.0`) through the matching engine.
       return input[range] as! Match
+    } else if rawCaptures.isEmpty, value != nil {
+      // FIXME: This is a workaround for whole-match values not
+      // being modeled as part of captures. We might want to
+      // switch to a model where results are alongside captures
+      return value! as! Match
     } else {
+      guard value == nil else {
+        fatalError("FIXME: what would this mean?")
+      }
       let typeErasedMatch = rawCaptures.existentialMatch(from: input[range])
       return typeErasedMatch as! Match
     }

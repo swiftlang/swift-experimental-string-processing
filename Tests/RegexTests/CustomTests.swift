@@ -83,15 +83,14 @@ extension RegexTests {
       ("55z", .match, nil),
       ("55z", .firstMatch, "55"))
 
-    // FIXME: Requires we return a value instead of a range
-//    customTest(
-//      Regex {
-//        Numbler()
-//      },
-//      ("ab123c", .firstMatch, 1),
-//      ("abc", .firstMatch, nil),
-//      ("55z", .match, nil),
-//      ("55z", .firstMatch, 5))
+    customTest(
+      Regex {
+        Numbler()
+      },
+      ("ab123c", .firstMatch, 1),
+      ("abc", .firstMatch, nil),
+      ("55z", .match, nil),
+      ("55z", .firstMatch, 5))
 
     // TODO: Convert below tests to better infra. Right now
     // it's hard because `Match` is constrained to be
