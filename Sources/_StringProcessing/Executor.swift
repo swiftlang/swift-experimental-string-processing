@@ -24,21 +24,41 @@ struct Executor {
     in inputRange: Range<String.Index>,
     _ mode: MatchMode
   ) throws -> RegexMatch<Match>? {
-    guard let (endIdx, capList) = engine.consume(
-      input, in: inputRange, matchMode: mode
-    ) else {
+    var cpu = engine.makeProcessor(
+      input: input, bounds: inputRange, matchMode: mode)
+
+    guard let endIdx = cpu.consume() else {
       return nil
     }
+
+    let capList = CaptureList(
+      values: cpu.storedCaptures,
+      referencedCaptureOffsets: engine.program.referencedCaptureOffsets)
+
     let capStruct = engine.program.captureStructure
     let range = inputRange.lowerBound..<endIdx
     let caps = try capStruct.structuralize(
         capList, input)
 
+    // FIXME: This is a workaround for not tracking (or
+    // specially compiling) whole-match values.
+    let value: Any?
+    if Match.self != Substring.self,
+       Match.self != (Substring, DynamicCaptures).self,
+       caps.isEmpty
+    {
+      value = cpu.registers.values.first
+      assert(value != nil, "hmm, what would this mean?")
+    } else {
+      value = nil
+    }
+
     return RegexMatch(
       input: input,
       range: range,
       rawCaptures: caps,
-      referencedCaptureOffsets: capList.referencedCaptureOffsets)
+      referencedCaptureOffsets: capList.referencedCaptureOffsets,
+      value: value)
   }
 
   func dynamicMatch(

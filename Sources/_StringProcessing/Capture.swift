@@ -96,5 +96,3 @@ extension Sequence where Element == StructuredCapture {
     self.map { $0.slice(from: input) }
   }
 }
-
-
