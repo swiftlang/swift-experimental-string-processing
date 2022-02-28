@@ -38,7 +38,7 @@ We propose accepting a syntactic "superset" of the following existing regular ex
 
 To our knowledge, all other popular regex engines support a subset of the above syntaxes.
 
-We also support [UTS#18][uts18]'s full set of character class operators (to our knowledge no other engine does). Beyond that, UTS#18 deals with semantics rather than syntax, and what syntax it uses is covered by the above list. We also parse `\p{javaLowerCase}`, meaning we support a superset of Java 8 as well.
+We also support [UTS#18][uts18]'s full set of character class operators (to our knowledge no other engine does). Beyond that, UTS#18 deals with semantics rather than syntax, and what syntax it uses is covered by the above list. We also parse Java's properties (e.g. `\p{javaLowerCase}`), meaning we support a superset of Java 8 as well.
 
 Note that there are minor syntactic incompatibilities and ambiguities involved in this approach. Each is addressed in the relevant sections below
 
@@ -48,19 +48,25 @@ Regex literal interior syntax will be part of Swift's source-compatibility story
 
 We propose the following syntax for use inside Swift regex literals.
 
-<details><summary>Grammar Conventions</summary>
+<details><summary>Grammar Notation</summary>
 
-Elements of the grammar are defined using the syntax `Element -> <Definition>`.
+For the grammar sections, we use a modified PEG-like notation, in which the grammar also describes an unambiguous top-down parsing algorithm.
 
-Quoted characters e.g `'abc'`, `"abc"` in the grammar match against the literal characters. Unquoted names e.g `Concatenation` refer to other definitions in the grammar.
+- `<Element> -> <Definition>` gives the definition of `Element`
+- The `|` operator specifies a choice of alternatives
+- `'x'` is the literal character `x`, otherwise it's a reference to x
+      + A literal `'` is spelled `"'"`
+- Postfix `*` `+` and `?` denote zero-or-more, one-or-more, and zero-or-one
+- Range quantifiers, like `{1...4}`, use Swift range syntax as convention.
+- Basic custom character classes are written like `[0-9a-zA-Z]`
+- Prefix `!` operator means the next element must not appear (a zero-width assertion)
+- Parenthesis group for the purposes of quantification
+- Builtins use angle brackets:
+    - `<Int>` refers to an integer, `<Char>` a character, etc.
+    - `<Space>` is any whitespace character
+    - `<EOL>` is the end-of-line anchor (e.g. `$` in regex).
 
-The `|` operator is used to specify that the grammar can match against either branch of the operator, similar to a regular expression. Similarly, `*`, `+`, and `?` are used to quantify an element of the grammar, with the same meaning as in regular expressions. Range quantifiers `{...}` may also be used, though we adopt a more explicit syntax that uses the Swift `..<` & `...` operators, e.g `{1...4}`.
-
-Basic custom character classes may appear in the grammar, and have the same meaning as in a regular expression. For example `[0-9a-zA-Z]` expresses the digits `0` to `9` and the letters `a` to `z` (both upper and lowercase).
-
-The `!` prefix operator is used to specify that the following grammar element must not appear at that position.
-
-Grammar elements may be surrounded by parentheses for the purposes of quantification.
+For example, `(!'|' !')' ConcatComponent)*` means any number (zero or more) occurrences of `ConcatComponent` so long as the initial character is neither a literal `|` nor a literal `)`.
 
 </details>
 
@@ -87,8 +93,8 @@ ConcatComponent -> Trivia | Quote | Quantification
 Trivia  -> Comment | NonSemanticWhitespace
 Comment -> '(?#' (!')')* ')' | EndOfLineComment
 
-(extended syntax only) EndOfLineComment      -> '#' .*$
-(extended syntax only) NonSemanticWhitespace -> \s+
+(extended syntax only) EndOfLineComment      -> '#' (!<EOL> .)* <EOL>
+(extended syntax only) NonSemanticWhitespace -> <Space>+
 
 Quote -> '\Q' (!'\E' .)* '\E'
 
@@ -212,12 +218,12 @@ Precise definitions of character classes is discussed in [Character Classes for 
 
 ```
 UnicodeScalar -> '\u{' HexDigit{1...} '}'
-           | '\u'  HexDigit{4}
-           | '\x{' HexDigit{1...} '}'
-           | '\x'  HexDigit{0...2}
-           | '\U'  HexDigit{8}
-           | '\o{' OctalDigit{1...} '}'
-           | '\0' OctalDigit{0...3}
+              | '\u'  HexDigit{4}
+              | '\x{' HexDigit{1...} '}'
+              | '\x'  HexDigit{0...2}
+              | '\U'  HexDigit{8}
+              | '\o{' OctalDigit{1...} '}'
+              | '\0' OctalDigit{0...3}
 
 HexDigit   -> [0-9a-zA-Z]
 OctalDigit -> [0-7]
