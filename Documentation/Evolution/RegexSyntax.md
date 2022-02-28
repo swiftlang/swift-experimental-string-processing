@@ -8,15 +8,24 @@ Hello, we want to issue an update to [Regular Expression Literals](https://forum
 
 ## Introduction
 
-Regex literals declare a string processing algorithm using syntax familiar across a variety of languages and tools throughout programming history. Formalizing regex literals in Swift requires choosing a delimiter strategy (e.g. `#/.../#` or `re'...'`), detailing the syntax accepted in between the delimiters ("interior syntax"), and specifying actual types and any relevant protocols for the literal itself.
+Regex literals declare a string processing algorithm using syntax familiar across a variety of languages and tools throughout programming history. Formalizing regex literals in Swift requires:
 
-This proposal-component focuses on the interior syntax, which is large enough for its own targeted discussion ahead of the full proposal. Regex literal interior syntax will be part of Swift's source-compatibility story (and to some extent binary compatibility), so we present a detailed and comprehensive design.
+- Choosing a delimiter (e.g. `#/.../#` or `re'...'`)
+- Detailing the "interior syntax" accepted in between delimiters
+- Specifying actual types and relevant protocols for the literal.
+
+We present a detailed and comprehensive treatment of regex literal interior syntax. The syntax we're proposing is large enough for its own dedicated discussion ahead of a full regex literal proposal.
+
+This is part of a larger effort in supporting regex literals, which in turn is part of a larger effort towards better string processing using regex. See [Pitch and Proposal Status](https://github.com/apple/swift-experimental-string-processing/issues/107), which tracks each relevant piece.
+
 
 ## Motivation
 
-Swift aims to be a pragmatic programming language, balancing (**TODO(Michael)**: prose). Rather than pursue a novel interior syntax, (**TODO(Michael)**: prose).
+Swift aims to be a pragmatic programming language, striking a balance between familiarity, interoperability, and advancing the art. Swift's `String` presents a uniquely Unicode-forward model of string, but currently suffers from limited processing facilities.
 
-Regex interior syntax is part of a larger [proposal](https://forums.swift.org/t/pitch-regular-expression-literals/52820), which in turn is part of a larger [string processing effort](https://forums.swift.org/t/declarative-string-processing-overview/52459).
+The full string processing effort includes a literal, a result builder DSL, protocols for intermixing 3rd party industrial-strength parsers with regex declarations, strong types, and a slew of regex-powered algorithms over strings.
+
+This proposal specifically hones in on the _familiarity_ aspect by providing a best-in-class treatment of familiar regex syntax.
 
 ## Proposed Solution
 
@@ -33,6 +42,7 @@ We also support [UTS#18][uts18]'s full set of character class operators (to our 
 
 Note that there are minor syntactic incompatibilities and ambiguities involved in this approach. Each is addressed in the relevant sections below
 
+Regex literal interior syntax will be part of Swift's source-compatibility story as well as its binary-compatibility story. Thus, we present a detailed and comprehensive design.
 
 ## Detailed Design
 
@@ -610,6 +620,7 @@ An absent function is an Oniguruma feature that allows for the easy inversion of
 - `(?~|absent)`: Absent stopper, which limits any subsequent matching to not include `absent`.
 - `(?~|)`: Absent clearer, which undoes the effects of the absent stopper.
 
+
 ## Syntactic differences between engines
 
 The proposed "syntactic superset" introduces some minor ambiguities, as each engine supports a slightly different set of features. When a particular engine's parser sees a feature it doesn't support, it typically has a fall-back behavior, such as treating the unknown feature as literal contents.
@@ -724,7 +735,7 @@ As such we feel that the more desirable default behavior of shorthand script pro
 
 ### Extended syntax modes
 
-Various regex engines offer an "extended syntax" where whitespace is treated as non-semantic (e.g `a b c` is equivalent to `abc`), in addition to allowing end-of-line comments `# comment`. In PCRE, this is enabled through the `(?x)` and `(?xx)` matching options, where the former allows non-semantic whitespace outside of character classes, and the latter also allows non-semantic whitespace in custom character classes.
+Various regex engines offer an "extended syntax" where whitespace is treated as non-semantic (e.g `a b c` is equivalent to `abc`), in addition to allowing end-of-line comments `# comment`. In PCRE, this is enabled through the `(?x)`, and in later versions, `(?xx)` matching options. The former allows non-semantic whitespace outside of character classes, and the latter also allows non-semantic whitespace in custom character classes.
 
 Oniguruma, Java, and ICU however enable the more broad behavior under `(?x)`. We therefore intend to follow this behavior, with `(?x)` and `(?xx)` being treated the same.
 
@@ -754,9 +765,14 @@ The `(z)` group gets numbered before the named groups get numbered.
 
 We intend on matching the PCRE behavior where groups are numbered purely based on order.
 
-## Canonical representations
 
-Many engines have different spellings for the same regex features, we intend to support parsing. However, for the purposes of e.g printing, we need to decide on a canonical syntax for various constructs.
+## Swift canonical syntax
+
+The proposed syntactic superset means there will be multiple ways to write the same thing. Below we discuss what Swift's preferred spelling could be, a "Swift canonical syntax".
+
+We are not formally proposing this as a distinct syntax or concept, rather it is useful for considering compiler features such as fixits, pretty-printing, and refactoring actions.
+
+*TODO Hamish*: We're not proposing any actual action or language-level representation. So I feel like this section is more of an advisory section and good for discussion. It guides tooling decisions more than it is a formal addition to the Swift programming language. Rather than say, e.g., "we intend on canonicalizing to `\u{...}`", we could say "we consider `\u{...}` to be Swift's preferred spelling, in line with string literals". I think we can be a bit briefer too, perhaps collapsing multiple sub-sections together.
 
 ### Unicode scalars
 
@@ -855,6 +871,30 @@ PCRECalloutBody -> '' | <Number>
 ```
 
 PCRE accepts a number of alternative delimiters for callout string arguments. We intend to canonicalize to `(?C"...")`. **TODO: May want to alter if we choose `r"..."`, though lexing should be able to handle it by looking for the `(?C` prefix**.
+
+
+## Alternatives Considered
+
+### Skip the literals
+
+The top alternative is to just skip regex literals and only ship the result builder DSL. However, doing so would miss out on the familiarity benefits of existing regex syntax.
+
+We consider our proposed direction to be more compelling, especially when coupled with refactoring actions to convert literals into regex DSLs.
+
+### Introduce a novel regex syntax
+
+Another alternative is to invent a new syntax for regex. This would similarly lose out on the familiarity benefit, though a few simple adjustments could aid readability.
+
+We are prototyping an "experimental" Swift extended syntax, which is future work and outside the scope of this proposal. Every syntactic extension, while individually compelling, does introduce incompatibilities and can lead to an "uncanny valley" effect. Further investigation is needed and such support can be built on top of what is presented here.
+
+### Support a minimal syntactic subset
+
+Regex literal interior syntax will become part of Swift's source and binary-compatibility story, so a reasonable alternative is to support the absolute minimal syntactic subset available. However, we would need to ensure that such a minimal approach is extensible far into the future. Because syntax decisions can impact each other, we would want to consider the ramifications of this full syntactic superset ahead of time anyways.
+
+Even though it is more work up-front, and creates a longer proposal, it is less risky to support the full intended syntax. The proposed superset maximizes the familiarity benefit of regex literals.
+
+Note that this proposal regards _syntactic_ support, and does not necessarily mean that everything that can be written will be supported by Swift's run-time in the initial release. Support for more obscure features may appear over time, see [MatchingEngine Capabilities and Roadmap](https://github.com/apple/swift-experimental-string-processing/issues/99) for status.
+
 
 
 [pcre2-syntax]: https://www.pcre.org/current/doc/html/pcre2syntax.html
