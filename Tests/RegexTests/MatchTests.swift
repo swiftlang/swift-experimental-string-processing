@@ -267,7 +267,7 @@ extension RegexTests {
     firstMatchTest(#"\070"#, input: "1238xyz", match: "8")
     firstMatchTest(#"\07A"#, input: "123\u{7}Axyz", match: "\u{7}A")
     firstMatchTest(#"\08"#, input: "123\08xyz", match: "\08")
-    firstMatchTest(#"\0707"#, input: "12387xyz", match: "87")
+    firstMatchTest(#"\0707"#, input: "12387\u{1C7}xyz", match: "\u{1C7}")
 
     // code point sequence
     firstMatchTest(#"\u{61 62 63}"#, input: "123abcxyz", match: "abc", xfail: true)
@@ -1018,9 +1018,6 @@ extension RegexTests {
     firstMatchTest(
       #"(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)\10"#,
       input: "aaaaaaaaabbc", match: "aaaaaaaaabb")
-    firstMatchTest(
-      #"(.)\10"#,
-      input: "a\u{8}b", match: "a\u{8}")
 
     firstMatchTest(
       #"(.)\g001"#,
