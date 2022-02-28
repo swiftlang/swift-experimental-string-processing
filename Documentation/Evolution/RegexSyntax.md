@@ -284,7 +284,7 @@ For non-Unicode properties, only a value is required. These include:
 
 Note that the internal `PropertyContents` syntax is shared by both the `\p{...}` and POSIX-style `[:...:]` syntax, allowing e.g `[:script=Latin:]` as well as `\p{alnum}`.
 
-### `\K`
+#### `\K`
 
 The `\K` escape sequence is used to drop any previously matched characters from the final matching result. It does not affect captures, e.g `a(b)\Kc` when matching against `abc` will return a match of `c`, but with a capture of `b`.
 
@@ -320,7 +320,7 @@ Identifier -> [\w--\d] \w*
 
 Groups define a new scope that contains a recursively nested regex. Groups have different semantics depending on how they are introduced.
 
-Note there are additional constructs that may syntactically appear similar to groups, such as backreferences and conditionals, but are distinct.
+Note there are additional constructs that may syntactically appear similar to groups, such as backreferences and PCRE backtracking directives, but are distinct.
 
 #### Basic group kinds
 
@@ -619,12 +619,12 @@ OnigurumaCalloutArgList -> OnigurumaCalloutArg (',' OnigurumaCalloutArgList)*
 OnigurumaCalloutArg     -> [^,}]+
 OnigurumaTag            -> '[' Identifier ']'
 
-OnigurumaCalloutOfContents -> '(?' '{'+ Contents '}'+ OnigurumaTag? Direction? ')'
-OnigurumaCalloutContents   -> <String>
+OnigurumaCalloutOfContents -> '(?' '{' OnigurumaCalloutContents '}' OnigurumaTag? Direction? ')'
+OnigurumaCalloutContents   -> <String> | '{' OnigurumaCalloutContents '}'
 OnigurumaCalloutDirection  -> 'X' | '<' | '>'
 ```
 
-A callout is a feature that allows a user-supplied function to be called when matching reaches that point in the pattern. We supported parsing both the PCRE and Oniguruma callout syntax. The PCRE syntax accepts a string or numeric argument that is passed to the function. The Oniguruma syntax is more involved, and may accept a tag, argument list, or even an arbitrary program in the 'callout of contents' syntax.
+A callout is a feature that allows a user-supplied function to be called when matching reaches that point in the pattern. We supported parsing both the PCRE and Oniguruma callout syntax. The PCRE syntax accepts a string or numeric argument that is passed to the function. The Oniguruma syntax is more involved, and may accept an identifier with an optional tag and argument list. It may also accept an arbitrary program in the 'callout of contents' syntax. This is an expanded version of Perl's interpolation syntax, and allows an arbitrary nesting of delimiters in addition to an optional tag and direction.
 
 ### Absent functions
 
@@ -757,7 +757,7 @@ As such we feel that the more desirable default behavior of shorthand script pro
 
 ### Extended syntax modes
 
-Various regex engines offer an "extended syntax" where whitespace is treated as non-semantic (e.g `a b c` is equivalent to `abc`), in addition to allowing end-of-line comments `# comment`. In PCRE, this is enabled through the `(?x)`, and in later versions, `(?xx)` matching options. The former allows non-semantic whitespace outside of character classes, and the latter also allows non-semantic whitespace in custom character classes.
+Various regex engines offer an "extended syntax" where whitespace is treated as non-semantic (e.g `a b c` is equivalent to `abc`), in addition to allowing end-of-line comments `# comment`. In both PCRE and Perl, this is enabled through the `(?x)`, and in later versions, `(?xx)` matching options. The former allows non-semantic whitespace outside of character classes, and the latter also allows non-semantic whitespace in custom character classes.
 
 Oniguruma, Java, and ICU however enable the more broad behavior under `(?x)`. We therefore intend to follow this behavior, with `(?x)` and `(?xx)` being treated the same.
 
