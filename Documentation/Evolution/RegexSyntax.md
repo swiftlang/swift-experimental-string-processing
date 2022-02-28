@@ -814,11 +814,11 @@ There are multiple equivalent ways of spelling the same the Unicode scalar value
 
 Character properties `\p{...}` have a variety of alternative spellings due to fuzzy matching, Unicode aliases, and shorthand syntax for common Unicode properties. They also may be written using POSIX syntax e.g `[:gc=Whitespace:]`.
 
-**TODO: Should we canonicalize on e.g `\p{Script_Extensions=Greek}`? Or prefer the shorthand where we can? Or just avoid canonicalizing?**
+**TODO: Should we suggest canonicalizing on e.g `\p{Script_Extensions=Greek}`? Or prefer the shorthand where we can? Or just avoid canonicalizing?**
 
 ### Groups
 
-#### Named
+Named groups may be specified with a few different delimiters:
 
 ```
 NamedGroup -> 'P<' GroupNameBody '>'
@@ -826,11 +826,11 @@ NamedGroup -> 'P<' GroupNameBody '>'
             | "'" GroupNameBody "'"
 ```
 
-We intend on canonicalizing to the `(?<...>)` spelling.
+The preferable spelling here will likely be influenced by the regex literal delimiter choice. `(?'...')` seems a reasonable preferred spelling in isolation, however not so much if `re'...'` is chosen as the delimiter. To reduce possible confusion for the parser as well as the user, `(?<...>)` would seem the more preferable syntax in that case. This would also likely affect the preferred syntax for references.
 
 #### Lookaheads and lookbehinds
 
-We intend on canonicalizing to the short-form versions of these group kinds, e.g `(?=`.
+These have both shorthand spellings as well as more explicit PCRE2 spellings. While the more explicit spellings are definitely clearer, they can feel quite verbose. The short-form spellings e.g `(?=` seem more preferable due to their familiarity.
 
 ### Backreferences
 
@@ -844,7 +844,9 @@ Backreference -> '\g{' NamedOrNumberRef '}'
                | '(?P=' NamedRef ')'
 ```
 
-For absolute numeric references, we plan on choosing the canonical spelling `\DDD`, as it is unambiguous with octal sequences. For relative numbered references, as well as named references, we intend on canonicalizing to `\k<...>` to match the group name canonicalization `(?<...>)`. **TODO: How valuable is it to have canonical `\DDD`? Would it be better to just use `\k<...>` for everything?**
+For absolute numeric references, `\DDD` seems to be a strong candidate for the preferred syntax due to its familiarity. For relative numbered references, as well as named references, `\k<...>` or `\k'...'` seem like the ideal choice (depending on the syntax chosen for named groups). This avoids the confusion between `\g{...}` and `\g<...>` referring to a backreference and subpattern respectively. It additionally avoids confusion with group syntax. 
+
+There may be value in choosing `\k` as the single unified syntax for backreferences (instead of `\DDD` for absolute numeric references), though there may be value in preserving the familiarity of `\DDD`.
 
 ### Subpatterns
 
@@ -859,7 +861,7 @@ GroupLikeSubpatternBody -> 'P>' NamedRef
                          | NumberRef
 ```
 
-We intend on canonicalizing to the `\g<...>` spelling. **TODO: For `(?R)` too?**
+To avoid confusion with groups, `\g<...>` or `\g'...'` seem like the ideal preferred spellings (depending on the syntax chosen for named groups). There may however be value in preserving the `(?R)` spelling where it is used, instead of preferring e.g `\g<0>`.
 
 ### Conditional references
 
@@ -874,7 +876,7 @@ KnownCondition -> 'R'
                 | NumberRef
 ```
 
-For named references in a group condition, there is a choice between `(?('name'))` and `(?(<name>))`. We intend on canonicalizing to `(?(<name>))` to match the group name canonicalization.
+For named references in a group condition, there is a choice between `(?('name'))` and `(?(<name>))`. The preferred syntax in this case would likely reflect the syntax chosen for named groups.
 
 ### PCRE Callouts
 
@@ -891,8 +893,7 @@ PCRECalloutBody -> '' | <Number>
                  | '{' <String> '}'
 ```
 
-PCRE accepts a number of alternative delimiters for callout string arguments. We intend to canonicalize to `(?C"...")`. **TODO: May want to alter if we choose `r"..."`, though lexing should be able to handle it by looking for the `(?C` prefix**.
-
+PCRE accepts a number of alternative delimiters for callout string arguments. The `(?C"...")` syntax seems preferable due to its consistency with string literal syntax. However it may be necessary to prefer `(?C'...')` depending on whether the regex literal delimiter ends up involving double quotes e.g `re"..."`.
 
 ## Alternatives Considered
 
