@@ -10,8 +10,8 @@ Hello, we want to issue an update to [Regular Expression Literals](https://forum
 
 Regex literals declare a string processing algorithm using syntax familiar across a variety of languages and tools throughout programming history. Formalizing regex literals in Swift requires:
 
-- Choosing a delimiter (e.g. `#/.../#` or `re'...'`)
-- Detailing the "interior syntax" accepted in between delimiters
+- Choosing a delimiter (e.g. `#/.../#` or `re'...'`).
+- Detailing the "interior syntax" accepted in between delimiters.
 - Specifying actual types and relevant protocols for the literal.
 
 We present a detailed and comprehensive treatment of regex literal interior syntax. The syntax we're proposing is large enough for its own dedicated discussion ahead of a full regex literal proposal.
@@ -48,18 +48,32 @@ Regex literal interior syntax will be part of Swift's source-compatibility story
 
 We propose the following syntax for use inside Swift regex literals.
 
-*TODO:* Disclosure triangle explaining the grammar conventions?
+<details><summary>Grammar Conventions</summary>
+
+Elements of the grammar are defined using the syntax `Element -> <Definition>`.
+
+Quoted characters e.g `'abc'`, `"abc"` in the grammar match against the literal characters. Unquoted names e.g `Concatenation` refer to other definitions in the grammar.
+
+The `|` operator is used to specify that the grammar can match against either branch of the operator, similar to a regular expression. Similarly, `*`, `+`, and `?` are used to quantify an element of the grammar, with the same meaning as in regular expressions. Range quantifiers `{...}` may also be used, though we adopt a more explicit syntax that uses the Swift `..<` & `...` operators, e.g `{1...4}`.
+
+Basic custom character classes may appear in the grammar, and have the same meaning as in a regular expression. For example `[0-9a-zA-Z]` expresses the digits `0` to `9` and the letters `a` to `z` (both upper and lowercase).
+
+The `!` prefix operator is used to specify that the following grammar element must not appear at that position.
+
+Grammar elements may be surrounded by parentheses for the purposes of quantification.
+
+</details>
 
 ### Top-level regular expression
 
 ```
-Regex     -> GlobalMatchingOptionSequence? RegexNode
-RegexNode -> '' | Alternation
-Alternation -> Concatenation ('|' Concatenation)*
-Concatenation   -> (!'|' !')' ConcatComponent)*
+Regex         -> GlobalMatchingOptionSequence? RegexNode
+RegexNode     -> '' | Alternation
+Alternation   -> Concatenation ('|' Concatenation)*
+Concatenation -> (!'|' !')' ConcatComponent)*
 ```
 
-A regex literal may be prefixed with a sequence of global matching options(*TODO*: intra-doc link). A literal's contents can be empty or a sequence of alternatives separated by `|`.
+A regex literal may be prefixed with a sequence of [global matching options](#pcre-global-matching-options). A literal's contents can be empty or a sequence of alternatives separated by `|`.
 
 Alternatives are a series of expressions concatenated together. The concatentation ends with either a `|` denoting the end of the alternative or a `)` denoting the end of a recursively parsed group.
 
@@ -192,7 +206,7 @@ BuiltinCharClass -> '.' | '\C' | '\d' | '\D' | '\h' | '\H' | '\N' | '\O' | '\R' 
 - `\W`: Non-word character.
 - `\X`: Any extended grapheme cluster.
 
-Precise definitions of character classes is discussed in (Character Classes for String Processing)[https://forums.swift.org/t/pitch-character-classes-for-string-processing/52920].
+Precise definitions of character classes is discussed in [Character Classes for String Processing](https://forums.swift.org/t/pitch-character-classes-for-string-processing/52920).
 
 #### Unicode scalars
 
@@ -234,7 +248,7 @@ A character property specifies a particular Unicode, POSIX, or PCRE property to 
 - The POSIX properties `alnum`, `blank`, `graph`, `print`, `word`, `xdigit` (note that `alpha`, `lower`, `upper`, `space`, `punct`, `digit`, and `cntrl` are covered by Unicode properties).
 - The UTS#18 special properties `any`, `assigned`, `ascii`.
 - The special PCRE2 properties `Xan`, `Xps`, `Xsp`, `Xuc`, `Xwd`.
-- The special Java property `javaLowerCase`
+- The special Java properties `javaLowerCase`, `javaUpperCase`, `javaWhitespace`, `javaMirrored`.
 
 We follow [UTS#18][uts18]'s guidance for character properties, including fuzzy matching for property name parsing, according to rules set out by [UAX44-LM3]. The following property names are equivalent:
 
@@ -257,12 +271,14 @@ Other Unicode properties however must specify both a key and value.
 
 For non-Unicode properties, only a value is required. These include:
 
-- The special properties `any`, `assigned`, `ascii`.
+- The UTS#18 special properties `any`, `assigned`, `ascii`.
 - The POSIX compatibility properties `alnum`, `blank`, `graph`, `print`, `word`, `xdigit`. The remaining POSIX properties are already covered by boolean Unicode property spellings.
+- The special PCRE2 properties `Xan`, `Xps`, `Xsp`, `Xuc`, `Xwd`.
+- The special Java properties `javaLowerCase`, `javaUpperCase`, `javaWhitespace`, `javaMirrored`.
 
 Note that the internal `PropertyContents` syntax is shared by both the `\p{...}` and POSIX-style `[:...:]` syntax, allowing e.g `[:script=Latin:]` as well as `\p{alnum}`.
 
-#### `\K`
+### `\K`
 
 The `\K` escape sequence is used to drop any previously matched characters from the final matching result. It does not affect captures, e.g `a(b)\Kc` when matching against `abc` will return a match of `c`, but with a capture of `b`.
 
@@ -298,13 +314,13 @@ Identifier -> [\w--\d] \w*
 
 Groups define a new scope that contains a recursively nested regex. Groups have different semantics depending on how they are introduced.
 
-Note there are additional constructs that may syntactically appear similar to groups, but are distinct. See the *group-like atoms* section.
+Note there are additional constructs that may syntactically appear similar to groups, such as backreferences and conditionals, but are distinct.
 
 #### Basic group kinds
 
 - `()`: A capturing group.
 - `(?:)`: A non-capturing group.
-- `(?|)`: A group that, for a direct child alternation, resets the numbering of groups at each branch of that alternation. See *group numbering*.
+- `(?|)`: A group that, for a direct child alternation, resets the numbering of groups at each branch of that alternation. See [Group Numbering](#group-numbering).
 
 Capturing groups produce captures, which remember the range of input matched for the scope of that group.
 
@@ -427,7 +443,7 @@ We support all the matching options accepted by PCRE, ICU, and Oniguruma. In add
 - `n`: Disables the capturing behavior of `(...)` groups. Named capture groups must be used instead.
 - `s`: Changes `.` to match any character, including newlines.
 - `U`: Changes quantifiers to be reluctant by default, with the `?` specifier changing to mean greedy.
-- `x`, `xx`: Enables extended syntax mode, which allows non-semantic whitespace and end-of-line comments. See the *trivia* section for more info.
+- `x`, `xx`: Enables extended syntax mode, which allows non-semantic whitespace and end-of-line comments. See [Extended Syntax Modes](#extended-syntax-modes) for more info.
 
 #### ICU options
 
@@ -513,7 +529,7 @@ PCREVersionCheck  -> '>'? '=' PCREVersionNumber
 PCREVersionNumber -> <Int> '.' <Int>
 ```
 
-A conditional evaluates a particular condition, and chooses a branch to match against accordingly. 1 or 2 branches may be specified. If 1 branch is specified e.g `(?(...)x)`, it is treated as the true branch. Note this includes an empty true branch, e.g `(?(...))` which is the null pattern as described in *top-level regular expression*. If 2 branches are specified, e.g `(?(...)x|y)`, the first is treated as the true branch, the second being the false branch.
+A conditional evaluates a particular condition, and chooses a branch to match against accordingly. 1 or 2 branches may be specified. If 1 branch is specified e.g `(?(...)x)`, it is treated as the true branch. Note this includes an empty true branch, e.g `(?(...))` which is the null pattern as described in the [Top-Level Regular Expression](#top-level-regular-expression) section. If 2 branches are specified, e.g `(?(...)x|y)`, the first is treated as the true branch, the second being the false branch.
 
 A condition may be:
 
@@ -787,11 +803,16 @@ UnicodeScalar -> '\u{' HexDigit{1...} '}'
 
 HexDigit   -> [0-9a-zA-Z]
 OctalDigit -> [0-7]
+
+NamedScalar -> '\N{' ScalarName '}'
+ScalarName -> 'U+' HexDigit{1...8} | [\s\w-]+
 ```
 
-For consistency with String escape syntax, we intend on canonicalizing to `\u{...}`.
+There are multiple equivalent ways of spelling the same the Unicode scalar value, in either hex, octal, or by spelling the name explicitly. String literals already provide a `\u{...}` syntax that allow a hex sequence for a Unicode scalar. As this is Swift's existing preferred spelling for such a sequence, we consider it to be the preferred spelling in this case too. There may however be value in preserving scalars that are explicitly spelled by name with `\N{...}` for clarity.
 
 ### Character properties
+
+Character properties `\p{...}` have a variety of alternative spellings due to fuzzy matching, Unicode aliases, and shorthand syntax for common Unicode properties. They also may be written using POSIX syntax e.g `[:gc=Whitespace:]`.
 
 **TODO: Should we canonicalize on e.g `\p{Script_Extensions=Greek}`? Or prefer the shorthand where we can? Or just avoid canonicalizing?**
 
