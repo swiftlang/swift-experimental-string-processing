@@ -14,45 +14,46 @@ This proposal is part of a larger [regex-powered string processing initiative](h
 
 ## Motivation
 
-Here is how [Python string processing API](https://docs.python.org/3/library/stdtypes.html#text-sequence-type-str) compares to their counterparts in Swift standard library. 
+Below is how [Python string processing API](https://docs.python.org/3/library/stdtypes.html#text-sequence-type-str) compare to their counterparts in Swift. Many essential string processing APIs are evidently missing in the standard library. While most of those can be substituted by chaining multiple functions or using Foundation, they are basic enough to warrant a place in the standard library.
 
-Note: The comparison table omits functions to query if all characters in the string are of a specified category, such as `isalnum()` and `isalpha()`. These are achievable in Swift by passing in the corresponding character set to `allSatisfy(_:)`. 
 
-|Python |Swift  |Note|
+|Python |Swift  |Note about Swift functions|
 |---    |---    |--- |
-|center(width, fillchar)|  |  |
-|count(sub, start, end)|  |  |
-|endswith(suffix, start, end)|hasSuffix(:)| `hasSuffix(:)` does not support searching from a given index| 
-|expandtabs(tabsize)|  |  |
-|find(sub, start, end)|firstIndex(where:)|`firstIndex(:)` only searches for a single character, and is limited to whole range only|
-|index(sub, start, end)|firstIndex(where:)|  |
-|join(iterable)|reduce(:nextPartialResult:)|  |
-|ljust(width, fillchar)|  |  |
-|lstrip([chars])|  |  |
-|maketrans(x, y, z)|  |  |
-|partition(sep)|  |  |
-|removeprefix(prefix)|  |  |
-|removesuffix(suffix)|  |  |
-|replace(old, new, count)|  | |
-|rfind(sub, start, end)|lastIndex(where:)|  |
-|rindex(sub, start, end)|lastIndex(where:)|  |
-|rjust(width, fillchar)|  |  |
-|rpartition(sep)|  |  |
-|rsplit(sep, maxsplit)|  |  |
-|rstrip([chars])|  |  |
-|split(sep, maxsplit)|split(separator:maxSplits:omittingEmptySubsequences:)|  |
-|splitlines(keepends)|split(separator:maxSplits:omittingEmptySubsequences:)|  |
-|startswith(prefix, start, end)|starts(with:)|  |  |
-|strip([chars])|  |  |
-|translate(table)|  |  |
-|zfill(width)|  |  |
+| `center(width, fillchar)` |  |  |
+| `count(sub, start, end)` |  |  |
+| `endswith(suffix, start, end)` | `hasSuffix(:)` | Does not support searching from a given index | 
+| `expandtabs(tabsize)` |  |  |
+| `find(sub, start, end)` | `firstIndex(where:)` | Does not support searching within a range |
+| `index(sub, start, end)` | `firstIndex(where:)` |  |
+| `join(iterable)` | `reduce(_:_:)` |  |
+| `ljust(width, fillchar)` |  | Alternative: `padding(toLength:)` in Foundation |
+| `lstrip([chars])` |  | |
+| `maketrans(x, y, z)` |  |  |
+| `partition(sep)` |  |  Alternative: `components(separatedBy:)` in Foundation |
+| `removeprefix(prefix)` |  |  |
+| `removesuffix(suffix)` |  |  |
+| `replace(old, new, count)` |  | Alternative: `replacingOccurrences(of:with:)` in Foundation |
+| `rfind(sub, start, end)` | `lastIndex(where:)` | Does not allow specifying a search range |
+| `rindex(sub, start, end)` | `lastIndex(where:)` | Same as above |
+| `rjust(width, fillchar)` |  |  |
+| `rpartition(sep)` |  |  |
+| `rsplit(sep, maxsplit)` |  |  |
+| `rstrip([chars])` |  |  |
+| `split(sep, maxsplit)` | `split(separator:maxSplits:...)` |  |
+| `splitlines(keepends)` | `split(separator:maxSplits:...)` |  |
+| `startswith(prefix, start, end)` | `starts(with:)` |  |  |
+| `strip([chars])` |  | Alternative: `trimmingCharacters(in:)` in Foundation  |
+| `translate(table)` |  |  |
+| `zfill(width)` |  | Alternative: `padding(toLength:)` in Foundation |
 
 
-Many essential string processing APIs are evidently missing in the standard library, which motivates this proposal.
+Note: The comparison table omits functions to query if all characters in the string are of a specified category, such as `isalnum()` and `isalpha()`. These are achievable in Swift by passing in the corresponding character set to `allSatisfy(_:)`, so they're omitted in this table for simplicity. 
 
 ### Processing domain-specific strings
 
-Processing strings that requires domain specific information is a common task. Consider parsing the date field `"Date: Wed, 16 Feb 2022 23:53:19 GMT"` in an HTTP header as a `Date` type. A common approach is to match a substring that look like a date string (`16 Feb 2022`), and post-process the substring as a `Date` using one of the date parsers in the Foundation:
+Another common task regarding string processing is handling those with domain specific information. 
+
+Consider parsing the date field `"Date: Wed, 16 Feb 2022 23:53:19 GMT"` in an HTTP header as a `Date` type. The naive approach is to search for a substring that looks like a date string (`16 Feb 2022`), and attempt to post-process it as a `Date` with a date parser:
 
 ```swift
 let regex = Regex {
@@ -394,6 +395,17 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         maxReplacements: Int = .max
     ) where Replacement.Element == Element
   
+    /// Returns a new collection in which all occurrences of a sequence matching
+    /// the given regex are replaced by another regex match.
+    /// - Parameters:
+    ///   - regex: A regex describing the sequence to replace.
+    ///   - replacement: A closure that receives the full match information,
+    ///   including captures, and returns a replacement collection.
+    ///   - subrange: The range in the collection in which to search for `regex`.
+    ///   - maxReplacements: A number specifying how many occurrences of the
+    ///   sequence matching `regex` to replace. Default is `Int.max`.
+    /// - Returns: A new collection in which all occurrences of subsequence
+    /// matching `regex` are replaced by `replacement`.
     public func replacing<R: RegexProtocol, Replacement: Collection>(
         _ regex: R,
         with replacement: (RegexMatch<R.Match>) throws -> Replacement,
@@ -401,12 +413,30 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         maxReplacements: Int = .max
     ) rethrows -> Self where Replacement.Element == Element
   
+    /// Returns a new collection in which all occurrences of a sequence matching
+    /// the given regex are replaced by another collection.
+    /// - Parameters:
+    ///   - regex: A regex describing the sequence to replace.
+    ///   - replacement: A closure that receives the full match information,
+    ///   including captures, and returns a replacement collection.
+    ///   - maxReplacements: A number specifying how many occurrences of the
+    ///   sequence matching `regex` to replace. Default is `Int.max`.
+    /// - Returns: A new collection in which all occurrences of subsequence
+    /// matching `regex` are replaced by `replacement`.
     public func replacing<R: RegexProtocol, Replacement: Collection>(
         _ regex: R,
         with replacement: (RegexMatch<R.Match>) throws -> Replacement,
         maxReplacements: Int = .max
     ) rethrows -> Self where Replacement.Element == Element
   
+    /// Replaces all occurrences of the sequence matching the given regex with
+    /// a given collection.
+    /// - Parameters:
+    ///   - regex: A regex describing the sequence to replace.
+    ///   - replacement: A closure that receives the full match information,
+    ///   including captures, and returns a replacement collection.
+    ///   - maxReplacements: A number specifying how many occurrences of the
+    ///   sequence matching `regex` to replace. Default is `Int.max`.
     public mutating func replace<R: RegexProtocol, Replacement: Collection>(
         _ regex: R,
         with replacement: (RegexMatch<R.Match>) throws -> Replacement,
@@ -463,7 +493,7 @@ public protocol CustomRegexComponent: RegexProtocol {
 
 Conformers naturally inherit from `RegexProtocol`, so they can be used with all of the string algorithms generic over `RegexProtocol`.
 
-Here, we use Foundation `FloatingPointFormatStyle<Double>.Currency` as an example. `FloatingPointFormatStyle<Double>.Currency` would conform to `CustomRegexComponent` by implementing the `match` function, with `Match` being a `Double`. It could also add a static function `.localizedCurrency(code:)` as a member of `RegexProtocol`, so you can refer to it as `.localizedCurrency(code:)` in the `Regex` result builder:
+Here, we use Foundation `FloatingPointFormatStyle<Double>.Currency` as an example. It would conform to `CustomRegexComponent` by implementing the `match` function, with `Match` being a `Double`. It could also add a static function `.localizedCurrency(code:)` as a member of `RegexProtocol`, so it can be referred as `.localizedCurrency(code:)` in the `Regex` result builder:
 
 ```swift
 extension FloatingPointFormatStyle<Double>.Currency : CustomRegexComponent { 
