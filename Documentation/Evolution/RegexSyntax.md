@@ -396,7 +396,7 @@ RangeElt        -> <Char> | UnicodeScalar | EscapeSequence
 SetOp           -> '&&' | '--' | '~~' | '-'
 ```
 
-Custom characters classes introduce their own language, in which most regular expression metacharacters become literal. The basic element in a custom character class is an `Atom`, though only a few atoms are considered valid:
+Custom characters classes introduce their own sublanguage, in which most regular expression metacharacters become literal. The basic element in a custom character class is an `Atom`, though only some atoms are considered valid:
 
 - Builtin character classes, except for `.`, `\R`, `\O`, `\X`, `\C`, and `\N`.
 - Escape sequences, including `\b` which becomes the backspace character (rather than a word boundary).
@@ -796,114 +796,23 @@ We intend on matching the PCRE behavior where groups are numbered purely based o
 
 The proposed syntactic superset means there will be multiple ways to write the same thing. Below we discuss what Swift's preferred spelling could be, a "Swift canonical syntax".
 
-We are not formally proposing this as a distinct syntax or concept, rather it is useful for considering compiler features such as fixits, pretty-printing, and refactoring actions.
+We are not formally proposing this as a distinct syntax or concept, rather it is useful for considering compiler features such as fixits, pretty-printing, and refactoring actions. We're hoping for further discussion with the community here. Useful criteria include how well the choice fits in with the rest of Swift, whether there's an existing common practice, and whether one choice is less confusing in the context of others.
 
-*TODO Hamish*: We're not proposing any actual action or language-level representation. So I feel like this section is more of an advisory section and good for discussion. It guides tooling decisions more than it is a formal addition to the Swift programming language. Rather than say, e.g., "we intend on canonicalizing to `\u{...}`", we could say "we consider `\u{...}` to be Swift's preferred spelling, in line with string literals". I think we can be a bit briefer too, perhaps collapsing multiple sub-sections together.
+Unicode scalar literals can be spelled in many ways (*TODO*: intra-doc link). We propose treating Swift's string literal syntax of `\u{HexDigit{1...}}` as the preferred spelling.
 
-### Unicode scalars
+Character properties can be spelled `\p{...}` or `[:...:]`. We recommend preferring `\p{...}` as the bracket syntax historically meant POSIX-defined character classes, and still has that connotation in some engines. The spelling of properties themselves can be fuzzy (*TODO*: intra doc link) and we (weakly) recommend the shortest spelling (no opinion on casing yet). For script extensions, we (weakly) recommend e.g. `\p{Greek}` instead of `\p{Script_Extensions=Greek}`. We would like more discussion with the community here.
 
-```
-UnicodeScalar -> '\u{' HexDigit{1...} '}'
-           | '\u'  HexDigit{4}
-           | '\x{' HexDigit{1...} '}'
-           | '\x'  HexDigit{0...2}
-           | '\U'  HexDigit{8}
-           | '\o{' OctalDigit{1...} '}'
-           | '\0' OctalDigit{0...3}
+Lookaround assertions have common shorthand spellings, while PCRE2 introduced longer more explicit spellings (*TODO*: doc link). We are (very weakly) recommending the common short-hand syntax of e.g. `(?=...)` as that's wider spread. We are interested in more discussion with the community here.
 
-HexDigit   -> [0-9a-zA-Z]
-OctalDigit -> [0-7]
+Named groups may be specified with a few different delimiters: `(?<name>...)`, `(?P<name>...)`, `(?'name'...)`. We (weakly) recommend `(?<name>...)`, but the final preference may be influenced by choice of delimiter for the regex itself. We'd appreciate any insight from the community.
 
-NamedScalar -> '\N{' ScalarName '}'
-ScalarName -> 'U+' HexDigit{1...8} | [\s\w-]+
-```
+References and backreferences (*TODO*: intra-doc link) have multiple spellings. For absolute numeric references, `\DDD` seems to be a strong candidate for the preferred syntax due to its familiarity. For relative numbered references, as well as named references, either `\k<...>` or `\k'...'` seem like the better choice, depending on the syntax chosen for named groups. This avoids the confusion between `\g{...}` and `\g<...>` referring to a backreferences and subpatterns respectively, as well as any confusion with group syntax. 
 
-There are multiple equivalent ways of spelling the same the Unicode scalar value, in either hex, octal, or by spelling the name explicitly. String literals already provide a `\u{...}` syntax that allow a hex sequence for a Unicode scalar. As this is Swift's existing preferred spelling for such a sequence, we consider it to be the preferred spelling in this case too. There may however be value in preserving scalars that are explicitly spelled by name with `\N{...}` for clarity.
+For subpatterns, we recommend either `\g<...>` or `\g'...'` depending on the choice for named group syntax. We're unsure if we should prefer `(?R)` as a spelling for e.g. `\g<0>` or not, as it is more widely used and understood, but less consistent with other subpatterns.
 
-### Character properties
+Conditional references (*TODO*: intra-doc link) have a choice between `(?('name'))` and `(?(<name>))`. The preferred syntax in this case would likely reflect the syntax chosen for named groups.
 
-Character properties `\p{...}` have a variety of alternative spellings due to fuzzy matching, Unicode aliases, and shorthand syntax for common Unicode properties. They also may be written using POSIX syntax e.g `[:gc=Whitespace:]`.
-
-**TODO: Should we suggest canonicalizing on e.g `\p{Script_Extensions=Greek}`? Or prefer the shorthand where we can? Or just avoid canonicalizing?**
-
-### Groups
-
-Named groups may be specified with a few different delimiters:
-
-```
-NamedGroup -> 'P<' GroupNameBody '>'
-            | '<' GroupNameBody '>'
-            | "'" GroupNameBody "'"
-```
-
-The preferable spelling here will likely be influenced by the regex literal delimiter choice. `(?'...')` seems a reasonable preferred spelling in isolation, however not so much if `re'...'` is chosen as the delimiter. To reduce possible confusion for the parser as well as the user, `(?<...>)` would seem the more preferable syntax in that case. This would also likely affect the preferred syntax for references.
-
-#### Lookaheads and lookbehinds
-
-These have both shorthand spellings as well as more explicit PCRE2 spellings. While the more explicit spellings are definitely clearer, they can feel quite verbose. The short-form spellings e.g `(?=` seem more preferable due to their familiarity.
-
-### Backreferences
-
-```
-Backreference -> '\g{' NamedOrNumberRef '}'
-               | '\g' NumberRef
-               | '\k<' NamedOrNumberRef '>'
-               | "\k'" NamedOrNumberRef "'"
-               | '\k{' NamedRef '}'
-               | '\' [1-9] [0-9]+
-               | '(?P=' NamedRef ')'
-```
-
-For absolute numeric references, `\DDD` seems to be a strong candidate for the preferred syntax due to its familiarity. For relative numbered references, as well as named references, `\k<...>` or `\k'...'` seem like the ideal choice (depending on the syntax chosen for named groups). This avoids the confusion between `\g{...}` and `\g<...>` referring to a backreference and subpattern respectively. It additionally avoids confusion with group syntax. 
-
-There may be value in choosing `\k` as the single unified syntax for backreferences (instead of `\DDD` for absolute numeric references), though there may be value in preserving the familiarity of `\DDD`.
-
-### Subpatterns
-
-```
-Subpattern -> '\g<' NamedOrNumberRef '>'
-            | "\g'" NamedOrNumberRef "'"
-            | '(?' GroupLikeSubpatternBody ')'
-
-GroupLikeSubpatternBody -> 'P>' NamedRef
-                         | '&' NamedRef
-                         | 'R'
-                         | NumberRef
-```
-
-To avoid confusion with groups, `\g<...>` or `\g'...'` seem like the ideal preferred spellings (depending on the syntax chosen for named groups). There may however be value in preserving the `(?R)` spelling where it is used, instead of preferring e.g `\g<0>`.
-
-### Conditional references
-
-```
-KnownCondition -> 'R'
-                | 'R' NumberRef
-                | 'R&' NamedRef
-                | '<' NamedOrNumberRef '>'
-                | "'" NamedOrNumberRef "'"
-                | 'DEFINE'
-                | 'VERSION' VersionCheck
-                | NumberRef
-```
-
-For named references in a group condition, there is a choice between `(?('name'))` and `(?(<name>))`. The preferred syntax in this case would likely reflect the syntax chosen for named groups.
-
-### PCRE Callouts
-
-```
-PCRECallout -> '(?C' CalloutBody ')'
-PCRECalloutBody -> '' | <Number>
-                 | '`' <String> '`'
-                 | "'" <String> "'"
-                 | '"' <String> '"'
-                 | '^' <String> '^'
-                 | '%' <String> '%'
-                 | '#' <String> '#'
-                 | '$' <String> '$'
-                 | '{' <String> '}'
-```
-
-PCRE accepts a number of alternative delimiters for callout string arguments. The `(?C"...")` syntax seems preferable due to its consistency with string literal syntax. However it may be necessary to prefer `(?C'...')` depending on whether the regex literal delimiter ends up involving double quotes e.g `re"..."`.
+We are deferring runtime support for callouts from regex literals as future work, though we will correctly parse their contents. We have no current recommendation for a preference of PCRE-style callout syntax (*TODO*: intra-doc link), and would like to discuss with the community whether we should have one.
 
 ## Alternatives Considered
 
