@@ -52,6 +52,9 @@ let package = Package(
             swiftSettings: [
                 .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
             ]),
+        .testTarget(
+          name: "UnicodeTests",
+          dependencies: ["_StringProcessing"]),
         .target(
             name: "Prototypes",
             dependencies: ["_MatchingEngine", "_StringProcessing"]),

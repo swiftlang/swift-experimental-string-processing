@@ -99,3 +99,8 @@ extension String.Index {
     self = unsafeBitCast(offset << 16, to: Self.self)
   }
 }
+
+extension _StringGuts {
+  @_silgen_name("$ss11_StringGutsV9isForeignSbvg")
+  func isforeign() -> Bool
+}
