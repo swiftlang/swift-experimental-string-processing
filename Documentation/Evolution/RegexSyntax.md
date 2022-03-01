@@ -83,7 +83,7 @@ A regex literal may be prefixed with a sequence of [global matching options](#pc
 
 Alternatives are a series of expressions concatenated together. The concatentation ends with either a `|` denoting the end of the alternative or a `)` denoting the end of a recursively parsed group.
 
-Alternation has a lower precedence than concatenation or other operations, so e.g `abc|def` matches against `abc` or `def`..
+Alternation has a lower precedence than concatenation or other operations, so e.g `abc|def` matches against `abc` or `def`.
 
 ### Concatenated subexpressions
 
@@ -130,9 +130,9 @@ Subexpressions can be quantified, meaning they will be repeated some number of t
 
 Behavior can further be refined by a subsequent `?` or `+`:
 
-- `x*` _eager_: consume as much of input as possible
-- `x*?` _reluctant_: consume as little of the input as possible
-- `x*+`: _possessive_: eager and never relinquishes any input consumed
+- `x*` _eager_: consume as much of input as possible.
+- `x*?` _reluctant_: consume as little of the input as possible.
+- `x*+`: _possessive_: eager and never relinquishes any input consumed.
 
 ### Atoms
 
@@ -187,7 +187,7 @@ These escape sequences each denote a specific scalar value.
 - `\f`: The form-feed character `U+C`.
 - `\n`: The newline character `U+A`.
 - `\r`: The carriage return character `U+D`.
-- `\t`: The tab character `U+9`
+- `\t`: The tab character `U+9`.
 
 #### Builtin character classes
 
@@ -218,12 +218,12 @@ Precise definitions of character classes is discussed in [Character Classes for 
 
 ```
 UnicodeScalar -> '\u{' HexDigit{1...} '}'
-              | '\u'  HexDigit{4}
-              | '\x{' HexDigit{1...} '}'
-              | '\x'  HexDigit{0...2}
-              | '\U'  HexDigit{8}
-              | '\o{' OctalDigit{1...} '}'
-              | '\0' OctalDigit{0...3}
+               | '\u'  HexDigit{4}
+               | '\x{' HexDigit{1...} '}'
+               | '\x'  HexDigit{0...2}
+               | '\U'  HexDigit{8}
+               | '\o{' OctalDigit{1...} '}'
+               | '\0' OctalDigit{0...3}
 
 HexDigit   -> [0-9a-zA-Z]
 OctalDigit -> [0-7]
@@ -232,7 +232,7 @@ NamedScalar -> '\N{' ScalarName '}'
 ScalarName -> 'U+' HexDigit{1...8} | [\s\w-]+
 ```
 
-These sequences define a unicode scalar value using hexadecimal or octal notation
+These sequences define a unicode scalar value using hexadecimal or octal notation.
 
 `\x`, when not followed by any hexadecimal digit characters, is treated as `\0`, matching PCRE's behavior.
 
@@ -362,7 +362,7 @@ A script run e.g `(*script_run:...)` specifies that the contents must match agai
 BalancingGroupBody -> Identifier? '-' Identifier
 ```
 
-Introduced by .NET, balancing groups extend the `GroupNameBody` syntax to support the ability to refer to a prior group. Upon matching, the prior group is deleted, and any intermediate matched input becomes the capture of the current group.
+Introduced by .NET, [balancing groups][balancing-groups] extend the `GroupNameBody` syntax to support the ability to refer to a prior group. Upon matching, the prior group is deleted, and any intermediate matched input becomes the capture of the current group.
 
 #### Group numbering
 
@@ -467,9 +467,9 @@ We support all the matching options accepted by PCRE, ICU, and Oniguruma. In add
 
 These options are specific to the Swift regex matching engine and control the semantic level at which matching takes place.
 
-- `X`: Grapheme cluster matching
-- `u`: Unicode scalar matching
-- `b`: Byte matching
+- `X`: Grapheme cluster matching.
+- `u`: Unicode scalar matching.
+- `b`: Byte matching.
 
 ### References
 
@@ -482,7 +482,7 @@ RecursionLevel   -> '+' <Int> | '-' <Int>
 
 A reference is an abstract identifier for a particular capturing group in a regular expression. It can either be named or numbered, and in the latter case may be specified relative to the current group. For example `-2` refers to the capture group `N - 2` where `N` is the number of the next capture group. References may refer to groups ahead of the current position e.g `+3`, or the name of a future group. These may be useful in recursive cases where the group being referenced has been matched in a prior iteration.
 
-A backreference may optionally include a recursion level in certain cases, which is a syntactic element inherited from Oniguruma that allows the reference to specify a capture relative to a given recursion level.
+A backreference may optionally include a recursion level in certain cases, which is a syntactic element inherited [from Oniguruma][oniguruma-syntax] that allows the reference to specify a capture relative to a given recursion level.
 
 #### Backreferences
 
@@ -639,7 +639,7 @@ AbsentFunction -> '(?~' RegexNode ')'
                 | '(?~|)'
 ```
 
-An absent function is an Oniguruma feature that allows for the easy inversion of a given pattern. There are 4 variants of the syntax:
+An absent function is an [Oniguruma][oniguruma-syntax] feature that allows for the easy inversion of a given pattern. There are 4 variants of the syntax:
 
 - `(?~|absent|expr)`: Absent expression, which attempts to match against `expr`, but is limited by the range that is not matched by `absent`.
 - `(?~absent)`: Absent repeater, which matches against any input not matched by `absent`. Equivalent to `(?~|absent|\O*)`.
@@ -848,3 +848,4 @@ Note that this proposal regards _syntactic_ support, and does not necessarily me
 [unicode-prop-value-aliases]: https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt
 [unicode-scripts]: https://www.unicode.org/reports/tr24/#Script
 [unicode-script-extensions]: https://www.unicode.org/reports/tr24/#Script_Extensions
+[balancing-groups]: https://docs.microsoft.com/en-us/dotnet/standard/base-types/grouping-constructs-in-regular-expressions#balancing-group-definitions
