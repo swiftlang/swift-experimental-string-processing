@@ -798,21 +798,21 @@ The proposed syntactic superset means there will be multiple ways to write the s
 
 We are not formally proposing this as a distinct syntax or concept, rather it is useful for considering compiler features such as fixits, pretty-printing, and refactoring actions. We're hoping for further discussion with the community here. Useful criteria include how well the choice fits in with the rest of Swift, whether there's an existing common practice, and whether one choice is less confusing in the context of others.
 
-Unicode scalar literals can be spelled in many ways (*TODO*: intra-doc link). We propose treating Swift's string literal syntax of `\u{HexDigit{1...}}` as the preferred spelling.
+[Unicode scalar literals](#unicode-scalars) can be spelled in many ways. We propose treating Swift's string literal syntax of `\u{HexDigit{1...}}` as the preferred spelling.
 
-Character properties can be spelled `\p{...}` or `[:...:]`. We recommend preferring `\p{...}` as the bracket syntax historically meant POSIX-defined character classes, and still has that connotation in some engines. The spelling of properties themselves can be fuzzy (*TODO*: intra doc link) and we (weakly) recommend the shortest spelling (no opinion on casing yet). For script extensions, we (weakly) recommend e.g. `\p{Greek}` instead of `\p{Script_Extensions=Greek}`. We would like more discussion with the community here.
+Character properties can be spelled `\p{...}` or `[:...:]`. We recommend preferring `\p{...}` as the bracket syntax historically meant POSIX-defined character classes, and still has that connotation in some engines. The [spelling of properties themselves can be fuzzy](#character-properties) and we (weakly) recommend the shortest spelling (no opinion on casing yet). For script extensions, we (weakly) recommend e.g. `\p{Greek}` instead of `\p{Script_Extensions=Greek}`. We would like more discussion with the community here.
 
-Lookaround assertions have common shorthand spellings, while PCRE2 introduced longer more explicit spellings (*TODO*: doc link). We are (very weakly) recommending the common short-hand syntax of e.g. `(?=...)` as that's wider spread. We are interested in more discussion with the community here.
+[Lookaround assertions](#lookahead-and-lookbehind) have common shorthand spellings, while PCRE2 introduced longer more explicit spellings. We are (very weakly) recommending the common short-hand syntax of e.g. `(?=...)` as that's wider spread. We are interested in more discussion with the community here.
 
 Named groups may be specified with a few different delimiters: `(?<name>...)`, `(?P<name>...)`, `(?'name'...)`. We (weakly) recommend `(?<name>...)`, but the final preference may be influenced by choice of delimiter for the regex itself. We'd appreciate any insight from the community.
 
-References and backreferences (*TODO*: intra-doc link) have multiple spellings. For absolute numeric references, `\DDD` seems to be a strong candidate for the preferred syntax due to its familiarity. For relative numbered references, as well as named references, either `\k<...>` or `\k'...'` seem like the better choice, depending on the syntax chosen for named groups. This avoids the confusion between `\g{...}` and `\g<...>` referring to a backreferences and subpatterns respectively, as well as any confusion with group syntax. 
+[Backreferences](#backreferences) have multiple spellings. For absolute numeric references, `\DDD` seems to be a strong candidate for the preferred syntax due to its familiarity. For relative numbered references, as well as named references, either `\k<...>` or `\k'...'` seem like the better choice, depending on the syntax chosen for named groups. This avoids the confusion between `\g{...}` and `\g<...>` referring to a backreferences and subpatterns respectively, as well as any confusion with group syntax. 
 
-For subpatterns, we recommend either `\g<...>` or `\g'...'` depending on the choice for named group syntax. We're unsure if we should prefer `(?R)` as a spelling for e.g. `\g<0>` or not, as it is more widely used and understood, but less consistent with other subpatterns.
+For [subpatterns](#subpatterns), we recommend either `\g<...>` or `\g'...'` depending on the choice for named group syntax. We're unsure if we should prefer `(?R)` as a spelling for e.g. `\g<0>` or not, as it is more widely used and understood, but less consistent with other subpatterns.
 
-Conditional references (*TODO*: intra-doc link) have a choice between `(?('name'))` and `(?(<name>))`. The preferred syntax in this case would likely reflect the syntax chosen for named groups.
+[Conditional references](#conditionals) have a choice between `(?('name'))` and `(?(<name>))`. The preferred syntax in this case would likely reflect the syntax chosen for named groups.
 
-We are deferring runtime support for callouts from regex literals as future work, though we will correctly parse their contents. We have no current recommendation for a preference of PCRE-style callout syntax (*TODO*: intra-doc link), and would like to discuss with the community whether we should have one.
+We are deferring runtime support for callouts from regex literals as future work, though we will correctly parse their contents. We have no current recommendation for a preference of PCRE-style [callout syntax](#callouts), and would like to discuss with the community whether we should have one.
 
 ## Alternatives Considered
 
