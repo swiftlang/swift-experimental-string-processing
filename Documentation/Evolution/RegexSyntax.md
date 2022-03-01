@@ -598,7 +598,7 @@ This is syntax specific to PCRE, and allows a set of global options to appear at
 ### Callouts
 
 ```
-Callout -> PCRECallout | OnigurumaCallout
+Callout -> PCRECallout | NamedCallout | InterpolatedCallout
 
 PCRECallout -> '(?C' CalloutBody ')'
 PCRECalloutBody -> '' | <Number>
@@ -611,20 +611,24 @@ PCRECalloutBody -> '' | <Number>
                  | '$' <String> '$'
                  | '{' <String> '}'
 
-OnigurumaCallout -> OnigurumaNamedCallout | OnigurumaCalloutOfContents
+NamedCallout   -> '(*' Identifier CalloutTag? CalloutArgs? ')'
+CalloutArgs    -> '{' CalloutArgList '}'
+CalloutArgList -> CalloutArg (',' CalloutArgList)*
+CalloutArg     -> [^,}]+
+CalloutTag     -> '[' Identifier ']'
 
-OnigurumaNamedCallout   -> '(*' Identifier OnigurumaTag? OnigurumaCalloutArgs? ')'
-OnigurumaCalloutArgs    -> '{' OnigurumaCalloutArgList '}'
-OnigurumaCalloutArgList -> OnigurumaCalloutArg (',' OnigurumaCalloutArgList)*
-OnigurumaCalloutArg     -> [^,}]+
-OnigurumaTag            -> '[' Identifier ']'
-
-OnigurumaCalloutOfContents -> '(?' '{' OnigurumaCalloutContents '}' OnigurumaTag? Direction? ')'
-OnigurumaCalloutContents   -> <String> | '{' OnigurumaCalloutContents '}'
-OnigurumaCalloutDirection  -> 'X' | '<' | '>'
+InterpolatedCallout -> '(?' '{' Interpolation '}' CalloutTag? CalloutDirection? ')'
+Interpolation       -> <String> | '{' Interpolation '}'
+CalloutDirection    -> 'X' | '<' | '>'
 ```
 
-A callout is a feature that allows a user-supplied function to be called when matching reaches that point in the pattern. We supported parsing both the PCRE and Oniguruma callout syntax. The PCRE syntax accepts a string or numeric argument that is passed to the function. The Oniguruma syntax is more involved, and may accept an identifier with an optional tag and argument list. It may also accept an arbitrary program in the 'callout of contents' syntax. This is an expanded version of Perl's interpolation syntax, and allows an arbitrary nesting of delimiters in addition to an optional tag and direction.
+A callout is a feature that allows a user-supplied function to be called when matching reaches that point in the pattern. We supported parsing 3 types of callout:
+
+- PCRE callout syntax, which accepts a string or numeric argument that is passed to the function.
+- Oniguruma named callout syntax, which accepts an identifier with an optional tag and argument list.
+- Interpolated callout syntax, which is equivalent to Oniguruma's "callout of contents". This callout accepts an arbitrary interpolated program. This is an expanded version of Perl's interpolation syntax, and allows an arbitrary nesting of delimiters in addition to an optional tag and direction.
+
+While we propose parsing these for the purposes of issuing helpful diagnostics, we are deferring full support for the interpolated syntax for the future.
 
 ### Absent functions
 
