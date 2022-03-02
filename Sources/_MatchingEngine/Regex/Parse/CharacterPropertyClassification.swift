@@ -381,7 +381,7 @@ extension Source {
       return .generalCategory(cat)
     }
     if let script = classifyScriptProperty(value) {
-      return .script(script)
+      return .scriptExtension(script)
     }
     if let posix = classifyPOSIX(value) {
       return .posix(posix)
