@@ -208,14 +208,17 @@ fileprivate struct DelimiterLexer {
 /// Drop a set of regex delimiters from the input string, returning the contents
 /// and the delimiter used. The input string must have valid delimiters.
 func droppingRegexDelimiters(_ str: String) -> (String, Delimiter) {
-  let utf8 = str.utf8
   func stripDelimiter(_ delim: Delimiter) -> String? {
-    let prefix = delim.opening.utf8
-    let suffix = delim.closing.utf8
-    guard utf8.prefix(prefix.count).elementsEqual(prefix),
-          utf8.suffix(suffix.count).elementsEqual(suffix) else { return nil }
+    // The opening delimiter must match.
+    guard var slice = str.utf8.tryDropPrefix(delim.opening.utf8)
+    else { return nil }
 
-    return String(utf8.dropFirst(prefix.count).dropLast(suffix.count))
+    // The closing delimiter may optionally match, as it may not be present in
+    // invalid code.
+    if let newSlice = slice.tryDropSuffix(delim.closing.utf8) {
+      slice = newSlice
+    }
+    return String(slice)
   }
   for d in Delimiter.allCases {
     if let contents = stripDelimiter(d) {

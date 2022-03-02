@@ -61,10 +61,16 @@ func libswiftLexRegexLiteral(
     errOut.pointee = copyCString("\(error)")
     curPtrPtr.pointee = error.resumePtr.assumingMemoryBound(to: CChar.self)
 
-    // For now, treat every error as unrecoverable.
-    // TODO: We should ideally be able to recover from a regex with missing
-    // closing delimiters, which would help with code completion.
-    return true
+    switch error.kind {
+    case .endOfString:
+      // Missing closing delimiter can be recovered from.
+      return false
+    case .unprintableASCII, .invalidUTF8:
+      // We don't currently have good recovery behavior for these.
+      return true
+    case .unknownDelimiter:
+      fatalError("Already handled")
+    }
   } catch {
     fatalError("Should be a DelimiterLexError")
   }
