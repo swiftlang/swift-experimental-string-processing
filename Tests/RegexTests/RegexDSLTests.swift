@@ -642,6 +642,59 @@ class RegexDSLTests: XCTestCase {
       }
     }
   }
+  
+  func testSemanticVersionExample() {
+    struct SemanticVersion: Equatable {
+      var major: Int
+      var minor: Int
+      var patch: Int
+      var dev: String?
+    }
+    struct SemanticVersionParser: CustomRegexComponent {
+      typealias Match = SemanticVersion
+      func match(
+        _ input: String,
+        startingAt index: String.Index,
+        in bounds: Range<String.Index>
+      ) -> (upperBound: String.Index, match: SemanticVersion)? {
+        let regex = Regex {
+          tryCapture(oneOrMore(.digit)) { Int($0) }
+          "."
+          tryCapture(oneOrMore(.digit)) { Int($0) }
+          optionally {
+            "."
+            tryCapture(oneOrMore(.digit)) { Int($0) }
+          }
+          optionally {
+            "-"
+            capture(oneOrMore(.word))
+          }
+        }
+
+        guard let match = input[index..<bounds.upperBound].firstMatch(of: regex),
+              match.range.lowerBound == index
+        else { return nil }
+
+        let result = SemanticVersion(
+          major: match.result.1,
+          minor: match.result.2,
+          patch: match.result.3 ?? 0,
+          dev: match.result.4.map(String.init))
+        return (match.range.upperBound, result)
+      }
+    }
+    
+    let versions = [
+      ("1.0", SemanticVersion(major: 1, minor: 0, patch: 0)),
+      ("1.0.1", SemanticVersion(major: 1, minor: 0, patch: 1)),
+      ("12.100.5-dev", SemanticVersion(major: 12, minor: 100, patch: 5, dev: "dev")),
+    ]
+    
+    let parser = SemanticVersionParser()
+    for (str, version) in versions {
+      XCTAssertEqual(str.match(parser)?.match, version)
+    }
+  }
 }
 
 extension Unicode.Scalar {
