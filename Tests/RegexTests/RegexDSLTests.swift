@@ -283,7 +283,7 @@ class RegexDSLTests: XCTestCase {
     try _testDSLCaptures(
       ("Cafe\u{301}", nil),
       ("Cafe", "Cafe"),
-      captureType: Substring.self, ==)
+      matchType: Substring.self, ==)
     {
       oneOrMore(.word)
       UnicodeScalar("e")
