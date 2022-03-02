@@ -416,7 +416,7 @@ Operators may be used to apply set operations to character class members. The op
 
 These operators have a lower precedence than the implicit union of members, e.g `[ac-d&&a[d]]` is an intersection of the character classes `[ac-d]` and `[ad]`.
 
-To avoid ambiguity between .NET's subtraction syntax and range syntax, .NET specifies that a subtraction will only be parsed if the right-hand-side is a nested custom character class. We intend to follow this behavior.
+To avoid ambiguity between .NET's subtraction syntax and range syntax, .NET specifies that a subtraction will only be parsed if the right-hand-side is a nested custom character class. We propose following this behavior.
 
 
 ### Matching options
@@ -666,9 +666,9 @@ Engines that don't support a particular operator fallback to treating it as lite
 
 Unlike other engines, .NET supports the use of `-` to denote both a range as well as a set subtraction. .NET disambiguates this by only permitting its use as a subtraction if the right hand operand is a nested custom character class, otherwise it is a range operator. This conflicts with e.g ICU where `[x-[y]]`, in which the `-` is treated as literal.
 
-We intend to support the operators `&&`, `--`, and `~~`. This means that any regex literal containing these sequences in a custom character class while being written for an engine not supporting that operation will have a different semantic meaning in our engine. However this ought not to be a common occurrence, as specifying a character multiple times in a custom character class is redundant.
+We propose supporting the operators `&&`, `--`, and `~~`. This means that any regex literal containing these sequences in a custom character class while being written for an engine not supporting that operation will have a different semantic meaning in our engine. However this ought not to be a common occurrence, as specifying a character multiple times in a custom character class is redundant.
 
-In the interests of compatibility, we also intend on supporting the `-` operator, though we will likely want to emit a warning and encourage users to switch to `--`.
+In the interests of compatibility, we also propose supporting the `-` operator, though we will likely want to emit a warning and encourage users to switch to `--`.
 
 ### Nested custom character classes
 
@@ -685,15 +685,15 @@ PCRE does not support this feature, and as such treats `]` as the closing charac
 
 .NET does not support nested character classes in general, although allows them as the right-hand side of a subtraction operation.
 
-We intend on permitting nested custom character classes.
+We propose allowing nested custom character classes.
 
 ### `\U`
 
-In PCRE, if `PCRE2_ALT_BSUX` or `PCRE2_EXTRA_ALT_BSUX` are specified, `\U` matches literal `U`. However in ICU, `\Uhhhhhhhh` matches a hex sequence. We intend on following the ICU behavior.
+In PCRE, if `PCRE2_ALT_BSUX` or `PCRE2_EXTRA_ALT_BSUX` are specified, `\U` matches literal `U`. However in ICU, `\Uhhhhhhhh` matches a hex sequence. We propose following the ICU behavior.
 
 ### `{,n}`
 
-This quantifier is supported by Oniguruma, but in PCRE it matches the literal characters `{`, `,`, `n`, and `}` in sequence. We intend on supporting it as a quantifier.
+This quantifier is supported by Oniguruma, but in PCRE it matches the literal characters `{`, `,`, `n`, and `}` in sequence. We propose supporting it as a quantifier.
 
 ### `\DDD`
 
@@ -709,17 +709,17 @@ Otherwise it is treated as an octal sequence.
 
 Oniguruma follows all of these except the second. If the first digit is `8` or `9`, it is instead treated as the literal number, e.g `\81` is `81`. .NET also follows this behavior, but additionally has the last condition consider *all* groups, not just prior ones (as backreferences can refer to future groups in recursive cases).
 
-We intend to implement a simpler behavior more inline with ICU and Java. A `\DDD` sequence that does not start with a `0` will be treated as a backreference, otherwise it will be treated as an octal sequence. If an invalid backreference is formed with this syntax, we will suggest prefixing with a `0` if an octal sequence is desired.
+We propose a simpler behavior more inline with ICU and Java. A `\DDD` sequence that does not start with a `0` will be treated as a backreference, otherwise it will be treated as an octal sequence. If an invalid backreference is formed with this syntax, we will suggest prefixing with a `0` if an octal sequence is desired.
 
-One further difference exists between engines in the octal sequence case. In ICU, up to 3 additional digits are read after the `0`. In PCRE, only 2 additional digits may be interpreted as octal, the last is literal. We intend to follow the ICU behavior, as it is necessary when requiring a `0` prefix.
+One further difference exists between engines in the octal sequence case. In ICU, up to 3 additional digits are read after the `0`. In PCRE, only 2 additional digits may be interpreted as octal, the last is literal. We will follow the ICU behavior, as it is necessary when requiring a `0` prefix.
 
 ### `\x`
 
-In PCRE, a bare `\x` denotes the NUL character (`U+00`). In Oniguruma, it denotes literal `x`. We intend on following the PCRE behavior.
+In PCRE, a bare `\x` denotes the NUL character (`U+00`). In Oniguruma, it denotes literal `x`. We propose following the PCRE behavior.
 
 ### Whitespace in ranges
 
-In PCRE, `x{2,4}` is a range quantifier meaning that `x` can be matched from 2 to 4 times. However if any whitespace is introduced within the braces e.g `x{2, 4}`, it becomes an invalid range and is then treated as the literal characters instead. We find this behavior to be unintuitive, and therefore intend to parse any intermixed whitespace in the range.
+In PCRE, `x{2,4}` is a range quantifier meaning that `x` can be matched from 2 to 4 times. However if any whitespace is introduced within the braces e.g `x{2, 4}`, it becomes an invalid range and is then treated as the literal characters instead. We find this behavior to be unintuitive, and therefore propose parsing any intermixed whitespace in the range.
 
 ### Implicitly-scoped matching option scopes
 
@@ -727,7 +727,7 @@ PCRE and Oniguruma both support changing the active matching options through an 
 
 These sound similar, but have different semantics around alternations, e.g for `a(?i)b|c|d`, in Oniguruma this becomes `a(?i:b|c|d)`, where `a` is no longer part of the alternation. However in PCRE it becomes `a(?i:b)|(?i:c)|(?i:d)`, where `a` remains a child of the alternation.
 
-We intend on matching the PCRE behavior.
+We propose matching the PCRE behavior.
 
 ### Backreference condition kinds
 
@@ -739,15 +739,15 @@ PCRE and .NET allow for conditional patterns to reference a group by its name wi
 
 where `y` will only be matched if `(?<group1>x)` was matched. PCRE will always treat such syntax as a backreference condition, however .NET will only treat it as such if a group with that name exists somewhere in the regex (including after the conditional). Otherwise, .NET interprets `group1` as an arbitrary regular expression condition to try match against. Oniguruma on the other hand will always treat `group1` as an regex condition to match against.
 
-We intend to always parse such conditions as an arbitrary regular expression condition, and will emit a warning asking users to explicitly use the syntax `(?(<group1>)y)` if they want a backreference condition. This more explicit syntax is supported by both PCRE and Oniguruma.
+We propose parsing such conditions as an arbitrary regular expression condition, as long as they do not conflict with other known condition spellings such as `R&name`. If the condition has a name that matches a named group in the regex, we will emit a warning asking users to explicitly use the syntax `(?(<group1>)y)` if they want a backreference condition. This more explicit syntax is supported by both PCRE and Oniguruma.
 
 ### `\N`
 
-PCRE supports `\N` meaning "not a newline", however there are engines that treat it as a literal `N`. We intend on supporting the PCRE behavior.
+PCRE supports `\N` meaning "not a newline", however there are engines that treat it as a literal `N`. We propose supporting the PCRE behavior.
 
 ### Extended character property syntax
 
-ICU unifies the character property syntax `\p{...}` with the syntax for POSIX character classes `[:...:]`, such that they follow the same internal grammar, which allows referencing any Unicode character property in addition to the POSIX properties. We intend to support this, though it is a purely additive feature, and therefore should not conflict with regex engines that implement a more limited POSIX syntax.
+ICU unifies the character property syntax `\p{...}` with the syntax for POSIX character classes `[:...:]`, such that they follow the same internal grammar, which allows referencing any Unicode character property in addition to the POSIX properties. We propose supporting this, though it is a purely additive feature, and therefore should not conflict with regex engines that implement a more limited POSIX syntax.
 
 ### Script properties
 
@@ -759,7 +759,7 @@ As such we feel that the more desirable default behavior of shorthand script pro
 
 Various regex engines offer an "extended syntax" where whitespace is treated as non-semantic (e.g `a b c` is equivalent to `abc`), in addition to allowing end-of-line comments `# comment`. In both PCRE and Perl, this is enabled through the `(?x)`, and in later versions, `(?xx)` matching options. The former allows non-semantic whitespace outside of character classes, and the latter also allows non-semantic whitespace in custom character classes.
 
-Oniguruma, Java, and ICU however enable the more broad behavior under `(?x)`. We therefore intend to follow this behavior, with `(?x)` and `(?xx)` being treated the same.
+Oniguruma, Java, and ICU however enable the more broad behavior under `(?x)`. We therefore propose following this behavior, with `(?x)` and `(?xx)` being treated the same.
 
 Different regex engines also have different rules around what characters are considered non-semantic whitespace. When compiled with Unicode support, PCRE considers the following whitespace:
 
@@ -771,7 +771,7 @@ Different regex engines also have different rules around what characters are con
 - Line separator `U+2028`
 - Paragraph separator `U+2029`
 
-This is a subset of the scalars matched by `UnicodeScalar.isWhitespace`. Additionally, in a custom character class, PCRE only considers the space and tab characters as whitespace. Other engines do not differentiate between whitespace characters inside and outside custom character classes, and appear to follow a subset of this list. Therefore we intend to support exactly the characters in this list for the purposes of non-semantic whitespace parsing.
+This is a subset of the scalars matched by `UnicodeScalar.isWhitespace`. Additionally, in a custom character class, PCRE only considers the space and tab characters as whitespace. Other engines do not differentiate between whitespace characters inside and outside custom character classes, and appear to follow a subset of this list. Therefore we propose supporting exactly the characters in this list for the purposes of non-semantic whitespace parsing.
 
 ### Group numbering
 
@@ -785,7 +785,7 @@ In PCRE, groups are numbered according to the position of their opening parenthe
 
 The `(z)` group gets numbered before the named groups get numbered.
 
-We intend on matching the PCRE behavior where groups are numbered purely based on order.
+We propose matching the PCRE behavior where groups are numbered purely based on order.
 
 
 ## Swift canonical syntax
