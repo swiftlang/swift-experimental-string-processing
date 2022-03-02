@@ -690,17 +690,10 @@ class RegexDSLTests: XCTestCase {
       ("12.100.5-dev", SemanticVersion(major: 12, minor: 100, patch: 5, dev: "dev")),
     ]
     
-    let regex = Regex {
-      capture(SemanticVersionParser())
-    }
+    let parser = SemanticVersionParser()
     for (str, version) in versions {
-      XCTAssertEqual(str.match(regex)?.match.1, version)
+      XCTAssertEqual(str.match(parser)?.match, version)
     }
-    // FIXME: This yields an assertion in TypeConstruction.tupleType(_:)
-    // "Assertion failed: A one-element tuple is not a realistic Swift type"
-    //    for (str, version) in versions {
-    //      XCTAssertEqual(str.match(SemanticVersionParser())?.match, version)
-    //    }
   }
 }
 
