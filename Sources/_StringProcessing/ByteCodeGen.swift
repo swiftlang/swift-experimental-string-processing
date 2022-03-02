@@ -103,7 +103,7 @@ extension Compiler.ByteCodeGen {
 
     case .notTextSegment:
       builder.buildAssert { (input, pos, _) in
-        // TODO: Unicode word boundary algorithm?
+        // FIXME: Grapheme or word based on options
         !input.isOnGraphemeClusterBoundary(pos)
       }
 
