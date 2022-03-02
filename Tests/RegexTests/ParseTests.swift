@@ -107,22 +107,46 @@ func parseTest(
   serializedCaptures.deallocate()
 }
 
+/// Test delimiter lexing. Takes an input string that starts with a regex
+/// literal. If `ignoreTrailing` is true, there may be additional characters
+/// that follow the literal that are not considered part of it.
+@discardableResult
+func delimiterLexingTest(
+  _ input: String, ignoreTrailing: Bool = false,
+  file: StaticString = #file, line: UInt = #line
+) -> String {
+  input.withCString(encodedAs: UTF8.self) { ptr in
+    let endPtr = ptr + input.utf8.count
+    let (contents, delim, end) = try! lexRegex(start: ptr, end: endPtr)
+    if ignoreTrailing {
+      XCTAssertNotEqual(end, endPtr, file: file, line: line)
+    } else {
+      XCTAssertEqual(end, endPtr, file: file, line: line)
+    }
+
+    let rawPtr = UnsafeRawPointer(ptr)
+    let buffer = UnsafeRawBufferPointer(start: rawPtr, count: end - rawPtr)
+    let literal = String(decoding: buffer, as: UTF8.self)
+
+    let (parseContents, parseDelim) = droppingRegexDelimiters(literal)
+    XCTAssertEqual(contents, parseContents, file: file, line: line)
+    XCTAssertEqual(delim, parseDelim, file: file, line: line)
+    return literal
+  }
+}
+
+/// Test parsing an input string with regex delimiters. If `ignoreTrailing` is
+/// true, there may be additional characters that follow the literal that are
+/// not considered part of it.
 func parseWithDelimitersTest(
-  _ input: String, _ expecting: AST.Node,
+  _ input: String, _ expecting: AST.Node, ignoreTrailing: Bool = false,
   file: StaticString = #file, line: UInt = #line
 ) {
   // First try lexing.
-  input.withCString { ptr in
-    let (contents, delim, end) = try! lexRegex(start: ptr,
-                                               end: ptr + input.count)
-    XCTAssertEqual(end, ptr + input.count, file: file, line: line)
+  let literal = delimiterLexingTest(
+    input, ignoreTrailing: ignoreTrailing, file: file, line: line)
 
-    let (parseContents, parseDelim) = droppingRegexDelimiters(input)
-    XCTAssertEqual(contents, parseContents, file: file, line: line)
-    XCTAssertEqual(delim, parseDelim, file: file, line: line)
-  }
-
-  let orig = try! parseWithDelimiters(input)
+  let orig = try! parseWithDelimiters(literal)
   let ast = orig.root
   guard ast == expecting
           || ast._dump() == expecting._dump() // EQ workaround
@@ -196,6 +220,32 @@ func diagnosticTest(
     }
   } catch let e {
     XCTFail("Error without source location: \(e)", file: file, line: line)
+  }
+}
+
+func delimiterLexingDiagnosticTest(
+  _ input: String, _ expected: DelimiterLexError.Kind,
+  syntax: SyntaxOptions = .traditional,
+  file: StaticString = #file, line: UInt = #line
+) {
+  do {
+    _ = try input.withCString { ptr in
+      try lexRegex(start: ptr, end: ptr + input.count)
+    }
+    XCTFail("""
+      Passed, but expected error: \(expected)
+    """, file: file, line: line)
+  } catch let e as DelimiterLexError {
+    guard e.kind == expected else {
+      XCTFail("""
+
+        Expected: \(expected)
+        Actual: \(e.kind)
+      """, file: file, line: line)
+      return
+    }
+  } catch let e {
+    XCTFail("Unexpected error type: \(e)", file: file, line: line)
   }
 }
 
@@ -1447,6 +1497,9 @@ extension RegexTests {
     parseWithDelimitersTest("#/a b/#", concat("a", " ", "b"))
     parseWithDelimitersTest("#|a b|#", concat("a", "b"))
 
+    parseWithDelimitersTest("re'a b'", concat("a", " ", "b"))
+    parseWithDelimitersTest("rx'a b'", concat("a", "b"))
+
     parseWithDelimitersTest("#|[a b]|#", charClass("a", "b"))
     parseWithDelimitersTest(
       "#|(?-x)[a b]|#", changeMatchingOptions(
@@ -1471,6 +1524,71 @@ extension RegexTests {
     parseWithDelimitersTest("#|a||#", alt("a", empty()))
 
     parseWithDelimitersTest("re'x*'", zeroOrMore(of: "x"))
+
+    parseWithDelimitersTest(#"re'🔥🇩🇰'"#, concat("🔥", "🇩🇰"))
+    parseWithDelimitersTest(#"re'\🔥✅'"#, concat("🔥", "✅"))
+
+    // Printable ASCII characters.
+    delimiterLexingTest(##"re' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~'"##)
+
+    // MARK: Delimiter skipping: Make sure we can skip over the ending delimiter
+    // if it's clear that it's part of the regex syntax.
+
+    parseWithDelimitersTest(
+      #"re'(?'a_bcA0'\')'"#, namedCapture("a_bcA0", "'"))
+    parseWithDelimitersTest(
+      #"re'(?'a_bcA0-c1A'x*)'"#,
+      balancedCapture(name: "a_bcA0", priorName: "c1A", zeroOrMore(of: "x")))
+
+    parseWithDelimitersTest(
+      #"rx' (?'a_bcA0' a b)'"#, concat(namedCapture("a_bcA0", concat("a", "b"))))
+
+    parseWithDelimitersTest(
+      #"re'(?('a_bcA0')x|y)'"#, conditional(
+        .groupMatched(ref("a_bcA0")), trueBranch: "x", falseBranch: "y"))
+    parseWithDelimitersTest(
+      #"re'(?('+20')\')'"#, conditional(
+        .groupMatched(ref(plus: 20)), trueBranch: "'", falseBranch: empty()))
+
+    parseWithDelimitersTest(
+      #"re'a\k'b0A''"#, concat("a", backreference(.named("b0A"))))
+    parseWithDelimitersTest(
+      #"re'\k'+2-1''"#, backreference(.relative(2), recursionLevel: -1))
+
+    parseWithDelimitersTest(
+      #"re'a\g'b0A''"#, concat("a", subpattern(.named("b0A"))))
+    parseWithDelimitersTest(
+      #"re'\g'-1'\''"#, concat(subpattern(.relative(-1)), "'"))
+
+    parseWithDelimitersTest(
+      #"re'(?C'a*b\c 🔥_ ;')'"#, pcreCallout(.string(#"a*b\c 🔥_ ;"#)))
+
+    // Fine, because we don't end up skipping.
+    delimiterLexingTest(#"re'(?'"#)
+    delimiterLexingTest(#"re'(?('"#)
+    delimiterLexingTest(#"re'\k'"#)
+    delimiterLexingTest(#"re'\g'"#)
+    delimiterLexingTest(#"re'(?C'"#)
+
+    // Not a valid group name, but we can still skip over it.
+    delimiterLexingTest(#"re'(?'🔥')'"#)
+
+    // Escaped, so don't skip. These will ignore the ending `'` as we've already
+    // closed the literal.
+    parseWithDelimitersTest(
+      #"re'\(?''"#, zeroOrOne(of: "("), ignoreTrailing: true
+    )
+    parseWithDelimitersTest(
+      #"re'\\k''"#, concat("\\", "k"), ignoreTrailing: true
+    )
+    parseWithDelimitersTest(
+      #"re'\\g''"#, concat("\\", "g"), ignoreTrailing: true
+    )
+    parseWithDelimitersTest(
+      #"re'\(?C''"#, concat(zeroOrOne(of: "("), "C"), ignoreTrailing: true
+    )
+    delimiterLexingTest(#"re'(\?''"#, ignoreTrailing: true)
+    delimiterLexingTest(#"re'\(?(''"#, ignoreTrailing: true)
 
     // MARK: Parse not-equal
 
@@ -1753,6 +1871,10 @@ extension RegexTests {
     diagnosticTest("(?<a-b", .expected(">"))
     diagnosticTest("(?<a-b>", .expected(")"))
 
+    // MARK: Bad escapes
+
+    diagnosticTest("\\", .expectedEscape)
+
     // MARK: Text Segment options
 
     diagnosticTest("(?-y{g})", .cannotRemoveTextSegmentOptions)
@@ -1773,6 +1895,12 @@ extension RegexTests {
 
     diagnosticTest(#"(?<#>)"#, .identifierMustBeAlphaNumeric(.groupName))
     diagnosticTest(#"(?'1A')"#, .identifierCannotStartWithNumber(.groupName))
+
+    // TODO: It might be better if tried to consume up to the closing `'` and
+    // diagnosed an invalid group name based on that.
+    diagnosticTest(#"(?'abc ')"#, .expected("'"))
+
+    diagnosticTest("(?'🔥')", .identifierMustBeAlphaNumeric(.groupName))
 
     diagnosticTest(#"(?'-')"#, .expectedIdentifier(.groupName))
     diagnosticTest(#"(?'--')"#, .identifierMustBeAlphaNumeric(.groupName))
@@ -1884,6 +2012,27 @@ extension RegexTests {
 
     // TODO: This diagnostic could be better.
     diagnosticTest("(*LIMIT_DEPTH=-1", .expectedNumber("", kind: .decimal))
+  }
+
+  func testDelimiterLexingErrors() {
+
+    // MARK: Printable ASCII
+
+    delimiterLexingDiagnosticTest(#"re'\\#n'"#, .endOfString)
+    for i: UInt8 in 0x1 ..< 0x20 where i != 0xA && i != 0xD { // U+A & U+D are \n and \r.
+      delimiterLexingDiagnosticTest("re'\(UnicodeScalar(i))'", .unprintableASCII)
+    }
+    delimiterLexingDiagnosticTest("re'\n'", .endOfString)
+    delimiterLexingDiagnosticTest("re'\r'", .endOfString)
+    delimiterLexingDiagnosticTest("re'\u{7F}'", .unprintableASCII)
+
+    // MARK: Delimiter skipping
+
+    delimiterLexingDiagnosticTest("re'(?''", .endOfString)
+    delimiterLexingDiagnosticTest("re'(?'abc'", .endOfString)
+    delimiterLexingDiagnosticTest("re'(?('abc'", .endOfString)
+    delimiterLexingDiagnosticTest(#"re'\k'ab_c0+-'"#, .endOfString)
+    delimiterLexingDiagnosticTest(#"re'\g'ab_c0+-'"#, .endOfString)
   }
 
   func testlibswiftDiagnostics() {
