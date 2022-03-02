@@ -34,7 +34,7 @@ To our knowledge, all other popular regex engines support a subset of the above 
 
 We also support [UTS#18][uts18]'s full set of character class operators (to our knowledge no other engine does). Beyond that, UTS#18 deals with semantics rather than syntax, and what syntax it uses is covered by the above list. We also parse Java's properties (e.g. `\p{javaLowerCase}`), meaning we support a superset of Java 8 as well.
 
-Note that there are minor syntactic incompatibilities and ambiguities involved in this approach. Each is addressed in the relevant sections below
+Note that there are minor syntactic incompatibilities and ambiguities involved in this approach. Each is addressed in the relevant sections below.
 
 Regex syntax will be part of Swift's source-compatibility story as well as its binary-compatibility story. Thus, we present a detailed and comprehensive design.
 
