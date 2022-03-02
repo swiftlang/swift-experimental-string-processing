@@ -63,71 +63,137 @@ struct DelimiterLexError: Error, CustomStringConvertible {
   }
 }
 
-/// Attempt to lex a regex literal between `start` and `end`, returning either
-/// the contents and pointer from which to resume lexing, or an error.
-func lexRegex(
-  start: UnsafeRawPointer, end: UnsafeRawPointer
-) throws -> (contents: String, Delimiter, end: UnsafeRawPointer) {
-  precondition(start <= end)
-  var current = start
+fileprivate struct DelimiterLexer {
+  let start: UnsafeRawPointer
+  var cursor: UnsafeRawPointer
+  let end: UnsafeRawPointer
+
+  init(start: UnsafeRawPointer, end: UnsafeRawPointer) {
+    precondition(start <= end)
+    self.start = start
+    self.cursor = start
+    self.end = end
+  }
 
   func ascii(_ s: Unicode.Scalar) -> UInt8 {
     assert(s.value <= 0x7F)
     return UInt8(asserting: s.value)
   }
-  func load(offset: Int) -> UInt8? {
-    guard current + offset < end else { return nil }
-    return current.load(fromByteOffset: offset, as: UInt8.self)
-  }
-  func load() -> UInt8? { load(offset: 0) }
-  func advance(_ n: Int = 1) {
-    precondition(current + n <= end, "Cannot advance past end")
-    current = current.advanced(by: n)
+
+  /// Return the byte at the current cursor, or `nil` if the end of the buffer
+  /// has been reached.
+  func load() -> UInt8? {
+    guard cursor < end else { return nil }
+    return cursor.load(as: UInt8.self)
   }
 
-  func tryEat(_ utf8: String.UTF8View) -> Bool {
-    for (i, idx) in utf8.indices.enumerated() {
-      guard load(offset: i) == utf8[idx] else { return false }
-    }
-    advance(utf8.count)
+  /// Return the slice of `count` bytes from a specified cursor position, or
+  /// `nil` if there are fewer than `count` bytes until the end of the buffer.
+  func slice(
+    at cursor: UnsafeRawPointer, _ count: Int
+  ) -> UnsafeRawBufferPointer? {
+    guard cursor + count <= end else { return nil }
+    return UnsafeRawBufferPointer(start: cursor, count: count)
+  }
+
+  /// Return the slice of `count` bytes from the current cursor, or `nil` if
+  /// there are fewer than `count` bytes until the end of the buffer.
+  func slice(_ count: Int) -> UnsafeRawBufferPointer? {
+    slice(at: cursor, count)
+  }
+
+  /// Advance the cursor `n` bytes.
+  mutating func advanceCursor(_ n: Int = 1) {
+    cursor += n
+    precondition(cursor <= end, "Cannot advance past end")
+  }
+
+  /// Check to see if a UTF-8 sequence can be eaten from the current cursor.
+  func canEat(_ utf8: String.UTF8View) -> Bool {
+    guard let slice = slice(utf8.count) else { return false }
+    return slice.elementsEqual(utf8)
+  }
+
+  /// Attempt to eat a UTF-8 byte sequence, returning `true` if successful.
+  mutating func tryEat(_ utf8: String.UTF8View) -> Bool {
+    guard canEat(utf8) else { return false }
+    advanceCursor(utf8.count)
     return true
   }
 
-  // Try to lex the opening delimiter.
-  guard let delimiter = Delimiter.allCases.first(
-    where: { tryEat($0.opening.utf8) }
-  ) else {
-    throw DelimiterLexError(.unknownDelimiter, resumeAt: current.successor())
+  /// Attempt to eat a particular closing delimiter, returning the contents of
+  /// the literal, and ending pointer, or `nil` if this is not a delimiter
+  /// ending.
+  mutating func tryEatEnding(
+    _ delimiter: Delimiter, contentsStart: UnsafeRawPointer
+  ) throws -> (contents: String, end: UnsafeRawPointer)? {
+    let contentsEnd = cursor
+    guard tryEat(delimiter.closing.utf8) else { return nil }
+
+    // Form a string from the contents and make sure it's valid UTF-8.
+    let count = contentsEnd - contentsStart
+    let contents = UnsafeRawBufferPointer(
+      start: contentsStart, count: count)
+    let s = String(decoding: contents, as: UTF8.self)
+
+    guard s.utf8.elementsEqual(contents) else {
+      throw DelimiterLexError(.invalidUTF8, resumeAt: cursor)
+    }
+    return (contents: s, end: cursor)
   }
 
-  let contentsStart = current
-  while true {
-    switch load() {
-    case nil, ascii("\n"), ascii("\r"):
-      throw DelimiterLexError(.endOfString, resumeAt: current)
+  /// Attempt to advance the lexer, throwing an error if the end of a line or
+  /// the end of the buffer is reached.
+  mutating func advance(escaped: Bool = false) throws {
+    guard let next = load() else {
+      throw DelimiterLexError(.endOfString, resumeAt: cursor)
+    }
+    switch UnicodeScalar(next) {
+    case let next where !next.isASCII:
+      // Just advance into a UTF-8 sequence. It shouldn't matter that we'll
+      // iterate through each byte as we only match against ASCII, and we
+      // validate it at the end. This case is separated out so we can just deal
+      // with the ASCII cases below.
+      advanceCursor()
 
-    case ascii("\\"):
-      // Skip next byte.
-      advance(2)
+    case "\n", "\r":
+      throw DelimiterLexError(.endOfString, resumeAt: cursor)
+
+    case "\0":
+      // TODO: Warn to match the behavior of String literal lexer? Or should
+      // we error as unprintable?
+      advanceCursor()
+
+    case "\\" where !escaped:
+      // Advance again for an escape sequence.
+      advanceCursor()
+      try advance(escaped: true)
+
 
     default:
+      advanceCursor()
+    }
+  }
+
+  /*consuming*/ mutating func lex(
+  ) throws -> (contents: String, Delimiter, end: UnsafeRawPointer) {
+
+    // Try to lex the opening delimiter.
+    guard let delimiter = Delimiter.allCases.first(
+      where: { tryEat($0.opening.utf8) }
+    ) else {
+      throw DelimiterLexError(.unknownDelimiter, resumeAt: cursor.successor())
+    }
+
+    let contentsStart = cursor
+    while true {
       // Try to lex the closing delimiter.
-      let contentsEnd = current
-      guard tryEat(delimiter.closing.utf8) else {
-        advance()
-        continue
+      if let (contents, end) = try tryEatEnding(delimiter,
+                                                contentsStart: contentsStart) {
+        return (contents, delimiter, end)
       }
-
-      // Form a string from the contents and make sure it's valid UTF-8.
-      let count = contentsEnd - contentsStart
-      let contents = UnsafeRawBufferPointer(
-        start: contentsStart, count: count)
-      let s = String(decoding: contents, as: UTF8.self)
-
-      guard s.utf8.elementsEqual(contents) else {
-        throw DelimiterLexError(.invalidUTF8, resumeAt: current)
-      }
-      return (contents: s, delimiter, end: current)
+      // Try to advance the lexer.
+      try advance()
     }
   }
 }
@@ -150,4 +216,13 @@ func droppingRegexDelimiters(_ str: String) -> (String, Delimiter) {
     }
   }
   fatalError("No valid delimiters")
+}
+
+/// Attempt to lex a regex literal between `start` and `end`, returning either
+/// the contents and pointer from which to resume lexing, or an error.
+func lexRegex(
+  start: UnsafeRawPointer, end: UnsafeRawPointer
+) throws -> (contents: String, Delimiter, end: UnsafeRawPointer) {
+  var lexer = DelimiterLexer(start: start, end: end)
+  return try lexer.lex()
 }
