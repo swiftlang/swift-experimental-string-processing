@@ -42,6 +42,7 @@ struct DelimiterLexError: Error, CustomStringConvertible {
     case endOfString
     case invalidUTF8 // TODO: better range reporting
     case unknownDelimiter
+    case unprintableASCII
   }
 
   var kind: Kind
@@ -59,6 +60,7 @@ struct DelimiterLexError: Error, CustomStringConvertible {
     case .endOfString: return "unterminated regex literal"
     case .invalidUTF8: return "invalid UTF-8 found in source file"
     case .unknownDelimiter: return "unknown regex literal delimiter"
+    case .unprintableASCII: return "unprintable ASCII character found in source file"
     }
   }
 }
@@ -169,6 +171,11 @@ fileprivate struct DelimiterLexer {
       advanceCursor()
       try advance(escaped: true)
 
+    case let next where !next.isPrintableASCII:
+      // Diagnose unprintable ASCII.
+      // TODO: Ideally we would recover and continue to lex until the ending
+      // delimiter.
+      throw DelimiterLexError(.unprintableASCII, resumeAt: cursor.successor())
 
     default:
       advanceCursor()

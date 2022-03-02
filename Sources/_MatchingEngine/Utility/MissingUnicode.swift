@@ -661,3 +661,11 @@ extension Character {
 
   public var isWordCharacter: Bool { isLetter || isNumber || self == "_" }
 }
+
+extension UnicodeScalar {
+  public var isPrintableASCII: Bool {
+    // Exclude non-printables before the space character U+20, and anything
+    // including and above the DEL character U+7F.
+    value >= 0x20 && value < 0x7F
+  }
+}

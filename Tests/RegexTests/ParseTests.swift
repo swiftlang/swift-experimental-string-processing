@@ -107,20 +107,26 @@ func parseTest(
   serializedCaptures.deallocate()
 }
 
-func parseWithDelimitersTest(
-  _ input: String, _ expecting: AST.Node,
-  file: StaticString = #file, line: UInt = #line
+func delimiterLexingTest(
+  _ input: String, file: StaticString = #file, line: UInt = #line
 ) {
-  // First try lexing.
-  input.withCString { ptr in
-    let (contents, delim, end) = try! lexRegex(start: ptr,
-                                               end: ptr + input.count)
-    XCTAssertEqual(end, ptr + input.count, file: file, line: line)
+  input.withCString(encodedAs: UTF8.self) { ptr in
+    let endPtr = ptr + input.utf8.count
+    let (contents, delim, end) = try! lexRegex(start: ptr, end: endPtr)
+    XCTAssertEqual(end, endPtr, file: file, line: line)
 
     let (parseContents, parseDelim) = droppingRegexDelimiters(input)
     XCTAssertEqual(contents, parseContents, file: file, line: line)
     XCTAssertEqual(delim, parseDelim, file: file, line: line)
   }
+}
+
+func parseWithDelimitersTest(
+  _ input: String, _ expecting: AST.Node,
+  file: StaticString = #file, line: UInt = #line
+) {
+  // First try lexing.
+  delimiterLexingTest(input, file: file, line: line)
 
   let orig = try! parseWithDelimiters(input)
   let ast = orig.root
@@ -196,6 +202,32 @@ func diagnosticTest(
     }
   } catch let e {
     XCTFail("Error without source location: \(e)", file: file, line: line)
+  }
+}
+
+func delimiterLexingDiagnosticTest(
+  _ input: String, _ expected: DelimiterLexError.Kind,
+  syntax: SyntaxOptions = .traditional,
+  file: StaticString = #file, line: UInt = #line
+) {
+  do {
+    _ = try input.withCString { ptr in
+      try lexRegex(start: ptr, end: ptr + input.count)
+    }
+    XCTFail("""
+      Passed, but expected error: \(expected)
+    """, file: file, line: line)
+  } catch let e as DelimiterLexError {
+    guard e.kind == expected else {
+      XCTFail("""
+
+        Expected: \(expected)
+        Actual: \(e.kind)
+      """, file: file, line: line)
+      return
+    }
+  } catch let e {
+    XCTFail("Unexpected error type: \(e)", file: file, line: line)
   }
 }
 
@@ -1472,6 +1504,11 @@ extension RegexTests {
 
     parseWithDelimitersTest("re'x*'", zeroOrMore(of: "x"))
 
+    parseWithDelimitersTest(#"re'🔥🇩🇰'"#, concat("🔥", "🇩🇰"))
+    parseWithDelimitersTest(#"re'\🔥✅'"#, concat("🔥", "✅"))
+
+    // Printable ASCII characters.
+    delimiterLexingTest(##"re' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~'"##)
     // MARK: Parse not-equal
 
     // Make sure dumping output correctly reflects differences in AST.
@@ -1888,6 +1925,16 @@ extension RegexTests {
 
     // TODO: This diagnostic could be better.
     diagnosticTest("(*LIMIT_DEPTH=-1", .expectedNumber("", kind: .decimal))
+  }
+
+  func testDelimiterLexingErrors() {
+    delimiterLexingDiagnosticTest(#"re'\\#n'"#, .endOfString)
+    for i: UInt8 in 0x1 ..< 0x20 where i != 0xA && i != 0xD { // U+A & U+D are \n and \r.
+      delimiterLexingDiagnosticTest("re'\(UnicodeScalar(i))'", .unprintableASCII)
+    }
+    delimiterLexingDiagnosticTest("re'\n'", .endOfString)
+    delimiterLexingDiagnosticTest("re'\r'", .endOfString)
+    delimiterLexingDiagnosticTest("re'\u{7F}'", .unprintableASCII)
   }
 
   func testlibswiftDiagnostics() {
