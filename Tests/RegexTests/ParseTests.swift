@@ -1753,6 +1753,10 @@ extension RegexTests {
     diagnosticTest("(?<a-b", .expected(">"))
     diagnosticTest("(?<a-b>", .expected(")"))
 
+    // MARK: Bad escapes
+
+    diagnosticTest("\\", .expectedEscape)
+
     // MARK: Text Segment options
 
     diagnosticTest("(?-y{g})", .cannotRemoveTextSegmentOptions)

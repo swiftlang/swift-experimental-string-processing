@@ -86,6 +86,12 @@ extension Source {
     tryEat(anyOf: set)
   }
 
+  /// Try to eat any character, returning `nil` if the input has been exhausted.
+  mutating func tryEat() -> Char? {
+    guard !isEmpty else { return nil }
+    return eat()
+  }
+
   mutating func eat(asserting c: Char) {
     assert(peek() == c)
     advance()

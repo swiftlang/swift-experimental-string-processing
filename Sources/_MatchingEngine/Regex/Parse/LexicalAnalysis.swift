@@ -1472,7 +1472,9 @@ extension Source {
         return ref
       }
 
-      let char = src.eat()
+      guard let char = src.tryEat() else {
+        throw ParseError.expectedEscape
+      }
 
       // Single-character builtins.
       if let builtin = AST.Atom.EscapedBuiltin(
