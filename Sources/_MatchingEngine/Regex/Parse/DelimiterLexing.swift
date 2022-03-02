@@ -15,12 +15,14 @@ enum Delimiter: Hashable, CaseIterable {
   case traditional
   case experimental
   case reSingleQuote
+  case rxSingleQuote
 
   var openingAndClosing: (opening: String, closing: String) {
     switch self {
     case .traditional: return ("#/", "/#")
     case .experimental: return ("#|", "|#")
     case .reSingleQuote: return ("re'", "'")
+    case .rxSingleQuote: return ("rx'", "'")
     }
   }
   var opening: String { openingAndClosing.opening }
@@ -31,7 +33,7 @@ enum Delimiter: Hashable, CaseIterable {
     switch self {
     case .traditional, .reSingleQuote:
       return .traditional
-    case .experimental:
+    case .experimental, .rxSingleQuote:
       return .experimental
     }
   }
@@ -134,11 +136,11 @@ fileprivate struct DelimiterLexer {
   /// Attempt to skip over a closing delimiter character that is unlikely to be
   /// the actual closing delimiter.
   mutating func trySkipDelimiter(_ delimiter: Delimiter) {
-    // Only the closing `'` for re'...' can potentially be skipped over.
+    // Only the closing `'` for re'...'/rx'...' can potentially be skipped over.
     switch delimiter {
     case .traditional, .experimental:
       return
-    case .reSingleQuote:
+    case .reSingleQuote, .rxSingleQuote:
       break
     }
     guard load() == ascii("'") else { return }

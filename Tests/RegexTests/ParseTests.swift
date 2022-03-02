@@ -1497,6 +1497,9 @@ extension RegexTests {
     parseWithDelimitersTest("#/a b/#", concat("a", " ", "b"))
     parseWithDelimitersTest("#|a b|#", concat("a", "b"))
 
+    parseWithDelimitersTest("re'a b'", concat("a", " ", "b"))
+    parseWithDelimitersTest("rx'a b'", concat("a", "b"))
+
     parseWithDelimitersTest("#|[a b]|#", charClass("a", "b"))
     parseWithDelimitersTest(
       "#|(?-x)[a b]|#", changeMatchingOptions(
@@ -1536,6 +1539,9 @@ extension RegexTests {
     parseWithDelimitersTest(
       #"re'(?'a_bcA0-c1A'x*)'"#,
       balancedCapture(name: "a_bcA0", priorName: "c1A", zeroOrMore(of: "x")))
+
+    parseWithDelimitersTest(
+      #"rx' (?'a_bcA0' a b)'"#, concat(namedCapture("a_bcA0", concat("a", "b"))))
 
     parseWithDelimitersTest(
       #"re'(?('a_bcA0')x|y)'"#, conditional(
