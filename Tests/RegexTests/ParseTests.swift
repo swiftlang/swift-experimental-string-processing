@@ -1053,13 +1053,13 @@ extension RegexTests {
 
     parseTest(#"\p{sc=grek}"#, prop(.script(.greek)))
     parseTest(#"\p{sc=isGreek}"#, prop(.script(.greek)))
-    parseTest(#"\p{Greek}"#, prop(.script(.greek)))
-    parseTest(#"\p{isGreek}"#, prop(.script(.greek)))
+    parseTest(#"\p{Greek}"#, prop(.scriptExtension(.greek)))
+    parseTest(#"\p{isGreek}"#, prop(.scriptExtension(.greek)))
     parseTest(#"\P{Script=Latn}"#, prop(.script(.latin), inverted: true))
     parseTest(#"\p{script=zzzz}"#, prop(.script(.unknown)))
     parseTest(#"\p{ISscript=iszzzz}"#, prop(.script(.unknown)))
     parseTest(#"\p{scx=bamum}"#, prop(.scriptExtension(.bamum)))
-    parseTest(#"\p{ISBAMUM}"#, prop(.script(.bamum)))
+    parseTest(#"\p{ISBAMUM}"#, prop(.scriptExtension(.bamum)))
 
     parseTest(#"\p{alpha}"#, prop(.binary(.alphabetic)))
     parseTest(#"\p{DEP}"#, prop(.binary(.deprecated)))
