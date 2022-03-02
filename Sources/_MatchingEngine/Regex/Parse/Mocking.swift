@@ -52,7 +52,7 @@ func libswiftLexRegexLiteral(
     let (_, _, endPtr) = try lexRegex(start: inputPtr, end: bufferEndPtr)
     curPtrPtr.pointee = endPtr.assumingMemoryBound(to: CChar.self)
     return false
-  } catch let error as LexError {
+  } catch let error as DelimiterLexError {
     if error.kind == .unknownDelimiter {
       // An unknown delimiter should be recovered from, as we may want to try
       // lex something else.
@@ -66,7 +66,7 @@ func libswiftLexRegexLiteral(
     // closing delimiters, which would help with code completion.
     return true
   } catch {
-    fatalError("Should be a LexError")
+    fatalError("Should be a DelimiterLexError")
   }
 }
 

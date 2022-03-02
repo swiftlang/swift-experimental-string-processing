@@ -37,7 +37,7 @@ enum Delimiter: Hashable, CaseIterable {
   }
 }
 
-struct LexError: Error, CustomStringConvertible {
+struct DelimiterLexError: Error, CustomStringConvertible {
   enum Kind: Hashable {
     case endOfString
     case invalidUTF8 // TODO: better range reporting
@@ -97,14 +97,14 @@ func lexRegex(
   guard let delimiter = Delimiter.allCases.first(
     where: { tryEat($0.opening.utf8) }
   ) else {
-    throw LexError(.unknownDelimiter, resumeAt: current.successor())
+    throw DelimiterLexError(.unknownDelimiter, resumeAt: current.successor())
   }
 
   let contentsStart = current
   while true {
     switch load() {
     case nil, ascii("\n"), ascii("\r"):
-      throw LexError(.endOfString, resumeAt: current)
+      throw DelimiterLexError(.endOfString, resumeAt: current)
 
     case ascii("\\"):
       // Skip next byte.
@@ -125,7 +125,7 @@ func lexRegex(
       let s = String(decoding: contents, as: UTF8.self)
 
       guard s.utf8.elementsEqual(contents) else {
-        throw LexError(.invalidUTF8, resumeAt: current)
+        throw DelimiterLexError(.invalidUTF8, resumeAt: current)
       }
       return (contents: s, delimiter, end: current)
     }
