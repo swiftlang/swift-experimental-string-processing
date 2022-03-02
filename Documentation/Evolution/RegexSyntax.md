@@ -1,20 +1,14 @@
 <!--
-Hello, we want to issue an update to [Regular Expression Literals](https://forums.swift.org/t/pitch-regular-expression-literals/52820) and prepare for a formal proposal. The great delimiter deliberation continues to unfold, so in the meantime, we have a significant amount of surface area to present for review/feedback: the syntax _inside_ a regex literal.
+Hello, we want to issue an update to [Regular Expression Literals](https://forums.swift.org/t/pitch-regular-expression-literals/52820) and prepare for a formal proposal. The great delimiter deliberation continues to unfold, so in the meantime, we have a significant amount of surface area to present for review/feedback: the syntax _inside_ a regex literal. Additionally, this is the syntax accepted from a string used for run-time regex construction, so we're devoting an entire pitch/proposal to the topic of _regex syntax_, distinct from the result builder DSL or the choice of delimiters for literals. 
 -->
 
-# Regex Literal Interior Syntax
+# Regex Syntax
 
 - Authors: Hamish Knight, Michael Ilseman
 
 ## Introduction
 
-Regex literals declare a string processing algorithm using syntax familiar across a variety of languages and tools throughout programming history. Formalizing regex literals in Swift requires:
-
-- Choosing a delimiter (e.g. `#/.../#` or `re'...'`).
-- Detailing the "interior syntax" accepted in between delimiters.
-- Specifying actual types and relevant protocols for the literal.
-
-We present a detailed and comprehensive treatment of regex literal interior syntax. The syntax we're proposing is large enough for its own dedicated discussion ahead of a full regex literal proposal.
+A regex declares a string processing algorithm using syntax familiar across a variety of languages and tools throughout programming history. Regexes can be created from a string at run time or from a literal at compile time. The contents of that run-time string, or the contents in-between the compile-time literal's delimiters, uses regex syntax. We present a detailed and comprehensive treatment of regex syntax.
 
 This is part of a larger effort in supporting regex literals, which in turn is part of a larger effort towards better string processing using regex. See [Pitch and Proposal Status](https://github.com/apple/swift-experimental-string-processing/issues/107), which tracks each relevant piece.
 
@@ -23,7 +17,7 @@ This is part of a larger effort in supporting regex literals, which in turn is p
 
 Swift aims to be a pragmatic programming language, striking a balance between familiarity, interoperability, and advancing the art. Swift's `String` presents a uniquely Unicode-forward model of string, but currently suffers from limited processing facilities.
 
-The full string processing effort includes a literal, a result builder DSL, protocols for intermixing 3rd party industrial-strength parsers with regex declarations, strong types, and a slew of regex-powered algorithms over strings.
+The full string processing effort includes a regex type with strongly typed captures, the ability to create a regex from a string at runtime, a compile-time literal, a result builder DSL, protocols for intermixing 3rd party industrial-strength parsers with regex declarations, and a slew of regex-powered algorithms over strings.
 
 This proposal specifically hones in on the _familiarity_ aspect by providing a best-in-class treatment of familiar regex syntax.
 
@@ -42,11 +36,11 @@ We also support [UTS#18][uts18]'s full set of character class operators (to our 
 
 Note that there are minor syntactic incompatibilities and ambiguities involved in this approach. Each is addressed in the relevant sections below
 
-Regex literal interior syntax will be part of Swift's source-compatibility story as well as its binary-compatibility story. Thus, we present a detailed and comprehensive design.
+Regex syntax will be part of Swift's source-compatibility story as well as its binary-compatibility story. Thus, we present a detailed and comprehensive design.
 
 ## Detailed Design
 
-We propose the following syntax for use inside Swift regex literals.
+We propose the following syntax for regex.
 
 <details><summary>Grammar Notation</summary>
 
@@ -79,7 +73,7 @@ Alternation   -> Concatenation ('|' Concatenation)*
 Concatenation -> (!'|' !')' ConcatComponent)*
 ```
 
-A regex literal may be prefixed with a sequence of [global matching options](#pcre-global-matching-options). A literal's contents can be empty or a sequence of alternatives separated by `|`.
+A regex may be prefixed with a sequence of [global matching options](#pcre-global-matching-options). Its contents can be empty or a sequence of alternatives separated by `|`.
 
 Alternatives are a series of expressions concatenated together. The concatentation ends with either a `|` denoting the end of the alternative or a `)` denoting the end of a recursively parsed group.
 
@@ -471,6 +465,8 @@ These options are specific to the Swift regex matching engine and control the se
 - `u`: Unicode scalar matching.
 - `b`: Byte matching.
 
+Further details on these are TBD and outside the scope of this pitch.
+      
 ### References
 
 ```
@@ -816,9 +812,10 @@ We are deferring runtime support for callouts from regex literals as future work
 
 ## Alternatives Considered
 
-### Skip the literals
 
-The top alternative is to just skip regex literals and only ship the result builder DSL. However, doing so would miss out on the familiarity benefits of existing regex syntax.
+### Skip the syntax
+
+The top alternative is to just skip regex syntax altogether by only shipping the result builder DSL and forbidding run-time regex construction from strings. However, doing so would miss out on the familiarity benefits of existing regex syntax. Additionally, without support for run-time strings containing regex syntax, important domains would be closed off from better string processing, such as command-line tools and user-input searches. This would land us in a confusing world where NSRegularExpression, even though it operates over a fundamentally different model of string than Swift's `String` and exhibits different behavior than Swift regexes, is still used for these purposes.
 
 We consider our proposed direction to be more compelling, especially when coupled with refactoring actions to convert literals into regex DSLs.
 
@@ -830,11 +827,11 @@ We are prototyping an "experimental" Swift extended syntax, which is future work
 
 ### Support a minimal syntactic subset
 
-Regex literal interior syntax will become part of Swift's source and binary-compatibility story, so a reasonable alternative is to support the absolute minimal syntactic subset available. However, we would need to ensure that such a minimal approach is extensible far into the future. Because syntax decisions can impact each other, we would want to consider the ramifications of this full syntactic superset ahead of time anyways.
+Regex syntax will become part of Swift's source and binary-compatibility story, so a reasonable alternative is to support the absolute minimal syntactic subset available. However, we would need to ensure that such a minimal approach is extensible far into the future. Because syntax decisions can impact each other, we would want to consider the ramifications of this full syntactic superset ahead of time anyways.
 
-Even though it is more work up-front, and creates a longer proposal, it is less risky to support the full intended syntax. The proposed superset maximizes the familiarity benefit of regex literals.
+Even though it is more work up-front and creates a longer proposal, it is less risky to support the full intended syntax. The proposed superset maximizes the familiarity benefit of regex syntax.
 
-Note that this proposal regards _syntactic_ support, and does not necessarily mean that everything that can be written will be supported by Swift's run-time in the initial release. Support for more obscure features may appear over time, see [MatchingEngine Capabilities and Roadmap](https://github.com/apple/swift-experimental-string-processing/issues/99) for status.
+Note that this proposal regards _syntactic_ support, and does not necessarily mean that everything that can be written will be supported by Swift's runtime engine in the initial release. Support for more obscure features may appear over time, see [MatchingEngine Capabilities and Roadmap](https://github.com/apple/swift-experimental-string-processing/issues/99) for status.
 
 
 
