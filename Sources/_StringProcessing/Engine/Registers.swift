@@ -88,13 +88,6 @@ extension Processor {
     subscript(_ i: ValueRegister) -> Any {
       get { values[i.rawValue] }
       set {
-        print("""
-          values: \(values)
-          i: \(i)
-          newValue: \(newValue)
-        """)
-        print(values)
-        print(i)
         values[i.rawValue] = newValue
       }
     }

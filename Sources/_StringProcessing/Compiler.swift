@@ -35,7 +35,7 @@ class Compiler {
   }
 }
 
-public func _compileRegex(
+func _compileRegex(
   _ regex: String, _ syntax: SyntaxOptions = .traditional
 ) throws -> Executor {
   let ast = try parse(regex, syntax)
@@ -43,3 +43,15 @@ public func _compileRegex(
   return Executor(program: program)
 }
 
+// An error produced when compiling a regular expression.
+public enum RegexCompilationError: Error, CustomStringConvertible {
+  // TODO: Source location?
+  case uncapturedReference
+
+  public var description: String {
+    switch self {
+    case .uncapturedReference:
+      return "Found a reference used before it captured any match."
+    }
+  }
+}

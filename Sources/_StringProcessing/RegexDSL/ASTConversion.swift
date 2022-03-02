@@ -131,11 +131,6 @@ extension AST.Node {
       case .empty(_):
         return .empty
 
-      case let .groupTransform(v, transform):
-        let child = v.child.dslTreeNode
-        return .groupTransform(
-          v.kind.value, child, transform)
-
       case let .absentFunction(a):
         // TODO: What should this map to?
         return .absentFunction(a)

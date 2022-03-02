@@ -11,8 +11,35 @@
 
 @dynamicMemberLookup
 public struct RegexMatch<Match> {
+  let input: String
   public let range: Range<String.Index>
-  public let match: Match
+  let rawCaptures: [StructuredCapture]
+  let referencedCaptureOffsets: [ReferenceID: Int]
+
+  let value: Any?
+
+  public var match: Match {
+    if Match.self == (Substring, DynamicCaptures).self {
+      // FIXME(rdar://89449323): Compiler assertion
+      let input = input
+      let dynCaps = rawCaptures.map { StoredDynamicCapture($0, in: input) }
+      return (input[range], dynCaps) as! Match
+    } else if Match.self == Substring.self {
+      // FIXME: Plumb whole match (`.0`) through the matching engine.
+      return input[range] as! Match
+    } else if rawCaptures.isEmpty, value != nil {
+      // FIXME: This is a workaround for whole-match values not
+      // being modeled as part of captures. We might want to
+      // switch to a model where results are alongside captures
+      return value! as! Match
+    } else {
+      guard value == nil else {
+        fatalError("FIXME: what would this mean?")
+      }
+      let typeErasedMatch = rawCaptures.existentialMatch(from: input[range])
+      return typeErasedMatch as! Match
+    }
+  }
 
   public subscript<T>(dynamicMember keyPath: KeyPath<Match, T>) -> T {
     match[keyPath: keyPath]
@@ -24,6 +51,15 @@ public struct RegexMatch<Match> {
     dynamicMember keyPath: KeyPath<(Match, _doNotUse: ()), Match>
   ) -> Match {
     match
+  }
+
+  public subscript<Capture>(_ reference: Reference<Capture>) -> Capture {
+    guard let offset = referencedCaptureOffsets[reference.id] else {
+      preconditionFailure(
+        "Reference did not capture any match in the regex")
+    }
+    return rawCaptures[offset].existentialMatchComponent(from: input[...])
+      as! Capture
   }
 }
 
@@ -43,23 +79,11 @@ extension RegexProtocol {
     mode: MatchMode = .wholeString
   ) -> RegexMatch<Match>? {
     let executor = Executor(program: regex.program.loweredProgram)
-    guard let (range, captures) = executor.execute(
-      input: input, in: inputRange, mode: mode
-    )?.destructure else {
-      return nil
+    do {
+      return try executor.match(input, in: inputRange, mode)
+    } catch {
+      fatalError(String(describing: error))
     }
-    let convertedMatch: Match
-    if Match.self == (Substring, DynamicCaptures).self {
-      convertedMatch = (input[range], DynamicCaptures(captures)) as! Match
-    } else if Match.self == Substring.self {
-      convertedMatch = input[range] as! Match
-    } else {
-      let typeErasedMatch = captures.matchValue(
-        withWholeMatch: input[range]
-      )
-      convertedMatch = typeErasedMatch as! Match
-    }
-    return RegexMatch(range: range, match: convertedMatch)
   }
 }
 

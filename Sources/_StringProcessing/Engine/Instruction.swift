@@ -299,8 +299,7 @@ extension Instruction {
 
 internal var _opcodeMask: UInt64 { 0xFF00_0000_0000_0000 }
 
-// TODO: internal after compiler moves in
-public var _payloadMask: UInt64 { ~_opcodeMask }
+var _payloadMask: UInt64 { ~_opcodeMask }
 
 extension Instruction {
   var opcodeMask: UInt64 { 0xFF00_0000_0000_0000 }

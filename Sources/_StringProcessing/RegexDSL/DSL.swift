@@ -190,3 +190,25 @@ public func choiceOf<R: RegexProtocol>(
 ) -> R {
   builder()
 }
+
+// MARK: - Backreference
+
+struct ReferenceID: Hashable, Equatable {
+  private static var counter: Int = 0
+  var base: Int
+
+  init() {
+    base = Self.counter
+    Self.counter += 1
+  }
+}
+
+public struct Reference<Capture>: RegexProtocol {
+  let id = ReferenceID()
+  
+  public init(_ captureType: Capture.Type = Capture.self) {}
+
+  public var regex: Regex<Capture> {
+    .init(node: .atom(.symbolicReference(id)))
+  }
+}

@@ -11,13 +11,13 @@
 
 import _MatchingEngine
 
-public struct MEProgram<Input: Collection> where Input.Element: Equatable {
-  public typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?
-  public typealias AssertionFunction =
+struct MEProgram<Input: Collection> where Input.Element: Equatable {
+  typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?
+  typealias AssertionFunction =
     (Input, Input.Index, Range<Input.Index>) -> Bool
-  public typealias TransformFunction =
+  typealias TransformFunction =
     (Input, Range<Input.Index>) -> Any?
-  public typealias MatcherFunction =
+  typealias MatcherFunction =
     (Input, Input.Index, Range<Input.Index>) -> (Input.Index, Any)?
 
   var instructions: InstructionList<Instruction>
@@ -35,10 +35,11 @@ public struct MEProgram<Input: Collection> where Input.Element: Equatable {
   var enableTracing: Bool = false
 
   let captureStructure: CaptureStructure
+  let referencedCaptureOffsets: [ReferenceID: Int]
 }
 
 extension MEProgram: CustomStringConvertible {
-  public var description: String {
+  var description: String {
     var result = """
     Elements: \(staticElements)
     Strings: \(staticStrings)

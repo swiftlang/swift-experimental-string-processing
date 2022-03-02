@@ -33,13 +33,13 @@
 
 enum UnsafeAssumingValidUTF8 {
   @inlinable @inline(__always)
-  public static func decode(_ x: UInt8) -> Unicode.Scalar {
+  static func decode(_ x: UInt8) -> Unicode.Scalar {
     _internalInvariant(UTF8.isASCII(x))
     return Unicode.Scalar(_unchecked: UInt32(x))
   }
 
   @inlinable @inline(__always)
-  public static func decode(
+  static func decode(
     _ x: UInt8, _ y: UInt8
   ) -> Unicode.Scalar {
     _internalInvariant(scalarLength(x) == 2)
@@ -50,7 +50,7 @@ enum UnsafeAssumingValidUTF8 {
   }
 
   @inlinable @inline(__always)
-  public static func decode(
+  static func decode(
     _ x: UInt8, _ y: UInt8, _ z: UInt8
   ) -> Unicode.Scalar {
     _internalInvariant(scalarLength(x) == 3)
@@ -63,7 +63,7 @@ enum UnsafeAssumingValidUTF8 {
   }
 
   @inlinable @inline(__always)
-  public static func decode(
+  static func decode(
     _ x: UInt8, _ y: UInt8, _ z: UInt8, _ w: UInt8
   ) -> Unicode.Scalar {
     _internalInvariant(scalarLength(x) == 4)
@@ -80,7 +80,7 @@ enum UnsafeAssumingValidUTF8 {
 
   // Also, assuming we can load from those bounds...
   @inlinable
-  public static func decode(
+  static func decode(
     _ utf8: UnsafeByteBuffer, startingAt i: Int
   ) -> (Unicode.Scalar, scalarLength: Int) {
     let cu0 = utf8[_unchecked: i]
@@ -103,7 +103,7 @@ enum UnsafeAssumingValidUTF8 {
   }
 
   @inlinable
-  public static func decode(
+  static func decode(
     _ utf8: UnsafeByteBuffer, endingAt i: Int
   ) -> (Unicode.Scalar, scalarLength: Int) {
     let len = scalarLength(utf8, endingAt: i)
@@ -113,7 +113,7 @@ enum UnsafeAssumingValidUTF8 {
   }
 
   @inlinable @inline(__always)
-  public static func scalarLength(_ x: UInt8) -> Int {
+  static func scalarLength(_ x: UInt8) -> Int {
     _internalInvariant(!UTF8.isContinuation(x))
     if UTF8.isASCII(x) { return 1 }
     // TODO(String micro-performance): check codegen
@@ -121,7 +121,7 @@ enum UnsafeAssumingValidUTF8 {
   }
 
   @inlinable @inline(__always)
-  public static func scalarLength(
+  static func scalarLength(
     _ utf8: UnsafeByteBuffer, endingAt i: Int
   ) -> Int {
     var len = 1
@@ -133,12 +133,12 @@ enum UnsafeAssumingValidUTF8 {
   }
 
   @inlinable @inline(__always)
-  public static func continuationPayload(_ x: UInt8) -> UInt32 {
+  static func continuationPayload(_ x: UInt8) -> UInt32 {
     return UInt32(x & 0x3F)
   }
 
   @inlinable
-  public static func scalarAlign(
+  static func scalarAlign(
     _ utf8: UnsafeByteBuffer, _ idx: Int
   ) -> Int {
     guard _fastPath(idx != utf8.count) else { return idx }

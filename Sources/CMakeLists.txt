@@ -1,0 +1,6 @@
+
+add_subdirectory(_Unicode)
+add_subdirectory(_MatchingEngine)
+add_subdirectory(_StringProcessing)
+add_subdirectory(Prototypes)
+add_subdirectory(VariadicsGenerator)

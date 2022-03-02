@@ -30,7 +30,7 @@ extension DSLTree {
     case concatenation([Node])
 
     /// (...)
-    case group(AST.Group.Kind, Node)
+    case group(AST.Group.Kind, Node, ReferenceID? = nil)
 
     /// (?(cond) true-branch | false-branch)
     ///
@@ -81,7 +81,8 @@ extension DSLTree {
     case groupTransform(
       AST.Group.Kind,
       Node,
-      CaptureTransform)
+      CaptureTransform,
+      ReferenceID? = nil)
 
     case consumer(_ConsumerInterface)
 
@@ -119,6 +120,7 @@ extension DSLTree {
 
     case assertion(AST.Atom.AssertionKind)
     case backreference(AST.Reference)
+    case symbolicReference(ReferenceID)
 
     case unconverted(AST.Atom)
   }
@@ -162,8 +164,8 @@ extension DSLTree.Node {
       // Treat this transparently
       return n.children
 
-    case let .group(_, n):             return [n]
-    case let .groupTransform(_, n, _): return [n]
+    case let .group(_, n, _):             return [n]
+    case let .groupTransform(_, n, _, _): return [n]
     case let .quantification(_, _, n): return [n]
 
     case let .conditional(_, t, f): return [t,f]
@@ -224,8 +226,8 @@ extension DSLTree {
 extension DSLTree.Node {
   var hasCapture: Bool {
     switch self {
-    case let .group(k, _) where k.isCapturing,
-         let .groupTransform(k, _, _) where k.isCapturing:
+    case let .group(k, _, _) where k.isCapturing,
+         let .groupTransform(k, _, _, _) where k.isCapturing:
       return true
     case let .convertedRegexLiteral(n, re):
       assert(n.hasCapture == re.hasCapture)
@@ -247,7 +249,7 @@ extension DSLTree {
   }
 }
 extension DSLTree.Node {
-  public func _captureStructure(
+  func _captureStructure(
     _ constructor: inout CaptureStructure.Constructor
   ) -> CaptureStructure {
     switch self {
@@ -257,14 +259,14 @@ extension DSLTree.Node {
     case let .concatenation(children):
       return constructor.concatenating(children)
 
-    case let .group(kind, child):
+    case let .group(kind, child, _):
       if let type = child.matcherCaptureType {
         return constructor.grouping(
           child, as: kind, withType: type)
       }
       return constructor.grouping(child, as: kind)
 
-    case let .groupTransform(kind, child, transform):
+    case let .groupTransform(kind, child, transform, _):
       return constructor.grouping(
         child, as: kind, withTransform: transform)
 

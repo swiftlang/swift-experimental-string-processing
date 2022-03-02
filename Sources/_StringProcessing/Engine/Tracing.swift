@@ -15,7 +15,7 @@ extension Processor: TracedProcessor {
 
   var currentPC: InstructionAddress { controller.pc }
 
-  public func formatSavePoints() -> String {
+  func formatSavePoints() -> String {
     if !savePoints.isEmpty {
       var result = "save points:\n"
       for point in savePoints {

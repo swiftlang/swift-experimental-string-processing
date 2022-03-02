@@ -11,112 +11,88 @@
 
 import _MatchingEngine
 
-// TODO: what here should be in the compile-time module?
+/// A structured capture
+struct StructuredCapture {
+  /// The `.optional` height of the result
+  var optionalCount = 0
 
-enum Capture {
-  case atom(Any)
-  indirect case tuple([Capture])
-  indirect case some(Capture)
-  case none(childType: AnyType)
-  indirect case array([Capture], childType: AnyType)
-}
+  var storedCapture: StoredCapture?
 
-extension Capture {
-  static func none(childType: Any.Type) -> Capture {
-    .none(childType: AnyType(childType))
-  }
-
-  static func array(_ children: [Capture], childType: Any.Type) -> Capture {
-    .array(children, childType: AnyType(childType))
+  var someCount: Int {
+    storedCapture == nil ? optionalCount - 1 : optionalCount
   }
 }
 
-extension Capture {
-  static func tupleOrAtom(_ elements: [Capture]) -> Self {
-    elements.count == 1 ? elements[0] : .tuple(elements)
-  }
+/// A storage form for a successful capture
+struct StoredCapture {
+  // TODO: drop optional when engine tracks all ranges
+  var range: Range<String.Index>?
 
-  static var void: Capture {
-    .tuple([])
-  }
+  // If strongly typed, value is set
+  var value: Any? = nil
+}
 
-  var value: Any {
-    switch self {
-    case .atom(let atom):
-      return atom
-    case .tuple(let elements):
-      return TypeConstruction.tuple(
-        of: elements.map(\.value))
-    case .array(let elements, let childType):
-      func helper<T>(_: T.Type) -> Any {
-        elements.map { $0.value as! T }
-      }
-      return _openExistential(childType.base, do: helper)
-    case .some(let subcapture):
-      func helper<T>(_ value: T) -> Any {
-        Optional(value) as Any
-      }
-      return _openExistential(subcapture.value, do: helper)
-    case .none(let childType):
-      func helper<T>(_: T.Type) -> Any {
-        nil as T? as Any
-      }
-      return _openExistential(childType.base, do: helper)
+// TODO: Where should this live? Inside TypeConstruction?
+func constructExistentialMatchComponent(
+  from input: Substring,
+  in range: Range<String.Index>?,
+  value: Any?,
+  optionalCount: Int
+) -> Any {
+  let someCount: Int
+  var underlying: Any
+  if let v = value {
+    underlying = v
+    someCount = optionalCount
+  } else if let r = range {
+    underlying = input[r]
+    someCount = optionalCount
+  } else {
+    // Ok since we Any-box every step up the ladder
+    underlying = Optional<Any>(nil) as Any
+    someCount = optionalCount - 1
+  }
+  for _ in 0..<someCount {
+    func wrap<T>(_ x: T) {
+      underlying = Optional(x) as Any
     }
+    _openExistential(underlying, do: wrap)
+  }
+  return underlying
+}
+
+extension StructuredCapture {
+  func existentialMatchComponent(
+    from input: Substring
+  ) -> Any {
+    constructExistentialMatchComponent(
+      from: input,
+      in: storedCapture?.range,
+      value: storedCapture?.value,
+      optionalCount: optionalCount)
   }
 
-  private func prepending(_ newElement: Any) -> Self {
-    switch self {
-    case .atom, .some, .none, .array:
-      return .tuple([.atom(newElement), self])
-    case .tuple(let elements):
-      return .tuple([.atom(newElement)] + elements)
-    }
-  }
-
-  func matchValue(withWholeMatch wholeMatch: Substring) -> Any {
-    prepending(wholeMatch).value
+  func slice(from input: String) -> Substring? {
+    guard let r = storedCapture?.range else { return nil }
+    return input[r]
   }
 }
 
-extension Capture: CustomStringConvertible {
-  public var description: String {
-    var printer = PrettyPrinter()
-    _print(&printer)
-    return printer.finish()
+extension Sequence where Element == StructuredCapture {
+  // FIXME: This is a stop gap where we still slice the input
+  // and traffic through existentials
+  func existentialMatch(
+    from input: Substring
+  ) -> Any {
+    var caps = Array<Any>()
+    caps.append(input)
+    caps.append(contentsOf: self.map {
+      $0.existentialMatchComponent(from: input)
+    })
+    return TypeConstruction.tuple(of: caps)
   }
 
-  private func _print(_ printer: inout PrettyPrinter) {
-    switch self {
-    case let .atom(n):
-      printer.print("Atom(\(n))")
-    case let .tuple(ns):
-      if ns.isEmpty {
-        printer.print("Tuple()")
-        return
-      }
-
-      printer.printBlock("Tuple") { printer in
-        for n in ns {
-          n._print(&printer)
-        }
-      }
-
-    case let .some(n):
-      printer.printBlock("Some") { printer in
-        n._print(&printer)
-      }
-
-    case let .none(childType):
-      printer.print("None(\(childType))")
-
-    case let .array(ns, childType):
-      printer.printBlock("Array(\(childType))") { printer in
-        for n in ns {
-          n._print(&printer)
-        }
-      }
-
-    }
+  func slices(from input: String) -> [Substring?] {
+    self.map { $0.slice(from: input) }
   }
 }

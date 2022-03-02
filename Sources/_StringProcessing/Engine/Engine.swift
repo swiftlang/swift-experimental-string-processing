@@ -11,7 +11,7 @@
 
 // Currently, engine binds the type and consume binds an instance.
 // But, we can play around with this.
-public struct Engine<Input: BidirectionalCollection> where Input.Element: Hashable {
+struct Engine<Input: BidirectionalCollection> where Input.Element: Hashable {
 
   var program: MEProgram<Input>
 
@@ -24,7 +24,7 @@ public struct Engine<Input: BidirectionalCollection> where Input.Element: Hashab
     set { program.enableTracing = newValue }
   }
 
-  public init(
+  init(
     _ program: MEProgram<Input>,
     enableTracing: Bool? = nil
   ) {
@@ -36,10 +36,10 @@ public struct Engine<Input: BidirectionalCollection> where Input.Element: Hashab
   }
 }
 
-public struct AsyncEngine { /* ... */ }
+struct AsyncEngine { /* ... */ }
 
 extension Engine: CustomStringConvertible {
-  public var description: String {
+  var description: String {
     // TODO: better description
     return program.description
   }

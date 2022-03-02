@@ -29,13 +29,18 @@ extension Processor {
     // perhaps current start)
     var captureEnds: [_StoredCapture]
 
+    // The int registers store values that can be relevant to
+    // backtracking, such as the number of trips in a quantification.
+    var intRegisters: [Int]
+
     var destructure: (
       pc: InstructionAddress,
       pos: Position?,
       stackEnd: CallStackAddress,
-      captureEnds: [_StoredCapture]
+      captureEnds: [_StoredCapture],
+      intRegisters: [Int]
     ) {
-      (pc, pos, stackEnd, captureEnds)
+      (pc, pos, stackEnd, captureEnds, intRegisters)
     }
   }
 
@@ -47,7 +52,8 @@ extension Processor {
       pc: pc,
       pos: addressOnly ? nil : currentPosition,
       stackEnd: .init(callStack.count),
-      captureEnds: storedCaptures)
+      captureEnds: storedCaptures,
+      intRegisters: registers.ints)
   }
 }
 

@@ -31,6 +31,9 @@ extension Compiler.ByteCodeGen {
     case let .backreference(ref):
       try emitBackreference(ref)
 
+    case let .symbolicReference(id):
+      builder.buildUnresolvedReference(id: id)
+
     case let .unconverted(astAtom):
       if let consumer = try astAtom.generateConsumer(options) {
         builder.buildConsume(by: consumer)
@@ -297,8 +300,14 @@ extension Compiler.ByteCodeGen {
   }
 
   mutating func emitGroup(
-    _ kind: AST.Group.Kind, _ child: DSLTree.Node
+    _ kind: AST.Group.Kind,
+    _ child: DSLTree.Node,
+    _ referenceID: ReferenceID?
   ) throws -> CaptureRegister? {
+    guard kind.isCapturing || referenceID == nil else {
+      throw Unreachable("Reference ID shouldn't exist for non-capturing groups")
+    }
+
     options.beginScope()
     defer { options.endScope() }
 
@@ -307,7 +316,7 @@ extension Compiler.ByteCodeGen {
     //
     // FIXME: Unify with .groupTransform
     if kind.isCapturing, case let .matcher(_, m) = child {
-      let cap = builder.makeCapture()
+      let cap = builder.makeCapture(id: referenceID)
       emitMatcher(m, into: cap)
       return cap
     }
@@ -323,7 +332,7 @@ extension Compiler.ByteCodeGen {
       throw Unreachable("TODO: reason")
 
     case .capture, .namedCapture:
-      let cap = builder.makeCapture()
+      let cap = builder.makeCapture(id: referenceID)
       builder.buildBeginCapture(cap)
       try emitNode(child)
       builder.buildEndCapture(cap)
@@ -556,8 +565,8 @@ extension Compiler.ByteCodeGen {
         try emitConcatenationComponent(child)
       }
 
-    case let .group(kind, child):
-      _ = try emitGroup(kind, child)
+    case let .group(kind, child, referenceID):
+      _ = try emitGroup(kind, child, referenceID)
 
     case .conditional:
       throw Unsupported("Conditionals")
@@ -596,8 +605,8 @@ extension Compiler.ByteCodeGen {
     case let .convertedRegexLiteral(n, _):
       try emitNode(n)
 
-    case let .groupTransform(kind, child, t):
-      guard let cap = try emitGroup(kind, child) else {
+    case let .groupTransform(kind, child, t, referenceID):
+      guard let cap = try emitGroup(kind, child, referenceID) else {
         assertionFailure("""
           What does it mean to not have a capture to transform?
           """)

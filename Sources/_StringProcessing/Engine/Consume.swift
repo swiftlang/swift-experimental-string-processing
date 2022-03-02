@@ -24,46 +24,17 @@ extension Engine {
   }
 }
 
-extension Engine where Input == String {
-  public func consume(
-    _ input: Input
-  ) -> (Input.Index, CaptureList)? {
-    consume(input, in: input.startIndex ..< input.endIndex)
-  }
-
-  public func consume(
-    _ input: Input,
-    in range: Range<Input.Index>,
-    matchMode: MatchMode = .partialFromFront
-  ) -> (Input.Index, CaptureList)? {
-    if enableTracing {
-      print("Consume: \(input)")
-    }
-
-    var cpu = makeProcessor(input: input, bounds: range, matchMode: matchMode)
-    let result: Input.Index? = {
-      while true {
-        switch cpu.state {
-        case .accept:
-          return cpu.currentPosition
-        case .fail:
-          return nil
-        case .inProgress: cpu.cycle()
-        }
-      }
-    }()
-
-    if enableTracing {
-      if let idx = result {
-        print("Result: \(input[..<idx]) | \(input[idx...])")
-      } else {
-        print("Result: nil")
+extension Processor where Input == String {
+  mutating func consume() -> Input.Index? {
+    while true {
+      switch self.state {
+      case .accept:
+        return self.currentPosition
+      case .fail:
+        return nil
+      case .inProgress: self.cycle()
       }
     }
-    guard let result = result else { return nil }
-
-    let capList = cpu.storedCaptures
-    return (result, CaptureList(caps: capList))
   }
 }
 
