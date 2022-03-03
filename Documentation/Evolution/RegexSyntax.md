@@ -155,8 +155,8 @@ Anchor -> '^' | '$' | '\A' | '\b' | '\B' | '\G' | '\y' | '\Y' | '\z' | '\Z'
 
 Anchors match against a certain position in the input rather than on a particular character of the input.
 
-- `^`: Matches at the start of a line.
-- `$`: Matches at the end of a line.
+- `^`: Matches at the very start of the input string, or the start of a line when in multi-line mode.
+- `$`: Matches at the very end of the input string, or the end of a line when in multi-line mode.
 - `\A`: Matches at the very start of the input string.
 - `\Z`: Matches at the very end of the input string, in addition to before a newline at the very end of the input string.
 - `\z`: Like `\Z`, but only matches at the very end of the input string.
