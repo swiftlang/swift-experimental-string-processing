@@ -76,3 +76,20 @@ extension String {
     WordView(base: self)
   }
 }
+
+extension String {
+  internal func isOnWordBoundary(_ i: String.Index) -> Bool {
+    guard i != startIndex, i != endIndex else {
+      return true
+    }
+    
+    guard i._isScalarAligned else {
+      return false
+    }
+    
+    let after = words.index(after: i)
+    let before = words.index(before: after)
+    
+    return i == before
+  }
+}

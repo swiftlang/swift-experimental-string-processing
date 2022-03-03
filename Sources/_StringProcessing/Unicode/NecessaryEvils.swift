@@ -94,7 +94,11 @@ extension String.Index {
     // The encoded offset is found in the top 48 bits.
     Int(unsafeBitCast(self, to: UInt64.self) >> 16)
   }
-
+  
+  internal var _isScalarAligned: Bool {
+    unsafeBitCast(self, to: UInt64.self) & 0x1 != 0
+  }
+  
   internal init(_encodedOffset offset: Int) {
     self = unsafeBitCast(offset << 16, to: Self.self)
   }

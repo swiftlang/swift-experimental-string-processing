@@ -21,19 +21,16 @@ uint8_t _swift_stdlib_getWordBreakProperty(uint32_t scalar) {
   while (high >= low) {
     int idx = low + (high - low) / 2;
     
-    const uint64_t entry = _swift_stdlib_words[idx];
+    const uint32_t entry = _swift_stdlib_words[idx];
     
-    // Shift the enum and range count out of the value.
-    uint32_t lower = (entry << 43) >> 43;
+    // Shift the range count out of the value.
+    uint32_t lower = (entry << 11) >> 11;
     
     // Shift the enum out first, then shift out the scalar value.
-    uint32_t upper = ((entry >> 21) << 43) >> 43;
-    
-    // Shift everything out.
-    uint8_t enumValue = (uint8_t)(entry >> 42);
+    uint32_t upper = lower + (entry >> 21) - 1;
     
     if (scalar >= lower && scalar <= upper) {
-      return enumValue;
+      return _swift_stdlib_words_data[idx];
     }
     
     if (scalar > upper) {

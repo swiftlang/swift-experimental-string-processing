@@ -885,6 +885,11 @@ extension RegexTests {
       (" 123", "23"),
       ("123 456", "23"))
 
+    // Level 2 Unicode Word Boundaries
+    firstMatchTest(#"\b😊\b"#, input: "🔥😊👍", match: "😊")
+    firstMatchTest(#"\b🇺🇸\b"#, input: "🇨🇦🇺🇸🇲🇽", match: "🇺🇸")
+    firstMatchTest(#"\b.+\b"#, input: "€1 234,56", match: "€1 234,56")
+    
     // TODO: \G and \K
 
     // TODO: Oniguruma \y and \Y

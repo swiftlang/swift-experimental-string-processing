@@ -118,16 +118,14 @@ extension Compiler.ByteCodeGen {
       // TODO: May want to consider Unicode level
       builder.buildAssert { (input, pos, bounds) in
         // TODO: How should we handle bounds?
-        CharacterClass.word.isBoundary(
-          input, at: pos, bounds: bounds)
+        input.isOnWordBoundary(pos)
       }
 
     case .notWordBoundary:
       // TODO: May want to consider Unicode level
       builder.buildAssert { (input, pos, bounds) in
         // TODO: How should we handle bounds?
-        !CharacterClass.word.isBoundary(
-          input, at: pos, bounds: bounds)
+        !input.isOnWordBoundary(pos)
       }
     }
   }
