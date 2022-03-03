@@ -337,7 +337,7 @@ These groups evaluate the input ahead or behind the current matching position, w
 - `(?=`: A lookahead, which matches against the input following the current matching position.
 - `(?!`: A negative lookahead, which ensures a negative match against the input following the current matching position.
 - `(?<=`: A lookbehind, which matches against the input prior to the current matching position.
-- `(?!<`: A negative lookbehind, which ensures a negative match against the input prior to the current matching position.
+- `(?<!`: A negative lookbehind, which ensures a negative match against the input prior to the current matching position.
 
 The above groups are all atomic, meaning that they will not be re-evaluated for backtracking. There are however also non-atomic variants:
 
