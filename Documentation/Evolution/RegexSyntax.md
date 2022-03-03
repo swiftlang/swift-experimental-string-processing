@@ -476,7 +476,7 @@ NumberRef        -> ('+' | '-')? <Decimal Number> RecursionLevel?
 RecursionLevel   -> '+' <Int> | '-' <Int>
 ```
 
-A reference is an abstract identifier for a particular capturing group in a regular expression. It can either be named or numbered, and in the latter case may be specified relative to the current group. For example `-2` refers to the capture group `N - 2` where `N` is the number of the next capture group. References may refer to groups ahead of the current position e.g `+3`, or the name of a future group. These may be useful in recursive cases where the group being referenced has been matched in a prior iteration.
+A reference is an abstract identifier for a particular capturing group in a regular expression. It can either be named or numbered, and in the latter case may be specified relative to the current group. For example `-2` refers to the capture group `N - 2` where `N` is the number of the next capture group. References may refer to groups ahead of the current position e.g `+3`, or the name of a future group. These may be useful in recursive cases where the group being referenced has been matched in a prior iteration. If a referenced capture does not exist anywhere in the regular expression, the reference is diagnosed as invalid.
 
 A backreference may optionally include a recursion level in certain cases, which is a syntactic element inherited [from Oniguruma][oniguruma-syntax] that allows the reference to specify a capture relative to a given recursion level.
 
