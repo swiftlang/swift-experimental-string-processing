@@ -281,6 +281,16 @@ class RegexDSLTests: XCTestCase {
     }
     
     try _testDSLCaptures(
+      ("Cafe\u{301}", nil),
+      ("Cafe", "Cafe"),
+      matchType: Substring.self, ==)
+    {
+      oneOrMore(.word)
+      UnicodeScalar("e")
+      Anchor.textSegmentBoundary
+    }
+
+    try _testDSLCaptures(
       ("aaaaa1", "aaaaa1"),
       ("aaaaa2", nil),
       ("aaaaa", nil),

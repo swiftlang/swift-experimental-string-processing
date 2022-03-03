@@ -17,8 +17,7 @@ extension String: RegexProtocol {
   public typealias Match = Substring
 
   public var regex: Regex<Match> {
-    let atoms = self.map { atom(.char($0)) }
-    return .init(ast: concat(atoms))
+    .init(node: .quotedLiteral(self))
   }
 }
 
@@ -26,8 +25,7 @@ extension Substring: RegexProtocol {
   public typealias Match = Substring
 
   public var regex: Regex<Match> {
-    let atoms = self.map { atom(.char($0)) }
-    return .init(ast: concat(atoms))
+    .init(node: .quotedLiteral(String(self)))
   }
 }
 
@@ -35,7 +33,15 @@ extension Character: RegexProtocol {
   public typealias Match = Substring
 
   public var regex: Regex<Match> {
-    .init(ast: atom(.char(self)))
+    .init(node: .atom(.char(self)))
+  }
+}
+
+extension UnicodeScalar: RegexProtocol {
+  public typealias Match = Substring
+
+  public var regex: Regex<Match> {
+    .init(node: .atom(.scalar(self)))
   }
 }
 
