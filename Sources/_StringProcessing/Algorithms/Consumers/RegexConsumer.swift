@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 public struct RegexConsumer<
-  R: RegexProtocol, Consumed: BidirectionalCollection
+  R: RegexComponent, Consumed: BidirectionalCollection
 > where Consumed.SubSequence == Substring {
   // TODO: Should `Regex` itself implement these protocols?
   let regex: R

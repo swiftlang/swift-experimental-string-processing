@@ -19,13 +19,13 @@ func dynCap(
 }
 
 class RegexDSLTests: XCTestCase {
-  func _testDSLCaptures<Content: RegexProtocol, CaptureType>(
+  func _testDSLCaptures<Content: RegexComponent, CaptureType>(
     _ tests: (input: String, expectedCaptures: CaptureType?)...,
     matchType: CaptureType.Type,
     _ equivalence: (CaptureType, CaptureType) -> Bool,
     file: StaticString = #file,
     line: UInt = #line,
-    @RegexBuilder _ content: () -> Content
+    @RegexComponentBuilder _ content: () -> Content
   ) throws {
     let regex = Regex(content())
     for (input, maybeExpectedCaptures) in tests {

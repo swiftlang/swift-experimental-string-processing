@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-public protocol CustomRegexComponent: RegexProtocol {
+public protocol CustomRegexComponent: RegexComponent {
   func match(
     _ input: String,
     startingAt index: String.Index,
