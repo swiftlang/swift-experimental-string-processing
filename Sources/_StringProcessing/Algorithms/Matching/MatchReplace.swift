@@ -80,7 +80,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max
-  ) rethrows -> Self where Replacement.Element == Element {
+  ) rethrows -> Self where Replacement.Element == Character {
     try replacing(
       RegexConsumer(regex),
       with: replacement,
@@ -92,7 +92,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     _ regex: R,
     with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
     maxReplacements: Int = .max
-  ) rethrows -> Self where Replacement.Element == Element {
+  ) rethrows -> Self where Replacement.Element == Character {
     try replacing(
       regex,
       with: replacement,
@@ -104,7 +104,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     _ regex: R,
     with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
     maxReplacements: Int = .max
-  ) rethrows where Replacement.Element == Element {
+  ) rethrows where Replacement.Element == Character {
     self = try replacing(
       regex,
       with: replacement,
