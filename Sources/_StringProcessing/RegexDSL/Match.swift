@@ -63,7 +63,7 @@ public struct RegexMatch<Match> {
   }
 }
 
-extension RegexProtocol {
+extension RegexComponent {
   public func match(in input: String) -> RegexMatch<Match>? {
     _match(
       input, in: input.startIndex..<input.endIndex)
@@ -88,23 +88,23 @@ extension RegexProtocol {
 }
 
 extension String {
-  public func match<R: RegexProtocol>(_ regex: R) -> RegexMatch<R.Match>? {
+  public func match<R: RegexComponent>(_ regex: R) -> RegexMatch<R.Match>? {
     regex.match(in: self)
   }
 
-  public func match<R: RegexProtocol>(
-    @RegexBuilder _ content: () -> R
+  public func match<R: RegexComponent>(
+    @RegexComponentBuilder _ content: () -> R
   ) -> RegexMatch<R.Match>? {
     match(content())
   }
 }
 extension Substring {
-  public func match<R: RegexProtocol>(_ regex: R) -> RegexMatch<R.Match>? {
+  public func match<R: RegexComponent>(_ regex: R) -> RegexMatch<R.Match>? {
     regex.match(in: self)
   }
 
-  public func match<R: RegexProtocol>(
-    @RegexBuilder _ content: () -> R
+  public func match<R: RegexComponent>(
+    @RegexComponentBuilder _ content: () -> R
   ) -> RegexMatch<R.Match>? {
     match(content())
   }

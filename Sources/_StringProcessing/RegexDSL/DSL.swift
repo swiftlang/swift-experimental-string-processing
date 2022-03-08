@@ -13,7 +13,7 @@ import _MatchingEngine
 
 // MARK: - Primitives
 
-extension String: RegexProtocol {
+extension String: RegexComponent {
   public typealias Match = Substring
 
   public var regex: Regex<Match> {
@@ -21,7 +21,7 @@ extension String: RegexProtocol {
   }
 }
 
-extension Substring: RegexProtocol {
+extension Substring: RegexComponent {
   public typealias Match = Substring
 
   public var regex: Regex<Match> {
@@ -29,7 +29,7 @@ extension Substring: RegexProtocol {
   }
 }
 
-extension Character: RegexProtocol {
+extension Character: RegexComponent {
   public typealias Match = Substring
 
   public var regex: Regex<Match> {
@@ -37,7 +37,7 @@ extension Character: RegexProtocol {
   }
 }
 
-extension UnicodeScalar: RegexProtocol {
+extension UnicodeScalar: RegexComponent {
   public typealias Match = Substring
 
   public var regex: Regex<Match> {
@@ -45,7 +45,7 @@ extension UnicodeScalar: RegexProtocol {
   }
 }
 
-extension CharacterClass: RegexProtocol {
+extension CharacterClass: RegexComponent {
   public typealias Match = Substring
 
   public var regex: Regex<Match> {
@@ -63,7 +63,7 @@ extension CharacterClass: RegexProtocol {
 // Note: Concatenation overloads are currently gyb'd.
 
 // TODO: Variadic generics
-// struct Concatenation<W0, C0..., R0: RegexProtocol, W1, C1..., R1: RegexProtocol>
+// struct Concatenation<W0, C0..., R0: RegexComponent, W1, C1..., R1: RegexComponent>
 // where R0.Match == (W0, C0...), R1.Match == (W1, C1...)
 // {
 //   typealias Match = (Substring, C0..., C1...)
@@ -116,7 +116,7 @@ extension QuantificationBehavior {
 }
 
 // TODO: Variadic generics
-// struct _OneOrMore<W, C..., Component: RegexProtocol>
+// struct _OneOrMore<W, C..., Component: RegexComponent>
 // where R.Match == (W, C...)
 // {
 //   typealias Match = (Substring, [(C...)])
@@ -126,7 +126,7 @@ extension QuantificationBehavior {
 //   }
 // }
 //
-// struct _OneOrMoreNonCapturing<Component: RegexProtocol> {
+// struct _OneOrMoreNonCapturing<Component: RegexComponent> {
 //   typealias Match = Substring
 //   let regex: Regex<Match>
 //   init(_ component: Component) {
@@ -134,16 +134,16 @@ extension QuantificationBehavior {
 //   }
 // }
 //
-// func oneOrMore<W, C..., Component: RegexProtocol>(
+// func oneOrMore<W, C..., Component: RegexComponent>(
 //   _ component: Component
-// ) -> <R: RegexProtocol where R.Match == (Substring, [(C...)])> R {
+// ) -> <R: RegexComponent where R.Match == (Substring, [(C...)])> R {
 //   _OneOrMore(component)
 // }
 //
 // @_disfavoredOverload
-// func oneOrMore<Component: RegexProtocol>(
+// func oneOrMore<Component: RegexComponent>(
 //   _ component: Component
-// ) -> <R: RegexProtocol where R.Match == Substring> R {
+// ) -> <R: RegexComponent where R.Match == Substring> R {
 //   _OneOrMoreNonCapturing(component)
 // }
 
@@ -157,9 +157,9 @@ postfix operator .+
 // @resultBuilder
 // struct AlternationBuilder {
 //   @_disfavoredOverload
-//   func buildBlock<R: RegexProtocol>(_ regex: R) -> R
+//   func buildBlock<R: RegexComponent>(_ regex: R) -> R
 //   func buildBlock<
-//     R: RegexProtocol, W0, C0...
+//     R: RegexComponent, W0, C0...
 //   >(
 //     _ regex: R
 //   ) -> R where R.Match == (W, C...)
@@ -168,24 +168,24 @@ postfix operator .+
 @resultBuilder
 public struct AlternationBuilder {
   @_disfavoredOverload
-  public static func buildBlock<R: RegexProtocol>(_ regex: R) -> R {
+  public static func buildBlock<R: RegexComponent>(_ regex: R) -> R {
     regex
   }
 
-  public static func buildExpression<R: RegexProtocol>(_ regex: R) -> R {
+  public static func buildExpression<R: RegexComponent>(_ regex: R) -> R {
     regex
   }
 
-  public static func buildEither<R: RegexProtocol>(first component: R) -> R {
+  public static func buildEither<R: RegexComponent>(first component: R) -> R {
     component
   }
 
-  public static func buildEither<R: RegexProtocol>(second component: R) -> R {
+  public static func buildEither<R: RegexComponent>(second component: R) -> R {
     component
   }
 }
 
-public func choiceOf<R: RegexProtocol>(
+public func choiceOf<R: RegexComponent>(
   @AlternationBuilder builder: () -> R
 ) -> R {
   builder()
@@ -203,7 +203,7 @@ struct ReferenceID: Hashable, Equatable {
   }
 }
 
-public struct Reference<Capture>: RegexProtocol {
+public struct Reference<Capture>: RegexComponent {
   let id = ReferenceID()
   
   public init(_ captureType: Capture.Type = Capture.self) {}

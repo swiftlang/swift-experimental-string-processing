@@ -149,7 +149,7 @@ extension RangeReplaceableCollection
 // MARK: Regex algorithms
 
 extension RangeReplaceableCollection where SubSequence == Substring {
-  public func replacing<R: RegexProtocol, Replacement: Collection>(
+  public func replacing<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: Replacement,
     subrange: Range<Index>,
@@ -162,7 +162,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
       maxReplacements: maxReplacements)
   }
   
-  public func replacing<R: RegexProtocol, Replacement: Collection>(
+  public func replacing<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: Replacement,
     maxReplacements: Int = .max
@@ -174,7 +174,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
       maxReplacements: maxReplacements)
   }
   
-  public mutating func replace<R: RegexProtocol, Replacement: Collection>(
+  public mutating func replace<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: Replacement,
     maxReplacements: Int = .max

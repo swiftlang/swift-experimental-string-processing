@@ -58,7 +58,7 @@ private func extractFromCaptures(
 }
 
 @inline(__always) // get rid of generic please
-private func graphemeBreakPropertyData<RP: RegexProtocol>(
+private func graphemeBreakPropertyData<RP: RegexComponent>(
   forLine line: String,
   using regex: RP
 ) -> GraphemeBreakEntry? where RP.Match == (Substring, Substring, Substring?, Substring) {

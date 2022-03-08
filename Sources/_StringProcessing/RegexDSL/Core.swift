@@ -13,13 +13,13 @@ import _MatchingEngine
 
 
 /// A type that represents a regular expression.
-public protocol RegexProtocol {
+public protocol RegexComponent {
   associatedtype Match
   var regex: Regex<Match> { get }
 }
 
 /// A regular expression.
-public struct Regex<Match>: RegexProtocol {
+public struct Regex<Match>: RegexComponent {
   /// A program representation that caches any lowered representation for
   /// execution.
   internal class Program {
@@ -78,14 +78,14 @@ public struct Regex<Match>: RegexProtocol {
     self.init(ast: try! parseWithDelimiters(pattern))
   }
 
-  public init<Content: RegexProtocol>(
+  public init<Content: RegexComponent>(
     _ content: Content
   ) where Content.Match == Match {
     self = content.regex
   }
 
-  public init<Content: RegexProtocol>(
-    @RegexBuilder _ content: () -> Content
+  public init<Content: RegexComponent>(
+    @RegexComponentBuilder _ content: () -> Content
   ) where Content.Match == Match {
     self.init(content())
   }
@@ -96,7 +96,7 @@ public struct Regex<Match>: RegexProtocol {
 }
 
 
-public struct MockRegexLiteral<Match>: RegexProtocol {
+public struct MockRegexLiteral<Match>: RegexComponent {
   public typealias MatchValue = Substring
   public let regex: Regex<Match>
 
