@@ -9,6 +9,10 @@ Authors: [Richard Wei](https://github.com/rxwei), [Kyle Macomber](https://github
 - **v2**
     - Includes entire match in `Regex`'s generic parameter.
     - Fixes Quantification and Alternation capture types to be consistent with traditional back reference numbering.
+- **v3**
+    - Updates quantifiers to not save the history.
+    - Updates `capture` method to type `Capture`.
+    - Adds `MatchResult` indirection.
 
 ## Introduction
 
@@ -20,18 +24,18 @@ let regex = /ab(cd*)(ef)gh/
 // => `Regex<(Substring, Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let regex = Pattern {
+//     let regex = Regex {
 //         "ab"
-//         Group {
+//         Capture {
 //             "c"
-//             Repeat("d")
-//         }.capture()
-//         "ef".capture()
+//             ZeroOrMore("d")
+//         }
+//         Capture("ef")
 //         "gh"
 //     }
 
-if let match = "abcddddefgh".firstMatch(of: regex) {
-    print(match) // => ("abcddddefgh", "cdddd", "ef")
+if let result = "abcddddefgh".firstMatch(of: regex) {
+    print(result.match) // => ("abcddddefgh", "cdddd", "ef")
 }
 ```
 
@@ -61,8 +65,8 @@ We introduce a generic structure `Regex<Match>` whose generic parameter `Match` 
 ```swift
 let regex = /ab(cd*)(ef)gh/
 // => Regex<(Substring, Substring, Substring)>
-if let match = "abcddddefgh".firstMatch(of: regex) {
-  print(match) // => ("abcddddefgh", "cdddd", "ef")
+if let result = "abcddddefgh".firstMatch(of: regex) {
+  print(result.match) // => ("abcddddefgh", "cdddd", "ef")
 }
 ```
 
@@ -72,8 +76,8 @@ Because much of the motivation behind providing regex literals in Swift is their
 
 ```swift
 let regex = /ab(cd*)(ef)gh/
-if let match = "abcddddefgh".firstMatch(of: regex) {
-  print((match.1, match.2)) // => ("cdddd", "ef")
+if let result = "abcddddefgh".firstMatch(of: regex) {
+  print((result.1, result.2)) // => ("cdddd", "ef")
 }
 ```
 
@@ -81,8 +85,8 @@ Quantifiers (`*`, `+`, and `?`) and alternations (`|`) wrap each capture inside 
 
 ```swift
 let regex = /ab(?:c(d)*(ef))?gh/
-if let match = "abcddddefgh".firstMatch(of: regex) {
-  print((match.1, match.2)) // => (Optional(["d","d","d","d"]), Optional("ef"))
+if let result = "abcddddefgh".firstMatch(of: regex) {
+  print((result.1, result.2)) // => (Optional(["d","d","d","d"]), Optional("ef"))
 }
 ```
 
@@ -106,7 +110,7 @@ The `firstMatch(of:)` method returns a `Substring` of the first match of the pro
 
 ```swift
 extension String {
-    public func firstMatch<R: RegexProtocol>(of regex: R) -> R.Match?
+    public func firstMatch<R: RegexProtocol>(of regex: R) -> MatchResult<R.Match>?
 }
 ```
 
@@ -130,9 +134,9 @@ In this section, we describe the inferred capture types for regular expression p
 By default, a regular expression literal has type `Regex`. Its generic argument `Match` can be viewed as a tuple of the entire matched substring and any captures.
 
 ```txt
-(EntireMatch, Captures...)
-              ^~~~~~~~~~~
-              Capture types
+(WholeMatch, Captures...)
+             ^~~~~~~~~~~
+             Capture types
 ```
 
 When there are no captures, `Match` is just the entire matched substring, for example:
@@ -141,9 +145,9 @@ When there are no captures, `Match` is just the entire matched substring, for ex
 let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Substring>`
 
 // Equivalent result builder syntax:
-//     let identifier = Pattern {
+//     let identifier = Regex {
 //         OneOrMore(/[_a-zA-Z]/)
-//         Repeat(/[_a-zA-Z0-9]/)
+//         ZeroOrMore(/[_a-zA-Z0-9]/)
 //     }
 ```
 
@@ -158,7 +162,7 @@ let graphemeBreakLowerBound = /([0-9a-fA-F]+)/
 // => `Regex<(Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakLowerBound = OneOrMore(.hexDigit).capture()
+//     let graphemeBreakLowerBound = Capture(OneOrMore(.hexDigit))
 ```
 
 #### Concatenation: `abc`
@@ -170,8 +174,8 @@ let graphemeBreakLowerBound = /([0-9a-fA-F]+)\.\.[0-9a-fA-F]+/
 // => `Regex<(Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakLowerBound = Pattern {
-//         OneOrMore(.hexDigit).capture()
+//     let graphemeBreakLowerBound = Regex {
+//         Capture(OneOrMore(.hexDigit))
 //         ".."
 //         OneOrMore(.hexDigit)
 //     }
@@ -180,10 +184,10 @@ let graphemeBreakRange = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)/
 // => `Regex<(Substring, Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakRange = Pattern {
-//         OneOrMore(.hexDigit).capture()
+//     let graphemeBreakRange = Regex {
+//         Capture(OneOrMore(.hexDigit))
 //         ".."
-//         OneOrMore(.hexDigit).capture()
+//         Capture(OneOrMore(.hexDigit))
 //     }
 ```
 
@@ -208,11 +212,11 @@ let graphemeBreakLowerBound = /([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?/
 // => `Regex<(Substring, Substring, Substring?)>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakLowerBound = Pattern {
-//         OneOrMore(.hexDigit).capture()
+//     let graphemeBreakLowerBound = Regex {
+//         Capture(OneOrMore(.hexDigit))
 //         Optionally {
 //             ".."
-//             OneOrMore(.hexDigit).capture()
+//             Capture(OneOrMore(.hexDigit))
 //         }
 //     }
 ```
@@ -230,21 +234,20 @@ let graphemeBreakPropertyData = /(([0-9a-fA-F]+)(\.\.([0-9a-fA-F]+)))\s*;\s(\w+)
 // => `Regex<(Substring, Substring, Substring, Substring, Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakPropertyData = Pattern {
-//         Group {
-//             OneOrMore(.hexDigit).capture() // (2)
-//             Group {
+//     let graphemeBreakPropertyData = Regex {
+//         Capture {
+//             Capture(OneOrMore(.hexDigit)) // (2)
+//             Capture {
 //                 ".."
-//                 OneOrMore(.hexDigit).capture() // (4)
-//             }.capture() // (3)
-//         }.capture() // (1)
+//                 Capture(OneOrMore(.hexDigit)) // (4)
+//             } // (3)
+//         } // (1)
 //         Repeat(.whitespace)
 //         ";"
 //         CharacterClass.whitespace
-//         OneOrMore(.word).capture() // (5)
+//         Capture(OneOrMore(.word)) // (5)
 //         Repeat(.any)
 //     }
-//     .flattened()
 
 let input = "007F..009F   ; Control"
 // Match result for `input`:
@@ -253,32 +256,32 @@ let input = "007F..009F   ; Control"
 
 #### Quantification: `*`, `+`, `?`, `{n}`, `{n,}`, `{n,m}`
 
-A quantifier wraps its underlying pattern's capture types in either an `Optional`s or `Array`s. Zero-or-one quantification (`?`) produces an `Optional` and all others produce an `Array`. The kind of quantification, i.e. greedy vs reluctant vs possessive, is irrelevant to determining the capture type.
+A quantifier may wrap its underlying pattern's capture types in `Optional`s. Quantifiers whose lower bound is zero produces an `Optional`. The kind of quantification, i.e. greedy vs reluctant vs possessive, is irrelevant to determining the capture type.
 
-| Syntax               | Description           | Capture type                                                  |
-| -------------------- | --------------------- | ------------------------------------------------------------- |
-| `*`                  | 0 or more             | `Array`s of the sub-pattern capture types                     |
-| `+`                  | 1 or more             | `Array`s of the sub-pattern capture types                     |
-| `?`                  | 0 or 1                | `Optional`s of the sub-pattern capture types                  |
-| `{n}`                | Exactly _n_           | `Array`s of the sub-pattern capture types                     |
-| `{n,m}`              | Between _n_ and _m_   | `Array`s of the sub-pattern capture types                     |
-| `{n,}`               | _n_ or more           | `Array`s of the sub-pattern capture types                     |
+| Syntax  | Description         | Capture type                             |
+|---------|---------------------|------------------------------------------|
+| `*`     | 0 or more           | `Optional`s of sub-pattern capture types |
+| `+`     | 1 or more           | Sub-pattern capture types                |
+| `?`     | 0 or 1              | `Optional`s of sub-pattern capture types |
+| `{n}`   | Exactly _n_         | Sub-pattern capture types                |
+| `{n,m}` | Between _n_ and _m_ | `Optional`s of sub-pattern capture types |
+| `{n,}`  | _n_ or more         | `Optional`s of Sub-pattern capture types |
 
 ```swift
 /([0-9a-fA-F]+)+/
-// => `Regex<(Substring, [Substring])>`
+// => `Regex<(Substring, Substring)>`
 
 // Equivalent result builder syntax:
 //     OneOrMore {
-//         OneOrMore(.hexDigit).capture()
+//         Capture(OneOrMore(.hexDigit))
 //     }
 
 /([0-9a-fA-F]+)*/
-// => `Regex<(Substring, [Substring])>`
+// => `Regex<(Substring, Substring?)>`
 
 // Equivalent result builder syntax:
-//     Repeat {
-//         OneOrMore(.hexDigit).capture()
+//     ZeroOrMore {
+//         Capture(OneOrMore(.hexDigit))
 //     }
 
 /([0-9a-fA-F]+)?/
@@ -286,15 +289,15 @@ A quantifier wraps its underlying pattern's capture types in either an `Optional
 
 // Equivalent result builder syntax:
 //     Optionally {
-//         OneOrMore(.hexDigit).capture()
+//         Capture(OneOrMore(.hexDigit))
 //     }
 
 /([0-9a-fA-F]+){3}/
 // => `Regex<(Substring, [Substring])>`
 
 // Equivalent result builder syntax:
-//     Repeat(3) {
-//         OneOrMore(.hexDigit).capture()
+//     Repeat(count: 3) {
+//         Capture(OneOrMore(.hexDigit))
 //     )
 
 /([0-9a-fA-F]+){3,5}/
@@ -302,7 +305,7 @@ A quantifier wraps its underlying pattern's capture types in either an `Optional
 
 // Equivalent result builder syntax:
 //     Repeat(3...5) {
-//         OneOrMore(.hexDigit).capture()
+//         Capture(OneOrMore(.hexDigit))
 //     )
 
 /([0-9a-fA-F]+){3,}/
@@ -310,7 +313,7 @@ A quantifier wraps its underlying pattern's capture types in either an `Optional
 
 // Equivalent result builder syntax:
 //     Repeat(3...) {
-//         OneOrMore(.hexDigit).capture()
+//         Capture(OneOrMore(.hexDigit))
 //     )
 
 let multipleAndNestedOptional = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))?/
@@ -320,35 +323,33 @@ let multipleAndNestedOptional = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))?/
 // => `Regex<(Substring, Substring?, Substring?, Substring?)>`
 
 // Equivalent result builder syntax:
-//     let multipleAndNestedOptional = Pattern {
-//         Optionally {
-//             OneOrMore(.hexDigit).capture()
-//             ".."
-//             OneOrMore(.hexDigit).capture()
+//     let multipleAndNestedOptional = Regex {
+//         Capture {
+//             Optionally {
+//                 Capture(OneOrMore(.hexDigit))
+//                 ".."
+//                 Capture(OneOrMore(.hexDigit))
+//             }
 //         }
-//         .capture()
 //     }
-//     .flattened()
 
 let multipleAndNestedQuantifier = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))+/
 // Positions in result:          0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                               1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                                2 ^~~~~~~~~~~~~~  3 ^~~~~~~~~~~~~~
-// => `Regex<(Substring, [Substring], [Substring], [Substring])>`
+// => `Regex<(Substring, Substring, Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let multipleAndNestedQuantifier = Pattern {
+//     let multipleAndNestedQuantifier = Regex {
 //         OneOrMore {
-//             OneOrMore(.hexDigit).capture()
+//             Capture(OneOrMore(.hexDigit))
 //             ".."
-//             OneOrMore(.hexDigit).capture()
+//             Capture(OneOrMore(.hexDigit))
 //         }
-//         .capture()
 //     }
-//     .flattened()
 ```
 
-Note that capturing collections of repeated captures like this is a departure from most regular expression implementations, which only provide access to the _last_ match of a repeated capture group. For example, Python only captures the last group in this dash-separated string:
+Capturing collections of repeated captures like this is consistent with most regular expression implementations, which only provide access to the _last_ match of a repeated capture group. For example, Python only captures the last group in this dash-separated string:
 
 ```python
 rep = re.compile('(?:([0-9a-fA-F]+)-?)+')
@@ -357,27 +358,17 @@ print(match.group(1))
 # Prints "def0"
 ```
 
-By contrast, the proposed Swift version captures all four sub-matches:
+Capturing only the last occurrences is the most memory-efficient behavior. For consistency and efficiency, we chose this behavior and its corresponding type.
 
 ```swift
 let pattern = /(?:([0-9a-fA-F]+)-?)+/
-if let match = "1234-5678-9abc-def0".firstMatch(of: pattern) {
-    print(match.1)
+if let result = "1234-5678-9abc-def0".firstMatch(of: pattern) {
+    print(result.1)
 }
-// Prints ["1234", "5678", "9abc", "def0"]
+// Prints "def0"
 ```
 
-We believe that the proposed capture behavior is more intuitive. However, the alternative behavior has a smaller memory footprint and is more consistent with usage of backreferences, which only refer to the last match of the repeated capture group:
-
-```swift
-let pattern = /(?:([0-9a-fA-F]+)-?)+ \1/
-var match = "1234-5678-9abc-def0 def0".firstMatch(of: pattern)
-print(match != nil) // true
-var match = "1234-5678-9abc-def0 1234".firstMatch(of: pattern)
-print(match != nil) // false
-```
-
-As a future direction, we could introduce some way of opting into this behavior.
+As a future direction, a way to save the capture history could be useful. We could introduce some way of opting into this behavior.
 
 #### Alternation: `a|b`
 
@@ -390,14 +381,13 @@ let numberAlternationRegex = /([01]+)|[0-9]+|([0-9a-fA-F]+)/
 // => `Regex<(Substring, Substring?, Substring?)>`
 
 // Equivalent result builder syntax:
-//     let numberAlternationRegex = Pattern {
-//         OneOf {
-//             OneOrMore(.binaryDigit).capture()
+//     let numberAlternationRegex = Regex {
+//         ChoiceOf {
+//             Capture(OneOrMore(.binaryDigit))
 //             OneOrMore(.decimalDigit)
-//             OneOrMore(.hexDigit).capture()
+//             Capture(OneOrMore(.hexDigit))
 //         }
 //     }
-//     .flattened()
 
 let scalarRangeAlternation = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)|([0-9a-fA-F]+)/
 // Positions in result:     0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -406,17 +396,16 @@ let scalarRangeAlternation = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)|([0-9a-fA-F]+)/
 // => `Regex<(Substring, Substring?, Substring?, Substring?)>
 
 // Equivalent result builder syntax:
-//     let scalarRangeAlternation = Pattern {
-//         OneOf {
+//     let scalarRangeAlternation = Regex {
+//         ChoiceOf {
 //             Group {
-//                 OneOrMore(.hexDigit).capture()
+//                 Capture(OneOrMore(.hexDigit))
 //                 ".."
-//                 OneOrMore(.hexDigit).capture()
+//                 Capture(OneOrMore(.hexDigit))
 //             }
-//             OneOrMore(.hexDigit).capture()
+//             Capture(OneOrMore(.hexDigit))
 //         }
 //     }
-//     .flattened()
 
 let nestedScalarRangeAlternation = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))|([0-9a-fA-F]+)/
 // Positions in result:           0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -426,19 +415,16 @@ let nestedScalarRangeAlternation = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))|([0-9a-fA
 // => `Regex<(Substring, Substring?, Substring?, Substring?, Substring?)>
 
 // Equivalent result builder syntax:
-//     let scalarRangeAlternation = Pattern {
-//         OneOf {
-//             Group {
-//                 OneOrMore(.hexDigit).capture()
+//     let scalarRangeAlternation = Regex {
+//         ChoiceOf {
+//             Capture {
+//                 ChoiceOf(OneOrMore(.hexDigit))
 //                 ".."
-//                 OneOrMore(.hexDigit).capture()
+//                 ChoiceOf(OneOrMore(.hexDigit))
 //             }
-//             .capture()
-//
-//             OneOrMore(.hexDigit).capture()
+//             Capture(OneOrMore(.hexDigit))
 //         }
 //     }
-//     .flattened()
 ```
 
 ## Effect on ABI stability
