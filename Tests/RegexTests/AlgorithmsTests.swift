@@ -122,7 +122,7 @@ class RegexConsumerTests: XCTestCase {
   }
   
   func testMatchReplace() {
-    func replaceTest<R: RegexProtocol>(
+    func replaceTest<R: RegexComponent>(
       _ regex: R,
       input: String,
       result: String,

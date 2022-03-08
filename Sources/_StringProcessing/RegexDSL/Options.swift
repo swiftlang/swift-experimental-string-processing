@@ -11,7 +11,7 @@
 
 import _MatchingEngine
 
-extension RegexProtocol {
+extension RegexComponent {
   public func caseSensitive(_ isCaseSensitive: Bool) -> Regex<Match> {
     // The API is "case sensitive = true or false", so as to avoid the
     // double negatives inherent in setting "case insensitive" to a Boolean

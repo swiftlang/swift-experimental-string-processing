@@ -275,13 +275,13 @@ extension BidirectionalCollection where Element: Comparable {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func split<R: RegexProtocol>(
+  public func split<R: RegexComponent>(
     by separator: R
   ) -> SplitCollection<RegexConsumer<R, Self>> {
     split(by: RegexConsumer(separator))
   }
   
-  public func splitFromBack<R: RegexProtocol>(
+  public func splitFromBack<R: RegexComponent>(
     by separator: R
   ) -> ReversedSplitCollection<RegexConsumer<R, Self>> {
     splitFromBack(by: RegexConsumer(separator))
