@@ -19,10 +19,10 @@ func dynCap(
 }
 
 class RegexDSLTests: XCTestCase {
-  func _testDSLCaptures<Content: RegexComponent, CaptureType>(
-    _ tests: (input: String, expectedCaptures: CaptureType?)...,
-    matchType: CaptureType.Type,
-    _ equivalence: (CaptureType, CaptureType) -> Bool,
+  func _testDSLCaptures<Content: RegexComponent, MatchType>(
+    _ tests: (input: String, expectedCaptures: MatchType?)...,
+    matchType: MatchType.Type,
+    _ equivalence: (MatchType, MatchType) -> Bool,
     file: StaticString = #file,
     line: UInt = #line,
     @RegexComponentBuilder _ content: () -> Content
@@ -32,7 +32,13 @@ class RegexDSLTests: XCTestCase {
       let maybeMatch = input.match(regex)
       if let expectedCaptures = maybeExpectedCaptures {
         let match = try XCTUnwrap(maybeMatch, file: file, line: line)
-        let captures = try XCTUnwrap(match.match as? CaptureType, file: file, line: line)
+        XCTAssertTrue(
+          type(of: regex).Match.self == MatchType.self,
+          """
+          Expected match type: \(MatchType.self)
+          Actual match type: \(type(of: regex).Match.self)
+          """)
+        let captures = try XCTUnwrap(match.match as? MatchType, file: file, line: line)
         XCTAssertTrue(
           equivalence(captures, expectedCaptures),
           "'\(captures)' is not equal to the expected '\(expectedCaptures)'.",
@@ -46,8 +52,8 @@ class RegexDSLTests: XCTestCase {
   func testSimpleStrings() throws {
     let regex = Regex {
       "a"
-      capture(Character("b")) // Character
-      tryCapture("1") { Int($0) } // Int
+      Capture(Character("b")) // Character
+      TryCapture("1") { Int($0) } // Int
     }
     // Assert the inferred capture type.
     let _: (Substring, Substring, Int).Type = type(of: regex).Match.self
@@ -66,26 +72,26 @@ class RegexDSLTests: XCTestCase {
       matchType: (Substring, Substring, Substring).self, ==)
     {
       .any
-      capture(.whitespace) // Substring
-      capture("c") // Substring
+      Capture(.whitespace) // Substring
+      Capture("c") // Substring
     }
   }
 
   func testMatchResultDotZeroWithoutCapture() throws {
-    let match = try XCTUnwrap("aaa".match { oneOrMore { "a" } })
+    let match = try XCTUnwrap("aaa".match { OneOrMore { "a" } })
     XCTAssertEqual(match.0, "aaa")
   }
 
   func testAlternation() throws {
     do {
-      let regex = choiceOf {
+      let regex = ChoiceOf {
         "aaa"
       }
       XCTAssertTrue("aaa".match(regex)?.match == "aaa")
       XCTAssertNil("aab".match(regex)?.match)
     }
     do {
-      let regex = choiceOf {
+      let regex = ChoiceOf {
         "aaa"
         "bbb"
         "ccc"
@@ -98,8 +104,8 @@ class RegexDSLTests: XCTestCase {
     do {
       let regex = Regex {
         "ab"
-        capture {
-          choiceOf {
+        Capture {
+          ChoiceOf {
             "c"
             "def"
           }
@@ -109,7 +115,7 @@ class RegexDSLTests: XCTestCase {
         try XCTUnwrap("abc".match(regex)?.match) == ("abc", "c"))
     }
     do {
-      let regex = choiceOf {
+      let regex = ChoiceOf {
         "aaa"
         "bbb"
         "ccc"
@@ -120,18 +126,18 @@ class RegexDSLTests: XCTestCase {
       XCTAssertTrue("ccc".match(regex)?.match == "ccc")
     }
     do {
-      let regex = choiceOf {
-        capture("aaa")
+      let regex = ChoiceOf {
+        Capture("aaa")
       }
       XCTAssertTrue(
         try XCTUnwrap("aaa".match(regex)?.match) == ("aaa", "aaa"))
       XCTAssertNil("aab".match(regex)?.match)
     }
     do {
-      let regex = choiceOf {
-        capture("aaa")
-        capture("bbb")
-        capture("ccc")
+      let regex = ChoiceOf {
+        Capture("aaa")
+        Capture("bbb")
+        Capture("ccc")
       }
       XCTAssertTrue(
         try XCTUnwrap("aaa".match(regex)?.match) == ("aaa", "aaa", nil, nil))
@@ -146,15 +152,15 @@ class RegexDSLTests: XCTestCase {
   func testCombinators() throws {
     try _testDSLCaptures(
       ("aaaabccccdddkj", ("aaaabccccdddkj", "b", "cccc", "d", "k", nil, "j")),
-      matchType: (Substring, Substring, Substring, Substring, Substring, Substring?, Substring?).self, ==)
+      matchType: (Substring, Substring, Substring, Substring?, Substring, Substring?, Substring?).self, ==)
     {
       "a".+
-      capture(oneOrMore(Character("b"))) // Substring
-      capture(zeroOrMore("c")) // Substring
-      capture(.hexDigit).* // [Substring]
+      Capture(OneOrMore(Character("b"))) // Substring
+      Capture(ZeroOrMore("c")) // Substring
+      Capture(.hexDigit).* // Substring?
       "e".?
-      capture("t" | "k") // Substring
-      choiceOf { capture("k"); capture("j") } // (Substring?, Substring?)
+      Capture("t" | "k") // Substring
+      ChoiceOf { Capture("k"); Capture("j") } // (Substring?, Substring?)
     }
   }
   
@@ -165,7 +171,7 @@ class RegexDSLTests: XCTestCase {
       ("abcabc", "abcabc"),
       ("abcABCaBc", "abcABCaBc"),
       matchType: Substring.self, ==) {
-        oneOrMore {
+        OneOrMore {
           "abc"
         }.caseSensitive(false)
       }
@@ -178,7 +184,7 @@ class RegexDSLTests: XCTestCase {
       ("abcabc", "abcabc"),
       ("abcABCaBc", "abcABCaBc"),
       matchType: Substring.self, ==) {
-        oneOrMore {
+        OneOrMore {
           "abc"
         }
         .caseSensitive(false)
@@ -195,9 +201,9 @@ class RegexDSLTests: XCTestCase {
       ("abcabc", "abcabc"),
       ("abcdeABCdeaBcde", "abcdeABCdeaBcde"),
       matchType: Substring.self, ==) {
-        oneOrMore {
+        OneOrMore {
           "abc".caseSensitive(false)
-          optionally("de")
+          Optionally("de")
         }
         .caseSensitive(true)
       }
@@ -208,9 +214,9 @@ class RegexDSLTests: XCTestCase {
       ("abc1def2", ("abc1def2", "2")),
       matchType: (Substring, Substring).self, ==)
     {
-      oneOrMore {
-        oneOrMore(.word)
-        capture(.digit)
+      OneOrMore {
+        OneOrMore(.word)
+        Capture(.digit)
       }
     }
 
@@ -218,9 +224,9 @@ class RegexDSLTests: XCTestCase {
       ("abc1def2", ("abc1def2", "2")),
       matchType: (Substring, Substring).self, ==)
     {
-      oneOrMore {
-        oneOrMore(.word, .reluctantly)
-        capture(.digit)
+      OneOrMore {
+        OneOrMore(.word, .reluctantly)
+        Capture(.digit)
       }
     }
 
@@ -228,11 +234,11 @@ class RegexDSLTests: XCTestCase {
       ("abc1def2", ("abc1def2", "2")),
       matchType: (Substring, Substring).self, ==)
     {
-      oneOrMore {
-        oneOrMore(.reluctantly) {
+      OneOrMore {
+        OneOrMore(.reluctantly) {
           .word
         }
-        capture(.digit)
+        Capture(.digit)
       }
     }
     
@@ -240,8 +246,8 @@ class RegexDSLTests: XCTestCase {
       ("abc1def2", "abc1def2"),
       matchType: Substring.self, ==)
     {
-      repeating(2...) {
-        repeating(count: 3) {
+      Repeat(2...) {
+        Repeat(count: 3) {
           CharacterClass.word
         }
         CharacterClass.digit
@@ -258,12 +264,12 @@ class RegexDSLTests: XCTestCase {
       ("aaabbbcccdddeee", "aaabbbcccdddeee"),
       matchType: Substring.self, ==)
     {
-      repeating(count: 3) { "a" }
-      repeating(1...) { "b" }
-      repeating(2...5) { "c" }
-      repeating(..<5) { "d" }
-      repeating(2...) { "e" }
-      repeating(0...) { "f" }
+      Repeat(count: 3) { "a" }
+      Repeat(1...) { "b" }
+      Repeat(2...5) { "c" }
+      Repeat(..<5) { "d" }
+      Repeat(2...) { "e" }
+      Repeat(0...) { "f" }
     }
   }
   
@@ -285,7 +291,7 @@ class RegexDSLTests: XCTestCase {
       ("Cafe", "Cafe"),
       matchType: Substring.self, ==)
     {
-      oneOrMore(.word)
+      OneOrMore(.word)
       UnicodeScalar("e")
       Anchor.textSegmentBoundary
     }
@@ -315,10 +321,10 @@ class RegexDSLTests: XCTestCase {
       matchType: (Substring, [(Substring, Substring, [Substring])]).self, ==)
     {
       "a".+
-      oneOrMore {
-        capture(oneOrMore("b"))
-        capture(zeroOrMore("c"))
-        capture("d").*
+      OneOrMore {
+        Capture(OneOrMore("b"))
+        Capture(ZeroOrMore("c"))
+        Capture("d").*
         "e".?
       }
     }
@@ -330,7 +336,7 @@ class RegexDSLTests: XCTestCase {
     // straight out of the quantifier (without being wrapped in a builder), is
     // able to produce a regex whose `Match` type does not contain any sort of
     // void.
-    let regex = zeroOrMore(.digit)
+    let regex = ZeroOrMore(.digit)
     // Assert the inferred capture type.
     let _: Substring.Type = type(of: regex).Match.self
     let input = "123123"
@@ -361,13 +367,13 @@ class RegexDSLTests: XCTestCase {
       matchType: (Substring, Int?, Word?).self, ==)
     {
       "a".+
-      oneOrMore(.whitespace)
-      optionally {
-        capture(oneOrMore(.digit)) { Int($0)! }
+      OneOrMore(.whitespace)
+      Optionally {
+        Capture(OneOrMore(.digit)) { Int($0)! }
       }
-      zeroOrMore {
-        oneOrMore(.whitespace)
-        capture(oneOrMore(.word)) { Word($0)! }
+      ZeroOrMore {
+        OneOrMore(.whitespace)
+        Capture(OneOrMore(.word)) { Word($0)! }
       }
     }
   }
@@ -375,8 +381,8 @@ class RegexDSLTests: XCTestCase {
   func testNestedCaptureTypes() throws {
     let regex1 = Regex {
       "a".+
-      capture {
-        capture(oneOrMore("b"))
+      Capture {
+        Capture(OneOrMore("b"))
         "e".?
       }
     }
@@ -384,8 +390,8 @@ class RegexDSLTests: XCTestCase {
       = type(of: regex1).Match.self
     let regex2 = Regex {
       "a".+
-      capture {
-        tryCapture("b") { Int($0) }.*
+      Capture {
+        TryCapture("b") { Int($0) }.*
         "e".?
       }
     }
@@ -393,10 +399,10 @@ class RegexDSLTests: XCTestCase {
       = type(of: regex2).Match.self
     let regex3 = Regex {
       "a".+
-      capture {
-        tryCapture("b") { Int($0) }
-        zeroOrMore {
-          tryCapture("c") { Double($0) }
+      Capture {
+        TryCapture("b") { Int($0) }
+        ZeroOrMore {
+          TryCapture("c") { Double($0) }
         }
         "e".?
       }
@@ -405,11 +411,11 @@ class RegexDSLTests: XCTestCase {
       = type(of: regex3).Match.self
     let regex4 = Regex {
       "a".+
-      capture {
-        oneOrMore {
-          capture(oneOrMore("b"))
-          capture(zeroOrMore("c"))
-          capture("d").*
+      Capture {
+        OneOrMore {
+          Capture(OneOrMore("b"))
+          Capture(ZeroOrMore("c"))
+          Capture("d").*
           "e".?
         }
       }
@@ -421,13 +427,13 @@ class RegexDSLTests: XCTestCase {
 
   func testUnicodeScalarPostProcessing() throws {
     let spaces = Regex {
-      zeroOrMore {
+      ZeroOrMore {
         .whitespace
       }
     }
 
     let unicodeScalar = Regex {
-      oneOrMore {
+      OneOrMore {
         .hexDigit
       }
       spaces
@@ -435,7 +441,7 @@ class RegexDSLTests: XCTestCase {
 
     let unicodeData = Regex {
       unicodeScalar
-      optionally {
+      Optionally {
         ".."
         unicodeScalar
       }
@@ -443,13 +449,13 @@ class RegexDSLTests: XCTestCase {
       ";"
       spaces
 
-      capture {
-        oneOrMore {
+      Capture {
+        OneOrMore {
           .word
         }
       }
 
-      zeroOrMore {
+      ZeroOrMore {
         .any
       }
     }
@@ -470,20 +476,20 @@ class RegexDSLTests: XCTestCase {
       """
     
     let regexWithCapture = Regex {
-      capture {
-        oneOrMore(.hexDigit)
+      Capture {
+        OneOrMore(.hexDigit)
       } transform: { Unicode.Scalar(hex: $0) }
-      optionally {
+      Optionally {
         ".."
-        capture {
-          oneOrMore(.hexDigit)
+        Capture {
+          OneOrMore(.hexDigit)
         } transform: { Unicode.Scalar(hex: $0) }
       }
-      oneOrMore(.whitespace)
+      OneOrMore(.whitespace)
       ";"
-      oneOrMore(.whitespace)
-      capture(oneOrMore(.word))
-      zeroOrMore(.any)
+      OneOrMore(.whitespace)
+      Capture(OneOrMore(.word))
+      ZeroOrMore(.any)
     } // Regex<(Substring, Unicode.Scalar?, Unicode.Scalar??, Substring)>
     do {
       // Assert the inferred capture type.
@@ -501,24 +507,24 @@ class RegexDSLTests: XCTestCase {
     }
 
     let regexWithTryCapture = Regex {
-      tryCapture {
-        oneOrMore(.hexDigit)
+      TryCapture {
+        OneOrMore(.hexDigit)
       } transform: {
         Unicode.Scalar(hex: $0)
       }
-      optionally {
+      Optionally {
         ".."
-        tryCapture {
-          oneOrMore(.hexDigit)
+        TryCapture {
+          OneOrMore(.hexDigit)
         } transform: {
           Unicode.Scalar(hex: $0)
         }
       }
-      oneOrMore(.whitespace)
+      OneOrMore(.whitespace)
       ";"
-      oneOrMore(.whitespace)
-      capture(oneOrMore(.word))
-      zeroOrMore(.any)
+      OneOrMore(.whitespace)
+      Capture(OneOrMore(.word))
+      ZeroOrMore(.any)
     } // Regex<(Substring, Unicode.Scalar, Unicode.Scalar?, Substring)>
     do {
       // Assert the inferred capture type.
@@ -582,22 +588,22 @@ class RegexDSLTests: XCTestCase {
     {
       let a = Reference(Substring.self)
       let b = Reference(Int.self)
-      capture("abc", as: a)
-      zeroOrMore {
-        tryCapture(as: b) {
+      Capture("abc", as: a)
+      ZeroOrMore {
+        TryCapture(as: b) {
           "#"
-          oneOrMore(.digit)
+          OneOrMore(.digit)
         } transform: {
           Int($0.dropFirst())
         }
       }
       a
-      zeroOrMore {
-        capture(a)
+      ZeroOrMore {
+        Capture(a)
       }
-      optionally {
+      Optionally {
         "b"
-        capture(a)
+        Capture(a)
       }
     }
 
@@ -606,21 +612,21 @@ class RegexDSLTests: XCTestCase {
       let a = Reference(Substring.self)
       let b = Reference(Int.self)
       let regex = Regex {
-        capture("abc", as: a)
-        zeroOrMore {
-          tryCapture(as: b) {
+        Capture("abc", as: a)
+        ZeroOrMore {
+          TryCapture(as: b) {
             "#"
-            oneOrMore(.digit)
+            OneOrMore(.digit)
           } transform: {
             Int($0.dropFirst())
           }
         }
         a
-        zeroOrMore {
-          capture(b)
+        ZeroOrMore {
+          Capture(b)
         }
-        optionally {
-          capture(a)
+        Optionally {
+          Capture(a)
         }
       }
       let input = "abc#41#42abc#42#42"
@@ -633,19 +639,21 @@ class RegexDSLTests: XCTestCase {
     // #"(?:\w\1|:(\w):)+"#
     try _testDSLCaptures(
       (":a:baca:o:boco", (":a:baca:o:boco", "o")),
-      matchType: (Substring, Substring).self,
+      matchType: (Substring, Substring?).self,
       ==
     ) {
-      oneOrMore {
+      // NOTE: "expression too complex to type check" when inferring the generic
+      // parameter.
+      OneOrMore {
         let a = Reference(Substring.self)
-        choiceOf {
+        ChoiceOf<(Substring, Substring?)> {
           Regex {
             .word
             a
           }
           Regex {
             ":"
-            capture(.word, as: a)
+            Capture(.word, as: a)
             ":"
           }
         }
@@ -668,16 +676,16 @@ class RegexDSLTests: XCTestCase {
         in bounds: Range<String.Index>
       ) -> (upperBound: String.Index, match: SemanticVersion)? {
         let regex = Regex {
-          tryCapture(oneOrMore(.digit)) { Int($0) }
+          TryCapture(OneOrMore(.digit)) { Int($0) }
           "."
-          tryCapture(oneOrMore(.digit)) { Int($0) }
-          optionally {
+          TryCapture(OneOrMore(.digit)) { Int($0) }
+          Optionally {
             "."
-            tryCapture(oneOrMore(.digit)) { Int($0) }
+            TryCapture(OneOrMore(.digit)) { Int($0) }
           }
-          optionally {
+          Optionally {
             "-"
-            capture(oneOrMore(.word))
+            Capture(OneOrMore(.word))
           }
         }
 

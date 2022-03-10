@@ -76,7 +76,7 @@ extension RegexTests {
 
     customTest(
       Regex {
-        oneOrMore { Numbler() }
+        OneOrMore { Numbler() }
       },
       ("ab123c", .firstMatch, "123"),
       ("abc", .firstMatch, nil),
@@ -97,8 +97,8 @@ extension RegexTests {
     // `Equatable` which tuples cannot be.
 
     let regex3 = Regex {
-      capture {
-        oneOrMore {
+      Capture {
+        OneOrMore {
           Numbler()
         }
       }
@@ -114,8 +114,8 @@ extension RegexTests {
     XCTAssertEqual(res3.result.1, "123")
 
     let regex4 = Regex {
-      oneOrMore {
-        capture { Numbler() }
+      OneOrMore {
+        Capture { Numbler() }
       }
     }
 

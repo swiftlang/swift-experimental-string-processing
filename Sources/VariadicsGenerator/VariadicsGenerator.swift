@@ -136,14 +136,14 @@ struct VariadicsGenerator: ParsableCommand {
       emitConcatenation(leftArity: leftArity, rightArity: rightArity)
     }
 
-    for arity in 0..<maxArity {
+    for arity in 0...maxArity {
       emitConcatenationWithEmpty(leftArity: arity)
     }
 
     output("\n\n")
 
     print("Generating quantifiers...", to: &standardError)
-    for arity in 0..<maxArity {
+    for arity in 0...maxArity {
       print("  Arity \(arity): ", terminator: "", to: &standardError)
       for kind in QuantifierKind.allCases {
         print("\(kind.rawValue) ", terminator: "", to: &standardError)
@@ -163,13 +163,13 @@ struct VariadicsGenerator: ParsableCommand {
     }
 
     print("Generating 'AlternationBuilder.buildBlock(_:)' overloads...", to: &standardError)
-    for arity in 1..<maxArity {
+    for arity in 1...maxArity {
       print("  Capture arity: \(arity)", to: &standardError)
       emitUnaryAlternationBuildBlock(arity: arity)
     }
 
     print("Generating 'capture' and 'tryCapture' overloads...", to: &standardError)
-    for arity in 0..<maxArity {
+    for arity in 0...maxArity {
       print("  Capture arity: \(arity)", to: &standardError)
       emitCapture(arity: arity)
     }
@@ -287,9 +287,9 @@ struct VariadicsGenerator: ParsableCommand {
   }
 
   enum QuantifierKind: String, CaseIterable {
-    case zeroOrOne = "optionally"
-    case zeroOrMore = "zeroOrMore"
-    case oneOrMore = "oneOrMore"
+    case zeroOrOne = "Optionally"
+    case zeroOrMore = "ZeroOrMore"
+    case oneOrMore = "OneOrMore"
 
     var operatorName: String {
       switch self {
@@ -311,14 +311,15 @@ struct VariadicsGenerator: ParsableCommand {
   struct QuantifierParameters {
     var disfavored: String
     var genericParams: String
+    var whereClauseForInit: String
     var whereClause: String
     var quantifiedCaptures: String
     var matchType: String
     
     var repeatingWhereClause: String {
-      whereClause.isEmpty
+      whereClauseForInit.isEmpty
         ? "where R.Bound == Int"
-        : whereClause + ", R.Bound == Int"
+        : whereClauseForInit + ", R.Bound == Int"
     }
     
     init(kind: QuantifierKind, arity: Int) {
@@ -336,8 +337,6 @@ struct VariadicsGenerator: ParsableCommand {
       
       let captures = (0..<arity).map { "C\($0)" }
       let capturesJoined = captures.joined(separator: ", ")
-      self.whereClause = arity == 0 ? "" :
-        "where Component.Match == (W, \(capturesJoined))"
       self.quantifiedCaptures = {
         switch kind {
         case .zeroOrOne, .zeroOrMore:
@@ -349,6 +348,10 @@ struct VariadicsGenerator: ParsableCommand {
       self.matchType = arity == 0
         ? baseMatchTypeName
         : "(\(baseMatchTypeName), \(quantifiedCaptures))"
+      self.whereClauseForInit = "where \(matchAssociatedTypeName) == \(matchType)" +
+        (arity == 0 ? "" : ", Component.Match == (W, \(capturesJoined))")
+      self.whereClause = arity == 0 ? "" :
+        "where Component.Match == (W, \(capturesJoined))"
     }
   }
 
@@ -356,26 +359,30 @@ struct VariadicsGenerator: ParsableCommand {
     assert(arity >= 0)
     let params = QuantifierParameters(kind: kind, arity: arity)
     output("""
-      \(params.disfavored)\
-      public func \(kind.rawValue)<\(params.genericParams)>(
-        _ component: Component,
-        _ behavior: QuantificationBehavior = .eagerly
-      ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
-        .init(node: .quantification(.\(kind.astQuantifierAmount), behavior.astKind, component.regex.root))
+      extension \(kind.rawValue) {
+        \(params.disfavored)\
+        public init<\(params.genericParams)>(
+          _ component: Component,
+          _ behavior: QuantificationBehavior = .eagerly
+        ) \(params.whereClauseForInit) {
+          self.init(node: .quantification(.\(kind.astQuantifierAmount), behavior.astKind, component.regex.root))
+        }
       }
 
-      \(params.disfavored)\
-      public func \(kind.rawValue)<\(params.genericParams)>(
-        _ behavior: QuantificationBehavior = .eagerly,
-        @\(concatBuilderName) _ component: () -> Component
-      ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
-        .init(node: .quantification(.\(kind.astQuantifierAmount), behavior.astKind, component().regex.root))
+      extension \(kind.rawValue) {
+        \(params.disfavored)\
+        public init<\(params.genericParams)>(
+          _ behavior: QuantificationBehavior = .eagerly,
+          @\(concatBuilderName) _ component: () -> Component
+        ) \(params.whereClauseForInit) {
+          self.init(node: .quantification(.\(kind.astQuantifierAmount), behavior.astKind, component().regex.root))
+        }
       }
 
       \(params.disfavored)\
       public postfix func \(kind.operatorName)<\(params.genericParams)>(
         _ component: Component
-      ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
+      ) -> \(kind.rawValue)<\(params.matchType)> \(params.whereClause) {
         .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component.regex.root))
       }
 
@@ -401,42 +408,44 @@ struct VariadicsGenerator: ParsableCommand {
     // We would need to prohibit `repeat(count: 0)`; can only happen at runtime
     
     output("""
-      \(params.disfavored)\
-      public func repeating<\(params.genericParams)>(
-        _ component: Component,
-        count: Int
-      ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
-        assert(count > 0, "Must specify a positive count")
-        // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-        return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
-      }
+      extension Repeat {
+        \(params.disfavored)\
+        public init<\(params.genericParams)>(
+          _ component: Component,
+          count: Int
+        ) \(params.whereClauseForInit) {
+          assert(count > 0, "Must specify a positive count")
+          // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
+          self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+        }
 
-      \(params.disfavored)\
-      public func repeating<\(params.genericParams)>(
-        count: Int,
-        @\(concatBuilderName) _ component: () -> Component
-      ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
-        assert(count > 0, "Must specify a positive count")
-        // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-        return Regex(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
-      }
-      
-      \(params.disfavored)\
-      public func repeating<\(params.genericParams), R: RangeExpression>(
-        _ component: Component,
-        _ expression: R,
-        _ behavior: QuantificationBehavior = .eagerly
-      ) -> \(regexTypeName)<\(params.matchType)> \(params.repeatingWhereClause) {
-        .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
-      }
+        \(params.disfavored)\
+        public init<\(params.genericParams)>(
+          count: Int,
+          @\(concatBuilderName) _ component: () -> Component
+        ) \(params.whereClauseForInit) {
+          assert(count > 0, "Must specify a positive count")
+          // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
+          self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+        }
 
-      \(params.disfavored)\
-      public func repeating<\(params.genericParams), R: RangeExpression>(
-        _ expression: R,
-        _ behavior: QuantificationBehavior = .eagerly,
-        @\(concatBuilderName) _ component: () -> Component
-      ) -> \(regexTypeName)<\(params.matchType)> \(params.repeatingWhereClause) {
-        .init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+        \(params.disfavored)\
+        public init<\(params.genericParams), R: RangeExpression>(
+          _ component: Component,
+          _ expression: R,
+          _ behavior: QuantificationBehavior = .eagerly
+        ) \(params.repeatingWhereClause) {
+          self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+        }
+
+        \(params.disfavored)\
+        public init<\(params.genericParams), R: RangeExpression>(
+          _ expression: R,
+          _ behavior: QuantificationBehavior = .eagerly,
+          @\(concatBuilderName) _ component: () -> Component
+        ) \(params.repeatingWhereClause) {
+          self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+        }
       }
       
       """)
@@ -484,12 +493,12 @@ struct VariadicsGenerator: ParsableCommand {
       extension \(altBuilderName) {
         public static func buildBlock<\(genericParams)>(
           combining next: R1, into combined: R0
-        ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+        ) -> ChoiceOf<\(matchType)> \(whereClause) {
           .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
         }
       }
 
-      public func | <\(genericParams)>(lhs: R0, rhs: R1) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+      public func | <\(genericParams)>(lhs: R0, rhs: R1) -> ChoiceOf<\(matchType)> \(whereClause) {
         .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
       }
 
@@ -512,7 +521,7 @@ struct VariadicsGenerator: ParsableCommand {
     let resultCaptures = (0..<arity).map { "C\($0)?" }.joined(separator: ", ")
     output("""
       extension \(altBuilderName) {
-        public static func buildBlock<\(genericParams)>(_ regex: R) -> \(regexTypeName)<(W, \(resultCaptures))> \(whereClause) {
+        public static func buildBlock<\(genericParams)>(_ regex: R) -> ChoiceOf<(W, \(resultCaptures))> \(whereClause) {
           .init(node: .alternation([regex.regex.root]))
         }
       }
@@ -521,6 +530,7 @@ struct VariadicsGenerator: ParsableCommand {
   }
 
   func emitCapture(arity: Int) {
+    let disfavored = arity == 0 ? "@_disfavoredOverload\n" : ""
     let genericParams = arity == 0
       ? "R: \(regexComponentProtocolName), W"
       : "R: \(regexComponentProtocolName), W, " + (0..<arity).map { "C\($0)" }.joined(separator: ", ")
@@ -532,167 +542,218 @@ struct VariadicsGenerator: ParsableCommand {
         ? "(\(baseMatchTypeName), \(newCaptureType))"
         : "(\(baseMatchTypeName), \(newCaptureType), " + (0..<arity).map { "C\($0)" }.joined(separator: ", ") + ")"
     }
-    let whereClause = "where R.\(matchAssociatedTypeName) == \(matchType)"
     let rawNewMatchType = newMatchType(newCaptureType: "W")
     let transformedNewMatchType = newMatchType(newCaptureType: "NewCapture")
+    let whereClauseRaw = "where \(matchAssociatedTypeName) == \(rawNewMatchType), R.\(matchAssociatedTypeName) == \(matchType)"
+    let whereClauseTransformed = "where \(matchAssociatedTypeName) == \(transformedNewMatchType), R.\(matchAssociatedTypeName) == \(matchType)"
     output("""
       // MARK: - Non-builder capture arity \(arity)
 
-      public func capture<\(genericParams)>(
-        _ component: R
-      ) -> \(regexTypeName)<\(rawNewMatchType)> \(whereClause) {
-        .init(node: .group(.capture, component.regex.root))
+      extension Capture {
+        \(disfavored)\
+        public init<\(genericParams)>(
+          _ component: R
+        ) \(whereClauseRaw) {
+          self.init(node: .group(.capture, component.regex.root))
+        }
+
+        \(disfavored)\
+        public init<\(genericParams)>(
+          _ component: R, as reference: Reference<W>
+        ) \(whereClauseRaw) {
+          self.init(node: .group(.capture, component.regex.root, reference.id))
+        }
+
+        \(disfavored)\
+        public init<\(genericParams), NewCapture>(
+          _ component: R,
+          transform: @escaping (Substring) -> NewCapture
+        ) \(whereClauseTransformed) {
+          self.init(node: .groupTransform(
+            .capture,
+            component.regex.root,
+            CaptureTransform(resultType: NewCapture.self) {
+              transform($0) as Any
+            }))
+        }
+
+        \(disfavored)\
+        public init<\(genericParams), NewCapture>(
+          _ component: R,
+          as reference: Reference<NewCapture>,
+          transform: @escaping (Substring) -> NewCapture
+        ) \(whereClauseTransformed) {
+          self.init(node: .groupTransform(
+            .capture,
+            component.regex.root,
+            CaptureTransform(resultType: NewCapture.self) {
+              transform($0) as Any
+            },
+            reference.id))
+        }
       }
 
-      public func capture<\(genericParams)>(
-        _ component: R, as reference: Reference<W>
-      ) -> \(regexTypeName)<\(rawNewMatchType)> \(whereClause) {
-        .init(node: .group(.capture, component.regex.root, reference.id))
-      }
+      extension TryCapture {
+        \(disfavored)\
+        public init<\(genericParams), NewCapture>(
+          _ component: R,
+          transform: @escaping (Substring) throws -> NewCapture
+        ) \(whereClauseTransformed) {
+          self.init(node: .groupTransform(
+            .capture,
+            component.regex.root,
+            CaptureTransform(resultType: NewCapture.self) {
+              try transform($0) as Any
+            }))
+        }
 
-      public func capture<\(genericParams), NewCapture>(
-        _ component: R,
-        transform: @escaping (Substring) -> NewCapture
-      ) -> \(regexTypeName)<\(transformedNewMatchType)> \(whereClause) {
-        .init(node: .groupTransform(
-          .capture,
-          component.regex.root,
-          CaptureTransform(resultType: NewCapture.self) {
-            transform($0) as Any
-          }))
-      }
+        \(disfavored)\
+        public init<\(genericParams), NewCapture>(
+          _ component: R,
+          as reference: Reference<NewCapture>,
+          transform: @escaping (Substring) throws -> NewCapture
+        ) \(whereClauseTransformed) {
+          self.init(node: .groupTransform(
+            .capture,
+            component.regex.root,
+            CaptureTransform(resultType: NewCapture.self) {
+              try transform($0) as Any
+            },
+            reference.id))
+        }
 
-      public func capture<\(genericParams), NewCapture>(
-        _ component: R,
-        as reference: Reference<NewCapture>,
-        transform: @escaping (Substring) -> NewCapture
-      ) -> \(regexTypeName)<\(transformedNewMatchType)> \(whereClause) {
-        .init(node: .groupTransform(
-          .capture,
-          component.regex.root,
-          CaptureTransform(resultType: NewCapture.self) {
-            transform($0) as Any
-          },
-          reference.id))
-      }
+        \(disfavored)\
+        public init<\(genericParams), NewCapture>(
+          _ component: R,
+          transform: @escaping (Substring) -> NewCapture?
+        ) \(whereClauseTransformed) {
+          self.init(node: .groupTransform(
+            .capture,
+            component.regex.root,
+            CaptureTransform(resultType: NewCapture.self) {
+              transform($0) as Any?
+            }))
+        }
 
-      public func tryCapture<\(genericParams), NewCapture>(
-        _ component: R,
-        transform: @escaping (Substring) throws -> NewCapture
-      ) -> \(regexTypeName)<\(transformedNewMatchType)> \(whereClause) {
-        .init(node: .groupTransform(
-          .capture,
-          component.regex.root,
-          CaptureTransform(resultType: NewCapture.self) {
-            try transform($0) as Any
-          }))
-      }
-
-      public func tryCapture<\(genericParams), NewCapture>(
-        _ component: R,
-        as reference: Reference<NewCapture>,
-        transform: @escaping (Substring) throws -> NewCapture
-      ) -> \(regexTypeName)<\(transformedNewMatchType)> \(whereClause) {
-        .init(node: .groupTransform(
-          .capture,
-          component.regex.root,
-          CaptureTransform(resultType: NewCapture.self) {
-            try transform($0) as Any
-          },
-          reference.id))
-      }
-
-      public func tryCapture<\(genericParams), NewCapture>(
-        _ component: R,
-        transform: @escaping (Substring) -> NewCapture?
-      ) -> \(regexTypeName)<\(transformedNewMatchType)> \(whereClause) {
-        .init(node: .groupTransform(
-          .capture,
-          component.regex.root,
-          CaptureTransform(resultType: NewCapture.self) {
-            transform($0) as Any?
-          }))
-      }
-
-      public func tryCapture<\(genericParams), NewCapture>(
-        _ component: R,
-        as reference: Reference<NewCapture>,
-        transform: @escaping (Substring) -> NewCapture?
-      ) -> \(regexTypeName)<\(transformedNewMatchType)> \(whereClause) {
-        .init(node: .groupTransform(
-          .capture,
-          component.regex.root,
-          CaptureTransform(resultType: NewCapture.self) {
-            transform($0) as Any?
-          },
-          reference.id))
+        \(disfavored)\
+        public init<\(genericParams), NewCapture>(
+          _ component: R,
+          as reference: Reference<NewCapture>,
+          transform: @escaping (Substring) -> NewCapture?
+        ) \(whereClauseTransformed) {
+          self.init(node: .groupTransform(
+            .capture,
+            component.regex.root,
+            CaptureTransform(resultType: NewCapture.self) {
+              transform($0) as Any?
+            },
+            reference.id))
+        }
       }
 
       // MARK: - Builder capture arity \(arity)
 
-      public func capture<\(genericParams)>(
-        @\(concatBuilderName) _ component: () -> R
-      ) -> \(regexTypeName)<\(rawNewMatchType)> \(whereClause) {
-        .init(node: .group(.capture, component().regex.root))
+      extension Capture {
+        \(disfavored)\
+        public init<\(genericParams)>(
+          @\(concatBuilderName) _ component: () -> R
+        ) \(whereClauseRaw) {
+          self.init(node: .group(.capture, component().regex.root))
+        }
+
+        \(disfavored)\
+        public init<\(genericParams)>(
+          as reference: Reference<W>,
+          @\(concatBuilderName) _ component: () -> R
+        ) \(whereClauseRaw) {
+          self.init(node: .group(.capture, component().regex.root, reference.id))
+        }
+
+        \(disfavored)\
+        public init<\(genericParams), NewCapture>(
+          @\(concatBuilderName) _ component: () -> R,
+          transform: @escaping (Substring) -> NewCapture
+        ) \(whereClauseTransformed) {
+          self.init(node: .groupTransform(
+            .capture,
+            component().regex.root,
+            CaptureTransform(resultType: NewCapture.self) {
+              transform($0) as Any
+            }))
+        }
+
+        \(disfavored)\
+        public init<\(genericParams), NewCapture>(
+          as reference: Reference<NewCapture>,
+          @\(concatBuilderName) _ component: () -> R,
+          transform: @escaping (Substring) -> NewCapture
+        ) \(whereClauseTransformed) {
+          self.init(node: .groupTransform(
+            .capture,
+            component().regex.root,
+            CaptureTransform(resultType: NewCapture.self) {
+              transform($0) as Any
+            },
+            reference.id))
+        }
       }
 
-      public func capture<\(genericParams)>(
-        as reference: Reference<W>,
-        @\(concatBuilderName) _ component: () -> R
-      ) -> \(regexTypeName)<\(rawNewMatchType)> \(whereClause) {
-        .init(node: .group(.capture, component().regex.root, reference.id))
-      }
+      extension TryCapture {
+        \(disfavored)\
+        public init<\(genericParams), NewCapture>(
+          @\(concatBuilderName) _ component: () -> R,
+          transform: @escaping (Substring) throws -> NewCapture
+        ) \(whereClauseTransformed) {
+          self.init(node: .groupTransform(
+            .capture,
+            component().regex.root,
+            CaptureTransform(resultType: NewCapture.self) {
+              try transform($0) as Any
+            }))
+        }
 
-      public func capture<\(genericParams), NewCapture>(
-        @\(concatBuilderName) _ component: () -> R,
-        transform: @escaping (Substring) -> NewCapture
-      ) -> \(regexTypeName)<\(transformedNewMatchType)> \(whereClause) {
-        .init(node: .groupTransform(
-          .capture,
-          component().regex.root,
-          CaptureTransform(resultType: NewCapture.self) {
-            transform($0) as Any
-          }))
-      }
+        \(disfavored)\
+        public init<\(genericParams), NewCapture>(
+          as reference: Reference<NewCapture>,
+          @\(concatBuilderName) _ component: () -> R,
+          transform: @escaping (Substring) throws -> NewCapture
+        ) \(whereClauseTransformed) {
+          self.init(node: .groupTransform(
+            .capture,
+            component().regex.root,
+            CaptureTransform(resultType: NewCapture.self) {
+              try transform($0) as Any
+            },
+            reference.id))
+        }
 
-      public func tryCapture<\(genericParams), NewCapture>(
-        as reference: Reference<NewCapture>,
-        @\(concatBuilderName) _ component: () -> R,
-        transform: @escaping (Substring) throws -> NewCapture
-      ) -> \(regexTypeName)<\(transformedNewMatchType)> \(whereClause) {
-        .init(node: .groupTransform(
-          .capture,
-          component().regex.root,
-          CaptureTransform(resultType: NewCapture.self) {
-            try transform($0) as Any
-          },
-          reference.id))
-      }
+        \(disfavored)\
+        public init<\(genericParams), NewCapture>(
+          @\(concatBuilderName) _ component: () -> R,
+          transform: @escaping (Substring) -> NewCapture?
+        ) \(whereClauseTransformed) {
+          self.init(node: .groupTransform(
+            .capture,
+            component().regex.root,
+            CaptureTransform(resultType: NewCapture.self) {
+              transform($0) as Any?
+            }))
+        }
 
-      public func tryCapture<\(genericParams), NewCapture>(
-        @\(concatBuilderName) _ component: () -> R,
-        transform: @escaping (Substring) -> NewCapture?
-      ) -> \(regexTypeName)<\(transformedNewMatchType)> \(whereClause) {
-        .init(node: .groupTransform(
-          .capture,
-          component().regex.root,
-          CaptureTransform(resultType: NewCapture.self) {
-            transform($0) as Any?
-          }))
-      }
-
-      public func tryCapture<\(genericParams), NewCapture>(
-        as reference: Reference<NewCapture>,
-        @\(concatBuilderName) _ component: () -> R,
-        transform: @escaping (Substring) -> NewCapture?
-      ) -> \(regexTypeName)<\(transformedNewMatchType)> \(whereClause) {
-        .init(node: .groupTransform(
-          .capture,
-          component().regex.root,
-          CaptureTransform(resultType: NewCapture.self) {
-            transform($0) as Any?
-          },
-          reference.id))
+        \(disfavored)\
+        public init<\(genericParams), NewCapture>(
+          as reference: Reference<NewCapture>,
+          @\(concatBuilderName) _ component: () -> R,
+          transform: @escaping (Substring) -> NewCapture?
+        ) \(whereClauseTransformed) {
+          self.init(node: .groupTransform(
+            .capture,
+            component().regex.root,
+            CaptureTransform(resultType: NewCapture.self) {
+              transform($0) as Any?
+            },
+            reference.id))
+        }
       }
 
 
