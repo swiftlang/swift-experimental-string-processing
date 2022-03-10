@@ -8,7 +8,7 @@ We propose:
 
 1. New regex-powered algorithms over strings, bringing the standard library up to parity with scripting languages
 2. Generic `Collection` equivalents of these algorithms in terms of subsequences
-3. `protocol CustomRegexComponent`, allowing libraries to vend types that can be intermixed as components of regexes
+3. `protocol CustomMatchingRegexComponent`, allowing libraries to vend types that can be intermixed as components of regexes
 
 This proposal is part of a larger [regex-powered string processing initiative](https://forums.swift.org/t/declarative-string-processing-overview/52459). Throughout the document, we will reference the still-in-progress [`RegexProtocol`, `Regex`](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/StronglyTypedCaptures.md), and [result builder DSL](https://forums.swift.org/t/pitch-regular-expression-literals/52820), but these are in flux and not formally part of this proposal. Further discussion of regex specifics is out of scope of this proposal and better discussed in another thread (see [Pitch and Proposal Status](https://github.com/apple/swift-experimental-string-processing/issues/107) for links to relevant threads).
 
@@ -87,7 +87,7 @@ DEBIT     03/24/2020    IRX tax payment    ($52,249.98)
 
 Parsing a currency string such as `$3,020.85` with regex is also tricky, as it can contain localized and currency symbols. This is why Foundation provides industrial-strength parsers for localized strings like these. 
 
-We propose a `CustomRegexComponent` protocol which allows types from outside the standard library participate in regex builders and `RegexProtocol` algorithms. This allows types, such as `Date.ParseStrategy` and `FloatingPointFormatStyle.Currency`, to be used directly within a regex:
+We propose a `CustomMatchingRegexComponent` protocol which allows types from outside the standard library participate in regex builders and `RegexComponent` algorithms. This allows types, such as `Date.ParseStrategy` and `FloatingPointFormatStyle.Currency`, to be used directly within a regex:
 
 ```swift
 let dateRegex = Regex {
@@ -131,7 +131,7 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Parameter regex: A regex to search for within this collection.
     /// - Returns: `true` if the regex was found in the collection, otherwise
     /// `false`.
-    public func contains<R: RegexProtocol>(_ regex: R) -> Bool
+    public func contains<R: RegexComponent>(_ regex: R) -> Bool
 }
 ```
 
@@ -144,7 +144,7 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Parameter regex: A regex to compare to this sequence.
     /// - Returns: `true` if the initial elements of the sequence matches the
     /// beginning of `regex`; otherwise, `false`.
-    public func starts<R: RegexProtocol>(with regex: R) -> Bool
+    public func starts<R: RegexComponent>(with regex: R) -> Bool
 }
 ```
 
@@ -210,7 +210,7 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Parameter regex: The regex to remove from this collection.
     /// - Returns: A new subsequence containing the elements of the collection
     /// that does not match `prefix` from the start.
-    public func trimmingPrefix<R: RegexProtocol>(_ regex: R) -> SubSequence
+    public func trimmingPrefix<R: RegexComponent>(_ regex: R) -> SubSequence
 }
 
 extension RangeReplaceableCollection
@@ -218,7 +218,7 @@ extension RangeReplaceableCollection
 {
     /// Removes the initial elements that matches the given regex.
     /// - Parameter regex: The regex to remove from this collection.
-    public mutating func trimPrefix<R: RegexProtocol>(_ regex: R)
+    public mutating func trimPrefix<R: RegexComponent>(_ regex: R)
 }
 ```
 
@@ -251,7 +251,7 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Parameter regex: The regex to search for.
     /// - Returns: A range in the collection of the first occurrence of `regex`.
     /// Returns `nil` if `regex` is not found.
-    public func firstRange<R: RegexProtocol>(of regex: R) -> Range<Index>?
+    public func firstRange<R: RegexComponent>(of regex: R) -> Range<Index>?
 }
 ```
 
@@ -274,7 +274,7 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Parameter regex: The regex to search for.
     /// - Returns: A collection or ranges in the receiver of all occurrences of
     /// `regex`. Returns an empty collection if `regex` is not found.
-    public func ranges<R: RegexProtocol>(of regex: R) -> some Collection<Range<Index>>
+    public func ranges<R: RegexComponent>(of regex: R) -> some Collection<Range<Index>>
 }
 ```
 
@@ -286,7 +286,7 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Parameter regex: The regex to search for.
     /// - Returns: The first match of `regex` in the collection, or `nil` if
     /// there isn't a match.
-    public func firstMatch<R: RegexProtocol>(of regex: R) -> RegexMatch<R.Match>?
+    public func firstMatch<R: RegexComponent>(of regex: R) -> RegexMatch<R.Match>?
 }
 ```
 
@@ -297,7 +297,7 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// Returns a collection containing all matches of the specified regex.
     /// - Parameter regex: The regex to search for.
     /// - Returns: A collection of matches of `regex`.
-    public func matches<R: RegexProtocol>(of regex: R) -> some Collection<RegexMatch<R.Match>>
+    public func matches<R: RegexComponent>(of regex: R) -> some Collection<RegexMatch<R.Match>>
 }
 ```
 
@@ -360,7 +360,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     ///   sequence matching `regex` to replace. Default is `Int.max`.
     /// - Returns: A new collection in which all occurrences of subsequence
     /// matching `regex` in `subrange` are replaced by `replacement`.
-    public func replacing<R: RegexProtocol, Replacement: Collection>(
+    public func replacing<R: RegexComponent, Replacement: Collection>(
         _ regex: R,
         with replacement: Replacement,
         subrange: Range<Index>,
@@ -376,7 +376,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     ///   sequence matching `regex` to replace. Default is `Int.max`.
     /// - Returns: A new collection in which all occurrences of subsequence
     /// matching `regex` are replaced by `replacement`.
-    public func replacing<R: RegexProtocol, Replacement: Collection>(
+    public func replacing<R: RegexComponent, Replacement: Collection>(
         _ regex: R,
         with replacement: Replacement,
         maxReplacements: Int = .max
@@ -389,7 +389,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     ///   - replacement: The new elements to add to the collection.
     ///   - maxReplacements: A number specifying how many occurrences of the
     ///   sequence matching `regex` to replace. Default is `Int.max`.
-    public mutating func replace<R: RegexProtocol, Replacement: Collection>(
+    public mutating func replace<R: RegexComponent, Replacement: Collection>(
         _ regex: R,
         with replacement: Replacement,
         maxReplacements: Int = .max
@@ -406,7 +406,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     ///   sequence matching `regex` to replace. Default is `Int.max`.
     /// - Returns: A new collection in which all occurrences of subsequence
     /// matching `regex` are replaced by `replacement`.
-    public func replacing<R: RegexProtocol, Replacement: Collection>(
+    public func replacing<R: RegexComponent, Replacement: Collection>(
         _ regex: R,
         with replacement: (RegexMatch<R.Match>) throws -> Replacement,
         subrange: Range<Index>,
@@ -423,7 +423,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     ///   sequence matching `regex` to replace. Default is `Int.max`.
     /// - Returns: A new collection in which all occurrences of subsequence
     /// matching `regex` are replaced by `replacement`.
-    public func replacing<R: RegexProtocol, Replacement: Collection>(
+    public func replacing<R: RegexComponent, Replacement: Collection>(
         _ regex: R,
         with replacement: (RegexMatch<R.Match>) throws -> Replacement,
         maxReplacements: Int = .max
@@ -437,7 +437,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     ///   including captures, and returns a replacement collection.
     ///   - maxReplacements: A number specifying how many occurrences of the
     ///   sequence matching `regex` to replace. Default is `Int.max`.
-    public mutating func replace<R: RegexProtocol, Replacement: Collection>(
+    public mutating func replace<R: RegexComponent, Replacement: Collection>(
         _ regex: R,
         with replacement: (RegexMatch<R.Match>) throws -> Replacement,
         maxReplacements: Int = .max
@@ -464,17 +464,16 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Parameter separator: A regex describing elements to be split upon.
     /// - Returns: A collection of substrings, split from this collection's
     /// elements.
-    public func split<R: RegexProtocol>(by separator: R) -> some Collection<Substring>
+    public func split<R: RegexComponent>(by separator: R) -> some Collection<Substring>
 }
 ```
 
 
-### `CustomRegexComponent`
-
-`CustomRegexComponent` inherits from `RegexProtocol` and satisfies its sole requirement. 
+### `CustomMatchingRegexComponent`
 
 ```swift
-public protocol CustomRegexComponent: RegexProtocol {
+/// A protocol for custom match functionality.
+public protocol CustomMatchingRegexComponent : RegexComponent {
     /// Match the input string within the specified bounds, beginning at the given index, and return
     /// the end position (upper bound) of the match and the matched instance.
     /// - Parameters:
@@ -491,12 +490,12 @@ public protocol CustomRegexComponent: RegexProtocol {
 }
 ```
 
-Conformers naturally inherit from `RegexProtocol`, so they can be used with all of the string algorithms generic over `RegexProtocol`.
+`CustomMatchingRegexComponent` inherits from `RegexComponent` and satisfies its sole requirement; Conformers can be used with all of the string algorithms generic over `RegexComponent`.
 
-Here, we use Foundation `FloatingPointFormatStyle<Double>.Currency` as an example. It would conform to `CustomRegexComponent` by implementing the `match` function, with `Match` being a `Double`. It could also add a static function `.localizedCurrency(code:)` as a member of `RegexProtocol`, so it can be referred as `.localizedCurrency(code:)` in the `Regex` result builder:
+Here, we use Foundation `FloatingPointFormatStyle<Double>.Currency` as an example for protocol conformance. It would implement the `match` function with `Match` being a `Double`. It could also add a static function `.localizedCurrency(code:)` as a member of `RegexComponent`, so it can be referred as `.localizedCurrency(code:)` in the `Regex` result builder:
 
 ```swift
-extension FloatingPointFormatStyle<Double>.Currency : CustomRegexComponent { 
+extension FloatingPointFormatStyle<Double>.Currency : CustomMatchingRegexComponent { 
     public func match(
         _ input: String,
         startingAt index: String.Index,
@@ -504,7 +503,7 @@ extension FloatingPointFormatStyle<Double>.Currency : CustomRegexComponent {
     ) -> (upperBound: String.Index, match: Double)?
 }
 
-extension RegexProtocol where Self == FloatingPointFormatStyle<Double>.Currency {
+extension RegexComponent where Self == FloatingPointFormatStyle<Double>.Currency {
     public static func localizedCurrency(code: Locale.Currency) -> Self
 }
 ```
@@ -542,4 +541,4 @@ The closure parameters of `trimPrefix(while:)` and `replace(_:with:)` aren't mar
 
 ### Open up the shared algorithm implementations for user-defined types
 
-At this point we have not settled on a final design for the protocol hierarchy that the shared algorithm implementations rely on, so we are not ready to expose this infrastructure and stabilize the entire ABI. We aim to eventually open up the ability for users to pass their own types to these `Collection` algorithms without having to go through the `RegexProtocol` overload which creates an intermediate `Regex` instance.
+At this point we have not settled on a final design for the protocol hierarchy that the shared algorithm implementations rely on, so we are not ready to expose this infrastructure and stabilize the entire ABI. We aim to eventually open up the ability for users to pass their own types to these `Collection` algorithms without having to go through the `RegexComponent` overload which creates an intermediate `Regex` instance.
