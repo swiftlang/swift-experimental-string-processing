@@ -192,7 +192,9 @@ postfix operator .+
 @resultBuilder
 public struct AlternationBuilder {
   @_disfavoredOverload
-  public static func buildBlock<R: RegexComponent>(_ component: R) -> ChoiceOf<R.Match> {
+  public static func buildPartialBlock<R: RegexComponent>(
+    first component: R
+  ) -> ChoiceOf<R.Match> {
     .init(component.regex)
   }
 
