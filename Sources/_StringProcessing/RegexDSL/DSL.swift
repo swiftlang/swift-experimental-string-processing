@@ -11,6 +11,18 @@
 
 import _MatchingEngine
 
+// A convenience protocol for builtin regex components that are initialized with
+// a `DSLTree` node.
+internal protocol _BuiltinRegexComponent: RegexComponent {
+  init(_ regex: Regex<Match>)
+}
+
+extension _BuiltinRegexComponent {
+  init(node: DSLTree.Node) {
+    self.init(Regex(node: node))
+  }
+}
+
 // MARK: - Primitives
 
 extension String: RegexComponent {
@@ -115,37 +127,49 @@ extension QuantificationBehavior {
   }
 }
 
-// TODO: Variadic generics
-// struct _OneOrMore<W, C..., Component: RegexComponent>
-// where R.Match == (W, C...)
-// {
-//   typealias Match = (Substring, [(C...)])
-//   let regex: Regex<Match>
-//   init(_ component: Component) {
-//     regex = .init(oneOrMore(r0))
-//   }
-// }
-//
-// struct _OneOrMoreNonCapturing<Component: RegexComponent> {
-//   typealias Match = Substring
-//   let regex: Regex<Match>
-//   init(_ component: Component) {
-//     regex = .init(oneOrMore(r0))
-//   }
-// }
-//
-// func oneOrMore<W, C..., Component: RegexComponent>(
-//   _ component: Component
-// ) -> <R: RegexComponent where R.Match == (Substring, [(C...)])> R {
-//   _OneOrMore(component)
-// }
-//
-// @_disfavoredOverload
-// func oneOrMore<Component: RegexComponent>(
-//   _ component: Component
-// ) -> <R: RegexComponent where R.Match == Substring> R {
-//   _OneOrMoreNonCapturing(component)
-// }
+public struct OneOrMore<Match>: _BuiltinRegexComponent {
+  public var regex: Regex<Match>
+
+  internal init(_ regex: Regex<Match>) {
+    self.regex = regex
+  }
+
+  // Note: Public initializers and operators are currently gyb'd. See
+  // Variadics.swift.
+}
+
+public struct ZeroOrMore<Match>: _BuiltinRegexComponent {
+  public var regex: Regex<Match>
+
+  internal init(_ regex: Regex<Match>) {
+    self.regex = regex
+  }
+
+  // Note: Public initializers and operators are currently gyb'd. See
+  // Variadics.swift.
+}
+
+public struct Optionally<Match>: _BuiltinRegexComponent {
+  public var regex: Regex<Match>
+
+  internal init(_ regex: Regex<Match>) {
+    self.regex = regex
+  }
+
+  // Note: Public initializers and operators are currently gyb'd. See
+  // Variadics.swift.
+}
+
+public struct Repeat<Match>: _BuiltinRegexComponent {
+  public var regex: Regex<Match>
+
+  internal init(_ regex: Regex<Match>) {
+    self.regex = regex
+  }
+
+  // Note: Public initializers and operators are currently gyb'd. See
+  // Variadics.swift.
+}
 
 postfix operator .?
 postfix operator .*
@@ -168,8 +192,8 @@ postfix operator .+
 @resultBuilder
 public struct AlternationBuilder {
   @_disfavoredOverload
-  public static func buildBlock<R: RegexComponent>(_ regex: R) -> R {
-    regex
+  public static func buildBlock<R: RegexComponent>(_ component: R) -> ChoiceOf<R.Match> {
+    .init(component.regex)
   }
 
   public static func buildExpression<R: RegexComponent>(_ regex: R) -> R {
@@ -185,10 +209,38 @@ public struct AlternationBuilder {
   }
 }
 
-public func choiceOf<R: RegexComponent>(
-  @AlternationBuilder builder: () -> R
-) -> R {
-  builder()
+public struct ChoiceOf<Match>: _BuiltinRegexComponent {
+  public var regex: Regex<Match>
+
+  internal init(_ regex: Regex<Match>) {
+    self.regex = regex
+  }
+
+  public init(@AlternationBuilder _ builder: () -> Self) {
+    self = builder()
+  }
+}
+
+// MARK: - Capture
+
+public struct Capture<Match>: _BuiltinRegexComponent {
+  public var regex: Regex<Match>
+
+  internal init(_ regex: Regex<Match>) {
+    self.regex = regex
+  }
+
+  // Note: Public initializers are currently gyb'd. See Variadics.swift.
+}
+
+public struct TryCapture<Match>: _BuiltinRegexComponent {
+  public var regex: Regex<Match>
+
+  internal init(_ regex: Regex<Match>) {
+    self.regex = regex
+  }
+
+  // Note: Public initializers are currently gyb'd. See Variadics.swift.
 }
 
 // MARK: - Backreference
