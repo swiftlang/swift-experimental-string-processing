@@ -234,10 +234,10 @@ struct VariadicsGenerator: ParsableCommand {
     // Emit concatenation builder.
     output("extension \(concatBuilderName) {\n")
     output("""
-        public static func buildBlock<\(genericParams)>(
-          combining next: R1, into combined: R0
+        public static func buildPartialBlock<\(genericParams)>(
+          accumulated: R0, next: R1
         ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
-          .init(node: combined.regex.root.appending(next.regex.root))
+          .init(node: accumulated.regex.root.appending(next.regex.root))
         }
       }
 
@@ -248,14 +248,14 @@ struct VariadicsGenerator: ParsableCommand {
     // T + () = T
     output("""
        extension \(concatBuilderName) {
-         public static func buildBlock<W0
+         public static func buildPartialBlock<W0
        """)
     outputForEach(0..<leftArity) {
       ", C\($0)"
     }
     output("""
       , R0: \(regexComponentProtocolName), R1: \(regexComponentProtocolName)>(
-          combining next: R1, into combined: R0
+          accumulated: R0, next: R1
         ) -> \(regexTypeName)<
       """)
     if leftArity == 0 {
@@ -279,7 +279,7 @@ struct VariadicsGenerator: ParsableCommand {
     }
     output("""
         {
-          .init(node: combined.regex.root.appending(next.regex.root))
+          .init(node: accumulated.regex.root.appending(next.regex.root))
         }
       }
 
@@ -491,10 +491,10 @@ struct VariadicsGenerator: ParsableCommand {
     }()
     output("""
       extension \(altBuilderName) {
-        public static func buildBlock<\(genericParams)>(
-          combining next: R1, into combined: R0
+        public static func buildPartialBlock<\(genericParams)>(
+          accumulated: R0, next: R1
         ) -> ChoiceOf<\(matchType)> \(whereClause) {
-          .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+          .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
         }
       }
 
@@ -521,7 +521,7 @@ struct VariadicsGenerator: ParsableCommand {
     let resultCaptures = (0..<arity).map { "C\($0)?" }.joined(separator: ", ")
     output("""
       extension \(altBuilderName) {
-        public static func buildBlock<\(genericParams)>(_ regex: R) -> ChoiceOf<(W, \(resultCaptures))> \(whereClause) {
+        public static func buildPartialBlock<\(genericParams)>(first regex: R) -> ChoiceOf<(W, \(resultCaptures))> \(whereClause) {
           .init(node: .alternation([regex.regex.root]))
         }
       }
