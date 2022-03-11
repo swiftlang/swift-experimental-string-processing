@@ -8,13 +8,13 @@ We propose:
 
 1. New regex-powered algorithms over strings, bringing the standard library up to parity with scripting languages
 2. Generic `Collection` equivalents of these algorithms in terms of subsequences
-3. `protocol CustomMatchingRegexComponent`, allowing libraries to vend types that can be intermixed as components of regexes
+3. `protocol CustomMatchingRegexComponent`, which allows 3rd party libraries to provide their industrial-strength parsers as intermixable components of regexes
 
 This proposal is part of a larger [regex-powered string processing initiative](https://forums.swift.org/t/declarative-string-processing-overview/52459). Throughout the document, we will reference the still-in-progress [`RegexProtocol`, `Regex`](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/StronglyTypedCaptures.md), and result builder DSL, but these are in flux and not formally part of this proposal. Further discussion of regex specifics is out of scope of this proposal and better discussed in another thread (see [Pitch and Proposal Status](https://github.com/apple/swift-experimental-string-processing/issues/107) for links to relevant threads).
 
 ## Motivation
 
-Below is how [Python string processing API](https://docs.python.org/3/library/stdtypes.html#text-sequence-type-str) compare to their counterparts in Swift. Many essential string processing APIs are evidently missing in the standard library. While most of those can be substituted by chaining multiple functions or using Foundation, they are basic enough to warrant a place in the standard library.
+Below is a comparison of how Swift's APIs stack up with Python's. Some of the gaps can be accomplished through a series of API calls, but every gap adds a burden to developers doing frequent or complex string processing.
 
 
 |Python |Swift  |Note about Swift functions|
@@ -49,9 +49,9 @@ Below is how [Python string processing API](https://docs.python.org/3/library/st
 
 Note: The comparison table omits functions to query if all characters in the string are of a specified category, such as `isalnum()` and `isalpha()`. These are achievable in Swift by passing in the corresponding character set to `allSatisfy(_:)`, so they're omitted in this table for simplicity. 
 
-### Processing domain-specific strings
+### Complex string processing
 
-Another common task regarding string processing is handling those with domain specific information. 
+Even with these API additions, more complex string processing quickly becomes unwieldy. Up-coming support for authoring regexes in Swift help alleviate this somewhat, but string processing in the modern world involves dealing with localization, standards-conforming validation, and other concerns for which a dedicated parser is required.
 
 Consider parsing the date field `"Date: Wed, 16 Feb 2022 23:53:19 GMT"` in an HTTP header as a `Date` type. The naive approach is to search for a substring that looks like a date string (`16 Feb 2022`), and attempt to post-process it as a `Date` with a date parser:
 
@@ -72,7 +72,7 @@ if let dateMatch = header.firstMatch(of: regex)?.0 {
 }
 ```
 
-While this approach happens to work for this example, it is fragile when it comes to localized strings. 
+This requires writing a simplistic pre-parser before invoking the real parser. The pre-parser will suffer from being out-of-sync and less featureful than what the real parser can do.
 
 Or consider parsing a bank statement to record all the monetary values in the last column:
 
@@ -85,7 +85,7 @@ DEBIT     03/24/2020    IRX tax payment    ($52,249.98)
 """
 ```
 
-Parsing a currency string such as `$3,020.85` with regex is also tricky, as it can contain localized and currency symbols. This is why Foundation provides industrial-strength parsers for localized strings like these. 
+Parsing a currency string such as `$3,020.85` with regex is also tricky, as it can contain localized and currency symbols in addition to accounting conventions. This is why Foundation provides industrial-strength parsers for localized strings.
 
 We propose a `CustomMatchingRegexComponent` protocol which allows types from outside the standard library participate in regex builders and `RegexComponent` algorithms. This allows types, such as `Date.ParseStrategy` and `FloatingPointFormatStyle.Currency`, to be used directly within a regex:
 
@@ -521,7 +521,7 @@ let regex = Regex {
 
 ### Extend `Sequence` instead of `Collection`
 
-All of the proposed algorithms are specific to the `Collection` protocol, without support for plain `Sequence`s. Types conforming to the `Sequence` protocol are not required to support multi-pass iteration, which makes a `Sequence` conformance insufficient for most of these algorithms. In light of this, the decision was made to have the underlying shared algorithm implementations work exclusively with `Collection`s.
+Most of the proposed algorithms are necessarily on `Collection` due to the use of indices or mutation.  `Sequence` does not support multi-pass iteration, so even `trimPrefix` would problematic on `Sequence` because it needs to look 1 `Element` ahead to know when to stop trimming.
 
 ## Future directions
 
