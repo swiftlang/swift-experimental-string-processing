@@ -14,465 +14,465 @@
 import _MatchingEngine
 
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0)>  where R0.Match == W0, R1.Match == (W1, C0) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1)>  where R0.Match == W0, R1.Match == (W1, C0, C1) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3, C4) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3, C4, C5) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3, C4, C5, C6) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3, C4, C5, C6, C7) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == W0, R1.Match == (W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1)>  where R0.Match == (W0, C0), R1.Match == (W1, C1) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5, C6) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5, C6, C7) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5, C6, C7, C8) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5, C6) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5, C6, C7) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5, C6, C7, C8) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5, C6) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5, C6, C7) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5, C6, C7, C8) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5, C6) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5, C6, C7) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5, C6, C7, C8) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5, C6) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5, C6, C7) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5, C6, C7, C8) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5), R1.Match == (W1, C6) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5), R1.Match == (W1, C6, C7) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5), R1.Match == (W1, C6, C7, C8) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5), R1.Match == (W1, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Match == (W1, C7) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Match == (W1, C7, C8) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Match == (W1, C7, C8, C9) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7), R1.Match == (W1, C8) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7), R1.Match == (W1, C8, C9) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8), R1.Match == (W1, C9) {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<Substring> where R0.Match == W0  {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, C0, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, C0, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0)> where R0.Match == (W0, C0)  {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, C0, C1, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, C0, C1, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1)> where R0.Match == (W0, C0, C1)  {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, C0, C1, C2, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, C0, C1, C2, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2)> where R0.Match == (W0, C0, C1, C2)  {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3)> where R0.Match == (W0, C0, C1, C2, C3)  {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)> where R0.Match == (W0, C0, C1, C2, C3, C4)  {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)> where R0.Match == (W0, C0, C1, C2, C3, C4, C5)  {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)> where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6)  {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)> where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7)  {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8)  {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 extension RegexComponentBuilder {
-  public static func buildBlock<W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+    accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)> where R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)  {
-    .init(node: combined.regex.root.appending(next.regex.root))
+    .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 
@@ -1767,10 +1767,10 @@ extension Repeat {
   }
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, R1>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, R1>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<Substring> where R0: RegexComponent, R1: RegexComponent {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1778,10 +1778,10 @@ public func | <R0, R1>(lhs: R0, rhs: R1) -> ChoiceOf<Substring> where R0: RegexC
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, R1, W1, C0>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, R1, W1, C0>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?)> where R0: RegexComponent, R1: RegexComponent, R1.Match == (W1, C0) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1789,10 +1789,10 @@ public func | <R0, R1, W1, C0>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0?)> w
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, R1, W1, C0, C1>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, R1, W1, C0, C1>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?)> where R0: RegexComponent, R1: RegexComponent, R1.Match == (W1, C0, C1) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1800,10 +1800,10 @@ public func | <R0, R1, W1, C0, C1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0?
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, R1, W1, C0, C1, C2>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, R1, W1, C0, C1, C2>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?)> where R0: RegexComponent, R1: RegexComponent, R1.Match == (W1, C0, C1, C2) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1811,10 +1811,10 @@ public func | <R0, R1, W1, C0, C1, C2>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring,
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, R1, W1, C0, C1, C2, C3>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?)> where R0: RegexComponent, R1: RegexComponent, R1.Match == (W1, C0, C1, C2, C3) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1822,10 +1822,10 @@ public func | <R0, R1, W1, C0, C1, C2, C3>(lhs: R0, rhs: R1) -> ChoiceOf<(Substr
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, R1, W1, C0, C1, C2, C3, C4>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R1.Match == (W1, C0, C1, C2, C3, C4) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1833,10 +1833,10 @@ public func | <R0, R1, W1, C0, C1, C2, C3, C4>(lhs: R0, rhs: R1) -> ChoiceOf<(Su
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R1.Match == (W1, C0, C1, C2, C3, C4, C5) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1844,10 +1844,10 @@ public func | <R0, R1, W1, C0, C1, C2, C3, C4, C5>(lhs: R0, rhs: R1) -> ChoiceOf
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R1.Match == (W1, C0, C1, C2, C3, C4, C5, C6) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1855,10 +1855,10 @@ public func | <R0, R1, W1, C0, C1, C2, C3, C4, C5, C6>(lhs: R0, rhs: R1) -> Choi
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R1.Match == (W1, C0, C1, C2, C3, C4, C5, C6, C7) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1866,10 +1866,10 @@ public func | <R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7>(lhs: R0, rhs: R1) -> 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R1.Match == (W1, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1877,10 +1877,10 @@ public func | <R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8>(lhs: R0, rhs: R1)
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R1.Match == (W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1888,10 +1888,10 @@ public func | <R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9>(lhs: R0, rhs:
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, R1>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, R1>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1899,10 +1899,10 @@ public func | <R0, W0, C0, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0)> wh
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, R1, W1, C1>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, R1, W1, C1>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0), R1.Match == (W1, C1) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1910,10 +1910,10 @@ public func | <R0, W0, C0, R1, W1, C1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring,
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, R1, W1, C1, C2>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0), R1.Match == (W1, C1, C2) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1921,10 +1921,10 @@ public func | <R0, W0, C0, R1, W1, C1, C2>(lhs: R0, rhs: R1) -> ChoiceOf<(Substr
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, R1, W1, C1, C2, C3>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1932,10 +1932,10 @@ public func | <R0, W0, C0, R1, W1, C1, C2, C3>(lhs: R0, rhs: R1) -> ChoiceOf<(Su
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1943,10 +1943,10 @@ public func | <R0, W0, C0, R1, W1, C1, C2, C3, C4>(lhs: R0, rhs: R1) -> ChoiceOf
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1954,10 +1954,10 @@ public func | <R0, W0, C0, R1, W1, C1, C2, C3, C4, C5>(lhs: R0, rhs: R1) -> Choi
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5, C6) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1965,10 +1965,10 @@ public func | <R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6>(lhs: R0, rhs: R1) -> 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5, C6, C7) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1976,10 +1976,10 @@ public func | <R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7>(lhs: R0, rhs: R1)
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7, C8>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7, C8>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5, C6, C7, C8) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1987,10 +1987,10 @@ public func | <R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7, C8>(lhs: R0, rhs:
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0), R1.Match == (W1, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -1998,10 +1998,10 @@ public func | <R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9>(lhs: R0, 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, R1>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, R1>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2009,10 +2009,10 @@ public func | <R0, W0, C0, C1, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0,
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, R1, W1, C2>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1), R1.Match == (W1, C2) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2020,10 +2020,10 @@ public func | <R0, W0, C0, C1, R1, W1, C2>(lhs: R0, rhs: R1) -> ChoiceOf<(Substr
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, R1, W1, C2, C3>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2031,10 +2031,10 @@ public func | <R0, W0, C0, C1, R1, W1, C2, C3>(lhs: R0, rhs: R1) -> ChoiceOf<(Su
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2042,10 +2042,10 @@ public func | <R0, W0, C0, C1, R1, W1, C2, C3, C4>(lhs: R0, rhs: R1) -> ChoiceOf
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2053,10 +2053,10 @@ public func | <R0, W0, C0, C1, R1, W1, C2, C3, C4, C5>(lhs: R0, rhs: R1) -> Choi
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5, C6) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2064,10 +2064,10 @@ public func | <R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6>(lhs: R0, rhs: R1) -> 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5, C6, C7) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2075,10 +2075,10 @@ public func | <R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7>(lhs: R0, rhs: R1)
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7, C8>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7, C8>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5, C6, C7, C8) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2086,10 +2086,10 @@ public func | <R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7, C8>(lhs: R0, rhs:
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7, C8, C9>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7, C8, C9>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1), R1.Match == (W1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2097,10 +2097,10 @@ public func | <R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7, C8, C9>(lhs: R0, 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, R1>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, R1>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2108,10 +2108,10 @@ public func | <R0, W0, C0, C1, C2, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring,
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, R1, W1, C3>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2119,10 +2119,10 @@ public func | <R0, W0, C0, C1, C2, R1, W1, C3>(lhs: R0, rhs: R1) -> ChoiceOf<(Su
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2130,10 +2130,10 @@ public func | <R0, W0, C0, C1, C2, R1, W1, C3, C4>(lhs: R0, rhs: R1) -> ChoiceOf
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2141,10 +2141,10 @@ public func | <R0, W0, C0, C1, C2, R1, W1, C3, C4, C5>(lhs: R0, rhs: R1) -> Choi
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5, C6) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2152,10 +2152,10 @@ public func | <R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6>(lhs: R0, rhs: R1) -> 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5, C6, C7) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2163,10 +2163,10 @@ public func | <R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7>(lhs: R0, rhs: R1)
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7, C8>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7, C8>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5, C6, C7, C8) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2174,10 +2174,10 @@ public func | <R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7, C8>(lhs: R0, rhs:
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7, C8, C9>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7, C8, C9>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2), R1.Match == (W1, C3, C4, C5, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2185,10 +2185,10 @@ public func | <R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7, C8, C9>(lhs: R0, 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, R1>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2196,10 +2196,10 @@ public func | <R0, W0, C0, C1, C2, C3, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substr
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2207,10 +2207,10 @@ public func | <R0, W0, C0, C1, C2, C3, R1, W1, C4>(lhs: R0, rhs: R1) -> ChoiceOf
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2218,10 +2218,10 @@ public func | <R0, W0, C0, C1, C2, C3, R1, W1, C4, C5>(lhs: R0, rhs: R1) -> Choi
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5, C6) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2229,10 +2229,10 @@ public func | <R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6>(lhs: R0, rhs: R1) -> 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5, C6, C7) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2240,10 +2240,10 @@ public func | <R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7>(lhs: R0, rhs: R1)
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7, C8>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7, C8>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5, C6, C7, C8) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2251,10 +2251,10 @@ public func | <R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7, C8>(lhs: R0, rhs:
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7, C8, C9>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7, C8, C9>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3), R1.Match == (W1, C4, C5, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2262,10 +2262,10 @@ public func | <R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7, C8, C9>(lhs: R0, 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, R1>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2273,10 +2273,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Su
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2284,10 +2284,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, R1, W1, C5>(lhs: R0, rhs: R1) -> Choi
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5, C6) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2295,10 +2295,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6>(lhs: R0, rhs: R1) -> 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5, C6, C7) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2306,10 +2306,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7>(lhs: R0, rhs: R1)
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7, C8>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7, C8>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5, C6, C7, C8) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2317,10 +2317,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7, C8>(lhs: R0, rhs:
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7, C8, C9>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7, C8, C9>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4), R1.Match == (W1, C5, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2328,10 +2328,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7, C8, C9>(lhs: R0, 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2339,10 +2339,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, R1>(lhs: R0, rhs: R1) -> ChoiceOf
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5), R1.Match == (W1, C6) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2350,10 +2350,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6>(lhs: R0, rhs: R1) -> 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5), R1.Match == (W1, C6, C7) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2361,10 +2361,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7>(lhs: R0, rhs: R1)
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7, C8>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7, C8>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5), R1.Match == (W1, C6, C7, C8) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2372,10 +2372,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7, C8>(lhs: R0, rhs:
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7, C8, C9>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7, C8, C9>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5), R1.Match == (W1, C6, C7, C8, C9) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2383,10 +2383,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7, C8, C9>(lhs: R0, 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2394,10 +2394,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, R1>(lhs: R0, rhs: R1) -> Choi
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Match == (W1, C7) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2405,10 +2405,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7>(lhs: R0, rhs: R1)
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7, C8>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7, C8>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Match == (W1, C7, C8) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2416,10 +2416,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7, C8>(lhs: R0, rhs:
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7, C8, C9>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7, C8, C9>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Match == (W1, C7, C8, C9) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2427,10 +2427,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7, C8, C9>(lhs: R0, 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2438,10 +2438,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1>(lhs: R0, rhs: R1) -> 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1, W1, C8>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1, W1, C8>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7), R1.Match == (W1, C8) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2449,10 +2449,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1, W1, C8>(lhs: R0, rhs:
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1, W1, C8, C9>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1, W1, C8, C9>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7), R1.Match == (W1, C8, C9) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2460,10 +2460,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1, W1, C8, C9>(lhs: R0, 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R1>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R1>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2471,10 +2471,10 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R1>(lhs: R0, rhs: R1)
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R1, W1, C9>(
-    combining next: R1, into combined: R0
+  public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R1, W1, C9>(
+    accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Match == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8), R1.Match == (W1, C9) {
-    .init(node: combined.regex.root.appendingAlternationCase(next.regex.root))
+    .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
 
@@ -2482,52 +2482,52 @@ public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R1, W1, C9>(lhs: R0, 
   .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
-  public static func buildBlock<R, W, C0>(_ regex: R) -> ChoiceOf<(W, C0?)> where R: RegexComponent, R.Match == (W, C0) {
+  public static func buildPartialBlock<R, W, C0>(first regex: R) -> ChoiceOf<(W, C0?)> where R: RegexComponent, R.Match == (W, C0) {
     .init(node: .alternation([regex.regex.root]))
   }
 }
 extension AlternationBuilder {
-  public static func buildBlock<R, W, C0, C1>(_ regex: R) -> ChoiceOf<(W, C0?, C1?)> where R: RegexComponent, R.Match == (W, C0, C1) {
+  public static func buildPartialBlock<R, W, C0, C1>(first regex: R) -> ChoiceOf<(W, C0?, C1?)> where R: RegexComponent, R.Match == (W, C0, C1) {
     .init(node: .alternation([regex.regex.root]))
   }
 }
 extension AlternationBuilder {
-  public static func buildBlock<R, W, C0, C1, C2>(_ regex: R) -> ChoiceOf<(W, C0?, C1?, C2?)> where R: RegexComponent, R.Match == (W, C0, C1, C2) {
+  public static func buildPartialBlock<R, W, C0, C1, C2>(first regex: R) -> ChoiceOf<(W, C0?, C1?, C2?)> where R: RegexComponent, R.Match == (W, C0, C1, C2) {
     .init(node: .alternation([regex.regex.root]))
   }
 }
 extension AlternationBuilder {
-  public static func buildBlock<R, W, C0, C1, C2, C3>(_ regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3) {
+  public static func buildPartialBlock<R, W, C0, C1, C2, C3>(first regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3) {
     .init(node: .alternation([regex.regex.root]))
   }
 }
 extension AlternationBuilder {
-  public static func buildBlock<R, W, C0, C1, C2, C3, C4>(_ regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?, C4?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3, C4) {
+  public static func buildPartialBlock<R, W, C0, C1, C2, C3, C4>(first regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?, C4?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3, C4) {
     .init(node: .alternation([regex.regex.root]))
   }
 }
 extension AlternationBuilder {
-  public static func buildBlock<R, W, C0, C1, C2, C3, C4, C5>(_ regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?, C4?, C5?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3, C4, C5) {
+  public static func buildPartialBlock<R, W, C0, C1, C2, C3, C4, C5>(first regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?, C4?, C5?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3, C4, C5) {
     .init(node: .alternation([regex.regex.root]))
   }
 }
 extension AlternationBuilder {
-  public static func buildBlock<R, W, C0, C1, C2, C3, C4, C5, C6>(_ regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?, C4?, C5?, C6?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
+  public static func buildPartialBlock<R, W, C0, C1, C2, C3, C4, C5, C6>(first regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?, C4?, C5?, C6?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3, C4, C5, C6) {
     .init(node: .alternation([regex.regex.root]))
   }
 }
 extension AlternationBuilder {
-  public static func buildBlock<R, W, C0, C1, C2, C3, C4, C5, C6, C7>(_ regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  public static func buildPartialBlock<R, W, C0, C1, C2, C3, C4, C5, C6, C7>(first regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
     .init(node: .alternation([regex.regex.root]))
   }
 }
 extension AlternationBuilder {
-  public static func buildBlock<R, W, C0, C1, C2, C3, C4, C5, C6, C7, C8>(_ regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  public static func buildPartialBlock<R, W, C0, C1, C2, C3, C4, C5, C6, C7, C8>(first regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
     .init(node: .alternation([regex.regex.root]))
   }
 }
 extension AlternationBuilder {
-  public static func buildBlock<R, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9>(_ regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
+  public static func buildPartialBlock<R, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9>(first regex: R) -> ChoiceOf<(W, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R: RegexComponent, R.Match == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     .init(node: .alternation([regex.regex.root]))
   }
 }
