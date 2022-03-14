@@ -14,44 +14,84 @@ This proposal is part of a larger [regex-powered string processing initiative](h
 
 ## Motivation
 
-Below is a comparison of how Swift's APIs stack up with Python's. Some of the gaps can be accomplished through a series of API calls, but every gap adds a burden to developers doing frequent or complex string processing.
+A number of common string processing APIs are missing from the Swift standard library. While most of the desired functionalities can be accomplished through a series of API calls, every gap adds a burden to developers doing frequent or complex string processing. For example, here's one approach to find the number of occurrences a substring ("banana") within a string:
+
+```swift
+let str = "A banana a day keeps the doctor away. I love bananas; banana are my favorite fruit."
+
+var idx = str.startIndex
+var ranges = [Range<String.Index>]()
+while let r = str.range(of: "banana", options: [], range: idx..<str.endIndex) {
+    if idx != str.endIndex {
+        idx = str.index(after: r.lowerBound)
+    }
+    ranges.append(r)
+}
+
+print(ranges.count)
+```
+
+While in Python this is as simple as 
+
+```python
+str = "A banana a day keeps the doctor away. I love bananas; banana are my favorite fruit."
+print(str.count("banana"))
+```
+
+We propose adding string processing algorithms so common tasks as such can be achieved as straightforwardly.
+
+<details>
+<summary> Comparison of how Swift's APIs stack up with Python's. </summary>
+
+Note: Only a subset of Python's string processing API are included in this table for the following reasons:
+
+- Functions to query if all characters in the string are of a specified category, such as `isalnum()` and `isalpha()`, are omitted. These are achievable in Swift by passing in the corresponding character set to `allSatisfy(_:)`, so they're omitted in this table for simplicity. 
+- String formatting functions such as `center(length, character)` and `ljust(width, fillchar)` are also excluded here as this proposal focuses on matching and searching functionalities.
+
+##### Search and replace
+
+|Python |Swift  |
+|---    |---    |
+| `count(sub, start, end)` |  |
+| `find(sub, start, end)`, `index(sub, start, end)` | `firstIndex(where:)` | 
+| `rfind(sub, start, end)`, `rindex(sub, start, end)` | `lastIndex(where:)` | 
+| `expandtabs(tabsize)`, `replace(old, new, count)` | `Foundation.replacingOccurrences(of:with:)` |
+| `maketrans(x, y, z)` + `translate(table)` |
+
+##### Prefix and suffix matching
+
+|Python |Swift  |
+|---    |---    |
+| `startswith(prefix, start, end)` | `starts(with:)` or `hasPrefix(:)`| 
+| `endswith(suffix, start, end)` | `hasSuffix(:)` | 
+| `removeprefix(prefix)` | Test if string has prefix with `hasPrefix(:)`, then drop the prefix with `dropFirst(:)`|
+| `removesuffix(suffix)` | Test if string has suffix with `hasSuffix(:)`, then drop the suffix with `dropLast(:)` |
+
+##### Strip / trim
+
+|Python |Swift  |
+|---    |---    |
+| `strip([chars])`| `Foundation.trimmingCharacters(in:)` |
+| `lstrip([chars])` | `drop(while:)` |
+| `rstrip([chars])` | Test character equality, then `dropLast()` iteratively |
+
+##### Split
+
+|Python |Swift  |
+|---    |---    |
+| `partition(sep)` | `Foundation.components(separatedBy:)` |
+| `rpartition(sep)` |  |
+| `split(sep, maxsplit)` | `split(separator:maxSplits:...)` |
+| `splitlines(keepends)` | `split(separator:maxSplits:...)` | 
+| `rsplit(sep, maxsplit)` |  |
+
+</details>
 
 
-|Python |Swift  |Note about Swift functions|
-|---    |---    |--- |
-| `center(width, fillchar)` |  |  |
-| `count(sub, start, end)` |  |  |
-| `endswith(suffix, start, end)` | `hasSuffix(:)` | Does not support searching from a given index | 
-| `expandtabs(tabsize)` |  |  |
-| `find(sub, start, end)` | `firstIndex(where:)` | Does not support searching within a range |
-| `index(sub, start, end)` | `firstIndex(where:)` |  |
-| `join(iterable)` | `reduce(_:_:)` |  |
-| `ljust(width, fillchar)` |  | Alternative: `padding(toLength:)` in Foundation |
-| `lstrip([chars])` |  | |
-| `maketrans(x, y, z)` |  |  |
-| `partition(sep)` |  |  Alternative: `components(separatedBy:)` in Foundation |
-| `removeprefix(prefix)` |  |  |
-| `removesuffix(suffix)` |  |  |
-| `replace(old, new, count)` |  | Alternative: `replacingOccurrences(of:with:)` in Foundation |
-| `rfind(sub, start, end)` | `lastIndex(where:)` | Does not allow specifying a search range |
-| `rindex(sub, start, end)` | `lastIndex(where:)` | Same as above |
-| `rjust(width, fillchar)` |  |  |
-| `rpartition(sep)` |  |  |
-| `rsplit(sep, maxsplit)` |  |  |
-| `rstrip([chars])` |  |  |
-| `split(sep, maxsplit)` | `split(separator:maxSplits:...)` |  |
-| `splitlines(keepends)` | `split(separator:maxSplits:...)` |  |
-| `startswith(prefix, start, end)` | `starts(with:)` |  |  |
-| `strip([chars])` |  | Alternative: `trimmingCharacters(in:)` in Foundation  |
-| `translate(table)` |  |  |
-| `zfill(width)` |  | Alternative: `padding(toLength:)` in Foundation |
-
-
-Note: The comparison table omits functions to query if all characters in the string are of a specified category, such as `isalnum()` and `isalpha()`. These are achievable in Swift by passing in the corresponding character set to `allSatisfy(_:)`, so they're omitted in this table for simplicity. 
 
 ### Complex string processing
 
-Even with these API additions, more complex string processing quickly becomes unwieldy. Up-coming support for authoring regexes in Swift help alleviate this somewhat, but string processing in the modern world involves dealing with localization, standards-conforming validation, and other concerns for which a dedicated parser is required.
+Even with the API additions, more complex string processing quickly becomes unwieldy. Up-coming support for authoring regexes in Swift help alleviate this somewhat, but string processing in the modern world involves dealing with localization, standards-conforming validation, and other concerns for which a dedicated parser is required.
 
 Consider parsing the date field `"Date: Wed, 16 Feb 2022 23:53:19 GMT"` in an HTTP header as a `Date` type. The naive approach is to search for a substring that looks like a date string (`16 Feb 2022`), and attempt to post-process it as a `Date` with a date parser:
 
@@ -87,30 +127,101 @@ DEBIT     03/24/2020    IRX tax payment    ($52,249.98)
 
 Parsing a currency string such as `$3,020.85` with regex is also tricky, as it can contain localized and currency symbols in addition to accounting conventions. This is why Foundation provides industrial-strength parsers for localized strings.
 
-We propose a `CustomMatchingRegexComponent` protocol which allows types from outside the standard library participate in regex builders and `RegexComponent` algorithms. This allows types, such as `Date.ParseStrategy` and `FloatingPointFormatStyle.Currency`, to be used directly within a regex:
 
+## Proposed solution 
+
+### Complex string processing
+
+We propose a `CustomMatchingRegexComponent` protocol which allows types from outside the standard library participate in regex builders and `RegexComponent` algorithms. This allows types, such as `Date.ParseStrategy` and `FloatingPointFormatStyle.Currency`, to be used directly within a regex:
+                           
 ```swift
 let dateRegex = Regex {
     capture(dateParser)
 }
 
-let date = header.firstMatch(of: dateRegex).map(\.result.1) 
-// A `Date` representing 2022-02-16 00:00:00 +0000
+let date: Date = header.firstMatch(of: dateRegex).map(\.result.1) 
 
 let currencyRegex = Regex {
     capture(.localizedCurrency(code: "USD").sign(strategy: .accounting))
 }
 
-let amount = statement.matches(of: currencyRegex).map(\.result.1)
-// [4.99, 69.73, -38.25, -52249.98]
+let amount: [Double] = statement.matches(of: currencyRegex).map(\.result.1)
 ```
-
-
-## Proposed solution and detailed design 
 
 ### String algorithm additions
 
-The following regex-powered algorithms as well as their generic `Collection` equivalents are included in this pitch:
+We also propose the following regex-powered algorithms as well as their generic `Collection` equivalents. See the Detailed design section for a complete list of variation and overloads .
+
+|Function | Description |
+|---    |---    |
+|`contains(_:) -> Bool` | Returns whether the collection contains the given sequence or `RegexComponent` |
+|`starts(with:) -> Bool` | Returns whether the collection contains the same prefix as the specified `RegexComponent` |
+|`trimPrefix(_:)`| Removes the prefix if it matches the given `RegexComponent` or collection |
+|`firstRange(of:) -> Range?` | Finds the range of the first occurrence of a given sequence or `RegexComponent`|
+|`ranges(of:) -> some Collection<Range>` | Finds the ranges of the all occurrences of a given sequence or `RegexComponent` within the collection |
+|`replace(:with:subrange:maxReplacements)`| Replaces all occurrences of the sequence matching the given `RegexComponent` or sequence with a given collection |
+|`split(by:)`| Returns the longest possible subsequences of the collection around elements equal to the given separator |
+|`firstMatch(of:)`| Returns the first match of the specified `RegexComponent` within the collection |
+|`matches(of:)`| Returns a collection containing all matches of the specified `RegexComponent` |
+
+
+
+## Detailed design 
+
+### `CustomMatchingRegexComponent`
+
+`CustomMatchingRegexComponent` inherits from `RegexComponent` and satisfies its sole requirement; Conformers can be used with all of the string algorithms generic over `RegexComponent`.
+
+```swift
+/// A protocol for custom match functionality.
+public protocol CustomMatchingRegexComponent : RegexComponent {
+    /// Match the input string within the specified bounds, beginning at the given index, and return
+    /// the end position (upper bound) of the match and the matched instance.
+    /// - Parameters:
+    ///   - input: The string in which the match is performed.
+    ///   - index: An index of `input` at which to begin matching.
+    ///   - bounds: The bounds in `input` in which the match is performed.
+    /// - Returns: The upper bound where the match terminates and a matched instance, or `nil` if
+    ///   there isn't a match.
+    func match(
+        _ input: String,
+        startingAt index: String.Index,
+        in bounds: Range<String.Index>
+    ) -> (upperBound: String.Index, match: Match)?
+}
+```
+
+<details>
+<summary>Example for protocol conformance</summary>
+
+We use Foundation `FloatingPointFormatStyle<Double>.Currency` as an example for protocol conformance. It would implement the `match` function with `Match` being a `Double`. It could also add a static function `.localizedCurrency(code:)` as a member of `RegexComponent`, so it can be referred as `.localizedCurrency(code:)` in the `Regex` result builder:
+
+```swift
+extension FloatingPointFormatStyle<Double>.Currency : CustomMatchingRegexComponent { 
+    public func match(
+        _ input: String,
+        startingAt index: String.Index,
+        in bounds: Range<String.Index>
+    ) -> (upperBound: String.Index, match: Double)?
+}
+
+extension RegexComponent where Self == FloatingPointFormatStyle<Double>.Currency {
+    public static func localizedCurrency(code: Locale.Currency) -> Self
+}
+```
+
+Matching and extracting a localized currency amount, such as `"$3,020.85"`, can be done directly within a regex:
+
+```swift
+let regex = Regex {
+    capture(.localizedCurreny(code: "USD"))
+}
+```
+ 
+</details>
+
+
+### String algorithm additions
 
 #### Contains
 
@@ -159,7 +270,7 @@ extension Collection {
     /// element should be removed from the collection.
     /// - Returns: A collection containing the elements of the collection that are
     ///  not removed by `predicate`.
-    public func trimmingPrefix(while predicate: (Element) -> Bool) -> SubSequence
+    public func trimmingPrefix(while predicate: (Element) throws -> Bool) rethrows -> SubSequence
 }
 
 extension Collection where SubSequence == Self {
@@ -168,7 +279,7 @@ extension Collection where SubSequence == Self {
     /// - Parameter predicate: A closure that takes an element of the sequence
     /// as its argument and returns a Boolean value indicating whether the
     /// element should be removed from the collection.
-    public mutating func trimPrefix(while predicate: (Element) -> Bool)
+    public mutating func trimPrefix(while predicate: (Element) throws -> Bool)
 }
 
 extension RangeReplaceableCollection {
@@ -177,7 +288,7 @@ extension RangeReplaceableCollection {
     /// - Parameter predicate: A closure that takes an element of the sequence
     /// as its argument and returns a Boolean value indicating whether the
     /// element should be removed from the collection.
-    public mutating func trimPrefix(while predicate: (Element) -> Bool)
+    public mutating func trimPrefix(while predicate: (Element) throws -> Bool)
 }
 
 extension Collection where Element: Equatable {
@@ -314,7 +425,8 @@ extension RangeReplaceableCollection where Element: Equatable {
     ///   - maxReplacements: A number specifying how many occurrences of `other`
     ///   to replace. Default is `Int.max`.
     /// - Returns: A new collection in which all occurrences of `other` in
-    /// `subrange` of the collection are replaced by `replacement`.    public func replacing<S: Sequence, Replacement: Collection>(
+    /// `subrange` of the collection are replaced by `replacement`.    
+    public func replacing<S: Sequence, Replacement: Collection>(
         _ other: S,
         with replacement: Replacement,
         subrange: Range<Index>,
@@ -469,52 +581,7 @@ extension BidirectionalCollection where SubSequence == Substring {
 ```
 
 
-### `CustomMatchingRegexComponent`
 
-```swift
-/// A protocol for custom match functionality.
-public protocol CustomMatchingRegexComponent : RegexComponent {
-    /// Match the input string within the specified bounds, beginning at the given index, and return
-    /// the end position (upper bound) of the match and the matched instance.
-    /// - Parameters:
-    ///   - input: The string in which the match is performed.
-    ///   - index: An index of `input` at which to begin matching.
-    ///   - bounds: The bounds in `input` in which the match is performed.
-    /// - Returns: The upper bound where the match terminates and a matched instance, or `nil` if
-    ///   there isn't a match.
-    func match(
-        _ input: String,
-        startingAt index: String.Index,
-        in bounds: Range<String.Index>
-    ) -> (upperBound: String.Index, match: Match)?
-}
-```
-
-`CustomMatchingRegexComponent` inherits from `RegexComponent` and satisfies its sole requirement; Conformers can be used with all of the string algorithms generic over `RegexComponent`.
-
-Here, we use Foundation `FloatingPointFormatStyle<Double>.Currency` as an example for protocol conformance. It would implement the `match` function with `Match` being a `Double`. It could also add a static function `.localizedCurrency(code:)` as a member of `RegexComponent`, so it can be referred as `.localizedCurrency(code:)` in the `Regex` result builder:
-
-```swift
-extension FloatingPointFormatStyle<Double>.Currency : CustomMatchingRegexComponent { 
-    public func match(
-        _ input: String,
-        startingAt index: String.Index,
-        in bounds: Range<String.Index>
-    ) -> (upperBound: String.Index, match: Double)?
-}
-
-extension RegexComponent where Self == FloatingPointFormatStyle<Double>.Currency {
-    public static func localizedCurrency(code: Locale.Currency) -> Self
-}
-```
-
-Matching and extracting a localized currency amount, such as `"$3,020.85"`, can be done directly within a regex:
-
-```swift
-let regex = Regex {
-    capture(.localizedCurreny(code: "USD"))
-}
-```
 
 
 ## Alternatives considered
@@ -525,20 +592,6 @@ Most of the proposed algorithms are necessarily on `Collection` due to the use o
 
 ## Future directions
 
-### Backward algorithms
+### Future API
 
-There are some unanswered questions about algorithms that operate from the back of a collection.
-
-There is a subtle difference between finding the last non-overlapping range of a pattern in a string, and finding the first range of this pattern when searching from the back. `"aaaaa".ranges(of: "aa")` produces two non-overlapping ranges, splitting the string in the chunks `aa|aa|a`. It would not be completely unreasonable to expect `"aaaaa".lastRange(of: "aa")` to be shorthand for `"aaaaa".ranges(of: "aa").last`, i.e. to return the range that contains the third and fourth characters of the string. Yet, the first range of `"aa"` when searching from the back of the string yields the range that contains the fourth and fifth characters.
-
-It is not obvious whether both of these notions of what it means for a range to be the "last" range should be supported, or what names should be used in order to disambiguate them. It is also worth noting that some kinds of patterns do behave nicely and always produce the same results when searching forwards or backwards, e.g. `myInts.lastIndex(where: { $0 > 10 })` is unambiguous. These kinds of patterns might warrant special treatment when designing algorithms that process the collection in reverse.
-
-Similar questions arise when trimming a string from both sides: `"ababa".trimming("aba")` can return either `"ba"` or `"ab"`, depending on whether the prefix or the suffix was trimmed first.
-
-### Throwing closures
-
-The closure parameters of `trimPrefix(while:)` and `replace(_:with:)` aren't marked `throws` and the methods themselves aren't marked `rethrows`, because the shared implementations of these groups of related algorithms do not yet support error handling.
-
-### Open up the shared algorithm implementations for user-defined types
-
-At this point we have not settled on a final design for the protocol hierarchy that the shared algorithm implementations rely on, so we are not ready to expose this infrastructure and stabilize the entire ABI. We aim to eventually open up the ability for users to pass their own types to these `Collection` algorithms without having to go through the `RegexComponent` overload which creates an intermediate `Regex` instance.
+Some Python functions are not currently included in this proposal, such as trimming the suffix from a string/collection. This pitch aims to establish a pattern for using `RegexComponent` with string processing algorithms, so that further enhancement can to be introduced to the standard library easily in the future, and eventually close the gap between Swift and other popular scripting languages. 
