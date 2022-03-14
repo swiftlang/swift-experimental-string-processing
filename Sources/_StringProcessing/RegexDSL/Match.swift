@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 @dynamicMemberLookup
-public struct RegexMatch<Match> {
+public struct MatchResult<Match> {
   let input: String
   public let range: Range<String.Index>
   let rawCaptures: [StructuredCapture]
@@ -64,11 +64,11 @@ public struct RegexMatch<Match> {
 }
 
 extension RegexComponent {
-  public func match(in input: String) -> RegexMatch<Match>? {
+  public func match(in input: String) -> MatchResult<Match>? {
     _match(
       input, in: input.startIndex..<input.endIndex)
   }
-  public func match(in input: Substring) -> RegexMatch<Match>? {
+  public func match(in input: Substring) -> MatchResult<Match>? {
     _match(
       input.base, in: input.startIndex..<input.endIndex)
   }
@@ -77,7 +77,7 @@ extension RegexComponent {
     _ input: String,
     in inputRange: Range<String.Index>,
     mode: MatchMode = .wholeString
-  ) -> RegexMatch<Match>? {
+  ) -> MatchResult<Match>? {
     let executor = Executor(program: regex.program.loweredProgram)
     do {
       return try executor.match(input, in: inputRange, mode)
@@ -88,24 +88,24 @@ extension RegexComponent {
 }
 
 extension String {
-  public func match<R: RegexComponent>(_ regex: R) -> RegexMatch<R.Match>? {
+  public func match<R: RegexComponent>(_ regex: R) -> MatchResult<R.Match>? {
     regex.match(in: self)
   }
 
   public func match<R: RegexComponent>(
     @RegexComponentBuilder _ content: () -> R
-  ) -> RegexMatch<R.Match>? {
+  ) -> MatchResult<R.Match>? {
     match(content())
   }
 }
 extension Substring {
-  public func match<R: RegexComponent>(_ regex: R) -> RegexMatch<R.Match>? {
+  public func match<R: RegexComponent>(_ regex: R) -> MatchResult<R.Match>? {
     regex.match(in: self)
   }
 
   public func match<R: RegexComponent>(
     @RegexComponentBuilder _ content: () -> R
-  ) -> RegexMatch<R.Match>? {
+  ) -> MatchResult<R.Match>? {
     match(content())
   }
 }

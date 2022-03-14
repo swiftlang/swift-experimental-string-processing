@@ -23,7 +23,7 @@ struct Executor {
     _ input: String,
     in inputRange: Range<String.Index>,
     _ mode: MatchMode
-  ) throws -> RegexMatch<Match>? {
+  ) throws -> MatchResult<Match>? {
     var cpu = engine.makeProcessor(
       input: input, bounds: inputRange, matchMode: mode)
 
@@ -53,7 +53,7 @@ struct Executor {
       value = nil
     }
 
-    return RegexMatch(
+    return MatchResult(
       input: input,
       range: range,
       rawCaptures: caps,
@@ -65,7 +65,7 @@ struct Executor {
     _ input: String,
     in inputRange: Range<String.Index>,
     _ mode: MatchMode
-  ) throws -> RegexMatch<(Substring, DynamicCaptures)>? {
+  ) throws -> MatchResult<(Substring, DynamicCaptures)>? {
     try match(input, in: inputRange, mode)
   }
 }
