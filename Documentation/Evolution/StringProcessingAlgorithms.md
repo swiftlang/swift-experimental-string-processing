@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Swift standard library's string processing algorithms are underpowered compared to other popular programming and scripting languages. Some of these omissions can be papered over through bridged `NSString` API available through the Foundation framework, but these are still incomplete and bring in linkage requirements to Foundation.
+The Swift standard library's string processing algorithms are underpowered compared to other popular programming and scripting languages. Some of these omissions can be found in `NSString`, but these fundamental algorithms should have a place in the standard library.
 
 We propose:
 
@@ -145,7 +145,7 @@ let currencyRegex = Regex {
     capture(.localizedCurrency(code: "USD").sign(strategy: .accounting))
 }
 
-let amount: [Double] = statement.matches(of: currencyRegex).map(\.result.1)
+let amount: [Decimal] = statement.matches(of: currencyRegex).map(\.result.1)
 ```
 
 ### String algorithm additions
@@ -194,18 +194,18 @@ public protocol CustomMatchingRegexComponent : RegexComponent {
 <details>
 <summary>Example for protocol conformance</summary>
 
-We use Foundation `FloatingPointFormatStyle<Double>.Currency` as an example for protocol conformance. It would implement the `match` function with `Match` being a `Double`. It could also add a static function `.localizedCurrency(code:)` as a member of `RegexComponent`, so it can be referred as `.localizedCurrency(code:)` in the `Regex` result builder:
+We use Foundation `FloatingPointFormatStyle<Decimal>.Currency` as an example for protocol conformance. It would implement the `match` function with `Match` being a `Decimal`. It could also add a static function `.localizedCurrency(code:)` as a member of `RegexComponent`, so it can be referred as `.localizedCurrency(code:)` in the `Regex` result builder:
 
 ```swift
-extension FloatingPointFormatStyle<Double>.Currency : CustomMatchingRegexComponent { 
+extension FloatingPointFormatStyle<Decimal>.Currency : CustomMatchingRegexComponent { 
     public func match(
         _ input: String,
         startingAt index: String.Index,
         in bounds: Range<String.Index>
-    ) -> (upperBound: String.Index, match: Double)?
+    ) -> (upperBound: String.Index, match: Decimal)?
 }
 
-extension RegexComponent where Self == FloatingPointFormatStyle<Double>.Currency {
+extension RegexComponent where Self == FloatingPointFormatStyle<Decimal>.Currency {
     public static func localizedCurrency(code: Locale.Currency) -> Self
 }
 ```
