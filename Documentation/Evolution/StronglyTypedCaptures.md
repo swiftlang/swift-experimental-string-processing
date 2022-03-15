@@ -12,7 +12,7 @@ Authors: [Richard Wei](https://github.com/rxwei), [Kyle Macomber](https://github
 - **v3**
     - Updates quantifiers to not save the history.
     - Updates `capture` method to type `Capture`.
-    - Adds `MatchResult` indirection.
+    - Adds `Regex<Output>.Match` indirection.
 
 ## Introduction
 
@@ -60,7 +60,7 @@ Across a variety of programming languages, many established regular expression l
 
 ## Proposed solution
 
-We introduce a generic structure `Regex<Match>` whose generic parameter `Match` includes the match and any captures, using tuples to represent multiple and nested captures.
+We introduce a generic structure `Regex<Match>` whose generic parameter `Output` includes the match and any captures, using tuples to represent multiple and nested captures.
 
 ```swift
 let regex = /ab(cd*)(ef)gh/
@@ -70,7 +70,7 @@ if let result = "abcddddefgh".firstMatch(of: regex) {
 }
 ```
 
-During type inference for regular expression literals, the compiler infers the type of `Match` from the content of the regular expression. The same will be true for the result builder syntax, except that the type inference rules are expressed as method declarations in the result builder type.
+During type inference for regular expression literals, the compiler infers the type of `Output` from the content of the regular expression. The same will be true for the result builder syntax, except that the type inference rules are expressed as method declarations in the result builder type.
 
 Because much of the motivation behind providing regex literals in Swift is their familiarity, a top priority of this design is for the result of calling `firstMatch(of:)` with a regex to align with the traditional numbering of backreferences to capture groups, which start at `\1`.
 
@@ -94,7 +94,7 @@ if let result = "abcddddefgh".firstMatch(of: regex) {
 
 ### `Regex` type
 
-`Regex` is a structure that represents a regular expression. `Regex` is generic over an unconstrained generic parameter `Match`. Upon a regex match, the entire match and any captured values are available as part of the result.
+`Regex` is a structure that represents a regular expression. `Regex` is generic over an unconstrained generic parameter `Output`. Upon a regex match, the entire match and any captured values are available as part of the result.
 
 ```swift
 public struct Regex<Match>: RegexProtocol, ExpressibleByRegexLiteral {
@@ -102,7 +102,7 @@ public struct Regex<Match>: RegexProtocol, ExpressibleByRegexLiteral {
 }
 ```
 
-> ***Note**: Semantic-level switching (i.e. matching grapheme clusters with canonical equivalence vs Unicode scalar values) is out-of-scope for this pitch, but handling that will likely introduce constraints on `Match`. We use an unconstrained generic parameter in this pitch for brevity and simplicity. The `Substring`s we use for illustration throughout this pitch are created on-the-fly; the actual memory representation uses `Range<String.Index>`. In this sense, the `Match` generic type is just an encoding of the arity and kind of captured content.*
+> ***Note**: Semantic-level switching (i.e. matching grapheme clusters with canonical equivalence vs Unicode scalar values) is out-of-scope for this pitch, but handling that will likely introduce constraints on `Output`. We use an unconstrained generic parameter in this pitch for brevity and simplicity. The `Substring`s we use for illustration throughout this pitch are created on-the-fly; the actual memory representation uses `Range<String.Index>`. In this sense, the `Output` generic type is just an encoding of the arity and kind of captured content.*
 
 ### `firstMatch(of:)` method
 
@@ -110,7 +110,7 @@ The `firstMatch(of:)` method returns a `Substring` of the first match of the pro
 
 ```swift
 extension String {
-    public func firstMatch<R: RegexProtocol>(of regex: R) -> MatchResult<R.Match>?
+    public func firstMatch<R: RegexProtocol>(of regex: R) -> Regex<R.Output>.Match?
 }
 ```
 
@@ -131,7 +131,7 @@ if let match = line.firstMatch(of: scalarRangePattern) {
 
 In this section, we describe the inferred capture types for regular expression patterns and how they compose.
 
-By default, a regular expression literal has type `Regex`. Its generic argument `Match` can be viewed as a tuple of the entire matched substring and any captures.
+By default, a regular expression literal has type `Regex`. Its generic argument `Output` can be viewed as a tuple of the entire matched substring and any captures.
 
 ```txt
 (WholeMatch, Captures...)
@@ -139,7 +139,7 @@ By default, a regular expression literal has type `Regex`. Its generic argument 
              Capture types
 ```
 
-When there are no captures, `Match` is just the entire matched substring, for example:
+When there are no captures, `Output` is just the entire matched substring, for example:
 
 ```swift
 let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Substring>`
@@ -427,6 +427,44 @@ let nestedScalarRangeAlternation = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))|([0-9a-fA
 //     }
 ```
 
+### Dynamic captures
+
+So far, we have explored offering static capture types for using a regular expression that is available in source code. Meanwhile, we would like to apply Swift's string processing capabilities to fully dynamic use cases, such as matching a string using a regular expression obtained at runtime.
+
+To support dynamism, we introduce a new type, `AnyRegexOutput` that represents a tree of captures, and add a `Regex` initializer that accepts a string and produces `Regex<AnyRegexOutput>`. `AnyRegexOutput` can also be used to retrofit regexes with strongly typed captures to preexisting use sites of `Regex<AnyRegexOutput>`.
+  
+```swift
+public struct AnyRegexOutput: Equatable, RandomAccessCollection {
+  public var match: Substring? { get }
+  public var range: Range<String.Index> { get }
+  public var count: Int { get }
+  public subscript(name: String) -> Substring { get }
+  public subscript(position: Int) -> Substring { get }
+  ...
+}
+
+extension Regex.Match where Output == AnyRegexOutput {
+  /// Creates a regex dynamically from text.
+  public init(_ text: String) throws where Output == AnyRegexOutput
+
+  /// Creates a type-erased match from an existing one.
+  public init<OtherOutput>(_ other: Regex<OtherOutput>.Match)
+}
+```
+
+Example usage:
+
+```swift
+let regex = readLine()! // (\w*)(\d)+z(\w*)?
+let input = readLine()! // abcd1234xyz
+print(input.firstMatch(of: regex)?.1)
+// [
+//     "abcd",
+//     "4",
+//     .some("xyz")
+// ]
+```
+
 ## Effect on ABI stability
 
 None.  This is a purely additive change to the Standard Library.
@@ -466,7 +504,7 @@ For exact-count quantifications, e.g. `[a-z]{5}`, it would slightly improve type
 
 However, this would cause an inconsistency between exact-count quantification and bounded quantification. We believe that the proposed design will result in fewer surprises as we associate the `{...}` quantifier syntax with `Array`.
 
-### `Regex<Captures>` instead of `Regex<Match>`
+### `Regex<Captures>` instead of `Regex<Output>`
 
 In the initial version of this pitch, `Regex` was _only_ generic over its captures and `firstMatch(of:)` was responsible for flattening together the match and captures into a tuple.
 
@@ -541,8 +579,8 @@ It's possible to derive the flat type from the structured type (but not vice ver
 ```swift
 extension String {
     struct MatchResult<R: RegexProtocol> {
-        var flat: R.Match.Flat { get }
-        var structured: R.Match { get }
+        var flat: R.Output.Flat { get }
+        var structured: R.Output { get }
     }
     func firstMatch<R>(of regex: R) -> MatchResult<R>?
 }
@@ -551,42 +589,3 @@ extension String {
 This is cool, but it adds extra complexity to `Regex` and it isn't as clear because the generic type no longer aligns with the traditional regex backreference numbering. Because the primary motivation for providing regex literals in Swift is their familiarity, we think the consistency of the flat capture types trumps the added safety and ergonomics of the structured capture types.
 
 We think the calculus probably flips in favor of a structured capture types for the result builder syntax, for which familiarity is not as high a priority.
-
-## Future directions
-
-### Dynamic captures
-
-So far, we have explored offering static capture types for using a regular expression that is available in source code. Meanwhile, we would like to apply Swift's string processing capabilities to fully dynamic use cases, such as matching a string using a regular expression obtained at runtime.
-
-To support dynamism, we could introduce a new type, `DynamicCaptures` that represents a tree of captures, and add a `Regex` initializer that accepts a string and produces `Regex<(Substring, DynamicCaptures)>`.
-  
-```swift
-public struct DynamicCaptures: Equatable, RandomAccessCollection {
-  var range: Range<String.Index> { get }
-  var substring: Substring? { get }
-  subscript(name: String) -> DynamicCaptures { get }
-  subscript(position: Int) -> DynamicCaptures { get }
-}
-
-extension Regex where Match == (Substring, DynamicCaptures) {
-  public init(_ string: String) throws
-}
-```
-
-Example usage:
-
-```swift
-let regex = readLine()! // (\w*)(\d)+z(\w*)?
-let input = readLine()! // abcd1234xyz
-print(input.firstMatch(of: regex)?.1)
-// [
-//     "abcd",
-//     [
-//         "1",
-//         "2",
-//         "3",
-//         "4",
-//     ],
-//     .some("xyz")
-// ]
-```
