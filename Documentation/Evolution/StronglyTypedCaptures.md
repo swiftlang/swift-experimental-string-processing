@@ -455,10 +455,11 @@ extension Regex.Match where Output == AnyRegexOutput {
 Example usage:
 
 ```swift
-let regex = readLine()! // (\w*)(\d)+z(\w*)?
+let regex = readLine()! // (\w*)(\d)+(\w*)?
 let input = readLine()! // abcd1234xyz
-print(input.firstMatch(of: regex)?.1)
+print(input.firstMatch(of: regex)?)
 // [
+//     "abcd1234xyz"
 //     "abcd",
 //     "4",
 //     .some("xyz")
