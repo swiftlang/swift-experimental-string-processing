@@ -11,7 +11,6 @@
 
 import _MatchingEngine
 
-
 /// A type that represents a regular expression.
 public protocol RegexComponent {
   associatedtype Match
@@ -31,7 +30,13 @@ public struct Regex<Match>: RegexComponent {
     let tree: DSLTree
 
     /// The program for execution with the matching engine.
-    lazy private(set) var loweredProgram = try! Compiler(tree: tree).emit()
+    lazy private(set) var loweredProgram: MEProgram<String> = {
+      do {
+        return try Compiler(tree: tree).emit()
+      } catch {
+        fatalError("Regex compilation failed: \(error)")
+      }
+    }()
 
     init(ast: AST) {
       self.tree = ast.dslTree

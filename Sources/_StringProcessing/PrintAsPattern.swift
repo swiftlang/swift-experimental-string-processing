@@ -163,6 +163,11 @@ extension PrettyPrinter {
 
     case .absentFunction:
       print("/* TODO: absent function */")
+
+    case let .located(node, loc):
+      printBlock("Located(\(loc))") { printer in
+        printer.printAsPattern(convertedFromAST: node)
+      }
     }
   }
 

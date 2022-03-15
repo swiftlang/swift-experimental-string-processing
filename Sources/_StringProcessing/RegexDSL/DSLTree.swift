@@ -90,6 +90,8 @@ extension DSLTree {
 
     // TODO: Would this just boil down to a consumer?
     case characterPredicate(_CharacterPredicateInterface)
+
+    case located(Node, DSLSourceLocation)
   }
 }
 
@@ -177,6 +179,8 @@ extension DSLTree.Node {
 
     case let .absentFunction(a):
       return a.children.map(\.dslTreeNode)
+
+    case let .located(n, _): return [n]
     }
   }
 }
@@ -287,7 +291,7 @@ extension DSLTree.Node {
     case let .absentFunction(abs):
       return constructor.absent(abs.kind)
 
-    case let .convertedRegexLiteral(n, _):
+    case let .convertedRegexLiteral(n, _), let .located(n, _):
       // TODO: Switch nesting strategy?
       return n._captureStructure(&constructor)
 

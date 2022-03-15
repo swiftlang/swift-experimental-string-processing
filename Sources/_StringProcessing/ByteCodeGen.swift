@@ -3,6 +3,7 @@ import _MatchingEngine
 extension Compiler {
   struct ByteCodeGen {
     var options: MatchingOptions
+    var dslLocationStack: [DSLSourceLocation] = []
     var builder = Program.Builder()
 
     mutating func finish(
@@ -32,7 +33,7 @@ extension Compiler.ByteCodeGen {
       try emitBackreference(ref)
 
     case let .symbolicReference(id):
-      builder.buildUnresolvedReference(id: id)
+      builder.buildUnresolvedReference(id: id, location: dslLocationStack.last)
 
     case let .unconverted(astAtom):
       if let consumer = try astAtom.generateConsumer(options) {
@@ -631,6 +632,11 @@ extension Compiler.ByteCodeGen {
 
     case .characterPredicate:
       throw Unsupported("character predicates")
+
+    case let .located(child, loc):
+      dslLocationStack.append(loc)
+      try emitNode(child)
+      dslLocationStack.removeLast()
 
     case .trivia, .empty:
       return

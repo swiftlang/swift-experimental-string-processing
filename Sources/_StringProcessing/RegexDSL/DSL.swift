@@ -198,8 +198,15 @@ public struct AlternationBuilder {
     .init(component.regex)
   }
 
-  public static func buildExpression<R: RegexComponent>(_ regex: R) -> R {
-    regex
+  public static func buildExpression<R: RegexComponent>(
+    _ regex: R,
+    file: String = #file,
+    function: String = #function,
+    line: Int = #line,
+    column: Int = #column
+  ) -> RegexComponentBuilder.Component<R> {
+    .init(
+      value: regex, file: file, function: function, line: line, column: column)
   }
 
   public static func buildEither<R: RegexComponent>(first component: R) -> R {

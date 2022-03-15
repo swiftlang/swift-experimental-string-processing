@@ -33,7 +33,7 @@ extension DSLTree.Node {
       fatalError(
         "unreachable: We should only ask atoms")
 
-    case let .convertedRegexLiteral(n, _):
+    case let .convertedRegexLiteral(n, _), let .located(n, _):
       return try n.generateConsumer(opts)
 
     case .alternation, .conditional, .concatenation, .group,

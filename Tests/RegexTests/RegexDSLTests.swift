@@ -659,6 +659,22 @@ class RegexDSLTests: XCTestCase {
         }
       }
     }
+
+    // TODO: Test runtime error.
+    #if false
+    do {
+      let a = Reference(Substring.self)
+      let regex = Regex {
+        "abc"
+        a
+        OneOrMore(a)
+      }
+      _ = "abc".match(regex)
+      // Fatal error: Regex compilation failed: Found a reference used before it captured any match. Used at:
+      //  - .../RegexDSLTests.swift@testBackreference():667:9
+      //  - .../RegexDSLTests.swift@testBackreference():668:9
+    }
+    #endif
   }
   
   func testSemanticVersionExample() {

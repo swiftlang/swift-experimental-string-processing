@@ -43,7 +43,7 @@ extension MEProgram where Input.Element: Hashable {
     var captureStructure: CaptureStructure = .empty
 
     // Symbolic reference resolution
-    var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
+    var unresolvedReferences: [ReferenceID: [DSLLocated<InstructionAddress>]] = [:]
     var referencedCaptureOffsets: [ReferenceID: Int] = [:]
     var captureCount: Int {
       // We currently deduce the capture count from the capture register number.
@@ -274,9 +274,13 @@ extension MEProgram.Builder {
       .init(.backreference, .init(capture: cap)))
   }
 
-  mutating func buildUnresolvedReference(id: ReferenceID) {
+  mutating func buildUnresolvedReference(
+    id: ReferenceID,
+    location: DSLSourceLocation?
+  ) {
     buildBackreference(.init(0))
-    unresolvedReferences[id, default: []].append(lastInstructionAddress)
+    unresolvedReferences[id, default: []].append(
+      .init(value: lastInstructionAddress, location: location))
   }
 
   // TODO: Mutating because of fail address fixup, drop when
@@ -426,10 +430,11 @@ fileprivate extension MEProgram.Builder {
   mutating func resolveReferences() throws {
     for (id, uses) in unresolvedReferences {
       guard let offset = referencedCaptureOffsets[id] else {
-        throw RegexCompilationError.uncapturedReference
+        throw RegexCompilationError.uncapturedReference(
+          uses.compactMap(\.location))
       }
       for use in uses {
-        instructions[use.rawValue] =
+        instructions[use.value.rawValue] =
           Instruction(.backreference, .init(capture: .init(offset)))
       }
     }
