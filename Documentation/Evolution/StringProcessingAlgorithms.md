@@ -592,6 +592,21 @@ Most of the proposed algorithms are necessarily on `Collection` due to the use o
 
 ## Future directions
 
+### Backward algorithms
+
+It would be useful to have algorithms that operate from the back of a collection, including ability to find the last non-overlapping range of a pattern in a string, and/or that to find the first range of a pattern when searching from the back, and trimming a string from both sides. They are deferred from this proposal as the API that could clarify the nuances of backward algorithms are still being explored. 
+
+<details>
+<summary> Nuances of backward algorithms </summary>
+
+There is a subtle difference between finding the last non-overlapping range of a pattern in a string, and finding the first range of this pattern when searching from the back. 
+
+The currently proposed algorithm that finds a pattern from the front, e.g. `"aaaaa".ranges(of: "aa")`, produces two non-overlapping ranges, splitting the string in the chunks `aa|aa|a`. It would not be completely unreasonable to expect to introduce a counterpart, such as `"aaaaa".lastRange(of: "aa")`, to return the range that contains the third and fourth characters of the string. This would be a shorthand for `"aaaaa".ranges(of: "aa").last`. Yet, it would also be reasonable to expect the function to return the first range of `"aa"` when searching from the back of the string, i.e. the range that contains the fourth and fifth characters. 
+
+Trimming a string from both sides shares a similar story. For example, `"ababa".trimming("aba")` can return either `"ba"` or `"ab"`, depending on whether the prefix or the suffix was trimmed first. 
+</details>
+
+ 
 ### Future API
 
 Some Python functions are not currently included in this proposal, such as trimming the suffix from a string/collection. This pitch aims to establish a pattern for using `RegexComponent` with string processing algorithms, so that further enhancement can to be introduced to the standard library easily in the future, and eventually close the gap between Swift and other popular scripting languages. 
