@@ -398,7 +398,7 @@ let scalarRangeAlternation = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)|([0-9a-fA-F]+)/
 // Equivalent result builder syntax:
 //     let scalarRangeAlternation = Regex {
 //         ChoiceOf {
-//             Group {
+//             Capture {
 //                 Capture(OneOrMore(.hexDigit))
 //                 ".."
 //                 Capture(OneOrMore(.hexDigit))
