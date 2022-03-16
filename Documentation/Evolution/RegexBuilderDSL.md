@@ -1,17 +1,10 @@
 # Regex builder DSL
 
 * Proposal: [SE-NNNN](NNNN-filename.md)
-* Authors: [Richard Wei](https://github.com/rxwei), ...
+* Authors: [Richard Wei](https://github.com/rxwei)
 * Review Manager: TBD
-* Status: **Awaiting implementation**
-
-*During the review process, add the following fields as needed:*
-
-* Implementation: [apple/swift#NNNNN](https://github.com/apple/swift/pull/NNNNN) or [apple/swift-evolution-staging#NNNNN](https://github.com/apple/swift-evolution-staging/pull/NNNNN)
-* Decision Notes: [Rationale](https://forums.swift.org/), [Additional Commentary](https://forums.swift.org/)
-* Bugs: [SR-NNNN](https://bugs.swift.org/browse/SR-NNNN), [SR-MMMM](https://bugs.swift.org/browse/SR-MMMM)
-* Previous Revision: [1](https://github.com/apple/swift-evolution/blob/...commit-ID.../proposals/NNNN-filename.md)
-* Previous Proposal: [SE-XXXX](XXXX-filename.md**
+* Implementation: [apple/swift-experimental-string-processing](https://github.com/apple/swift-experimental-string-processing/tree/main/Sources/_StringProcessing/RegexDSL)
+* Status: **Pitch**
 
 **Table of Contents**
 - [Introduction](#introduction)
