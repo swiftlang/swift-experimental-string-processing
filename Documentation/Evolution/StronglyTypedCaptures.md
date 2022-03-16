@@ -9,6 +9,10 @@ Authors: [Richard Wei](https://github.com/rxwei), [Kyle Macomber](https://github
 - **v2**
     - Includes entire match in `Regex`'s generic parameter.
     - Fixes Quantification and Alternation capture types to be consistent with traditional back reference numbering.
+- **v3**
+    - Updates quantifiers to not save the history.
+    - Updates `capture` method to type `Capture`.
+    - Adds `Regex<Output>.Match` indirection.
 
 ## Introduction
 
@@ -20,18 +24,18 @@ let regex = /ab(cd*)(ef)gh/
 // => `Regex<(Substring, Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let regex = Pattern {
+//     let regex = Regex {
 //         "ab"
-//         Group {
+//         Capture {
 //             "c"
-//             Repeat("d")
-//         }.capture()
-//         "ef".capture()
+//             ZeroOrMore("d")
+//         }
+//         Capture("ef")
 //         "gh"
 //     }
 
-if let match = "abcddddefgh".firstMatch(of: regex) {
-    print(match) // => ("abcddddefgh", "cdddd", "ef")
+if let result = "abcddddefgh".firstMatch(of: regex) {
+    print(result.match) // => ("abcddddefgh", "cdddd", "ef")
 }
 ```
 
@@ -56,24 +60,24 @@ Across a variety of programming languages, many established regular expression l
 
 ## Proposed solution
 
-We introduce a generic structure `Regex<Match>` whose generic parameter `Match` includes the match and any captures, using tuples to represent multiple and nested captures.
+We introduce a generic structure `Regex<Match>` whose generic parameter `Output` includes the match and any captures, using tuples to represent multiple and nested captures.
 
 ```swift
 let regex = /ab(cd*)(ef)gh/
 // => Regex<(Substring, Substring, Substring)>
-if let match = "abcddddefgh".firstMatch(of: regex) {
-  print(match) // => ("abcddddefgh", "cdddd", "ef")
+if let result = "abcddddefgh".firstMatch(of: regex) {
+  print(result.match) // => ("abcddddefgh", "cdddd", "ef")
 }
 ```
 
-During type inference for regular expression literals, the compiler infers the type of `Match` from the content of the regular expression. The same will be true for the result builder syntax, except that the type inference rules are expressed as method declarations in the result builder type.
+During type inference for regular expression literals, the compiler infers the type of `Output` from the content of the regular expression. The same will be true for the result builder syntax, except that the type inference rules are expressed as method declarations in the result builder type.
 
 Because much of the motivation behind providing regex literals in Swift is their familiarity, a top priority of this design is for the result of calling `firstMatch(of:)` with a regex to align with the traditional numbering of backreferences to capture groups, which start at `\1`.
 
 ```swift
 let regex = /ab(cd*)(ef)gh/
-if let match = "abcddddefgh".firstMatch(of: regex) {
-  print((match.1, match.2)) // => ("cdddd", "ef")
+if let result = "abcddddefgh".firstMatch(of: regex) {
+  print((result.1, result.2)) // => ("cdddd", "ef")
 }
 ```
 
@@ -81,8 +85,8 @@ Quantifiers (`*`, `+`, and `?`) and alternations (`|`) wrap each capture inside 
 
 ```swift
 let regex = /ab(?:c(d)*(ef))?gh/
-if let match = "abcddddefgh".firstMatch(of: regex) {
-  print((match.1, match.2)) // => (Optional(["d","d","d","d"]), Optional("ef"))
+if let result = "abcddddefgh".firstMatch(of: regex) {
+  print((result.1, result.2)) // => (Optional(["d","d","d","d"]), Optional("ef"))
 }
 ```
 
@@ -90,7 +94,7 @@ if let match = "abcddddefgh".firstMatch(of: regex) {
 
 ### `Regex` type
 
-`Regex` is a structure that represents a regular expression. `Regex` is generic over an unconstrained generic parameter `Match`. Upon a regex match, the entire match and any captured values are available as part of the result.
+`Regex` is a structure that represents a regular expression. `Regex` is generic over an unconstrained generic parameter `Output`. Upon a regex match, the entire match and any captured values are available as part of the result.
 
 ```swift
 public struct Regex<Match>: RegexProtocol, ExpressibleByRegexLiteral {
@@ -98,7 +102,7 @@ public struct Regex<Match>: RegexProtocol, ExpressibleByRegexLiteral {
 }
 ```
 
-> ***Note**: Semantic-level switching (i.e. matching grapheme clusters with canonical equivalence vs Unicode scalar values) is out-of-scope for this pitch, but handling that will likely introduce constraints on `Match`. We use an unconstrained generic parameter in this pitch for brevity and simplicity. The `Substring`s we use for illustration throughout this pitch are created on-the-fly; the actual memory representation uses `Range<String.Index>`. In this sense, the `Match` generic type is just an encoding of the arity and kind of captured content.*
+> ***Note**: Semantic-level switching (i.e. matching grapheme clusters with canonical equivalence vs Unicode scalar values) is out-of-scope for this pitch, but handling that will likely introduce constraints on `Output`. We use an unconstrained generic parameter in this pitch for brevity and simplicity. The `Substring`s we use for illustration throughout this pitch are created on-the-fly; the actual memory representation uses `Range<String.Index>`. In this sense, the `Output` generic type is just an encoding of the arity and kind of captured content.*
 
 ### `firstMatch(of:)` method
 
@@ -106,7 +110,7 @@ The `firstMatch(of:)` method returns a `Substring` of the first match of the pro
 
 ```swift
 extension String {
-    public func firstMatch<R: RegexProtocol>(of regex: R) -> R.Match?
+    public func firstMatch<R: RegexProtocol>(of regex: R) -> Regex<R.Output>.Match?
 }
 ```
 
@@ -127,23 +131,23 @@ if let match = line.firstMatch(of: scalarRangePattern) {
 
 In this section, we describe the inferred capture types for regular expression patterns and how they compose.
 
-By default, a regular expression literal has type `Regex`. Its generic argument `Match` can be viewed as a tuple of the entire matched substring and any captures.
+By default, a regular expression literal has type `Regex`. Its generic argument `Output` can be viewed as a tuple of the entire matched substring and any captures.
 
 ```txt
-(EntireMatch, Captures...)
-              ^~~~~~~~~~~
-              Capture types
+(WholeMatch, Captures...)
+             ^~~~~~~~~~~
+             Capture types
 ```
 
-When there are no captures, `Match` is just the entire matched substring, for example:
+When there are no captures, `Output` is just the entire matched substring, for example:
 
 ```swift
 let identifier = /[_a-zA-Z]+[_a-zA-Z0-9]*/  // => `Regex<Substring>`
 
 // Equivalent result builder syntax:
-//     let identifier = Pattern {
+//     let identifier = Regex {
 //         OneOrMore(/[_a-zA-Z]/)
-//         Repeat(/[_a-zA-Z0-9]/)
+//         ZeroOrMore(/[_a-zA-Z0-9]/)
 //     }
 ```
 
@@ -158,7 +162,7 @@ let graphemeBreakLowerBound = /([0-9a-fA-F]+)/
 // => `Regex<(Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakLowerBound = OneOrMore(.hexDigit).capture()
+//     let graphemeBreakLowerBound = Capture(OneOrMore(.hexDigit))
 ```
 
 #### Concatenation: `abc`
@@ -170,8 +174,8 @@ let graphemeBreakLowerBound = /([0-9a-fA-F]+)\.\.[0-9a-fA-F]+/
 // => `Regex<(Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakLowerBound = Pattern {
-//         OneOrMore(.hexDigit).capture()
+//     let graphemeBreakLowerBound = Regex {
+//         Capture(OneOrMore(.hexDigit))
 //         ".."
 //         OneOrMore(.hexDigit)
 //     }
@@ -180,10 +184,10 @@ let graphemeBreakRange = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)/
 // => `Regex<(Substring, Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakRange = Pattern {
-//         OneOrMore(.hexDigit).capture()
+//     let graphemeBreakRange = Regex {
+//         Capture(OneOrMore(.hexDigit))
 //         ".."
-//         OneOrMore(.hexDigit).capture()
+//         Capture(OneOrMore(.hexDigit))
 //     }
 ```
 
@@ -208,11 +212,11 @@ let graphemeBreakLowerBound = /([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?/
 // => `Regex<(Substring, Substring, Substring?)>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakLowerBound = Pattern {
-//         OneOrMore(.hexDigit).capture()
+//     let graphemeBreakLowerBound = Regex {
+//         Capture(OneOrMore(.hexDigit))
 //         Optionally {
 //             ".."
-//             OneOrMore(.hexDigit).capture()
+//             Capture(OneOrMore(.hexDigit))
 //         }
 //     }
 ```
@@ -230,21 +234,20 @@ let graphemeBreakPropertyData = /(([0-9a-fA-F]+)(\.\.([0-9a-fA-F]+)))\s*;\s(\w+)
 // => `Regex<(Substring, Substring, Substring, Substring, Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let graphemeBreakPropertyData = Pattern {
-//         Group {
-//             OneOrMore(.hexDigit).capture() // (2)
-//             Group {
+//     let graphemeBreakPropertyData = Regex {
+//         Capture {
+//             Capture(OneOrMore(.hexDigit)) // (2)
+//             Capture {
 //                 ".."
-//                 OneOrMore(.hexDigit).capture() // (4)
-//             }.capture() // (3)
-//         }.capture() // (1)
+//                 Capture(OneOrMore(.hexDigit)) // (4)
+//             } // (3)
+//         } // (1)
 //         Repeat(.whitespace)
 //         ";"
 //         CharacterClass.whitespace
-//         OneOrMore(.word).capture() // (5)
+//         Capture(OneOrMore(.word)) // (5)
 //         Repeat(.any)
 //     }
-//     .flattened()
 
 let input = "007F..009F   ; Control"
 // Match result for `input`:
@@ -253,32 +256,32 @@ let input = "007F..009F   ; Control"
 
 #### Quantification: `*`, `+`, `?`, `{n}`, `{n,}`, `{n,m}`
 
-A quantifier wraps its underlying pattern's capture types in either an `Optional`s or `Array`s. Zero-or-one quantification (`?`) produces an `Optional` and all others produce an `Array`. The kind of quantification, i.e. greedy vs reluctant vs possessive, is irrelevant to determining the capture type.
+A quantifier may wrap its underlying pattern's capture types in `Optional`s. Quantifiers whose lower bound is zero produces an `Optional`. The kind of quantification, i.e. greedy vs reluctant vs possessive, is irrelevant to determining the capture type.
 
-| Syntax               | Description           | Capture type                                                  |
-| -------------------- | --------------------- | ------------------------------------------------------------- |
-| `*`                  | 0 or more             | `Array`s of the sub-pattern capture types                     |
-| `+`                  | 1 or more             | `Array`s of the sub-pattern capture types                     |
-| `?`                  | 0 or 1                | `Optional`s of the sub-pattern capture types                  |
-| `{n}`                | Exactly _n_           | `Array`s of the sub-pattern capture types                     |
-| `{n,m}`              | Between _n_ and _m_   | `Array`s of the sub-pattern capture types                     |
-| `{n,}`               | _n_ or more           | `Array`s of the sub-pattern capture types                     |
+| Syntax  | Description         | Capture type                             |
+|---------|---------------------|------------------------------------------|
+| `*`     | 0 or more           | `Optional`s of sub-pattern capture types |
+| `+`     | 1 or more           | Sub-pattern capture types                |
+| `?`     | 0 or 1              | `Optional`s of sub-pattern capture types |
+| `{n}`   | Exactly _n_         | Sub-pattern capture types                |
+| `{n,m}` | Between _n_ and _m_ | `Optional`s of sub-pattern capture types |
+| `{n,}`  | _n_ or more         | `Optional`s of Sub-pattern capture types |
 
 ```swift
 /([0-9a-fA-F]+)+/
-// => `Regex<(Substring, [Substring])>`
+// => `Regex<(Substring, Substring)>`
 
 // Equivalent result builder syntax:
 //     OneOrMore {
-//         OneOrMore(.hexDigit).capture()
+//         Capture(OneOrMore(.hexDigit))
 //     }
 
 /([0-9a-fA-F]+)*/
-// => `Regex<(Substring, [Substring])>`
+// => `Regex<(Substring, Substring?)>`
 
 // Equivalent result builder syntax:
-//     Repeat {
-//         OneOrMore(.hexDigit).capture()
+//     ZeroOrMore {
+//         Capture(OneOrMore(.hexDigit))
 //     }
 
 /([0-9a-fA-F]+)?/
@@ -286,15 +289,15 @@ A quantifier wraps its underlying pattern's capture types in either an `Optional
 
 // Equivalent result builder syntax:
 //     Optionally {
-//         OneOrMore(.hexDigit).capture()
+//         Capture(OneOrMore(.hexDigit))
 //     }
 
 /([0-9a-fA-F]+){3}/
 // => `Regex<(Substring, [Substring])>`
 
 // Equivalent result builder syntax:
-//     Repeat(3) {
-//         OneOrMore(.hexDigit).capture()
+//     Repeat(count: 3) {
+//         Capture(OneOrMore(.hexDigit))
 //     )
 
 /([0-9a-fA-F]+){3,5}/
@@ -302,7 +305,7 @@ A quantifier wraps its underlying pattern's capture types in either an `Optional
 
 // Equivalent result builder syntax:
 //     Repeat(3...5) {
-//         OneOrMore(.hexDigit).capture()
+//         Capture(OneOrMore(.hexDigit))
 //     )
 
 /([0-9a-fA-F]+){3,}/
@@ -310,7 +313,7 @@ A quantifier wraps its underlying pattern's capture types in either an `Optional
 
 // Equivalent result builder syntax:
 //     Repeat(3...) {
-//         OneOrMore(.hexDigit).capture()
+//         Capture(OneOrMore(.hexDigit))
 //     )
 
 let multipleAndNestedOptional = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))?/
@@ -320,35 +323,33 @@ let multipleAndNestedOptional = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))?/
 // => `Regex<(Substring, Substring?, Substring?, Substring?)>`
 
 // Equivalent result builder syntax:
-//     let multipleAndNestedOptional = Pattern {
-//         Optionally {
-//             OneOrMore(.hexDigit).capture()
-//             ".."
-//             OneOrMore(.hexDigit).capture()
+//     let multipleAndNestedOptional = Regex {
+//         Capture {
+//             Optionally {
+//                 Capture(OneOrMore(.hexDigit))
+//                 ".."
+//                 Capture(OneOrMore(.hexDigit))
+//             }
 //         }
-//         .capture()
 //     }
-//     .flattened()
 
 let multipleAndNestedQuantifier = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))+/
 // Positions in result:          0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                               1 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                                2 ^~~~~~~~~~~~~~  3 ^~~~~~~~~~~~~~
-// => `Regex<(Substring, [Substring], [Substring], [Substring])>`
+// => `Regex<(Substring, Substring, Substring, Substring)>`
 
 // Equivalent result builder syntax:
-//     let multipleAndNestedQuantifier = Pattern {
+//     let multipleAndNestedQuantifier = Regex {
 //         OneOrMore {
-//             OneOrMore(.hexDigit).capture()
+//             Capture(OneOrMore(.hexDigit))
 //             ".."
-//             OneOrMore(.hexDigit).capture()
+//             Capture(OneOrMore(.hexDigit))
 //         }
-//         .capture()
 //     }
-//     .flattened()
 ```
 
-Note that capturing collections of repeated captures like this is a departure from most regular expression implementations, which only provide access to the _last_ match of a repeated capture group. For example, Python only captures the last group in this dash-separated string:
+Capturing collections of repeated captures like this is consistent with most regular expression implementations, which only provide access to the _last_ match of a repeated capture group. For example, Python only captures the last group in this dash-separated string:
 
 ```python
 rep = re.compile('(?:([0-9a-fA-F]+)-?)+')
@@ -357,27 +358,17 @@ print(match.group(1))
 # Prints "def0"
 ```
 
-By contrast, the proposed Swift version captures all four sub-matches:
+Capturing only the last occurrences is the most memory-efficient behavior. For consistency and efficiency, we chose this behavior and its corresponding type.
 
 ```swift
 let pattern = /(?:([0-9a-fA-F]+)-?)+/
-if let match = "1234-5678-9abc-def0".firstMatch(of: pattern) {
-    print(match.1)
+if let result = "1234-5678-9abc-def0".firstMatch(of: pattern) {
+    print(result.1)
 }
-// Prints ["1234", "5678", "9abc", "def0"]
+// Prints "def0"
 ```
 
-We believe that the proposed capture behavior is more intuitive. However, the alternative behavior has a smaller memory footprint and is more consistent with usage of backreferences, which only refer to the last match of the repeated capture group:
-
-```swift
-let pattern = /(?:([0-9a-fA-F]+)-?)+ \1/
-var match = "1234-5678-9abc-def0 def0".firstMatch(of: pattern)
-print(match != nil) // true
-var match = "1234-5678-9abc-def0 1234".firstMatch(of: pattern)
-print(match != nil) // false
-```
-
-As a future direction, we could introduce some way of opting into this behavior.
+As a future direction, a way to save the capture history could be useful. We could introduce some way of opting into this behavior.
 
 #### Alternation: `a|b`
 
@@ -390,14 +381,13 @@ let numberAlternationRegex = /([01]+)|[0-9]+|([0-9a-fA-F]+)/
 // => `Regex<(Substring, Substring?, Substring?)>`
 
 // Equivalent result builder syntax:
-//     let numberAlternationRegex = Pattern {
-//         OneOf {
-//             OneOrMore(.binaryDigit).capture()
+//     let numberAlternationRegex = Regex {
+//         ChoiceOf {
+//             Capture(OneOrMore(.binaryDigit))
 //             OneOrMore(.decimalDigit)
-//             OneOrMore(.hexDigit).capture()
+//             Capture(OneOrMore(.hexDigit))
 //         }
 //     }
-//     .flattened()
 
 let scalarRangeAlternation = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)|([0-9a-fA-F]+)/
 // Positions in result:     0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -406,17 +396,16 @@ let scalarRangeAlternation = /([0-9a-fA-F]+)\.\.([0-9a-fA-F]+)|([0-9a-fA-F]+)/
 // => `Regex<(Substring, Substring?, Substring?, Substring?)>
 
 // Equivalent result builder syntax:
-//     let scalarRangeAlternation = Pattern {
-//         OneOf {
-//             Group {
-//                 OneOrMore(.hexDigit).capture()
+//     let scalarRangeAlternation = Regex {
+//         ChoiceOf {
+//             Capture {
+//                 Capture(OneOrMore(.hexDigit))
 //                 ".."
-//                 OneOrMore(.hexDigit).capture()
+//                 Capture(OneOrMore(.hexDigit))
 //             }
-//             OneOrMore(.hexDigit).capture()
+//             Capture(OneOrMore(.hexDigit))
 //         }
 //     }
-//     .flattened()
 
 let nestedScalarRangeAlternation = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))|([0-9a-fA-F]+)/
 // Positions in result:           0 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -426,19 +415,55 @@ let nestedScalarRangeAlternation = /(([0-9a-fA-F]+)\.\.([0-9a-fA-F]+))|([0-9a-fA
 // => `Regex<(Substring, Substring?, Substring?, Substring?, Substring?)>
 
 // Equivalent result builder syntax:
-//     let scalarRangeAlternation = Pattern {
-//         OneOf {
-//             Group {
-//                 OneOrMore(.hexDigit).capture()
+//     let scalarRangeAlternation = Regex {
+//         ChoiceOf {
+//             Capture {
+//                 ChoiceOf(OneOrMore(.hexDigit))
 //                 ".."
-//                 OneOrMore(.hexDigit).capture()
+//                 ChoiceOf(OneOrMore(.hexDigit))
 //             }
-//             .capture()
-//
-//             OneOrMore(.hexDigit).capture()
+//             Capture(OneOrMore(.hexDigit))
 //         }
 //     }
-//     .flattened()
+```
+
+### Dynamic captures
+
+So far, we have explored offering static capture types for using a regular expression that is available in source code. Meanwhile, we would like to apply Swift's string processing capabilities to fully dynamic use cases, such as matching a string using a regular expression obtained at runtime.
+
+To support dynamism, we introduce a new type, `AnyRegexOutput` that represents a tree of captures, and add a `Regex` initializer that accepts a string and produces `Regex<AnyRegexOutput>`. `AnyRegexOutput` can also be used to retrofit regexes with strongly typed captures to preexisting use sites of `Regex<AnyRegexOutput>`.
+  
+```swift
+public struct AnyRegexOutput: Equatable, RandomAccessCollection {
+  public var match: Substring? { get }
+  public var range: Range<String.Index> { get }
+  public var count: Int { get }
+  public subscript(name: String) -> Substring { get }
+  public subscript(position: Int) -> Substring { get }
+  ...
+}
+
+extension Regex.Match where Output == AnyRegexOutput {
+  /// Creates a regex dynamically from text.
+  public init(_ text: String) throws where Output == AnyRegexOutput
+
+  /// Creates a type-erased match from an existing one.
+  public init<OtherOutput>(_ other: Regex<OtherOutput>.Match)
+}
+```
+
+Example usage:
+
+```swift
+let regex = readLine()! // (\w*)(\d)+(\w*)?
+let input = readLine()! // abcd1234xyz
+print(input.firstMatch(of: regex)?)
+// [
+//     "abcd1234xyz"
+//     "abcd",
+//     "4",
+//     .some("xyz")
+// ]
 ```
 
 ## Effect on ABI stability
@@ -480,7 +505,7 @@ For exact-count quantifications, e.g. `[a-z]{5}`, it would slightly improve type
 
 However, this would cause an inconsistency between exact-count quantification and bounded quantification. We believe that the proposed design will result in fewer surprises as we associate the `{...}` quantifier syntax with `Array`.
 
-### `Regex<Captures>` instead of `Regex<Match>`
+### `Regex<Captures>` instead of `Regex<Output>`
 
 In the initial version of this pitch, `Regex` was _only_ generic over its captures and `firstMatch(of:)` was responsible for flattening together the match and captures into a tuple.
 
@@ -555,8 +580,8 @@ It's possible to derive the flat type from the structured type (but not vice ver
 ```swift
 extension String {
     struct MatchResult<R: RegexProtocol> {
-        var flat: R.Match.Flat { get }
-        var structured: R.Match { get }
+        var flat: R.Output.Flat { get }
+        var structured: R.Output { get }
     }
     func firstMatch<R>(of regex: R) -> MatchResult<R>?
 }
@@ -565,42 +590,3 @@ extension String {
 This is cool, but it adds extra complexity to `Regex` and it isn't as clear because the generic type no longer aligns with the traditional regex backreference numbering. Because the primary motivation for providing regex literals in Swift is their familiarity, we think the consistency of the flat capture types trumps the added safety and ergonomics of the structured capture types.
 
 We think the calculus probably flips in favor of a structured capture types for the result builder syntax, for which familiarity is not as high a priority.
-
-## Future directions
-
-### Dynamic captures
-
-So far, we have explored offering static capture types for using a regular expression that is available in source code. Meanwhile, we would like to apply Swift's string processing capabilities to fully dynamic use cases, such as matching a string using a regular expression obtained at runtime.
-
-To support dynamism, we could introduce a new type, `DynamicCaptures` that represents a tree of captures, and add a `Regex` initializer that accepts a string and produces `Regex<(Substring, DynamicCaptures)>`.
-  
-```swift
-public struct DynamicCaptures: Equatable, RandomAccessCollection {
-  var range: Range<String.Index> { get }
-  var substring: Substring? { get }
-  subscript(name: String) -> DynamicCaptures { get }
-  subscript(position: Int) -> DynamicCaptures { get }
-}
-
-extension Regex where Match == (Substring, DynamicCaptures) {
-  public init(_ string: String) throws
-}
-```
-
-Example usage:
-
-```swift
-let regex = readLine()! // (\w*)(\d)+z(\w*)?
-let input = readLine()! // abcd1234xyz
-print(input.firstMatch(of: regex)?.1)
-// [
-//     "abcd",
-//     [
-//         "1",
-//         "2",
-//         "3",
-//         "4",
-//     ],
-//     .some("xyz")
-// ]
-```
