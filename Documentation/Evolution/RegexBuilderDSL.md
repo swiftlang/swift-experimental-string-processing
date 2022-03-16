@@ -1231,7 +1231,7 @@ The proposed feature relies heavily upon overloads of `buildBlock` and `buildPar
 
 ## Alternatives considered
 
-### Operators for quantification and alterantion
+### Operators for quantification and alternation
 
 While `ChoiceOf` and quantifier functions provide a general way of creating alternations and quantifications, we recognize that some synctactic sugar can be useful for creating one-liners like in textual regexes, e.g. infix operator `|`, postfix operator `*`, etc.
 
@@ -1366,7 +1366,7 @@ However, given that one-or-more (`+`), zero-or-more (`*`) and optional (`?`) are
 
 One could argue that type such as `OneOrMore<Output>` could be defined as a top-level function that returns `Regex`. While it is entirely possible to do so, it would lose the name scoping benefits of a type and pollute the top-level namespace with `O(arity^2)` overloads of quantifiers, `capture`, `tryCapture`, etc. This could be detrimental to the usefulness of code completion.
 
-Another reason to use types instead of free functions is consistency with existing result-buidler-based DSLs such as SwiftUI.
+Another reason to use types instead of free functions is consistency with existing result-builder-based DSLs such as SwiftUI.
 
 [Declarative String Processing]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/DeclarativeStringProcessing.md
 [Strongly Typed Regex Captures]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/StronglyTypedCaptures.md
