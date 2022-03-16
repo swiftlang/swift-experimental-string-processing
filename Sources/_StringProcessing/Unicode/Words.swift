@@ -238,11 +238,6 @@ extension String.WordView {
     
     let y = Unicode._WordBreakProperty(from: scalar2)
     
-    // Handle cases wher e
-    if y == .extendedPictographic, state.previousProperty == .zwj {
-      x = .zwj
-    }
-    
     var previousIndex: Int? = nil
     var previousProperty: Unicode._WordBreakProperty? = nil
     var previousZWJ = false
