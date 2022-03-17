@@ -173,10 +173,10 @@ Regex builder addresses all of textual regexes' shortcomings presented in the [M
 One of the goals of the regex builder DSL is allowing the developers to easily compose regexes from common currency types and literals, or even define custom patterns to use for matching. We introduce `RegexComponent`, a protocol that unifies all types that can represent a component of a regex.
 
 ```swift
-protocol RegexComponent {
+public protocol RegexComponent {
   associatedtype Output
   @RegexComponentBuilder
-  public var regex: Regex<Output> { get }
+  var regex: Regex<Output> { get }
 }
 ```
 
