@@ -1,17 +1,10 @@
 # Regex builder DSL
 
 * Proposal: [SE-NNNN](NNNN-filename.md)
-* Authors: [Richard Wei](https://github.com/rxwei), ...
+* Authors: [Richard Wei](https://github.com/rxwei)
 * Review Manager: TBD
-* Status: **Awaiting implementation**
-
-*During the review process, add the following fields as needed:*
-
-* Implementation: [apple/swift#NNNNN](https://github.com/apple/swift/pull/NNNNN) or [apple/swift-evolution-staging#NNNNN](https://github.com/apple/swift-evolution-staging/pull/NNNNN)
-* Decision Notes: [Rationale](https://forums.swift.org/), [Additional Commentary](https://forums.swift.org/)
-* Bugs: [SR-NNNN](https://bugs.swift.org/browse/SR-NNNN), [SR-MMMM](https://bugs.swift.org/browse/SR-MMMM)
-* Previous Revision: [1](https://github.com/apple/swift-evolution/blob/...commit-ID.../proposals/NNNN-filename.md)
-* Previous Proposal: [SE-XXXX](XXXX-filename.md**
+* Implementation: [apple/swift-experimental-string-processing](https://github.com/apple/swift-experimental-string-processing/tree/main/Sources/_StringProcessing/RegexDSL)
+* Status: **Pitch**
 
 **Table of Contents**
 - [Introduction](#introduction)
@@ -340,36 +333,43 @@ public enum RegexComponentBuilder {
     line: Int = #line,
     column: Int = #column
   ) -> Component<R>
- 
-  /// Provides support for “if” statements in multi-statement closures, producing
-  /// conditional content for the “then” branch.
-  public static func buildEither<R: RegexComponent>(
-    first component: Component<R>
-  ) -> Regex<R.Output> {
-    component
-  }
-
-  /// Provides support for “if-else” statements in multi-statement closures, 
-  /// producing conditional content for the “else” branch.
-  public static func buildEither<R: RegexComponent>(
-    second component: Component<R>
-  ) -> Regex<R.Output> {
-    component
-  }
 }
 ```
 
 When it comes to concatenation, `RegexComponentBuilder` utilizes the [recently proposed `buildPartialBlock` feature](https://forums.swift.org/t/pitch-buildpartialblock-for-result-builders/55561/1) to be able to concatenate all components' capture types to a single result tuple. `buildPartialBlock(first:)` provides support for creating a regex from a single component, and `buildPartialBlock(accumulated:next:)` support for creating a regex from multiple results.
 
-Before Swift supports variadic generics, `buildPartialBlock(accumulated:next:)` must be overloaded to support concatenating regexes of supported capture quantities (arities). Due to the need for concatenating any pair of regexes that make up 10 captures, `buildPartialBlock(accumulated:next:)` is overloaded up to `arity^2` times.
+Before Swift supports variadic generics, `buildPartialBlock(first:)` and `buildPartialBlock(accumulated:next:)` must be overloaded to support concatenating regexes of supported capture quantities (arities).
+- `buildPartialBlock(first:)` is overloaded `arity` times such that a unary block with a component of any supported capture arity will produce a regex with capture type `Substring` followed by the component's capture types. The base overload, `buildPartialBlock<R>(first:) -> Regex<Substring>`, must be marked with `@_disfavoredOverload` to prevent it from shadowing other overloads.
+- `buildPartialBlock(accumulated:next:)` is overloaded up to `arity^2` times to account for all possible pairs of regexes that make up 10 captures.
 
-In the initial version of the DSL, we plan to support regexes with up to 10 captures, as 10 captures are sufficient for most use cases. These overloads can be superceded by a variadic version of `buildPartialBlock(accumulated:next:)` in a future release.
+In the initial version of the DSL, we plan to support regexes with up to 10 captures, as 10 captures are sufficient for most use cases. These overloads can be superceded by variadic versions of `buildPartialBlock(first:)` and `buildPartialBlock(accumulated:next:)` in a future release.
 
 ```swift
 extension RegexComponentBuilder {
+  // The following builder methods implement what would be possible with
+  // variadic generics (using imaginary syntax) as a single method:
+  //
+  //   public static func buildPartialBlock<
+  //     R, WholeMatch, Capture...
+  //   >(
+  //     first component: Component<R>
+  //   ) -> Regex<(Substring, Capture...)>
+  //   where Component.Output == (WholeMatch, Capture...),
+
+  @_disfavoredOverload
   public static func buildPartialBlock<R: RegexComponent>(
-    first r: Compoment<R>
-  ) -> Regex<R.Output>
+    first r: Component<R>
+  ) -> Regex<Substring>
+
+  public static func buildPartialBlock<W, C0, R: RegexComponent>(
+    first r: Component<R>
+  ) -> Regex<(Substring, C0)> where R.Output == (W, C0)
+
+  public static func buildPartialBlock<W, C0, C1, R: RegexComponent>(
+    first r: Component<R>
+  ) -> Regex<(Substring, C0, C1)> where R.Output == (W, C0, C1)
+
+  // ... `O(arity)` overloads of `buildPartialBlock(first:)`
 
   // The following builder methods implement what would be possible with
   // variadic generics (using imaginary syntax) as a single method:
@@ -379,18 +379,18 @@ extension RegexComponentBuilder {
   //     AccumulatedCapture..., NextCapture...,
   //     Accumulated: RegexComponent, Next: RegexComponent
   //   >(
-  //     accumulated: Accumulated, next: Next
+  //     accumulated: Accumulated, next: Component<Next>
   //   ) -> Regex<(Substring, AccumulatedCapture..., NextCapture...)>
   //   where Accumulated.Output == (AccumulatedWholeMatch, AccumulatedCapture...),
   //         Next.Output == (NextWholeMatch, NextCapture...)
   
   public static func buildPartialBlock<W0, W1, C0, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: Component<R1>
-  ) -> Regex<(Substring, C0)>  where R0.Output == W0, R1.Output == (W1, C0)
+  ) -> Regex<(Substring, C0)> where R0.Output == W0, R1.Output == (W1, C0)
   
   public static func buildPartialBlock<W0, W1, C0, C1, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: Component<R1>
-  ) -> Regex<(Substring, C0, C1)>  where R0.Output == W0, R1.Output == (W1, C0, C1)
+  ) -> Regex<(Substring, C0, C1)> where R0.Output == W0, R1.Output == (W1, C0, C1)
   
   public static func buildPartialBlock<W0, W1, C0, C1, C2, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: Component<R1>
@@ -400,10 +400,68 @@ extension RegexComponentBuilder {
 }
 ```
 
-To support `if` statements, `buildOptional(_:)` is defined with overloads to support up to 10 captures because each capture type needs to be transformed to an optional. The overload for non-capturing regexes, due to the lack of generic constraints, must be annotated with `@_disfavoredOverload` in order not to become the default choice by the compiler. We expect that a variadic-generic version of this method will eventually superceded all of these overloads.
+To support `if` statements, `buildEither(first:)`, `buildEither(second:)` and `buildOptional(_:)` are defined with overloads to support up to 10 captures because each capture type needs to be transformed to an optional. The overload for non-capturing regexes, due to the lack of generic constraints, must be annotated with `@_disfavoredOverload` in order not shadow other overloads. We expect that a variadic-generic version of this method will eventually superseded all of these overloads.
 
 ```swift
 extension RegexComponentBuilder {
+  // The following builder methods implement what would be possible with
+  // variadic generics (using imaginary syntax) as a single method:
+  //
+  //   public static func buildEither<
+  //     Component, WholeMatch, Capture...
+  //   >(
+  //     first component: Component
+  //   ) -> Regex<(Substring, Capture...)>
+  //   where Component.Output == (WholeMatch, Capture...)
+
+  public static func buildEither<R: RegexComponent>(
+    first component: Component<R>
+  ) -> Regex<Substring> {
+    component
+  }
+
+  public static func buildEither<W, C0, R: RegexComponent>(
+    first component: Component<R>
+  ) -> Regex<(Substring, C0)> where R.Output == (W, C0) {
+    component
+  }
+
+  public static func buildEither<W, C0, C1, R: RegexComponent>(
+    first component: Component<R>
+  ) -> Regex<(Substring, C0, C1)> where R.Output == (W, C0, C1) {
+    component
+  }
+
+  // The following builder methods implement what would be possible with
+  // variadic generics (using imaginary syntax) as a single method:
+  //
+  //   public static func buildEither<
+  //     Component, WholeMatch, Capture...
+  //   >(
+  //     second component: Component
+  //   ) -> Regex<(Substring, Capture...)>
+  //   where Component.Output == (WholeMatch, Capture...)
+
+  public static func buildEither<R: RegexComponent>(
+    second component: Component<R>
+  ) -> Regex<Substring> {
+    component
+  }
+
+  public static func buildEither<W, C0, R: RegexComponent>(
+    second component: Component<R>
+  ) -> Regex<(Substring, C0)> where R.Output == (W, C0) {
+    component
+  }
+
+  public static func buildEither<W, C0, C1, R: RegexComponent>(
+    second component: Component<R>
+  ) -> Regex<(Substring, C0, C1)> where R.Output == (W, C0, C1) {
+    component
+  }
+  
+  // ... `O(arity)` overloads of `buildEither(_:)`
+
   // The following builder methods implement what would be possible with
   // variadic generics (using imaginary syntax) as a single method:
   //
@@ -427,10 +485,6 @@ extension RegexComponentBuilder {
   ) -> Regex<(Substring, C0?, C1?)>
   
   // ... `O(arity)` overloads of `buildOptional(_:)`
-  
-  public static func buildOptional<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R: RegexComponent>(
-    _ component: Component<R>?
-  ) -> Regex<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8, C9?)> where R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)
 }
 ```
 
@@ -461,10 +515,6 @@ extension RegexComponentBuilder {
   ) -> Regex<(Substring, C0?, C1?)>
   
   // ... `O(arity)` overloads of `buildLimitedAvailability(_:)`
-  
-  public static func buildLimitedAvailability<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R: RegexComponent>(
-    _ component: Component<R>
-  ) -> Regex<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8, C9?)> where R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)
 }
 ```
 
@@ -505,15 +555,7 @@ public struct ChoiceOf<Output>: RegexComponent {
 ```swift
 @resultBuilder
 public enum AlternationBuilder {
-  /// A builder component that stores a regex component and its source location
-  /// for debugging purposes.
-  public struct Component<Value: RegexComponent> {
-    public var value: Value
-    public var file: String
-    public var function: String
-    public var line: Int
-    public var column: Int
-  }
+  public typealias Component<Value> = RegexComponentBuilder.Component<Value>
 
   /// Returns a component by wrapping the component regex in `Component` and
   /// recording its source location.
@@ -525,9 +567,28 @@ public enum AlternationBuilder {
     column: Int = #column
   ) -> Component<R>
 
+  // The following builder methods implement what would be possible with
+  // variadic generics (using imaginary syntax) as a single method:
+  //
+  //   public static func buildPartialBlock<
+  //     R, WholeMatch, Capture...
+  //   >(
+  //     first component: Component<R>
+  //   ) -> Regex<(Substring, Capture?...)>
+  //   where Component.Output == (WholeMatch, Capture...),
+
+  @_disfavoredOverload
   public static func buildPartialBlock<R: RegexComponent>(
-    first: Component<R>
-  ) -> Regex<R.Output>
+    first r: Component<R>
+  ) -> Regex<Substring>
+
+  public static func buildPartialBlock<W, C0, R: RegexComponent>(
+    first r: Component<R>
+  ) -> Regex<(Substring, C0?)> where R.Output == (W, C0)
+
+  public static func buildPartialBlock<W, C0, C1, R: RegexComponent>(
+    first r: Component<R>
+  ) -> Regex<(Substring, C0?, C1?)> where R.Output == (W, C0, C1)
 
   // The following builder methods implement what would be possible with
   // variadic generics (using imaginary syntax) as a single method:
@@ -977,7 +1038,7 @@ extension Repeat {
     _ behavior: QuantificationBehavior = .eagerly
   )
   where Output == (Substring, C0),
-        Compoment.Output == (Substring, C0),
+        Component.Output == (Substring, C0),
         R.Bound == Int
   
   public init<W, C0, Component: RegexComponent>(
@@ -986,7 +1047,7 @@ extension Repeat {
     @RegexComponentBuilder _ component: () -> Component
   )
   where Output == (Substring, C0),
-        Compoment.Output == (Substring, C0),
+        Component.Output == (Substring, C0),
         R.Bound == Int
   
   public init<W, C0, Component: RegexComponent, RE: RangeExpression>(
@@ -1125,7 +1186,7 @@ let regex = Regex {
 }
 ```
 
-Variants of `capture` and `tryCapture` accept a `Reference` argument. References can be used to achieve named captures and named backreferences from textual regexes.
+Variants of `Capture` and `TryCapture` accept a `Reference` argument. References can be used to achieve named captures and named backreferences from textual regexes.
 
 ```swift
 public struct Reference<Capture>: RegexComponent {
@@ -1160,7 +1221,7 @@ A regex is considered invalid when it contains a use of reference without it eve
 In textual regex, one can refer to a subpattern to avoid duplicating the subpattern, for example:
 
 ```
-(you|I) say (goodbye|hello); (?0) say (?1)
+(you|I) say (goodbye|hello); (?1) say (?2)
 ```
 
 The above regex is equivalent to
@@ -1238,7 +1299,7 @@ The proposed feature relies heavily upon overloads of `buildBlock` and `buildPar
 
 ## Alternatives considered
 
-### Operators for quantification and alterantion
+### Operators for quantification and alternation
 
 While `ChoiceOf` and quantifier functions provide a general way of creating alternations and quantifications, we recognize that some synctactic sugar can be useful for creating one-liners like in textual regexes, e.g. infix operator `|`, postfix operator `*`, etc.
 
@@ -1373,7 +1434,7 @@ However, given that one-or-more (`+`), zero-or-more (`*`) and optional (`?`) are
 
 One could argue that type such as `OneOrMore<Output>` could be defined as a top-level function that returns `Regex`. While it is entirely possible to do so, it would lose the name scoping benefits of a type and pollute the top-level namespace with `O(arity^2)` overloads of quantifiers, `capture`, `tryCapture`, etc. This could be detrimental to the usefulness of code completion.
 
-Another reason to use types instead of free functions is consistency with existing result-buidler-based DSLs such as SwiftUI.
+Another reason to use types instead of free functions is consistency with existing result-builder-based DSLs such as SwiftUI.
 
 [Declarative String Processing]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/DeclarativeStringProcessing.md
 [Strongly Typed Regex Captures]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/StronglyTypedCaptures.md
