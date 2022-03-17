@@ -175,7 +175,7 @@ class RegexDSLTests: XCTestCase {
       matchType: Substring.self, ==) {
         OneOrMore {
           "abc"
-        }.caseSensitive(false)
+        }.ignoringCase(true)
       }
     
     // Multiple options on one component wrap successively, but do not
@@ -189,8 +189,8 @@ class RegexDSLTests: XCTestCase {
         OneOrMore {
           "abc"
         }
-        .caseSensitive(false)
-        .caseSensitive(true)
+        .ignoringCase(true)
+        .ignoringCase(false)
       }
 
     // An option on an outer component doesn't override an option set on an
@@ -204,10 +204,10 @@ class RegexDSLTests: XCTestCase {
       ("abcdeABCdeaBcde", "abcdeABCdeaBcde"),
       matchType: Substring.self, ==) {
         OneOrMore {
-          "abc".caseSensitive(false)
+          "abc".ignoringCase(true)
           Optionally("de")
         }
-        .caseSensitive(true)
+        .ignoringCase(false)
       }
   }
   
