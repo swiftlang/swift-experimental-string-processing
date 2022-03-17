@@ -1195,13 +1195,17 @@ public struct Reference<Capture>: RegexComponent {
   public init(_ captureType: Capture.Type = Capture.self)
   public var regex: Regex<Capture>
 }
+
+extension Regex.Match {
+  public subscript<Capture>(_ reference: Reference<Capture>) -> Capture { get }
+}
 ```
 
-When capturing some regex with a reference specified, the reference will refer to the most recently captured content. The reference itself can be used as a regex to match the most recently captured content. This API is also designed to work with match result lookup, which will be introduced in a different pitch.
+When capturing some regex with a reference specified, the reference will refer to the most recently captured content. The reference itself can be used as a regex to match the most recently captured content, or as a name to look up the result of matching.
 
 ```swift
-let a = Reference()
-let b = Reference()
+let a = Reference(Substring.self)
+let b = Reference(Substring.self)
 let regex = Regex {
   Capture("abc", as: a)
   Capture("def", as: b)
@@ -1209,7 +1213,6 @@ let regex = Regex {
   Capture(b)
 }
 
-// To be introduced in a different pitch:
 if let result = input.firstMatch(of: regex) {
   print(result[a]) // => "abc"
   print(result[b]) // => "def"
