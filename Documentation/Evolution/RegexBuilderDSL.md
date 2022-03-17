@@ -543,7 +543,9 @@ To the developer, the top-level API is a type named `ChoiceOf`. This type has an
 ```swift
 public struct ChoiceOf<Output>: RegexComponent {
   public var regex: Regex<Output> { get }
-  public init(@AlternationBuilder builder: () -> R)
+  public init<R: RegexComponent>(
+    @AlternationBuilder builder: () -> R
+  ) where R.Output == Output
 }
 ```
 
@@ -1258,7 +1260,7 @@ Sometimes, a textual regex may also use `(?R)` or `(?0)` to recusively evaluate 
 (you|I) say (goodbye|hello|(?R))
 ```
 
-For this, `Regex` offers a special initializer that allows its pattern to recursively reference itself. This is somewhat akin to a fixed-pointer combinator.
+For this, `Regex` offers a special initializer that allows its pattern to recursively reference itself. This is somewhat akin to a fixed-point combinator.
 
 ```swift
 extension Regex {
