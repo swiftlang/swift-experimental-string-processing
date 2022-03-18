@@ -11,86 +11,71 @@
 
 
 // Just a phantom-typed Int wrapper.
-@frozen
-public struct TypedInt<👻>: RawRepresentable, Hashable {
-  @_alwaysEmitIntoClient
-  public var rawValue: Int
+struct TypedInt<👻>: RawRepresentable, Hashable {
+  var rawValue: Int
 
-  @_alwaysEmitIntoClient
-  public init(rawValue: Int) {
+  init(rawValue: Int) {
     self.rawValue = rawValue
   }
 
-  @_alwaysEmitIntoClient
-  public init(_ rawValue: Int) {
+  init(_ rawValue: Int) {
     self.init(rawValue: rawValue)
   }
 
-  @_alwaysEmitIntoClient
-  public init(_ uint: UInt64) {
+  init(_ uint: UInt64) {
     assert(uint.leadingZeroBitCount > 0)
     self.init(Int(asserting: uint))
   }
 }
 extension TypedInt: Comparable {
-  @_alwaysEmitIntoClient
-  public static func <(lhs: TypedInt, rhs: TypedInt) -> Bool {
+  static func <(lhs: TypedInt, rhs: TypedInt) -> Bool {
     return lhs.rawValue < rhs.rawValue
   }
 }
 extension TypedInt: CustomStringConvertible {
-  @_alwaysEmitIntoClient
-  public var description: String { return "#\(rawValue)" }
+  var description: String { return "#\(rawValue)" }
 }
 extension TypedInt: ExpressibleByIntegerLiteral {
-  @_alwaysEmitIntoClient
-  public init(integerLiteral value: Int) {
+  init(integerLiteral value: Int) {
     self.init(rawValue: value)
   }
 }
 
-public protocol TypedIntProtocol {
+protocol TypedIntProtocol {
   associatedtype 👻
 }
 extension TypedInt: TypedIntProtocol { }
 
 // A placeholder type for when we must supply a type.
 // When the phantom type appears, it says boo
-public enum _Boo {}
+enum _Boo {}
 
 // Easier for clients to just have their own typealias
-public typealias TypedInt_ = TypedInt
+typealias TypedInt_ = TypedInt
 
 // TODO: BinaryInteger, etc.
 extension TypedInt {
-  @_alwaysEmitIntoClient
-  public static func +(lhs: TypedInt, rhs: Int) -> TypedInt {
+  static func +(lhs: TypedInt, rhs: Int) -> TypedInt {
     return TypedInt(lhs.rawValue + rhs)
   }
 
-  @_alwaysEmitIntoClient
-  public var bits: UInt64 {
+  var bits: UInt64 {
     UInt64(asserting: self.rawValue)
   }
 }
 
-@frozen
-public struct TypedSetVector<Element: Hashable, 👻> {
-  public typealias Idx = TypedInt<👻>
+struct TypedSetVector<Element: Hashable, 👻> {
+  typealias Idx = TypedInt<👻>
 
   // TODO: Replace with real set vector
-  @_alwaysEmitIntoClient
-  public var lookup: Dictionary<Element, Idx> = [:]
+  var lookup: Dictionary<Element, Idx> = [:]
 
-  @_alwaysEmitIntoClient
-  public var stored: Array<Element> = []
+  var stored: Array<Element> = []
 
-  @_alwaysEmitIntoClient
-  public func load(_ idx: Idx) -> Element { stored[idx.rawValue] }
+  func load(_ idx: Idx) -> Element { stored[idx.rawValue] }
 
-  @_alwaysEmitIntoClient
   @discardableResult
-  public mutating func store(_ e: Element) -> Idx {
+  mutating func store(_ e: Element) -> Idx {
     if let reg = lookup[e] { return reg }
     let reg = Idx(stored.count)
     stored.append(e)
@@ -98,34 +83,32 @@ public struct TypedSetVector<Element: Hashable, 👻> {
     return reg
   }
 
-  @_alwaysEmitIntoClient
-  public var count: Int { stored.count }
+  var count: Int { stored.count }
 
-  @_alwaysEmitIntoClient
-  public init() {}
+  init() {}
 }
 
 // MARK: - Strongly typed int wrappers
 
 /// A distance in the Input, e.g. `n` in consume(n)
-public typealias Distance = TypedInt<_Distance>
-public enum _Distance {}
+typealias Distance = TypedInt<_Distance>
+enum _Distance {}
 
 /// An instruction address, i.e. the index into our instruction list
-public typealias InstructionAddress = TypedInt<_InstructionAddress>
-public enum _InstructionAddress {}
+typealias InstructionAddress = TypedInt<_InstructionAddress>
+enum _InstructionAddress {}
 
 /// A position in the call stack, i.e. for save point restores
-public typealias CallStackAddress = TypedInt<_CallStackAddress>
-public enum _CallStackAddress {}
+typealias CallStackAddress = TypedInt<_CallStackAddress>
+enum _CallStackAddress {}
 
 /// A position in a position stack, i.e. for NFA simulation
-public typealias PositionStackAddress = TypedInt<_PositionStackAddress>
-public enum _PositionStackAddress {}
+typealias PositionStackAddress = TypedInt<_PositionStackAddress>
+enum _PositionStackAddress {}
 
 /// A position in the save point stack, i.e. for backtracking
-public typealias SavePointStackAddress = TypedInt<_SavePointAddress>
-public enum _SavePointAddress {}
+typealias SavePointStackAddress = TypedInt<_SavePointAddress>
+enum _SavePointAddress {}
 
 
 // MARK: - Registers
@@ -135,85 +118,85 @@ public enum _SavePointAddress {}
 /// NOTE: Currently just used for static data, but e.g. could be
 /// used to save the most recently seen element satisfying some
 /// property
-public typealias ElementRegister = TypedInt<_ElementRegister>
-public enum _ElementRegister {}
+typealias ElementRegister = TypedInt<_ElementRegister>
+enum _ElementRegister {}
 
-public typealias SequenceRegister = TypedInt<_SequenceRegister>
-public enum _SequenceRegister {}
+typealias SequenceRegister = TypedInt<_SequenceRegister>
+enum _SequenceRegister {}
 
 /// The register number for a stored boolean value
 ///
 /// E.g. used for conditional branches
-public typealias BoolRegister = TypedInt<_BoolRegister>
-public enum _BoolRegister {}
+typealias BoolRegister = TypedInt<_BoolRegister>
+enum _BoolRegister {}
 
 /// The register number for a string (e.g. comment, failure reason)
-public typealias StringRegister = TypedInt<_StringRegister>
-public enum _StringRegister {}
+typealias StringRegister = TypedInt<_StringRegister>
+enum _StringRegister {}
 
 /// Used for consume functions, e.g. character classes
-public typealias ConsumeFunctionRegister = TypedInt<_ConsumeFunctionRegister>
-public enum _ConsumeFunctionRegister {}
+typealias ConsumeFunctionRegister = TypedInt<_ConsumeFunctionRegister>
+enum _ConsumeFunctionRegister {}
 
 /// Used for assertion functions, e.g. anchors etc
-public typealias AssertionFunctionRegister = TypedInt<_AssertionFunctionRegister>
-public enum _AssertionFunctionRegister {}
+typealias AssertionFunctionRegister = TypedInt<_AssertionFunctionRegister>
+enum _AssertionFunctionRegister {}
 
 /// Used for capture transforms, etc
-public typealias TransformRegister = TypedInt<_TransformRegister>
-public enum _TransformRegister {}
+typealias TransformRegister = TypedInt<_TransformRegister>
+enum _TransformRegister {}
 
 /// Used for value-producing matchers
-public typealias MatcherRegister = TypedInt<_MatcherRegister>
-public enum _MatcherRegister {}
+typealias MatcherRegister = TypedInt<_MatcherRegister>
+enum _MatcherRegister {}
 
 /// UNIMPLEMENTED
-public typealias IntRegister = TypedInt<_IntRegister>
-public enum _IntRegister {}
+typealias IntRegister = TypedInt<_IntRegister>
+enum _IntRegister {}
 
 /// UNIMPLEMENTED
-public typealias FloatRegister = TypedInt<_FloatRegister>
-public enum _FloatRegister {}
+typealias FloatRegister = TypedInt<_FloatRegister>
+enum _FloatRegister {}
 
 /// UNIMPLEMENTED
 ///
 /// NOTE: This, along with a position stack, might
 /// serve NFA-simulation style execution models
-public typealias PositionRegister = TypedInt<_PositionRegister>
-public enum _PositionRegister {}
+typealias PositionRegister = TypedInt<_PositionRegister>
+enum _PositionRegister {}
 
-public typealias ValueRegister = TypedInt<_ValueRegister>
-public enum _ValueRegister {}
+typealias ValueRegister = TypedInt<_ValueRegister>
+enum _ValueRegister {}
 
-public typealias CaptureRegister = TypedInt<_CaptureRegister>
-public enum _CaptureRegister {}
-
-/// UNIMPLEMENTED
-public typealias InstructionAddressRegister = TypedInt<_InstructionAddressRegister>
-public enum _InstructionAddressRegister {}
+typealias CaptureRegister = TypedInt<_CaptureRegister>
+enum _CaptureRegister {}
 
 /// UNIMPLEMENTED
-public typealias CallStackAddressRegister = TypedInt<_CallStackAddressRegister>
-public enum _CallStackAddressRegister {}
+typealias InstructionAddressRegister = TypedInt<_InstructionAddressRegister>
+enum _InstructionAddressRegister {}
 
 /// UNIMPLEMENTED
-public typealias PositionStackAddressRegister = TypedInt<_PositionStackAddressRegister>
-public enum _PositionStackAddressRegister {}
+typealias CallStackAddressRegister = TypedInt<_CallStackAddressRegister>
+enum _CallStackAddressRegister {}
 
 /// UNIMPLEMENTED
-public typealias SavePointAddressRegister = TypedInt<_SavePointAddressRegister>
-public enum _SavePointAddressRegister {}
+typealias PositionStackAddressRegister = TypedInt<_PositionStackAddressRegister>
+enum _PositionStackAddressRegister {}
+
+/// UNIMPLEMENTED
+typealias SavePointAddressRegister = TypedInt<_SavePointAddressRegister>
+enum _SavePointAddressRegister {}
 
 /// A numbered label
-public typealias LabelId = TypedInt<_LabelId>
-public enum _LabelId {}
+typealias LabelId = TypedInt<_LabelId>
+enum _LabelId {}
 
 /// A numbered function
-public typealias FunctionId = TypedInt<_FunctionId>
-public enum _FunctionId {}
+typealias FunctionId = TypedInt<_FunctionId>
+enum _FunctionId {}
 
 /// A numbered capture
-public typealias CaptureId = TypedInt<_CaptureId>
-public enum _CaptureId {}
+typealias CaptureId = TypedInt<_CaptureId>
+enum _CaptureId {}
 
 

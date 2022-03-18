@@ -108,7 +108,28 @@ extension Collection {
   >(_ idx: Index, in c: C) -> C.Index {
     c.index(atOffset: offset(of: idx))
   }
+}
 
+extension Collection where Element: Equatable {
+  /// Attempt to drop a given prefix from the collection, returning the
+  /// resulting subsequence, or `nil` if the prefix does not match.
+  public func tryDropPrefix<C : Collection>(
+    _ other: C
+  ) -> SubSequence? where C.Element == Element {
+    let prefixCount = other.count
+    guard prefix(prefixCount).elementsEqual(other) else { return nil }
+    return dropFirst(prefixCount)
+  }
+
+  /// Attempt to drop a given suffix from the collection, returning the
+  /// resulting subsequence, or `nil` if the suffix does not match.
+  public func tryDropSuffix<C : Collection>(
+    _ other: C
+  ) -> SubSequence? where C.Element == Element {
+    let suffixCount = other.count
+    guard suffix(suffixCount).elementsEqual(other) else { return nil }
+    return dropLast(suffixCount)
+  }
 }
 
 extension UnsafeMutableRawPointer {

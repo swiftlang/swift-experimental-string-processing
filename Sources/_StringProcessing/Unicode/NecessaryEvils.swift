@@ -40,7 +40,7 @@ extension Optional {
 }
 
 // Don't use UnsafeRawBufferPointer for anything important
-public struct UnsafeByteBuffer {
+struct UnsafeByteBuffer {
   var pointer: UnsafeRawPointer
   var count: Int
 

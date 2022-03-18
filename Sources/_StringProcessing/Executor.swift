@@ -11,8 +11,7 @@
 
 import _MatchingEngine
 
-  // FIXME: Public for prototype
-public struct Executor {
+struct Executor {
   // TODO: consider let, for now lets us toggle tracing
   var engine: Engine<String>
 
@@ -20,70 +19,53 @@ public struct Executor {
     self.engine = Engine(program, enableTracing: enablesTracing)
   }
 
-  // FIXME: Public for prototype
-  public struct Result {
-    public var range: Range<String.Index>
-    var captures: [StructuredCapture]
-    var referencedCaptureOffsets: [ReferenceID: Int]
+  func match<Match>(
+    _ input: String,
+    in inputRange: Range<String.Index>,
+    _ mode: MatchMode
+  ) throws -> RegexMatch<Match>? {
+    var cpu = engine.makeProcessor(
+      input: input, bounds: inputRange, matchMode: mode)
 
-    var destructure: (
-      matched: Range<String.Index>,
-      captures: [StructuredCapture],
-      referencedCaptureOffsets: [ReferenceID: Int]
-    ) {
-      (range, captures, referencedCaptureOffsets)
-    }
-
-    init(
-      _ matched: Range<String.Index>, _ captures: [StructuredCapture],
-      _ referencedCaptureOffsets: [ReferenceID: Int]
-    ) {
-      self.range = matched
-      self.captures = captures
-      self.referencedCaptureOffsets = referencedCaptureOffsets
-    }
-  }
-
-  public func execute(
-    input: String,
-    in range: Range<String.Index>,
-    mode: MatchMode = .wholeString
-  ) -> Result? {
-    guard let (endIdx, capList) = engine.consume(
-      input, in: range, matchMode: mode
-    ) else {
+    guard let endIdx = cpu.consume() else {
       return nil
     }
+
+    let capList = CaptureList(
+      values: cpu.storedCaptures,
+      referencedCaptureOffsets: engine.program.referencedCaptureOffsets)
+
     let capStruct = engine.program.captureStructure
-    do {
-      let range = range.lowerBound..<endIdx
-
-      let caps = try capStruct.structuralize(
+    let range = inputRange.lowerBound..<endIdx
+    let caps = try capStruct.structuralize(
         capList, input)
-      return Result(range, caps, capList.referencedCaptureOffsets)
-    } catch {
-      fatalError(String(describing: error))
+
+    // FIXME: This is a workaround for not tracking (or
+    // specially compiling) whole-match values.
+    let value: Any?
+    if Match.self != Substring.self,
+       Match.self != (Substring, DynamicCaptures).self,
+       caps.isEmpty
+    {
+      value = cpu.registers.values.first
+      assert(value != nil, "hmm, what would this mean?")
+    } else {
+      value = nil
     }
-  }
-  public func execute(
-    input: Substring,
-    mode: MatchMode = .wholeString
-  ) -> Result? {
-    self.execute(
-      input: input.base,
-      in: input.startIndex..<input.endIndex,
-      mode: mode)
+
+    return RegexMatch(
+      input: input,
+      range: range,
+      rawCaptures: caps,
+      referencedCaptureOffsets: capList.referencedCaptureOffsets,
+      value: value)
   }
 
-  public func executeFlat(
-    input: String,
-    in range: Range<String.Index>,
-    mode: MatchMode = .wholeString
-  ) -> (Range<String.Index>, CaptureList)? {
-    engine.consume(
-      input, in: range, matchMode: mode
-    ).map { endIndex, capture in
-      (range.lowerBound..<endIndex, capture)
-    }
+  func dynamicMatch(
+    _ input: String,
+    in inputRange: Range<String.Index>,
+    _ mode: MatchMode
+  ) throws -> RegexMatch<(Substring, DynamicCaptures)>? {
+    try match(input, in: inputRange, mode)
   }
 }

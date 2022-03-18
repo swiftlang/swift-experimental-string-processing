@@ -99,12 +99,16 @@ extension Compiler.ByteCodeGen {
       }
 
     case .textSegment:
-      // This we should be able to do!
-      throw Unsupported(#"\y (text segment)"#)
+      builder.buildAssert { (input, pos, _) in
+        // FIXME: Grapheme or word based on options
+        input.isOnGraphemeClusterBoundary(pos)
+      }
 
     case .notTextSegment:
-      // This we should be able to do!
-      throw Unsupported(#"\Y (not text segment)"#)
+      builder.buildAssert { (input, pos, _) in
+        // FIXME: Grapheme or word based on options
+        !input.isOnGraphemeClusterBoundary(pos)
+      }
 
     case .startOfLine:
       builder.buildAssert { (input, pos, bounds) in

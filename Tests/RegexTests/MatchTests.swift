@@ -23,13 +23,13 @@ extension Executor {
     // Consumer -> searcher algorithm
     var start = input.startIndex
     while true {
-      if let (range, caps) = self.executeFlat(
-        input: input,
+      if let result = try! self.dynamicMatch(
+        input,
         in: start..<input.endIndex,
-        mode: .partialFromFront
+        .partialFromFront
       ) {
-        let matched = input[range]
-        return (matched, caps.latestUntyped(from: input))
+        let caps = result.rawCaptures.slices(from: input)
+        return (input[result.range], caps)
       } else if start == input.endIndex {
         throw "match not found for \(regex) in \(input)"
       } else {
@@ -267,7 +267,7 @@ extension RegexTests {
     firstMatchTest(#"\070"#, input: "1238xyz", match: "8")
     firstMatchTest(#"\07A"#, input: "123\u{7}Axyz", match: "\u{7}A")
     firstMatchTest(#"\08"#, input: "123\08xyz", match: "\08")
-    firstMatchTest(#"\0707"#, input: "12387xyz", match: "87")
+    firstMatchTest(#"\0707"#, input: "12387\u{1C7}xyz", match: "\u{1C7}")
 
     // code point sequence
     firstMatchTest(#"\u{61 62 63}"#, input: "123abcxyz", match: "abc", xfail: true)
@@ -695,6 +695,7 @@ extension RegexTests {
     firstMatchTest(#"\p{ISBAMUM}"#, input: "123ꚠꚡꚢxyz", match: "ꚠ")
     firstMatchTest(#"\p{Script=Unknown}"#, input: "\u{10FFFF}", match: "\u{10FFFF}")
     firstMatchTest(#"\p{scx=Gujr}"#, input: "\u{a839}", match: "\u{a839}")
+    firstMatchTest(#"\p{Gujr}"#, input: "\u{a839}", match: "\u{a839}")
 
     firstMatchTest(#"\p{alpha}"#, input: "123abcXYZ", match: "a")
     firstMatchTest(#"\P{alpha}"#, input: "123abcXYZ", match: "1")
@@ -876,7 +877,8 @@ extension RegexTests {
       #"\d+\b"#,
       ("123", "123"),
       (" 123", "123"),
-      ("123 456", "123"))
+      ("123 456", "123"),
+      ("123A 456", "456"))
     firstMatchTests(
       #"\d+\b\s\b\d+"#,
       ("123", nil),
@@ -892,7 +894,18 @@ extension RegexTests {
     // TODO: \G and \K
 
     // TODO: Oniguruma \y and \Y
-
+    firstMatchTests(
+      #"\u{65}"#,             // Scalar 'e' is present in both:
+      ("Cafe\u{301}", "e"),   // composed and
+      ("Sol Cafe", "e"))      // standalone
+    firstMatchTests(
+      #"\u{65}\y"#,           // Grapheme boundary assertion
+      ("Cafe\u{301}", nil),
+      ("Sol Cafe", "e"))
+    firstMatchTests(
+      #"\u{65}\Y"#,           // Grapheme non-boundary assertion
+      ("Cafe\u{301}", "e"),
+      ("Sol Cafe", nil))
   }
 
   func testMatchGroups() {
@@ -1018,9 +1031,6 @@ extension RegexTests {
     firstMatchTest(
       #"(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)\10"#,
       input: "aaaaaaaaabbc", match: "aaaaaaaaabb")
-    firstMatchTest(
-      #"(.)\10"#,
-      input: "a\u{8}b", match: "a\u{8}")
 
     firstMatchTest(
       #"(.)\g001"#,

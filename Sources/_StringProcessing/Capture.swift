@@ -71,6 +71,11 @@ extension StructuredCapture {
       value: storedCapture?.value,
       optionalCount: optionalCount)
   }
+
+  func slice(from input: String) -> Substring? {
+    guard let r = storedCapture?.range else { return nil }
+    return input[r]
+  }
 }
 
 extension Sequence where Element == StructuredCapture {
@@ -86,5 +91,8 @@ extension Sequence where Element == StructuredCapture {
     })
     return TypeConstruction.tuple(of: caps)
   }
-}
 
+  func slices(from input: String) -> [Substring?] {
+    self.map { $0.slice(from: input) }
+  }
+}

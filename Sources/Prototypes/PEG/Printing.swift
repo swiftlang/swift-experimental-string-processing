@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _StringProcessing
+@testable import _StringProcessing
 
 extension PEGCore.Instruction: InstructionProtocol {
   var operandPC: InstructionAddress? { self.pc }

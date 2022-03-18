@@ -279,7 +279,7 @@ extension Source {
   ///                | 'x'  HexDigit{0...2}
   ///                | 'U'  HexDigit{8}
   ///                | 'o{' OctalDigit{1...} '}'
-  ///                | OctalDigit{1...3}
+  ///                | '0' OctalDigit{0...3}
   ///
   mutating func expectUnicodeScalar(
     escapedCharacter base: Character
@@ -313,13 +313,14 @@ extension Source {
         let str = try src.lexUntil(eating: "}").value
         return try Source.validateUnicodeScalar(str, .octal)
 
-      case let c where c.isOctalDigit:
-        // We can read *up to* 2 more octal digits per PCRE.
-        // FIXME: ICU can read up to 3 octal digits if the leading digit is 0,
-        // we should have a parser mode to switch.
-        let nextDigits = src.tryEatPrefix(maxLength: 2, \.isOctalDigit)
-        let str = String(c) + (nextDigits?.string ?? "")
-        return try Source.validateUnicodeScalar(str, .octal)
+      case "0":
+        // We can read *up to* 3 more octal digits.
+        // FIXME: PCRE can only read up to 2 octal digits, if we get a strict
+        // PCRE mode, we should limit it here.
+        guard let digits = src.tryEatPrefix(maxLength: 3, \.isOctalDigit) else {
+          return Unicode.Scalar(0)
+        }
+        return try Source.validateUnicodeScalar(digits.string, .octal)
 
       default:
         fatalError("Unexpected scalar start")
@@ -1341,26 +1342,10 @@ extension Source {
           return nil
         }
 
-        // Lexing \n is tricky, as it's ambiguous with octal sequences. In PCRE
-        // it is treated as a backreference if its first digit is not 0 (as that
-        // is always octal) and one of the following holds:
-        //
-        // - It's 0 < n < 10 (as octal would be pointless here)
-        // - Its first digit is 8 or 9 (as not valid octal)
-        // - There have been as many prior groups as the reference.
-        //
-        // Oniguruma follows the same rules except the second one. e.g \81 and
-        // \91 are instead treated as literal 81 and 91 respectively.
-        // TODO: If we want a strict Oniguruma mode, we'll need to add a check
-        // here.
+        // Backslash followed by a non-0 digit character is a backreference.
         if firstChar != "0", let numAndLoc = try src.lexNumber() {
-          let num = numAndLoc.value
-          let ref = AST.Reference(.absolute(num), innerLoc: numAndLoc.location)
-          if num < 10 || firstChar == "8" || firstChar == "9" ||
-              context.isPriorGroupRef(ref.kind) {
-            return .backreference(ref)
-          }
-          return nil
+          return .backreference(.init(
+            .absolute(numAndLoc.value), innerLoc: numAndLoc.location))
         }
         return nil
       }
@@ -1487,7 +1472,9 @@ extension Source {
         return ref
       }
 
-      let char = src.eat()
+      guard let char = src.tryEat() else {
+        throw ParseError.expectedEscape
+      }
 
       // Single-character builtins.
       if let builtin = AST.Atom.EscapedBuiltin(
@@ -1497,10 +1484,8 @@ extension Source {
       }
 
       switch char {
-      // Hexadecimal and octal unicode scalars. This must be done after
-      // backreference lexing due to the ambiguity with \nnn.
-      case let c where c.isOctalDigit: fallthrough
-      case "u", "x", "U", "o":
+      // Hexadecimal and octal unicode scalars.
+      case "u", "x", "U", "o", "0":
         return try .scalar(
           src.expectUnicodeScalar(escapedCharacter: char).value)
       default:

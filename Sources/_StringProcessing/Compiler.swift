@@ -35,7 +35,7 @@ class Compiler {
   }
 }
 
-public func _compileRegex(
+func _compileRegex(
   _ regex: String, _ syntax: SyntaxOptions = .traditional
 ) throws -> Executor {
   let ast = try parse(regex, syntax)

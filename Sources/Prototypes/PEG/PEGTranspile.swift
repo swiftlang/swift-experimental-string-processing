@@ -9,8 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _MatchingEngine
-import _StringProcessing
+@testable import _StringProcessing
 
 extension PEG.VM where Input == String {
   typealias MEProg = MEProgram<String>
