@@ -291,7 +291,7 @@ A regex describes an algorithm to be ran over some model of string, and Swift's 
 
 Calling `dropFirst()` will not drop a leading byte or `Unicode.Scalar`, but rather a full `Character`. Similarly, a `.` in a regex will match any extended grapheme cluster. A regex will match canonical equivalents by default, strengthening the connection between regex and the equivalent `String` operations.
 
-Additionally, word boundaries (`\b`) follow [UTS\#29 Word Boundaries](https://www.unicode.org/reports/tr29/#Word_Boundaries), meaning contractions ("don't") and script changes are detected and separated, without incurring significant binary size costs associated with language dictionaries.
+Additionally, word boundaries (`\b`) follow [UTS\#29 Word Boundaries](https://www.unicode.org/reports/tr29/#Word_Boundaries). Contractions ("don't") are correctly detected and script changes are separated, without incurring significant binary size costs associated with language dictionaries.
 
 Regex targets [UTS\#18 Level 2](https://www.unicode.org/reports/tr18/#Extended_Unicode_Support) by default, but provides options to switch to scalar-level processing as well as compatibility character classes. Detailed rules on how we infer necessary grapheme cluster breaks inside regexes, as well as options and other concerns, are discussed in [Unicode for String Processing][pitches]. 
 
