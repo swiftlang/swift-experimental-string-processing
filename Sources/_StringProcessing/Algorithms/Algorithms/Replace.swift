@@ -154,7 +154,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     with replacement: Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max
-  ) -> Self where Replacement.Element == Character {
+  ) -> Self where Replacement.Element == Element {
     replacing(
       RegexConsumer(regex),
       with: replacement,
@@ -166,7 +166,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     _ regex: R,
     with replacement: Replacement,
     maxReplacements: Int = .max
-  ) -> Self where Replacement.Element == Character {
+  ) -> Self where Replacement.Element == Element {
     replacing(
       regex,
       with: replacement,
@@ -178,7 +178,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     _ regex: R,
     with replacement: Replacement,
     maxReplacements: Int = .max
-  ) where Replacement.Element == Character {
+  ) where Replacement.Element == Element {
     self = replacing(
       regex,
       with: replacement,
