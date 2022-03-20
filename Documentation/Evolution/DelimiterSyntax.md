@@ -1,6 +1,6 @@
 # Regular Expression Literal Delimiters
 
-- Authors: Hamish Knight, Michael Ilseman
+- Authors: Hamish Knight, Michael Ilseman, David Ewing
 
 ## Introduction
 
@@ -28,6 +28,7 @@ The use of a single quote delimiter has a minor conflict with a couple of items 
 To do this, a heuristic will be used when lexing a regex literal, and will check for the ending sequences `(?`, `(?(`, `\g`, `\k` and `(?C`. On encountering these, the lexer will attempt to scan ahead to the next `'` character, and then to the `'` that closes the literal. It should be noted that these are not valid regex endings, and as such this cannot break valid code.
 
 **TODO: Or do we want to insist on the user using raw `re#'...'#` syntax?**
+
 
 ## Future Directions
 
@@ -66,17 +67,17 @@ We could choose to shorten the literal prefix to just `r`. However this could po
 
 ### Forward slashes `/.../`
 
-Forward slashes are a regex term of art, and are used as the delimiters for regex literals in Perl, JavaScript and Ruby (though Perl and Ruby also provide alternative choices). However, they would be an awkward fit in Swift's language grammar, and would not provide a path for extensibility.
+Forward slashes are a regex term of art, and are used as the delimiters for regex literals in Perl, JavaScript and Ruby (though Perl and Ruby also provide alternative choices). However, they would be an awkward fit in Swift's language grammar, and would not provide a path for extensibility. Here we give an extensive list of drawbacks to the choice. While no individual issue is terribly bad and each could be overcome, the list of issues is quite long. 
 
 #### Parsing ambiguities
 
-The primary parsing ambiguity with `/.../` delimiters is with comment syntax.
+The obvious parsing ambiguity with `/.../` delimiters is with comment syntaxes.
 
-An empty regex literal would conflict with line comment syntax `//`. While this isn't a particularly useful thing to express, it may lead to an awkward user typing experience. In particular, as you begin to type a regex literal, a comment could be formed before you start typing the contents. This could however be mitigated by source tooling.
+- An empty regex literal would conflict with line comment syntax `//`. But this isn't a particularly useful thing to express, and could be disallowed.
 
-Line comment syntax additionally means that a potential multi-line version of a regular expression literal would not be able to use `///` delimiters, in accordance with the precedent set by multi-line string literals `"""`.
+- The obvious choice for a multi-line regular expression literal would be to use `///` delimiters, in accordance with the precedent set by multi-line string literals `"""`. A different multi-line delimiter would be needed, with no obvious choice.
 
-There is also a conflict with block comment syntax, when surrounding a regex literal ending with `*`, for example:
+- There is also a conflict with block comment syntax, when surrounding a regex literal ending with `*`, for example:
 
 ```swift
 /*
@@ -84,11 +85,11 @@ let regex = /x*/
 */
 ```
 
-In this case, the block comment would prematurely end on the second line, rather than extending all the way to the third line as the user would expect. This is already an issue today with `*/` in a string literal, however it is much more likely to occur in a regular expression given the prevalence of the `*` quantifier.
+   In this case, the block comment would prematurely end on the second line, rather than extending all the way to the third line as the user would expect. This is already an issue today with `*/` in a string literal, however it is much more likely to occur in a regular expression given the prevalence of the `*` quantifier.
 
-Block comment syntax also means that a regex literal would not be able to start with the `*` character, however this is less of a concern as it would not be valid regex syntax.
+- Block comment syntax also means that a regex literal would not be able to start with the `*` character, however this is less of a concern as it would not be valid regex syntax.
 
-Finally, there would be a minor ambiguity with infix operators used with regex literals. When used without whitespace, e.g `x+/y/`, the expression will be treated as using an infix operator `+/`. Whitespace is therefore required `x + /y/` for regex literal interpretation.
+- Finally, there would be a minor ambiguity with infix operators used with regex literals. When used without whitespace, e.g `x+/y/`, the expression will be treated as using an infix operator `+/`. Whitespace is therefore required `x + /y/` for regex literal interpretation.
 
 #### Regex limitations
 
@@ -145,11 +146,28 @@ let x = !/y / .foo()
 ```
     
 Otherwise it would be interpreted as the prefix operator `!/` by default, and require parens `!(/y /)` for regex parsing.
+
+
+
+**TODO: More cases from slack discussion **
+
+```swift
+func foo(_ x: (Int, Int) -> Int, _ y: (Int, Int) -> Int) {}
+foo(/, /)
+```
+
+`foo(/, "(") / 2` !!!
+
+
     
 ##### Comma as the starting character of a regex literal
 
 **TODO: Or do we want to ban it as the starting character?**
-    
+
+#### Editor Considerations
+
+Many source editors in use today do rather simplistic syntax coloring of programming languages. And there's a long history of complaints about syntax coloring of regular expressions in Perl, JavaScript and Ruby to be found on the internet. While the most popular editors do a very good job recognizing the most common incantations of a regular expression in each language, most still don't get it 100% right. There's just a lot of work involved in doing that. If parsing Swift regular expressions is as difficult as these other languages because of the choice of delimiter, it becomes a barrier to entry for support by those editors.
+
 ### Pound slash `#/.../#`
 
 This would be less syntactically ambiguous than `/.../`, while retaining some of the term-of-art familiarity. It would also provide a natural path through which to introduce `/.../` in a new language mode, as users could drop the `#` characters once they upgrade.
