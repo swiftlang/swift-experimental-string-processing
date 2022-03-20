@@ -44,11 +44,11 @@ extension AST.Node {
     }
 
     // Convert the top-level node without wrapping
-    func convert() -> DSLTree.Node {
+    func convert() throws -> DSLTree.Node {
       switch self {
       case let .alternation(v):
         let children = v.children.map(\.dslTreeNode)
-        return .alternation(children)
+        return .orderedChoice(children)
 
       case let .concatenation(v):
         // Coalesce adjacent children who can produce a
@@ -103,7 +103,16 @@ extension AST.Node {
 
       case let .group(v):
         let child = v.child.dslTreeNode
-        return .group(v.kind.value, child)
+        switch v.kind.value {
+        case .capture:
+          return .capture(child)
+        case .namedCapture(let name):
+          return .capture(name: name.value, child)
+        case .balancedCapture:
+          throw Unsupported("TODO: balanced captures")
+        default:
+          return .nonCapturingGroup(v.kind.value, child)
+        }
 
       case let .conditional(v):
         let trueBranch = v.trueBranch.dslTreeNode
@@ -137,7 +146,8 @@ extension AST.Node {
       }
     }
 
-    let converted = convert()
+    // FIXME: make total function again
+    let converted = try! convert()
     return wrap(converted)
   }
 }

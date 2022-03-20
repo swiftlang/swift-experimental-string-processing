@@ -59,54 +59,29 @@ extension CaptureStructure.Constructor {
   }
 
   public mutating func grouping<T: _TreeNode>(
-    _ child: T, as kind: AST.Group.Kind
+    _ child: T,
+    as kind: AST.Group.Kind
   ) -> CaptureStructure {
-    let innerCaptures = child._captureStructure(&self)
     switch kind {
     case .capture:
-      return .atom() + innerCaptures
+      return capturing(child)
     case .namedCapture(let name):
-      return .atom(name: name.value) + innerCaptures
+      return capturing(name: name.value, child)
     case .balancedCapture(let b):
-      return .atom(name: b.name?.value) + innerCaptures
+      return capturing(name: b.name?.value, child)
     default:
       precondition(!kind.isCapturing)
-      return innerCaptures
+      return child._captureStructure(&self)
     }
   }
 
-  public mutating func grouping<T: _TreeNode>(
+  public mutating func capturing<T: _TreeNode>(
+    name: String? = nil,
     _ child: T,
-    as kind: AST.Group.Kind,
-    withTransform transform: CaptureTransform
+    withType type: AnyType? = nil
   ) -> CaptureStructure {
-    let innerCaptures = child._captureStructure(&self)
-    switch kind {
-    case .capture:
-      return .atom(type: AnyType(transform.resultType)) + innerCaptures
-    case .namedCapture(let name):
-      return .atom(name: name.value, type: AnyType(transform.resultType))
-        + innerCaptures
-    default:
-      return innerCaptures
-    }
-  }
-
-  public mutating func grouping<T: _TreeNode>(
-    _ child: T,
-    as kind: AST.Group.Kind,
-    withType type: AnyType
-  ) -> CaptureStructure {
-    let innerCaptures = child._captureStructure(&self)
-    switch kind {
-    case .capture:
-      return .atom(type: type) + innerCaptures
-    case .namedCapture(let name):
-      return .atom(name: name.value, type: type)
-            + innerCaptures
-    default:
-      return innerCaptures
-    }
+    .atom(name: name, type: type)
+      + child._captureStructure(&self)
   }
 
   // TODO: We'll likely want/need a generalization of

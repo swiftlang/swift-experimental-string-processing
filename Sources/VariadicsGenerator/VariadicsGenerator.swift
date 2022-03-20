@@ -522,7 +522,7 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       extension \(altBuilderName) {
         public static func buildPartialBlock<\(genericParams)>(first regex: R) -> ChoiceOf<(W, \(resultCaptures))> \(whereClause) {
-          .init(node: .alternation([regex.regex.root]))
+          .init(node: .orderedChoice([regex.regex.root]))
         }
       }
       
@@ -554,14 +554,14 @@ struct VariadicsGenerator: ParsableCommand {
         public init<\(genericParams)>(
           _ component: R
         ) \(whereClauseRaw) {
-          self.init(node: .group(.capture, component.regex.root))
+          self.init(node: .capture(component.regex.root))
         }
 
         \(disfavored)\
         public init<\(genericParams)>(
           _ component: R, as reference: Reference<W>
         ) \(whereClauseRaw) {
-          self.init(node: .group(.capture, component.regex.root, reference.id))
+          self.init(node: .capture(reference: reference.id, component.regex.root))
         }
 
         \(disfavored)\
@@ -569,12 +569,11 @@ struct VariadicsGenerator: ParsableCommand {
           _ component: R,
           transform: @escaping (Substring) -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .groupTransform(
-            .capture,
-            component.regex.root,
+          self.init(node: .capture(.transform(
             CaptureTransform(resultType: NewCapture.self) {
               transform($0) as Any
-            }))
+            },
+            component.regex.root)))
         }
 
         \(disfavored)\
@@ -583,13 +582,13 @@ struct VariadicsGenerator: ParsableCommand {
           as reference: Reference<NewCapture>,
           transform: @escaping (Substring) -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .groupTransform(
-            .capture,
-            component.regex.root,
-            CaptureTransform(resultType: NewCapture.self) {
-              transform($0) as Any
-            },
-            reference.id))
+          self.init(node: .capture(
+            reference: reference.id,
+            .transform(
+              CaptureTransform(resultType: NewCapture.self) {
+                transform($0) as Any
+              },
+              component.regex.root)))
         }
       }
 
@@ -599,12 +598,11 @@ struct VariadicsGenerator: ParsableCommand {
           _ component: R,
           transform: @escaping (Substring) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .groupTransform(
-            .capture,
-            component.regex.root,
+          self.init(node: .capture(.transform(
             CaptureTransform(resultType: NewCapture.self) {
               try transform($0) as Any
-            }))
+            },
+            component.regex.root)))
         }
 
         \(disfavored)\
@@ -613,13 +611,13 @@ struct VariadicsGenerator: ParsableCommand {
           as reference: Reference<NewCapture>,
           transform: @escaping (Substring) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .groupTransform(
-            .capture,
-            component.regex.root,
-            CaptureTransform(resultType: NewCapture.self) {
-              try transform($0) as Any
-            },
-            reference.id))
+          self.init(node: .capture(
+            reference: reference.id,
+            .transform(
+              CaptureTransform(resultType: NewCapture.self) {
+                try transform($0) as Any
+              },
+              component.regex.root)))
         }
 
         \(disfavored)\
@@ -627,12 +625,11 @@ struct VariadicsGenerator: ParsableCommand {
           _ component: R,
           transform: @escaping (Substring) -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .groupTransform(
-            .capture,
-            component.regex.root,
+          self.init(node: .capture(.transform(
             CaptureTransform(resultType: NewCapture.self) {
               transform($0) as Any?
-            }))
+            },
+            component.regex.root)))
         }
 
         \(disfavored)\
@@ -641,13 +638,13 @@ struct VariadicsGenerator: ParsableCommand {
           as reference: Reference<NewCapture>,
           transform: @escaping (Substring) -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .groupTransform(
-            .capture,
-            component.regex.root,
-            CaptureTransform(resultType: NewCapture.self) {
-              transform($0) as Any?
-            },
-            reference.id))
+          self.init(node: .capture(
+            reference: reference.id,
+            .transform(
+              CaptureTransform(resultType: NewCapture.self) {
+                transform($0) as Any?
+              },
+              component.regex.root)))
         }
       }
 
@@ -658,7 +655,7 @@ struct VariadicsGenerator: ParsableCommand {
         public init<\(genericParams)>(
           @\(concatBuilderName) _ component: () -> R
         ) \(whereClauseRaw) {
-          self.init(node: .group(.capture, component().regex.root))
+          self.init(node: .capture(component().regex.root))
         }
 
         \(disfavored)\
@@ -666,7 +663,9 @@ struct VariadicsGenerator: ParsableCommand {
           as reference: Reference<W>,
           @\(concatBuilderName) _ component: () -> R
         ) \(whereClauseRaw) {
-          self.init(node: .group(.capture, component().regex.root, reference.id))
+          self.init(node: .capture(
+            reference: reference.id,
+            component().regex.root))
         }
 
         \(disfavored)\
@@ -674,12 +673,11 @@ struct VariadicsGenerator: ParsableCommand {
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (Substring) -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .groupTransform(
-            .capture,
-            component().regex.root,
+          self.init(node: .capture(.transform(
             CaptureTransform(resultType: NewCapture.self) {
               transform($0) as Any
-            }))
+            },
+            component().regex.root)))
         }
 
         \(disfavored)\
@@ -688,13 +686,13 @@ struct VariadicsGenerator: ParsableCommand {
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (Substring) -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .groupTransform(
-            .capture,
-            component().regex.root,
-            CaptureTransform(resultType: NewCapture.self) {
-              transform($0) as Any
-            },
-            reference.id))
+          self.init(node: .capture(
+            reference: reference.id,
+            .transform(
+              CaptureTransform(resultType: NewCapture.self) {
+                transform($0) as Any
+              },
+              component().regex.root)))
         }
       }
 
@@ -704,12 +702,11 @@ struct VariadicsGenerator: ParsableCommand {
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (Substring) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .groupTransform(
-            .capture,
-            component().regex.root,
+          self.init(node: .capture(.transform(
             CaptureTransform(resultType: NewCapture.self) {
               try transform($0) as Any
-            }))
+            },
+            component().regex.root)))
         }
 
         \(disfavored)\
@@ -718,13 +715,13 @@ struct VariadicsGenerator: ParsableCommand {
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (Substring) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .groupTransform(
-            .capture,
-            component().regex.root,
-            CaptureTransform(resultType: NewCapture.self) {
-              try transform($0) as Any
-            },
-            reference.id))
+          self.init(node: .capture(
+            reference: reference.id,
+            .transform(
+              CaptureTransform(resultType: NewCapture.self) {
+                try transform($0) as Any
+              },
+              component().regex.root)))
         }
 
         \(disfavored)\
@@ -732,12 +729,11 @@ struct VariadicsGenerator: ParsableCommand {
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (Substring) -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .groupTransform(
-            .capture,
-            component().regex.root,
+          self.init(node: .capture(.transform(
             CaptureTransform(resultType: NewCapture.self) {
               transform($0) as Any?
-            }))
+            },
+            component().regex.root)))
         }
 
         \(disfavored)\
@@ -746,13 +742,13 @@ struct VariadicsGenerator: ParsableCommand {
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (Substring) -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .groupTransform(
-            .capture,
-            component().regex.root,
-            CaptureTransform(resultType: NewCapture.self) {
-              transform($0) as Any?
-            },
-            reference.id))
+          self.init(node: .capture(
+            reference: reference.id,
+            .transform(
+              CaptureTransform(resultType: NewCapture.self) {
+                transform($0) as Any?
+              },
+              component().regex.root)))
         }
       }
 
