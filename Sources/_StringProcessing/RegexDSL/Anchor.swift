@@ -110,12 +110,12 @@ public func lookahead<R: RegexComponent>(
   negative: Bool = false,
   @RegexComponentBuilder _ content: () -> R
 ) -> Regex<R.Match> {
-  Regex(node: .group(negative ? .negativeLookahead : .lookahead, content().regex.root))
+  Regex(node: .nonCapturingGroup(negative ? .negativeLookahead : .lookahead, content().regex.root))
 }
   
 public func lookahead<R: RegexComponent>(
   _ component: R,
   negative: Bool = false
 ) -> Regex<R.Match> {
-  Regex(node: .group(negative ? .negativeLookahead : .lookahead, component.regex.root))
+  Regex(node: .nonCapturingGroup(negative ? .negativeLookahead : .lookahead, component.regex.root))
 }

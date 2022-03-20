@@ -73,7 +73,7 @@ extension PrettyPrinter {
 
     switch node {
 
-    case let .alternation(a):
+    case let .orderedChoice(a):
       printBlock("Alternation") { printer in
         a.forEach {
           printer.printAsPattern(convertedFromAST: $0)
@@ -87,10 +87,18 @@ extension PrettyPrinter {
         }
       }
 
-    case let .group(kind, child, referenceID):
+    case let .nonCapturingGroup(kind, child):
       let kind = kind._patternBase
-      let refIDString = referenceID.map { ", referenceID: \($0)" } ?? ""
-      printBlock("Group(\(kind)\(refIDString)") { printer in
+      printBlock("Group(\(kind))") { printer in
+        printer.printAsPattern(convertedFromAST: child)
+      }
+
+    case let .capture(name, _, child):
+      var cap = "capture"
+      if let n = name {
+        cap += "(\(n))"
+      }
+      printBlock(cap) { printer in
         printer.printAsPattern(convertedFromAST: child)
       }
 
@@ -152,8 +160,8 @@ extension PrettyPrinter {
     case let .customCharacterClass(ccc):
       printAsPattern(ccc)
 
-    case .groupTransform:
-      print("/* TODO: group transforms */")
+    case .transform:
+      print("/* TODO: transforms */")
     case .consumer:
       print("/* TODO: consumers */")
     case .matcher:

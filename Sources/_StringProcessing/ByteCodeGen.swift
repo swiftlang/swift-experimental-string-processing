@@ -299,31 +299,33 @@ extension Compiler.ByteCodeGen {
     }
   }
 
-  mutating func emitGroup(
-    _ kind: AST.Group.Kind,
+  mutating func emitTransform(
+    _ t: CaptureTransform,
     _ child: DSLTree.Node,
-    _ referenceID: ReferenceID?
-  ) throws -> CaptureRegister? {
-    guard kind.isCapturing || referenceID == nil else {
-      throw Unreachable("Reference ID shouldn't exist for non-capturing groups")
+    into cap: CaptureRegister
+  ) throws {
+    let transform = builder.makeTransformFunction {
+      input, range in
+      t(input[range])
     }
+    builder.buildBeginCapture(cap)
+    try emitNode(child)
+    builder.buildEndCapture(cap)
+    builder.buildTransformCapture(cap, transform)
+  }
+
+  mutating func emitNoncapturingGroup(
+    _ kind: AST.Group.Kind,
+    _ child: DSLTree.Node
+  ) throws {
+    assert(!kind.isCapturing)
 
     options.beginScope()
     defer { options.endScope() }
 
-    // If we have a strong type, write result directly into
-    // the capture register.
-    //
-    // FIXME: Unify with .groupTransform
-    if kind.isCapturing, case let .matcher(_, m) = child {
-      let cap = builder.makeCapture(id: referenceID)
-      emitMatcher(m, into: cap)
-      return cap
-    }
-
     if let lookaround = kind.lookaroundKind {
       try emitLookaround(lookaround, child)
-      return nil
+      return
     }
 
     switch kind {
@@ -331,22 +333,16 @@ extension Compiler.ByteCodeGen {
         .lookbehind, .negativeLookbehind:
       throw Unreachable("TODO: reason")
 
-    case .capture, .namedCapture:
-      let cap = builder.makeCapture(id: referenceID)
-      builder.buildBeginCapture(cap)
-      try emitNode(child)
-      builder.buildEndCapture(cap)
-      return cap
+    case .capture, .namedCapture, .balancedCapture:
+      throw Unreachable("These should produce a capture node")
 
     case .changeMatchingOptions(let optionSequence, _):
       options.apply(optionSequence)
       try emitNode(child)
-      return nil
 
     default:
       // FIXME: Other kinds...
       try emitNode(child)
-      return nil
     }
   }
 
@@ -557,7 +553,7 @@ extension Compiler.ByteCodeGen {
   mutating func emitNode(_ node: DSLTree.Node) throws {
     switch node {
       
-    case let .alternation(children):
+    case let .orderedChoice(children):
       try emitAlternation(children)
 
     case let .concatenation(children):
@@ -565,8 +561,21 @@ extension Compiler.ByteCodeGen {
         try emitConcatenationComponent(child)
       }
 
-    case let .group(kind, child, referenceID):
-      _ = try emitGroup(kind, child, referenceID)
+    case let .capture(_, refId, child):
+      let cap = builder.makeCapture(id: refId)
+      switch child {
+      case let .matcher(_, m):
+        emitMatcher(m, into: cap)
+      case let .transform(t, child):
+        try emitTransform(t, child, into: cap)
+      default:
+        builder.buildBeginCapture(cap)
+        try emitNode(child)
+        builder.buildEndCapture(cap)
+      }
+
+    case let .nonCapturingGroup(kind, child):
+      try emitNoncapturingGroup(kind, child)
 
     case .conditional:
       throw Unsupported("Conditionals")
@@ -605,22 +614,6 @@ extension Compiler.ByteCodeGen {
     case let .convertedRegexLiteral(n, _):
       try emitNode(n)
 
-    case let .groupTransform(kind, child, t, referenceID):
-      guard let cap = try emitGroup(kind, child, referenceID) else {
-        assertionFailure("""
-          What does it mean to not have a capture to transform?
-          """)
-        return
-      }
-
-      // FIXME: Is this how we want to do it?
-      let transform = builder.makeTransformFunction {
-        input, range in
-        t(input[range])
-      }
-
-      builder.buildTransformCapture(cap, transform)
-
     case .absentFunction:
       throw Unsupported("absent function")
     case .consumer:
@@ -628,6 +621,10 @@ extension Compiler.ByteCodeGen {
 
     case let .matcher(_, f):
       emitMatcher(f)
+
+    case .transform:
+      throw Unreachable(
+        "Transforms only directly inside captures")
 
     case .characterPredicate:
       throw Unsupported("character predicates")

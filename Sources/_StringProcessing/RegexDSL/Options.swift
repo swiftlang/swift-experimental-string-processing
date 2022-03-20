@@ -20,7 +20,9 @@ extension RegexComponent {
     let sequence = isCaseSensitive
       ? AST.MatchingOptionSequence(removing: [.init(.caseInsensitive, location: .fake)])
       : AST.MatchingOptionSequence(adding: [.init(.caseInsensitive, location: .fake)])
-    return Regex(node: .group(.changeMatchingOptions(sequence, isIsolated: false), regex.root))
+    return Regex(node: .nonCapturingGroup(
+      .changeMatchingOptions(sequence, isIsolated: false),
+      regex.root))
   }
 }
 

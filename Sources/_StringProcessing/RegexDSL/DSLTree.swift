@@ -23,18 +23,32 @@ struct DSLTree {
 
 extension DSLTree {
   indirect enum Node: _TreeNode {
-    /// ... | ... | ...
-    case alternation([Node])
+    /// Try to match each node in order
+    ///
+    ///     ... | ... | ...
+    case orderedChoice([Node])
 
-    /// ... ...
+    /// Match each node in sequence
+    ///
+    ///     ... ...
     case concatenation([Node])
 
-    /// (...)
-    case group(AST.Group.Kind, Node, ReferenceID? = nil)
-
-    /// (?(cond) true-branch | false-branch)
+    /// Capture the result of a subpattern
     ///
-    /// TODO: Consider splitting off grouped conditions, or have our own kind
+    ///     (...), (?<name>...)
+    case capture(
+      name: String? = nil, reference: ReferenceID? = nil, Node)
+
+    /// Match a (non-capturing) subpattern / group
+    case nonCapturingGroup(AST.Group.Kind, Node)
+
+    // TODO: Consider splitting off grouped conditions, or have
+    // our own kind
+
+    /// Match a choice of two nodes based on a condition
+    ///
+    ///     (?(cond) true-branch | false-branch)
+    ///
     case conditional(
       AST.Conditional.Condition.Kind, Node, Node)
 
@@ -74,15 +88,8 @@ extension DSLTree {
 
     // MARK: - Extensibility points
 
-    /// A capturing group (TODO: is it?) with a transformation function
-    ///
-    /// TODO: Consider as a validator or constructor nested in a
-    /// group, or split capturing off of group.
-    case groupTransform(
-      AST.Group.Kind,
-      Node,
-      CaptureTransform,
-      ReferenceID? = nil)
+    /// Transform a range into a value, most often used inside captures
+    case transform(CaptureTransform, Node)
 
     case consumer(_ConsumerInterface)
 
@@ -157,16 +164,17 @@ extension DSLTree.Node {
   var children: [DSLTree.Node]? {
     switch self {
       
-    case let .alternation(v):   return v
+    case let .orderedChoice(v):   return v
     case let .concatenation(v): return v
 
     case let .convertedRegexLiteral(n, _):
       // Treat this transparently
       return n.children
 
-    case let .group(_, n, _):             return [n]
-    case let .groupTransform(_, n, _, _): return [n]
-    case let .quantification(_, _, n): return [n]
+    case let .capture(_, _, n):           return [n]
+    case let .nonCapturingGroup(_, n):    return [n]
+    case let .transform(_, n):            return [n]
+    case let .quantification(_, _, n):    return [n]
 
     case let .conditional(_, t, f): return [t,f]
 
@@ -226,18 +234,17 @@ extension DSLTree {
 extension DSLTree.Node {
   var hasCapture: Bool {
     switch self {
-    case let .group(k, _, _) where k.isCapturing,
-         let .groupTransform(k, _, _, _) where k.isCapturing:
+    case .capture:
       return true
+    case let .regexLiteral(re):
+      return re.hasCapture
     case let .convertedRegexLiteral(n, re):
       assert(n.hasCapture == re.hasCapture)
       return n.hasCapture
-    case let .regexLiteral(re):
-      return re.hasCapture
+
     default:
-      break
+      return self.children?.any(\.hasCapture) ?? false
     }
-    return self.children?.any(\.hasCapture) ?? false
   }
 }
 
@@ -253,22 +260,22 @@ extension DSLTree.Node {
     _ constructor: inout CaptureStructure.Constructor
   ) -> CaptureStructure {
     switch self {
-    case let .alternation(children):
+    case let .orderedChoice(children):
       return constructor.alternating(children)
 
     case let .concatenation(children):
       return constructor.concatenating(children)
 
-    case let .group(kind, child, _):
-      if let type = child.matcherCaptureType {
-        return constructor.grouping(
-          child, as: kind, withType: type)
+    case let .capture(name, _, child):
+      if let type = child.valueCaptureType {
+        return constructor.capturing(
+          name: name, child, withType: type)
       }
-      return constructor.grouping(child, as: kind)
+      return constructor.capturing(name: name, child)
 
-    case let .groupTransform(kind, child, transform, _):
-      return constructor.grouping(
-        child, as: kind, withTransform: transform)
+    case let .nonCapturingGroup(kind, child):
+      assert(!kind.isCapturing)
+      return constructor.grouping(child, as: kind)
 
     case let .conditional(cond, trueBranch, falseBranch):
       return constructor.condition(
@@ -294,17 +301,22 @@ extension DSLTree.Node {
     case .matcher:
       return .empty
 
+    case .transform(_, let child):
+      return child._captureStructure(&constructor)
+
     case .customCharacterClass, .atom, .trivia, .empty,
         .quotedLiteral, .consumer, .characterPredicate:
       return .empty
     }
   }
 
-  // TODO: Unify with group transform
-  var matcherCaptureType: AnyType? {
+  /// For typed capture-producing nodes, the type produced.
+  var valueCaptureType: AnyType? {
     switch self {
     case let .matcher(t, _):
       return t
+    case let .transform(t, _):
+      return AnyType(t.resultType)
     default: return nil
     }
   }
@@ -319,10 +331,10 @@ extension DSLTree.Node {
   }
 
   func appendingAlternationCase(_ newNode: DSLTree.Node) -> DSLTree.Node {
-    if case .alternation(let components) = self {
-      return .alternation(components + [newNode])
+    if case .orderedChoice(let components) = self {
+      return .orderedChoice(components + [newNode])
     }
-    return .alternation([self, newNode])
+    return .orderedChoice([self, newNode])
   }
 }
 
