@@ -1489,8 +1489,17 @@ extension Source {
         return try .scalar(
           src.expectUnicodeScalar(escapedCharacter: char).value)
       default:
-        return .char(char)
+        break
       }
+
+      // We only allow unknown escape sequences for non-letter ASCII, and
+      // non-ASCII whitespace.
+      guard (char.isASCII && !char.isLetter) ||
+              (!char.isASCII && char.isWhitespace)
+      else {
+        throw ParseError.invalidEscape(char)
+      }
+      return .char(char)
     }
   }
 

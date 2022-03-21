@@ -39,6 +39,7 @@ enum ParseError: Error, Hashable {
 
   case expectedNonEmptyContents
   case expectedEscape
+  case invalidEscape(Character)
 
   case cannotReferToWholePattern
 
@@ -107,6 +108,8 @@ extension ParseError: CustomStringConvertible {
       return "expected non-empty contents"
     case .expectedEscape:
       return "expected escape sequence"
+    case .invalidEscape(let c):
+      return "invalid escape sequence '\\\(c)'"
     case .cannotReferToWholePattern:
       return "cannot refer to whole pattern here"
     case .notQuantifiable:
