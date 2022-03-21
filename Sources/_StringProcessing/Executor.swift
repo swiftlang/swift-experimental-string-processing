@@ -44,7 +44,7 @@ struct Executor {
     // specially compiling) whole-match values.
     let value: Any?
     if Output.self != Substring.self,
-       Output.self != (Substring, DynamicCaptures).self,
+       Output.self != AnyRegexOutput.self,
        caps.isEmpty
     {
       value = cpu.registers.values.first
@@ -65,7 +65,7 @@ struct Executor {
     _ input: String,
     in inputRange: Range<String.Index>,
     _ mode: MatchMode
-  ) throws -> Regex<(Substring, DynamicCaptures)>.Match? {
+  ) throws -> Regex<AnyRegexOutput>.Match? {
     try match(input, in: inputRange, mode)
   }
 }

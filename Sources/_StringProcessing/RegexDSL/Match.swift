@@ -23,11 +23,14 @@ extension Regex {
 
 extension Regex.Match {
   public var output: Output {
-    if Output.self == (Substring, DynamicCaptures).self {
-      // FIXME(rdar://89449323): Compiler assertion
-      let input = input
-      let dynCaps = rawCaptures.map { StoredDynamicCapture($0, in: input) }
-      return (input[range], dynCaps) as! Output
+    if Output.self == AnyRegexOutput.self {
+      let wholeMatchAsCapture = StructuredCapture(
+        optionalCount: 0,
+        storedCapture: StoredCapture(range: range, value: nil))
+      let output = AnyRegexOutput(
+        input: input,
+        elements: [wholeMatchAsCapture] + rawCaptures)
+      return output as! Output
     } else if Output.self == Substring.self {
       // FIXME: Plumb whole match (`.0`) through the matching engine.
       return input[range] as! Output
@@ -40,7 +43,7 @@ extension Regex.Match {
       guard value == nil else {
         fatalError("FIXME: what would this mean?")
       }
-      let typeErasedMatch = rawCaptures.existentialMatch(from: input[range])
+      let typeErasedMatch = rawCaptures.existentialOutput(from: input[range])
       return typeErasedMatch as! Output
     }
   }
@@ -62,7 +65,7 @@ extension Regex.Match {
       preconditionFailure(
         "Reference did not capture any match in the regex")
     }
-    return rawCaptures[offset].existentialMatchComponent(from: input[...])
+    return rawCaptures[offset].existentialOutputComponent(from: input[...])
       as! Capture
   }
 }
