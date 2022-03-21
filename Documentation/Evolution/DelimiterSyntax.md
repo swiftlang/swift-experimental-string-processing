@@ -25,7 +25,7 @@ The use of a two letter prefix allows for easy future extensibility of such lite
 
 There are a few items of regex grammar that use the single quote character as a metacharacter. These include named group definitions and references such as `(?'name')`, `(?('name'))`, `\g'name'`, `\k'name'`, as well as callout syntax `(?C'arg')`. The use of a single quote conflicts with the `re'...'` delimiter as it will be considered the end of the literal. Fortunately, alternative syntax exists for all of these constructs, e.g `(?<name>)`, `\k<name>`, and `(?C"arg")`.
 
-As such, the single quote variants of the syntax will be considered invalid in a `re'...'` literal, and users must use the alternative syntax. If a raw variant of the syntax `re#'...'#` of the syntax is later added, that may also be used. In order to improve diagnostic behavior, the compiler will attempt to scan ahead when encountering the ending sequences `(?`, `(?(`, `\g`, `\k` and `(?C`. This will enable a more accurate error to be emitted that suggests the alternative syntax.
+As such, the single quote variants of the syntax will be considered invalid in a `re'...'` literal, and users must use the alternative syntax instead. If a raw variant of the syntax `re#'...'#` of the syntax is later added, that may also be used. In order to improve diagnostic behavior, the compiler will attempt to scan ahead when encountering the ending sequences `(?`, `(?(`, `\g`, `\k` and `(?C`. This will enable a more accurate error to be emitted that suggests the alternative syntax.
 
 ## Future Directions
 
@@ -35,7 +35,7 @@ The `re'...'` syntax could be naturally extended to supporting "raw text" throug
 
 In particular:
 
-- `\` and `'` characters would become literal, e.g `re#''\n''#` expresses a regular expression pattern that literally matches against the characters `'\n'` (including the quotes).
+- `\` and `'` characters would become literal, e.g `re#''\n''#` expresses a regular expression pattern that literally matches against the characters `'\n'` (including the quotes). **TODO: Do we really want to treat backslash as literal? Seems consistent, but escape sequences are frequently used in regex.**
 - Any number of `#` characters may surround the literal.
 - Escape sequences would require the same number of `#` characters as in the delimiter to be treated specially. For example, `re##'\##n'##` would be required for a newline character sequence.
 
@@ -70,17 +70,17 @@ Forward slashes are a regex term of art, and are used as the delimiters for rege
 
 The obvious parsing ambiguity with `/.../` delimiters is with comment syntaxes.
 
-- An empty regex literal would conflict with line comment syntax `//`. But this isn't a particularly useful thing to express, and could be disallowed.
+- An empty regex literal would conflict with line comment syntax `//`. But this isn't a particularly useful thing to express, and can therefore be disallowed without significant impact.
 
 - The obvious choice for a multi-line regular expression literal would be to use `///` delimiters, in accordance with the precedent set by multi-line string literals `"""`. A different multi-line delimiter would be needed, with no obvious choice.
 
-- There is also a conflict with block comment syntax, when surrounding a regex literal ending with `*`, for example:
+- There is a conflict with block comment syntax, when surrounding a regex literal ending with `*`, for example:
 
-```swift
-/*
-let regex = /x*/
-*/
-```
+  ```swift
+  /*
+  let regex = /x*/
+  */
+  ```
 
    In this case, the block comment would prematurely end on the second line, rather than extending all the way to the third line as the user would expect. This is already an issue today with `*/` in a string literal, however it is much more likely to occur in a regular expression given the prevalence of the `*` quantifier.
 
@@ -90,7 +90,11 @@ let regex = /x*/
 
 #### Regex limitations
 
-Another ambiguity with `/.../` arises when it is used to start a new line. This is particularly problematic for result builders, where we expect it to be frequently used, for example:
+In order to help avoid parsing ambiguities, a regex literal will not be parsed if it starts with a space, tab, or `)` character. Though the latter is already invalid regex syntax.
+
+<details><summary>Rationale</summary>
+
+This is due to 2 main ambiguities. The first of which arises when a `/.../` regex literal is used to start a new line. This is particularly problematic for result builders, where we expect it to be frequently used, for example:
 
 ```swift
 Builder {
@@ -100,7 +104,7 @@ Builder {
 }
 ```
 
-This is parsed as a single operator chain, however it is likely the user is expecting a regex literal. To resolve this ambiguity, a regex literal may not start with a space or tab character. This takes advantage of the fact that infix operators require consistent spacing.
+This is parsed as a single operator chain, however it is likely the user is expecting a regex literal. To resolve this ambiguity, a regex literal may not start with a space or tab character. This takes advantage of the fact that infix operators require consistent spacing on either side.
 
 If a space or tab is needed as the first character, it must be escaped, e.g:
 
@@ -112,7 +116,27 @@ Builder {
 }
 ```
 
-**TODO: Regex starting with `)`**
+The second ambiguity arises with Swift's ability to pass an unapplied operator reference as an argument to a function, for example:
+
+```swift
+let arr: [Double] = [2, 3, 4]
+let x = arr.reduce(1, /) / 5
+```
+
+The `/` in the call to `reduce` is in a valid expression context, and as such could be passed as a regular expression literal. To help mitigate this ambiguity, a regex literal will not be parsed if the first character is `)`. Note this would not be valid regex syntax anyway.
+
+This is also applicable to unapplied operator references in parentheses and tuples.
+
+It should be noted that this only mitigates the issue, as another ambiguity arises if the next character is a comma:
+
+```swift
+func foo(_ x: (Int, Int) -> Int, _ y: (Int, Int) -> Int) {}
+foo(/, /)
+```
+
+However we feel that starting a regex with a comma is likely to be a common case, and as such we intend to change the parser such that the above becomes a regex literal.
+
+</details>
 
 #### Language changes required
 
@@ -160,6 +184,8 @@ foo(/, /)
 ##### Comma as the starting character of a regex literal
 
 **TODO: Or do we want to ban it as the starting character?**
+
+</details>
 
 #### Editor Considerations
 
