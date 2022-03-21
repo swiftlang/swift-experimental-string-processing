@@ -90,11 +90,11 @@ The obvious parsing ambiguity with `/.../` delimiters is with comment syntaxes.
 
 #### Regex limitations
 
-In order to help avoid parsing ambiguities, a regex literal will not be parsed if it starts with a space, tab, or `)` character. Though the latter is already invalid regex syntax.
+In order to help avoid further parsing ambiguities, a regex literal will not be parsed if it starts with a space, tab, or `)` character. Though the latter is already invalid regex syntax.
 
 <details><summary>Rationale</summary>
 
-This is due to 2 main ambiguities. The first of which arises when a `/.../` regex literal is used to start a new line. This is particularly problematic for result builders, where we expect it to be frequently used, for example:
+This is due to 2 main ambiguities. The first of which arises when a `/.../` regex literal starts a new line. This is particularly problematic for result builders, where we expect it to be frequently used, for example:
 
 ```swift
 Builder {
@@ -116,16 +116,14 @@ Builder {
 }
 ```
 
-The second ambiguity arises with Swift's ability to pass an unapplied operator reference as an argument to a function, for example:
+The second ambiguity arises with Swift's ability to pass an unapplied operator reference as an argument to a function for example:
 
 ```swift
 let arr: [Double] = [2, 3, 4]
 let x = arr.reduce(1, /) / 5
 ```
 
-The `/` in the call to `reduce` is in a valid expression context, and as such could be passed as a regular expression literal. To help mitigate this ambiguity, a regex literal will not be parsed if the first character is `)`. Note this would not be valid regex syntax anyway.
-
-This is also applicable to unapplied operator references in parentheses and tuples.
+The `/` in the call to `reduce` is in a valid expression context, and as such could be parsed as a regex literal. This is also applicable to operators in tuples and parentheses. To help mitigate this ambiguity, a regex literal will not be parsed if the first character is `)`. This should have minimal impact, as this would not be valid regex syntax anyway.
 
 It should be noted that this only mitigates the issue, as another ambiguity arises if the next character is a comma:
 
@@ -143,7 +141,7 @@ However we feel that starting a regex with a comma is likely to be a common case
 In addition to ambiguities listed above, there are also some parsing ambiguities that would require the following language changes:
 
 - Deprecation of prefix operators containing the `/` character.
-- Potentially parsing `/,` as the start of a regex literal rather than an unapplied operator in an argument list e.g `fn(/, 5) + fn(/, 3)`.
+- Potentially parsing `/,` as the start of a regex literal rather than an unapplied operator in an argument list. For example, `fn(/, /)` becomes a regex literal rather than 2 unapplied operator arguments. **TODO: Or do we want to ban it as the starting character? Seems like a common regex case**
 
 <details><summary>Rationale</summary>
   
@@ -167,23 +165,32 @@ let x = !/y / .foo()
 ```
     
 Otherwise it would be interpreted as the prefix operator `!/` by default, and require parens `!(/y /)` for regex parsing.
+    
+##### Comma as the starting character of a regex literal
 
+As stated previously, there is a parsing ambiguity with unapplied operators in argument lists, tuples, and parentheses. Some of these cases can be mitigated by not parsing a regex literal if the starting character is `)`. However it does not solve the issue when the next character is `,`, i.e `/` is used in an argument list before another argument.
 
-
-**TODO: More cases from slack discussion **
+For example:
 
 ```swift
 func foo(_ x: (Int, Int) -> Int, _ y: (Int, Int) -> Int) {}
 foo(/, /)
 ```
 
+This is currently parsed as 2 unapplied operator arguments. However, given the fact that a regex starting with a comma is not an uncommon case, this will become a regex literal.
+
+The above case seems uncommon, however note this may also occur when the closing `/` appears outside of the argument list, e.g:
+
+```swift
+foo(/, 2) + foo(/, 3)
+```
+
+This would also become a regex literal, i.e it would be parsed as the argument `/, 2) + foo(/`.
+
+**TODO: More cases from slack discussion **
+
 `foo(/, "(") / 2` !!!
 
-
-    
-##### Comma as the starting character of a regex literal
-
-**TODO: Or do we want to ban it as the starting character?**
 
 </details>
 
