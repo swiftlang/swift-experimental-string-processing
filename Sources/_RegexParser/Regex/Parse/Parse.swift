@@ -425,6 +425,12 @@ extension Parser {
     try source.expectNonEmpty()
 
     var members: Array<Member> = []
+
+    // We can eat an initial ']', as PCRE, Oniguruma, and ICU forbid empty
+    // character classes, and assume an initial ']' is literal.
+    if let loc = source.tryEatWithLoc("]") {
+      members.append(.atom(.init(.char("]"), loc)))
+    }
     try parseCCCMembers(into: &members)
 
     // If we have a binary set operator, parse it and the next members. Note

@@ -428,6 +428,10 @@ extension RegexTests {
 
     parseTest("[-]", charClass("-"))
 
+    // Empty character classes are forbidden, therefore this is a character
+    // class of literal ']'.
+    parseTest("[]]", charClass("]"))
+
     // These are metacharacters in certain contexts, but normal characters
     // otherwise.
     parseTest(
@@ -1900,6 +1904,10 @@ extension RegexTests {
     diagnosticTest("(?<a--", .identifierMustBeAlphaNumeric(.groupName))
     diagnosticTest("(?<a-b", .expected(">"))
     diagnosticTest("(?<a-b>", .expected(")"))
+
+    // The first ']' of a custom character class is literal, so this is missing
+    // the closing bracket.
+    diagnosticTest("[]", .expected("]"))
 
     // MARK: Bad escapes
 
