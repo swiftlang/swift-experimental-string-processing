@@ -21,7 +21,7 @@ let regex = re'([[:alpha:]]\w*) = ([0-9A-F]+)'
 
 The use of a two letter prefix allows for easy future extensibility of such literals, by allowing different prefixes to indicate different types of literal. **TODO: examples**
 
-### Regex limitations
+### Regex syntax limitations
 
 There are a few items of regex grammar that use the single quote character as a metacharacter. These include named group definitions and references such as `(?'name')`, `(?('name'))`, `\g'name'`, `\k'name'`, as well as callout syntax `(?C'arg')`. The use of a single quote conflicts with the `re'...'` delimiter as it will be considered the end of the literal. Fortunately, alternative syntax exists for all of these constructs, e.g `(?<name>)`, `\k<name>`, and `(?C"arg")`.
 
@@ -88,7 +88,7 @@ The obvious parsing ambiguity with `/.../` delimiters is with comment syntaxes.
 
 - Finally, there would be a minor ambiguity with infix operators used with regex literals. When used without whitespace, e.g `x+/y/`, the expression will be treated as using an infix operator `+/`. Whitespace is therefore required `x + /y/` for regex literal interpretation.
 
-#### Regex limitations
+#### Regex syntax limitations
 
 In order to help avoid further parsing ambiguities, a regex literal will not be parsed if it starts with a space, tab, or `)` character. Though the latter is already invalid regex syntax.
 
@@ -141,7 +141,7 @@ However we feel that starting a regex with a comma is likely to be a common case
 In addition to ambiguities listed above, there are also some parsing ambiguities that would require the following language changes:
 
 - Deprecation of prefix operators containing the `/` character.
-- Potentially parsing `/,` as the start of a regex literal rather than an unapplied operator in an argument list. For example, `fn(/, /)` becomes a regex literal rather than 2 unapplied operator arguments. **TODO: Or do we want to ban it as the starting character? Seems like a common regex case**
+- Parsing `/,` as the start of a regex literal if a closing `/` is found, rather than an unapplied operator in an argument list. For example, `fn(/, /)` becomes a regex literal rather than 2 unapplied operator arguments. **TODO: Or do we want to ban it as the starting character? Seems like a common regex case**
 
 <details><summary>Rationale</summary>
   
@@ -185,12 +185,17 @@ The above case seems uncommon, however note this may also occur when the closing
 foo(/, 2) + foo(/, 3)
 ```
 
-This would also become a regex literal, i.e it would be parsed as the argument `/, 2) + foo(/`.
+This would also become a regex literal, i.e it would be parsed as the argument `/, 2) + foo(/`. If users wish to disambiguate, they will need to surround at least the opening `/` with parentheses, e.g:
+
+```swift
+foo((/), 2) + foo(/, 3)
+```
+
+This takes advantage of the fact that a regex literal will not be parsed if the first character is `)`.
 
 **TODO: More cases from slack discussion **
 
 `foo(/, "(") / 2` !!!
-
 
 </details>
 
