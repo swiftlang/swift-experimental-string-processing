@@ -166,7 +166,7 @@ foo(/, /)
 
 #### Editor Considerations
 
-Many source editors in use today do rather simplistic syntax coloring of programming languages. And there's a long history of complaints about syntax coloring of regular expressions in Perl, JavaScript and Ruby to be found on the internet. While the most popular editors do a very good job recognizing the most common incantations of a regular expression in each language, most still don't get it 100% right. There's just a lot of work involved in doing that. If parsing Swift regular expressions is as difficult as these other languages because of the choice of delimiter, it becomes a barrier to entry for support by those editors.
+As described above, there would be a lot involved in handling the parsing ambiguities with `/.../` delimiters. It's one thing to do this in the compiler. But the language also has to be understood by a plethora of source code editors. Those editors either need encode all those ambiguities, or they need to provide a "best effort" at handling the most common cases. It's all too common for editors to take the "best effort" route. There's a long history of complaints with editors that don't completely support a language's features. And indeed, there's plenty of history of editors that don't correctly support regular expression literals in other languages. By choosing a literal that is easily parsed, we should avoid seeing those complaints regarding Swift.
 
 ### Pound slash `#/.../#`
 
