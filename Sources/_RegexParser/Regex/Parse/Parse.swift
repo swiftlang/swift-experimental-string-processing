@@ -489,10 +489,11 @@ extension Parser {
       // Range between atoms.
       if let (dashLoc, rhs) =
           try source.lexCustomCharClassRangeEnd(context: context) {
-        guard atom.literalCharacterValue != nil &&
-              rhs.literalCharacterValue != nil else {
+        guard atom.isValidCharacterClassRangeBound &&
+              rhs.isValidCharacterClassRangeBound else {
           throw ParseError.invalidCharacterClassRangeOperand
         }
+        // TODO: Validate lower <= upper?
         members.append(.range(.init(atom, dashLoc, rhs)))
         continue
       }

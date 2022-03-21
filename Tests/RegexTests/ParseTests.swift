@@ -494,6 +494,25 @@ extension RegexTests {
     parseTest("[*]", charClass("*"))
     parseTest("[{0}]", charClass("{", "0", "}"))
 
+    parseTest(#"[\f-\e]"#, charClass(
+      range_m(.escaped(.formfeed), .escaped(.escape))))
+    parseTest(#"[\a-\b]"#, charClass(
+      range_m(.escaped(.alarm), .escaped(.backspace))))
+    parseTest(#"[\n-\r]"#, charClass(
+      range_m(.escaped(.newline), .escaped(.carriageReturn))))
+    parseTest(#"[\t-\t]"#, charClass(
+      range_m(.escaped(.tab), .escaped(.tab))))
+
+    parseTest(#"[\cX-\cY\C-A-\C-B\M-\C-A-\M-\C-B\M-A-\M-B]"#, charClass(
+      range_m(.keyboardControl("X"), .keyboardControl("Y")),
+      range_m(.keyboardControl("A"), .keyboardControl("B")),
+      range_m(.keyboardMetaControl("A"), .keyboardMetaControl("B")),
+      range_m(.keyboardMeta("A"), .keyboardMeta("B"))
+    ))
+
+    parseTest(#"[\N{DOLLAR SIGN}-\N{APOSTROPHE}]"#, charClass(
+      range_m(.namedCharacter("DOLLAR SIGN"), .namedCharacter("APOSTROPHE"))))
+
     // MARK: Operators
 
     parseTest(
@@ -574,6 +593,15 @@ extension RegexTests {
 
     // Escaped U+3000 IDEOGRAPHIC SPACE.
     parseTest(#"\\#u{3000}"#, "\u{3000}")
+
+    // Control and meta controls.
+    parseTest(#"\c "#, atom(.keyboardControl(" ")))
+    parseTest(#"\c!"#, atom(.keyboardControl("!")))
+    parseTest(#"\c~"#, atom(.keyboardControl("~")))
+    parseTest(#"\C--"#, atom(.keyboardControl("-")))
+    parseTest(#"\M-\C-a"#, atom(.keyboardMetaControl("a")))
+    parseTest(#"\M-\C--"#, atom(.keyboardMetaControl("-")))
+    parseTest(#"\M-a"#, atom(.keyboardMeta("a")))
 
     // MARK: Comments
 
@@ -1876,6 +1904,9 @@ extension RegexTests {
     // MARK: Bad escapes
 
     diagnosticTest("\\", .expectedEscape)
+
+    // TODO: Custom diagnostic for control sequence
+    diagnosticTest(#"\c"#, .unexpectedEndOfInput)
 
     // TODO: Custom diagnostic for expected backref
     diagnosticTest(#"\g"#, .invalidEscape("g"))

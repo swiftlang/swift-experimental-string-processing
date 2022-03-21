@@ -594,6 +594,35 @@ extension RegexTests {
 
     firstMatchTest("[[:script=Greek:]]", input: "123αβγxyz", match: "α")
 
+    func scalar(_ u: UnicodeScalar) -> UInt32 { u.value }
+
+    // Currently not supported in the matching engine.
+    for s in scalar("\u{C}") ... scalar("\u{1B}") {
+      let u = UnicodeScalar(s)!
+      firstMatchTest(#"[\f-\e]"#, input: "\u{B}\u{1C}\(u)", match: "\(u)",
+                     xfail: true)
+    }
+    for u: UnicodeScalar in ["\u{7}", "\u{8}"] {
+      firstMatchTest(#"[\a-\b]"#, input: "\u{6}\u{9}\(u)", match: "\(u)",
+                     xfail: true)
+    }
+    for s in scalar("\u{A}") ... scalar("\u{D}") {
+      let u = UnicodeScalar(s)!
+      firstMatchTest(#"[\n-\r]"#, input: "\u{9}\u{E}\(u)", match: "\(u)",
+                     xfail: true)
+    }
+    firstMatchTest(#"[\t-\t]"#, input: "\u{8}\u{A}\u{9}", match: "\u{9}",
+                   xfail: true)
+
+    for c: UnicodeScalar in ["a", "b", "c"] {
+      firstMatchTest(#"[\c!-\C-#]"#, input: "def\(c)", match: "\(c)",
+                     xfail: true)
+    }
+    for c: UnicodeScalar in ["$", "%", "&", "'"] {
+      firstMatchTest(#"[\N{DOLLAR SIGN}-\N{APOSTROPHE}]"#,
+                     input: "#()\(c)", match: "\(c)", xfail: true)
+    }
+
     // MARK: Operators
 
     firstMatchTest(
