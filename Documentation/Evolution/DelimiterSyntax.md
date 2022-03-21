@@ -185,6 +185,8 @@ The above case seems uncommon, however note this may also occur when the closing
 foo(/, 2) + foo(/, 3)
 ```
 
+**TODO: Do we want to talk about a heuristic that looks for unbalanced parens? I'm kind of hesitant to implement that, as it would have edge cases and might screw with regex errors that should be diagnosed as invalid regex, rather than some cryptic Swift syntactic error. Which would also make it harder to explain to users.**
+
 This would also become a regex literal, i.e it would be parsed as the argument `/, 2) + foo(/`. If users wish to disambiguate, they will need to surround at least the opening `/` with parentheses, e.g:
 
 ```swift
@@ -192,10 +194,6 @@ foo((/), 2) + foo(/, 3)
 ```
 
 This takes advantage of the fact that a regex literal will not be parsed if the first character is `)`.
-
-**TODO: More cases from slack discussion **
-
-`foo(/, "(") / 2` !!!
 
 </details>
 
