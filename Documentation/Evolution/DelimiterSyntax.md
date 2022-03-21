@@ -21,14 +21,11 @@ let regex = re'([[:alpha:]]\w*) = ([0-9A-F]+)'
 
 The use of a two letter prefix allows for easy future extensibility of such literals, by allowing different prefixes to indicate different types of literal. **TODO: examples**
 
-### Parsing ambiguities
+### Regex limitations
 
-The use of a single quote delimiter has a minor conflict with a couple of items of regex grammar, mainly around named groups. This includes `(?'name')`, `(?('name'))`, `\g'name'`, `\k'name'`, and `(?C'arg')`. Fortunately, alternative syntax exists for all of these constructs, e.g `(?<name>)`, `\k<name>`. However we still aim to parse the single quote variants of the syntax to achieve the syntactic superset of regex grammar.
+There are a few items of regex grammar that use the single quote character as a metacharacter. These include named group definitions and references such as `(?'name')`, `(?('name'))`, `\g'name'`, `\k'name'`, as well as callout syntax `(?C'arg')`. The use of a single quote conflicts with the `re'...'` delimiter as it will be considered the end of the literal. Fortunately, alternative syntax exists for all of these constructs, e.g `(?<name>)`, `\k<name>`, and `(?C"arg")`.
 
-To do this, a heuristic will be used when lexing a regex literal, and will check for the ending sequences `(?`, `(?(`, `\g`, `\k` and `(?C`. On encountering these, the lexer will attempt to scan ahead to the next `'` character, and then to the `'` that closes the literal. It should be noted that these are not valid regex endings, and as such this cannot break valid code.
-
-**TODO: Or do we want to insist on the user using raw `re#'...'#` syntax?**
-
+As such, the single quote variants of the syntax will be considered invalid in a `re'...'` literal, and users must use the alternative syntax. If a raw variant of the syntax `re#'...'#` of the syntax is later added, that may also be used. In order to improve diagnostic behavior, the compiler will attempt to scan ahead when encountering the ending sequences `(?`, `(?(`, `\g`, `\k` and `(?C`. This will enable a more accurate error to be emitted that suggests the alternative syntax.
 
 ## Future Directions
 
