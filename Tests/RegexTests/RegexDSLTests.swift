@@ -572,6 +572,12 @@ class RegexDSLTests: XCTestCase {
       XCTAssertTrue(output[1].substring == "A6F0")
       XCTAssertTrue(output[2].substring == "A6F1")
       XCTAssertTrue(output[3].substring == "Extend")
+      let typedOutput = try XCTUnwrap(output.as(
+        (Substring, Substring, Substring?, Substring).self))
+      XCTAssertEqual(typedOutput.0, line[...])
+      XCTAssertTrue(typedOutput.1 == "A6F0")
+      XCTAssertTrue(typedOutput.2 == "A6F1")
+      XCTAssertTrue(typedOutput.3 == "Extend")
     }
   }
 

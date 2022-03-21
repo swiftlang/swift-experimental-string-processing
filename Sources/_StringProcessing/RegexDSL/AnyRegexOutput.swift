@@ -56,6 +56,21 @@ extension AnyRegexOutput {
     fatalError("FIXME: Not implemented")
     // self.init(input: match.input, _elements: <elements of output tuple>)
   }
+
+  /// Returns a typed output by converting the underlying value to the specified
+  /// type.
+  /// - Parameter type: The expected output type.
+  /// - Returns: The output, if the underlying value can be converted to the
+  ///   output type, or nil otherwise.
+  public func `as`<Output>(_ type: Output.Type) -> Output? {
+    let elements = _elements.map {
+      StructuredCapture(
+        optionalCount: $0.optionalDepth,
+        storedCapture: .init(range: $0.bounds)
+      ).existentialOutputComponent(from: input[...])
+    }
+    return TypeConstruction.tuple(of: elements) as? Output
+  }
 }
 
 extension AnyRegexOutput {
