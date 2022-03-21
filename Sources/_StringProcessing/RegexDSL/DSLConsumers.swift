@@ -14,12 +14,12 @@ public protocol CustomRegexComponent: RegexComponent {
     _ input: String,
     startingAt index: String.Index,
     in bounds: Range<String.Index>
-  ) -> (upperBound: String.Index, match: Match)?
+  ) -> (upperBound: String.Index, output: Output)?
 }
 
 extension CustomRegexComponent {
-  public var regex: Regex<Match> {
-    Regex(node: .matcher(.init(Match.self), { input, index, bounds in
+  public var regex: Regex<Output> {
+    Regex(node: .matcher(.init(Output.self), { input, index, bounds in
       match(input, startingAt: index, in: bounds)
     }))
   }

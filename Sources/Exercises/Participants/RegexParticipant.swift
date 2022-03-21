@@ -61,8 +61,8 @@ private func extractFromCaptures(
 private func graphemeBreakPropertyData<RP: RegexComponent>(
   forLine line: String,
   using regex: RP
-) -> GraphemeBreakEntry? where RP.Match == (Substring, Substring, Substring?, Substring) {
-  line.match(regex).map(\.match).flatMap(extractFromCaptures)
+) -> GraphemeBreakEntry? where RP.Output == (Substring, Substring, Substring?, Substring) {
+  line.match(regex).map(\.output).flatMap(extractFromCaptures)
 }
 
 private func graphemeBreakPropertyDataLiteral(
@@ -91,7 +91,7 @@ private func graphemeBreakPropertyData(
     TryCapture(OneOrMore(.word)) { Unicode.GraphemeBreakProperty($0) }
     ZeroOrMore(.any)
   }.map {
-    let (_, lower, upper, property) = $0.match
+    let (_, lower, upper, property) = $0.output
     return GraphemeBreakEntry(lower...(upper ?? lower), property)
   }
 }

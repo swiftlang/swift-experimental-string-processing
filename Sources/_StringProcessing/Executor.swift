@@ -19,11 +19,11 @@ struct Executor {
     self.engine = Engine(program, enableTracing: enablesTracing)
   }
 
-  func match<Match>(
+  func match<Output>(
     _ input: String,
     in inputRange: Range<String.Index>,
     _ mode: MatchMode
-  ) throws -> MatchResult<Match>? {
+  ) throws -> Regex<Output>.Match? {
     var cpu = engine.makeProcessor(
       input: input, bounds: inputRange, matchMode: mode)
 
@@ -43,8 +43,8 @@ struct Executor {
     // FIXME: This is a workaround for not tracking (or
     // specially compiling) whole-match values.
     let value: Any?
-    if Match.self != Substring.self,
-       Match.self != (Substring, DynamicCaptures).self,
+    if Output.self != Substring.self,
+       Output.self != (Substring, DynamicCaptures).self,
        caps.isEmpty
     {
       value = cpu.registers.values.first
@@ -53,7 +53,7 @@ struct Executor {
       value = nil
     }
 
-    return MatchResult(
+    return .init(
       input: input,
       range: range,
       rawCaptures: caps,
@@ -65,7 +65,7 @@ struct Executor {
     _ input: String,
     in inputRange: Range<String.Index>,
     _ mode: MatchMode
-  ) throws -> MatchResult<(Substring, DynamicCaptures)>? {
+  ) throws -> Regex<(Substring, DynamicCaptures)>.Match? {
     try match(input, in: inputRange, mode)
   }
 }
