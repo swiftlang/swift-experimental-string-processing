@@ -11,7 +11,7 @@
 
 import _MatchingEngine
 
-extension Regex where Match == (Substring, DynamicCaptures) {
+extension Regex where Output == (Substring, DynamicCaptures) {
   public init(_ pattern: String) throws {
     self.init(ast: try parse(pattern, .traditional))
   }

@@ -14,7 +14,7 @@ import _MatchingEngine
 // A convenience protocol for builtin regex components that are initialized with
 // a `DSLTree` node.
 internal protocol _BuiltinRegexComponent: RegexComponent {
-  init(_ regex: Regex<Match>)
+  init(_ regex: Regex<Output>)
 }
 
 extension _BuiltinRegexComponent {
@@ -26,41 +26,41 @@ extension _BuiltinRegexComponent {
 // MARK: - Primitives
 
 extension String: RegexComponent {
-  public typealias Match = Substring
+  public typealias Output = Substring
 
-  public var regex: Regex<Match> {
+  public var regex: Regex<Output> {
     .init(node: .quotedLiteral(self))
   }
 }
 
 extension Substring: RegexComponent {
-  public typealias Match = Substring
+  public typealias Output = Substring
 
-  public var regex: Regex<Match> {
+  public var regex: Regex<Output> {
     .init(node: .quotedLiteral(String(self)))
   }
 }
 
 extension Character: RegexComponent {
-  public typealias Match = Substring
+  public typealias Output = Substring
 
-  public var regex: Regex<Match> {
+  public var regex: Regex<Output> {
     .init(node: .atom(.char(self)))
   }
 }
 
 extension UnicodeScalar: RegexComponent {
-  public typealias Match = Substring
+  public typealias Output = Substring
 
-  public var regex: Regex<Match> {
+  public var regex: Regex<Output> {
     .init(node: .atom(.scalar(self)))
   }
 }
 
 extension CharacterClass: RegexComponent {
-  public typealias Match = Substring
+  public typealias Output = Substring
 
-  public var regex: Regex<Match> {
+  public var regex: Regex<Output> {
     guard let ast = self.makeAST() else {
       fatalError("FIXME: extended AST?")
     }
@@ -79,7 +79,7 @@ extension CharacterClass: RegexComponent {
 // where R0.Match == (W0, C0...), R1.Match == (W1, C1...)
 // {
 //   typealias Match = (Substring, C0..., C1...)
-//   let regex: Regex<Match>
+//   let regex: Regex<Output>
 //   init(_ first: R0, _ second: R1) {
 //     regex = .init(concat(r0, r1))
 //   }
@@ -127,10 +127,10 @@ extension QuantificationBehavior {
   }
 }
 
-public struct OneOrMore<Match>: _BuiltinRegexComponent {
-  public var regex: Regex<Match>
+public struct OneOrMore<Output>: _BuiltinRegexComponent {
+  public var regex: Regex<Output>
 
-  internal init(_ regex: Regex<Match>) {
+  internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
 
@@ -138,10 +138,10 @@ public struct OneOrMore<Match>: _BuiltinRegexComponent {
   // Variadics.swift.
 }
 
-public struct ZeroOrMore<Match>: _BuiltinRegexComponent {
-  public var regex: Regex<Match>
+public struct ZeroOrMore<Output>: _BuiltinRegexComponent {
+  public var regex: Regex<Output>
 
-  internal init(_ regex: Regex<Match>) {
+  internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
 
@@ -149,10 +149,10 @@ public struct ZeroOrMore<Match>: _BuiltinRegexComponent {
   // Variadics.swift.
 }
 
-public struct Optionally<Match>: _BuiltinRegexComponent {
-  public var regex: Regex<Match>
+public struct Optionally<Output>: _BuiltinRegexComponent {
+  public var regex: Regex<Output>
 
-  internal init(_ regex: Regex<Match>) {
+  internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
 
@@ -160,10 +160,10 @@ public struct Optionally<Match>: _BuiltinRegexComponent {
   // Variadics.swift.
 }
 
-public struct Repeat<Match>: _BuiltinRegexComponent {
-  public var regex: Regex<Match>
+public struct Repeat<Output>: _BuiltinRegexComponent {
+  public var regex: Regex<Output>
 
-  internal init(_ regex: Regex<Match>) {
+  internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
 
@@ -194,7 +194,7 @@ public struct AlternationBuilder {
   @_disfavoredOverload
   public static func buildPartialBlock<R: RegexComponent>(
     first component: R
-  ) -> ChoiceOf<R.Match> {
+  ) -> ChoiceOf<R.Output> {
     .init(component.regex)
   }
 
@@ -211,10 +211,10 @@ public struct AlternationBuilder {
   }
 }
 
-public struct ChoiceOf<Match>: _BuiltinRegexComponent {
-  public var regex: Regex<Match>
+public struct ChoiceOf<Output>: _BuiltinRegexComponent {
+  public var regex: Regex<Output>
 
-  internal init(_ regex: Regex<Match>) {
+  internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
 
@@ -225,20 +225,20 @@ public struct ChoiceOf<Match>: _BuiltinRegexComponent {
 
 // MARK: - Capture
 
-public struct Capture<Match>: _BuiltinRegexComponent {
-  public var regex: Regex<Match>
+public struct Capture<Output>: _BuiltinRegexComponent {
+  public var regex: Regex<Output>
 
-  internal init(_ regex: Regex<Match>) {
+  internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
 
   // Note: Public initializers are currently gyb'd. See Variadics.swift.
 }
 
-public struct TryCapture<Match>: _BuiltinRegexComponent {
-  public var regex: Regex<Match>
+public struct TryCapture<Output>: _BuiltinRegexComponent {
+  public var regex: Regex<Output>
 
-  internal init(_ regex: Regex<Match>) {
+  internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
 

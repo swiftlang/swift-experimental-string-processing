@@ -109,13 +109,13 @@ extension Anchor {
 public func lookahead<R: RegexComponent>(
   negative: Bool = false,
   @RegexComponentBuilder _ content: () -> R
-) -> Regex<R.Match> {
+) -> Regex<R.Output> {
   Regex(node: .nonCapturingGroup(negative ? .negativeLookahead : .lookahead, content().regex.root))
 }
   
 public func lookahead<R: RegexComponent>(
   _ component: R,
   negative: Bool = false
-) -> Regex<R.Match> {
+) -> Regex<R.Output> {
   Regex(node: .nonCapturingGroup(negative ? .negativeLookahead : .lookahead, component.regex.root))
 }

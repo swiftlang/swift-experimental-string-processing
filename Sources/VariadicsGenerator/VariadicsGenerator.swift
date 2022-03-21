@@ -90,7 +90,7 @@ var standardError = StandardErrorStream()
 
 typealias Counter = Int64
 let regexComponentProtocolName = "RegexComponent"
-let matchAssociatedTypeName = "Match"
+let outputAssociatedTypeName = "Output"
 let patternProtocolRequirementName = "regex"
 let regexTypeName = "Regex"
 let baseMatchTypeName = "Substring"
@@ -202,7 +202,7 @@ struct VariadicsGenerator: ParsableCommand {
     // Emit concatenation type declaration.
 
     let whereClause: String = {
-      var result = " where R0.Match == "
+      var result = " where R0.\(outputAssociatedTypeName) == "
       if leftArity == 0 {
         result += "W0"
       } else {
@@ -210,7 +210,7 @@ struct VariadicsGenerator: ParsableCommand {
         result += (0..<leftArity).map { ", C\($0)" }.joined()
         result += ")"
       }
-      result += ", R1.Match == "
+      result += ", R1.\(outputAssociatedTypeName) == "
       if rightArity == 0 {
         result += "W1"
       } else {
@@ -267,7 +267,7 @@ struct VariadicsGenerator: ParsableCommand {
       }
       output(")")
     }
-    output("> where R0.\(matchAssociatedTypeName) == ")
+    output("> where R0.\(outputAssociatedTypeName) == ")
     if leftArity == 0 {
       output("W0")
     } else {
@@ -348,10 +348,10 @@ struct VariadicsGenerator: ParsableCommand {
       self.matchType = arity == 0
         ? baseMatchTypeName
         : "(\(baseMatchTypeName), \(quantifiedCaptures))"
-      self.whereClauseForInit = "where \(matchAssociatedTypeName) == \(matchType)" +
-        (arity == 0 ? "" : ", Component.Match == (W, \(capturesJoined))")
+      self.whereClauseForInit = "where \(outputAssociatedTypeName) == \(matchType)" +
+        (arity == 0 ? "" : ", Component.\(outputAssociatedTypeName) == (W, \(capturesJoined))")
       self.whereClause = arity == 0 ? "" :
-        "where Component.Match == (W, \(capturesJoined))"
+        "where Component.\(outputAssociatedTypeName) == (W, \(capturesJoined))"
     }
   }
 
@@ -468,10 +468,10 @@ struct VariadicsGenerator: ParsableCommand {
     let whereClause: String = {
       var result = "where R0: \(regexComponentProtocolName), R1: \(regexComponentProtocolName)"
       if leftArity > 0 {
-        result += ", R0.\(matchAssociatedTypeName) == (W0, \((0..<leftArity).map { "C\($0)" }.joined(separator: ", ")))"
+        result += ", R0.\(outputAssociatedTypeName) == (W0, \((0..<leftArity).map { "C\($0)" }.joined(separator: ", ")))"
       }
       if rightArity > 0 {
-        result += ", R1.\(matchAssociatedTypeName) == (W1, \((leftArity..<leftArity+rightArity).map { "C\($0)" }.joined(separator: ", ")))"
+        result += ", R1.\(outputAssociatedTypeName) == (W1, \((leftArity..<leftArity+rightArity).map { "C\($0)" }.joined(separator: ", ")))"
       }
       return result
     }()
@@ -516,7 +516,7 @@ struct VariadicsGenerator: ParsableCommand {
     }()
     let whereClause: String = """
       where R: \(regexComponentProtocolName), \
-      R.\(matchAssociatedTypeName) == (W, \(captures))
+      R.\(outputAssociatedTypeName) == (W, \(captures))
       """
     let resultCaptures = (0..<arity).map { "C\($0)?" }.joined(separator: ", ")
     output("""
@@ -544,8 +544,8 @@ struct VariadicsGenerator: ParsableCommand {
     }
     let rawNewMatchType = newMatchType(newCaptureType: "W")
     let transformedNewMatchType = newMatchType(newCaptureType: "NewCapture")
-    let whereClauseRaw = "where \(matchAssociatedTypeName) == \(rawNewMatchType), R.\(matchAssociatedTypeName) == \(matchType)"
-    let whereClauseTransformed = "where \(matchAssociatedTypeName) == \(transformedNewMatchType), R.\(matchAssociatedTypeName) == \(matchType)"
+    let whereClauseRaw = "where \(outputAssociatedTypeName) == \(rawNewMatchType), R.\(outputAssociatedTypeName) == \(matchType)"
+    let whereClauseTransformed = "where \(outputAssociatedTypeName) == \(transformedNewMatchType), R.\(outputAssociatedTypeName) == \(matchType)"
     output("""
       // MARK: - Non-builder capture arity \(arity)
 

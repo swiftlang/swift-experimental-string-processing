@@ -14,12 +14,12 @@ import _MatchingEngine
 
 /// A type that represents a regular expression.
 public protocol RegexComponent {
-  associatedtype Match
-  var regex: Regex<Match> { get }
+  associatedtype Output
+  var regex: Regex<Output> { get }
 }
 
 /// A regular expression.
-public struct Regex<Match>: RegexComponent {
+public struct Regex<Output>: RegexComponent {
   /// A program representation that caches any lowered representation for
   /// execution.
   internal class Program {
@@ -80,37 +80,37 @@ public struct Regex<Match>: RegexComponent {
 
   public init<Content: RegexComponent>(
     _ content: Content
-  ) where Content.Match == Match {
+  ) where Content.Output == Output {
     self = content.regex
   }
 
   public init<Content: RegexComponent>(
     @RegexComponentBuilder _ content: () -> Content
-  ) where Content.Match == Match {
+  ) where Content.Output == Output {
     self.init(content())
   }
 
-  public var regex: Regex<Match> {
+  public var regex: Regex<Output> {
     self
   }
 }
 
 
-public struct MockRegexLiteral<Match>: RegexComponent {
+public struct MockRegexLiteral<Output>: RegexComponent {
   public typealias MatchValue = Substring
-  public let regex: Regex<Match>
+  public let regex: Regex<Output>
 
   public init(
     _ string: String,
     _ syntax: SyntaxOptions = .traditional,
-    matching: Match.Type = Match.self
+    matching: Output.Type = Output.self
   ) throws {
     regex = Regex(ast: try parse(string, syntax))
   }
 }
 
-public func r<Match>(
-  _ s: String, matching matchType: Match.Type = Match.self
-) -> MockRegexLiteral<Match> {
+public func r<Output>(
+  _ s: String, matching matchType: Output.Type = Output.self
+) -> MockRegexLiteral<Output> {
   try! MockRegexLiteral(s, matching: matchType)
 }

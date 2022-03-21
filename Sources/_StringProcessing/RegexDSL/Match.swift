@@ -9,48 +9,52 @@
 //
 //===----------------------------------------------------------------------===//
 
-@dynamicMemberLookup
-public struct MatchResult<Match> {
-  let input: String
-  public let range: Range<String.Index>
-  let rawCaptures: [StructuredCapture]
-  let referencedCaptureOffsets: [ReferenceID: Int]
+extension Regex {
+  @dynamicMemberLookup
+  public struct Match {
+    let input: String
+    public let range: Range<String.Index>
+    let rawCaptures: [StructuredCapture]
+    let referencedCaptureOffsets: [ReferenceID: Int]
 
-  let value: Any?
+    let value: Any?
+  }
+}
 
-  public var match: Match {
-    if Match.self == (Substring, DynamicCaptures).self {
+extension Regex.Match {
+  public var output: Output {
+    if Output.self == (Substring, DynamicCaptures).self {
       // FIXME(rdar://89449323): Compiler assertion
       let input = input
       let dynCaps = rawCaptures.map { StoredDynamicCapture($0, in: input) }
-      return (input[range], dynCaps) as! Match
-    } else if Match.self == Substring.self {
+      return (input[range], dynCaps) as! Output
+    } else if Output.self == Substring.self {
       // FIXME: Plumb whole match (`.0`) through the matching engine.
-      return input[range] as! Match
+      return input[range] as! Output
     } else if rawCaptures.isEmpty, value != nil {
       // FIXME: This is a workaround for whole-match values not
       // being modeled as part of captures. We might want to
       // switch to a model where results are alongside captures
-      return value! as! Match
+      return value! as! Output
     } else {
       guard value == nil else {
         fatalError("FIXME: what would this mean?")
       }
       let typeErasedMatch = rawCaptures.existentialMatch(from: input[range])
-      return typeErasedMatch as! Match
+      return typeErasedMatch as! Output
     }
   }
 
-  public subscript<T>(dynamicMember keyPath: KeyPath<Match, T>) -> T {
-    match[keyPath: keyPath]
+  public subscript<T>(dynamicMember keyPath: KeyPath<Output, T>) -> T {
+    output[keyPath: keyPath]
   }
 
   // Allows `.0` when `Match` is not a tuple.
   @_disfavoredOverload
   public subscript(
-    dynamicMember keyPath: KeyPath<(Match, _doNotUse: ()), Match>
-  ) -> Match {
-    match
+    dynamicMember keyPath: KeyPath<(Output, _doNotUse: ()), Output>
+  ) -> Output {
+    output
   }
 
   public subscript<Capture>(_ reference: Reference<Capture>) -> Capture {
@@ -64,11 +68,11 @@ public struct MatchResult<Match> {
 }
 
 extension RegexComponent {
-  public func match(in input: String) -> MatchResult<Match>? {
+  public func match(in input: String) -> Regex<Output>.Match? {
     _match(
       input, in: input.startIndex..<input.endIndex)
   }
-  public func match(in input: Substring) -> MatchResult<Match>? {
+  public func match(in input: Substring) -> Regex<Output>.Match? {
     _match(
       input.base, in: input.startIndex..<input.endIndex)
   }
@@ -77,7 +81,7 @@ extension RegexComponent {
     _ input: String,
     in inputRange: Range<String.Index>,
     mode: MatchMode = .wholeString
-  ) -> MatchResult<Match>? {
+  ) -> Regex<Output>.Match? {
     let executor = Executor(program: regex.program.loweredProgram)
     do {
       return try executor.match(input, in: inputRange, mode)
@@ -88,24 +92,24 @@ extension RegexComponent {
 }
 
 extension String {
-  public func match<R: RegexComponent>(_ regex: R) -> MatchResult<R.Match>? {
+  public func match<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
     regex.match(in: self)
   }
 
   public func match<R: RegexComponent>(
     @RegexComponentBuilder _ content: () -> R
-  ) -> MatchResult<R.Match>? {
+  ) -> Regex<R.Output>.Match? {
     match(content())
   }
 }
 extension Substring {
-  public func match<R: RegexComponent>(_ regex: R) -> MatchResult<R.Match>? {
+  public func match<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
     regex.match(in: self)
   }
 
   public func match<R: RegexComponent>(
     @RegexComponentBuilder _ content: () -> R
-  ) -> MatchResult<R.Match>? {
+  ) -> Regex<R.Output>.Match? {
     match(content())
   }
 }
