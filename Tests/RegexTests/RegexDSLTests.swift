@@ -12,12 +12,6 @@
 import XCTest
 @testable import _StringProcessing
 
-func dynCap(
-  _ s: String, optional: Bool = false
-) -> StoredDynamicCapture {
-  StoredDynamicCapture(s[...], optionalCount: optional ? 1 : 0)
-}
-
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
     _ tests: (input: String, expectedCaptures: MatchType?)...,
@@ -559,25 +553,25 @@ class RegexDSLTests: XCTestCase {
     do {
       let regex = try Regex("aabcc.")
       let line = "aabccd"
-      let captures = try XCTUnwrap(line.match(regex)?.1)
-      XCTAssertEqual(captures, [])
+      let match = try XCTUnwrap(line.match(regex))
+      XCTAssertEqual(match.0, line[...])
+      let output = match.output
+      XCTAssertEqual(output[0].substring, line[...])
     }
     do {
-
       let regex = try Regex(
         #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#)
       let line = """
         A6F0..A6F1    ; Extend # Mn   [2] BAMUM COMBINING MARK KOQNDON..BAMUM \
         COMBINING MARK TUKWENTIS
         """
-      let captures = try XCTUnwrap(line.match(regex)?.1)
-      XCTAssertEqual(
-        captures,
-        [
-          dynCap("A6F0"),
-          dynCap("A6F1", optional: true),
-          dynCap("Extend"),
-        ])
+      let match = try XCTUnwrap(line.match(regex))
+      XCTAssertEqual(match.0, line[...])
+      let output = match.output
+      XCTAssertEqual(output[0].substring, line[...])
+      XCTAssertTrue(output[1].substring == "A6F0")
+      XCTAssertTrue(output[2].substring == "A6F1")
+      XCTAssertTrue(output[3].substring == "Extend")
     }
   }
 

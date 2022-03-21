@@ -33,7 +33,7 @@ struct StoredCapture {
 }
 
 // TODO: Where should this live? Inside TypeConstruction?
-func constructExistentialMatchComponent(
+func constructExistentialOutputComponent(
   from input: Substring,
   in range: Range<String.Index>?,
   value: Any?,
@@ -62,10 +62,10 @@ func constructExistentialMatchComponent(
 }
 
 extension StructuredCapture {
-  func existentialMatchComponent(
+  func existentialOutputComponent(
     from input: Substring
   ) -> Any {
-    constructExistentialMatchComponent(
+    constructExistentialOutputComponent(
       from: input,
       in: storedCapture?.range,
       value: storedCapture?.value,
@@ -81,13 +81,13 @@ extension StructuredCapture {
 extension Sequence where Element == StructuredCapture {
   // FIXME: This is a stop gap where we still slice the input
   // and traffic through existentials
-  func existentialMatch(
+  func existentialOutput(
     from input: Substring
   ) -> Any {
     var caps = Array<Any>()
     caps.append(input)
     caps.append(contentsOf: self.map {
-      $0.existentialMatchComponent(from: input)
+      $0.existentialOutputComponent(from: input)
     })
     return TypeConstruction.tuple(of: caps)
   }
