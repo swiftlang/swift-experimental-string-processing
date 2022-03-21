@@ -116,7 +116,7 @@ Builder {
 }
 ```
 
-The second ambiguity arises with Swift's ability to pass an unapplied operator reference as an argument to a function for example:
+The second ambiguity arises with Swift's ability to pass an unapplied operator reference as an argument to a function, for example:
 
 ```swift
 let arr: [Double] = [2, 3, 4]
