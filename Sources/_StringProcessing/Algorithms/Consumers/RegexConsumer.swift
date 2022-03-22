@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 public struct RegexConsumer<
-  R: RegexProtocol, Consumed: BidirectionalCollection
+  R: RegexComponent, Consumed: BidirectionalCollection
 > where Consumed.SubSequence == Substring {
   // TODO: Should `Regex` itself implement these protocols?
   let regex: R
@@ -28,7 +28,7 @@ extension RegexConsumer {
       consumed.base,
       in: range, mode: .partialFromFront
     ) else { return nil }
-    return (result.range.upperBound, result.match)
+    return (result.range.upperBound, result.output)
   }
 }
 
@@ -36,7 +36,7 @@ extension RegexConsumer {
 // well, taking advantage of the fact that the captures can be ignored
 
 extension RegexConsumer: MatchingCollectionConsumer {
-  public typealias Match = R.Match
+  public typealias Match = R.Output
   
   public func matchingConsuming(
     _ consumed: Consumed, in range: Range<Consumed.Index>

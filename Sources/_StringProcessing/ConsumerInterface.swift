@@ -36,13 +36,16 @@ extension DSLTree.Node {
     case let .convertedRegexLiteral(n, _):
       return try n.generateConsumer(opts)
 
-    case .alternation, .conditional, .concatenation, .group,
+    case .orderedChoice, .conditional, .concatenation,
+        .capture, .nonCapturingGroup,
         .quantification, .trivia, .empty,
-        .groupTransform, .absentFunction: return nil
+        .absentFunction: return nil
 
     case .consumer:
       fatalError("FIXME: Is this where we handle them?")
     case .matcher:
+      fatalError("FIXME: Is this where we handle them?")
+    case .transform:
       fatalError("FIXME: Is this where we handle them?")
     case .characterPredicate:
       fatalError("FIXME: Is this where we handle them?")

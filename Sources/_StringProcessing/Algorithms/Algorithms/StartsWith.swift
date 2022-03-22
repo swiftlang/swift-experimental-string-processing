@@ -48,11 +48,11 @@ extension BidirectionalCollection where Element: Equatable {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func starts<R: RegexProtocol>(with regex: R) -> Bool {
+  public func starts<R: RegexComponent>(with regex: R) -> Bool {
     starts(with: RegexConsumer(regex))
   }
   
-  public func ends<R: RegexProtocol>(with regex: R) -> Bool {
+  public func ends<R: RegexComponent>(with regex: R) -> Bool {
     ends(with: RegexConsumer(regex))
   }
 }

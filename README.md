@@ -8,7 +8,7 @@ See [Declarative String Processing Overview][decl-string]
 
 ## Requirements
 
-- [Swift Trunk Development Snapshot](https://www.swift.org/download/#snapshots) DEVELOPMENT-SNAPSHOT-2022-02-03 or later.
+- [Swift Trunk Development Snapshot](https://www.swift.org/download/#snapshots) DEVELOPMENT-SNAPSHOT-2022-03-09 or later.
 
 ## Integration with Swift
 
@@ -45,8 +45,9 @@ A pair of corresponding branches are expected to build successfully together and
 To integrate the latest changes in apple/swift-experimental-string-processing to apple/swift, carefully follow the workflow: 
 
 - Create pull requests.
-  - Create a pull request in apple/swift-experimental-string-processing from `main` to `swift/main`, e.g. "[Integration] main -> swift/main".
-  - If apple/swift needs to be modified to work with the latest `main` in apple/swift-experimental-string-processing, create a pull request in apple/swift.
+  - Create a branch from a commit on `main` that you would like to integrate into `swift/main`.
+  - Create a pull request in apple/swift-experimental-string-processing from that branch to `swift/main`, e.g. "[Integration] main (<commit>) -> swift/main".
+  - If apple/swift needs to be modified to work with the latest `main` in apple/swift-experimental-string-processing, create a pull request in apple/swift.  **Note:** Since CI in apple/swift-experimental-string-processing has not yet been set up to run full toolchain tests, you should create a PR in apple/swift regardless; if the integartion does not require changing apple/swift, create a dummy PR in apple/swift by changing the README and just not merge it in the end.
 - Trigger CI.
   - In the apple/swift-experimental-string-processing pull request, trigger CI using the following command (replacing `<PR NUMBER>` with the apple/swift pull request number, if any):
     ```

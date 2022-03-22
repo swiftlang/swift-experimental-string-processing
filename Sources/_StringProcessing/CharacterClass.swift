@@ -178,7 +178,7 @@ public struct CharacterClass: Hashable {
   }
 }
 
-extension RegexProtocol where Self == CharacterClass {
+extension RegexComponent where Self == CharacterClass {
   public static var any: CharacterClass {
     .init(cc: .any, matchLevel: .graphemeCluster)
   }

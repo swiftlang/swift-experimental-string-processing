@@ -55,16 +55,16 @@ enum SemanticsLevel {
 }
 
 /// Conformers can be ran as a regex / pattern
-protocol RegexProtocol {
+protocol RegexComponent {
   var level: SemanticsLevel? { get }
 }
 
 /// Provide the option to encode semantic level statically
 protocol RegexLiteralProtocol: ExpressibleByRegexLiteral {
-  associatedtype ScalarSemanticRegex: RegexProtocol
-  associatedtype GraphemeSemanticRegex: RegexProtocol
-  associatedtype POSIXSemanticRegex: RegexProtocol
-  associatedtype UnspecifiedSemanticRegex: RegexProtocol = RegexLiteral
+  associatedtype ScalarSemanticRegex: RegexComponent
+  associatedtype GraphemeSemanticRegex: RegexComponent
+  associatedtype POSIXSemanticRegex: RegexComponent
+  associatedtype UnspecifiedSemanticRegex: RegexComponent = RegexLiteral
 
   var scalarSemantic: ScalarSemanticRegex { get }
   var graphemeSemantic: GraphemeSemanticRegex { get }
@@ -84,16 +84,16 @@ struct StaticSemanticRegexLiteral: RegexLiteralProtocol {
    */
 
   /// A regex that has statically  bound its semantic level
-  struct ScalarSemanticRegex: RegexProtocol {
+  struct ScalarSemanticRegex: RegexComponent {
     var level: SemanticsLevel? { .scalar }
   }
-  struct GraphemeSemanticRegex: RegexProtocol {
+  struct GraphemeSemanticRegex: RegexComponent {
     var level: SemanticsLevel? { .graphemeCluster }
   }
-  struct POSIXSemanticRegex: RegexProtocol {
+  struct POSIXSemanticRegex: RegexComponent {
     var level: SemanticsLevel? { .posix }
   }
-  struct UnspecifiedSemanticRegex: RegexProtocol {
+  struct UnspecifiedSemanticRegex: RegexComponent {
     var level: SemanticsLevel? { nil }
   }
 
@@ -132,9 +132,9 @@ struct RegexLiteral: ExpressibleByRegexLiteral {
   }
 }
 
-extension RegexLiteral: RegexProtocol, RegexLiteralProtocol {
+extension RegexLiteral: RegexComponent, RegexLiteralProtocol {
   /// A regex that has finally bound its semantic level (dynamically)
-  struct BoundSemantic: RegexProtocol {
+  struct BoundSemantic: RegexComponent {
     var _level: SemanticsLevel // Bound semantic level
     var level: SemanticsLevel? { _level }
   }

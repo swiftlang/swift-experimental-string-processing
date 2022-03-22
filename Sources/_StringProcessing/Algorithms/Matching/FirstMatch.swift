@@ -38,13 +38,13 @@ extension BidirectionalCollection {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func firstMatch<R: RegexProtocol>(
+  public func firstMatch<R: RegexComponent>(
     of regex: R
   ) -> _MatchResult<RegexConsumer<R, Self>>? {
     firstMatch(of: RegexConsumer(regex))
   }
   
-  public func lastMatch<R: RegexProtocol>(
+  public func lastMatch<R: RegexComponent>(
     of regex: R
   ) -> _BackwardMatchResult<RegexConsumer<R, Self>>? {
     lastMatch(of: RegexConsumer(regex))

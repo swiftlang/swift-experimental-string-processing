@@ -184,13 +184,13 @@ extension BidirectionalCollection {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func matches<R: RegexProtocol>(
+  public func matches<R: RegexComponent>(
     of regex: R
   ) -> MatchesCollection<RegexConsumer<R, Self>> {
     matches(of: RegexConsumer(regex))
   }
   
-  public func matchesFromBack<R: RegexProtocol>(
+  public func matchesFromBack<R: RegexComponent>(
     of regex: R
   ) -> ReversedMatchesCollection<RegexConsumer<R, Self>> {
     matchesFromBack(of: RegexConsumer(regex))

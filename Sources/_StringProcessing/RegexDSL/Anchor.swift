@@ -27,7 +27,7 @@ public struct Anchor {
   var isInverted: Bool = false
 }
 
-extension Anchor: RegexProtocol {
+extension Anchor: RegexComponent {
   var astAssertion: AST.Atom.AssertionKind {
     if !isInverted {
       switch kind {
@@ -106,16 +106,16 @@ extension Anchor {
   }
 }
 
-public func lookahead<R: RegexProtocol>(
+public func lookahead<R: RegexComponent>(
   negative: Bool = false,
-  @RegexBuilder _ content: () -> R
-) -> Regex<R.Match> {
-  Regex(node: .group(negative ? .negativeLookahead : .lookahead, content().regex.root))
+  @RegexComponentBuilder _ content: () -> R
+) -> Regex<R.Output> {
+  Regex(node: .nonCapturingGroup(negative ? .negativeLookahead : .lookahead, content().regex.root))
 }
   
-public func lookahead<R: RegexProtocol>(
+public func lookahead<R: RegexComponent>(
   _ component: R,
   negative: Bool = false
-) -> Regex<R.Match> {
-  Regex(node: .group(negative ? .negativeLookahead : .lookahead, component.regex.root))
+) -> Regex<R.Output> {
+  Regex(node: .nonCapturingGroup(negative ? .negativeLookahead : .lookahead, component.regex.root))
 }

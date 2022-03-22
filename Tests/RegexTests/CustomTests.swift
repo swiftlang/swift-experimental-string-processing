@@ -3,7 +3,7 @@ import XCTest
 
 // A nibbler processes a single character from a string
 private protocol Nibbler: CustomRegexComponent {
-  func nibble(_: Character) -> Match?
+  func nibble(_: Character) -> Output?
 }
 
 extension Nibbler {
@@ -12,7 +12,7 @@ extension Nibbler {
     _ input: String,
     startingAt index: String.Index,
     in bounds: Range<String.Index>
-  ) -> (upperBound: String.Index, match: Match)? {
+  ) -> (upperBound: String.Index, output: Output)? {
     guard index != bounds.upperBound, let res = nibble(input[index]) else {
       return nil
     }
@@ -23,7 +23,7 @@ extension Nibbler {
 
 // A number nibbler
 private struct Numbler: Nibbler {
-  typealias Match = Int
+  typealias Output = Int
   func nibble(_ c: Character) -> Int? {
     c.wholeNumberValue
   }
@@ -31,7 +31,7 @@ private struct Numbler: Nibbler {
 
 // An ASCII value nibbler
 private struct Asciibbler: Nibbler {
-  typealias Match = UInt8
+  typealias Output = UInt8
   func nibble(_ c: Character) -> UInt8? {
     c.asciiValue
   }
@@ -50,7 +50,7 @@ func customTest<Match: Equatable>(
     let result: Match?
     switch call {
     case .match:
-      result = input.match(regex)?.match
+      result = input.match(regex)?.output
     case .firstMatch:
       result = input.firstMatch(of: regex)?.result
     }
@@ -76,7 +76,7 @@ extension RegexTests {
 
     customTest(
       Regex {
-        oneOrMore { Numbler() }
+        OneOrMore { Numbler() }
       },
       ("ab123c", .firstMatch, "123"),
       ("abc", .firstMatch, nil),
@@ -97,8 +97,8 @@ extension RegexTests {
     // `Equatable` which tuples cannot be.
 
     let regex3 = Regex {
-      capture {
-        oneOrMore {
+      Capture {
+        OneOrMore {
           Numbler()
         }
       }
@@ -114,8 +114,8 @@ extension RegexTests {
     XCTAssertEqual(res3.result.1, "123")
 
     let regex4 = Regex {
-      oneOrMore {
-        capture { Numbler() }
+      OneOrMore {
+        Capture { Numbler() }
       }
     }
 

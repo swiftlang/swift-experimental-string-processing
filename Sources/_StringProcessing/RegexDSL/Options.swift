@@ -11,8 +11,8 @@
 
 import _MatchingEngine
 
-extension RegexProtocol {
-  public func caseSensitive(_ isCaseSensitive: Bool) -> Regex<Match> {
+extension RegexComponent {
+  public func caseSensitive(_ isCaseSensitive: Bool) -> Regex<Output> {
     // The API is "case sensitive = true or false", so as to avoid the
     // double negatives inherent in setting "case insensitive" to a Boolean
     // value. The internal version of this option, on the other hand, is
@@ -20,7 +20,9 @@ extension RegexProtocol {
     let sequence = isCaseSensitive
       ? AST.MatchingOptionSequence(removing: [.init(.caseInsensitive, location: .fake)])
       : AST.MatchingOptionSequence(adding: [.init(.caseInsensitive, location: .fake)])
-    return Regex(node: .group(.changeMatchingOptions(sequence, isIsolated: false), regex.root))
+    return Regex(node: .nonCapturingGroup(
+      .changeMatchingOptions(sequence, isIsolated: false),
+      regex.root))
   }
 }
 
