@@ -112,7 +112,7 @@ Postfix `/` operators would be okay, as they'd only be treated as regex literal 
 
 #### Prefix operators containing `/`
     
-Prefix operators *containing* `/` (not just at the start) would likely need banning too, in order to allow prefix operators to be used with regex literals in an unambiguous way, e.g:
+Prefix operators *containing* `/` (not just at the start) need banning too, in order to allow prefix operators to be used with regex literals in an unambiguous way, e.g:
     
 ```swift
 let x = !/y / .foo()
