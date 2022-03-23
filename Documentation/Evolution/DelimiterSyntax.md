@@ -188,14 +188,14 @@ Additionally, introducing this syntax would introduce an inconsistency with raw 
 
 ### Prefixed quote `re'...'`
 
-**TODO: Do a pass over this to make sure it sounds correct now that it's an alternative**
-
 We could choose to use `re'...'` delimiters, for example:
 
 ```
 // Matches "<identifier> = <hexadecimal value>", extracting the identifier and hex number
 let regex = re'([[:alpha:]]\w*) = ([0-9A-F]+)'
 ```
+
+The use of two letter prefix could potentially be used as a namespace for future literal types. However, it is unusual for a Swift literal to be prefixed in this way.
 
 **TODO: Fill in reasons why not to pick this**
 
@@ -207,17 +207,53 @@ There are a few items of regex grammar that use the single quote character as a 
 
 As such, the single quote variants of the syntax would be considered invalid in a `re'...'` literal, and users must use the alternative syntax instead. If a raw variant of the syntax `re#'...'#` of the syntax is later added, that may also be used. In order to improve diagnostic behavior, the compiler would attempt to scan ahead when encountering the ending sequences `(?`, `(?(`, `\g`, `\k` and `(?C`. This would enable a more accurate error to be emitted that suggests the alternative syntax.
 
-**TODO: Do we actually want to include the below? They're less relevant if `re'...'` is itself the alternative**
+### Prefixed double quote `re"...."`
 
-### Double quoted `re"...."`
+This would be a double quoted version of `re'...'`, more similar to string literal syntax. This has the advantage that single quote regex syntax e.g `(?'name')` would continue to work without requiring the use of the alternative syntax or "raw syntax" delimiters. However it could be argued that regex literals are distinct from string literals in that they introduce their own specific language to parse. As such, regex literals are more like "program literals" than "data literals", and the use of single quote instead of double quote may be useful in expressing this difference.
 
-We could choose to use double quotes instead of single quotes. This would be similar in appearance to string literals, however it could be argued that regex literals are distinct from string literals in that they introduce their own specific language to parse. As such, regex literals are more like "program literals" than "data literals", and the use of single quote instead of double quote could express this difference.
+### Single letter prefixed quote `r'...'`
 
-### Single letter `r'...'`
+This would be a slightly shorter version of `re'...'`. While it's more concise, it could potentially be confused to mean "raw", especially as Python uses this syntax for raw strings.
 
-We could choose to shorten the literal prefix to just `r`. However this could potentially be confused to mean "raw", especially as Python uses this syntax for raw strings. The syntax `re'...'` could also set the precedent for a 2 letter namespace for future literals.
+#### Single quotes `'...'`
 
-**TODO: Add the other alternatives e.g `#regex(...)`**
+This would be an even more concise version of `re'...'` that drops the prefix entirely. However, given how close it is to string literal syntax, it may not be entirely clear to users that `'...'` denotes a regular expression as opposed to some different form of string literal (e.g some form of character literal, or a string literal with different escaping rules).
+
+We could help distinguish it from a string literal by requiring e.g `'/.../'`, though it may not be clear that the `/` characters are part of the delimiters rather than part of the literal. Additionally, this would potentially rule out the use of `'...'` as a future literal kind. 
+
+#### Magic literal `#regex(...)`
+
+We could opt for for a more explicitly spelled out literal syntax such as `#regex(...)`. This is an even more heavyweight option, similar to `#selector(...)`. As such, it may be considered syntactically noisy as e.g a function argument `str.match(#regex([abc]+))` vs `str.match(/[abc]+/)`.
+
+Such a syntax would require the containing regex to correctly balance capture group parentheses, otherwise the rest of the line might be incorrectly considered a regex. This could place additional cognitive burden on the user, and may lead to an awkward typing experience. For example, if the user is editing a previously written regex, the syntax highlighting for the rest of the line may change, and unhelpful spurious errors may be reported. With a different delimiter, the compiler would be able to detect and better diagnose unbalanced parentheses in the regex.
+
+We could avoid the parenthesis balancing issue by requiring an additional internal delimiter such as `#regex(/.../)`. However it is even more heavyweight, and it may be unclear that `/` is part of the delimiter rather than part of the literal. Alternatively, we could replace the internal delimiter with another character such as ```#regex`...` ```, `#regex{...}`, or `#regex/.../`. However those would be inconsistent with the existing `#literal(...)` syntax and the first two would overload the existing meanings for the ``` `` ``` and `{}` delimiters.
+
+It should also be noted that `#regex(...)` would introduce a syntactic inconsistency where the argument of a `#literal(...)` is no longer necessarily valid Swift syntax, despite being written in the form of an argument.
+
+#### Shortened magic literal `#(...)`
+
+We could reduce the visual weight of `#regex(...)` by only requiring `#(...)`. This would retain the same advantages e.g not requiring to escape `/`. However it would also still retain the same issues, such as still looking potentially visually noisy as an argument, and having suboptimal behavior for parenthesis balancing. It is also not clear why regex literals would deserve such privileged syntax.
+
+### Reusing string literal syntax
+
+Instead of supporting a first-class literal kind for regular expressions, we could instead allow users to write a regular expression in a string literal, and parse, diagnose, and generate the appropriate code when it's coerced to an `ExpressibleByRegexLiteral` conforming type.
+
+```swift
+let regex: Regex = "([[:alpha:]]\w*) = ([0-9A-F]+)"
+```
+
+However we decided against this because:
+
+- We would not be able to easily apply custom syntax highlighting for the regex syntax.
+- It would require an `ExpressibleByRegexLiteral` contextual type to be treated as a regex, otherwise it would be defaulted to `String`, which may be undesired.
+- In an overloaded context it may be ambiguous or unclear whether a string literal is meant to be interpreted as a literal string or regex.
+- Regex escape sequences aren't currently compatible with string literal escape sequence rules, e.g `\w` is currently illegal in a string literal.
+- It wouldn't be compatible with other string literal features such as interpolations.
+
+### No custom literal
+
+Instead of adding a custom regex literal, we could require users to explicitly write `Regex(compiling: "[abc]+")`. This would however lose all the benefits of parsing the literal at compile time, meaning that parse errors will instead be diagnosed at runtime, and no source tooling support (e.g syntax highlighting, refactoring actions) would be available. 
 
 [SE-0168]: https://github.com/apple/swift-evolution/blob/main/proposals/0168-multi-line-string-literals.md
 [SE-0200]: https://github.com/apple/swift-evolution/blob/main/proposals/0200-raw-string-escaping.md
