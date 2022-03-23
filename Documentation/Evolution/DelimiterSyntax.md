@@ -223,7 +223,7 @@ We could help distinguish it from a string literal by requiring e.g `'/.../'`, t
 
 ### Magic literal `#regex(...)`
 
-We could opt for for a more explicitly spelled out literal syntax such as `#regex(...)`. This is an even more heavyweight option, similar to `#selector(...)`. As such, it may be considered syntactically noisy as e.g a function argument `str.match(#regex([abc]+))` vs `str.match(/[abc]+/)`.
+We could opt for for a more explicitly spelled out literal syntax such as `#regex(...)`. This is a more heavyweight option, similar to `#selector(...)`. As such, it may be considered syntactically noisy as e.g a function argument `str.match(#regex([abc]+))` vs `str.match(/[abc]+/)`.
 
 Such a syntax would require the containing regex to correctly balance capture group parentheses, otherwise the rest of the line might be incorrectly considered a regex. This could place additional cognitive burden on the user, and may lead to an awkward typing experience. For example, if the user is editing a previously written regex, the syntax highlighting for the rest of the line may change, and unhelpful spurious errors may be reported. With a different delimiter, the compiler would be able to detect and better diagnose unbalanced parentheses in the regex.
 
@@ -233,14 +233,14 @@ It should also be noted that `#regex(...)` would introduce a syntactic inconsist
 
 ### Shortened magic literal `#(...)`
 
-We could reduce the visual weight of `#regex(...)` by only requiring `#(...)`. This would retain the same advantages e.g not requiring to escape `/`. However it would also still retain the same issues, such as still looking potentially visually noisy as an argument, and having suboptimal behavior for parenthesis balancing. It is also not clear why regex literals would deserve such privileged syntax.
+We could reduce the visual weight of `#regex(...)` by only requiring `#(...)`. However it would still retain the same issues, such as still looking potentially visually noisy as an argument, and having suboptimal behavior for parenthesis balancing. It is also not clear why regex literals would deserve such privileged syntax.
 
 ### Reusing string literal syntax
 
 Instead of supporting a first-class literal kind for regular expressions, we could instead allow users to write a regular expression in a string literal, and parse, diagnose, and generate the appropriate code when it's coerced to an `ExpressibleByRegexLiteral` conforming type.
 
 ```swift
-let regex: Regex = "([[:alpha:]]\w*) = ([0-9A-F]+)"
+let regex: Regex = #"([[:alpha:]]\w*) = ([0-9A-F]+)"#
 ```
 
 However we decided against this because:
@@ -248,7 +248,7 @@ However we decided against this because:
 - We would not be able to easily apply custom syntax highlighting for the regex syntax.
 - It would require an `ExpressibleByRegexLiteral` contextual type to be treated as a regex, otherwise it would be defaulted to `String`, which may be undesired.
 - In an overloaded context it may be ambiguous or unclear whether a string literal is meant to be interpreted as a literal string or regex.
-- Regex escape sequences aren't currently compatible with string literal escape sequence rules, e.g `\w` is currently illegal in a string literal.
+- Regex-specific escape sequences such as `\w` would likely require the use of raw string syntax `#"..."#`, as they are otherwise invalid in a string literal.
 - It wouldn't be compatible with other string literal features such as interpolations.
 
 ### No custom literal
