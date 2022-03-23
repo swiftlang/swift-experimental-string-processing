@@ -16,14 +16,14 @@
 
 A regular expression literal will be introduced using `/.../` delimiters, within which the compiler will parse a regular expression (the details of which are outlined in [the Regex Syntax pitch][internal-syntax]):
 
-```
+```swift
 // Matches "<identifier> = <hexadecimal value>", extracting the identifier and hex number
 let regex = /([[:alpha:]]\w*) = ([0-9A-F]+)/
 ```
 
-Forward slashes are a regex term of art, and are used as the delimiters for regex literals in Perl, JavaScript and Ruby (though Perl and Ruby also provide alternative choices). Due to its existing use in comment syntax and operators, there are some syntactic ambiguities to consider. While there are quite a few cases to consider, we do not feel that the impact of any individual case is particularly high.
+Forward slashes are a regex term of art, and are used as the delimiters for regex literals in Perl, JavaScript and Ruby (though Perl and Ruby also provide alternatives). Their ubiquity and familiarity makes them a compelling choice for Swift.
 
-**TODO: Do we want to present a stronger argument for `/.../`?**
+Due to the existing use of `/` in comment syntax and operators, there are some syntactic ambiguities to consider. While there are quite a few cases to consider, we do not feel that the impact of any individual case is sufficient to disqualify the syntax.
 
 **TODO: Anything else we want to say here before segueing into the massive list?**
 
@@ -182,7 +182,7 @@ Additionally, introducing this syntax would introduce an inconsistency with raw 
 
 ## Future Directions
 
-**TODO: What do we want to say here?**
+**TODO: What do we want to say here? Talk about raw and multiline? Don't really have a good option for the latter tho**
 
 ## Alternatives Considered
 
@@ -190,14 +190,14 @@ Additionally, introducing this syntax would introduce an inconsistency with raw 
 
 We could choose to use `re'...'` delimiters, for example:
 
-```
+```swift
 // Matches "<identifier> = <hexadecimal value>", extracting the identifier and hex number
 let regex = re'([[:alpha:]]\w*) = ([0-9A-F]+)'
 ```
 
 The use of two letter prefix could potentially be used as a namespace for future literal types. However, it is unusual for a Swift literal to be prefixed in this way.
 
-**TODO: Fill in reasons why not to pick this**
+**TODO: Any other reasons why not to pick this?**
 
 **TODO: Mention that it nicely extends to raw and multiline?**
 
@@ -225,7 +225,7 @@ We could help distinguish it from a string literal by requiring e.g `'/.../'`, t
 
 We could opt for for a more explicitly spelled out literal syntax such as `#regex(...)`. This is a more heavyweight option, similar to `#selector(...)`. As such, it may be considered syntactically noisy as e.g a function argument `str.match(#regex([abc]+))` vs `str.match(/[abc]+/)`.
 
-Such a syntax would require the containing regex to correctly balance capture group parentheses, otherwise the rest of the line might be incorrectly considered a regex. This could place additional cognitive burden on the user, and may lead to an awkward typing experience. For example, if the user is editing a previously written regex, the syntax highlighting for the rest of the line may change, and unhelpful spurious errors may be reported. With a different delimiter, the compiler would be able to detect and better diagnose unbalanced parentheses in the regex.
+Such a syntax would require the containing regex to correctly balance parentheses for groups, otherwise the rest of the line might be incorrectly considered a regex. This could place additional cognitive burden on the user, and may lead to an awkward typing experience. For example, if the user is editing a previously written regex, the syntax highlighting for the rest of the line may change, and unhelpful spurious errors may be reported. With a different delimiter, the compiler would be able to detect and better diagnose unbalanced parentheses in the regex.
 
 We could avoid the parenthesis balancing issue by requiring an additional internal delimiter such as `#regex(/.../)`. However it is even more heavyweight, and it may be unclear that `/` is part of the delimiter rather than part of the literal. Alternatively, we could replace the internal delimiter with another character such as ```#regex`...` ```, `#regex{...}`, or `#regex/.../`. However those would be inconsistent with the existing `#literal(...)` syntax and the first two would overload the existing meanings for the ``` `` ``` and `{}` delimiters.
 
