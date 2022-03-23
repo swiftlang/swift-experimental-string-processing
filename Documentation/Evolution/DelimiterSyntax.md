@@ -215,13 +215,13 @@ This would be a double quoted version of `re'...'`, more similar to string liter
 
 This would be a slightly shorter version of `re'...'`. While it's more concise, it could potentially be confused to mean "raw", especially as Python uses this syntax for raw strings.
 
-#### Single quotes `'...'`
+### Single quotes `'...'`
 
 This would be an even more concise version of `re'...'` that drops the prefix entirely. However, given how close it is to string literal syntax, it may not be entirely clear to users that `'...'` denotes a regular expression as opposed to some different form of string literal (e.g some form of character literal, or a string literal with different escaping rules).
 
 We could help distinguish it from a string literal by requiring e.g `'/.../'`, though it may not be clear that the `/` characters are part of the delimiters rather than part of the literal. Additionally, this would potentially rule out the use of `'...'` as a future literal kind. 
 
-#### Magic literal `#regex(...)`
+### Magic literal `#regex(...)`
 
 We could opt for for a more explicitly spelled out literal syntax such as `#regex(...)`. This is an even more heavyweight option, similar to `#selector(...)`. As such, it may be considered syntactically noisy as e.g a function argument `str.match(#regex([abc]+))` vs `str.match(/[abc]+/)`.
 
@@ -231,7 +231,7 @@ We could avoid the parenthesis balancing issue by requiring an additional intern
 
 It should also be noted that `#regex(...)` would introduce a syntactic inconsistency where the argument of a `#literal(...)` is no longer necessarily valid Swift syntax, despite being written in the form of an argument.
 
-#### Shortened magic literal `#(...)`
+### Shortened magic literal `#(...)`
 
 We could reduce the visual weight of `#regex(...)` by only requiring `#(...)`. This would retain the same advantages e.g not requiring to escape `/`. However it would also still retain the same issues, such as still looking potentially visually noisy as an argument, and having suboptimal behavior for parenthesis balancing. It is also not clear why regex literals would deserve such privileged syntax.
 
