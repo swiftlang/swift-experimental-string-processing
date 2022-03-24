@@ -36,6 +36,7 @@ public struct Regex<Output>: RegexComponent {
     init(ast: AST) {
       self.tree = ast.dslTree
     }
+
     init(tree: DSLTree) {
       self.tree = tree
     }
@@ -44,7 +45,8 @@ public struct Regex<Output>: RegexComponent {
   let program: Program
 //  var ast: AST { program.ast }
 
-  var root: DSLTree.Node {
+  @_spi(RegexBuilder)
+  public var root: DSLTree.Node {
     program.tree.root
   }
 
@@ -59,7 +61,8 @@ public struct Regex<Output>: RegexComponent {
     self.program = Program(ast: .init(ast, globalOptions: nil))
   }
 
-  init(node: DSLTree.Node) {
+  @_spi(RegexBuilder)
+  public init(node: DSLTree.Node) {
     self.program = Program(tree: .init(node, options: nil))
   }
 
@@ -84,17 +87,46 @@ public struct Regex<Output>: RegexComponent {
     self = content.regex
   }
 
-  public init<Content: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> Content
-  ) where Content.Output == Output {
-    self.init(content())
-  }
-
   public var regex: Regex<Output> {
     self
   }
 }
 
+// MARK: - Primitive regex components
+
+extension String: RegexComponent {
+  public typealias Output = Substring
+
+  public var regex: Regex<Output> {
+    .init(node: .quotedLiteral(self))
+  }
+}
+
+extension Substring: RegexComponent {
+  public typealias Output = Substring
+
+  public var regex: Regex<Output> {
+    .init(node: .quotedLiteral(String(self)))
+  }
+}
+
+extension Character: RegexComponent {
+  public typealias Output = Substring
+
+  public var regex: Regex<Output> {
+    .init(node: .atom(.char(self)))
+  }
+}
+
+extension UnicodeScalar: RegexComponent {
+  public typealias Output = Substring
+
+  public var regex: Regex<Output> {
+    .init(node: .atom(.scalar(self)))
+  }
+}
+
+// MARK: - Testing
 
 public struct MockRegexLiteral<Output>: RegexComponent {
   public typealias MatchValue = Substring

@@ -10,7 +10,8 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
-@testable import _StringProcessing
+import _StringProcessing
+@testable import RegexBuilder
 
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
