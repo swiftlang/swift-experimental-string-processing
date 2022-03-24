@@ -1,20 +1,27 @@
-# Regular Expression Literal Delimiters
+# Regex Literal Delimiters
 
 - Authors: Hamish Knight, Michael Ilseman, David Ewing
 
 ## Introduction
 
-**TODO**
+This proposal introduces regex literals to Swift source code. The proposed syntax mirrors literals in other programing languages such as Perl, JavaScript and Ruby. As in those languages, literals are delimited with the `/` character:
 
-**TODO: Motivation for regex literals in the first place? Or is that a given?**
+```swift
+let re = /[0-9]+/
+```
 
-**TODO: Overview of regex literals in other languages?**
+## Motivation
 
-## Detailed Design
+This proposal helps complete the story told in [Regex Type and Overview][regex-type] and [elsewhere][pitch-status]. Literals are compiled directly, allowing errors to be found at compile time, rather than at run time. Using a literal also allows editors to support features such as syntax coloring inside the literal, highlighting sub-structure of the regex, and conversion of the literal to an equivalent result builder DSL (see [Regex builder DSL][regex-dsl]). It would be difficult to support all of this if regexes could only be defined inside a string.
+
+
+## Proposed solution
 
 **TODO: Say that this is Swift 6 syntax only, `#/.../#` would be 5.7 syntax**
 
-A regular expression literal will be introduced using `/.../` delimiters, within which the compiler will parse a regular expression (the details of which are outlined in [the Regex Syntax pitch][internal-syntax]):
+**TODO: But is it?**
+	
+A regex literal will be introduced using `/.../` delimiters, within which the compiler will parse a regular expression (the details of which are outlined in [the Regex Syntax pitch][internal-syntax]):
 
 ```swift
 // Matches "<identifier> = <hexadecimal value>", extracting the identifier and hex number
@@ -25,21 +32,21 @@ Forward slashes are a regex term of art, and are used as the delimiters for rege
 
 Due to the existing use of `/` in comment syntax and operators, there are some syntactic ambiguities to consider. While there are quite a few cases to consider, we do not feel that the impact of any individual case is sufficient to disqualify the syntax.
 
-**TODO: Anything else we want to say here before segueing into the massive list?**
+## Detailed design
 
-### Parsing ambiguities
+Choice of `/` as the regex literal delimiter requires a number of ambiguities to be resolved. And it requires some existing features of the language to be disallowed.
 
-The obvious parsing ambiguity with `/.../` delimiters is with comment syntaxes.
+### Ambiguities with comment syntax
 
-- An empty regex literal would conflict with line comment syntax `//`. But this isn't a particularly useful thing to express, and can therefore be disallowed without significant impact.
+Perhaps the most obvious parsing ambiguity with `/.../` delimiters is with comment syntax.
 
-- The obvious choice for a multi-line regular expression literal would be to use `///` delimiters, in accordance with the precedent set by multi-line string literals `"""`. A different multi-line delimiter would be needed, with no obvious choice.
+- An empty regex literal would conflict with line comment syntax `//`. But an empty regex isn't a particularly useful thing to express, and can be disallowed without significant impact.
 
 - There is a conflict with block comment syntax, when surrounding a regex literal ending with `*`, for example:
 
   ```swift
   /*
-  let regex = /x*/
+  let regex = /[0-9]*/
   */
   ```
 
@@ -47,7 +54,10 @@ The obvious parsing ambiguity with `/.../` delimiters is with comment syntaxes.
 
 - Block comment syntax also means that a regex literal would not be able to start with the `*` character, however this is less of a concern as it would not be valid regex syntax.
 
-- Finally, there would be a minor ambiguity with infix operators used with regex literals. When used without whitespace, e.g `x+/y/`, the expression will be treated as using an infix operator `+/`. Whitespace is therefore required `x + /y/` for regex literal interpretation.
+
+### Ambiguity with infix operators
+
+There would be a minor ambiguity with infix operators used with regex literals. When used without whitespace, e.g `x+/y/`, the expression will be treated as using an infix operator `+/`. Whitespace is therefore required `x + /y/` for regex literal interpretation.
 
 ### Regex syntax limitations
 
@@ -163,12 +173,22 @@ This takes advantage of the fact that a regex literal will not be parsed if the 
 
 </details>
 
-### Editor Considerations
 
-**TODO: Rewrite now that `/.../` is the syntax being pitched?**
+## Future Directions
 
-As described above, there would be a lot involved in handling the parsing ambiguities with `/.../` delimiters. It's one thing to do this in the compiler. But the language also has to be understood by a plethora of source code editors. Those editors either need encode all those ambiguities, or they need to provide a "best effort" at handling the most common cases. It's all too common for editors to take the "best effort" route. There's a long history of complaints with editors that don't completely support a language's features. And indeed, there's plenty of history of editors that don't correctly support regular expression literals in other languages. By choosing a literal that is easily parsed, we should avoid seeing those complaints regarding Swift.
+### Raw literals
 
+The obvious choice here would follow string literals and use `#/.../#`.
+
+### Multi-line literals
+
+The obvious choice for a multi-line regex literal would be to use `///` delimiters, in accordance with the precedent set by multi-line string literals `"""`. But this signifies a (documentation) comment, so a different multi-line delimiter would be needed, with no obvious choice. However, it's not clear that we need multi-line regex literals. The existing literals can be used inside a regex builder DSL. 
+
+### Regex extended syntax
+
+Allowing non-semantic whitespace and other features of the extended syntax would be highly desired, with no obvious choice for a literal. Perhaps the need is also lessened by the ability to use regex literals inside the regex builder DSL.
+
+## Alternatives Considered
 
 ### Pound slash `#/.../#`
 
@@ -180,12 +200,6 @@ However this option would also have the same block comment issue as `/.../` wher
 
 Additionally, introducing this syntax would introduce an inconsistency with raw string literal syntax, as `#/.../#` on its own would not treat backslashes as literal, unlike `#"..."#`. If raw regex syntax were implemented, it would start at `##/.../##`. With raw strings, escape sequences must use the same number of `#`s as the delimiter, e.g `#"\#n"#` for a newline. However for raw regex literals it would be one fewer `#` than the delimiter e.g `##/\#n/##`.
 
-## Future Directions
-
-**TODO: What do we want to say here? Talk about raw and multiline? Don't really have a good option for the latter tho**
-
-## Alternatives Considered
-
 ### Prefixed quote `re'...'`
 
 We could choose to use `re'...'` delimiters, for example:
@@ -195,17 +209,9 @@ We could choose to use `re'...'` delimiters, for example:
 let regex = re'([[:alpha:]]\w*) = ([0-9A-F]+)'
 ```
 
-The use of two letter prefix could potentially be used as a namespace for future literal types. However, it is unusual for a Swift literal to be prefixed in this way.
+The use of two letter prefix could potentially be used as a namespace for future literal types. It would also have obvious extensions to raw and multi-line literals using `re#'...'#` and `re'''...'''` respectively. However, it is unusual for a Swift literal to be prefixed in this way. We also feel that its similarity to a string literal might have users confuse it with a raw string literal. 
 
-**TODO: Any other reasons why not to pick this?**
-
-**TODO: Mention that it nicely extends to raw and multiline?**
-
-#### Regex syntax limitations
-
-There are a few items of regex grammar that use the single quote character as a metacharacter. These include named group definitions and references such as `(?'name')`, `(?('name'))`, `\g'name'`, `\k'name'`, as well as callout syntax `(?C'arg')`. The use of a single quote conflicts with the `re'...'` delimiter as it will be considered the end of the literal. Fortunately, alternative syntax exists for all of these constructs, e.g `(?<name>)`, `\k<name>`, and `(?C"arg")`.
-
-As such, the single quote variants of the syntax would be considered invalid in a `re'...'` literal, and users must use the alternative syntax instead. If a raw variant of the syntax `re#'...'#` of the syntax is later added, that may also be used. In order to improve diagnostic behavior, the compiler would attempt to scan ahead when encountering the ending sequences `(?`, `(?(`, `\g`, `\k` and `(?C`. This would enable a more accurate error to be emitted that suggests the alternative syntax.
+Also, there are a few items of regex grammar that use the single quote character as a metacharacter. These include named group definitions and references such as `(?'name')`, `(?('name'))`, `\g'name'`, `\k'name'`, as well as callout syntax `(?C'arg')`. The use of a single quote conflicts with the `re'...'` delimiter as it will be considered the end of the literal. However, alternative syntax exists for all of these constructs, e.g `(?<name>)`, `\k<name>`, and `(?C"arg")`. Those could be required instead. If a raw regex literal were later added, the single quote syntax could also be used.
 
 ### Prefixed double quote `re"...."`
 
@@ -245,7 +251,7 @@ let regex: Regex = #"([[:alpha:]]\w*) = ([0-9A-F]+)"#
 
 However we decided against this because:
 
-- We would not be able to easily apply custom syntax highlighting for the regex syntax.
+- We would not be able to easily apply custom syntax highlighting and other editor features for the regex syntax.
 - It would require an `ExpressibleByRegexLiteral` contextual type to be treated as a regex, otherwise it would be defaulted to `String`, which may be undesired.
 - In an overloaded context it may be ambiguous or unclear whether a string literal is meant to be interpreted as a literal string or regex.
 - Regex-specific escape sequences such as `\w` would likely require the use of raw string syntax `#"..."#`, as they are otherwise invalid in a string literal.
@@ -258,3 +264,6 @@ Instead of adding a custom regex literal, we could require users to explicitly w
 [SE-0168]: https://github.com/apple/swift-evolution/blob/main/proposals/0168-multi-line-string-literals.md
 [SE-0200]: https://github.com/apple/swift-evolution/blob/main/proposals/0200-raw-string-escaping.md
 [internal-syntax]: https://forums.swift.org/t/pitch-regex-syntax/55711
+[regex-type]: https://forums.swift.org/t/pitch-regex-type-and-overview/56029
+[pitch-status]: https://github.com/apple/swift-experimental-string-processing/issues/107
+[regex-dsl]: https://forums.swift.org/t/pitch-regex-builder-dsl/56007
