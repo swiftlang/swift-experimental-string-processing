@@ -60,8 +60,9 @@ extension Regex.Match {
     output
   }
 
-  public subscript<Capture>(_ reference: Reference<Capture>) -> Capture {
-    guard let offset = referencedCaptureOffsets[reference.id] else {
+  @_spi(RegexBuilder)
+  public subscript<Capture>(_ id: ReferenceID) -> Capture {
+    guard let offset = referencedCaptureOffsets[id] else {
       preconditionFailure(
         "Reference did not capture any match in the regex")
     }
@@ -98,21 +99,9 @@ extension String {
   public func match<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
     regex.match(in: self)
   }
-
-  public func match<R: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> R
-  ) -> Regex<R.Output>.Match? {
-    match(content())
-  }
 }
 extension Substring {
   public func match<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
     regex.match(in: self)
-  }
-
-  public func match<R: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> R
-  ) -> Regex<R.Output>.Match? {
-    match(content())
   }
 }

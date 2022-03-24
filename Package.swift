@@ -44,11 +44,20 @@ let package = Package(
             dependencies: ["_MatchingEngine", "_CUnicode"],
             swiftSettings: [
                 .unsafeFlags(["-enable-library-evolution"]),
+            ]),
+        .target(
+            name: "RegexBuilder",
+            dependencies: ["_StringProcessing", "_MatchingEngine"],
+            swiftSettings: [
+                .unsafeFlags(["-enable-library-evolution"]),
                 .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
             ]),
         .testTarget(
             name: "RegexTests",
-            dependencies: ["_StringProcessing"],
+            dependencies: ["_StringProcessing"]),
+        .testTarget(
+            name: "RegexBuilderTests",
+            dependencies: ["_StringProcessing", "RegexBuilder"],
             swiftSettings: [
                 .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
             ]),
@@ -73,7 +82,7 @@ let package = Package(
         // MARK: Exercises
         .target(
           name: "Exercises",
-          dependencies: ["_MatchingEngine", "Prototypes", "_StringProcessing"],
+          dependencies: ["_MatchingEngine", "Prototypes", "_StringProcessing", "RegexBuilder"],
           swiftSettings: [
               .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
           ]),

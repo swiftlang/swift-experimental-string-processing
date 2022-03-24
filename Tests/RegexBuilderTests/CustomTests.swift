@@ -1,5 +1,17 @@
-import _StringProcessing
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
 import XCTest
+import _StringProcessing
+@testable import RegexBuilder
 
 // A nibbler processes a single character from a string
 private protocol Nibbler: CustomRegexComponent {
@@ -58,8 +70,7 @@ func customTest<Match: Equatable>(
   }
 }
 
-extension RegexTests {
-
+class CustomRegexComponentTests: XCTestCase {
   // TODO: Refactor below into more exhaustive, declarative
   // tests.
   func testCustomRegexComponents() {
@@ -127,5 +138,4 @@ extension RegexTests {
     XCTAssertEqual(res4.result.0, "123")
     XCTAssertEqual(res4.result.1, 3)
   }
-
 }
