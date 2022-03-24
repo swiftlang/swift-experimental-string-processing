@@ -17,10 +17,6 @@ This proposal helps complete the story told in [Regex Type and Overview][regex-t
 
 ## Proposed solution
 
-**TODO: Say that this is Swift 6 syntax only, `#/.../#` would be 5.7 syntax**
-
-**TODO: But is it?**
-	
 A regex literal will be introduced using `/.../` delimiters, within which the compiler will parse a regex (the details of which are outlined in [the Regex Syntax pitch][internal-syntax]):
 
 ```swift
@@ -31,6 +27,8 @@ let regex = /([[:alpha:]]\w*) = ([0-9A-F]+)/
 Forward slashes are a regex term of art, and are used as the delimiters for regex literals in Perl, JavaScript and Ruby (though Perl and Ruby also provide alternatives). Their ubiquity and familiarity makes them a compelling choice for Swift.
 
 Due to the existing use of `/` in comment syntax and operators, there are some syntactic ambiguities to consider. While there are quite a few cases to consider, we do not feel that the impact of any individual case is sufficient to disqualify the syntax.
+
+Some of these ambiguities require a couple of source breaking language changes, and as such the `/.../` syntax will require upgrading to a new language mode in order to use.
 
 ## Detailed design
 
@@ -186,13 +184,13 @@ Allowing non-semantic whitespace and other features of the extended syntax would
 
 ### Pound slash `#/.../#`
 
-**TODO: This needs to be rewritten to say that it's a potential transition syntax**
+This is a less syntactically ambiguous version of `/.../` that retains some of the term-of-art familiarity. It could potentially provide a natural path through which to introduce `/.../` in a new language mode, as users could drop the `#` characters once they upgrade.
 
-This would be less syntactically ambiguous than `/.../`, while retaining some of the term-of-art familiarity. It would also provide a natural path through which to introduce `/.../` in a new language mode, as users could drop the `#` characters once they upgrade.
+However, introducing this as non-raw regex literal syntax would introduce an inconsistency with raw string literal syntax, as `#/.../#` on its own would not treat backslashes as literal, unlike `#"..."#`. If raw regex syntax were added, they would likely start at `##/.../##`. With raw strings, escape sequences must use the same number of `#`s as the delimiter, e.g `#"\#n"#` for a newline. However for raw regex literals it would be one fewer `#` than the delimiter e.g `##/\#n/##`.
 
-However this option would also have the same block comment issue as `/.../` where e.g `#/x*/#` nested inside a block comment would prematurely end. Similarly, it's not clear how a multi-line version of the literal would be spelled.
+**TODO: What backslash rules do we want?**
 
-Additionally, introducing this syntax would introduce an inconsistency with raw string literal syntax, as `#/.../#` on its own would not treat backslashes as literal, unlike `#"..."#`. If raw regex syntax were implemented, it would start at `##/.../##`. With raw strings, escape sequences must use the same number of `#`s as the delimiter, e.g `#"\#n"#` for a newline. However for raw regex literals it would be one fewer `#` than the delimiter e.g `##/\#n/##`.
+It should also be noted that this option has the same block comment issue as `/.../` where e.g `#/[0-9]*/#` nested inside a block comment would prematurely end. Similarly, it's not clear how a multi-line version of the literal would be spelled.
 
 ### Prefixed quote `re'...'`
 
