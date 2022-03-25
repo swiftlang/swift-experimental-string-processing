@@ -10,6 +10,15 @@
 //===----------------------------------------------------------------------===//
 
 import _MatchingEngine
+@_spi(RegexBuilder) import _StringProcessing
+
+extension Regex {
+  public init<Content: RegexComponent>(
+    @RegexComponentBuilder _ content: () -> Content
+  ) where Content.Output == Output {
+    self.init(content())
+  }
+}
 
 // A convenience protocol for builtin regex components that are initialized with
 // a `DSLTree` node.
@@ -20,51 +29,6 @@ internal protocol _BuiltinRegexComponent: RegexComponent {
 extension _BuiltinRegexComponent {
   init(node: DSLTree.Node) {
     self.init(Regex(node: node))
-  }
-}
-
-// MARK: - Primitives
-
-extension String: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .quotedLiteral(self))
-  }
-}
-
-extension Substring: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .quotedLiteral(String(self)))
-  }
-}
-
-extension Character: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .atom(.char(self)))
-  }
-}
-
-extension UnicodeScalar: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .atom(.scalar(self)))
-  }
-}
-
-extension CharacterClass: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    guard let ast = self.makeAST() else {
-      fatalError("FIXME: extended AST?")
-    }
-    return Regex(ast: ast)
   }
 }
 
@@ -96,14 +60,44 @@ public struct QuantificationBehavior {
     case reluctantly
     case possessively
   }
-  
+
   var kind: Kind
-  
+
   internal var astKind: AST.Quantification.Kind {
     switch kind {
     case .eagerly: return .eager
     case .reluctantly: return .reluctant
     case .possessively: return .possessive
+    }
+  }
+}
+
+extension DSLTree.Node {
+  /// Generates a DSLTree node for a repeated range of the given DSLTree node.
+  /// Individual public API functions are in the generated Variadics.swift file.
+  static func repeating(
+    _ range: Range<Int>,
+    _ behavior: QuantificationBehavior,
+    _ node: DSLTree.Node
+  ) -> DSLTree.Node {
+    // TODO: Throw these as errors
+    assert(range.lowerBound >= 0, "Cannot specify a negative lower bound")
+    assert(!range.isEmpty, "Cannot specify an empty range")
+
+    switch (range.lowerBound, range.upperBound) {
+    case (0, Int.max): // 0...
+      return .quantification(.zeroOrMore, behavior.astKind, node)
+    case (1, Int.max): // 1...
+      return .quantification(.oneOrMore, behavior.astKind, node)
+    case _ where range.count == 1: // ..<1 or ...0 or any range with count == 1
+      // Note: `behavior` is ignored in this case
+      return .quantification(.exactly(.init(faking: range.lowerBound)), .eager, node)
+    case (0, _): // 0..<n or 0...n or ..<n or ...n
+      return .quantification(.upToN(.init(faking: range.upperBound)), behavior.astKind, node)
+    case (_, Int.max): // n...
+      return .quantification(.nOrMore(.init(faking: range.lowerBound)), behavior.astKind, node)
+    default: // any other range
+      return .quantification(.range(.init(faking: range.lowerBound), .init(faking: range.upperBound)), behavior.astKind, node)
     }
   }
 }
@@ -114,13 +108,13 @@ extension QuantificationBehavior {
   public static var eagerly: QuantificationBehavior {
     .init(kind: .eagerly)
   }
-  
+
   /// Match as little of the input string as possible, expanding the matched
   /// region as necessary to complete a match.
   public static var reluctantly: QuantificationBehavior {
     .init(kind: .reluctantly)
   }
-  
+
   /// Match as much of the input string as possible, performing no backtracking.
   public static var possessively: QuantificationBehavior {
     .init(kind: .possessively)
@@ -247,22 +241,18 @@ public struct TryCapture<Output>: _BuiltinRegexComponent {
 
 // MARK: - Backreference
 
-struct ReferenceID: Hashable, Equatable {
-  private static var counter: Int = 0
-  var base: Int
-
-  init() {
-    base = Self.counter
-    Self.counter += 1
-  }
-}
-
 public struct Reference<Capture>: RegexComponent {
   let id = ReferenceID()
-  
+
   public init(_ captureType: Capture.Type = Capture.self) {}
 
   public var regex: Regex<Capture> {
     .init(node: .atom(.symbolicReference(id)))
+  }
+}
+
+extension Regex.Match {
+  public subscript<Capture>(_ reference: Reference<Capture>) -> Capture {
+    self[reference.id]
   }
 }

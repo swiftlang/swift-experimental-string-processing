@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+@_spi(RegexBuilder) import _StringProcessing
+
 @resultBuilder
 public enum RegexComponentBuilder {
   public static func buildBlock() -> Regex<Substring> {

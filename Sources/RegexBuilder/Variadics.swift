@@ -12,6 +12,7 @@
 // BEGIN AUTO-GENERATED CONTENT
 
 import _MatchingEngine
+@_spi(RegexBuilder) import _StringProcessing
 
 extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C0, R0: RegexComponent, R1: RegexComponent>(
