@@ -1,4 +1,4 @@
-# Regex Literal Delimiters
+# Regex Literals
 
 - Authors: Hamish Knight, Michael Ilseman, David Ewing
 
@@ -24,11 +24,11 @@ A regex literal will be introduced using `/.../` delimiters, within which the co
 let regex = /([[:alpha:]]\w*) = ([0-9A-F]+)/
 ```
 
+The above regex literal will be inferred to be [the regex type][regex-type] `Regex<(Substring, Substring, Substring)>`, where the capture types have been automatically inferred. Errors in the regex will be diagnosed by the compiler.
+
 Forward slashes are a regex term of art, and are used as the delimiters for regex literals in Perl, JavaScript and Ruby (though Perl and Ruby also provide alternatives). Their ubiquity and familiarity makes them a compelling choice for Swift.
 
-Due to the existing use of `/` in comment syntax and operators, there are some syntactic ambiguities to consider. While there are quite a few cases to consider, we do not feel that the impact of any individual case is sufficient to disqualify the syntax.
-
-Some of these ambiguities require a couple of source breaking language changes, and as such the `/.../` syntax will require upgrading to a new language mode in order to use.
+Due to the existing use of `/` in comment syntax and operators, there are some syntactic ambiguities to consider. While there are quite a few cases to consider, we do not feel that the impact of any individual case is sufficient to disqualify the syntax. Some of these ambiguities require a couple of source breaking language changes, and as such the `/.../` syntax will require upgrading to a new language mode in order to use.
 
 ## Detailed design
 
@@ -182,11 +182,13 @@ Allowing non-semantic whitespace and other features of the extended syntax would
 
 ## Alternatives Considered
 
+Given the fact that `/` is an existing term of art for regular expressions, we feel it should be the preferred delimiter syntax. While it has some syntactic ambiguities, we do not feel that they are sufficient to disqualify the syntax. To evaluate this trade-off, below is a list of alternative delimiters that would not have the same ambiguities.
+
 ### Pound slash `#/.../#`
 
 This is a less syntactically ambiguous version of `/.../` that retains some of the term-of-art familiarity. It could potentially provide a natural path through which to introduce `/.../` in a new language mode, as users could drop the `#` characters once they upgrade.
 
-However, introducing this as non-raw regex literal syntax would introduce an inconsistency with raw string literal syntax, as `#/.../#` on its own would not treat backslashes as literal, unlike `#"..."#`. If raw regex syntax were added, they would likely start at `##/.../##`. With raw strings, escape sequences must use the same number of `#`s as the delimiter, e.g `#"\#n"#` for a newline. However for raw regex literals it would be one fewer `#` than the delimiter e.g `##/\#n/##`.
+However, introducing this as non-raw regex literal syntax would introduce an inconsistency with raw string literal syntax, as `#/.../#` on its own would not treat backslashes as literal, unlike `#"..."#`. If raw regex syntax was added, it would likely start at `##/.../##`. With raw strings, escape sequences must use the same number of `#`s as the delimiter, e.g `#"\#n"#` for a newline. However for raw regex literals it would be one fewer `#` than the delimiter e.g `##/\#n/##`.
 
 **TODO: What backslash rules do we want?**
 
@@ -251,7 +253,14 @@ However we decided against this because:
 
 ### No custom literal
 
-Instead of adding a custom regex literal, we could require users to explicitly write `Regex(compiling: "[abc]+")`. This would however lose all the benefits of parsing the literal at compile time, meaning that parse errors will instead be diagnosed at runtime, and no source tooling support (e.g syntax highlighting, refactoring actions) would be available. 
+Instead of adding a custom regex literal, we could require users to explicitly write `try! Regex(compiling: "[abc]+")`. This would be similar to `NSRegularExpression`, and loses all the benefits of parsing the literal at compile time. This would mean:
+
+- No source tooling support (e.g syntax highlighting, refactoring actions) would be available.
+- Parse errors would be diagnosed at run time rather than at compile time.
+- We would lose the type safety of typed captures.
+- More verbose syntax is required.
+
+We therefore feel this would be a much less compelling feature without first class literal support.
 
 [SE-0168]: https://github.com/apple/swift-evolution/blob/main/proposals/0168-multi-line-string-literals.md
 [SE-0200]: https://github.com/apple/swift-evolution/blob/main/proposals/0200-raw-string-escaping.md
