@@ -68,4 +68,7 @@ uint8_t _swift_stdlib_getScript(uint32_t scalar);
 SWIFT_CC
 const uint8_t * const _swift_stdlib_getScriptExtensions(uint32_t scalar, uint8_t *count);
 
+SWIFT_CC
+void _swift_stdlib_getCaseMapping(uint32_t scalar, uint32_t *buffer);
+
 #endif // SWIFT_STDLIB_SHIMS_UNICODEDATA_H

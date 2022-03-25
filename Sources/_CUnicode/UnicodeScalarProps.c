@@ -10,8 +10,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "Common/CaseData.h"
 #include "Common/ScriptData.h"
 #include "include/UnicodeData.h"
+#include "stdio.h"
 
 SWIFT_CC
 uint8_t _swift_stdlib_getScript(uint32_t scalar) {
@@ -84,4 +86,60 @@ const uint8_t * const _swift_stdlib_getScriptExtensions(uint32_t scalar,
   *count = scalarDataIdx >> 11;
   
   return _swift_stdlib_script_extensions_data + (scalarDataIdx & 0x7FF);
+}
+
+SWIFT_CC
+void _swift_stdlib_getCaseMapping(uint32_t scalar, uint32_t *buffer) {
+  intptr_t mphIdx = _swift_stdlib_getMphIdx(scalar, CASE_FOLD_LEVEL_COUNT,
+                                            _swift_stdlib_case_keys,
+                                            _swift_stdlib_case_ranks,
+                                            _swift_stdlib_case_sizes);
+  
+  uint64_t caseValue = _swift_stdlib_case[mphIdx];
+  uint32_t hashedScalar = (caseValue << 43) >> 43;
+  
+  // If our scalar is not the original one we hashed, then this scalar has no
+  // case mapping. It maps to itself.
+  if (scalar != hashedScalar) {
+    buffer[0] = scalar;
+    return;
+  }
+  
+  // If the top bit is NOT set, then this scalar simply maps to another scalar.
+  // We have stored the distance to said scalar in this value.
+  if ((caseValue & ((uint64_t)(0x1) << 63)) == 0) {
+    int32_t distance = (int32_t)((caseValue << 1) >> 22);
+    uint32_t mappedScalar = (uint32_t)((int32_t)(scalar) - distance);
+    
+    buffer[0] = mappedScalar;
+    return;
+  }
+  
+  // Our top bit WAS set which means this scalar maps to multiple scalars.
+  // Lookup our mapping in the full mph.
+  intptr_t fullMphIdx = _swift_stdlib_getMphIdx(scalar,
+                                                CASE_FULL_FOLD_LEVEL_COUNT,
+                                                _swift_stdlib_case_full_keys,
+                                                _swift_stdlib_case_full_ranks,
+                                                _swift_stdlib_case_full_sizes);
+  
+  uint64_t fullCaseValue = _swift_stdlib_case_full[fullMphIdx];
+  
+  // The max amount of scalars in a mapping is 3.
+  for (int i = 0; i != 3; i += 1) {
+    int32_t distance = (int32_t)((fullCaseValue & ((uint64_t)(0xFFFF) << (i * 17))) >> (i * 17));
+    
+    // If we don't have a distance, we're done.
+    if (distance == 0) {
+      return;
+    }
+    
+    if ((fullCaseValue & (0x1 << ((i + 1) * (16 + i)))) != 0) {
+      distance = -distance;
+    }
+    
+    uint32_t mappedScalar = (uint32_t)((int32_t)(scalar) - distance);
+    
+    buffer[i] = mappedScalar;
+  }
 }
