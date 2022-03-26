@@ -13,6 +13,13 @@ import XCTest
 @testable import _MatchingEngine
 @testable import _StringProcessing
 
+struct MatchError: Error {
+    var message: String
+    init(_ message: String) {
+        self.message = message
+    }
+}
+
 extension Executor {
   func _firstMatch(
     _ regex: String, input: String,
@@ -31,7 +38,7 @@ extension Executor {
         let caps = result.rawCaptures.slices(from: input)
         return (input[result.range], caps)
       } else if start == input.endIndex {
-        throw "match not found for \(regex) in \(input)"
+        throw MatchError("match not found for \(regex) in \(input)")
       } else {
         input.formIndex(after: &start)
       }
@@ -76,27 +83,29 @@ func flatCaptureTest(
         if expect == nil {
           continue
         } else {
-          throw "Match failed"
+          throw MatchError("Match failed")
         }
       }
       guard let expect = expect else {
-        throw "Match of \(test) succeeded where failure expected in \(regex)"
+        throw MatchError("""
+            Match of \(test) succeeded where failure expected in \(regex)
+            """)
       }
       let capStrs = caps.map { $0 == nil ? nil : String($0!) }
       guard expect.count == capStrs.count else {
-        throw """
+        throw MatchError("""
           Capture count mismatch:
             \(expect)
             \(capStrs)
-          """
+          """)
       }
 
       guard expect.elementsEqual(capStrs) else {
-        throw """
+        throw MatchError("""
           Capture mismatch:
             \(expect)
             \(capStrs)
-          """
+          """)
       }
     } catch {
       if !xfail {
