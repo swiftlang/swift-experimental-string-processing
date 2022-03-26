@@ -31,20 +31,22 @@ public protocol Participant {
 
 // Default impls
 extension Participant {
-  static var unsupported: Error { "Unsupported" }
+  enum Error: Swift.Error {
+    case unsupported
+  }
 
   // Produce a function that will parse a grapheme break entry from a line
   public static func graphemeBreakProperty() throws -> (String) -> GraphemeBreakEntry? {
-    throw unsupported
+    throw Error.unsupported
   }
 
   // Produce a function that will extract the bodies of C-style comments from its input
   public static func cComments() throws -> (String) -> [Substring] {
-    throw unsupported
+    throw Error.unsupported
   }
 
   // Produce a function that will extract the bodies of Swift-style comments from its input
   public static func swiftComments() throws -> (String) -> [Substring] {
-    throw unsupported
+    throw Error.unsupported
   }
 }
