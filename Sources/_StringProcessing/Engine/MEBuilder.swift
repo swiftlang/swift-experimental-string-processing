@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _MatchingEngine // For errors
+import _RegexParser // For errors
 
 extension MEProgram where Input.Element: Hashable {
   struct Builder {

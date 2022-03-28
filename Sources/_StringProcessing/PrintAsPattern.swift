@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _MatchingEngine
+import _RegexParser
 
 // TODO: Add an expansion level, both from top to bottom.
 //       After `printAsCanonical` is fleshed out, these two

@@ -11,7 +11,7 @@
 
 // BEGIN AUTO-GENERATED CONTENT
 
-import _MatchingEngine
+import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
 extension RegexComponentBuilder {

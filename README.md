@@ -12,13 +12,13 @@ See [Declarative String Processing Overview][decl-string]
 
 ## Integration with Swift
 
-`_MatchingEngine`, `_CUnicode` and `_StringProcessing` are specially integrated modules that are built as part of apple/swift.
+`_RegexParser` and `_StringProcessing` are specially integrated modules that are built as part of apple/swift.
 
-Specifically, `_MatchingEngine` contains the parser for regular expression literals and is built both as part of the compiler and as a core library. `_CUnicode` and `_StringProcessing` are built together as a core library named `_StringProcessing`.
+Specifically, `_RegexParser` contains the parser for regular expression literals and is built both as part of the compiler and as a core library. `_CUnicode` and `_StringProcessing` are built together as a core library named `_StringProcessing`.
 
 | Module              | Swift toolchain component                                                            |
 | ------------------- | ------------------------------------------------------------------------------------ |
-| `_MatchingEngine`   | `SwiftCompilerSources/Sources/ExperimentalRegex` and `stdlib/public/_MatchingEngine` |
+| `_RegexParser`      | `SwiftCompilerSources/Sources/_RegexParser` and `stdlib/public/_RegexParser` |
 | `_CUnicode`         | `stdlib/public/_StringProcessing`                                                    |
 | `_StringProcessing` | `stdlib/public/_StringProcessing`                                                    |
 
@@ -65,10 +65,9 @@ To integrate the latest changes in apple/swift-experimental-string-processing to
 
 ### Development notes
 
-Compiler integration can be tricky. Use special caution when developing `_MatchingEngine`, `_CUnicode` and `_StringProcessing` modules.
+Compiler integration can be tricky. Use special caution when developing `_RegexParser` and `_StringProcessing` modules.
 
 - Do not change the names of these modules without due approval from compiler and infrastructure teams.
 - Do not modify the existing ABI (e.g. C API, serialization format) between the regular expression parser and the Swift compiler unless absolutely necessary. 
 - Always minimize the number of lockstep integrations, i.e. when apple/swift-experimental-string-processing and apple/swift have to change together. Whenever possible, introduce new API first, migrate Swift compiler onto it, and then deprecate old API. Use versioning if helpful.
 - In `_StringProcessing`, do not write fully qualified references to symbols in `_CUnicode`, and always wrap `import _CUnicode` in a `#if canImport(_CUnicode)`. This is because `_CUnicode` is built as part of `_StringProcessing` with CMake.
-- In `_MatchingEngine`, do not write fully qualified references to `_MatchingEngine` itself. This is because `_MatchingEngine` is built as `ExperimentalRegex` in `SwiftCompilerSources/` with CMake. 

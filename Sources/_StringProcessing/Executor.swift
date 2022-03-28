@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _MatchingEngine
+import _RegexParser
 
 struct Executor {
   // TODO: consider let, for now lets us toggle tracing
