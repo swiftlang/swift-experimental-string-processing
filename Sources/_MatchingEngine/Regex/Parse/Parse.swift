@@ -122,15 +122,6 @@ extension ParsingContext {
 
 // Diagnostics
 extension Parser {
-  mutating func report(
-    _ str: String, _ function: String = #function, _ line: Int = #line
-  ) throws -> Never {
-    throw """
-        ERROR: \(str)
-        (error detected in parser at \(function):\(line))
-        """
-  }
-
   fileprivate func loc(
     _ start: Source.Position
   ) -> SourceLocation {
@@ -529,5 +520,3 @@ public func parseWithDelimiters<S: StringProtocol>(
   let (contents, delim) = droppingRegexDelimiters(String(regex))
   return try parse(contents, delim.defaultSyntaxOptions)
 }
-
-extension String: Error {}
