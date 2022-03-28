@@ -14,6 +14,21 @@ let re = /[0-9]+/
 
 This proposal helps complete the story told in [Regex Type and Overview][regex-type] and [elsewhere][pitch-status]. Literals are compiled directly, allowing errors to be found at compile time, rather than at run time. Using a literal also allows editors to support features such as syntax coloring inside the literal, highlighting sub-structure of the regex, and conversion of the literal to an equivalent result builder DSL (see [Regex builder DSL][regex-dsl]). It would be difficult to support all of this if regexes could only be defined inside a string.
 
+A regex literal also allows for seamless composition with the Regex DSL, enabling the intermixing of a regex syntax with other elements of the builder:
+
+```swift
+// A regex literal for parsing an amount of currency in dollars or pounds.
+let regex = Regex {
+  /([$£])/
+  TryCapture {
+    OneOrMore(.digit)
+    "."
+    Repeat(.digit, count: 2)
+  } transform: { Amount(twoDecimalPlaces: $0) }
+}
+```
+
+This flexibility allows for terse matching syntax to be used when it's suitable, and more explicit syntax where clarity and strong types are required.
 
 ## Proposed solution
 
@@ -94,35 +109,41 @@ In order to help avoid further parsing ambiguities, a `/.../` regex literal will
 
 #### Rationale
 
-This is due to 2 main ambiguities. The first of which arises when a `/.../` regex literal starts a new line. This is particularly problematic for result builders, where we expect it to be frequently used, for example:
+This is due to 2 main parsing ambiguities. The first of which arises when a `/.../` regex literal starts a new line. This is particularly problematic for result builders, where we expect it to be frequently used, in particular within a `Regex` builder:
 
 ```swift
-Builder {
-   1
-   / 2 /
-   3
+let digit = Regex {
+  TryCapture(OneOrMore(.digit)) { Int($0) }
+}
+// Matches against <digit>+ (' + ' | ' - ') <digit>+
+let regex = Regex {
+   digit
+   / [+-] /
+   digit
 }
 ```
 
-This is parsed as a single operator chain, however it is likely the user is expecting a regex literal. To resolve this ambiguity, a regex literal may not start with a space or tab character. The above therefore remains an operator chain. This takes advantage of the fact that infix operators require consistent spacing on either side.
+Instead of being parsed as 3 result builder elements, the second of which being a regex literal, this is instead parsed as a single operator chain with the operands `digit`, `[+-]`, and `digit`. This will therefore be diagnosed as semantically invalid.
+
+To avoid this issue, a regex literal may not start with a space or tab character. This takes advantage of the fact that infix operators require consistent spacing on either side.
 
 If a space or tab is needed as the first character, it must be either escaped, e.g:
 
 ```swift
-Builder {
-   1
-   /\ 2 /
-   3
+let regex = Regex {
+   digit
+   /\ [+-] /
+   digit
 }
 ```
 
 or extended syntax must be used, e.g:
 
 ```swift
-Builder {
-   1
-   #/ 2 /#
-   3
+let regex = Regex {
+   digit
+   #/ [+-] /#
+   digit
 }
 ```
 
