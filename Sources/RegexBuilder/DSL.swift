@@ -165,10 +165,6 @@ public struct Repeat<Output>: _BuiltinRegexComponent {
   // Variadics.swift.
 }
 
-postfix operator .?
-postfix operator .*
-postfix operator .+
-
 // MARK: Alternation
 
 // TODO: Variadic generics
