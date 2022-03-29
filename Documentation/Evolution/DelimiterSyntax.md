@@ -41,7 +41,7 @@ Forward slashes are a regex term of art, and are used as the delimiters for rege
 
 A regex literal may also be spelled using an extended syntax `#/.../#`, which allows the placement of an arbitrary number of balanced `#` characters around a regex literal. This syntax allows regex literals to contain unescaped forward slashes, and may be used without needing to upgrade to Swift 5.7 mode.
 
-Within a regex literal, the compiler will parse the regex syntax outlined in in [the Regex Syntax pitch][internal-syntax], and diagnose any errors at compile time. The capture types are automatically inferred based on the capture groups present in the regex. Using a literal allows editors to support features such as syntax coloring inside the literal, highlighting sub-structure of the regex, and conversion of the literal to an equivalent result builder DSL (see [Regex builder DSL][regex-dsl]).
+Within a regex literal, the compiler will parse the regex syntax outlined in in [the Regex Syntax pitch][internal-syntax], and diagnose any errors at compile time. The capture types and labels are automatically inferred based on the capture groups present in the regex. Using a literal allows editors to support features such as syntax coloring inside the literal, highlighting sub-structure of the regex, and conversion of the literal to an equivalent result builder DSL (see [Regex builder DSL][regex-dsl]).
 
 A regex literal also allows for seamless composition with the Regex DSL, enabling lightweight intermixing of a regex syntax with other elements of the builder:
 
@@ -63,21 +63,34 @@ Due to the existing use of `/` in comment syntax and operators, there are some s
 
 ## Detailed design
 
-### Named typed captures
+### Typed captures
 
-Regex literals have their capture types statically determined by the capture groups present. Each capture group adds an additional capture to the match tuple, with named capture groups receiving a corresponding tuple label.
+Regex literals have their capture types statically determined by the capture groups present. A initial `Substring` is always present for the entire match, and each capture group adds an additional capture to the match tuple, with named capture groups receiving a corresponding tuple label. Once matched, such captures may later be referenced:
 
-**TODO: Example**
+```swift
+func matchHexAssignment(_ input: String) -> (String, Int)? {
+  let regex = /(?<identifier>[[:alpha:]]\w*) = (?<hex>[0-9A-F]+)/
+  // regex: Regex<(Substring, identifier: Substring, hex: Substring)>
+  
+  guard let match = regex.matchWhole(input), 
+        let hex = Int(match.hex, radix: 16) 
+  else { return nil }
+  
+  return (match.identifier, hex)
+}
+```
 
+Unnamed capture groups produce unlabeled tuple elements and must be referenced by their position, e.g `match.1`, `match.2`.
 
-**TODO: Should we cover more general typed capture behavior here? e.g Quantifier types. It overlaps with the typed capture behavior of the DSL tho**
+**TODO: Should we cover more general typed capture behavior from [StronglyTypedCaptures.md](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/StronglyTypedCaptures.md) here? There is some overlap with the typed capture behavior of the DSL tho, labels are the main thing that are literal specific**
 
 ### Extended delimiters `#/.../#`, `##/.../##`
 
 A regex literal may be surrounded by an arbitrary number of balanced pound characters. This is a similar to raw string literal syntax introduced by [SE-0200], and allows a regex literal to use forward slashes without the need to escape them, e.g:
 
 ```swift
-let regex = #//usr/lib/modules/([^/]+)/vmlinuz/#
+let regex = #/usr/lib/modules/([^/]+)/vmlinuz/#
+// regex: Regex<(Substring, Substring)>
 ```
 
 Additionally, this syntax provides a way to write a regex literal without needing to upgrade to Swift 5.7 mode.
@@ -99,6 +112,7 @@ In this case, the intent is not for the compiler to recognize any of these seque
 
 ```swift
 let regex = /\\\w\s*=\s*\d+/
+// regex: Regex<Substring>
 ```
 
 Backslashes still require escaping to be treated as literal, however we don't expect this to be as common of an occurrence as needing to write a regex escape sequence such as `\s`, `\w`, or `\p{...}`, within a regex literal with extended delimiters `#/.../#`.
