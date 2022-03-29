@@ -4,7 +4,7 @@
 
 ## Introduction
 
-This proposal introduces regex literals to Swift source code. The proposed syntax mirrors literals in other programing languages such as Perl, JavaScript and Ruby. As in those languages, literals are delimited with the `/` character:
+This proposal helps complete the story told in [Regex Type and Overview][regex-type] and [elsewhere][pitch-status]. We propose the introduction of regex literals to Swift source code. The proposed syntax mirrors literals in other programing languages such as Perl, JavaScript and Ruby. As in those languages, literals are delimited with the `/` character:
 
 ```swift
 let re = /[0-9]+/
@@ -12,9 +12,38 @@ let re = /[0-9]+/
 
 ## Motivation
 
-This proposal helps complete the story told in [Regex Type and Overview][regex-type] and [elsewhere][pitch-status]. Literals are compiled directly, allowing errors to be found at compile time, rather than at run time. Using a literal also allows editors to support features such as syntax coloring inside the literal, highlighting sub-structure of the regex, and conversion of the literal to an equivalent result builder DSL (see [Regex builder DSL][regex-dsl]). It would be difficult to support all of this if regexes could only be defined inside a string.
+In [Regex Type and Overview][regex-type] we introduced the `Regex` type, which is able to dynamically compile a regex pattern:
 
-A regex literal also allows for seamless composition with the Regex DSL, enabling the intermixing of a regex syntax with other elements of the builder:
+```swift
+let pattern = #"(\w+)\s\s+(\S+)\s\s+((?:(?!\s\s).)*)\s\s+(.*)"#
+let regex = try! Regex(compiling: pattern)
+// regex: Regex<AnyRegexOutput>
+```
+
+The ability to compile regex patterns at runtime is useful for cases where it is e.g provided as user input, however it is suboptimal when the pattern is statically known for a number of reasons:
+
+- Regex syntax errors aren't detected until runtime, and explicit error handling (e.g `try!`) is required to deal with these errors.
+- No special source tooling support, such as syntactic highlighting, code completion, and refactoring support, is available.
+- Capture types aren't known until runtime, and as such a dynamic `AnyRegexOutput` capture type must be used.
+- The syntax is overly verbose, especially for e.g an argument to a matching function.
+
+## Proposed solution
+
+We propose introducing a new kind of literal for a regex. In Swift 5.7 mode, a regex literal may be written using `/.../` delimiters:
+
+```swift
+// Matches "<identifier> = <hexadecimal value>", extracting the identifier and hex number
+let regex = /(?<identifier>[[:alpha:]]\w*) = (?<hex>[0-9A-F]+)/
+// regex: Regex<(Substring, identifier: Substring, hex: Substring)>
+```
+
+Forward slashes are a regex term of art, and are used as the delimiters for regex literals in Perl, JavaScript and Ruby (though Perl and Ruby also provide alternatives). Their ubiquity and familiarity makes them a compelling choice for Swift.
+
+A regex literal may also be spelled using an extended syntax `#/.../#`, which allows the placement of an arbitrary number of balanced `#` characters around a regex literal. This syntax allows regex literals to contain unescaped forward slashes, and may be used without needing to upgrade to Swift 5.7 mode.
+
+Within a regex literal, the compiler will parse the regex syntax outlined in in [the Regex Syntax pitch][internal-syntax], and diagnose any errors at compile time. The capture types are automatically inferred based on the capture groups present in the regex. Using a literal allows editors to support features such as syntax coloring inside the literal, highlighting sub-structure of the regex, and conversion of the literal to an equivalent result builder DSL (see [Regex builder DSL][regex-dsl]).
+
+A regex literal also allows for seamless composition with the Regex DSL, enabling lightweight intermixing of a regex syntax with other elements of the builder:
 
 ```swift
 // A regex literal for parsing an amount of currency in dollars or pounds.
@@ -30,24 +59,18 @@ let regex = Regex {
 
 This flexibility allows for terse matching syntax to be used when it's suitable, and more explicit syntax where clarity and strong types are required.
 
-## Proposed solution
-
-A regex literal will be introduced in Swift 5.7 mode using `/.../` delimiters, within which the compiler will parse a regex (the details of which are outlined in [the Regex Syntax pitch][internal-syntax]):
-
-```swift
-// Matches "<identifier> = <hexadecimal value>", extracting the identifier and hex number
-let regex = /([[:alpha:]]\w*) = ([0-9A-F]+)/
-```
-
-The above regex literal will be inferred to be [the regex type][regex-type] `Regex<(Substring, Substring, Substring)>`, where the capture types have been automatically inferred. Errors in the regex will be diagnosed by the compiler.
-
-Forward slashes are a regex term of art, and are used as the delimiters for regex literals in Perl, JavaScript and Ruby (though Perl and Ruby also provide alternatives). Their ubiquity and familiarity makes them a compelling choice for Swift.
-
 Due to the existing use of `/` in comment syntax and operators, there are some syntactic ambiguities to consider. While there are quite a few cases to consider, we do not feel that the impact of any individual case is sufficient to disqualify the syntax. Some of these ambiguities require a couple of source breaking language changes, and as such the `/.../` syntax requires upgrading to a new language mode in order to use.
 
-A regex literal may also be spelled using an extended syntax `#/.../#`, which allows the placement of an arbitrary number of balanced `#` characters around a regex literal. This syntax allows regex literals to contain unescaped forward slashes, and provides a delimiter option which does not require a new language mode to use.
-
 ## Detailed design
+
+### Named typed captures
+
+Regex literals have their capture types statically determined by the capture groups present. Each capture group adds an additional capture to the match tuple, with named capture groups receiving a corresponding tuple label.
+
+**TODO: Example**
+
+
+**TODO: Should we cover more general typed capture behavior here? e.g Quantifier types. It overlaps with the typed capture behavior of the DSL tho**
 
 ### Extended delimiters `#/.../#`, `##/.../##`
 
