@@ -306,8 +306,8 @@ class RegexDSLTests: XCTestCase {
       matchType: Substring.self, ==)
     {
       OneOrMore("a")
-      lookahead(CharacterClass.digit)
-      lookahead("2", negative: true)
+      Lookahead(CharacterClass.digit)
+      Lookahead("2", negative: true)
       CharacterClass.word
     }
   }
