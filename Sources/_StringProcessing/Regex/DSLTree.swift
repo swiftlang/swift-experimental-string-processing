@@ -11,7 +11,8 @@
 
 import _MatchingEngine
 
-struct DSLTree {
+@_spi(RegexBuilder)
+public struct DSLTree {
   var root: Node
   var options: Options?
 
@@ -22,7 +23,8 @@ struct DSLTree {
 }
 
 extension DSLTree {
-  indirect enum Node: _TreeNode {
+  @_spi(RegexBuilder)
+  public indirect enum Node: _TreeNode {
     /// Try to match each node in order
     ///
     ///     ... | ... | ...
@@ -101,7 +103,8 @@ extension DSLTree {
 }
 
 extension DSLTree {
-  struct CustomCharacterClass {
+  @_spi(RegexBuilder)
+  public struct CustomCharacterClass {
     var members: [Member]
     var isInverted: Bool
 
@@ -120,7 +123,8 @@ extension DSLTree {
     }
   }
 
-  enum Atom {
+  @_spi(RegexBuilder)
+  public enum Atom {
     case char(Character)
     case scalar(Unicode.Scalar)
     case any
@@ -134,18 +138,21 @@ extension DSLTree {
 }
 
 // CollectionConsumer
-typealias _ConsumerInterface = (
+@_spi(RegexBuilder)
+public typealias _ConsumerInterface = (
   String, Range<String.Index>
 ) -> String.Index?
 
 // Type producing consume
 // TODO: better name
-typealias _MatcherInterface = (
+@_spi(RegexBuilder)
+public typealias _MatcherInterface = (
   String, String.Index, Range<String.Index>
 ) -> (String.Index, Any)?
 
 // Character-set (post grapheme segmentation)
-typealias _CharacterPredicateInterface = (
+@_spi(RegexBuilder)
+public typealias _CharacterPredicateInterface = (
   (Character) -> Bool
 )
 
@@ -161,7 +168,8 @@ typealias _CharacterPredicateInterface = (
  */
 
 extension DSLTree.Node {
-  var children: [DSLTree.Node]? {
+  @_spi(RegexBuilder)
+  public var children: [DSLTree.Node]? {
     switch self {
       
     case let .orderedChoice(v):   return v
@@ -256,7 +264,8 @@ extension DSLTree {
   }
 }
 extension DSLTree.Node {
-  func _captureStructure(
+  @_spi(RegexBuilder)
+  public func _captureStructure(
     _ constructor: inout CaptureStructure.Constructor
   ) -> CaptureStructure {
     switch self {
@@ -323,14 +332,18 @@ extension DSLTree.Node {
 }
 
 extension DSLTree.Node {
-  func appending(_ newNode: DSLTree.Node) -> DSLTree.Node {
+  @_spi(RegexBuilder)
+  public func appending(_ newNode: DSLTree.Node) -> DSLTree.Node {
     if case .concatenation(let components) = self {
       return .concatenation(components + [newNode])
     }
     return .concatenation([self, newNode])
   }
 
-  func appendingAlternationCase(_ newNode: DSLTree.Node) -> DSLTree.Node {
+  @_spi(RegexBuilder)
+  public func appendingAlternationCase(
+    _ newNode: DSLTree.Node
+  ) -> DSLTree.Node {
     if case .orderedChoice(let components) = self {
       return .orderedChoice(components + [newNode])
     }
@@ -338,32 +351,13 @@ extension DSLTree.Node {
   }
 }
 
-extension DSLTree.Node {
-  /// Generates a DSLTree node for a repeated range of the given DSLTree node.
-  /// Individual public API functions are in the generated Variadics.swift file.
-  static func repeating(
-    _ range: Range<Int>,
-    _ behavior: QuantificationBehavior,
-    _ node: DSLTree.Node
-  ) -> DSLTree.Node {
-    // TODO: Throw these as errors
-    assert(range.lowerBound >= 0, "Cannot specify a negative lower bound")
-    assert(!range.isEmpty, "Cannot specify an empty range")
-    
-    switch (range.lowerBound, range.upperBound) {
-    case (0, Int.max): // 0...
-      return .quantification(.zeroOrMore, behavior.astKind, node)
-    case (1, Int.max): // 1...
-      return .quantification(.oneOrMore, behavior.astKind, node)
-    case _ where range.count == 1: // ..<1 or ...0 or any range with count == 1
-      // Note: `behavior` is ignored in this case
-      return .quantification(.exactly(.init(faking: range.lowerBound)), .eager, node)
-    case (0, _): // 0..<n or 0...n or ..<n or ...n
-      return .quantification(.upToN(.init(faking: range.upperBound)), behavior.astKind, node)
-    case (_, Int.max): // n...
-      return .quantification(.nOrMore(.init(faking: range.lowerBound)), behavior.astKind, node)
-    default: // any other range
-      return .quantification(.range(.init(faking: range.lowerBound), .init(faking: range.upperBound)), behavior.astKind, node)
-    }
+@_spi(RegexBuilder)
+public struct ReferenceID: Hashable, Equatable {
+  private static var counter: Int = 0
+  var base: Int
+
+  public init() {
+    base = Self.counter
+    Self.counter += 1
   }
 }

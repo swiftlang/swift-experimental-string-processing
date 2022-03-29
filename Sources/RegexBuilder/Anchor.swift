@@ -10,6 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 import _MatchingEngine
+@_spi(RegexBuilder) import _StringProcessing
 
 public struct Anchor {
   internal enum Kind {

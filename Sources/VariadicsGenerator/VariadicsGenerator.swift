@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// swift run VariadicsGenerator --max-arity 10 > Sources/_StringProcessing/RegexDSL/Variadics.swift
+// swift run VariadicsGenerator --max-arity 10 > Sources/RegexBuilder/Variadics.swift
 
 import ArgumentParser
 #if os(macOS)
@@ -121,6 +121,7 @@ struct VariadicsGenerator: ParsableCommand {
       // BEGIN AUTO-GENERATED CONTENT
 
       import _MatchingEngine
+      @_spi(RegexBuilder) import _StringProcessing
 
 
       """)

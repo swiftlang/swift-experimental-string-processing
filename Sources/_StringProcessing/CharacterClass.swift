@@ -178,6 +178,17 @@ public struct CharacterClass: Hashable {
   }
 }
 
+extension CharacterClass: RegexComponent {
+  public typealias Output = Substring
+
+  public var regex: Regex<Output> {
+    guard let ast = self.makeAST() else {
+      fatalError("FIXME: extended AST?")
+    }
+    return Regex(ast: ast)
+  }
+}
+
 extension RegexComponent where Self == CharacterClass {
   public static var any: CharacterClass {
     .init(cc: .any, matchLevel: .graphemeCluster)
