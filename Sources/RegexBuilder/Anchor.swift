@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _MatchingEngine
+import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
 public struct Anchor {

@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
-@testable import _MatchingEngine
+@testable import _RegexParser
 
 class UtilTests: XCTestCase {
   func testTupleTypeConstruction() {

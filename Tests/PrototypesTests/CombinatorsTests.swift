@@ -11,7 +11,7 @@
 
 import XCTest
 @testable import Combinators
-import _MatchingEngine
+import _RegexParser
 
 class CombinatorTests: XCTestCase {
   func testAdHoc() {

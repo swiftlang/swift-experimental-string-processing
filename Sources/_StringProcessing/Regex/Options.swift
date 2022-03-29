@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _MatchingEngine
+import _RegexParser
 
 extension RegexComponent {
   public func caseSensitive(_ isCaseSensitive: Bool) -> Regex<Output> {
