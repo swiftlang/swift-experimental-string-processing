@@ -99,12 +99,14 @@ class RegexDSLTests: XCTestCase {
     do {
       let regex = Regex {
         "ab"
-        Capture {
-          ChoiceOf {
-            "c"
-            "def"
+        OneOrMore {
+          Capture {
+            ChoiceOf {
+              "c"
+              "def"
+            }
           }
-        }.+
+        }
       }
       XCTAssertTrue(
         try XCTUnwrap("abc".match(regex)?.output) == ("abc", "c"))
@@ -149,12 +151,17 @@ class RegexDSLTests: XCTestCase {
       ("aaaabccccdddkj", ("aaaabccccdddkj", "b", "cccc", "d", "k", nil, "j")),
       matchType: (Substring, Substring, Substring, Substring?, Substring, Substring?, Substring?).self, ==)
     {
-      "a".+
+      OneOrMore("a")
       Capture(OneOrMore(Character("b"))) // Substring
       Capture(ZeroOrMore("c")) // Substring
-      Capture(.hexDigit).* // Substring?
-      "e".?
-      Capture("t" | "k") // Substring
+      ZeroOrMore(Capture(.hexDigit)) // Substring?
+      Optionally("e")
+      Capture {
+        ChoiceOf {
+          "t"
+          "k"
+        }
+      } // Substring
       ChoiceOf { Capture("k"); Capture("j") } // (Substring?, Substring?)
     }
   }
@@ -276,7 +283,7 @@ class RegexDSLTests: XCTestCase {
       matchType: Substring.self, ==)
     {
       Anchor.startOfLine
-      "a".+
+      OneOrMore("a")
       "b"
       Anchor.endOfLine
     }
@@ -298,7 +305,7 @@ class RegexDSLTests: XCTestCase {
       ("aaaaab", nil),
       matchType: Substring.self, ==)
     {
-      "a".+
+      OneOrMore("a")
       lookahead(CharacterClass.digit)
       lookahead("2", negative: true)
       CharacterClass.word
@@ -361,7 +368,7 @@ class RegexDSLTests: XCTestCase {
       ("aaa     ", ("aaa     ", nil, nil)),
       matchType: (Substring, Int?, Word?).self, ==)
     {
-      "a".+
+      OneOrMore("a")
       OneOrMore(.whitespace)
       Optionally {
         Capture(OneOrMore(.digit)) { Int($0)! }
@@ -375,43 +382,45 @@ class RegexDSLTests: XCTestCase {
 
   func testNestedCaptureTypes() throws {
     let regex1 = Regex {
-      "a".+
+      OneOrMore("a")
       Capture {
         Capture(OneOrMore("b"))
-        "e".?
+        Optionally("e")
       }
     }
     let _: (Substring, Substring, Substring).Type
       = type(of: regex1).Output.self
     let regex2 = Regex {
-      "a".+
+      OneOrMore("a")
       Capture {
-        TryCapture("b") { Int($0) }.*
-        "e".?
+        ZeroOrMore {
+          TryCapture("b") { Int($0) }
+        }
+        Optionally("e")
       }
     }
     let _: (Substring, Substring, Int?).Type
       = type(of: regex2).Output.self
     let regex3 = Regex {
-      "a".+
+      OneOrMore("a")
       Capture {
         TryCapture("b") { Int($0) }
         ZeroOrMore {
           TryCapture("c") { Double($0) }
         }
-        "e".?
+        Optionally("e")
       }
     }
     let _: (Substring, Substring, Int, Double?).Type
       = type(of: regex3).Output.self
     let regex4 = Regex {
-      "a".+
+      OneOrMore("a")
       Capture {
         OneOrMore {
           Capture(OneOrMore("b"))
           Capture(ZeroOrMore("c"))
-          Capture("d").*
-          "e".?
+          ZeroOrMore(Capture("d"))
+          Optionally("e")
         }
       }
     }
