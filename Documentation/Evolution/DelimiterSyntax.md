@@ -29,7 +29,7 @@ The ability to compile regex patterns at runtime is useful for cases where it is
 
 ## Proposed solution
 
-We propose introducing a new kind of literal for a regex. In Swift 5.7 mode, a regex literal may be written using `/.../` delimiters:
+We propose introducing a new kind of literal for a regex. In a new language mode, a regex literal may be written using `/.../` delimiters:
 
 ```swift
 // Matches "<identifier> = <hexadecimal value>", extracting the identifier and hex number
@@ -39,7 +39,7 @@ let regex = /(?<identifier>[[:alpha:]]\w*) = (?<hex>[0-9A-F]+)/
 
 Forward slashes are a regex term of art, and are used as the delimiters for regex literals in Perl, JavaScript and Ruby (though Perl and Ruby also provide alternatives). Their ubiquity and familiarity makes them a compelling choice for Swift.
 
-A regex literal may also be spelled using an extended syntax `#/.../#`, which allows the placement of an arbitrary number of balanced `#` characters around a regex literal. This syntax allows regex literals to contain unescaped forward slashes, and may be used without needing to upgrade to Swift 5.7 mode.
+A regex literal may also be spelled using an extended syntax `#/.../#`, which allows the placement of an arbitrary number of balanced `#` characters around a regex literal. This syntax allows regex literals to contain unescaped forward slashes, and may be used without needing to upgrade to a new language mode.
 
 Within a regex literal, the compiler will parse the regex syntax outlined in in [the Regex Syntax pitch][internal-syntax], and diagnose any errors at compile time. The capture types and labels are automatically inferred based on the capture groups present in the regex. Using a literal allows editors to support features such as syntax coloring inside the literal, highlighting sub-structure of the regex, and conversion of the literal to an equivalent result builder DSL (see [Regex builder DSL][regex-dsl]).
 
@@ -93,13 +93,13 @@ let regex = #/usr/lib/modules/([^/]+)/vmlinuz/#
 // regex: Regex<(Substring, Substring)>
 ```
 
-Additionally, this syntax provides a way to write a regex literal without needing to upgrade to Swift 5.7 mode.
+Additionally, this syntax provides a way to write a regex literal without needing to upgrade to a new language mode.
 
 #### Escaping of backslashes
 
 This syntax differs from raw string literals `#"..."#` in that it does not treat backslashes as literal within the regex. A string literal `#"\n"#` represents the literal characters `\n`. However a regex literal `#/\n/#` remains a newline escape sequence.
 
-One of the primary motivations behind this escaping behavior in raw string literals is that it allows the contents to be easily transportable to/from e.g external files where escaping is unnecessary. For string literals, this suggests that backslashes be treated as literal by default. For regex literals, it instead suggests that backslashes should retain their semantic meaning, as it enables interoperability with regexes taken from outside your code without having to adjust escape sequences to match the delimiters used.
+One of the primary motivations behind this escaping behavior in raw string literals is that it allows the contents to be easily transportable to/from e.g external files where escaping is unnecessary. For string literals, this suggests that backslashes be treated as literal by default. For regex literals however, it instead suggests that backslashes should retain their semantic meaning, as it enables interoperability with regexes taken from outside your code without having to adjust escape sequences to match the delimiters used.
 
 With string literals, escaping can be tricky without the use of raw syntax, as backslashes may have semantic meaning to the consumer, rather than the compiler. For example:
 
@@ -197,7 +197,7 @@ It should be noted that this only mitigates the issue, as it does not handle the
 
 ### Language changes required
 
-In addition to ambiguities listed above, there are also some parsing ambiguities that would require the following language changes in Swift 5.7 mode:
+In addition to ambiguities listed above, there are also some parsing ambiguities that would require the following language changes in a new language mode:
 
 - Deprecation of prefix operators containing the `/` character.
 - Parsing `/,` and `/]` as the start of a regex literal if a closing `/` is found, rather than an unapplied operator in an argument list. For example, `fn(/, /)` becomes a regex literal rather than 2 unapplied operator arguments.
