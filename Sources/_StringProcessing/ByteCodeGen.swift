@@ -125,7 +125,7 @@ extension Compiler.ByteCodeGen {
       // TODO: May want to consider Unicode level
       builder.buildAssert { (input, pos, bounds) in
         // TODO: How should we handle bounds?
-        CharacterClass.word.isBoundary(
+        _CharacterClassModel.word.isBoundary(
           input, at: pos, bounds: bounds)
       }
 
@@ -133,7 +133,7 @@ extension Compiler.ByteCodeGen {
       // TODO: May want to consider Unicode level
       builder.buildAssert { (input, pos, bounds) in
         // TODO: How should we handle bounds?
-        !CharacterClass.word.isBoundary(
+        !_CharacterClassModel.word.isBoundary(
           input, at: pos, bounds: bounds)
       }
     }

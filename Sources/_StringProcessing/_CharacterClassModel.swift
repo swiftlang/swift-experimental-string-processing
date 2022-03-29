@@ -15,7 +15,8 @@ import _RegexParser
 // an AST, but this isn't a natural thing to produce in the context
 // of parsing or to store in an AST
 
-public struct CharacterClass: Hashable {
+@_spi(RegexBuilder)
+public struct _CharacterClassModel: Hashable {
   /// The actual character class to match.
   var cc: Representation
   
@@ -54,6 +55,7 @@ public struct CharacterClass: Hashable {
   public typealias SetOperator = AST.CustomCharacterClass.SetOp
 
   /// A binary set operation that forms a character class component.
+  @_spi(RegexBuilder)
   public struct SetOperation: Hashable {
     var lhs: CharacterSetComponent
     var op: SetOperator
@@ -71,12 +73,13 @@ public struct CharacterClass: Hashable {
     }
   }
 
+  @_spi(RegexBuilder)
   public enum CharacterSetComponent: Hashable {
     case character(Character)
     case range(ClosedRange<Character>)
 
     /// A nested character class.
-    case characterClass(CharacterClass)
+    case characterClass(_CharacterClassModel)
 
     /// A binary set operation of character class components.
     indirect case setOperation(SetOperation)
@@ -178,7 +181,7 @@ public struct CharacterClass: Hashable {
   }
 }
 
-extension CharacterClass: RegexComponent {
+extension _CharacterClassModel: RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> {
@@ -189,51 +192,52 @@ extension CharacterClass: RegexComponent {
   }
 }
 
-extension RegexComponent where Self == CharacterClass {
-  public static var any: CharacterClass {
+@_spi(RegexBuilder)
+extension RegexComponent where Self == _CharacterClassModel {
+  public static var any: _CharacterClassModel {
     .init(cc: .any, matchLevel: .graphemeCluster)
   }
 
-  public static var anyGrapheme: CharacterClass {
+  public static var anyGrapheme: _CharacterClassModel {
     .init(cc: .anyGrapheme, matchLevel: .graphemeCluster)
   }
 
-  public static var whitespace: CharacterClass {
+  public static var whitespace: _CharacterClassModel {
     .init(cc: .whitespace, matchLevel: .graphemeCluster)
   }
   
-  public static var digit: CharacterClass {
+  public static var digit: _CharacterClassModel {
     .init(cc: .digit, matchLevel: .graphemeCluster)
   }
   
-  public static var hexDigit: CharacterClass {
+  public static var hexDigit: _CharacterClassModel {
     .init(cc: .hexDigit, matchLevel: .graphemeCluster)
   }
 
-  public static var horizontalWhitespace: CharacterClass {
+  public static var horizontalWhitespace: _CharacterClassModel {
     .init(cc: .horizontalWhitespace, matchLevel: .graphemeCluster)
   }
 
-  public static var newlineSequence: CharacterClass {
+  public static var newlineSequence: _CharacterClassModel {
     .init(cc: .newlineSequence, matchLevel: .graphemeCluster)
   }
 
-  public static var verticalWhitespace: CharacterClass {
+  public static var verticalWhitespace: _CharacterClassModel {
     .init(cc: .verticalWhitespace, matchLevel: .graphemeCluster)
   }
 
-  public static var word: CharacterClass {
+  public static var word: _CharacterClassModel {
     .init(cc: .word, matchLevel: .graphemeCluster)
   }
 
   public static func custom(
-    _ components: [CharacterClass.CharacterSetComponent]
-  ) -> CharacterClass {
+    _ components: [_CharacterClassModel.CharacterSetComponent]
+  ) -> _CharacterClassModel {
     .init(cc: .custom(components), matchLevel: .graphemeCluster)
   }
 }
 
-extension CharacterClass.CharacterSetComponent: CustomStringConvertible {
+extension _CharacterClassModel.CharacterSetComponent: CustomStringConvertible {
   public var description: String {
     switch self {
     case .range(let range): return "<range \(range)>"
@@ -244,7 +248,7 @@ extension CharacterClass.CharacterSetComponent: CustomStringConvertible {
   }
 }
 
-extension CharacterClass.Representation: CustomStringConvertible {
+extension _CharacterClassModel.Representation: CustomStringConvertible {
   public var description: String {
     switch self {
     case .any: return "<any>"
@@ -261,13 +265,13 @@ extension CharacterClass.Representation: CustomStringConvertible {
   }
 }
 
-extension CharacterClass: CustomStringConvertible {
+extension _CharacterClassModel: CustomStringConvertible {
   public var description: String {
     return "\(isInverted ? "not " : "")\(cc)"
   }
 }
 
-extension CharacterClass {
+extension _CharacterClassModel {
   public func makeAST() -> AST.Node? {
     let inv = isInverted
 
@@ -320,7 +324,7 @@ extension CharacterClass {
 }
 
 extension DSLTree.Node {
-  var characterClass: CharacterClass? {
+  var characterClass: _CharacterClassModel? {
     switch self {
     case let .customCharacterClass(ccc):
       return ccc.modelCharacterClass
@@ -335,10 +339,10 @@ extension DSLTree.Node {
   }
 }
 
-extension CharacterClass {
+extension _CharacterClassModel {
   public func withMatchLevel(
-    _ level: CharacterClass.MatchLevel
-  ) -> CharacterClass {
+    _ level: _CharacterClassModel.MatchLevel
+  ) -> _CharacterClassModel {
     var cc = self
     cc.matchLevel = level
     return cc
@@ -346,7 +350,7 @@ extension CharacterClass {
 }
 
 extension DSLTree.Atom {
-  var characterClass: CharacterClass? {
+  var characterClass: _CharacterClassModel? {
     switch self {
     case let .unconverted(a):
       return a.characterClass
@@ -357,7 +361,7 @@ extension DSLTree.Atom {
 }
 
 extension AST.Atom {
-  var characterClass: CharacterClass? {
+  var characterClass: _CharacterClassModel? {
     switch kind {
     case let .escaped(b): return b.characterClass
 
@@ -383,7 +387,7 @@ extension AST.Atom {
 }
 
 extension AST.Atom.EscapedBuiltin {
-  var characterClass: CharacterClass? {
+  var characterClass: _CharacterClassModel? {
     switch self {
     case .decimalDigit:    return .digit
     case .notDecimalDigit: return .digit.inverted
@@ -414,9 +418,9 @@ extension AST.Atom.EscapedBuiltin {
 
 extension DSLTree.CustomCharacterClass {
   // TODO: Refactor a bit, and... can we drop this type?
-  var modelCharacterClass: CharacterClass? {
+  var modelCharacterClass: _CharacterClassModel? {
     var result =
-      Array<CharacterClass.CharacterSetComponent>()
+      Array<_CharacterClassModel.CharacterSetComponent>()
     for m in members {
       switch m {
       case let .atom(a):
@@ -482,12 +486,12 @@ extension DSLTree.CustomCharacterClass {
         break
       }
     }
-    let cc = CharacterClass.custom(result)
+    let cc = _CharacterClassModel.custom(result)
     return isInverted ? cc.inverted : cc
   }
 }
 
-extension CharacterClass {
+extension _CharacterClassModel {
   // FIXME: Calling on inverted sets wont be the same as the
   // inverse of a boundary if at the start or end of the
   // string. (Think through what we want: do it ourselves or

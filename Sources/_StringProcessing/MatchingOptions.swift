@@ -84,7 +84,7 @@ extension MatchingOptions {
 // Deprecated CharacterClass.MatchLevel API
 extension MatchingOptions {
   @available(*, deprecated)
-  var matchLevel: CharacterClass.MatchLevel {
+  var matchLevel: _CharacterClassModel.MatchLevel {
     switch semanticLevel {
     case .graphemeCluster:
       return .graphemeCluster

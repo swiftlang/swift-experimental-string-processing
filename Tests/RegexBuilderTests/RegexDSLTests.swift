@@ -250,9 +250,9 @@ class RegexDSLTests: XCTestCase {
     {
       Repeat(2...) {
         Repeat(count: 3) {
-          CharacterClass.word
+          _CharacterClassModel.word
         }
-        CharacterClass.digit
+        _CharacterClassModel.digit
       }
     }
     
