@@ -16,7 +16,7 @@ extension Regex {
   public init<Content: RegexComponent>(
     @RegexComponentBuilder _ content: () -> Content
   ) where Content.Output == Output {
-    self.init(content())
+    self = content().regex
   }
 }
 

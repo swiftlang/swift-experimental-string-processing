@@ -81,12 +81,6 @@ public struct Regex<Output>: RegexComponent {
     self.init(ast: try! parseWithDelimiters(pattern))
   }
 
-  public init<Content: RegexComponent>(
-    _ content: Content
-  ) where Content.Output == Output {
-    self = content.regex
-  }
-
   public var regex: Regex<Output> {
     self
   }

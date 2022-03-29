@@ -22,7 +22,7 @@ class RegexDSLTests: XCTestCase {
     line: UInt = #line,
     @RegexComponentBuilder _ content: () -> Content
   ) throws {
-    let regex = Regex(content())
+    let regex = content()
     for (input, maybeExpectedCaptures) in tests {
       let maybeMatch = input.match(regex)
       if let expectedCaptures = maybeExpectedCaptures {
