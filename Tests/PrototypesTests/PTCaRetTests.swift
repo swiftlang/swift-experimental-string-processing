@@ -11,7 +11,7 @@
 
 import XCTest
 @testable import Prototypes
-import _MatchingEngine
+import _RegexParser
 
 enum Event: UInt64, Hashable {
   case authenticate = 0

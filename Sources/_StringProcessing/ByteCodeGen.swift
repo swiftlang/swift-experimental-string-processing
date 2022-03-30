@@ -1,4 +1,4 @@
-import _MatchingEngine
+import _RegexParser
 
 extension Compiler {
   struct ByteCodeGen {

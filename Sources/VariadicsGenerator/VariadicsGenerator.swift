@@ -120,7 +120,7 @@ struct VariadicsGenerator: ParsableCommand {
 
       // BEGIN AUTO-GENERATED CONTENT
 
-      import _MatchingEngine
+      import _RegexParser
       @_spi(RegexBuilder) import _StringProcessing
 
 
@@ -380,13 +380,6 @@ struct VariadicsGenerator: ParsableCommand {
         }
       }
 
-      \(params.disfavored)\
-      public postfix func \(kind.operatorName)<\(params.genericParams)>(
-        _ component: Component
-      ) -> \(kind.rawValue)<\(params.matchType)> \(params.whereClause) {
-        .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component.regex.root))
-      }
-
       \(kind == .zeroOrOne ?
         """
         extension \(concatBuilderName) {
@@ -497,10 +490,6 @@ struct VariadicsGenerator: ParsableCommand {
         ) -> ChoiceOf<\(matchType)> \(whereClause) {
           .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
         }
-      }
-
-      public func | <\(genericParams)>(lhs: R0, rhs: R1) -> ChoiceOf<\(matchType)> \(whereClause) {
-        .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
       }
 
       """)

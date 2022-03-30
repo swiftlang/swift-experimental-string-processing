@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _MatchingEngine
+import _RegexParser
 
 
 /// A type that represents a regular expression.
@@ -79,12 +79,6 @@ public struct Regex<Output>: RegexComponent {
     // The version argument is passed by the compiler using the value defined
     // in libswiftParseRegexLiteral.
     self.init(ast: try! parseWithDelimiters(pattern))
-  }
-
-  public init<Content: RegexComponent>(
-    _ content: Content
-  ) where Content.Output == Output {
-    self = content.regex
   }
 
   public var regex: Regex<Output> {

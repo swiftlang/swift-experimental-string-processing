@@ -9,14 +9,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _MatchingEngine
+import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
 extension Regex {
   public init<Content: RegexComponent>(
     @RegexComponentBuilder _ content: () -> Content
   ) where Content.Output == Output {
-    self.init(content())
+    self = content().regex
   }
 }
 
@@ -164,10 +164,6 @@ public struct Repeat<Output>: _BuiltinRegexComponent {
   // Note: Public initializers and operators are currently gyb'd. See
   // Variadics.swift.
 }
-
-postfix operator .?
-postfix operator .*
-postfix operator .+
 
 // MARK: Alternation
 
