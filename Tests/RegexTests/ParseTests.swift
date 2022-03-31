@@ -428,6 +428,10 @@ extension RegexTests {
 
     parseTest("[-]", charClass("-"))
 
+    // Empty character classes are forbidden, therefore this is a character
+    // class of literal ']'.
+    parseTest("[]]", charClass("]"))
+
     // These are metacharacters in certain contexts, but normal characters
     // otherwise.
     parseTest(
@@ -494,6 +498,25 @@ extension RegexTests {
     parseTest("[*]", charClass("*"))
     parseTest("[{0}]", charClass("{", "0", "}"))
 
+    parseTest(#"[\f-\e]"#, charClass(
+      range_m(.escaped(.formfeed), .escaped(.escape))))
+    parseTest(#"[\a-\b]"#, charClass(
+      range_m(.escaped(.alarm), .escaped(.backspace))))
+    parseTest(#"[\n-\r]"#, charClass(
+      range_m(.escaped(.newline), .escaped(.carriageReturn))))
+    parseTest(#"[\t-\t]"#, charClass(
+      range_m(.escaped(.tab), .escaped(.tab))))
+
+    parseTest(#"[\cX-\cY\C-A-\C-B\M-\C-A-\M-\C-B\M-A-\M-B]"#, charClass(
+      range_m(.keyboardControl("X"), .keyboardControl("Y")),
+      range_m(.keyboardControl("A"), .keyboardControl("B")),
+      range_m(.keyboardMetaControl("A"), .keyboardMetaControl("B")),
+      range_m(.keyboardMeta("A"), .keyboardMeta("B"))
+    ))
+
+    parseTest(#"[\N{DOLLAR SIGN}-\N{APOSTROPHE}]"#, charClass(
+      range_m(.namedCharacter("DOLLAR SIGN"), .namedCharacter("APOSTROPHE"))))
+
     // MARK: Operators
 
     parseTest(
@@ -544,9 +567,8 @@ extension RegexTests {
       #"a\Q \Q \\.\Eb"#,
       concat("a", quote(#" \Q \\."#), "b"))
 
-    // These follow the PCRE behavior.
+    // This follows the PCRE behavior.
     parseTest(#"\Q\\E"#, quote("\\"))
-    parseTest(#"\E"#, "E")
 
     parseTest(#"a" ."b"#, concat("a", quote(" ."), "b"),
               syntax: .experimental)
@@ -565,6 +587,25 @@ extension RegexTests {
               syntax: .experimental)
 
     parseTest(#"["-"]"#, charClass(range_m("\"", "\"")))
+
+    // MARK: Escapes
+
+    // Not metachars, but we allow their escape as ASCII.
+    parseTest(#"\<"#, "<")
+    parseTest(#"\ "#, " ")
+    parseTest(#"\\"#, "\\")
+
+    // Escaped U+3000 IDEOGRAPHIC SPACE.
+    parseTest(#"\\#u{3000}"#, "\u{3000}")
+
+    // Control and meta controls.
+    parseTest(#"\c "#, atom(.keyboardControl(" ")))
+    parseTest(#"\c!"#, atom(.keyboardControl("!")))
+    parseTest(#"\c~"#, atom(.keyboardControl("~")))
+    parseTest(#"\C--"#, atom(.keyboardControl("-")))
+    parseTest(#"\M-\C-a"#, atom(.keyboardMetaControl("a")))
+    parseTest(#"\M-\C--"#, atom(.keyboardMetaControl("-")))
+    parseTest(#"\M-a"#, atom(.keyboardMeta("a")))
 
     // MARK: Comments
 
@@ -989,13 +1030,6 @@ extension RegexTests {
     // Backreferences are not valid in custom character classes.
     parseTest(#"[\8]"#, charClass("8"))
     parseTest(#"[\9]"#, charClass("9"))
-    parseTest(#"[\g]"#, charClass("g"))
-    parseTest(#"[\g+30]"#, charClass("g", "+", "3", "0"))
-    parseTest(#"[\g{1}]"#, charClass("g", "{", "1", "}"))
-    parseTest(#"[\k'a']"#, charClass("k", "'", "a", "'"))
-
-    parseTest(#"\g"#, atom(.char("g")))
-    parseTest(#"\k"#, atom(.char("k")))
 
     // MARK: Character names.
 
@@ -1526,7 +1560,7 @@ extension RegexTests {
     parseWithDelimitersTest("re'x*'", zeroOrMore(of: "x"))
 
     parseWithDelimitersTest(#"re'🔥🇩🇰'"#, concat("🔥", "🇩🇰"))
-    parseWithDelimitersTest(#"re'\🔥✅'"#, concat("🔥", "✅"))
+    parseWithDelimitersTest(#"re'🔥✅'"#, concat("🔥", "✅"))
 
     // Printable ASCII characters.
     delimiterLexingTest(##"re' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~'"##)
@@ -1871,9 +1905,36 @@ extension RegexTests {
     diagnosticTest("(?<a-b", .expected(">"))
     diagnosticTest("(?<a-b>", .expected(")"))
 
+    // The first ']' of a custom character class is literal, so this is missing
+    // the closing bracket.
+    diagnosticTest("[]", .expected("]"))
+
     // MARK: Bad escapes
 
     diagnosticTest("\\", .expectedEscape)
+
+    // TODO: Custom diagnostic for control sequence
+    diagnosticTest(#"\c"#, .unexpectedEndOfInput)
+
+    // TODO: Custom diagnostic for expected backref
+    diagnosticTest(#"\g"#, .invalidEscape("g"))
+    diagnosticTest(#"\k"#, .invalidEscape("k"))
+
+    // TODO: Custom diagnostic for backref in custom char class
+    diagnosticTest(#"[\g]"#, .invalidEscape("g"))
+    diagnosticTest(#"[\g+30]"#, .invalidEscape("g"))
+    diagnosticTest(#"[\g{1}]"#, .invalidEscape("g"))
+    diagnosticTest(#"[\k'a']"#, .invalidEscape("k"))
+
+    // TODO: Custom diagnostic for missing '\Q'
+    diagnosticTest(#"\E"#, .invalidEscape("E"))
+
+    // Non-ASCII non-whitespace cases.
+    diagnosticTest(#"\🔥"#, .invalidEscape("🔥"))
+    diagnosticTest(#"\🇩🇰"#, .invalidEscape("🇩🇰"))
+    diagnosticTest(#"\e\#u{301}"#, .invalidEscape("e\u{301}"))
+    diagnosticTest(#"\\#u{E9}"#, .invalidEscape("é"))
+    diagnosticTest(#"\˂"#, .invalidEscape("˂"))
 
     // MARK: Text Segment options
 
