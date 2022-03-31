@@ -10,11 +10,19 @@
 //===----------------------------------------------------------------------===//
 
 extension Regex {
+  /// The result of matching a regex against a string.
+  ///
+  /// A `Match` forwards API to the `Output` generic parameter,
+  /// providing direct access to captures.
   @dynamicMemberLookup
   public struct Match {
     let input: String
+
+    /// The range of the overall match
     public let range: Range<String.Index>
+
     let rawCaptures: [StructuredCapture]
+
     let referencedCaptureOffsets: [ReferenceID: Int]
 
     let value: Any?
@@ -22,6 +30,7 @@ extension Regex {
 }
 
 extension Regex.Match {
+  /// The produced output from the match operation
   public var output: Output {
     if Output.self == AnyRegexOutput.self {
       let wholeMatchAsCapture = StructuredCapture(
@@ -48,6 +57,7 @@ extension Regex.Match {
     }
   }
 
+  /// Lookup a capture by name or number
   public subscript<T>(dynamicMember keyPath: KeyPath<Output, T>) -> T {
     output[keyPath: keyPath]
   }
@@ -72,36 +82,57 @@ extension Regex.Match {
 }
 
 extension RegexComponent {
-  public func match(in input: String) -> Regex<Output>.Match? {
-    _match(
-      input, in: input.startIndex..<input.endIndex)
+  /// Match a string in its entirety.
+  ///
+  /// Returns `nil` if no match and throws on abort
+  public func matchWhole(_ s: String) throws -> Regex<Output>.Match? {
+    try _match(s, in: s.startIndex..<s.endIndex, mode: .wholeString)
   }
-  public func match(in input: Substring) -> Regex<Output>.Match? {
-    _match(
-      input.base, in: input.startIndex..<input.endIndex)
+
+  /// Match part of the string, starting at the beginning.
+  ///
+  /// Returns `nil` if no match and throws on abort
+  public func matchPrefix(_ s: String) throws -> Regex<Output>.Match? {
+    try _match(s, in: s.startIndex..<s.endIndex, mode: .partialFromFront)
+  }
+
+  /// Match a substring in its entirety.
+  ///
+  /// Returns `nil` if no match and throws on abort
+  public func matchWhole(_ s: Substring) throws -> Regex<Output>.Match? {
+    try _match(s.base, in: s.startIndex..<s.endIndex, mode: .wholeString)
+  }
+
+  /// Match part of the string, starting at the beginning.
+  ///
+  /// Returns `nil` if no match and throws on abort
+  public func matchPrefix(_ s: Substring) throws -> Regex<Output>.Match? {
+    try _match(s.base, in: s.startIndex..<s.endIndex, mode: .partialFromFront)
   }
 
   func _match(
     _ input: String,
     in inputRange: Range<String.Index>,
     mode: MatchMode = .wholeString
-  ) -> Regex<Output>.Match? {
+  ) throws -> Regex<Output>.Match? {
     let executor = Executor(program: regex.program.loweredProgram)
-    do {
       return try executor.match(input, in: inputRange, mode)
-    } catch {
-      fatalError(String(describing: error))
-    }
   }
 }
 
 extension String {
-  public func match<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
-    regex.match(in: self)
+  public func matchWhole<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
+    try? regex.matchWhole(self)
+  }
+  public func matchPrefix<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
+    try? regex.matchPrefix(self)
   }
 }
 extension Substring {
-  public func match<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
-    regex.match(in: self)
+  public func matchWhole<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
+    try? regex.matchWhole(self)
+  }
+  public func matchPrefix<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
+    try? regex.matchPrefix(self)
   }
 }

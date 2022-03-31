@@ -12,17 +12,29 @@
 import _StringProcessing
 
 extension String {
-  public func match<R: RegexComponent>(
+  public func matchWhole<R: RegexComponent>(
     @RegexComponentBuilder _ content: () -> R
   ) -> Regex<R.Output>.Match? {
-    match(content())
+    matchWhole(content())
+  }
+
+  public func matchPrefix<R: RegexComponent>(
+    @RegexComponentBuilder _ content: () -> R
+  ) -> Regex<R.Output>.Match? {
+    matchPrefix(content())
   }
 }
 
 extension Substring {
-  public func match<R: RegexComponent>(
+  public func matchWhole<R: RegexComponent>(
     @RegexComponentBuilder _ content: () -> R
   ) -> Regex<R.Output>.Match? {
-    match(content())
+    matchWhole(content())
+  }
+
+  public func matchPrefix<R: RegexComponent>(
+    @RegexComponentBuilder _ content: () -> R
+  ) -> Regex<R.Output>.Match? {
+    matchPrefix(content())
   }
 }
