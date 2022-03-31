@@ -1566,6 +1566,173 @@ extension Repeat {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
   }
 }
+extension BacktrackingScope {
+  @_disfavoredOverload
+  public init<Component: RegexComponent>(
+    _ component: Component
+  ) where Output == Substring {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
+  }
+}
+
+extension BacktrackingScope {
+  @_disfavoredOverload
+  public init<Component: RegexComponent>(
+    @RegexComponentBuilder _ component: () -> Component
+  ) where Output == Substring {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
+  }
+}
+extension BacktrackingScope {
+    public init<W, C0, Component: RegexComponent>(
+    _ component: Component
+  ) where Output == (Substring, C0), Component.Output == (W, C0) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
+  }
+}
+
+extension BacktrackingScope {
+    public init<W, C0, Component: RegexComponent>(
+    @RegexComponentBuilder _ component: () -> Component
+  ) where Output == (Substring, C0), Component.Output == (W, C0) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
+  }
+}
+extension BacktrackingScope {
+    public init<W, C0, C1, Component: RegexComponent>(
+    _ component: Component
+  ) where Output == (Substring, C0, C1), Component.Output == (W, C0, C1) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
+  }
+}
+
+extension BacktrackingScope {
+    public init<W, C0, C1, Component: RegexComponent>(
+    @RegexComponentBuilder _ component: () -> Component
+  ) where Output == (Substring, C0, C1), Component.Output == (W, C0, C1) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
+  }
+}
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, Component: RegexComponent>(
+    _ component: Component
+  ) where Output == (Substring, C0, C1, C2), Component.Output == (W, C0, C1, C2) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
+  }
+}
+
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, Component: RegexComponent>(
+    @RegexComponentBuilder _ component: () -> Component
+  ) where Output == (Substring, C0, C1, C2), Component.Output == (W, C0, C1, C2) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
+  }
+}
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, Component: RegexComponent>(
+    _ component: Component
+  ) where Output == (Substring, C0, C1, C2, C3), Component.Output == (W, C0, C1, C2, C3) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
+  }
+}
+
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, Component: RegexComponent>(
+    @RegexComponentBuilder _ component: () -> Component
+  ) where Output == (Substring, C0, C1, C2, C3), Component.Output == (W, C0, C1, C2, C3) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
+  }
+}
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, C4, Component: RegexComponent>(
+    _ component: Component
+  ) where Output == (Substring, C0, C1, C2, C3, C4), Component.Output == (W, C0, C1, C2, C3, C4) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
+  }
+}
+
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, C4, Component: RegexComponent>(
+    @RegexComponentBuilder _ component: () -> Component
+  ) where Output == (Substring, C0, C1, C2, C3, C4), Component.Output == (W, C0, C1, C2, C3, C4) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
+  }
+}
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent>(
+    _ component: Component
+  ) where Output == (Substring, C0, C1, C2, C3, C4, C5), Component.Output == (W, C0, C1, C2, C3, C4, C5) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
+  }
+}
+
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent>(
+    @RegexComponentBuilder _ component: () -> Component
+  ) where Output == (Substring, C0, C1, C2, C3, C4, C5), Component.Output == (W, C0, C1, C2, C3, C4, C5) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
+  }
+}
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+    _ component: Component
+  ) where Output == (Substring, C0, C1, C2, C3, C4, C5, C6), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
+  }
+}
+
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+    @RegexComponentBuilder _ component: () -> Component
+  ) where Output == (Substring, C0, C1, C2, C3, C4, C5, C6), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
+  }
+}
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+    _ component: Component
+  ) where Output == (Substring, C0, C1, C2, C3, C4, C5, C6, C7), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
+  }
+}
+
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+    @RegexComponentBuilder _ component: () -> Component
+  ) where Output == (Substring, C0, C1, C2, C3, C4, C5, C6, C7), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
+  }
+}
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+    _ component: Component
+  ) where Output == (Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
+  }
+}
+
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+    @RegexComponentBuilder _ component: () -> Component
+  ) where Output == (Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
+  }
+}
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+    _ component: Component
+  ) where Output == (Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
+  }
+}
+
+extension BacktrackingScope {
+    public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+    @RegexComponentBuilder _ component: () -> Component
+  ) where Output == (Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
+    self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
+  }
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1>(
     accumulated: R0, next: R1
