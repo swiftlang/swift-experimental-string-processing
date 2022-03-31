@@ -33,32 +33,6 @@ intptr_t _swift_stdlib_getScalarBitArrayIdx(uint32_t scalar,
                                             const uint16_t *ranks);
 
 //===----------------------------------------------------------------------===//
-// Normalization
-//===----------------------------------------------------------------------===//
-
-SWIFT_CC
-uint16_t _swift_stdlib_getNormData(uint32_t scalar);
-
-SWIFT_CC
-const uint8_t *_swift_stdlib_nfd_decompositions(void);
-
-SWIFT_CC
-uint32_t _swift_stdlib_getDecompositionEntry(uint32_t scalar);
-
-SWIFT_CC
-uint32_t _swift_stdlib_getComposition(uint32_t x, uint32_t y);
-
-//===----------------------------------------------------------------------===//
-// Grapheme Breaking
-//===----------------------------------------------------------------------===//
-
-SWIFT_CC
-uint8_t _swift_stdlib_getGraphemeBreakProperty(uint32_t scalar);
-
-SWIFT_CC
-_Bool _swift_stdlib_isLinkingConsonant(uint32_t scalar);
-
-//===----------------------------------------------------------------------===//
 // Scalar Props
 //===----------------------------------------------------------------------===//
 
