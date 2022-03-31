@@ -239,7 +239,7 @@ public struct TryCapture<Output>: _BuiltinRegexComponent {
 
 /// An atomic group, i.e. opens a local backtracking scope which, upon successful exit,
 /// discards any remaining backtracking points from within the scope
-public struct BacktrackingScope<Output>: _BuiltinRegexComponent {
+public struct Local<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
   internal init(_ regex: Regex<Output>) {

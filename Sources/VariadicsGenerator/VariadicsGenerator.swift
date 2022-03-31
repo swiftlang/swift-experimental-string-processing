@@ -404,7 +404,7 @@ struct VariadicsGenerator: ParsableCommand {
 
   func emitAtomicGroup(arity: Int) {
     assert(arity >= 0)
-    let groupName = "BacktrackingScope"
+    let groupName = "Local"
     func node(builder: Bool) -> String {
       """
       .nonCapturingGroup(.atomicNonCapturing, component\(
