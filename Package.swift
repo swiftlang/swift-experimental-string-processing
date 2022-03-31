@@ -14,8 +14,8 @@ let package = Package(
             name: "Prototypes",
             targets: ["Prototypes"]),
         .library(
-            name: "_MatchingEngine",
-            targets: ["_MatchingEngine"]),
+            name: "_RegexParser",
+            targets: ["_RegexParser"]),
         .executable(
             name: "VariadicsGenerator",
             targets: ["VariadicsGenerator"])
@@ -27,7 +27,7 @@ let package = Package(
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
-            name: "_MatchingEngine",
+            name: "_RegexParser",
             dependencies: [],
             swiftSettings: [
                 .unsafeFlags(["-enable-library-evolution"])
@@ -35,19 +35,19 @@ let package = Package(
         .testTarget(
             name: "MatchingEngineTests",
             dependencies: [
-              "_MatchingEngine", "_StringProcessing"]),
+              "_RegexParser", "_StringProcessing"]),
         .target(
             name: "_CUnicode",
             dependencies: []),
         .target(
             name: "_StringProcessing",
-            dependencies: ["_MatchingEngine", "_CUnicode"],
+            dependencies: ["_RegexParser", "_CUnicode"],
             swiftSettings: [
                 .unsafeFlags(["-enable-library-evolution"]),
             ]),
         .target(
             name: "RegexBuilder",
-            dependencies: ["_StringProcessing", "_MatchingEngine"],
+            dependencies: ["_StringProcessing", "_RegexParser"],
             swiftSettings: [
                 .unsafeFlags(["-enable-library-evolution"]),
                 .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
@@ -63,7 +63,7 @@ let package = Package(
             ]),
         .target(
             name: "Prototypes",
-            dependencies: ["_MatchingEngine", "_StringProcessing"]),
+            dependencies: ["_RegexParser", "_StringProcessing"]),
 
         // MARK: Scripts
         .executableTarget(
@@ -75,14 +75,14 @@ let package = Package(
             name: "PatternConverter",
             dependencies: [
               .product(name: "ArgumentParser", package: "swift-argument-parser"),
-              "_MatchingEngine",
+              "_RegexParser",
               "_StringProcessing"
             ]),
 
         // MARK: Exercises
         .target(
           name: "Exercises",
-          dependencies: ["_MatchingEngine", "Prototypes", "_StringProcessing", "RegexBuilder"],
+          dependencies: ["_RegexParser", "Prototypes", "_StringProcessing", "RegexBuilder"],
           swiftSettings: [
               .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
           ]),

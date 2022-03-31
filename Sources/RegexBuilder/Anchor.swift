@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _MatchingEngine
+import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
 public struct Anchor {
@@ -107,16 +107,26 @@ extension Anchor {
   }
 }
 
-public func lookahead<R: RegexComponent>(
-  negative: Bool = false,
-  @RegexComponentBuilder _ content: () -> R
-) -> Regex<R.Output> {
-  Regex(node: .nonCapturingGroup(negative ? .negativeLookahead : .lookahead, content().regex.root))
-}
-  
-public func lookahead<R: RegexComponent>(
-  _ component: R,
-  negative: Bool = false
-) -> Regex<R.Output> {
-  Regex(node: .nonCapturingGroup(negative ? .negativeLookahead : .lookahead, component.regex.root))
+public struct Lookahead<Output>: _BuiltinRegexComponent {
+  public var regex: Regex<Output>
+
+  init(_ regex: Regex<Output>) {
+    self.regex = regex
+  }
+
+  public init<R: RegexComponent>(
+    _ component: R,
+    negative: Bool = false
+  ) where R.Output == Output {
+    self.init(node: .nonCapturingGroup(
+      negative ? .negativeLookahead : .lookahead, component.regex.root))
+  }
+
+  public init<R: RegexComponent>(
+    negative: Bool = false,
+    @RegexComponentBuilder _ component: () -> R
+  ) where R.Output == Output {
+    self.init(node: .nonCapturingGroup(
+      negative ? .negativeLookahead : .lookahead, component().regex.root))
+  }
 }

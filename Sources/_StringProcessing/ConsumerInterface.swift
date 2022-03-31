@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _MatchingEngine
+import _RegexParser
 
 extension DSLTree.Node {
   /// Attempt to generate a consumer from this AST node

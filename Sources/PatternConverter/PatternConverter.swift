@@ -12,7 +12,7 @@
 // swift run PatternConverter <regex>
 
 import ArgumentParser
-import _MatchingEngine
+import _RegexParser
 import _StringProcessing
 
 @main
@@ -52,7 +52,7 @@ struct PatternConverter: ParsableCommand {
     let delim = experimentalSyntax ? "|" : "/"
     print("Converting '\(delim)\(regex)\(delim)'")
 
-    let ast = try _MatchingEngine.parse(
+    let ast = try _RegexParser.parse(
       regex,
       experimentalSyntax ? .experimental : .traditional)
 
