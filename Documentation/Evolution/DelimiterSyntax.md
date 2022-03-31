@@ -20,11 +20,11 @@ let regex = try! Regex(compiling: pattern)
 // regex: Regex<AnyRegexOutput>
 ```
 
-The ability to compile regex patterns at runtime is useful for cases where it is e.g provided as user input, however it is suboptimal when the pattern is statically known for a number of reasons:
+The ability to compile regex patterns at run time is useful for cases where it is e.g provided as user input, however it is suboptimal when the pattern is statically known for a number of reasons:
 
-- Regex syntax errors aren't detected until runtime, and explicit error handling (e.g `try!`) is required to deal with these errors.
+- Regex syntax errors aren't detected until run time, and explicit error handling (e.g `try!`) is required to deal with these errors.
 - No special source tooling support, such as syntactic highlighting, code completion, and refactoring support, is available.
-- Capture types aren't known until runtime, and as such a dynamic `AnyRegexOutput` capture type must be used.
+- Capture types aren't known until run time, and as such a dynamic `AnyRegexOutput` capture type must be used.
 - The syntax is overly verbose, especially for e.g an argument to a matching function.
 
 ## Proposed solution
@@ -39,7 +39,7 @@ let regex = /(?<identifier>[[:alpha:]]\w*) = (?<hex>[0-9A-F]+)/
 
 Forward slashes are a regex term of art, and are used as the delimiters for regex literals in Perl, JavaScript and Ruby (though Perl and Ruby also provide alternatives). Their ubiquity and familiarity makes them a compelling choice for Swift.
 
-A regex literal may also be spelled using an extended syntax `#/.../#`, which allows the placement of an arbitrary number of balanced `#` characters around a regex literal. This syntax allows regex literals to contain unescaped forward slashes, and may be used without needing to upgrade to a new language mode.
+A regex literal may also be spelled using an extended syntax `#/.../#`, which allows the placement of an arbitrary number of balanced `#` characters around a regex literal. This syntax allows regex literals to contain unescaped forward slashes, and may be used without needing to upgrade to a new language mode. This syntax further allows a multi-line mode when the opening delimiter is followed by a new line.
 
 Within a regex literal, the compiler will parse the regex syntax outlined in in [the Regex Syntax pitch][internal-syntax], and diagnose any errors at compile time. The capture types and labels are automatically inferred based on the capture groups present in the regex. Using a literal allows editors to support features such as syntax coloring inside the literal, highlighting sub-structure of the regex, and conversion of the literal to an equivalent result builder DSL (see [Regex builder DSL][regex-dsl]).
 
@@ -86,7 +86,7 @@ Unnamed capture groups produce unlabeled tuple elements and must be referenced b
 
 ### Extended delimiters `#/.../#`, `##/.../##`
 
-A regex literal may be surrounded by an arbitrary number of balanced pound characters. This is a similar to raw string literal syntax introduced by [SE-0200], and allows a regex literal to use forward slashes without the need to escape them, e.g:
+A regex literal may be surrounded by an arbitrary number of balanced pound characters. This is a somewhat similar to the raw string literal syntax introduced by [SE-0200], and allows a regex literal to use forward slashes without the need to escape them, e.g:
 
 ```swift
 let regex = #/usr/lib/modules/([^/]+)/vmlinuz/#
@@ -99,7 +99,7 @@ Additionally, this syntax provides a way to write a regex literal without needin
 
 This syntax differs from raw string literals `#"..."#` in that it does not treat backslashes as literal within the regex. A string literal `#"\n"#` represents the literal characters `\n`. However a regex literal `#/\n/#` remains a newline escape sequence.
 
-One of the primary motivations behind this escaping behavior in raw string literals is that it allows the contents to be easily transportable to/from e.g external files where escaping is unnecessary. For string literals, this suggests that backslashes be treated as literal by default. For regex literals however, it instead suggests that backslashes should retain their semantic meaning, as it enables interoperability with regexes taken from outside your code without having to adjust escape sequences to match the delimiters used.
+One of the primary motivations behind this escaping behavior in raw string literals is that it allows the contents to be easily transportable to/from e.g external files where escaping is unnecessary. For string literals, this suggests that backslashes be treated as literal by default. For regex literals however, it instead suggests that backslashes should retain their semantic meaning. This enables interoperability with regexes taken from outside your code without having to adjust escape sequences to match the delimiters used.
 
 With string literals, escaping can be tricky without the use of raw syntax, as backslashes may have semantic meaning to the consumer, rather than the compiler. For example:
 
@@ -116,6 +116,24 @@ let regex = /\\\w\s*=\s*\d+/
 ```
 
 Backslashes still require escaping to be treated as literal, however we don't expect this to be as common of an occurrence as needing to write a regex escape sequence such as `\s`, `\w`, or `\p{...}`, within a regex literal with extended delimiters `#/.../#`.
+
+#### Multi-line mode
+
+Extended regex delimiters additionally support a multi-line mode when the opening delimiter is followed by a new line. For example:
+
+```swift
+let regex = #/
+  # Match a line of the format e.g "DEBIT  03/03/2022  Totally Legit Shell Corp  $2,000,000.00"
+  (?<kind>    \w+)                \s\s+
+  (?<date>    \S+)                \s\s+
+  (?<account> (?: (?!\s\s) . )+)  \s\s+ # Note that account names may contain spaces.
+  (?<amount>  .*)
+  /#
+```
+
+In this mode, [extended regex syntax][extended-regex-syntax] `(?x)` is enabled by default. This means that whitespace becomes non-semantic, and end-of-line comments are supported with `# comment` syntax.
+
+This mode is supported with any (non-zero) number of pound characters in the delimiter. Similar to multi-line strings introduced by [SE-0168], the closing delimiter must appear on a new line. To avoid parsing confusion, such a literal will not be parsed if a closing delimiter is not present. This avoids inadvertently treating the rest of the file as regex if you only type the opening.
 
 ### Ambiguities with comment syntax
 
@@ -266,13 +284,7 @@ This takes advantage of the fact that a regex literal will not be parsed if the 
 
 ## Future Directions
 
-### Multi-line literals
-
-The obvious choice for a multi-line regex literal would be to use `///` delimiters, in accordance with the precedent set by multi-line string literals `"""`. But this signifies a (documentation) comment, so a different multi-line delimiter would be needed, with no obvious choice. However, it's not clear that we need multi-line regex literals. The existing literals can be used inside a regex builder DSL. 
-
-### Regex extended syntax
-
-Allowing non-semantic whitespace and other features of the extended syntax would be highly desired, with no obvious choice for a literal. Perhaps the need is also lessened by the ability to use regex literals inside the regex builder DSL.
+**TODO: Do we have any other future directions now that extended multi-line syntax has been subsumed?**
 
 ## Alternatives Considered
 
@@ -319,6 +331,10 @@ It should also be noted that `#regex(...)` would introduce a syntactic inconsist
 
 We could reduce the visual weight of `#regex(...)` by only requiring `#(...)`. However it would still retain the same issues, such as still looking potentially visually noisy as an argument, and having suboptimal behavior for parenthesis balancing. It is also not clear why regex literals would deserve such privileged syntax.
 
+### Using a different delimiter for multi-line
+
+Instead of re-using the extended delimiter syntax `#/.../#` for multi-line regex literals, we could choose a different delimiter for it. Unfortunately, the obvious choice for a multi-line regex literal would be to use `///` delimiters, in accordance with the precedent set by multi-line string literals `"""`. This signifies a (documentation) comment, and as such would not be viable.
+
 ### Reusing string literal syntax
 
 Instead of supporting a first-class literal kind for regex, we could instead allow users to write a regex in a string literal, and parse, diagnose, and generate the appropriate code when it's coerced to the `Regex` type.
@@ -352,3 +368,4 @@ We therefore feel this would be a much less compelling feature without first cla
 [regex-type]: https://forums.swift.org/t/pitch-regex-type-and-overview/56029
 [pitch-status]: https://github.com/apple/swift-experimental-string-processing/issues/107
 [regex-dsl]: https://forums.swift.org/t/pitch-regex-builder-dsl/56007
+[extended-regex-syntax]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md#extended-syntax-modes
