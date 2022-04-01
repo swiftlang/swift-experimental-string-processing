@@ -96,6 +96,13 @@ extension RegexComponent {
     try _match(s, in: s.startIndex..<s.endIndex, mode: .partialFromFront)
   }
 
+  /// Find the first match in a string
+  ///
+  /// Returns `nil` if no match is found and throws on abort
+  public func firstMatch(in s: String) throws -> Regex<Output>.Match? {
+    try _firstMatch(s, in: s.startIndex..<s.endIndex)
+  }
+
   /// Match a substring in its entirety.
   ///
   /// Returns `nil` if no match and throws on abort
@@ -110,6 +117,13 @@ extension RegexComponent {
     try _match(s.base, in: s.startIndex..<s.endIndex, mode: .partialFromFront)
   }
 
+  /// Find the first match in a substring
+  ///
+  /// Returns `nil` if no match is found and throws on abort
+  public func firstMatch(_ s: Substring) throws -> Regex<Output>.Match? {
+    try _firstMatch(s.base, in: s.startIndex..<s.endIndex)
+  }
+
   func _match(
     _ input: String,
     in inputRange: Range<String.Index>,
@@ -117,6 +131,24 @@ extension RegexComponent {
   ) throws -> Regex<Output>.Match? {
     let executor = Executor(program: regex.program.loweredProgram)
       return try executor.match(input, in: inputRange, mode)
+  }
+
+  func _firstMatch(
+    _ input: String,
+    in inputRange: Range<String.Index>
+  ) throws -> Regex<Output>.Match? {
+    // FIXME: Something more efficient, likely an engine interface, and we
+    // should scrap the RegexConsumer crap and call this
+
+    var low = inputRange.lowerBound
+    let high = inputRange.upperBound
+    while low < high {
+      if let m = try _match(input, in: low..<high, mode: .partialFromFront) {
+        return m
+      }
+      input.formIndex(after: &low)
+    }
+    return nil
   }
 }
 

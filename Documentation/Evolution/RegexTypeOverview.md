@@ -317,6 +317,11 @@ public struct Regex<Output> {
   /// Returns `nil` if no match and throws on abort
   public func matchPrefix(_ s: String) throws -> Regex<Output>.Match?
 
+  /// Find the first match in a string
+  ///
+  /// Returns `nil` if no match is found and throws on abort
+  public func firstMatch(in s: String) throws -> Regex<Output>.Match?
+
   /// Match a substring in its entirety.
   ///
   /// Returns `nil` if no match and throws on abort
@@ -326,6 +331,11 @@ public struct Regex<Output> {
   ///
   /// Returns `nil` if no match and throws on abort
   public func matchPrefix(_ s: Substring) throws -> Regex<Output>.Match?
+
+  /// Find the first match in a substring
+  ///
+  /// Returns `nil` if no match is found and throws on abort
+  public func firstMatch(_ s: Substring) throws -> Regex<Output>.Match?
 
   /// The result of matching a regex against a string.
   ///
