@@ -29,7 +29,7 @@ The ability to compile regex patterns at run time is useful for cases where it i
 
 ## Proposed solution
 
-We propose introducing a new kind of literal for a regex. In a new language mode, a regex literal may be written using `/.../` delimiters:
+A regex literal may be written using `/.../` delimiters:
 
 ```swift
 // Matches "<identifier> = <hexadecimal value>", extracting the identifier and hex number
@@ -39,7 +39,7 @@ let regex = /(?<identifier>[[:alpha:]]\w*) = (?<hex>[0-9A-F]+)/
 
 Forward slashes are a regex term of art, and are used as the delimiters for regex literals in Perl, JavaScript and Ruby (though Perl and Ruby also provide alternatives). Their ubiquity and familiarity makes them a compelling choice for Swift.
 
-A regex literal may also be spelled using an extended syntax `#/.../#`, which allows the placement of an arbitrary number of balanced `#` characters around a regex literal. This syntax allows regex literals to contain unescaped forward slashes, and may be used without needing to upgrade to a new language mode. This syntax further allows a multi-line mode when the opening delimiter is followed by a new line.
+A regex literal may also be spelled using an extended syntax `#/.../#`, which allows the placement of an arbitrary number of balanced `#` characters around the literal. This syntax may be used to avoid needing to escape forward slashes within the regex. Additionally, it allows for a multi-line mode when the opening delimiter is followed by a new line.
 
 Within a regex literal, the compiler will parse the regex syntax outlined in in [the Regex Syntax pitch][internal-syntax], and diagnose any errors at compile time. The capture types and labels are automatically inferred based on the capture groups present in the regex. Using a literal allows editors to support features such as syntax coloring inside the literal, highlighting sub-structure of the regex, and conversion of the literal to an equivalent result builder DSL (see [Regex builder DSL][regex-dsl]).
 
@@ -62,6 +62,10 @@ This flexibility allows for terse matching syntax to be used when it's suitable,
 Due to the existing use of `/` in comment syntax and operators, there are some syntactic ambiguities to consider. While there are quite a few cases to consider, we do not feel that the impact of any individual case is sufficient to disqualify the syntax. Some of these ambiguities require a couple of source breaking language changes, and as such the `/.../` syntax requires upgrading to a new language mode in order to use.
 
 ## Detailed design
+
+### Upgrade path
+
+Due to the source breaking changes needed for the `/.../` syntax, it will be introduced in Swift 6 mode. However, projects will be able to adopt it earlier by using the compiler flag `-enable-regex-literals`. Note this does not affect the extended syntax `#/.../#`, which will be usable immediately.
 
 ### Typed captures
 
@@ -93,7 +97,7 @@ let regex = #/usr/lib/modules/([^/]+)/vmlinuz/#
 // regex: Regex<(Substring, Substring)>
 ```
 
-Additionally, this syntax provides a way to write a regex literal without needing to upgrade to a new language mode.
+Additionally, it allows for a multi-line mode when the opening delimiter is followed by a new line.
 
 #### Escaping of backslashes
 
@@ -215,7 +219,7 @@ It should be noted that this only mitigates the issue, as it does not handle the
 
 ### Language changes required
 
-In addition to ambiguities listed above, there are also some parsing ambiguities that would require the following language changes in a new language mode:
+In addition to ambiguities listed above, there are also some parsing ambiguities that require the following language changes in a new language mode:
 
 - Deprecation of prefix operators containing the `/` character.
 - Parsing `/,` and `/]` as the start of a regex literal if a closing `/` is found, rather than an unapplied operator in an argument list. For example, `fn(/, /)` becomes a regex literal rather than 2 unapplied operator arguments.
