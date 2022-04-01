@@ -117,7 +117,8 @@ func delimiterLexingTest(
 ) -> String {
   input.withCString(encodedAs: UTF8.self) { ptr in
     let endPtr = ptr + input.utf8.count
-    let (contents, delim, end) = try! lexRegex(start: ptr, end: endPtr)
+    let (contents, delim, end) = try! lexRegex(
+      start: ptr, end: endPtr, delimiters: Delimiter.allDelimiters)
     if ignoreTrailing {
       XCTAssertNotEqual(end, endPtr, file: file, line: line)
     } else {
@@ -260,7 +261,8 @@ func delimiterLexingDiagnosticTest(
 ) {
   do {
     _ = try input.withCString { ptr in
-      try lexRegex(start: ptr, end: ptr + input.count)
+      try lexRegex(
+        start: ptr, end: ptr + input.count, delimiters: Delimiter.allDelimiters)
     }
     XCTFail("""
       Passed, but expected error: \(expected)

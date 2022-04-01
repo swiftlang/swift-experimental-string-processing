@@ -35,6 +35,12 @@ struct Delimiter: Hashable {
       return false
     }
   }
+
+  /// The delimiters which are currently enabled.
+  static var enabledDelimiters: [Kind] { [.forwardSlash] }
+
+  /// All known delimiters.
+  static var allDelimiters: [Kind] { Kind.allCases }
 }
 
 extension Delimiter {
@@ -106,11 +112,15 @@ fileprivate struct DelimiterLexer {
   var firstNewline: UnsafeRawPointer?
   var isMultiline: Bool { firstNewline != nil }
 
-  init(start: UnsafeRawPointer, end: UnsafeRawPointer) {
+  let delimiters: [Delimiter.Kind]
+
+  init(start: UnsafeRawPointer, end: UnsafeRawPointer,
+       delimiters: [Delimiter.Kind]) {
     precondition(start <= end)
     self.start = start
     self.cursor = start
     self.end = end
+    self.delimiters = delimiters
   }
 
   func ascii(_ s: Unicode.Scalar) -> UInt8 {
@@ -337,7 +347,7 @@ fileprivate struct DelimiterLexer {
   }
 
   mutating func tryLexOpeningDelimiter(poundCount: Int) -> Delimiter? {
-    for kind in Delimiter.Kind.allCases {
+    for kind in delimiters {
       // If the delimiter allows extended pound syntax, or there are no pounds,
       // we just need to lex it.
       let opening = kind.opening.utf8
@@ -435,7 +445,7 @@ func droppingRegexDelimiters(_ str: String) -> (String, Delimiter) {
     precondition(result.utf8.elementsEqual(slice))
     return (result, delim)
   }
-  for kind in Delimiter.Kind.allCases {
+  for kind in Delimiter.allDelimiters {
     if let (contents, d) = stripDelimiter(kind) {
       return (contents, d)
     }
@@ -446,8 +456,9 @@ func droppingRegexDelimiters(_ str: String) -> (String, Delimiter) {
 /// Attempt to lex a regex literal between `start` and `end`, returning either
 /// the contents and pointer from which to resume lexing, or an error.
 func lexRegex(
-  start: UnsafeRawPointer, end: UnsafeRawPointer
+  start: UnsafeRawPointer, end: UnsafeRawPointer,
+  delimiters: [Delimiter.Kind] = Delimiter.enabledDelimiters
 ) throws -> (contents: String, Delimiter, end: UnsafeRawPointer) {
-  var lexer = DelimiterLexer(start: start, end: end)
+  var lexer = DelimiterLexer(start: start, end: end, delimiters: delimiters)
   return try lexer.lex()
 }

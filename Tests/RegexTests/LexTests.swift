@@ -100,7 +100,7 @@ extension RegexTests {
   }
 
 
-  func testCompilerInterface() {
+  func testCompilerInterface() throws {
     func delim(_ kind: Delimiter.Kind, poundCount: Int = 0) -> Delimiter {
       Delimiter(kind, poundCount: poundCount)
     }
@@ -138,7 +138,9 @@ extension RegexTests {
       input.withCString {
         let endPtr = $0 + input.utf8.count
         assert(endPtr.pointee == 0)
-        guard let out = try? lexRegex(start: $0, end: endPtr) else {
+        guard let out = try? lexRegex(
+          start: $0, end: endPtr, delimiters: Delimiter.allDelimiters)
+        else {
           XCTAssertNil(expected)
           return
         }
@@ -148,6 +150,24 @@ extension RegexTests {
         let droppedDelimiters = droppingRegexDelimiters(input)
         XCTAssertEqual(expected?.0, droppedDelimiters.0)
         XCTAssertEqual(expected?.1, droppedDelimiters.1)
+      }
+    }
+
+    // TODO: Remove the lexing code for these if we no longer need them.
+    let disabledDelimiters: [String] = [
+      "#|x|#", "re'x'", "rx'y'"
+    ]
+
+    for input in disabledDelimiters {
+      try input.withCString {
+        let endPtr = $0 + input.utf8.count
+        assert(endPtr.pointee == 0)
+        do {
+          _ = try lexRegex(start: $0, end: endPtr)
+          XCTFail()
+        } catch let e as DelimiterLexError {
+          XCTAssertEqual(e.kind, .unknownDelimiter)
+        }
       }
     }
   }
