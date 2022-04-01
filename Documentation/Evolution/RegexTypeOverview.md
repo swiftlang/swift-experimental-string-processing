@@ -307,7 +307,7 @@ Regex targets [UTS\#18 Level 2](https://www.unicode.org/reports/tr18/#Extended_U
 ///     print(match.1) // "x"
 ///
 public struct Regex<Output> {
- /// Match a string in its entirety.
+  /// Match a string in its entirety.
   ///
   /// Returns `nil` if no match and throws on abort
   public func matchWhole(_ s: String) throws -> Regex<Output>.Match?
