@@ -657,6 +657,7 @@ extension Source {
   ///                        | MatchingOption* '-' MatchingOption*
   ///
   mutating func lexMatchingOptionSequence(
+    context: ParsingContext
   ) throws -> AST.MatchingOptionSequence? {
     let ateCaret = recordLoc { $0.tryEat("^") }
 
@@ -690,6 +691,11 @@ extension Source {
         // Matching semantics options can only be added, not removed.
         if opt.isSemanticMatchingLevel {
           throw ParseError.cannotRemoveSemanticsOptions
+        }
+        // Extended syntax may not be removed if in multi-line mode.
+        if context.syntax.contains(.multilineExtendedSyntax) &&
+            opt.isAnyExtended {
+          throw ParseError.cannotRemoveExtendedSyntaxInMultilineMode
         }
         removing.append(opt)
       }
@@ -864,7 +870,7 @@ extension Source {
           }
 
           // Matching option changing group (?iJmnsUxxxDPSWy{..}-iJmnsUxxxDPSW:).
-          if let seq = try src.lexMatchingOptionSequence() {
+          if let seq = try src.lexMatchingOptionSequence(context: context) {
             if src.tryEat(":") {
               return .changeMatchingOptions(seq, isIsolated: false)
             }

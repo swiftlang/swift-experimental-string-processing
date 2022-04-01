@@ -110,6 +110,11 @@ extension RegexTests {
       ("###/abc/###", ("abc", delim(.forwardSlash, poundCount: 3))),
       ("#|abc|#", ("abc", delim(.experimental))),
 
+      // Multiline
+      ("#/\na\nb\n/#", ("\na\nb\n", delim(.forwardSlash, poundCount: 1))),
+      ("#/ \na\nb\n  /#", (" \na\nb\n  ", delim(.forwardSlash, poundCount: 1))),
+      ("##/ \na\nb\n  /##", (" \na\nb\n  ", delim(.forwardSlash, poundCount: 2))),
+
       // TODO: Null characters are lexically valid, similar to string literals,
       // but we ought to warn the user about them.
       ("#|ab\0c|#", ("ab\0c", delim(.experimental))),

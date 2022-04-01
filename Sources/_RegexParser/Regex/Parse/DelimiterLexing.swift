@@ -9,8 +9,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// TODO: mock up multi-line soon
-
 struct Delimiter: Hashable {
   let kind: Kind
   let poundCount: Int
@@ -28,13 +26,13 @@ struct Delimiter: Hashable {
     kind.closing + String(repeating: "#", count: poundCount)
   }
 
-  /// The default set of syntax options that the delimiter indicates.
-  var defaultSyntaxOptions: SyntaxOptions {
+  /// Whether or not multi-line mode is permitted.
+  var allowsMultiline: Bool {
     switch kind {
-    case .forwardSlash, .reSingleQuote:
-      return .traditional
-    case .experimental, .rxSingleQuote:
-      return .experimental
+    case .forwardSlash:
+      return poundCount > 0
+    case .experimental, .reSingleQuote, .rxSingleQuote:
+      return false
     }
   }
 }
@@ -76,6 +74,7 @@ struct DelimiterLexError: Error, CustomStringConvertible {
     case invalidUTF8 // TODO: better range reporting
     case unknownDelimiter
     case unprintableASCII
+    case multilineClosingNotOnNewline
   }
 
   var kind: Kind
@@ -94,6 +93,7 @@ struct DelimiterLexError: Error, CustomStringConvertible {
     case .invalidUTF8: return "invalid UTF-8 found in source file"
     case .unknownDelimiter: return "unknown regex literal delimiter"
     case .unprintableASCII: return "unprintable ASCII character found in source file"
+    case .multilineClosingNotOnNewline: return "closing delimiter must appear on new line"
     }
   }
 }
@@ -102,6 +102,9 @@ fileprivate struct DelimiterLexer {
   let start: UnsafeRawPointer
   var cursor: UnsafeRawPointer
   let end: UnsafeRawPointer
+
+  var firstNewline: UnsafeRawPointer?
+  var isMultiline: Bool { firstNewline != nil }
 
   init(start: UnsafeRawPointer, end: UnsafeRawPointer) {
     precondition(start <= end)
@@ -262,12 +265,23 @@ fileprivate struct DelimiterLexer {
     let contentsEnd = cursor
     guard tryEat(delimiter.closing.utf8) else { return nil }
 
-    // Form a string from the contents and make sure it's valid UTF-8.
     let count = contentsEnd - contentsStart
     let contents = UnsafeRawBufferPointer(
       start: contentsStart, count: count)
-    let s = String(decoding: contents, as: UTF8.self)
 
+    // In multi-line mode, we must be on a new line. So scan backwards and make
+    // sure we only have whitespace until the newline.
+    if isMultiline {
+      let idx = contents.lastIndex(
+        where: { $0 == ascii("\n") || $0 == ascii("\r") })! + 1
+      guard contents[idx...].all({ $0 == ascii(" ") || $0 == ascii("\t") })
+      else {
+        throw DelimiterLexError(.multilineClosingNotOnNewline, resumeAt: cursor)
+      }
+    }
+
+    // Form a string from the contents and make sure it's valid UTF-8.
+    let s = String(decoding: contents, as: UTF8.self)
     guard s.utf8.elementsEqual(contents) else {
       throw DelimiterLexError(.invalidUTF8, resumeAt: cursor)
     }
@@ -278,7 +292,10 @@ fileprivate struct DelimiterLexer {
   /// the end of the buffer is reached.
   mutating func advance(escaped: Bool = false) throws {
     guard let next = load() else {
-      throw DelimiterLexError(.unterminated, resumeAt: cursor)
+      // We've hit the end of the buffer. In multi-line mode, we don't want to
+      // skip over what is likely otherwise valid Swift code, so resume from the
+      // first newline.
+      throw DelimiterLexError(.unterminated, resumeAt: firstNewline ?? cursor)
     }
     switch UnicodeScalar(next) {
     case let next where !next.isASCII:
@@ -289,7 +306,10 @@ fileprivate struct DelimiterLexer {
       advanceCursor()
 
     case "\n", "\r":
-      throw DelimiterLexError(.unterminated, resumeAt: cursor)
+      guard isMultiline else {
+        throw DelimiterLexError(.unterminated, resumeAt: cursor)
+      }
+      advanceCursor()
 
     case "\0":
       // TODO: Warn to match the behavior of String literal lexer? Or should
@@ -301,8 +321,12 @@ fileprivate struct DelimiterLexer {
       advanceCursor()
       try advance(escaped: true)
 
-    case let next where !next.isPrintableASCII:
+    case let next
+      where !next.isPrintableASCII && !(isMultiline && next == "\t"):
       // Diagnose unprintable ASCII.
+      // Note that tabs are allowed in multi-line literals.
+      // TODO: This matches the string literal behavior, but should we allow
+      // tabs for single-line regex literals too?
       // TODO: Ideally we would recover and continue to lex until the ending
       // delimiter.
       throw DelimiterLexError(.unprintableASCII, resumeAt: cursor.successor())
@@ -349,6 +373,23 @@ fileprivate struct DelimiterLexer {
       throw DelimiterLexError(.unknownDelimiter, resumeAt: cursor.successor())
     }
     let contentsStart = cursor
+
+    // If the delimiter allows multi-line, try skipping over any whitespace to a
+    // newline character. If we can do that, we enter multi-line mode.
+    if delimiter.allowsMultiline {
+      while let next = load() {
+        switch next {
+        case ascii(" "), ascii("\t"):
+          advanceCursor()
+          continue
+        case ascii("\n"), ascii("\r"):
+          firstNewline = cursor
+        default:
+          break
+        }
+        break
+      }
+    }
     while true {
       // Check to see if we're at a character that looks like a delimiter, but
       // likely isn't. In such a case, we can attempt to skip over it.

@@ -288,22 +288,25 @@ extension Parser {
   ) throws -> AST.Group {
     context.recordGroup(kind.value)
 
-    // Check if we're introducing or removing extended syntax.
+    // Check if we're introducing or removing extended syntax. We skip this for
+    // multi-line, as extended syntax is always enabled there.
     // TODO: PCRE differentiates between (?x) and (?xx) where only the latter
     // handles non-semantic whitespace in a custom character class. Other
     // engines such as Oniguruma, Java, and ICU do this under (?x). Therefore,
     // treat (?x) and (?xx) as the same option here. If we ever get a strict
     // PCRE mode, we will need to change this to handle that.
     let currentSyntax = context.syntax
-    if case .changeMatchingOptions(let c, isIsolated: _) = kind.value {
-      if c.resetsCurrentOptions {
-        context.syntax.remove(.extendedSyntax)
-      }
-      if c.adding.contains(where: \.isAnyExtended) {
-        context.syntax.insert(.extendedSyntax)
-      }
-      if c.removing.contains(where: \.isAnyExtended) {
-        context.syntax.remove(.extendedSyntax)
+    if !context.syntax.contains(.multilineExtendedSyntax) {
+      if case .changeMatchingOptions(let c, isIsolated: _) = kind.value {
+        if c.resetsCurrentOptions {
+          context.syntax.remove(.extendedSyntax)
+        }
+        if c.adding.contains(where: \.isAnyExtended) {
+          context.syntax.insert(.extendedSyntax)
+        }
+        if c.removing.contains(where: \.isAnyExtended) {
+          context.syntax.remove(.extendedSyntax)
+        }
       }
     }
     defer {
@@ -532,11 +535,32 @@ public func parse<S: StringProtocol>(
   return try parser.parse()
 }
 
+/// Retrieve the default set of syntax options that a delimiter and literal
+/// contents indicates.
+fileprivate func defaultSyntaxOptions(
+  _ delim: Delimiter, contents: String
+) -> SyntaxOptions {
+  switch delim.kind {
+  case .forwardSlash:
+    // For an extended syntax forward slash e.g #/.../#, extended syntax is
+    // permitted if it spans multiple lines.
+    if delim.poundCount > 0 &&
+        contents.unicodeScalars.contains(where: { $0 == "\n" || $0 == "\r" }) {
+      return .multilineExtendedSyntax
+    }
+    return .traditional
+  case .reSingleQuote:
+    return .traditional
+  case .experimental, .rxSingleQuote:
+    return .experimental
+  }
+}
+
 /// Parse a given regex string with delimiters, inferring the syntax options
 /// from the delimiter used.
 public func parseWithDelimiters<S: StringProtocol>(
   _ regex: S
 ) throws -> AST where S.SubSequence == Substring {
   let (contents, delim) = droppingRegexDelimiters(String(regex))
-  return try parse(contents, delim.defaultSyntaxOptions)
+  return try parse(contents, defaultSyntaxOptions(delim, contents: contents))
 }
