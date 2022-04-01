@@ -68,6 +68,12 @@ extension Source {
     return true
   }
 
+  mutating func tryEat(where pred: (Char) throws -> Bool) rethrows -> Bool {
+    guard let next = peek(), try pred(next) else { return false }
+    advance()
+    return true
+  }
+
   mutating func tryEat<C: Collection>(sequence c: C) -> Bool
   where C.Element == Char {
     guard _slice.starts(with: c) else { return false }

@@ -76,6 +76,10 @@ struct ParsingContext {
   /// The syntax options currently set.
   fileprivate(set) var syntax: SyntaxOptions
 
+  /// The current newline matching mode.
+  fileprivate(set) var newlineMode: AST.GlobalMatchingOption.NewlineMatching
+    = .anyCarriageReturnOrLinefeed
+
   fileprivate mutating func recordGroup(_ g: AST.Group.Kind) {
     // TODO: Needs to track group number resets (?|...).
     priorGroupCount += 1
@@ -138,6 +142,15 @@ extension Parser {
   mutating func parse() throws -> AST {
     // First parse any global matching options if present.
     let opts = try source.lexGlobalMatchingOptionSequence()
+
+    // If we have a newline mode global option, update the context accordingly.
+    if let opts = opts {
+      for opt in opts.options.reversed() {
+        guard case .newlineMatching(let newline) = opt.kind else { continue }
+        context.newlineMode = newline
+        break
+      }
+    }
 
     // Then parse the root AST node.
     let ast = try parseNode()

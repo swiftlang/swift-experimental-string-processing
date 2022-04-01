@@ -1526,6 +1526,214 @@ extension RegexTests {
         matchingOptions(adding: .extended), isIsolated: true, charClass("a", "b"))
     )
 
+    // Test multi-line comment handling.
+    parseTest(
+      """
+      # a
+      bc # d
+      ef# g
+      # h
+      """,
+      concat("b", "c", "e", "f"),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      # a\r\
+      bc # d\r\
+      ef# g\r\
+      # h\r
+      """,
+      concat("b", "c", "e", "f"),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      # a\r\
+      bc # d\r\
+      ef# g\r\
+      # h\r
+      """,
+      concat("b", "c", "e", "f"),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      # a\r
+      bc # d\r
+      ef# g\r
+      # h\r
+      """,
+      concat("b", "c", "e", "f"),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      # a\n\r\
+      bc # d\n\r\
+      ef# g\n\r\
+      # h\n\r
+      """,
+      concat("b", "c", "e", "f"),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*CR)
+      # a
+      bc # d
+      ef# g
+      # h
+      """,
+      ast(empty(), opts: .newlineMatching(.carriageReturnOnly)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*CR)\r\
+      # a\r\
+      bc # d\r\
+      ef# g\r\
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.carriageReturnOnly)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*LF)
+      # a
+      bc # d
+      ef# g
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.linefeedOnly)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*CRLF)
+      # a
+      bc # d
+      ef# g
+      # h
+      """,
+      ast(empty(), opts: .newlineMatching(.carriageAndLinefeedOnly)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*CRLF)
+      # a\r
+      bc # d\r
+      ef# g\r
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.carriageAndLinefeedOnly)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*ANYCRLF)
+      # a
+      bc # d
+      ef# g
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyCarriageReturnOrLinefeed)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*ANYCRLF)
+      # a\r\
+      bc # d\r\
+      ef# g\r\
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyCarriageReturnOrLinefeed)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*ANYCRLF)
+      # a\r
+      bc # d\r
+      ef# g\r
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyCarriageReturnOrLinefeed)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*ANY)
+      # a
+      bc # d
+      ef# g
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyUnicode)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      # a\u{2028}\
+      bc # d
+      ef# g\u{2028}\
+      # h
+      """,
+      concat("e", "f"),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*ANY)
+      # a\u{2028}\
+      bc # d\u{2028}\
+      ef# g\u{2028}\
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyUnicode)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*NUL)
+      # a
+      bc # d\0\
+      ef# g
+      # h
+      """,
+      ast(concat("e", "f"), opts: .newlineMatching(.nulCharacter)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*NUL)
+      # a\0\
+      bc # d\0\
+      ef# g\0\
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.nulCharacter)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*CR)(*NUL)
+      # a\0\
+      bc # d\0\
+      ef# g\0\
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"),
+          opts: .newlineMatching(.carriageReturnOnly),
+                .newlineMatching(.nulCharacter)
+         ),
+      syntax: .extendedSyntax
+    )
+
     // MARK: Parse with delimiters
 
     parseWithDelimitersTest("#/a b/#", concat("a", " ", "b"))
