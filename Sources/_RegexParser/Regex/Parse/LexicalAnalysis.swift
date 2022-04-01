@@ -550,28 +550,12 @@ extension Source {
   ) throws -> AST.Trivia? {
     guard context.ignoreWhitespace else { return nil }
 
-    func isWhitespace(_ c: Character) -> Bool {
-      // This is a list of characters that PCRE treats as whitespace when
-      // compiled with Unicode support. It is a subset of the characters with
-      // the `.isWhitespace` property. ICU appears to also follow this list.
-      // Oniguruma and .NET follow a subset of this list.
-      //
-      // FIXME: PCRE only treats space and tab characters as whitespace when
-      // inside a custom character class (and only treats whitespace as
-      // non-semantic there for the extra-extended `(?xx)` mode). If we get a
-      // strict-PCRE mode, we'll need to add a case for that.
-      switch c {
-      case " ", "\u{9}"..."\u{D}", // space, \t, \n, vertical tab, \f, \r
-           "\u{85}", "\u{200E}",   // next line, left-to-right mark
-           "\u{200F}", "\u{2028}", // right-to-left-mark, line separator
-           "\u{2029}":             // paragraph separator
-        return true
-      default:
-        return false
-      }
-    }
+    // FIXME: PCRE only treats space and tab characters as whitespace when
+    // inside a custom character class (and only treats whitespace as
+    // non-semantic there for the extra-extended `(?xx)` mode). If we get a
+    // strict-PCRE mode, we'll need to add a case for that.
     let trivia: Located<String>? = recordLoc { src in
-      src.tryEatPrefix(isWhitespace)?.string
+      src.tryEatPrefix(\.isPatternWhitespace)?.string
     }
     guard let trivia = trivia else { return nil }
     return AST.Trivia(trivia)
