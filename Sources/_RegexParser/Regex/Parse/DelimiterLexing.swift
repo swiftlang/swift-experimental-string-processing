@@ -11,30 +11,61 @@
 
 // TODO: mock up multi-line soon
 
-enum Delimiter: Hashable, CaseIterable {
-  case traditional
-  case experimental
-  case reSingleQuote
-  case rxSingleQuote
+struct Delimiter: Hashable {
+  let kind: Kind
+  let poundCount: Int
 
-  var openingAndClosing: (opening: String, closing: String) {
-    switch self {
-    case .traditional: return ("#/", "/#")
-    case .experimental: return ("#|", "|#")
-    case .reSingleQuote: return ("re'", "'")
-    case .rxSingleQuote: return ("rx'", "'")
-    }
+  init(_ kind: Kind, poundCount: Int) {
+    precondition(kind.allowsExtendedPoundSyntax || poundCount == 0)
+    self.kind = kind
+    self.poundCount = poundCount
   }
-  var opening: String { openingAndClosing.opening }
-  var closing: String { openingAndClosing.closing }
+
+  var opening: String {
+    String(repeating: "#", count: poundCount) + kind.opening
+  }
+  var closing: String {
+    kind.closing + String(repeating: "#", count: poundCount)
+  }
 
   /// The default set of syntax options that the delimiter indicates.
   var defaultSyntaxOptions: SyntaxOptions {
-    switch self {
-    case .traditional, .reSingleQuote:
+    switch kind {
+    case .forwardSlash, .reSingleQuote:
       return .traditional
     case .experimental, .rxSingleQuote:
       return .experimental
+    }
+  }
+}
+
+extension Delimiter {
+  enum Kind: Hashable, CaseIterable {
+    case forwardSlash
+    case experimental
+    case reSingleQuote
+    case rxSingleQuote
+
+    var openingAndClosing: (opening: String, closing: String) {
+      switch self {
+      case .forwardSlash: return ("/", "/")
+      case .experimental: return ("#|", "|#")
+      case .reSingleQuote: return ("re'", "'")
+      case .rxSingleQuote: return ("rx'", "'")
+      }
+    }
+    var opening: String { openingAndClosing.opening }
+    var closing: String { openingAndClosing.closing }
+
+    /// Whether or not extended pound syntax e.g `##/.../##` is allowed with
+    /// this delimiter.
+    var allowsExtendedPoundSyntax: Bool {
+      switch self {
+      case .forwardSlash:
+        return true
+      case .experimental, .reSingleQuote, .rxSingleQuote:
+        return false
+      }
     }
   }
 }
@@ -120,16 +151,25 @@ fileprivate struct DelimiterLexer {
     precondition(cursor <= end, "Cannot advance past end")
   }
 
-  /// Check to see if a UTF-8 sequence can be eaten from the current cursor.
-  func canEat(_ utf8: String.UTF8View) -> Bool {
-    guard let slice = slice(utf8.count) else { return false }
-    return slice.elementsEqual(utf8)
+  /// Check to see if a byte sequence can be eaten from the current cursor.
+  func canEat<C : Collection>(_ bytes: C) -> Bool where C.Element == UInt8 {
+    guard let slice = slice(bytes.count) else { return false }
+    return slice.elementsEqual(bytes)
   }
 
-  /// Attempt to eat a UTF-8 byte sequence, returning `true` if successful.
-  mutating func tryEat(_ utf8: String.UTF8View) -> Bool {
-    guard canEat(utf8) else { return false }
-    advanceCursor(utf8.count)
+  /// Attempt to eat a byte sequence, returning `true` if successful.
+  mutating func tryEat<C : Collection>(
+    _ bytes: C
+  ) -> Bool where C.Element == UInt8 {
+    guard canEat(bytes) else { return false }
+    advanceCursor(bytes.count)
+    return true
+  }
+
+  /// Attempt to eat an ascii scalar, returning `true` if successful.
+  mutating func tryEat(ascii s: Unicode.Scalar) -> Bool {
+    guard load() == ascii(s) else { return false }
+    advanceCursor()
     return true
   }
 
@@ -137,8 +177,8 @@ fileprivate struct DelimiterLexer {
   /// the actual closing delimiter.
   mutating func trySkipDelimiter(_ delimiter: Delimiter) {
     // Only the closing `'` for re'...'/rx'...' can potentially be skipped over.
-    switch delimiter {
-    case .traditional, .experimental:
+    switch delimiter.kind {
+    case .forwardSlash, .experimental:
       return
     case .reSingleQuote, .rxSingleQuote:
       break
@@ -272,16 +312,42 @@ fileprivate struct DelimiterLexer {
     }
   }
 
+  mutating func tryLexOpeningDelimiter(poundCount: Int) -> Delimiter? {
+    for kind in Delimiter.Kind.allCases {
+      // If the delimiter allows extended pound syntax, or there are no pounds,
+      // we just need to lex it.
+      let opening = kind.opening.utf8
+      if kind.allowsExtendedPoundSyntax || poundCount == 0 {
+        guard tryEat(opening) else { continue }
+        return Delimiter(kind, poundCount: poundCount)
+      }
+
+      // The delimiter doesn't allow extended pound syntax, so the pounds must be
+      // part of the delimiter.
+      guard
+        poundCount < opening.count,
+        opening.prefix(poundCount)
+          .elementsEqual(repeatElement(ascii("#"), count: poundCount)),
+        tryEat(opening.dropFirst(poundCount))
+      else { continue }
+
+      return Delimiter(kind, poundCount: 0)
+    }
+    return nil
+  }
+
   /*consuming*/ mutating func lex(
   ) throws -> (contents: String, Delimiter, end: UnsafeRawPointer) {
-
-    // Try to lex the opening delimiter.
-    guard let delimiter = Delimiter.allCases.first(
-      where: { tryEat($0.opening.utf8) }
-    ) else {
-      throw DelimiterLexError(.unknownDelimiter, resumeAt: cursor.successor())
+    // We can consume any number of pound signs.
+    var poundCount = 0
+    while tryEat(ascii: "#") {
+      poundCount += 1
     }
 
+    // Try to lex the opening delimiter.
+    guard let delimiter = tryLexOpeningDelimiter(poundCount: poundCount) else {
+      throw DelimiterLexError(.unknownDelimiter, resumeAt: cursor.successor())
+    }
     let contentsStart = cursor
     while true {
       // Check to see if we're at a character that looks like a delimiter, but
@@ -302,20 +368,34 @@ fileprivate struct DelimiterLexer {
 /// Drop a set of regex delimiters from the input string, returning the contents
 /// and the delimiter used. The input string must have valid delimiters.
 func droppingRegexDelimiters(_ str: String) -> (String, Delimiter) {
-  func stripDelimiter(_ delim: Delimiter) -> String? {
+  func stripDelimiter(_ kind: Delimiter.Kind) -> (String, Delimiter)? {
+    var slice = str.utf8[...]
+
+    // Try strip any number of opening '#'s.
+    var poundCount = 0
+    if kind.allowsExtendedPoundSyntax {
+      poundCount = slice.prefix(while: {
+        $0 == UInt8(("#" as UnicodeScalar).value)
+      }).count
+      slice = slice.dropFirst(poundCount)
+    }
+
     // The opening delimiter must match.
-    guard var slice = str.utf8.tryDropPrefix(delim.opening.utf8)
+    guard var slice = slice.tryDropPrefix(kind.opening.utf8)
     else { return nil }
 
     // The closing delimiter may optionally match, as it may not be present in
     // invalid code.
+    let delim = Delimiter(kind, poundCount: poundCount)
     if let newSlice = slice.tryDropSuffix(delim.closing.utf8) {
       slice = newSlice
     }
-    return String(slice)
+    let result = String(decoding: slice, as: UTF8.self)
+    precondition(result.utf8.elementsEqual(slice))
+    return (result, delim)
   }
-  for d in Delimiter.allCases {
-    if let contents = stripDelimiter(d) {
+  for kind in Delimiter.Kind.allCases {
+    if let (contents, d) = stripDelimiter(kind) {
       return (contents, d)
     }
   }

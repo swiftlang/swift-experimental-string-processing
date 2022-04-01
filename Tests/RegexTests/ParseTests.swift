@@ -1736,7 +1736,9 @@ extension RegexTests {
 
     // MARK: Parse with delimiters
 
+    parseWithDelimitersTest("/a b/", concat("a", " ", "b"))
     parseWithDelimitersTest("#/a b/#", concat("a", " ", "b"))
+    parseWithDelimitersTest("##/a b/##", concat("a", " ", "b"))
     parseWithDelimitersTest("#|a b|#", concat("a", "b"))
 
     parseWithDelimitersTest("re'a b'", concat("a", " ", "b"))
@@ -1772,6 +1774,11 @@ extension RegexTests {
 
     // Printable ASCII characters.
     delimiterLexingTest(##"re' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~'"##)
+
+    // Make sure we can handle a combining accent as first character.
+    parseWithDelimitersTest("/\u{301}/", "\u{301}")
+
+    delimiterLexingTest("/a/#", ignoreTrailing: true)
 
     // MARK: Delimiter skipping: Make sure we can skip over the ending delimiter
     // if it's clear that it's part of the regex syntax.
@@ -2302,6 +2309,11 @@ extension RegexTests {
     delimiterLexingDiagnosticTest("re'(?('abc'", .unterminated)
     delimiterLexingDiagnosticTest(#"re'\k'ab_c0+-'"#, .unterminated)
     delimiterLexingDiagnosticTest(#"re'\g'ab_c0+-'"#, .unterminated)
+
+    // MARK: Unbalanced extended syntax
+    delimiterLexingDiagnosticTest("#/a/", .unterminated)
+    delimiterLexingDiagnosticTest("##/a/#", .unterminated)
+
   }
 
   func testlibswiftDiagnostics() {

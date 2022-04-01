@@ -101,26 +101,31 @@ extension RegexTests {
 
 
   func testCompilerInterface() {
+    func delim(_ kind: Delimiter.Kind, poundCount: Int = 0) -> Delimiter {
+      Delimiter(kind, poundCount: poundCount)
+    }
     let testCases: [(String, (String, Delimiter)?)] = [
-      ("#/abc/#", ("abc", .traditional)),
-      ("#|abc|#", ("abc", .experimental)),
+      ("/abc/", ("abc", delim(.forwardSlash))),
+      ("#/abc/#", ("abc", delim(.forwardSlash, poundCount: 1))),
+      ("###/abc/###", ("abc", delim(.forwardSlash, poundCount: 3))),
+      ("#|abc|#", ("abc", delim(.experimental))),
 
       // TODO: Null characters are lexically valid, similar to string literals,
       // but we ought to warn the user about them.
-      ("#|ab\0c|#", ("ab\0c", .experimental)),
+      ("#|ab\0c|#", ("ab\0c", delim(.experimental))),
       ("'abc'", nil),
-      ("#/abc/def/#", ("abc/def", .traditional)),
-      ("#|abc|def|#", ("abc|def", .experimental)),
-      ("#/abc\\/#def/#", ("abc\\/#def", .traditional)),
-      ("#|abc\\|#def|#", ("abc\\|#def", .experimental)),
-      ("#/abc|#def/#", ("abc|#def", .traditional)),
-      ("#|abc/#def|#", ("abc/#def", .experimental)),
+      ("#/abc/def/#", ("abc/def", delim(.forwardSlash, poundCount: 1))),
+      ("#|abc|def|#", ("abc|def", delim(.experimental))),
+      ("#/abc\\/#def/#", ("abc\\/#def", delim(.forwardSlash, poundCount: 1))),
+      ("#|abc\\|#def|#", ("abc\\|#def", delim(.experimental))),
+      ("#/abc|#def/#", ("abc|#def", delim(.forwardSlash, poundCount: 1))),
+      ("#|abc/#def|#", ("abc/#def", delim(.experimental))),
       ("#/abc|#def/", nil),
       ("#|abc/#def#", nil),
       ("#/abc\n/#", nil),
       ("#/abc\r/#", nil),
 
-      (#"re'abcre\''"#, (#"abcre\'"#, .reSingleQuote)),
+      (#"re'abcre\''"#, (#"abcre\'"#, delim(.reSingleQuote))),
       (#"re'\'"#, nil)
     ]
 
