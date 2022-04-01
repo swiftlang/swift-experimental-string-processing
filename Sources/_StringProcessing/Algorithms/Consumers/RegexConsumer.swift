@@ -24,7 +24,7 @@ extension RegexConsumer {
   func _matchingConsuming(
     _ consumed: Substring, in range: Range<String.Index>
   ) -> (upperBound: String.Index, match: Match)? {
-    guard let result = regex._match(
+    guard let result = try! regex._match(
       consumed.base,
       in: range, mode: .partialFromFront
     ) else { return nil }

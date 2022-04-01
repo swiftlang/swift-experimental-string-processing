@@ -12,7 +12,18 @@
 import _RegexParser
 
 extension Regex where Output == AnyRegexOutput {
-  public init(_ pattern: String) throws {
+  /// Parse and compile `pattern`, resulting in an existentially-typed capture list.
+  public init(compiling pattern: String) throws {
+    self.init(ast: try parse(pattern, .traditional))
+  }
+}
+
+extension Regex {
+  /// Parse and compile `pattern`, resulting in a strongly-typed capture list.
+  public init(
+    compiling pattern: String,
+    as: Output.Type = Output.self
+  ) throws {
     self.init(ast: try parse(pattern, .traditional))
   }
 }

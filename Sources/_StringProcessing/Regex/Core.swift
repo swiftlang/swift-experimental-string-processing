@@ -18,8 +18,48 @@ public protocol RegexComponent {
   var regex: Regex<Output> { get }
 }
 
-/// A regular expression.
+/// A regex represents a string processing algorithm.
+///
+///     let regex = try Regex(compiling: "a(.*)b")
+///     let match = "cbaxb".firstMatch(of: regex)
+///     print(match.0) // "axb"
+///     print(match.1) // "x"
+///
 public struct Regex<Output>: RegexComponent {
+  let program: Program
+
+  var hasCapture: Bool {
+    program.tree.hasCapture
+  }
+
+  init(ast: AST) {
+    self.program = Program(ast: ast)
+  }
+  init(ast: AST.Node) {
+    self.program = Program(ast: .init(ast, globalOptions: nil))
+  }
+
+  // Compiler interface. Do not change independently.
+  @usableFromInline
+  init(_regexString pattern: String) {
+    self.init(ast: try! parse(pattern, .traditional))
+  }
+
+  // Compiler interface. Do not change independently.
+  @usableFromInline
+  init(_regexString pattern: String, version: Int) {
+    assert(version == currentRegexLiteralFormatVersion)
+    // The version argument is passed by the compiler using the value defined
+    // in libswiftParseRegexLiteral.
+    self.init(ast: try! parseWithDelimiters(pattern))
+  }
+
+  public var regex: Regex<Output> {
+    self
+  }
+}
+
+extension Regex {
   /// A program representation that caches any lowered representation for
   /// execution.
   internal class Program {
@@ -41,24 +81,12 @@ public struct Regex<Output>: RegexComponent {
       self.tree = tree
     }
   }
+}
 
-  let program: Program
-//  var ast: AST { program.ast }
-
+extension Regex {
   @_spi(RegexBuilder)
   public var root: DSLTree.Node {
     program.tree.root
-  }
-
-  var hasCapture: Bool {
-    program.tree.hasCapture
-  }
-
-  init(ast: AST) {
-    self.program = Program(ast: ast)
-  }
-  init(ast: AST.Node) {
-    self.program = Program(ast: .init(ast, globalOptions: nil))
   }
 
   @_spi(RegexBuilder)
@@ -66,24 +94,6 @@ public struct Regex<Output>: RegexComponent {
     self.program = Program(tree: .init(node, options: nil))
   }
 
-  // Compiler interface. Do not change independently.
-  @usableFromInline
-  init(_regexString pattern: String) {
-    self.init(ast: try! parse(pattern, .traditional))
-  }
-
-  // Compiler interface. Do not change independently.
-  @usableFromInline
-  init(_regexString pattern: String, version: Int) {
-    assert(version == currentRegexLiteralFormatVersion)
-    // The version argument is passed by the compiler using the value defined
-    // in libswiftParseRegexLiteral.
-    self.init(ast: try! parseWithDelimiters(pattern))
-  }
-
-  public var regex: Regex<Output> {
-    self
-  }
 }
 
 // MARK: - Primitive regex components
