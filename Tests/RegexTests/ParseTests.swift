@@ -2079,21 +2079,21 @@ extension RegexTests {
 
     // MARK: Printable ASCII
 
-    delimiterLexingDiagnosticTest(#"re'\\#n'"#, .endOfString)
+    delimiterLexingDiagnosticTest(#"re'\\#n'"#, .unterminated)
     for i: UInt8 in 0x1 ..< 0x20 where i != 0xA && i != 0xD { // U+A & U+D are \n and \r.
       delimiterLexingDiagnosticTest("re'\(UnicodeScalar(i))'", .unprintableASCII)
     }
-    delimiterLexingDiagnosticTest("re'\n'", .endOfString)
-    delimiterLexingDiagnosticTest("re'\r'", .endOfString)
+    delimiterLexingDiagnosticTest("re'\n'", .unterminated)
+    delimiterLexingDiagnosticTest("re'\r'", .unterminated)
     delimiterLexingDiagnosticTest("re'\u{7F}'", .unprintableASCII)
 
     // MARK: Delimiter skipping
 
-    delimiterLexingDiagnosticTest("re'(?''", .endOfString)
-    delimiterLexingDiagnosticTest("re'(?'abc'", .endOfString)
-    delimiterLexingDiagnosticTest("re'(?('abc'", .endOfString)
-    delimiterLexingDiagnosticTest(#"re'\k'ab_c0+-'"#, .endOfString)
-    delimiterLexingDiagnosticTest(#"re'\g'ab_c0+-'"#, .endOfString)
+    delimiterLexingDiagnosticTest("re'(?''", .unterminated)
+    delimiterLexingDiagnosticTest("re'(?'abc'", .unterminated)
+    delimiterLexingDiagnosticTest("re'(?('abc'", .unterminated)
+    delimiterLexingDiagnosticTest(#"re'\k'ab_c0+-'"#, .unterminated)
+    delimiterLexingDiagnosticTest(#"re'\g'ab_c0+-'"#, .unterminated)
   }
 
   func testlibswiftDiagnostics() {

@@ -41,7 +41,7 @@ enum Delimiter: Hashable, CaseIterable {
 
 struct DelimiterLexError: Error, CustomStringConvertible {
   enum Kind: Hashable {
-    case endOfString
+    case unterminated
     case invalidUTF8 // TODO: better range reporting
     case unknownDelimiter
     case unprintableASCII
@@ -59,7 +59,7 @@ struct DelimiterLexError: Error, CustomStringConvertible {
 
   var description: String {
     switch kind {
-    case .endOfString: return "unterminated regex literal"
+    case .unterminated: return "unterminated regex literal"
     case .invalidUTF8: return "invalid UTF-8 found in source file"
     case .unknownDelimiter: return "unknown regex literal delimiter"
     case .unprintableASCII: return "unprintable ASCII character found in source file"
@@ -238,7 +238,7 @@ fileprivate struct DelimiterLexer {
   /// the end of the buffer is reached.
   mutating func advance(escaped: Bool = false) throws {
     guard let next = load() else {
-      throw DelimiterLexError(.endOfString, resumeAt: cursor)
+      throw DelimiterLexError(.unterminated, resumeAt: cursor)
     }
     switch UnicodeScalar(next) {
     case let next where !next.isASCII:
@@ -249,7 +249,7 @@ fileprivate struct DelimiterLexer {
       advanceCursor()
 
     case "\n", "\r":
-      throw DelimiterLexError(.endOfString, resumeAt: cursor)
+      throw DelimiterLexError(.unterminated, resumeAt: cursor)
 
     case "\0":
       // TODO: Warn to match the behavior of String literal lexer? Or should

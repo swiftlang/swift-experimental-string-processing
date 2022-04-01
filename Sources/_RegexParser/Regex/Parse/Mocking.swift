@@ -62,7 +62,7 @@ func libswiftLexRegexLiteral(
     curPtrPtr.pointee = error.resumePtr.assumingMemoryBound(to: CChar.self)
 
     switch error.kind {
-    case .endOfString:
+    case .unterminated:
       // Missing closing delimiter can be recovered from.
       return false
     case .unprintableASCII, .invalidUTF8:
