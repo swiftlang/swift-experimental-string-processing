@@ -117,7 +117,8 @@ func delimiterLexingTest(
 ) -> String {
   input.withCString(encodedAs: UTF8.self) { ptr in
     let endPtr = ptr + input.utf8.count
-    let (contents, delim, end) = try! lexRegex(start: ptr, end: endPtr)
+    let (contents, delim, end) = try! lexRegex(
+      start: ptr, end: endPtr, delimiters: Delimiter.allDelimiters)
     if ignoreTrailing {
       XCTAssertNotEqual(end, endPtr, file: file, line: line)
     } else {
@@ -223,6 +224,36 @@ func diagnosticTest(
   }
 }
 
+func diagnosticWithDelimitersTest(
+  _ input: String, _ expected: ParseError, ignoreTrailing: Bool = false,
+  file: StaticString = #file, line: UInt = #line
+) {
+  // First try lexing.
+  let literal = delimiterLexingTest(
+    input, ignoreTrailing: ignoreTrailing, file: file, line: line)
+
+  do {
+    let orig = try parseWithDelimiters(literal)
+    let ast = orig.root
+    XCTFail("""
+
+      Passed \(ast)
+      But expected error: \(expected)
+    """, file: file, line: line)
+  } catch let e as Source.LocatedError<ParseError> {
+    guard e.error == expected else {
+      XCTFail("""
+
+        Expected: \(expected)
+        Actual: \(e.error)
+      """, file: file, line: line)
+      return
+    }
+  } catch let e {
+    XCTFail("Error without source location: \(e)", file: file, line: line)
+  }
+}
+
 func delimiterLexingDiagnosticTest(
   _ input: String, _ expected: DelimiterLexError.Kind,
   syntax: SyntaxOptions = .traditional,
@@ -230,7 +261,8 @@ func delimiterLexingDiagnosticTest(
 ) {
   do {
     _ = try input.withCString { ptr in
-      try lexRegex(start: ptr, end: ptr + input.count)
+      try lexRegex(
+        start: ptr, end: ptr + input.count, delimiters: Delimiter.allDelimiters)
     }
     XCTFail("""
       Passed, but expected error: \(expected)
@@ -1403,6 +1435,18 @@ extension RegexTests {
     parseTest("(?xx) \\ ", changeMatchingOptions(matchingOptions(
       adding: .extraExtended), isIsolated: true, concat(" ")))
 
+    parseTest(
+      "(?x) a (?^) b",
+      changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        concat(
+          "a",
+          changeMatchingOptions(
+            unsetMatchingOptions(), isIsolated: true, concat(" ", "b"))
+        )
+      )
+    )
+
     // End of line comments aren't applicable in custom char classes.
     // TODO: ICU supports this.
     parseTest(
@@ -1526,9 +1570,219 @@ extension RegexTests {
         matchingOptions(adding: .extended), isIsolated: true, charClass("a", "b"))
     )
 
+    // Test multi-line comment handling.
+    parseTest(
+      """
+      # a
+      bc # d
+      ef# g
+      # h
+      """,
+      concat("b", "c", "e", "f"),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      # a\r\
+      bc # d\r\
+      ef# g\r\
+      # h\r
+      """,
+      concat("b", "c", "e", "f"),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      # a\r\
+      bc # d\r\
+      ef# g\r\
+      # h\r
+      """,
+      concat("b", "c", "e", "f"),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      # a\r
+      bc # d\r
+      ef# g\r
+      # h\r
+      """,
+      concat("b", "c", "e", "f"),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      # a\n\r\
+      bc # d\n\r\
+      ef# g\n\r\
+      # h\n\r
+      """,
+      concat("b", "c", "e", "f"),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*CR)
+      # a
+      bc # d
+      ef# g
+      # h
+      """,
+      ast(empty(), opts: .newlineMatching(.carriageReturnOnly)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*CR)\r\
+      # a\r\
+      bc # d\r\
+      ef# g\r\
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.carriageReturnOnly)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*LF)
+      # a
+      bc # d
+      ef# g
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.linefeedOnly)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*CRLF)
+      # a
+      bc # d
+      ef# g
+      # h
+      """,
+      ast(empty(), opts: .newlineMatching(.carriageAndLinefeedOnly)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*CRLF)
+      # a\r
+      bc # d\r
+      ef# g\r
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.carriageAndLinefeedOnly)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*ANYCRLF)
+      # a
+      bc # d
+      ef# g
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyCarriageReturnOrLinefeed)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*ANYCRLF)
+      # a\r\
+      bc # d\r\
+      ef# g\r\
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyCarriageReturnOrLinefeed)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*ANYCRLF)
+      # a\r
+      bc # d\r
+      ef# g\r
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyCarriageReturnOrLinefeed)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*ANY)
+      # a
+      bc # d
+      ef# g
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyUnicode)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      # a\u{2028}\
+      bc # d
+      ef# g\u{2028}\
+      # h
+      """,
+      concat("e", "f"),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*ANY)
+      # a\u{2028}\
+      bc # d\u{2028}\
+      ef# g\u{2028}\
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyUnicode)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*NUL)
+      # a
+      bc # d\0\
+      ef# g
+      # h
+      """,
+      ast(concat("e", "f"), opts: .newlineMatching(.nulCharacter)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*NUL)
+      # a\0\
+      bc # d\0\
+      ef# g\0\
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.nulCharacter)),
+      syntax: .extendedSyntax
+    )
+    parseTest(
+      """
+      (*CR)(*NUL)
+      # a\0\
+      bc # d\0\
+      ef# g\0\
+      # h
+      """,
+      ast(concat("b", "c", "e", "f"),
+          opts: .newlineMatching(.carriageReturnOnly),
+                .newlineMatching(.nulCharacter)
+         ),
+      syntax: .extendedSyntax
+    )
+
     // MARK: Parse with delimiters
 
+    parseWithDelimitersTest("/a b/", concat("a", " ", "b"))
     parseWithDelimitersTest("#/a b/#", concat("a", " ", "b"))
+    parseWithDelimitersTest("##/a b/##", concat("a", " ", "b"))
     parseWithDelimitersTest("#|a b|#", concat("a", "b"))
 
     parseWithDelimitersTest("re'a b'", concat("a", " ", "b"))
@@ -1564,6 +1818,61 @@ extension RegexTests {
 
     // Printable ASCII characters.
     delimiterLexingTest(##"re' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~'"##)
+
+    // Make sure we can handle a combining accent as first character.
+    parseWithDelimitersTest("/\u{301}/", "\u{301}")
+
+    delimiterLexingTest("/a/#", ignoreTrailing: true)
+
+    // MARK: Multiline
+
+    parseWithDelimitersTest("#/\n/#", empty())
+    parseWithDelimitersTest("#/\r/#", empty())
+    parseWithDelimitersTest("#/\r\n/#", empty())
+    parseWithDelimitersTest("#/\n\t\t  /#", empty())
+    parseWithDelimitersTest("#/  \t\t\n\t\t  /#", empty())
+
+    parseWithDelimitersTest("#/\n a \n/#", "a")
+    parseWithDelimitersTest("#/\r a \r/#", "a")
+    parseWithDelimitersTest("#/\r\n a \r\n/#", "a")
+    parseWithDelimitersTest("#/\n a \n\t\t  /#", "a")
+    parseWithDelimitersTest("#/\t  \n a \n\t\t  /#", "a")
+
+    parseWithDelimitersTest("""
+      #/
+      a
+        b
+           c
+         /#
+      """, concat("a", "b", "c"))
+
+    parseWithDelimitersTest("""
+      #/
+      a    # comment
+        b # another
+      #
+         /#
+      """, concat("a", "b"))
+
+    // Make sure (?^) is ignored.
+    parseWithDelimitersTest("""
+      #/
+      (?^)
+      # comment
+      /#
+      """, changeMatchingOptions(
+        unsetMatchingOptions(), isIsolated: true, empty())
+    )
+
+    // (?x) has no effect.
+    parseWithDelimitersTest("""
+      #/
+      (?x)
+      # comment
+      /#
+      """, changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true, empty())
+    )
 
     // MARK: Delimiter skipping: Make sure we can skip over the ending delimiter
     // if it's clear that it's part of the regex syntax.
@@ -1947,6 +2256,32 @@ extension RegexTests {
     diagnosticTest("(?-u)", .cannotRemoveSemanticsOptions)
     diagnosticTest("(?-b)", .cannotRemoveSemanticsOptions)
 
+    // Extended syntax may not be removed in multi-line mode.
+    diagnosticWithDelimitersTest("""
+      #/
+      (?-x)a b
+      /#
+      """, .cannotRemoveExtendedSyntaxInMultilineMode
+    )
+    diagnosticWithDelimitersTest("""
+      #/
+      (?-xx)a b
+      /#
+      """, .cannotRemoveExtendedSyntaxInMultilineMode
+    )
+    diagnosticWithDelimitersTest("""
+      #/
+      (?-x:a b)
+      /#
+      """, .cannotRemoveExtendedSyntaxInMultilineMode
+    )
+    diagnosticWithDelimitersTest("""
+      #/
+      (?-xx:a b)
+      /#
+      """, .cannotRemoveExtendedSyntaxInMultilineMode
+    )
+
     // MARK: Group specifiers
 
     diagnosticTest(#"(*"#, .unknownGroupKind("*"))
@@ -2079,21 +2414,35 @@ extension RegexTests {
 
     // MARK: Printable ASCII
 
-    delimiterLexingDiagnosticTest(#"re'\\#n'"#, .endOfString)
+    delimiterLexingDiagnosticTest(#"re'\\#n'"#, .unterminated)
     for i: UInt8 in 0x1 ..< 0x20 where i != 0xA && i != 0xD { // U+A & U+D are \n and \r.
       delimiterLexingDiagnosticTest("re'\(UnicodeScalar(i))'", .unprintableASCII)
     }
-    delimiterLexingDiagnosticTest("re'\n'", .endOfString)
-    delimiterLexingDiagnosticTest("re'\r'", .endOfString)
+    delimiterLexingDiagnosticTest("re'\n'", .unterminated)
+    delimiterLexingDiagnosticTest("re'\r'", .unterminated)
     delimiterLexingDiagnosticTest("re'\u{7F}'", .unprintableASCII)
 
     // MARK: Delimiter skipping
 
-    delimiterLexingDiagnosticTest("re'(?''", .endOfString)
-    delimiterLexingDiagnosticTest("re'(?'abc'", .endOfString)
-    delimiterLexingDiagnosticTest("re'(?('abc'", .endOfString)
-    delimiterLexingDiagnosticTest(#"re'\k'ab_c0+-'"#, .endOfString)
-    delimiterLexingDiagnosticTest(#"re'\g'ab_c0+-'"#, .endOfString)
+    delimiterLexingDiagnosticTest("re'(?''", .unterminated)
+    delimiterLexingDiagnosticTest("re'(?'abc'", .unterminated)
+    delimiterLexingDiagnosticTest("re'(?('abc'", .unterminated)
+    delimiterLexingDiagnosticTest(#"re'\k'ab_c0+-'"#, .unterminated)
+    delimiterLexingDiagnosticTest(#"re'\g'ab_c0+-'"#, .unterminated)
+
+    // MARK: Unbalanced extended syntax
+    delimiterLexingDiagnosticTest("#/a/", .unterminated)
+    delimiterLexingDiagnosticTest("##/a/#", .unterminated)
+
+    // MARK: Multiline
+
+    // Can only be done if pound signs are used.
+    delimiterLexingDiagnosticTest("/\n/", .unterminated)
+
+    // Opening and closing delimiters must be on a newline.
+    delimiterLexingDiagnosticTest("#/a\n/#", .unterminated)
+    delimiterLexingDiagnosticTest("#/\na/#", .multilineClosingNotOnNewline)
+    delimiterLexingDiagnosticTest("#/\n#/#", .multilineClosingNotOnNewline)
   }
 
   func testlibswiftDiagnostics() {

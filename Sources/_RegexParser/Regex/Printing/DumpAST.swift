@@ -44,18 +44,23 @@ extension _ASTPrintable {
     guard let children = _children else {
       return _dumpBase
     }
-    let sub = children.lazy.compactMap {
+    let childDump = children.compactMap { child -> String? in
       // Exclude trivia for now, as we don't want it to appear when performing
       // comparisons of dumped output in tests.
       // TODO: We should eventually have some way of filtering out trivia for
       // tests, so that it can appear in regular dumps.
-      if $0.isTrivia { return nil }
-      return $0._dump()
-    }.joined(separator: ",")
-    if sub.isEmpty {
-      return "\(_dumpBase)"
+      if child.isTrivia { return nil }
+      let dump = child._dump()
+      return !dump.isEmpty ? dump : nil
     }
-    return "\(_dumpBase)(\(sub))"
+    let base = "\(_dumpBase)"
+    if childDump.isEmpty {
+      return base
+    }
+    if childDump.count == 1, base.isEmpty {
+      return "\(childDump[0])"
+    }
+    return "\(base)(\(childDump.joined(separator: ",")))"
   }
 }
 
@@ -77,7 +82,7 @@ extension AST.Node: _ASTPrintable {
 }
 
 extension AST.Alternation {
-  public var _dumpBase: String { "alternation" }
+  public var _dumpBase: String { "alternation<\(children.count)>" }
 }
 
 extension AST.Concatenation {

@@ -70,6 +70,8 @@ enum ParseError: Error, Hashable {
 
   case cannotRemoveTextSegmentOptions
   case cannotRemoveSemanticsOptions
+  case cannotRemoveExtendedSyntaxInMultilineMode
+
   case expectedCalloutArgument
 }
 
@@ -158,6 +160,8 @@ extension ParseError: CustomStringConvertible {
       return "text segment mode cannot be unset, only changed"
     case .cannotRemoveSemanticsOptions:
       return "semantic level cannot be unset, only changed"
+    case .cannotRemoveExtendedSyntaxInMultilineMode:
+      return "extended syntax may not be disabled in multi-line mode"
     case .expectedCalloutArgument:
       return "expected argument to callout"
     }

@@ -528,11 +528,27 @@ extension Source {
         return try src.expectQuoted(endingWith: "*/").value
       }
       if context.endOfLineComments, src.tryEat("#") {
-        // TODO: If we ever support multi-line regex literals, this will need
-        // to be updated to stop at a newline. Note though that PCRE specifies
-        // that the newline it matches against can be controlled by the global
-        // matching options e.g `(*CR)`, `(*ANY)`, ...
-        return src.lexUntil(\.isEmpty).value
+        // Try eat until we either exhaust the input, or hit a newline. Note
+        // that the definition of newline can be altered depending on the global
+        // matching options. By default we consider a newline to be `\n` or
+        // `\r`.
+        return src.lexUntil { src in
+          if src.isEmpty { return true }
+          switch context.newlineMode {
+          case .carriageReturnOnly:
+            return src.tryEat("\r")
+          case .linefeedOnly:
+            return src.tryEat("\n")
+          case .carriageAndLinefeedOnly:
+            return src.tryEat("\r\n")
+          case .anyCarriageReturnOrLinefeed:
+            return src.tryEat(anyOf: "\r", "\n", "\r\n") != nil
+          case .anyUnicode:
+            return src.tryEat(where: \.isNewline)
+          case .nulCharacter:
+            return src.tryEat("\0")
+          }
+        }.value
       }
       return nil
     }
@@ -550,28 +566,12 @@ extension Source {
   ) throws -> AST.Trivia? {
     guard context.ignoreWhitespace else { return nil }
 
-    func isWhitespace(_ c: Character) -> Bool {
-      // This is a list of characters that PCRE treats as whitespace when
-      // compiled with Unicode support. It is a subset of the characters with
-      // the `.isWhitespace` property. ICU appears to also follow this list.
-      // Oniguruma and .NET follow a subset of this list.
-      //
-      // FIXME: PCRE only treats space and tab characters as whitespace when
-      // inside a custom character class (and only treats whitespace as
-      // non-semantic there for the extra-extended `(?xx)` mode). If we get a
-      // strict-PCRE mode, we'll need to add a case for that.
-      switch c {
-      case " ", "\u{9}"..."\u{D}", // space, \t, \n, vertical tab, \f, \r
-           "\u{85}", "\u{200E}",   // next line, left-to-right mark
-           "\u{200F}", "\u{2028}", // right-to-left-mark, line separator
-           "\u{2029}":             // paragraph separator
-        return true
-      default:
-        return false
-      }
-    }
+    // FIXME: PCRE only treats space and tab characters as whitespace when
+    // inside a custom character class (and only treats whitespace as
+    // non-semantic there for the extra-extended `(?xx)` mode). If we get a
+    // strict-PCRE mode, we'll need to add a case for that.
     let trivia: Located<String>? = recordLoc { src in
-      src.tryEatPrefix(isWhitespace)?.string
+      src.tryEatPrefix(\.isPatternWhitespace)?.string
     }
     guard let trivia = trivia else { return nil }
     return AST.Trivia(trivia)
@@ -657,6 +657,7 @@ extension Source {
   ///                        | MatchingOption* '-' MatchingOption*
   ///
   mutating func lexMatchingOptionSequence(
+    context: ParsingContext
   ) throws -> AST.MatchingOptionSequence? {
     let ateCaret = recordLoc { $0.tryEat("^") }
 
@@ -690,6 +691,11 @@ extension Source {
         // Matching semantics options can only be added, not removed.
         if opt.isSemanticMatchingLevel {
           throw ParseError.cannotRemoveSemanticsOptions
+        }
+        // Extended syntax may not be removed if in multi-line mode.
+        if context.syntax.contains(.multilineExtendedSyntax) &&
+            opt.isAnyExtended {
+          throw ParseError.cannotRemoveExtendedSyntaxInMultilineMode
         }
         removing.append(opt)
       }
@@ -864,7 +870,7 @@ extension Source {
           }
 
           // Matching option changing group (?iJmnsUxxxDPSWy{..}-iJmnsUxxxDPSW:).
-          if let seq = try src.lexMatchingOptionSequence() {
+          if let seq = try src.lexMatchingOptionSequence(context: context) {
             if src.tryEat(":") {
               return .changeMatchingOptions(seq, isIsolated: false)
             }

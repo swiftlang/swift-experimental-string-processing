@@ -58,6 +58,11 @@ public struct SyntaxOptions: OptionSet {
   ///  `(_: .*)` == `(?:.*)`
   public static var experimentalCaptures: Self { Self(1 << 5) }
 
+  /// The default syntax for a multi-line regex literal.
+  public static var multilineExtendedSyntax: Self {
+    return [Self(1 << 6), .extendedSyntax]
+  }
+
   /*
 
     /// `<digit>*` == `[[:digit:]]*` == `\d*`
