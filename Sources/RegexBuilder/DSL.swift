@@ -54,6 +54,7 @@ extension _BuiltinRegexComponent {
 // Note: Quantifiers are currently gyb'd.
 
 /// Specifies how much to attempt to match when using a quantifier.
+@available(SwiftStdlib 5.7, *)
 public struct QuantificationBehavior {
   internal enum Kind {
     case eagerly
@@ -121,6 +122,7 @@ extension QuantificationBehavior {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct OneOrMore<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -132,6 +134,7 @@ public struct OneOrMore<Output>: _BuiltinRegexComponent {
   // Variadics.swift.
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct ZeroOrMore<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -143,6 +146,7 @@ public struct ZeroOrMore<Output>: _BuiltinRegexComponent {
   // Variadics.swift.
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct Optionally<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -154,6 +158,7 @@ public struct Optionally<Output>: _BuiltinRegexComponent {
   // Variadics.swift.
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct Repeat<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -179,6 +184,7 @@ public struct Repeat<Output>: _BuiltinRegexComponent {
 //   ) -> R where R.Match == (W, C...)
 // }
 
+@available(SwiftStdlib 5.7, *)
 @resultBuilder
 public struct AlternationBuilder {
   @_disfavoredOverload
@@ -201,6 +207,7 @@ public struct AlternationBuilder {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct ChoiceOf<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -215,6 +222,7 @@ public struct ChoiceOf<Output>: _BuiltinRegexComponent {
 
 // MARK: - Capture
 
+@available(SwiftStdlib 5.7, *)
 public struct Capture<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -225,6 +233,7 @@ public struct Capture<Output>: _BuiltinRegexComponent {
   // Note: Public initializers are currently gyb'd. See Variadics.swift.
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct TryCapture<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -239,6 +248,7 @@ public struct TryCapture<Output>: _BuiltinRegexComponent {
 
 /// An atomic group, i.e. opens a local backtracking scope which, upon successful exit,
 /// discards any remaining backtracking points from within the scope
+@available(SwiftStdlib 5.7, *)
 public struct Local<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -249,6 +259,7 @@ public struct Local<Output>: _BuiltinRegexComponent {
 
 // MARK: - Backreference
 
+@available(SwiftStdlib 5.7, *)
 public struct Reference<Capture>: RegexComponent {
   let id = ReferenceID()
 

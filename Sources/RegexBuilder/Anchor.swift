@@ -12,6 +12,7 @@
 import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
+@available(SwiftStdlib 5.7, *)
 public struct Anchor {
   internal enum Kind {
     case startOfSubject
@@ -107,6 +108,7 @@ extension Anchor {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct Lookahead<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 

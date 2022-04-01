@@ -9,6 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+@available(SwiftStdlib 5.7, *)
 public protocol CustomRegexComponent: RegexComponent {
   func match(
     _ input: String,

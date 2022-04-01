@@ -12,6 +12,7 @@
 import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
+@available(SwiftStdlib 5.7, *)
 public struct CharacterClass {
   internal var ccc: DSLTree.CustomCharacterClass
   
@@ -122,6 +123,7 @@ extension CharacterClass {
 }
 
 /// Range syntax for characters in `CharacterClass`es.
+@available(SwiftStdlib 5.7, *)
 public func ...(lhs: Character, rhs: Character) -> CharacterClass {
   let range: DSLTree.CustomCharacterClass.Member = .range(.char(lhs), .char(rhs))
   let ccc = DSLTree.CustomCharacterClass(members: [range], isInverted: false)
@@ -130,6 +132,7 @@ public func ...(lhs: Character, rhs: Character) -> CharacterClass {
 
 /// Range syntax for unicode scalars in `CharacterClass`es.
 @_disfavoredOverload
+@available(SwiftStdlib 5.7, *)
 public func ...(lhs: UnicodeScalar, rhs: UnicodeScalar) -> CharacterClass {
   let range: DSLTree.CustomCharacterClass.Member = .range(.scalar(lhs), .scalar(rhs))
   let ccc = DSLTree.CustomCharacterClass(members: [range], isInverted: false)

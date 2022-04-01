@@ -27,6 +27,7 @@ extension Collection where Element: Equatable {
   /// - Parameter other: A sequence to search for within this collection.
   /// - Returns: `true` if the collection contains the specified sequence,
   /// otherwise `false`.
+  @available(SwiftStdlib 5.7, *)
   public func contains<S: Sequence>(_ other: S) -> Bool
     where S.Element == Element
   {
@@ -50,6 +51,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter regex: A regex to search for within this collection.
   /// - Returns: `true` if the regex was found in the collection, otherwise
   /// `false`.
+  @available(SwiftStdlib 5.7, *)
   public func contains<R: RegexComponent>(_ regex: R) -> Bool {
     contains(RegexConsumer(regex))
   }
