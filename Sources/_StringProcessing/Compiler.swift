@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+import _MatchingEngine
 
 class Compiler {
   let tree: DSLTree

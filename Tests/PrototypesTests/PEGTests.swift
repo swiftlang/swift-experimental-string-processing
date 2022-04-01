@@ -11,7 +11,7 @@
 
 import XCTest
 @testable import Prototypes
-import _RegexParser
+import _MatchingEngine
 
 // Make examples more sane. Need builder
 typealias Pattern = PEG<Character>.Pattern

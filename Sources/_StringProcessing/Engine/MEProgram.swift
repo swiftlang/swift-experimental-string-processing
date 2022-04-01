@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+import _MatchingEngine
 
 struct MEProgram<Input: Collection> where Input.Element: Equatable {
   typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?

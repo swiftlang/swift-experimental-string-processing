@@ -11,7 +11,7 @@
 
 // BEGIN AUTO-GENERATED CONTENT
 
-import _RegexParser
+import _MatchingEngine
 @_spi(RegexBuilder) import _StringProcessing
 
 extension RegexComponentBuilder {
@@ -498,6 +498,13 @@ extension Optionally {
   }
 }
 
+@_disfavoredOverload
+public postfix func .?<Component: RegexComponent>(
+  _ component: Component
+) -> Optionally<Substring>  {
+  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+}
+
 extension RegexComponentBuilder {
   public static func buildLimitedAvailability<Component: RegexComponent>(
     _ component: Component
@@ -525,6 +532,13 @@ extension ZeroOrMore {
   }
 }
 
+@_disfavoredOverload
+public postfix func .*<Component: RegexComponent>(
+  _ component: Component
+) -> ZeroOrMore<Substring>  {
+  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+}
+
 
 extension OneOrMore {
   @_disfavoredOverload
@@ -544,6 +558,13 @@ extension OneOrMore {
   ) where Output == Substring {
     self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
   }
+}
+
+@_disfavoredOverload
+public postfix func .+<Component: RegexComponent>(
+  _ component: Component
+) -> OneOrMore<Substring>  {
+  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
 }
 
 
@@ -602,6 +623,12 @@ extension Optionally {
   ) where Output == (Substring, C0?), Component.Output == (W, C0) {
     self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .?<W, C0, Component: RegexComponent>(
+  _ component: Component
+) -> Optionally<(Substring, C0?)> where Component.Output == (W, C0) {
+  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
 }
 
 extension RegexComponentBuilder {
@@ -629,6 +656,12 @@ extension ZeroOrMore {
   }
 }
 
+public postfix func .*<W, C0, Component: RegexComponent>(
+  _ component: Component
+) -> ZeroOrMore<(Substring, C0?)> where Component.Output == (W, C0) {
+  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+}
+
 
 extension OneOrMore {
     public init<W, C0, Component: RegexComponent>(
@@ -646,6 +679,12 @@ extension OneOrMore {
   ) where Output == (Substring, C0), Component.Output == (W, C0) {
     self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .+<W, C0, Component: RegexComponent>(
+  _ component: Component
+) -> OneOrMore<(Substring, C0)> where Component.Output == (W, C0) {
+  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
 }
 
 
@@ -700,6 +739,12 @@ extension Optionally {
   ) where Output == (Substring, C0?, C1?), Component.Output == (W, C0, C1) {
     self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .?<W, C0, C1, Component: RegexComponent>(
+  _ component: Component
+) -> Optionally<(Substring, C0?, C1?)> where Component.Output == (W, C0, C1) {
+  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
 }
 
 extension RegexComponentBuilder {
@@ -727,6 +772,12 @@ extension ZeroOrMore {
   }
 }
 
+public postfix func .*<W, C0, C1, Component: RegexComponent>(
+  _ component: Component
+) -> ZeroOrMore<(Substring, C0?, C1?)> where Component.Output == (W, C0, C1) {
+  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+}
+
 
 extension OneOrMore {
     public init<W, C0, C1, Component: RegexComponent>(
@@ -744,6 +795,12 @@ extension OneOrMore {
   ) where Output == (Substring, C0, C1), Component.Output == (W, C0, C1) {
     self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .+<W, C0, C1, Component: RegexComponent>(
+  _ component: Component
+) -> OneOrMore<(Substring, C0, C1)> where Component.Output == (W, C0, C1) {
+  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
 }
 
 
@@ -798,6 +855,12 @@ extension Optionally {
   ) where Output == (Substring, C0?, C1?, C2?), Component.Output == (W, C0, C1, C2) {
     self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .?<W, C0, C1, C2, Component: RegexComponent>(
+  _ component: Component
+) -> Optionally<(Substring, C0?, C1?, C2?)> where Component.Output == (W, C0, C1, C2) {
+  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
 }
 
 extension RegexComponentBuilder {
@@ -825,6 +888,12 @@ extension ZeroOrMore {
   }
 }
 
+public postfix func .*<W, C0, C1, C2, Component: RegexComponent>(
+  _ component: Component
+) -> ZeroOrMore<(Substring, C0?, C1?, C2?)> where Component.Output == (W, C0, C1, C2) {
+  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+}
+
 
 extension OneOrMore {
     public init<W, C0, C1, C2, Component: RegexComponent>(
@@ -842,6 +911,12 @@ extension OneOrMore {
   ) where Output == (Substring, C0, C1, C2), Component.Output == (W, C0, C1, C2) {
     self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .+<W, C0, C1, C2, Component: RegexComponent>(
+  _ component: Component
+) -> OneOrMore<(Substring, C0, C1, C2)> where Component.Output == (W, C0, C1, C2) {
+  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
 }
 
 
@@ -896,6 +971,12 @@ extension Optionally {
   ) where Output == (Substring, C0?, C1?, C2?, C3?), Component.Output == (W, C0, C1, C2, C3) {
     self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .?<W, C0, C1, C2, C3, Component: RegexComponent>(
+  _ component: Component
+) -> Optionally<(Substring, C0?, C1?, C2?, C3?)> where Component.Output == (W, C0, C1, C2, C3) {
+  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
 }
 
 extension RegexComponentBuilder {
@@ -923,6 +1004,12 @@ extension ZeroOrMore {
   }
 }
 
+public postfix func .*<W, C0, C1, C2, C3, Component: RegexComponent>(
+  _ component: Component
+) -> ZeroOrMore<(Substring, C0?, C1?, C2?, C3?)> where Component.Output == (W, C0, C1, C2, C3) {
+  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+}
+
 
 extension OneOrMore {
     public init<W, C0, C1, C2, C3, Component: RegexComponent>(
@@ -940,6 +1027,12 @@ extension OneOrMore {
   ) where Output == (Substring, C0, C1, C2, C3), Component.Output == (W, C0, C1, C2, C3) {
     self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .+<W, C0, C1, C2, C3, Component: RegexComponent>(
+  _ component: Component
+) -> OneOrMore<(Substring, C0, C1, C2, C3)> where Component.Output == (W, C0, C1, C2, C3) {
+  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
 }
 
 
@@ -994,6 +1087,12 @@ extension Optionally {
   ) where Output == (Substring, C0?, C1?, C2?, C3?, C4?), Component.Output == (W, C0, C1, C2, C3, C4) {
     self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .?<W, C0, C1, C2, C3, C4, Component: RegexComponent>(
+  _ component: Component
+) -> Optionally<(Substring, C0?, C1?, C2?, C3?, C4?)> where Component.Output == (W, C0, C1, C2, C3, C4) {
+  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
 }
 
 extension RegexComponentBuilder {
@@ -1021,6 +1120,12 @@ extension ZeroOrMore {
   }
 }
 
+public postfix func .*<W, C0, C1, C2, C3, C4, Component: RegexComponent>(
+  _ component: Component
+) -> ZeroOrMore<(Substring, C0?, C1?, C2?, C3?, C4?)> where Component.Output == (W, C0, C1, C2, C3, C4) {
+  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+}
+
 
 extension OneOrMore {
     public init<W, C0, C1, C2, C3, C4, Component: RegexComponent>(
@@ -1038,6 +1143,12 @@ extension OneOrMore {
   ) where Output == (Substring, C0, C1, C2, C3, C4), Component.Output == (W, C0, C1, C2, C3, C4) {
     self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .+<W, C0, C1, C2, C3, C4, Component: RegexComponent>(
+  _ component: Component
+) -> OneOrMore<(Substring, C0, C1, C2, C3, C4)> where Component.Output == (W, C0, C1, C2, C3, C4) {
+  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
 }
 
 
@@ -1092,6 +1203,12 @@ extension Optionally {
   ) where Output == (Substring, C0?, C1?, C2?, C3?, C4?, C5?), Component.Output == (W, C0, C1, C2, C3, C4, C5) {
     self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .?<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent>(
+  _ component: Component
+) -> Optionally<(Substring, C0?, C1?, C2?, C3?, C4?, C5?)> where Component.Output == (W, C0, C1, C2, C3, C4, C5) {
+  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
 }
 
 extension RegexComponentBuilder {
@@ -1119,6 +1236,12 @@ extension ZeroOrMore {
   }
 }
 
+public postfix func .*<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent>(
+  _ component: Component
+) -> ZeroOrMore<(Substring, C0?, C1?, C2?, C3?, C4?, C5?)> where Component.Output == (W, C0, C1, C2, C3, C4, C5) {
+  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+}
+
 
 extension OneOrMore {
     public init<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent>(
@@ -1136,6 +1259,12 @@ extension OneOrMore {
   ) where Output == (Substring, C0, C1, C2, C3, C4, C5), Component.Output == (W, C0, C1, C2, C3, C4, C5) {
     self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .+<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent>(
+  _ component: Component
+) -> OneOrMore<(Substring, C0, C1, C2, C3, C4, C5)> where Component.Output == (W, C0, C1, C2, C3, C4, C5) {
+  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
 }
 
 
@@ -1190,6 +1319,12 @@ extension Optionally {
   ) where Output == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6) {
     self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .?<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+  _ component: Component
+) -> Optionally<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?)> where Component.Output == (W, C0, C1, C2, C3, C4, C5, C6) {
+  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
 }
 
 extension RegexComponentBuilder {
@@ -1217,6 +1352,12 @@ extension ZeroOrMore {
   }
 }
 
+public postfix func .*<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+  _ component: Component
+) -> ZeroOrMore<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?)> where Component.Output == (W, C0, C1, C2, C3, C4, C5, C6) {
+  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+}
+
 
 extension OneOrMore {
     public init<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
@@ -1234,6 +1375,12 @@ extension OneOrMore {
   ) where Output == (Substring, C0, C1, C2, C3, C4, C5, C6), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6) {
     self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .+<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+  _ component: Component
+) -> OneOrMore<(Substring, C0, C1, C2, C3, C4, C5, C6)> where Component.Output == (W, C0, C1, C2, C3, C4, C5, C6) {
+  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
 }
 
 
@@ -1288,6 +1435,12 @@ extension Optionally {
   ) where Output == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
     self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .?<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+  _ component: Component
+) -> Optionally<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?)> where Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
 }
 
 extension RegexComponentBuilder {
@@ -1315,6 +1468,12 @@ extension ZeroOrMore {
   }
 }
 
+public postfix func .*<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+  _ component: Component
+) -> ZeroOrMore<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?)> where Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+}
+
 
 extension OneOrMore {
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
@@ -1332,6 +1491,12 @@ extension OneOrMore {
   ) where Output == (Substring, C0, C1, C2, C3, C4, C5, C6, C7), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
     self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .+<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+  _ component: Component
+) -> OneOrMore<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)> where Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
 }
 
 
@@ -1386,6 +1551,12 @@ extension Optionally {
   ) where Output == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
     self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .?<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+  _ component: Component
+) -> Optionally<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
 }
 
 extension RegexComponentBuilder {
@@ -1413,6 +1584,12 @@ extension ZeroOrMore {
   }
 }
 
+public postfix func .*<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+  _ component: Component
+) -> ZeroOrMore<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+}
+
 
 extension OneOrMore {
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
@@ -1430,6 +1607,12 @@ extension OneOrMore {
   ) where Output == (Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
     self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .+<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+  _ component: Component
+) -> OneOrMore<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
 }
 
 
@@ -1486,6 +1669,12 @@ extension Optionally {
   }
 }
 
+public postfix func .?<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+  _ component: Component
+) -> Optionally<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
+  .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+}
+
 extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component
@@ -1511,6 +1700,12 @@ extension ZeroOrMore {
   }
 }
 
+public postfix func .*<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+  _ component: Component
+) -> ZeroOrMore<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
+  .init(node: .quantification(.zeroOrMore, .eager, component.regex.root))
+}
+
 
 extension OneOrMore {
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
@@ -1528,6 +1723,12 @@ extension OneOrMore {
   ) where Output == (Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9), Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
   }
+}
+
+public postfix func .+<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+  _ component: Component
+) -> OneOrMore<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)> where Component.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
+  .init(node: .quantification(.oneOrMore, .eager, component.regex.root))
 }
 
 
@@ -1573,12 +1774,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, R1>(lhs: R0, rhs: R1) -> ChoiceOf<Substring> where R0: RegexComponent, R1: RegexComponent {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, R1, W1, C0>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1>(
@@ -1587,12 +1796,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, R1, W1, C0, C1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0?, C1?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0, C1) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0, C1, C2) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, R1, W1, C0, C1, C2>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0?, C1?, C2?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0, C1, C2) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3>(
@@ -1601,12 +1818,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, R1, W1, C0, C1, C2, C3>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0, C1, C2, C3) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0, C1, C2, C3, C4) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, R1, W1, C0, C1, C2, C3, C4>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0, C1, C2, C3, C4) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5>(
@@ -1615,12 +1840,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, R1, W1, C0, C1, C2, C3, C4, C5>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0, C1, C2, C3, C4, C5) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0, C1, C2, C3, C4, C5, C6) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, R1, W1, C0, C1, C2, C3, C4, C5, C6>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0, C1, C2, C3, C4, C5, C6) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7>(
@@ -1629,12 +1862,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
@@ -1643,12 +1884,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R1.Output == (W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1>(
@@ -1657,12 +1906,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, R1, W1, C1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0), R1.Output == (W1, C1) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0), R1.Output == (W1, C1, C2) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, R1, W1, C1, C2>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1?, C2?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0), R1.Output == (W1, C1, C2) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3>(
@@ -1671,12 +1928,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, R1, W1, C1, C2, C3>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0), R1.Output == (W1, C1, C2, C3) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0), R1.Output == (W1, C1, C2, C3, C4) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, R1, W1, C1, C2, C3, C4>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0), R1.Output == (W1, C1, C2, C3, C4) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5>(
@@ -1685,12 +1950,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, R1, W1, C1, C2, C3, C4, C5>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0), R1.Output == (W1, C1, C2, C3, C4, C5) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0), R1.Output == (W1, C1, C2, C3, C4, C5, C6) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0), R1.Output == (W1, C1, C2, C3, C4, C5, C6) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7>(
@@ -1699,12 +1972,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0), R1.Output == (W1, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0), R1.Output == (W1, C1, C2, C3, C4, C5, C6, C7, C8) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7, C8>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0), R1.Output == (W1, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
@@ -1713,12 +1994,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0), R1.Output == (W1, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2>(
@@ -1727,12 +2016,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, R1, W1, C2>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1), R1.Output == (W1, C2) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1), R1.Output == (W1, C2, C3) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, R1, W1, C2, C3>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2?, C3?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1), R1.Output == (W1, C2, C3) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4>(
@@ -1741,12 +2038,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, R1, W1, C2, C3, C4>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1), R1.Output == (W1, C2, C3, C4) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1), R1.Output == (W1, C2, C3, C4, C5) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, R1, W1, C2, C3, C4, C5>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1), R1.Output == (W1, C2, C3, C4, C5) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6>(
@@ -1755,12 +2060,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1), R1.Output == (W1, C2, C3, C4, C5, C6) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1), R1.Output == (W1, C2, C3, C4, C5, C6, C7) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1), R1.Output == (W1, C2, C3, C4, C5, C6, C7) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7, C8>(
@@ -1769,12 +2082,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7, C8>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1), R1.Output == (W1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7, C8, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1), R1.Output == (W1, C2, C3, C4, C5, C6, C7, C8, C9) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7, C8, C9>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1), R1.Output == (W1, C2, C3, C4, C5, C6, C7, C8, C9) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1>(
@@ -1783,12 +2104,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2), R1.Output == (W1, C3) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, R1, W1, C3>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2), R1.Output == (W1, C3) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4>(
@@ -1797,12 +2126,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, R1, W1, C3, C4>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2), R1.Output == (W1, C3, C4) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2), R1.Output == (W1, C3, C4, C5) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, R1, W1, C3, C4, C5>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2), R1.Output == (W1, C3, C4, C5) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6>(
@@ -1811,12 +2148,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2), R1.Output == (W1, C3, C4, C5, C6) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2), R1.Output == (W1, C3, C4, C5, C6, C7) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2), R1.Output == (W1, C3, C4, C5, C6, C7) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7, C8>(
@@ -1825,12 +2170,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7, C8>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2), R1.Output == (W1, C3, C4, C5, C6, C7, C8) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7, C8, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2), R1.Output == (W1, C3, C4, C5, C6, C7, C8, C9) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7, C8, C9>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2), R1.Output == (W1, C3, C4, C5, C6, C7, C8, C9) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1>(
@@ -1839,12 +2192,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3), R1.Output == (W1, C4) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, C3, R1, W1, C4>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3), R1.Output == (W1, C4) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5>(
@@ -1853,12 +2214,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, R1, W1, C4, C5>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3), R1.Output == (W1, C4, C5) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3), R1.Output == (W1, C4, C5, C6) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3), R1.Output == (W1, C4, C5, C6) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7>(
@@ -1867,12 +2236,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3), R1.Output == (W1, C4, C5, C6, C7) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3), R1.Output == (W1, C4, C5, C6, C7, C8) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7, C8>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3), R1.Output == (W1, C4, C5, C6, C7, C8) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7, C8, C9>(
@@ -1881,12 +2258,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7, C8, C9>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3), R1.Output == (W1, C4, C5, C6, C7, C8, C9) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, C3, C4, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5>(
@@ -1895,12 +2280,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, C4, R1, W1, C5>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4), R1.Output == (W1, C5) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4), R1.Output == (W1, C5, C6) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4), R1.Output == (W1, C5, C6) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7>(
@@ -1909,12 +2302,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4), R1.Output == (W1, C5, C6, C7) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4), R1.Output == (W1, C5, C6, C7, C8) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7, C8>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4), R1.Output == (W1, C5, C6, C7, C8) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7, C8, C9>(
@@ -1923,12 +2324,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7, C8, C9>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4), R1.Output == (W1, C5, C6, C7, C8, C9) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6>(
@@ -1937,12 +2346,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5), R1.Output == (W1, C6) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5), R1.Output == (W1, C6, C7) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5), R1.Output == (W1, C6, C7) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7, C8>(
@@ -1951,12 +2368,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7, C8>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5), R1.Output == (W1, C6, C7, C8) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7, C8, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5), R1.Output == (W1, C6, C7, C8, C9) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7, C8, C9>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5), R1.Output == (W1, C6, C7, C8, C9) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1>(
@@ -1965,12 +2390,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5, C6) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Output == (W1, C7) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Output == (W1, C7) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7, C8>(
@@ -1979,12 +2412,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7, C8>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Output == (W1, C7, C8) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7, C8, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Output == (W1, C7, C8, C9) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7, C8, C9>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5, C6), R1.Output == (W1, C7, C8, C9) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1>(
@@ -1993,12 +2434,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5, C6, C7) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1, W1, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5, C6, C7), R1.Output == (W1, C8) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1, W1, C8>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5, C6, C7), R1.Output == (W1, C8) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1, W1, C8, C9>(
@@ -2007,6 +2456,10 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1, W1, C8, C9>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5, C6, C7), R1.Output == (W1, C8, C9) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R1>(
     accumulated: R0, next: R1
@@ -2014,12 +2467,20 @@ extension AlternationBuilder {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
 }
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R1>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
+}
 extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R1, W1, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8), R1.Output == (W1, C9) {
     .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
   }
+}
+
+public func | <R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R1, W1, C9>(lhs: R0, rhs: R1) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.Output == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8), R1.Output == (W1, C9) {
+  .init(node: lhs.regex.root.appendingAlternationCase(rhs.regex.root))
 }
 extension AlternationBuilder {
   public static func buildPartialBlock<R, W, C0>(first regex: R) -> ChoiceOf<(W, C0?)> where R: RegexComponent, R.Output == (W, C0) {

@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+import _MatchingEngine
 
 extension AST {
   var dslTree: DSLTree {

@@ -1,4 +1,4 @@
-import _RegexParser
+import _MatchingEngine
 
 extension CaptureStructure {
   var optionalCount: Int {

@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@testable import _RegexParser
+@testable import _MatchingEngine
 
 import XCTest
 @testable import _StringProcessing

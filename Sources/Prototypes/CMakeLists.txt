@@ -15,4 +15,4 @@ add_library(Prototypes
   TourOfTypes/CharacterClass.swift
   TourOfTypes/Literal.swift)
 target_link_libraries(Prototypes PUBLIC
-  _RegexParser)
+  _MatchingEngine)

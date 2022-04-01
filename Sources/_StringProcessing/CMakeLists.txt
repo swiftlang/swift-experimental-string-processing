@@ -12,12 +12,6 @@ add_library(_StringProcessing
   Algorithms/Consumers/ManyConsumer.swift
   Algorithms/Consumers/PredicateConsumer.swift
   Algorithms/Consumers/RegexConsumer.swift
-  Algorithms/Matching/FirstMatch.swift
-  Algorithms/Matching/Matches.swift
-  Algorithms/Matching/MatchingCollectionConsumer.swift
-  Algorithms/Matching/MatchingCollectionSearcher.swift
-  Algorithms/Matching/MatchReplace.swift
-  Algorithms/Matching/MatchResult.swift
   Algorithms/Searchers/CollectionSearcher.swift
   Algorithms/Searchers/ConsumerSearcher.swift
   Algorithms/Searchers/NaivePatternSearcher.swift
@@ -25,54 +19,24 @@ add_library(_StringProcessing
   Algorithms/Searchers/PredicateSearcher.swift
   Algorithms/Searchers/TwoWaySearcher.swift
   Algorithms/Searchers/ZSearcher.swift
-  Engine/Backtracking.swift
-  Engine/Consume.swift
-  Engine/Engine.swift
-  Engine/InstPayload.swift
-  Engine/Instruction.swift
-  Engine/MEBuilder.swift
-  Engine/MECapture.swift
-  Engine/MEProgram.swift
-  Engine/Processor.swift
-  Engine/Register.swift
-  Engine/Structuralize.swift
-  Engine/Tracing.swift
-  Regex/AnyRegexOutput.swift
-  Regex/ASTConversion.swift
-  Regex/Core.swift
-  Regex/DSLConsumers.swift
-  Regex/DSLTree.swift
-  Regex/Match.swift
-  Regex/Options.swift
-  Unicode/CaseConversion.swift
-  Unicode/CharacterProps.swift
-  Unicode/Comparison.swift
-  Unicode/Data.swift
-  Unicode/Decoding.swift
-  Unicode/Encodings.swift
-  Unicode/Formatting.swift
-  Unicode/Graphemes.swift
-  Unicode/NecessaryEvils.swift
-  Unicode/Normalization.swift
-  Unicode/NumberParsing.swift
-  Unicode/ScalarProps.swift
-  Unicode/Transcoding.swift
-  Unicode/UCD.swift
-  Unicode/Validation.swift
-  Utility/ASTBuilder.swift
-  Utility/Protocols.swift
-  Utility/Traced.swift
-  Utility/TypedIndex.swift
-  Utility/TypedInt.swift
-  ByteCodeGen.swift
+  ASTBuilder.swift
   Capture.swift
   CharacterClass.swift
   Compiler.swift
   ConsumerInterface.swift
   Executor.swift
-  MatchingOptions.swift
-  PrintAsPattern.swift)
+  Legacy/HareVM.swift
+  Legacy/LegacyCompile.swift
+  Legacy/RECode.swift
+  Legacy/TortoiseVM.swift
+  Legacy/VirtualMachine.swift
+  RegexDSL/Builder.swift
+  RegexDSL/Concatenation.swift
+  RegexDSL/Core.swift
+  RegexDSL/DSL.swift
+  RegexDSL/DSLCapture.swift
+  RegexDSL/DynamicCaptures.swift)
 target_compile_options(_StringProcessing PRIVATE
   -enable-library-evolution)
 target_link_libraries(_StringProcessing PUBLIC
-  _RegexParser)
+  _MatchingEngine)

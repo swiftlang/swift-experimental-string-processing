@@ -11,7 +11,7 @@
 
 import XCTest
 @testable @_spi(RegexBuilder) import _StringProcessing
-import _RegexParser
+import _MatchingEngine
 
 extension StructuredCapture {
   func formatStringCapture(input: String) -> String {

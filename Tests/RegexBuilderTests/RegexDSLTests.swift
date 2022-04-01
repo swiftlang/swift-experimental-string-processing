@@ -22,7 +22,7 @@ class RegexDSLTests: XCTestCase {
     line: UInt = #line,
     @RegexComponentBuilder _ content: () -> Content
   ) throws {
-    let regex = content()
+    let regex = Regex(content())
     for (input, maybeExpectedCaptures) in tests {
       let maybeMatch = input.match(regex)
       if let expectedCaptures = maybeExpectedCaptures {
@@ -99,14 +99,12 @@ class RegexDSLTests: XCTestCase {
     do {
       let regex = Regex {
         "ab"
-        OneOrMore {
-          Capture {
-            ChoiceOf {
-              "c"
-              "def"
-            }
+        Capture {
+          ChoiceOf {
+            "c"
+            "def"
           }
-        }
+        }.+
       }
       XCTAssertTrue(
         try XCTUnwrap("abc".match(regex)?.output) == ("abc", "c"))
@@ -151,17 +149,12 @@ class RegexDSLTests: XCTestCase {
       ("aaaabccccdddkj", ("aaaabccccdddkj", "b", "cccc", "d", "k", nil, "j")),
       matchType: (Substring, Substring, Substring, Substring?, Substring, Substring?, Substring?).self, ==)
     {
-      OneOrMore("a")
+      "a".+
       Capture(OneOrMore(Character("b"))) // Substring
       Capture(ZeroOrMore("c")) // Substring
-      ZeroOrMore(Capture(.hexDigit)) // Substring?
-      Optionally("e")
-      Capture {
-        ChoiceOf {
-          "t"
-          "k"
-        }
-      } // Substring
+      Capture(.hexDigit).* // Substring?
+      "e".?
+      Capture("t" | "k") // Substring
       ChoiceOf { Capture("k"); Capture("j") } // (Substring?, Substring?)
     }
   }
@@ -283,7 +276,7 @@ class RegexDSLTests: XCTestCase {
       matchType: Substring.self, ==)
     {
       Anchor.startOfLine
-      OneOrMore("a")
+      "a".+
       "b"
       Anchor.endOfLine
     }
@@ -305,9 +298,9 @@ class RegexDSLTests: XCTestCase {
       ("aaaaab", nil),
       matchType: Substring.self, ==)
     {
-      OneOrMore("a")
-      Lookahead(CharacterClass.digit)
-      Lookahead("2", negative: true)
+      "a".+
+      lookahead(CharacterClass.digit)
+      lookahead("2", negative: true)
       CharacterClass.word
     }
   }
@@ -368,7 +361,7 @@ class RegexDSLTests: XCTestCase {
       ("aaa     ", ("aaa     ", nil, nil)),
       matchType: (Substring, Int?, Word?).self, ==)
     {
-      OneOrMore("a")
+      "a".+
       OneOrMore(.whitespace)
       Optionally {
         Capture(OneOrMore(.digit)) { Int($0)! }
@@ -382,45 +375,43 @@ class RegexDSLTests: XCTestCase {
 
   func testNestedCaptureTypes() throws {
     let regex1 = Regex {
-      OneOrMore("a")
+      "a".+
       Capture {
         Capture(OneOrMore("b"))
-        Optionally("e")
+        "e".?
       }
     }
     let _: (Substring, Substring, Substring).Type
       = type(of: regex1).Output.self
     let regex2 = Regex {
-      OneOrMore("a")
+      "a".+
       Capture {
-        ZeroOrMore {
-          TryCapture("b") { Int($0) }
-        }
-        Optionally("e")
+        TryCapture("b") { Int($0) }.*
+        "e".?
       }
     }
     let _: (Substring, Substring, Int?).Type
       = type(of: regex2).Output.self
     let regex3 = Regex {
-      OneOrMore("a")
+      "a".+
       Capture {
         TryCapture("b") { Int($0) }
         ZeroOrMore {
           TryCapture("c") { Double($0) }
         }
-        Optionally("e")
+        "e".?
       }
     }
     let _: (Substring, Substring, Int, Double?).Type
       = type(of: regex3).Output.self
     let regex4 = Regex {
-      OneOrMore("a")
+      "a".+
       Capture {
         OneOrMore {
           Capture(OneOrMore("b"))
           Capture(ZeroOrMore("c"))
-          ZeroOrMore(Capture("d"))
-          Optionally("e")
+          Capture("d").*
+          "e".?
         }
       }
     }

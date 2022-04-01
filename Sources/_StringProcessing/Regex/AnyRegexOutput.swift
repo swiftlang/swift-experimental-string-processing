@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+import _MatchingEngine
 
 extension Regex where Output == AnyRegexOutput {
   public init(_ pattern: String) throws {
