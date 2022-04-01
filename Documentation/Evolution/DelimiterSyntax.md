@@ -80,7 +80,7 @@ func matchHexAssignment(_ input: String) -> (String, Int)? {
 }
 ```
 
-Unnamed capture groups produce unlabeled tuple elements and must be referenced by their position, e.g `match.1`, `match.2`.
+Unnamed capture groups produce unlabeled tuple elements and must be referenced by their position, e.g `match.1`, `match.2`. See [StronglyTypedCaptures.md](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/StronglyTypedCaptures.md) for more info.
 
 **TODO: Should we cover more general typed capture behavior from [StronglyTypedCaptures.md](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/StronglyTypedCaptures.md) here? There is some overlap with the typed capture behavior of the DSL tho, labels are the main thing that are literal specific**
 
@@ -156,7 +156,7 @@ Perhaps the most obvious parsing ambiguity with `/.../` delimiters is with comme
 
 ### Ambiguity with infix operators
 
-There would be a minor ambiguity with infix operators used with regex literals. When used without whitespace, e.g `x+/y/`, the expression will be treated as using an infix operator `+/`. Whitespace is therefore required `x + /y/` for regex literal interpretation. Alternatively, extended syntax may be used, e.g `x+#/y/#`.
+There would be a minor ambiguity with infix operators used with regex literals. When used without whitespace, e.g `x+/y/`, the expression will be treated as using an infix operator `+/`. Whitespace is therefore required for regex literal interpretation, e.g `x + /y/`. Alternatively, extended syntax may be used, e.g `x+#/y/#`.
 
 ### Regex syntax limitations
 
@@ -241,8 +241,6 @@ Postfix `/` operators do not require banning, as they'd only be treated as regex
     
 #### `/,` and `/]` as regex literal openings
 
-**TODO: Do we still want to break source here given we're also proposing `#/.../#`?**
-
 As stated previously, there is a parsing ambiguity with unapplied operators in argument lists, tuples, and parentheses. Some of these cases can be mitigated by not parsing a regex literal if the starting character is `)`. However it does not solve the issue when the next character is `,` or `]`. Both of these are valid regex starting characters, and comma in particular may be a fairly common case for a regex.
 
 For example:
@@ -284,7 +282,9 @@ This takes advantage of the fact that a regex literal will not be parsed if the 
 
 ## Future Directions
 
-**TODO: Do we have any other future directions now that extended multi-line syntax has been subsumed?**
+### Modern literal syntax
+
+We could support a more modern Swift-like syntax in regex literals. For example, comments could be done with `//` and `/* ... */`, and quoted sequences could be done with `"..."`. This would however be incompatible with the syntactic superset of regex syntax we intend to parse, and as such may need to be introduced using a new literal kind, with no obvious choice of delimiter. However, it's possible that the ability to use regex literals in the DSL lessens the benefit that this syntax would bring.
 
 ## Alternatives Considered
 
