@@ -70,6 +70,59 @@ class RegexDSLTests: XCTestCase {
       Capture(.whitespace) // Substring
       Capture("c") // Substring
     }
+    
+    try _testDSLCaptures(
+      ("abc1def2", "abc1def2"),
+      matchType: Substring.self, ==)
+    {
+      // First group
+      OneOrMore {
+        CharacterClass.anyOf("a"..."z", .digit)
+      }
+
+      // Second group
+      OneOrMore {
+        ChoiceOf {
+          "a"..."z"
+          CharacterClass.hexDigit
+        }
+      }
+    }
+
+    try _testDSLCaptures(
+      ("abc1def2", ("abc1def2", "abc1")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      Capture {
+        OneOrMore(.digit.inverted)
+        ("a"..."z").inverted
+      }
+
+      OneOrMore {
+        CharacterClass.whitespace.inverted
+      }
+    }
+  }
+
+  func testCharacterClassOperations() throws {
+    try _testDSLCaptures(
+      ("bcdefn1a", "bcdefn1a"),
+      ("nbcdef1a", nil),        // fails symmetric difference lookahead
+      ("abcdef1a", nil),        // fails union
+      ("bcdef3a", nil),         // fails subtraction
+      ("bcdef1z", nil),         // fails intersection
+      matchType: Substring.self, ==)
+    {
+      let disallowedChars = CharacterClass.hexDigit
+        .symmetricDifference("a"..."z")
+      Lookahead(disallowedChars, negative: true)      // No: 0-9 + g-z
+
+      OneOrMore(("b"..."g").union("d"..."n"))         // b-n
+      
+      CharacterClass.digit.subtracting("3"..."9")     // 1, 2, non-ascii digits
+
+      CharacterClass.hexDigit.intersection("a"..."z") // a-f
+    }
   }
 
   func testMatchResultDotZeroWithoutCapture() throws {
@@ -250,9 +303,9 @@ class RegexDSLTests: XCTestCase {
     {
       Repeat(2...) {
         Repeat(count: 3) {
-          _CharacterClassModel.word
+          CharacterClass.word
         }
-        _CharacterClassModel.digit
+        CharacterClass.digit
       }
     }
     

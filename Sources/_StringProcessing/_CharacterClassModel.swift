@@ -193,7 +193,7 @@ extension _CharacterClassModel: RegexComponent {
 }
 
 @_spi(RegexBuilder)
-extension RegexComponent where Self == _CharacterClassModel {
+extension _CharacterClassModel {
   public static var any: _CharacterClassModel {
     .init(cc: .any, matchLevel: .graphemeCluster)
   }

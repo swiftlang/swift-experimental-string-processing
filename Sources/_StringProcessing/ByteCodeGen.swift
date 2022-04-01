@@ -584,7 +584,15 @@ extension Compiler.ByteCodeGen {
       try emitQuantification(amt, kind, child)
 
     case let .customCharacterClass(ccc):
-      try emitCustomCharacterClass(ccc)
+      if ccc.containsAny {
+        if !ccc.isInverted {
+          emitAny()
+        } else {
+          throw Unsupported("Inverted any")
+        }
+      } else {
+        try emitCustomCharacterClass(ccc)
+      }
 
     case let .atom(a):
       try emitAtom(a)
