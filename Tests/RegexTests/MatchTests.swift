@@ -281,6 +281,15 @@ extension RegexTests {
     // code point sequence
     firstMatchTest(#"\u{61 62 63}"#, input: "123abcxyz", match: "abc", xfail: true)
 
+    // Escape sequences that represent scalar values.
+    firstMatchTest(#"\a[\b]\e\f\n\r\t"#,
+                   input: "\u{7}\u{8}\u{1B}\u{C}\n\r\t",
+                   match: "\u{7}\u{8}\u{1B}\u{C}\n\r\t")
+    firstMatchTest(#"[\a][\b][\e][\f][\n][\r][\t]"#,
+                   input: "\u{7}\u{8}\u{1B}\u{C}\n\r\t",
+                   match: "\u{7}\u{8}\u{1B}\u{C}\n\r\t")
+
+    firstMatchTest(#"\r\n"#, input: "\r\n", match: "\r\n")
 
     // MARK: Quotes
 
@@ -596,24 +605,20 @@ extension RegexTests {
 
     func scalar(_ u: UnicodeScalar) -> UInt32 { u.value }
 
-    // Currently not supported in the matching engine.
     for s in scalar("\u{C}") ... scalar("\u{1B}") {
       let u = UnicodeScalar(s)!
-      firstMatchTest(#"[\f-\e]"#, input: "\u{B}\u{1C}\(u)", match: "\(u)",
-                     xfail: true)
+      firstMatchTest(#"[\f-\e]"#, input: "\u{B}\u{1C}\(u)", match: "\(u)")
     }
     for u: UnicodeScalar in ["\u{7}", "\u{8}"] {
-      firstMatchTest(#"[\a-\b]"#, input: "\u{6}\u{9}\(u)", match: "\(u)",
-                     xfail: true)
+      firstMatchTest(#"[\a-\b]"#, input: "\u{6}\u{9}\(u)", match: "\(u)")
     }
     for s in scalar("\u{A}") ... scalar("\u{D}") {
       let u = UnicodeScalar(s)!
-      firstMatchTest(#"[\n-\r]"#, input: "\u{9}\u{E}\(u)", match: "\(u)",
-                     xfail: true)
+      firstMatchTest(#"[\n-\r]"#, input: "\u{9}\u{E}\(u)", match: "\(u)")
     }
-    firstMatchTest(#"[\t-\t]"#, input: "\u{8}\u{A}\u{9}", match: "\u{9}",
-                   xfail: true)
+    firstMatchTest(#"[\t-\t]"#, input: "\u{8}\u{A}\u{9}", match: "\u{9}")
 
+    // Currently not supported in the matching engine.
     for c: UnicodeScalar in ["a", "b", "c"] {
       firstMatchTest(#"[\c!-\C-#]"#, input: "def\(c)", match: "\(c)",
                      xfail: true)
