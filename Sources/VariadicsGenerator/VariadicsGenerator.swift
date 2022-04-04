@@ -155,6 +155,13 @@ struct VariadicsGenerator: ParsableCommand {
       print(to: &standardError)
     }
 
+    print("Generating atomic groups...", to: &standardError)
+    for arity in 0...maxArity {
+      print("  Arity \(arity): ", terminator: "", to: &standardError)
+      emitAtomicGroup(arity: arity)
+      print(to: &standardError)
+    }
+
     print("Generating alternation overloads...", to: &standardError)
     for (leftArity, rightArity) in Permutations(totalArity: maxArity) {
       print(
@@ -393,6 +400,60 @@ struct VariadicsGenerator: ParsableCommand {
 
       """)
   }
+
+
+  func emitAtomicGroup(arity: Int) {
+    assert(arity >= 0)
+    let groupName = "Local"
+    func node(builder: Bool) -> String {
+      """
+      .nonCapturingGroup(.atomicNonCapturing, component\(
+        builder ? "()" : ""
+      ).regex.root)
+      """
+    }
+
+    let disfavored = arity == 0 ? "@_disfavoredOverload\n" : ""
+    let genericParams: String = {
+      var result = ""
+      if arity > 0 {
+        result += "W"
+        result += (0..<arity).map { ", C\($0)" }.joined()
+        result += ", "
+      }
+      result += "Component: \(regexComponentProtocolName)"
+      return result
+    }()
+    let captures = (0..<arity).map { "C\($0)" }
+    let capturesJoined = captures.joined(separator: ", ")
+    let matchType = arity == 0
+      ? baseMatchTypeName
+      : "(\(baseMatchTypeName), \(capturesJoined))"
+    let whereClauseForInit = "where \(outputAssociatedTypeName) == \(matchType)" +
+      (arity == 0 ? "" : ", Component.\(outputAssociatedTypeName) == (W, \(capturesJoined))")
+
+    output("""
+      extension \(groupName) {
+        \(disfavored)\
+        public init<\(genericParams)>(
+          _ component: Component
+        ) \(whereClauseForInit) {
+          self.init(node: \(node(builder: false)))
+        }
+      }
+
+      extension \(groupName) {
+        \(disfavored)\
+        public init<\(genericParams)>(
+          @\(concatBuilderName) _ component: () -> Component
+        ) \(whereClauseForInit) {
+          self.init(node: \(node(builder: true)))
+        }
+      }
+
+      """)
+  }
+
   
   func emitRepeating(arity: Int) {
     assert(arity >= 0)

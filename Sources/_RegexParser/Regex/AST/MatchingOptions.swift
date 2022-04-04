@@ -137,7 +137,8 @@ extension AST {
   /// Global matching option specifiers. Unlike `MatchingOptionSequence`,
   /// these must appear at the start of the pattern, and apply globally.
   public struct GlobalMatchingOption: _ASTNode, Hashable {
-    /// Determines the definition of a newline for the '.' character class.
+    /// Determines the definition of a newline for the '.' character class and
+    /// when parsing end-of-line comments.
     public enum NewlineMatching: Hashable {
       /// (*CR*)
       case carriageReturnOnly

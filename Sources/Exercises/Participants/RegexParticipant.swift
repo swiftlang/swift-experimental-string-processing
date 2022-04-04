@@ -63,7 +63,7 @@ private func graphemeBreakPropertyData<RP: RegexComponent>(
   forLine line: String,
   using regex: RP
 ) -> GraphemeBreakEntry? where RP.Output == (Substring, Substring, Substring?, Substring) {
-  line.match(regex).map(\.output).flatMap(extractFromCaptures)
+  line.matchWhole(regex).map(\.output).flatMap(extractFromCaptures)
 }
 
 private func graphemeBreakPropertyDataLiteral(
@@ -80,7 +80,7 @@ private func graphemeBreakPropertyDataLiteral(
 private func graphemeBreakPropertyData(
   forLine line: String
 ) -> GraphemeBreakEntry? {
-  line.match {
+  line.matchWhole {
     TryCapture(OneOrMore(.hexDigit)) { Unicode.Scalar(hex: $0) }
     Optionally {
       ".."
