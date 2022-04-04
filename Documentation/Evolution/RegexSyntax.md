@@ -10,27 +10,56 @@ Hello, we want to issue an update to [Regular Expression Literals](https://forum
 
 A regex declares a string processing algorithm using syntax familiar across a variety of languages and tools throughout programming history. We propose the ability to create a regex at run time from a string containing regex syntax (detailed here), API for accessing the match and captures, and a means to convert between an existential capture representation and concrete types.
 
-The overall story is laid out in [Regex Type and Overview](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexTypeOverview.md) and each individual component is tracked in [Pitch and Proposal Status](https://github.com/apple/swift-experimental-string-processing/issues/107).
+The overall story is laid out in [Regex Type and Overview][overview] and each individual component is tracked in [Pitch and Proposal Status](https://github.com/apple/swift-experimental-string-processing/issues/107).
 
 ## Motivation
 
 Swift aims to be a pragmatic programming language, striking a balance between familiarity, interoperability, and advancing the art. Swift's `String` presents a uniquely Unicode-forward model of string, but currently suffers from limited processing facilities.
 
-<!--
-... tools need run time construction
-...  ns regular expression operates over a fundamentally different model and has limited syntactic and semantic support
-... we prpose a best-in-class treatment of familiar regex syntax
--->
+`NSRegularExpression` can construct a processing pipeline from a string containing [ICU regular expression syntax][icu-syntax]. However, it is inherently tied to ICU's engine and thus it operates over a fundamentally different model of string than Swift's `String`. It is also limited in features and carries a fair amount of Objective-C baggage.
 
-The full string processing effort includes a regex type with strongly typed captures, the ability to create a regex from a string at runtime, a compile-time literal, a result builder DSL, protocols for intermixing 3rd party industrial-strength parsers with regex declarations, and a slew of regex-powered algorithms over strings.
+```swift
+let pattern = #"(\w+)\s\s+(\S+)\s\s+((?:(?!\s\s).)*)\s\s+(.*)"#
+let nsRegEx = try! NSRegularExpression(pattern: pattern)
 
-This proposal specifically hones in on the _familiarity_ aspect by providing a best-in-class treatment of familiar regex syntax.
+func processEntry(_ line: String) -> Transaction? {
+  let range = NSRange(line.startIndex..<line.endIndex, in: line)
+  guard let result = nsRegEx.firstMatch(in: line, range: range),
+        let kindRange = Range(result.range(at: 1), in: line),
+        let kind = Transaction.Kind(line[kindRange]),
+        let dateRange = Range(result.range(at: 2), in: line),
+        let date = try? Date(String(line[dateRange]), strategy: dateParser),
+        let accountRange = Range(result.range(at: 3), in: line),
+        let amountRange = Range(result.range(at: 4), in: line),
+        let amount = try? Decimal(
+          String(line[amountRange]), format: decimalParser)
+  else {
+    return nil
+  }
+
+  return Transaction(
+    kind: kind, date: date, account: String(line[accountRange]), amount: amount)
+}
+```
+
+Fixing these fundamental limitations requires migrating to a completely different engine and type system representation. This is the path we're proposing with `Regex`, outlined in [Regex Type and Overview][overview]. Details on the semantic mismatch between ICU and Swift's `String` is discussed in [Unicode for String Processing][pitches].
+
+Run-time construction is important for tools and editors. For example, SwiftPM allows the user to provide a regular expression to filter tests via `swift test --filter`.
+
 
 ## Proposed Solution
 
-<!--
- ... regex compiling and existential match type
--->
+We propose run-time construction of `Regex` from a best-in-class treatment of familiar regular expression syntax. A `Regex` is generic over its `Output`, which includes capture information. This may be an existential `AnyRegexOutput`, or a concrete type provided by the user.
+
+```swift
+let pattern = #"(\w+)\s\s+(\S+)\s\s+((?:(?!\s\s).)*)\s\s+(.*)"#
+let regex = try! Regex(compiling: pattern)
+// regex: Regex<AnyRegexOutput>
+
+let regex: Regex<(Substring, Substring, Substring, Substring, Substring)> =
+  try! Regex(compiling: pattern)
+```
+
 
 ### Syntax
 
@@ -866,3 +895,9 @@ This proposal regards _syntactic_ support, and does not necessarily mean that ev
 [unicode-scripts]: https://www.unicode.org/reports/tr24/#Script
 [unicode-script-extensions]: https://www.unicode.org/reports/tr24/#Script_Extensions
 [balancing-groups]: https://docs.microsoft.com/en-us/dotnet/standard/base-types/grouping-constructs-in-regular-expressions#balancing-group-definitions
+[overview]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexTypeOverview.md
+[pitches]: https://github.com/apple/swift-experimental-string-processing/issues/107
+
+
+
+
