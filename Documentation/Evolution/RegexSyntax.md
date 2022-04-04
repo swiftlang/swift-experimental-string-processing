@@ -2,26 +2,37 @@
 Hello, we want to issue an update to [Regular Expression Literals](https://forums.swift.org/t/pitch-regular-expression-literals/52820) and prepare for a formal proposal. The great delimiter deliberation continues to unfold, so in the meantime, we have a significant amount of surface area to present for review/feedback: the syntax _inside_ a regex literal. Additionally, this is the syntax accepted from a string used for run-time regex construction, so we're devoting an entire pitch/proposal to the topic of _regex syntax_, distinct from the result builder DSL or the choice of delimiters for literals. 
 -->
 
-# Regex Syntax
+# Run-time Regex Construction
 
-- Authors: Hamish Knight, Michael Ilseman
+- Authors: [Hamish Knight](https://github.com/hamishknight), [Michael Ilseman](https://github.com/milseman)
 
 ## Introduction
 
-A regex declares a string processing algorithm using syntax familiar across a variety of languages and tools throughout programming history. Regexes can be created from a string at run time or from a literal at compile time. The contents of that run-time string, or the contents in-between the compile-time literal's delimiters, uses regex syntax. We present a detailed and comprehensive treatment of regex syntax.
+A regex declares a string processing algorithm using syntax familiar across a variety of languages and tools throughout programming history. We propose the ability to create a regex at run time from a string containing regex syntax (detailed here), API for accessing the match and captures, and a means to convert between an existential capture representation and concrete types.
 
-This is part of a larger effort in supporting regex literals, which in turn is part of a larger effort towards better string processing using regex. See [Pitch and Proposal Status](https://github.com/apple/swift-experimental-string-processing/issues/107), which tracks each relevant piece. This proposal regards _syntactic_ support, and does not necessarily mean that everything that can be written will be supported by Swift's runtime engine in the initial release. Support for more obscure features may appear over time, see [MatchingEngine Capabilities and Roadmap](https://github.com/apple/swift-experimental-string-processing/issues/99) for status.
-
+The overall story is laid out in [Regex Type and Overview](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexTypeOverview.md) and each individual component is tracked in [Pitch and Proposal Status](https://github.com/apple/swift-experimental-string-processing/issues/107).
 
 ## Motivation
 
 Swift aims to be a pragmatic programming language, striking a balance between familiarity, interoperability, and advancing the art. Swift's `String` presents a uniquely Unicode-forward model of string, but currently suffers from limited processing facilities.
+
+<!--
+... tools need run time construction
+...  ns regular expression operates over a fundamentally different model and has limited syntactic and semantic support
+... we prpose a best-in-class treatment of familiar regex syntax
+-->
 
 The full string processing effort includes a regex type with strongly typed captures, the ability to create a regex from a string at runtime, a compile-time literal, a result builder DSL, protocols for intermixing 3rd party industrial-strength parsers with regex declarations, and a slew of regex-powered algorithms over strings.
 
 This proposal specifically hones in on the _familiarity_ aspect by providing a best-in-class treatment of familiar regex syntax.
 
 ## Proposed Solution
+
+<!--
+ ... regex compiling and existential match type
+-->
+
+### Syntax
 
 We propose accepting a syntactic "superset" of the following existing regular expression engines:
 
@@ -39,6 +50,10 @@ Note that there are minor syntactic incompatibilities and ambiguities involved i
 Regex syntax will be part of Swift's source-compatibility story as well as its binary-compatibility story. Thus, we present a detailed and comprehensive design.
 
 ## Detailed Design
+
+<!--
+ ... init, dynamic match, conversion to static
+ -->
 
 We propose the following syntax for regex.
 
@@ -145,7 +160,7 @@ Atom -> Anchor
       | '\'? <Character>
 ```
 
-Atoms are the smallest units of regex syntax. They include escape sequences, metacharacters, backreferences, etc. The most basic form of atom is a literal character. A metacharacter may be treated as literal by preceding it with a backslash. Other literal characters may also be preceded with a backslash, but it has no effect if they are unknown escape sequences, e.g `\I` is literal `I`.
+Atoms are the smallest units of regex syntax. They include escape sequences, metacharacters, backreferences, etc. The most basic form of atom is a literal character. A metacharacter may be treated as literal by preceding it with a backslash. Other literal characters may also be preceded by a backslash, in which case it has no effect, e.g `\%` is literal `%`. However this does not apply to either non-whitespace Unicode characters, or to unknown ASCII letter character escapes, e.g `\I` is invalid and would produce an error.
 
 #### Anchors
 
@@ -831,6 +846,14 @@ Regex syntax will become part of Swift's source and binary-compatibility story, 
 
 Even though it is more work up-front and creates a longer proposal, it is less risky to support the full intended syntax. The proposed superset maximizes the familiarity benefit of regex syntax.
 
+
+<!-- 
+
+### TODO: Semantic capabilities
+
+This proposal regards _syntactic_ support, and does not necessarily mean that everything that can be parsed will be supported by Swift's engine in the initial release. Support for more obscure features may appear over time, see [MatchingEngine Capabilities and Roadmap](https://github.com/apple/swift-experimental-string-processing/issues/99) for status.
+
+ -->
 
 [pcre2-syntax]: https://www.pcre.org/current/doc/html/pcre2syntax.html
 [oniguruma-syntax]: https://github.com/kkos/oniguruma/blob/master/doc/RE

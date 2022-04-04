@@ -319,21 +319,6 @@ extension CharacterClass {
   }
 }
 
-extension AST.Node {
-  /// If this has a character class representation, whether built-in or custom, return it.
-  ///
-  /// TODO: Not sure if this the right model type, but I suspect we'll want to produce
-  /// something like this on demand
-  var characterClass: CharacterClass? {
-    switch self {
-    case let .customCharacterClass(cc): return cc.modelCharacterClass
-    case let .atom(a): return a.characterClass
-
-    default: return nil
-    }
-  }
-}
-
 extension DSLTree.Node {
   var characterClass: CharacterClass? {
     switch self {
@@ -499,66 +484,6 @@ extension DSLTree.CustomCharacterClass {
     }
     let cc = CharacterClass.custom(result)
     return isInverted ? cc.inverted : cc
-  }
-}
-
-extension AST.CustomCharacterClass {
-  /// The model character class for this custom character class.
-  var modelCharacterClass: CharacterClass? {
-    typealias Component = CharacterClass.CharacterSetComponent
-    func getComponents(_ members: [Member]) -> [Component]? {
-      var result = Array<Component>()
-      for m in members {
-        switch m {
-        case .custom(let cc):
-          guard let cc = cc.modelCharacterClass else {
-            return nil
-          }
-          result.append(.characterClass(cc))
-        case .range(let r):
-          result.append(.range(
-            r.lhs.literalCharacterValue! ...
-            r.rhs.literalCharacterValue!))
-
-        case .atom(let a):
-          if let cc = a.characterClass {
-            result.append(.characterClass(cc))
-          } else if let lit = a.literalCharacterValue {
-            result.append(.character(lit))
-          } else {
-            return nil
-          }
-
-        case .quote(let q):
-          // Decompose quoted literal into literal characters.
-          result += q.literal.map { .character($0) }
-
-        case .trivia:
-          // Not semantically important.
-          break
-
-        case .setOperation(let lhs, let op, let rhs):
-          // FIXME: CharacterClass wasn't designed for set operations with
-          // multiple components in each operand, we should fix that. For now,
-          // just produce custom components.
-          guard let lhs = getComponents(lhs),
-                let rhs = getComponents(rhs)
-          else {
-            return nil
-          }
-          result.append(.setOperation(.init(
-            lhs: .characterClass(.custom(lhs)),
-            op: op.value,
-            rhs: .characterClass(.custom(rhs)))))
-        }
-      }
-      return result
-    }
-    guard let comps = getComponents(members) else {
-      return nil
-    }
-    let cc = CharacterClass.custom(comps)
-    return self.isInverted ? cc.inverted : cc
   }
 }
 

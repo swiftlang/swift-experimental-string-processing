@@ -149,11 +149,11 @@ Type mismatches and invalid regex syntax are diagnosed at construction time by `
 When the pattern is known at compile time, regexes can be created from a literal containing the same regex syntax, allowing the compiler to infer the output type. Regex literals enable source tools, e.g. syntax highlighting and actions to refactor into a result builder equivalent.
 
 ```swift
-let regex = re'(\w+)\s\s+(\S+)\s\s+((?:(?!\s\s).)*)\s\s+(.*)'
+let regex = /(\w+)\s\s+(\S+)\s\s+((?:(?!\s\s).)*)\s\s+(.*)/
 // regex: Regex<(Substring, Substring, Substring, Substring, Substring)>
 ```
 
-*Note*: Regex literals, most notably the choice of delimiter, are discussed in [Regex Literals][pitches]. For this example, I used the less technically-problematic option of `re'...'`.
+*Note*: Regex literals, most notably the choice of delimiter, are discussed in [Regex Literals][pitches].
 
 This same regex can be created from a result builder, a refactoring-friendly representation:
 
@@ -193,13 +193,13 @@ A `Regex<Output>.Match` contains the result of a match, surfacing captures by nu
 
 ```swift
 func processEntry(_ line: String) -> Transaction? {
-  let regex = re'''
-    (?x) # Ignore whitespace and comments
+  // Multiline literal implies `(?x)`, i.e. non-semantic whitespace with line-ending comments
+  let regex = #/
     (?<kind>    \w+)                \s\s+
     (?<date>    \S+)                \s\s+
     (?<account> (?: (?!\s\s) . )+)  \s\s+
     (?<amount>  .*)
-    '''
+  /#
   //  regex: Regex<(
   //    Substring,
   //    kind: Substring,
@@ -291,7 +291,7 @@ A regex describes an algorithm to be ran over some model of string, and Swift's 
 
 Calling `dropFirst()` will not drop a leading byte or `Unicode.Scalar`, but rather a full `Character`. Similarly, a `.` in a regex will match any extended grapheme cluster. A regex will match canonical equivalents by default, strengthening the connection between regex and the equivalent `String` operations.
 
-Additionally, word boundaries (`\b`) follow [UTS\#29 Word Boundaries](https://www.unicode.org/reports/tr29/#Word_Boundaries), meaning contractions ("don't") and script changes are detected and separated, without incurring significant binary size costs associated with language dictionaries.
+Additionally, word boundaries (`\b`) follow [UTS\#29 Word Boundaries](https://www.unicode.org/reports/tr29/#Word_Boundaries). Contractions ("don't") are correctly detected and script changes are separated, without incurring significant binary size costs associated with language dictionaries.
 
 Regex targets [UTS\#18 Level 2](https://www.unicode.org/reports/tr18/#Extended_Unicode_Support) by default, but provides options to switch to scalar-level processing as well as compatibility character classes. Detailed rules on how we infer necessary grapheme cluster breaks inside regexes, as well as options and other concerns, are discussed in [Unicode for String Processing][pitches]. 
 
@@ -300,18 +300,47 @@ Regex targets [UTS\#18 Level 2](https://www.unicode.org/reports/tr18/#Extended_U
 
 ```swift
 /// A regex represents a string processing algorithm.
+///
+///     let regex = try Regex(compiling: "a(.*)b")
+///     let match = "cbaxb".firstMatch(of: regex)
+///     print(match.0) // "axb"
+///     print(match.1) // "x"
+///
 public struct Regex<Output> {
   /// Match a string in its entirety.
   ///
   /// Returns `nil` if no match and throws on abort
-  public func matchWhole(_: String) throws -> Match?
+  public func matchWhole(_ s: String) throws -> Regex<Output>.Match?
 
-  /// Match at the front of a string
+  /// Match part of the string, starting at the beginning.
   ///
   /// Returns `nil` if no match and throws on abort
-  public func matchFront(_: String) throws -> Match?
+  public func matchPrefix(_ s: String) throws -> Regex<Output>.Match?
+
+  /// Find the first match in a string
+  ///
+  /// Returns `nil` if no match is found and throws on abort
+  public func firstMatch(in s: String) throws -> Regex<Output>.Match?
+
+  /// Match a substring in its entirety.
+  ///
+  /// Returns `nil` if no match and throws on abort
+  public func matchWhole(_ s: Substring) throws -> Regex<Output>.Match?
+
+  /// Match part of the string, starting at the beginning.
+  ///
+  /// Returns `nil` if no match and throws on abort
+  public func matchPrefix(_ s: Substring) throws -> Regex<Output>.Match?
+
+  /// Find the first match in a substring
+  ///
+  /// Returns `nil` if no match is found and throws on abort
+  public func firstMatch(_ s: Substring) throws -> Regex<Output>.Match?
 
   /// The result of matching a regex against a string.
+  ///
+  /// A `Match` forwards API to the `Output` generic parameter,
+  /// providing direct access to captures.
   @dynamicMemberLookup
   public struct Match {
     /// The range of the overall match
@@ -320,7 +349,7 @@ public struct Regex<Output> {
     /// The produced output from the match operation
     public var output: Output
   
-    /// Lookup a capture by number
+    /// Lookup a capture by name or number
     public subscript<T>(dynamicMember keyPath: KeyPath<Output, T>) -> T
   
     /// Lookup a capture by number
@@ -342,11 +371,6 @@ public struct Regex<Output> {
 extension Regex: RegexComponent {
   public var regex: Regex<Output> { self }
 
-  /// Create a regex out of a single component
-  public init<Content: RegexComponent>(
-    _ content: Content
-  ) where Content.Output == Output
-
   /// Result builder interface
   public init<Content: RegexComponent>(
     @RegexComponentBuilder _ content: () -> Content
@@ -360,11 +384,11 @@ extension Regex.Match {
 
 // Run-time compilation interfaces
 extension Regex {
-  /// Parse and compile `pattern`.
+  /// Parse and compile `pattern`, resulting in a strongly-typed capture list.
   public init(compiling pattern: String, as: Output.Type = Output.self) throws
 }
 extension Regex where Output == AnyRegexOutput {
-  /// Parse and compile `pattern`.
+  /// Parse and compile `pattern`, resulting in an existentially-typed capture list.
   public init(compiling pattern: String) throws
 }
 ```

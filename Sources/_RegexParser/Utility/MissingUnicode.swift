@@ -660,6 +660,12 @@ extension Character {
   public var isOctalDigit: Bool { ("0"..."7").contains(self) }
 
   public var isWordCharacter: Bool { isLetter || isNumber || self == "_" }
+
+  /// Whether this character represents whitespace for the purposes of pattern
+  /// parsing.
+  public var isPatternWhitespace: Bool {
+    return unicodeScalars.first!.properties.isPatternWhitespace
+  }
 }
 
 extension UnicodeScalar {

@@ -62,7 +62,7 @@ func customTest<Match: Equatable>(
     let result: Match?
     switch call {
     case .match:
-      result = input.match(regex)?.output
+      result = input.matchWhole(regex)?.output
     case .firstMatch:
       result = input.firstMatch(of: regex)?.result
     }

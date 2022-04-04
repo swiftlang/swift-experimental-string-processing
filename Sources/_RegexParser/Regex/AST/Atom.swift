@@ -641,14 +641,64 @@ extension AST.Atom {
     case .scalar(let s):
       return Character(s)
 
-    case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
-      // TODO: Not a character per-say, what should we do?
-      fallthrough
+    case .escaped(let c):
+      switch c {
+      // TODO: Should we separate these into a separate enum? Or move the
+      // specifics of the scalar to the DSL tree?
+      case .alarm:
+        return "\u{7}"
+      case .backspace:
+        return "\u{8}"
+      case .escape:
+        return "\u{1B}"
+      case .formfeed:
+        return "\u{C}"
+      case .newline:
+        return "\n"
+      case .carriageReturn:
+        return "\r"
+      case .tab:
+        return "\t"
 
-    case .property, .escaped, .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .namedCharacter, .callout,
-        .backtrackingDirective:
+      case .singleDataUnit, .decimalDigit, .notDecimalDigit,
+          .horizontalWhitespace, .notHorizontalWhitespace, .notNewline,
+          .newlineSequence, .whitespace, .notWhitespace, .verticalTab,
+          .notVerticalTab, .wordCharacter, .notWordCharacter, .graphemeCluster,
+          .wordBoundary, .notWordBoundary, .startOfSubject,
+          .endOfSubjectBeforeNewline, .endOfSubject,
+          .firstMatchingPositionInSubject, .resetStartOfMatch, .trueAnychar,
+          .textSegment, .notTextSegment:
+        return nil
+      }
+
+    case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
+      // TODO: These should have unicode scalar values.
       return nil
+
+    case .namedCharacter:
+      // TODO: This should have a unicode scalar value depending on the name
+      // given.
+      // TODO: Do we want to validate and assign a scalar value when building
+      // the AST? Or defer for the matching engine?
+      return nil
+
+    case .property, .any, .startOfLine, .endOfLine, .backreference, .subpattern,
+        .callout, .backtrackingDirective:
+      return nil
+    }
+  }
+
+  /// Whether this atom is valid as the operand of a custom character class
+  /// range.
+  public var isValidCharacterClassRangeBound: Bool {
+    // If we have a literal character value for this, it can be used as a bound.
+    if literalCharacterValue != nil { return true }
+    switch kind {
+    // \cx, \C-x, \M-x, \M-\C-x, \N{...}
+    case .keyboardControl, .keyboardMeta, .keyboardMetaControl, .namedCharacter:
+      return true
+    default:
+      return false
     }
   }
 
