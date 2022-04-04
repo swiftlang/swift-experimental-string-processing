@@ -160,7 +160,7 @@ Atom -> Anchor
       | '\'? <Character>
 ```
 
-Atoms are the smallest units of regex syntax. They include escape sequences, metacharacters, backreferences, etc. The most basic form of atom is a literal character. A metacharacter may be treated as literal by preceding it with a backslash. Other literal characters may also be preceded with a backslash, but it has no effect if they are unknown escape sequences, e.g `\I` is literal `I`.
+Atoms are the smallest units of regex syntax. They include escape sequences, metacharacters, backreferences, etc. The most basic form of atom is a literal character. A metacharacter may be treated as literal by preceding it with a backslash. Other literal characters may also be preceded by a backslash, in which case it has no effect, e.g `\%` is literal `%`. However this does not apply to either non-whitespace Unicode characters, or to unknown ASCII letter character escapes, e.g `\I` is invalid and would produce an error.
 
 #### Anchors
 
