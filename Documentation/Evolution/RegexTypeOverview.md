@@ -1,7 +1,7 @@
 
 # Regex Type and Overview
 
-- Authors: [Michael Ilseman](https://github.com/milseman) and the Standard Library Team
+- Authors: [Michael Ilseman](https://github.com/milseman)
 
 ## Introduction
 
@@ -545,4 +545,4 @@ Regexes are often used for tokenization and tokens can be represented with Swift
 
 -->
 
-[pitches]: https://github.com/apple/swift-experimental-string-processing/issues/107
+[pitches]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/ProposalOverview.md
