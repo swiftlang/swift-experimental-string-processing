@@ -10,14 +10,14 @@
 //===----------------------------------------------------------------------===//
 
 /// Wraps a searcher that searches for a given pattern. If the pattern is empty, falls back on matching every empty index range exactly once.
-public struct PatternOrEmpty<Searcher: CollectionSearcher> {
+struct PatternOrEmpty<Searcher: CollectionSearcher> {
   let searcher: Searcher?
 }
 
 extension PatternOrEmpty: CollectionSearcher {
-  public typealias Searched = Searcher.Searched
+  typealias Searched = Searcher.Searched
   
-  public struct State {
+  struct State {
     enum Representation {
       case state(Searcher.State)
       case empty(index: Searched.Index, end: Searched.Index)
@@ -27,7 +27,7 @@ extension PatternOrEmpty: CollectionSearcher {
     let representation: Representation
   }
   
-  public func state(
+  func state(
     for searched: Searcher.Searched,
     in range: Range<Searched.Index>
   ) -> State {
@@ -40,7 +40,7 @@ extension PatternOrEmpty: CollectionSearcher {
     }
   }
   
-  public func search(
+  func search(
     _ searched: Searched,
     _ state: inout State
   ) -> Range<Searched.Index>? {

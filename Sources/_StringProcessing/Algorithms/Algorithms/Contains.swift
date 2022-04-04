@@ -12,7 +12,7 @@
 // MARK: `CollectionSearcher` algorithms
 
 extension Collection {
-  public func contains<Searcher: CollectionSearcher>(
+  func contains<Searcher: CollectionSearcher>(
     _ searcher: Searcher
   ) -> Bool where Searcher.Searched == Self {
     firstRange(of: searcher) != nil
@@ -22,6 +22,11 @@ extension Collection {
 // MARK: Fixed pattern algorithms
 
 extension Collection where Element: Equatable {
+  /// Returns a Boolean value indicating whether the collection contains the
+  /// given sequence.
+  /// - Parameter other: A sequence to search for within this collection.
+  /// - Returns: `true` if the collection contains the specified sequence,
+  /// otherwise `false`.
   public func contains<S: Sequence>(_ other: S) -> Bool
     where S.Element == Element
   {
@@ -30,7 +35,7 @@ extension Collection where Element: Equatable {
 }
 
 extension BidirectionalCollection where Element: Comparable {
-  public func contains<S: Sequence>(_ other: S) -> Bool
+  func contains<S: Sequence>(_ other: S) -> Bool
     where S.Element == Element
   {
     firstRange(of: other) != nil
@@ -40,6 +45,12 @@ extension BidirectionalCollection where Element: Comparable {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
+  /// Returns a Boolean value indicating whether the collection contains the
+  /// given regex.
+  /// - Parameter regex: A regex to search for within this collection.
+  /// - Returns: `true` if the regex was found in the collection, otherwise
+  /// `false`.
+
   public func contains<R: RegexComponent>(_ regex: R) -> Bool {
     contains(RegexConsumer(regex))
   }

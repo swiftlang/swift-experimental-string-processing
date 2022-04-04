@@ -12,7 +12,7 @@
 // MARK: `CollectionSearcher` algorithms
 
 extension Collection {
-  public func firstMatch<S: MatchingCollectionSearcher>(
+  func firstMatch<S: MatchingCollectionSearcher>(
     of searcher: S
   ) -> _MatchResult<S>? where S.Searched == Self {
     var state = searcher.state(for: self, in: startIndex..<endIndex)
@@ -23,7 +23,7 @@ extension Collection {
 }
 
 extension BidirectionalCollection {
-  public func lastMatch<S: BackwardMatchingCollectionSearcher>(
+  func lastMatch<S: BackwardMatchingCollectionSearcher>(
     of searcher: S
   ) -> _BackwardMatchResult<S>?
     where S.BackwardSearched == Self
@@ -38,15 +38,26 @@ extension BidirectionalCollection {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func firstMatch<R: RegexComponent>(
+  func firstMatch<R: RegexComponent>(
     of regex: R
   ) -> _MatchResult<RegexConsumer<R, Self>>? {
     firstMatch(of: RegexConsumer(regex))
   }
   
-  public func lastMatch<R: RegexComponent>(
+  func lastMatch<R: RegexComponent>(
     of regex: R
   ) -> _BackwardMatchResult<RegexConsumer<R, Self>>? {
     lastMatch(of: RegexConsumer(regex))
+  }
+
+  /// Returns the first match of the specified regex within the collection.
+  /// - Parameter regex: The regex to search for.
+  /// - Returns: The first match of `regex` in the collection, or `nil` if
+  /// there isn't a match.
+  public func firstMatch<R: RegexComponent>(
+    of regex: R
+  ) -> Regex<R.Output>.Match? {
+    let slice = self[...]
+    return try? regex.firstMatch(in: slice.base)
   }
 }

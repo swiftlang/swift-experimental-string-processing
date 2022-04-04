@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-public struct DefaultSearcherState<Searched: Collection> {
+struct DefaultSearcherState<Searched: Collection> {
   enum Position {
     case index(Searched.Index)
     case done
@@ -19,7 +19,7 @@ public struct DefaultSearcherState<Searched: Collection> {
   let end: Searched.Index
 }
 
-public protocol CollectionSearcher {
+protocol CollectionSearcher {
   associatedtype Searched: Collection
   associatedtype State
   
@@ -30,7 +30,7 @@ public protocol CollectionSearcher {
   ) -> Range<Searched.Index>?
 }
 
-public protocol StatelessCollectionSearcher: CollectionSearcher
+protocol StatelessCollectionSearcher: CollectionSearcher
   where State == DefaultSearcherState<Searched>
 {
   func search(
@@ -39,14 +39,14 @@ public protocol StatelessCollectionSearcher: CollectionSearcher
 }
 
 extension StatelessCollectionSearcher {
-  public func state(
+  func state(
     for searched: Searched,
     in range: Range<Searched.Index>
   ) -> State {
     State(position: .index(range.lowerBound), end: range.upperBound)
   }
   
-  public func search(
+  func search(
     _ searched: Searched,
     _ state: inout State
   ) -> Range<Searched.Index>? {
@@ -71,7 +71,7 @@ extension StatelessCollectionSearcher {
 
 // MARK: Searching from the back
 
-public protocol BackwardCollectionSearcher {
+protocol BackwardCollectionSearcher {
   associatedtype BackwardSearched: BidirectionalCollection
   associatedtype BackwardState
   
@@ -84,7 +84,7 @@ public protocol BackwardCollectionSearcher {
   ) -> Range<BackwardSearched.Index>?
 }
 
-public protocol BackwardStatelessCollectionSearcher: BackwardCollectionSearcher
+protocol BackwardStatelessCollectionSearcher: BackwardCollectionSearcher
   where BackwardState == DefaultSearcherState<BackwardSearched>
 {
   func searchBack(
@@ -94,14 +94,14 @@ public protocol BackwardStatelessCollectionSearcher: BackwardCollectionSearcher
 }
 
 extension BackwardStatelessCollectionSearcher {
-  public func backwardState(
+  func backwardState(
     for searched: BackwardSearched,
     in range: Range<BackwardSearched.Index>
   ) -> BackwardState {
     BackwardState(position: .index(range.upperBound), end: range.lowerBound)
   }
   
-  public func searchBack(
+  func searchBack(
     _ searched: BackwardSearched,
     _ state: inout BackwardState) -> Range<BackwardSearched.Index>? {
     guard
