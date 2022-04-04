@@ -216,32 +216,42 @@ class RegexDSLTests: XCTestCase {
       ("abc1def2", ("abc1def2", "2")),
       matchType: (Substring, Substring).self, ==)
     {
-      OneOrMore {
-        OneOrMore(.word)
-        Capture(.digit)
+      OneOrMore(.word)
+      Capture(.digit)
+      ZeroOrMore(.any)
+    }
+
+    try _testDSLCaptures(
+      ("abc1def2", ("abc1def2", "1")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      OneOrMore(.word, .reluctantly)
+      Capture(.digit)
+      ZeroOrMore(.any)
+    }
+    
+    try XCTExpectFailure("'relucantCaptures()' API should only affect regex literals") {
+      try _testDSLCaptures(
+        ("abc1def2", ("abc1def2", "2")),
+        matchType: (Substring, Substring).self, ==)
+      {
+        Regex {
+          OneOrMore(.word)
+          Capture(.digit)
+          ZeroOrMore(.any)
+        }.reluctantCaptures()
       }
     }
 
     try _testDSLCaptures(
-      ("abc1def2", ("abc1def2", "2")),
+      ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
     {
-      OneOrMore {
-        OneOrMore(.word, .reluctantly)
-        Capture(.digit)
+      OneOrMore(.reluctantly) {
+        .word
       }
-    }
-
-    try _testDSLCaptures(
-      ("abc1def2", ("abc1def2", "2")),
-      matchType: (Substring, Substring).self, ==)
-    {
-      OneOrMore {
-        OneOrMore(.reluctantly) {
-          .word
-        }
-        Capture(.digit)
-      }
+      Capture(.digit)
+      ZeroOrMore(.any)
     }
     
     try _testDSLCaptures(
