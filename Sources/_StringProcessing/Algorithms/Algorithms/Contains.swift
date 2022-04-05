@@ -50,7 +50,6 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter regex: A regex to search for within this collection.
   /// - Returns: `true` if the regex was found in the collection, otherwise
   /// `false`.
-
   public func contains<R: RegexComponent>(_ regex: R) -> Bool {
     contains(RegexConsumer(regex))
   }
