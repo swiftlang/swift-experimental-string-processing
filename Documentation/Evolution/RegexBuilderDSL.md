@@ -1,7 +1,7 @@
 # Regex builder DSL
 
 * Proposal: [SE-NNNN](NNNN-filename.md)
-* Authors: [Richard Wei](https://github.com/rxwei)
+* Authors: [Richard Wei](https://github.com/rxwei), [Michael Ilseman](https://github.com/milseman), [Nate Cook](https://github.com/natecook1000)
 * Review Manager: TBD
 * Implementation: [apple/swift-experimental-string-processing](https://github.com/apple/swift-experimental-string-processing/tree/main/Sources/_StringProcessing/RegexDSL)
 * Status: **Pitch**
