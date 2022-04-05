@@ -230,6 +230,7 @@ class RegexDSLTests: XCTestCase {
       ZeroOrMore(.any)
     }
     
+#if os(macOS)
     try XCTExpectFailure("'relucantCaptures()' API should only affect regex literals") {
       try _testDSLCaptures(
         ("abc1def2", ("abc1def2", "2")),
@@ -242,7 +243,8 @@ class RegexDSLTests: XCTestCase {
         }.reluctantCaptures()
       }
     }
-
+#endif
+    
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
