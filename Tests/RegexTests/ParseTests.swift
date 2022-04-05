@@ -2313,6 +2313,10 @@ extension RegexTests {
     diagnosticTest("{5}", .quantifierRequiresOperand("{5}"))
     diagnosticTest("{1,3}", .quantifierRequiresOperand("{1,3}"))
 
+    // MARK: Unicode scalars
+
+    diagnosticTest(#"\u{G}"#, .expectedNumber("G", kind: .hex))
+
     // MARK: Matching options
 
     diagnosticTest(#"(?^-"#, .cannotRemoveMatchingOptionsAfterCaret)
