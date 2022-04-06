@@ -4,7 +4,7 @@
 
 ## Introduction
 
-This proposal helps complete the story told in [Regex Type and Overview][regex-type] and [elsewhere][pitch-status]. We propose the introduction of regex literals to Swift source code. The proposed syntax mirrors literals in other programing languages such as Perl, JavaScript and Ruby. As in those languages, literals are delimited with the `/` character:
+This proposal helps complete the story told in *[Regex Type and Overview][regex-type]* and [elsewhere][pitch-status]. We propose the introduction of regex literals to Swift source code. The proposed syntax mirrors literals in other programing languages such as Perl, JavaScript and Ruby. As in those languages, literals are delimited with the `/` character:
 
 ```swift
 let re = /[0-9]+/
@@ -12,7 +12,7 @@ let re = /[0-9]+/
 
 ## Motivation
 
-In [Regex Type and Overview][regex-type] we introduced the `Regex` type, which is able to dynamically compile a regex pattern:
+In *[Regex Type and Overview][regex-type]* we introduced the `Regex` type, which is able to dynamically compile a regex pattern:
 
 ```swift
 let pattern = #"(\w+)\s\s+(\S+)\s\s+((?:(?!\s\s).)*)\s\s+(.*)"#
@@ -41,7 +41,7 @@ Forward slashes are a regex term of art, and are used as the delimiters for rege
 
 A regex literal may also be spelled using an extended syntax `#/.../#`, which allows the placement of an arbitrary number of balanced `#` characters around the literal. This syntax may be used to avoid needing to escape forward slashes within the regex. Additionally, it allows for a multi-line mode when the opening delimiter is followed by a new line.
 
-Within a regex literal, the compiler will parse the regex syntax outlined in in [the Regex Syntax pitch][internal-syntax], and diagnose any errors at compile time. The capture types and labels are automatically inferred based on the capture groups present in the regex. Using a literal allows editors to support features such as syntax coloring inside the literal, highlighting sub-structure of the regex, and conversion of the literal to an equivalent result builder DSL (see [Regex builder DSL][regex-dsl]).
+Within a regex literal, the compiler will parse the regex syntax outlined in *[Regex Construction][internal-syntax]*, and diagnose any errors at compile time. The capture types and labels are automatically inferred based on the capture groups present in the regex. Using a literal allows editors to support features such as syntax coloring inside the literal, highlighting sub-structure of the regex, and conversion of the literal to an equivalent result builder DSL (see *[Regex builder DSL][regex-dsl]*).
 
 A regex literal also allows for seamless composition with the Regex DSL, enabling lightweight intermixing of a regex syntax with other elements of the builder:
 
@@ -67,9 +67,9 @@ Due to the existing use of `/` in comment syntax and operators, there are some s
 
 Due to the source breaking changes needed for the `/.../` syntax, it will be introduced in Swift 6 mode. However, projects will be able to adopt it earlier by using the compiler flag `-enable-regex-literals`. Note this does not affect the extended syntax `#/.../#`, which will be usable immediately.
 
-### Typed captures
+### Named typed captures
 
-Regex literals have their capture types statically determined by the capture groups present. A initial `Substring` is always present for the entire match, and each capture group adds an additional capture to the match tuple, with named capture groups receiving a corresponding tuple label. Once matched, such captures may later be referenced:
+Regex literals have their capture types statically determined by the capture groups present. This follows the same inference behavior as [the DSL][regex-dsl], and is explored in more detail in *[Strongly Typed Captures][strongly-typed-captures]*. One aspect of this that is currently unique to the literal is the ability to infer labeled tuple elements for named capture groups. For example:
 
 ```swift
 func matchHexAssignment(_ input: String) -> (String, Int)? {
@@ -84,9 +84,7 @@ func matchHexAssignment(_ input: String) -> (String, Int)? {
 }
 ```
 
-Unnamed capture groups produce unlabeled tuple elements and must be referenced by their position, e.g `match.1`, `match.2`. See [StronglyTypedCaptures.md](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/StronglyTypedCaptures.md) for more info.
-
-**TODO: Should we cover more general typed capture behavior from [StronglyTypedCaptures.md](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/StronglyTypedCaptures.md) here? There is some overlap with the typed capture behavior of the DSL tho, labels are the main thing that are literal specific**
+This allows the captures to be referenced as `match.identifier` and `match.hex` instead of `match.1` and `match.2`, which would be the behavior for unnamed capture groups. This label inference behavior is not available in the DSL, however users are able to [bind captures to named variables instead][dsl-captures].
 
 ### Extended delimiters `#/.../#`, `##/.../##`
 
@@ -288,7 +286,9 @@ This takes advantage of the fact that a regex literal will not be parsed if the 
 
 ### Modern literal syntax
 
-We could support a more modern Swift-like syntax in regex literals. For example, comments could be done with `//` and `/* ... */`, and quoted sequences could be done with `"..."`. This would however be incompatible with the syntactic superset of regex syntax we intend to parse, and as such may need to be introduced using a new literal kind, with no obvious choice of delimiter. However, it's possible that the ability to use regex literals in the DSL lessens the benefit that this syntax would bring.
+We could support a more modern Swift-like syntax in regex literals. For example, comments could be done with `//` and `/* ... */`, and quoted sequences could be done with `"..."`. This would however be incompatible with the syntactic superset of regex syntax we intend to parse, and as such may need to be introduced using a new literal kind, with no obvious choice of delimiter.
+
+However, such a syntax would lose out on the familiarity benefits of standard regex, and as such may lead to an "uncanny valley" effect. It's also possible that the ability to use regex literals in the DSL lessens the benefit that this syntax would bring.
 
 ## Alternatives Considered
 
@@ -368,8 +368,14 @@ We therefore feel this would be a much less compelling feature without first cla
 
 [SE-0168]: https://github.com/apple/swift-evolution/blob/main/proposals/0168-multi-line-string-literals.md
 [SE-0200]: https://github.com/apple/swift-evolution/blob/main/proposals/0200-raw-string-escaping.md
-[internal-syntax]: https://forums.swift.org/t/pitch-regex-syntax/55711
-[regex-type]: https://forums.swift.org/t/pitch-regex-type-and-overview/56029
-[pitch-status]: https://github.com/apple/swift-experimental-string-processing/issues/107
-[regex-dsl]: https://forums.swift.org/t/pitch-regex-builder-dsl/56007
+
+[pitch-status]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/ProposalOverview.md
+[regex-type]: https://github.com/apple/swift-evolution/blob/main/proposals/0350-regex-type-overview.md
+[strongly-typed-captures]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/StronglyTypedCaptures.md
+
+[internal-syntax]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md
 [extended-regex-syntax]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md#extended-syntax-modes
+
+[regex-dsl]: https://github.com/apple/swift-evolution/blob/main/proposals/0351-regex-builder.md
+[dsl-captures]: https://github.com/apple/swift-evolution/blob/main/proposals/0351-regex-builder.md#capture-and-reference
+
