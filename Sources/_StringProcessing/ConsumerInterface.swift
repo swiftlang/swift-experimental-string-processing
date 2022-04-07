@@ -136,7 +136,7 @@ extension AST.Atom {
     ) {
       return { input, bounds in
         // FIXME: should we worry about out of bounds?
-        cc.matches(in: input, at: bounds.lowerBound)
+        cc.matches(in: input, at: bounds.lowerBound, with: opts)
       }
     }
 
