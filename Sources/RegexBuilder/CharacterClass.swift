@@ -177,8 +177,14 @@ extension Unicode.GeneralCategory {
 // MARK: - Set algebra methods
 
 extension RegexComponent where Self == CharacterClass {
-  public static func anyOf(_ first: CharacterClass, _ second: CharacterClass, _ rest: CharacterClass...) -> CharacterClass {
-    CharacterClass(.init(members: ([first, second] + rest).map { .custom($0.ccc) }))
+  public init(_ first: CharacterClass, _ rest: CharacterClass...) {
+    if rest.isEmpty {
+      self.init(first.ccc)
+    } else {
+      let members: [DSLTree.CustomCharacterClass.Member] =
+        (CollectionOfOne(first) + rest).map { .custom($0.ccc) }
+      self.init(.init(members: members))
+    }
   }
 }
 

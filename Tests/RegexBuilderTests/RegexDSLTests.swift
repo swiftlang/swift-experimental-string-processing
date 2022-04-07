@@ -77,7 +77,7 @@ class RegexDSLTests: XCTestCase {
     {
       // First group
       OneOrMore {
-        CharacterClass.anyOf("a"..."z", .digit)
+        CharacterClass("a"..."z", .digit)
       }
 
       // Second group
