@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_spi(RegexBuilder) import _StringProcessing
+import _StringProcessing
 import RegexBuilder
 
 /*
