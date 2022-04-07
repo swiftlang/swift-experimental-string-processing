@@ -228,7 +228,7 @@ class RegexDSLTests: XCTestCase {
       matchType: Substring.self, ==) {
         OneOrMore {
           "abc"
-        }.caseSensitive(false)
+        }.ignoringCase(true)
       }
     
     // Multiple options on one component wrap successively, but do not
@@ -242,8 +242,8 @@ class RegexDSLTests: XCTestCase {
         OneOrMore {
           "abc"
         }
-        .caseSensitive(false)
-        .caseSensitive(true)
+        .ignoringCase(true)
+        .ignoringCase(false)
       }
 
     // An option on an outer component doesn't override an option set on an
@@ -257,10 +257,10 @@ class RegexDSLTests: XCTestCase {
       ("abcdeABCdeaBcde", "abcdeABCdeaBcde"),
       matchType: Substring.self, ==) {
         OneOrMore {
-          "abc".caseSensitive(false)
+          "abc".ignoringCase(true)
           Optionally("de")
         }
-        .caseSensitive(true)
+        .ignoringCase(false)
       }
   }
   
@@ -269,32 +269,44 @@ class RegexDSLTests: XCTestCase {
       ("abc1def2", ("abc1def2", "2")),
       matchType: (Substring, Substring).self, ==)
     {
-      OneOrMore {
-        OneOrMore(.word)
-        Capture(.digit)
-      }
+      OneOrMore(.word)
+      Capture(.digit)
+      ZeroOrMore(.any)
     }
 
     try _testDSLCaptures(
-      ("abc1def2", ("abc1def2", "2")),
+      ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
     {
-      OneOrMore {
-        OneOrMore(.word, .reluctantly)
-        Capture(.digit)
+      OneOrMore(.word, .reluctantly)
+      Capture(.digit)
+      ZeroOrMore(.any)
+    }
+    
+#if os(macOS)
+    try XCTExpectFailure("'relucantCaptures()' API should only affect regex literals") {
+      try _testDSLCaptures(
+        ("abc1def2", ("abc1def2", "2")),
+        matchType: (Substring, Substring).self, ==)
+      {
+        Regex {
+          OneOrMore(.word)
+          Capture(.digit)
+          ZeroOrMore(.any)
+        }.reluctantCaptures()
       }
     }
-
+#endif
+    
     try _testDSLCaptures(
-      ("abc1def2", ("abc1def2", "2")),
+      ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
     {
-      OneOrMore {
-        OneOrMore(.reluctantly) {
-          .word
-        }
-        Capture(.digit)
+      OneOrMore(.reluctantly) {
+        .word
       }
+      Capture(.digit)
+      ZeroOrMore(.any)
     }
     
     try _testDSLCaptures(
@@ -757,10 +769,10 @@ class RegexDSLTests: XCTestCase {
         else { return nil }
 
         let result = SemanticVersion(
-          major: match.result.1,
-          minor: match.result.2,
-          patch: match.result.3 ?? 0,
-          dev: match.result.4.map(String.init))
+          major: match.output.1,
+          minor: match.output.2,
+          patch: match.output.3 ?? 0,
+          dev: match.output.4.map(String.init))
         return (match.range.upperBound, result)
       }
     }

@@ -61,14 +61,14 @@ public struct _CharacterClassModel: Hashable {
     var op: SetOperator
     var rhs: CharacterSetComponent
 
-    public func matches(_ c: Character) -> Bool {
+    public func matches(_ c: Character, with options: MatchingOptions) -> Bool {
       switch op {
       case .intersection:
-        return lhs.matches(c) && rhs.matches(c)
+        return lhs.matches(c, with: options) && rhs.matches(c, with: options)
       case .subtraction:
-        return lhs.matches(c) && !rhs.matches(c)
+        return lhs.matches(c, with: options) && !rhs.matches(c, with: options)
       case .symmetricDifference:
-        return lhs.matches(c) != rhs.matches(c)
+        return lhs.matches(c, with: options) != rhs.matches(c, with: options)
       }
     }
   }
@@ -90,14 +90,28 @@ public struct _CharacterClassModel: Hashable {
       .setOperation(.init(lhs: lhs, op: op, rhs: rhs))
     }
 
-    public func matches(_ character: Character) -> Bool {
+    public func matches(_ character: Character, with options: MatchingOptions) -> Bool {
       switch self {
-      case .character(let c): return c == character
-      case .range(let range): return range.contains(character)
+      case .character(let c):
+        if options.isCaseInsensitive {
+          return c.lowercased() == character.lowercased()
+        } else {
+          return c == character
+        }
+      case .range(let range):
+        if options.isCaseInsensitive {
+          let newLower = range.lowerBound.lowercased()
+          let newUpper = range.upperBound.lowercased()
+          // FIXME: Is failing this possible? Is this the right behavior if so?
+          guard newLower <= newUpper else { return false }
+          return (newLower...newUpper).contains(character.lowercased())
+        } else {
+          return range.contains(character)
+        }
       case .characterClass(let custom):
         let str = String(character)
-        return custom.matches(in: str, at: str.startIndex) != nil
-      case .setOperation(let op): return op.matches(character)
+        return custom.matches(in: str, at: str.startIndex, with: options) != nil
+      case .setOperation(let op): return op.matches(character, with: options)
       }
     }
   }
@@ -138,21 +152,26 @@ public struct _CharacterClassModel: Hashable {
   
   /// Returns the end of the match of this character class in `str`, if
   /// it matches.
-  public func matches(in str: String, at i: String.Index) -> String.Index? {
+  public func matches(in str: String, at i: String.Index, with options: MatchingOptions) -> String.Index? {
     switch matchLevel {
     case .graphemeCluster:
       let c = str[i]
       var matched: Bool
       switch cc {
       case .any, .anyGrapheme: matched = true
-      case .digit: matched = c.isNumber
-      case .hexDigit: matched = c.isHexDigit
+      case .digit:
+        matched = c.isNumber && (c.isASCII || !options.usesASCIIDigits)
+      case .hexDigit:
+        matched = c.isHexDigit && (c.isASCII || !options.usesASCIIDigits)
       case .horizontalWhitespace: fatalError("Not implemented")
-      case .newlineSequence: matched = c.isNewline
+      case .newlineSequence:
+        matched = c.isNewline && (c.isASCII || !options.usesASCIISpaces)
       case .verticalWhitespace: fatalError("Not implemented")
-      case .whitespace: matched = c.isWhitespace
-      case .word: matched = c.isWordCharacter
-      case .custom(let set): matched = set.any { $0.matches(c) }
+      case .whitespace:
+        matched = c.isWhitespace && (c.isASCII || !options.usesASCIISpaces)
+      case .word:
+        matched = c.isWordCharacter && (c.isASCII || !options.usesASCIIWord)
+      case .custom(let set): matched = set.any { $0.matches(c, with: options) }
       }
       if isInverted {
         matched.toggle()
@@ -164,13 +183,17 @@ public struct _CharacterClassModel: Hashable {
       switch cc {
       case .any: matched = true
       case .anyGrapheme: fatalError("Not matched in this mode")
-      case .digit: matched = c.properties.numericType != nil
-      case .hexDigit: matched = Character(c).isHexDigit
+      case .digit:
+        matched = c.properties.numericType != nil && (c.isASCII || !options.usesASCIIDigits)
+      case .hexDigit:
+        matched = Character(c).isHexDigit && (c.isASCII || !options.usesASCIIDigits)
       case .horizontalWhitespace: fatalError("Not implemented")
       case .newlineSequence: fatalError("Not implemented")
       case .verticalWhitespace: fatalError("Not implemented")
-      case .whitespace: matched = c.properties.isWhitespace
-      case .word: matched = c.properties.isAlphabetic || c == "_"
+      case .whitespace:
+        matched = c.properties.isWhitespace && (c.isASCII || !options.usesASCIISpaces)
+      case .word:
+        matched = (c.properties.isAlphabetic || c == "_") && (c.isASCII || !options.usesASCIIWord)
       case .custom: fatalError("Not supported")
       }
       if isInverted {
@@ -499,21 +522,22 @@ extension _CharacterClassModel {
   func isBoundary(
     _ input: String,
     at pos: String.Index,
-    bounds: Range<String.Index>
+    bounds: Range<String.Index>,
+    with options: MatchingOptions
   ) -> Bool {
     // FIXME: How should we handle bounds?
     // We probably need two concepts
     if input.isEmpty { return false }
     if pos == input.startIndex {
-      return self.matches(in: input, at: pos) != nil
+      return self.matches(in: input, at: pos, with: options) != nil
     }
     let priorIdx = input.index(before: pos)
     if pos == input.endIndex {
-      return self.matches(in: input, at: priorIdx) != nil
+      return self.matches(in: input, at: priorIdx, with: options) != nil
     }
 
-    let prior = self.matches(in: input, at: priorIdx) != nil
-    let current = self.matches(in: input, at: pos) != nil
+    let prior = self.matches(in: input, at: priorIdx, with: options) != nil
+    let current = self.matches(in: input, at: pos, with: options) != nil
     return prior != current
   }
 

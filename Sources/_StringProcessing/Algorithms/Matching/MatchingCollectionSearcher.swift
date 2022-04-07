@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-public protocol MatchingCollectionSearcher: CollectionSearcher {
+protocol MatchingCollectionSearcher: CollectionSearcher {
   associatedtype Match
   func matchingSearch(
     _ searched: Searched,
@@ -18,7 +18,7 @@ public protocol MatchingCollectionSearcher: CollectionSearcher {
 }
 
 extension MatchingCollectionSearcher {
-  public func search(
+  func search(
     _ searched: Searched,
     _ state: inout State
   ) -> Range<Searched.Index>? {
@@ -26,7 +26,7 @@ extension MatchingCollectionSearcher {
   }
 }
 
-public protocol MatchingStatelessCollectionSearcher:
+protocol MatchingStatelessCollectionSearcher:
   MatchingCollectionSearcher, StatelessCollectionSearcher
 {
   func matchingSearch(
@@ -38,14 +38,14 @@ public protocol MatchingStatelessCollectionSearcher:
 extension MatchingStatelessCollectionSearcher {
   // for disambiguation between the `MatchingCollectionSearcher` and
   // `StatelessCollectionSearcher` overloads
-  public func search(
+  func search(
     _ searched: Searched,
     _ state: inout State
   ) -> Range<Searched.Index>? {
     matchingSearch(searched, &state)?.range
   }
   
-  public func matchingSearch(
+  func matchingSearch(
     _ searched: Searched,
     _ state: inout State
   ) -> (range: Range<Searched.Index>, match: Match)? {
@@ -69,7 +69,7 @@ extension MatchingStatelessCollectionSearcher {
     return (range, value)
   }
   
-  public func search(
+  func search(
     _ searched: Searched,
     in range: Range<Searched.Index>
   ) -> Range<Searched.Index>? {
@@ -79,7 +79,7 @@ extension MatchingStatelessCollectionSearcher {
 
 // MARK: Searching from the back
 
-public protocol BackwardMatchingCollectionSearcher: BackwardCollectionSearcher {
+protocol BackwardMatchingCollectionSearcher: BackwardCollectionSearcher {
   associatedtype Match
   func matchingSearchBack(
     _ searched: BackwardSearched,
@@ -87,7 +87,7 @@ public protocol BackwardMatchingCollectionSearcher: BackwardCollectionSearcher {
   ) -> (range: Range<BackwardSearched.Index>, match: Match)?
 }
 
-public protocol BackwardMatchingStatelessCollectionSearcher:
+protocol BackwardMatchingStatelessCollectionSearcher:
   BackwardMatchingCollectionSearcher, BackwardStatelessCollectionSearcher
 {
   func matchingSearchBack(
@@ -97,14 +97,14 @@ public protocol BackwardMatchingStatelessCollectionSearcher:
 }
 
 extension BackwardMatchingStatelessCollectionSearcher {
-  public func searchBack(
+  func searchBack(
     _ searched: BackwardSearched,
     in range: Range<BackwardSearched.Index>
   ) -> Range<BackwardSearched.Index>? {
     matchingSearchBack(searched, in: range)?.range
   }
   
-  public func matchingSearchBack(
+  func matchingSearchBack(
     _ searched: BackwardSearched,
     _ state: inout BackwardState) -> (range: Range<BackwardSearched.Index>, match: Match)?
   {

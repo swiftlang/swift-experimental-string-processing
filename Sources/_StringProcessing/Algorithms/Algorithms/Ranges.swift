@@ -11,7 +11,7 @@
 
 // MARK: `RangesCollection`
 
-public struct RangesCollection<Searcher: CollectionSearcher> {
+struct RangesCollection<Searcher: CollectionSearcher> {
   public typealias Base = Searcher.Searched
   
   let base: Base
@@ -33,7 +33,7 @@ public struct RangesCollection<Searcher: CollectionSearcher> {
   }
 }
 
-public struct RangesIterator<Searcher: CollectionSearcher>: IteratorProtocol {
+struct RangesIterator<Searcher: CollectionSearcher>: IteratorProtocol {
   public typealias Base = Searcher.Searched
   
   let base: Base
@@ -92,7 +92,7 @@ extension RangesCollection: Collection {
 }
 
 extension RangesCollection.Index: Comparable {
-  public static func == (lhs: Self, rhs: Self) -> Bool {
+  static func == (lhs: Self, rhs: Self) -> Bool {
     switch (lhs.range, rhs.range) {
     case (nil, nil):
       return true
@@ -103,7 +103,7 @@ extension RangesCollection.Index: Comparable {
     }
   }
 
-  public static func < (lhs: Self, rhs: Self) -> Bool {
+  static func < (lhs: Self, rhs: Self) -> Bool {
     switch (lhs.range, rhs.range) {
     case (nil, _):
       return false
@@ -117,8 +117,8 @@ extension RangesCollection.Index: Comparable {
 
 // MARK: `ReversedRangesCollection`
 
-public struct ReversedRangesCollection<Searcher: BackwardCollectionSearcher> {
-  public typealias Base = Searcher.BackwardSearched
+struct ReversedRangesCollection<Searcher: BackwardCollectionSearcher> {
+  typealias Base = Searcher.BackwardSearched
   
   let base: Base
   let searcher: Searcher
@@ -157,7 +157,7 @@ extension ReversedRangesCollection: Sequence {
 // MARK: `CollectionSearcher` algorithms
 
 extension Collection {
-  public func ranges<S: CollectionSearcher>(
+  func ranges<S: CollectionSearcher>(
     of searcher: S
   ) -> RangesCollection<S> where S.Searched == Self {
     RangesCollection(base: self, searcher: searcher)
@@ -165,7 +165,7 @@ extension Collection {
 }
 
 extension BidirectionalCollection {
-  public func rangesFromBack<S: BackwardCollectionSearcher>(
+  func rangesFromBack<S: BackwardCollectionSearcher>(
     of searcher: S
   ) -> ReversedRangesCollection<S> where S.BackwardSearched == Self {
     ReversedRangesCollection(base: self, searcher: searcher)
@@ -175,7 +175,8 @@ extension BidirectionalCollection {
 // MARK: Fixed pattern algorithms
 
 extension Collection where Element: Equatable {
-  public func ranges<S: Sequence>(
+  // FIXME: Replace `RangesCollection` when SE-0346 is enabled
+  func ranges<S: Sequence>(
     of other: S
   ) -> RangesCollection<ZSearcher<Self>> where S.Element == Element {
     ranges(of: ZSearcher(pattern: Array(other), by: ==))
@@ -194,7 +195,7 @@ extension BidirectionalCollection where Element: Equatable {
 }
 
 extension BidirectionalCollection where Element: Comparable {
-  public func ranges<S: Sequence>(
+  func ranges<S: Sequence>(
     of other: S
   ) -> RangesCollection<PatternOrEmpty<TwoWaySearcher<Self>>>
     where S.Element == Element
@@ -216,13 +217,14 @@ extension BidirectionalCollection where Element: Comparable {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func ranges<R: RegexComponent>(
+  // FIXME: Replace `RangesCollection` when SE-0346 is enabled
+  func ranges<R: RegexComponent>(
     of regex: R
   ) -> RangesCollection<RegexConsumer<R, Self>> {
     ranges(of: RegexConsumer(regex))
   }
   
-  public func rangesFromBack<R: RegexComponent>(
+  func rangesFromBack<R: RegexComponent>(
     of regex: R
   ) -> ReversedRangesCollection<RegexConsumer<R, Self>> {
     rangesFromBack(of: RegexConsumer(regex))

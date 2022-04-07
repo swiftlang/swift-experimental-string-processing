@@ -13,7 +13,7 @@ import _RegexParser
 
 /// A type that represents the current state of regex matching options, with
 /// stack-based scoping.
-struct MatchingOptions {
+public struct MatchingOptions {
   fileprivate var stack: [Representation]
   
   fileprivate func _invariantCheck() {
@@ -67,11 +67,32 @@ extension MatchingOptions {
     stack.last!.contains(.singleLine)
   }
   
+  var anchorsMatchNewlines: Bool {
+    stack.last!.contains(.multiline)
+  }
+  
+  var usesASCIIWord: Bool {
+    stack.last!.contains(.asciiOnlyWord)
+      || stack.last!.contains(.asciiOnlyPOSIXProps)
+  }
+  
+  var usesASCIIDigits: Bool {
+    stack.last!.contains(.asciiOnlyDigit)
+      || stack.last!.contains(.asciiOnlyPOSIXProps)
+  }
+  
+  var usesASCIISpaces: Bool {
+    stack.last!.contains(.asciiOnlySpace)
+      || stack.last!.contains(.asciiOnlyPOSIXProps)
+  }
+  
+  var usesSimpleUnicodeBoundaries: Bool {
+    !stack.last!.contains(.unicodeWordBoundaries)
+  }
+  
   enum SemanticLevel {
     case graphemeCluster
     case unicodeScalar
-    // TODO: include?
-    // case byte
   }
   
   var semanticLevel: SemanticLevel {

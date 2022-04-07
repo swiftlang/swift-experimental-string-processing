@@ -111,30 +111,41 @@ extension Compiler.ByteCodeGen {
       }
 
     case .startOfLine:
-      builder.buildAssert { (input, pos, bounds) in
-        pos == input.startIndex ||
-        input[input.index(before: pos)].isNewline
+      if options.anchorsMatchNewlines {
+        builder.buildAssert { (input, pos, bounds) in
+          pos == input.startIndex || input[input.index(before: pos)].isNewline
+        }
+      } else {
+        builder.buildAssert { (input, pos, bounds) in
+          pos == input.startIndex
+        }
       }
-
+      
     case .endOfLine:
-      builder.buildAssert { (input, pos, bounds) in
-        pos == input.endIndex || input[pos].isNewline
+      if options.anchorsMatchNewlines {
+        builder.buildAssert { (input, pos, bounds) in
+          pos == input.endIndex || input[pos].isNewline
+        }
+      } else {
+        builder.buildAssert { (input, pos, bounds) in
+          pos == input.endIndex
+        }
       }
 
     case .wordBoundary:
       // TODO: May want to consider Unicode level
-      builder.buildAssert { (input, pos, bounds) in
+      builder.buildAssert { [options] (input, pos, bounds) in
         // TODO: How should we handle bounds?
         _CharacterClassModel.word.isBoundary(
-          input, at: pos, bounds: bounds)
+          input, at: pos, bounds: bounds, with: options)
       }
 
     case .notWordBoundary:
       // TODO: May want to consider Unicode level
-      builder.buildAssert { (input, pos, bounds) in
+      builder.buildAssert { [options] (input, pos, bounds) in
         // TODO: How should we handle bounds?
         !_CharacterClassModel.word.isBoundary(
-          input, at: pos, bounds: bounds)
+          input, at: pos, bounds: bounds, with: options)
       }
     }
   }
