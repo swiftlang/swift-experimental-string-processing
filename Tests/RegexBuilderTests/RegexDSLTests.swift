@@ -704,10 +704,10 @@ class RegexDSLTests: XCTestCase {
         else { return nil }
 
         let result = SemanticVersion(
-          major: match.result.1,
-          minor: match.result.2,
-          patch: match.result.3 ?? 0,
-          dev: match.result.4.map(String.init))
+          major: match.output.1,
+          minor: match.output.2,
+          patch: match.output.3 ?? 0,
+          dev: match.output.4.map(String.init))
         return (match.range.upperBound, result)
       }
     }

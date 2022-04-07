@@ -64,7 +64,7 @@ func customTest<Match: Equatable>(
     case .match:
       result = input.matchWhole(regex)?.output
     case .firstMatch:
-      result = input.firstMatch(of: regex)?.result
+      result = input.firstMatch(of: regex)?.output
     }
     XCTAssertEqual(result, match)
   }
@@ -120,9 +120,9 @@ class CustomRegexComponentTests: XCTestCase {
       return
     }
 
-    XCTAssertEqual(res3.match, "123")
-    XCTAssertEqual(res3.result.0, "123")
-    XCTAssertEqual(res3.result.1, "123")
+    XCTAssertEqual(res3.range, "ab123c".index(atOffset: 2)..<"ab123c".index(atOffset: 5))
+    XCTAssertEqual(res3.output.0, "123")
+    XCTAssertEqual(res3.output.1, "123")
 
     let regex4 = Regex {
       OneOrMore {
@@ -135,7 +135,7 @@ class CustomRegexComponentTests: XCTestCase {
       return
     }
 
-    XCTAssertEqual(res4.result.0, "123")
-    XCTAssertEqual(res4.result.1, 3)
+    XCTAssertEqual(res4.output.0, "123")
+    XCTAssertEqual(res4.output.1, 3)
   }
 }
