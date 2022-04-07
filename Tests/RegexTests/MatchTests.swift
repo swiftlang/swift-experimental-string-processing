@@ -869,15 +869,15 @@ extension RegexTests {
       ("123", "123"),
       (" 123", nil),
       ("123 456", "123"),
-      (" 123 \n456", "456"),
-      (" \n123 \n456", "123"))
+      (" 123 \n456", nil),
+      (" \n123 \n456", nil))
 
     firstMatchTests(
       #"\d+$"#,
       ("123", "123"),
       (" 123", "123"),
       (" 123 \n456", "456"),
-      (" 123\n456", "123"),
+      (" 123\n456", "456"),
       ("123 456", "456"))
 
     firstMatchTests(
@@ -1197,6 +1197,89 @@ extension RegexTests {
       ("cafe", true),
       ("CaFe", true),
       ("EfAc", true))
+    matchTest(
+      #"(?i)[a-f]{4}"#,
+      ("cafe", true),
+      ("CaFe", true),
+      ("EfAc", true))
+  }
+  
+  func testASCIIClasses() {
+    // 'D' ASCII-only digits
+    matchTest(
+      #"\d+"#,
+      ("123", true),
+      ("¹೨¾", true))
+    matchTest(
+      #"(?D)\d+"#,
+      ("123", true),
+      ("¹೨¾", false))
+    matchTest(
+      #"(?P)\d+"#,
+      ("123", true),
+      ("¹೨¾", false))
+
+    // 'W' ASCII-only word characters (and word boundaries)
+    matchTest(
+      #"\w+"#,
+      ("aeiou", true),
+      ("åe\u{301}ïôú", true))
+    matchTest(
+      #"(?W)\w+"#,
+      ("aeiou", true),
+      ("åe\u{301}ïôú", false))
+    matchTest(
+      #"(?P)\w+"#,
+      ("aeiou", true),
+      ("åe\u{301}ïôú", false))
+
+    matchTest(
+      #"abcd\b.+"#,
+      ("abcd ef", true),
+      ("abcdef", false),
+      ("abcdéf", false))
+    matchTest(
+      #"(?W)abcd\b.+"#,
+      ("abcd ef", true),
+      ("abcdef", false),
+      ("abcdéf", true)) // "dé" matches /d\b./ because "é" isn't ASCII
+    matchTest(
+      #"(?P)abcd\b.+"#,
+      ("abcd ef", true),
+      ("abcdef", false),
+      ("abcdéf", true)) // "dé" matches /d\b./ because "é" isn't ASCII
+
+    // 'S' ASCII-only spaces
+    matchTest(
+      #"a\sb"#,
+      ("a\tb", true),
+      ("a\u{202f}b", true)) // NARROW NO-BREAK SPACE
+    matchTest(
+      #"(?S)a\sb"#,
+      ("a\tb", true),
+      ("a\u{202f}b", false))
+    matchTest(
+      #"(?P)a\sb"#,
+      ("a\tb", true),
+      ("a\u{202f}b", false))
+  }
+  
+  func testAnchorMatching() throws {
+    let string = """
+      01: Alabama
+      02: Alaska
+      03: Arizona
+      04: Arkansas
+      05: California
+      """
+    XCTAssertTrue(string.contains(try Regex(compiling: #"^\d+"#)))
+    XCTAssertEqual(string.ranges(of: try Regex(compiling: #"^\d+"#)).count, 1)
+    XCTAssertEqual(string.ranges(of: try Regex(compiling: #"(?m)^\d+"#)).count, 5)
+
+    let regex = try Regex(compiling: #"^\d+: [\w ]+$"#)
+    XCTAssertFalse(string.contains(regex))
+    let allRanges = string.ranges(of: regex.anchorsMatchLineEndings())
+    XCTAssertEqual(allRanges.count, 5)
   }
   
   func testMatchingOptionsScope() {
@@ -1218,6 +1301,16 @@ extension RegexTests {
     firstMatchTest(#"(((?s)a)).b"#, input: "a\nb", match: nil)
     firstMatchTest(#"(?s)(((?-s)a)).b"#, input: "a\nb", match: "a\nb")
     firstMatchTest(#"(?s)((?-s)((?i)a)).b"#, input: "a\nb", match: "a\nb")
+  }
+  
+  func testOptionMethods() throws {
+    let regex = try Regex(compiling: "c.f.")
+    XCTAssertTrue ("cafe".contains(regex))
+    XCTAssertFalse("CaFe".contains(regex))
+    
+    let caseInsensitiveRegex = regex.ignoringCase()
+    XCTAssertTrue("cafe".contains(caseInsensitiveRegex))
+    XCTAssertTrue("CaFe".contains(caseInsensitiveRegex))
   }
   
   // MARK: Character Semantics
