@@ -40,13 +40,26 @@ extension RegexComponent {
     wrapInOption(.asciiOnlyPOSIXProps, addingIf: useASCII)
   }
   
-  /// Returns a regular expression that uses a simpler set of Unicode scalar
-  /// values to detect word boundaries.
-  public func usingSimpleWordBoundaries(_ useASCII: Bool = true) -> Regex<Output> {
-    wrapInOption(.unicodeWordBoundaries, addingIf: !useASCII)
+  /// Returns a regular expression that uses the Unicode word boundary
+  /// algorithm.
+  ///
+  /// This option is enabled by default; pass `false` to disable use of
+  /// Unicode's word boundary algorithm.
+  public func usingUnicodeWordBoundaries(_ useUnicodeWordBoundaries: Bool = true) -> Regex<Output> {
+    wrapInOption(.unicodeWordBoundaries, addingIf: useUnicodeWordBoundaries)
   }
   
-  /// Match with the specified semantic level.
+  /// Returns a regular expression where the start and end of input
+  /// anchors (`^` and `$`) also match against the start and end of a line.
+  ///
+  /// - Parameter dotMatchesNewlines: A Boolean value indicating whether `.`
+  ///   should match a newline character.
+  public func dotMatchesNewlines(_ dotMatchesNewlines: Bool = true) -> Regex<Output> {
+    wrapInOption(.singleLine, addingIf: dotMatchesNewlines)
+  }
+  
+  /// Returns a regular expression that matches with the specified semantic
+  /// level.
   ///
   /// When matching with grapheme cluster semantics (the default),
   /// metacharacters like `.` and `\w`, custom character classes, and character
@@ -130,20 +143,6 @@ extension RegexComponent {
     wrapInOption(.multiline, addingIf: matchLineEndings)
   }
   
-  /// Returns a regular expression where the start and end of input
-  /// anchors (`^` and `$`) also match against the start and end of a line.
-  ///
-  /// This method corresponds to applying the `s` option in a regular
-  /// expression literal, and only applies to regular expressions specified as
-  /// literals. To use this distinction in the `RegexBuilder` syntax, see
-  /// ``CharacterClass.any`` and ``CharacterClass.anyNonNewline``.
-  ///
-  /// - Parameter dotMatchesNewlines: A Boolean value indicating whether `.`
-  ///   should match a newline character.
-  public func dotMatchesNewlines(_ dotMatchesNewlines: Bool = true) -> Regex<Output> {
-    wrapInOption(.singleLine, addingIf: dotMatchesNewlines)
-  }
-  
   /// Returns a regular expression where quantifiers are reluctant by default
   /// instead of eager.
   ///
@@ -156,63 +155,6 @@ extension RegexComponent {
   ///   quantifiers should be reluctant by default.
   public func reluctantCaptures(_ useReluctantCaptures: Bool = true) -> Regex<Output> {
     wrapInOption(.reluctantByDefault, addingIf: useReluctantCaptures)
-  }
-  
-  /// Returns a regular expression where the `\X`, `\y`, and `\Y` metacharacters
-  /// operate at the word boundary level instead of the grapheme cluster level.
-  ///
-  /// This method corresponds to applying the `y{w}` or `y{g}` option in a
-  /// regular expression literal, and only applies to regular expressions
-  /// specified as literals.
-  ///
-  /// - Parameter useWordBoundaries: A Boolean value indicating whether `\X`,
-  ///   `\y`, and `\Y` should use word boundaries instead of grapheme cluster
-  ///   boundaries.
-  public func segmentTextByWords(_ useWordBoundaries: Bool = true) -> Regex<Output> {
-    wrapInOption(.textSegmentWordMode, addingIf: useWordBoundaries)
-  }
-}
-
-// Options that affect parsing, and therefore likely can't be API
-@available(*, unavailable)
-extension RegexComponent {
-  /// Returns a regular expression where whitespace is not significant for
-  /// matching.
-  ///
-  /// This method corresponds to applying the `xx` option in a regular
-  /// expression literal, and only applies to regular expressions specified as
-  /// literals.
-  ///
-  /// - Parameter useExtendedSyntax: A Boolean value indicating whether
-  ///   whitespace in a regex literal should be ignored.
-  public func extendedSyntax(_ useExtendedSyntax: Bool = true) -> Regex<Output> {
-    wrapInOption(.extraExtended, addingIf: useExtendedSyntax)
-  }
-  
-  /// Returns a regular expression where only named groups are captured.
-  ///
-  /// This method corresponds to applying the `n` option in a regular
-  /// expression literal, and only applies to regular expressions specified as
-  /// literals. In the `RegexBuilder` syntax, use the `Capture` method only
-  /// when you want to capture a portion of a match.
-  ///
-  /// - Parameter namedCapturesOnly: A Boolean value indicating whether only
-  ///   named groups should be captured.
-  public func namedCapturesOnly(_ namedCapturesOnly: Bool = true) -> Regex<Output> {
-    wrapInOption(.noAutoCapture, addingIf: namedCapturesOnly)
-  }
-  
-  /// Returns a regular expression where multiple groups are allowed to share
-  /// the same name.
-  ///
-  /// This method corresponds to applying the `J` option in a regular
-  /// expression literal, and only applies to regular expressions specified as
-  /// literals.
-  ///
-  /// - Parameter allowDuplicateNames: A Boolean value indicating whether groups
-  ///   are allowed to share names.
-  public func allowDuplicateNames(_ allowDuplicateNames: Bool = true) -> Regex<Output> {
-    wrapInOption(.allowDuplicateGroupNames, addingIf: allowDuplicateNames)
   }
 }
 
