@@ -9,20 +9,20 @@
 //
 //===----------------------------------------------------------------------===//
 
-public struct _MatchResult<S: MatchingCollectionSearcher> {
-  public let match: S.Searched.SubSequence
-  public let result: S.Match
+struct _MatchResult<S: MatchingCollectionSearcher> {
+  let match: S.Searched.SubSequence
+  let result: S.Match
   
-  public var range: Range<S.Searched.Index> {
+  var range: Range<S.Searched.Index> {
     match.startIndex..<match.endIndex
   }
 }
 
-public struct _BackwardMatchResult<S: BackwardMatchingCollectionSearcher> {
-  public let match: S.BackwardSearched.SubSequence
-  public let result: S.Match
+struct _BackwardMatchResult<S: BackwardMatchingCollectionSearcher> {
+  let match: S.BackwardSearched.SubSequence
+  let result: S.Match
   
-  public var range: Range<S.BackwardSearched.Index> {
+  var range: Range<S.BackwardSearched.Index> {
     match.startIndex..<match.endIndex
   }
 }
