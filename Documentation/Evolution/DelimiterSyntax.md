@@ -88,14 +88,14 @@ This allows the captures to be referenced as `match.identifier` and `match.hex` 
 
 ### Extended delimiters `#/.../#`, `##/.../##`
 
-A regex literal may be surrounded by an arbitrary number of balanced pound characters. This is a somewhat similar to the raw string literal syntax introduced by [SE-0200], and allows a regex literal to use forward slashes without the need to escape them, e.g:
+Backslashes may be used to write forward slashes within the regex literal, e.g `/foo\/bar/`. However, this can be quite syntactically noisy and confusing. To avoid this, a regex literal may be surrounded by an arbitrary number of balanced pound characters. This changes the delimiter of the literal, and therefore allows the use of forward slashes without escaping. For example:
 
 ```swift
 let regex = #/usr/lib/modules/([^/]+)/vmlinuz/#
 // regex: Regex<(Substring, Substring)>
 ```
 
-Additionally, it allows for a multi-line mode when the opening delimiter is followed by a new line.
+The number of pounds may be further increased to allow the use of e.g `/#` within the literal. This is similar in style to the raw string literal syntax introduced by [SE-0200], however it has a couple of key differences. The escaping rules for backslashes do not change, and a multi-line mode is entered when the opening delimiter is followed by a newline.
 
 #### Escaping of backslashes
 
