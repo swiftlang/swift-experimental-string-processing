@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-public struct PredicateConsumer<Consumed: Collection> {
+struct PredicateConsumer<Consumed: Collection> {
   let predicate: (Consumed.Element) -> Bool
 }
 
@@ -29,7 +29,7 @@ extension PredicateConsumer: CollectionConsumer {
 extension PredicateConsumer: BidirectionalCollectionConsumer
   where Consumed: BidirectionalCollection
 {
-  public func consumingBack(
+  func consumingBack(
     _ consumed: Consumed,
     in range: Range<Consumed.Index>
   ) -> Consumed.Index? {
@@ -59,9 +59,9 @@ extension PredicateConsumer: BackwardCollectionSearcher,
                              BackwardStatelessCollectionSearcher
   where Searched: BidirectionalCollection
 {
-  public typealias BackwardSearched = Consumed
+  typealias BackwardSearched = Consumed
   
-  public func searchBack(
+  func searchBack(
     _ searched: BackwardSearched,
     in range: Range<BackwardSearched.Index>
   ) -> Range<BackwardSearched.Index>? {

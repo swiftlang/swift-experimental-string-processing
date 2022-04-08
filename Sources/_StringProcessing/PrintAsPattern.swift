@@ -19,6 +19,7 @@ import _RegexParser
 
 extension AST {
   /// Render as a Pattern DSL
+  @_spi(PatternConverter)
   public func renderAsBuilderDSL(
     maxTopDownLevels: Int? = nil,
     minBottomUpLevels: Int? = nil
