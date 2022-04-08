@@ -931,7 +931,7 @@ We are deferring runtime support for callouts from regex literals as future work
 
 ## Alternatives Considered
 
-### Failalbe inits
+### Failable inits
 
 There are many ways for compilation to fail, from syntactic errors to unsupported features to type mismatches. In the general case, run-time compilation errors are not recoverable by a tool without modifying the user's input. Even then, the thrown errors contain valuable information as to why compilation failed. For example, swiftpm presents any errors directly to the user.
 
