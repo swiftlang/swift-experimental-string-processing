@@ -1,6 +1,6 @@
 # Regex Literals
 
-- Authors: Hamish Knight, Michael Ilseman, David Ewing
+- Authors: [Hamish Knight](https://github.com/hamishknight), [Michael Ilseman](https://github.com/milseman), [David Ewing](https://github.com/DaveEwing)
 
 ## Introduction
 
