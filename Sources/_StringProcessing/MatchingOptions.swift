@@ -13,7 +13,7 @@ import _RegexParser
 
 /// A type that represents the current state of regex matching options, with
 /// stack-based scoping.
-public struct MatchingOptions {
+struct MatchingOptions {
   fileprivate var stack: [Representation]
   
   fileprivate func _invariantCheck() {
