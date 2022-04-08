@@ -61,7 +61,7 @@ public struct _CharacterClassModel: Hashable {
     var op: SetOperator
     var rhs: CharacterSetComponent
 
-    public func matches(_ c: Character, with options: MatchingOptions) -> Bool {
+    func matches(_ c: Character, with options: MatchingOptions) -> Bool {
       switch op {
       case .intersection:
         return lhs.matches(c, with: options) && rhs.matches(c, with: options)
@@ -90,7 +90,7 @@ public struct _CharacterClassModel: Hashable {
       .setOperation(.init(lhs: lhs, op: op, rhs: rhs))
     }
 
-    public func matches(_ character: Character, with options: MatchingOptions) -> Bool {
+    func matches(_ character: Character, with options: MatchingOptions) -> Bool {
       switch self {
       case .character(let c):
         if options.isCaseInsensitive {
@@ -116,20 +116,20 @@ public struct _CharacterClassModel: Hashable {
     }
   }
 
-  public enum MatchLevel {
+  enum MatchLevel {
     /// Match at the extended grapheme cluster level.
     case graphemeCluster
     /// Match at the Unicode scalar level.
     case unicodeScalar
   }
 
-  public var scalarSemantic: Self {
+  var scalarSemantic: Self {
     var result = self
     result.matchLevel = .unicodeScalar
     return result
   }
   
-  public var graphemeClusterSemantic: Self {
+  var graphemeClusterSemantic: Self {
     var result = self
     result.matchLevel = .graphemeCluster
     return result
@@ -137,7 +137,7 @@ public struct _CharacterClassModel: Hashable {
 
   /// Returns an inverted character class if true is passed, otherwise the
   /// same character class is returned.
-  public func withInversion(_ invertion: Bool) -> Self {
+  func withInversion(_ invertion: Bool) -> Self {
     var copy = self
     if invertion {
       copy.isInverted.toggle()
@@ -152,7 +152,7 @@ public struct _CharacterClassModel: Hashable {
   
   /// Returns the end of the match of this character class in `str`, if
   /// it matches.
-  public func matches(in str: String, at i: String.Index, with options: MatchingOptions) -> String.Index? {
+  func matches(in str: String, at i: String.Index, with options: MatchingOptions) -> String.Index? {
     switch matchLevel {
     case .graphemeCluster:
       let c = str[i]
@@ -363,7 +363,7 @@ extension DSLTree.Node {
 }
 
 extension _CharacterClassModel {
-  public func withMatchLevel(
+  func withMatchLevel(
     _ level: _CharacterClassModel.MatchLevel
   ) -> _CharacterClassModel {
     var cc = self
