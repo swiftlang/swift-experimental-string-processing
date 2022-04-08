@@ -136,7 +136,7 @@ extension Compiler.ByteCodeGen {
       // TODO: May want to consider Unicode level
       builder.buildAssert { [options] (input, pos, bounds) in
         // TODO: How should we handle bounds?
-        CharacterClass.word.isBoundary(
+        _CharacterClassModel.word.isBoundary(
           input, at: pos, bounds: bounds, with: options)
       }
 
@@ -144,7 +144,7 @@ extension Compiler.ByteCodeGen {
       // TODO: May want to consider Unicode level
       builder.buildAssert { [options] (input, pos, bounds) in
         // TODO: How should we handle bounds?
-        !CharacterClass.word.isBoundary(
+        !_CharacterClassModel.word.isBoundary(
           input, at: pos, bounds: bounds, with: options)
       }
     }
@@ -595,7 +595,15 @@ extension Compiler.ByteCodeGen {
       try emitQuantification(amt, kind, child)
 
     case let .customCharacterClass(ccc):
-      try emitCustomCharacterClass(ccc)
+      if ccc.containsAny {
+        if !ccc.isInverted {
+          emitAny()
+        } else {
+          throw Unsupported("Inverted any")
+        }
+      } else {
+        try emitCustomCharacterClass(ccc)
+      }
 
     case let .atom(a):
       try emitAtom(a)

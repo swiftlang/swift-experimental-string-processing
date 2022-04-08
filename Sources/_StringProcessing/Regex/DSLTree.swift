@@ -107,8 +107,31 @@ extension DSLTree {
   public struct CustomCharacterClass {
     var members: [Member]
     var isInverted: Bool
+    
+    var containsAny: Bool {
+      members.contains { member in
+        switch member {
+        case .atom(.any): return true
+        case .custom(let ccc): return ccc.containsAny
+        default:
+          return false
+        }
+      }
+    }
+    
+    public init(members: [DSLTree.CustomCharacterClass.Member], isInverted: Bool = false) {
+      self.members = members
+      self.isInverted = isInverted
+    }
+    
+    public var inverted: CustomCharacterClass {
+      var result = self
+      result.isInverted.toggle()
+      return result
+    }
 
-    enum Member {
+    @_spi(RegexBuilder)
+    public enum Member {
       case atom(Atom)
       case range(Atom, Atom)
       case custom(CustomCharacterClass)
