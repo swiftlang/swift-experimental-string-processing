@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-public struct TwoWaySearcher<Searched: BidirectionalCollection>
+struct TwoWaySearcher<Searched: BidirectionalCollection>
   where Searched.Element: Comparable
 {
   // TODO: Be generic over the pattern?
@@ -36,14 +36,14 @@ public struct TwoWaySearcher<Searched: BidirectionalCollection>
 }
 
 extension TwoWaySearcher: CollectionSearcher {
-  public struct State {
+  struct State {
     let end: Searched.Index
     var index: Searched.Index
     var criticalIndex: Searched.Index
     var memory: (offset: Int, index: Searched.Index)?
   }
   
-  public func state(
+  func state(
     for searched: Searched,
     in range: Range<Searched.Index>
   ) -> State {
@@ -57,7 +57,7 @@ extension TwoWaySearcher: CollectionSearcher {
       memory: nil)
   }
 
-  public func search(
+  func search(
     _ searched: Searched,
     _ state: inout State
   ) -> Range<Searched.Index>? {
