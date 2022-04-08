@@ -611,9 +611,9 @@ class RegexDSLTests: XCTestCase {
     }
 
     do {
-      let regexLiteral = try MockRegexLiteral(
-        #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
-        matching: (Substring, Substring, Substring?, Substring).self)
+      let regexLiteral = try Regex(
+        compiling: #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
+        as: (Substring, Substring, Substring?, Substring).self)
       let maybeMatchResult = line.matchWhole(regexLiteral)
       let matchResult = try XCTUnwrap(maybeMatchResult)
       let (wholeMatch, lower, upper, propertyString) = matchResult.output

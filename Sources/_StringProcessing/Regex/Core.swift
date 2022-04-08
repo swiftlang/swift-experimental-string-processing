@@ -129,24 +129,3 @@ extension UnicodeScalar: RegexComponent {
     .init(node: .atom(.scalar(self)))
   }
 }
-
-// MARK: - Testing
-
-public struct MockRegexLiteral<Output>: RegexComponent {
-  public typealias MatchValue = Substring
-  public let regex: Regex<Output>
-
-  public init(
-    _ string: String,
-    _ syntax: SyntaxOptions = .traditional,
-    matching: Output.Type = Output.self
-  ) throws {
-    regex = Regex(ast: try parse(string, syntax))
-  }
-}
-
-public func r<Output>(
-  _ s: String, matching matchType: Output.Type = Output.self
-) -> MockRegexLiteral<Output> {
-  try! MockRegexLiteral(s, matching: matchType)
-}
