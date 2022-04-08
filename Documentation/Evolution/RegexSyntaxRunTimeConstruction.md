@@ -2,7 +2,7 @@
 Hello, we want to issue an update to [Regular Expression Literals](https://forums.swift.org/t/pitch-regular-expression-literals/52820) and prepare for a formal proposal. The great delimiter deliberation continues to unfold, so in the meantime, we have a significant amount of surface area to present for review/feedback: the syntax _inside_ a regex literal. Additionally, this is the syntax accepted from a string used for run-time regex construction, so we're devoting an entire pitch/proposal to the topic of _regex syntax_, distinct from the result builder DSL or the choice of delimiters for literals. 
 -->
 
-# Run-time Regex Construction
+# Regex Syntax and Run-time Construction
 
 - Authors: [Hamish Knight](https://github.com/hamishknight), [Michael Ilseman](https://github.com/milseman)
 
@@ -16,11 +16,33 @@ The overall story is laid out in [Regex Type and Overview](https://github.com/ap
 
 Swift aims to be a pragmatic programming language, striking a balance between familiarity, interoperability, and advancing the art. Swift's `String` presents a uniquely Unicode-forward model of string, but currently suffers from limited processing facilities.
 
-<!--
-... tools need run time construction
-...  ns regular expression operates over a fundamentally different model and has limited syntactic and semantic support
-... we prpose a best-in-class treatment of familiar regex syntax
--->
+`NSRegularExpression` can construct a processing pipeline from a string containing [ICU regular expression syntax][icu-syntax]. However, it is inherently tied to ICU's engine and thus it operates over a fundamentally different model of string than Swift's `String`. It is also limited in features and carries a fair amount of Objective-C baggage, such as the need to translate between `NSRange` and `Range`.
+
+```swift
+let pattern = #"(\w+)\s\s+(\S+)\s\s+((?:(?!\s\s).)*)\s\s+(.*)"#
+let nsRegEx = try! NSRegularExpression(pattern: pattern)
+
+func processEntry(_ line: String) -> Transaction? {
+  let range = NSRange(line.startIndex..<line.endIndex, in: line)
+  guard let result = nsRegEx.firstMatch(in: line, range: range),
+        let kindRange = Range(result.range(at: 1), in: line),
+        let kind = Transaction.Kind(line[kindRange]),
+        let dateRange = Range(result.range(at: 2), in: line),
+        let date = try? Date(String(line[dateRange]), strategy: dateParser),
+        let accountRange = Range(result.range(at: 3), in: line),
+        let amountRange = Range(result.range(at: 4), in: line),
+        let amount = try? Decimal(
+          String(line[amountRange]), format: decimalParser)
+  else {
+    return nil
+  }
+
+  return Transaction(
+    kind: kind, date: date, account: String(line[accountRange]), amount: amount)
+}
+```
+
+Fixing these fundamental limitations requires migrating to a completely different engine and type system representation. This is the path we're proposing with `Regex`, outlined in [Regex Type and Overview][overview]. Details on the semantic differences between ICU's string model and Swift's `String` is discussed in [Unicode for String Processing][pitches].
 
 The full string processing effort includes a regex type with strongly typed captures, the ability to create a regex from a string at runtime, a compile-time literal, a result builder DSL, protocols for intermixing 3rd party industrial-strength parsers with regex declarations, and a slew of regex-powered algorithms over strings.
 
@@ -28,9 +50,16 @@ This proposal specifically hones in on the _familiarity_ aspect by providing a b
 
 ## Proposed Solution
 
-<!--
- ... regex compiling and existential match type
--->
+We propose run-time construction of `Regex` from a best-in-class treatment of familiar regular expression syntax. A `Regex` is generic over its `Output`, which includes capture information. This may be an existential `AnyRegexOutput`, or a concrete type provided by the user.
+
+```swift
+let pattern = #"(\w+)\s\s+(\S+)\s\s+((?:(?!\s\s).)*)\s\s+(.*)"#
+let regex = try! Regex(compiling: pattern)
+// regex: Regex<AnyRegexOutput>
+
+let regex: Regex<(Substring, Substring, Substring, Substring, Substring)> =
+  try! Regex(compiling: pattern)
+```
 
 ### Syntax
 
@@ -51,11 +80,87 @@ Regex syntax will be part of Swift's source-compatibility story as well as its b
 
 ## Detailed Design
 
-<!--
- ... init, dynamic match, conversion to static
- -->
+We propose initializers to declare and compile a regex from syntax. Upon failure, these initializers throw compilation errors, such as for syntax or type errors. API for retrieving error information is future work.
 
-We propose the following syntax for regex.
+```swift
+extension Regex {
+  /// Parse and compile `pattern`, resulting in a strongly-typed capture list.
+  public init(compiling pattern: String, as: Output.Type = Output.self) throws
+}
+extension Regex where Output == AnyRegexOutput {
+  /// Parse and compile `pattern`, resulting in an existentially-typed capture list.
+  public init(compiling pattern: String) throws
+}
+```
+
+We propose `AnyRegexOutput` for capture types not known at compilation time, alongside casting API to convert to a strongly-typed capture list.
+
+```swift
+/// A type-erased regex output
+public struct AnyRegexOutput {
+  /// Creates a type-erased regex output from an existing output.
+  ///
+  /// Use this initializer to fit a regex with strongly typed captures into the
+  /// use site of a dynamic regex, i.e. one that was created from a string.
+  public init<Output>(_ match: Regex<Output>.Match)
+
+  /// Returns a typed output by converting the underlying value to the specified
+  /// type.
+  ///
+  /// - Parameter type: The expected output type.
+  /// - Returns: The output, if the underlying value can be converted to the
+  ///   output type, or nil otherwise.
+  public func `as`<Output>(_ type: Output.Type) -> Output?
+}
+extension AnyRegexOutput: RandomAccessCollection {
+  public struct Element {
+    /// The range over which a value was captured. `nil` for no-capture.
+    public var range: Range<String.Index>?
+
+    /// The slice of the input over which a value was captured. `nil` for no-capture.
+    public var substring: Substring?
+
+    /// The captured value. `nil` for no-capture.
+    public var value: Any?    
+  }
+
+  // Trivial collection conformance requirements
+
+  public var startIndex: Int { get }
+
+  public var endIndex: Int { get }
+
+  public var count: Int { get }
+
+  public func index(after i: Int) -> Int
+
+  public func index(before i: Int) -> Int
+
+  public subscript(position: Int) -> Element
+}
+```
+
+We propose adding an API to `Regex<AnyRegexOutput>.Match` to cast the output type to a concrete one. A regex match will lazily create a `Substring` on demand, so casting the match itself saves ARC traffic vs extracting and casting the output.
+
+```swift
+extension Regex.Match where Output == AnyRegexOutput {
+  /// Creates a type-erased regex match from an existing match.
+  ///
+  /// Use this initializer to fit a regex match with strongly typed captures into the
+  /// use site of a dynamic regex match, i.e. one that was created from a string.
+  public init<Output>(_ match: Regex<Output>.Match)
+
+  /// Returns a typed match by converting the underlying values to the specified
+  /// types.
+  ///
+  /// - Parameter type: The expected output type.
+  /// - Returns: A match generic over the output type if the underlying values can be converted to the
+  ///   output type. Returns `nil` otherwise.
+  public func `as`<Output>(_ type: Output.Type) -> Regex<Output>.Match?
+}
+```
+
+The rest of this proposal will be a detailed and exhaustive definition of our proposed regex syntax.
 
 <details><summary>Grammar Notation</summary>
 
@@ -826,6 +931,12 @@ For [subpatterns](#subpatterns), we recommend either `\g<...>` or `\g'...'` depe
 We are deferring runtime support for callouts from regex literals as future work, though we will correctly parse their contents. We have no current recommendation for a preference of PCRE-style [callout syntax](#callouts), and would like to discuss with the community whether we should have one.
 
 ## Alternatives Considered
+
+### Failalbe inits
+
+There are many ways for compilation to fail, from syntactic errors to unsupported features to type mismatches. In the general case, run-time compilation errors are not recoverable by a tool without modifying the user's input. Even then, the thrown errors contain valuable information as to why compilation failed. For example, swiftpm presents any errors directly to the user.
+
+As proposed, the errors thrown will be the same errors presented to the Swift compiler, tracking fine-grained source locations with specific reasons why compilation failed. Defining a rich error API is future work, as these errors are rapidly evolving and it is too early to lock in the ABI.
 
 
 ### Skip the syntax
