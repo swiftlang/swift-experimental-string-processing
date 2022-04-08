@@ -1,6 +1,3 @@
-<!--
-Hello, we want to issue an update to [Regular Expression Literals](https://forums.swift.org/t/pitch-regular-expression-literals/52820) and prepare for a formal proposal. The great delimiter deliberation continues to unfold, so in the meantime, we have a significant amount of surface area to present for review/feedback: the syntax _inside_ a regex literal. Additionally, this is the syntax accepted from a string used for run-time regex construction, so we're devoting an entire pitch/proposal to the topic of _regex syntax_, distinct from the result builder DSL or the choice of delimiters for literals. 
--->
 
 # Regex Syntax and Run-time Construction
 
