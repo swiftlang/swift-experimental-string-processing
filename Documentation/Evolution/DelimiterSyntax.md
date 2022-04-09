@@ -4,11 +4,7 @@
 
 ## Introduction
 
-This proposal helps complete the story told in *[Regex Type and Overview][regex-type]* and [elsewhere][pitch-status]. We propose the introduction of regex literals to Swift source code. The proposed syntax mirrors literals in other programing languages such as Perl, JavaScript and Ruby. As in those languages, literals are delimited with the `/` character:
-
-```swift
-let re = /[0-9]+/
-```
+This proposal helps complete the story told in *[Regex Type and Overview][regex-type]* and [elsewhere][pitch-status]. We propose the introduction of regex literals to Swift source code, providing compile-time checks and typed-capture inference.
 
 ## Motivation
 
@@ -37,23 +33,26 @@ let regex = /(?<identifier>[[:alpha:]]\w*) = (?<hex>[0-9A-F]+)/
 // regex: Regex<(Substring, identifier: Substring, hex: Substring)>
 ```
 
-Forward slashes are a regex term of art, and are used as the delimiters for regex literals in Perl, JavaScript and Ruby (though Perl and Ruby also provide alternatives). Their ubiquity and familiarity makes them a compelling choice for Swift.
+Forward slashes are a regex term of art. They are used as the delimiters for regex literals in, e.g., Perl, JavaScript and Ruby. Perl and Ruby additionally allow for [user-selected delimiters](https://perldoc.perl.org/perlop#Quote-and-Quote-like-Operators) to avoid having to escape any slashes inside a regex. For that purpose, we propose the extended literal `#/.../#`.
 
-A regex literal may also be spelled using an extended syntax `#/.../#`, which allows the placement of an arbitrary number of balanced `#` characters around the literal. This syntax may be used to avoid needing to escape forward slashes within the regex. Additionally, it allows for a multi-line mode when the opening delimiter is followed by a new line.
+An extended literal, `#/.../#`, avoids the need to escape forward slashes within the regex. It allows an arbitrary number of balanced `#` characters around the literal and escape. When the opening delimiter is followed by a new line, it supports a multi-line literal where whitespace is non-semantic and line-ending comments are ignored.
 
-Within a regex literal, the compiler will parse the regex syntax outlined in *[Regex Construction][internal-syntax]*, and diagnose any errors at compile time. The capture types and labels are automatically inferred based on the capture groups present in the regex. Using a literal allows editors to support features such as syntax coloring inside the literal, highlighting sub-structure of the regex, and conversion of the literal to an equivalent result builder DSL (see *[Regex builder DSL][regex-dsl]*).
+The compiler will parse the contents of a regex literal using regex syntax outlined in *[Regex Construction][internal-syntax]*, diagnosing any errors at compile time. The capture types and labels are automatically inferred based on the capture groups present in the regex. Regex literals allows editors and source tools to support features such as syntax coloring inside the literal, highlighting sub-structure of the regex, and conversion of the literal to an equivalent result builder DSL (see *[Regex builder DSL][regex-dsl]*).
 
 A regex literal also allows for seamless composition with the Regex DSL, enabling lightweight intermixing of a regex syntax with other elements of the builder:
 
 ```swift
-// A regex literal for parsing an amount of currency in dollars or pounds.
+// A regex for extracting a currency (dollars or pounds) and amount from input 
+// with precisely the form /[$£]\d+\.\d{2}/
 let regex = Regex {
-  /([$£])/
+  Capture { /[$£]/ }
   TryCapture {
-    OneOrMore(.digit)
+    /\d+/
     "."
-    Repeat(.digit, count: 2)
-  } transform: { Amount(twoDecimalPlaces: $0) }
+    /\d{2}/
+  } transform: {
+    Amount(twoDecimalPlaces: $0)
+  }
 }
 ```
 
@@ -65,7 +64,7 @@ Due to the existing use of `/` in comment syntax and operators, there are some s
 
 ### Upgrade path
 
-Due to the source breaking changes needed for the `/.../` syntax, it will be introduced in Swift 6 mode. However, projects will be able to adopt it earlier by using the compiler flag `-enable-regex-literals`. Note this does not affect the extended syntax `#/.../#`, which will be usable immediately.
+Due to the source breaking changes needed for the `/.../` syntax, it will be introduced in Swift 6 mode. However, projects will be able to adopt it earlier by using the compiler flag `-enable-regex-literals`. Note this does not affect the extended literal `#/.../#`, which will be usable immediately.
 
 ### Named typed captures
 
@@ -84,18 +83,27 @@ func matchHexAssignment(_ input: String) -> (String, Int)? {
 }
 ```
 
-This allows the captures to be referenced as `match.identifier` and `match.hex` instead of `match.1` and `match.2`, which would be the behavior for unnamed capture groups. This label inference behavior is not available in the DSL, however users are able to [bind captures to named variables instead][dsl-captures].
+This allows the captures to be referenced as `match.identifier` and `match.hex`, in addition to numerically (like unnamed capture groups) as `match.1` and `match.2`. This label inference behavior is not available in the DSL, however users are able to [bind captures to named variables instead][dsl-captures].
 
 ### Extended delimiters `#/.../#`, `##/.../##`
 
-Backslashes may be used to write forward slashes within the regex literal, e.g `/foo\/bar/`. However, this can be quite syntactically noisy and confusing. To avoid this, a regex literal may be surrounded by an arbitrary number of balanced pound characters. This changes the delimiter of the literal, and therefore allows the use of forward slashes without escaping. For example:
+Backslashes may be used to write forward slashes within the regex literal, e.g `/foo\/bar/`. However, this can be quite syntactically noisy and confusing. To avoid this, a regex literal may be surrounded by an arbitrary number of balanced octothorpes. This changes the delimiter of the literal, and therefore allows the use of forward slashes without escaping. For example:
 
 ```swift
 let regex = #/usr/lib/modules/([^/]+)/vmlinuz/#
 // regex: Regex<(Substring, Substring)>
 ```
 
-The number of pounds may be further increased to allow the use of e.g `/#` within the literal. This is similar in style to the raw string literal syntax introduced by [SE-0200], however it has a couple of key differences. The escaping rules for backslashes do not change, and a multi-line mode is entered when the opening delimiter is followed by a newline.
+The number of pounds may be further increased to allow the use of e.g `/#` within the literal. This is similar in style to the raw string literal syntax introduced by [SE-0200], however it has a couple of key differences. The escaping rules for backslashes do not change. Additionally, a multi-line mode, where whitespace and line-ending comments are ignored, is entered when the opening delimiter is followed by a newline.
+
+```swift
+let regex = #/
+  /usr/lib/modules/ # Prefix
+  (?<subpath> [^/]+)
+  /vmlinuz          # The kernel
+#/
+// regex: Regex<(Substring, subpath: Substring)>
+```
 
 #### Escaping of backslashes
 
@@ -158,11 +166,11 @@ Perhaps the most obvious parsing ambiguity with `/.../` delimiters is with comme
 
 ### Ambiguity with infix operators
 
-There would be a minor ambiguity with infix operators used with regex literals. When used without whitespace, e.g `x+/y/`, the expression will be treated as using an infix operator `+/`. Whitespace is therefore required for regex literal interpretation, e.g `x + /y/`. Alternatively, extended syntax may be used, e.g `x+#/y/#`.
+There would be a minor ambiguity with infix operators used with regex literals. When used without whitespace, e.g `x+/y/`, the expression will be treated as using an infix operator `+/`. Whitespace is therefore required for regex literal interpretation, e.g `x + /y/`. Alternatively, extended literals may be used, e.g `x+#/y/#`.
 
 ### Regex syntax limitations
 
-In order to help avoid further parsing ambiguities, a `/.../` regex literal will not be parsed if it starts with a space, tab, or `)` character. Though the latter is already invalid regex syntax. This restriction may be avoided by using extended `#/.../#` syntax.
+In order to help avoid further parsing ambiguities, a `/.../` regex literal will not be parsed if it starts with a space, tab, or `)` character. Though the latter is already invalid regex syntax. This restriction may be avoided by using the extended `#/.../#` literal.
 
 #### Rationale
 
@@ -194,7 +202,7 @@ let regex = Regex {
 }
 ```
 
-or extended syntax must be used, e.g:
+or extended literal must be used, e.g:
 
 ```swift
 let regex = Regex {
@@ -378,4 +386,3 @@ We therefore feel this would be a much less compelling feature without first cla
 
 [regex-dsl]: https://github.com/apple/swift-evolution/blob/main/proposals/0351-regex-builder.md
 [dsl-captures]: https://github.com/apple/swift-evolution/blob/main/proposals/0351-regex-builder.md#capture-and-reference
-
