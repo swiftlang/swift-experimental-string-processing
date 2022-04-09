@@ -164,14 +164,14 @@ extension DSLTree {
 @_spi(RegexBuilder)
 public typealias _ConsumerInterface = (
   String, Range<String.Index>
-) -> String.Index?
+) throws -> String.Index?
 
 // Type producing consume
 // TODO: better name
 @_spi(RegexBuilder)
 public typealias _MatcherInterface = (
   String, String.Index, Range<String.Index>
-) -> (String.Index, Any)?
+) throws -> (String.Index, Any)?
 
 // Character-set (post grapheme segmentation)
 @_spi(RegexBuilder)

@@ -341,7 +341,7 @@ public struct CaptureTransform: Equatable, Hashable, CustomStringConvertible {
     self.init(resultType: resultType, closure: .throwing(closure))
   }
 
-  public func callAsFunction(_ input: Substring) -> Any? {
+  public func callAsFunction(_ input: Substring) throws -> Any? {
     switch closure {
     case .nonfailable(let closure):
       let result = closure(input)
@@ -354,13 +354,9 @@ public struct CaptureTransform: Equatable, Hashable, CustomStringConvertible {
       assert(type(of: result) == resultType)
       return result
     case .throwing(let closure):
-      do {
-        let result = try closure(input)
-        assert(type(of: result) == resultType)
-        return result
-      } catch {
-        return nil
-      }
+      let result = try closure(input)
+      assert(type(of: result) == resultType)
+      return result
     }
   }
 

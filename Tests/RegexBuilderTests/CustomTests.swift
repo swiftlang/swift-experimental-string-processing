@@ -138,4 +138,55 @@ class CustomRegexComponentTests: XCTestCase {
     XCTAssertEqual(res4.output.0, "123")
     XCTAssertEqual(res4.output.1, 3)
   }
+
+  func testRegexAbort() {
+
+    enum Radix: Hashable {
+      case dot
+      case comma
+    }
+    struct Abort: Error, Hashable {}
+
+    let hexRegex = Regex {
+      Capture { OneOrMore(.hexDigit) }
+      TryCapture { CharacterClass.any } transform: { c -> Radix? in
+        switch c {
+        case ".": return Radix.dot
+        case ",": return Radix.comma
+        case "❗️":
+          // Malicious! Toxic levels of emphasis detected.
+          throw Abort()
+        default:
+          // Not a radix
+          return nil
+        }
+      }
+      Capture { OneOrMore(.hexDigit) }
+    }
+    // hexRegex: Regex<(Substring, Substring, Radix?, Substring)>
+    // TODO: Why is Radix optional?
+
+    do {
+      guard let m = try hexRegex.matchWhole("123aef.345") else {
+        XCTFail()
+        return
+      }
+      XCTAssertEqual(m.0, "123aef.345")
+      XCTAssertEqual(m.1, "123aef")
+      XCTAssertEqual(m.2, .dot)
+      XCTAssertEqual(m.3, "345")
+    } catch {
+      XCTFail()
+    }
+
+    do {
+      _ = try hexRegex.matchWhole("123aef❗️345")
+      XCTFail()
+    } catch let e as Abort {
+      XCTAssertEqual(e, Abort())
+    } catch {
+      XCTFail()
+    }
+
+  }
 }
