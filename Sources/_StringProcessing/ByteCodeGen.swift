@@ -317,7 +317,7 @@ extension Compiler.ByteCodeGen {
   ) throws {
     let transform = builder.makeTransformFunction {
       input, range in
-      t(input[range])
+      try t(input[range])
     }
     builder.buildBeginCapture(cap)
     try emitNode(child)

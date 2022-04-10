@@ -28,6 +28,9 @@ struct Executor {
       input: input, bounds: inputRange, matchMode: mode)
 
     guard let endIdx = cpu.consume() else {
+      if let e = cpu.failureReason {
+        throw e
+      }
       return nil
     }
 

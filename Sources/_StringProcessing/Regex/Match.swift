@@ -130,7 +130,7 @@ extension RegexComponent {
     mode: MatchMode = .wholeString
   ) throws -> Regex<Output>.Match? {
     let executor = Executor(program: regex.program.loweredProgram)
-      return try executor.match(input, in: inputRange, mode)
+    return try executor.match(input, in: inputRange, mode)
   }
 
   func _firstMatch(
