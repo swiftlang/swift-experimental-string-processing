@@ -188,5 +188,39 @@ class CustomRegexComponentTests: XCTestCase {
       XCTFail()
     }
 
+    struct Poison: Error, Hashable {}
+
+    let addressRegex = Regex {
+      "0x"
+      Capture(Repeat(.hexDigit, count: 8)) { hex -> Int in
+        let i = Int(hex, radix: 16)!
+        if i == 0xdeadbeef {
+          throw Poison()
+        }
+        return i
+      }
+    }
+
+    do {
+      guard let m = try addressRegex.matchWhole("0x1234567f") else {
+        XCTFail()
+        return
+      }
+      XCTAssertEqual(m.0, "0x1234567f")
+      XCTAssertEqual(m.1, 0x1234567f)
+    } catch {
+      XCTFail()
+    }
+
+    do {
+      _ = try addressRegex.matchWhole("0xdeadbeef")
+      XCTFail()
+    } catch let e as Poison {
+      XCTAssertEqual(e, Poison())
+    } catch {
+      XCTFail()
+    }
+
+
   }
 }
