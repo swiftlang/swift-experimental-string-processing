@@ -2287,33 +2287,6 @@ extension TryCapture {
   @_disfavoredOverload
   public init<R: RegexComponent, W, NewCapture>(
     _ component: R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture), R.Output == W {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component.regex.root)))
-  }
-
-  @_disfavoredOverload
-  public init<R: RegexComponent, W, NewCapture>(
-    _ component: R,
-    as reference: Reference<NewCapture>,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture), R.Output == W {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component.regex.root)))
-  }
-
-  @_disfavoredOverload
-  public init<R: RegexComponent, W, NewCapture>(
-    _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where Output == (Substring, NewCapture), R.Output == W {
     self.init(node: .capture(.transform(
@@ -2391,33 +2364,6 @@ extension TryCapture {
   @_disfavoredOverload
   public init<R: RegexComponent, W, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture), R.Output == W {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component().regex.root)))
-  }
-
-  @_disfavoredOverload
-  public init<R: RegexComponent, W, NewCapture>(
-    as reference: Reference<NewCapture>,
-    @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture), R.Output == W {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component().regex.root)))
-  }
-
-  @_disfavoredOverload
-  public init<R: RegexComponent, W, NewCapture>(
-    @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where Output == (Substring, NewCapture), R.Output == W {
     self.init(node: .capture(.transform(
@@ -2485,31 +2431,6 @@ extension Capture {
 }
 
 extension TryCapture {
-    public init<R: RegexComponent, W, C0, NewCapture>(
-    _ component: R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0), R.Output == (W, C0) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component.regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, NewCapture>(
-    _ component: R,
-    as reference: Reference<NewCapture>,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0), R.Output == (W, C0) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component.regex.root)))
-  }
-
     public init<R: RegexComponent, W, C0, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -2583,31 +2504,6 @@ extension Capture {
 extension TryCapture {
     public init<R: RegexComponent, W, C0, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0), R.Output == (W, C0) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, NewCapture>(
-    as reference: Reference<NewCapture>,
-    @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0), R.Output == (W, C0) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, NewCapture>(
-    @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where Output == (Substring, NewCapture, C0), R.Output == (W, C0) {
     self.init(node: .capture(.transform(
@@ -2674,31 +2570,6 @@ extension Capture {
 }
 
 extension TryCapture {
-    public init<R: RegexComponent, W, C0, C1, NewCapture>(
-    _ component: R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1), R.Output == (W, C0, C1) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component.regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, NewCapture>(
-    _ component: R,
-    as reference: Reference<NewCapture>,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1), R.Output == (W, C0, C1) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component.regex.root)))
-  }
-
     public init<R: RegexComponent, W, C0, C1, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -2772,31 +2643,6 @@ extension Capture {
 extension TryCapture {
     public init<R: RegexComponent, W, C0, C1, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1), R.Output == (W, C0, C1) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, NewCapture>(
-    as reference: Reference<NewCapture>,
-    @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1), R.Output == (W, C0, C1) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, NewCapture>(
-    @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where Output == (Substring, NewCapture, C0, C1), R.Output == (W, C0, C1) {
     self.init(node: .capture(.transform(
@@ -2863,31 +2709,6 @@ extension Capture {
 }
 
 extension TryCapture {
-    public init<R: RegexComponent, W, C0, C1, C2, NewCapture>(
-    _ component: R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2), R.Output == (W, C0, C1, C2) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component.regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, NewCapture>(
-    _ component: R,
-    as reference: Reference<NewCapture>,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2), R.Output == (W, C0, C1, C2) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component.regex.root)))
-  }
-
     public init<R: RegexComponent, W, C0, C1, C2, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -2961,31 +2782,6 @@ extension Capture {
 extension TryCapture {
     public init<R: RegexComponent, W, C0, C1, C2, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2), R.Output == (W, C0, C1, C2) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, NewCapture>(
-    as reference: Reference<NewCapture>,
-    @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2), R.Output == (W, C0, C1, C2) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, NewCapture>(
-    @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where Output == (Substring, NewCapture, C0, C1, C2), R.Output == (W, C0, C1, C2) {
     self.init(node: .capture(.transform(
@@ -3052,31 +2848,6 @@ extension Capture {
 }
 
 extension TryCapture {
-    public init<R: RegexComponent, W, C0, C1, C2, C3, NewCapture>(
-    _ component: R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3), R.Output == (W, C0, C1, C2, C3) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component.regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, NewCapture>(
-    _ component: R,
-    as reference: Reference<NewCapture>,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3), R.Output == (W, C0, C1, C2, C3) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component.regex.root)))
-  }
-
     public init<R: RegexComponent, W, C0, C1, C2, C3, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3150,31 +2921,6 @@ extension Capture {
 extension TryCapture {
     public init<R: RegexComponent, W, C0, C1, C2, C3, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3), R.Output == (W, C0, C1, C2, C3) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, NewCapture>(
-    as reference: Reference<NewCapture>,
-    @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3), R.Output == (W, C0, C1, C2, C3) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, NewCapture>(
-    @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where Output == (Substring, NewCapture, C0, C1, C2, C3), R.Output == (W, C0, C1, C2, C3) {
     self.init(node: .capture(.transform(
@@ -3241,31 +2987,6 @@ extension Capture {
 }
 
 extension TryCapture {
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, NewCapture>(
-    _ component: R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4), R.Output == (W, C0, C1, C2, C3, C4) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component.regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, NewCapture>(
-    _ component: R,
-    as reference: Reference<NewCapture>,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4), R.Output == (W, C0, C1, C2, C3, C4) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component.regex.root)))
-  }
-
     public init<R: RegexComponent, W, C0, C1, C2, C3, C4, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3339,31 +3060,6 @@ extension Capture {
 extension TryCapture {
     public init<R: RegexComponent, W, C0, C1, C2, C3, C4, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4), R.Output == (W, C0, C1, C2, C3, C4) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, NewCapture>(
-    as reference: Reference<NewCapture>,
-    @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4), R.Output == (W, C0, C1, C2, C3, C4) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, NewCapture>(
-    @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4), R.Output == (W, C0, C1, C2, C3, C4) {
     self.init(node: .capture(.transform(
@@ -3430,31 +3126,6 @@ extension Capture {
 }
 
 extension TryCapture {
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, NewCapture>(
-    _ component: R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5), R.Output == (W, C0, C1, C2, C3, C4, C5) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component.regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, NewCapture>(
-    _ component: R,
-    as reference: Reference<NewCapture>,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5), R.Output == (W, C0, C1, C2, C3, C4, C5) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component.regex.root)))
-  }
-
     public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3528,31 +3199,6 @@ extension Capture {
 extension TryCapture {
     public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5), R.Output == (W, C0, C1, C2, C3, C4, C5) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, NewCapture>(
-    as reference: Reference<NewCapture>,
-    @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5), R.Output == (W, C0, C1, C2, C3, C4, C5) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, NewCapture>(
-    @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5), R.Output == (W, C0, C1, C2, C3, C4, C5) {
     self.init(node: .capture(.transform(
@@ -3619,31 +3265,6 @@ extension Capture {
 }
 
 extension TryCapture {
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, NewCapture>(
-    _ component: R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6), R.Output == (W, C0, C1, C2, C3, C4, C5, C6) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component.regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, NewCapture>(
-    _ component: R,
-    as reference: Reference<NewCapture>,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6), R.Output == (W, C0, C1, C2, C3, C4, C5, C6) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component.regex.root)))
-  }
-
     public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3717,31 +3338,6 @@ extension Capture {
 extension TryCapture {
     public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6), R.Output == (W, C0, C1, C2, C3, C4, C5, C6) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, NewCapture>(
-    as reference: Reference<NewCapture>,
-    @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6), R.Output == (W, C0, C1, C2, C3, C4, C5, C6) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, NewCapture>(
-    @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6), R.Output == (W, C0, C1, C2, C3, C4, C5, C6) {
     self.init(node: .capture(.transform(
@@ -3808,31 +3404,6 @@ extension Capture {
 }
 
 extension TryCapture {
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
-    _ component: R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component.regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
-    _ component: R,
-    as reference: Reference<NewCapture>,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component.regex.root)))
-  }
-
     public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3906,31 +3477,6 @@ extension Capture {
 extension TryCapture {
     public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
-    as reference: Reference<NewCapture>,
-    @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
-    @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
     self.init(node: .capture(.transform(
@@ -3997,31 +3543,6 @@ extension Capture {
 }
 
 extension TryCapture {
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
-    _ component: R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component.regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
-    _ component: R,
-    as reference: Reference<NewCapture>,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component.regex.root)))
-  }
-
     public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -4095,31 +3616,6 @@ extension Capture {
 extension TryCapture {
     public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
-    as reference: Reference<NewCapture>,
-    @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
-    @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
     self.init(node: .capture(.transform(
@@ -4186,31 +3682,6 @@ extension Capture {
 }
 
 extension TryCapture {
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
-    _ component: R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component.regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
-    _ component: R,
-    as reference: Reference<NewCapture>,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component.regex.root)))
-  }
-
     public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -4282,31 +3753,6 @@ extension Capture {
 }
 
 extension TryCapture {
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
-    @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(node: .capture(.transform(
-      CaptureTransform(resultType: NewCapture.self) {
-        try transform($0) as Any
-      },
-      component().regex.root)))
-  }
-
-    public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
-    as reference: Reference<NewCapture>,
-    @RegexComponentBuilder _ component: () -> R,
-    transform: @escaping (Substring) throws -> NewCapture
-  ) where Output == (Substring, NewCapture, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.Output == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(node: .capture(
-      reference: reference.id,
-      .transform(
-        CaptureTransform(resultType: NewCapture.self) {
-          try transform($0) as Any
-        },
-        component().regex.root)))
-  }
-
     public init<R: RegexComponent, W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?

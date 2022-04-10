@@ -647,33 +647,6 @@ struct VariadicsGenerator: ParsableCommand {
         \(disfavored)\
         public init<\(genericParams), NewCapture>(
           _ component: R,
-          transform: @escaping (Substring) throws -> NewCapture
-        ) \(whereClauseTransformed) {
-          self.init(node: .capture(.transform(
-            CaptureTransform(resultType: NewCapture.self) {
-              try transform($0) as Any
-            },
-            component.regex.root)))
-        }
-
-        \(disfavored)\
-        public init<\(genericParams), NewCapture>(
-          _ component: R,
-          as reference: Reference<NewCapture>,
-          transform: @escaping (Substring) throws -> NewCapture
-        ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            reference: reference.id,
-            .transform(
-              CaptureTransform(resultType: NewCapture.self) {
-                try transform($0) as Any
-              },
-              component.regex.root)))
-        }
-
-        \(disfavored)\
-        public init<\(genericParams), NewCapture>(
-          _ component: R,
           transform: @escaping (Substring) throws -> NewCapture?
         ) \(whereClauseTransformed) {
           self.init(node: .capture(.transform(
@@ -748,33 +721,6 @@ struct VariadicsGenerator: ParsableCommand {
       }
 
       extension TryCapture {
-        \(disfavored)\
-        public init<\(genericParams), NewCapture>(
-          @\(concatBuilderName) _ component: () -> R,
-          transform: @escaping (Substring) throws -> NewCapture
-        ) \(whereClauseTransformed) {
-          self.init(node: .capture(.transform(
-            CaptureTransform(resultType: NewCapture.self) {
-              try transform($0) as Any
-            },
-            component().regex.root)))
-        }
-
-        \(disfavored)\
-        public init<\(genericParams), NewCapture>(
-          as reference: Reference<NewCapture>,
-          @\(concatBuilderName) _ component: () -> R,
-          transform: @escaping (Substring) throws -> NewCapture
-        ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            reference: reference.id,
-            .transform(
-              CaptureTransform(resultType: NewCapture.self) {
-                try transform($0) as Any
-              },
-              component().regex.root)))
-        }
-
         \(disfavored)\
         public init<\(genericParams), NewCapture>(
           @\(concatBuilderName) _ component: () -> R,
