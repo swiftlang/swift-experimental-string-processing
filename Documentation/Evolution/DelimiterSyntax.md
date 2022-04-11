@@ -4,7 +4,7 @@
 
 ## Introduction
 
-This proposal helps complete the story told in *[Regex Type and Overview][regex-type]* and [elsewhere][pitch-status]. We propose the introduction of regex literals to Swift source code, providing compile-time checks and typed-capture inference.
+We propose the introduction of regex literals to Swift source code, providing compile-time checks and typed-capture inference. Regex literals help complete the story told in *[Regex Type and Overview][regex-type]*.
 
 ## Motivation
 
