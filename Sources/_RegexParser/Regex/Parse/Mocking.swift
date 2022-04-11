@@ -9,6 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+@available(*, deprecated, message: "moving to SwiftCompilerModules")
 private func copyCString(_ str: String) -> UnsafePointer<CChar> {
   let count = str.utf8.count + 1
   return str.withCString {
@@ -36,6 +37,7 @@ private func copyCString(_ str: String) -> UnsafePointer<CChar> {
 /// - Returns: A bool indicating whether lexing was completely erroneous, and
 ///            cannot be recovered from, or false if there either was no error,
 ///            or there was a recoverable error.
+@available(*, deprecated, message: "moving to SwiftCompilerModules")
 func libswiftLexRegexLiteral(
   _ curPtrPtr: UnsafeMutablePointer<UnsafePointer<CChar>?>?,
   _ bufferEndPtr: UnsafePointer<CChar>?,
@@ -93,6 +95,7 @@ public let currentRegexLiteralFormatVersion: CUnsignedInt = 1
 ///     capture structure.
 ///   - captureStructureSize: The size of the capture structure buffer. Must be
 ///     greater than or equal to `strlen(inputPtr)`.
+@available(*, deprecated, message: "moving to SwiftCompilerModules")
 func libswiftParseRegexLiteral(
   _ inputPtr: UnsafePointer<CChar>?,
   _ errOut: UnsafeMutablePointer<UnsafePointer<CChar>?>?,

@@ -583,5 +583,15 @@ public func parseWithDelimiters<S: StringProtocol>(
   _ regex: S
 ) throws -> AST where S.SubSequence == Substring {
   let (contents, delim) = droppingRegexDelimiters(String(regex))
-  return try parse(contents, defaultSyntaxOptions(delim, contents: contents))
+  do {
+    return try parse(contents, defaultSyntaxOptions(delim, contents: contents))
+  } catch let error as LocatedErrorProtocol {
+    // Convert the range in 'contents' to the range in 'regex'.
+    let delimCount = delim.opening.count
+    let offsets = contents.offsets(of: error.location.range)
+    let startIndex = regex.index(atOffset: delimCount + offsets.lowerBound)
+    let endIndex = regex.index(atOffset: delimCount + offsets.upperBound)
+
+    throw error._typeErasedError.addingLocation(startIndex..<endIndex)
+  }
 }
