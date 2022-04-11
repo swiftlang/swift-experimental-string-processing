@@ -1,7 +1,7 @@
 # Unicode for String Processing
 
 Proposal: [SE-NNNN](NNNN-filename.md)  
-Authors: [Nate Cook](https://github.com/natecook1000), [Michael Ilseman](https://github.com/milseman)  
+Authors: [Nate Cook](https://github.com/natecook1000), [Michael Ilseman](https://github.com/milseman), [Alejandro Alonso](https://github.com/Azoy)
 Review Manager: TBD  
 Implementation: [apple/swift-experimental-string-processing][repo]  
 Status: **Draft**
@@ -9,7 +9,7 @@ Status: **Draft**
 
 ## Introduction
 
-This proposal describes `Regex`'s rich Unicode support during regular expression matching, along with the character classes and options and that define that behavior.
+This proposal describes `Regex`'s rich Unicode support during regular expression matching, along with the character classes and options that define that behavior.
 
 ## Motivation
 
@@ -25,13 +25,13 @@ str.last == "é"         // true (precomposed e with acute accent)
 str.last == "e\u{301}"  // true (e followed by composing acute accent)
 ```
 
-At a regular expression's simplest, without metacharacters or special features, matching should behave like a test for equality. A string should always match a regular expression that simply contains the same characters.
+At a regular expression's simplest, without metacharacters or special features, matching behaves like a test for equality. A string always matches a regular expression that simply contains the same characters.
 
 ```swift
 str.contains(/Café/)        // true
 ```
 
-And from there, small changes should continue to comport with the element counting and comparison expectations set by `String`:
+From that point, small changes continue to comport with the element counting and comparison expectations set by `String`:
 
 ```swift
 str.contains(/Caf./)        // true
@@ -40,7 +40,7 @@ str.contains(/.+e\u{301}/)  // true
 str.contains(/\w+é/)        // true
 ```
 
-With these initial principles in hand, we can look at how character classes should behave with Swift strings. Unicode leaves all interpretation of grapheme clusters up to implementations, which means that Swift needs to define any semantics for its own usage. Since other regex engines operate, at most, at the semantics level of Unicode scalar values, there is little to no prior art to consult.
+With these initial principles in hand, we can look at how character classes behave with Swift strings. Unicode leaves all interpretation of grapheme clusters up to implementations, which means that Swift needs to define any semantics for its own usage. Since other regex engines operate, at most, at the semantics level of Unicode scalar values, there is little to no prior art to consult.
 
 <details><summary>Other engines</summary>
 
@@ -65,37 +65,38 @@ First, we'll discuss the options that let you control a regex's behavior, and th
 
 ### Options
 
-Options can be declared in two different ways: as part of [regular expression literal syntax][literals], or applied as methods when declaring a `Regex`. For example, both of these `Regex`es are declared with case insensitivity:
+Options can be enabled and disabled in two different ways: as part of [regular expression internal syntax][internals], or applied as methods when declaring a `Regex`. For example, both of these `Regex`es are declared with case insensitivity:
 
 ```swift
-let regex1 = /(?i)label/
+let regex1 = /(?i)banana/
 let regex2 = Regex {
-    "label"
+    "banana"
 }.ignoringCase()`
 ```
 
-Note that the `ignoringCase()` is available on any type conforming to `RegexComponent`, which means that you can use the more readable option-setting interface in conjunction with literals:
+Note that the `ignoringCase()` is available on any type conforming to `RegexComponent`, which means that you can use the more readable option-setting interface in conjunction with regex literals:
 
 ```swift
-let regex3 = /label/.ignoringCase()
+let regex3 = /banana/.ignoringCase()
 ```
 
-Calling option-setting methods like `ignoringCase(_:)` acts like wrapping the regex in a option-setting group. That is, while it sets the *default* behavior for the callee, it doesn’t override options that are applied to more specific regions. In this example, the `"b"` in `"label"` matches case-sensitively, despite the outer call to `ignoringCase()`:
+Calling an option-setting method like `ignoringCase(_:)` acts like wrapping the callee in an option-setting group `(?:...)`. That is, while it sets the behavior for the callee, it doesn’t override options that are applied to more specific regions. In this example, the middle `"na"` in `"banana"` matches case-sensitively, despite the outer call to `ignoringCase()`:
 
 ```swift
 let regex4 = Regex {
-    "la"
-    "b".ignoringCase(false)
-    "el"
+    "ba"
+    "na".ignoringCase(false)
+    "na"
 }
 .ignoringCase()
 	
-"label".contains(regex4)     // true
-"LAbEL".contains(regex4)     // true
-"LABEL".contains(regex4)     // false
-```
+"banana".contains(regex4)     // true
+"BAnaNA".contains(regex4)     // true
+"BANANA".contains(regex4)     // false
 
-Option scoping in literals is discussed in the [Run-time Regex Construction proposal][option-scoping].
+// Equivalent to:
+let regex5 = /(?i)ba(?-i:na)na/
+```
 
 #### Case insensitivity
 
@@ -111,9 +112,9 @@ str.firstMatch(of: /(?i)cAfÉ/)      // "Café"
 
 Case insensitive matching uses case folding to ensure that canonical equivalence continues to operate as expected.
 
-*Regex literal syntax:* `/(?i).../` or `/(?i...)/`
+**Regular expression syntax:** `(?i)...` or `(?i:...)`
 
-*Regex builder syntax:*
+**`RegexBuilder` API:**
 
 ```swift
 extension RegexComponent {
@@ -139,9 +140,9 @@ str.firstMatch(of: /(?s)<<.+>>/)    // "This string\nuses double-angle-brackets\
 
 This option also affects the behavior of `CharacterClass.any`, which is designed to match the behavior of the `.` regex literal component.
 
-*Regex literal syntax:* `/(?s).../` or `/(?s...)/`
+**Regular expression syntax:** `(?s)...` or `(?s...)`
 
-*Regex builder syntax:*
+**`RegexBuilder` API:**
 
 ```swift
 extension RegexComponent {
@@ -173,9 +174,9 @@ str.firstMatch(of: /(?U)<.+>/)      // "<token>"
 str.firstMatch(of: /(?U)<.+?>/)     // "<token>A value.</token>"
 ```
 
-*Regex literal syntax:* `/(?U).../` or `/(?U...)/`
+**Regular expression syntax:** `(?U)...` or `(?U...)`
 
-*Regex builder syntax:*
+**`RegexBuilder` API:**
 
 ```swift
 extension RegexComponent {
@@ -194,9 +195,9 @@ With one or more of these options enabled, the default character classes match o
 * `W`: Match only ASCII members for `\w`, `\p{Word}`, `[:word:]`, `\b`, `CharacterClass.word`, and `Anchor.wordBoundary`.
 * `P`: Match only ASCII members for all POSIX properties (including `digit`, `space`, and `word`).
 
-*Regex literal syntax:* `/(?DSWP).../` or `/(?DSWP...)/`
+**Regular expression syntax:** `(?DSWP)...` or `(?DSWP...)`
 
-*Regex builder syntax:*
+**`RegexBuilder` API:**
 
 ```swift
 extension RegexComponent {
@@ -219,9 +220,11 @@ extension RegexComponent {
 
 #### Use Unicode word boundaries
 
-By default, matching uses the Unicode specification for finding word boundaries for the `\b` and `Anchor.wordBoundary` anchors. Disabling the `w` option switches to finding word boundaries at points in the input where `\b\B` or `\B\b` match, given the other matching options that are enabled, which may be more compatible with other regular expression engines.
+By default, matching word boundaries with the `\b` and `Anchor.wordBoundary` anchors uses Unicode default word boundaries, specified as Unicode [level 2 regular expression support][level2-word-boundaries]. 
 
-In this example, the default matching behavior find the whole first word of the string, while the match with Unicode word boundaries disabled stops at the apostrophe:
+Disabling the `w` option switches to [simple word boundaries][level1-word-boundaries], finding word boundaries at points in the input where `\b\B` or `\B\b` match. Depending on the other matching options that are enabled, this may be more compatible with the behavior other regular expression engines.
+
+As shown in this example, the default matching behavior finds the whole first word of the string, while the match with simple word boundaries stops at the apostrophe:
 
 ```swift
 let str = "Don't look down!"
@@ -230,18 +233,23 @@ str.firstMatch(of: /D\S+\b/)        // "Don't"
 str.firstMatch(of: /(?-w)D\S+\b/)   // "Don"
 ```
 
-*Regex literal syntax:* `/(?-w).../` or `/(?-w...)/`
+**Regular expression syntax:** `(?-w)...` or `(?-w...)`
 
-*Regex builder syntax:*
+**`RegexBuilder` API:**
 
 ```swift
 extension RegexComponent {
-  /// Returns a regular expression that uses the Unicode word boundary
-  /// algorithm.
+  /// Returns a regular expression that uses simple word boundaries.
   ///
-  /// This option is enabled by default; pass `false` to disable use of
-  /// Unicode's word boundary algorithm.
-  public func usingUnicodeWordBoundaries(_ useUnicodeWordBoundaries: Bool = true) -> Regex<Output>
+  /// A simple word boundary is a position in the input between two characters
+  // that match `/\w\W/` or `/\W\w/`, or between the start or end of the input
+  // and `\w` character. Word boundaries therefore depend on the option-defined
+  // behavior of `\w`.
+  //
+  // The default word boundaries use a Unicode algorithm that handles some cases
+  // better than simple word boundaries, such as words with internal
+  // punctuation, changes in script, and Emoji.
+  public func usingSimpleWordBoundaries(_ useSimpleWordBoundaries: Bool = true) -> Regex<Output>
 }
 ```
 
@@ -275,9 +283,9 @@ print(decomposed.contains(queRegexScalar))
 // Prints "false"
 ```
 
-*Regex literal syntax:* `(?X)...` or `(?X...)` for grapheme cluster semantics, `(?u)...` or `(?u...)` for Unicode scalar semantics.
+**Regular expression syntax:** `(?X)...` or `(?X...)` for grapheme cluster semantics, `(?u)...` or `(?u...)` for Unicode scalar semantics.
 
-*Regex builder syntax:*
+**`RegexBuilder` API:**
 
 ```swift
 extension RegexComponent {
@@ -323,9 +331,9 @@ str.firstMatch(of: Regex { Anchor.startOfInput ; "def" }) // nil
 str.firstMatch(of: Regex { Anchor.startOfLine  ; "def" }) // "def"
 ```
 
-*Regex literal syntax:* `/(?m).../` or `/(?m...)/`
+**Regular expression syntax:** `(?m)...` or `(?m...)`
 
-*Regex builder syntax:*
+**`RegexBuilder` API:**
 
 ```swift
 extension RegexComponent {
@@ -484,7 +492,7 @@ We use Unicode's recommended scalar semantics for horizontal and vertical whites
 
 #### Unicode properties
 
-Character classes that match **Unicode properties** are written as `\p{PROPERTY}` or `\p{PROPERTY=VALUE}`, as described in the [Run-time Regex Construction proposal][literal-properties].
+Character classes that match **Unicode properties** are written as `\p{PROPERTY}` or `\p{PROPERTY=VALUE}`, as described in the [Run-time Regex Construction proposal][internals-properties].
 
 While most Unicode properties are only defined at the scalar level, some are defined to match an extended grapheme cluster. For example, `\p{RGI_Emoji_Flag_Sequence}` will match any flag emoji character, which are composed of two Unicode scalar values. Such property classes will match multiple scalars, even when matching with Unicode scalar semantics.
 
@@ -524,9 +532,9 @@ Custom classes function as the set union of their individual components, whether
 - When in grapheme cluster semantic mode, ranges of characters will test for membership using NFD form (or NFKD when performing caseless matching). This differs from how a `ClosedRange<Character>` would operate its `contains` method, since that depends on `String`'s `Comparable` conformance, but the decomposed comparison better aligns with the canonical equivalence matching used elsewhere in `Regex`.
 - A custom character class will match a maximum of one `Character` or `UnicodeScalar`, depending on the matching semantic level. This means that a custom character class with extended grapheme cluster members may not match anything while using scalar semantics.
 
-In regex literals, custom classes are enclosed in square brackets `[...]`, and can be nested or combined using set operators like `&&`. For more detail, see the [literal syntax proposal][literal-charclass].
+Inside regular expressions, custom classes are enclosed in square brackets `[...]`, and can be nested or combined using set operators like `&&`. For more detail, see the [Run-time Regex Construction proposal][internals-charclass].
 
-With the `RegexBuilder`'s `CharacterClass` type, you can use built-in character classes with ranges and groups of characters. For example, to parse a valid octodecimal number, you could define a custom character class that combines `.decimalDigit` with a range of characters.
+With `RegexBuilder`'s `CharacterClass` type, you can use built-in character classes with ranges and groups of characters. For example, to parse a valid octodecimal number, you could define a custom character class that combines `.decimalDigit` with a range of characters.
 
 ```swift
 let octoDecimalRegex: Regex<Substring, Int> = Regex {
@@ -615,7 +623,7 @@ Everything in this proposal is additive, and has no effect on existing stable AB
 
 ## Effect on API resilience
 
-TBD
+TK
 
 
 ## Future directions
@@ -627,6 +635,10 @@ The initial version of `Regex` includes only the options described above. Fillin
 ### Extensions to Character and Unicode Scalar APIs
 
 An earlier version of this pitch described adding standard library APIs to `Character` and `UnicodeScalar` for each of the supported character classes, as well as convenient static members for control characters. In addition, regex literals support Unicode property features that don’t currently exist in the standard library, such as a scalar’s script or extended category, or creating a scalar by its Unicode name instead of its scalar value. These kinds of additions are 
+
+### Byte semantic mode
+
+A future `Regex` version could support a byte-level semantic mode in addition to grapheme cluster and Unicode scalar semantics. Byte-level semantics would allow matching individual bytes, potentially providing the capability of parsing string and non-string data together.
 
 ## Alternatives considered
 
@@ -642,9 +654,11 @@ Instead of providing APIs to select whether `Regex` matching is `Character`-base
 
 [repo]: https://github.com/apple/swift-experimental-string-processing/
 [option-scoping]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md#matching-options
-[literals]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md
-[literal-properties]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md#character-properties
-[literal-charclass]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md#custom-character-classes
+[internals]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md
+[internals-properties]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md#character-properties
+[internals-charclass]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md#custom-character-classes
+[level1-word-boundaries]:https://unicode.org/reports/tr18/#Simple_Word_Boundaries
+[level2-word-boundaries]:https://unicode.org/reports/tr18/#RL2.3
 
 [overview]: https://forums.swift.org/t/declarative-string-processing-overview/52459
 [charprops]: https://github.com/apple/swift-evolution/blob/master/proposals/0221-character-properties.md
