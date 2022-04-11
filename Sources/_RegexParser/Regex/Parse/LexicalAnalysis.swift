@@ -24,7 +24,7 @@ API convention:
 extension Error {
   func addingLocation(_ loc: Range<Source.Position>) -> Error {
     // If we're already a LocatedError, don't change the location.
-    if self is _LocatedErrorProtocol {
+    if self is LocatedErrorProtocol {
       return self
     }
     return Source.LocatedError<Self>(self, loc)
