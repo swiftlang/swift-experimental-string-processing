@@ -94,7 +94,7 @@ let regex = #/usr/lib/modules/([^/]+)/vmlinuz/#
 // regex: Regex<(Substring, Substring)>
 ```
 
-The number of pounds may be further increased to allow the use of e.g `/#` within the literal. This is similar in style to the raw string literal syntax introduced by [SE-0200], however it has a couple of key differences. The escaping rules for backslashes do not change. Additionally, a multi-line mode, where whitespace and line-ending comments are ignored, is entered when the opening delimiter is followed by a newline.
+The number of pounds may be further increased to allow the use of e.g `/#` within the literal. This is similar in style to the raw string literal syntax introduced by [SE-0200], however it has a couple of key differences. Backslashes do not become literal characters. Additionally, a multi-line mode, where whitespace and line-ending comments are ignored, is entered when the opening delimiter is followed by a newline.
 
 ```swift
 let regex = #/
