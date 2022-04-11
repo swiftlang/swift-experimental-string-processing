@@ -87,18 +87,18 @@ This allows the captures to be referenced as `match.identifier` and `match.hex`,
 
 ### Extended delimiters `#/.../#`, `##/.../##`
 
-Backslashes may be used to write forward slashes within the regex literal, e.g `/foo\/bar/`. However, this can be quite syntactically noisy and confusing. To avoid this, a regex literal may be surrounded by an arbitrary number of balanced octothorpes. This changes the delimiter of the literal, and therefore allows the use of forward slashes without escaping. For example:
+Backslashes may be used to write forward slashes within the regex literal, e.g `/foo\/bar/`. However, this can be quite syntactically noisy and confusing. To avoid this, a regex literal may be surrounded by an arbitrary number of balanced number signs. This changes the delimiter of the literal, and therefore allows the use of forward slashes without escaping. For example:
 
 ```swift
 let regex = #/usr/lib/modules/([^/]+)/vmlinuz/#
 // regex: Regex<(Substring, Substring)>
 ```
 
-The number of pounds may be further increased to allow the use of e.g `/#` within the literal. This is similar in style to the raw string literal syntax introduced by [SE-0200], however it has a couple of key differences. Backslashes do not become literal characters. Additionally, a multi-line mode, where whitespace and line-ending comments are ignored, is entered when the opening delimiter is followed by a newline.
+The number of `#` characters may be further increased to allow the use of e.g `/#` within the literal. This is similar in style to the raw string literal syntax introduced by [SE-0200], however it has a couple of key differences. Backslashes do not become literal characters. Additionally, a multi-line mode, where whitespace and line-ending comments are ignored, is entered when the opening delimiter is followed by a newline.
 
 ```swift
 let regex = #/
-  /usr/lib/modules/ # Prefix
+  usr/lib/modules/ # Prefix
   (?<subpath> [^/]+)
   /vmlinuz          # The kernel
 #/
@@ -143,7 +143,7 @@ let regex = #/
 
 In this mode, [extended regex syntax][extended-regex-syntax] `(?x)` is enabled by default. This means that whitespace becomes non-semantic, and end-of-line comments are supported with `# comment` syntax.
 
-This mode is supported with any (non-zero) number of pound characters in the delimiter. Similar to multi-line strings introduced by [SE-0168], the closing delimiter must appear on a new line. To avoid parsing confusion, such a literal will not be parsed if a closing delimiter is not present. This avoids inadvertently treating the rest of the file as regex if you only type the opening.
+This mode is supported with any (non-zero) number of `#` characters in the delimiter. Similar to multi-line strings introduced by [SE-0168], the closing delimiter must appear on a new line. To avoid parsing confusion, such a literal will not be parsed if a closing delimiter is not present. This avoids inadvertently treating the rest of the file as regex if you only type the opening.
 
 ### Ambiguities with comment syntax
 
