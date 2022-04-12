@@ -55,7 +55,9 @@ let package = Package(
             ]),
         .testTarget(
             name: "RegexTests",
-            dependencies: ["_StringProcessing"]),
+            dependencies: ["_StringProcessing"],
+            swiftSettings: [.unsafeFlags(["-Xfrontend", "-enable-experimental-string-processing"])]
+        ),
         .testTarget(
             name: "RegexBuilderTests",
             dependencies: ["_StringProcessing", "RegexBuilder"],
