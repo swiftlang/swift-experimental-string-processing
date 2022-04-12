@@ -474,6 +474,26 @@ extension RegexTests {
     parseTest(
       "[a^]", charClass("a", "^"))
 
+    // These are custom character classes, not invalid POSIX character classes.
+    // TODO: This behavior is subtle, we ought to warn.
+    parseTest("[[:space]]", charClass(charClass(":", "s", "p", "a", "c", "e")))
+    parseTest("[:space:]", charClass(":", "s", "p", "a", "c", "e", ":"))
+    parseTest("[:a]", charClass(":", "a"))
+    parseTest("[a:]", charClass("a", ":"))
+    parseTest("[:]", charClass(":"))
+    parseTest("[::]", charClass(":", ":"))
+    parseTest("[:=:]", charClass(":", "=", ":"))
+    parseTest("[[:]]", charClass(charClass(":")))
+    parseTest("[[:a=b=c:]]", charClass(charClass(":", "a", "=", "b", "=", "c", ":")))
+
+    parseTest(#"[[:a[b]:]]"#, charClass(charClass(":", "a", charClass("b"), ":")))
+    parseTest(#"[[:a]][:]"#, concat(charClass(charClass(":", "a")), charClass(":")))
+    parseTest(#"[[:a]]"#, charClass(charClass(":", "a")))
+    parseTest(#"[[:}]]"#, charClass(charClass(":", "}")))
+    parseTest(#"[[:{]]"#, charClass(charClass(":", "{")))
+    parseTest(#"[[:{:]]"#, charClass(posixProp_m(.other(key: nil, value: "{"))))
+    parseTest(#"[[:}:]]"#, charClass(charClass(":", "}", ":")))
+
     parseTest(
       #"\D\S\W"#,
       concat(
@@ -1096,9 +1116,13 @@ extension RegexTests {
       #"\p{C}+"#,
       oneOrMore(of: prop(.generalCategory(.other))))
 
+    // TODO: Start erroring on these?
     parseTest(#"\p{Lx}"#, prop(.other(key: nil, value: "Lx")))
     parseTest(#"\p{gcL}"#, prop(.other(key: nil, value: "gcL")))
     parseTest(#"\p{x=y}"#, prop(.other(key: "x", value: "y")))
+    parseTest(#"\p{aaa(b)}"#, prop(.other(key: nil, value: "aaa(b)")))
+    parseTest("[[:a():]]", charClass(posixProp_m(.other(key: nil, value: "a()"))))
+    parseTest(#"\p{aaa\p{b}}"#, concat(prop(.other(key: nil, value: #"aaa\p{b"#)), "}"))
 
     // UAX44-LM3 means all of the below are equivalent.
     let lowercaseLetter = prop(.generalCategory(.lowercaseLetter))
@@ -2183,7 +2207,11 @@ extension RegexTests {
     diagnosticTest(#"\N{A"#, .expected("}"))
     diagnosticTest(#"\N{U+A"#, .expected("}"))
     diagnosticTest(#"\p{a"#, .expected("}"))
-    diagnosticTest(#"\p{a="#, .expected("}"))
+    diagnosticTest(#"\p{a="#, .emptyProperty)
+    diagnosticTest(#"\p{a=}"#, .emptyProperty)
+    diagnosticTest(#"\p{a=b"#, .expected("}"))
+    diagnosticTest(#"\p{aaa[b]}"#, .expected("}"))
+    diagnosticTest(#"\p{a=b=c}"#, .expected("}"))
     diagnosticTest(#"(?#"#, .expected(")"))
     diagnosticTest(#"(?x"#, .expected(")"))
 
@@ -2217,6 +2245,15 @@ extension RegexTests {
     // The first ']' of a custom character class is literal, so this is missing
     // the closing bracket.
     diagnosticTest("[]", .expected("]"))
+
+    diagnosticTest("[:a", .expected("]"))
+    diagnosticTest("[:a:", .expected("]"))
+    diagnosticTest("[[:a", .expected("]"))
+    diagnosticTest("[[:a:", .expected("]"))
+    diagnosticTest("[[:a[:]", .expected("]"))
+
+    diagnosticTest("[[::]]", .emptyProperty)
+    diagnosticTest("[[:=:]]", .emptyProperty)
 
     // MARK: Bad escapes
 
