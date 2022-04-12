@@ -62,10 +62,6 @@ Due to the existing use of `/` in comment syntax and operators, there are some s
 
 ## Detailed design
 
-### Upgrade path
-
-Due to the source breaking changes needed for the `/.../` syntax, it will be introduced in Swift 6 mode. However, projects will be able to adopt it earlier by using the compiler flag `-enable-regex-literals`. Note this does not affect the extended literal `#/.../#`, which will be usable immediately.
-
 ### Named typed captures
 
 Regex literals have their capture types statically determined by the capture groups present. This follows the same inference behavior as [the DSL][regex-dsl], and is explored in more detail in *[Strongly Typed Captures][strongly-typed-captures]*. One aspect of this that is currently unique to the literal is the ability to infer labeled tuple elements for named capture groups. For example:
@@ -147,11 +143,9 @@ This mode is supported with any (non-zero) number of `#` characters in the delim
 
 ### Ambiguities with comment syntax
 
-Perhaps the most obvious parsing ambiguity with `/.../` delimiters is with comment syntax.
+Line comment syntax `//` and block comment syntax `/*` will continue to be parsed as comments. An empty regex literal is not a particularly useful thing to express, but can be written as `#//#` if desired. `*` would be an invalid starting character of a regex, and therefore does not pose an issue.
 
-- An empty regex literal would conflict with line comment syntax `//`. But an empty regex isn't a particularly useful thing to express, and can be disallowed without significant impact.
-
-- There is a conflict with block comment syntax, when surrounding a regex literal ending with `*`, for example:
+A parsing conflict does however arise when a block comment surrounds a regex literal ending with `*`, for example:
 
   ```swift
   /*
@@ -159,14 +153,12 @@ Perhaps the most obvious parsing ambiguity with `/.../` delimiters is with comme
   */
   ```
 
-   In this case, the block comment would prematurely end on the second line, rather than extending all the way to the third line as the user would expect. This is already an issue today with `*/` in a string literal, though it is more likely to occur in a regex given the prevalence of the `*` quantifier. This issue can be avoided in many cases by using line comment syntax `//` instead, which it should be noted is the syntax that Xcode uses when commenting out multiple lines.
-
-- Block comment syntax also means that a regex literal would not be able to start with the `*` character, however this is less of a concern as it would not be valid regex syntax.
+In this case, the block comment prematurely ends on the second line, rather than extending all the way to the third line as the user would expect. This is already an issue today with `*/` in a string literal, though it is more likely to occur in a regex given the prevalence of the `*` quantifier. This issue can be avoided in many cases by using line comment syntax `//` instead, which it should be noted is the syntax that Xcode uses when commenting out multiple lines.
 
 
 ### Ambiguity with infix operators
 
-There would be a minor ambiguity with infix operators used with regex literals. When used without whitespace, e.g `x+/y/`, the expression will be treated as using an infix operator `+/`. Whitespace is therefore required for regex literal interpretation, e.g `x + /y/`. Alternatively, extended literals may be used, e.g `x+#/y/#`.
+There is a minor ambiguity when infix operators are used with regex literals. When used without whitespace, e.g `x+/y/`, the expression will be treated as using an infix operator `+/`. Whitespace is therefore required for regex literal interpretation, e.g `x + /y/`. Alternatively, extended literals may be used, e.g `x+#/y/#`.
 
 ### Regex syntax limitations
 
@@ -273,7 +265,7 @@ func baz(_ x: S) -> Int {
 }
 ```
 
-`foo(/, /)` is currently parsed as 2 unapplied operator arguments. `bar(/, 2) + bar(/, 3)` is currently parsed as two independent calls that each take an unapplied `/` operator reference. Both of these would become regex literals arguments, `/, /` and `/, 2) + bar(/` respectively (though the latter would produce a regex error).
+`foo(/, /)` is currently parsed as 2 unapplied operator arguments. `bar(/, 2) + bar(/, 3)` is currently parsed as two independent calls that each take an unapplied `/` operator reference. Both of these will become regex literals arguments, `/, /` and `/, 2) + bar(/` respectively (though the latter will produce a regex error).
 
 To disambiguate these cases, users will need to surround at least the opening `/` with parentheses, e.g:
 
@@ -290,6 +282,15 @@ This takes advantage of the fact that a regex literal will not be parsed if the 
 
 </details>
 
+## Source Compatibility
+
+As explored above, two source breaking changes are needed for `/.../` syntax:
+
+- Deprecation of prefix operators containing the `/` character.
+- Parsing `/,` and `/]` as the start of a regex literal if a closing `/` is found, rather than an unapplied operator in an argument list. For example, `fn(/, /)` becomes a regex literal rather than two unapplied operator arguments.
+
+As such, both these changes and the `/.../` syntax will be introduced in Swift 6 mode. However, projects will be able to adopt the syntax earlier by passing the compiler flag `-enable-bare-regex-syntax`. Note this does not affect the extended delimiter syntax `#/.../#`, which will be usable immediately.
+
 ## Future Directions
 
 ### Modern literal syntax
@@ -300,7 +301,7 @@ However, such a syntax would lose out on the familiarity benefits of standard re
 
 ## Alternatives Considered
 
-Given the fact that `/` is an existing term of art for regular expressions, we feel it should be the preferred delimiter syntax. While it has some syntactic ambiguities, we do not feel that they are sufficient to disqualify the syntax. To evaluate this trade-off, below is a list of alternative delimiters that would not have the same ambiguities.
+Given the fact that `/.../` is an existing term of art for regular expressions, we feel it should be the preferred delimiter syntax. It should be noted that the syntax has become less popular in some communities such as Perl, however we still feel that it is a compelling choice, especially with extended delimiters `#/.../#`. Additionally, while there has some syntactic ambiguities, we do not feel that they are sufficient to disqualify the syntax. To evaluate this trade-off, below is a list of alternative delimiters that would not have the same ambiguities.
 
 ### Prefixed quote `re'...'`
 
