@@ -199,7 +199,7 @@ private func process(
   _ line: String,
   using regex: Regex<(Substring, Substring, Substring, Substring, Substring)>
 ) -> Transaction? {
-  guard let output = try? regex.matchWhole(line),
+  guard let output = try? regex.wholeMatch(in: line),
         let kind = Transaction.Kind(output.1)
   else {
     return nil
