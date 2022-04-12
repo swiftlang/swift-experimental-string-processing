@@ -9,6 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+// FIXME: What even is this? Can we delete this whole thing?
 struct RegexConsumer<
   R: RegexComponent, Consumed: BidirectionalCollection
 > where Consumed.SubSequence == Substring {
@@ -24,7 +25,7 @@ extension RegexConsumer {
   func _matchingConsuming(
     _ consumed: Substring, in range: Range<String.Index>
   ) -> (upperBound: String.Index, match: Match)? {
-    guard let result = try! regex._match(
+    guard let result = try! regex.regex._match(
       consumed.base,
       in: range, mode: .partialFromFront
     ) else { return nil }
