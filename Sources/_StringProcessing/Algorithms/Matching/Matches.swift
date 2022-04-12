@@ -202,14 +202,17 @@ extension BidirectionalCollection where SubSequence == Substring {
 
   // FIXME: Replace the returned value as `some Collection<Regex<R.Output>.Match>
   // when SE-0346 is enabled
-  func _matches<R: RegexComponent>(of regex: R) -> [Regex<R.Output>.Match] {
+  func _matches<R: RegexComponent>(of r: R) -> [Regex<R.Output>.Match] {
     let slice = self[...]
     var start = self.startIndex
     let end = self.endIndex
+    let regex = r.regex
 
     var result = [Regex<R.Output>.Match]()
     while start < end {
-      guard let match = try? regex._firstMatch(slice.base, in: start..<end) else {
+      guard let match = try? regex._firstMatch(
+        slice.base, in: start..<end
+      ) else {
         break
       }
       result.append(match)

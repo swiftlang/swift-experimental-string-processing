@@ -62,7 +62,7 @@ func customTest<Match: Equatable>(
     let result: Match?
     switch call {
     case .match:
-      result = input.matchWhole(regex)?.output
+      result = input.wholeMatch(of: regex)?.output
     case .firstMatch:
       result = input.firstMatch(of: regex)?.output
     }
@@ -167,7 +167,7 @@ class CustomRegexComponentTests: XCTestCase {
     // TODO: Why is Radix optional?
 
     do {
-      guard let m = try hexRegex.matchWhole("123aef.345") else {
+      guard let m = try hexRegex.wholeMatch(in: "123aef.345") else {
         XCTFail()
         return
       }
@@ -180,7 +180,7 @@ class CustomRegexComponentTests: XCTestCase {
     }
 
     do {
-      _ = try hexRegex.matchWhole("123aef❗️345")
+      _ = try hexRegex.wholeMatch(in: "123aef❗️345")
       XCTFail()
     } catch let e as Abort {
       XCTAssertEqual(e, Abort())
@@ -202,7 +202,7 @@ class CustomRegexComponentTests: XCTestCase {
     }
 
     do {
-      guard let m = try addressRegex.matchWhole("0x1234567f") else {
+      guard let m = try addressRegex.wholeMatch(in: "0x1234567f") else {
         XCTFail()
         return
       }
@@ -213,7 +213,7 @@ class CustomRegexComponentTests: XCTestCase {
     }
 
     do {
-      _ = try addressRegex.matchWhole("0xdeadbeef")
+      _ = try addressRegex.wholeMatch(in: "0xdeadbeef")
       XCTFail()
     } catch let e as Poison {
       XCTAssertEqual(e, Poison())
