@@ -477,12 +477,9 @@ extension RegexTests {
     // These are custom character classes, not invalid POSIX character classes.
     // TODO: This behavior is subtle, we ought to warn.
     parseTest("[[:space]]", charClass(charClass(":", "s", "p", "a", "c", "e")))
-    parseTest("[:space:]", charClass(":", "s", "p", "a", "c", "e", ":"))
     parseTest("[:a]", charClass(":", "a"))
     parseTest("[a:]", charClass("a", ":"))
     parseTest("[:]", charClass(":"))
-    parseTest("[::]", charClass(":", ":"))
-    parseTest("[:=:]", charClass(":", "=", ":"))
     parseTest("[[:]]", charClass(charClass(":")))
     parseTest("[[:a=b=c:]]", charClass(charClass(":", "a", "=", "b", "=", "c", ":")))
 
@@ -521,6 +518,12 @@ extension RegexTests {
                         atom_m(.escaped(.decimalDigit)),
                         posixProp_m(.binary(.uppercase), inverted: true),
                         "c", "d"))
+
+    // Like ICU, we allow POSIX character properties outside of custom character
+    // classes. This also appears to be suggested by UTS#18.
+    // TODO: We should likely emit a warning.
+    parseTest("[:space:]", posixProp(.binary(.whitespace)))
+    parseTest("[:script=Greek:]", posixProp(.script(.greek)))
 
     parseTest("[[[:space:]]]", charClass(charClass(
       posixProp_m(.binary(.whitespace))
@@ -2252,6 +2255,8 @@ extension RegexTests {
     diagnosticTest("[[:a:", .expected("]"))
     diagnosticTest("[[:a[:]", .expected("]"))
 
+    diagnosticTest("[::]", .emptyProperty)
+    diagnosticTest("[:=:]", .emptyProperty)
     diagnosticTest("[[::]]", .emptyProperty)
     diagnosticTest("[[:=:]]", .emptyProperty)
 
