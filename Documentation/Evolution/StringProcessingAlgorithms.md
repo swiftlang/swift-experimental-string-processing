@@ -187,7 +187,7 @@ public protocol CustomMatchingRegexComponent : RegexComponent {
         _ input: String,
         startingAt index: String.Index,
         in bounds: Range<String.Index>
-    ) -> (upperBound: String.Index, match: Match)?
+    ) throws -> (upperBound: String.Index, match: Match)?
 }
 ```
 
