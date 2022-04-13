@@ -1064,14 +1064,13 @@ extension Source {
   }
 
   mutating func lexCustomCCStart(
-    context: ParsingContext
   ) throws -> Located<CustomCC.Start>? {
     recordLoc { src in
       // Make sure we don't have a POSIX character property. This may require
       // walking to its ending to make sure we have a closing ':]', as otherwise
       // we have a custom character class.
       // TODO: This behavior seems subtle, could we warn?
-      guard !src.canLexPOSIXCharacterProperty(context: context) else {
+      guard !src.canLexPOSIXCharacterProperty() else {
         return nil
       }
       if src.tryEat("[") {
@@ -1104,11 +1103,8 @@ extension Source {
   }
 
   private mutating func lexPOSIXCharacterProperty(
-    context: ParsingContext
   ) throws -> Located<AST.Atom.CharacterProperty>? {
-    // Only allowed in a custom character class.
-    guard context.isInCustomCharacterClass else { return nil }
-    return try recordLoc { src in
+    try recordLoc { src in
       try src.tryEating { src in
         guard src.tryEat(sequence: "[:") else { return nil }
         let inverted = src.tryEat("^")
@@ -1127,10 +1123,10 @@ extension Source {
     }
   }
 
-  private func canLexPOSIXCharacterProperty(context: ParsingContext) -> Bool {
+  private func canLexPOSIXCharacterProperty() -> Bool {
     do {
       var src = self
-      return try src.lexPOSIXCharacterProperty(context: context) != nil
+      return try src.lexPOSIXCharacterProperty() != nil
     } catch {
       // We want to tend on the side of lexing a POSIX character property, so
       // even if it is invalid in some way (e.g invalid property names), still
@@ -1818,8 +1814,9 @@ extension Source {
       if !customCC && (src.peek() == ")" || src.peek() == "|") { return nil }
       // TODO: Store customCC in the atom, if that's useful
 
-      // POSIX character property.
-      if let prop = try src.lexPOSIXCharacterProperty(context: context)?.value {
+      // POSIX character property. Like \p{...} this is also allowed outside of
+      // a custom character class.
+      if let prop = try src.lexPOSIXCharacterProperty()?.value {
         return .property(prop)
       }
 

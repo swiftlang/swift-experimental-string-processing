@@ -354,6 +354,11 @@ func prop(
 ) -> AST.Node {
   atom(.property(.init(kind, isInverted: inverted, isPOSIX: false)))
 }
+func posixProp(
+  _ kind: AST.Atom.CharacterProperty.Kind, inverted: Bool = false
+) -> AST.Node {
+  atom(.property(.init(kind, isInverted: inverted, isPOSIX: true)))
+}
 
 // Raw atom constructing variant
 func atom_a(
