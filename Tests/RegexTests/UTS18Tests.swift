@@ -10,14 +10,14 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
-@testable import _StringProcessing
+@testable // for internal `matches(of:)`
+import _StringProcessing
 
 class UTS18Tests: XCTestCase {
   var input: String {
     "ABCdefghîøü\u{FFF0} -–—[]123"
   // 012345678901       234567890
   }
-
 }
 
 fileprivate extension String {
@@ -361,6 +361,8 @@ extension UTS18Tests {
     XCTAssertTrue("\u{FEFF}".contains(#/\N{ZERO WIDTH NO-BREAK SPACE}/#))
     XCTAssertTrue("강".contains(#/\N{HANGUL SYLLABLE GANG}/#))
     XCTAssertTrue("\u{1F514}".contains(#/\N{BELL}/#))
+    XCTAssertTrue("🐯".contains(#/\N{TIGER FACE}/#))
+    XCTAssertFalse("🐯".contains(#/\N{TIEGR FACE}/#))
   }
 
   func testIndividuallyNamedCharacters_XFail() {
@@ -399,6 +401,122 @@ extension UTS18Tests {
   // Standard (or Unicode Technical Standard, respectively), with values that
   // match the Unicode definitions for that version.
   func testFullProperties() {
-    XCTExpectFailure { XCTFail("Implement tests") }
+    // MARK: General
+    // Name (Name_Alias)
+    // Block
+    // Age
+    // General_Category
+    // Script (Script_Extensions)
+    // White_Space
+    // Alphabetic
+    // Hangul_Syllable_Type
+    // Noncharacter_Code_Point
+    // Default_Ignorable_Code_Point
+    // Deprecated
+    // Logical_Order_Exception
+    // Variation_Selector
+
+    // MARK: Numeric
+    // Numeric_Value
+    // Numeric_Type
+    // Hex_Digit
+    // ASCII_Hex_Digit
+
+    // MARK: Identifiers
+    // ID_Continue
+    // ID_Start
+    // XID_Continue
+    // XID_Start
+    // Pattern_Syntax
+    // Pattern_White_Space
+    // Identifier_Status
+    // Identifier_Type
+
+    // MARK: CJK
+    // Ideographic
+    // Unified_Ideograph
+    // Radical
+    // IDS_Binary_Operator
+    // IDS_Trinary_Operator
+    // Equivalent_Unified_Ideograph
+    XCTExpectFailure()
+    XCTFail("Unsupported: \(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#)")
+    // XCTAssertTrue("⼚⺁厂".contains(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#))
+
+    // MARK: Case
+    // Uppercase
+    // Lowercase
+    // Simple_Lowercase_Mapping
+    // Simple_Titlecase_Mapping
+    // Simple_Uppercase_Mapping
+    // Simple_Case_Folding
+    // Soft_Dotted
+    // Cased
+    // Case_Ignorable
+    // Changes_When_Lowercased
+    // Changes_When_Uppercased
+    XCTAssertTrue("a".contains(#/\p{Changes_When_Uppercased}/#))
+    XCTAssertTrue("a".contains(#/\p{Changes_When_Uppercased=true}/#))
+    XCTAssertFalse("A".contains(#/\p{Changes_When_Uppercased}/#))
+    // Changes_When_Titlecased
+    // Changes_When_Casefolded
+    // Changes_When_Casemapped
+
+    // MARK: Normalization
+    // Canonical_Combining_Class
+    // Decomposition_Type
+    // NFC_Quick_Check
+    // NFKC_Quick_Check
+    // NFD_Quick_Check
+    // NFKD_Quick_Check
+    // NFKC_Casefold
+    // Changes_When_NFKC_Casefolded
+
+    // MARK: Emoji
+    // Emoji
+    // Emoji_Presentation
+    // Emoji_Modifier
+    // Emoji_Modifier_Base
+    // Emoji_Component
+    // Extended_Pictographic
+    // Basic_Emoji*
+    // Emoji_Keycap_Sequence*
+    // RGI_Emoji_Modifier_Sequence*
+    // RGI_Emoji_Flag_Sequence*
+    // RGI_Emoji_Tag_Sequence*
+    // RGI_Emoji_ZWJ_Sequence*
+    // RGI_Emoji*
+
+    // MARK: Shaping and Rendering
+    // Join_Control
+    // Joining_Group
+    // Joining_Type
+    // Vertical_Orientation
+    // Line_Break
+    // Grapheme_Cluster_Break
+    // Sentence_Break
+    // Word_Break
+    // East_Asian_Width
+    // Prepended_Concatenation_Mark
+
+    // MARK: Bidirectional
+    // Bidi_Class
+    // Bidi_Control
+    // Bidi_Mirrored
+    // Bidi_Mirroring_Glyph
+    // Bidi_Paired_Bracket
+    // Bidi_Paired_Bracket_Type
+
+    // MARK: Miscellaneous
+    // Math
+    // Quotation_Mark
+    // Dash
+    // Sentence_Terminal
+    // Terminal_Punctuation
+    // Diacritic
+    // Extender
+    // Grapheme_Base
+    // Grapheme_Extend
+    // Regional_Indicator
   }
 }
