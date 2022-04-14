@@ -397,8 +397,9 @@ extension Source {
       return .pcreSpecial(pcreSpecial)
     }
 
-    // Otherwise we don't know what this is.
-    return .other(key: nil, value: value)
+    // TODO: This should be versioned, and do we want a more lax behavior for
+    // the runtime?
+    throw ParseError.unknownProperty(key: nil, value: value)
   }
 
   static func classifyCharacterProperty(
@@ -435,6 +436,8 @@ extension Source {
     if let match = match {
       return match
     }
-    return .other(key: key, value: value)
+    // TODO: This should be versioned, and do we want a more lax behavior for
+    // the runtime?
+    throw ParseError.unknownProperty(key: key, value: value)
   }
 }

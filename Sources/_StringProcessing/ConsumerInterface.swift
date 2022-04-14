@@ -423,10 +423,6 @@ extension AST.Atom.CharacterProperty {
 
       case .onigurumaSpecial(let s):
         throw Unsupported("TODO: map Oniguruma special: \(s)")
-
-      case let .other(key, value):
-        throw Unsupported(
-          "TODO: map other \(key ?? "")=\(value)")
       }
     }()
 
