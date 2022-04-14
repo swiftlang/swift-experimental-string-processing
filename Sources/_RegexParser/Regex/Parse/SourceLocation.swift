@@ -56,9 +56,11 @@ extension Source {
   var currentPosition: Position { bounds.lowerBound }
 }
 
+protocol _LocatedErrorProtocol: Error {}
+
 extension Source {
   /// An error with source location info
-  public struct LocatedError<E: Error>: Error {
+  public struct LocatedError<E: Error>: Error, _LocatedErrorProtocol {
     public let error: E
     public let location: SourceLocation
 
@@ -70,7 +72,6 @@ extension Source {
       self.error = v
       self.location = Location(r)
     }
-
   }
 
   /// Located value: a value wrapped with a source range
