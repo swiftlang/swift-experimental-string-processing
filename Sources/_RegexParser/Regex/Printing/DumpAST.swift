@@ -312,7 +312,9 @@ extension AST.CustomCharacterClass.Member: _ASTPrintable {
     case .quote(let q): return "\(q)"
     case .trivia(let t): return "\(t)"
     case .setOperation(let lhs, let op, let rhs):
-      return "op \(lhs) \(op.value) \(rhs)"
+      // TODO: We should eventually have some way of filtering out trivia for
+      // tests, so that it can appear in regular dumps.
+      return "op \(lhs.filter(\.isSemantic)) \(op.value) \(rhs.filter(\.isSemantic))"
     }
   }
 }

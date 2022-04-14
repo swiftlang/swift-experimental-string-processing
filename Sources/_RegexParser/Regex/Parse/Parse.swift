@@ -438,16 +438,18 @@ extension Parser {
     defer { context.isInCustomCharacterClass = alreadyInCCC }
 
     typealias Member = CustomCC.Member
-    try source.expectNonEmpty()
-
     var members: Array<Member> = []
-
-    // We can eat an initial ']', as PCRE, Oniguruma, and ICU forbid empty
-    // character classes, and assume an initial ']' is literal.
-    if let loc = source.tryEatWithLoc("]") {
-      members.append(.atom(.init(.char("]"), loc)))
-    }
     try parseCCCMembers(into: &members)
+
+    // If we didn't parse any semantic members, we can eat a ']' character, as
+    // PCRE, Oniguruma, and ICU forbid empty character classes, and assume an
+    // initial ']' is literal.
+    if members.none(\.isSemantic) {
+      if let loc = source.tryEatWithLoc("]") {
+        members.append(.atom(.init(.char("]"), loc)))
+        try parseCCCMembers(into: &members)
+      }
+    }
 
     // If we have a binary set operator, parse it and the next members. Note
     // that this means we left associate for a chain of operators.
@@ -458,8 +460,9 @@ extension Parser {
       var rhs: Array<Member> = []
       try parseCCCMembers(into: &rhs)
 
-      if members.isEmpty || rhs.isEmpty {
-        throw ParseError.expectedCustomCharacterClassMembers
+      if members.none(\.isSemantic) || rhs.none(\.isSemantic) {
+        throw Source.LocatedError(
+          ParseError.expectedCustomCharacterClassMembers, start.location)
       }
 
       // If we're done, bail early
@@ -472,8 +475,9 @@ extension Parser {
       // Otherwise it's just another member to accumulate
       members = [setOp]
     }
-    if members.isEmpty {
-      throw ParseError.expectedCustomCharacterClassMembers
+    if members.none(\.isSemantic) {
+      throw Source.LocatedError(
+        ParseError.expectedCustomCharacterClassMembers, start.location)
     }
     try source.expect("]")
     return CustomCC(start, members, loc(start.location.start))
@@ -484,7 +488,8 @@ extension Parser {
   ) throws {
     // Parse members until we see the end of the custom char class or an
     // operator.
-    while source.peek() != "]" && source.peekCCBinOp() == nil {
+    while !source.isEmpty && source.peek() != "]" &&
+          source.peekCCBinOp() == nil {
 
       // Nested custom character class.
       if let cccStart = try source.lexCustomCCStart() {
