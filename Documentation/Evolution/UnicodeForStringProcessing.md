@@ -122,19 +122,19 @@ All option APIs are provided on `RegexComponent`, so they can be called on a `Re
 
 The options that `Regex` supports are shown in the table below. Options that affect _matching behavior_ are supported through both regex syntax and APIs, while options that have _structural_ or _syntactic_ effects are only supported through regex syntax.
 
-| **Matching Behavior**    |                |                               |
-|--------------------------|----------------|-------------------------------|
-| Case insensitivity       | `(?i)`         | `ignoringCase()`              |
-| Dot matches newlines     | `(?s)`         | `dotMatchesNewlines()`        |
-| Anchors match newlines   | `(?m)`         | `anchorsMatchNewlines()`      |
-| Unicode word boundaries  | `(?w)`         | `usingSimpleWordBoundaries()` |
-| ASCII character classes  | `(?DSWP)`      | `usingASCIIDigits()`, etc     |
-| Semantic level           | `(?Xu)`        | `matchingSemantics(_:)`       |
-| Reluctant quantifiers    | `(?U)`         | `reluctantQuantifiers()`      |
-| **Structural/Syntactic** |                |                               |
-| Extended syntax          | `(?x)`,`(?xx)` | n/a                           |
-| Named captures only      | `(?n)`         | n/a                           |
-| Shared capture names     | `(?J)`         | n/a                           |
+| **Matching Behavior**        |                |                               |
+|------------------------------|----------------|-------------------------------|
+| Case insensitivity           | `(?i)`         | `ignoringCase()`              |
+| Single-line mode             | `(?s)`         | `dotMatchesNewlines()`        |
+| Multi-line mode              | `(?m)`         | `anchorsMatchNewlines()`      |
+| ASCII-only character classes | `(?DSWP)`      | `usingASCIIDigits()`, etc     |
+| Unicode word boundaries      | `(?w)`         | `usingSimpleWordBoundaries()` |
+| Semantic level               | `(?Xu)`        | `matchingSemantics(_:)`       |
+| Reluctant quantifiers        | `(?U)`         | `reluctantQuantifiers()`      |
+| **Structural/Syntactic**     |                |                               |
+| Extended syntax              | `(?x)`,`(?xx)` | n/a                           |
+| Named captures only          | `(?n)`         | n/a                           |
+| Shared capture names         | `(?J)`         | n/a                           |
 
 #### Case insensitivity
 
@@ -190,54 +190,45 @@ extension RegexComponent {
 }
 ```
 
-#### Reluctant quantification by default
+#### Multiline mode
 
-Regex quantifiers (`+`, `*`, and `?`) match eagerly by default, such that they match the longest possible substring. Appending `?` to a quantifier makes it reluctant, instead, so that it matches the shortest possible substring.
-
-```swift
-let str = "<token>A value.</token>"
-	
-// By default, the '+' quantifier is eager, and consumes as much as possible.
-str.firstMatch(of: /<.+>/)          // "<token>A value.</token>"
-	
-// Adding '?' makes the '+' quantifier reluctant, so that it consumes as little as possible.
-str.firstMatch(of: /<.+?>/)         // "<token>"
-```
-
-The `U` option toggles the "eagerness" of quanitifiers, so that quantifiers are reluctant by default, and only become eager when `?` is added to the quantifier.
+By default, the start and end anchors (`^` and `$`) match only the beginning and end of a string. With the `m` or the option, they also match the beginning and end of each line.
 
 ```swift
-// '(?U)' toggles the eagerness of quantifiers:
-str.firstMatch(of: /(?U)<.+>/)      // "<token>"
-str.firstMatch(of: /(?U)<.+?>/)     // "<token>A value.</token>"
+let str = """
+    abc
+    def
+    ghi
+    """
+	
+str.firstMatch(of: /^abc/)          // "abc"
+str.firstMatch(of: /^abc$/)         // nil
+str.firstMatch(of: /(?m)^abc$/)     // "abc"
+	
+str.firstMatch(of: /^def/)          // nil
+str.firstMatch(of: /(?m)^def$/)     // "def"
 ```
 
-**Regex syntax:** `(?U)...` or `(?U...)`
+This option applies only to anchors used in a regex literal. The anchors defined in `RegexBuilder` are specific about matching at the start/end of the input or the line, and therefore do not correspond directly with the `^` and `$` literal anchors.
+
+```swift
+str.firstMatch(of: Regex { Anchor.startOfInput ; "def" }) // nil
+str.firstMatch(of: Regex { Anchor.startOfLine  ; "def" }) // "def"
+```
+
+**Regex syntax:** `(?m)...` or `(?m...)`
 
 **`RegexBuilder` API:**
 
 ```swift
 extension RegexComponent {
-  /// Returns a regular expression where quantifiers are reluctant by default
-  /// instead of eager.
-  public func reluctantQuantifiers(_ useReluctantQuantifiers: Bool = true) -> Regex<Output>
+  /// Returns a regular expression where the start and end of input
+  /// anchors (`^` and `$`) also match against the start and end of a line.
+  public func anchorsMatchLineEndings(_ matchLineEndings: Bool = true) -> Regex<Output>
 }
 ```
 
-In order for this option to have the same effect on regexes built with `RegexBuilder` as with regex syntax, the `RegexBuilder` quantifier APIs are amended to have an `nil`-defaulted optional `behavior` parameter. For example:
-
-```swift
-extension OneOrMore {
-    public init<W, C0, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior? = nil,
-    @RegexComponentBuilder _ component: () -> Component
-  ) where Output == (Substring, C0), Component.Output == (W, C0)
-}
-```
-
-When you pass `nil`, the quantifier uses the default behavior as set by this option (either eager or reluctant). If an explicit behavior is passed, that behavior is used regardless of the default.
-
-#### Use ASCII-only character classes
+#### ASCII-only character classes
 
 With one or more of these options enabled, the default character classes match only ASCII values instead of the full Unicode range of characters. Four options are included in this group:
 
@@ -269,7 +260,7 @@ extension RegexComponent {
 }
 ```
 
-#### Use Unicode word boundaries
+#### Unicode word boundaries
 
 By default, matching word boundaries with the `\b` and `Anchor.wordBoundary` anchors uses Unicode default word boundaries, specified as [Unicode level 2 regular expression support][level2-word-boundaries]. 
 
@@ -374,43 +365,53 @@ public struct RegexSemanticLevel: Hashable {
 }
 ```
 
-#### Multiline mode
+#### Reluctant quantification by default
 
-By default, the start and end anchors (`^` and `$`) match only the beginning and end of a string. With the `m` or the option, they also match the beginning and end of each line.
-
-```swift
-let str = """
-    abc
-    def
-    ghi
-    """
-	
-str.firstMatch(of: /^abc/)          // "abc"
-str.firstMatch(of: /^abc$/)         // nil
-str.firstMatch(of: /(?m)^abc$/)     // "abc"
-	
-str.firstMatch(of: /^def/)          // nil
-str.firstMatch(of: /(?m)^def$/)     // "def"
-```
-
-This option applies only to anchors used in a regex literal. The anchors defined in `RegexBuilder` are specific about matching at the start/end of the input or the line, and therefore do not correspond directly with the `^` and `$` literal anchors.
+Regex quantifiers (`+`, `*`, and `?`) match eagerly by default, such that they match the longest possible substring. Appending `?` to a quantifier makes it reluctant, instead, so that it matches the shortest possible substring.
 
 ```swift
-str.firstMatch(of: Regex { Anchor.startOfInput ; "def" }) // nil
-str.firstMatch(of: Regex { Anchor.startOfLine  ; "def" }) // "def"
+let str = "<token>A value.</token>"
+	
+// By default, the '+' quantifier is eager, and consumes as much as possible.
+str.firstMatch(of: /<.+>/)          // "<token>A value.</token>"
+	
+// Adding '?' makes the '+' quantifier reluctant, so that it consumes as little as possible.
+str.firstMatch(of: /<.+?>/)         // "<token>"
 ```
 
-**Regex syntax:** `(?m)...` or `(?m...)`
+The `U` option toggles the "eagerness" of quanitifiers, so that quantifiers are reluctant by default, and only become eager when `?` is added to the quantifier.
+
+```swift
+// '(?U)' toggles the eagerness of quantifiers:
+str.firstMatch(of: /(?U)<.+>/)      // "<token>"
+str.firstMatch(of: /(?U)<.+?>/)     // "<token>A value.</token>"
+```
+
+**Regex syntax:** `(?U)...` or `(?U...)`
 
 **`RegexBuilder` API:**
 
 ```swift
 extension RegexComponent {
-  /// Returns a regular expression where the start and end of input
-  /// anchors (`^` and `$`) also match against the start and end of a line.
-  public func anchorsMatchLineEndings(_ matchLineEndings: Bool = true) -> Regex<Output>
+  /// Returns a regular expression where quantifiers are reluctant by default
+  /// instead of eager.
+  public func reluctantQuantifiers(_ useReluctantQuantifiers: Bool = true) -> Regex<Output>
 }
 ```
+
+In order for this option to have the same effect on regexes built with `RegexBuilder` as with regex syntax, the `RegexBuilder` quantifier APIs are amended to have an `nil`-defaulted optional `behavior` parameter. For example:
+
+```swift
+extension OneOrMore {
+    public init<W, C0, Component: RegexComponent>(
+    _ behavior: QuantificationBehavior? = nil,
+    @RegexComponentBuilder _ component: () -> Component
+  ) where Output == (Substring, C0), Component.Output == (W, C0)
+}
+```
+
+When you pass `nil`, the quantifier uses the default behavior as set by this option (either eager or reluctant). If an explicit behavior is passed, that behavior is used regardless of the default.
+
 
 ---
 
