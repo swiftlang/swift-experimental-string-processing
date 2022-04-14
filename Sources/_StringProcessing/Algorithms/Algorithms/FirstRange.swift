@@ -37,6 +37,7 @@ extension Collection where Element: Equatable {
   /// - Parameter sequence: The sequence to search for.
   /// - Returns: A range in the collection of the first occurrence of `sequence`.
   /// Returns nil if `sequence` is not found.
+  @available(SwiftStdlib 5.7, *)
   public func firstRange<S: Sequence>(
     of sequence: S
   ) -> Range<Index>? where S.Element == Element {
@@ -52,6 +53,7 @@ extension BidirectionalCollection where Element: Comparable {
   /// - Parameter other: The sequence to search for.
   /// - Returns: A range in the collection of the first occurrence of `sequence`.
   /// Returns `nil` if `sequence` is not found.
+  @available(SwiftStdlib 5.7, *)
   public func firstRange<S: Sequence>(
     of other: S
   ) -> Range<Index>? where S.Element == Element {
@@ -71,6 +73,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter regex: The regex to search for.
   /// - Returns: A range in the collection of the first occurrence of `regex`.
   /// Returns `nil` if `regex` is not found.
+  @available(SwiftStdlib 5.7, *)
   public func firstRange<R: RegexComponent>(of regex: R) -> Range<Index>? {
     firstRange(of: RegexConsumer(regex))
   }

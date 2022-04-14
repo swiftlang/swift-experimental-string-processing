@@ -13,6 +13,7 @@ import _RegexParser
 
 
 /// A type that represents a regular expression.
+@available(SwiftStdlib 5.7, *)
 public protocol RegexComponent {
   associatedtype Output
   var regex: Regex<Output> { get }
@@ -25,6 +26,7 @@ public protocol RegexComponent {
 ///     print(match.0) // "axb"
 ///     print(match.1) // "x"
 ///
+@available(SwiftStdlib 5.7, *)
 public struct Regex<Output>: RegexComponent {
   let program: Program
 

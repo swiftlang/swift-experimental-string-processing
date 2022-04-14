@@ -16,6 +16,7 @@ import _RegexParser
 // of parsing or to store in an AST
 
 @_spi(RegexBuilder)
+@available(SwiftStdlib 5.7, *)
 public struct _CharacterClassModel: Hashable {
   /// The actual character class to match.
   var cc: Representation

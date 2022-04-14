@@ -3,6 +3,13 @@
 
 import PackageDescription
 
+let availabilityDefinition = PackageDescription.SwiftSetting.unsafeFlags([
+    "-Xfrontend",
+    "-define-availability",
+    "-Xfrontend",
+    #""SwiftStdlib 5.7:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999""#
+])
+
 let package = Package(
     name: "swift-experimental-string-processing",
     products: [
@@ -31,12 +38,14 @@ let package = Package(
             name: "_RegexParser",
             dependencies: [],
             swiftSettings: [
-                .unsafeFlags(["-enable-library-evolution"])
+                .unsafeFlags(["-enable-library-evolution"]),
+                availabilityDefinition
             ]),
         .testTarget(
             name: "MatchingEngineTests",
             dependencies: [
-              "_RegexParser", "_StringProcessing"]),
+                "_RegexParser", "_StringProcessing"
+            ]),
         .target(
             name: "_CUnicode",
             dependencies: []),
@@ -45,26 +54,31 @@ let package = Package(
             dependencies: ["_RegexParser", "_CUnicode"],
             swiftSettings: [
                 .unsafeFlags(["-enable-library-evolution"]),
+                availabilityDefinition
             ]),
         .target(
             name: "RegexBuilder",
             dependencies: ["_StringProcessing", "_RegexParser"],
             swiftSettings: [
                 .unsafeFlags(["-enable-library-evolution"]),
-                .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
+                .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"]),
+                availabilityDefinition
             ]),
         .testTarget(
             name: "RegexTests",
-            dependencies: ["_StringProcessing"]),
+            dependencies: ["_StringProcessing"],
+            swiftSettings: [availabilityDefinition]),
         .testTarget(
             name: "RegexBuilderTests",
             dependencies: ["_StringProcessing", "RegexBuilder"],
             swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
+                .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"]),
+                availabilityDefinition
             ]),
         .target(
             name: "Prototypes",
-            dependencies: ["_RegexParser", "_StringProcessing"]),
+            dependencies: ["_RegexParser", "_StringProcessing"],
+            swiftSettings: [availabilityDefinition]),
 
         // MARK: Scripts
         .executableTarget(
@@ -85,11 +99,12 @@ let package = Package(
           name: "Exercises",
           dependencies: ["_RegexParser", "Prototypes", "_StringProcessing", "RegexBuilder"],
           swiftSettings: [
-              .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"])
+              .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"]),
+              availabilityDefinition
           ]),
         .testTarget(
           name: "ExercisesTests",
-          dependencies: ["Exercises"]),
+          dependencies: ["Exercises"],
+          swiftSettings: [availabilityDefinition]),
     ]
 )
-
