@@ -9,13 +9,11 @@ Status: **Draft**
 
 ## Introduction
 
-This proposal describes `Regex`'s rich Unicode support during regular expression matching, along with the character classes and options that define that behavior.
+This proposal describes `Regex`'s rich Unicode support during regex matching, along with the character classes and options that define that behavior.
 
 ## Motivation
 
-Character classes in regular expressions include metacharacters like `\d` to match a digit, `\s` to match whitespace, and `.` to match any character. Individual literal characters can also be thought of as character classes, as they at least match themselves, and, in case-insensitive matching, their case-toggled counterpart. For the purpose of this work, then, we consider a *character class* to be any part of a regular expression literal that can match an actual component of a string.
-
-Operating over classes of characters is a vital component of string processing. Swift's `String` provides, by default, a view of `Character`s or [extended grapheme clusters][graphemes] whose comparison honors [Unicode canonical equivalence][canoneq].
+Swift's `String` type provides, by default, a view of `Character`s or [extended grapheme clusters][graphemes] whose comparison honors [Unicode canonical equivalence][canoneq]. Each character in a string can be composed of one or more Unicode scalar values, while still being treated as a single unit, equivalent to other ways of formulating the equivalent character:
 
 ```swift
 let str = "Cafe\u{301}" // "Café"
@@ -25,9 +23,48 @@ str.last == "é"         // true (precomposed e with acute accent)
 str.last == "e\u{301}"  // true (e followed by composing acute accent)
 ```
 
-At a regular expression's simplest, without metacharacters or special features, matching behaves like a test for equality. A string always matches a regular expression that simply contains the same characters.
+This default view is fairly novel. Most languages that support Unicode strings generally operate at the Unicode scalar level, and don't provide the same affordance for operating on a string as a collection of grapheme clusters. In Python, for example, Unicode strings report their length as the number of scalar values, and don't use canonical equivalence in comparisons:
+
+```python
+cafe = u"Cafe\u0301"
+len(cafe)                     # 5
+cafe == u"Café"               # False
+```
+
+Existing regex engines follow this same model of operating at the Unicode scalar level. To match canonically equivalent characters, or have equivalent behavior between equivalent strings, you must normalize your string and regex to the same canonical format.
+
+```python
+# Matches a four-element string
+re.match(u"^.{4}$", cafe)     # None
+# Matches a string ending with 'é'
+re.match(u".+é$", cafe)       # None
+
+cafeComp = unicodedata.normalize("NFC", cafe)
+re.match(u"^.{4}$", cafeComp) # <re.Match object...>
+re.match(u".+é$", cafeComp)   # <re.Match object...>
+```
+
+With Swift's string model, this behavior would surprising and undesirable — Swift's default regex semantics must match the semantics of a `String`.
+
+<details><summary>Other engines</summary>
+
+Other regex engines match character classes (such as `\w` or `.`) at the Unicode scalar value level, or even the code unit level, instead of recognizing grapheme clusters as characters. When matching the `.` character class, other languages will only match the first part of an `"e\u{301}"` grapheme cluster. Some languages, like Perl, Ruby, and Java, support an additional `\X` metacharacter, which explicitly represents a single grapheme cluster.
+
+| Matching  `"Cafe\u{301}"` | Pattern: `^Caf.` | Remaining | Pattern:  `^Caf\X` | Remaining |
+|---|---|---|---|---|
+| C#, Rust, Go, Python | `"Cafe"` | `"´"` | n/a | n/a |
+| NSString, Java, Ruby, Perl | `"Cafe"` | `"´"` | `"Café"` | `""` |
+
+Other than Java's `CANON_EQ` option, the vast majority of other languages and engines are not capable of comparing with canonical equivalence.
+
+</details>
+
+## Proposed solution
+
+In a regex's simplest form, without metacharacters or special features, matching behaves like a test for equality. A string always matches a regex that simply contains the same characters.
 
 ```swift
+let str = "Cafe\u{301}"     // "Café"
 str.contains(/Café/)        // true
 ```
 
@@ -40,24 +77,7 @@ str.contains(/.+e\u{301}/)  // true
 str.contains(/\w+é/)        // true
 ```
 
-With these initial principles in hand, we can look at how character classes behave with Swift strings. Unicode leaves all interpretation of grapheme clusters up to implementations, which means that Swift needs to define any semantics for its own usage. Since other regex engines operate, at most, at the semantics level of Unicode scalar values, there is little to no prior art to consult.
-
-<details><summary>Other engines</summary>
-
-Character classes in other languages match at either the Unicode scalar value level, or even the code unit level, instead of recognizing grapheme clusters as characters. When matching the `.` character class, other languages will only match the first part of an `"e\u{301}"` grapheme cluster. Some languages, like Perl, Ruby, and Java, support an additional `\X` metacharacter, which explicitly represents a single grapheme cluster.
-
-| Matching  `"Cafe\u{301}"` | Pattern: `^Caf.` | Remaining | Pattern:  `^Caf\X` | Remaining |
-|---|---|---|---|---|
-| C#, Rust, Go | `"Cafe"` | `"´"` | n/a | n/a |
-| NSString, Java, Ruby, Perl | `"Cafe"` | `"´"` | `"Café"` | `""` |
-
-Other than Java's `CANON_EQ` option, the vast majority of other languages and engines are not capable of comparing with canonical equivalence.
-
-</details>
-
-## Proposed solution
-
-TK: semantic levels, options for controlling, canonical equivalence, Unicode properties
+Swift's `Regex` follows the level 2 guidelines for Unicode support in regular expressions described in [Unicode Technical Standard #18][uts18], with support for Unicode character classes, canonical equivalence, grapheme cluster matching semantics, and level 2 word boundaries enabled by default. `Regex` provides options for selecting different matching behaviors, such as ASCII character classes or Unicode scalar semantics, which corresponds more closely with other regex engines.
 
 ## Detailed design
 
@@ -65,7 +85,7 @@ First, we'll discuss the options that let you control a regex's behavior, and th
 
 ### Options
 
-Options can be enabled and disabled in two different ways: as part of [regular expression internal syntax][internals], or applied as methods when declaring a `Regex`. For example, both of these `Regex`es are declared with case insensitivity:
+Options can be enabled and disabled in two different ways: as part of [regex internal syntax][internals], or applied as methods when declaring a `Regex`. For example, both of these `Regex`es are declared with case insensitivity:
 
 ```swift
 let regex1 = /(?i)banana/
@@ -100,7 +120,7 @@ let regex5 = /(?i)ba(?-i:na)na/
 
 #### Case insensitivity
 
-Regular expressions perform case sensitive comparisons by default. The `i` option or the `ignoringCase(_:)` method enables case insensitive comparison.
+Regexes perform case sensitive comparisons by default. The `i` option or the `ignoringCase(_:)` method enables case insensitive comparison.
 
 ```swift
 let str = "Café"
@@ -112,7 +132,7 @@ str.firstMatch(of: /(?i)cAfÉ/)      // "Café"
 
 Case insensitive matching uses case folding to ensure that canonical equivalence continues to operate as expected.
 
-**Regular expression syntax:** `(?i)...` or `(?i:...)`
+**Regex syntax:** `(?i)...` or `(?i:...)`
 
 **`RegexBuilder` API:**
 
@@ -140,7 +160,7 @@ str.firstMatch(of: /(?s)<<.+>>/)    // "This string\nuses double-angle-brackets\
 
 This option also affects the behavior of `CharacterClass.any`, which is designed to match the behavior of the `.` regex literal component.
 
-**Regular expression syntax:** `(?s)...` or `(?s...)`
+**Regex syntax:** `(?s)...` or `(?s...)`
 
 **`RegexBuilder` API:**
 
@@ -154,7 +174,7 @@ extension RegexComponent {
 
 #### Reluctant quantification by default
 
-Regular expression quantifiers (`+`, `*`, and `?`) match eagerly by default, such that they match the longest possible substring. Appending `?` to a quantifier makes it reluctant, instead, so that it matches the shortest possible substring.
+Regex quantifiers (`+`, `*`, and `?`) match eagerly by default, such that they match the longest possible substring. Appending `?` to a quantifier makes it reluctant, instead, so that it matches the shortest possible substring.
 
 ```swift
 let str = "<token>A value.</token>"
@@ -174,7 +194,7 @@ str.firstMatch(of: /(?U)<.+>/)      // "<token>"
 str.firstMatch(of: /(?U)<.+?>/)     // "<token>A value.</token>"
 ```
 
-**Regular expression syntax:** `(?U)...` or `(?U...)`
+**Regex syntax:** `(?U)...` or `(?U...)`
 
 **`RegexBuilder` API:**
 
@@ -195,7 +215,7 @@ With one or more of these options enabled, the default character classes match o
 * `W`: Match only ASCII members for `\w`, `\p{Word}`, `[:word:]`, `\b`, `CharacterClass.word`, and `Anchor.wordBoundary`.
 * `P`: Match only ASCII members for all POSIX properties (including `digit`, `space`, and `word`).
 
-**Regular expression syntax:** `(?DSWP)...` or `(?DSWP...)`
+**Regex syntax:** `(?DSWP)...` or `(?DSWP...)`
 
 **`RegexBuilder` API:**
 
@@ -220,9 +240,9 @@ extension RegexComponent {
 
 #### Use Unicode word boundaries
 
-By default, matching word boundaries with the `\b` and `Anchor.wordBoundary` anchors uses Unicode default word boundaries, specified as Unicode [level 2 regular expression support][level2-word-boundaries]. 
+By default, matching word boundaries with the `\b` and `Anchor.wordBoundary` anchors uses Unicode default word boundaries, specified as [Unicode level 2 regular expression support][level2-word-boundaries]. 
 
-Disabling the `w` option switches to [simple word boundaries][level1-word-boundaries], finding word boundaries at points in the input where `\b\B` or `\B\b` match. Depending on the other matching options that are enabled, this may be more compatible with the behavior other regular expression engines.
+Disabling the `w` option switches to [simple word boundaries][level1-word-boundaries], finding word boundaries at points in the input where `\b\B` or `\B\b` match. Depending on the other matching options that are enabled, this may be more compatible with the behavior other regex engines.
 
 As shown in this example, the default matching behavior finds the whole first word of the string, while the match with simple word boundaries stops at the apostrophe:
 
@@ -233,7 +253,25 @@ str.firstMatch(of: /D\S+\b/)        // "Don't"
 str.firstMatch(of: /(?-w)D\S+\b/)   // "Don"
 ```
 
-**Regular expression syntax:** `(?-w)...` or `(?-w...)`
+You can see more differences between level 1 and level 2 word boundaries in the following table:
+
+| Example             | Level 1                         | Level 2                                   |
+|---------------------|---------------------------------|-------------------------------------------|
+| I can't do that.    | ["I", "can", "t", "do", "that"] | ["I", "can't", "do", "that", "."]         |
+| 🔥😊👍                 | ["🔥😊👍"]                         | ["🔥", "😊", "👍"]                           |
+| 👩🏻👶🏿👨🏽🧑🏾👩🏼          | ["👩🏻👶🏿👨🏽🧑🏾👩🏼"]                  | ["👩🏻", "👶🏿", "👨🏽", "🧑🏾", "👩🏼"]            |
+| 🇨🇦🇺🇸🇲🇽              | ["🇨🇦🇺🇸🇲🇽"]                      | ["🇨🇦", "🇺🇸", "🇲🇽"]                        |
+| 〱㋞ツ              | ["〱", "㋞", "ツ"]              | ["〱㋞ツ"]                                |
+| hello〱㋞ツ         | ["hello〱", "㋞", "ツ"]         | ["hello", "〱㋞ツ"]                       |
+| 나는 Chicago에 산다 | ["나는", "Chicago에", "산다"]   | ["나", "는", "Chicago", "에", "산", "다"] |
+| 眼睛love食物        | ["眼睛love食物"]                | ["眼", "睛", "love", "食", "物"]          |
+| 아니ㅋㅋㅋ네        | ["아니ㅋㅋㅋ네"]                | ["아", "니", "ㅋㅋㅋ", "네"]              |
+| Re:Zero             | ["Re", "Zero"]                  | ["Re:Zero"]                               |
+| \u{d}\u{a}          | ["\u{d}", "\u{a}"]              | ["\u{d}\u{a}"]                            |
+| €1 234,56           | ["1", "234", "56"]              | ["€", "1", "234,56"]                      |
+
+
+**Regex syntax:** `(?-w)...` or `(?-w...)`
 
 **`RegexBuilder` API:**
 
@@ -253,7 +291,7 @@ extension RegexComponent {
 }
 ```
 
-### Matching semantic level
+#### Matching semantic level
 
 When matching with grapheme cluster semantics (the default), metacharacters like `.` and `\w`, custom character classes, and character class instances like `.any` match a grapheme cluster when possible, corresponding with the default string representation. In addition, matching with grapheme cluster semantics compares characters using their canonical representation, corresponding with the way comparing strings for equality works.
 
@@ -273,7 +311,7 @@ print(decomposed.contains(queRegex))
 // Prints "true"
 ```
 
-When using Unicode scalar semantics, however, the regular expression only matches the composed version of the string, because each `.` matches a single Unicode scalar value.
+When using Unicode scalar semantics, however, the regex only matches the composed version of the string, because each `.` matches a single Unicode scalar value.
 
 ```swift
 let queRegexScalar = queRegex.matchingSemantics(.unicodeScalar)
@@ -283,7 +321,7 @@ print(decomposed.contains(queRegexScalar))
 // Prints "false"
 ```
 
-**Regular expression syntax:** `(?X)...` or `(?X...)` for grapheme cluster semantics, `(?u)...` or `(?u...)` for Unicode scalar semantics.
+**Regex syntax:** `(?X)...` or `(?X...)` for grapheme cluster semantics, `(?u)...` or `(?u...)` for Unicode scalar semantics.
 
 **`RegexBuilder` API:**
 
@@ -331,7 +369,7 @@ str.firstMatch(of: Regex { Anchor.startOfInput ; "def" }) // nil
 str.firstMatch(of: Regex { Anchor.startOfLine  ; "def" }) // "def"
 ```
 
-**Regular expression syntax:** `(?m)...` or `(?m...)`
+**Regex syntax:** `(?m)...` or `(?m...)`
 
 **`RegexBuilder` API:**
 
@@ -349,7 +387,7 @@ extension RegexComponent {
 
 We propose the following definitions for regex character classes, along with a `CharacterClass` type as part of the `RegexBuilder` module, to encapsulate and simplify character class usage within builder-style regexes.
 
-The two regular expressions defined in this example will match the same inputs, looking for one or more word characters followed by up to three digits, optionally separated by a space:
+The two regexes defined in this example will match the same inputs, looking for one or more word characters followed by up to three digits, optionally separated by a space:
 
 ```swift
 let regex1 = /\w+\s?\d{,3}/
@@ -436,7 +474,7 @@ We interpret Unicode's definition of the set of scalars, especially its requirem
 
 #### "Word" characters
 
-The **word** character class is matched by `\w` or `CharacterClass.word`. This character class and its name are essentially terms of art within regular expressions, and represents part of a notional "word". Note that, by default, this is distinct from the algorithm for identifying word boundaries.
+The **word** character class is matched by `\w` or `CharacterClass.word`. This character class and its name are essentially terms of art within regexes, and represents part of a notional "word". Note that, by default, this is distinct from the algorithm for identifying word boundaries.
 
 _Unicode scalar semantics:_ Matches a Unicode scalar that has one of the Unicode properties `Alphabetic`, `Digit`, or `Join_Control`, or is in the general category `Mark` or `Connector_Punctuation`. 
 
@@ -532,7 +570,7 @@ Custom classes function as the set union of their individual components, whether
 - When in grapheme cluster semantic mode, ranges of characters will test for membership using NFD form (or NFKD when performing caseless matching). This differs from how a `ClosedRange<Character>` would operate its `contains` method, since that depends on `String`'s `Comparable` conformance, but the decomposed comparison better aligns with the canonical equivalence matching used elsewhere in `Regex`.
 - A custom character class will match a maximum of one `Character` or `UnicodeScalar`, depending on the matching semantic level. This means that a custom character class with extended grapheme cluster members may not match anything while using scalar semantics.
 
-Inside regular expressions, custom classes are enclosed in square brackets `[...]`, and can be nested or combined using set operators like `&&`. For more detail, see the [Run-time Regex Construction proposal][internals-charclass].
+Inside regexes, custom classes are enclosed in square brackets `[...]`, and can be nested or combined using set operators like `&&`. For more detail, see the [Run-time Regex Construction proposal][internals-charclass].
 
 With `RegexBuilder`'s `CharacterClass` type, you can use built-in character classes with ranges and groups of characters. For example, to parse a valid octodecimal number, you could define a custom character class that combines `.decimalDigit` with a range of characters.
 
@@ -615,16 +653,13 @@ public func ...(lhs: UnicodeScalar, rhs: UnicodeScalar) -> CharacterClass
 
 Everything in this proposal is additive, and has no compatibility effect on existing source code.
 
-
 ## Effect on ABI stability
 
 Everything in this proposal is additive, and has no effect on existing stable ABI.
 
-
 ## Effect on API resilience
 
-TK
-
+N/A
 
 ## Future directions
 
