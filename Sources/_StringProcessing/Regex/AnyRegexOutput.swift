@@ -38,6 +38,7 @@ extension Regex.Match where Output == AnyRegexOutput {
 }
 
 /// A type-erased regex output
+@available(SwiftStdlib 5.7, *)
 public struct AnyRegexOutput {
   let input: String
   fileprivate let _elements: [ElementRepresentation]
