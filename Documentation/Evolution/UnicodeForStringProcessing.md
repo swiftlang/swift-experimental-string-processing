@@ -118,6 +118,24 @@ let regex4 = Regex {
 let regex5 = /(?i)ba(?-i:na)na/
 ```
 
+All option APIs are provided on `RegexComponent`, so they can be called on a `Regex` instance, or on any component that you would use inside a `RegexBuilder` block when the `RegexBuilder` module is imported.
+
+The options that `Regex` supports are shown in the table below. Options that affect _matching behavior_ are supported through both regex syntax and APIs, while options that have _structural_ or _syntactic_ effects are only supported through regex syntax.
+
+| **Matching Behavior**    |                |                               |
+|--------------------------|----------------|-------------------------------|
+| Case insensitivity       | `(?i)`         | `ignoringCase()`              |
+| Dot matches newlines     | `(?s)`         | `dotMatchesNewlines()`        |
+| Anchors match newlines   | `(?m)`         | `anchorsMatchNewlines()`      |
+| Unicode word boundaries  | `(?w)`         | `usingSimpleWordBoundaries()` |
+| ASCII character classes  | `(?DSWP)`      | `usingASCIIDigits()`, etc     |
+| Semantic level           | `(?Xu)`        | `matchingSemantics(_:)`       |
+| Reluctant quantifiers    | `(?U)`         | `reluctantQuantifiers()`      |
+| **Structural/Syntactic** |                |                               |
+| Extended syntax          | `(?x)`,`(?xx)` | n/a                           |
+| Named captures only      | `(?n)`         | n/a                           |
+| Shared capture names     | `(?J)`         | n/a                           |
+
 #### Case insensitivity
 
 Regexes perform case sensitive comparisons by default. The `i` option or the `ignoringCase(_:)` method enables case insensitive comparison.
@@ -202,9 +220,22 @@ str.firstMatch(of: /(?U)<.+?>/)     // "<token>A value.</token>"
 extension RegexComponent {
   /// Returns a regular expression where quantifiers are reluctant by default
   /// instead of eager.
-  public func reluctantCaptures(_ useReluctantCaptures: Bool = true) -> Regex<Output>
+  public func reluctantQuantifiers(_ useReluctantQuantifiers: Bool = true) -> Regex<Output>
 }
 ```
+
+In order for this option to have the same effect on regexes built with `RegexBuilder` as with regex syntax, the `RegexBuilder` quantifier APIs are amended to have an `nil`-defaulted optional `behavior` parameter. For example:
+
+```swift
+extension OneOrMore {
+    public init<W, C0, Component: RegexComponent>(
+    _ behavior: QuantificationBehavior? = nil,
+    @RegexComponentBuilder _ component: () -> Component
+  ) where Output == (Substring, C0), Component.Output == (W, C0)
+}
+```
+
+When you pass `nil`, the quantifier uses the default behavior as set by this option (either eager or reluctant). If an explicit behavior is passed, that behavior is used regardless of the default.
 
 #### Use ASCII-only character classes
 
@@ -221,16 +252,16 @@ With one or more of these options enabled, the default character classes match o
 
 ```swift
 extension RegexComponent {
-  /// Returns a regular expression that only matches ASCII characters as "word
-  /// characters".
-  public func usingASCIIWordCharacters(_ useASCII: Bool = true) -> Regex<Output>
-	
   /// Returns a regular expression that only matches ASCII characters as digits.
   public func usingASCIIDigits(_ useASCII: Bool = true) -> Regex<Output>
 	
   /// Returns a regular expression that only matches ASCII characters as space
   /// characters.
   public func usingASCIISpaces(_ useASCII: Bool = true) -> Regex<Output>
+	
+  /// Returns a regular expression that only matches ASCII characters as "word
+  /// characters".
+  public func usingASCIIWordCharacters(_ useASCII: Bool = true) -> Regex<Output>
 	
   /// Returns a regular expression that only matches ASCII characters when
   /// matching character classes.
@@ -428,8 +459,8 @@ for match in data.matches(of: /(.),/.matchingSemantics(.unicodeScalar)) {
 
 `Regex` also provides ways to select a specific level of "any" matching, without needing to change semantic levels.
 
-- The **any grapheme cluster** character class is written as `\X` or `CharacterClass.anyGraphemeCluster`, and matches from the current location up to the next grapheme cluster boundary.
-- The **any Unicode scalar** character class is written as `\O` or `CharacterClass.anyUnicodeScalar`, and matches exactly one Unicode scalar value at the current location.
+- The **any grapheme cluster** character class is written as `\X` or `CharacterClass.anyGraphemeCluster`, and matches from the current location up to the next grapheme cluster boundary. This includes matching newlines, regardless of any option settings.
+- The **any Unicode scalar** character class is written as `\O` or `CharacterClass.anyUnicodeScalar`, and matches exactly one Unicode scalar value at the current location. This includes matching newlines, regardless of any option settings, but only the first scalar in an `\r\n` cluster.
 
 #### Decimal and hexadecimal digits
 
@@ -665,7 +696,7 @@ N/A
 
 ### Expanded options
 
-The initial version of `Regex` includes only the options described above. Filling out the remainder of options described in the [Run-time Regex Construction proposal][literals] could be completed as future work.
+The initial version of `Regex` includes only the options described above. Filling out the remainder of options described in the [Run-time Regex Construction proposal][literals] could be completed as future work, as well as additional improvements, such as adding an option for making quantifiers possessive by default.
 
 ### Extensions to Character and Unicode Scalar APIs
 
@@ -688,10 +719,10 @@ Instead of providing APIs to select whether `Regex` matching is `Character`-base
 
 
 [repo]: https://github.com/apple/swift-experimental-string-processing/
-[option-scoping]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md#matching-options
-[internals]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md
-[internals-properties]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md#character-properties
-[internals-charclass]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md#custom-character-classes
+[option-scoping]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntaxRunTimeConstruction.md#matching-options
+[internals]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntaxRunTimeConstruction.md
+[internals-properties]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntaxRunTimeConstruction.md#character-properties
+[internals-charclass]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntaxRunTimeConstruction.md#custom-character-classes
 [level1-word-boundaries]:https://unicode.org/reports/tr18/#Simple_Word_Boundaries
 [level2-word-boundaries]:https://unicode.org/reports/tr18/#RL2.3
 
