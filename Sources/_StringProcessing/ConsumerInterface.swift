@@ -287,11 +287,8 @@ extension DSLTree.CustomCharacterClass.Member {
       }
     case .trivia:
       // TODO: Should probably strip this earlier...
-      return { _, bounds in
-        return bounds.lowerBound
-      }
+      return { _, _ in nil }
     }
-
   }
 }
 

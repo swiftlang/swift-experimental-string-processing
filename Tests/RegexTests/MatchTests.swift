@@ -1208,6 +1208,19 @@ extension RegexTests {
       ("CaFe", true),
       ("EfAc", true))
   }
+
+  func testNonSemanticWhitespace() {
+    firstMatchTest(#" \t "#, input: " \t ", match: " \t ")
+    firstMatchTest(#"(?xx) \t "#, input: " \t ", match: "\t")
+
+    firstMatchTest(#"[ \t]+"#, input: " \t ", match: " \t ")
+    firstMatchTest(#"(?xx)[ \t]+"#, input: " \t ", match: "\t")
+    firstMatchTest(#"(?xx)[ \t]+"#, input: " \t\t ", match: "\t\t")
+    firstMatchTest(#"(?xx)[ \t]+"#, input: " \t \t", match: "\t")
+
+    firstMatchTest("(?xx)[ a && ab ]+", input: " aaba ", match: "aa")
+    firstMatchTest("(?xx)[ ] a ]+", input: " a]]a ] ", match: "a]]a")
+  }
   
   func testASCIIClasses() {
     // 'D' ASCII-only digits
