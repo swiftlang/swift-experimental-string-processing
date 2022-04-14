@@ -15,7 +15,7 @@ import _RegexParser
 extension Regex {
   public init<Content: RegexComponent>(
     @RegexComponentBuilder _ content: () -> Content
-  ) where Content.Output == Output {
+  ) where Content.RegexOutput == Output {
     self = content().regex
   }
 }
@@ -23,7 +23,7 @@ extension Regex {
 // A convenience protocol for builtin regex components that are initialized with
 // a `DSLTree` node.
 internal protocol _BuiltinRegexComponent: RegexComponent {
-  init(_ regex: Regex<Output>)
+  init(_ regex: Regex<RegexOutput>)
 }
 
 extension _BuiltinRegexComponent {
@@ -224,7 +224,7 @@ public struct AlternationBuilder {
   @_disfavoredOverload
   public static func buildPartialBlock<R: RegexComponent>(
     first component: R
-  ) -> ChoiceOf<R.Output> {
+  ) -> ChoiceOf<R.RegexOutput> {
     .init(component.regex)
   }
 

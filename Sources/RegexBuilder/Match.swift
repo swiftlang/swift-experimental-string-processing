@@ -15,14 +15,14 @@ extension String {
   @available(SwiftStdlib 5.7, *)
   public func wholeMatch<R: RegexComponent>(
     @RegexComponentBuilder of content: () -> R
-  ) -> Regex<R.Output>.Match? {
+  ) -> Regex<R.RegexOutput>.Match? {
     wholeMatch(of: content())
   }
 
   @available(SwiftStdlib 5.7, *)
   public func prefixMatch<R: RegexComponent>(
     @RegexComponentBuilder of content: () -> R
-  ) -> Regex<R.Output>.Match? {
+  ) -> Regex<R.RegexOutput>.Match? {
     prefixMatch(of: content())
   }
 }
@@ -31,14 +31,14 @@ extension Substring {
   @available(SwiftStdlib 5.7, *)
   public func wholeMatch<R: RegexComponent>(
     @RegexComponentBuilder of content: () -> R
-  ) -> Regex<R.Output>.Match? {
+  ) -> Regex<R.RegexOutput>.Match? {
     wholeMatch(of: content())
   }
 
   @available(SwiftStdlib 5.7, *)
   public func prefixMatch<R: RegexComponent>(
     @RegexComponentBuilder of content: () -> R
-  ) -> Regex<R.Output>.Match? {
+  ) -> Regex<R.RegexOutput>.Match? {
     prefixMatch(of: content())
   }
 }

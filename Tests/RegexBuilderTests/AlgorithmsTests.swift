@@ -28,7 +28,7 @@ class RegexConsumerTests: XCTestCase {
       _ regex: R,
       input: String,
       result: String,
-      _ replace: (Regex<R.Output>.Match) -> String,
+      _ replace: (Regex<R.RegexOutput>.Match) -> String,
       file: StaticString = #file,
       line: UInt = #line
     ) {
