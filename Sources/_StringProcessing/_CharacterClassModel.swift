@@ -205,9 +205,9 @@ public struct _CharacterClassModel: Hashable {
 }
 
 extension _CharacterClassModel: RegexComponent {
-  public typealias Output = Substring
+  public typealias RegexOutput = Substring
 
-  public var regex: Regex<Output> {
+  public var regex: Regex<RegexOutput> {
     guard let ast = self.makeAST() else {
       fatalError("FIXME: extended AST?")
     }

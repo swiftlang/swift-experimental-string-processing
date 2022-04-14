@@ -90,7 +90,7 @@ var standardError = StandardErrorStream()
 
 typealias Counter = Int64
 let regexComponentProtocolName = "RegexComponent"
-let outputAssociatedTypeName = "Output"
+let outputAssociatedTypeName = "RegexOutput"
 let patternProtocolRequirementName = "regex"
 let regexTypeName = "Regex"
 let baseMatchTypeName = "Substring"

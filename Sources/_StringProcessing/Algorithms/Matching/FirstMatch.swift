@@ -56,7 +56,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// there isn't a match.
   public func firstMatch<R: RegexComponent>(
     of r: R
-  ) -> Regex<R.Output>.Match? {
+  ) -> Regex<R.RegexOutput>.Match? {
     let slice = self[...]
     return try? r.regex.firstMatch(in: slice.base)
   }

@@ -14,13 +14,13 @@ import _StringProcessing
 extension String {
   public func wholeMatch<R: RegexComponent>(
     @RegexComponentBuilder of content: () -> R
-  ) -> Regex<R.Output>.Match? {
+  ) -> Regex<R.RegexOutput>.Match? {
     wholeMatch(of: content())
   }
 
   public func prefixMatch<R: RegexComponent>(
     @RegexComponentBuilder of content: () -> R
-  ) -> Regex<R.Output>.Match? {
+  ) -> Regex<R.RegexOutput>.Match? {
     prefixMatch(of: content())
   }
 }
@@ -28,13 +28,13 @@ extension String {
 extension Substring {
   public func wholeMatch<R: RegexComponent>(
     @RegexComponentBuilder of content: () -> R
-  ) -> Regex<R.Output>.Match? {
+  ) -> Regex<R.RegexOutput>.Match? {
     wholeMatch(of: content())
   }
 
   public func prefixMatch<R: RegexComponent>(
     @RegexComponentBuilder of content: () -> R
-  ) -> Regex<R.Output>.Match? {
+  ) -> Regex<R.RegexOutput>.Match? {
     prefixMatch(of: content())
   }
 }

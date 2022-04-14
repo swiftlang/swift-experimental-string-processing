@@ -14,8 +14,8 @@ import _RegexParser
 
 /// A type that represents a regular expression.
 public protocol RegexComponent {
-  associatedtype Output
-  var regex: Regex<Output> { get }
+  associatedtype RegexOutput
+  var regex: Regex<RegexOutput> { get }
 }
 
 /// A regex represents a string processing algorithm.

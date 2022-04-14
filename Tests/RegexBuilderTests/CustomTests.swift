@@ -15,7 +15,7 @@ import _StringProcessing
 
 // A nibbler processes a single character from a string
 private protocol Nibbler: CustomRegexComponent {
-  func nibble(_: Character) -> Output?
+  func nibble(_: Character) -> RegexOutput?
 }
 
 extension Nibbler {
@@ -24,7 +24,7 @@ extension Nibbler {
     _ input: String,
     startingAt index: String.Index,
     in bounds: Range<String.Index>
-  ) -> (upperBound: String.Index, output: Output)? {
+  ) -> (upperBound: String.Index, output: RegexOutput)? {
     guard index != bounds.upperBound, let res = nibble(input[index]) else {
       return nil
     }
@@ -35,7 +35,7 @@ extension Nibbler {
 
 // A number nibbler
 private struct Numbler: Nibbler {
-  typealias Output = Int
+  typealias RegexOutput = Int
   func nibble(_ c: Character) -> Int? {
     c.wholeNumberValue
   }
@@ -43,7 +43,7 @@ private struct Numbler: Nibbler {
 
 // An ASCII value nibbler
 private struct Asciibbler: Nibbler {
-  typealias Output = UInt8
+  typealias RegexOutput = UInt8
   func nibble(_ c: Character) -> UInt8? {
     c.asciiValue
   }
