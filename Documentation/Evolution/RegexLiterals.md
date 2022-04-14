@@ -75,7 +75,7 @@ func matchHexAssignment(_ input: String) -> (String, Int)? {
         let hex = Int(match.hex, radix: 16) 
   else { return nil }
   
-  return (match.identifier, hex)
+  return (String(match.identifier), hex)
 }
 ```
 
@@ -382,8 +382,8 @@ We therefore feel this would be a much less compelling feature without first cla
 [regex-type]: https://github.com/apple/swift-evolution/blob/main/proposals/0350-regex-type-overview.md
 [strongly-typed-captures]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/StronglyTypedCaptures.md
 
-[internal-syntax]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md
-[extended-regex-syntax]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntax.md#extended-syntax-modes
+[internal-syntax]: https://github.com/apple/swift-experimental-string-processing/blob/39cb22d96d90ee7cb308b1153e106e50598afdd9/Documentation/Evolution/RegexSyntaxRunTimeConstruction.md
+[extended-regex-syntax]: https://github.com/apple/swift-experimental-string-processing/blob/39cb22d96d90ee7cb308b1153e106e50598afdd9/Documentation/Evolution/RegexSyntaxRunTimeConstruction.md#extended-syntax-modes
 
 [regex-dsl]: https://github.com/apple/swift-evolution/blob/main/proposals/0351-regex-builder.md
 [dsl-captures]: https://github.com/apple/swift-evolution/blob/main/proposals/0351-regex-builder.md#capture-and-reference
