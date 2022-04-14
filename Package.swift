@@ -44,6 +44,7 @@ let package = Package(
             dependencies: ["_RegexParser", "_CUnicode"],
             swiftSettings: [
                 .unsafeFlags(["-enable-library-evolution"]),
+                .unsafeFlags(["-Xfrontend", "-enable-parameterized-protocol-types"])
             ]),
         .target(
             name: "RegexBuilder",

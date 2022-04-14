@@ -13,7 +13,7 @@ import _RegexParser
 
 
 /// A type that represents a regular expression.
-public protocol RegexComponent {
+public protocol RegexComponent<Output> {
   associatedtype Output
   var regex: Regex<Output> { get }
 }
@@ -93,7 +93,6 @@ extension Regex {
   public init(node: DSLTree.Node) {
     self.program = Program(tree: .init(node, options: nil))
   }
-
 }
 
 // MARK: - Primitive regex components
