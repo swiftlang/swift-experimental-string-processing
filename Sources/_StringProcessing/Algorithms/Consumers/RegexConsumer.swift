@@ -37,7 +37,7 @@ extension RegexConsumer {
 // well, taking advantage of the fact that the captures can be ignored
 
 extension RegexConsumer: MatchingCollectionConsumer {
-  typealias Match = R.Output
+  typealias Match = R.RegexOutput
   
   func matchingConsuming(
     _ consumed: Consumed, in range: Range<Consumed.Index>
