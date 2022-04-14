@@ -712,6 +712,22 @@ extension Source {
     return .init(caretLoc: nil, adding: adding, minusLoc: nil, removing: [])
   }
 
+  /// A matching option changing atom.
+  ///
+  ///     '(?' MatchingOptionSeq ')'
+  ///
+  mutating func lexChangeMatchingOptionAtom(
+    context: ParsingContext
+  ) throws -> AST.MatchingOptionSequence? {
+    try tryEating { src in
+      guard src.tryEat(sequence: "(?"),
+            let seq = try src.lexMatchingOptionSequence(context: context)
+      else { return nil }
+      try src.expect(")")
+      return seq
+    }
+  }
+
   /// Try to consume explicitly spelled-out PCRE2 group syntax.
   mutating func lexExplicitPCRE2GroupStart() -> AST.Group.Kind? {
     tryEating { src in
@@ -852,7 +868,7 @@ extension Source {
         // otherwise a matching option specifier. Conversely, '(?P' can be the
         // start of a matching option sequence, or a reference if it is followed
         // by '=' or '<'.
-        guard !src.shouldLexGroupLikeAtom() else { return nil }
+        guard !src.shouldLexGroupLikeAtom(context: context) else { return nil }
 
         guard src.tryEat("(") else { return nil }
         if src.tryEat("?") {
@@ -877,22 +893,13 @@ extension Source {
 
           // Matching option changing group (?iJmnsUxxxDPSWy{..}-iJmnsUxxxDPSW:).
           if let seq = try src.lexMatchingOptionSequence(context: context) {
-            if src.tryEat(":") {
-              return .changeMatchingOptions(seq, isIsolated: false)
-            }
-            // If this isn't start of an explicit group, we should have an
-            // implicit group that covers the remaining elements of the current
-            // group.
-            // TODO: This implicit scoping behavior matches Oniguruma, but PCRE
-            // also does it across alternations, which will require additional
-            // handling.
-            guard src.tryEat(")") else {
+            guard src.tryEat(":") else {
               if let next = src.peek() {
                 throw ParseError.invalidMatchingOption(next)
               }
               throw ParseError.expected(")")
             }
-            return .changeMatchingOptions(seq, isIsolated: true)
+            return .changeMatchingOptions(seq)
           }
 
           guard let next = src.peek() else {
@@ -1041,18 +1048,8 @@ extension Source {
     context: ParsingContext
   ) throws -> Located<AST.Group.Kind>? {
     try tryEating { src in
-      guard src.tryEat(sequence: "(?"),
-            let group = try src.lexGroupStart(context: context)
-      else { return nil }
-
-      // Implicitly scoped groups are not supported here.
-      guard !group.value.hasImplicitScope else {
-        throw LocatedError(
-          ParseError.unsupportedCondition("implicitly scoped group"),
-          group.location
-        )
-      }
-      return group
+      guard src.tryEat(sequence: "(?") else { return nil }
+      return try src.lexGroupStart(context: context)
     }
   }
 
@@ -1239,17 +1236,19 @@ extension Source {
     allowWholePatternRef: Bool = false, allowRecursionLevel: Bool = false
   ) throws -> AST.Reference? {
     let kind = try recordLoc { src -> AST.Reference.Kind? in
-      // Note this logic should match canLexNumberedReference.
-      if src.tryEat("+") {
-        return .relative(try src.expectNumber().value)
+      try src.tryEating { src in
+        // Note this logic should match canLexNumberedReference.
+        if src.tryEat("+"), let num = try src.lexNumber() {
+          return .relative(num.value)
+        }
+        if src.tryEat("-"), let num = try src.lexNumber() {
+          return .relative(-num.value)
+        }
+        if let num = try src.lexNumber() {
+          return .absolute(num.value)
+        }
+        return nil
       }
-      if src.tryEat("-") {
-        return .relative(try -src.expectNumber().value)
-      }
-      if let num = try src.lexNumber() {
-        return .absolute(num.value)
-      }
-      return nil
     }
     guard let kind = kind else { return nil }
     guard allowWholePatternRef || kind.value != .recurseWholePattern else {
@@ -1478,8 +1477,21 @@ extension Source {
     return src.canLexNumberedReference()
   }
 
+  private func canLexMatchingOptionsAsAtom(context: ParsingContext) -> Bool {
+    var src = self
+
+    // See if we can lex a matching option sequence that terminates in ')'. Such
+    // a sequence is an atom. If an error is thrown, there are invalid elements
+    // of the matching option sequence. In such a case, we can lex as a group
+    // and diagnose the invalid group kind.
+    guard (try? src.lexMatchingOptionSequence(context: context)) != nil else {
+      return false
+    }
+    return src.tryEat(")")
+  }
+
   /// Whether a group specifier should be lexed as an atom instead of a group.
-  private func shouldLexGroupLikeAtom() -> Bool {
+  private func shouldLexGroupLikeAtom(context: ParsingContext) -> Bool {
     var src = self
     guard src.tryEat("(") else { return false }
 
@@ -1492,6 +1504,9 @@ extension Source {
 
       // The start of an Oniguruma 'of-contents' callout.
       if src.tryEat("{") { return true }
+
+      // A matching option atom (?x), (?i), ...
+      if src.canLexMatchingOptionsAsAtom(context: context) { return true }
 
       return false
     }
@@ -1753,11 +1768,18 @@ extension Source {
   ///
   ///     GroupLikeAtom -> GroupLikeReference | Callout | BacktrackingDirective
   ///
-  mutating func expectGroupLikeAtom() throws -> AST.Atom.Kind {
+  mutating func expectGroupLikeAtom(
+    context: ParsingContext
+  ) throws -> AST.Atom.Kind {
     try recordLoc { src in
       // References that look like groups, e.g (?R), (?1), ...
       if let ref = try src.lexGroupLikeReference() {
         return ref.value
+      }
+
+      // Change matching options atom (?i), (?x-i), ...
+      if let seq = try src.lexChangeMatchingOptionAtom(context: context) {
+        return .changeMatchingOptions(seq)
       }
 
       // (*ACCEPT), (*FAIL), (*MARK), ...
@@ -1828,8 +1850,8 @@ extension Source {
 
       // If we have group syntax that was skipped over in lexGroupStart, we
       // need to handle it as an atom, or throw an error.
-      if !customCC && src.shouldLexGroupLikeAtom() {
-        return try src.expectGroupLikeAtom()
+      if !customCC && src.shouldLexGroupLikeAtom(context: context) {
+        return try src.expectGroupLikeAtom(context: context)
       }
 
       // A quantifier here is invalid.
