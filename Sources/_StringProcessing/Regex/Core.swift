@@ -95,37 +95,3 @@ extension Regex {
   }
 
 }
-
-// MARK: - Primitive regex components
-
-extension String: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .quotedLiteral(self))
-  }
-}
-
-extension Substring: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .quotedLiteral(String(self)))
-  }
-}
-
-extension Character: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .atom(.char(self)))
-  }
-}
-
-extension UnicodeScalar: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .atom(.scalar(self)))
-  }
-}
