@@ -24,7 +24,7 @@ class RegexDSLTests: XCTestCase {
   ) throws {
     let regex = content()
     for (input, maybeExpectedCaptures) in tests {
-      let maybeMatch = input.matchWhole(regex)
+      let maybeMatch = input.wholeMatch(of: regex)
       if let expectedCaptures = maybeExpectedCaptures {
         let match = try XCTUnwrap(maybeMatch, file: file, line: line)
         XCTAssertTrue(
@@ -52,12 +52,12 @@ class RegexDSLTests: XCTestCase {
     }
     // Assert the inferred capture type.
     let _: (Substring, Substring, Int).Type = type(of: regex).Output.self
-    let maybeMatch = "ab1".matchWhole(regex)
+    let maybeMatch = "ab1".wholeMatch(of: regex)
     let match = try XCTUnwrap(maybeMatch)
     XCTAssertTrue(match.output == ("ab1", "b", 1))
 
     let substring = "ab1"[...]
-    let substringMatch = try XCTUnwrap(substring.matchWhole(regex))
+    let substringMatch = try XCTUnwrap(substring.wholeMatch(of: regex))
     XCTAssertTrue(match.output == substringMatch.output)
   }
 
@@ -126,7 +126,7 @@ class RegexDSLTests: XCTestCase {
   }
 
   func testMatchResultDotZeroWithoutCapture() throws {
-    let match = try XCTUnwrap("aaa".matchWhole { OneOrMore { "a" } })
+    let match = try XCTUnwrap("aaa".wholeMatch { OneOrMore { "a" } })
     XCTAssertEqual(match.0, "aaa")
   }
 
@@ -135,8 +135,8 @@ class RegexDSLTests: XCTestCase {
       let regex = ChoiceOf {
         "aaa"
       }
-      XCTAssertTrue("aaa".matchWhole(regex)?.output == "aaa")
-      XCTAssertNil("aab".matchWhole(regex)?.output)
+      XCTAssertTrue("aaa".wholeMatch(of: regex)?.output == "aaa")
+      XCTAssertNil("aab".wholeMatch(of: regex)?.output)
     }
     do {
       let regex = ChoiceOf {
@@ -144,10 +144,10 @@ class RegexDSLTests: XCTestCase {
         "bbb"
         "ccc"
       }
-      XCTAssertTrue("aaa".matchWhole(regex)?.output == "aaa")
-      XCTAssertNil("aab".matchWhole(regex)?.output)
-      XCTAssertTrue("bbb".matchWhole(regex)?.output == "bbb")
-      XCTAssertTrue("ccc".matchWhole(regex)?.output == "ccc")
+      XCTAssertTrue("aaa".wholeMatch(of: regex)?.output == "aaa")
+      XCTAssertNil("aab".wholeMatch(of: regex)?.output)
+      XCTAssertTrue("bbb".wholeMatch(of: regex)?.output == "bbb")
+      XCTAssertTrue("ccc".wholeMatch(of: regex)?.output == "ccc")
     }
     do {
       let regex = Regex {
@@ -162,7 +162,7 @@ class RegexDSLTests: XCTestCase {
         }
       }
       XCTAssertTrue(
-        try XCTUnwrap("abc".matchWhole(regex)?.output) == ("abc", "c"))
+        try XCTUnwrap("abc".wholeMatch(of: regex)?.output) == ("abc", "c"))
     }
     do {
       let regex = ChoiceOf {
@@ -170,18 +170,18 @@ class RegexDSLTests: XCTestCase {
         "bbb"
         "ccc"
       }
-      XCTAssertTrue("aaa".matchWhole(regex)?.output == "aaa")
-      XCTAssertNil("aab".matchWhole(regex)?.output)
-      XCTAssertTrue("bbb".matchWhole(regex)?.output == "bbb")
-      XCTAssertTrue("ccc".matchWhole(regex)?.output == "ccc")
+      XCTAssertTrue("aaa".wholeMatch(of: regex)?.output == "aaa")
+      XCTAssertNil("aab".wholeMatch(of: regex)?.output)
+      XCTAssertTrue("bbb".wholeMatch(of: regex)?.output == "bbb")
+      XCTAssertTrue("ccc".wholeMatch(of: regex)?.output == "ccc")
     }
     do {
       let regex = ChoiceOf {
         Capture("aaa")
       }
       XCTAssertTrue(
-        try XCTUnwrap("aaa".matchWhole(regex)?.output) == ("aaa", "aaa"))
-      XCTAssertNil("aab".matchWhole(regex)?.output)
+        try XCTUnwrap("aaa".wholeMatch(of: regex)?.output) == ("aaa", "aaa"))
+      XCTAssertNil("aab".wholeMatch(of: regex)?.output)
     }
     do {
       let regex = ChoiceOf {
@@ -190,12 +190,12 @@ class RegexDSLTests: XCTestCase {
         Capture("ccc")
       }
       XCTAssertTrue(
-        try XCTUnwrap("aaa".matchWhole(regex)?.output) == ("aaa", "aaa", nil, nil))
+        try XCTUnwrap("aaa".wholeMatch(of: regex)?.output) == ("aaa", "aaa", nil, nil))
       XCTAssertTrue(
-        try XCTUnwrap("bbb".matchWhole(regex)?.output) == ("bbb", nil, "bbb", nil))
+        try XCTUnwrap("bbb".wholeMatch(of: regex)?.output) == ("bbb", nil, "bbb", nil))
       XCTAssertTrue(
-        try XCTUnwrap("ccc".matchWhole(regex)?.output) == ("ccc", nil, nil, "ccc"))
-      XCTAssertNil("aab".matchWhole(regex)?.output)
+        try XCTUnwrap("ccc".wholeMatch(of: regex)?.output) == ("ccc", nil, nil, "ccc"))
+      XCTAssertNil("aab".wholeMatch(of: regex)?.output)
     }
   }
 
@@ -407,7 +407,7 @@ class RegexDSLTests: XCTestCase {
     // Assert the inferred capture type.
     let _: Substring.Type = type(of: regex).Output.self
     let input = "123123"
-    let match = try XCTUnwrap(input.matchWhole(regex)?.output)
+    let match = try XCTUnwrap(input.wholeMatch(of: regex)?.output)
     XCTAssertTrue(match == input)
   }
 
@@ -534,7 +534,7 @@ class RegexDSLTests: XCTestCase {
 
     let unicodeLine =
       "1BCA0..1BCA3  ; Control # Cf   [4] SHORTHAND FORMAT LETTER OVERLAP..SHORTHAND FORMAT UP STEP"
-    let match = try XCTUnwrap(unicodeLine.matchWhole(unicodeData))
+    let match = try XCTUnwrap(unicodeLine.wholeMatch(of: unicodeData))
     XCTAssertEqual(match.0, Substring(unicodeLine))
     XCTAssertEqual(match.1, "Control")
   }
@@ -566,7 +566,7 @@ class RegexDSLTests: XCTestCase {
         Substring, Unicode.Scalar?, Unicode.Scalar??, Substring
       )
       let _: ExpectedMatch.Type = type(of: regexWithCapture).Output.self
-      let maybeMatchResult = line.matchWhole(regexWithCapture)
+      let maybeMatchResult = line.wholeMatch(of: regexWithCapture)
       let matchResult = try XCTUnwrap(maybeMatchResult)
       let (wholeMatch, lower, upper, propertyString) = matchResult.output
       XCTAssertEqual(wholeMatch, Substring(line))
@@ -601,7 +601,7 @@ class RegexDSLTests: XCTestCase {
         Substring, Unicode.Scalar, Unicode.Scalar?, Substring
       )
       let _: ExpectedMatch.Type = type(of: regexWithTryCapture).Output.self
-      let maybeMatchResult = line.matchWhole(regexWithTryCapture)
+      let maybeMatchResult = line.wholeMatch(of: regexWithTryCapture)
       let matchResult = try XCTUnwrap(maybeMatchResult)
       let (wholeMatch, lower, upper, propertyString) = matchResult.output
       XCTAssertEqual(wholeMatch, Substring(line))
@@ -611,10 +611,10 @@ class RegexDSLTests: XCTestCase {
     }
 
     do {
-      let regexLiteral = try MockRegexLiteral(
-        #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
-        matching: (Substring, Substring, Substring?, Substring).self)
-      let maybeMatchResult = line.matchWhole(regexLiteral)
+      let regexLiteral = try Regex(
+        compiling: #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
+        as: (Substring, Substring, Substring?, Substring).self)
+      let maybeMatchResult = line.wholeMatch(of: regexLiteral)
       let matchResult = try XCTUnwrap(maybeMatchResult)
       let (wholeMatch, lower, upper, propertyString) = matchResult.output
       XCTAssertEqual(wholeMatch, Substring(line))
@@ -628,7 +628,7 @@ class RegexDSLTests: XCTestCase {
     do {
       let regex = try Regex(compiling: "aabcc.")
       let line = "aabccd"
-      let match = try XCTUnwrap(line.matchWhole(regex))
+      let match = try XCTUnwrap(line.wholeMatch(of: regex))
       XCTAssertEqual(match.0, line[...])
       let output = match.output
       XCTAssertEqual(output[0].substring, line[...])
@@ -640,7 +640,7 @@ class RegexDSLTests: XCTestCase {
         A6F0..A6F1    ; Extend # Mn   [2] BAMUM COMBINING MARK KOQNDON..BAMUM \
         COMBINING MARK TUKWENTIS
         """
-      let match = try XCTUnwrap(line.matchWhole(regex))
+      let match = try XCTUnwrap(line.wholeMatch(of: regex))
       XCTAssertEqual(match.0, line[...])
       let output = match.output
       XCTAssertEqual(output[0].substring, line[...])
@@ -705,7 +705,7 @@ class RegexDSLTests: XCTestCase {
         }
       }
       let input = "abc#41#42abc#42#42"
-      let result = try XCTUnwrap(input.matchWhole(regex))
+      let result = try XCTUnwrap(input.wholeMatch(of: regex))
       XCTAssertEqual(result[a], "abc")
       XCTAssertEqual(result[b], 42)
     }
@@ -785,7 +785,7 @@ class RegexDSLTests: XCTestCase {
     
     let parser = SemanticVersionParser()
     for (str, version) in versions {
-      XCTAssertEqual(str.matchWhole(parser)?.output, version)
+      XCTAssertEqual(str.wholeMatch(of: parser)?.output, version)
     }
   }
 }

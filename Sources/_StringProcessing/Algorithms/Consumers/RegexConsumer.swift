@@ -9,13 +9,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-public struct RegexConsumer<
+// FIXME: What even is this? Can we delete this whole thing?
+struct RegexConsumer<
   R: RegexComponent, Consumed: BidirectionalCollection
 > where Consumed.SubSequence == Substring {
   // TODO: Should `Regex` itself implement these protocols?
   let regex: R
 
-  public init(_ regex: R) {
+  init(_ regex: R) {
     self.regex = regex
   }
 }
@@ -24,7 +25,7 @@ extension RegexConsumer {
   func _matchingConsuming(
     _ consumed: Substring, in range: Range<String.Index>
   ) -> (upperBound: String.Index, match: Match)? {
-    guard let result = try! regex._match(
+    guard let result = try! regex.regex._match(
       consumed.base,
       in: range, mode: .partialFromFront
     ) else { return nil }
@@ -36,9 +37,9 @@ extension RegexConsumer {
 // well, taking advantage of the fact that the captures can be ignored
 
 extension RegexConsumer: MatchingCollectionConsumer {
-  public typealias Match = R.Output
+  typealias Match = R.Output
   
-  public func matchingConsuming(
+  func matchingConsuming(
     _ consumed: Consumed, in range: Range<Consumed.Index>
   ) -> (upperBound: String.Index, match: Match)? {
     _matchingConsuming(consumed[...], in: range)
@@ -47,7 +48,7 @@ extension RegexConsumer: MatchingCollectionConsumer {
 
 // TODO: We'll want to bake backwards into the engine
 extension RegexConsumer: BidirectionalMatchingCollectionConsumer {
-  public func matchingConsumingBack(
+  func matchingConsumingBack(
     _ consumed: Consumed, in range: Range<Consumed.Index>
   ) -> (lowerBound: String.Index, match: Match)? {
     var i = range.lowerBound
@@ -67,12 +68,12 @@ extension RegexConsumer: BidirectionalMatchingCollectionConsumer {
 }
 
 extension RegexConsumer: MatchingStatelessCollectionSearcher {
-  public typealias Searched = Consumed
+  typealias Searched = Consumed
 
   // TODO: We'll want to bake search into the engine so it can
   // take advantage of the structure of the regex itself and
   // its own internal state
-  public func matchingSearch(
+  func matchingSearch(
     _ searched: Searched, in range: Range<Searched.Index>
   ) -> (range: Range<String.Index>, match: Match)? {
     ConsumerSearcher(consumer: self).matchingSearch(searched, in: range)
@@ -81,9 +82,9 @@ extension RegexConsumer: MatchingStatelessCollectionSearcher {
 
 // TODO: Bake in search-back to engine too
 extension RegexConsumer: BackwardMatchingStatelessCollectionSearcher {
-  public typealias BackwardSearched = Consumed
+  typealias BackwardSearched = Consumed
   
-  public func matchingSearchBack(
+  func matchingSearchBack(
     _ searched: BackwardSearched, in range: Range<Searched.Index>
   ) -> (range: Range<String.Index>, match: Match)? {
     ConsumerSearcher(consumer: self).matchingSearchBack(searched, in: range)

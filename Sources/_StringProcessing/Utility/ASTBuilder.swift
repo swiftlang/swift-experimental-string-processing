@@ -106,16 +106,16 @@ func negativeLookahead(_ child: AST.Node) -> AST.Node {
 func negativeLookbehind(_ child: AST.Node) -> AST.Node {
   group(.negativeLookbehind, child)
 }
-public func nonAtomicLookahead(_ child: AST.Node) -> AST.Node {
+func nonAtomicLookahead(_ child: AST.Node) -> AST.Node {
   group(.nonAtomicLookahead, child)
 }
-public func nonAtomicLookbehind(_ child: AST.Node) -> AST.Node {
+func nonAtomicLookbehind(_ child: AST.Node) -> AST.Node {
   group(.nonAtomicLookbehind, child)
 }
-public func scriptRun(_ child: AST.Node) -> AST.Node {
+func scriptRun(_ child: AST.Node) -> AST.Node {
   group(.scriptRun, child)
 }
-public func atomicScriptRun(_ child: AST.Node) -> AST.Node {
+func atomicScriptRun(_ child: AST.Node) -> AST.Node {
   group(.atomicScriptRun, child)
 }
 func changeMatchingOptions(
@@ -353,6 +353,11 @@ func prop(
   inverted: Bool = false
 ) -> AST.Node {
   atom(.property(.init(kind, isInverted: inverted, isPOSIX: false)))
+}
+func posixProp(
+  _ kind: AST.Atom.CharacterProperty.Kind, inverted: Bool = false
+) -> AST.Node {
+  atom(.property(.init(kind, isInverted: inverted, isPOSIX: true)))
 }
 
 // Raw atom constructing variant

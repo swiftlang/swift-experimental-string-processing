@@ -62,7 +62,7 @@ func customTest<Match: Equatable>(
     let result: Match?
     switch call {
     case .match:
-      result = input.matchWhole(regex)?.output
+      result = input.wholeMatch(of: regex)?.output
     case .firstMatch:
       result = input.firstMatch(of: regex)?.output
     }
@@ -137,5 +137,90 @@ class CustomRegexComponentTests: XCTestCase {
 
     XCTAssertEqual(res4.output.0, "123")
     XCTAssertEqual(res4.output.1, 3)
+  }
+
+  func testRegexAbort() {
+
+    enum Radix: Hashable {
+      case dot
+      case comma
+    }
+    struct Abort: Error, Hashable {}
+
+    let hexRegex = Regex {
+      Capture { OneOrMore(.hexDigit) }
+      TryCapture { CharacterClass.any } transform: { c -> Radix? in
+        switch c {
+        case ".": return Radix.dot
+        case ",": return Radix.comma
+        case "❗️":
+          // Malicious! Toxic levels of emphasis detected.
+          throw Abort()
+        default:
+          // Not a radix
+          return nil
+        }
+      }
+      Capture { OneOrMore(.hexDigit) }
+    }
+    // hexRegex: Regex<(Substring, Substring, Radix?, Substring)>
+    // TODO: Why is Radix optional?
+
+    do {
+      guard let m = try hexRegex.wholeMatch(in: "123aef.345") else {
+        XCTFail()
+        return
+      }
+      XCTAssertEqual(m.0, "123aef.345")
+      XCTAssertEqual(m.1, "123aef")
+      XCTAssertEqual(m.2, .dot)
+      XCTAssertEqual(m.3, "345")
+    } catch {
+      XCTFail()
+    }
+
+    do {
+      _ = try hexRegex.wholeMatch(in: "123aef❗️345")
+      XCTFail()
+    } catch let e as Abort {
+      XCTAssertEqual(e, Abort())
+    } catch {
+      XCTFail()
+    }
+
+    struct Poison: Error, Hashable {}
+
+    let addressRegex = Regex {
+      "0x"
+      Capture(Repeat(.hexDigit, count: 8)) { hex -> Int in
+        let i = Int(hex, radix: 16)!
+        if i == 0xdeadbeef {
+          throw Poison()
+        }
+        return i
+      }
+    }
+
+    do {
+      guard let m = try addressRegex.wholeMatch(in: "0x1234567f") else {
+        XCTFail()
+        return
+      }
+      XCTAssertEqual(m.0, "0x1234567f")
+      XCTAssertEqual(m.1, 0x1234567f)
+    } catch {
+      XCTFail()
+    }
+
+    do {
+      _ = try addressRegex.wholeMatch(in: "0xdeadbeef")
+      XCTFail()
+    } catch let e as Poison {
+      XCTAssertEqual(e, Poison())
+    } catch {
+      XCTFail()
+    }
+
+
   }
 }

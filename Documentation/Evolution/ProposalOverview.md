@@ -3,14 +3,15 @@
 
 ## Regex Type and Overview
 
-- [Pitch](https://forums.swift.org/t/pitch-regex-type-and-overview/56029)
-- Proposal: To-be-scheduled
+- [Proposal](https://github.com/apple/swift-evolution/blob/main/proposals/0350-regex-type-overview.md), [Thread](https://forums.swift.org/t/se-0350-regex-type-and-overview/56530)
+- [Pitch thread](https://forums.swift.org/t/pitch-regex-type-and-overview/56029)
 
 Presents basic Regex type and gives an overview of how everything fits into the overall story 
 
 
 ## Regex Builder DSL
 
+- [Proposal](https://github.com/apple/swift-evolution/blob/main/proposals/0351-regex-builder.md), [Thread](https://forums.swift.org/t/se-0351-regex-builder-dsl/56531)
 - [Pitch thread](https://forums.swift.org/t/pitch-regex-builder-dsl/56007)
 
 Covers the result builder approach and basic API.
@@ -18,12 +19,11 @@ Covers the result builder approach and basic API.
 
 ## Run-time Regex Construction
 
-- Pitch thread: [Regex Syntax](https://forums.swift.org/t/pitch-regex-syntax/55711)
+- [Pitch](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntaxRunTimeConstruction.md)
+- (old) Pitch thread: [Regex Syntax](https://forums.swift.org/t/pitch-regex-syntax/55711)
     + Brief: Syntactic superset of PCRE2, Oniguruma, ICU, UTS\#18, etc.
 
 Covers the "interior" syntax, extended syntaxes, run-time construction of a regex from a string, and details of `AnyRegexOutput`.
-
-Note: The above pitch drills into the syntax, the revised pitch including two initializers and existential details is still under development.
 
 ## Regex Literals
 

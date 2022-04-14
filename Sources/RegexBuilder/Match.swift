@@ -12,29 +12,29 @@
 import _StringProcessing
 
 extension String {
-  public func matchWhole<R: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> R
+  public func wholeMatch<R: RegexComponent>(
+    @RegexComponentBuilder of content: () -> R
   ) -> Regex<R.Output>.Match? {
-    matchWhole(content())
+    wholeMatch(of: content())
   }
 
-  public func matchPrefix<R: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> R
+  public func prefixMatch<R: RegexComponent>(
+    @RegexComponentBuilder of content: () -> R
   ) -> Regex<R.Output>.Match? {
-    matchPrefix(content())
+    prefixMatch(of: content())
   }
 }
 
 extension Substring {
-  public func matchWhole<R: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> R
+  public func wholeMatch<R: RegexComponent>(
+    @RegexComponentBuilder of content: () -> R
   ) -> Regex<R.Output>.Match? {
-    matchWhole(content())
+    wholeMatch(of: content())
   }
 
-  public func matchPrefix<R: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> R
+  public func prefixMatch<R: RegexComponent>(
+    @RegexComponentBuilder of content: () -> R
   ) -> Regex<R.Output>.Match? {
-    matchPrefix(content())
+    prefixMatch(of: content())
   }
 }
