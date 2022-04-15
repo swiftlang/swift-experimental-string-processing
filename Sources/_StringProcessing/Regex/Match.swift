@@ -154,33 +154,3 @@ extension Regex {
     return nil
   }
 }
-
-@available(SwiftStdlib 5.7, *)
-extension String {
-  public func wholeMatch<R: RegexComponent>(
-    of r: R
-  ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.wholeMatch(in: self)
-  }
-
-  public func prefixMatch<R: RegexComponent>(
-    of r: R
-  ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.prefixMatch(in: self)
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Substring {
-  public func wholeMatch<R: RegexComponent>(
-    of r: R
-  ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.wholeMatch(in: self)
-  }
-
-  public func prefixMatch<R: RegexComponent>(
-    of r: R
-  ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.prefixMatch(in: self)
-  }
-}

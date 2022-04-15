@@ -13,6 +13,16 @@ import XCTest
 import _StringProcessing
 @testable import RegexBuilder
 
+fileprivate extension StringProtocol where SubSequence == Substring {
+  func wholeMatch<R: RegexComponent>(of rc: R) -> Regex<R.RegexOutput>.Match? {
+    try? rc.regex.wholeMatch(in: self[...])
+  }
+  
+  func wholeMatch<R: RegexComponent>(@RegexComponentBuilder _ content: () -> R) -> Regex<R.RegexOutput>.Match? {
+    wholeMatch(of: content())
+  }
+}
+
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
     _ tests: (input: String, expectedCaptures: MatchType?)...,
