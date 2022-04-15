@@ -25,7 +25,7 @@ AST.
 
 */
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 func alt(_ asts: [AST.Node]) -> AST.Node {
   return .alternation(
