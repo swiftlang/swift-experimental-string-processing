@@ -39,6 +39,7 @@ extension BidirectionalCollection {
 
 extension BidirectionalCollection where SubSequence == Substring {
   @available(SwiftStdlib 5.7, *)
+  @_disfavoredOverload
   func firstMatch<R: RegexComponent>(
     of regex: R
   ) -> _MatchResult<RegexConsumer<R, Self>>? {

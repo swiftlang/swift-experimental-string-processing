@@ -133,6 +133,51 @@ func customTest<Match: Equatable>(
   }
 }
 
+// Test support
+struct Concat : Equatable {
+  var wrapped: String
+  init(_ name: String, _ suffix: Int?) {
+    if let suffix = suffix {
+      wrapped = name + String(suffix)
+    } else {
+      wrapped = name
+    }
+  }
+}
+
+extension Concat : Collection {
+  typealias Index = String.Index
+  typealias Element = String.Element
+
+  var startIndex: Index { return wrapped.startIndex }
+  var endIndex: Index { return wrapped.endIndex }
+
+  subscript(position: Index) -> Element {
+    return wrapped[position]
+  }
+
+  func index(after i: Index) -> Index {
+    return wrapped.index(after: i)
+  }
+}
+
+extension Concat: BidirectionalCollection {
+  typealias Indices = String.Indices
+  typealias SubSequence = String.SubSequence
+
+  func index(before i: Index) -> Index {
+    return wrapped.index(before: i)
+  }
+
+  var indices: Indices {
+    wrapped.indices
+  }
+
+  subscript(bounds: Range<Index>) -> Substring {
+    Substring(wrapped[bounds])
+  }
+}
+
 class CustomRegexComponentTests: XCTestCase {
   // TODO: Refactor below into more exhaustive, declarative
   // tests.
@@ -467,4 +512,120 @@ class CustomRegexComponentTests: XCTestCase {
     )
 
   }
+
+
+  func testMatchVarients() {
+    func customTest<Match: Equatable>(
+      _ regex: Regex<Match>,
+      _ input: Concat,
+      expected: (wholeMatch: Match?, firstMatch: Match?, prefixMatch: Match?),
+      file: StaticString = #file, line: UInt = #line
+    ) {
+      let wholeResult = input.wholeMatch(of: regex)?.output
+      let firstResult = input.firstMatch(of: regex)?.output
+      let prefixResult = input.prefixMatch(of: regex)?.output
+      XCTAssertEqual(wholeResult, expected.wholeMatch, file: file, line: line)
+      XCTAssertEqual(firstResult, expected.firstMatch, file: file, line: line)
+      XCTAssertEqual(prefixResult, expected.prefixMatch, file: file, line: line)
+    }
+
+    typealias CaptureMatch1 = (Substring, Int?)
+    func customTest(
+      _ regex: Regex<CaptureMatch1>,
+      _ input: Concat,
+      expected: (wholeMatch: CaptureMatch1?, firstMatch: CaptureMatch1?, prefixMatch: CaptureMatch1?),
+      file: StaticString = #file, line: UInt = #line
+    ) {
+      let wholeResult = input.wholeMatch(of: regex)?.output
+      let firstResult = input.firstMatch(of: regex)?.output
+      let prefixResult = input.prefixMatch(of: regex)?.output
+      XCTAssertEqual(wholeResult?.0, expected.wholeMatch?.0, file: file, line: line)
+      XCTAssertEqual(wholeResult?.1, expected.wholeMatch?.1, file: file, line: line)
+
+      XCTAssertEqual(firstResult?.0, expected.firstMatch?.0, file: file, line: line)
+      XCTAssertEqual(firstResult?.1, expected.firstMatch?.1, file: file, line: line)
+
+      XCTAssertEqual(prefixResult?.0, expected.prefixMatch?.0, file: file, line: line)
+      XCTAssertEqual(prefixResult?.1, expected.prefixMatch?.1, file: file, line: line)
+    }
+
+    var regex = Regex {
+      OneOrMore(.digit)
+    }
+
+    customTest(regex, Concat("amy", 2023), expected:(nil, "2023", nil)) // amy2023
+    customTest(regex, Concat("amy2023", nil), expected:(nil, "2023", nil))
+    customTest(regex, Concat("amy", nil), expected:(nil, nil, nil))
+    customTest(regex, Concat("", 2023), expected:("2023", "2023", "2023")) // 2023
+    customTest(regex, Concat("bob012b", 2023), expected:(nil, "012", nil)) // b012b2023
+    customTest(regex, Concat("bob012b", nil), expected:(nil, "012", nil))
+    customTest(regex, Concat("007bob", 2023), expected:(nil, "007", "007"))
+    customTest(regex, Concat("", nil), expected:(nil, nil, nil))
+
+    regex = Regex {
+      OneOrMore(CharacterClass("a"..."z"))
+    }
+
+    customTest(regex, Concat("amy", 2023), expected:(nil, "amy", "amy")) // amy2023
+    customTest(regex, Concat("amy", nil), expected:("amy", "amy", "amy"))
+    customTest(regex, Concat("amy2022-bob", 2023), expected:(nil, "amy", "amy")) // amy2023
+    customTest(regex, Concat("", 2023), expected:(nil, nil, nil)) // 2023
+    customTest(regex, Concat("bob012b", 2023), expected:(nil, "bob", "bob")) // b012b2023
+    customTest(regex, Concat("bob012b", nil), expected:(nil, "bob", "bob"))
+    customTest(regex, Concat("007bob", 2023), expected:(nil, "bob", nil))
+    customTest(regex, Concat("", nil), expected:(nil, nil, nil))
+
+    regex = Regex {
+      OneOrMore {
+        CharacterClass("A"..."Z")
+        OneOrMore(CharacterClass("a"..."z"))
+        Repeat(.digit, count: 2)
+      }
+    }
+
+    customTest(regex, Concat("Amy12345", nil), expected:(nil, "Amy12", "Amy12"))
+    customTest(regex, Concat("Amy", 2023), expected:(nil, "Amy20", "Amy20"))
+    customTest(regex, Concat("Amy", 23), expected:("Amy23", "Amy23", "Amy23"))
+    customTest(regex, Concat("", 2023), expected:(nil, nil, nil)) // 2023
+    customTest(regex, Concat("Amy23 Boba17", nil), expected:(nil, "Amy23", "Amy23"))
+    customTest(regex, Concat("amy23 Boba17", nil), expected:(nil, "Boba17", nil))
+    customTest(regex, Concat("Amy23 boba17", nil), expected:(nil, "Amy23", "Amy23"))
+    customTest(regex, Concat("amy23 Boba", 17), expected:(nil, "Boba17", nil))
+    customTest(regex, Concat("Amy23Boba17", nil), expected:("Amy23Boba17", "Amy23Boba17", "Amy23Boba17"))
+    customTest(regex, Concat("Amy23Boba", 17), expected:("Amy23Boba17", "Amy23Boba17", "Amy23Boba17"))
+    customTest(regex, Concat("23 Boba", 17), expected:(nil, "Boba17", nil))
+
+    let twoDigitRegex = Regex {
+      OneOrMore {
+        CharacterClass("A"..."Z")
+        OneOrMore(CharacterClass("a"..."z"))
+        Capture(Repeat(.digit, count: 2)) { Int($0) }
+      }
+    }
+
+    customTest(twoDigitRegex, Concat("Amy12345", nil), expected: (nil, ("Amy12", 12), ("Amy12", 12)))
+    customTest(twoDigitRegex, Concat("Amy", 12345), expected: (nil, ("Amy12", 12), ("Amy12", 12)))
+    customTest(twoDigitRegex, Concat("Amy", 12), expected: (("Amy12", 12), ("Amy12", 12), ("Amy12", 12)))
+    customTest(twoDigitRegex, Concat("Amy23 Boba", 17), expected: (nil, firstMatch: ("Amy23", 23), prefixMatch: ("Amy23", 23)))
+    customTest(twoDigitRegex, Concat("amy23 Boba20", 23), expected:(nil, ("Boba20", 20), nil))
+    customTest(twoDigitRegex, Concat("Amy23Boba17", nil), expected:(("Amy23Boba17", 17), ("Amy23Boba17", 17), ("Amy23Boba17", 17)))
+    customTest(twoDigitRegex, Concat("Amy23Boba", 17), expected:(("Amy23Boba17", 17), ("Amy23Boba17", 17), ("Amy23Boba17", 17)))
+
+    let millennium = Regex {
+      CharacterClass("A"..."Z")
+      OneOrMore(CharacterClass("a"..."z"))
+      Capture { Repeat(.digit, count: 4) } transform: { v -> Int? in
+        guard let year = Int(v) else { return nil }
+        return year > 2000 ? year : nil
+      }
+    }
+
+    customTest(millennium, Concat("Amy2025", nil), expected: (("Amy2025", 2025), ("Amy2025", 2025), ("Amy2025", 2025)))
+    customTest(millennium, Concat("Amy", 2025), expected: (("Amy2025", 2025), ("Amy2025", 2025), ("Amy2025", 2025)))
+    customTest(millennium, Concat("Amy1995", nil), expected: (("Amy1995", nil), ("Amy1995", nil), ("Amy1995", nil)))
+    customTest(millennium, Concat("Amy", 1995), expected: (("Amy1995", nil), ("Amy1995", nil), ("Amy1995", nil)))
+    customTest(millennium, Concat("amy2025", nil), expected: (nil, nil, nil))
+    customTest(millennium, Concat("amy", 2025), expected: (nil, nil, nil))
+  }
 }
+

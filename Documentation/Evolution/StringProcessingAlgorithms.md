@@ -162,8 +162,9 @@ We also propose the following regex-powered algorithms as well as their generic 
 |`replace(:with:subrange:maxReplacements)`| Replaces all occurrences of the sequence matching the given `RegexComponent` or sequence with a given collection |
 |`split(by:)`| Returns the longest possible subsequences of the collection around elements equal to the given separator |
 |`firstMatch(of:)`| Returns the first match of the specified `RegexComponent` within the collection |
+|`wholeMatch(of:)`| Matches the specified `RegexComponent` in the collection as a whole |
+|`prefixMatch(of:)`| Matches the specified `RegexComponent` against the collection at the beginning |
 |`matches(of:)`| Returns a collection containing all matches of the specified `RegexComponent` |
-
 
 
 ## Detailed design 
@@ -389,7 +390,7 @@ extension BidirectionalCollection where SubSequence == Substring {
 }
 ```
 
-#### First match
+#### Match
 
 ```swift
 extension BidirectionalCollection where SubSequence == Substring {
@@ -398,6 +399,16 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Returns: The first match of `regex` in the collection, or `nil` if
     /// there isn't a match.
     public func firstMatch<R: RegexComponent>(of regex: R) -> RegexMatch<R.Match>?
+    
+    /// Match a regex in its entirety.
+    /// - Parameter r: The regex to match against.
+    /// - Returns: The match if there is one, or `nil` if none.
+    public func wholeMatch<R: RegexComponent>(of r: R) -> Regex<R.Output>.Match? 
+    
+    /// Match part of the regex, starting at the beginning.
+    /// - Parameter r: The regex to match against.
+    /// - Returns: The match if there is one, or `nil` if none.
+    public func prefixMatch<R: RegexComponent>(of r: R) -> Regex<R.Output>.Match?
 }
 ```
 
@@ -473,7 +484,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     /// - Returns: A new collection in which all occurrences of subsequence
     /// matching `regex` in `subrange` are replaced by `replacement`.
     public func replacing<R: RegexComponent, Replacement: Collection>(
-        _ regex: R,
+        _ r: R,
         with replacement: Replacement,
         subrange: Range<Index>,
         maxReplacements: Int = .max
@@ -489,7 +500,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     /// - Returns: A new collection in which all occurrences of subsequence
     /// matching `regex` are replaced by `replacement`.
     public func replacing<R: RegexComponent, Replacement: Collection>(
-        _ regex: R,
+        _ r: R,
         with replacement: Replacement,
         maxReplacements: Int = .max
     ) -> Self where Replacement.Element == Element
@@ -502,7 +513,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     ///   - maxReplacements: A number specifying how many occurrences of the
     ///   sequence matching `regex` to replace. Default is `Int.max`.
     public mutating func replace<R: RegexComponent, Replacement: Collection>(
-        _ regex: R,
+        _ r: R,
         with replacement: Replacement,
         maxReplacements: Int = .max
     ) where Replacement.Element == Element
@@ -609,4 +620,4 @@ Trimming a string from both sides shares a similar story. For example, `"ababa".
  
 ### Future API
 
-Some Python functions are not currently included in this proposal, such as trimming the suffix from a string/collection. This pitch aims to establish a pattern for using `RegexComponent` with string processing algorithms, so that further enhancement can to be introduced to the standard library easily in the future, and eventually close the gap between Swift and other popular scripting languages. 
+Some common string processing functions are not currently included in this proposal, such as trimming the suffix from a string/collection, and finding overlapping ranges of matched substrings. This pitch aims to establish a pattern for using `RegexComponent` with string processing algorithms, so that further enhancement can to be introduced to the standard library easily in the future, and eventually close the gap between Swift and other popular scripting languages. 
