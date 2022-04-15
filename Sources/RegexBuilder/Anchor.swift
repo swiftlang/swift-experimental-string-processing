@@ -29,6 +29,7 @@ public struct Anchor {
   var isInverted: Bool = false
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Anchor: RegexComponent {
   var astAssertion: AST.Atom.AssertionKind {
     if !isInverted {
@@ -63,6 +64,7 @@ extension Anchor: RegexComponent {
 
 // MARK: - Public API
 
+@available(SwiftStdlib 5.7, *)
 extension Anchor {
   public static var startOfSubject: Anchor {
     Anchor(kind: .startOfSubject)
