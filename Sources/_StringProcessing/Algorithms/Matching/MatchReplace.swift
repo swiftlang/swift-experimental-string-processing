@@ -75,6 +75,7 @@ extension RangeReplaceableCollection {
 // MARK: Regex algorithms
 
 extension RangeReplaceableCollection where SubSequence == Substring {
+  @available(SwiftStdlib 5.7, *)
   func replacing<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
@@ -87,7 +88,8 @@ extension RangeReplaceableCollection where SubSequence == Substring {
       subrange: subrange,
       maxReplacements: maxReplacements)
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   func replacing<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
@@ -99,7 +101,8 @@ extension RangeReplaceableCollection where SubSequence == Substring {
       subrange: startIndex..<endIndex,
       maxReplacements: maxReplacements)
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   mutating func replace<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,

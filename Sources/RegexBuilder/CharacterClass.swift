@@ -37,18 +37,21 @@ public struct CharacterClass {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension CharacterClass: RegexComponent {
   public var regex: Regex<Substring> {
     return Regex(node: DSLTree.Node.customCharacterClass(ccc))
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension CharacterClass {
   public var inverted: CharacterClass {
     CharacterClass(ccc.inverted)
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension RegexComponent where Self == CharacterClass {
   public static var any: CharacterClass {
     .init(DSLTree.CustomCharacterClass(members: [.atom(.any)]))
@@ -91,6 +94,7 @@ extension RegexComponent where Self == CharacterClass {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension RegexComponent where Self == CharacterClass {
   /// Returns a character class that matches any character in the given string
   /// or sequence.
@@ -112,6 +116,7 @@ extension RegexComponent where Self == CharacterClass {
 }
 
 // Unicode properties
+@available(SwiftStdlib 5.7, *)
 extension CharacterClass {
   public static func generalCategory(_ category: Unicode.GeneralCategory) -> CharacterClass {
     guard let extendedCategory = category.extendedGeneralCategory else {
@@ -179,6 +184,7 @@ extension Unicode.GeneralCategory {
 
 // MARK: - Set algebra methods
 
+@available(SwiftStdlib 5.7, *)
 extension RegexComponent where Self == CharacterClass {
   public init(_ first: CharacterClass, _ rest: CharacterClass...) {
     if rest.isEmpty {
@@ -191,6 +197,7 @@ extension RegexComponent where Self == CharacterClass {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension CharacterClass {
   public func union(_ other: CharacterClass) -> CharacterClass {
     CharacterClass(.init(members: [

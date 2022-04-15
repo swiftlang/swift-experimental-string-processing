@@ -7,7 +7,7 @@ let availabilityDefinition = PackageDescription.SwiftSetting.unsafeFlags([
     "-Xfrontend",
     "-define-availability",
     "-Xfrontend",
-    #""SwiftStdlib 5.7:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999""#
+    #"SwiftStdlib 5.7:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999"#,
 ])
 
 let package = Package(
@@ -67,44 +67,50 @@ let package = Package(
         .testTarget(
             name: "RegexTests",
             dependencies: ["_StringProcessing"],
-            swiftSettings: [availabilityDefinition]),
+            swiftSettings: [
+                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
+            ]),
         .testTarget(
             name: "RegexBuilderTests",
             dependencies: ["_StringProcessing", "RegexBuilder"],
             swiftSettings: [
                 .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"]),
-                availabilityDefinition
+                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
             ]),
         .target(
             name: "Prototypes",
             dependencies: ["_RegexParser", "_StringProcessing"],
-            swiftSettings: [availabilityDefinition]),
+            swiftSettings: [
+                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
+            ]),
 
         // MARK: Scripts
         .executableTarget(
             name: "VariadicsGenerator",
             dependencies: [
-              .product(name: "ArgumentParser", package: "swift-argument-parser")
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
         .executableTarget(
             name: "PatternConverter",
             dependencies: [
-              .product(name: "ArgumentParser", package: "swift-argument-parser"),
-              "_RegexParser",
-              "_StringProcessing"
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                "_RegexParser",
+                "_StringProcessing"
             ]),
 
         // MARK: Exercises
         .target(
-          name: "Exercises",
-          dependencies: ["_RegexParser", "Prototypes", "_StringProcessing", "RegexBuilder"],
-          swiftSettings: [
-              .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"]),
-              availabilityDefinition
-          ]),
+            name: "Exercises",
+            dependencies: ["_RegexParser", "Prototypes", "_StringProcessing", "RegexBuilder"],
+            swiftSettings: [
+                .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"]),
+                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
+            ]),
         .testTarget(
-          name: "ExercisesTests",
-          dependencies: ["Exercises"],
-          swiftSettings: [availabilityDefinition]),
+            name: "ExercisesTests",
+            dependencies: ["Exercises"],
+            swiftSettings: [
+                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
+            ])
     ]
 )

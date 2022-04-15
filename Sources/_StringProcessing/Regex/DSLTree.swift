@@ -12,7 +12,6 @@
 import _RegexParser
 
 @_spi(RegexBuilder)
-@available(SwiftStdlib 5.7, *)
 public struct DSLTree {
   var root: Node
   var options: Options?
@@ -163,7 +162,6 @@ extension DSLTree {
 
 // CollectionConsumer
 @_spi(RegexBuilder)
-@available(SwiftStdlib 5.7, *)
 public typealias _ConsumerInterface = (
   String, Range<String.Index>
 ) throws -> String.Index?
@@ -171,14 +169,12 @@ public typealias _ConsumerInterface = (
 // Type producing consume
 // TODO: better name
 @_spi(RegexBuilder)
-@available(SwiftStdlib 5.7, *)
 public typealias _MatcherInterface = (
   String, String.Index, Range<String.Index>
 ) throws -> (String.Index, Any)?
 
 // Character-set (post grapheme segmentation)
 @_spi(RegexBuilder)
-@available(SwiftStdlib 5.7, *)
 public typealias _CharacterPredicateInterface = (
   (Character) -> Bool
 )
@@ -379,7 +375,6 @@ extension DSLTree.Node {
 }
 
 @_spi(RegexBuilder)
-@available(SwiftStdlib 5.7, *)
 public struct ReferenceID: Hashable, Equatable {
   private static var counter: Int = 0
   var base: Int
@@ -391,7 +386,6 @@ public struct ReferenceID: Hashable, Equatable {
 }
 
 @_spi(RegexBuilder)
-@available(SwiftStdlib 5.7, *)
 public struct CaptureTransform: Hashable, CustomStringConvertible {
   public enum Closure {
     case failable((Substring) throws -> Any?)
