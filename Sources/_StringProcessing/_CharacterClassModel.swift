@@ -16,7 +16,6 @@ import _RegexParser
 // of parsing or to store in an AST
 
 @_spi(RegexBuilder)
-@available(SwiftStdlib 5.7, *)
 public struct _CharacterClassModel: Hashable {
   /// The actual character class to match.
   var cc: Representation
@@ -29,7 +28,7 @@ public struct _CharacterClassModel: Hashable {
   var isInverted: Bool = false
 
   // TODO: Split out builtin character classes into their own type?
-  public enum Representation: Hashable {
+    public enum Representation: Hashable {
     /// Any character
     case any
     /// Any grapheme cluster
@@ -56,8 +55,7 @@ public struct _CharacterClassModel: Hashable {
   public typealias SetOperator = AST.CustomCharacterClass.SetOp
 
   /// A binary set operation that forms a character class component.
-  @_spi(RegexBuilder)
-  public struct SetOperation: Hashable {
+    public struct SetOperation: Hashable {
     var lhs: CharacterSetComponent
     var op: SetOperator
     var rhs: CharacterSetComponent
@@ -74,8 +72,7 @@ public struct _CharacterClassModel: Hashable {
     }
   }
 
-  @_spi(RegexBuilder)
-  public enum CharacterSetComponent: Hashable {
+    public enum CharacterSetComponent: Hashable {
     case character(Character)
     case range(ClosedRange<Character>)
 
@@ -205,6 +202,7 @@ public struct _CharacterClassModel: Hashable {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension _CharacterClassModel: RegexComponent {
   public typealias RegexOutput = Substring
 
@@ -374,7 +372,7 @@ extension _CharacterClassModel {
 }
 
 extension DSLTree.Atom {
-  var characterClass: _CharacterClassModel? {
+    var characterClass: _CharacterClassModel? {
     switch self {
     case let .unconverted(a):
       return a.characterClass
@@ -385,7 +383,7 @@ extension DSLTree.Atom {
 }
 
 extension AST.Atom {
-  var characterClass: _CharacterClassModel? {
+    var characterClass: _CharacterClassModel? {
     switch kind {
     case let .escaped(b): return b.characterClass
 
@@ -411,7 +409,7 @@ extension AST.Atom {
 }
 
 extension AST.Atom.EscapedBuiltin {
-  var characterClass: _CharacterClassModel? {
+    var characterClass: _CharacterClassModel? {
     switch self {
     case .decimalDigit:    return .digit
     case .notDecimalDigit: return .digit.inverted

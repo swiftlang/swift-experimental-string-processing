@@ -61,6 +61,7 @@ public struct Regex<Output>: RegexComponent {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   /// A program representation that caches any lowered representation for
   /// execution.
@@ -85,6 +86,7 @@ extension Regex {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   @_spi(RegexBuilder)
   public var root: DSLTree.Node {
@@ -95,5 +97,4 @@ extension Regex {
   public init(node: DSLTree.Node) {
     self.program = Program(tree: .init(node, options: nil))
   }
-
 }

@@ -11,6 +11,7 @@
 
 import _RegexParser
 
+@available(SwiftStdlib 5.7, *)
 extension RegexComponent {
   /// Returns a regular expression that ignores casing when matching.
   public func ignoringCase(_ ignoreCase: Bool = true) -> Regex<RegexOutput> {
@@ -105,6 +106,7 @@ extension RegexComponent {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct RegexSemanticLevel: Hashable {
   internal enum Representation {
     case graphemeCluster
@@ -127,6 +129,7 @@ public struct RegexSemanticLevel: Hashable {
 }
 
 // Options that only affect literals
+@available(SwiftStdlib 5.7, *)
 extension RegexComponent {
   /// Returns a regular expression where the start and end of input
   /// anchors (`^` and `$`) also match against the start and end of a line.
@@ -159,6 +162,8 @@ extension RegexComponent {
 }
 
 // MARK: - Helper method
+
+@available(SwiftStdlib 5.7, *)
 extension RegexComponent {
   fileprivate func wrapInOption(
     _ option: AST.MatchingOption.Kind,
