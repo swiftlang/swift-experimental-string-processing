@@ -39,7 +39,10 @@ extension BidirectionalCollection where Element: Comparable {
   func contains<S: Sequence>(_ other: S) -> Bool
     where S.Element == Element
   {
-    firstRange(of: other) != nil
+    if #available(SwiftStdlib 5.7, *) {
+      return firstRange(of: other) != nil
+    }
+    fatalError()
   }
 }
 

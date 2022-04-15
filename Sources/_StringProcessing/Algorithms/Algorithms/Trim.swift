@@ -288,11 +288,13 @@ extension BidirectionalCollection where SubSequence == Substring {
   public func trimmingPrefix<R: RegexComponent>(_ regex: R) -> SubSequence {
     trimmingPrefix(RegexConsumer(regex))
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   func trimmingSuffix<R: RegexComponent>(_ regex: R) -> SubSequence {
     trimmingSuffix(RegexConsumer(regex))
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   func trimming<R: RegexComponent>(_ regex: R) -> SubSequence {
     trimming(RegexConsumer(regex))
   }
@@ -307,11 +309,13 @@ extension RangeReplaceableCollection
   public mutating func trimPrefix<R: RegexComponent>(_ regex: R) {
     trimPrefix(RegexConsumer(regex))
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   mutating func trimSuffix<R: RegexComponent>(_ regex: R) {
     trimSuffix(RegexConsumer(regex))
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   mutating func trim<R: RegexComponent>(_ regex: R) {
     let consumer = RegexConsumer<R, Self>(regex)
     trimPrefix(consumer)
@@ -320,14 +324,17 @@ extension RangeReplaceableCollection
 }
 
 extension Substring {
+  @available(SwiftStdlib 5.7, *)
   mutating func trimPrefix<R: RegexComponent>(_ regex: R) {
     trimPrefix(RegexConsumer(regex))
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   mutating func trimSuffix<R: RegexComponent>(_ regex: R) {
     trimSuffix(RegexConsumer(regex))
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   mutating func trim<R: RegexComponent>(_ regex: R) {
     let consumer = RegexConsumer<R, Self>(regex)
     trimPrefix(consumer)

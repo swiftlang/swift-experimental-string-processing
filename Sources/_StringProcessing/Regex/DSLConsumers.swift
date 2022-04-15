@@ -18,6 +18,7 @@ public protocol CustomRegexComponent: RegexComponent {
   ) -> (upperBound: String.Index, output: RegexOutput)?
 }
 
+@available(SwiftStdlib 5.7, *)
 extension CustomRegexComponent {
   public var regex: Regex<RegexOutput> {
     Regex(node: .matcher(.init(RegexOutput.self), { input, index, bounds in

@@ -12,6 +12,7 @@
 import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   public init<Content: RegexComponent>(
     @RegexComponentBuilder _ content: () -> Content
@@ -22,10 +23,12 @@ extension Regex {
 
 // A convenience protocol for builtin regex components that are initialized with
 // a `DSLTree` node.
+@available(SwiftStdlib 5.7, *)
 internal protocol _BuiltinRegexComponent: RegexComponent {
   init(_ regex: Regex<RegexOutput>)
 }
 
+@available(SwiftStdlib 5.7, *)
 extension _BuiltinRegexComponent {
   init(node: DSLTree.Node) {
     self.init(Regex(node: node))
@@ -34,6 +37,7 @@ extension _BuiltinRegexComponent {
 
 // MARK: - Primitive regex components
 
+@available(SwiftStdlib 5.7, *)
 extension String: RegexComponent {
   public typealias Output = Substring
 
@@ -42,6 +46,7 @@ extension String: RegexComponent {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Substring: RegexComponent {
   public typealias Output = Substring
 
@@ -50,6 +55,7 @@ extension Substring: RegexComponent {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Character: RegexComponent {
   public typealias Output = Substring
 
@@ -58,6 +64,7 @@ extension Character: RegexComponent {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension UnicodeScalar: RegexComponent {
   public typealias Output = Substring
 
@@ -110,6 +117,7 @@ public struct QuantificationBehavior {
 extension DSLTree.Node {
   /// Generates a DSLTree node for a repeated range of the given DSLTree node.
   /// Individual public API functions are in the generated Variadics.swift file.
+  @available(SwiftStdlib 5.7, *)
   static func repeating(
     _ range: Range<Int>,
     _ behavior: QuantificationBehavior,
@@ -137,6 +145,7 @@ extension DSLTree.Node {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension QuantificationBehavior {
   /// Match as much of the input string as possible, backtracking when
   /// necessary.
@@ -304,6 +313,7 @@ public struct Reference<Capture>: RegexComponent {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex.Match {
   public subscript<Capture>(_ reference: Reference<Capture>) -> Capture {
     self[reference.id]

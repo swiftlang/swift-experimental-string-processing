@@ -11,6 +11,7 @@
 
 import _StringProcessing
 
+@available(SwiftStdlib 5.7, *)
 extension String {
   @available(SwiftStdlib 5.7, *)
   public func wholeMatch<R: RegexComponent>(
