@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-public protocol CollectionConsumer {
+protocol CollectionConsumer {
   associatedtype Consumed: Collection
   func consuming(
     _ consumed: Consumed,
@@ -18,13 +18,13 @@ public protocol CollectionConsumer {
 }
 
 extension CollectionConsumer {
-  public func consuming(_ consumed: Consumed) -> Consumed.Index? {
+  func consuming(_ consumed: Consumed) -> Consumed.Index? {
     consuming(consumed, in: consumed.startIndex..<consumed.endIndex)
   }
   
   // TODO: `@discardableResult`?
   /// Returns `true` if the consume was successful.
-  public func consume(_ consumed: inout Consumed) -> Bool
+  func consume(_ consumed: inout Consumed) -> Bool
     where Consumed.SubSequence == Consumed
   {
     guard let index = consuming(consumed) else { return false }
@@ -35,7 +35,7 @@ extension CollectionConsumer {
 
 // MARK: Consuming from the back
 
-public protocol BidirectionalCollectionConsumer: CollectionConsumer
+protocol BidirectionalCollectionConsumer: CollectionConsumer
   where Consumed: BidirectionalCollection
 {
   func consumingBack(
@@ -45,11 +45,11 @@ public protocol BidirectionalCollectionConsumer: CollectionConsumer
 }
 
 extension BidirectionalCollectionConsumer {
-  public func consumingBack(_ consumed: Consumed) -> Consumed.Index? {
+  func consumingBack(_ consumed: Consumed) -> Consumed.Index? {
     consumingBack(consumed, in: consumed.startIndex..<consumed.endIndex)
   }
   
-  public func consumeBack(_ consumed: inout Consumed) -> Bool
+  func consumeBack(_ consumed: inout Consumed) -> Bool
     where Consumed.SubSequence == Consumed
   {
     guard let index = consumingBack(consumed) else { return false }

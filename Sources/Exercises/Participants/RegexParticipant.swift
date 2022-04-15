@@ -62,17 +62,17 @@ private func extractFromCaptures(
 private func graphemeBreakPropertyData<RP: RegexComponent>(
   forLine line: String,
   using regex: RP
-) -> GraphemeBreakEntry? where RP.Output == (Substring, Substring, Substring?, Substring) {
-  line.matchWhole(regex).map(\.output).flatMap(extractFromCaptures)
+) -> GraphemeBreakEntry? where RP.RegexOutput == (Substring, Substring, Substring?, Substring) {
+  line.wholeMatch(of: regex).map(\.output).flatMap(extractFromCaptures)
 }
 
 private func graphemeBreakPropertyDataLiteral(
   forLine line: String
 ) -> GraphemeBreakEntry? {
-  return graphemeBreakPropertyData(
-    forLine: line,
-    using: r(#"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
-             matching: (Substring, Substring, Substring?, Substring).self))
+  let regex = try! Regex(
+    compiling: #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
+    as: (Substring, Substring, Substring?, Substring).self)
+  return graphemeBreakPropertyData(forLine: line, using: regex)
 }
 
 // MARK: - Builder DSL
@@ -80,7 +80,7 @@ private func graphemeBreakPropertyDataLiteral(
 private func graphemeBreakPropertyData(
   forLine line: String
 ) -> GraphemeBreakEntry? {
-  line.matchWhole {
+  line.wholeMatch {
     TryCapture(OneOrMore(.hexDigit)) { Unicode.Scalar(hex: $0) }
     Optionally {
       ".."

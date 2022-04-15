@@ -156,6 +156,9 @@ extension AST.Atom {
 
     case .backtrackingDirective(let d): return "\(d)"
 
+    case .changeMatchingOptions(let opts):
+      return "changeMatchingOptions<\(opts)>"
+
     case .char, .scalar:
       fatalError("Unreachable")
     }
@@ -225,22 +228,21 @@ extension AST.Reference: _ASTPrintable {
 extension AST.Group.Kind: _ASTPrintable {
   public var _dumpBase: String {
     switch self {
-    case .capture:                return "capture"
-    case .namedCapture(let s):    return "capture<\(s.value)>"
-    case .balancedCapture(let b): return "balanced capture \(b)"
-    case .nonCapture:             return "nonCapture"
-    case .nonCaptureReset:        return "nonCaptureReset"
-    case .atomicNonCapturing:     return "atomicNonCapturing"
-    case .lookahead:              return "lookahead"
-    case .negativeLookahead:      return "negativeLookahead"
-    case .nonAtomicLookahead:     return "nonAtomicLookahead"
-    case .lookbehind:             return "lookbehind"
-    case .negativeLookbehind:     return "negativeLookbehind"
-    case .nonAtomicLookbehind:    return "nonAtomicLookbehind"
-    case .scriptRun:              return "scriptRun"
-    case .atomicScriptRun:        return "atomicScriptRun"
-    case .changeMatchingOptions(let seq, let isIsolated):
-      return "changeMatchingOptions<\(seq), \(isIsolated)>"
+    case .capture:                        return "capture"
+    case .namedCapture(let s):            return "capture<\(s.value)>"
+    case .balancedCapture(let b):         return "balanced capture \(b)"
+    case .nonCapture:                     return "nonCapture"
+    case .nonCaptureReset:                return "nonCaptureReset"
+    case .atomicNonCapturing:             return "atomicNonCapturing"
+    case .lookahead:                      return "lookahead"
+    case .negativeLookahead:              return "negativeLookahead"
+    case .nonAtomicLookahead:             return "nonAtomicLookahead"
+    case .lookbehind:                     return "lookbehind"
+    case .negativeLookbehind:             return "negativeLookbehind"
+    case .nonAtomicLookbehind:            return "nonAtomicLookbehind"
+    case .scriptRun:                      return "scriptRun"
+    case .atomicScriptRun:                return "atomicScriptRun"
+    case .changeMatchingOptions(let seq): return "changeMatchingOptions<\(seq)>"
     }
   }
 }
@@ -312,7 +314,9 @@ extension AST.CustomCharacterClass.Member: _ASTPrintable {
     case .quote(let q): return "\(q)"
     case .trivia(let t): return "\(t)"
     case .setOperation(let lhs, let op, let rhs):
-      return "op \(lhs) \(op.value) \(rhs)"
+      // TODO: We should eventually have some way of filtering out trivia for
+      // tests, so that it can appear in regular dumps.
+      return "op \(lhs.filter(\.isSemantic)) \(op.value) \(rhs.filter(\.isSemantic))"
     }
   }
 }

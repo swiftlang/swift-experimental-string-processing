@@ -11,30 +11,35 @@
 
 import _StringProcessing
 
+@available(SwiftStdlib 5.7, *)
 extension String {
-  public func matchWhole<R: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> R
-  ) -> Regex<R.Output>.Match? {
-    matchWhole(content())
+  @available(SwiftStdlib 5.7, *)
+  public func wholeMatch<R: RegexComponent>(
+    @RegexComponentBuilder of content: () -> R
+  ) -> Regex<R.RegexOutput>.Match? {
+    wholeMatch(of: content())
   }
 
-  public func matchPrefix<R: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> R
-  ) -> Regex<R.Output>.Match? {
-    matchPrefix(content())
+  @available(SwiftStdlib 5.7, *)
+  public func prefixMatch<R: RegexComponent>(
+    @RegexComponentBuilder of content: () -> R
+  ) -> Regex<R.RegexOutput>.Match? {
+    prefixMatch(of: content())
   }
 }
 
 extension Substring {
-  public func matchWhole<R: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> R
-  ) -> Regex<R.Output>.Match? {
-    matchWhole(content())
+  @available(SwiftStdlib 5.7, *)
+  public func wholeMatch<R: RegexComponent>(
+    @RegexComponentBuilder of content: () -> R
+  ) -> Regex<R.RegexOutput>.Match? {
+    wholeMatch(of: content())
   }
 
-  public func matchPrefix<R: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> R
-  ) -> Regex<R.Output>.Match? {
-    matchPrefix(content())
+  @available(SwiftStdlib 5.7, *)
+  public func prefixMatch<R: RegexComponent>(
+    @RegexComponentBuilder of content: () -> R
+  ) -> Regex<R.RegexOutput>.Match? {
+    prefixMatch(of: content())
   }
 }

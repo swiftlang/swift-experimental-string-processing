@@ -19,6 +19,7 @@ struct Executor {
     self.engine = Engine(program, enableTracing: enablesTracing)
   }
 
+  @available(SwiftStdlib 5.7, *)
   func match<Output>(
     _ input: String,
     in inputRange: Range<String.Index>,
@@ -28,6 +29,9 @@ struct Executor {
       input: input, bounds: inputRange, matchMode: mode)
 
     guard let endIdx = cpu.consume() else {
+      if let e = cpu.failureReason {
+        throw e
+      }
       return nil
     }
 
@@ -61,6 +65,7 @@ struct Executor {
       value: value)
   }
 
+  @available(SwiftStdlib 5.7, *)
   func dynamicMatch(
     _ input: String,
     in inputRange: Range<String.Index>,

@@ -21,6 +21,16 @@ API convention:
 - eat() and tryEat() is still used by the parser as a character-by-character interface
 */
 
+extension Error {
+  func addingLocation(_ loc: Range<Source.Position>) -> Error {
+    // If we're already a LocatedError, don't change the location.
+    if self is _LocatedErrorProtocol {
+      return self
+    }
+    return Source.LocatedError<Self>(self, loc)
+  }
+}
+
 extension Source {
   // MARK: - recordLoc
 
@@ -51,12 +61,8 @@ extension Source {
     do {
       guard let result = try f(&self) else { return nil }
       return Located(result, start..<currentPosition)
-    } catch let e as Source.LocatedError<ParseError> {
-      throw e
-    } catch let e as ParseError {
-      throw LocatedError(e, start..<currentPosition)
-    } catch {
-      fatalError("FIXME: Let's not keep the boxed existential...")
+    } catch let e {
+      throw e.addingLocation(start..<currentPosition)
     }
   }
 
@@ -706,6 +712,22 @@ extension Source {
     return .init(caretLoc: nil, adding: adding, minusLoc: nil, removing: [])
   }
 
+  /// A matching option changing atom.
+  ///
+  ///     '(?' MatchingOptionSeq ')'
+  ///
+  mutating func lexChangeMatchingOptionAtom(
+    context: ParsingContext
+  ) throws -> AST.MatchingOptionSequence? {
+    try tryEating { src in
+      guard src.tryEat(sequence: "(?"),
+            let seq = try src.lexMatchingOptionSequence(context: context)
+      else { return nil }
+      try src.expect(")")
+      return seq
+    }
+  }
+
   /// Try to consume explicitly spelled-out PCRE2 group syntax.
   mutating func lexExplicitPCRE2GroupStart() -> AST.Group.Kind? {
     tryEating { src in
@@ -846,7 +868,7 @@ extension Source {
         // otherwise a matching option specifier. Conversely, '(?P' can be the
         // start of a matching option sequence, or a reference if it is followed
         // by '=' or '<'.
-        guard !src.shouldLexGroupLikeAtom() else { return nil }
+        guard !src.shouldLexGroupLikeAtom(context: context) else { return nil }
 
         guard src.tryEat("(") else { return nil }
         if src.tryEat("?") {
@@ -871,22 +893,13 @@ extension Source {
 
           // Matching option changing group (?iJmnsUxxxDPSWy{..}-iJmnsUxxxDPSW:).
           if let seq = try src.lexMatchingOptionSequence(context: context) {
-            if src.tryEat(":") {
-              return .changeMatchingOptions(seq, isIsolated: false)
-            }
-            // If this isn't start of an explicit group, we should have an
-            // implicit group that covers the remaining elements of the current
-            // group.
-            // TODO: This implicit scoping behavior matches Oniguruma, but PCRE
-            // also does it across alternations, which will require additional
-            // handling.
-            guard src.tryEat(")") else {
+            guard src.tryEat(":") else {
               if let next = src.peek() {
                 throw ParseError.invalidMatchingOption(next)
               }
               throw ParseError.expected(")")
             }
-            return .changeMatchingOptions(seq, isIsolated: true)
+            return .changeMatchingOptions(seq)
           }
 
           guard let next = src.peek() else {
@@ -1035,18 +1048,8 @@ extension Source {
     context: ParsingContext
   ) throws -> Located<AST.Group.Kind>? {
     try tryEating { src in
-      guard src.tryEat(sequence: "(?"),
-            let group = try src.lexGroupStart(context: context)
-      else { return nil }
-
-      // Implicitly scoped groups are not supported here.
-      guard !group.value.hasImplicitScope else {
-        throw LocatedError(
-          ParseError.unsupportedCondition("implicitly scoped group"),
-          group.location
-        )
-      }
-      return group
+      guard src.tryEat(sequence: "(?") else { return nil }
+      return try src.lexGroupStart(context: context)
     }
   }
 
@@ -1066,9 +1069,13 @@ extension Source {
   mutating func lexCustomCCStart(
   ) throws -> Located<CustomCC.Start>? {
     recordLoc { src in
-      // POSIX named sets are atoms.
-      guard !src.starts(with: "[:") else { return nil }
-
+      // Make sure we don't have a POSIX character property. This may require
+      // walking to its ending to make sure we have a closing ':]', as otherwise
+      // we have a custom character class.
+      // TODO: This behavior seems subtle, could we warn?
+      guard !src.canLexPOSIXCharacterProperty() else {
+        return nil
+      }
       if src.tryEat("[") {
         return src.tryEat("^") ? .inverted : .normal
       }
@@ -1101,10 +1108,33 @@ extension Source {
   private mutating func lexPOSIXCharacterProperty(
   ) throws -> Located<AST.Atom.CharacterProperty>? {
     try recordLoc { src in
-      guard src.tryEat(sequence: "[:") else { return nil }
-      let inverted = src.tryEat("^")
-      let prop = try src.lexCharacterPropertyContents(end: ":]").value
-      return .init(prop, isInverted: inverted, isPOSIX: true)
+      try src.tryEating { src in
+        guard src.tryEat(sequence: "[:") else { return nil }
+        let inverted = src.tryEat("^")
+
+        // Note we lex the contents and ending *before* classifying, because we
+        // want to bail with nil if we don't have the right ending. This allows
+        // the lexing of a custom character class if we don't have a ':]'
+        // ending.
+        let (key, value) = src.lexCharacterPropertyKeyValue()
+        guard src.tryEat(sequence: ":]") else { return nil }
+
+        let prop = try Source.classifyCharacterPropertyContents(key: key,
+                                                                value: value)
+        return .init(prop, isInverted: inverted, isPOSIX: true)
+      }
+    }
+  }
+
+  private func canLexPOSIXCharacterProperty() -> Bool {
+    do {
+      var src = self
+      return try src.lexPOSIXCharacterProperty() != nil
+    } catch {
+      // We want to tend on the side of lexing a POSIX character property, so
+      // even if it is invalid in some way (e.g invalid property names), still
+      // try and lex it.
+      return true
     }
   }
 
@@ -1129,26 +1159,52 @@ extension Source {
     }
   }
 
-  private mutating func lexCharacterPropertyContents(
-    end: String
-  ) throws -> Located<AST.Atom.CharacterProperty.Kind> {
-    try recordLoc { src in
-      // We should either have:
-      // - 'x=y' where 'x' is a property key, and 'y' is a value.
-      // - 'y' where 'y' is a value (or a bool key with an inferred value
-      //   of true), and its key is inferred.
-      // TODO: We could have better recovery here if we only ate the characters
-      // that property keys and values can use.
-      let lhs = src.lexUntil {
-        $0.isEmpty || $0.peek() == "=" || $0.starts(with: end)
-      }.value
-      if src.tryEat("=") {
-        let rhs = try src.lexUntil(eating: end).value
-        return try Source.classifyCharacterProperty(key: lhs, value: rhs)
+  private mutating func lexCharacterPropertyKeyValue(
+  ) -> (key: String?, value: String) {
+    func atPossibleEnding(_ src: inout Source) -> Bool {
+      guard let next = src.peek() else { return true }
+      switch next {
+      case "=":
+        // End of a key.
+        return true
+      case ":", "[", "]":
+        // POSIX character property endings to cover ':]', ']', and '[' as the
+        // start of a nested character class.
+        return true
+      case "}":
+        // Ending of '\p{'. We cover this for POSIX too as it's not a valid
+        // character property name anyway, and it's nice not to have diverging
+        // logic for these cases.
+        return true
+      default:
+        // We may want to handle other metacharacters here, e.g '{', '(', ')',
+        // as they're not valid character property names. However for now
+        // let's tend on the side of forming an unknown property name in case
+        // these characters are ever used in future character property names
+        // (though it's very unlikely). Users can always escape e.g the ':'
+        // in '[:' if they definitely want a custom character class.
+        return false
       }
-      try src.expect(sequence: end)
-      return try Source.classifyCharacterPropertyValueOnly(lhs)
     }
+    // We should either have:
+    // - 'x=y' where 'x' is a property key, and 'y' is a value.
+    // - 'y' where 'y' is a value (or a bool key with an inferred value of true)
+    //   and its key is inferred.
+    let lhs = lexUntil(atPossibleEnding).value
+    if tryEat("=") {
+      let rhs = lexUntil(atPossibleEnding).value
+      return (lhs, rhs)
+    }
+    return (nil, lhs)
+  }
+
+  private static func classifyCharacterPropertyContents(
+    key: String?, value: String
+  ) throws -> AST.Atom.CharacterProperty.Kind {
+    if let key = key {
+      return try classifyCharacterProperty(key: key, value: value)
+    }
+    return try classifyCharacterPropertyValueOnly(value)
   }
 
   /// Try to consume a character property.
@@ -1164,7 +1220,10 @@ extension Source {
       let isInverted = src.peek() == "P"
       src.advance(2)
 
-      let prop = try src.lexCharacterPropertyContents(end: "}").value
+      let (key, value) = src.lexCharacterPropertyKeyValue()
+      let prop = try Source.classifyCharacterPropertyContents(key: key,
+                                                              value: value)
+      try src.expect("}")
       return .init(prop, isInverted: isInverted, isPOSIX: false)
     }
   }
@@ -1177,17 +1236,19 @@ extension Source {
     allowWholePatternRef: Bool = false, allowRecursionLevel: Bool = false
   ) throws -> AST.Reference? {
     let kind = try recordLoc { src -> AST.Reference.Kind? in
-      // Note this logic should match canLexNumberedReference.
-      if src.tryEat("+") {
-        return .relative(try src.expectNumber().value)
+      try src.tryEating { src in
+        // Note this logic should match canLexNumberedReference.
+        if src.tryEat("+"), let num = try src.lexNumber() {
+          return .relative(num.value)
+        }
+        if src.tryEat("-"), let num = try src.lexNumber() {
+          return .relative(-num.value)
+        }
+        if let num = try src.lexNumber() {
+          return .absolute(num.value)
+        }
+        return nil
       }
-      if src.tryEat("-") {
-        return .relative(try -src.expectNumber().value)
-      }
-      if let num = try src.lexNumber() {
-        return .absolute(num.value)
-      }
-      return nil
     }
     guard let kind = kind else { return nil }
     guard allowWholePatternRef || kind.value != .recurseWholePattern else {
@@ -1416,8 +1477,21 @@ extension Source {
     return src.canLexNumberedReference()
   }
 
+  private func canLexMatchingOptionsAsAtom(context: ParsingContext) -> Bool {
+    var src = self
+
+    // See if we can lex a matching option sequence that terminates in ')'. Such
+    // a sequence is an atom. If an error is thrown, there are invalid elements
+    // of the matching option sequence. In such a case, we can lex as a group
+    // and diagnose the invalid group kind.
+    guard (try? src.lexMatchingOptionSequence(context: context)) != nil else {
+      return false
+    }
+    return src.tryEat(")")
+  }
+
   /// Whether a group specifier should be lexed as an atom instead of a group.
-  private func shouldLexGroupLikeAtom() -> Bool {
+  private func shouldLexGroupLikeAtom(context: ParsingContext) -> Bool {
     var src = self
     guard src.tryEat("(") else { return false }
 
@@ -1430,6 +1504,9 @@ extension Source {
 
       // The start of an Oniguruma 'of-contents' callout.
       if src.tryEat("{") { return true }
+
+      // A matching option atom (?x), (?i), ...
+      if src.canLexMatchingOptionsAsAtom(context: context) { return true }
 
       return false
     }
@@ -1691,11 +1768,18 @@ extension Source {
   ///
   ///     GroupLikeAtom -> GroupLikeReference | Callout | BacktrackingDirective
   ///
-  mutating func expectGroupLikeAtom() throws -> AST.Atom.Kind {
+  mutating func expectGroupLikeAtom(
+    context: ParsingContext
+  ) throws -> AST.Atom.Kind {
     try recordLoc { src in
       // References that look like groups, e.g (?R), (?1), ...
       if let ref = try src.lexGroupLikeReference() {
         return ref.value
+      }
+
+      // Change matching options atom (?i), (?x-i), ...
+      if let seq = try src.lexChangeMatchingOptionAtom(context: context) {
+        return .changeMatchingOptions(seq)
       }
 
       // (*ACCEPT), (*FAIL), (*MARK), ...
@@ -1758,18 +1842,16 @@ extension Source {
       if !customCC && (src.peek() == ")" || src.peek() == "|") { return nil }
       // TODO: Store customCC in the atom, if that's useful
 
-      // POSIX character property. This is only allowed in a custom character
-      // class.
-      // TODO: Can we try and recover and diagnose these outside character
-      // classes?
-      if customCC, let prop = try src.lexPOSIXCharacterProperty()?.value {
+      // POSIX character property. Like \p{...} this is also allowed outside of
+      // a custom character class.
+      if let prop = try src.lexPOSIXCharacterProperty()?.value {
         return .property(prop)
       }
 
       // If we have group syntax that was skipped over in lexGroupStart, we
       // need to handle it as an atom, or throw an error.
-      if !customCC && src.shouldLexGroupLikeAtom() {
-        return try src.expectGroupLikeAtom()
+      if !customCC && src.shouldLexGroupLikeAtom(context: context) {
+        return try src.expectGroupLikeAtom(context: context)
       }
 
       // A quantifier here is invalid.
@@ -1786,6 +1868,9 @@ extension Source {
           return .char(char)
         }
         throw Unreachable("TODO: reason")
+
+      case "(" where !customCC:
+        throw Unreachable("Should have lexed a group or group-like atom")
 
       // (sometimes) special metacharacters
       case ".": return customCC ? .char(".") : .any

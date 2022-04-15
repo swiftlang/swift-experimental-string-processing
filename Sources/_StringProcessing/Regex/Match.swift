@@ -9,6 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   /// The result of matching a regex against a string.
   ///
@@ -29,6 +30,7 @@ extension Regex {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex.Match {
   /// The produced output from the match operation
   public var output: Output {
@@ -81,18 +83,19 @@ extension Regex.Match {
   }
 }
 
-extension RegexComponent {
+@available(SwiftStdlib 5.7, *)
+extension Regex {
   /// Match a string in its entirety.
   ///
   /// Returns `nil` if no match and throws on abort
-  public func matchWhole(_ s: String) throws -> Regex<Output>.Match? {
+  public func wholeMatch(in s: String) throws -> Regex<Output>.Match? {
     try _match(s, in: s.startIndex..<s.endIndex, mode: .wholeString)
   }
 
   /// Match part of the string, starting at the beginning.
   ///
   /// Returns `nil` if no match and throws on abort
-  public func matchPrefix(_ s: String) throws -> Regex<Output>.Match? {
+  public func prefixMatch(in s: String) throws -> Regex<Output>.Match? {
     try _match(s, in: s.startIndex..<s.endIndex, mode: .partialFromFront)
   }
 
@@ -106,14 +109,14 @@ extension RegexComponent {
   /// Match a substring in its entirety.
   ///
   /// Returns `nil` if no match and throws on abort
-  public func matchWhole(_ s: Substring) throws -> Regex<Output>.Match? {
+  public func wholeMatch(in s: Substring) throws -> Regex<Output>.Match? {
     try _match(s.base, in: s.startIndex..<s.endIndex, mode: .wholeString)
   }
 
   /// Match part of the string, starting at the beginning.
   ///
   /// Returns `nil` if no match and throws on abort
-  public func matchPrefix(_ s: Substring) throws -> Regex<Output>.Match? {
+  public func prefixMatch(in s: Substring) throws -> Regex<Output>.Match? {
     try _match(s.base, in: s.startIndex..<s.endIndex, mode: .partialFromFront)
   }
 
@@ -130,7 +133,7 @@ extension RegexComponent {
     mode: MatchMode = .wholeString
   ) throws -> Regex<Output>.Match? {
     let executor = Executor(program: regex.program.loweredProgram)
-      return try executor.match(input, in: inputRange, mode)
+    return try executor.match(input, in: inputRange, mode)
   }
 
   func _firstMatch(
@@ -152,19 +155,32 @@ extension RegexComponent {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension String {
-  public func matchWhole<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
-    try? regex.matchWhole(self)
+  public func wholeMatch<R: RegexComponent>(
+    of r: R
+  ) -> Regex<R.RegexOutput>.Match? {
+    try? r.regex.wholeMatch(in: self)
   }
-  public func matchPrefix<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
-    try? regex.matchPrefix(self)
+
+  public func prefixMatch<R: RegexComponent>(
+    of r: R
+  ) -> Regex<R.RegexOutput>.Match? {
+    try? r.regex.prefixMatch(in: self)
   }
 }
+
+@available(SwiftStdlib 5.7, *)
 extension Substring {
-  public func matchWhole<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
-    try? regex.matchWhole(self)
+  public func wholeMatch<R: RegexComponent>(
+    of r: R
+  ) -> Regex<R.RegexOutput>.Match? {
+    try? r.regex.wholeMatch(in: self)
   }
-  public func matchPrefix<R: RegexComponent>(_ regex: R) -> Regex<R.Output>.Match? {
-    try? regex.matchPrefix(self)
+
+  public func prefixMatch<R: RegexComponent>(
+    of r: R
+  ) -> Regex<R.RegexOutput>.Match? {
+    try? r.regex.prefixMatch(in: self)
   }
 }
