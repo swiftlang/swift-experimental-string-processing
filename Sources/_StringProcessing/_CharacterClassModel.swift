@@ -15,7 +15,9 @@ import _RegexParser
 // an AST, but this isn't a natural thing to produce in the context
 // of parsing or to store in an AST
 
-public struct CharacterClass: Hashable {
+@_spi(RegexBuilder)
+@available(SwiftStdlib 5.7, *)
+public struct _CharacterClassModel: Hashable {
   /// The actual character class to match.
   var cc: Representation
   
@@ -54,29 +56,31 @@ public struct CharacterClass: Hashable {
   public typealias SetOperator = AST.CustomCharacterClass.SetOp
 
   /// A binary set operation that forms a character class component.
+  @_spi(RegexBuilder)
   public struct SetOperation: Hashable {
     var lhs: CharacterSetComponent
     var op: SetOperator
     var rhs: CharacterSetComponent
 
-    public func matches(_ c: Character) -> Bool {
+    func matches(_ c: Character, with options: MatchingOptions) -> Bool {
       switch op {
       case .intersection:
-        return lhs.matches(c) && rhs.matches(c)
+        return lhs.matches(c, with: options) && rhs.matches(c, with: options)
       case .subtraction:
-        return lhs.matches(c) && !rhs.matches(c)
+        return lhs.matches(c, with: options) && !rhs.matches(c, with: options)
       case .symmetricDifference:
-        return lhs.matches(c) != rhs.matches(c)
+        return lhs.matches(c, with: options) != rhs.matches(c, with: options)
       }
     }
   }
 
+  @_spi(RegexBuilder)
   public enum CharacterSetComponent: Hashable {
     case character(Character)
     case range(ClosedRange<Character>)
 
     /// A nested character class.
-    case characterClass(CharacterClass)
+    case characterClass(_CharacterClassModel)
 
     /// A binary set operation of character class components.
     indirect case setOperation(SetOperation)
@@ -87,32 +91,46 @@ public struct CharacterClass: Hashable {
       .setOperation(.init(lhs: lhs, op: op, rhs: rhs))
     }
 
-    public func matches(_ character: Character) -> Bool {
+    func matches(_ character: Character, with options: MatchingOptions) -> Bool {
       switch self {
-      case .character(let c): return c == character
-      case .range(let range): return range.contains(character)
+      case .character(let c):
+        if options.isCaseInsensitive {
+          return c.lowercased() == character.lowercased()
+        } else {
+          return c == character
+        }
+      case .range(let range):
+        if options.isCaseInsensitive {
+          let newLower = range.lowerBound.lowercased()
+          let newUpper = range.upperBound.lowercased()
+          // FIXME: Is failing this possible? Is this the right behavior if so?
+          guard newLower <= newUpper else { return false }
+          return (newLower...newUpper).contains(character.lowercased())
+        } else {
+          return range.contains(character)
+        }
       case .characterClass(let custom):
         let str = String(character)
-        return custom.matches(in: str, at: str.startIndex) != nil
-      case .setOperation(let op): return op.matches(character)
+        return custom.matches(in: str, at: str.startIndex, with: options) != nil
+      case .setOperation(let op): return op.matches(character, with: options)
       }
     }
   }
 
-  public enum MatchLevel {
+  enum MatchLevel {
     /// Match at the extended grapheme cluster level.
     case graphemeCluster
     /// Match at the Unicode scalar level.
     case unicodeScalar
   }
 
-  public var scalarSemantic: Self {
+  var scalarSemantic: Self {
     var result = self
     result.matchLevel = .unicodeScalar
     return result
   }
   
-  public var graphemeClusterSemantic: Self {
+  var graphemeClusterSemantic: Self {
     var result = self
     result.matchLevel = .graphemeCluster
     return result
@@ -120,7 +138,7 @@ public struct CharacterClass: Hashable {
 
   /// Returns an inverted character class if true is passed, otherwise the
   /// same character class is returned.
-  public func withInversion(_ invertion: Bool) -> Self {
+  func withInversion(_ invertion: Bool) -> Self {
     var copy = self
     if invertion {
       copy.isInverted.toggle()
@@ -135,21 +153,26 @@ public struct CharacterClass: Hashable {
   
   /// Returns the end of the match of this character class in `str`, if
   /// it matches.
-  public func matches(in str: String, at i: String.Index) -> String.Index? {
+  func matches(in str: String, at i: String.Index, with options: MatchingOptions) -> String.Index? {
     switch matchLevel {
     case .graphemeCluster:
       let c = str[i]
       var matched: Bool
       switch cc {
       case .any, .anyGrapheme: matched = true
-      case .digit: matched = c.isNumber
-      case .hexDigit: matched = c.isHexDigit
+      case .digit:
+        matched = c.isNumber && (c.isASCII || !options.usesASCIIDigits)
+      case .hexDigit:
+        matched = c.isHexDigit && (c.isASCII || !options.usesASCIIDigits)
       case .horizontalWhitespace: fatalError("Not implemented")
-      case .newlineSequence: matched = c.isNewline
+      case .newlineSequence:
+        matched = c.isNewline && (c.isASCII || !options.usesASCIISpaces)
       case .verticalWhitespace: fatalError("Not implemented")
-      case .whitespace: matched = c.isWhitespace
-      case .word: matched = c.isWordCharacter
-      case .custom(let set): matched = set.any { $0.matches(c) }
+      case .whitespace:
+        matched = c.isWhitespace && (c.isASCII || !options.usesASCIISpaces)
+      case .word:
+        matched = c.isWordCharacter && (c.isASCII || !options.usesASCIIWord)
+      case .custom(let set): matched = set.any { $0.matches(c, with: options) }
       }
       if isInverted {
         matched.toggle()
@@ -161,13 +184,17 @@ public struct CharacterClass: Hashable {
       switch cc {
       case .any: matched = true
       case .anyGrapheme: fatalError("Not matched in this mode")
-      case .digit: matched = c.properties.numericType != nil
-      case .hexDigit: matched = Character(c).isHexDigit
+      case .digit:
+        matched = c.properties.numericType != nil && (c.isASCII || !options.usesASCIIDigits)
+      case .hexDigit:
+        matched = Character(c).isHexDigit && (c.isASCII || !options.usesASCIIDigits)
       case .horizontalWhitespace: fatalError("Not implemented")
       case .newlineSequence: fatalError("Not implemented")
       case .verticalWhitespace: fatalError("Not implemented")
-      case .whitespace: matched = c.properties.isWhitespace
-      case .word: matched = c.properties.isAlphabetic || c == "_"
+      case .whitespace:
+        matched = c.properties.isWhitespace && (c.isASCII || !options.usesASCIISpaces)
+      case .word:
+        matched = (c.properties.isAlphabetic || c == "_") && (c.isASCII || !options.usesASCIIWord)
       case .custom: fatalError("Not supported")
       }
       if isInverted {
@@ -178,10 +205,10 @@ public struct CharacterClass: Hashable {
   }
 }
 
-extension CharacterClass: RegexComponent {
-  public typealias Output = Substring
+extension _CharacterClassModel: RegexComponent {
+  public typealias RegexOutput = Substring
 
-  public var regex: Regex<Output> {
+  public var regex: Regex<RegexOutput> {
     guard let ast = self.makeAST() else {
       fatalError("FIXME: extended AST?")
     }
@@ -189,51 +216,52 @@ extension CharacterClass: RegexComponent {
   }
 }
 
-extension RegexComponent where Self == CharacterClass {
-  public static var any: CharacterClass {
+@_spi(RegexBuilder)
+extension _CharacterClassModel {
+  public static var any: _CharacterClassModel {
     .init(cc: .any, matchLevel: .graphemeCluster)
   }
 
-  public static var anyGrapheme: CharacterClass {
+  public static var anyGrapheme: _CharacterClassModel {
     .init(cc: .anyGrapheme, matchLevel: .graphemeCluster)
   }
 
-  public static var whitespace: CharacterClass {
+  public static var whitespace: _CharacterClassModel {
     .init(cc: .whitespace, matchLevel: .graphemeCluster)
   }
   
-  public static var digit: CharacterClass {
+  public static var digit: _CharacterClassModel {
     .init(cc: .digit, matchLevel: .graphemeCluster)
   }
   
-  public static var hexDigit: CharacterClass {
+  public static var hexDigit: _CharacterClassModel {
     .init(cc: .hexDigit, matchLevel: .graphemeCluster)
   }
 
-  public static var horizontalWhitespace: CharacterClass {
+  public static var horizontalWhitespace: _CharacterClassModel {
     .init(cc: .horizontalWhitespace, matchLevel: .graphemeCluster)
   }
 
-  public static var newlineSequence: CharacterClass {
+  public static var newlineSequence: _CharacterClassModel {
     .init(cc: .newlineSequence, matchLevel: .graphemeCluster)
   }
 
-  public static var verticalWhitespace: CharacterClass {
+  public static var verticalWhitespace: _CharacterClassModel {
     .init(cc: .verticalWhitespace, matchLevel: .graphemeCluster)
   }
 
-  public static var word: CharacterClass {
+  public static var word: _CharacterClassModel {
     .init(cc: .word, matchLevel: .graphemeCluster)
   }
 
   public static func custom(
-    _ components: [CharacterClass.CharacterSetComponent]
-  ) -> CharacterClass {
+    _ components: [_CharacterClassModel.CharacterSetComponent]
+  ) -> _CharacterClassModel {
     .init(cc: .custom(components), matchLevel: .graphemeCluster)
   }
 }
 
-extension CharacterClass.CharacterSetComponent: CustomStringConvertible {
+extension _CharacterClassModel.CharacterSetComponent: CustomStringConvertible {
   public var description: String {
     switch self {
     case .range(let range): return "<range \(range)>"
@@ -244,7 +272,7 @@ extension CharacterClass.CharacterSetComponent: CustomStringConvertible {
   }
 }
 
-extension CharacterClass.Representation: CustomStringConvertible {
+extension _CharacterClassModel.Representation: CustomStringConvertible {
   public var description: String {
     switch self {
     case .any: return "<any>"
@@ -261,13 +289,13 @@ extension CharacterClass.Representation: CustomStringConvertible {
   }
 }
 
-extension CharacterClass: CustomStringConvertible {
+extension _CharacterClassModel: CustomStringConvertible {
   public var description: String {
     return "\(isInverted ? "not " : "")\(cc)"
   }
 }
 
-extension CharacterClass {
+extension _CharacterClassModel {
   public func makeAST() -> AST.Node? {
     let inv = isInverted
 
@@ -320,7 +348,7 @@ extension CharacterClass {
 }
 
 extension DSLTree.Node {
-  var characterClass: CharacterClass? {
+  var characterClass: _CharacterClassModel? {
     switch self {
     case let .customCharacterClass(ccc):
       return ccc.modelCharacterClass
@@ -335,10 +363,10 @@ extension DSLTree.Node {
   }
 }
 
-extension CharacterClass {
-  public func withMatchLevel(
-    _ level: CharacterClass.MatchLevel
-  ) -> CharacterClass {
+extension _CharacterClassModel {
+  func withMatchLevel(
+    _ level: _CharacterClassModel.MatchLevel
+  ) -> _CharacterClassModel {
     var cc = self
     cc.matchLevel = level
     return cc
@@ -346,7 +374,7 @@ extension CharacterClass {
 }
 
 extension DSLTree.Atom {
-  var characterClass: CharacterClass? {
+  var characterClass: _CharacterClassModel? {
     switch self {
     case let .unconverted(a):
       return a.characterClass
@@ -357,7 +385,7 @@ extension DSLTree.Atom {
 }
 
 extension AST.Atom {
-  var characterClass: CharacterClass? {
+  var characterClass: _CharacterClassModel? {
     switch kind {
     case let .escaped(b): return b.characterClass
 
@@ -383,7 +411,7 @@ extension AST.Atom {
 }
 
 extension AST.Atom.EscapedBuiltin {
-  var characterClass: CharacterClass? {
+  var characterClass: _CharacterClassModel? {
     switch self {
     case .decimalDigit:    return .digit
     case .notDecimalDigit: return .digit.inverted
@@ -414,9 +442,9 @@ extension AST.Atom.EscapedBuiltin {
 
 extension DSLTree.CustomCharacterClass {
   // TODO: Refactor a bit, and... can we drop this type?
-  var modelCharacterClass: CharacterClass? {
+  var modelCharacterClass: _CharacterClassModel? {
     var result =
-      Array<CharacterClass.CharacterSetComponent>()
+      Array<_CharacterClassModel.CharacterSetComponent>()
     for m in members {
       switch m {
       case let .atom(a):
@@ -482,12 +510,12 @@ extension DSLTree.CustomCharacterClass {
         break
       }
     }
-    let cc = CharacterClass.custom(result)
+    let cc = _CharacterClassModel.custom(result)
     return isInverted ? cc.inverted : cc
   }
 }
 
-extension CharacterClass {
+extension _CharacterClassModel {
   // FIXME: Calling on inverted sets wont be the same as the
   // inverse of a boundary if at the start or end of the
   // string. (Think through what we want: do it ourselves or
@@ -495,21 +523,22 @@ extension CharacterClass {
   func isBoundary(
     _ input: String,
     at pos: String.Index,
-    bounds: Range<String.Index>
+    bounds: Range<String.Index>,
+    with options: MatchingOptions
   ) -> Bool {
     // FIXME: How should we handle bounds?
     // We probably need two concepts
     if input.isEmpty { return false }
     if pos == input.startIndex {
-      return self.matches(in: input, at: pos) != nil
+      return self.matches(in: input, at: pos, with: options) != nil
     }
     let priorIdx = input.index(before: pos)
     if pos == input.endIndex {
-      return self.matches(in: input, at: priorIdx) != nil
+      return self.matches(in: input, at: priorIdx, with: options) != nil
     }
 
-    let prior = self.matches(in: input, at: priorIdx) != nil
-    let current = self.matches(in: input, at: pos) != nil
+    let prior = self.matches(in: input, at: priorIdx, with: options) != nil
+    let current = self.matches(in: input, at: pos, with: options) != nil
     return prior != current
   }
 

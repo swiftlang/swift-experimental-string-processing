@@ -34,6 +34,9 @@ extension Compiler.ByteCodeGen {
     case let .symbolicReference(id):
       builder.buildUnresolvedReference(id: id)
 
+    case let .changeMatchingOptions(optionSequence):
+      options.apply(optionSequence)
+
     case let .unconverted(astAtom):
       if let consumer = try astAtom.generateConsumer(options) {
         builder.buildConsume(by: consumer)
@@ -111,30 +114,41 @@ extension Compiler.ByteCodeGen {
       }
 
     case .startOfLine:
-      builder.buildAssert { (input, pos, bounds) in
-        pos == input.startIndex ||
-        input[input.index(before: pos)].isNewline
+      if options.anchorsMatchNewlines {
+        builder.buildAssert { (input, pos, bounds) in
+          pos == input.startIndex || input[input.index(before: pos)].isNewline
+        }
+      } else {
+        builder.buildAssert { (input, pos, bounds) in
+          pos == input.startIndex
+        }
       }
-
+      
     case .endOfLine:
-      builder.buildAssert { (input, pos, bounds) in
-        pos == input.endIndex || input[pos].isNewline
+      if options.anchorsMatchNewlines {
+        builder.buildAssert { (input, pos, bounds) in
+          pos == input.endIndex || input[pos].isNewline
+        }
+      } else {
+        builder.buildAssert { (input, pos, bounds) in
+          pos == input.endIndex
+        }
       }
 
     case .wordBoundary:
       // TODO: May want to consider Unicode level
-      builder.buildAssert { (input, pos, bounds) in
+      builder.buildAssert { [options] (input, pos, bounds) in
         // TODO: How should we handle bounds?
-        CharacterClass.word.isBoundary(
-          input, at: pos, bounds: bounds)
+        _CharacterClassModel.word.isBoundary(
+          input, at: pos, bounds: bounds, with: options)
       }
 
     case .notWordBoundary:
       // TODO: May want to consider Unicode level
-      builder.buildAssert { (input, pos, bounds) in
+      builder.buildAssert { [options] (input, pos, bounds) in
         // TODO: How should we handle bounds?
-        !CharacterClass.word.isBoundary(
-          input, at: pos, bounds: bounds)
+        !_CharacterClassModel.word.isBoundary(
+          input, at: pos, bounds: bounds, with: options)
       }
     }
   }
@@ -306,7 +320,7 @@ extension Compiler.ByteCodeGen {
   ) throws {
     let transform = builder.makeTransformFunction {
       input, range in
-      t(input[range])
+      try t(input[range])
     }
     builder.buildBeginCapture(cap)
     try emitNode(child)
@@ -336,7 +350,7 @@ extension Compiler.ByteCodeGen {
     case .capture, .namedCapture, .balancedCapture:
       throw Unreachable("These should produce a capture node")
 
-    case .changeMatchingOptions(let optionSequence, _):
+    case .changeMatchingOptions(let optionSequence):
       options.apply(optionSequence)
       try emitNode(child)
 
@@ -562,6 +576,9 @@ extension Compiler.ByteCodeGen {
       }
 
     case let .capture(_, refId, child):
+      options.beginScope()
+      defer { options.endScope() }
+
       let cap = builder.makeCapture(id: refId)
       switch child {
       case let .matcher(_, m):
@@ -584,7 +601,15 @@ extension Compiler.ByteCodeGen {
       try emitQuantification(amt, kind, child)
 
     case let .customCharacterClass(ccc):
-      try emitCustomCharacterClass(ccc)
+      if ccc.containsAny {
+        if !ccc.isInverted {
+          emitAny()
+        } else {
+          throw Unsupported("Inverted any")
+        }
+      } else {
+        try emitCustomCharacterClass(ccc)
+      }
 
     case let .atom(a):
       try emitAtom(a)

@@ -13,9 +13,10 @@ import _RegexParser
 
 
 /// A type that represents a regular expression.
+@available(SwiftStdlib 5.7, *)
 public protocol RegexComponent {
-  associatedtype Output
-  var regex: Regex<Output> { get }
+  associatedtype RegexOutput
+  var regex: Regex<RegexOutput> { get }
 }
 
 /// A regex represents a string processing algorithm.
@@ -25,6 +26,7 @@ public protocol RegexComponent {
 ///     print(match.0) // "axb"
 ///     print(match.1) // "x"
 ///
+@available(SwiftStdlib 5.7, *)
 public struct Regex<Output>: RegexComponent {
   let program: Program
 
@@ -94,59 +96,4 @@ extension Regex {
     self.program = Program(tree: .init(node, options: nil))
   }
 
-}
-
-// MARK: - Primitive regex components
-
-extension String: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .quotedLiteral(self))
-  }
-}
-
-extension Substring: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .quotedLiteral(String(self)))
-  }
-}
-
-extension Character: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .atom(.char(self)))
-  }
-}
-
-extension UnicodeScalar: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .atom(.scalar(self)))
-  }
-}
-
-// MARK: - Testing
-
-public struct MockRegexLiteral<Output>: RegexComponent {
-  public typealias MatchValue = Substring
-  public let regex: Regex<Output>
-
-  public init(
-    _ string: String,
-    _ syntax: SyntaxOptions = .traditional,
-    matching: Output.Type = Output.self
-  ) throws {
-    regex = Regex(ast: try parse(string, syntax))
-  }
-}
-
-public func r<Output>(
-  _ s: String, matching matchType: Output.Type = Output.self
-) -> MockRegexLiteral<Output> {
-  try! MockRegexLiteral(s, matching: matchType)
 }

@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-public protocol MatchingCollectionConsumer: CollectionConsumer {
+protocol MatchingCollectionConsumer: CollectionConsumer {
   associatedtype Match
   func matchingConsuming(
     _ consumed: Consumed,
@@ -18,7 +18,7 @@ public protocol MatchingCollectionConsumer: CollectionConsumer {
 }
 
 extension MatchingCollectionConsumer {
-  public func consuming(
+  func consuming(
     _ consumed: Consumed,
     in range: Range<Consumed.Index>
   ) -> Consumed.Index? {
@@ -28,7 +28,7 @@ extension MatchingCollectionConsumer {
 
 // MARK: Consuming from the back
 
-public protocol BidirectionalMatchingCollectionConsumer:
+protocol BidirectionalMatchingCollectionConsumer:
   MatchingCollectionConsumer, BidirectionalCollectionConsumer
 {
   func matchingConsumingBack(
@@ -38,7 +38,7 @@ public protocol BidirectionalMatchingCollectionConsumer:
 }
 
 extension BidirectionalMatchingCollectionConsumer {
-  public func consumingBack(
+  func consumingBack(
     _ consumed: Consumed,
     in range: Range<Consumed.Index>
   ) -> Consumed.Index? {

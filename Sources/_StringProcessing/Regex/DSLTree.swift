@@ -12,6 +12,7 @@
 import _RegexParser
 
 @_spi(RegexBuilder)
+@available(SwiftStdlib 5.7, *)
 public struct DSLTree {
   var root: Node
   var options: Options?
@@ -107,8 +108,31 @@ extension DSLTree {
   public struct CustomCharacterClass {
     var members: [Member]
     var isInverted: Bool
+    
+    var containsAny: Bool {
+      members.contains { member in
+        switch member {
+        case .atom(.any): return true
+        case .custom(let ccc): return ccc.containsAny
+        default:
+          return false
+        }
+      }
+    }
+    
+    public init(members: [DSLTree.CustomCharacterClass.Member], isInverted: Bool = false) {
+      self.members = members
+      self.isInverted = isInverted
+    }
+    
+    public var inverted: CustomCharacterClass {
+      var result = self
+      result.isInverted.toggle()
+      return result
+    }
 
-    enum Member {
+    @_spi(RegexBuilder)
+    public enum Member {
       case atom(Atom)
       case range(Atom, Atom)
       case custom(CustomCharacterClass)
@@ -133,25 +157,30 @@ extension DSLTree {
     case backreference(AST.Reference)
     case symbolicReference(ReferenceID)
 
+    case changeMatchingOptions(AST.MatchingOptionSequence)
+
     case unconverted(AST.Atom)
   }
 }
 
 // CollectionConsumer
 @_spi(RegexBuilder)
+@available(SwiftStdlib 5.7, *)
 public typealias _ConsumerInterface = (
   String, Range<String.Index>
-) -> String.Index?
+) throws -> String.Index?
 
 // Type producing consume
 // TODO: better name
 @_spi(RegexBuilder)
+@available(SwiftStdlib 5.7, *)
 public typealias _MatcherInterface = (
   String, String.Index, Range<String.Index>
-) -> (String.Index, Any)?
+) throws -> (String.Index, Any)?
 
 // Character-set (post grapheme segmentation)
 @_spi(RegexBuilder)
+@available(SwiftStdlib 5.7, *)
 public typealias _CharacterPredicateInterface = (
   (Character) -> Bool
 )
@@ -352,6 +381,7 @@ extension DSLTree.Node {
 }
 
 @_spi(RegexBuilder)
+@available(SwiftStdlib 5.7, *)
 public struct ReferenceID: Hashable, Equatable {
   private static var counter: Int = 0
   var base: Int
@@ -359,5 +389,65 @@ public struct ReferenceID: Hashable, Equatable {
   public init() {
     base = Self.counter
     Self.counter += 1
+  }
+}
+
+@_spi(RegexBuilder)
+@available(SwiftStdlib 5.7, *)
+public struct CaptureTransform: Hashable, CustomStringConvertible {
+  public enum Closure {
+    case failable((Substring) throws -> Any?)
+    case nonfailable((Substring) throws -> Any)
+  }
+  public let resultType: Any.Type
+  public let closure: Closure
+
+  public init(resultType: Any.Type, closure: Closure) {
+    self.resultType = resultType
+    self.closure = closure
+  }
+
+  public init(
+    resultType: Any.Type,
+    _ closure: @escaping (Substring) throws -> Any
+  ) {
+    self.init(resultType: resultType, closure: .nonfailable(closure))
+  }
+
+  public init(
+    resultType: Any.Type,
+    _ closure: @escaping (Substring) throws -> Any?
+  ) {
+    self.init(resultType: resultType, closure: .failable(closure))
+  }
+
+  public func callAsFunction(_ input: Substring) throws -> Any? {
+    switch closure {
+    case .nonfailable(let closure):
+      let result = try closure(input)
+      assert(type(of: result) == resultType)
+      return result
+    case .failable(let closure):
+      guard let result = try closure(input) else {
+        return nil
+      }
+      assert(type(of: result) == resultType)
+      return result
+    }
+  }
+
+  public static func == (lhs: CaptureTransform, rhs: CaptureTransform) -> Bool {
+    unsafeBitCast(lhs.closure, to: (Int, Int).self) ==
+      unsafeBitCast(rhs.closure, to: (Int, Int).self)
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    let (fn, ctx) = unsafeBitCast(closure, to: (Int, Int).self)
+    hasher.combine(fn)
+    hasher.combine(ctx)
+  }
+
+  public var description: String {
+    "<transform result_type=\(resultType)>"
   }
 }

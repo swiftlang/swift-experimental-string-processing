@@ -13,7 +13,7 @@
 
 import ArgumentParser
 import _RegexParser
-import _StringProcessing
+@_spi(PatternConverter) import _StringProcessing
 
 @main
 struct PatternConverter: ParsableCommand {

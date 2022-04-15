@@ -15,7 +15,7 @@ import _StringProcessing
 
 // A nibbler processes a single character from a string
 private protocol Nibbler: CustomRegexComponent {
-  func nibble(_: Character) -> Output?
+  func nibble(_: Character) -> RegexOutput?
 }
 
 extension Nibbler {
@@ -24,7 +24,7 @@ extension Nibbler {
     _ input: String,
     startingAt index: String.Index,
     in bounds: Range<String.Index>
-  ) -> (upperBound: String.Index, output: Output)? {
+  ) -> (upperBound: String.Index, output: RegexOutput)? {
     guard index != bounds.upperBound, let res = nibble(input[index]) else {
       return nil
     }
@@ -35,7 +35,7 @@ extension Nibbler {
 
 // A number nibbler
 private struct Numbler: Nibbler {
-  typealias Output = Int
+  typealias RegexOutput = Int
   func nibble(_ c: Character) -> Int? {
     c.wholeNumberValue
   }
@@ -43,7 +43,7 @@ private struct Numbler: Nibbler {
 
 // An ASCII value nibbler
 private struct Asciibbler: Nibbler {
-  typealias Output = UInt8
+  typealias RegexOutput = UInt8
   func nibble(_ c: Character) -> UInt8? {
     c.asciiValue
   }
@@ -62,9 +62,9 @@ func customTest<Match: Equatable>(
     let result: Match?
     switch call {
     case .match:
-      result = input.matchWhole(regex)?.output
+      result = input.wholeMatch(of: regex)?.output
     case .firstMatch:
-      result = input.firstMatch(of: regex)?.result
+      result = input.firstMatch(of: regex)?.output
     }
     XCTAssertEqual(result, match)
   }
@@ -120,9 +120,9 @@ class CustomRegexComponentTests: XCTestCase {
       return
     }
 
-    XCTAssertEqual(res3.match, "123")
-    XCTAssertEqual(res3.result.0, "123")
-    XCTAssertEqual(res3.result.1, "123")
+    XCTAssertEqual(res3.range, "ab123c".index(atOffset: 2)..<"ab123c".index(atOffset: 5))
+    XCTAssertEqual(res3.output.0, "123")
+    XCTAssertEqual(res3.output.1, "123")
 
     let regex4 = Regex {
       OneOrMore {
@@ -135,7 +135,92 @@ class CustomRegexComponentTests: XCTestCase {
       return
     }
 
-    XCTAssertEqual(res4.result.0, "123")
-    XCTAssertEqual(res4.result.1, 3)
+    XCTAssertEqual(res4.output.0, "123")
+    XCTAssertEqual(res4.output.1, 3)
+  }
+
+  func testRegexAbort() {
+
+    enum Radix: Hashable {
+      case dot
+      case comma
+    }
+    struct Abort: Error, Hashable {}
+
+    let hexRegex = Regex {
+      Capture { OneOrMore(.hexDigit) }
+      TryCapture { CharacterClass.any } transform: { c -> Radix? in
+        switch c {
+        case ".": return Radix.dot
+        case ",": return Radix.comma
+        case "❗️":
+          // Malicious! Toxic levels of emphasis detected.
+          throw Abort()
+        default:
+          // Not a radix
+          return nil
+        }
+      }
+      Capture { OneOrMore(.hexDigit) }
+    }
+    // hexRegex: Regex<(Substring, Substring, Radix?, Substring)>
+    // TODO: Why is Radix optional?
+
+    do {
+      guard let m = try hexRegex.wholeMatch(in: "123aef.345") else {
+        XCTFail()
+        return
+      }
+      XCTAssertEqual(m.0, "123aef.345")
+      XCTAssertEqual(m.1, "123aef")
+      XCTAssertEqual(m.2, .dot)
+      XCTAssertEqual(m.3, "345")
+    } catch {
+      XCTFail()
+    }
+
+    do {
+      _ = try hexRegex.wholeMatch(in: "123aef❗️345")
+      XCTFail()
+    } catch let e as Abort {
+      XCTAssertEqual(e, Abort())
+    } catch {
+      XCTFail()
+    }
+
+    struct Poison: Error, Hashable {}
+
+    let addressRegex = Regex {
+      "0x"
+      Capture(Repeat(.hexDigit, count: 8)) { hex -> Int in
+        let i = Int(hex, radix: 16)!
+        if i == 0xdeadbeef {
+          throw Poison()
+        }
+        return i
+      }
+    }
+
+    do {
+      guard let m = try addressRegex.wholeMatch(in: "0x1234567f") else {
+        XCTFail()
+        return
+      }
+      XCTAssertEqual(m.0, "0x1234567f")
+      XCTAssertEqual(m.1, 0x1234567f)
+    } catch {
+      XCTFail()
+    }
+
+    do {
+      _ = try addressRegex.wholeMatch(in: "0xdeadbeef")
+      XCTFail()
+    } catch let e as Poison {
+      XCTAssertEqual(e, Poison())
+    } catch {
+      XCTFail()
+    }
+
+
   }
 }

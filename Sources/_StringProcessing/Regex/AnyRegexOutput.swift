@@ -37,6 +37,8 @@ extension Regex.Match where Output == AnyRegexOutput {
   }
 }
 
+/// A type-erased regex output
+@available(SwiftStdlib 5.7, *)
 public struct AnyRegexOutput {
   let input: String
   fileprivate let _elements: [ElementRepresentation]
@@ -70,6 +72,7 @@ extension AnyRegexOutput {
 
   /// Returns a typed output by converting the underlying value to the specified
   /// type.
+  ///
   /// - Parameter type: The expected output type.
   /// - Returns: The output, if the underlying value can be converted to the
   ///   output type, or nil otherwise.
@@ -119,12 +122,19 @@ extension AnyRegexOutput: RandomAccessCollection {
     fileprivate let representation: ElementRepresentation
     let input: String
 
+    /// The range over which a value was captured. `nil` for no-capture.
     public var range: Range<String.Index>? {
       representation.bounds
     }
 
+    /// The slice of the input over which a value was captured. `nil` for no-capture.
     public var substring: Substring? {
       range.map { input[$0] }
+    }
+
+    /// The captured value, `nil` for no-capture
+    public var value: Any? {
+      fatalError()
     }
   }
 
@@ -150,5 +160,25 @@ extension AnyRegexOutput: RandomAccessCollection {
 
   public subscript(position: Int) -> Element {
     .init(representation: _elements[position], input: input)
+  }
+}
+
+extension Regex.Match where Output == AnyRegexOutput {
+  /// Creates a type-erased regex match from an existing match.
+  ///
+  /// Use this initializer to fit a regex match with strongly typed captures into the
+  /// use site of a dynamic regex match, i.e. one that was created from a string.
+  public init<Output>(_ match: Regex<Output>.Match) {
+    fatalError("FIXME: Not implemented")
+  }
+
+  /// Returns a typed match by converting the underlying values to the specified
+  /// types.
+  ///
+  /// - Parameter type: The expected output type.
+  /// - Returns: A match generic over the output type if the underlying values can be converted to the
+  ///   output type. Returns `nil` otherwise.
+  public func `as`<Output>(_ type: Output.Type) -> Regex<Output>.Match? {
+    fatalError("FIXME: Not implemented")
   }
 }
