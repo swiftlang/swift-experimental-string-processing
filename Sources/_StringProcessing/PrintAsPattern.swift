@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 // TODO: Add an expansion level, both from top to bottom.
 //       After `printAsCanonical` is fleshed out, these two
@@ -17,6 +17,7 @@ import _RegexParser
 //       incremental conversion, such that leaves remain
 //       as canonical regex literals.
 
+@_spi(PatternConverter)
 extension AST {
   /// Render as a Pattern DSL
   @_spi(PatternConverter)

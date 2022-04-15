@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 @available(SwiftStdlib 5.7, *)
 extension RegexComponent {
