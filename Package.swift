@@ -76,7 +76,7 @@ let package = Package(
                 .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"]),
                 .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
             ]),
-        .target(
+        .testTarget(
             name: "Prototypes",
             dependencies: ["_RegexParser", "_StringProcessing"],
             swiftSettings: [
@@ -100,7 +100,7 @@ let package = Package(
         // MARK: Exercises
         .target(
             name: "Exercises",
-            dependencies: ["_RegexParser", "Prototypes", "_StringProcessing", "RegexBuilder"],
+            dependencies: ["_RegexParser", "_StringProcessing", "RegexBuilder"],
             swiftSettings: [
                 .unsafeFlags(["-Xfrontend", "-enable-experimental-pairwise-build-block"]),
                 .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
