@@ -262,6 +262,24 @@ class RegexDSLTests: XCTestCase {
         }
         .ignoringCase(false)
       }
+    
+    try _testDSLCaptures(
+      ("abcdef123", ("abcdef123", "a", "123")),
+      matchType: (Substring, Substring, Substring).self, ==) {
+        Capture {
+          // Reluctant behavior due to option
+          OneOrMore(.anyOf("abcd"))
+            .reluctantQuantifiers()
+        }
+        ZeroOrMore("a"..."z")
+        
+        Capture {
+          // Eager behavior due to explicit parameter, despite option
+          OneOrMore(.digit, .eagerly)
+            .reluctantQuantifiers()
+        }
+        ZeroOrMore(.digit)
+      }
   }
   
   func testQuantificationBehavior() throws {
@@ -293,7 +311,7 @@ class RegexDSLTests: XCTestCase {
           OneOrMore(.word)
           Capture(.digit)
           ZeroOrMore(.any)
-        }.reluctantCaptures()
+        }.reluctantQuantifiers()
       }
     }
 #endif
