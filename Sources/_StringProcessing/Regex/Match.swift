@@ -123,7 +123,7 @@ extension Regex {
   /// Find the first match in a substring
   ///
   /// Returns `nil` if no match is found and throws on abort
-  public func firstMatch(_ s: Substring) throws -> Regex<Output>.Match? {
+  public func firstMatch(in s: Substring) throws -> Regex<Output>.Match? {
     try _firstMatch(s.base, in: s.startIndex..<s.endIndex)
   }
 
