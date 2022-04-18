@@ -14,35 +14,35 @@
 @available(SwiftStdlib 5.7, *)
 extension RegexComponent {
   /// Returns a regular expression that ignores casing when matching.
-  public func ignoringCase(_ ignoreCase: Bool = true) -> Regex<RegexOutput> {
-    wrapInOption(.caseInsensitive, addingIf: ignoreCase)
+  public func ignoresCase(_ ignoresCase: Bool = true) -> Regex<RegexOutput> {
+    wrapInOption(.caseInsensitive, addingIf: ignoresCase)
   }
 
   /// Returns a regular expression that only matches ASCII characters as "word
   /// characters".
-  public func usingASCIIWordCharacters(_ useASCII: Bool = true) -> Regex<RegexOutput> {
-    wrapInOption(.asciiOnlyDigit, addingIf: useASCII)
+  public func asciiOnlyWordCharacters(_ useASCII: Bool = true) -> Regex<RegexOutput> {
+    wrapInOption(.asciiOnlyWord, addingIf: useASCII)
   }
 
   /// Returns a regular expression that only matches ASCII characters as digits.
-  public func usingASCIIDigits(_ useASCII: Bool = true) -> Regex<RegexOutput> {
+  public func asciiOnlyDigits(_ useASCII: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.asciiOnlyDigit, addingIf: useASCII)
   }
 
   /// Returns a regular expression that only matches ASCII characters as space
   /// characters.
-  public func usingASCIISpaces(_ useASCII: Bool = true) -> Regex<RegexOutput> {
+  public func asciiOnlyWhitespace(_ useASCII: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.asciiOnlySpace, addingIf: useASCII)
   }
 
   /// Returns a regular expression that only matches ASCII characters when
   /// matching character classes.
-  public func usingASCIICharacterClasses(_ useASCII: Bool = true) -> Regex<RegexOutput> {
+  public func asciiOnlyCharacterClasses(_ useASCII: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.asciiOnlyPOSIXProps, addingIf: useASCII)
   }
   
   /// Returns a regular expression that uses the specified word boundary algorithm.
-  public func identifyingWordBoundaries(with wordBoundaryKind: RegexWordBoundaryKind) -> Regex<RegexOutput> {
+  public func wordBoundaryKind(_ wordBoundaryKind: RegexWordBoundaryKind) -> Regex<RegexOutput> {
     wrapInOption(.unicodeWordBoundaries, addingIf: wordBoundaryKind == .unicodeLevel2)
   }
   
