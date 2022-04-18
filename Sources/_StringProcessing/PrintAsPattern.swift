@@ -397,3 +397,14 @@ extension AST.Quantification.Kind {
     }
   }
 }
+
+extension DSLTree.QuantificationKind {
+  var _patternBase: String {
+    switch self {
+    case .explicit(let kind), .syntax(let kind):
+      return kind._patternBase
+    case .default:
+      return ".eager"
+    }
+  }
+}

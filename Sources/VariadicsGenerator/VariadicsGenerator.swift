@@ -378,9 +378,10 @@ struct VariadicsGenerator: ParsableCommand {
         \(params.disfavored)\
         public init<\(params.genericParams)>(
           _ component: Component,
-          _ behavior: QuantificationBehavior = .eagerly
+          _ behavior: QuantificationBehavior? = nil
         ) \(params.whereClauseForInit) {
-          self.init(node: .quantification(.\(kind.astQuantifierAmount), behavior.astKind, component.regex.root))
+          let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+          self.init(node: .quantification(.\(kind.astQuantifierAmount), kind, component.regex.root))
         }
       }
 
@@ -389,10 +390,11 @@ struct VariadicsGenerator: ParsableCommand {
         \(defaultAvailableAttr)
         \(params.disfavored)\
         public init<\(params.genericParams)>(
-          _ behavior: QuantificationBehavior = .eagerly,
+          _ behavior: QuantificationBehavior? = nil,
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.whereClauseForInit) {
-          self.init(node: .quantification(.\(kind.astQuantifierAmount), behavior.astKind, component().regex.root))
+          let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+          self.init(node: .quantification(.\(kind.astQuantifierAmount), kind, component().regex.root))
         }
       }
 
@@ -404,7 +406,7 @@ struct VariadicsGenerator: ParsableCommand {
           public static func buildLimitedAvailability<\(params.genericParams)>(
             _ component: Component
           ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
-            .init(node: .quantification(.\(kind.astQuantifierAmount), .eager, component.regex.root))
+            .init(node: .quantification(.\(kind.astQuantifierAmount), .default, component.regex.root))
           }
         }
         """ : "")
@@ -488,7 +490,7 @@ struct VariadicsGenerator: ParsableCommand {
         ) \(params.whereClauseForInit) {
           assert(count > 0, "Must specify a positive count")
           // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-          self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+          self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
         }
 
         \(defaultAvailableAttr)
@@ -499,7 +501,7 @@ struct VariadicsGenerator: ParsableCommand {
         ) \(params.whereClauseForInit) {
           assert(count > 0, "Must specify a positive count")
           // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-          self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+          self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
         }
 
         \(defaultAvailableAttr)
@@ -507,7 +509,7 @@ struct VariadicsGenerator: ParsableCommand {
         public init<\(params.genericParams), R: RangeExpression>(
           _ component: Component,
           _ expression: R,
-          _ behavior: QuantificationBehavior = .eagerly
+          _ behavior: QuantificationBehavior? = nil
         ) \(params.repeatingWhereClause) {
           self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
         }
@@ -516,7 +518,7 @@ struct VariadicsGenerator: ParsableCommand {
         \(params.disfavored)\
         public init<\(params.genericParams), R: RangeExpression>(
           _ expression: R,
-          _ behavior: QuantificationBehavior = .eagerly,
+          _ behavior: QuantificationBehavior? = nil,
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.repeatingWhereClause) {
           self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))

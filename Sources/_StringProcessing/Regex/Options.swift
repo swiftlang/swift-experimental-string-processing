@@ -59,6 +59,32 @@ extension RegexComponent {
     wrapInOption(.singleLine, addingIf: dotMatchesNewlines)
   }
   
+  /// Returns a regular expression where the start and end of input
+  /// anchors (`^` and `$`) also match against the start and end of a line.
+  ///
+  /// This method corresponds to applying the `m` option in a regular
+  /// expression literal. For this behavior in the `RegexBuilder` syntax, see
+  /// ``Anchor.startOfLine``, ``Anchor.endOfLine``, ``Anchor.startOfInput``,
+  /// and ``Anchor.endOfInput``.
+  ///
+  /// - Parameter matchLineEndings: A Boolean value indicating whether `^` and
+  ///   `$` should match the start and end of lines, respectively.
+  public func anchorsMatchLineEndings(_ matchLineEndings: Bool = true) -> Regex<RegexOutput> {
+    wrapInOption(.multiline, addingIf: matchLineEndings)
+  }
+  
+  /// Returns a regular expression where quantifiers are reluctant by default
+  /// instead of eager.
+  ///
+  /// This method corresponds to applying the `U` option in a regular
+  /// expression literal.
+  ///
+  /// - Parameter useReluctantQuantifiers: A Boolean value indicating whether
+  ///   quantifiers should be reluctant by default.
+  public func reluctantQuantifiers(_ useReluctantQuantifiers: Bool = true) -> Regex<RegexOutput> {
+    wrapInOption(.reluctantByDefault, addingIf: useReluctantQuantifiers)
+  }
+
   /// Returns a regular expression that matches with the specified semantic
   /// level.
   ///
@@ -125,39 +151,6 @@ public struct RegexSemanticLevel: Hashable {
   /// matched element is a `UnicodeScalar` value.
   public static var unicodeScalar: RegexSemanticLevel {
     .init(base: .unicodeScalar)
-  }
-}
-
-// Options that only affect literals
-@available(SwiftStdlib 5.7, *)
-extension RegexComponent {
-  /// Returns a regular expression where the start and end of input
-  /// anchors (`^` and `$`) also match against the start and end of a line.
-  ///
-  /// This method corresponds to applying the `m` option in a regular
-  /// expression literal, and only applies to regular expressions specified as
-  /// literals. For this behavior in the `RegexBuilder` syntax, see
-  /// ``Anchor.startOfLine``, ``Anchor.endOfLine``, ``Anchor.startOfInput``,
-  /// and ``Anchor.endOfInput``.
-  ///
-  /// - Parameter matchLineEndings: A Boolean value indicating whether `^` and
-  ///   `$` should match the start and end of lines, respectively.
-  public func anchorsMatchLineEndings(_ matchLineEndings: Bool = true) -> Regex<RegexOutput> {
-    wrapInOption(.multiline, addingIf: matchLineEndings)
-  }
-  
-  /// Returns a regular expression where quantifiers are reluctant by default
-  /// instead of eager.
-  ///
-  /// This method corresponds to applying the `U` option in a regular
-  /// expression literal, and only applies to regular expressions specified as
-  /// literals. In the `RegexBuilder` syntax, pass a ``QuantificationBehavior``
-  /// value to any quantification method to change its behavior.
-  ///
-  /// - Parameter useReluctantCaptures: A Boolean value indicating whether
-  ///   quantifiers should be reluctant by default.
-  public func reluctantCaptures(_ useReluctantCaptures: Bool = true) -> Regex<RegexOutput> {
-    wrapInOption(.reluctantByDefault, addingIf: useReluctantCaptures)
   }
 }
 
