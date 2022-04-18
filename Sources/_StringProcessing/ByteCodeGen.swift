@@ -299,7 +299,9 @@ extension Compiler.ByteCodeGen {
     // not captured. This may mean we should store
     // an existential instead of a closure...
 
-    let matcher = builder.makeMatcherFunction(matcher)
+    let matcher = builder.makeMatcherFunction { input, start, range in
+      try matcher(input, start, range)
+    }
 
     let valReg = builder.makeValueRegister()
     builder.buildMatcher(matcher, into: valReg)

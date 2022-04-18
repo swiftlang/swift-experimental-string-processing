@@ -743,13 +743,13 @@ class RegexDSLTests: XCTestCase {
       var patch: Int
       var dev: String?
     }
-    struct SemanticVersionParser: CustomRegexComponent {
+    struct SemanticVersionParser: CustomMatchingRegexComponent {
       typealias RegexOutput = SemanticVersion
       func match(
         _ input: String,
         startingAt index: String.Index,
         in bounds: Range<String.Index>
-      ) -> (upperBound: String.Index, output: SemanticVersion)? {
+      ) throws -> (upperBound: String.Index, output: SemanticVersion)? {
         let regex = Regex {
           TryCapture(OneOrMore(.digit)) { Int($0) }
           "."
@@ -776,13 +776,13 @@ class RegexDSLTests: XCTestCase {
         return (match.range.upperBound, result)
       }
     }
-    
+
     let versions = [
       ("1.0", SemanticVersion(major: 1, minor: 0, patch: 0)),
       ("1.0.1", SemanticVersion(major: 1, minor: 0, patch: 1)),
       ("12.100.5-dev", SemanticVersion(major: 12, minor: 100, patch: 5, dev: "dev")),
     ]
-    
+
     let parser = SemanticVersionParser()
     for (str, version) in versions {
       XCTAssertEqual(str.wholeMatch(of: parser)?.output, version)
