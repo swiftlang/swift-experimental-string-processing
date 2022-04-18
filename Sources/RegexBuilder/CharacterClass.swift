@@ -12,6 +12,7 @@
 import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
+@available(SwiftStdlib 5.7, *)
 public struct CharacterClass {
   internal var ccc: DSLTree.CustomCharacterClass
   
@@ -36,18 +37,21 @@ public struct CharacterClass {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension CharacterClass: RegexComponent {
   public var regex: Regex<Substring> {
     return Regex(node: DSLTree.Node.customCharacterClass(ccc))
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension CharacterClass {
   public var inverted: CharacterClass {
     CharacterClass(ccc.inverted)
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension RegexComponent where Self == CharacterClass {
   public static var any: CharacterClass {
     .init(DSLTree.CustomCharacterClass(members: [.atom(.any)]))
@@ -90,6 +94,7 @@ extension RegexComponent where Self == CharacterClass {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension RegexComponent where Self == CharacterClass {
   /// Returns a character class that matches any character in the given string
   /// or sequence.
@@ -111,6 +116,7 @@ extension RegexComponent where Self == CharacterClass {
 }
 
 // Unicode properties
+@available(SwiftStdlib 5.7, *)
 extension CharacterClass {
   public static func generalCategory(_ category: Unicode.GeneralCategory) -> CharacterClass {
     guard let extendedCategory = category.extendedGeneralCategory else {
@@ -122,6 +128,7 @@ extension CharacterClass {
 }
 
 /// Range syntax for characters in `CharacterClass`es.
+@available(SwiftStdlib 5.7, *)
 public func ...(lhs: Character, rhs: Character) -> CharacterClass {
   let range: DSLTree.CustomCharacterClass.Member = .range(.char(lhs), .char(rhs))
   let ccc = DSLTree.CustomCharacterClass(members: [range], isInverted: false)
@@ -130,6 +137,7 @@ public func ...(lhs: Character, rhs: Character) -> CharacterClass {
 
 /// Range syntax for unicode scalars in `CharacterClass`es.
 @_disfavoredOverload
+@available(SwiftStdlib 5.7, *)
 public func ...(lhs: UnicodeScalar, rhs: UnicodeScalar) -> CharacterClass {
   let range: DSLTree.CustomCharacterClass.Member = .range(.scalar(lhs), .scalar(rhs))
   let ccc = DSLTree.CustomCharacterClass(members: [range], isInverted: false)
@@ -176,6 +184,7 @@ extension Unicode.GeneralCategory {
 
 // MARK: - Set algebra methods
 
+@available(SwiftStdlib 5.7, *)
 extension RegexComponent where Self == CharacterClass {
   public init(_ first: CharacterClass, _ rest: CharacterClass...) {
     if rest.isEmpty {
@@ -188,6 +197,7 @@ extension RegexComponent where Self == CharacterClass {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension CharacterClass {
   public func union(_ other: CharacterClass) -> CharacterClass {
     CharacterClass(.init(members: [

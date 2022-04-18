@@ -47,6 +47,7 @@ extension BidirectionalCollection where Element: Equatable {
 
 // MARK: Regex algorithms
 
+@available(SwiftStdlib 5.7, *)
 extension BidirectionalCollection where SubSequence == Substring {
   /// Returns a Boolean value indicating whether the initial elements of the
   /// sequence are the same as the elements in the specified regex.

@@ -28,10 +28,10 @@ class RegexDSLTests: XCTestCase {
       if let expectedCaptures = maybeExpectedCaptures {
         let match = try XCTUnwrap(maybeMatch, file: file, line: line)
         XCTAssertTrue(
-          type(of: regex).Output.self == MatchType.self,
+          type(of: regex).RegexOutput.self == MatchType.self,
           """
           Expected match type: \(MatchType.self)
-          Actual match type: \(type(of: regex).Output.self)
+          Actual match type: \(type(of: regex).RegexOutput.self)
           """)
         let captures = try XCTUnwrap(match.output as? MatchType, file: file, line: line)
         XCTAssertTrue(
@@ -51,7 +51,7 @@ class RegexDSLTests: XCTestCase {
       TryCapture("1") { Int($0) } // Int
     }
     // Assert the inferred capture type.
-    let _: (Substring, Substring, Int).Type = type(of: regex).Output.self
+    let _: (Substring, Substring, Int).Type = type(of: regex).RegexOutput.self
     let maybeMatch = "ab1".wholeMatch(of: regex)
     let match = try XCTUnwrap(maybeMatch)
     XCTAssertTrue(match.output == ("ab1", "b", 1))
@@ -423,7 +423,7 @@ class RegexDSLTests: XCTestCase {
     // void.
     let regex = ZeroOrMore(.digit)
     // Assert the inferred capture type.
-    let _: Substring.Type = type(of: regex).Output.self
+    let _: Substring.Type = type(of: regex).RegexOutput.self
     let input = "123123"
     let match = try XCTUnwrap(input.wholeMatch(of: regex)?.output)
     XCTAssertTrue(match == input)
@@ -472,7 +472,7 @@ class RegexDSLTests: XCTestCase {
       }
     }
     let _: (Substring, Substring, Substring).Type
-      = type(of: regex1).Output.self
+      = type(of: regex1).RegexOutput.self
     let regex2 = Regex {
       OneOrMore("a")
       Capture {
@@ -483,7 +483,7 @@ class RegexDSLTests: XCTestCase {
       }
     }
     let _: (Substring, Substring, Int?).Type
-      = type(of: regex2).Output.self
+      = type(of: regex2).RegexOutput.self
     let regex3 = Regex {
       OneOrMore("a")
       Capture {
@@ -495,7 +495,7 @@ class RegexDSLTests: XCTestCase {
       }
     }
     let _: (Substring, Substring, Int, Double?).Type
-      = type(of: regex3).Output.self
+      = type(of: regex3).RegexOutput.self
     let regex4 = Regex {
       OneOrMore("a")
       Capture {
@@ -509,7 +509,7 @@ class RegexDSLTests: XCTestCase {
     }
     let _: (
       Substring, Substring, Substring, Substring, Substring?).Type
-      = type(of: regex4).Output.self
+      = type(of: regex4).RegexOutput.self
   }
 
   func testUnicodeScalarPostProcessing() throws {
@@ -548,7 +548,7 @@ class RegexDSLTests: XCTestCase {
     }
 
     // Assert the inferred capture type.
-    let _: (Substring, Substring).Type = type(of: unicodeData).Output.self
+    let _: (Substring, Substring).Type = type(of: unicodeData).RegexOutput.self
 
     let unicodeLine =
       "1BCA0..1BCA3  ; Control # Cf   [4] SHORTHAND FORMAT LETTER OVERLAP..SHORTHAND FORMAT UP STEP"
@@ -583,7 +583,7 @@ class RegexDSLTests: XCTestCase {
       typealias ExpectedMatch = (
         Substring, Unicode.Scalar?, Unicode.Scalar??, Substring
       )
-      let _: ExpectedMatch.Type = type(of: regexWithCapture).Output.self
+      let _: ExpectedMatch.Type = type(of: regexWithCapture).RegexOutput.self
       let maybeMatchResult = line.wholeMatch(of: regexWithCapture)
       let matchResult = try XCTUnwrap(maybeMatchResult)
       let (wholeMatch, lower, upper, propertyString) = matchResult.output
@@ -618,7 +618,7 @@ class RegexDSLTests: XCTestCase {
       typealias ExpectedMatch = (
         Substring, Unicode.Scalar, Unicode.Scalar?, Substring
       )
-      let _: ExpectedMatch.Type = type(of: regexWithTryCapture).Output.self
+      let _: ExpectedMatch.Type = type(of: regexWithTryCapture).RegexOutput.self
       let maybeMatchResult = line.wholeMatch(of: regexWithTryCapture)
       let matchResult = try XCTUnwrap(maybeMatchResult)
       let (wholeMatch, lower, upper, propertyString) = matchResult.output
@@ -761,13 +761,13 @@ class RegexDSLTests: XCTestCase {
       var patch: Int
       var dev: String?
     }
-    struct SemanticVersionParser: CustomRegexComponent {
-      typealias Output = SemanticVersion
+    struct SemanticVersionParser: CustomMatchingRegexComponent {
+      typealias RegexOutput = SemanticVersion
       func match(
         _ input: String,
         startingAt index: String.Index,
         in bounds: Range<String.Index>
-      ) -> (upperBound: String.Index, output: SemanticVersion)? {
+      ) throws -> (upperBound: String.Index, output: SemanticVersion)? {
         let regex = Regex {
           TryCapture(OneOrMore(.digit)) { Int($0) }
           "."
@@ -794,13 +794,13 @@ class RegexDSLTests: XCTestCase {
         return (match.range.upperBound, result)
       }
     }
-    
+
     let versions = [
       ("1.0", SemanticVersion(major: 1, minor: 0, patch: 0)),
       ("1.0.1", SemanticVersion(major: 1, minor: 0, patch: 1)),
       ("12.100.5-dev", SemanticVersion(major: 12, minor: 100, patch: 5, dev: "dev")),
     ]
-    
+
     let parser = SemanticVersionParser()
     for (str, version) in versions {
       XCTAssertEqual(str.wholeMatch(of: parser)?.output, version)

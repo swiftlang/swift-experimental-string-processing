@@ -9,13 +9,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 
 /// A type that represents a regular expression.
+@available(SwiftStdlib 5.7, *)
 public protocol RegexComponent {
-  associatedtype Output
-  var regex: Regex<Output> { get }
+  associatedtype RegexOutput
+  var regex: Regex<RegexOutput> { get }
 }
 
 /// A regex represents a string processing algorithm.
@@ -25,6 +26,7 @@ public protocol RegexComponent {
 ///     print(match.0) // "axb"
 ///     print(match.1) // "x"
 ///
+@available(SwiftStdlib 5.7, *)
 public struct Regex<Output>: RegexComponent {
   let program: Program
 
@@ -59,6 +61,7 @@ public struct Regex<Output>: RegexComponent {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   /// A program representation that caches any lowered representation for
   /// execution.
@@ -83,6 +86,7 @@ extension Regex {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   @_spi(RegexBuilder)
   public var root: DSLTree.Node {
@@ -92,40 +96,5 @@ extension Regex {
   @_spi(RegexBuilder)
   public init(node: DSLTree.Node) {
     self.program = Program(tree: .init(node, options: nil))
-  }
-
-}
-
-// MARK: - Primitive regex components
-
-extension String: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .quotedLiteral(self))
-  }
-}
-
-extension Substring: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .quotedLiteral(String(self)))
-  }
-}
-
-extension Character: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .atom(.char(self)))
-  }
-}
-
-extension UnicodeScalar: RegexComponent {
-  public typealias Output = Substring
-
-  public var regex: Regex<Output> {
-    .init(node: .atom(.scalar(self)))
   }
 }

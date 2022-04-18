@@ -9,8 +9,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
+@available(SwiftStdlib 5.7, *)
 extension Regex where Output == AnyRegexOutput {
   /// Parse and compile `pattern`, resulting in an existentially-typed capture list.
   public init(compiling pattern: String) throws {
@@ -18,6 +19,7 @@ extension Regex where Output == AnyRegexOutput {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   /// Parse and compile `pattern`, resulting in a strongly-typed capture list.
   public init(
@@ -28,6 +30,7 @@ extension Regex {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex.Match where Output == AnyRegexOutput {
   // Ensures `.0` always refers to the whole match.
   public subscript(
@@ -38,6 +41,7 @@ extension Regex.Match where Output == AnyRegexOutput {
 }
 
 /// A type-erased regex output
+@available(SwiftStdlib 5.7, *)
 public struct AnyRegexOutput {
   let input: String
   fileprivate let _elements: [ElementRepresentation]
@@ -53,6 +57,7 @@ public struct AnyRegexOutput {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput {
   /// Creates a type-erased regex output from an existing output.
   ///
@@ -86,6 +91,7 @@ extension AnyRegexOutput {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput {
   internal init<C: Collection>(
     input: String, elements: C
@@ -94,6 +100,7 @@ extension AnyRegexOutput {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput.ElementRepresentation {
   init(_ element: StructuredCapture) {
     self.init(
@@ -116,6 +123,7 @@ extension AnyRegexOutput.ElementRepresentation {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput: RandomAccessCollection {
   public struct Element {
     fileprivate let representation: ElementRepresentation
@@ -162,6 +170,7 @@ extension AnyRegexOutput: RandomAccessCollection {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex.Match where Output == AnyRegexOutput {
   /// Creates a type-erased regex match from an existing match.
   ///

@@ -9,6 +9,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// Disabled because Prototypes is a test target.
+#if false
+
 struct PEGParticipant: Participant {
   static var name: String { "PEG" }
 }
@@ -51,3 +54,4 @@ private func graphemeBreakPropertyData(forLine line: String) -> GraphemeBreakEnt
 
 }
 
+#endif

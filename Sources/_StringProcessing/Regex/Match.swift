@@ -9,6 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   /// The result of matching a regex against a string.
   ///
@@ -29,6 +30,7 @@ extension Regex {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex.Match {
   /// The produced output from the match operation
   public var output: Output {
@@ -81,6 +83,7 @@ extension Regex.Match {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   /// Match a string in its entirety.
   ///
@@ -120,7 +123,7 @@ extension Regex {
   /// Find the first match in a substring
   ///
   /// Returns `nil` if no match is found and throws on abort
-  public func firstMatch(_ s: Substring) throws -> Regex<Output>.Match? {
+  public func firstMatch(in s: Substring) throws -> Regex<Output>.Match? {
     try _firstMatch(s.base, in: s.startIndex..<s.endIndex)
   }
 
@@ -152,27 +155,32 @@ extension Regex {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension String {
   public func wholeMatch<R: RegexComponent>(
     of r: R
-  ) -> Regex<R.Output>.Match? {
+  ) -> Regex<R.RegexOutput>.Match? {
     try? r.regex.wholeMatch(in: self)
   }
+
   public func prefixMatch<R: RegexComponent>(
     of r: R
-  ) -> Regex<R.Output>.Match? {
+  ) -> Regex<R.RegexOutput>.Match? {
     try? r.regex.prefixMatch(in: self)
   }
 }
+
+@available(SwiftStdlib 5.7, *)
 extension Substring {
   public func wholeMatch<R: RegexComponent>(
     of r: R
-  ) -> Regex<R.Output>.Match? {
+  ) -> Regex<R.RegexOutput>.Match? {
     try? r.regex.wholeMatch(in: self)
   }
+
   public func prefixMatch<R: RegexComponent>(
     of r: R
-  ) -> Regex<R.Output>.Match? {
+  ) -> Regex<R.RegexOutput>.Match? {
     try? r.regex.prefixMatch(in: self)
   }
 }

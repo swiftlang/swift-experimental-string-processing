@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 @_spi(RegexBuilder)
 public struct DSLTree {
@@ -165,6 +165,8 @@ extension DSLTree {
     case assertion(AST.Atom.AssertionKind)
     case backreference(AST.Reference)
     case symbolicReference(ReferenceID)
+
+    case changeMatchingOptions(AST.MatchingOptionSequence)
 
     case unconverted(AST.Atom)
   }

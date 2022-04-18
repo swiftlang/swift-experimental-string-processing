@@ -11,6 +11,7 @@
 
 @_spi(RegexBuilder) import _StringProcessing
 
+@available(SwiftStdlib 5.7, *)
 @resultBuilder
 public enum RegexComponentBuilder {
   public static func buildBlock() -> Regex<Substring> {

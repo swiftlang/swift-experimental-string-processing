@@ -9,34 +9,35 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
+@available(SwiftStdlib 5.7, *)
 extension RegexComponent {
   /// Returns a regular expression that ignores casing when matching.
-  public func ignoringCase(_ ignoreCase: Bool = true) -> Regex<Output> {
+  public func ignoringCase(_ ignoreCase: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.caseInsensitive, addingIf: ignoreCase)
   }
 
   /// Returns a regular expression that only matches ASCII characters as "word
   /// characters".
-  public func usingASCIIWordCharacters(_ useASCII: Bool = true) -> Regex<Output> {
+  public func usingASCIIWordCharacters(_ useASCII: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.asciiOnlyDigit, addingIf: useASCII)
   }
 
   /// Returns a regular expression that only matches ASCII characters as digits.
-  public func usingASCIIDigits(_ useASCII: Bool = true) -> Regex<Output> {
+  public func usingASCIIDigits(_ useASCII: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.asciiOnlyDigit, addingIf: useASCII)
   }
 
   /// Returns a regular expression that only matches ASCII characters as space
   /// characters.
-  public func usingASCIISpaces(_ useASCII: Bool = true) -> Regex<Output> {
+  public func usingASCIISpaces(_ useASCII: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.asciiOnlySpace, addingIf: useASCII)
   }
 
   /// Returns a regular expression that only matches ASCII characters when
   /// matching character classes.
-  public func usingASCIICharacterClasses(_ useASCII: Bool = true) -> Regex<Output> {
+  public func usingASCIICharacterClasses(_ useASCII: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.asciiOnlyPOSIXProps, addingIf: useASCII)
   }
   
@@ -45,7 +46,7 @@ extension RegexComponent {
   ///
   /// This option is enabled by default; pass `false` to disable use of
   /// Unicode's word boundary algorithm.
-  public func usingUnicodeWordBoundaries(_ useUnicodeWordBoundaries: Bool = true) -> Regex<Output> {
+  public func usingUnicodeWordBoundaries(_ useUnicodeWordBoundaries: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.unicodeWordBoundaries, addingIf: useUnicodeWordBoundaries)
   }
   
@@ -54,7 +55,7 @@ extension RegexComponent {
   ///
   /// - Parameter dotMatchesNewlines: A Boolean value indicating whether `.`
   ///   should match a newline character.
-  public func dotMatchesNewlines(_ dotMatchesNewlines: Bool = true) -> Regex<Output> {
+  public func dotMatchesNewlines(_ dotMatchesNewlines: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.singleLine, addingIf: dotMatchesNewlines)
   }
   
@@ -68,7 +69,7 @@ extension RegexComponent {
   ///
   /// - Parameter matchLineEndings: A Boolean value indicating whether `^` and
   ///   `$` should match the start and end of lines, respectively.
-  public func anchorsMatchLineEndings(_ matchLineEndings: Bool = true) -> Regex<Output> {
+  public func anchorsMatchLineEndings(_ matchLineEndings: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.multiline, addingIf: matchLineEndings)
   }
   
@@ -80,7 +81,7 @@ extension RegexComponent {
   ///
   /// - Parameter useReluctantQuantifiers: A Boolean value indicating whether
   ///   quantifiers should be reluctant by default.
-  public func reluctantQuantifiers(_ useReluctantQuantifiers: Bool = true) -> Regex<Output> {
+  public func reluctantQuantifiers(_ useReluctantQuantifiers: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.reluctantByDefault, addingIf: useReluctantQuantifiers)
   }
 
@@ -121,7 +122,7 @@ extension RegexComponent {
   ///     // Prints "true"
   ///     print(decomposed.contains(queRegexScalar))
   ///     // Prints "false"
-  public func matchingSemantics(_ semanticLevel: RegexSemanticLevel) -> Regex<Output> {
+  public func matchingSemantics(_ semanticLevel: RegexSemanticLevel) -> Regex<RegexOutput> {
     switch semanticLevel.base {
     case .graphemeCluster:
       return wrapInOption(.graphemeClusterSemantics, addingIf: true)
@@ -131,6 +132,7 @@ extension RegexComponent {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct RegexSemanticLevel: Hashable {
   internal enum Representation {
     case graphemeCluster
@@ -153,16 +155,17 @@ public struct RegexSemanticLevel: Hashable {
 }
 
 // MARK: - Helper method
+
+@available(SwiftStdlib 5.7, *)
 extension RegexComponent {
   fileprivate func wrapInOption(
     _ option: AST.MatchingOption.Kind,
-    addingIf shouldAdd: Bool) -> Regex<Output>
+    addingIf shouldAdd: Bool) -> Regex<RegexOutput>
   {
     let sequence = shouldAdd
       ? AST.MatchingOptionSequence(adding: [.init(option, location: .fake)])
       : AST.MatchingOptionSequence(removing: [.init(option, location: .fake)])
     return Regex(node: .nonCapturingGroup(
-      .changeMatchingOptions(sequence, isIsolated: false),
-      regex.root))
+      .changeMatchingOptions(sequence), regex.root))
   }
 }
