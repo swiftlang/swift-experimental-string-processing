@@ -262,6 +262,30 @@ class RegexDSLTests: XCTestCase {
         }
         .ignoringCase(false)
       }
+    
+#if os(macOS)
+    try XCTExpectFailure("Implement level 2 word boundaries") {
+      try _testDSLCaptures(
+        ("can't stop won't stop", ("can't stop won't stop", "can't", "won")),
+        matchType: (Substring, Substring, Substring).self, ==) {
+          Capture {
+            OneOrMore(.word)
+            Anchor.wordBoundary
+          }
+          OneOrMore(.any, .reluctantly)
+          "stop"
+          " "
+          
+          Capture {
+            OneOrMore(.word)
+            Anchor.wordBoundary
+          }
+          .identifyingWordBoundaries(with: .unicodeLevel1)
+          OneOrMore(.any, .reluctantly)
+          "stop"
+        }
+    }
+#endif
   }
   
   func testQuantificationBehavior() throws {

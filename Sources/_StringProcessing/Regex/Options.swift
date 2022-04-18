@@ -41,13 +41,9 @@ extension RegexComponent {
     wrapInOption(.asciiOnlyPOSIXProps, addingIf: useASCII)
   }
   
-  /// Returns a regular expression that uses the Unicode word boundary
-  /// algorithm.
-  ///
-  /// This option is enabled by default; pass `false` to disable use of
-  /// Unicode's word boundary algorithm.
-  public func usingUnicodeWordBoundaries(_ useUnicodeWordBoundaries: Bool = true) -> Regex<RegexOutput> {
-    wrapInOption(.unicodeWordBoundaries, addingIf: useUnicodeWordBoundaries)
+  /// Returns a regular expression that uses the specified word boundary algorithm.
+  public func identifyingWordBoundaries(with wordBoundaryKind: RegexWordBoundaryKind) -> Regex<RegexOutput> {
+    wrapInOption(.unicodeWordBoundaries, addingIf: wordBoundaryKind == .unicodeLevel2)
   }
   
   /// Returns a regular expression where the start and end of input
@@ -107,6 +103,7 @@ extension RegexComponent {
 }
 
 @available(SwiftStdlib 5.7, *)
+/// A semantic level to use during regex matching.
 public struct RegexSemanticLevel: Hashable {
   internal enum Representation {
     case graphemeCluster
@@ -125,6 +122,38 @@ public struct RegexSemanticLevel: Hashable {
   /// matched element is a `UnicodeScalar` value.
   public static var unicodeScalar: RegexSemanticLevel {
     .init(base: .unicodeScalar)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+/// A word boundary algorithm to use during regex matching.
+public struct RegexWordBoundaryKind: Hashable {
+  internal enum Representation {
+    case unicodeLevel1
+    case unicodeLevel2
+  }
+  
+  internal var base: Representation
+
+  /// A word boundary algorithm that implements the "simple word boundary"
+  /// Unicode recommendation.
+  ///
+  /// A simple word boundary is a position in the input between two characters
+  /// that match `/\w\W/` or `/\W\w/`, or between the start or end of the input
+  /// and a `\w` character. Word boundaries therefore depend on the option-
+  /// defined behavior of `\w`.
+  public static var unicodeLevel1: Self {
+    .init(base: .unicodeLevel1)
+  }
+
+  /// A word boundary algorithm that implements the "default word boundary"
+  /// Unicode recommendation.
+  ///
+  /// Default word boundaries use a Unicode algorithm that handles some cases
+  /// better than simple word boundaries, such as words with internal
+  /// punctuation, changes in script, and Emoji.
+  public static var unicodeLevel2: Self {
+    .init(base: .unicodeLevel2)
   }
 }
 
