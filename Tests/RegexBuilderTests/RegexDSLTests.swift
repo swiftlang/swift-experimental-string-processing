@@ -263,6 +263,7 @@ class RegexDSLTests: XCTestCase {
         .ignoringCase(false)
       }
     
+#if os(macOS)
     try XCTExpectFailure("Implement level 2 word boundaries") {
       try _testDSLCaptures(
         ("can't stop won't stop", ("can't stop won't stop", "can't", "won")),
@@ -284,7 +285,8 @@ class RegexDSLTests: XCTestCase {
           "stop"
         }
     }
-
+#endif
+    
     try _testDSLCaptures(
       ("abcdef123", ("abcdef123", "a", "123")),
       matchType: (Substring, Substring, Substring).self, ==) {
