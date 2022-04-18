@@ -1308,7 +1308,7 @@ extension RegexTests {
     XCTAssertTrue ("cafe".contains(regex))
     XCTAssertFalse("CaFe".contains(regex))
     
-    let caseInsensitiveRegex = regex.ignoringCase()
+    let caseInsensitiveRegex = regex.ignoresCase()
     XCTAssertTrue("cafe".contains(caseInsensitiveRegex))
     XCTAssertTrue("CaFe".contains(caseInsensitiveRegex))
   }

@@ -228,7 +228,7 @@ class RegexDSLTests: XCTestCase {
       matchType: Substring.self, ==) {
         OneOrMore {
           "abc"
-        }.ignoringCase(true)
+        }.ignoresCase(true)
       }
     
     // Multiple options on one component wrap successively, but do not
@@ -242,8 +242,8 @@ class RegexDSLTests: XCTestCase {
         OneOrMore {
           "abc"
         }
-        .ignoringCase(true)
-        .ignoringCase(false)
+        .ignoresCase(true)
+        .ignoresCase(false)
       }
 
     // An option on an outer component doesn't override an option set on an
@@ -257,11 +257,35 @@ class RegexDSLTests: XCTestCase {
       ("abcdeABCdeaBcde", "abcdeABCdeaBcde"),
       matchType: Substring.self, ==) {
         OneOrMore {
-          "abc".ignoringCase(true)
+          "abc".ignoresCase(true)
           Optionally("de")
         }
-        .ignoringCase(false)
+        .ignoresCase(false)
       }
+    
+#if os(macOS)
+    try XCTExpectFailure("Implement level 2 word boundaries") {
+      try _testDSLCaptures(
+        ("can't stop won't stop", ("can't stop won't stop", "can't", "won")),
+        matchType: (Substring, Substring, Substring).self, ==) {
+          Capture {
+            OneOrMore(.word)
+            Anchor.wordBoundary
+          }
+          OneOrMore(.any, .reluctantly)
+          "stop"
+          " "
+          
+          Capture {
+            OneOrMore(.word)
+            Anchor.wordBoundary
+          }
+          .wordBoundaryKind(.unicodeLevel1)
+          OneOrMore(.any, .reluctantly)
+          "stop"
+        }
+    }
+#endif
     
     try _testDSLCaptures(
       ("abcdef123", ("abcdef123", "a", "123")),
@@ -279,6 +303,18 @@ class RegexDSLTests: XCTestCase {
             .reluctantQuantifiers()
         }
         ZeroOrMore(.digit)
+      }
+    
+    try _testDSLCaptures(
+      ("abcdefg", ("abcdefg", "abcdefg")),
+      ("abcdéfg", ("abcdéfg", "abcd")),
+      matchType: (Substring, Substring).self, ==) {
+        Capture {
+          OneOrMore(.word)
+        }
+        .asciiOnlyWordCharacters()
+        
+        ZeroOrMore(.any)
       }
   }
   
