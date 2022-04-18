@@ -90,7 +90,7 @@ extension PrettyPrinter {
       }
 
     case let .nonCapturingGroup(kind, child):
-      let kind = kind._patternBase
+      let kind = kind.ast._patternBase
       printBlock("Group(\(kind))") { printer in
         printer.printAsPattern(convertedFromAST: child)
       }
@@ -108,8 +108,8 @@ extension PrettyPrinter {
       print("/* TODO: conditional */")
 
     case let .quantification(amount, kind, child):
-      let amount = amount._patternBase
-      let kind = kind._patternBase
+      let amount = amount.ast._patternBase
+      let kind = kind.ast._patternBase
       printBlock("\(amount)(\(kind))") { printer in
         printer.printAsPattern(convertedFromAST: child)
       }

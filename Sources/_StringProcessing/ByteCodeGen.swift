@@ -592,13 +592,13 @@ extension Compiler.ByteCodeGen {
       }
 
     case let .nonCapturingGroup(kind, child):
-      try emitNoncapturingGroup(kind, child)
+      try emitNoncapturingGroup(kind.ast, child)
 
     case .conditional:
       throw Unsupported("Conditionals")
 
     case let .quantification(amt, kind, child):
-      try emitQuantification(amt, kind, child)
+      try emitQuantification(amt.ast, kind.ast, child)
 
     case let .customCharacterClass(ccc):
       if ccc.containsAny {
@@ -634,7 +634,7 @@ extension Compiler.ByteCodeGen {
       }
 
     case let .regexLiteral(l):
-      try emitNode(l.dslTreeNode)
+      try emitNode(l.ast.dslTreeNode)
 
     case let .convertedRegexLiteral(n, _):
       try emitNode(n)

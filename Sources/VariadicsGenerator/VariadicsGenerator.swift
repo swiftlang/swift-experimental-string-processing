@@ -487,7 +487,7 @@ struct VariadicsGenerator: ParsableCommand {
         ) \(params.whereClauseForInit) {
           assert(count > 0, "Must specify a positive count")
           // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-          self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+          self.init(node: .quantification(.exactly(count), .eager, component.regex.root))
         }
 
         \(defaultAvailableAttr)
@@ -498,7 +498,7 @@ struct VariadicsGenerator: ParsableCommand {
         ) \(params.whereClauseForInit) {
           assert(count > 0, "Must specify a positive count")
           // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-          self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+          self.init(node: .quantification(.exactly(count), .eager, component().regex.root))
         }
 
         \(defaultAvailableAttr)

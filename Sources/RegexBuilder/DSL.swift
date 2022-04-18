@@ -105,7 +105,7 @@ public struct QuantificationBehavior {
 
   var kind: Kind
 
-  internal var astKind: AST.Quantification.Kind {
+  internal var astKind: DSLTree._AST.QuantificationKind {
     switch kind {
     case .eagerly: return .eager
     case .reluctantly: return .reluctant
@@ -134,13 +134,13 @@ extension DSLTree.Node {
       return .quantification(.oneOrMore, behavior.astKind, node)
     case _ where range.count == 1: // ..<1 or ...0 or any range with count == 1
       // Note: `behavior` is ignored in this case
-      return .quantification(.exactly(.init(faking: range.lowerBound)), .eager, node)
+      return .quantification(.exactly(range.lowerBound), .eager, node)
     case (0, _): // 0..<n or 0...n or ..<n or ...n
-      return .quantification(.upToN(.init(faking: range.upperBound)), behavior.astKind, node)
+      return .quantification(.upToN(range.upperBound), behavior.astKind, node)
     case (_, Int.max): // n...
-      return .quantification(.nOrMore(.init(faking: range.lowerBound)), behavior.astKind, node)
+      return .quantification(.nOrMore(range.lowerBound), behavior.astKind, node)
     default: // any other range
-      return .quantification(.range(.init(faking: range.lowerBound), .init(faking: range.upperBound)), behavior.astKind, node)
+      return .quantification(.range(range.lowerBound, range.upperBound), behavior.astKind, node)
     }
   }
 }

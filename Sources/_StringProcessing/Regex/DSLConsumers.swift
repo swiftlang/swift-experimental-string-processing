@@ -21,7 +21,7 @@ public protocol CustomRegexComponent: RegexComponent {
 @available(SwiftStdlib 5.7, *)
 extension CustomRegexComponent {
   public var regex: Regex<RegexOutput> {
-    Regex(node: .matcher(.init(RegexOutput.self), { input, index, bounds in
+    Regex(node: .matcher(RegexOutput.self, { input, index, bounds in
       match(input, startingAt: index, in: bounds)
     }))
   }

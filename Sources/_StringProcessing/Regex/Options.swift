@@ -173,6 +173,6 @@ extension RegexComponent {
       ? AST.MatchingOptionSequence(adding: [.init(option, location: .fake)])
       : AST.MatchingOptionSequence(removing: [.init(option, location: .fake)])
     return Regex(node: .nonCapturingGroup(
-      .changeMatchingOptions(sequence), regex.root))
+      .init(ast: .changeMatchingOptions(sequence)), regex.root))
   }
 }

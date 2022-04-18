@@ -24,7 +24,7 @@ public struct DSLTree {
 
 extension DSLTree {
   @_spi(RegexBuilder)
-  public indirect enum Node: _TreeNode {
+  public indirect enum Node: _DSLTreeNode {
     /// Try to match each node in order
     ///
     ///     ... | ... | ...
@@ -42,7 +42,7 @@ extension DSLTree {
       name: String? = nil, reference: ReferenceID? = nil, Node)
 
     /// Match a (non-capturing) subpattern / group
-    case nonCapturingGroup(AST.Group.Kind, Node)
+    case nonCapturingGroup(_AST.GroupKind, Node)
 
     // TODO: Consider splitting off grouped conditions, or have
     // our own kind
@@ -52,11 +52,11 @@ extension DSLTree {
     ///     (?(cond) true-branch | false-branch)
     ///
     case conditional(
-      AST.Conditional.Condition.Kind, Node, Node)
+      _AST.ConditionKind, Node, Node)
 
     case quantification(
-      AST.Quantification.Amount,
-      AST.Quantification.Kind,
+      _AST.QuantificationAmount,
+      _AST.QuantificationKind,
       Node)
 
     case customCharacterClass(CustomCharacterClass)
@@ -74,19 +74,19 @@ extension DSLTree {
     case quotedLiteral(String)
 
     /// An embedded literal
-    case regexLiteral(AST.Node)
+    case regexLiteral(_AST.ASTNode)
 
     // TODO: What should we do here?
     ///
     /// TODO: Consider splitting off expression functions, or have our own kind
-    case absentFunction(AST.AbsentFunction)
+    case absentFunction(_AST.AbsentFunction)
 
     // MARK: - Tree conversions
 
     /// The target of AST conversion.
     ///
     /// Keeps original AST around for rich syntactic and source information
-    case convertedRegexLiteral(Node, AST.Node)
+    case convertedRegexLiteral(Node, _AST.ASTNode)
 
     // MARK: - Extensibility points
 
@@ -95,7 +95,7 @@ extension DSLTree {
 
     case consumer(_ConsumerInterface)
 
-    case matcher(AnyType, _MatcherInterface)
+    case matcher(Any.Type, _MatcherInterface)
 
     // TODO: Would this just boil down to a consumer?
     case characterPredicate(_CharacterPredicateInterface)
@@ -216,8 +216,8 @@ extension DSLTree.Node {
         .customCharacterClass, .atom:
       return []
 
-    case let .absentFunction(a):
-      return a.children.map(\.dslTreeNode)
+    case let .absentFunction(abs):
+      return abs.ast.children.map(\.dslTreeNode)
     }
   }
 }
@@ -225,8 +225,8 @@ extension DSLTree.Node {
 extension DSLTree.Node {
   var astNode: AST.Node? {
     switch self {
-    case let .regexLiteral(ast):             return ast
-    case let .convertedRegexLiteral(_, ast): return ast
+    case let .regexLiteral(literal):             return literal.ast
+    case let .convertedRegexLiteral(_, literal): return literal.ast
     default: return nil
     }
   }
@@ -270,9 +270,9 @@ extension DSLTree.Node {
     case .capture:
       return true
     case let .regexLiteral(re):
-      return re.hasCapture
+      return re.ast.hasCapture
     case let .convertedRegexLiteral(n, re):
-      assert(n.hasCapture == re.hasCapture)
+      assert(n.hasCapture == re.ast.hasCapture)
       return n.hasCapture
 
     default:
@@ -308,25 +308,25 @@ extension DSLTree.Node {
       return constructor.capturing(name: name, child)
 
     case let .nonCapturingGroup(kind, child):
-      assert(!kind.isCapturing)
-      return constructor.grouping(child, as: kind)
+      assert(!kind.ast.isCapturing)
+      return constructor.grouping(child, as: kind.ast)
 
     case let .conditional(cond, trueBranch, falseBranch):
       return constructor.condition(
-        cond,
+        cond.ast,
         trueBranch: trueBranch,
         falseBranch: falseBranch)
 
     case let .quantification(amount, _, child):
       return constructor.quantifying(
-        child, amount: amount)
+        child, amount: amount.ast)
 
     case let .regexLiteral(re):
       // TODO: Force a re-nesting?
-      return re._captureStructure(&constructor)
+      return re.ast._captureStructure(&constructor)
 
     case let .absentFunction(abs):
-      return constructor.absent(abs.kind)
+      return constructor.absent(abs.ast.kind)
 
     case let .convertedRegexLiteral(n, _):
       // TODO: Switch nesting strategy?
@@ -348,7 +348,7 @@ extension DSLTree.Node {
   var valueCaptureType: AnyType? {
     switch self {
     case let .matcher(t, _):
-      return t
+      return AnyType(t)
     case let .transform(t, _):
       return AnyType(t.resultType)
     default: return nil
@@ -443,5 +443,88 @@ public struct CaptureTransform: Hashable, CustomStringConvertible {
 
   public var description: String {
     "<transform result_type=\(resultType)>"
+  }
+}
+
+// MARK: AST wrapper types
+//
+// These wrapper types are required because even @_spi-marked public APIs can't
+// include symbols from implementation-only dependencies.
+internal protocol _DSLTreeNode: _TreeNode {}
+
+extension DSLTree {
+  @_spi(RegexBuilder)
+  public enum _AST {
+    @_spi(RegexBuilder)
+    public struct GroupKind {
+      internal var ast: AST.Group.Kind
+      
+      @_spi(RegexBuilder) public static var atomicNonCapturing: Self {
+        .init(ast: .atomicNonCapturing)
+      }
+      @_spi(RegexBuilder) public static var lookahead: Self {
+        .init(ast: .lookahead)
+      }
+      @_spi(RegexBuilder) public static var negativeLookahead: Self {
+        .init(ast: .negativeLookahead)
+      }
+    }
+
+    @_spi(RegexBuilder)
+    public struct ConditionKind {
+      internal var ast: AST.Conditional.Condition.Kind
+    }
+    
+    @_spi(RegexBuilder)
+    public struct QuantificationKind {
+      internal var ast: AST.Quantification.Kind
+      
+      @_spi(RegexBuilder) public static var eager: Self {
+        .init(ast: .eager)
+      }
+      @_spi(RegexBuilder) public static var reluctant: Self {
+        .init(ast: .reluctant)
+      }
+      @_spi(RegexBuilder) public static var possessive: Self {
+        .init(ast: .possessive)
+      }
+    }
+    
+    @_spi(RegexBuilder)
+    public struct QuantificationAmount {
+      internal var ast: AST.Quantification.Amount
+      
+      @_spi(RegexBuilder) public static var zeroOrMore: Self {
+        .init(ast: .zeroOrMore)
+      }
+      @_spi(RegexBuilder) public static var oneOrMore: Self {
+        .init(ast: .oneOrMore)
+      }
+      @_spi(RegexBuilder) public static var zeroOrOne: Self {
+        .init(ast: .zeroOrOne)
+      }
+      @_spi(RegexBuilder) public static func exactly(_ n: Int) -> Self {
+        .init(ast: .exactly(.init(faking: n)))
+      }
+      @_spi(RegexBuilder) public static func nOrMore(_ n: Int) -> Self {
+        .init(ast: .nOrMore(.init(faking: n)))
+      }
+      @_spi(RegexBuilder) public static func upToN(_ n: Int) -> Self {
+        .init(ast: .upToN(.init(faking: n)))
+      }
+      @_spi(RegexBuilder) public static func range(_ lower: Int, _ upper: Int) -> Self {
+        .init(ast: .range(.init(faking: lower), .init(faking: upper)))
+      }
+    }
+    
+    @_spi(RegexBuilder)
+    public struct ASTNode {
+      internal var ast: AST.Node
+    }
+    
+    @_spi(RegexBuilder)
+    public struct AbsentFunction {
+      internal var ast: AST.AbsentFunction
+    }
   }
 }
