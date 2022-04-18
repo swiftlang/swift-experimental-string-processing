@@ -122,19 +122,19 @@ All option APIs are provided on `RegexComponent`, so they can be called on a `Re
 
 The options that `Regex` supports are shown in the table below. Options that affect _matching behavior_ are supported through both regex syntax and APIs, while options that have _structural_ or _syntactic_ effects are only supported through regex syntax.
 
-| **Matching Behavior**        |                |                               |
-|------------------------------|----------------|-------------------------------|
-| Case insensitivity           | `(?i)`         | `ignoringCase()`              |
-| Single-line mode             | `(?s)`         | `dotMatchesNewlines()`        |
-| Multi-line mode              | `(?m)`         | `anchorsMatchNewlines()`      |
-| ASCII-only character classes | `(?DSWP)`      | `usingASCIIDigits()`, etc     |
-| Unicode word boundaries      | `(?w)`         | `usingSimpleWordBoundaries()` |
-| Semantic level               | `(?Xu)`        | `matchingSemantics(_:)`       |
-| Reluctant quantifiers        | `(?U)`         | `reluctantQuantifiers()`      |
-| **Structural/Syntactic**     |                |                               |
-| Extended syntax              | `(?x)`,`(?xx)` | n/a                           |
-| Named captures only          | `(?n)`         | n/a                           |
-| Shared capture names         | `(?J)`         | n/a                           |
+| **Matching Behavior**        |                |                                    |
+|------------------------------|----------------|------------------------------------|
+| Case insensitivity           | `(?i)`         | `ignoringCase()`                   |
+| Single-line mode             | `(?s)`         | `dotMatchesNewlines()`             |
+| Multi-line mode              | `(?m)`         | `anchorsMatchNewlines()`           |
+| ASCII-only character classes | `(?DSWP)`      | `usingASCIIDigits()`, etc          |
+| Unicode word boundaries      | `(?w)`         | `identifyingWordBoundaries(with:)` |
+| Semantic level               | `(?Xu)`        | `matchingSemantics(_:)`            |
+| Reluctant quantifiers        | `(?U)`         | `reluctantQuantifiers()`           |
+| **Structural/Syntactic**     |                |                                    |
+| Extended syntax              | `(?x)`,`(?xx)` | n/a                                |
+| Named captures only          | `(?n)`         | n/a                                |
+| Shared capture names         | `(?J)`         | n/a                                |
 
 #### Case insensitivity
 
@@ -299,17 +299,36 @@ You can see more differences between level 1 and level 2 word boundaries in the 
 
 ```swift
 extension RegexComponent {
-  /// Returns a regular expression that uses simple word boundaries.
+  /// Returns a regular expression that uses the specified word boundary algorithm.
   ///
   /// A simple word boundary is a position in the input between two characters
-  // that match `/\w\W/` or `/\W\w/`, or between the start or end of the input
-  // and `\w` character. Word boundaries therefore depend on the option-defined
-  // behavior of `\w`.
-  //
-  // The default word boundaries use a Unicode algorithm that handles some cases
-  // better than simple word boundaries, such as words with internal
-  // punctuation, changes in script, and Emoji.
-  public func usingSimpleWordBoundaries(_ useSimpleWordBoundaries: Bool = true) -> Regex<Output>
+  /// that match `/\w\W/` or `/\W\w/`, or between the start or end of the input
+  /// and `\w` character. Word boundaries therefore depend on the option-defined
+  /// behavior of `\w`.
+  ///
+  /// The default word boundaries use a Unicode algorithm that handles some cases
+  /// better than simple word boundaries, such as words with internal
+  /// punctuation, changes in script, and Emoji.
+  public func identifyingWordBoundaries(with wordBoundaryKind: RegexWordBoundaryKind) -> Regex<Output>
+}
+
+public struct RegexWordBoundaryKind: Hashable {
+  /// A word boundary algorithm that implements the "simple word boundary"
+  /// Unicode recommendation.
+  ///
+  /// A simple word boundary is a position in the input between two characters
+  /// that match `/\w\W/` or `/\W\w/`, or between the start or end of the input
+  /// and a `\w` character. Word boundaries therefore depend on the option-
+  /// defined behavior of `\w`.
+  public static var unicodeLevel1: Self { get }
+
+  /// A word boundary algorithm that implements the "default word boundary"
+  /// Unicode recommendation.
+  ///
+  /// Default word boundaries use a Unicode algorithm that handles some cases
+  /// better than simple word boundaries, such as words with internal
+  /// punctuation, changes in script, and Emoji.
+  public static var unicodeLevel2: Self { get }
 }
 ```
 
@@ -716,7 +735,9 @@ Instead of providing APIs to select whether `Regex` matching is `Character`-base
 * As the scalar level used when matching changes the behavior of individual components of a `Regex`, it’s more appropriate to specify the semantic level at the declaration site than the call site.
 * With the proposed options model, you can define a Regex that includes different semantic levels for different portions of the match, which would be impossible with a call site-based approach.
 
+### Binary word boundary option method
 
+A prior version of this proposal used a binary method for setting the word boundary algorithm, called `usingSimpleWordBoundaries()`. A method taking a `RegexWordBoundaryKind` instance is included in the proposal instead, to leave room for implementing other word boundary algorithms in the future.
 
 
 [repo]: https://github.com/apple/swift-experimental-string-processing/
