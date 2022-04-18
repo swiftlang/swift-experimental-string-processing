@@ -16,7 +16,6 @@ public enum Exercises {
       HandWrittenParticipant.self,
       RegexDSLParticipant.self,
       RegexLiteralParticipant.self,
-      PEGParticipant.self,
       NSREParticipant.self,
     ]
   }

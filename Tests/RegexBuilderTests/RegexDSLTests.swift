@@ -228,7 +228,7 @@ class RegexDSLTests: XCTestCase {
       matchType: Substring.self, ==) {
         OneOrMore {
           "abc"
-        }.ignoringCase(true)
+        }.ignoresCase(true)
       }
     
     // Multiple options on one component wrap successively, but do not
@@ -242,8 +242,8 @@ class RegexDSLTests: XCTestCase {
         OneOrMore {
           "abc"
         }
-        .ignoringCase(true)
-        .ignoringCase(false)
+        .ignoresCase(true)
+        .ignoresCase(false)
       }
 
     // An option on an outer component doesn't override an option set on an
@@ -257,10 +257,64 @@ class RegexDSLTests: XCTestCase {
       ("abcdeABCdeaBcde", "abcdeABCdeaBcde"),
       matchType: Substring.self, ==) {
         OneOrMore {
-          "abc".ignoringCase(true)
+          "abc".ignoresCase(true)
           Optionally("de")
         }
-        .ignoringCase(false)
+        .ignoresCase(false)
+      }
+    
+#if os(macOS)
+    try XCTExpectFailure("Implement level 2 word boundaries") {
+      try _testDSLCaptures(
+        ("can't stop won't stop", ("can't stop won't stop", "can't", "won")),
+        matchType: (Substring, Substring, Substring).self, ==) {
+          Capture {
+            OneOrMore(.word)
+            Anchor.wordBoundary
+          }
+          OneOrMore(.any, .reluctantly)
+          "stop"
+          " "
+          
+          Capture {
+            OneOrMore(.word)
+            Anchor.wordBoundary
+          }
+          .wordBoundaryKind(.unicodeLevel1)
+          OneOrMore(.any, .reluctantly)
+          "stop"
+        }
+    }
+#endif
+    
+    try _testDSLCaptures(
+      ("abcdef123", ("abcdef123", "a", "123")),
+      matchType: (Substring, Substring, Substring).self, ==) {
+        Capture {
+          // Reluctant behavior due to option
+          OneOrMore(.anyOf("abcd"))
+            .reluctantQuantifiers()
+        }
+        ZeroOrMore("a"..."z")
+        
+        Capture {
+          // Eager behavior due to explicit parameter, despite option
+          OneOrMore(.digit, .eagerly)
+            .reluctantQuantifiers()
+        }
+        ZeroOrMore(.digit)
+      }
+    
+    try _testDSLCaptures(
+      ("abcdefg", ("abcdefg", "abcdefg")),
+      ("abcdéfg", ("abcdéfg", "abcd")),
+      matchType: (Substring, Substring).self, ==) {
+        Capture {
+          OneOrMore(.word)
+        }
+        .asciiOnlyWordCharacters()
+        
+        ZeroOrMore(.any)
       }
   }
   
@@ -293,7 +347,7 @@ class RegexDSLTests: XCTestCase {
           OneOrMore(.word)
           Capture(.digit)
           ZeroOrMore(.any)
-        }.reluctantCaptures()
+        }.reluctantQuantifiers()
       }
     }
 #endif
@@ -743,13 +797,13 @@ class RegexDSLTests: XCTestCase {
       var patch: Int
       var dev: String?
     }
-    struct SemanticVersionParser: CustomRegexComponent {
+    struct SemanticVersionParser: CustomMatchingRegexComponent {
       typealias RegexOutput = SemanticVersion
       func match(
         _ input: String,
         startingAt index: String.Index,
         in bounds: Range<String.Index>
-      ) -> (upperBound: String.Index, output: SemanticVersion)? {
+      ) throws -> (upperBound: String.Index, output: SemanticVersion)? {
         let regex = Regex {
           TryCapture(OneOrMore(.digit)) { Int($0) }
           "."
@@ -776,13 +830,13 @@ class RegexDSLTests: XCTestCase {
         return (match.range.upperBound, result)
       }
     }
-    
+
     let versions = [
       ("1.0", SemanticVersion(major: 1, minor: 0, patch: 0)),
       ("1.0.1", SemanticVersion(major: 1, minor: 0, patch: 1)),
       ("12.100.5-dev", SemanticVersion(major: 12, minor: 100, patch: 5, dev: "dev")),
     ]
-    
+
     let parser = SemanticVersionParser()
     for (str, version) in versions {
       XCTAssertEqual(str.wholeMatch(of: parser)?.output, version)

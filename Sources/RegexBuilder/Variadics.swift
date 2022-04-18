@@ -616,9 +616,10 @@ extension Optionally {
   @_disfavoredOverload
   public init<Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == Substring {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component.regex.root))
   }
 }
 
@@ -627,10 +628,11 @@ extension Optionally {
   @available(SwiftStdlib 5.7, *)
   @_disfavoredOverload
   public init<Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == Substring {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component().regex.root))
   }
 }
 
@@ -640,7 +642,7 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<Component: RegexComponent>(
     _ component: Component
   ) -> Regex<Substring>  {
-    .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+    .init(node: .quantification(.zeroOrOne, .default, component.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -649,9 +651,10 @@ extension ZeroOrMore {
   @_disfavoredOverload
   public init<Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == Substring {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component.regex.root))
   }
 }
 
@@ -660,10 +663,11 @@ extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
   @_disfavoredOverload
   public init<Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == Substring {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component().regex.root))
   }
 }
 
@@ -674,9 +678,10 @@ extension OneOrMore {
   @_disfavoredOverload
   public init<Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == Substring {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component.regex.root))
   }
 }
 
@@ -685,10 +690,11 @@ extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
   @_disfavoredOverload
   public init<Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == Substring {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component().regex.root))
   }
 }
 
@@ -703,7 +709,7 @@ extension Repeat {
   ) where RegexOutput == Substring {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -714,7 +720,7 @@ extension Repeat {
   ) where RegexOutput == Substring {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -722,7 +728,7 @@ extension Repeat {
   public init<Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == Substring, R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
@@ -731,7 +737,7 @@ extension Repeat {
   @_disfavoredOverload
   public init<Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == Substring, R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
@@ -742,9 +748,10 @@ extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?), Component.RegexOutput == (W, C0) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component.regex.root))
   }
 }
 
@@ -752,10 +759,11 @@ extension Optionally {
 extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?), Component.RegexOutput == (W, C0) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component().regex.root))
   }
 }
 
@@ -765,7 +773,7 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C0, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C0?)> where Component.RegexOutput == (W, C0) {
-    .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+    .init(node: .quantification(.zeroOrOne, .default, component.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -773,9 +781,10 @@ extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?), Component.RegexOutput == (W, C0) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component.regex.root))
   }
 }
 
@@ -783,10 +792,11 @@ extension ZeroOrMore {
 extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?), Component.RegexOutput == (W, C0) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component().regex.root))
   }
 }
 
@@ -796,9 +806,10 @@ extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0), Component.RegexOutput == (W, C0) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component.regex.root))
   }
 }
 
@@ -806,10 +817,11 @@ extension OneOrMore {
 extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0), Component.RegexOutput == (W, C0) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component().regex.root))
   }
 }
 
@@ -823,7 +835,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?), Component.RegexOutput == (W, C0) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -833,14 +845,14 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?), Component.RegexOutput == (W, C0) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?), Component.RegexOutput == (W, C0), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
@@ -848,7 +860,7 @@ extension Repeat {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?), Component.RegexOutput == (W, C0), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
@@ -859,9 +871,10 @@ extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?), Component.RegexOutput == (W, C0, C1) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component.regex.root))
   }
 }
 
@@ -869,10 +882,11 @@ extension Optionally {
 extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?), Component.RegexOutput == (W, C0, C1) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component().regex.root))
   }
 }
 
@@ -882,7 +896,7 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C0, C1, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C0?, C1?)> where Component.RegexOutput == (W, C0, C1) {
-    .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+    .init(node: .quantification(.zeroOrOne, .default, component.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -890,9 +904,10 @@ extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?), Component.RegexOutput == (W, C0, C1) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component.regex.root))
   }
 }
 
@@ -900,10 +915,11 @@ extension ZeroOrMore {
 extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?), Component.RegexOutput == (W, C0, C1) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component().regex.root))
   }
 }
 
@@ -913,9 +929,10 @@ extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0, C1), Component.RegexOutput == (W, C0, C1) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component.regex.root))
   }
 }
 
@@ -923,10 +940,11 @@ extension OneOrMore {
 extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0, C1), Component.RegexOutput == (W, C0, C1) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component().regex.root))
   }
 }
 
@@ -940,7 +958,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?), Component.RegexOutput == (W, C0, C1) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -950,14 +968,14 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?), Component.RegexOutput == (W, C0, C1) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?), Component.RegexOutput == (W, C0, C1), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
@@ -965,7 +983,7 @@ extension Repeat {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?), Component.RegexOutput == (W, C0, C1), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
@@ -976,9 +994,10 @@ extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?), Component.RegexOutput == (W, C0, C1, C2) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component.regex.root))
   }
 }
 
@@ -986,10 +1005,11 @@ extension Optionally {
 extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?), Component.RegexOutput == (W, C0, C1, C2) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component().regex.root))
   }
 }
 
@@ -999,7 +1019,7 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C0, C1, C2, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C0?, C1?, C2?)> where Component.RegexOutput == (W, C0, C1, C2) {
-    .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+    .init(node: .quantification(.zeroOrOne, .default, component.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1007,9 +1027,10 @@ extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?), Component.RegexOutput == (W, C0, C1, C2) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component.regex.root))
   }
 }
 
@@ -1017,10 +1038,11 @@ extension ZeroOrMore {
 extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?), Component.RegexOutput == (W, C0, C1, C2) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component().regex.root))
   }
 }
 
@@ -1030,9 +1052,10 @@ extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0, C1, C2), Component.RegexOutput == (W, C0, C1, C2) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component.regex.root))
   }
 }
 
@@ -1040,10 +1063,11 @@ extension OneOrMore {
 extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0, C1, C2), Component.RegexOutput == (W, C0, C1, C2) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component().regex.root))
   }
 }
 
@@ -1057,7 +1081,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?), Component.RegexOutput == (W, C0, C1, C2) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1067,14 +1091,14 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?), Component.RegexOutput == (W, C0, C1, C2) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?), Component.RegexOutput == (W, C0, C1, C2), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
@@ -1082,7 +1106,7 @@ extension Repeat {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?), Component.RegexOutput == (W, C0, C1, C2), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
@@ -1093,9 +1117,10 @@ extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?), Component.RegexOutput == (W, C0, C1, C2, C3) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component.regex.root))
   }
 }
 
@@ -1103,10 +1128,11 @@ extension Optionally {
 extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?), Component.RegexOutput == (W, C0, C1, C2, C3) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component().regex.root))
   }
 }
 
@@ -1116,7 +1142,7 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C0, C1, C2, C3, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C0?, C1?, C2?, C3?)> where Component.RegexOutput == (W, C0, C1, C2, C3) {
-    .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+    .init(node: .quantification(.zeroOrOne, .default, component.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1124,9 +1150,10 @@ extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?), Component.RegexOutput == (W, C0, C1, C2, C3) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component.regex.root))
   }
 }
 
@@ -1134,10 +1161,11 @@ extension ZeroOrMore {
 extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?), Component.RegexOutput == (W, C0, C1, C2, C3) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component().regex.root))
   }
 }
 
@@ -1147,9 +1175,10 @@ extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0, C1, C2, C3), Component.RegexOutput == (W, C0, C1, C2, C3) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component.regex.root))
   }
 }
 
@@ -1157,10 +1186,11 @@ extension OneOrMore {
 extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0, C1, C2, C3), Component.RegexOutput == (W, C0, C1, C2, C3) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component().regex.root))
   }
 }
 
@@ -1174,7 +1204,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?), Component.RegexOutput == (W, C0, C1, C2, C3) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1184,14 +1214,14 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?), Component.RegexOutput == (W, C0, C1, C2, C3) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?), Component.RegexOutput == (W, C0, C1, C2, C3), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
@@ -1199,7 +1229,7 @@ extension Repeat {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?), Component.RegexOutput == (W, C0, C1, C2, C3), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
@@ -1210,9 +1240,10 @@ extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C0, C1, C2, C3, C4) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component.regex.root))
   }
 }
 
@@ -1220,10 +1251,11 @@ extension Optionally {
 extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C0, C1, C2, C3, C4) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component().regex.root))
   }
 }
 
@@ -1233,7 +1265,7 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C0, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C0?, C1?, C2?, C3?, C4?)> where Component.RegexOutput == (W, C0, C1, C2, C3, C4) {
-    .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+    .init(node: .quantification(.zeroOrOne, .default, component.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1241,9 +1273,10 @@ extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C0, C1, C2, C3, C4) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component.regex.root))
   }
 }
 
@@ -1251,10 +1284,11 @@ extension ZeroOrMore {
 extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C0, C1, C2, C3, C4) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component().regex.root))
   }
 }
 
@@ -1264,9 +1298,10 @@ extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0, C1, C2, C3, C4), Component.RegexOutput == (W, C0, C1, C2, C3, C4) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component.regex.root))
   }
 }
 
@@ -1274,10 +1309,11 @@ extension OneOrMore {
 extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0, C1, C2, C3, C4), Component.RegexOutput == (W, C0, C1, C2, C3, C4) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component().regex.root))
   }
 }
 
@@ -1291,7 +1327,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C0, C1, C2, C3, C4) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1301,14 +1337,14 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C0, C1, C2, C3, C4) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C0, C1, C2, C3, C4), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
@@ -1316,7 +1352,7 @@ extension Repeat {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C0, C1, C2, C3, C4), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
@@ -1327,9 +1363,10 @@ extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component.regex.root))
   }
 }
 
@@ -1337,10 +1374,11 @@ extension Optionally {
 extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component().regex.root))
   }
 }
 
@@ -1350,7 +1388,7 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C0?, C1?, C2?, C3?, C4?, C5?)> where Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5) {
-    .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+    .init(node: .quantification(.zeroOrOne, .default, component.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1358,9 +1396,10 @@ extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component.regex.root))
   }
 }
 
@@ -1368,10 +1407,11 @@ extension ZeroOrMore {
 extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component().regex.root))
   }
 }
 
@@ -1381,9 +1421,10 @@ extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0, C1, C2, C3, C4, C5), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component.regex.root))
   }
 }
 
@@ -1391,10 +1432,11 @@ extension OneOrMore {
 extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0, C1, C2, C3, C4, C5), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component().regex.root))
   }
 }
 
@@ -1408,7 +1450,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1418,14 +1460,14 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
@@ -1433,7 +1475,7 @@ extension Repeat {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
@@ -1444,9 +1486,10 @@ extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component.regex.root))
   }
 }
 
@@ -1454,10 +1497,11 @@ extension Optionally {
 extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component().regex.root))
   }
 }
 
@@ -1467,7 +1511,7 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?)> where Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6) {
-    .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+    .init(node: .quantification(.zeroOrOne, .default, component.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1475,9 +1519,10 @@ extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component.regex.root))
   }
 }
 
@@ -1485,10 +1530,11 @@ extension ZeroOrMore {
 extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component().regex.root))
   }
 }
 
@@ -1498,9 +1544,10 @@ extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0, C1, C2, C3, C4, C5, C6), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component.regex.root))
   }
 }
 
@@ -1508,10 +1555,11 @@ extension OneOrMore {
 extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0, C1, C2, C3, C4, C5, C6), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component().regex.root))
   }
 }
 
@@ -1525,7 +1573,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1535,14 +1583,14 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
@@ -1550,7 +1598,7 @@ extension Repeat {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
@@ -1561,9 +1609,10 @@ extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component.regex.root))
   }
 }
 
@@ -1571,10 +1620,11 @@ extension Optionally {
 extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component().regex.root))
   }
 }
 
@@ -1584,7 +1634,7 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?)> where Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-    .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+    .init(node: .quantification(.zeroOrOne, .default, component.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1592,9 +1642,10 @@ extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component.regex.root))
   }
 }
 
@@ -1602,10 +1653,11 @@ extension ZeroOrMore {
 extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component().regex.root))
   }
 }
 
@@ -1615,9 +1667,10 @@ extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0, C1, C2, C3, C4, C5, C6, C7), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component.regex.root))
   }
 }
 
@@ -1625,10 +1678,11 @@ extension OneOrMore {
 extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0, C1, C2, C3, C4, C5, C6, C7), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component().regex.root))
   }
 }
 
@@ -1642,7 +1696,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1652,14 +1706,14 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
@@ -1667,7 +1721,7 @@ extension Repeat {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
@@ -1678,9 +1732,10 @@ extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component.regex.root))
   }
 }
 
@@ -1688,10 +1743,11 @@ extension Optionally {
 extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component().regex.root))
   }
 }
 
@@ -1701,7 +1757,7 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+    .init(node: .quantification(.zeroOrOne, .default, component.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1709,9 +1765,10 @@ extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component.regex.root))
   }
 }
 
@@ -1719,10 +1776,11 @@ extension ZeroOrMore {
 extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component().regex.root))
   }
 }
 
@@ -1732,9 +1790,10 @@ extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component.regex.root))
   }
 }
 
@@ -1742,10 +1801,11 @@ extension OneOrMore {
 extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component().regex.root))
   }
 }
 
@@ -1759,7 +1819,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1769,14 +1829,14 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
@@ -1784,7 +1844,7 @@ extension Repeat {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
@@ -1795,9 +1855,10 @@ extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component.regex.root))
   }
 }
 
@@ -1805,10 +1866,11 @@ extension Optionally {
 extension Optionally {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(node: .quantification(.zeroOrOne, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrOne, kind, component().regex.root))
   }
 }
 
@@ -1818,7 +1880,7 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    .init(node: .quantification(.zeroOrOne, .eager, component.regex.root))
+    .init(node: .quantification(.zeroOrOne, .default, component.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1826,9 +1888,10 @@ extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component.regex.root))
   }
 }
 
@@ -1836,10 +1899,11 @@ extension ZeroOrMore {
 extension ZeroOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(node: .quantification(.zeroOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.zeroOrMore, kind, component().regex.root))
   }
 }
 
@@ -1849,9 +1913,10 @@ extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component.regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component.regex.root))
   }
 }
 
@@ -1859,10 +1924,11 @@ extension OneOrMore {
 extension OneOrMore {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(node: .quantification(.oneOrMore, behavior.astKind, component().regex.root))
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    self.init(node: .quantification(.oneOrMore, kind, component().regex.root))
   }
 }
 
@@ -1876,7 +1942,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component.regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1886,14 +1952,14 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .eager, component().regex.root))
+    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly
+    _ behavior: QuantificationBehavior? = nil
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
@@ -1901,7 +1967,7 @@ extension Repeat {
   @available(SwiftStdlib 5.7, *)
     public init<W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
-    _ behavior: QuantificationBehavior = .eagerly,
+    _ behavior: QuantificationBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.Bound == Int {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
