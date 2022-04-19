@@ -587,11 +587,11 @@ extension Compiler.ByteCodeGen {
         try emitConcatenationComponent(child)
       }
 
-    case let .capture(_, refId, child):
+    case let .capture(name, refId, child):
       options.beginScope()
       defer { options.endScope() }
 
-      let cap = builder.makeCapture(id: refId)
+      let cap = builder.makeCapture(id: refId, name: name)
       switch child {
       case let .matcher(_, m):
         emitMatcher(m, into: cap)
