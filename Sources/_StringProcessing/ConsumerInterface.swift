@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 extension DSLTree.Node {
   /// Attempt to generate a consumer from this AST node
@@ -100,6 +100,10 @@ extension DSLTree.Atom {
       // TODO: Should we handle?
       return nil
 
+    case .changeMatchingOptions:
+      // TODO: Should we handle?
+      return nil
+
     case let .unconverted(a):
       return try a.generateConsumer(opts)
     }
@@ -178,7 +182,8 @@ extension AST.Atom {
       return nil
 
     case .escaped, .keyboardControl, .keyboardMeta, .keyboardMetaControl,
-      .backreference, .subpattern, .callout, .backtrackingDirective:
+        .backreference, .subpattern, .callout, .backtrackingDirective,
+        .changeMatchingOptions:
       // FIXME: implement
       return nil
     }
@@ -287,11 +292,8 @@ extension DSLTree.CustomCharacterClass.Member {
       }
     case .trivia:
       // TODO: Should probably strip this earlier...
-      return { _, bounds in
-        return bounds.lowerBound
-      }
+      return { _, _ in nil }
     }
-
   }
 }
 
@@ -421,10 +423,6 @@ extension AST.Atom.CharacterProperty {
 
       case .onigurumaSpecial(let s):
         throw Unsupported("TODO: map Oniguruma special: \(s)")
-
-      case let .other(key, value):
-        throw Unsupported(
-          "TODO: map other \(key ?? "")=\(value)")
       }
     }()
 

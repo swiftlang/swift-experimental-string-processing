@@ -12,6 +12,7 @@
 import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
+@available(SwiftStdlib 5.7, *)
 public struct Anchor {
   internal enum Kind {
     case startOfSubject
@@ -28,6 +29,7 @@ public struct Anchor {
   var isInverted: Bool = false
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Anchor: RegexComponent {
   var astAssertion: AST.Atom.AssertionKind {
     if !isInverted {
@@ -62,6 +64,7 @@ extension Anchor: RegexComponent {
 
 // MARK: - Public API
 
+@available(SwiftStdlib 5.7, *)
 extension Anchor {
   public static var startOfSubject: Anchor {
     Anchor(kind: .startOfSubject)
@@ -107,6 +110,7 @@ extension Anchor {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct Lookahead<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -117,7 +121,7 @@ public struct Lookahead<Output>: _BuiltinRegexComponent {
   public init<R: RegexComponent>(
     _ component: R,
     negative: Bool = false
-  ) where R.Output == Output {
+  ) where R.RegexOutput == Output {
     self.init(node: .nonCapturingGroup(
       negative ? .negativeLookahead : .lookahead, component.regex.root))
   }
@@ -125,7 +129,7 @@ public struct Lookahead<Output>: _BuiltinRegexComponent {
   public init<R: RegexComponent>(
     negative: Bool = false,
     @RegexComponentBuilder _ component: () -> R
-  ) where R.Output == Output {
+  ) where R.RegexOutput == Output {
     self.init(node: .nonCapturingGroup(
       negative ? .negativeLookahead : .lookahead, component().regex.root))
   }

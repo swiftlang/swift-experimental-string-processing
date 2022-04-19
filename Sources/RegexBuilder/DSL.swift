@@ -12,23 +12,64 @@
 import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   public init<Content: RegexComponent>(
     @RegexComponentBuilder _ content: () -> Content
-  ) where Content.Output == Output {
+  ) where Content.RegexOutput == Output {
     self = content().regex
   }
 }
 
 // A convenience protocol for builtin regex components that are initialized with
 // a `DSLTree` node.
+@available(SwiftStdlib 5.7, *)
 internal protocol _BuiltinRegexComponent: RegexComponent {
-  init(_ regex: Regex<Output>)
+  init(_ regex: Regex<RegexOutput>)
 }
 
+@available(SwiftStdlib 5.7, *)
 extension _BuiltinRegexComponent {
   init(node: DSLTree.Node) {
     self.init(Regex(node: node))
+  }
+}
+
+// MARK: - Primitive regex components
+
+@available(SwiftStdlib 5.7, *)
+extension String: RegexComponent {
+  public typealias Output = Substring
+
+  public var regex: Regex<Output> {
+    .init(node: .quotedLiteral(self))
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Substring: RegexComponent {
+  public typealias Output = Substring
+
+  public var regex: Regex<Output> {
+    .init(node: .quotedLiteral(String(self)))
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Character: RegexComponent {
+  public typealias Output = Substring
+
+  public var regex: Regex<Output> {
+    .init(node: .atom(.char(self)))
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension UnicodeScalar: RegexComponent {
+  public typealias Output = Substring
+
+  public var regex: Regex<Output> {
+    .init(node: .atom(.scalar(self)))
   }
 }
 
@@ -54,6 +95,7 @@ extension _BuiltinRegexComponent {
 // Note: Quantifiers are currently gyb'd.
 
 /// Specifies how much to attempt to match when using a quantifier.
+@available(SwiftStdlib 5.7, *)
 public struct QuantificationBehavior {
   internal enum Kind {
     case eagerly
@@ -75,33 +117,37 @@ public struct QuantificationBehavior {
 extension DSLTree.Node {
   /// Generates a DSLTree node for a repeated range of the given DSLTree node.
   /// Individual public API functions are in the generated Variadics.swift file.
+  @available(SwiftStdlib 5.7, *)
   static func repeating(
     _ range: Range<Int>,
-    _ behavior: QuantificationBehavior,
+    _ behavior: QuantificationBehavior?,
     _ node: DSLTree.Node
   ) -> DSLTree.Node {
     // TODO: Throw these as errors
     assert(range.lowerBound >= 0, "Cannot specify a negative lower bound")
     assert(!range.isEmpty, "Cannot specify an empty range")
+    
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
 
     switch (range.lowerBound, range.upperBound) {
     case (0, Int.max): // 0...
-      return .quantification(.zeroOrMore, behavior.astKind, node)
+      return .quantification(.zeroOrMore, kind, node)
     case (1, Int.max): // 1...
-      return .quantification(.oneOrMore, behavior.astKind, node)
+      return .quantification(.oneOrMore, kind, node)
     case _ where range.count == 1: // ..<1 or ...0 or any range with count == 1
       // Note: `behavior` is ignored in this case
-      return .quantification(.exactly(.init(faking: range.lowerBound)), .eager, node)
+      return .quantification(.exactly(.init(faking: range.lowerBound)), .default, node)
     case (0, _): // 0..<n or 0...n or ..<n or ...n
-      return .quantification(.upToN(.init(faking: range.upperBound)), behavior.astKind, node)
+      return .quantification(.upToN(.init(faking: range.upperBound)), kind, node)
     case (_, Int.max): // n...
-      return .quantification(.nOrMore(.init(faking: range.lowerBound)), behavior.astKind, node)
+      return .quantification(.nOrMore(.init(faking: range.lowerBound)), kind, node)
     default: // any other range
-      return .quantification(.range(.init(faking: range.lowerBound), .init(faking: range.upperBound)), behavior.astKind, node)
+      return .quantification(.range(.init(faking: range.lowerBound), .init(faking: range.upperBound)), kind, node)
     }
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension QuantificationBehavior {
   /// Match as much of the input string as possible, backtracking when
   /// necessary.
@@ -121,6 +167,7 @@ extension QuantificationBehavior {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct OneOrMore<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -132,6 +179,7 @@ public struct OneOrMore<Output>: _BuiltinRegexComponent {
   // Variadics.swift.
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct ZeroOrMore<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -143,6 +191,7 @@ public struct ZeroOrMore<Output>: _BuiltinRegexComponent {
   // Variadics.swift.
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct Optionally<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -154,6 +203,7 @@ public struct Optionally<Output>: _BuiltinRegexComponent {
   // Variadics.swift.
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct Repeat<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -179,12 +229,13 @@ public struct Repeat<Output>: _BuiltinRegexComponent {
 //   ) -> R where R.Match == (W, C...)
 // }
 
+@available(SwiftStdlib 5.7, *)
 @resultBuilder
 public struct AlternationBuilder {
   @_disfavoredOverload
   public static func buildPartialBlock<R: RegexComponent>(
     first component: R
-  ) -> ChoiceOf<R.Output> {
+  ) -> ChoiceOf<R.RegexOutput> {
     .init(component.regex)
   }
 
@@ -201,6 +252,7 @@ public struct AlternationBuilder {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct ChoiceOf<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -215,6 +267,7 @@ public struct ChoiceOf<Output>: _BuiltinRegexComponent {
 
 // MARK: - Capture
 
+@available(SwiftStdlib 5.7, *)
 public struct Capture<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -225,6 +278,7 @@ public struct Capture<Output>: _BuiltinRegexComponent {
   // Note: Public initializers are currently gyb'd. See Variadics.swift.
 }
 
+@available(SwiftStdlib 5.7, *)
 public struct TryCapture<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -239,6 +293,7 @@ public struct TryCapture<Output>: _BuiltinRegexComponent {
 
 /// An atomic group, i.e. opens a local backtracking scope which, upon successful exit,
 /// discards any remaining backtracking points from within the scope
+@available(SwiftStdlib 5.7, *)
 public struct Local<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
@@ -249,6 +304,7 @@ public struct Local<Output>: _BuiltinRegexComponent {
 
 // MARK: - Backreference
 
+@available(SwiftStdlib 5.7, *)
 public struct Reference<Capture>: RegexComponent {
   let id = ReferenceID()
 
@@ -259,6 +315,7 @@ public struct Reference<Capture>: RegexComponent {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex.Match {
   public subscript<Capture>(_ reference: Reference<Capture>) -> Capture {
     self[reference.id]

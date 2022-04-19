@@ -72,6 +72,9 @@ extension AST {
 
       // (*ACCEPT), (*FAIL), ...
       case backtrackingDirective(BacktrackingDirective)
+
+      // (?i), (?i-m), ...
+      case changeMatchingOptions(MatchingOptionSequence)
     }
   }
 }
@@ -91,6 +94,7 @@ extension AST.Atom {
     case .subpattern(let v):            return v
     case .callout(let v):               return v
     case .backtrackingDirective(let v): return v
+    case .changeMatchingOptions(let v): return v
     case .any:                          return nil
     case .startOfLine:                  return nil
     case .endOfLine:                    return nil
@@ -397,9 +401,6 @@ extension AST.Atom.CharacterProperty {
     /// Some special properties implemented by PCRE and Oniguruma.
     case pcreSpecial(PCRESpecialCategory)
     case onigurumaSpecial(OnigurumaSpecialProperty)
-
-    /// Unhandled properties.
-    case other(key: String?, value: String)
   }
 
   // TODO: erm, separate out or fold into something? splat it in?
@@ -691,7 +692,7 @@ extension AST.Atom {
       return nil
 
     case .property, .any, .startOfLine, .endOfLine, .backreference, .subpattern,
-        .callout, .backtrackingDirective:
+        .callout, .backtrackingDirective, .changeMatchingOptions:
       return nil
     }
   }
@@ -731,7 +732,7 @@ extension AST.Atom {
 
     case .property, .escaped, .any, .startOfLine, .endOfLine,
         .backreference, .subpattern, .namedCharacter, .callout,
-        .backtrackingDirective:
+        .backtrackingDirective, .changeMatchingOptions:
       return nil
     }
   }
@@ -740,6 +741,8 @@ extension AST.Atom {
     switch kind {
     case .backtrackingDirective(let b):
       return b.isQuantifiable
+    case .changeMatchingOptions:
+      return false
     // TODO: Are callouts quantifiable?
     default:
       return true

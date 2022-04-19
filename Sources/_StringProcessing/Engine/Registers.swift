@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 struct SentinelValue: Hashable, CustomStringConvertible {
   var description: String { "<value sentinel>" }

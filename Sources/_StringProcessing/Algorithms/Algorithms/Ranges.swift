@@ -218,12 +218,14 @@ extension BidirectionalCollection where Element: Comparable {
 
 extension BidirectionalCollection where SubSequence == Substring {
   // FIXME: Replace `RangesCollection` when SE-0346 is enabled
+  @available(SwiftStdlib 5.7, *)
   func ranges<R: RegexComponent>(
     of regex: R
   ) -> RangesCollection<RegexConsumer<R, Self>> {
     ranges(of: RegexConsumer(regex))
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   func rangesFromBack<R: RegexComponent>(
     of regex: R
   ) -> ReversedRangesCollection<RegexConsumer<R, Self>> {

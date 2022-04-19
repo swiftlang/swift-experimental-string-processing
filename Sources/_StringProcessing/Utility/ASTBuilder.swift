@@ -25,7 +25,7 @@ AST.
 
 */
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 func alt(_ asts: [AST.Node]) -> AST.Node {
   return .alternation(
@@ -119,9 +119,14 @@ func atomicScriptRun(_ child: AST.Node) -> AST.Node {
   group(.atomicScriptRun, child)
 }
 func changeMatchingOptions(
-  _ seq: AST.MatchingOptionSequence, isIsolated: Bool, _ child: AST.Node
+  _ seq: AST.MatchingOptionSequence, _ child: AST.Node
 ) -> AST.Node {
-  group(.changeMatchingOptions(seq, isIsolated: isIsolated), child)
+  group(.changeMatchingOptions(seq), child)
+}
+func changeMatchingOptions(
+  _ seq: AST.MatchingOptionSequence
+) -> AST.Node {
+  atom(.changeMatchingOptions(seq))
 }
 
 func matchingOptions(
@@ -353,6 +358,11 @@ func prop(
   inverted: Bool = false
 ) -> AST.Node {
   atom(.property(.init(kind, isInverted: inverted, isPOSIX: false)))
+}
+func posixProp(
+  _ kind: AST.Atom.CharacterProperty.Kind, inverted: Bool = false
+) -> AST.Node {
+  atom(.property(.init(kind, isInverted: inverted, isPOSIX: true)))
 }
 
 // Raw atom constructing variant

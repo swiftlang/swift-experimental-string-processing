@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 // TODO: Add an expansion level, both from top to bottom.
 //       After `printAsCanonical` is fleshed out, these two
@@ -17,6 +17,7 @@ import _RegexParser
 //       incremental conversion, such that leaves remain
 //       as canonical regex literals.
 
+@_spi(PatternConverter)
 extension AST {
   /// Render as a Pattern DSL
   @_spi(PatternConverter)
@@ -136,6 +137,8 @@ extension PrettyPrinter {
         print("/* TOOD: backreferences */")
       case .symbolicReference:
         print("/* TOOD: symbolic references */")
+      case .changeMatchingOptions:
+        print("/* TODO: change matching options */")
       }
 
     case .trivia:
@@ -319,6 +322,9 @@ extension AST.Atom {
 
     case .backtrackingDirective:
       return " /* TODO: backtracking directive */"
+
+    case .changeMatchingOptions:
+      return "/* TODO: change matching options */"
     }
   }
 }
@@ -388,6 +394,17 @@ extension AST.Quantification.Kind {
     case .eager: return ".eager"
     case .reluctant: return ".reluctant"
     case .possessive: return ".possessive"
+    }
+  }
+}
+
+extension DSLTree.QuantificationKind {
+  var _patternBase: String {
+    switch self {
+    case .explicit(let kind), .syntax(let kind):
+      return kind._patternBase
+    case .default:
+      return ".eager"
     }
   }
 }

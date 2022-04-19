@@ -75,6 +75,7 @@ extension RangeReplaceableCollection {
 // MARK: Regex algorithms
 
 extension RangeReplaceableCollection where SubSequence == Substring {
+  @available(SwiftStdlib 5.7, *)
   func replacing<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
@@ -87,7 +88,8 @@ extension RangeReplaceableCollection where SubSequence == Substring {
       subrange: subrange,
       maxReplacements: maxReplacements)
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   func replacing<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
@@ -99,7 +101,8 @@ extension RangeReplaceableCollection where SubSequence == Substring {
       subrange: startIndex..<endIndex,
       maxReplacements: maxReplacements)
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   mutating func replace<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
@@ -122,9 +125,10 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   ///   sequence matching `regex` to replace. Default is `Int.max`.
   /// - Returns: A new collection in which all occurrences of subsequence
   /// matching `regex` are replaced by `replacement`.
+  @available(SwiftStdlib 5.7, *)
   public func replacing<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
-    with replacement: (Regex<R.Output>.Match) throws -> Replacement,
+    with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max
   ) rethrows -> Self where Replacement.Element == Element {
@@ -157,9 +161,10 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   ///   sequence matching `regex` to replace. Default is `Int.max`.
   /// - Returns: A new collection in which all occurrences of subsequence
   /// matching `regex` are replaced by `replacement`.
+  @available(SwiftStdlib 5.7, *)
   public func replacing<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
-    with replacement: (Regex<R.Output>.Match) throws -> Replacement,
+    with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement,
     maxReplacements: Int = .max
   ) rethrows -> Self where Replacement.Element == Element {
     try replacing(
@@ -177,9 +182,10 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   ///   including captures, and returns a replacement collection.
   ///   - maxReplacements: A number specifying how many occurrences of the
   ///   sequence matching `regex` to replace. Default is `Int.max`.
+  @available(SwiftStdlib 5.7, *)
   public mutating func replace<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
-    with replacement: (Regex<R.Output>.Match) throws -> Replacement,
+    with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement,
     maxReplacements: Int = .max
   ) rethrows where Replacement.Element == Element {
     self = try replacing(

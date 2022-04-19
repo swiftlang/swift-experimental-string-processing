@@ -1,4 +1,3 @@
-
 # Regex Type and Overview
 
 - Authors: [Michael Ilseman](https://github.com/milseman)
@@ -225,7 +224,7 @@ func processEntry(_ line: String) -> Transaction? {
 
 The result builder allows for inline failable value construction, which participates in the overall string processing algorithm: returning `nil` signals a local failure and the engine backtracks to try an alternative. This not only relieves the use site from post-processing, it enables new kinds of processing algorithms, allows for search-space pruning, and enhances debuggability.
 
-Swift regexes describe an unambiguous algorithm, were choice is ordered and effects can be reliably observed. For example, a `print()` statement inside the `TryCapture`'s transform function will run whenever the overall algorithm naturally dictates an attempt should be made. Optimizations can only elide such calls if they can prove it is behavior-preserving (e.g. "pure").
+Swift regexes describe an unambiguous algorithm, where choice is ordered and effects can be reliably observed. For example, a `print()` statement inside the `TryCapture`'s transform function will run whenever the overall algorithm naturally dictates an attempt should be made. Optimizations can only elide such calls if they can prove it is behavior-preserving (e.g. "pure").
 
 `CustomMatchingRegexComponent`, discussed in [String Processing Algorithms][pitches], allows industrial-strength parsers to be used a regex components. This allows us to drop the overly-permissive pre-parsing step:
 
@@ -278,14 +277,14 @@ func processEntry(_ line: String) -> Transaction? {
 *Note*: Details on how references work is discussed in [Regex Builders][pitches]. `Regex.Match` supports referring to _all_ captures by position (`match.1`, etc.) whether named or referenced or neither. Due to compiler limitations, result builders do not support forming labeled tuples for named captures.
 
 
-### Algorithms, algorithms everywhere
+### Regex-powered algorithms
 
 Regexes can be used right out of the box with a variety of powerful and convenient algorithms, including trimming, splitting, and finding/replacing all matches within a string.
 
 These algorithms are discussed in [String Processing Algorithms][pitches].
 
 
-### Onward Unicode
+### Unicode handling
 
 A regex describes an algorithm to be ran over some model of string, and Swift's `String` has a rather unique Unicode-forward model. `Character` is an [extended grapheme cluster](https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries) and equality is determined under [canonical equivalence](https://www.unicode.org/reports/tr15/#Canon_Compat_Equivalence).
 
@@ -310,12 +309,12 @@ public struct Regex<Output> {
   /// Match a string in its entirety.
   ///
   /// Returns `nil` if no match and throws on abort
-  public func matchWhole(_ s: String) throws -> Regex<Output>.Match?
+  public func wholeMatch(in s: String) throws -> Regex<Output>.Match?
 
   /// Match part of the string, starting at the beginning.
   ///
   /// Returns `nil` if no match and throws on abort
-  public func matchPrefix(_ s: String) throws -> Regex<Output>.Match?
+  public func prefixMatch(in s: String) throws -> Regex<Output>.Match?
 
   /// Find the first match in a string
   ///
@@ -325,17 +324,17 @@ public struct Regex<Output> {
   /// Match a substring in its entirety.
   ///
   /// Returns `nil` if no match and throws on abort
-  public func matchWhole(_ s: Substring) throws -> Regex<Output>.Match?
+  public func wholeMatch(in s: Substring) throws -> Regex<Output>.Match?
 
   /// Match part of the string, starting at the beginning.
   ///
   /// Returns `nil` if no match and throws on abort
-  public func matchPrefix(_ s: Substring) throws -> Regex<Output>.Match?
+  public func prefixMatch(in s: Substring) throws -> Regex<Output>.Match?
 
   /// Find the first match in a substring
   ///
   /// Returns `nil` if no match is found and throws on abort
-  public func firstMatch(_ s: Substring) throws -> Regex<Output>.Match?
+  public func firstMatch(in s: Substring) throws -> Regex<Output>.Match?
 
   /// The result of matching a regex against a string.
   ///
@@ -344,19 +343,19 @@ public struct Regex<Output> {
   @dynamicMemberLookup
   public struct Match {
     /// The range of the overall match
-    public let range: Range<String.Index>
+    public var range: Range<String.Index> { get }
   
     /// The produced output from the match operation
-    public var output: Output
+    public var output: Output { get }
   
     /// Lookup a capture by name or number
-    public subscript<T>(dynamicMember keyPath: KeyPath<Output, T>) -> T
+    public subscript<T>(dynamicMember keyPath: KeyPath<Output, T>) -> T { get }
   
     /// Lookup a capture by number
     @_disfavoredOverload
     public subscript(
       dynamicMember keyPath: KeyPath<(Output, _doNotUse: ()), Output>
-    ) -> Output
+    ) -> Output { get }
     // Note: this allows `.0` when `Match` is not a tuple.
   
   }
@@ -481,6 +480,7 @@ We're working on how to eliminate these, likely by having API to access ranges, 
 We're also looking for more community discussion on what the default type system and API presentation should be. As pitched, `Substring` emphasizes that we're referring to slices of the original input, with strong sharing connotations.
 
 The actual `Match` struct just stores ranges: the `Substrings` are lazily created on demand. This avoids unnecessary ARC traffic and memory usage.
+
 
 ### `Regex<Match, Captures>` instead of `Regex<Output>`
 

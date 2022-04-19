@@ -280,6 +280,7 @@ extension BidirectionalCollection where Element: Comparable {
 
 // MARK: Regex algorithms
 
+@available(SwiftStdlib 5.7, *)
 extension BidirectionalCollection where SubSequence == Substring {
   // FIXME: Replace `SplitCollection` when SE-0346 is enabled
   /// Returns the longest possible subsequences of the collection, in order,

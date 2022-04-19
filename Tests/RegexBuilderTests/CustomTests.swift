@@ -14,8 +14,8 @@ import _StringProcessing
 @testable import RegexBuilder
 
 // A nibbler processes a single character from a string
-private protocol Nibbler: CustomRegexComponent {
-  func nibble(_: Character) -> Output?
+private protocol Nibbler: CustomMatchingRegexComponent {
+  func nibble(_: Character) -> RegexOutput?
 }
 
 extension Nibbler {
@@ -24,7 +24,7 @@ extension Nibbler {
     _ input: String,
     startingAt index: String.Index,
     in bounds: Range<String.Index>
-  ) -> (upperBound: String.Index, output: Output)? {
+  ) throws -> (upperBound: String.Index, output: RegexOutput)? {
     guard index != bounds.upperBound, let res = nibble(input[index]) else {
       return nil
     }
@@ -35,7 +35,7 @@ extension Nibbler {
 
 // A number nibbler
 private struct Numbler: Nibbler {
-  typealias Output = Int
+  typealias RegexOutput = Int
   func nibble(_ c: Character) -> Int? {
     c.wholeNumberValue
   }
@@ -43,9 +43,72 @@ private struct Numbler: Nibbler {
 
 // An ASCII value nibbler
 private struct Asciibbler: Nibbler {
-  typealias Output = UInt8
+  typealias RegexOutput = UInt8
   func nibble(_ c: Character) -> UInt8? {
     c.asciiValue
+  }
+}
+
+private struct IntParser: CustomMatchingRegexComponent {
+  struct ParseError: Error, Hashable {}
+  typealias RegexOutput = Int
+  func match(_ input: String,
+    startingAt index: String.Index,
+    in bounds: Range<String.Index>
+  ) throws -> (upperBound: String.Index, output: Int)? {
+    guard index != bounds.upperBound else { return nil }
+
+    let r = Regex {
+      Capture(OneOrMore(.digit)) { Int($0) }
+    }
+
+    guard let match = input[index..<bounds.upperBound].prefixMatch(of: r),
+            let output = match.1 else {
+      throw ParseError()
+    }
+
+    return (match.range.upperBound, output)
+  }
+}
+
+private struct CurrencyParser: CustomMatchingRegexComponent {
+  enum Currency: String, Hashable {
+    case usd = "USD"
+    case ntd = "NTD"
+    case dem = "DEM"
+  }
+
+  enum ParseError: Error, Hashable {
+    case unrecognized
+    case deprecated
+  }
+
+  typealias RegexOutput = Currency
+  func match(_ input: String,
+             startingAt index: String.Index,
+             in bounds: Range<String.Index>
+  ) throws -> (upperBound: String.Index, output: Currency)? {
+
+    guard index != bounds.upperBound else { return nil }
+
+    let substr = input[index..<bounds.upperBound]
+    guard !substr.isEmpty else { return nil }
+
+    let currencies: [Currency] = [ .usd, .ntd ]
+    let deprecated: [Currency] = [ .dem ]
+
+    for currency in currencies {
+      if substr.hasPrefix(currency.rawValue) {
+        return (input.range(of: currency.rawValue)!.upperBound, currency)
+      }
+    }
+
+    for dep in deprecated {
+      if substr.hasPrefix(dep.rawValue) {
+        throw ParseError.deprecated
+      }
+    }
+    throw ParseError.unrecognized
   }
 }
 
@@ -62,7 +125,7 @@ func customTest<Match: Equatable>(
     let result: Match?
     switch call {
     case .match:
-      result = input.matchWhole(regex)?.output
+      result = input.wholeMatch(of: regex)?.output
     case .firstMatch:
       result = input.firstMatch(of: regex)?.output
     }
@@ -167,7 +230,7 @@ class CustomRegexComponentTests: XCTestCase {
     // TODO: Why is Radix optional?
 
     do {
-      guard let m = try hexRegex.matchWhole("123aef.345") else {
+      guard let m = try hexRegex.wholeMatch(in: "123aef.345") else {
         XCTFail()
         return
       }
@@ -180,7 +243,7 @@ class CustomRegexComponentTests: XCTestCase {
     }
 
     do {
-      _ = try hexRegex.matchWhole("123aef❗️345")
+      _ = try hexRegex.wholeMatch(in: "123aef❗️345")
       XCTFail()
     } catch let e as Abort {
       XCTAssertEqual(e, Abort())
@@ -202,7 +265,7 @@ class CustomRegexComponentTests: XCTestCase {
     }
 
     do {
-      guard let m = try addressRegex.matchWhole("0x1234567f") else {
+      guard let m = try addressRegex.wholeMatch(in: "0x1234567f") else {
         XCTFail()
         return
       }
@@ -213,7 +276,7 @@ class CustomRegexComponentTests: XCTestCase {
     }
 
     do {
-      _ = try addressRegex.matchWhole("0xdeadbeef")
+      _ = try addressRegex.wholeMatch(in: "0xdeadbeef")
       XCTFail()
     } catch let e as Poison {
       XCTAssertEqual(e, Poison())
@@ -221,6 +284,188 @@ class CustomRegexComponentTests: XCTestCase {
       XCTFail()
     }
 
+
+  }
+
+  func testCustomRegexThrows() {
+
+    func customTest<Match: Equatable, E: Error & Equatable>(
+      _ regex: Regex<Match>,
+      _ tests: (input: String, match: Match?, expectError: E?)...,
+      file: StaticString = #file,
+      line: UInt = #line
+    ) {
+      for (input, match, expectError) in tests {
+        do {
+          let result = try regex.wholeMatch(in: input)?.output
+          XCTAssertEqual(result, match)
+        } catch let e as E {
+          XCTAssertEqual(e, expectError)
+        } catch {
+          XCTFail()
+        }
+      }
+    }
+
+    func customTest<Match: Equatable, Error1: Error & Equatable, Error2: Error & Equatable>(
+      _ regex: Regex<Match>,
+      _ tests: (input: String, match: Match?, expectError1: Error1?, expectError2: Error2?)...,
+      file: StaticString = #file,
+      line: UInt = #line
+    ) {
+      for (input, match, expectError1, expectError2) in tests {
+        do {
+          let result = try regex.wholeMatch(in: input)?.output
+          XCTAssertEqual(result, match)
+        } catch let e as Error1 {
+          XCTAssertEqual(e, expectError1, input, file: file, line: line)
+        } catch let e as Error2 {
+          XCTAssertEqual(e, expectError2, input, file: file, line: line)
+        } catch {
+          XCTFail("caught error: \(error.localizedDescription)")
+        }
+      }
+    }
+
+    func customTest<Capture: Equatable, Error1: Error & Equatable, Error2: Error & Equatable>(
+      _ regex: Regex<(Substring, Capture)>,
+      _ tests: (input: String, match: (Substring, Capture)?, expectError1: Error1?, expectError2: Error2?)...,
+      file: StaticString = #file,
+      line: UInt = #line
+    ) {
+      for (input, match, expectError1, expectError2) in tests {
+        do {
+          let result = try regex.wholeMatch(in: input)?.output
+          XCTAssertEqual(result?.0, match?.0, file: file, line: line)
+          XCTAssertEqual(result?.1, match?.1, file: file, line: line)
+        } catch let e as Error1 {
+          XCTAssertEqual(e, expectError1, input, file: file, line: line)
+        } catch let e as Error2 {
+          XCTAssertEqual(e, expectError2, input, file: file, line: line)
+        } catch {
+          XCTFail("caught error: \(error.localizedDescription)")
+        }
+      }
+    }
+
+    func customTest<Capture1: Equatable, Capture2: Equatable, Error1: Error & Equatable, Error2: Error & Equatable>(
+      _ regex: Regex<(Substring, Capture1, Capture2)>,
+      _ tests: (input: String, match: (Substring, Capture1, Capture2)?, expectError1: Error1?, expectError2: Error2?)...,
+      file: StaticString = #file,
+      line: UInt = #line
+    ) {
+      for (input, match, expectError1, expectError2) in tests {
+        do {
+          let result = try regex.wholeMatch(in: input)?.output
+          XCTAssertEqual(result?.0, match?.0, file: file, line: line)
+          XCTAssertEqual(result?.1, match?.1, file: file, line: line)
+          XCTAssertEqual(result?.2, match?.2, file: file, line: line)
+        } catch let e as Error1 {
+          XCTAssertEqual(e, expectError1, input,  file: file, line: line)
+        } catch let e as Error2 {
+          XCTAssertEqual(e, expectError2, input, file: file, line: line)
+        } catch {
+          XCTFail("caught error: \(error.localizedDescription)")
+        }
+      }
+    }
+
+    // No capture, one error
+    customTest(
+      Regex {
+        IntParser()
+      },
+      ("zzz", nil, IntParser.ParseError()),
+      ("x10x", nil, IntParser.ParseError()),
+      ("30", 30, nil)
+    )
+
+    customTest(
+      Regex {
+        CurrencyParser()
+      },
+      ("USD", .usd, nil),
+      ("NTD", .ntd, nil),
+      ("NTD USD", nil, nil),
+      ("DEM", nil, CurrencyParser.ParseError.deprecated),
+      ("XXX", nil, CurrencyParser.ParseError.unrecognized)
+    )
+
+    // No capture, two errors
+    customTest(
+      Regex {
+        IntParser()
+        " "
+        IntParser()
+      },
+      ("20304 100", "20304 100", nil, nil),
+      ("20304.445 200", nil, IntParser.ParseError(), nil),
+      ("20304 200.123", nil, nil, IntParser.ParseError()),
+      ("20304.445 200.123", nil, IntParser.ParseError(), IntParser.ParseError())
+    )
+
+    customTest(
+      Regex {
+        CurrencyParser()
+        IntParser()
+      },
+      ("USD100", "USD100", nil, nil),
+      ("XXX100", nil, CurrencyParser.ParseError.unrecognized, nil),
+      ("USD100.000", nil, nil, IntParser.ParseError()),
+      ("XXX100.0000", nil, CurrencyParser.ParseError.unrecognized, IntParser.ParseError())
+    )
+
+    // One capture, two errors: One error is thrown from inside a capture,
+    // while the other one is thrown from outside
+    customTest(
+      Regex {
+        Capture { CurrencyParser() }
+        IntParser()
+      },
+      ("USD100", ("USD100", .usd), nil, nil),
+      ("NTD305.5", nil, nil, IntParser.ParseError()),
+      ("DEM200", ("DEM200", .dem), CurrencyParser.ParseError.deprecated, nil),
+      ("XXX", nil, CurrencyParser.ParseError.unrecognized, IntParser.ParseError())
+    )
+
+    customTest(
+      Regex {
+        CurrencyParser()
+        Capture { IntParser() }
+      },
+      ("USD100", ("USD100", 100), nil, nil),
+      ("NTD305.5", nil, nil, IntParser.ParseError()),
+      ("DEM200", ("DEM200", 200), CurrencyParser.ParseError.deprecated, nil),
+      ("XXX", nil, CurrencyParser.ParseError.unrecognized, IntParser.ParseError())
+    )
+
+    // One capture, two errors: Both errors are thrown from inside the capture
+    customTest(
+      Regex {
+        Capture {
+          CurrencyParser()
+          IntParser()
+        }
+      },
+      ("USD100", ("USD100", "USD100"), nil, nil),
+      ("NTD305.5", nil, nil, IntParser.ParseError()),
+      ("DEM200", ("DEM200", "DEM200"), CurrencyParser.ParseError.deprecated, nil),
+      ("XXX", nil, CurrencyParser.ParseError.unrecognized, IntParser.ParseError())
+    )
+
+    // Two captures, two errors: Different erros are thrown from inside captures
+    customTest(
+      Regex {
+        Capture(CurrencyParser())
+        Capture(IntParser())
+      },
+      ("USD100", ("USD100", .usd, 100), nil, nil),
+      ("NTD500", ("NTD500", .ntd, 500), nil, nil),
+      ("XXX20", nil, CurrencyParser.ParseError.unrecognized, IntParser.ParseError()),
+      ("DEM500", nil, CurrencyParser.ParseError.deprecated, nil),
+      ("DEM500.345", nil, CurrencyParser.ParseError.deprecated, IntParser.ParseError()),
+      ("NTD100.345", nil, nil, IntParser.ParseError())
+    )
 
   }
 }

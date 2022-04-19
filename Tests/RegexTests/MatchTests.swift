@@ -1208,6 +1208,19 @@ extension RegexTests {
       ("CaFe", true),
       ("EfAc", true))
   }
+
+  func testNonSemanticWhitespace() {
+    firstMatchTest(#" \t "#, input: " \t ", match: " \t ")
+    firstMatchTest(#"(?xx) \t "#, input: " \t ", match: "\t")
+
+    firstMatchTest(#"[ \t]+"#, input: " \t ", match: " \t ")
+    firstMatchTest(#"(?xx)[ \t]+"#, input: " \t ", match: "\t")
+    firstMatchTest(#"(?xx)[ \t]+"#, input: " \t\t ", match: "\t\t")
+    firstMatchTest(#"(?xx)[ \t]+"#, input: " \t \t", match: "\t")
+
+    firstMatchTest("(?xx)[ a && ab ]+", input: " aaba ", match: "aa")
+    firstMatchTest("(?xx)[ ] a ]+", input: " a]]a ] ", match: "a]]a")
+  }
   
   func testASCIIClasses() {
     // 'D' ASCII-only digits
@@ -1306,6 +1319,17 @@ extension RegexTests {
     firstMatchTest(#"(((?s)a)).b"#, input: "a\nb", match: nil)
     firstMatchTest(#"(?s)(((?-s)a)).b"#, input: "a\nb", match: "a\nb")
     firstMatchTest(#"(?s)((?-s)((?i)a)).b"#, input: "a\nb", match: "a\nb")
+
+    // Matching option changing persists across alternations.
+    firstMatchTest(#"a(?s)b|c|.d"#, input: "abc", match: "ab")
+    firstMatchTest(#"a(?s)b|c|.d"#, input: "c", match: "c")
+    firstMatchTest(#"a(?s)b|c|.d"#, input: "a\nd", match: "\nd")
+    firstMatchTest(#"a(?s)(?^)b|c|.d"#, input: "a\nd", match: nil)
+    firstMatchTest(#"a(?s)b|.c(?-s)|.d"#, input: "a\nd", match: nil)
+    firstMatchTest(#"a(?s)b|.c(?-s)|.d"#, input: "a\nc", match: "\nc")
+    firstMatchTest(#"a(?s)b|c(?-s)|(?^s).d"#, input: "a\nd", match: "\nd")
+    firstMatchTest(#"a(?:(?s).b)|.c|.d"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"a(?:(?s).b)|.c"#, input: "a\nc", match: nil)
   }
   
   func testOptionMethods() throws {
@@ -1313,7 +1337,7 @@ extension RegexTests {
     XCTAssertTrue ("cafe".contains(regex))
     XCTAssertFalse("CaFe".contains(regex))
     
-    let caseInsensitiveRegex = regex.ignoringCase()
+    let caseInsensitiveRegex = regex.ignoresCase()
     XCTAssertTrue("cafe".contains(caseInsensitiveRegex))
     XCTAssertTrue("CaFe".contains(caseInsensitiveRegex))
   }

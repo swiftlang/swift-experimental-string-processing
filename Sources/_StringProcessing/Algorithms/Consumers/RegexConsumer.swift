@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// FIXME: What even is this? Can we delete this whole thing?
+@available(SwiftStdlib 5.7, *)
 struct RegexConsumer<
   R: RegexComponent, Consumed: BidirectionalCollection
 > where Consumed.SubSequence == Substring {
@@ -20,11 +22,12 @@ struct RegexConsumer<
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension RegexConsumer {
   func _matchingConsuming(
     _ consumed: Substring, in range: Range<String.Index>
   ) -> (upperBound: String.Index, match: Match)? {
-    guard let result = try! regex._match(
+    guard let result = try! regex.regex._match(
       consumed.base,
       in: range, mode: .partialFromFront
     ) else { return nil }
@@ -35,8 +38,9 @@ extension RegexConsumer {
 // TODO: Explicitly implement the non-matching consumer/searcher protocols as
 // well, taking advantage of the fact that the captures can be ignored
 
+@available(SwiftStdlib 5.7, *)
 extension RegexConsumer: MatchingCollectionConsumer {
-  typealias Match = R.Output
+  typealias Match = R.RegexOutput
   
   func matchingConsuming(
     _ consumed: Consumed, in range: Range<Consumed.Index>
@@ -46,6 +50,7 @@ extension RegexConsumer: MatchingCollectionConsumer {
 }
 
 // TODO: We'll want to bake backwards into the engine
+@available(SwiftStdlib 5.7, *)
 extension RegexConsumer: BidirectionalMatchingCollectionConsumer {
   func matchingConsumingBack(
     _ consumed: Consumed, in range: Range<Consumed.Index>
@@ -66,6 +71,7 @@ extension RegexConsumer: BidirectionalMatchingCollectionConsumer {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension RegexConsumer: MatchingStatelessCollectionSearcher {
   typealias Searched = Consumed
 
@@ -80,6 +86,7 @@ extension RegexConsumer: MatchingStatelessCollectionSearcher {
 }
 
 // TODO: Bake in search-back to engine too
+@available(SwiftStdlib 5.7, *)
 extension RegexConsumer: BackwardMatchingStatelessCollectionSearcher {
   typealias BackwardSearched = Consumed
   

@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 struct Executor {
   // TODO: consider let, for now lets us toggle tracing
@@ -19,6 +19,7 @@ struct Executor {
     self.engine = Engine(program, enableTracing: enablesTracing)
   }
 
+  @available(SwiftStdlib 5.7, *)
   func match<Output>(
     _ input: String,
     in inputRange: Range<String.Index>,
@@ -36,7 +37,8 @@ struct Executor {
 
     let capList = CaptureList(
       values: cpu.storedCaptures,
-      referencedCaptureOffsets: engine.program.referencedCaptureOffsets)
+      referencedCaptureOffsets: engine.program.referencedCaptureOffsets,
+      namedCaptureOffsets: engine.program.namedCaptureOffsets)
 
     let capStruct = engine.program.captureStructure
     let range = inputRange.lowerBound..<endIdx
@@ -61,9 +63,11 @@ struct Executor {
       range: range,
       rawCaptures: caps,
       referencedCaptureOffsets: capList.referencedCaptureOffsets,
+      namedCaptureOffsets: capList.namedCaptureOffsets,
       value: value)
   }
 
+  @available(SwiftStdlib 5.7, *)
   func dynamicMatch(
     _ input: String,
     in inputRange: Range<String.Index>,

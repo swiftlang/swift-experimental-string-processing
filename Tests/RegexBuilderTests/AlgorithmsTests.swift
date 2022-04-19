@@ -13,6 +13,7 @@ import XCTest
 import _StringProcessing
 @testable import RegexBuilder
 
+@available(SwiftStdlib 5.7, *)
 class RegexConsumerTests: XCTestCase {
   // FIXME: enable this test when we update the return type of `matches(of:)`
   // when SE-0346 is available
@@ -27,7 +28,7 @@ class RegexConsumerTests: XCTestCase {
       _ regex: R,
       input: String,
       result: String,
-      _ replace: (Regex<R.Output>.Match) -> String,
+      _ replace: (Regex<R.RegexOutput>.Match) -> String,
       file: StaticString = #file,
       line: UInt = #line
     ) {
