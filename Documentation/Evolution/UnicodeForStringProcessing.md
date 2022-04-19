@@ -91,25 +91,25 @@ Options can be enabled and disabled in two different ways: as part of [regex int
 let regex1 = /(?i)banana/
 let regex2 = Regex {
     "banana"
-}.ignoringCase()`
+}.ignoresCase()`
 ```
 
-Note that the `ignoringCase()` is available on any type conforming to `RegexComponent`, which means that you can use the more readable option-setting interface in conjunction with regex literals:
+Note that the `ignoresCase()` is available on any type conforming to `RegexComponent`, which means that you can always use the more readable option-setting interface in conjunction with regex literals or run-time compiled `Regex`es:
 
 ```swift
-let regex3 = /banana/.ignoringCase()
+let regex3 = /banana/.ignoresCase()
 ```
 
-Calling an option-setting method like `ignoringCase(_:)` acts like wrapping the callee in an option-setting group `(?:...)`. That is, while it sets the behavior for the callee, it doesn’t override options that are applied to more specific regions. In this example, the middle `"na"` in `"banana"` matches case-sensitively, despite the outer call to `ignoringCase()`:
+Calling an option-setting method like `ignoresCase(_:)` acts like wrapping the callee in an option-setting group `(?:...)`. That is, while it sets the behavior for the callee, it doesn’t override options that are applied to more specific regions. In this example, the middle `"na"` in `"banana"` matches case-sensitively, despite the outer call to `ignoresCase()`:
 
 ```swift
 let regex4 = Regex {
     "ba"
-    "na".ignoringCase(false)
+    "na".ignoresCase(false)
     "na"
 }
-.ignoringCase()
-	
+.ignoresCase()
+
 "banana".contains(regex4)     // true
 "BAnaNA".contains(regex4)     // true
 "BANANA".contains(regex4)     // false
@@ -122,19 +122,19 @@ All option APIs are provided on `RegexComponent`, so they can be called on a `Re
 
 The options that `Regex` supports are shown in the table below. Options that affect _matching behavior_ are supported through both regex syntax and APIs, while options that have _structural_ or _syntactic_ effects are only supported through regex syntax.
 
-| **Matching Behavior**        |                |                                    |
-|------------------------------|----------------|------------------------------------|
-| Case insensitivity           | `(?i)`         | `ignoringCase()`                   |
-| Single-line mode             | `(?s)`         | `dotMatchesNewlines()`             |
-| Multi-line mode              | `(?m)`         | `anchorsMatchNewlines()`           |
-| ASCII-only character classes | `(?DSWP)`      | `usingASCIIDigits()`, etc          |
-| Unicode word boundaries      | `(?w)`         | `identifyingWordBoundaries(with:)` |
-| Semantic level               | `(?Xu)`        | `matchingSemantics(_:)`            |
-| Reluctant quantifiers        | `(?U)`         | `reluctantQuantifiers()`           |
-| **Structural/Syntactic**     |                |                                    |
-| Extended syntax              | `(?x)`,`(?xx)` | n/a                                |
-| Named captures only          | `(?n)`         | n/a                                |
-| Shared capture names         | `(?J)`         | n/a                                |
+| **Matching Behavior**        |                |                           |
+|------------------------------|----------------|---------------------------|
+| Case insensitivity           | `(?i)`         | `ignoresCase()`           |
+| Single-line mode             | `(?s)`         | `dotMatchesNewlines()`    |
+| Multi-line mode              | `(?m)`         | `anchorsMatchNewlines()`  |
+| ASCII-only character classes | `(?DSWP)`      | `asciiOnlyDigits()`, etc  |
+| Unicode word boundaries      | `(?w)`         | `wordBoundaryKind(_:)`    |
+| Semantic level               | `(?Xu)`        | `matchingSemantics(_:)`   |
+| Reluctant quantifiers        | `(?U)`         | `reluctantQuantifiers()`  |
+| **Structural/Syntactic**     |                |                           |
+| Extended syntax              | `(?x)`,`(?xx)` | n/a                       |
+| Named captures only          | `(?n)`         | n/a                       |
+| Shared capture names         | `(?J)`         | n/a                       |
 
 #### Case insensitivity
 
@@ -157,7 +157,7 @@ Case insensitive matching uses case folding to ensure that canonical equivalence
 ```swift
 extension RegexComponent {
     /// Returns a regular expression that ignores casing when matching.
-    public func ignoringCase(_ ignoreCase: Bool = true) -> Regex<Output>
+    public func ignoresCase(_ ignoresCase: Bool = true) -> Regex<Output>
 }
 ```
 
@@ -244,19 +244,19 @@ With one or more of these options enabled, the default character classes match o
 ```swift
 extension RegexComponent {
   /// Returns a regular expression that only matches ASCII characters as digits.
-  public func usingASCIIDigits(_ useASCII: Bool = true) -> Regex<Output>
+  public func asciiOnlyDigits(_ asciiOnly: Bool = true) -> Regex<Output>
 	
   /// Returns a regular expression that only matches ASCII characters as space
   /// characters.
-  public func usingASCIISpaces(_ useASCII: Bool = true) -> Regex<Output>
+  public func asciiOnlyWhitespace(_ asciiOnly: Bool = true) -> Regex<Output>
 	
   /// Returns a regular expression that only matches ASCII characters as "word
   /// characters".
-  public func usingASCIIWordCharacters(_ useASCII: Bool = true) -> Regex<Output>
+  public func asciiOnlyWordCharacters(_ asciiOnly: Bool = true) -> Regex<Output>
 	
   /// Returns a regular expression that only matches ASCII characters when
   /// matching character classes.
-  public func usingASCIICharacterClasses(_ useASCII: Bool = true) -> Regex<Output>
+  public func asciiOnlyCharacterClasses(_ asciiOnly: Bool = true) -> Regex<Output>
 }
 ```
 
@@ -309,7 +309,7 @@ extension RegexComponent {
   /// The default word boundaries use a Unicode algorithm that handles some cases
   /// better than simple word boundaries, such as words with internal
   /// punctuation, changes in script, and Emoji.
-  public func identifyingWordBoundaries(with wordBoundaryKind: RegexWordBoundaryKind) -> Regex<Output>
+  public func wordBoundaryKind(_ wordBoundaryKind: RegexWordBoundaryKind) -> Regex<Output>
 }
 
 public struct RegexWordBoundaryKind: Hashable {
