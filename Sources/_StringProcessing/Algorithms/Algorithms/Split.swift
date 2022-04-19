@@ -233,16 +233,24 @@ extension BidirectionalCollection where Element: Equatable {
 // MARK: Fixed pattern algorithms
 
 extension Collection where Element: Equatable {
-  // FIXME: Replace `SplitCollection` when SE-0346 is enabled
+  @_disfavoredOverload
+  func split<S: Sequence>(
+    by separator: S
+  ) -> SplitCollection<ZSearcher<Self>> where S.Element == Element {
+    split(by: ZSearcher(pattern: Array(separator), by: ==))
+  }
+
+  // FIXME: Return `some Collection<SubSequence>` for SE-0346
   /// Returns the longest possible subsequences of the collection, in order,
   /// around elements equal to the given separator.
   /// - Parameter separator: The element to be split upon.
   /// - Returns: A collection of subsequences, split from this collection's
   /// elements.
-  func split<S: Sequence>(
+  @available(SwiftStdlib 5.7, *)
+  public func split<S: Sequence>(
     by separator: S
-  ) -> SplitCollection<ZSearcher<Self>> where S.Element == Element {
-    split(by: ZSearcher(pattern: Array(separator), by: ==))
+  ) -> [SubSequence] where S.Element == Element {
+    split(by: ZSearcher(pattern: Array(separator), by: ==)).map{ $0 }
   }
 }
 
@@ -282,12 +290,7 @@ extension BidirectionalCollection where Element: Comparable {
 
 @available(SwiftStdlib 5.7, *)
 extension BidirectionalCollection where SubSequence == Substring {
-  // FIXME: Replace `SplitCollection` when SE-0346 is enabled
-  /// Returns the longest possible subsequences of the collection, in order,
-  /// around elements equal to the given separator.
-  /// - Parameter separator: A regex describing elements to be split upon.
-  /// - Returns: A collection of substrings, split from this collection's
-  /// elements.
+  @_disfavoredOverload
   func split<R: RegexComponent>(
     by separator: R
   ) -> SplitCollection<RegexConsumer<R, Self>> {
@@ -298,5 +301,17 @@ extension BidirectionalCollection where SubSequence == Substring {
     by separator: R
   ) -> ReversedSplitCollection<RegexConsumer<R, Self>> {
     splitFromBack(by: RegexConsumer(separator))
+  }
+
+  // FIXME: Return `some Collection<Substring>` for SE-0346 
+  /// Returns the longest possible subsequences of the collection, in order,
+  /// around elements equal to the given separator.
+  /// - Parameter separator: A regex describing elements to be split upon.
+  /// - Returns: A collection of substrings, split from this collection's
+  /// elements.
+  public func split<R: RegexComponent>(
+    by separator: R
+  ) -> [SubSequence] {
+    split(by: RegexConsumer(separator)).map{ $0 }
   }
 }

@@ -139,7 +139,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     var result = Self()
     result.append(contentsOf: self[..<index])
 
-    for match in self[subrange]._matches(of: regex)
+    for match in self[subrange].matches(of: regex)
       .prefix(maxReplacements)
     {
       result.append(contentsOf: self[index..<match.range.lowerBound])
