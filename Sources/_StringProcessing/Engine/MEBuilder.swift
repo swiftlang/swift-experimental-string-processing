@@ -45,6 +45,7 @@ extension MEProgram where Input.Element: Hashable {
     // Symbolic reference resolution
     var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
     var referencedCaptureOffsets: [ReferenceID: Int] = [:]
+    var namedCaptureOffsets: [String: Int] = [:]
     var captureCount: Int {
       // We currently deduce the capture count from the capture register number.
       nextCaptureRegister.rawValue
@@ -353,7 +354,8 @@ extension MEProgram.Builder {
       staticMatcherFunctions: matcherFunctions,
       registerInfo: regInfo,
       captureStructure: captureStructure,
-      referencedCaptureOffsets: referencedCaptureOffsets)
+      referencedCaptureOffsets: referencedCaptureOffsets,
+      namedCaptureOffsets: namedCaptureOffsets)
   }
 
   mutating func reset() { self = Self() }
@@ -438,13 +440,19 @@ fileprivate extension MEProgram.Builder {
 
 // Register helpers
 extension MEProgram.Builder {
-  mutating func makeCapture(id: ReferenceID?) -> CaptureRegister {
+  mutating func makeCapture(
+    id: ReferenceID?, name: String?
+  ) -> CaptureRegister {
     defer { nextCaptureRegister.rawValue += 1 }
     // Register the capture for later lookup via symbolic references.
     if let id = id {
       let preexistingValue = referencedCaptureOffsets.updateValue(
         captureCount, forKey: id)
       assert(preexistingValue == nil)
+    }
+    if let name = name {
+      // TODO: Reject duplicate capture names unless `(?J)`?
+      namedCaptureOffsets.updateValue(captureCount, forKey: name)
     }
     return nextCaptureRegister
   }

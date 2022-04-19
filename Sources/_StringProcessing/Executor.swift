@@ -37,7 +37,8 @@ struct Executor {
 
     let capList = CaptureList(
       values: cpu.storedCaptures,
-      referencedCaptureOffsets: engine.program.referencedCaptureOffsets)
+      referencedCaptureOffsets: engine.program.referencedCaptureOffsets,
+      namedCaptureOffsets: engine.program.namedCaptureOffsets)
 
     let capStruct = engine.program.captureStructure
     let range = inputRange.lowerBound..<endIdx
@@ -62,6 +63,7 @@ struct Executor {
       range: range,
       rawCaptures: caps,
       referencedCaptureOffsets: capList.referencedCaptureOffsets,
+      namedCaptureOffsets: capList.namedCaptureOffsets,
       value: value)
   }
 

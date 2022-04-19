@@ -26,6 +26,8 @@ extension Regex {
 
     let referencedCaptureOffsets: [ReferenceID: Int]
 
+    let namedCaptureOffsets: [String: Int]
+
     let value: Any?
   }
 }
@@ -40,6 +42,7 @@ extension Regex.Match {
         storedCapture: StoredCapture(range: range, value: nil))
       let output = AnyRegexOutput(
         input: input,
+        namedCaptureOffsets: namedCaptureOffsets,
         elements: [wholeMatchAsCapture] + rawCaptures)
       return output as! Output
     } else if Output.self == Substring.self {
