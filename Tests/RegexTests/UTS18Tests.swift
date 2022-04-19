@@ -17,6 +17,7 @@ class UTS18Tests: XCTestCase {
   var input: String {
     "ABCdefghîøü\u{FFF0} -–—[]123"
   // 012345678901       234567890
+  // 0         10               20
   }
 }
 
@@ -128,9 +129,9 @@ extension UTS18Tests {
   func testProperties_XFail() {
     XCTExpectFailure("Need to support 'age' and 'block' properties") {
       // XCTAssertFalse("z".contains(#/\p{age=3.1}/#))
-      XCTFail("\(#/\p{age=3.1}/#)")
+      XCTFail(#"\(#/\p{age=3.1}/#)"#)
       // XCTAssertTrue("\u{1F00}".contains(#/\p{Block=Greek}/#))
-      XCTFail("\(#/\p{Block=Greek}/#)")
+      XCTFail(#"\(#/\p{Block=Greek}/#)"#)
     }
   }
   
@@ -196,7 +197,7 @@ extension UTS18Tests {
   // - Nonspacing marks are never divided from their base characters, and
   //   otherwise ignored in locating boundaries.
   func testSimpleWordBoundaries() {
-    let simpleWordRegex = #/.+?\b/#.usingUnicodeWordBoundaries(false)
+    let simpleWordRegex = #/.+?\b/#.wordBoundaryKind(.unicodeLevel1)
     expectFirstMatch(input, simpleWordRegex, input[pos: ..<11])
     expectFirstMatch("don't", simpleWordRegex, "don")
     expectFirstMatch("Cafe\u{301}", simpleWordRegex, "Café")
@@ -213,17 +214,17 @@ extension UTS18Tests {
   // conversions, then it shall provide at least the simple, default Unicode
   // case folding.
   func testSimpleLooseMatches() {
-    expectFirstMatch("Dåb", #/Dåb/#.ignoringCase(), "Dåb")
-    expectFirstMatch("dÅB", #/Dåb/#.ignoringCase(), "dÅB")
-    expectFirstMatch("D\u{212B}B", #/Dåb/#.ignoringCase(), "D\u{212B}B")
+    expectFirstMatch("Dåb", #/Dåb/#.ignoresCase(), "Dåb")
+    expectFirstMatch("dÅB", #/Dåb/#.ignoresCase(), "dÅB")
+    expectFirstMatch("D\u{212B}B", #/Dåb/#.ignoresCase(), "D\u{212B}B")
   }
 
   func testSimpleLooseMatches_XFail() {
     XCTExpectFailure("Need case folding support") {
       let sigmas = "σΣς"
-      expectFirstMatch(sigmas, #/σ+/#.ignoringCase(), sigmas[...])
-      expectFirstMatch(sigmas, #/Σ+/#.ignoringCase(), sigmas[...])
-      expectFirstMatch(sigmas, #/ς+/#.ignoringCase(), sigmas[...])
+      expectFirstMatch(sigmas, #/σ+/#.ignoresCase(), sigmas[...])
+      expectFirstMatch(sigmas, #/Σ+/#.ignoresCase(), sigmas[...])
+      expectFirstMatch(sigmas, #/ς+/#.ignoresCase(), sigmas[...])
       
       // TODO: Test German sharp S
       // TODO: Test char classes, e.g. [\p{Block=Phonetic_Extensions} [A-E]]
@@ -294,7 +295,46 @@ extension UTS18Tests {
   //
   // Specific recommendation?
   func testCanonicalEquivalents() {
-    XCTExpectFailure { XCTFail("Implement tests") }
+    let equivalents = [
+      "\u{006f}\u{031b}\u{0323}",     // o + horn + dot_below
+      "\u{006f}\u{0323}\u{031b}",     // o + dot_below + horn
+      "\u{01a1}\u{0323}",             // o-horn + dot_below
+      "\u{1ecd}\u{031b}",             // o-dot_below + horn
+      "\u{1ee3}",                     // o-horn-dot_below
+    ]
+    
+    let regexes = [
+      #/\u{006f}\u{031b}\u{0323}/#,   // o + horn + dot_below
+      #/\u{006f}\u{0323}\u{031b}/#,   // o + dot_below + horn
+      #/\u{01a1}\u{0323}/#,           // o-horn + dot_below
+      #/\u{1ecd}\u{031b}/#,           // o-dot_below + horn
+      #/\u{1ee3}/#,                   // o-horn-dot_below
+    ]
+
+    // Default: Grapheme cluster semantics
+    for (regexNum, regex) in regexes.enumerated() {
+      for (equivNum, equiv) in equivalents.enumerated() {
+        XCTAssertTrue(
+          equiv.contains(regex),
+          "Grapheme cluster semantics: Regex \(regexNum) didn't match with string \(equivNum)")
+      }
+    }
+    
+    // Unicode scalar semantics
+    for (regexNum, regex) in regexes.enumerated() {
+      for (equivNum, equiv) in equivalents.enumerated() {
+        let regex = regex.matchingSemantics(.unicodeScalar)
+        if regexNum == equivNum {
+          XCTAssertTrue(
+            equiv.contains(regex),
+            "Unicode scalar semantics: Regex \(regexNum) didn't match with string \(equivNum)")
+        } else {
+          XCTAssertFalse(
+            equiv.contains(regex),
+            "Unicode scalar semantics: Regex \(regexNum) incorrectly matched with string \(equivNum)")
+        }
+      }
+    }
   }
   
   // RL2.2 Extended Grapheme Clusters and Character Classes with Strings
@@ -333,7 +373,7 @@ extension UTS18Tests {
   // named characters.
   func testNameProperty_XFail() {
     XCTExpectFailure("Need \\p{name=...} support") {
-      XCTFail("\(#/\p{name=BOM}/#)")
+      XCTFail(#"\(#/\p{name=BOM}/#)"#)
       // Name property
       // XCTAssertTrue("\u{FEFF}".contains(#/\p{name=ZERO WIDTH NO-BREAK SPACE}/#))
       // Name property and Matching Rules
@@ -440,7 +480,7 @@ extension UTS18Tests {
     // IDS_Trinary_Operator
     // Equivalent_Unified_Ideograph
     XCTExpectFailure()
-    XCTFail("Unsupported: \(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#)")
+    XCTFail(#"Unsupported: \(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#)"#)
     // XCTAssertTrue("⼚⺁厂".contains(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#))
 
     // MARK: Case
