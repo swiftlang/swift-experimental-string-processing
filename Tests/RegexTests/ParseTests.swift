@@ -504,6 +504,25 @@ extension RegexTests {
     parseTest(#"[[:}:]]"#, charClass(charClass(":", "}", ":")))
 
     parseTest(
+      #"[:[:space:]:]"#,
+      charClass(":", posixProp_m(.binary(.whitespace)), ":")
+    )
+    parseTest(
+      #"[:a[:space:]b:]"#,
+      charClass(":", "a", posixProp_m(.binary(.whitespace)), "b", ":")
+    )
+
+    // ICU parses a custom character class if it sees any of its known escape
+    // sequences in a POSIX character property (though it appears to exclude
+    // character class escapes e.g '\d'). We do so for any escape sequence as
+    // '\' is not a valid character property character.
+    parseTest(#"[:\Q:]\E]"#, charClass(":", quote_m(":]")))
+    parseTest(#"[:\a:]"#, charClass(":", atom_m(.escaped(.alarm)), ":"))
+    parseTest(#"[:\d:]"#, charClass(":", atom_m(.escaped(.decimalDigit)), ":"))
+    parseTest(#"[:\\:]"#, charClass(":", "\\", ":"))
+    parseTest(#"[:\:]"#, charClass(":", ":"))
+
+    parseTest(
       #"\D\S\W"#,
       concat(
         escaped(.notDecimalDigit),
@@ -2319,7 +2338,7 @@ extension RegexTests {
     diagnosticTest(#"\p{x=y}"#, .unknownProperty(key: "x", value: "y"))
     diagnosticTest(#"\p{aaa(b)}"#, .unknownProperty(key: nil, value: "aaa(b)"))
     diagnosticTest("[[:a():]]", .unknownProperty(key: nil, value: "a()"))
-    diagnosticTest(#"\p{aaa\p{b}}"#, .unknownProperty(key: nil, value: #"aaa\p{b"#))
+    diagnosticTest(#"\p{aaa\p{b}}"#, .unknownProperty(key: nil, value: "aaa"))
     diagnosticTest(#"[[:{:]]"#, .unknownProperty(key: nil, value: "{"))
 
     // MARK: Matching options
