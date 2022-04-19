@@ -123,7 +123,7 @@ extension AST.Node {
       case let .quantification(v):
         let child = v.child.dslTreeNode
         return .quantification(
-          .init(ast: v.amount.value), .init(ast: v.kind.value), child)
+          .init(ast: v.amount.value), .syntax(.init(ast: v.kind.value)), child)
 
       case let .quote(v):
         return .quotedLiteral(v.literal)

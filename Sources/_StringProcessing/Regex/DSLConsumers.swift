@@ -10,19 +10,27 @@
 //===----------------------------------------------------------------------===//
 
 @available(SwiftStdlib 5.7, *)
-public protocol CustomRegexComponent: RegexComponent {
+public protocol CustomMatchingRegexComponent: RegexComponent {
   func match(
     _ input: String,
     startingAt index: String.Index,
     in bounds: Range<String.Index>
-  ) -> (upperBound: String.Index, output: RegexOutput)?
+  ) throws -> (upperBound: String.Index, output: RegexOutput)?
 }
 
 @available(SwiftStdlib 5.7, *)
-extension CustomRegexComponent {
+extension CustomMatchingRegexComponent {
   public var regex: Regex<RegexOutput> {
+<<<<<<< HEAD
     Regex(node: .matcher(RegexOutput.self, { input, index, bounds in
       match(input, startingAt: index, in: bounds)
     }))
+=======
+
+    let node: DSLTree.Node = .matcher(.init(RegexOutput.self), { input, index, bounds in
+      try match(input, startingAt: index, in: bounds)
+    })
+    return Regex(node: node)
+>>>>>>> main
   }
 }

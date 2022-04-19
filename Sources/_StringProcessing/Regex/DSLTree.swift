@@ -56,7 +56,7 @@ extension DSLTree {
 
     case quantification(
       _AST.QuantificationAmount,
-      _AST.QuantificationKind,
+      QuantificationKind,
       Node)
 
     case customCharacterClass(CustomCharacterClass)
@@ -103,6 +103,16 @@ extension DSLTree {
 }
 
 extension DSLTree {
+  @_spi(RegexBuilder)
+  public enum QuantificationKind {
+    /// The default quantification kind, as set by options.
+    case `default`
+    /// An explicitly chosen kind, overriding any options.
+    case explicit(_AST.QuantificationKind)
+    /// A kind set via syntax, which can be affected by options.
+    case syntax(_AST.QuantificationKind)
+  }
+  
   @_spi(RegexBuilder)
   public struct CustomCharacterClass {
     var members: [Member]
