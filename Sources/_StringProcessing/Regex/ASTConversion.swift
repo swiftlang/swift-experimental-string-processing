@@ -65,13 +65,17 @@ extension AST.Node {
             // TODO: For printing, nice to coalesce
             // scalars literals too. We likely need a different
             // approach even before we have a better IR.
-            guard let char = atom?.singleCharacter else {
+            if let char = atom?.singleCharacter  {
+              result.append(char)
+            } else if let scalar = atom?.singleScalar {
+              result.append(Character(scalar))
+            } else {
               break
             }
-            result.append(char)
+            
             astChildren.formIndex(after: &idx)
           }
-          return result.count <= 1 ? nil : (idx, result)
+          return result.isEmpty ? nil : (idx, result)
         }
 
         // No need to nest single children concatenations
@@ -207,7 +211,7 @@ extension AST.Atom {
 
     switch self.kind {
     case let .char(c):                    return .char(c)
-    case let .scalar(s):                  return .scalar(s)
+    case let .scalar(s):                  return .char(Character(s))
     case .any:                            return .any
     case let .backreference(r):           return .backreference(r)
     case let .changeMatchingOptions(seq): return .changeMatchingOptions(seq)

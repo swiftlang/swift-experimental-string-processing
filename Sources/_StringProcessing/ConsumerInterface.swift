@@ -131,6 +131,13 @@ extension AST.Atom {
     }
   }
 
+  var singleScalar: UnicodeScalar? {
+    switch kind {
+    case .scalar(let s): return s
+    default: return nil
+    }
+  }
+
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram<String>.ConsumeFunction? {

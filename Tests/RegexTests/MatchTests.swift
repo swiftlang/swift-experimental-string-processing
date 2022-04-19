@@ -938,15 +938,15 @@ extension RegexTests {
 
     // TODO: Oniguruma \y and \Y
     firstMatchTests(
-      #"\u{65}"#,             // Scalar 'e' is present in both:
-      ("Cafe\u{301}", "e"),   // composed and
-      ("Sol Cafe", "e"))      // standalone
+      #"\u{65}"#,             // Scalar 'e' is present in both
+      ("Cafe\u{301}", nil),   // but scalar mode requires boundary at end of match
+      ("Sol Cafe", "e"))      // standalone is okay
     firstMatchTests(
       #"\u{65}\y"#,           // Grapheme boundary assertion
       ("Cafe\u{301}", nil),
       ("Sol Cafe", "e"))
     firstMatchTests(
-      #"\u{65}\Y"#,           // Grapheme non-boundary assertion
+      #"(?u)\u{65}\Y"#,       // Grapheme non-boundary assertion
       ("Cafe\u{301}", "e"),
       ("Sol Cafe", nil))
   }
@@ -1353,11 +1353,10 @@ extension RegexTests {
     // as a character.
 
     firstMatchTest(#"\u{65}\u{301}$"#, input: eDecomposed, match: eDecomposed)
-    // FIXME: Decomposed character in regex literal doesn't match an equivalent character
-    firstMatchTest(#"\u{65}\u{301}$"#, input: eComposed, match: eComposed,
-      xfail: true)
+    firstMatchTest(#"\u{65}\u{301}$"#, input: eComposed, match: eComposed)
 
-    firstMatchTest(#"\u{65}"#, input: eDecomposed, match: "e")
+    firstMatchTest(#"\u{65}"#, input: eDecomposed, match: "e",
+      xfail: true)
     firstMatchTest(#"\u{65}$"#, input: eDecomposed, match: nil)
     // FIXME: \y is unsupported
     firstMatchTest(#"\u{65}\y"#, input: eDecomposed, match: nil,
@@ -1381,12 +1380,10 @@ extension RegexTests {
       (eComposed, true),
       (eDecomposed, true))
 
-    // FIXME: Decomposed character in regex literal doesn't match an equivalent character
     matchTest(
       #"e\u{301}$"#,
       (eComposed, true),
-      (eDecomposed, true),
-      xfail: true)
+      (eDecomposed, true))
 
     matchTest(
       #"e$"#,
@@ -1472,7 +1469,8 @@ extension RegexTests {
     firstMatchTest(#"\u{1F1F0}\u{1F1F7}"#, input: flag, match: flag)
     
     // First Unicode scalar followed by CCC of regional indicators
-    firstMatchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag)
+    firstMatchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag,
+              xfail: true)
 
     // FIXME: CCC of Regional Indicator doesn't match with both parts of a flag character
     // A CCC of regional indicators x 2
