@@ -187,3 +187,10 @@ extension Substring {
     try? r.regex.prefixMatch(in: self)
   }
 }
+
+@available(SwiftStdlib 5.7, *)
+extension Regex {
+  public init(quoting string: String) {
+    self.init(node: .quotedLiteral(string))
+  }
+}
