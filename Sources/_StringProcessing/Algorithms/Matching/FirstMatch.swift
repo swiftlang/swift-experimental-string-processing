@@ -61,6 +61,6 @@ extension BidirectionalCollection where SubSequence == Substring {
     of r: R
   ) -> Regex<R.RegexOutput>.Match? {
     let slice = self[...]
-    return try? r.regex.firstMatch(in: slice.base)
+    return try? r.regex.firstMatch(in: slice)
   }
 }

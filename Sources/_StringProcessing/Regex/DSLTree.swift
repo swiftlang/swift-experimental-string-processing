@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 @_spi(RegexBuilder)
 public struct DSLTree {
@@ -56,7 +56,7 @@ extension DSLTree {
 
     case quantification(
       AST.Quantification.Amount,
-      AST.Quantification.Kind,
+      QuantificationKind,
       Node)
 
     case customCharacterClass(CustomCharacterClass)
@@ -103,6 +103,16 @@ extension DSLTree {
 }
 
 extension DSLTree {
+  @_spi(RegexBuilder)
+  public enum QuantificationKind {
+    /// The default quantification kind, as set by options.
+    case `default`
+    /// An explicitly chosen kind, overriding any options.
+    case explicit(AST.Quantification.Kind)
+    /// A kind set via syntax, which can be affected by options.
+    case syntax(AST.Quantification.Kind)
+  }
+  
   @_spi(RegexBuilder)
   public struct CustomCharacterClass {
     var members: [Member]

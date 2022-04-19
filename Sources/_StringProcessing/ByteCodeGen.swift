@@ -1,4 +1,4 @@
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 extension Compiler {
   struct ByteCodeGen {
@@ -302,7 +302,9 @@ extension Compiler.ByteCodeGen {
     // not captured. This may mean we should store
     // an existential instead of a closure...
 
-    let matcher = builder.makeMatcherFunction(matcher)
+    let matcher = builder.makeMatcherFunction { input, start, range in
+      try matcher(input, start, range)
+    }
 
     let valReg = builder.makeValueRegister()
     builder.buildMatcher(matcher, into: valReg)
@@ -362,10 +364,20 @@ extension Compiler.ByteCodeGen {
 
   mutating func emitQuantification(
     _ amount: AST.Quantification.Amount,
-    _ kind: AST.Quantification.Kind,
+    _ kind: DSLTree.QuantificationKind,
     _ child: DSLTree.Node
   ) throws {
-    let kind = kind.applying(options)
+    let updatedKind: AST.Quantification.Kind
+    switch kind {
+    case .explicit(let kind):
+      updatedKind = kind
+    case .syntax(let kind):
+      updatedKind = kind.applying(options)
+    case .default:
+      updatedKind = options.isReluctantByDefault
+        ? .reluctant
+        : .eager
+    }
 
     let (low, high) = amount.bounds
     switch (low, high) {
@@ -494,7 +506,7 @@ extension Compiler.ByteCodeGen {
     }
 
     // Set up a dummy save point for possessive to update
-    if kind == .possessive {
+    if updatedKind == .possessive {
       builder.pushEmptySavePoint()
     }
 
@@ -540,7 +552,7 @@ extension Compiler.ByteCodeGen {
         to: exit, ifZeroElseDecrement: extraTripsReg!)
     }
 
-    switch kind {
+    switch updatedKind {
     case .eager:
       builder.buildSplit(to: loopBody, saving: exit)
     case .possessive:

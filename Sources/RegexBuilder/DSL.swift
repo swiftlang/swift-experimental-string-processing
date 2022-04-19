@@ -120,27 +120,29 @@ extension DSLTree.Node {
   @available(SwiftStdlib 5.7, *)
   static func repeating(
     _ range: Range<Int>,
-    _ behavior: QuantificationBehavior,
+    _ behavior: QuantificationBehavior?,
     _ node: DSLTree.Node
   ) -> DSLTree.Node {
     // TODO: Throw these as errors
     assert(range.lowerBound >= 0, "Cannot specify a negative lower bound")
     assert(!range.isEmpty, "Cannot specify an empty range")
+    
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
 
     switch (range.lowerBound, range.upperBound) {
     case (0, Int.max): // 0...
-      return .quantification(.zeroOrMore, behavior.astKind, node)
+      return .quantification(.zeroOrMore, kind, node)
     case (1, Int.max): // 1...
-      return .quantification(.oneOrMore, behavior.astKind, node)
+      return .quantification(.oneOrMore, kind, node)
     case _ where range.count == 1: // ..<1 or ...0 or any range with count == 1
       // Note: `behavior` is ignored in this case
-      return .quantification(.exactly(.init(faking: range.lowerBound)), .eager, node)
+      return .quantification(.exactly(.init(faking: range.lowerBound)), .default, node)
     case (0, _): // 0..<n or 0...n or ..<n or ...n
-      return .quantification(.upToN(.init(faking: range.upperBound)), behavior.astKind, node)
+      return .quantification(.upToN(.init(faking: range.upperBound)), kind, node)
     case (_, Int.max): // n...
-      return .quantification(.nOrMore(.init(faking: range.lowerBound)), behavior.astKind, node)
+      return .quantification(.nOrMore(.init(faking: range.lowerBound)), kind, node)
     default: // any other range
-      return .quantification(.range(.init(faking: range.lowerBound), .init(faking: range.upperBound)), behavior.astKind, node)
+      return .quantification(.range(.init(faking: range.lowerBound), .init(faking: range.upperBound)), kind, node)
     }
   }
 }
