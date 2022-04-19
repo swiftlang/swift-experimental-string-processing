@@ -136,7 +136,7 @@ func customTest<Match: Equatable>(
 class CustomRegexComponentTests: XCTestCase {
   // TODO: Refactor below into more exhaustive, declarative
   // tests.
-  func testCustomRegexComponents() {
+  func testCustomRegexComponents() throws {
     customTest(
       Regex {
         Numbler()
@@ -178,14 +178,13 @@ class CustomRegexComponentTests: XCTestCase {
       }
     }
 
-    guard let res3 = "ab123c".firstMatch(of: regex3) else {
-      XCTFail()
-      return
-    }
+    let str = "ab123c"
+    let res3 = try XCTUnwrap(str.firstMatch(of: regex3))
 
-    XCTAssertEqual(res3.range, "ab123c".index(atOffset: 2)..<"ab123c".index(atOffset: 5))
-    XCTAssertEqual(res3.output.0, "123")
-    XCTAssertEqual(res3.output.1, "123")
+    let expectedSubstring = str.dropFirst(2).prefix(3)
+    XCTAssertEqual(res3.range, expectedSubstring.startIndex..<expectedSubstring.endIndex)
+    XCTAssertEqual(res3.output.0, expectedSubstring)
+    XCTAssertEqual(res3.output.1, expectedSubstring)
 
     let regex4 = Regex {
       OneOrMore {

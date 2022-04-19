@@ -111,6 +111,14 @@ extension DSLTree {
     case explicit(_AST.QuantificationKind)
     /// A kind set via syntax, which can be affected by options.
     case syntax(_AST.QuantificationKind)
+    
+    var ast: AST.Quantification.Kind? {
+      switch self {
+      case .default: return nil
+      case .explicit(let kind), .syntax(let kind):
+        return kind.ast
+      }
+    }
   }
   
   @_spi(RegexBuilder)
@@ -132,6 +140,12 @@ extension DSLTree {
     public init(members: [DSLTree.CustomCharacterClass.Member], isInverted: Bool = false) {
       self.members = members
       self.isInverted = isInverted
+    }
+    
+    public static func generalCategory(_ category: Unicode.GeneralCategory) -> Self {
+      let property = AST.Atom.CharacterProperty(.generalCategory(category.extendedGeneralCategory!), isInverted: false, isPOSIX: false)
+      let astAtom = AST.Atom(.property(property), .fake)
+      return .init(members: [.atom(.unconverted(.init(ast: astAtom)))])
     }
     
     public var inverted: CustomCharacterClass {
@@ -162,13 +176,51 @@ extension DSLTree {
     case scalar(Unicode.Scalar)
     case any
 
-    case assertion(AST.Atom.AssertionKind)
-    case backreference(AST.Reference)
+    case assertion(_AST.AssertionKind)
+    case backreference(_AST.Reference)
     case symbolicReference(ReferenceID)
 
-    case changeMatchingOptions(AST.MatchingOptionSequence)
+    case changeMatchingOptions(_AST.MatchingOptionSequence)
 
-    case unconverted(AST.Atom)
+    case unconverted(_AST.Atom)
+  }
+}
+
+extension Unicode.GeneralCategory {
+  var extendedGeneralCategory: Unicode.ExtendedGeneralCategory? {
+    switch self {
+    case .uppercaseLetter: return .uppercaseLetter
+    case .lowercaseLetter: return .lowercaseLetter
+    case .titlecaseLetter: return .titlecaseLetter
+    case .modifierLetter: return .modifierLetter
+    case .otherLetter: return .otherLetter
+    case .nonspacingMark: return .nonspacingMark
+    case .spacingMark: return .spacingMark
+    case .enclosingMark: return .enclosingMark
+    case .decimalNumber: return .decimalNumber
+    case .letterNumber: return .letterNumber
+    case .otherNumber: return .otherNumber
+    case .connectorPunctuation: return .connectorPunctuation
+    case .dashPunctuation: return .dashPunctuation
+    case .openPunctuation: return .openPunctuation
+    case .closePunctuation: return .closePunctuation
+    case .initialPunctuation: return .initialPunctuation
+    case .finalPunctuation: return .finalPunctuation
+    case .otherPunctuation: return .otherPunctuation
+    case .mathSymbol: return .mathSymbol
+    case .currencySymbol: return .currencySymbol
+    case .modifierSymbol: return .modifierSymbol
+    case .otherSymbol: return .otherSymbol
+    case .spaceSeparator: return .spaceSeparator
+    case .lineSeparator: return .lineSeparator
+    case .paragraphSeparator: return .paragraphSeparator
+    case .control: return .control
+    case .format: return .format
+    case .surrogate: return .surrogate
+    case .privateUse: return .privateUse
+    case .unassigned: return .unassigned
+    @unknown default: return nil
+    }
   }
 }
 
@@ -469,13 +521,13 @@ extension DSLTree {
     public struct GroupKind {
       internal var ast: AST.Group.Kind
       
-      @_spi(RegexBuilder) public static var atomicNonCapturing: Self {
+      public static var atomicNonCapturing: Self {
         .init(ast: .atomicNonCapturing)
       }
-      @_spi(RegexBuilder) public static var lookahead: Self {
+      public static var lookahead: Self {
         .init(ast: .lookahead)
       }
-      @_spi(RegexBuilder) public static var negativeLookahead: Self {
+      public static var negativeLookahead: Self {
         .init(ast: .negativeLookahead)
       }
     }
@@ -489,13 +541,13 @@ extension DSLTree {
     public struct QuantificationKind {
       internal var ast: AST.Quantification.Kind
       
-      @_spi(RegexBuilder) public static var eager: Self {
+      public static var eager: Self {
         .init(ast: .eager)
       }
-      @_spi(RegexBuilder) public static var reluctant: Self {
+      public static var reluctant: Self {
         .init(ast: .reluctant)
       }
-      @_spi(RegexBuilder) public static var possessive: Self {
+      public static var possessive: Self {
         .init(ast: .possessive)
       }
     }
@@ -504,25 +556,25 @@ extension DSLTree {
     public struct QuantificationAmount {
       internal var ast: AST.Quantification.Amount
       
-      @_spi(RegexBuilder) public static var zeroOrMore: Self {
+      public static var zeroOrMore: Self {
         .init(ast: .zeroOrMore)
       }
-      @_spi(RegexBuilder) public static var oneOrMore: Self {
+      public static var oneOrMore: Self {
         .init(ast: .oneOrMore)
       }
-      @_spi(RegexBuilder) public static var zeroOrOne: Self {
+      public static var zeroOrOne: Self {
         .init(ast: .zeroOrOne)
       }
-      @_spi(RegexBuilder) public static func exactly(_ n: Int) -> Self {
+      public static func exactly(_ n: Int) -> Self {
         .init(ast: .exactly(.init(faking: n)))
       }
-      @_spi(RegexBuilder) public static func nOrMore(_ n: Int) -> Self {
+      public static func nOrMore(_ n: Int) -> Self {
         .init(ast: .nOrMore(.init(faking: n)))
       }
-      @_spi(RegexBuilder) public static func upToN(_ n: Int) -> Self {
+      public static func upToN(_ n: Int) -> Self {
         .init(ast: .upToN(.init(faking: n)))
       }
-      @_spi(RegexBuilder) public static func range(_ lower: Int, _ upper: Int) -> Self {
+      public static func range(_ lower: Int, _ upper: Int) -> Self {
         .init(ast: .range(.init(faking: lower), .init(faking: upper)))
       }
     }
@@ -535,6 +587,55 @@ extension DSLTree {
     @_spi(RegexBuilder)
     public struct AbsentFunction {
       internal var ast: AST.AbsentFunction
+    }
+    
+    @_spi(RegexBuilder)
+    public struct AssertionKind {
+      internal var ast: AST.Atom.AssertionKind
+      
+      public static func startOfSubject(_ inverted: Bool = false) -> Self {
+        .init(ast: .startOfSubject)
+      }
+      public static func endOfSubjectBeforeNewline(_ inverted: Bool = false) -> Self {
+        .init(ast: .endOfSubjectBeforeNewline)
+      }
+      public static func endOfSubject(_ inverted: Bool = false) -> Self {
+        .init(ast: .endOfSubject)
+      }
+      public static func firstMatchingPositionInSubject(_ inverted: Bool = false) -> Self {
+        .init(ast: .firstMatchingPositionInSubject)
+      }
+      public static func textSegmentBoundary(_ inverted: Bool = false) -> Self {
+        inverted
+          ? .init(ast: .notTextSegment)
+          : .init(ast: .textSegment)
+      }
+      public static func startOfLine(_ inverted: Bool = false) -> Self {
+        .init(ast: .startOfLine)
+      }
+      public static func endOfLine(_ inverted: Bool = false) -> Self {
+        .init(ast: .endOfLine)
+      }
+      public static func wordBoundary(_ inverted: Bool = false) -> Self {
+        inverted
+          ? .init(ast: .notWordBoundary)
+          : .init(ast: .wordBoundary)
+      }
+    }
+    
+    @_spi(RegexBuilder)
+    public struct Reference {
+      internal var ast: AST.Reference
+    }
+    
+    @_spi(RegexBuilder)
+    public struct MatchingOptionSequence {
+      internal var ast: AST.MatchingOptionSequence
+    }
+    
+    @_spi(RegexBuilder)
+    public struct Atom {
+      internal var ast: AST.Atom
     }
   }
 }

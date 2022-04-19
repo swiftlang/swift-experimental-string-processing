@@ -294,7 +294,17 @@ extension _CharacterClassModel: CustomStringConvertible {
 }
 
 extension _CharacterClassModel {
-  public func makeAST() -> AST.Node? {
+  public func makeDSLTreeCharacterClass() -> DSLTree.CustomCharacterClass? {
+    // FIXME: Implement in DSLTree instead of wrapping an AST atom
+    switch makeAST() {
+    case .atom(let atom):
+      return .init(members: [.atom(.unconverted(.init(ast: atom)))])
+    default:
+      return nil
+    }
+  }
+  
+  internal func makeAST() -> AST.Node? {
     let inv = isInverted
 
     func esc(_ b: AST.Atom.EscapedBuiltin) -> AST.Node {
@@ -375,7 +385,7 @@ extension DSLTree.Atom {
     var characterClass: _CharacterClassModel? {
     switch self {
     case let .unconverted(a):
-      return a.characterClass
+      return a.ast.characterClass
 
     default: return nil
     }

@@ -109,7 +109,7 @@ extension PrettyPrinter {
 
     case let .quantification(amount, kind, child):
       let amount = amount.ast._patternBase
-      let kind = kind.ast._patternBase
+      let kind = (kind.ast ?? .eager)._patternBase
       printBlock("\(amount)(\(kind))") { printer in
         printer.printAsPattern(convertedFromAST: child)
       }
@@ -129,7 +129,7 @@ extension PrettyPrinter {
       case let .unconverted(a):
         // TODO: is this always right?
         // TODO: Convert built-in character classes
-        print(a._patternBase)
+        print(a.ast._patternBase)
 
       case .assertion:
         print("/* TODO: assertions */")
@@ -400,11 +400,6 @@ extension AST.Quantification.Kind {
 
 extension DSLTree.QuantificationKind {
   var _patternBase: String {
-    switch self {
-    case .explicit(let kind), .syntax(let kind):
-      return kind._patternBase
-    case .default:
-      return ".eager"
-    }
+    (ast ?? .eager)._patternBase
   }
 }
