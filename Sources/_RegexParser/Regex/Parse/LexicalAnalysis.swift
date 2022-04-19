@@ -1176,6 +1176,14 @@ extension Source {
         // character property name anyway, and it's nice not to have diverging
         // logic for these cases.
         return true
+      case "\\":
+        // An escape sequence, which may include e.g '\Q :] \E'. ICU bails here
+        // for all its known escape sequences (e.g '\a', '\e' '\f', ...). It
+        // seems character class escapes e.g '\d' are excluded, however it's not
+        // clear that is intentional. Let's apply the rule for any escape, as a
+        // backslash would never be a valid character property name, and we can
+        // diagnose any invalid escapes when parsing as a character class.
+        return true
       default:
         // We may want to handle other metacharacters here, e.g '{', '(', ')',
         // as they're not valid character property names. However for now
