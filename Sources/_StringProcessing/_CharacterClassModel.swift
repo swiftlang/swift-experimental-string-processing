@@ -28,7 +28,7 @@ public struct _CharacterClassModel: Hashable {
   var isInverted: Bool = false
 
   // TODO: Split out builtin character classes into their own type?
-    public enum Representation: Hashable {
+  public enum Representation: Hashable {
     /// Any character
     case any
     /// Any grapheme cluster
@@ -52,10 +52,14 @@ public struct _CharacterClassModel: Hashable {
     case custom([CharacterSetComponent])
   }
 
-  public typealias SetOperator = AST.CustomCharacterClass.SetOp
+  public enum SetOperator: Hashable {
+    case subtraction
+    case intersection
+    case symmetricDifference
+  }
 
   /// A binary set operation that forms a character class component.
-    public struct SetOperation: Hashable {
+  public struct SetOperation: Hashable {
     var lhs: CharacterSetComponent
     var op: SetOperator
     var rhs: CharacterSetComponent
@@ -72,7 +76,7 @@ public struct _CharacterClassModel: Hashable {
     }
   }
 
-    public enum CharacterSetComponent: Hashable {
+  public enum CharacterSetComponent: Hashable {
     case character(Character)
     case range(ClosedRange<Character>)
 
