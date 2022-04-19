@@ -121,7 +121,6 @@ struct VariadicsGenerator: ParsableCommand {
 
       // BEGIN AUTO-GENERATED CONTENT
 
-      import _RegexParser
       @_spi(RegexBuilder) import _StringProcessing
 
 
