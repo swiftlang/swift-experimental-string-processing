@@ -250,7 +250,7 @@ extension Collection where Element: Equatable {
   public func split<S: Sequence>(
     by separator: S
   ) -> [SubSequence] where S.Element == Element {
-    split(by: ZSearcher(pattern: Array(separator), by: ==)).map{ $0 }
+    Array(split(by: ZSearcher(pattern: Array(separator), by: ==)))
   }
 }
 
@@ -312,6 +312,6 @@ extension BidirectionalCollection where SubSequence == Substring {
   public func split<R: RegexComponent>(
     by separator: R
   ) -> [SubSequence] {
-    split(by: RegexConsumer(separator)).map{ $0 }
+    Array(split(by: RegexConsumer(separator)))
   }
 }

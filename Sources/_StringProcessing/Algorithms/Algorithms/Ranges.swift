@@ -254,6 +254,6 @@ extension BidirectionalCollection where SubSequence == Substring {
   public func ranges<R: RegexComponent>(
     of regex: R
   ) -> [Range<Index>] {
-    ranges(of: RegexConsumer(regex)).map{ $0 }
+    Array(ranges(of: RegexConsumer(regex)))
   }
 }
