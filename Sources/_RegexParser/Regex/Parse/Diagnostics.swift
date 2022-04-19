@@ -57,8 +57,8 @@ enum ParseError: Error, Hashable {
   case expectedCustomCharacterClassMembers
   case invalidCharacterClassRangeOperand
 
-  case invalidPOSIXSetName(String)
   case emptyProperty
+  case unknownProperty(key: String?, value: String)
 
   case expectedGroupSpecifier
   case unbalancedEndOfGroup
@@ -142,10 +142,13 @@ extension ParseError: CustomStringConvertible {
       return "expected custom character class members"
     case .invalidCharacterClassRangeOperand:
       return "invalid character class range"
-    case let .invalidPOSIXSetName(n):
-      return "invalid character set name: '\(n)'"
     case .emptyProperty:
       return "empty property"
+    case .unknownProperty(let key, let value):
+      if let key = key {
+        return "unknown character property '\(key)=\(value)'"
+      }
+      return "unknown character property '\(value)'"
     case .expectedGroupSpecifier:
       return "expected group specifier"
     case .unbalancedEndOfGroup:
