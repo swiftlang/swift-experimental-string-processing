@@ -175,11 +175,23 @@ extension BidirectionalCollection {
 // MARK: Fixed pattern algorithms
 
 extension Collection where Element: Equatable {
-  // FIXME: Replace `RangesCollection` when SE-0346 is enabled
   func ranges<S: Sequence>(
     of other: S
   ) -> RangesCollection<ZSearcher<Self>> where S.Element == Element {
     ranges(of: ZSearcher(pattern: Array(other), by: ==))
+  }
+
+  // FIXME: Return `some Collection<Range<Index>>` for SE-0346
+  /// Finds and returns the ranges of the all occurrences of a given sequence
+  /// within the collection.
+  /// - Parameter other: The sequence to search for.
+  /// - Returns: A collection of ranges of all occurrences of `other`. Returns
+  ///  an empty collection if `other` is not found.
+  @available(SwiftStdlib 5.7, *)
+  public func ranges<S: Sequence>(
+    of other: S
+  ) -> [Range<Index>] where S.Element == Element {
+    ranges(of: ZSearcher(pattern: Array(other), by: ==)).map { $0 }
   }
 }
 
@@ -217,8 +229,8 @@ extension BidirectionalCollection where Element: Comparable {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  // FIXME: Replace `RangesCollection` when SE-0346 is enabled
   @available(SwiftStdlib 5.7, *)
+  @_disfavoredOverload
   func ranges<R: RegexComponent>(
     of regex: R
   ) -> RangesCollection<RegexConsumer<R, Self>> {
@@ -230,5 +242,18 @@ extension BidirectionalCollection where SubSequence == Substring {
     of regex: R
   ) -> ReversedRangesCollection<RegexConsumer<R, Self>> {
     rangesFromBack(of: RegexConsumer(regex))
+  }
+
+  // FIXME: Return `some Collection<Range<Index>>` for SE-0346
+  /// Finds and returns the ranges of the all occurrences of a given sequence
+  /// within the collection.
+  /// - Parameter regex: The regex to search for.
+  /// - Returns: A collection or ranges in the receiver of all occurrences of
+  /// `regex`. Returns an empty collection if `regex` is not found.
+  @available(SwiftStdlib 5.7, *)
+  public func ranges<R: RegexComponent>(
+    of regex: R
+  ) -> [Range<Index>] {
+    Array(ranges(of: RegexConsumer(regex)))
   }
 }
