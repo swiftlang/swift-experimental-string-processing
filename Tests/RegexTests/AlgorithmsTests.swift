@@ -163,13 +163,13 @@ class RegexConsumerTests: XCTestCase {
     XCTAssertEqual(s2.replacing(regex, with: ""), "")
 
     XCTAssertEqual(
-      s._matches(of: regex).map(\.0),
+      s.matches(of: regex).map(\.0),
       ["aaa", "aaaaaa", "aaaaaaaaaa"])
     XCTAssertEqual(
-      s1._matches(of: regex).map(\.0),
+      s1.matches(of: regex).map(\.0),
       ["aaaaaa", "aaaaaaaaaa"])
     XCTAssertEqual(
-      s2._matches(of: regex).map(\.0),
+      s2.matches(of: regex).map(\.0),
       ["aa"])
   }
 }

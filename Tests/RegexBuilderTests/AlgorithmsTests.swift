@@ -15,13 +15,11 @@ import _StringProcessing
 
 @available(SwiftStdlib 5.7, *)
 class RegexConsumerTests: XCTestCase {
-  // FIXME: enable this test when we update the return type of `matches(of:)`
-  // when SE-0346 is available
-  //  func testMatches() {
-  //    let regex = Capture(OneOrMore(.digit)) { 2 * Int($0)! }
-  //    let str = "foo 160 bar 99 baz"
-  //    XCTAssertEqual(str.matches(of: regex).map(\.result.1), [320, 198])
-  //  }
+  func testMatches() {
+    let regex = Capture(OneOrMore(.digit)) { 2 * Int($0)! }
+    let str = "foo 160 bar 99 baz"
+    XCTAssertEqual(str.matches(of: regex).map(\.output.1), [320, 198])
+  }
   
   func testMatchReplace() {
     func replaceTest<R: RegexComponent>(
