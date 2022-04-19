@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
 @available(SwiftStdlib 5.7, *)
@@ -31,34 +31,21 @@ public struct Anchor {
 
 @available(SwiftStdlib 5.7, *)
 extension Anchor: RegexComponent {
-  var astAssertion: AST.Atom.AssertionKind {
-    if !isInverted {
-      switch kind {
-      case .startOfSubject: return .startOfSubject
-      case .endOfSubjectBeforeNewline: return .endOfSubjectBeforeNewline
-      case .endOfSubject: return .endOfSubject
-      case .firstMatchingPositionInSubject: return .firstMatchingPositionInSubject
-      case .textSegmentBoundary: return .textSegment
-      case .startOfLine: return .startOfLine
-      case .endOfLine: return .endOfLine
-      case .wordBoundary: return .wordBoundary
-      }
-    } else {
-      switch kind {
-      case .startOfSubject: fatalError("Not yet supported")
-      case .endOfSubjectBeforeNewline: fatalError("Not yet supported")
-      case .endOfSubject: fatalError("Not yet supported")
-      case .firstMatchingPositionInSubject: fatalError("Not yet supported")
-      case .textSegmentBoundary: return .notTextSegment
-      case .startOfLine: fatalError("Not yet supported")
-      case .endOfLine: fatalError("Not yet supported")
-      case .wordBoundary: return .notWordBoundary
-      }
+  var baseAssertion: DSLTree._AST.AssertionKind {
+    switch kind {
+    case .startOfSubject: return .startOfSubject(isInverted)
+    case .endOfSubjectBeforeNewline: return .endOfSubjectBeforeNewline(isInverted)
+    case .endOfSubject: return .endOfSubject(isInverted)
+    case .firstMatchingPositionInSubject: return .firstMatchingPositionInSubject(isInverted)
+    case .textSegmentBoundary: return .textSegmentBoundary(isInverted)
+    case .startOfLine: return .startOfLine(isInverted)
+    case .endOfLine: return .endOfLine(isInverted)
+    case .wordBoundary: return .wordBoundary(isInverted)
     }
   }
   
   public var regex: Regex<Substring> {
-    Regex(node: .atom(.assertion(astAssertion)))
+    Regex(node: .atom(.assertion(baseAssertion)))
   }
 }
 

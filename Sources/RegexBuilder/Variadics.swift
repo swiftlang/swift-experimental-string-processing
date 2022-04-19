@@ -11,7 +11,6 @@
 
 // BEGIN AUTO-GENERATED CONTENT
 
-import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
 @available(SwiftStdlib 5.7, *)
@@ -709,7 +708,7 @@ extension Repeat {
   ) where RegexOutput == Substring {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -720,7 +719,7 @@ extension Repeat {
   ) where RegexOutput == Substring {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -835,7 +834,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?), Component.RegexOutput == (W, C0) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -845,7 +844,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?), Component.RegexOutput == (W, C0) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -958,7 +957,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?), Component.RegexOutput == (W, C0, C1) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -968,7 +967,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?), Component.RegexOutput == (W, C0, C1) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1081,7 +1080,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?), Component.RegexOutput == (W, C0, C1, C2) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1091,7 +1090,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?), Component.RegexOutput == (W, C0, C1, C2) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1204,7 +1203,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?), Component.RegexOutput == (W, C0, C1, C2, C3) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1214,7 +1213,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?), Component.RegexOutput == (W, C0, C1, C2, C3) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1327,7 +1326,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C0, C1, C2, C3, C4) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1337,7 +1336,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C0, C1, C2, C3, C4) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1450,7 +1449,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1460,7 +1459,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1573,7 +1572,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1583,7 +1582,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1696,7 +1695,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1706,7 +1705,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1819,7 +1818,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1829,7 +1828,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1942,7 +1941,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -1952,7 +1951,7 @@ extension Repeat {
   ) where RegexOutput == (Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     assert(count > 0, "Must specify a positive count")
     // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-    self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
+    self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
   @available(SwiftStdlib 5.7, *)

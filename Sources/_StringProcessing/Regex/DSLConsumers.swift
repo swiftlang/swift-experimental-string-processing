@@ -21,8 +21,7 @@ public protocol CustomMatchingRegexComponent: RegexComponent {
 @available(SwiftStdlib 5.7, *)
 extension CustomMatchingRegexComponent {
   public var regex: Regex<RegexOutput> {
-
-    let node: DSLTree.Node = .matcher(.init(RegexOutput.self), { input, index, bounds in
+    let node: DSLTree.Node = .matcher(RegexOutput.self, { input, index, bounds in
       try match(input, startingAt: index, in: bounds)
     })
     return Regex(node: node)

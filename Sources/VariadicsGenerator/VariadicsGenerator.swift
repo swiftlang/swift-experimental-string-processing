@@ -121,7 +121,6 @@ struct VariadicsGenerator: ParsableCommand {
 
       // BEGIN AUTO-GENERATED CONTENT
 
-      import _RegexParser
       @_spi(RegexBuilder) import _StringProcessing
 
 
@@ -490,7 +489,7 @@ struct VariadicsGenerator: ParsableCommand {
         ) \(params.whereClauseForInit) {
           assert(count > 0, "Must specify a positive count")
           // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-          self.init(node: .quantification(.exactly(.init(faking: count)), .default, component.regex.root))
+          self.init(node: .quantification(.exactly(count), .default, component.regex.root))
         }
 
         \(defaultAvailableAttr)
@@ -501,7 +500,7 @@ struct VariadicsGenerator: ParsableCommand {
         ) \(params.whereClauseForInit) {
           assert(count > 0, "Must specify a positive count")
           // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-          self.init(node: .quantification(.exactly(.init(faking: count)), .default, component().regex.root))
+          self.init(node: .quantification(.exactly(count), .default, component().regex.root))
         }
 
         \(defaultAvailableAttr)
