@@ -68,7 +68,7 @@ extension PrettyPrinter {
   private mutating func printAsPattern(
     convertedFromAST node: DSLTree.Node
   ) {
-    if patternBackoff(node) {
+    if patternBackoff(DSLTree._Tree(node)) {
       printBackoff(node)
       return
     }

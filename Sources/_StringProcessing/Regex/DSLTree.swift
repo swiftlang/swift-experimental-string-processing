@@ -24,7 +24,7 @@ public struct DSLTree {
 
 extension DSLTree {
   @_spi(RegexBuilder)
-  public indirect enum Node: _DSLTreeNode {
+  public indirect enum Node {
     /// Try to match each node in order
     ///
     ///     ... | ... | ...
@@ -347,65 +347,10 @@ extension DSLTree {
   var captureStructure: CaptureStructure {
     // TODO: nesting
     var constructor = CaptureStructure.Constructor(.flatten)
-    return root._captureStructure(&constructor)
+    return _Tree(root)._captureStructure(&constructor)
   }
 }
 extension DSLTree.Node {
-  @_spi(RegexBuilder)
-  public func _captureStructure(
-    _ constructor: inout CaptureStructure.Constructor
-  ) -> CaptureStructure {
-    switch self {
-    case let .orderedChoice(children):
-      return constructor.alternating(children)
-
-    case let .concatenation(children):
-      return constructor.concatenating(children)
-
-    case let .capture(name, _, child):
-      if let type = child.valueCaptureType {
-        return constructor.capturing(
-          name: name, child, withType: type)
-      }
-      return constructor.capturing(name: name, child)
-
-    case let .nonCapturingGroup(kind, child):
-      assert(!kind.ast.isCapturing)
-      return constructor.grouping(child, as: kind.ast)
-
-    case let .conditional(cond, trueBranch, falseBranch):
-      return constructor.condition(
-        cond.ast,
-        trueBranch: trueBranch,
-        falseBranch: falseBranch)
-
-    case let .quantification(amount, _, child):
-      return constructor.quantifying(
-        child, amount: amount.ast)
-
-    case let .regexLiteral(re):
-      // TODO: Force a re-nesting?
-      return re.ast._captureStructure(&constructor)
-
-    case let .absentFunction(abs):
-      return constructor.absent(abs.ast.kind)
-
-    case let .convertedRegexLiteral(n, _):
-      // TODO: Switch nesting strategy?
-      return n._captureStructure(&constructor)
-
-    case .matcher:
-      return .empty
-
-    case .transform(_, let child):
-      return child._captureStructure(&constructor)
-
-    case .customCharacterClass, .atom, .trivia, .empty,
-        .quotedLiteral, .consumer, .characterPredicate:
-      return .empty
-    }
-  }
-
   /// For typed capture-producing nodes, the type produced.
   var valueCaptureType: AnyType? {
     switch self {
@@ -512,9 +457,99 @@ public struct CaptureTransform: Hashable, CustomStringConvertible {
 //
 // These wrapper types are required because even @_spi-marked public APIs can't
 // include symbols from implementation-only dependencies.
-internal protocol _DSLTreeNode: _TreeNode {}
 
 extension DSLTree {
+  /// Presents a wrapped version of `DSLTree.Node` that can provide an internal
+  /// `_TreeNode` conformance.
+  struct _Tree: _TreeNode {
+    var node: DSLTree.Node
+    
+    init(_ node: DSLTree.Node) {
+      self.node = node
+    }
+    
+    var children: [_Tree]? {
+      switch node {
+        
+      case let .orderedChoice(v): return v.map(_Tree.init)
+      case let .concatenation(v): return v.map(_Tree.init)
+
+      case let .convertedRegexLiteral(n, _):
+        // Treat this transparently
+        return _Tree(n).children
+
+      case let .capture(_, _, n):           return [_Tree(n)]
+      case let .nonCapturingGroup(_, n):    return [_Tree(n)]
+      case let .transform(_, n):            return [_Tree(n)]
+      case let .quantification(_, _, n):    return [_Tree(n)]
+
+      case let .conditional(_, t, f): return [_Tree(t), _Tree(f)]
+
+      case .trivia, .empty, .quotedLiteral, .regexLiteral,
+          .consumer, .matcher, .characterPredicate,
+          .customCharacterClass, .atom:
+        return []
+
+      case let .absentFunction(abs):
+        return abs.ast.children.map(\.dslTreeNode).map(_Tree.init)
+      }
+    }
+    
+    func _captureStructure(
+      _ constructor: inout CaptureStructure.Constructor
+    ) -> CaptureStructure {
+      switch node {
+      case let .orderedChoice(children):
+        return constructor.alternating(children.map(_Tree.init))
+
+      case let .concatenation(children):
+        return constructor.concatenating(children.map(_Tree.init))
+
+      case let .capture(name, _, child):
+        if let type = child.valueCaptureType {
+          return constructor.capturing(
+            name: name, _Tree(child), withType: type)
+        }
+        return constructor.capturing(name: name, _Tree(child))
+
+      case let .nonCapturingGroup(kind, child):
+        assert(!kind.ast.isCapturing)
+        return constructor.grouping(_Tree(child), as: kind.ast)
+
+      case let .conditional(cond, trueBranch, falseBranch):
+        return constructor.condition(
+          cond.ast,
+          trueBranch: _Tree(trueBranch),
+          falseBranch: _Tree(falseBranch))
+
+      case let .quantification(amount, _, child):
+        return constructor.quantifying(
+          Self(child), amount: amount.ast)
+
+      case let .regexLiteral(re):
+        // TODO: Force a re-nesting?
+        return re.ast._captureStructure(&constructor)
+
+      case let .absentFunction(abs):
+        return constructor.absent(abs.ast.kind)
+
+      case let .convertedRegexLiteral(n, _):
+        // TODO: Switch nesting strategy?
+        return Self(n)._captureStructure(&constructor)
+
+      case .matcher:
+        return .empty
+
+      case .transform(_, let child):
+        return Self(child)._captureStructure(&constructor)
+
+      case .customCharacterClass, .atom, .trivia, .empty,
+          .quotedLiteral, .consumer, .characterPredicate:
+        return .empty
+      }
+    }
+  }
+
   @_spi(RegexBuilder)
   public enum _AST {
     @_spi(RegexBuilder)
