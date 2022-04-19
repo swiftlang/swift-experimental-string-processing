@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
 @available(SwiftStdlib 5.7, *)
@@ -106,7 +106,7 @@ extension DSLTree.Node {
     // TODO: Throw these as errors
     assert(range.lowerBound >= 0, "Cannot specify a negative lower bound")
     assert(!range.isEmpty, "Cannot specify an empty range")
-    
+
     let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
 
     switch (range.lowerBound, range.upperBound) {
@@ -116,13 +116,13 @@ extension DSLTree.Node {
       return .quantification(.oneOrMore, kind, node)
     case _ where range.count == 1: // ..<1 or ...0 or any range with count == 1
       // Note: `behavior` is ignored in this case
-      return .quantification(.exactly(.init(faking: range.lowerBound)), .default, node)
+      return .quantification(.exactly(range.lowerBound), .default, node)
     case (0, _): // 0..<n or 0...n or ..<n or ...n
-      return .quantification(.upToN(.init(faking: range.upperBound)), kind, node)
+      return .quantification(.upToN(range.upperBound), kind, node)
     case (_, Int.max): // n...
-      return .quantification(.nOrMore(.init(faking: range.lowerBound)), kind, node)
+      return .quantification(.nOrMore(range.lowerBound), kind, node)
     default: // any other range
-      return .quantification(.range(.init(faking: range.lowerBound), .init(faking: range.upperBound)), kind, node)
+      return .quantification(.range(range.lowerBound, range.upperBound), kind, node)
     }
   }
 }

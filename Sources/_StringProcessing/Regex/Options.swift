@@ -200,7 +200,8 @@ public struct RegexRepetitionBehavior: Hashable {
 
   var kind: Kind
 
-  @_spi(RegexBuilder) public var dslTreeKind: AST.Quantification.Kind {
+  @_spi(RegexBuilder)
+  public var dslTreeKind: DSLTree._AST.QuantificationKind {
     switch kind {
     case .eager: return .eager
     case .reluctant: return .reluctant
@@ -241,6 +242,6 @@ extension RegexComponent {
       ? AST.MatchingOptionSequence(adding: [.init(option, location: .fake)])
       : AST.MatchingOptionSequence(removing: [.init(option, location: .fake)])
     return Regex(node: .nonCapturingGroup(
-      .changeMatchingOptions(sequence), regex.root))
+      .init(ast: .changeMatchingOptions(sequence)), regex.root))
   }
 }

@@ -105,7 +105,7 @@ extension DSLTree.Atom {
       return nil
 
     case let .unconverted(a):
-      return try a.generateConsumer(opts)
+      return try a.ast.generateConsumer(opts)
     }
 
   }
