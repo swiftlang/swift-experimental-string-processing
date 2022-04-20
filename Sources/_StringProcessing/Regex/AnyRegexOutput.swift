@@ -14,7 +14,7 @@
 @available(SwiftStdlib 5.7, *)
 extension Regex where Output == AnyRegexOutput {
   /// Parse and compile `pattern`, resulting in an existentially-typed capture list.
-  public init(compiling pattern: String) throws {
+  public init(_ pattern: String) throws {
     self.init(ast: try parse(pattern, .traditional))
   }
 }
@@ -23,7 +23,7 @@ extension Regex where Output == AnyRegexOutput {
 extension Regex {
   /// Parse and compile `pattern`, resulting in a strongly-typed capture list.
   public init(
-    compiling pattern: String,
+    _ pattern: String,
     as: Output.Type = Output.self
   ) throws {
     self.init(ast: try parse(pattern, .traditional))

@@ -666,7 +666,7 @@ class RegexDSLTests: XCTestCase {
 
     do {
       let regexLiteral = try Regex(
-        compiling: #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
+          #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
         as: (Substring, Substring, Substring?, Substring).self)
       let maybeMatchResult = line.wholeMatch(of: regexLiteral)
       let matchResult = try XCTUnwrap(maybeMatchResult)
@@ -680,7 +680,7 @@ class RegexDSLTests: XCTestCase {
 
   func testDynamicCaptures() throws {
     do {
-      let regex = try Regex(compiling: "aabcc.")
+      let regex = try Regex("aabcc.")
       let line = "aabccd"
       let match = try XCTUnwrap(line.wholeMatch(of: regex))
       XCTAssertEqual(match.0, line[...])
@@ -689,7 +689,7 @@ class RegexDSLTests: XCTestCase {
     }
     do {
       let regex = try Regex(
-        compiling: #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#)
+        #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#)
       let line = """
         A6F0..A6F1    ; Extend # Mn   [2] BAMUM COMBINING MARK KOQNDON..BAMUM \
         COMBINING MARK TUKWENTIS
