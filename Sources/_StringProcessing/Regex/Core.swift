@@ -21,7 +21,7 @@ public protocol RegexComponent {
 
 /// A regex represents a string processing algorithm.
 ///
-///     let regex = try Regex(compiling: "a(.*)b")
+///     let regex = try Regex("a(.*)b")
 ///     let match = "cbaxb".firstMatch(of: regex)
 ///     print(match.0) // "axb"
 ///     print(match.1) // "x"
