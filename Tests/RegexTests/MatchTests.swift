@@ -169,6 +169,8 @@ func firstMatchTest(
       XCTAssertEqual(found, match, file: file, line: line)
     }
   } catch {
+    // FIXME: This allows non-matches to succeed even when xfail'd
+    // When xfail == true, this should report failure for match == nil
     if !xfail && match != nil {
       XCTFail("\(error)", file: file, line: line)
     }
@@ -182,7 +184,9 @@ func firstMatchTests(
   syntax: SyntaxOptions = .traditional,
   enableTracing: Bool = false,
   dumpAST: Bool = false,
-  xfail: Bool = false
+  xfail: Bool = false,
+  file: StaticString = #filePath,
+  line: UInt = #line
 ) {
   for (input, match) in tests {
     firstMatchTest(
@@ -192,7 +196,9 @@ func firstMatchTests(
       syntax: syntax,
       enableTracing: enableTracing,
       dumpAST: dumpAST,
-      xfail: xfail)
+      xfail: xfail,
+      file: file,
+      line: line)
   }
 }
 
@@ -483,6 +489,24 @@ extension RegexTests {
       ("baaaaaaaabc", nil),
       ("bb", nil))
 
+    // XFAIL'd possessive tests
+    firstMatchTests(
+      "a?+a",
+      ("a", nil),
+      xfail: true)
+    firstMatchTests(
+      "(a|a)?+a",
+      ("a", nil),
+      xfail: true)
+    firstMatchTests(
+      "(a|a){2,4}+a",
+      ("a", nil),
+      ("aa", nil))
+    firstMatchTests(
+      "(a|a){2,4}+a",
+      ("aaa", nil),
+      ("aaaa", nil),
+      xfail: true)
 
     firstMatchTests(
       "(?:a{2,4}?b)+",
