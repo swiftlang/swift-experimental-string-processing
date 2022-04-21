@@ -25,7 +25,7 @@ AST.
 
 */
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 func alt(_ asts: [AST.Node]) -> AST.Node {
   return .alternation(
@@ -106,16 +106,16 @@ func negativeLookahead(_ child: AST.Node) -> AST.Node {
 func negativeLookbehind(_ child: AST.Node) -> AST.Node {
   group(.negativeLookbehind, child)
 }
-public func nonAtomicLookahead(_ child: AST.Node) -> AST.Node {
+func nonAtomicLookahead(_ child: AST.Node) -> AST.Node {
   group(.nonAtomicLookahead, child)
 }
-public func nonAtomicLookbehind(_ child: AST.Node) -> AST.Node {
+func nonAtomicLookbehind(_ child: AST.Node) -> AST.Node {
   group(.nonAtomicLookbehind, child)
 }
-public func scriptRun(_ child: AST.Node) -> AST.Node {
+func scriptRun(_ child: AST.Node) -> AST.Node {
   group(.scriptRun, child)
 }
-public func atomicScriptRun(_ child: AST.Node) -> AST.Node {
+func atomicScriptRun(_ child: AST.Node) -> AST.Node {
   group(.atomicScriptRun, child)
 }
 func changeMatchingOptions(

@@ -11,7 +11,7 @@
 
 // MARK: `MatchesCollection`
 
-public struct MatchesCollection<Searcher: MatchingCollectionSearcher> {
+struct MatchesCollection<Searcher: MatchingCollectionSearcher> {
   public typealias Base = Searcher.Searched
   
   let base: Base
@@ -33,7 +33,7 @@ public struct MatchesCollection<Searcher: MatchingCollectionSearcher> {
   }
 }
 
-public struct MatchesIterator<
+struct MatchesIterator<
   Searcher: MatchingCollectionSearcher
 >: IteratorProtocol {
   public typealias Base = Searcher.Searched
@@ -64,7 +64,7 @@ extension MatchesCollection: Sequence {
 extension MatchesCollection: Collection {
   // TODO: Custom `SubSequence` for the sake of more efficient slice iteration
   
-  public struct Index {
+  struct Index {
     var match: (range: Range<Base.Index>, match: Searcher.Match)?
     var state: Searcher.State
   }
@@ -122,7 +122,7 @@ extension MatchesCollection.Index: Comparable {
 // MARK: `ReversedMatchesCollection`
 // TODO: reversed matches
 
-public struct ReversedMatchesCollection<
+struct ReversedMatchesCollection<
   Searcher: BackwardMatchingCollectionSearcher
 > {
   public typealias Base = Searcher.BackwardSearched
@@ -137,7 +137,7 @@ public struct ReversedMatchesCollection<
 }
 
 extension ReversedMatchesCollection: Sequence {
-  public struct Iterator: IteratorProtocol {
+  struct Iterator: IteratorProtocol {
     let base: Base
     let searcher: Searcher
     var state: Searcher.BackwardState
@@ -166,7 +166,7 @@ extension ReversedMatchesCollection: Sequence {
 // MARK: `CollectionSearcher` algorithms
 
 extension Collection {
-  public func matches<S: MatchingCollectionSearcher>(
+  func matches<S: MatchingCollectionSearcher>(
     of searcher: S
   ) -> MatchesCollection<S> where S.Searched == Self {
     MatchesCollection(base: self, searcher: searcher)
@@ -174,7 +174,7 @@ extension Collection {
 }
 
 extension BidirectionalCollection {
-  public func matchesFromBack<S: BackwardMatchingCollectionSearcher>(
+  func matchesFromBack<S: BackwardMatchingCollectionSearcher>(
     of searcher: S
   ) -> ReversedMatchesCollection<S> where S.BackwardSearched == Self {
     ReversedMatchesCollection(base: self, searcher: searcher)
@@ -184,15 +184,44 @@ extension BidirectionalCollection {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  public func matches<R: RegexComponent>(
+  // FIXME: Replace `MatchesCollection` when SE-0346 is enabled
+  /// Returns a collection containing all matches of the specified regex.
+  /// - Parameter regex: The regex to search for.
+  /// - Returns: A collection of matches of `regex`.
+  @available(SwiftStdlib 5.7, *)
+  func matches<R: RegexComponent>(
     of regex: R
   ) -> MatchesCollection<RegexConsumer<R, Self>> {
     matches(of: RegexConsumer(regex))
   }
-  
-  public func matchesFromBack<R: RegexComponent>(
+
+  @available(SwiftStdlib 5.7, *)
+  func matchesFromBack<R: RegexComponent>(
     of regex: R
   ) -> ReversedMatchesCollection<RegexConsumer<R, Self>> {
     matchesFromBack(of: RegexConsumer(regex))
   }
+
+  // FIXME: Replace the returned value as `some Collection<Regex<R.Output>.Match>
+  // when SE-0346 is enabled
+  @available(SwiftStdlib 5.7, *)
+  func _matches<R: RegexComponent>(of r: R) -> [Regex<R.RegexOutput>.Match] {
+    let slice = self[...]
+    var start = self.startIndex
+    let end = self.endIndex
+    let regex = r.regex
+
+    var result = [Regex<R.RegexOutput>.Match]()
+    while start < end {
+      guard let match = try? regex._firstMatch(
+        slice.base, in: start..<end
+      ) else {
+        break
+      }
+      result.append(match)
+      start = match.range.upperBound
+    }
+    return result
+  }
+
 }

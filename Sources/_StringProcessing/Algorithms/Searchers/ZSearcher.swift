@@ -9,12 +9,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-public struct ZSearcher<Searched: Collection> {
+struct ZSearcher<Searched: Collection> {
   let pattern: [Searched.Element]
   let z: [Int]
   let areEquivalent: (Searched.Element, Searched.Element) -> Bool
   
-  public init(
+  init(
     pattern: [Searched.Element],
     by areEquivalent: @escaping (Searched.Element, Searched.Element
     ) -> Bool) {
@@ -25,7 +25,7 @@ public struct ZSearcher<Searched: Collection> {
 }
 
 extension ZSearcher: StatelessCollectionSearcher {
-  public func search(
+  func search(
     _ searched: Searched,
     in range: Range<Searched.Index>
   ) -> Range<Searched.Index>? {

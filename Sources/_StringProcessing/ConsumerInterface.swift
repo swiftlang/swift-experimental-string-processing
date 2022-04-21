@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 extension DSLTree.Node {
   /// Attempt to generate a consumer from this AST node
@@ -136,7 +136,7 @@ extension AST.Atom {
     ) {
       return { input, bounds in
         // FIXME: should we worry about out of bounds?
-        cc.matches(in: input, at: bounds.lowerBound)
+        cc.matches(in: input, at: bounds.lowerBound, with: opts)
       }
     }
 

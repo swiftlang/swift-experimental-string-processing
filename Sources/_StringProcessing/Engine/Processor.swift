@@ -51,6 +51,8 @@ struct Processor<
 
   var state: State = .inProgress
 
+  var failureReason: Error? = nil
+
   var isTracingEnabled: Bool
 
   var storedCaptures: Array<_StoredCapture>
@@ -179,6 +181,13 @@ extension Processor {
     callStack.removeLast(callStack.count - stackEnd.rawValue)
     storedCaptures = capEnds
     registers.ints = intRegisters
+  }
+
+  mutating func abort(_ e: Error? = nil) {
+    if let e = e {
+      self.failureReason = e
+    }
+    self.state = .fail
   }
 
   mutating func tryAccept() {
@@ -355,8 +364,13 @@ extension Processor {
     case .assertBy:
       let reg = payload.assertion
       let assertion = registers[reg]
-      guard assertion(input, currentPosition, bounds) else {
-        signalFailure()
+      do {
+        guard try assertion(input, currentPosition, bounds) else {
+          signalFailure()
+          return
+        }
+      } catch {
+        abort(error)
         return
       }
       controller.step()
@@ -364,15 +378,20 @@ extension Processor {
     case .matchBy:
       let (matcherReg, valReg) = payload.pairedMatcherValue
       let matcher = registers[matcherReg]
-      guard let (nextIdx, val) = matcher(
-        input, currentPosition, bounds
-      ) else {
-        signalFailure()
+      do {
+        guard let (nextIdx, val) = try matcher(
+          input, currentPosition, bounds
+        ) else {
+          signalFailure()
+          return
+        }
+        registers[valReg] = val
+        advance(to: nextIdx)
+        controller.step()
+      } catch {
+        abort(error)
         return
       }
-      registers[valReg] = val
-      advance(to: nextIdx)
-      controller.step()
 
     case .print:
       // TODO: Debug stream
@@ -431,14 +450,18 @@ extension Processor {
         fatalError(
           "Unreachable: transforming without a capture")
       }
-      // FIXME: Pass input or the slice?
-      guard let value = transform(input, range) else {
-        signalFailure()
+      do {
+        // FIXME: Pass input or the slice?
+        guard let value = try transform(input, range) else {
+          signalFailure()
+          return
+        }
+        storedCaptures[capNum].registerValue(value)
+        controller.step()
+      } catch {
+        abort(error)
         return
       }
-      storedCaptures[capNum].registerValue(value)
-
-      controller.step()
 
     case .captureValue:
       let (val, cap) = payload.pairedValueCapture

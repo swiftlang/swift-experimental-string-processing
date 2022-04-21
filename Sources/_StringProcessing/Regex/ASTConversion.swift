@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 extension AST {
   var dslTree: DSLTree {
@@ -123,7 +123,7 @@ extension AST.Node {
       case let .quantification(v):
         let child = v.child.dslTreeNode
         return .quantification(
-          v.amount.value, v.kind.value, child)
+          v.amount.value, .syntax(v.kind.value), child)
 
       case let .quote(v):
         return .quotedLiteral(v.literal)

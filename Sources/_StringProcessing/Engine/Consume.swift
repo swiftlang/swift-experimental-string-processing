@@ -25,6 +25,7 @@ extension Engine {
 }
 
 extension Processor where Input == String {
+  // TODO: Should we throw here?
   mutating func consume() -> Input.Index? {
     while true {
       switch self.state {

@@ -1,4 +1,4 @@
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 extension Compiler {
   struct ByteCodeGen {
@@ -111,30 +111,41 @@ extension Compiler.ByteCodeGen {
       }
 
     case .startOfLine:
-      builder.buildAssert { (input, pos, bounds) in
-        pos == input.startIndex ||
-        input[input.index(before: pos)].isNewline
+      if options.anchorsMatchNewlines {
+        builder.buildAssert { (input, pos, bounds) in
+          pos == input.startIndex || input[input.index(before: pos)].isNewline
+        }
+      } else {
+        builder.buildAssert { (input, pos, bounds) in
+          pos == input.startIndex
+        }
       }
-
+      
     case .endOfLine:
-      builder.buildAssert { (input, pos, bounds) in
-        pos == input.endIndex || input[pos].isNewline
+      if options.anchorsMatchNewlines {
+        builder.buildAssert { (input, pos, bounds) in
+          pos == input.endIndex || input[pos].isNewline
+        }
+      } else {
+        builder.buildAssert { (input, pos, bounds) in
+          pos == input.endIndex
+        }
       }
 
     case .wordBoundary:
       // TODO: May want to consider Unicode level
-      builder.buildAssert { (input, pos, bounds) in
+      builder.buildAssert { [options] (input, pos, bounds) in
         // TODO: How should we handle bounds?
-        CharacterClass.word.isBoundary(
-          input, at: pos, bounds: bounds)
+        _CharacterClassModel.word.isBoundary(
+          input, at: pos, bounds: bounds, with: options)
       }
 
     case .notWordBoundary:
       // TODO: May want to consider Unicode level
-      builder.buildAssert { (input, pos, bounds) in
+      builder.buildAssert { [options] (input, pos, bounds) in
         // TODO: How should we handle bounds?
-        !CharacterClass.word.isBoundary(
-          input, at: pos, bounds: bounds)
+        !_CharacterClassModel.word.isBoundary(
+          input, at: pos, bounds: bounds, with: options)
       }
     }
   }
@@ -288,7 +299,9 @@ extension Compiler.ByteCodeGen {
     // not captured. This may mean we should store
     // an existential instead of a closure...
 
-    let matcher = builder.makeMatcherFunction(matcher)
+    let matcher = builder.makeMatcherFunction { input, start, range in
+      try matcher(input, start, range)
+    }
 
     let valReg = builder.makeValueRegister()
     builder.buildMatcher(matcher, into: valReg)
@@ -306,7 +319,7 @@ extension Compiler.ByteCodeGen {
   ) throws {
     let transform = builder.makeTransformFunction {
       input, range in
-      t(input[range])
+      try t(input[range])
     }
     builder.buildBeginCapture(cap)
     try emitNode(child)
@@ -348,10 +361,20 @@ extension Compiler.ByteCodeGen {
 
   mutating func emitQuantification(
     _ amount: AST.Quantification.Amount,
-    _ kind: AST.Quantification.Kind,
+    _ kind: DSLTree.QuantificationKind,
     _ child: DSLTree.Node
   ) throws {
-    let kind = kind.applying(options)
+    let updatedKind: AST.Quantification.Kind
+    switch kind {
+    case .explicit(let kind):
+      updatedKind = kind
+    case .syntax(let kind):
+      updatedKind = kind.applying(options)
+    case .default:
+      updatedKind = options.isReluctantByDefault
+        ? .reluctant
+        : .eager
+    }
 
     let (low, high) = amount.bounds
     switch (low, high) {
@@ -480,7 +503,7 @@ extension Compiler.ByteCodeGen {
     }
 
     // Set up a dummy save point for possessive to update
-    if kind == .possessive {
+    if updatedKind == .possessive {
       builder.pushEmptySavePoint()
     }
 
@@ -526,7 +549,7 @@ extension Compiler.ByteCodeGen {
         to: exit, ifZeroElseDecrement: extraTripsReg!)
     }
 
-    switch kind {
+    switch updatedKind {
     case .eager:
       builder.buildSplit(to: loopBody, saving: exit)
     case .possessive:
@@ -584,7 +607,15 @@ extension Compiler.ByteCodeGen {
       try emitQuantification(amt, kind, child)
 
     case let .customCharacterClass(ccc):
-      try emitCustomCharacterClass(ccc)
+      if ccc.containsAny {
+        if !ccc.isInverted {
+          emitAny()
+        } else {
+          throw Unsupported("Inverted any")
+        }
+      } else {
+        try emitCustomCharacterClass(ccc)
+      }
 
     case let .atom(a):
       try emitAtom(a)

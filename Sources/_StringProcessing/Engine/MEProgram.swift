@@ -9,16 +9,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 struct MEProgram<Input: Collection> where Input.Element: Equatable {
   typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?
   typealias AssertionFunction =
-    (Input, Input.Index, Range<Input.Index>) -> Bool
+    (Input, Input.Index, Range<Input.Index>) throws -> Bool
   typealias TransformFunction =
-    (Input, Range<Input.Index>) -> Any?
+    (Input, Range<Input.Index>) throws -> Any?
   typealias MatcherFunction =
-    (Input, Input.Index, Range<Input.Index>) -> (Input.Index, Any)?
+    (Input, Input.Index, Range<Input.Index>) throws -> (Input.Index, Any)?
 
   var instructions: InstructionList<Instruction>
 

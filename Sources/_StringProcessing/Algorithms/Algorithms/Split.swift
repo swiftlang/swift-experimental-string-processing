@@ -11,7 +11,7 @@
 
 // MARK: `SplitCollection`
 
-public struct SplitCollection<Searcher: CollectionSearcher> {
+struct SplitCollection<Searcher: CollectionSearcher> {
   public typealias Base = Searcher.Searched
   
   let ranges: RangesCollection<Searcher>
@@ -101,7 +101,7 @@ extension SplitCollection: Collection {
 }
 
 extension SplitCollection.Index: Comparable {
-  public static func == (lhs: Self, rhs: Self) -> Bool {
+   static func == (lhs: Self, rhs: Self) -> Bool {
     switch (lhs.isEndIndex, rhs.isEndIndex) {
     case (false, false):
       return lhs.start == rhs.start
@@ -110,7 +110,7 @@ extension SplitCollection.Index: Comparable {
     }
   }
 
-  public static func < (lhs: Self, rhs: Self) -> Bool {
+  static func < (lhs: Self, rhs: Self) -> Bool {
     switch (lhs.isEndIndex, rhs.isEndIndex) {
     case (true, _):
       return false
@@ -124,7 +124,7 @@ extension SplitCollection.Index: Comparable {
 
 // MARK: `ReversedSplitCollection`
 
-public struct ReversedSplitCollection<Searcher: BackwardCollectionSearcher> {
+struct ReversedSplitCollection<Searcher: BackwardCollectionSearcher> {
   public typealias Base = Searcher.BackwardSearched
   
   let ranges: ReversedRangesCollection<Searcher>
@@ -175,7 +175,7 @@ extension ReversedSplitCollection: Sequence {
 // MARK: `CollectionSearcher` algorithms
 
 extension Collection {
-  public func split<Searcher: CollectionSearcher>(
+  func split<Searcher: CollectionSearcher>(
     by separator: Searcher
   ) -> SplitCollection<Searcher> where Searcher.Searched == Self {
     // TODO: `maxSplits`, `omittingEmptySubsequences`?
@@ -184,7 +184,7 @@ extension Collection {
 }
 
 extension BidirectionalCollection {
-  public func splitFromBack<Searcher: BackwardCollectionSearcher>(
+  func splitFromBack<Searcher: BackwardCollectionSearcher>(
     by separator: Searcher
   ) -> ReversedSplitCollection<Searcher>
     where Searcher.BackwardSearched == Self
@@ -197,7 +197,7 @@ extension BidirectionalCollection {
 
 extension Collection {
   // TODO: Non-escaping and throwing
-  public func split(
+  func split(
     whereSeparator predicate: @escaping (Element) -> Bool
   ) -> SplitCollection<PredicateConsumer<Self>> {
     split(by: PredicateConsumer(predicate: predicate))
@@ -205,7 +205,7 @@ extension Collection {
 }
 
 extension BidirectionalCollection where Element: Equatable {
-  public func splitFromBack(
+  func splitFromBack(
     whereSeparator predicate: @escaping (Element) -> Bool
   ) -> ReversedSplitCollection<PredicateConsumer<Self>> {
     splitFromBack(by: PredicateConsumer(predicate: predicate))
@@ -215,7 +215,7 @@ extension BidirectionalCollection where Element: Equatable {
 // MARK: Single element algorithms
 
 extension Collection where Element: Equatable {
-  public func split(
+  func split(
     by separator: Element
   ) -> SplitCollection<PredicateConsumer<Self>> {
     split(whereSeparator: { $0 == separator })
@@ -223,7 +223,7 @@ extension Collection where Element: Equatable {
 }
 
 extension BidirectionalCollection where Element: Equatable {
-  public func splitFromBack(
+  func splitFromBack(
     by separator: Element
   ) -> ReversedSplitCollection<PredicateConsumer<Self>> {
     splitFromBack(whereSeparator: { $0 == separator })
@@ -233,7 +233,13 @@ extension BidirectionalCollection where Element: Equatable {
 // MARK: Fixed pattern algorithms
 
 extension Collection where Element: Equatable {
-  public func split<S: Sequence>(
+  // FIXME: Replace `SplitCollection` when SE-0346 is enabled
+  /// Returns the longest possible subsequences of the collection, in order,
+  /// around elements equal to the given separator.
+  /// - Parameter separator: The element to be split upon.
+  /// - Returns: A collection of subsequences, split from this collection's
+  /// elements.
+  func split<S: Sequence>(
     by separator: S
   ) -> SplitCollection<ZSearcher<Self>> where S.Element == Element {
     split(by: ZSearcher(pattern: Array(separator), by: ==))
@@ -252,7 +258,7 @@ extension BidirectionalCollection where Element: Equatable {
 }
 
 extension BidirectionalCollection where Element: Comparable {
-  public func split<S: Sequence>(
+  func split<S: Sequence>(
     by separator: S
   ) -> SplitCollection<PatternOrEmpty<TwoWaySearcher<Self>>>
     where S.Element == Element
@@ -274,14 +280,21 @@ extension BidirectionalCollection where Element: Comparable {
 
 // MARK: Regex algorithms
 
+@available(SwiftStdlib 5.7, *)
 extension BidirectionalCollection where SubSequence == Substring {
-  public func split<R: RegexComponent>(
+  // FIXME: Replace `SplitCollection` when SE-0346 is enabled
+  /// Returns the longest possible subsequences of the collection, in order,
+  /// around elements equal to the given separator.
+  /// - Parameter separator: A regex describing elements to be split upon.
+  /// - Returns: A collection of substrings, split from this collection's
+  /// elements.
+  func split<R: RegexComponent>(
     by separator: R
   ) -> SplitCollection<RegexConsumer<R, Self>> {
     split(by: RegexConsumer(separator))
   }
   
-  public func splitFromBack<R: RegexComponent>(
+  func splitFromBack<R: RegexComponent>(
     by separator: R
   ) -> ReversedSplitCollection<RegexConsumer<R, Self>> {
     splitFromBack(by: RegexConsumer(separator))

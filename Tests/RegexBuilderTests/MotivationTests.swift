@@ -139,7 +139,7 @@ private func processWithRuntimeDynamicRegex(
   _ line: String
 ) -> Transaction? {
   // FIXME: Shouldn't this init throw?
-  let regex = try! Regex(compiling: pattern)
+  let regex = try! Regex(pattern)
 
 //      guard let result = line.match(regex) else { return nil }
 //
@@ -156,7 +156,7 @@ private func processWithRuntimeDynamicRegex(
 @available(macOS 12.0, *)
 private func processWithRuntimeStaticRegex(_ line: String) -> Transaction? {
   let regex: Regex<(Substring, Substring, Substring, Substring, Substring)>
-  = try! Regex(compiling: pattern)
+  = try! Regex(pattern)
 
   return process(line, using: regex)
 }
@@ -199,7 +199,7 @@ private func process(
   _ line: String,
   using regex: Regex<(Substring, Substring, Substring, Substring, Substring)>
 ) -> Transaction? {
-  guard let output = try? regex.matchWhole(line),
+  guard let output = try? regex.wholeMatch(in: line),
         let kind = Transaction.Kind(output.1)
   else {
     return nil
