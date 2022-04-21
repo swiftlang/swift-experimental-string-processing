@@ -32,7 +32,7 @@ class RegexConsumerTests: XCTestCase {
       _ expected: [Range<Int>],
       file: StaticString = #file, line: UInt = #line
     ) {
-      let regex = try! Regex(compiling: regex)
+      let regex = try! Regex(regex)
       
       let actualSeq: [Range<Int>] = string[...].ranges(of: regex).map(string.offsets(of:))
       XCTAssertEqual(actualSeq, expected, file: file, line: line)
@@ -69,7 +69,7 @@ class RegexConsumerTests: XCTestCase {
       _ expected: [Substring],
       file: StaticString = #file, line: UInt = #line
     ) {
-      let regex = try! Regex(compiling: regex)
+      let regex = try! Regex(regex)
       let actual = Array(string.split(by: regex))
       XCTAssertEqual(actual, expected, file: file, line: line)
     }
@@ -89,7 +89,7 @@ class RegexConsumerTests: XCTestCase {
       _ expected: String,
       file: StaticString = #file, line: UInt = #line
     ) {
-      let regex = try! Regex(compiling: regex)
+      let regex = try! Regex(regex)
       let actual = string.replacing(regex, with: replacement)
       XCTAssertEqual(actual, expected, file: file, line: line)
     }
@@ -108,7 +108,7 @@ class RegexConsumerTests: XCTestCase {
   }
 
   func testAdHoc() {
-    let r = try! Regex(compiling: "a|b+")
+    let r = try! Regex("a|b+")
 
     XCTAssert("palindrome".contains(r))
     XCTAssert("botany".contains(r))
@@ -142,7 +142,7 @@ class RegexConsumerTests: XCTestCase {
     let s = "aaa | aaaaaa | aaaaaaaaaa"
     let s1 = s.dropFirst(6)  // "aaaaaa | aaaaaaaaaa"
     let s2 = s1.dropLast(17) // "aa"
-    let regex = try! Regex(compiling: "a+")
+    let regex = try! Regex("a+")
 
     XCTAssertEqual(s.firstMatch(of: regex)?.0, "aaa")
     XCTAssertEqual(s1.firstMatch(of: regex)?.0, "aaaaaa")

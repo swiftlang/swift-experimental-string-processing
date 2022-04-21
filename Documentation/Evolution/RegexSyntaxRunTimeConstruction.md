@@ -50,11 +50,11 @@ We propose run-time construction of `Regex` from a best-in-class treatment of fa
 
 ```swift
 let pattern = #"(\w+)\s\s+(\S+)\s\s+((?:(?!\s\s).)*)\s\s+(.*)"#
-let regex = try! Regex(compiling: pattern)
+let regex = try! Regex(pattern)
 // regex: Regex<AnyRegexOutput>
 
 let regex: Regex<(Substring, Substring, Substring, Substring, Substring)> =
-  try! Regex(compiling: pattern)
+  try! Regex(pattern)
 ```
 
 ### Syntax
