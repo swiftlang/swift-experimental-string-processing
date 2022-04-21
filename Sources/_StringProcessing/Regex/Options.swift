@@ -58,8 +58,8 @@ extension RegexComponent {
   /// Returns a regular expression where the start and end of input
   /// anchors (`^` and `$`) also match against the start and end of a line.
   ///
-  /// This method corresponds to applying the `m` option in a regular
-  /// expression literal. For this behavior in the `RegexBuilder` syntax, see
+  /// This method corresponds to applying the `m` option in regex syntax. For
+  /// this behavior in the `RegexBuilder` syntax, see
   /// ``Anchor.startOfLine``, ``Anchor.endOfLine``, ``Anchor.startOfInput``,
   /// and ``Anchor.endOfInput``.
   ///
@@ -69,14 +69,16 @@ extension RegexComponent {
     wrapInOption(.multiline, addingIf: matchLineEndings)
   }
   
-  /// Returns a regular expression where quantifiers are reluctant by default
-  /// instead of eager.
+  /// Returns a regular expression where quantifiers use the specified behavior
+  /// by default.
   ///
-  /// This method corresponds to applying the `U` option in a regular
-  /// expression literal.
+  /// This setting does not affect calls to quantifier methods, such as
+  /// `OneOrMore`, that include an explicit `behavior` parameter.
   ///
-  /// - Parameter useReluctantQuantifiers: A Boolean value indicating whether
-  ///   quantifiers should be reluctant by default.
+  /// Passing `.eager` or `.reluctant` to this method corresponds to applying
+  /// the `(?-U)` or `(?U)` option in regex syntax, respectively.
+  ///
+  /// - Parameter behavior: The default behavior to use for quantifiers.
   public func quantificationBehavior(_ behavior: RegexQuantificationBehavior) -> Regex<RegexOutput> {
     if behavior == .possessive {
       return wrapInOption(.possessiveByDefault, addingIf: true)
