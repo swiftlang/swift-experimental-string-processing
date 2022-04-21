@@ -33,6 +33,8 @@ public struct _CharacterClassModel: Hashable {
     case any
     /// Any grapheme cluster
     case anyGrapheme
+    /// Any Unicode scalar
+    case anyScalar
     /// Character.isDigit
     case digit
     /// Character.isHexDigit
@@ -155,8 +157,12 @@ public struct _CharacterClassModel: Hashable {
     case .graphemeCluster:
       let c = str[i]
       var matched: Bool
+      var next = str.index(after: i)
       switch cc {
       case .any, .anyGrapheme: matched = true
+      case .anyScalar:
+        matched = true
+        next = str.unicodeScalars.index(after: i)
       case .digit:
         matched = c.isNumber && (c.isASCII || !options.usesASCIIDigits)
       case .hexDigit:
@@ -174,12 +180,13 @@ public struct _CharacterClassModel: Hashable {
       if isInverted {
         matched.toggle()
       }
-      return matched ? str.index(after: i) : nil
+      return matched ? next : nil
     case .unicodeScalar:
       let c = str.unicodeScalars[i]
       var matched: Bool
       switch cc {
       case .any: matched = true
+      case .anyScalar: matched = true
       case .anyGrapheme: fatalError("Not matched in this mode")
       case .digit:
         matched = c.properties.numericType != nil && (c.isASCII || !options.usesASCIIDigits)
@@ -222,6 +229,10 @@ extension _CharacterClassModel {
 
   public static var anyGrapheme: _CharacterClassModel {
     .init(cc: .anyGrapheme, matchLevel: .graphemeCluster)
+  }
+
+  public static var anyUnicodeScalar: _CharacterClassModel {
+    .init(cc: .any, matchLevel: .unicodeScalar)
   }
 
   public static var whitespace: _CharacterClassModel {
@@ -275,6 +286,7 @@ extension _CharacterClassModel.Representation: CustomStringConvertible {
     switch self {
     case .any: return "<any>"
     case .anyGrapheme: return "<any grapheme>"
+    case .anyScalar: return "<any scalar>"
     case .digit: return "<digit>"
     case .hexDigit: return "<hex digit>"
     case .horizontalWhitespace: return "<horizontal whitespace>"
@@ -431,6 +443,7 @@ extension AST.Atom.EscapedBuiltin {
     case .notWordCharacter: return .word.inverted
 
     case .graphemeCluster: return .anyGrapheme
+    case .trueAnychar: return .anyUnicodeScalar
 
     default:
       return nil
