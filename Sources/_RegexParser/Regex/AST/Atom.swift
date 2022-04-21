@@ -401,9 +401,6 @@ extension AST.Atom.CharacterProperty {
     /// Some special properties implemented by PCRE and Oniguruma.
     case pcreSpecial(PCRESpecialCategory)
     case onigurumaSpecial(OnigurumaSpecialProperty)
-
-    /// Unhandled properties.
-    case other(key: String?, value: String)
   }
 
   // TODO: erm, separate out or fold into something? splat it in?
