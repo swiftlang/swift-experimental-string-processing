@@ -130,7 +130,7 @@ The options that `Regex` supports are shown in the table below. Options that aff
 | ASCII-only character classes | `(?DSWP)`      | `asciiOnlyDigits()`, etc  |
 | Unicode word boundaries      | `(?w)`         | `wordBoundaryKind(_:)`    |
 | Semantic level               | `(?Xu)`        | `matchingSemantics(_:)`   |
-| Reluctant quantifiers        | `(?U)`         | `reluctantQuantifiers()`  |
+| Repetition behavior          | `(?U)`         | `repetitionBehavior(_:)`  |
 | **Structural/Syntactic**     |                |                           |
 | Extended syntax              | `(?x)`,`(?xx)` | n/a                       |
 | Named captures only          | `(?n)`         | n/a                       |
@@ -384,9 +384,9 @@ public struct RegexSemanticLevel: Hashable {
 }
 ```
 
-#### Reluctant quantification by default
+#### Default repetition behavior
 
-Regex quantifiers (`+`, `*`, and `?`) match eagerly by default, such that they match the longest possible substring. Appending `?` to a quantifier makes it reluctant, instead, so that it matches the shortest possible substring.
+Regex quantifiers (`+`, `*`, and `?`) match eagerly by default when they repeat, such that they match the longest possible substring. Appending `?` to a quantifier makes it reluctant, instead, so that it matches the shortest possible substring.
 
 ```swift
 let str = "<token>A value.</token>"
@@ -398,7 +398,7 @@ str.firstMatch(of: /<.+>/)          // "<token>A value.</token>"
 str.firstMatch(of: /<.+?>/)         // "<token>"
 ```
 
-The `U` option toggles the "eagerness" of quanitifiers, so that quantifiers are reluctant by default, and only become eager when `?` is added to the quantifier.
+The `U` option toggles the "eagerness" of quantifiers, so that quantifiers are reluctant by default, and only become eager when `?` is added to the quantifier.
 
 ```swift
 // '(?U)' toggles the eagerness of quantifiers:
@@ -410,11 +410,26 @@ str.firstMatch(of: /(?U)<.+?>/)     // "<token>A value.</token>"
 
 **`RegexBuilder` API:**
 
+The `repetitionBehavior(_:)` method lets you set the default behavior for all quantifiers that don't explicitly provide their own behavior. For example, you can make all quantifiers behave possessively, eliminating any quantification-caused backtracking.
+
 ```swift
 extension RegexComponent {
   /// Returns a regular expression where quantifiers are reluctant by default
   /// instead of eager.
-  public func reluctantQuantifiers(_ useReluctantQuantifiers: Bool = true) -> Regex<Output>
+  public func repetitionBehavior(_ behavior: RegexRepetitionBehavior) -> Regex<Output>
+}
+
+public struct RegexRepetitionBehavior {
+  /// Match as much of the input string as possible, backtracking when
+  /// necessary.
+  public static var eager: RegexRepetitionBehavior { get }
+
+  /// Match as little of the input string as possible, expanding the matched
+  /// region as necessary to complete a match.
+  public static var reluctant: RegexRepetitionBehavior { get }
+
+  /// Match as much of the input string as possible, performing no backtracking.
+  public static var possessive: RegexRepetitionBehavior { get }
 }
 ```
 
@@ -423,7 +438,7 @@ In order for this option to have the same effect on regexes built with `RegexBui
 ```swift
 extension OneOrMore {
     public init<W, C0, Component: RegexComponent>(
-    _ behavior: QuantificationBehavior? = nil,
+    _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where Output == (Substring, C0), Component.Output == (W, C0)
 }
@@ -714,9 +729,9 @@ N/A
 
 ## Future directions
 
-### Expanded options
+### Expanded options and modifiers
 
-The initial version of `Regex` includes only the options described above. Filling out the remainder of options described in the [Run-time Regex Construction proposal][literals] could be completed as future work, as well as additional improvements, such as adding an option for making quantifiers possessive by default.
+The initial version of `Regex` includes only the options described above. Filling out the remainder of options described in the [Run-time Regex Construction proposal][literals] could be completed as future work, as well as additional improvements, such as adding an option that makes a regex match only at the start of a string.
 
 ### Extensions to Character and Unicode Scalar APIs
 
