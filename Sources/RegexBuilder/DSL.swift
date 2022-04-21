@@ -94,40 +94,20 @@ extension UnicodeScalar: RegexComponent {
 
 // Note: Quantifiers are currently gyb'd.
 
-/// Specifies how much to attempt to match when using a quantifier.
-@available(SwiftStdlib 5.7, *)
-public struct QuantificationBehavior {
-  internal enum Kind {
-    case eagerly
-    case reluctantly
-    case possessively
-  }
-
-  var kind: Kind
-
-  internal var astKind: DSLTree._AST.QuantificationKind {
-    switch kind {
-    case .eagerly: return .eager
-    case .reluctantly: return .reluctant
-    case .possessively: return .possessive
-    }
-  }
-}
-
 extension DSLTree.Node {
   /// Generates a DSLTree node for a repeated range of the given DSLTree node.
   /// Individual public API functions are in the generated Variadics.swift file.
   @available(SwiftStdlib 5.7, *)
   static func repeating(
     _ range: Range<Int>,
-    _ behavior: QuantificationBehavior?,
+    _ behavior: RegexRepetitionBehavior?,
     _ node: DSLTree.Node
   ) -> DSLTree.Node {
     // TODO: Throw these as errors
     assert(range.lowerBound >= 0, "Cannot specify a negative lower bound")
     assert(!range.isEmpty, "Cannot specify an empty range")
     
-    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
 
     switch (range.lowerBound, range.upperBound) {
     case (0, Int.max): // 0...
@@ -144,26 +124,6 @@ extension DSLTree.Node {
     default: // any other range
       return .quantification(.range(range.lowerBound, range.upperBound), kind, node)
     }
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension QuantificationBehavior {
-  /// Match as much of the input string as possible, backtracking when
-  /// necessary.
-  public static var eagerly: QuantificationBehavior {
-    .init(kind: .eagerly)
-  }
-
-  /// Match as little of the input string as possible, expanding the matched
-  /// region as necessary to complete a match.
-  public static var reluctantly: QuantificationBehavior {
-    .init(kind: .reluctantly)
-  }
-
-  /// Match as much of the input string as possible, performing no backtracking.
-  public static var possessively: QuantificationBehavior {
-    .init(kind: .possessively)
   }
 }
 

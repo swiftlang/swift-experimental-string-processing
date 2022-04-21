@@ -377,9 +377,9 @@ struct VariadicsGenerator: ParsableCommand {
         \(params.disfavored)\
         public init<\(params.genericParams)>(
           _ component: Component,
-          _ behavior: QuantificationBehavior? = nil
+          _ behavior: RegexRepetitionBehavior? = nil
         ) \(params.whereClauseForInit) {
-          let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+          let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
           self.init(node: .quantification(.\(kind.astQuantifierAmount), kind, component.regex.root))
         }
       }
@@ -389,10 +389,10 @@ struct VariadicsGenerator: ParsableCommand {
         \(defaultAvailableAttr)
         \(params.disfavored)\
         public init<\(params.genericParams)>(
-          _ behavior: QuantificationBehavior? = nil,
+          _ behavior: RegexRepetitionBehavior? = nil,
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.whereClauseForInit) {
-          let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.astKind) } ?? .default
+          let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
           self.init(node: .quantification(.\(kind.astQuantifierAmount), kind, component().regex.root))
         }
       }
@@ -508,7 +508,7 @@ struct VariadicsGenerator: ParsableCommand {
         public init<\(params.genericParams), R: RangeExpression>(
           _ component: Component,
           _ expression: R,
-          _ behavior: QuantificationBehavior? = nil
+          _ behavior: RegexRepetitionBehavior? = nil
         ) \(params.repeatingWhereClause) {
           self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
         }

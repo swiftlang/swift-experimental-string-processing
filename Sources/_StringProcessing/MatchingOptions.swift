@@ -22,6 +22,9 @@ struct MatchingOptions {
     // Must contain exactly one of each mutually exclusive group
     assert(stack.last!.intersection(.textSegmentOptions).rawValue.nonzeroBitCount == 1)
     assert(stack.last!.intersection(.semanticMatchingLevels).rawValue.nonzeroBitCount == 1)
+    
+    // Must contain at most one quantifier behavior
+    assert(stack.last!.intersection(.repetitionBehaviors).rawValue.nonzeroBitCount <= 1)
   }
 }
 
@@ -61,6 +64,16 @@ extension MatchingOptions {
   
   var isReluctantByDefault: Bool {
     stack.last!.contains(.reluctantByDefault)
+  }
+  
+  var defaultQuantificationKind: AST.Quantification.Kind {
+    if stack.last!.contains(.possessiveByDefault) {
+      return .possessive
+    } else if stack.last!.contains(.reluctantByDefault) {
+      return .reluctant
+    } else {
+      return .eager
+    }
   }
   
   var dotMatchesNewline: Bool {
@@ -150,6 +163,9 @@ extension MatchingOptions {
     case unicodeScalarSemantics
     case byteSemantics
     
+    // Swift-only default possessive quantifier
+    case possessiveByDefault
+
     init?(_ astKind: AST.MatchingOption.Kind) {
       switch astKind {
       case .caseInsensitive:
@@ -184,6 +200,8 @@ extension MatchingOptions {
         self = .unicodeScalarSemantics
       case .byteSemantics:
         self = .byteSemantics
+      case .possessiveByDefault:
+        self = .possessiveByDefault
         
       // Whitespace options are only relevant during parsing, not compilation.
       case .extended, .extraExtended:
@@ -219,6 +237,9 @@ extension MatchingOptions {
       if Self.textSegmentOptions.contains(opt.representation) {
         remove(.textSegmentOptions)
       }
+      if Self.repetitionBehaviors.contains(opt.representation) {
+        remove(.repetitionBehaviors)
+      }
 
       insert(opt.representation)
     }
@@ -240,6 +261,9 @@ extension MatchingOptions {
       for opt in sequence.removing {
         guard let opt = Option(opt.kind) else {
           continue
+        }
+        if Self.repetitionBehaviors.contains(opt.representation) {
+          remove(.repetitionBehaviors)
         }
         remove(opt.representation)
       }
@@ -274,7 +298,15 @@ extension MatchingOptions.Representation {
   static var semanticMatchingLevels: Self {
     [.graphemeClusterSemantics, .unicodeScalarSemantics, .byteSemantics]
   }
-    
+  
+  // Quantification behavior options
+  static var reluctantByDefault: Self { .init(.reluctantByDefault) }
+  static var possessiveByDefault: Self { .init(.possessiveByDefault) }
+
+  static var repetitionBehaviors: Self {
+    [.reluctantByDefault, .possessiveByDefault]
+  }
+  
   /// The default set of options.
   static var `default`: Self {
     [.graphemeClusterSemantics, .textSegmentGraphemeMode]
