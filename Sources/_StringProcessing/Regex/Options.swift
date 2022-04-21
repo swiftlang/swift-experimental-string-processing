@@ -200,7 +200,7 @@ public struct RegexRepetitionBehavior: Hashable {
 
   var kind: Kind
 
-  @_spi(RegexBuilder) public var dslTreeKind: DSLTree._AST.QuantificationKind {
+  @_spi(RegexBuilder) public var dslTreeKind: AST.Quantification.Kind {
     switch kind {
     case .eager: return .eager
     case .reluctant: return .reluctant
