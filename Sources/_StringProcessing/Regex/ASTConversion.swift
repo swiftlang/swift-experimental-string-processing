@@ -211,6 +211,9 @@ extension AST.Atom {
     case .any:                  return .any
     case let .backreference(r): return .backreference(r)
 
+    case .escaped(let c) where c.scalarValue != nil:
+      return .scalar(c.scalarValue!)
+
     default: return .unconverted(self)
     }
   }
