@@ -403,7 +403,7 @@ extension Parser {
     }
 
     // Check if we have the start of a custom character class '['.
-    if let cccStart = try source.lexCustomCCStart() {
+    if let cccStart = try source.lexCustomCCStart(context: context) {
       return .customCharacterClass(
         try parseCustomCharacterClass(cccStart))
     }
@@ -487,7 +487,7 @@ extension Parser {
     while source.peek() != "]" && source.peekCCBinOp() == nil {
 
       // Nested custom character class.
-      if let cccStart = try source.lexCustomCCStart() {
+      if let cccStart = try source.lexCustomCCStart(context: context) {
         members.append(.custom(try parseCustomCharacterClass(cccStart)))
         continue
       }
