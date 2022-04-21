@@ -138,7 +138,7 @@ The options that `Regex` supports are shown in the table below. Options that aff
 
 #### Case insensitivity
 
-Regexes perform case sensitive comparisons by default. The `i` option or the `ignoringCase(_:)` method enables case insensitive comparison.
+Regexes perform case sensitive comparisons by default. The `i` option or the `ignoresCase(_:)` method enables case insensitive comparison.
 
 ```swift
 let str = "Café"
@@ -460,7 +460,7 @@ let regex1 = /\w+\s?\d{,3}/
 let regex2 = Regex {
     OneOrMore(.word)
     Optionally(.whitespace)
-    Repeat(.decimalDigit, ...3)
+    Repeat(.digit, ...3)
 }
 ```
 
@@ -497,14 +497,14 @@ for match in data.matches(of: /(.),/.matchingSemantics(.unicodeScalar)) {
 - The **any grapheme cluster** character class is written as `\X` or `CharacterClass.anyGraphemeCluster`, and matches from the current location up to the next grapheme cluster boundary. This includes matching newlines, regardless of any option settings.
 - The **any Unicode scalar** character class is written as `\O` or `CharacterClass.anyUnicodeScalar`, and matches exactly one Unicode scalar value at the current location. This includes matching newlines, regardless of any option settings, but only the first scalar in an `\r\n` cluster.
 
-#### Decimal and hexadecimal digits
+#### Digits
 
-The **decimal digit** character class is matched by `\d` or `CharacterClass.decimalDigit`. Both regexes in this example match one or more decimal digits followed by a colon:
+The **decimal digit** character class is matched by `\d` or `CharacterClass.digit`. Both regexes in this example match one or more decimal digits followed by a colon:
 
 ```swift
 let regex1 = /\d+:/
 let regex2 = Regex {
-    OneOrMore(.decimalDigit)
+    OneOrMore(.digit)
     ":"
 }
 ```
@@ -516,7 +516,7 @@ _Grapheme cluster semantics:_ Matches a character made up of a single Unicode sc
 _ASCII mode_: Matches a Unicode scalar in the range `0` to `9`.
 
 
-To invert the decimal digit character class, use `\D` or `CharacterClass.decimalDigit.inverted`.
+To invert the decimal digit character class, use `\D` or `CharacterClass.digit.inverted`.
 
 
 The **hexadecimal digit** character class is matched by  `CharacterClass.hexDigit`.
@@ -638,11 +638,11 @@ Custom classes function as the set union of their individual components, whether
 
 Inside regexes, custom classes are enclosed in square brackets `[...]`, and can be nested or combined using set operators like `&&`. For more detail, see the [Run-time Regex Construction proposal][internals-charclass].
 
-With `RegexBuilder`'s `CharacterClass` type, you can use built-in character classes with ranges and groups of characters. For example, to parse a valid octodecimal number, you could define a custom character class that combines `.decimalDigit` with a range of characters.
+With `RegexBuilder`'s `CharacterClass` type, you can use built-in character classes with ranges and groups of characters. For example, to parse a valid octodecimal number, you could define a custom character class that combines `.digit` with a range of characters.
 
 ```swift
 let octoDecimalRegex: Regex<Substring, Int> = Regex {
-    let charClass = CharacterClass(.decimalDigit, "a"..."h").ignoringCase()
+    let charClass = CharacterClass(.digit, "a"..."h").ignoresCase()
     Capture(OneOrMore(charClass))
         transform: { Int($0, radix: 18) }
 }
@@ -664,7 +664,7 @@ extension RegexComponent where Self == CharacterClass {
 
   public static var anyUnicodeScalar: CharacterClass { get }
 
-  public static var decimalDigit: CharacterClass { get }
+  public static var digit: CharacterClass { get }
   
   public static var hexDigit: CharacterClass { get }
 
@@ -683,10 +683,12 @@ extension RegexComponent where Self == CharacterClass {
   /// Returns a character class that matches any character in the given string
   /// or sequence.
   public static func anyOf<S: Sequence>(_ s: S) -> CharacterClass
+    where S.Element == Character
     
   /// Returns a character class that matches any unicode scalar in the given
   /// sequence.
   public static func anyOf<S: Sequence>(_ s: S) -> CharacterClass
+    where S.Element == UnicodeScalar
 }
 
 // Unicode properties
