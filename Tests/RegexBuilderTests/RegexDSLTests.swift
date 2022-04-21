@@ -272,7 +272,7 @@ class RegexDSLTests: XCTestCase {
             OneOrMore(.word)
             Anchor.wordBoundary
           }
-          OneOrMore(.any, .reluctantly)
+          OneOrMore(.any, .reluctant)
           "stop"
           " "
           
@@ -281,7 +281,7 @@ class RegexDSLTests: XCTestCase {
             Anchor.wordBoundary
           }
           .wordBoundaryKind(.unicodeLevel1)
-          OneOrMore(.any, .reluctantly)
+          OneOrMore(.any, .reluctant)
           "stop"
         }
     }
@@ -293,14 +293,14 @@ class RegexDSLTests: XCTestCase {
         Capture {
           // Reluctant behavior due to option
           OneOrMore(.anyOf("abcd"))
-            .reluctantQuantifiers()
+            .quantificationBehavior(.reluctant)
         }
         ZeroOrMore("a"..."z")
         
         Capture {
           // Eager behavior due to explicit parameter, despite option
-          OneOrMore(.digit, .eagerly)
-            .reluctantQuantifiers()
+          OneOrMore(.digit, .eager)
+            .quantificationBehavior(.reluctant)
         }
         ZeroOrMore(.digit)
       }
@@ -332,37 +332,56 @@ class RegexDSLTests: XCTestCase {
       ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
     {
-      OneOrMore(.word, .reluctantly)
+      OneOrMore(.word, .reluctant)
       Capture(.digit)
       ZeroOrMore(.any)
     }
-    
-#if os(macOS)
-    try XCTExpectFailure("'relucantCaptures()' API should only affect regex literals") {
-      try _testDSLCaptures(
-        ("abc1def2", ("abc1def2", "2")),
-        matchType: (Substring, Substring).self, ==)
-      {
-        Regex {
-          OneOrMore(.word)
-          Capture(.digit)
-          ZeroOrMore(.any)
-        }.reluctantQuantifiers()
-      }
-    }
-#endif
-    
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
     {
-      OneOrMore(.reluctantly) {
+      OneOrMore(.reluctant) {
         .word
-      }
+      }.quantificationBehavior(.possessive)
       Capture(.digit)
       ZeroOrMore(.any)
     }
-    
+    try _testDSLCaptures(
+      ("abc1def2", ("abc1def2", "1")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      Regex {
+        OneOrMore(.word)
+        Capture(.digit)
+        ZeroOrMore(.any)
+      }.quantificationBehavior(.reluctant)
+    }
+    try _testDSLCaptures(
+      ("abc1def2", ("abc1def2", "1")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      try! Regex(compiling: #"\w+(\d).*"#, as: (Substring, Substring).self)
+        .quantificationBehavior(.reluctant)
+    }
+    try _testDSLCaptures(
+      ("aaaa", nil),
+      matchType: (Substring, Substring).self, ==)
+    {
+      Regex {
+        OneOrMore("a", .possessive)
+        "a"
+      }
+    }
+    try _testDSLCaptures(
+      ("aaaa", nil),
+      matchType: (Substring, Substring).self, ==)
+    {
+      Regex {
+        OneOrMore("a")
+        "a"
+      }.quantificationBehavior(.possessive)
+    }
+
     try _testDSLCaptures(
       ("abc1def2", "abc1def2"),
       matchType: Substring.self, ==)

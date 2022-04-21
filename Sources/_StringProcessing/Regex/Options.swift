@@ -77,8 +77,12 @@ extension RegexComponent {
   ///
   /// - Parameter useReluctantQuantifiers: A Boolean value indicating whether
   ///   quantifiers should be reluctant by default.
-  public func reluctantQuantifiers(_ useReluctantQuantifiers: Bool = true) -> Regex<RegexOutput> {
-    wrapInOption(.reluctantByDefault, addingIf: useReluctantQuantifiers)
+  public func quantificationBehavior(_ behavior: RegexQuantificationBehavior) -> Regex<RegexOutput> {
+    if behavior == .possessive {
+      return wrapInOption(.possessiveByDefault, addingIf: true)
+    } else {
+      return wrapInOption(.reluctantByDefault, addingIf: behavior == .reluctant)
+    }
   }
 
   /// Returns a regular expression that matches with the specified semantic
@@ -180,6 +184,46 @@ public struct RegexWordBoundaryKind: Hashable {
   /// punctuation, changes in script, and Emoji.
   public static var unicodeLevel2: Self {
     .init(base: .unicodeLevel2)
+  }
+}
+
+/// Specifies how much to attempt to match when using a quantifier.
+@available(SwiftStdlib 5.7, *)
+public struct RegexQuantificationBehavior: Hashable {
+  internal enum Kind {
+    case eager
+    case reluctant
+    case possessive
+  }
+
+  var kind: Kind
+
+  @_spi(RegexBuilder) public var dslTreeKind: DSLTree._AST.QuantificationKind {
+    switch kind {
+    case .eager: return .eager
+    case .reluctant: return .reluctant
+    case .possessive: return .possessive
+    }
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexQuantificationBehavior {
+  /// Match as much of the input string as possible, backtracking when
+  /// necessary.
+  public static var eager: Self {
+    .init(kind: .eager)
+  }
+
+  /// Match as little of the input string as possible, expanding the matched
+  /// region as necessary to complete a match.
+  public static var reluctant: Self {
+    .init(kind: .reluctant)
+  }
+
+  /// Match as much of the input string as possible, performing no backtracking.
+  public static var possessive: Self {
+    .init(kind: .possessive)
   }
 }
 

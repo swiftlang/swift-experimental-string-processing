@@ -63,6 +63,16 @@ extension MatchingOptions {
     stack.last!.contains(.reluctantByDefault)
   }
   
+  var defaultQuantificationKind: AST.Quantification.Kind {
+    if stack.last!.contains(.possessiveByDefault) {
+      return .possessive
+    } else if stack.last!.contains(.reluctantByDefault) {
+      return .reluctant
+    } else {
+      return .eager
+    }
+  }
+  
   var dotMatchesNewline: Bool {
     stack.last!.contains(.singleLine)
   }
@@ -150,6 +160,9 @@ extension MatchingOptions {
     case unicodeScalarSemantics
     case byteSemantics
     
+    // Swift-only default possessive quantifier
+    case possessiveByDefault
+
     init?(_ astKind: AST.MatchingOption.Kind) {
       switch astKind {
       case .caseInsensitive:
@@ -184,6 +197,8 @@ extension MatchingOptions {
         self = .unicodeScalarSemantics
       case .byteSemantics:
         self = .byteSemantics
+      case .possessiveByDefault:
+        self = .possessiveByDefault
         
       // Whitespace options are only relevant during parsing, not compilation.
       case .extended, .extraExtended:
@@ -218,6 +233,9 @@ extension MatchingOptions {
       }
       if Self.textSegmentOptions.contains(opt.representation) {
         remove(.textSegmentOptions)
+      }
+      if Self.quantificationBehaviors.contains(opt.representation) {
+        remove(.quantificationBehaviors)
       }
 
       insert(opt.representation)
@@ -274,7 +292,15 @@ extension MatchingOptions.Representation {
   static var semanticMatchingLevels: Self {
     [.graphemeClusterSemantics, .unicodeScalarSemantics, .byteSemantics]
   }
-    
+  
+  // Quantification behavior options
+  static var reluctantByDefault: Self { .init(.reluctantByDefault) }
+  static var possessiveByDefault: Self { .init(.possessiveByDefault) }
+
+  static var quantificationBehaviors: Self {
+    [.reluctantByDefault, .possessiveByDefault]
+  }
+  
   /// The default set of options.
   static var `default`: Self {
     [.graphemeClusterSemantics, .textSegmentGraphemeMode]

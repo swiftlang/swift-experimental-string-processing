@@ -374,9 +374,7 @@ extension Compiler.ByteCodeGen {
     case .syntax(let kind):
       updatedKind = kind.ast.applying(options)
     case .default:
-      updatedKind = options.isReluctantByDefault
-        ? .reluctant
-        : .eager
+      updatedKind = options.defaultQuantificationKind
     }
 
     let (low, high) = amount.bounds
