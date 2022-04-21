@@ -195,7 +195,6 @@ extension RegexComponent {
       ? AST.MatchingOptionSequence(adding: [.init(option, location: .fake)])
       : AST.MatchingOptionSequence(removing: [.init(option, location: .fake)])
     return Regex(node: .nonCapturingGroup(
-      .changeMatchingOptions(sequence, isIsolated: false),
-      regex.root))
+      .changeMatchingOptions(sequence), regex.root))
   }
 }

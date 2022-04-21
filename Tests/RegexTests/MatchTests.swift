@@ -1319,6 +1319,17 @@ extension RegexTests {
     firstMatchTest(#"(((?s)a)).b"#, input: "a\nb", match: nil)
     firstMatchTest(#"(?s)(((?-s)a)).b"#, input: "a\nb", match: "a\nb")
     firstMatchTest(#"(?s)((?-s)((?i)a)).b"#, input: "a\nb", match: "a\nb")
+
+    // Matching option changing persists across alternations.
+    firstMatchTest(#"a(?s)b|c|.d"#, input: "abc", match: "ab")
+    firstMatchTest(#"a(?s)b|c|.d"#, input: "c", match: "c")
+    firstMatchTest(#"a(?s)b|c|.d"#, input: "a\nd", match: "\nd")
+    firstMatchTest(#"a(?s)(?^)b|c|.d"#, input: "a\nd", match: nil)
+    firstMatchTest(#"a(?s)b|.c(?-s)|.d"#, input: "a\nd", match: nil)
+    firstMatchTest(#"a(?s)b|.c(?-s)|.d"#, input: "a\nc", match: "\nc")
+    firstMatchTest(#"a(?s)b|c(?-s)|(?^s).d"#, input: "a\nd", match: "\nd")
+    firstMatchTest(#"a(?:(?s).b)|.c|.d"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"a(?:(?s).b)|.c"#, input: "a\nc", match: nil)
   }
   
   func testOptionMethods() throws {

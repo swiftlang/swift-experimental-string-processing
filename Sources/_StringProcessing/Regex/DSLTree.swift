@@ -166,6 +166,8 @@ extension DSLTree {
     case backreference(AST.Reference)
     case symbolicReference(ReferenceID)
 
+    case changeMatchingOptions(AST.MatchingOptionSequence)
+
     case unconverted(AST.Atom)
   }
 }

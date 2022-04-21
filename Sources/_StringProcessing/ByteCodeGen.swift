@@ -34,6 +34,9 @@ extension Compiler.ByteCodeGen {
     case let .symbolicReference(id):
       builder.buildUnresolvedReference(id: id)
 
+    case let .changeMatchingOptions(optionSequence):
+      options.apply(optionSequence)
+
     case let .unconverted(astAtom):
       if let consumer = try astAtom.generateConsumer(options) {
         builder.buildConsume(by: consumer)
@@ -349,7 +352,7 @@ extension Compiler.ByteCodeGen {
     case .capture, .namedCapture, .balancedCapture:
       throw Unreachable("These should produce a capture node")
 
-    case .changeMatchingOptions(let optionSequence, _):
+    case .changeMatchingOptions(let optionSequence):
       options.apply(optionSequence)
       try emitNode(child)
 
@@ -585,6 +588,9 @@ extension Compiler.ByteCodeGen {
       }
 
     case let .capture(_, refId, child):
+      options.beginScope()
+      defer { options.endScope() }
+
       let cap = builder.makeCapture(id: refId)
       switch child {
       case let .matcher(_, m):
