@@ -403,6 +403,10 @@ extension UTS18Tests {
     XCTAssertTrue("\u{1F514}".contains(#/\N{BELL}/#))
     XCTAssertTrue("🐯".contains(#/\N{TIGER FACE}/#))
     XCTAssertFalse("🐯".contains(#/\N{TIEGR FACE}/#))
+    
+    // Matching semantic level
+    XCTAssertFalse("👩‍👩‍👧‍👦".contains(#/.\N{ZERO WIDTH JOINER}/#))
+    XCTAssertTrue("👩‍👩‍👧‍👦".contains(#/(?u).\N{ZERO WIDTH JOINER}/#))
   }
 
   func testIndividuallyNamedCharacters_XFail() {
