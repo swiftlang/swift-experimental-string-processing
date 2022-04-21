@@ -41,7 +41,11 @@ extension AST {
       case graphemeClusterSemantics // X
       case unicodeScalarSemantics   // u
       case byteSemantics            // b
+      
+      // Swift-only default possessive quantifier
+      case possessiveByDefault      // t.b.d.
     }
+    
     public var kind: Kind
     public var location: SourceLocation
 
