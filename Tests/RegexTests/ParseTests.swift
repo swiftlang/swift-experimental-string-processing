@@ -460,9 +460,25 @@ extension RegexTests {
 
     parseTest("[-]", charClass("-"))
 
-    // Empty character classes are forbidden, therefore this is a character
-    // class of literal ']'.
+    // Empty character classes are forbidden, therefore these are character
+    // classes containing literal ']'.
     parseTest("[]]", charClass("]"))
+    parseTest("[]a]", charClass("]", "a"))
+    parseTest(
+      "(?x)[ ]]", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        charClass("]"))
+    )
+    parseTest(
+      "(?x)[ ]  ]", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        charClass("]"))
+    )
+    parseTest(
+      "(?x)[ ] a ]", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true,
+        charClass("]", "a"))
+    )
 
     // These are metacharacters in certain contexts, but normal characters
     // otherwise.
@@ -612,6 +628,16 @@ extension RegexTests {
       "--+", concat("-", oneOrMore(of: "-")))
     parseTest(
       "~~*", concat("~", zeroOrMore(of: "~")))
+
+    parseTest(
+      "[ &&  ]", charClass(
+        .setOperation([" "], .init(faking: .intersection), [" ", " "]))
+    )
+    parseTest(
+      "(?x)[ a && b ]", changeMatchingOptions(
+        matchingOptions(adding: .extended), isIsolated: true, charClass(
+          .setOperation(["a"], .init(faking: .intersection), ["b"]))
+      ))
 
     // MARK: Quotes
 
@@ -2205,6 +2231,9 @@ extension RegexTests {
     diagnosticTest(")))", .unbalancedEndOfGroup)
     diagnosticTest("())()", .unbalancedEndOfGroup)
 
+    diagnosticTest("[", .expectedCustomCharacterClassMembers)
+    diagnosticTest("[^", .expectedCustomCharacterClassMembers)
+
     diagnosticTest(#"\u{5"#, .expected("}"))
     diagnosticTest(#"\x{5"#, .expected("}"))
     diagnosticTest(#"\N{A"#, .expected("}"))
@@ -2245,9 +2274,21 @@ extension RegexTests {
     diagnosticTest("(?<a-b", .expected(">"))
     diagnosticTest("(?<a-b>", .expected(")"))
 
-    // The first ']' of a custom character class is literal, so this is missing
-    // the closing bracket.
+    // MARK: Character classes
+
+    diagnosticTest("[a", .expected("]"))
+
+    // The first ']' of a custom character class is literal, so these are
+    // missing the closing bracket.
     diagnosticTest("[]", .expected("]"))
+    diagnosticTest("(?x)[  ]", .expected("]"))
+
+    diagnosticTest("[&&]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("[a&&]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("[&&a]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[ && ]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[ &&a]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[a&& ]", .expectedCustomCharacterClassMembers)
 
     diagnosticTest("[:a", .expected("]"))
     diagnosticTest("[:a:", .expected("]"))
