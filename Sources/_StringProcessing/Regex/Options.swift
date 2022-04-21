@@ -79,7 +79,7 @@ extension RegexComponent {
   /// the `(?-U)` or `(?U)` option in regex syntax, respectively.
   ///
   /// - Parameter behavior: The default behavior to use for quantifiers.
-  public func quantificationBehavior(_ behavior: RegexQuantificationBehavior) -> Regex<RegexOutput> {
+  public func repetitionBehavior(_ behavior: RegexRepetitionBehavior) -> Regex<RegexOutput> {
     if behavior == .possessive {
       return wrapInOption(.possessiveByDefault, addingIf: true)
     } else {
@@ -191,7 +191,7 @@ public struct RegexWordBoundaryKind: Hashable {
 
 /// Specifies how much to attempt to match when using a quantifier.
 @available(SwiftStdlib 5.7, *)
-public struct RegexQuantificationBehavior: Hashable {
+public struct RegexRepetitionBehavior: Hashable {
   internal enum Kind {
     case eager
     case reluctant
@@ -210,7 +210,7 @@ public struct RegexQuantificationBehavior: Hashable {
 }
 
 @available(SwiftStdlib 5.7, *)
-extension RegexQuantificationBehavior {
+extension RegexRepetitionBehavior {
   /// Match as much of the input string as possible, backtracking when
   /// necessary.
   public static var eager: Self {

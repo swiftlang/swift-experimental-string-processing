@@ -293,14 +293,14 @@ class RegexDSLTests: XCTestCase {
         Capture {
           // Reluctant behavior due to option
           OneOrMore(.anyOf("abcd"))
-            .quantificationBehavior(.reluctant)
+            .repetitionBehavior(.reluctant)
         }
         ZeroOrMore("a"..."z")
         
         Capture {
           // Eager behavior due to explicit parameter, despite option
           OneOrMore(.digit, .eager)
-            .quantificationBehavior(.reluctant)
+            .repetitionBehavior(.reluctant)
         }
         ZeroOrMore(.digit)
       }
@@ -345,7 +345,7 @@ class RegexDSLTests: XCTestCase {
     {
       OneOrMore(.reluctant) {
         .word
-      }.quantificationBehavior(.possessive)
+      }.repetitionBehavior(.possessive)
       Capture(.digit)
       ZeroOrMore(.any)
     }
@@ -358,7 +358,7 @@ class RegexDSLTests: XCTestCase {
         OneOrMore(.word)
         Capture(.digit)
         ZeroOrMore(.any)
-      }.quantificationBehavior(.reluctant)
+      }.repetitionBehavior(.reluctant)
     }
     // Default set to reluctant applies to regex syntax
     try _testDSLCaptures(
@@ -366,7 +366,7 @@ class RegexDSLTests: XCTestCase {
       matchType: (Substring, Substring).self, ==)
     {
       try! Regex(#"\w+(\d).*"#, as: (Substring, Substring).self)
-        .quantificationBehavior(.reluctant)
+        .repetitionBehavior(.reluctant)
     }
     
     // Explicitly possessive
@@ -387,7 +387,7 @@ class RegexDSLTests: XCTestCase {
       Regex {
         OneOrMore("a")
         "a"
-      }.quantificationBehavior(.possessive)
+      }.repetitionBehavior(.possessive)
     }
     // More specific default set to eager
     try _testDSLCaptures(
@@ -397,10 +397,10 @@ class RegexDSLTests: XCTestCase {
       Regex {
         Capture {
           OneOrMore("a")
-            .quantificationBehavior(.eager)
+            .repetitionBehavior(.eager)
         }
         OneOrMore("a")
-      }.quantificationBehavior(.possessive)
+      }.repetitionBehavior(.possessive)
     }
     // More specific default set to reluctant
     try _testDSLCaptures(
@@ -410,10 +410,10 @@ class RegexDSLTests: XCTestCase {
       Regex {
         Capture {
           OneOrMore("a")
-            .quantificationBehavior(.reluctant)
+            .repetitionBehavior(.reluctant)
         }
         OneOrMore("a")
-      }.quantificationBehavior(.possessive)
+      }.repetitionBehavior(.possessive)
     }
 
     try _testDSLCaptures(

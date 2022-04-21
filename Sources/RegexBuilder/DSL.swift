@@ -100,7 +100,7 @@ extension DSLTree.Node {
   @available(SwiftStdlib 5.7, *)
   static func repeating(
     _ range: Range<Int>,
-    _ behavior: RegexQuantificationBehavior?,
+    _ behavior: RegexRepetitionBehavior?,
     _ node: DSLTree.Node
   ) -> DSLTree.Node {
     // TODO: Throw these as errors

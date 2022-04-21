@@ -24,7 +24,7 @@ struct MatchingOptions {
     assert(stack.last!.intersection(.semanticMatchingLevels).rawValue.nonzeroBitCount == 1)
     
     // Must contain at most one quantifier behavior
-    assert(stack.last!.intersection(.quantificationBehaviors).rawValue.nonzeroBitCount <= 1)
+    assert(stack.last!.intersection(.repetitionBehaviors).rawValue.nonzeroBitCount <= 1)
   }
 }
 
@@ -237,8 +237,8 @@ extension MatchingOptions {
       if Self.textSegmentOptions.contains(opt.representation) {
         remove(.textSegmentOptions)
       }
-      if Self.quantificationBehaviors.contains(opt.representation) {
-        remove(.quantificationBehaviors)
+      if Self.repetitionBehaviors.contains(opt.representation) {
+        remove(.repetitionBehaviors)
       }
 
       insert(opt.representation)
@@ -262,8 +262,8 @@ extension MatchingOptions {
         guard let opt = Option(opt.kind) else {
           continue
         }
-        if Self.quantificationBehaviors.contains(opt.representation) {
-          remove(.quantificationBehaviors)
+        if Self.repetitionBehaviors.contains(opt.representation) {
+          remove(.repetitionBehaviors)
         }
         remove(opt.representation)
       }
@@ -303,7 +303,7 @@ extension MatchingOptions.Representation {
   static var reluctantByDefault: Self { .init(.reluctantByDefault) }
   static var possessiveByDefault: Self { .init(.possessiveByDefault) }
 
-  static var quantificationBehaviors: Self {
+  static var repetitionBehaviors: Self {
     [.reluctantByDefault, .possessiveByDefault]
   }
   
