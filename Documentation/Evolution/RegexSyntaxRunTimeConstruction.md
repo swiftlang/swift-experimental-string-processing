@@ -339,7 +339,7 @@ UnicodeScalar -> '\u{' HexDigit{1...} '}'
                | '\o{' OctalDigit{1...} '}'
                | '\0' OctalDigit{0...3}
 
-HexDigit   -> [0-9a-zA-Z]
+HexDigit   -> [0-9a-fA-F]
 OctalDigit -> [0-7]
 
 NamedScalar -> '\N{' ScalarName '}'
