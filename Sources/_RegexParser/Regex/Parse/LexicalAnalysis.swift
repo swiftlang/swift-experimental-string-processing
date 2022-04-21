@@ -21,6 +21,16 @@ API convention:
 - eat() and tryEat() is still used by the parser as a character-by-character interface
 */
 
+extension Error {
+  func addingLocation(_ loc: Range<Source.Position>) -> Error {
+    // If we're already a LocatedError, don't change the location.
+    if self is _LocatedErrorProtocol {
+      return self
+    }
+    return Source.LocatedError<Self>(self, loc)
+  }
+}
+
 extension Source {
   // MARK: - recordLoc
 
@@ -51,12 +61,8 @@ extension Source {
     do {
       guard let result = try f(&self) else { return nil }
       return Located(result, start..<currentPosition)
-    } catch let e as Source.LocatedError<ParseError> {
-      throw e
-    } catch let e as ParseError {
-      throw LocatedError(e, start..<currentPosition)
-    } catch {
-      fatalError("FIXME: Let's not keep the boxed existential...")
+    } catch let e {
+      throw e.addingLocation(start..<currentPosition)
     }
   }
 
@@ -1840,6 +1846,9 @@ extension Source {
           return .char(char)
         }
         throw Unreachable("TODO: reason")
+
+      case "(" where !customCC:
+        throw Unreachable("Should have lexed a group or group-like atom")
 
       // (sometimes) special metacharacters
       case ".": return customCC ? .char(".") : .any
