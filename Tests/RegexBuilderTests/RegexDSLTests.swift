@@ -360,7 +360,7 @@ class RegexDSLTests: XCTestCase {
       ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
     {
-      try! Regex(compiling: #"\w+(\d).*"#, as: (Substring, Substring).self)
+      try! Regex(#"\w+(\d).*"#, as: (Substring, Substring).self)
         .quantificationBehavior(.reluctant)
     }
     try _testDSLCaptures(
