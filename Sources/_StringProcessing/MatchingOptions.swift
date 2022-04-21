@@ -22,6 +22,9 @@ struct MatchingOptions {
     // Must contain exactly one of each mutually exclusive group
     assert(stack.last!.intersection(.textSegmentOptions).rawValue.nonzeroBitCount == 1)
     assert(stack.last!.intersection(.semanticMatchingLevels).rawValue.nonzeroBitCount == 1)
+    
+    // Must contain at most one quantifier behavior
+    assert(stack.last!.intersection(.quantificationBehaviors).rawValue.nonzeroBitCount <= 1)
   }
 }
 
@@ -258,6 +261,9 @@ extension MatchingOptions {
       for opt in sequence.removing {
         guard let opt = Option(opt.kind) else {
           continue
+        }
+        if Self.quantificationBehaviors.contains(opt.representation) {
+          remove(.quantificationBehaviors)
         }
         remove(opt.representation)
       }

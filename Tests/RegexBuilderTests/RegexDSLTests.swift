@@ -319,6 +319,7 @@ class RegexDSLTests: XCTestCase {
   }
   
   func testQuantificationBehavior() throws {
+    // Eager by default
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "2")),
       matchType: (Substring, Substring).self, ==)
@@ -328,6 +329,7 @@ class RegexDSLTests: XCTestCase {
       ZeroOrMore(.any)
     }
 
+    // Explicitly reluctant
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
@@ -336,6 +338,7 @@ class RegexDSLTests: XCTestCase {
       Capture(.digit)
       ZeroOrMore(.any)
     }
+    // Explicitly reluctant overrides default option
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
@@ -346,6 +349,7 @@ class RegexDSLTests: XCTestCase {
       Capture(.digit)
       ZeroOrMore(.any)
     }
+    // Default set to reluctant
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
@@ -356,6 +360,7 @@ class RegexDSLTests: XCTestCase {
         ZeroOrMore(.any)
       }.quantificationBehavior(.reluctant)
     }
+    // Default set to reluctant applies to regex syntax
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
@@ -363,22 +368,51 @@ class RegexDSLTests: XCTestCase {
       try! Regex(#"\w+(\d).*"#, as: (Substring, Substring).self)
         .quantificationBehavior(.reluctant)
     }
+    
+    // Explicitly possessive
     try _testDSLCaptures(
       ("aaaa", nil),
-      matchType: (Substring, Substring).self, ==)
+      matchType: Substring.self, ==)
     {
       Regex {
         OneOrMore("a", .possessive)
         "a"
       }
     }
+    // Default set to possessive
     try _testDSLCaptures(
       ("aaaa", nil),
-      matchType: (Substring, Substring).self, ==)
+      matchType: Substring.self, ==)
     {
       Regex {
         OneOrMore("a")
         "a"
+      }.quantificationBehavior(.possessive)
+    }
+    // More specific default set to eager
+    try _testDSLCaptures(
+      ("aaaa", ("aaaa", "aaa")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      Regex {
+        Capture {
+          OneOrMore("a")
+            .quantificationBehavior(.eager)
+        }
+        OneOrMore("a")
+      }.quantificationBehavior(.possessive)
+    }
+    // More specific default set to reluctant
+    try _testDSLCaptures(
+      ("aaaa", ("aaaa", "a")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      Regex {
+        Capture {
+          OneOrMore("a")
+            .quantificationBehavior(.reluctant)
+        }
+        OneOrMore("a")
       }.quantificationBehavior(.possessive)
     }
 
