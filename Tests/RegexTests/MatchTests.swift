@@ -281,6 +281,15 @@ extension RegexTests {
     // code point sequence
     firstMatchTest(#"\u{61 62 63}"#, input: "123abcxyz", match: "abc", xfail: true)
 
+    // Escape sequences that represent scalar values.
+    firstMatchTest(#"\a[\b]\e\f\n\r\t"#,
+                   input: "\u{7}\u{8}\u{1B}\u{C}\n\r\t",
+                   match: "\u{7}\u{8}\u{1B}\u{C}\n\r\t")
+    firstMatchTest(#"[\a][\b][\e][\f][\n][\r][\t]"#,
+                   input: "\u{7}\u{8}\u{1B}\u{C}\n\r\t",
+                   match: "\u{7}\u{8}\u{1B}\u{C}\n\r\t")
+
+    firstMatchTest(#"\r\n"#, input: "\r\n", match: "\r\n")
 
     // MARK: Quotes
 
@@ -596,24 +605,20 @@ extension RegexTests {
 
     func scalar(_ u: UnicodeScalar) -> UInt32 { u.value }
 
-    // Currently not supported in the matching engine.
     for s in scalar("\u{C}") ... scalar("\u{1B}") {
       let u = UnicodeScalar(s)!
-      firstMatchTest(#"[\f-\e]"#, input: "\u{B}\u{1C}\(u)", match: "\(u)",
-                     xfail: true)
+      firstMatchTest(#"[\f-\e]"#, input: "\u{B}\u{1C}\(u)", match: "\(u)")
     }
     for u: UnicodeScalar in ["\u{7}", "\u{8}"] {
-      firstMatchTest(#"[\a-\b]"#, input: "\u{6}\u{9}\(u)", match: "\(u)",
-                     xfail: true)
+      firstMatchTest(#"[\a-\b]"#, input: "\u{6}\u{9}\(u)", match: "\(u)")
     }
     for s in scalar("\u{A}") ... scalar("\u{D}") {
       let u = UnicodeScalar(s)!
-      firstMatchTest(#"[\n-\r]"#, input: "\u{9}\u{E}\(u)", match: "\(u)",
-                     xfail: true)
+      firstMatchTest(#"[\n-\r]"#, input: "\u{9}\u{E}\(u)", match: "\(u)")
     }
-    firstMatchTest(#"[\t-\t]"#, input: "\u{8}\u{A}\u{9}", match: "\u{9}",
-                   xfail: true)
+    firstMatchTest(#"[\t-\t]"#, input: "\u{8}\u{A}\u{9}", match: "\u{9}")
 
+    // Currently not supported in the matching engine.
     for c: UnicodeScalar in ["a", "b", "c"] {
       firstMatchTest(#"[\c!-\C-#]"#, input: "def\(c)", match: "\(c)",
                      xfail: true)
@@ -1203,6 +1208,19 @@ extension RegexTests {
       ("CaFe", true),
       ("EfAc", true))
   }
+
+  func testNonSemanticWhitespace() {
+    firstMatchTest(#" \t "#, input: " \t ", match: " \t ")
+    firstMatchTest(#"(?xx) \t "#, input: " \t ", match: "\t")
+
+    firstMatchTest(#"[ \t]+"#, input: " \t ", match: " \t ")
+    firstMatchTest(#"(?xx)[ \t]+"#, input: " \t ", match: "\t")
+    firstMatchTest(#"(?xx)[ \t]+"#, input: " \t\t ", match: "\t\t")
+    firstMatchTest(#"(?xx)[ \t]+"#, input: " \t \t", match: "\t")
+
+    firstMatchTest("(?xx)[ a && ab ]+", input: " aaba ", match: "aa")
+    firstMatchTest("(?xx)[ ] a ]+", input: " a]]a ] ", match: "a]]a")
+  }
   
   func testASCIIClasses() {
     // 'D' ASCII-only digits
@@ -1301,6 +1319,17 @@ extension RegexTests {
     firstMatchTest(#"(((?s)a)).b"#, input: "a\nb", match: nil)
     firstMatchTest(#"(?s)(((?-s)a)).b"#, input: "a\nb", match: "a\nb")
     firstMatchTest(#"(?s)((?-s)((?i)a)).b"#, input: "a\nb", match: "a\nb")
+
+    // Matching option changing persists across alternations.
+    firstMatchTest(#"a(?s)b|c|.d"#, input: "abc", match: "ab")
+    firstMatchTest(#"a(?s)b|c|.d"#, input: "c", match: "c")
+    firstMatchTest(#"a(?s)b|c|.d"#, input: "a\nd", match: "\nd")
+    firstMatchTest(#"a(?s)(?^)b|c|.d"#, input: "a\nd", match: nil)
+    firstMatchTest(#"a(?s)b|.c(?-s)|.d"#, input: "a\nd", match: nil)
+    firstMatchTest(#"a(?s)b|.c(?-s)|.d"#, input: "a\nc", match: "\nc")
+    firstMatchTest(#"a(?s)b|c(?-s)|(?^s).d"#, input: "a\nd", match: "\nd")
+    firstMatchTest(#"a(?:(?s).b)|.c|.d"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"a(?:(?s).b)|.c"#, input: "a\nc", match: nil)
   }
   
   func testOptionMethods() throws {

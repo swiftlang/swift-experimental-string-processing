@@ -137,6 +137,8 @@ extension PrettyPrinter {
         print("/* TOOD: backreferences */")
       case .symbolicReference:
         print("/* TOOD: symbolic references */")
+      case .changeMatchingOptions:
+        print("/* TODO: change matching options */")
       }
 
     case .trivia:
@@ -320,6 +322,9 @@ extension AST.Atom {
 
     case .backtrackingDirective:
       return " /* TODO: backtracking directive */"
+
+    case .changeMatchingOptions:
+      return "/* TODO: change matching options */"
     }
   }
 }

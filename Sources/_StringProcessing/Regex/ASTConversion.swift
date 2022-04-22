@@ -206,10 +206,14 @@ extension AST.Atom {
     }
 
     switch self.kind {
-    case let .char(c):          return .char(c)
-    case let .scalar(s):        return .scalar(s)
-    case .any:                  return .any
-    case let .backreference(r): return .backreference(r)
+    case let .char(c):                    return .char(c)
+    case let .scalar(s):                  return .scalar(s)
+    case .any:                            return .any
+    case let .backreference(r):           return .backreference(r)
+    case let .changeMatchingOptions(seq): return .changeMatchingOptions(seq)
+
+    case .escaped(let c) where c.scalarValue != nil:
+      return .scalar(c.scalarValue!)
 
     default: return .unconverted(self)
     }

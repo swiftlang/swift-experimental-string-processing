@@ -68,9 +68,7 @@ extension AST {
       case atomicScriptRun
 
       // (?iJmnsUxxxDPSWy{..}-iJmnsUxxxDPSW:)
-      // Isolated options are written as e.g (?i), and implicitly form a group
-      // containing all the following elements of the current group.
-      case changeMatchingOptions(MatchingOptionSequence, isIsolated: Bool)
+      case changeMatchingOptions(MatchingOptionSequence)
 
       // NOTE: Comments appear to be groups, but are not parsed
       // the same. They parse more like quotes, so are not
@@ -84,21 +82,6 @@ extension AST.Group.Kind {
     switch self {
     case .capture, .namedCapture, .balancedCapture: return true
     default: return false
-    }
-  }
-
-  /// Whether this is a group with an implicit scope, e.g isolated matching
-  /// options implicitly become parent groups for the rest of the elements in
-  /// the current group:
-  ///
-  ///      (a(?i)bc)de -> (a(?i:bc))de
-  ///
-  public var hasImplicitScope: Bool {
-    switch self {
-    case .changeMatchingOptions(_, let isIsolated):
-      return isIsolated
-    default:
-      return false
     }
   }
 

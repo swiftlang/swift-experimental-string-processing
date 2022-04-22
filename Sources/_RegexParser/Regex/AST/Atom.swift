@@ -72,6 +72,9 @@ extension AST {
 
       // (*ACCEPT), (*FAIL), ...
       case backtrackingDirective(BacktrackingDirective)
+
+      // (?i), (?i-m), ...
+      case changeMatchingOptions(MatchingOptionSequence)
     }
   }
 }
@@ -91,6 +94,7 @@ extension AST.Atom {
     case .subpattern(let v):            return v
     case .callout(let v):               return v
     case .backtrackingDirective(let v): return v
+    case .changeMatchingOptions(let v): return v
     case .any:                          return nil
     case .startOfLine:                  return nil
     case .endOfLine:                    return nil
@@ -397,9 +401,6 @@ extension AST.Atom.CharacterProperty {
     /// Some special properties implemented by PCRE and Oniguruma.
     case pcreSpecial(PCRESpecialCategory)
     case onigurumaSpecial(OnigurumaSpecialProperty)
-
-    /// Unhandled properties.
-    case other(key: String?, value: String)
   }
 
   // TODO: erm, separate out or fold into something? splat it in?
@@ -631,6 +632,41 @@ extension AST.Atom {
   }
 }
 
+extension AST.Atom.EscapedBuiltin {
+  /// If the escape sequence represents a unicode scalar value, returns the
+  /// value, otherwise `nil`.
+  public var scalarValue: UnicodeScalar? {
+    switch self {
+    // TODO: Should we separate these into a separate enum? Or move the
+    // specifics of the scalar to the DSL tree?
+    case .alarm:
+      return "\u{7}"
+    case .backspace:
+      return "\u{8}"
+    case .escape:
+      return "\u{1B}"
+    case .formfeed:
+      return "\u{C}"
+    case .newline:
+      return "\n"
+    case .carriageReturn:
+      return "\r"
+    case .tab:
+      return "\t"
+
+    case .singleDataUnit, .decimalDigit, .notDecimalDigit,
+        .horizontalWhitespace, .notHorizontalWhitespace, .notNewline,
+        .newlineSequence, .whitespace, .notWhitespace, .verticalTab,
+        .notVerticalTab, .wordCharacter, .notWordCharacter, .graphemeCluster,
+        .wordBoundary, .notWordBoundary, .startOfSubject,
+        .endOfSubjectBeforeNewline, .endOfSubject,
+        .firstMatchingPositionInSubject, .resetStartOfMatch, .trueAnychar,
+        .textSegment, .notTextSegment:
+      return nil
+    }
+  }
+}
+
 extension AST.Atom {
   /// Retrieve the character value of the atom if it represents a literal
   /// character or unicode scalar, nil otherwise.
@@ -642,34 +678,7 @@ extension AST.Atom {
       return Character(s)
 
     case .escaped(let c):
-      switch c {
-      // TODO: Should we separate these into a separate enum? Or move the
-      // specifics of the scalar to the DSL tree?
-      case .alarm:
-        return "\u{7}"
-      case .backspace:
-        return "\u{8}"
-      case .escape:
-        return "\u{1B}"
-      case .formfeed:
-        return "\u{C}"
-      case .newline:
-        return "\n"
-      case .carriageReturn:
-        return "\r"
-      case .tab:
-        return "\t"
-
-      case .singleDataUnit, .decimalDigit, .notDecimalDigit,
-          .horizontalWhitespace, .notHorizontalWhitespace, .notNewline,
-          .newlineSequence, .whitespace, .notWhitespace, .verticalTab,
-          .notVerticalTab, .wordCharacter, .notWordCharacter, .graphemeCluster,
-          .wordBoundary, .notWordBoundary, .startOfSubject,
-          .endOfSubjectBeforeNewline, .endOfSubject,
-          .firstMatchingPositionInSubject, .resetStartOfMatch, .trueAnychar,
-          .textSegment, .notTextSegment:
-        return nil
-      }
+      return c.scalarValue.map(Character.init)
 
     case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
       // TODO: These should have unicode scalar values.
@@ -683,7 +692,7 @@ extension AST.Atom {
       return nil
 
     case .property, .any, .startOfLine, .endOfLine, .backreference, .subpattern,
-        .callout, .backtrackingDirective:
+        .callout, .backtrackingDirective, .changeMatchingOptions:
       return nil
     }
   }
@@ -723,7 +732,7 @@ extension AST.Atom {
 
     case .property, .escaped, .any, .startOfLine, .endOfLine,
         .backreference, .subpattern, .namedCharacter, .callout,
-        .backtrackingDirective:
+        .backtrackingDirective, .changeMatchingOptions:
       return nil
     }
   }
@@ -732,6 +741,8 @@ extension AST.Atom {
     switch kind {
     case .backtrackingDirective(let b):
       return b.isQuantifiable
+    case .changeMatchingOptions:
+      return false
     // TODO: Are callouts quantifiable?
     default:
       return true

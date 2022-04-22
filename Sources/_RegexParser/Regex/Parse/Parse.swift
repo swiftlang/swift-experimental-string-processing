@@ -282,42 +282,53 @@ extension Parser {
       loc(start)))
   }
 
+  /// Apply the syntax options of a given matching option sequence to the
+  /// current set of options.
+  private mutating func applySyntaxOptions(
+    of opts: AST.MatchingOptionSequence
+  ) {
+    // We skip this for multi-line, as extended syntax is always enabled there.
+    if context.syntax.contains(.multilineExtendedSyntax) { return }
+
+    // Check if we're introducing or removing extended syntax.
+    // TODO: PCRE differentiates between (?x) and (?xx) where only the latter
+    // handles non-semantic whitespace in a custom character class. Other
+    // engines such as Oniguruma, Java, and ICU do this under (?x). Therefore,
+    // treat (?x) and (?xx) as the same option here. If we ever get a strict
+    // PCRE mode, we will need to change this to handle that.
+    if opts.resetsCurrentOptions {
+      context.syntax.remove(.extendedSyntax)
+    }
+    if opts.adding.contains(where: \.isAnyExtended) {
+      context.syntax.insert(.extendedSyntax)
+    }
+    if opts.removing.contains(where: \.isAnyExtended) {
+      context.syntax.remove(.extendedSyntax)
+    }
+  }
+
+  /// Apply the syntax options of a matching option changing group to the
+  /// current set of options.
+  private mutating func applySyntaxOptions(of group: AST.Group.Kind) {
+    if case .changeMatchingOptions(let seq) = group {
+      applySyntaxOptions(of: seq)
+    }
+  }
+
   /// Perform a recursive parse for the body of a group.
   mutating func parseGroupBody(
     start: Source.Position, _ kind: AST.Located<AST.Group.Kind>
   ) throws -> AST.Group {
     context.recordGroup(kind.value)
 
-    // Check if we're introducing or removing extended syntax. We skip this for
-    // multi-line, as extended syntax is always enabled there.
-    // TODO: PCRE differentiates between (?x) and (?xx) where only the latter
-    // handles non-semantic whitespace in a custom character class. Other
-    // engines such as Oniguruma, Java, and ICU do this under (?x). Therefore,
-    // treat (?x) and (?xx) as the same option here. If we ever get a strict
-    // PCRE mode, we will need to change this to handle that.
     let currentSyntax = context.syntax
-    if !context.syntax.contains(.multilineExtendedSyntax) {
-      if case .changeMatchingOptions(let c, isIsolated: _) = kind.value {
-        if c.resetsCurrentOptions {
-          context.syntax.remove(.extendedSyntax)
-        }
-        if c.adding.contains(where: \.isAnyExtended) {
-          context.syntax.insert(.extendedSyntax)
-        }
-        if c.removing.contains(where: \.isAnyExtended) {
-          context.syntax.remove(.extendedSyntax)
-        }
-      }
-    }
+    applySyntaxOptions(of: kind.value)
     defer {
       context.syntax = currentSyntax
     }
 
     let child = try parseNode()
-    // An implicit scoped group has already consumed its closing paren.
-    if !kind.value.hasImplicitScope {
-      try source.expect(")")
-    }
+    try source.expect(")")
     return .init(kind, child, loc(start))
   }
 
@@ -409,6 +420,11 @@ extension Parser {
     }
 
     if let atom = try source.lexAtom(context: context) {
+      // If we have a change matching options atom, apply the syntax options. We
+      // already take care of scoping syntax options within a group.
+      if case .changeMatchingOptions(let opts) = atom.kind {
+        applySyntaxOptions(of: opts)
+      }
       // TODO: track source locations
       return .atom(atom)
     }
@@ -438,16 +454,18 @@ extension Parser {
     defer { context.isInCustomCharacterClass = alreadyInCCC }
 
     typealias Member = CustomCC.Member
-    try source.expectNonEmpty()
-
     var members: Array<Member> = []
-
-    // We can eat an initial ']', as PCRE, Oniguruma, and ICU forbid empty
-    // character classes, and assume an initial ']' is literal.
-    if let loc = source.tryEatWithLoc("]") {
-      members.append(.atom(.init(.char("]"), loc)))
-    }
     try parseCCCMembers(into: &members)
+
+    // If we didn't parse any semantic members, we can eat a ']' character, as
+    // PCRE, Oniguruma, and ICU forbid empty character classes, and assume an
+    // initial ']' is literal.
+    if members.none(\.isSemantic) {
+      if let loc = source.tryEatWithLoc("]") {
+        members.append(.atom(.init(.char("]"), loc)))
+        try parseCCCMembers(into: &members)
+      }
+    }
 
     // If we have a binary set operator, parse it and the next members. Note
     // that this means we left associate for a chain of operators.
@@ -458,8 +476,9 @@ extension Parser {
       var rhs: Array<Member> = []
       try parseCCCMembers(into: &rhs)
 
-      if members.isEmpty || rhs.isEmpty {
-        throw ParseError.expectedCustomCharacterClassMembers
+      if members.none(\.isSemantic) || rhs.none(\.isSemantic) {
+        throw Source.LocatedError(
+          ParseError.expectedCustomCharacterClassMembers, start.location)
       }
 
       // If we're done, bail early
@@ -472,8 +491,9 @@ extension Parser {
       // Otherwise it's just another member to accumulate
       members = [setOp]
     }
-    if members.isEmpty {
-      throw ParseError.expectedCustomCharacterClassMembers
+    if members.none(\.isSemantic) {
+      throw Source.LocatedError(
+        ParseError.expectedCustomCharacterClassMembers, start.location)
     }
     try source.expect("]")
     return CustomCC(start, members, loc(start.location.start))
@@ -484,7 +504,8 @@ extension Parser {
   ) throws {
     // Parse members until we see the end of the custom char class or an
     // operator.
-    while source.peek() != "]" && source.peekCCBinOp() == nil {
+    while !source.isEmpty && source.peek() != "]" &&
+          source.peekCCBinOp() == nil {
 
       // Nested custom character class.
       if let cccStart = try source.lexCustomCCStart() {

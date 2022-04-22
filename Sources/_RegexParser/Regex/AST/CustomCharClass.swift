@@ -97,6 +97,10 @@ extension CustomCC.Member {
     if case .trivia = self { return true }
     return false
   }
+
+  public var isSemantic: Bool {
+    !isTrivia
+  }
 }
 
 extension AST.CustomCharacterClass {
@@ -104,7 +108,7 @@ extension AST.CustomCharacterClass {
   /// nested custom character classes.
   public var strippingTriviaShallow: Self {
     var copy = self
-    copy.members = copy.members.filter { !$0.isTrivia }
+    copy.members = copy.members.filter(\.isSemantic)
     return copy
   }
 }
