@@ -14,13 +14,13 @@ import _StringProcessing
 @testable import RegexBuilder
 
 // A nibbler processes a single character from a string
-private protocol Nibbler: CustomMatchingRegexComponent {
+private protocol Nibbler: CustomPrefixMatchRegexComponent {
   func nibble(_: Character) -> RegexOutput?
 }
 
 extension Nibbler {
   // Default implementation, just feed the character in
-  func match(
+  func consuming(
     _ input: String,
     startingAt index: String.Index,
     in bounds: Range<String.Index>
@@ -49,10 +49,10 @@ private struct Asciibbler: Nibbler {
   }
 }
 
-private struct IntParser: CustomMatchingRegexComponent {
+private struct IntParser: CustomPrefixMatchRegexComponent {
   struct ParseError: Error, Hashable {}
   typealias RegexOutput = Int
-  func match(_ input: String,
+  func consuming(_ input: String,
     startingAt index: String.Index,
     in bounds: Range<String.Index>
   ) throws -> (upperBound: String.Index, output: Int)? {
@@ -71,7 +71,7 @@ private struct IntParser: CustomMatchingRegexComponent {
   }
 }
 
-private struct CurrencyParser: CustomMatchingRegexComponent {
+private struct CurrencyParser: CustomPrefixMatchRegexComponent {
   enum Currency: String, Hashable {
     case usd = "USD"
     case ntd = "NTD"
@@ -84,7 +84,7 @@ private struct CurrencyParser: CustomMatchingRegexComponent {
   }
 
   typealias RegexOutput = Currency
-  func match(_ input: String,
+  func consuming(_ input: String,
              startingAt index: String.Index,
              in bounds: Range<String.Index>
   ) throws -> (upperBound: String.Index, output: Currency)? {
