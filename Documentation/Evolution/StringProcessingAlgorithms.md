@@ -588,7 +588,7 @@ extension Collection where Element: Equatable {
     /// - Returns: A collection of subsequences, split from this collection's
     ///   elements.
     public func split<C: Collection>(
-        by separator: C,
+        separator: C,
         maxSplits: Int = Int.max,
         omittingEmptySubsequences: Bool = true
     ) -> some Collection<SubSequence> where C.Element == Element
@@ -609,7 +609,7 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Returns: A collection of substrings, split from this collection's
     ///   elements.
     public func split(
-        by separator: some RegexComponent,
+        separator: some RegexComponent,
         maxSplits: Int = Int.max,
         omittingEmptySubsequences: Bool = true
     ) -> some Collection<Substring>
