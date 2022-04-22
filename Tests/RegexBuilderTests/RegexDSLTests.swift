@@ -850,7 +850,7 @@ class RegexDSLTests: XCTestCase {
       var patch: Int
       var dev: String?
     }
-    struct SemanticVersionParser: CustomPrefixMatchRegexComponent {
+    struct SemanticVersionParser: CustomConsumingRegexComponent {
       typealias RegexOutput = SemanticVersion
       func consuming(
         _ input: String,
