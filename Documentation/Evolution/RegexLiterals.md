@@ -12,7 +12,7 @@ In *[Regex Type and Overview][regex-type]* we introduced the `Regex` type, which
 
 ```swift
 let pattern = #"(\w+)\s\s+(\S+)\s\s+((?:(?!\s\s).)*)\s\s+(.*)"#
-let regex = try! Regex(compiling: pattern)
+let regex = try! Regex(pattern)
 // regex: Regex<AnyRegexOutput>
 ```
 
@@ -366,7 +366,7 @@ However we decided against this because:
 
 ### No custom literal
 
-Instead of adding a custom regex literal, we could require users to explicitly write `try! Regex(compiling: "[abc]+")`. This would be similar to `NSRegularExpression`, and loses all the benefits of parsing the literal at compile time. This would mean:
+Instead of adding a custom regex literal, we could require users to explicitly write `try! Regex("[abc]+")`. This would be similar to `NSRegularExpression`, and loses all the benefits of parsing the literal at compile time. This would mean:
 
 - No source tooling support (e.g syntax highlighting, refactoring actions) would be available.
 - Parse errors would be diagnosed at run time rather than at compile time.

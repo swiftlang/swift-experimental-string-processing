@@ -9,44 +9,41 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
+@available(SwiftStdlib 5.7, *)
 extension RegexComponent {
   /// Returns a regular expression that ignores casing when matching.
-  public func ignoringCase(_ ignoreCase: Bool = true) -> Regex<Output> {
-    wrapInOption(.caseInsensitive, addingIf: ignoreCase)
+  public func ignoresCase(_ ignoresCase: Bool = true) -> Regex<RegexOutput> {
+    wrapInOption(.caseInsensitive, addingIf: ignoresCase)
   }
 
   /// Returns a regular expression that only matches ASCII characters as "word
   /// characters".
-  public func usingASCIIWordCharacters(_ useASCII: Bool = true) -> Regex<Output> {
-    wrapInOption(.asciiOnlyDigit, addingIf: useASCII)
+  public func asciiOnlyWordCharacters(_ useASCII: Bool = true) -> Regex<RegexOutput> {
+    wrapInOption(.asciiOnlyWord, addingIf: useASCII)
   }
 
   /// Returns a regular expression that only matches ASCII characters as digits.
-  public func usingASCIIDigits(_ useASCII: Bool = true) -> Regex<Output> {
+  public func asciiOnlyDigits(_ useASCII: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.asciiOnlyDigit, addingIf: useASCII)
   }
 
   /// Returns a regular expression that only matches ASCII characters as space
   /// characters.
-  public func usingASCIISpaces(_ useASCII: Bool = true) -> Regex<Output> {
+  public func asciiOnlyWhitespace(_ useASCII: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.asciiOnlySpace, addingIf: useASCII)
   }
 
   /// Returns a regular expression that only matches ASCII characters when
   /// matching character classes.
-  public func usingASCIICharacterClasses(_ useASCII: Bool = true) -> Regex<Output> {
+  public func asciiOnlyCharacterClasses(_ useASCII: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.asciiOnlyPOSIXProps, addingIf: useASCII)
   }
   
-  /// Returns a regular expression that uses the Unicode word boundary
-  /// algorithm.
-  ///
-  /// This option is enabled by default; pass `false` to disable use of
-  /// Unicode's word boundary algorithm.
-  public func usingUnicodeWordBoundaries(_ useUnicodeWordBoundaries: Bool = true) -> Regex<Output> {
-    wrapInOption(.unicodeWordBoundaries, addingIf: useUnicodeWordBoundaries)
+  /// Returns a regular expression that uses the specified word boundary algorithm.
+  public func wordBoundaryKind(_ wordBoundaryKind: RegexWordBoundaryKind) -> Regex<RegexOutput> {
+    wrapInOption(.unicodeWordBoundaries, addingIf: wordBoundaryKind == .unicodeLevel2)
   }
   
   /// Returns a regular expression where the start and end of input
@@ -54,10 +51,42 @@ extension RegexComponent {
   ///
   /// - Parameter dotMatchesNewlines: A Boolean value indicating whether `.`
   ///   should match a newline character.
-  public func dotMatchesNewlines(_ dotMatchesNewlines: Bool = true) -> Regex<Output> {
+  public func dotMatchesNewlines(_ dotMatchesNewlines: Bool = true) -> Regex<RegexOutput> {
     wrapInOption(.singleLine, addingIf: dotMatchesNewlines)
   }
   
+  /// Returns a regular expression where the start and end of input
+  /// anchors (`^` and `$`) also match against the start and end of a line.
+  ///
+  /// This method corresponds to applying the `m` option in regex syntax. For
+  /// this behavior in the `RegexBuilder` syntax, see
+  /// ``Anchor.startOfLine``, ``Anchor.endOfLine``, ``Anchor.startOfInput``,
+  /// and ``Anchor.endOfInput``.
+  ///
+  /// - Parameter matchLineEndings: A Boolean value indicating whether `^` and
+  ///   `$` should match the start and end of lines, respectively.
+  public func anchorsMatchLineEndings(_ matchLineEndings: Bool = true) -> Regex<RegexOutput> {
+    wrapInOption(.multiline, addingIf: matchLineEndings)
+  }
+  
+  /// Returns a regular expression where quantifiers use the specified behavior
+  /// by default.
+  ///
+  /// This setting does not affect calls to quantifier methods, such as
+  /// `OneOrMore`, that include an explicit `behavior` parameter.
+  ///
+  /// Passing `.eager` or `.reluctant` to this method corresponds to applying
+  /// the `(?-U)` or `(?U)` option in regex syntax, respectively.
+  ///
+  /// - Parameter behavior: The default behavior to use for quantifiers.
+  public func repetitionBehavior(_ behavior: RegexRepetitionBehavior) -> Regex<RegexOutput> {
+    if behavior == .possessive {
+      return wrapInOption(.possessiveByDefault, addingIf: true)
+    } else {
+      return wrapInOption(.reluctantByDefault, addingIf: behavior == .reluctant)
+    }
+  }
+
   /// Returns a regular expression that matches with the specified semantic
   /// level.
   ///
@@ -95,7 +124,7 @@ extension RegexComponent {
   ///     // Prints "true"
   ///     print(decomposed.contains(queRegexScalar))
   ///     // Prints "false"
-  public func matchingSemantics(_ semanticLevel: RegexSemanticLevel) -> Regex<Output> {
+  public func matchingSemantics(_ semanticLevel: RegexSemanticLevel) -> Regex<RegexOutput> {
     switch semanticLevel.base {
     case .graphemeCluster:
       return wrapInOption(.graphemeClusterSemantics, addingIf: true)
@@ -105,6 +134,8 @@ extension RegexComponent {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
+/// A semantic level to use during regex matching.
 public struct RegexSemanticLevel: Hashable {
   internal enum Representation {
     case graphemeCluster
@@ -126,49 +157,90 @@ public struct RegexSemanticLevel: Hashable {
   }
 }
 
-// Options that only affect literals
-extension RegexComponent {
-  /// Returns a regular expression where the start and end of input
-  /// anchors (`^` and `$`) also match against the start and end of a line.
-  ///
-  /// This method corresponds to applying the `m` option in a regular
-  /// expression literal, and only applies to regular expressions specified as
-  /// literals. For this behavior in the `RegexBuilder` syntax, see
-  /// ``Anchor.startOfLine``, ``Anchor.endOfLine``, ``Anchor.startOfInput``,
-  /// and ``Anchor.endOfInput``.
-  ///
-  /// - Parameter matchLineEndings: A Boolean value indicating whether `^` and
-  ///   `$` should match the start and end of lines, respectively.
-  public func anchorsMatchLineEndings(_ matchLineEndings: Bool = true) -> Regex<Output> {
-    wrapInOption(.multiline, addingIf: matchLineEndings)
+@available(SwiftStdlib 5.7, *)
+/// A word boundary algorithm to use during regex matching.
+public struct RegexWordBoundaryKind: Hashable {
+  internal enum Representation {
+    case unicodeLevel1
+    case unicodeLevel2
   }
   
-  /// Returns a regular expression where quantifiers are reluctant by default
-  /// instead of eager.
+  internal var base: Representation
+
+  /// A word boundary algorithm that implements the "simple word boundary"
+  /// Unicode recommendation.
   ///
-  /// This method corresponds to applying the `U` option in a regular
-  /// expression literal, and only applies to regular expressions specified as
-  /// literals. In the `RegexBuilder` syntax, pass a ``QuantificationBehavior``
-  /// value to any quantification method to change its behavior.
+  /// A simple word boundary is a position in the input between two characters
+  /// that match `/\w\W/` or `/\W\w/`, or between the start or end of the input
+  /// and a `\w` character. Word boundaries therefore depend on the option-
+  /// defined behavior of `\w`.
+  public static var unicodeLevel1: Self {
+    .init(base: .unicodeLevel1)
+  }
+
+  /// A word boundary algorithm that implements the "default word boundary"
+  /// Unicode recommendation.
   ///
-  /// - Parameter useReluctantCaptures: A Boolean value indicating whether
-  ///   quantifiers should be reluctant by default.
-  public func reluctantCaptures(_ useReluctantCaptures: Bool = true) -> Regex<Output> {
-    wrapInOption(.reluctantByDefault, addingIf: useReluctantCaptures)
+  /// Default word boundaries use a Unicode algorithm that handles some cases
+  /// better than simple word boundaries, such as words with internal
+  /// punctuation, changes in script, and Emoji.
+  public static var unicodeLevel2: Self {
+    .init(base: .unicodeLevel2)
+  }
+}
+
+/// Specifies how much to attempt to match when using a quantifier.
+@available(SwiftStdlib 5.7, *)
+public struct RegexRepetitionBehavior: Hashable {
+  internal enum Kind {
+    case eager
+    case reluctant
+    case possessive
+  }
+
+  var kind: Kind
+
+  @_spi(RegexBuilder) public var dslTreeKind: DSLTree._AST.QuantificationKind {
+    switch kind {
+    case .eager: return .eager
+    case .reluctant: return .reluctant
+    case .possessive: return .possessive
+    }
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexRepetitionBehavior {
+  /// Match as much of the input string as possible, backtracking when
+  /// necessary.
+  public static var eager: Self {
+    .init(kind: .eager)
+  }
+
+  /// Match as little of the input string as possible, expanding the matched
+  /// region as necessary to complete a match.
+  public static var reluctant: Self {
+    .init(kind: .reluctant)
+  }
+
+  /// Match as much of the input string as possible, performing no backtracking.
+  public static var possessive: Self {
+    .init(kind: .possessive)
   }
 }
 
 // MARK: - Helper method
+
+@available(SwiftStdlib 5.7, *)
 extension RegexComponent {
   fileprivate func wrapInOption(
     _ option: AST.MatchingOption.Kind,
-    addingIf shouldAdd: Bool) -> Regex<Output>
+    addingIf shouldAdd: Bool) -> Regex<RegexOutput>
   {
     let sequence = shouldAdd
       ? AST.MatchingOptionSequence(adding: [.init(option, location: .fake)])
       : AST.MatchingOptionSequence(removing: [.init(option, location: .fake)])
     return Regex(node: .nonCapturingGroup(
-      .changeMatchingOptions(sequence, isIsolated: false),
-      regex.root))
+      .init(ast: .changeMatchingOptions(sequence)), regex.root))
   }
 }

@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 /*
 
@@ -145,6 +145,7 @@ extension Processor._StoredCapture: CustomStringConvertible {
 struct CaptureList {
   var values: Array<Processor<String>._StoredCapture>
   var referencedCaptureOffsets: [ReferenceID: Int]
+  var namedCaptureOffsets: [String: Int]
 
 //  func extract(from s: String) -> Array<Array<Substring>> {
 //    caps.map { $0.map { s[$0] }  }

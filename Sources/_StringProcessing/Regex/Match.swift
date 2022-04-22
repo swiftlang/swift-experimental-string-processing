@@ -9,6 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   /// The result of matching a regex against a string.
   ///
@@ -25,10 +26,13 @@ extension Regex {
 
     let referencedCaptureOffsets: [ReferenceID: Int]
 
+    let namedCaptureOffsets: [String: Int]
+
     let value: Any?
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex.Match {
   /// The produced output from the match operation
   public var output: Output {
@@ -38,6 +42,7 @@ extension Regex.Match {
         storedCapture: StoredCapture(range: range, value: nil))
       let output = AnyRegexOutput(
         input: input,
+        namedCaptureOffsets: namedCaptureOffsets,
         elements: [wholeMatchAsCapture] + rawCaptures)
       return output as! Output
     } else if Output.self == Substring.self {
@@ -81,6 +86,7 @@ extension Regex.Match {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   /// Match a string in its entirety.
   ///
@@ -120,7 +126,7 @@ extension Regex {
   /// Find the first match in a substring
   ///
   /// Returns `nil` if no match is found and throws on abort
-  public func firstMatch(_ s: Substring) throws -> Regex<Output>.Match? {
+  public func firstMatch(in s: Substring) throws -> Regex<Output>.Match? {
     try _firstMatch(s.base, in: s.startIndex..<s.endIndex)
   }
 
@@ -152,27 +158,30 @@ extension Regex {
   }
 }
 
-extension String {
+@available(SwiftStdlib 5.7, *)
+extension BidirectionalCollection where SubSequence == Substring {
+  /// Match a regex in its entirety.
+  /// - Parameter r: The regex to match against.
+  /// - Returns: The match if there is one, or `nil` if none.
   public func wholeMatch<R: RegexComponent>(
     of r: R
-  ) -> Regex<R.Output>.Match? {
-    try? r.regex.wholeMatch(in: self)
+  ) -> Regex<R.RegexOutput>.Match? {
+    try? r.regex.wholeMatch(in: self[...].base)
   }
+
+  /// Match part of the regex, starting at the beginning.
+  /// - Parameter r: The regex to match against.
+  /// - Returns: The match if there is one, or `nil` if none.
   public func prefixMatch<R: RegexComponent>(
     of r: R
-  ) -> Regex<R.Output>.Match? {
-    try? r.regex.prefixMatch(in: self)
+  ) -> Regex<R.RegexOutput>.Match? {
+    try? r.regex.prefixMatch(in: self[...])
   }
 }
-extension Substring {
-  public func wholeMatch<R: RegexComponent>(
-    of r: R
-  ) -> Regex<R.Output>.Match? {
-    try? r.regex.wholeMatch(in: self)
-  }
-  public func prefixMatch<R: RegexComponent>(
-    of r: R
-  ) -> Regex<R.Output>.Match? {
-    try? r.regex.prefixMatch(in: self)
+
+@available(SwiftStdlib 5.7, *)
+extension Regex {
+  public init(quoting string: String) {
+    self.init(node: .quotedLiteral(string))
   }
 }

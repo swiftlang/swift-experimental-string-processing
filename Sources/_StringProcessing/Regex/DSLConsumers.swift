@@ -9,18 +9,21 @@
 //
 //===----------------------------------------------------------------------===//
 
-public protocol CustomRegexComponent: RegexComponent {
+@available(SwiftStdlib 5.7, *)
+public protocol CustomMatchingRegexComponent: RegexComponent {
   func match(
     _ input: String,
     startingAt index: String.Index,
     in bounds: Range<String.Index>
-  ) -> (upperBound: String.Index, output: Output)?
+  ) throws -> (upperBound: String.Index, output: RegexOutput)?
 }
 
-extension CustomRegexComponent {
-  public var regex: Regex<Output> {
-    Regex(node: .matcher(.init(Output.self), { input, index, bounds in
-      match(input, startingAt: index, in: bounds)
-    }))
+@available(SwiftStdlib 5.7, *)
+extension CustomMatchingRegexComponent {
+  public var regex: Regex<RegexOutput> {
+    let node: DSLTree.Node = .matcher(RegexOutput.self, { input, index, bounds in
+      try match(input, startingAt: index, in: bounds)
+    })
+    return Regex(node: node)
   }
 }

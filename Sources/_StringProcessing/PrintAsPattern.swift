@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 // TODO: Add an expansion level, both from top to bottom.
 //       After `printAsCanonical` is fleshed out, these two
@@ -17,6 +17,7 @@ import _RegexParser
 //       incremental conversion, such that leaves remain
 //       as canonical regex literals.
 
+@_spi(PatternConverter)
 extension AST {
   /// Render as a Pattern DSL
   @_spi(PatternConverter)
@@ -67,7 +68,7 @@ extension PrettyPrinter {
   private mutating func printAsPattern(
     convertedFromAST node: DSLTree.Node
   ) {
-    if patternBackoff(node) {
+    if patternBackoff(DSLTree._Tree(node)) {
       printBackoff(node)
       return
     }
@@ -89,7 +90,7 @@ extension PrettyPrinter {
       }
 
     case let .nonCapturingGroup(kind, child):
-      let kind = kind._patternBase
+      let kind = kind.ast._patternBase
       printBlock("Group(\(kind))") { printer in
         printer.printAsPattern(convertedFromAST: child)
       }
@@ -107,8 +108,8 @@ extension PrettyPrinter {
       print("/* TODO: conditional */")
 
     case let .quantification(amount, kind, child):
-      let amount = amount._patternBase
-      let kind = kind._patternBase
+      let amount = amount.ast._patternBase
+      let kind = (kind.ast ?? .eager)._patternBase
       printBlock("\(amount)(\(kind))") { printer in
         printer.printAsPattern(convertedFromAST: child)
       }
@@ -128,7 +129,7 @@ extension PrettyPrinter {
       case let .unconverted(a):
         // TODO: is this always right?
         // TODO: Convert built-in character classes
-        print(a._patternBase)
+        print(a.ast._patternBase)
 
       case .assertion:
         print("/* TODO: assertions */")
@@ -136,6 +137,8 @@ extension PrettyPrinter {
         print("/* TOOD: backreferences */")
       case .symbolicReference:
         print("/* TOOD: symbolic references */")
+      case .changeMatchingOptions:
+        print("/* TODO: change matching options */")
       }
 
     case .trivia:
@@ -319,6 +322,9 @@ extension AST.Atom {
 
     case .backtrackingDirective:
       return " /* TODO: backtracking directive */"
+
+    case .changeMatchingOptions:
+      return "/* TODO: change matching options */"
     }
   }
 }
@@ -389,5 +395,11 @@ extension AST.Quantification.Kind {
     case .reluctant: return ".reluctant"
     case .possessive: return ".possessive"
     }
+  }
+}
+
+extension DSLTree.QuantificationKind {
+  var _patternBase: String {
+    (ast ?? .eager)._patternBase
   }
 }

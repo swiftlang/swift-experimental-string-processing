@@ -77,6 +77,7 @@ extension RangeReplaceableCollection where Element: Equatable {
   ///   to replace. Default is `Int.max`.
   /// - Returns: A new collection in which all occurrences of `other` in
   /// `subrange` of the collection are replaced by `replacement`.
+  @available(SwiftStdlib 5.7, *)
   public func replacing<S: Sequence, Replacement: Collection>(
     _ other: S,
     with replacement: Replacement,
@@ -99,6 +100,7 @@ extension RangeReplaceableCollection where Element: Equatable {
   ///   to replace. Default is `Int.max`.
   /// - Returns: A new collection in which all occurrences of `other` in
   /// `subrange` of the collection are replaced by `replacement`.
+  @available(SwiftStdlib 5.7, *)
   public func replacing<S: Sequence, Replacement: Collection>(
     _ other: S,
     with replacement: Replacement,
@@ -117,6 +119,7 @@ extension RangeReplaceableCollection where Element: Equatable {
   ///   - replacement: The new elements to add to the collection.
   ///   - maxReplacements: A number specifying how many occurrences of `other`
   ///   to replace. Default is `Int.max`.
+  @available(SwiftStdlib 5.7, *)
   public mutating func replace<S: Sequence, Replacement: Collection>(
     _ other: S,
     with replacement: Replacement,
@@ -184,6 +187,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   ///   sequence matching `regex` to replace. Default is `Int.max`.
   /// - Returns: A new collection in which all occurrences of subsequence
   /// matching `regex` in `subrange` are replaced by `replacement`.
+  @available(SwiftStdlib 5.7, *)
   public func replacing<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: Replacement,
@@ -206,6 +210,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   ///   sequence matching `regex` to replace. Default is `Int.max`.
   /// - Returns: A new collection in which all occurrences of subsequence
   /// matching `regex` are replaced by `replacement`.
+  @available(SwiftStdlib 5.7, *)
   public func replacing<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: Replacement,
@@ -225,6 +230,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   ///   - replacement: The new elements to add to the collection.
   ///   - maxReplacements: A number specifying how many occurrences of the
   ///   sequence matching `regex` to replace. Default is `Int.max`.
+  @available(SwiftStdlib 5.7, *)
   public mutating func replace<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: Replacement,

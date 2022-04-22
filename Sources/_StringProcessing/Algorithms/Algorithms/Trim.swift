@@ -111,6 +111,7 @@ extension Collection {
 }
 
 extension Collection where SubSequence == Self {
+  @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix(
     while predicate: @escaping (Element) -> Bool
   ) {
@@ -121,6 +122,7 @@ extension Collection where SubSequence == Self {
 
 extension RangeReplaceableCollection {
   @_disfavoredOverload
+  @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix(
     while predicate: @escaping (Element) -> Bool
   ) {
@@ -185,6 +187,7 @@ extension Collection where Element: Equatable {
   /// element should be removed from the collection.
   /// - Returns: A collection containing the elements of the collection that are
   ///  not removed by `predicate`.
+  @available(SwiftStdlib 5.7, *)
   public func trimmingPrefix<Prefix: Collection>(
     _ prefix: Prefix
   ) -> SubSequence where Prefix.Element == Element {
@@ -198,6 +201,7 @@ extension Collection where SubSequence == Self, Element: Equatable {
   /// - Parameter predicate: A closure that takes an element of the sequence
   /// as its argument and returns a Boolean value indicating whether the
   /// element should be removed from the collection.
+  @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix<Prefix: Collection>(
     _ prefix: Prefix
   ) where Prefix.Element == Element {
@@ -212,6 +216,7 @@ extension RangeReplaceableCollection where Element: Equatable {
   /// - Parameter predicate: A closure that takes an element of the sequence
   /// as its argument and returns a Boolean value indicating whether the
   /// element should be removed from the collection.
+  @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix<Prefix: Collection>(
     _ prefix: Prefix
   ) where Prefix.Element == Element {
@@ -279,14 +284,17 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter prefix: The collection to remove from this collection.
   /// - Returns: A collection containing the elements that does not match
   /// `prefix` from the start.
+  @available(SwiftStdlib 5.7, *)
   public func trimmingPrefix<R: RegexComponent>(_ regex: R) -> SubSequence {
     trimmingPrefix(RegexConsumer(regex))
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   func trimmingSuffix<R: RegexComponent>(_ regex: R) -> SubSequence {
     trimmingSuffix(RegexConsumer(regex))
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   func trimming<R: RegexComponent>(_ regex: R) -> SubSequence {
     trimming(RegexConsumer(regex))
   }
@@ -297,14 +305,17 @@ extension RangeReplaceableCollection
 {
   /// Removes the initial elements that matches the given regex.
   /// - Parameter regex: The regex to remove from this collection.
+  @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix<R: RegexComponent>(_ regex: R) {
     trimPrefix(RegexConsumer(regex))
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   mutating func trimSuffix<R: RegexComponent>(_ regex: R) {
     trimSuffix(RegexConsumer(regex))
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   mutating func trim<R: RegexComponent>(_ regex: R) {
     let consumer = RegexConsumer<R, Self>(regex)
     trimPrefix(consumer)
@@ -313,14 +324,17 @@ extension RangeReplaceableCollection
 }
 
 extension Substring {
+  @available(SwiftStdlib 5.7, *)
   mutating func trimPrefix<R: RegexComponent>(_ regex: R) {
     trimPrefix(RegexConsumer(regex))
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   mutating func trimSuffix<R: RegexComponent>(_ regex: R) {
     trimSuffix(RegexConsumer(regex))
   }
-  
+
+  @available(SwiftStdlib 5.7, *)
   mutating func trim<R: RegexComponent>(_ regex: R) {
     let consumer = RegexConsumer<R, Self>(regex)
     trimPrefix(consumer)

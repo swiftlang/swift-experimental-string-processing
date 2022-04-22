@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 struct MEProgram<Input: Collection> where Input.Element: Equatable {
   typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?
@@ -36,6 +36,7 @@ struct MEProgram<Input: Collection> where Input.Element: Equatable {
 
   let captureStructure: CaptureStructure
   let referencedCaptureOffsets: [ReferenceID: Int]
+  let namedCaptureOffsets: [String: Int]
 }
 
 extension MEProgram: CustomStringConvertible {

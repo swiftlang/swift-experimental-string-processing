@@ -184,31 +184,35 @@ extension BidirectionalCollection {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  // FIXME: Replace `MatchesCollection` when SE-0346 is enabled
-  /// Returns a collection containing all matches of the specified regex.
-  /// - Parameter regex: The regex to search for.
-  /// - Returns: A collection of matches of `regex`.
+  @available(SwiftStdlib 5.7, *)
+  @_disfavoredOverload
   func matches<R: RegexComponent>(
     of regex: R
   ) -> MatchesCollection<RegexConsumer<R, Self>> {
     matches(of: RegexConsumer(regex))
   }
 
+  @available(SwiftStdlib 5.7, *)
   func matchesFromBack<R: RegexComponent>(
     of regex: R
   ) -> ReversedMatchesCollection<RegexConsumer<R, Self>> {
     matchesFromBack(of: RegexConsumer(regex))
   }
 
-  // FIXME: Replace the returned value as `some Collection<Regex<R.Output>.Match>
-  // when SE-0346 is enabled
-  func _matches<R: RegexComponent>(of r: R) -> [Regex<R.Output>.Match] {
+  // FIXME: Return `some Collection<Regex<R.Output>.Match> for SE-0346
+  /// Returns a collection containing all matches of the specified regex.
+  /// - Parameter regex: The regex to search for.
+  /// - Returns: A collection of matches of `regex`.
+  @available(SwiftStdlib 5.7, *)
+  public func matches<R: RegexComponent>(
+    of r: R
+  ) -> [Regex<R.RegexOutput>.Match] {
     let slice = self[...]
     var start = self.startIndex
     let end = self.endIndex
     let regex = r.regex
 
-    var result = [Regex<R.Output>.Match]()
+    var result = [Regex<R.RegexOutput>.Match]()
     while start < end {
       guard let match = try? regex._firstMatch(
         slice.base, in: start..<end

@@ -1208,6 +1208,19 @@ extension RegexTests {
       ("CaFe", true),
       ("EfAc", true))
   }
+
+  func testNonSemanticWhitespace() {
+    firstMatchTest(#" \t "#, input: " \t ", match: " \t ")
+    firstMatchTest(#"(?xx) \t "#, input: " \t ", match: "\t")
+
+    firstMatchTest(#"[ \t]+"#, input: " \t ", match: " \t ")
+    firstMatchTest(#"(?xx)[ \t]+"#, input: " \t ", match: "\t")
+    firstMatchTest(#"(?xx)[ \t]+"#, input: " \t\t ", match: "\t\t")
+    firstMatchTest(#"(?xx)[ \t]+"#, input: " \t \t", match: "\t")
+
+    firstMatchTest("(?xx)[ a && ab ]+", input: " aaba ", match: "aa")
+    firstMatchTest("(?xx)[ ] a ]+", input: " a]]a ] ", match: "a]]a")
+  }
   
   func testASCIIClasses() {
     // 'D' ASCII-only digits
@@ -1277,11 +1290,11 @@ extension RegexTests {
       04: Arkansas
       05: California
       """
-    XCTAssertTrue(string.contains(try Regex(compiling: #"^\d+"#)))
-    XCTAssertEqual(string.ranges(of: try Regex(compiling: #"^\d+"#)).count, 1)
-    XCTAssertEqual(string.ranges(of: try Regex(compiling: #"(?m)^\d+"#)).count, 5)
+    XCTAssertTrue(string.contains(try Regex(#"^\d+"#)))
+    XCTAssertEqual(string.ranges(of: try Regex(#"^\d+"#)).count, 1)
+    XCTAssertEqual(string.ranges(of: try Regex(#"(?m)^\d+"#)).count, 5)
 
-    let regex = try Regex(compiling: #"^\d+: [\w ]+$"#)
+    let regex = try Regex(#"^\d+: [\w ]+$"#)
     XCTAssertFalse(string.contains(regex))
     let allRanges = string.ranges(of: regex.anchorsMatchLineEndings())
     XCTAssertEqual(allRanges.count, 5)
@@ -1306,14 +1319,25 @@ extension RegexTests {
     firstMatchTest(#"(((?s)a)).b"#, input: "a\nb", match: nil)
     firstMatchTest(#"(?s)(((?-s)a)).b"#, input: "a\nb", match: "a\nb")
     firstMatchTest(#"(?s)((?-s)((?i)a)).b"#, input: "a\nb", match: "a\nb")
+
+    // Matching option changing persists across alternations.
+    firstMatchTest(#"a(?s)b|c|.d"#, input: "abc", match: "ab")
+    firstMatchTest(#"a(?s)b|c|.d"#, input: "c", match: "c")
+    firstMatchTest(#"a(?s)b|c|.d"#, input: "a\nd", match: "\nd")
+    firstMatchTest(#"a(?s)(?^)b|c|.d"#, input: "a\nd", match: nil)
+    firstMatchTest(#"a(?s)b|.c(?-s)|.d"#, input: "a\nd", match: nil)
+    firstMatchTest(#"a(?s)b|.c(?-s)|.d"#, input: "a\nc", match: "\nc")
+    firstMatchTest(#"a(?s)b|c(?-s)|(?^s).d"#, input: "a\nd", match: "\nd")
+    firstMatchTest(#"a(?:(?s).b)|.c|.d"#, input: "a\nb", match: "a\nb")
+    firstMatchTest(#"a(?:(?s).b)|.c"#, input: "a\nc", match: nil)
   }
   
   func testOptionMethods() throws {
-    let regex = try Regex(compiling: "c.f.")
+    let regex = try Regex("c.f.")
     XCTAssertTrue ("cafe".contains(regex))
     XCTAssertFalse("CaFe".contains(regex))
     
-    let caseInsensitiveRegex = regex.ignoringCase()
+    let caseInsensitiveRegex = regex.ignoresCase()
     XCTAssertTrue("cafe".contains(caseInsensitiveRegex))
     XCTAssertTrue("CaFe".contains(caseInsensitiveRegex))
   }
@@ -1488,13 +1512,11 @@ extension RegexTests {
       (eDecomposed, false))
     
     // FIXME: \O is unsupported
-    firstMatchTest(#"\O\u{301}"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
-    firstMatchTest(#"e\O"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
-    firstMatchTest(#"\O\u{301}"#, input: eComposed, match: nil,
-              xfail: true)
-    firstMatchTest(#"e\O"#, input: eComposed, match: nil,
+    firstMatchTest(#"(?u)\O\u{301}"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(#"(?u)e\O"#, input: eDecomposed, match: eDecomposed,
+      xfail: true)
+    firstMatchTest(#"\O"#, input: eComposed, match: eComposed)
+    firstMatchTest(#"\O"#, input: eDecomposed, match: nil,
               xfail: true)
 
     matchTest(

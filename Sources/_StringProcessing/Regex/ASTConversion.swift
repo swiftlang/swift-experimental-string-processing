@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 
 extension AST {
   var dslTree: DSLTree {
@@ -40,7 +40,7 @@ extension AST.Node {
       // TODO: Should we do this for the
       // single-concatenation child too, or should?
       // we wrap _that_?
-      return .convertedRegexLiteral(node, self)
+      return .convertedRegexLiteral(node, .init(ast: self))
     }
 
     // Convert the top-level node without wrapping
@@ -111,19 +111,19 @@ extension AST.Node {
         case .balancedCapture:
           throw Unsupported("TODO: balanced captures")
         default:
-          return .nonCapturingGroup(v.kind.value, child)
+          return .nonCapturingGroup(.init(ast: v.kind.value), child)
         }
 
       case let .conditional(v):
         let trueBranch = v.trueBranch.dslTreeNode
         let falseBranch = v.falseBranch.dslTreeNode
         return .conditional(
-          v.condition.kind, trueBranch, falseBranch)
+          .init(ast: v.condition.kind), trueBranch, falseBranch)
 
       case let .quantification(v):
         let child = v.child.dslTreeNode
         return .quantification(
-          v.amount.value, v.kind.value, child)
+          .init(ast: v.amount.value), .syntax(.init(ast: v.kind.value)), child)
 
       case let .quote(v):
         return .quotedLiteral(v.literal)
@@ -140,9 +140,9 @@ extension AST.Node {
       case .empty(_):
         return .empty
 
-      case let .absentFunction(a):
+      case let .absentFunction(abs):
         // TODO: What should this map to?
-        return .absentFunction(a)
+        return .absentFunction(.init(ast: abs))
       }
     }
 
@@ -202,19 +202,20 @@ extension AST.CustomCharacterClass {
 extension AST.Atom {
   var dslTreeAtom: DSLTree.Atom {
     if let kind = assertionKind {
-      return .assertion(kind)
+      return .assertion(.init(ast: kind))
     }
 
     switch self.kind {
-    case let .char(c):          return .char(c)
-    case let .scalar(s):        return .scalar(s)
-    case .any:                  return .any
-    case let .backreference(r): return .backreference(r)
+    case let .char(c):                    return .char(c)
+    case let .scalar(s):                  return .scalar(s)
+    case .any:                            return .any
+    case let .backreference(r):           return .backreference(.init(ast: r))
+    case let .changeMatchingOptions(seq): return .changeMatchingOptions(.init(ast: seq))
 
     case .escaped(let c) where c.scalarValue != nil:
       return .scalar(c.scalarValue!)
 
-    default: return .unconverted(self)
+    default: return .unconverted(.init(ast: self))
     }
   }
 }
