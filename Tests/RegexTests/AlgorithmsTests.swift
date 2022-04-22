@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@testable import _StringProcessing
+import _StringProcessing
 import XCTest
 
 // TODO: Protocol-powered testing
@@ -107,37 +107,6 @@ class RegexConsumerTests: XCTestCase {
     expectReplace("aab", "a*", "X", "XXbX")
   }
 
-  func testAdHoc() {
-    let r = try! Regex("a|b+")
-
-    XCTAssert("palindrome".contains(r))
-    XCTAssert("botany".contains(r))
-    XCTAssert("antiquing".contains(r))
-    XCTAssertFalse("cdef".contains(r))
-
-    let str = "a string with the letter b in it"
-    let first = str.firstRange(of: r)
-    let last = str.lastRange(of: r)
-    let (expectFirst, expectLast) = (
-      str.index(atOffset: 0)..<str.index(atOffset: 1),
-      str.index(atOffset: 25)..<str.index(atOffset: 26))
-    output(str.split(around: first!))
-    output(str.split(around: last!))
-
-    XCTAssertEqual(expectFirst, first)
-    XCTAssertEqual(expectLast, last)
-
-    XCTAssertEqual(
-      [expectFirst, expectLast], Array(str.ranges(of: r)))
-
-    XCTAssertTrue(str.starts(with: r))
-    XCTAssertFalse(str.ends(with: r))
-
-    XCTAssertEqual(str.dropFirst(), str.trimmingPrefix(r))
-    XCTAssertEqual("x", "axb".trimming(r))
-    XCTAssertEqual("x", "axbb".trimming(r))
-  }
-  
   func testSubstring() throws {
     let s = "aaa | aaaaaa | aaaaaaaaaa"
     let s1 = s.dropFirst(6)  // "aaaaaa | aaaaaaaaaa"
