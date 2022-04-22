@@ -27,7 +27,7 @@ Covers the "interior" syntax, extended syntaxes, run-time construction of a rege
 
 ## Regex Literals
 
-- [Draft](https://github.com/apple/swift-experimental-string-processing/pull/187)
+- [Draft](https://github.com/apple/swift-experimental-string-processing/pull/187), [Thread](https://forums.swift.org/t/pitch-2-regex-literals/56736)
 - (Old) original pitch:
     + [Thread](https://forums.swift.org/t/pitch-regular-expression-literals/52820)
     + [Update](https://forums.swift.org/t/pitch-regular-expression-literals/52820/90)
