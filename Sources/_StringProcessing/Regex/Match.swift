@@ -159,32 +159,23 @@ extension Regex {
 }
 
 @available(SwiftStdlib 5.7, *)
-extension String {
+extension BidirectionalCollection where SubSequence == Substring {
+  /// Match a regex in its entirety.
+  /// - Parameter r: The regex to match against.
+  /// - Returns: The match if there is one, or `nil` if none.
   public func wholeMatch<R: RegexComponent>(
     of r: R
   ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.wholeMatch(in: self)
+    try? r.regex.wholeMatch(in: self[...].base)
   }
 
+  /// Match part of the regex, starting at the beginning.
+  /// - Parameter r: The regex to match against.
+  /// - Returns: The match if there is one, or `nil` if none.
   public func prefixMatch<R: RegexComponent>(
     of r: R
   ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.prefixMatch(in: self)
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Substring {
-  public func wholeMatch<R: RegexComponent>(
-    of r: R
-  ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.wholeMatch(in: self)
-  }
-
-  public func prefixMatch<R: RegexComponent>(
-    of r: R
-  ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.prefixMatch(in: self)
+    try? r.regex.prefixMatch(in: self[...])
   }
 }
 
