@@ -80,7 +80,7 @@ private func graphemeBreakPropertyDataLiteral(
 private func graphemeBreakPropertyData(
   forLine line: String
 ) -> GraphemeBreakEntry? {
-  line.wholeMatch {
+  let regex = Regex {
     TryCapture(OneOrMore(.hexDigit)) { Unicode.Scalar(hex: $0) }
     Optionally {
       ".."
@@ -91,7 +91,8 @@ private func graphemeBreakPropertyData(
     OneOrMore(.whitespace)
     TryCapture(OneOrMore(.word)) { Unicode.GraphemeBreakProperty($0) }
     ZeroOrMore(.any)
-  }.map {
+  }
+  return line.wholeMatch(of: regex).map {
     let (_, lower, upper, property) = $0.output
     return GraphemeBreakEntry(lower...(upper ?? lower), property)
   }
