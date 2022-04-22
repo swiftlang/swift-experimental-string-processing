@@ -234,7 +234,7 @@ extension Collection where Element: Equatable {
     /// - Parameter other: A sequence to search for within this collection.
     /// - Returns: `true` if the collection contains the specified sequence,
     /// otherwise `false`.
-    public func contains<S: Sequence>(_ other: S) -> Bool
+    public func contains<C: Collection>(_ other: C) -> Bool
         where S.Element == Element
 }
 
@@ -281,7 +281,7 @@ extension Collection where SubSequence == Self {
     /// - Parameter predicate: A closure that takes an element of the sequence
     /// as its argument and returns a Boolean value indicating whether the
     /// element should be removed from the collection.
-    public mutating func trimPrefix(while predicate: (Element) throws -> Bool)
+    public mutating func trimPrefix(while predicate: (Element) throws -> Bool) rethrows
 }
 
 extension RangeReplaceableCollection {
@@ -290,7 +290,7 @@ extension RangeReplaceableCollection {
     /// - Parameter predicate: A closure that takes an element of the sequence
     /// as its argument and returns a Boolean value indicating whether the
     /// element should be removed from the collection.
-    public mutating func trimPrefix(while predicate: (Element) throws -> Bool)
+    public mutating func trimPrefix(while predicate: (Element) throws -> Bool) rethrows
 }
 
 extension Collection where Element: Equatable {
@@ -299,21 +299,21 @@ extension Collection where Element: Equatable {
     /// - Parameter prefix: The collection to remove from this collection.
     /// - Returns: A collection containing the elements that does not match
     /// `prefix` from the start.
-    public func trimmingPrefix<Prefix: Collection>(_ prefix: Prefix) -> SubSequence
+    public func trimmingPrefix<Prefix: Sequence>(_ prefix: Prefix) -> SubSequence
         where Prefix.Element == Element
 }
 
 extension Collection where SubSequence == Self, Element: Equatable {
     /// Removes the initial elements that matches `prefix` from the start.
     /// - Parameter prefix: The collection to remove from this collection.
-    public mutating func trimPrefix<Prefix: Collection>(_ prefix: Prefix)
+    public mutating func trimPrefix<Prefix: Sequence>(_ prefix: Prefix)
         where Prefix.Element == Element
 }
 
 extension RangeReplaceableCollection where Element: Equatable {
     /// Removes the initial elements that matches `prefix` from the start.
     /// - Parameter prefix: The collection to remove from this collection.
-    public mutating func trimPrefix<Prefix: Collection>(_ prefix: Prefix)
+    public mutating func trimPrefix<Prefix: Sequence>(_ prefix: Prefix)
         where Prefix.Element == Element
 }
 
@@ -344,8 +344,8 @@ extension Collection where Element: Equatable {
     /// - Parameter sequence: The sequence to search for.
     /// - Returns: A range in the collection of the first occurrence of `sequence`.
     /// Returns nil if `sequence` is not found.
-    public func firstRange<S: Sequence>(of sequence: S) -> Range<Index>? 
-        where S.Element == Element
+    public func firstRange<C: Collection>(of other: C) -> Range<Index>? 
+        where C.Element == Element
 }
 
 extension BidirectionalCollection where Element: Comparable {
@@ -354,8 +354,8 @@ extension BidirectionalCollection where Element: Comparable {
     /// - Parameter other: The sequence to search for.
     /// - Returns: A range in the collection of the first occurrence of `sequence`.
     /// Returns `nil` if `sequence` is not found.
-    public func firstRange<S: Sequence>(of other: S) -> Range<Index>?
-        where S.Element == Element
+    public func firstRange<C: BidirectionalCollection>(of other: C) -> Range<Index>?
+        where C.Element == Element
 }
 
 extension BidirectionalCollection where SubSequence == Substring {
@@ -377,8 +377,8 @@ extension Collection where Element: Equatable {
     /// - Parameter other: The sequence to search for.
     /// - Returns: A collection of ranges of all occurrences of `other`. Returns
     ///  an empty collection if `other` is not found.
-    public func ranges<S: Sequence>(of other: S) -> some Collection<Range<Index>>
-        where S.Element == Element
+    public func ranges<C: Collection>(of other: C) -> some Collection<Range<Index>>
+        where C.Element == Element
 }
 
 extension BidirectionalCollection where SubSequence == Substring {
@@ -438,12 +438,12 @@ extension RangeReplaceableCollection where Element: Equatable {
     ///   to replace. Default is `Int.max`.
     /// - Returns: A new collection in which all occurrences of `other` in
     /// `subrange` of the collection are replaced by `replacement`.    
-    public func replacing<S: Sequence, Replacement: Collection>(
-        _ other: S,
+    public func replacing<C: Collection, Replacement: Collection>(
+        _ other: C,
         with replacement: Replacement,
         subrange: Range<Index>,
         maxReplacements: Int = .max
-    ) -> Self where S.Element == Element, Replacement.Element == Element
+    ) -> Self where C.Element == Element, Replacement.Element == Element
   
     /// Returns a new collection in which all occurrences of a target sequence
     /// are replaced by another collection.
@@ -454,11 +454,11 @@ extension RangeReplaceableCollection where Element: Equatable {
     ///   to replace. Default is `Int.max`.
     /// - Returns: A new collection in which all occurrences of `other` in
     /// `subrange` of the collection are replaced by `replacement`.
-    public func replacing<S: Sequence, Replacement: Collection>(
-        _ other: S,
+    public func replacing<C: Collection, Replacement: Collection>(
+        _ other: C,
         with replacement: Replacement,
         maxReplacements: Int = .max
-    ) -> Self where S.Element == Element, Replacement.Element == Element
+    ) -> Self where C.Element == Element, Replacement.Element == Element
   
     /// Replaces all occurrences of a target sequence with a given collection
     /// - Parameters:
@@ -466,11 +466,11 @@ extension RangeReplaceableCollection where Element: Equatable {
     ///   - replacement: The new elements to add to the collection.
     ///   - maxReplacements: A number specifying how many occurrences of `other`
     ///   to replace. Default is `Int.max`.
-    public mutating func replace<S: Sequence, Replacement: Collection>(
-        _ other: S,
+    public mutating func replace<C: Collection, Replacement: Collection>(
+        _ other: C,
         with replacement: Replacement,
         maxReplacements: Int = .max
-    ) where S.Element == Element, Replacement.Element == Element
+    ) where C.Element == Element, Replacement.Element == Element
 }
 
 extension RangeReplaceableCollection where SubSequence == Substring {
@@ -578,8 +578,8 @@ extension Collection where Element: Equatable {
     /// - Parameter separator: The element to be split upon.
     /// - Returns: A collection of subsequences, split from this collection's
     /// elements.
-    public func split<S: Sequence>(by separator: S) -> some Collection<SubSequence>
-        where S.Element == Element
+    public func split<C: Collection>(by separator: C) -> some Collection<SubSequence>
+        where C.Element == Element
 }
 
 extension BidirectionalCollection where SubSequence == Substring {
