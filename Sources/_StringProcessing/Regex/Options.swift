@@ -58,8 +58,8 @@ extension RegexComponent {
   /// Returns a regular expression where the start and end of input
   /// anchors (`^` and `$`) also match against the start and end of a line.
   ///
-  /// This method corresponds to applying the `m` option in a regular
-  /// expression literal. For this behavior in the `RegexBuilder` syntax, see
+  /// This method corresponds to applying the `m` option in regex syntax. For
+  /// this behavior in the `RegexBuilder` syntax, see
   /// ``Anchor.startOfLine``, ``Anchor.endOfLine``, ``Anchor.startOfInput``,
   /// and ``Anchor.endOfInput``.
   ///
@@ -69,16 +69,22 @@ extension RegexComponent {
     wrapInOption(.multiline, addingIf: matchLineEndings)
   }
   
-  /// Returns a regular expression where quantifiers are reluctant by default
-  /// instead of eager.
+  /// Returns a regular expression where quantifiers use the specified behavior
+  /// by default.
   ///
-  /// This method corresponds to applying the `U` option in a regular
-  /// expression literal.
+  /// This setting does not affect calls to quantifier methods, such as
+  /// `OneOrMore`, that include an explicit `behavior` parameter.
   ///
-  /// - Parameter useReluctantQuantifiers: A Boolean value indicating whether
-  ///   quantifiers should be reluctant by default.
-  public func reluctantQuantifiers(_ useReluctantQuantifiers: Bool = true) -> Regex<RegexOutput> {
-    wrapInOption(.reluctantByDefault, addingIf: useReluctantQuantifiers)
+  /// Passing `.eager` or `.reluctant` to this method corresponds to applying
+  /// the `(?-U)` or `(?U)` option in regex syntax, respectively.
+  ///
+  /// - Parameter behavior: The default behavior to use for quantifiers.
+  public func repetitionBehavior(_ behavior: RegexRepetitionBehavior) -> Regex<RegexOutput> {
+    if behavior == .possessive {
+      return wrapInOption(.possessiveByDefault, addingIf: true)
+    } else {
+      return wrapInOption(.reluctantByDefault, addingIf: behavior == .reluctant)
+    }
   }
 
   /// Returns a regular expression that matches with the specified semantic
@@ -180,6 +186,46 @@ public struct RegexWordBoundaryKind: Hashable {
   /// punctuation, changes in script, and Emoji.
   public static var unicodeLevel2: Self {
     .init(base: .unicodeLevel2)
+  }
+}
+
+/// Specifies how much to attempt to match when using a quantifier.
+@available(SwiftStdlib 5.7, *)
+public struct RegexRepetitionBehavior: Hashable {
+  internal enum Kind {
+    case eager
+    case reluctant
+    case possessive
+  }
+
+  var kind: Kind
+
+  @_spi(RegexBuilder) public var dslTreeKind: AST.Quantification.Kind {
+    switch kind {
+    case .eager: return .eager
+    case .reluctant: return .reluctant
+    case .possessive: return .possessive
+    }
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexRepetitionBehavior {
+  /// Match as much of the input string as possible, backtracking when
+  /// necessary.
+  public static var eager: Self {
+    .init(kind: .eager)
+  }
+
+  /// Match as little of the input string as possible, expanding the matched
+  /// region as necessary to complete a match.
+  public static var reluctant: Self {
+    .init(kind: .reluctant)
+  }
+
+  /// Match as much of the input string as possible, performing no backtracking.
+  public static var possessive: Self {
+    .init(kind: .possessive)
   }
 }
 

@@ -1483,13 +1483,11 @@ extension RegexTests {
       (eDecomposed, false))
     
     // FIXME: \O is unsupported
-    firstMatchTest(#"\O\u{301}"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
-    firstMatchTest(#"e\O"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
-    firstMatchTest(#"\O\u{301}"#, input: eComposed, match: nil,
-              xfail: true)
-    firstMatchTest(#"e\O"#, input: eComposed, match: nil,
+    firstMatchTest(#"(?u)\O\u{301}"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(#"(?u)e\O"#, input: eDecomposed, match: eDecomposed,
+      xfail: true)
+    firstMatchTest(#"\O"#, input: eComposed, match: eComposed)
+    firstMatchTest(#"\O"#, input: eDecomposed, match: nil,
               xfail: true)
 
     matchTest(
