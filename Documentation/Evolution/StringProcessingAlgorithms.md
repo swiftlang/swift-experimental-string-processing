@@ -8,7 +8,7 @@ We propose:
 
 1. New regex-powered algorithms over strings, bringing the standard library up to parity with scripting languages
 2. Generic `Collection` equivalents of these algorithms in terms of subsequences
-3. `protocol CustomPrefixMatchRegexComponent`, which allows 3rd party libraries to provide their industrial-strength parsers as intermixable components of regexes
+3. `protocol CustomConsumingRegexComponent`, which allows 3rd party libraries to provide their industrial-strength parsers as intermixable components of regexes
 
 This proposal is part of a larger [regex-powered string processing initiative](https://github.com/apple/swift-evolution/blob/main/proposals/0350-regex-type-overview.md), the status of each proposal is tracked [here](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/ProposalOverview.md). Further discussion of regex specifics is out of scope of this proposal and better discussed in their relevant reviews.
 
@@ -132,7 +132,7 @@ Parsing a currency string such as `$3,020.85` with regex is also tricky, as it c
 
 ### Complex string processing
 
-We propose a `CustomPrefixMatchRegexComponent` protocol which allows types from outside the standard library participate in regex builders and `RegexComponent` algorithms. This allows types, such as `Date.ParseStrategy` and `FloatingPointFormatStyle.Currency`, to be used directly within a regex:
+We propose a `CustomConsumingRegexComponent` protocol which allows types from outside the standard library participate in regex builders and `RegexComponent` algorithms. This allows types, such as `Date.ParseStrategy` and `FloatingPointFormatStyle.Currency`, to be used directly within a regex:
                            
 ```swift
 let dateRegex = Regex {
@@ -169,14 +169,14 @@ We also propose the following regex-powered algorithms as well as their generic 
 
 ## Detailed design
 
-### `CustomPrefixMatchRegexComponent`
+### `CustomConsumingRegexComponent`
 
-`CustomPrefixMatchRegexComponent` inherits from `RegexComponent` and satisfies its sole requirement. Conformers can be used with all of the string algorithms generic over `RegexComponent`.
+`CustomConsumingRegexComponent` inherits from `RegexComponent` and satisfies its sole requirement. Conformers can be used with all of the string algorithms generic over `RegexComponent`.
 
 ```swift
 /// A protocol allowing custom types to function as regex components by 
 /// providing the raw functionality backing `prefixMatch`.
-public protocol CustomPrefixMatchRegexComponent: RegexComponent {
+public protocol CustomConsumingRegexComponent: RegexComponent {
     /// Process the input string within the specified bounds, beginning at the given index, and return
     /// the end position (upper bound) of the match and the produced output.
     /// - Parameters:
@@ -199,7 +199,7 @@ public protocol CustomPrefixMatchRegexComponent: RegexComponent {
 We use Foundation `FloatingPointFormatStyle<Decimal>.Currency` as an example for protocol conformance. It would implement the `match` function with `Match` being a `Decimal`. It could also add a static function `.localizedCurrency(code:)` as a member of `RegexComponent`, so it can be referred as `.localizedCurrency(code:)` in the `Regex` result builder:
 
 ```swift
-extension FloatingPointFormatStyle<Decimal>.Currency : CustomPrefixMatchRegexComponent { 
+extension FloatingPointFormatStyle<Decimal>.Currency : CustomConsumingRegexComponent { 
     public func consuming(
         _ input: String,
         startingAt index: String.Index,
