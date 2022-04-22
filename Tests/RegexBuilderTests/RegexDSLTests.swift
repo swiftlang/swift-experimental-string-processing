@@ -445,6 +445,14 @@ class RegexDSLTests: XCTestCase {
       Repeat(2...) { "e" }
       Repeat(0...) { "f" }
     }
+    
+    let octoDecimalRegex: Regex<(Substring, Int?)> = Regex {
+      let charClass = CharacterClass(.digit, "a"..."h")//.ignoringCase()
+      Capture {
+        OneOrMore(charClass)
+      } transform: { Int($0, radix: 18) }
+    }
+    XCTAssertEqual("ab12".firstMatch(of: octoDecimalRegex)!.output.1, 61904)
   }
   
   func testAssertions() throws {
