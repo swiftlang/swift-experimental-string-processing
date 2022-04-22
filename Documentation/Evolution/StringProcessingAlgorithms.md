@@ -399,17 +399,17 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Parameter regex: The regex to search for.
     /// - Returns: The first match of `regex` in the collection, or `nil` if
     /// there isn't a match.
-    public func firstMatch<R: RegexComponent>(of regex: R) -> RegexMatch<R.Match>?
+    public func firstMatch<R: RegexComponent>(of regex: R) -> Regex<R.Output>.Match?
     
     /// Match a regex in its entirety.
     /// - Parameter r: The regex to match against.
     /// - Returns: The match if there is one, or `nil` if none.
-    public func wholeMatch<R: RegexComponent>(of r: R) -> Regex<R.Output>.Match? 
+    public func wholeMatch<R: RegexComponent>(of regex: R) -> Regex<R.Output>.Match? 
     
     /// Match part of the regex, starting at the beginning.
     /// - Parameter r: The regex to match against.
     /// - Returns: The match if there is one, or `nil` if none.
-    public func prefixMatch<R: RegexComponent>(of r: R) -> Regex<R.Output>.Match?
+    public func prefixMatch<R: RegexComponent>(of regex: R) -> Regex<R.Output>.Match?
 }
 ```
 
@@ -574,21 +574,45 @@ extension RangeReplaceableCollection where SubSequence == Substring {
 ```swift
 extension Collection where Element: Equatable {
     /// Returns the longest possible subsequences of the collection, in order,
-    /// around elements equal to the given separator.
-    /// - Parameter separator: The element to be split upon.
+    /// around elements equal to the given separator collection.
+    ///
+    /// - Parameters:
+    ///   - separator: A collection of elements to be split upon.
+    ///   - maxSplits: The maximum number of times to split the collection, 
+    ///     or one less than the number of subsequences to return.
+    ///   - omittingEmptySubsequences: If `false`, an empty subsequence is 
+    ///     returned in the result for each consecutive pair of separator 
+    ///     sequences in the collection and for each instance of separator 
+    ///     sequences at the start or end of the collection. If `true`, only
+    ///     nonempty subsequences are returned.
     /// - Returns: A collection of subsequences, split from this collection's
-    /// elements.
-    public func split<C: Collection>(by separator: C) -> some Collection<SubSequence>
-        where C.Element == Element
+    ///   elements.
+    public func split<C: Collection>(
+        by separator: C,
+        maxSplits: Int = Int.max,
+        omittingEmptySubsequences: Bool = true
+    ) -> some Collection<SubSequence> where C.Element == Element
 }
 
 extension BidirectionalCollection where SubSequence == Substring {
     /// Returns the longest possible subsequences of the collection, in order,
-    /// around elements equal to the given separator.
-    /// - Parameter separator: A regex describing elements to be split upon.
+    /// around subsequence that match the given separator regex.
+    ///
+    /// - Parameters:
+    ///   - separator: A regex to be split upon.
+    ///   - maxSplits: The maximum number of times to split the collection, 
+    ///     or one less than the number of subsequences to return.
+    ///   - omittingEmptySubsequences: If `false`, an empty subsequence is 
+    ///     returned in the result for each consecutive pair of matches
+    ///     and for each match at the start or end of the collection. If
+    ///     `true`, only nonempty subsequences are returned.
     /// - Returns: A collection of substrings, split from this collection's
-    /// elements.
-    public func split<R: RegexComponent>(by separator: R) -> some Collection<Substring>
+    ///   elements.
+    public func split<R: RegexComponent>(
+        by separator: R,
+        maxSplits: Int = Int.max,
+        omittingEmptySubsequences: Bool = true
+    ) -> some Collection<Substring>
 }
 ```
 
