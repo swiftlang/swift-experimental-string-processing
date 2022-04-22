@@ -592,9 +592,23 @@ extension BidirectionalCollection where SubSequence == Substring {
 }
 ```
 
+**Note:** We plan to adopt the new generics features enabled by [SE-0346][] for these proposed methods when the standard library adopts primary associated types, [pending a forthcoming proposal][stdlib-pitch]. For example, the first method in the _Replacement_ section above would instead be:
 
+```swift
+extension RangeReplaceableCollection where Element: Equatable {
+    /// Returns a new collection in which all occurrences of a target sequence
+    /// are replaced by another collection.
+    public func replacing(
+        _ other: some Collection<Element>,
+        with replacement: some Collection<Element>,
+        subrange: Range<Index>,
+        maxReplacements: Int = .max
+    ) -> Self
+}
+```
 
-
+[SE-0346]: https://github.com/apple/swift-evolution/blob/main/proposals/0346-light-weight-same-type-syntax.md
+[stdlib-pitch]: https://forums.swift.org/t/pitch-primary-associated-types-in-the-standard-library/56426
 
 ## Alternatives considered
 
