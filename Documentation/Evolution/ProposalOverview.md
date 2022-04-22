@@ -19,7 +19,7 @@ Covers the result builder approach and basic API.
 
 ## Run-time Regex Construction
 
-- [Pitch](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntaxRunTimeConstruction.md)
+- [Pitch](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexSyntaxRunTimeConstruction.md), [Thread](https://forums.swift.org/t/pitch-2-regex-syntax-and-run-time-construction/56624)
 - (old) Pitch thread: [Regex Syntax](https://forums.swift.org/t/pitch-regex-syntax/55711)
     + Brief: Syntactic superset of PCRE2, Oniguruma, ICU, UTS\#18, etc.
 
