@@ -43,13 +43,13 @@ Introduces `CustomMatchingRegexComponent`, which is a monadic-parser style inter
 
 ## Unicode for String Processing
 
-- Draft: TBD
+- [Draft](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/UnicodeForStringProcessing.md)
 - (Old) [Character class definitions](https://forums.swift.org/t/pitch-character-classes-for-string-processing/52920)
 
 Covers three topics:
 
-- Proposes literal and DSL API for library-defined character classes, Unicode scripts and properties, and custom character classes.
-- Proposes literal and DSL API for options that affect matching behavior.
+- Proposes regex syntax and `RegexBuilder` API for options that affect matching behavior.
+- Proposes regex syntax and `RegexBuilder` API for library-defined character classes, Unicode properties, and custom character classes.
 - Defines how Unicode scalar-based classes are extended to grapheme clusters in the different semantic and other matching modes.
 
 
