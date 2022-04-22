@@ -231,7 +231,7 @@ The result builder allows for inline failable value construction, which particip
 
 Swift regexes describe an unambiguous algorithm, where choice is ordered and effects can be reliably observed. For example, a `print()` statement inside the `TryCapture`'s transform function will run whenever the overall algorithm naturally dictates an attempt should be made. Optimizations can only elide such calls if they can prove it is behavior-preserving (e.g. "pure").
 
-`CustomMatchingRegexComponent`, discussed in [String Processing Algorithms][pitches], allows industrial-strength parsers to be used a regex components. This allows us to drop the overly-permissive pre-parsing step:
+`CustomPrefixMatchRegexComponent`, discussed in [String Processing Algorithms][pitches], allows industrial-strength parsers to be used a regex components. This allows us to drop the overly-permissive pre-parsing step:
 
 ```swift
 func processEntry(_ line: String) -> Transaction? {
@@ -431,7 +431,7 @@ Regular expressions have a deservedly mixed reputation, owing to their historica
 
 * "Regular expressions are bad because you should use a real parser"
     - In other systems, you're either in or you're out, leading to a gravitational pull to stay in when... you should get out
-    - Our remedy is interoperability with real parsers via `CustomMatchingRegexComponent`
+    - Our remedy is interoperability with real parsers via `CustomPrefixMatchRegexComponent`
     - Literals with refactoring actions provide an incremental off-ramp from regex syntax to result builders and real parsers
 * "Regular expressions are bad because ugly unmaintainable syntax"
     - We propose literals with source tools support, allowing for better syntax highlighting and analysis
@@ -516,7 +516,7 @@ Regex are compiled into an intermediary representation and fairly simple analysi
 
 ### Future work: parser combinators
 
-What we propose here is an incremental step towards better parsing support in Swift using parser-combinator style libraries. The underlying execution engine supports recursive function calls and mechanisms for library extensibility. `CustomMatchingRegexComponent`'s protocol requirement is effectively a [monadic parser](https://homepages.inf.ed.ac.uk/wadler/papers/marktoberdorf/baastad.pdf), meaning `Regex` provides a regex-flavored combinator-like system.
+What we propose here is an incremental step towards better parsing support in Swift using parser-combinator style libraries. The underlying execution engine supports recursive function calls and mechanisms for library extensibility. `CustomPrefixMatchRegexComponent`'s protocol requirement is effectively a [monadic parser](https://homepages.inf.ed.ac.uk/wadler/papers/marktoberdorf/baastad.pdf), meaning `Regex` provides a regex-flavored combinator-like system.
 
 An issues with traditional parser combinator libraries are the compilation barriers between call-site and definition, resulting in excessive and overly-cautious backtracking traffic. These can be eliminated through better [compilation techniques](https://core.ac.uk/download/pdf/148008325.pdf). As mentioned above, Swift's support for custom static compilation is still under development.
 
@@ -565,7 +565,7 @@ Regexes are often used for tokenization and tokens can be represented with Swift
 
 ### Future work: baked-in localized processing
 
-- `CustomMatchingRegexComponent` gives an entry point for localized processors
+- `CustomPrefixMatchRegexComponent` gives an entry point for localized processors
 - Future work includes (sub?)protocols to communicate localization intent
 
 -->

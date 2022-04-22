@@ -39,7 +39,7 @@ Covers the "interior" syntax, extended syntaxes, run-time construction of a rege
 
 Proposes a slew of Regex-powered algorithms.
 
-Introduces `CustomMatchingRegexComponent`, which is a monadic-parser style interface for external parsers to be used as components of a regex.
+Introduces `CustomPrefixMatchRegexComponent`, which is a monadic-parser style interface for external parsers to be used as components of a regex.
 
 ## Unicode for String Processing
 

@@ -863,9 +863,9 @@ class RegexDSLTests: XCTestCase {
       var patch: Int
       var dev: String?
     }
-    struct SemanticVersionParser: CustomMatchingRegexComponent {
+    struct SemanticVersionParser: CustomPrefixMatchRegexComponent {
       typealias RegexOutput = SemanticVersion
-      func match(
+      func consuming(
         _ input: String,
         startingAt index: String.Index,
         in bounds: Range<String.Index>
