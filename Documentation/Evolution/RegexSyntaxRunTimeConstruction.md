@@ -1,7 +1,12 @@
 
 # Regex Syntax and Run-time Construction
 
-- Authors: [Hamish Knight](https://github.com/hamishknight), [Michael Ilseman](https://github.com/milseman)
+* Proposal: [SE-NNNN](NNNN-filename.md)
+* Authors: [Hamish Knight](https://github.com/hamishknight), [Michael Ilseman](https://github.com/milseman)
+* Review Manager: [Ben Cohen](https://github.com/airspeedswift)
+* Status: **Awaiting review**
+* Implementation: https://github.com/apple/swift-experimental-string-processing
+  * Available in nightly toolchain snapshots with `import _StringProcessing`
 
 ## Introduction
 
@@ -81,11 +86,11 @@ We propose initializers to declare and compile a regex from syntax. Upon failure
 ```swift
 extension Regex {
   /// Parse and compile `pattern`, resulting in a strongly-typed capture list.
-  public init(compiling pattern: String, as: Output.Type = Output.self) throws
+  public init(_ pattern: String, as: Output.Type = Output.self) throws
 }
 extension Regex where Output == AnyRegexOutput {
   /// Parse and compile `pattern`, resulting in an existentially-typed capture list.
-  public init(compiling pattern: String) throws
+  public init(_ pattern: String) throws
 }
 ```
 
@@ -153,6 +158,20 @@ extension Regex.Match where Output == AnyRegexOutput {
   /// - Returns: A match generic over the output type if the underlying values can be converted to the
   ///   output type. Returns `nil` otherwise.
   public func `as`<Output>(_ type: Output.Type) -> Regex<Output>.Match?
+}
+```
+
+We propose adding API to query and access captures by name in an existentially typed regex match:
+
+```swift
+extension Regex.Match where Output == AnyRegexOutput {
+  /// If a named-capture with `name` is present, returns its value. Otherwise `nil`.
+  public subscript(_ name: String) -> AnyRegexOutput.Element? { get }
+}
+
+extension AnyRegexOutput {
+  /// If a named-capture with `name` is present, returns its value. Otherwise `nil`.
+  public subscript(_ name: String) -> AnyRegexOutput.Element? { get }
 }
 ```
 
