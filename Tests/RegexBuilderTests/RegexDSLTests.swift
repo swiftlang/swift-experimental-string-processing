@@ -11,7 +11,7 @@
 
 import XCTest
 import _StringProcessing
-@testable import RegexBuilder
+import RegexBuilder
 
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
