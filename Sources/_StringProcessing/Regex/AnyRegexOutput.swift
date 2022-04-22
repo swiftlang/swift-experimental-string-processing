@@ -14,7 +14,7 @@
 @available(SwiftStdlib 5.7, *)
 extension Regex where Output == AnyRegexOutput {
   /// Parse and compile `pattern`, resulting in an existentially-typed capture list.
-  public init(compiling pattern: String) throws {
+  public init(_ pattern: String) throws {
     self.init(ast: try parse(pattern, .traditional))
   }
 }
@@ -23,7 +23,7 @@ extension Regex where Output == AnyRegexOutput {
 extension Regex {
   /// Parse and compile `pattern`, resulting in a strongly-typed capture list.
   public init(
-    compiling pattern: String,
+    _ pattern: String,
     as: Output.Type = Output.self
   ) throws {
     self.init(ast: try parse(pattern, .traditional))
@@ -38,12 +38,17 @@ extension Regex.Match where Output == AnyRegexOutput {
   ) -> Substring {
     input[range]
   }
+
+  public subscript(name: String) -> AnyRegexOutput.Element? {
+    namedCaptureOffsets[name].map { self[$0 + 1] }
+  }
 }
 
 /// A type-erased regex output
 @available(SwiftStdlib 5.7, *)
 public struct AnyRegexOutput {
   let input: String
+  let namedCaptureOffsets: [String: Int]
   fileprivate let _elements: [ElementRepresentation]
 
   /// The underlying representation of the element of a type-erased regex
@@ -94,9 +99,12 @@ extension AnyRegexOutput {
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput {
   internal init<C: Collection>(
-    input: String, elements: C
+    input: String, namedCaptureOffsets: [String: Int], elements: C
   ) where C.Element == StructuredCapture {
-    self.init(input: input, _elements: elements.map(ElementRepresentation.init))
+    self.init(
+      input: input,
+      namedCaptureOffsets: namedCaptureOffsets,
+      _elements: elements.map(ElementRepresentation.init))
   }
 }
 
@@ -167,6 +175,13 @@ extension AnyRegexOutput: RandomAccessCollection {
 
   public subscript(position: Int) -> Element {
     .init(representation: _elements[position], input: input)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension AnyRegexOutput {
+  public subscript(name: String) -> Element? {
+    namedCaptureOffsets[name].map { self[$0 + 1] }
   }
 }
 

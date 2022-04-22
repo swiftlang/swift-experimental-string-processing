@@ -1,6 +1,11 @@
 # Regex Type and Overview
 
-- Authors: [Michael Ilseman](https://github.com/milseman)
+* Proposal: [SE-0350](0350-regex-type-overview.md)
+* Authors: [Michael Ilseman](https://github.com/milseman)
+* Review Manager: [Ben Cohen](https://github.com/airspeedswift)
+* Status: **Active Review (4 - 28 April 2022)**
+* Implementation: https://github.com/apple/swift-experimental-string-processing
+  * Available in nightly toolchain snapshots with `import _StringProcessing`
 
 ## Introduction
 
@@ -134,11 +139,11 @@ Regexes can be created at run time from a string containing familiar regex synta
 
 ```swift
 let pattern = #"(\w+)\s\s+(\S+)\s\s+((?:(?!\s\s).)*)\s\s+(.*)"#
-let regex = try! Regex(compiling: pattern)
+let regex = try! Regex(pattern)
 // regex: Regex<AnyRegexOutput>
 
 let regex: Regex<(Substring, Substring, Substring, Substring, Substring)> =
-  try! Regex(compiling: pattern)
+  try! Regex(pattern)
 ```
 
 *Note*: The syntax accepted and further details on run-time compilation, including `AnyRegexOutput` and extended syntaxes, are discussed in [Run-time Regex Construction][pitches].
@@ -207,7 +212,7 @@ func processEntry(_ line: String) -> Transaction? {
   //    amount: Substring
   //  )>
 
-  guard let match = regex.matchWhole(line),
+  guard let match = regex.wholeMatch(line),
         let kind = Transaction.Kind(match.kind),
         let date = try? Date(String(match.date), strategy: dateParser),
         let amount = try? Decimal(String(match.amount), format: decimalParser)
@@ -226,7 +231,7 @@ The result builder allows for inline failable value construction, which particip
 
 Swift regexes describe an unambiguous algorithm, where choice is ordered and effects can be reliably observed. For example, a `print()` statement inside the `TryCapture`'s transform function will run whenever the overall algorithm naturally dictates an attempt should be made. Optimizations can only elide such calls if they can prove it is behavior-preserving (e.g. "pure").
 
-`CustomMatchingRegexComponent`, discussed in [String Processing Algorithms][pitches], allows industrial-strength parsers to be used a regex components. This allows us to drop the overly-permissive pre-parsing step:
+`CustomPrefixMatchRegexComponent`, discussed in [String Processing Algorithms][pitches], allows industrial-strength parsers to be used a regex components. This allows us to drop the overly-permissive pre-parsing step:
 
 ```swift
 func processEntry(_ line: String) -> Transaction? {
@@ -300,7 +305,7 @@ Regex targets [UTS\#18 Level 2](https://www.unicode.org/reports/tr18/#Extended_U
 ```swift
 /// A regex represents a string processing algorithm.
 ///
-///     let regex = try Regex(compiling: "a(.*)b")
+///     let regex = try Regex("a(.*)b")
 ///     let match = "cbaxb".firstMatch(of: regex)
 ///     print(match.0) // "axb"
 ///     print(match.1) // "x"
@@ -384,20 +389,24 @@ extension Regex.Match {
 // Run-time compilation interfaces
 extension Regex {
   /// Parse and compile `pattern`, resulting in a strongly-typed capture list.
-  public init(compiling pattern: String, as: Output.Type = Output.self) throws
+  public init(_ pattern: String, as: Output.Type = Output.self) throws
 }
 extension Regex where Output == AnyRegexOutput {
   /// Parse and compile `pattern`, resulting in an existentially-typed capture list.
-  public init(compiling pattern: String) throws
+  public init(_ pattern: String) throws
 }
 ```
+
+### Cancellation
+
+Regex is somewhat different from existing standard library operations in that regex processing can be a long-running task.
+For this reason regex algorithms may check if the parent task has been cancelled and end execution.
 
 ### On severability and related proposals
 
 The proposal split presented is meant to aid focused discussion, while acknowledging that each is interconnected. The boundaries between them are not completely cut-and-dry and could be refined as they enter proposal phase.
 
 Accepting this proposal in no way implies that all related proposals must be accepted. They are severable and each should stand on their own merit.
-
 
 ## Source compatibility
 
@@ -422,7 +431,7 @@ Regular expressions have a deservedly mixed reputation, owing to their historica
 
 * "Regular expressions are bad because you should use a real parser"
     - In other systems, you're either in or you're out, leading to a gravitational pull to stay in when... you should get out
-    - Our remedy is interoperability with real parsers via `CustomMatchingRegexComponent`
+    - Our remedy is interoperability with real parsers via `CustomPrefixMatchRegexComponent`
     - Literals with refactoring actions provide an incremental off-ramp from regex syntax to result builders and real parsers
 * "Regular expressions are bad because ugly unmaintainable syntax"
     - We propose literals with source tools support, allowing for better syntax highlighting and analysis
@@ -488,6 +497,16 @@ The generic parameter `Output` is proposed to contain both the whole match (the 
 
 The biggest issue with this alternative design is that the numbering of `Captures` elements misaligns with the numbering of captures in textual regexes, where backreference `\0` refers to the entire match and captures start at `\1`. This design would sacrifice familarity and have the pitfall of introducing off-by-one errors.
 
+### Encoding `Regex`es into the type system
+
+During the initial review period the following comment was made:
+
+> I think the goal should be that, at least for regex literals (and hopefully for the DSL to some extent), one day we might not even need a bytecode or interpreter. I think the ideal case is if each literal was its own function or type that gets generated and optimised as if you wrote it in Swift.
+
+This is an approach that has been tried a few times in a few different languages (including by a few members of the Swift Standard Library and Core teams), and while it can produce attractive microbenchmarks, it has almost always proved to be a bad idea at the macro scale. In particular, even if we set aside witness tables and other associated swift generics overhead, optimizing a fixed pipeline for each pattern you want to match causes significant codesize expansion when there are multiple patterns in use, as compared to a more flexible byte code interpreter. A bytecode interpreter makes better use of instruction caches and memory, and can also benefit from micro architectural resources that are shared across different patterns. There is a tradeoff w.r.t. branch prediction resources, where separately compiled patterns may have more decisive branch history data, but a shared bytecode engine has much more data to use; this tradeoff tends to fall on the side of a bytecode engine, but it does not always do so.
+
+It should also be noted that nothing prevents AOT or JIT compiling of the bytecode if we believe it will be advantageous, but compiling or interpreting arbitrary Swift code at runtime is rather more unattractive, since both the type system and language are undecidable. Even absent this rationale, we would probably not encode regex programs directly into the type system simply because it is unnecessarily complex.
+
 ### Future work: static optimization and compilation
 
 Swift's support for static compilation is still developing, and future work here is leveraging that to compile regex when profitable. Many regex describe simple [DFAs](https://en.wikipedia.org/wiki/Deterministic_finite_automaton) and can be statically compiled into very efficient programs. Full static compilation needs to be balanced with code size concerns, as a matching-specific bytecode is typically far smaller than a corresponding program (especially since the bytecode interpreter is shared).
@@ -497,7 +516,7 @@ Regex are compiled into an intermediary representation and fairly simple analysi
 
 ### Future work: parser combinators
 
-What we propose here is an incremental step towards better parsing support in Swift using parser-combinator style libraries. The underlying execution engine supports recursive function calls and mechanisms for library extensibility. `CustomMatchingRegexComponent`'s protocol requirement is effectively a [monadic parser](https://homepages.inf.ed.ac.uk/wadler/papers/marktoberdorf/baastad.pdf), meaning `Regex` provides a regex-flavored combinator-like system.
+What we propose here is an incremental step towards better parsing support in Swift using parser-combinator style libraries. The underlying execution engine supports recursive function calls and mechanisms for library extensibility. `CustomPrefixMatchRegexComponent`'s protocol requirement is effectively a [monadic parser](https://homepages.inf.ed.ac.uk/wadler/papers/marktoberdorf/baastad.pdf), meaning `Regex` provides a regex-flavored combinator-like system.
 
 An issues with traditional parser combinator libraries are the compilation barriers between call-site and definition, resulting in excessive and overly-cautious backtracking traffic. These can be eliminated through better [compilation techniques](https://core.ac.uk/download/pdf/148008325.pdf). As mentioned above, Swift's support for custom static compilation is still under development.
 
@@ -546,7 +565,7 @@ Regexes are often used for tokenization and tokens can be represented with Swift
 
 ### Future work: baked-in localized processing
 
-- `CustomMatchingRegexComponent` gives an entry point for localized processors
+- `CustomPrefixMatchRegexComponent` gives an entry point for localized processors
 - Future work includes (sub?)protocols to communicate localization intent
 
 -->

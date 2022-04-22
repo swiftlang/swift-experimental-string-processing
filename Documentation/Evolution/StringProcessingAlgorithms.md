@@ -8,9 +8,9 @@ We propose:
 
 1. New regex-powered algorithms over strings, bringing the standard library up to parity with scripting languages
 2. Generic `Collection` equivalents of these algorithms in terms of subsequences
-3. `protocol CustomMatchingRegexComponent`, which allows 3rd party libraries to provide their industrial-strength parsers as intermixable components of regexes
+3. `protocol CustomPrefixMatchRegexComponent`, which allows 3rd party libraries to provide their industrial-strength parsers as intermixable components of regexes
 
-This proposal is part of a larger [regex-powered string processing initiative](https://forums.swift.org/t/declarative-string-processing-overview/52459). Throughout the document, we will reference the still-in-progress [`RegexProtocol`, `Regex`](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/StronglyTypedCaptures.md), and result builder DSL, but these are in flux and not formally part of this proposal. Further discussion of regex specifics is out of scope of this proposal and better discussed in another thread (see [Pitch and Proposal Status](https://github.com/apple/swift-experimental-string-processing/issues/107) for links to relevant threads).
+This proposal is part of a larger [regex-powered string processing initiative](https://github.com/apple/swift-evolution/blob/main/proposals/0350-regex-type-overview.md), the status of each proposal is tracked [here](https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/ProposalOverview.md). Further discussion of regex specifics is out of scope of this proposal and better discussed in their relevant reviews.
 
 ## Motivation
 
@@ -91,18 +91,18 @@ Note: Only a subset of Python's string processing API are included in this table
 
 ### Complex string processing
 
-Even with the API additions, more complex string processing quickly becomes unwieldy. Up-coming support for authoring regexes in Swift help alleviate this somewhat, but string processing in the modern world involves dealing with localization, standards-conforming validation, and other concerns for which a dedicated parser is required.
+Even with the API additions, more complex string processing quickly becomes unwieldy. String processing in the modern world involves dealing with localization, standards-conforming validation, and other concerns for which a dedicated parser is required.
 
 Consider parsing the date field `"Date: Wed, 16 Feb 2022 23:53:19 GMT"` in an HTTP header as a `Date` type. The naive approach is to search for a substring that looks like a date string (`16 Feb 2022`), and attempt to post-process it as a `Date` with a date parser:
 
 ```swift
 let regex = Regex {
-    capture {
-        oneOrMore(.digit)
+    Capture {
+        OneOrMore(.digit)
         " "
-        oneOrMore(.word)
+        OneOrMore(.word)
         " "
-        oneOrMore(.digit)
+        OneOrMore(.digit)
     }
 }
 
@@ -128,21 +128,21 @@ DEBIT     03/24/2020    IRX tax payment    ($52,249.98)
 Parsing a currency string such as `$3,020.85` with regex is also tricky, as it can contain localized and currency symbols in addition to accounting conventions. This is why Foundation provides industrial-strength parsers for localized strings.
 
 
-## Proposed solution 
+## Proposed solution
 
 ### Complex string processing
 
-We propose a `CustomMatchingRegexComponent` protocol which allows types from outside the standard library participate in regex builders and `RegexComponent` algorithms. This allows types, such as `Date.ParseStrategy` and `FloatingPointFormatStyle.Currency`, to be used directly within a regex:
+We propose a `CustomPrefixMatchRegexComponent` protocol which allows types from outside the standard library participate in regex builders and `RegexComponent` algorithms. This allows types, such as `Date.ParseStrategy` and `FloatingPointFormatStyle.Currency`, to be used directly within a regex:
                            
 ```swift
 let dateRegex = Regex {
-    capture(dateParser)
+    Capture(dateParser)
 }
 
 let date: Date = header.firstMatch(of: dateRegex).map(\.result.1) 
 
 let currencyRegex = Regex {
-    capture(.localizedCurrency(code: "USD").sign(strategy: .accounting))
+    Capture(.localizedCurrency(code: "USD").sign(strategy: .accounting))
 }
 
 let amount: [Decimal] = statement.matches(of: currencyRegex).map(\.result.1)
@@ -162,28 +162,30 @@ We also propose the following regex-powered algorithms as well as their generic 
 |`replace(:with:subrange:maxReplacements)`| Replaces all occurrences of the sequence matching the given `RegexComponent` or sequence with a given collection |
 |`split(by:)`| Returns the longest possible subsequences of the collection around elements equal to the given separator |
 |`firstMatch(of:)`| Returns the first match of the specified `RegexComponent` within the collection |
+|`wholeMatch(of:)`| Matches the specified `RegexComponent` in the collection as a whole |
+|`prefixMatch(of:)`| Matches the specified `RegexComponent` against the collection at the beginning |
 |`matches(of:)`| Returns a collection containing all matches of the specified `RegexComponent` |
 
 
+## Detailed design
 
-## Detailed design 
+### `CustomPrefixMatchRegexComponent`
 
-### `CustomMatchingRegexComponent`
-
-`CustomMatchingRegexComponent` inherits from `RegexComponent` and satisfies its sole requirement; Conformers can be used with all of the string algorithms generic over `RegexComponent`.
+`CustomPrefixMatchRegexComponent` inherits from `RegexComponent` and satisfies its sole requirement. Conformers can be used with all of the string algorithms generic over `RegexComponent`.
 
 ```swift
-/// A protocol for custom match functionality.
-public protocol CustomMatchingRegexComponent : RegexComponent {
-    /// Match the input string within the specified bounds, beginning at the given index, and return
-    /// the end position (upper bound) of the match and the matched instance.
+/// A protocol allowing custom types to function as regex components by 
+/// providing the raw functionality backing `prefixMatch`.
+public protocol CustomPrefixMatchRegexComponent: RegexComponent {
+    /// Process the input string within the specified bounds, beginning at the given index, and return
+    /// the end position (upper bound) of the match and the produced output.
     /// - Parameters:
     ///   - input: The string in which the match is performed.
     ///   - index: An index of `input` at which to begin matching.
     ///   - bounds: The bounds in `input` in which the match is performed.
     /// - Returns: The upper bound where the match terminates and a matched instance, or `nil` if
     ///   there isn't a match.
-    func match(
+    func consuming(
         _ input: String,
         startingAt index: String.Index,
         in bounds: Range<String.Index>
@@ -197,8 +199,8 @@ public protocol CustomMatchingRegexComponent : RegexComponent {
 We use Foundation `FloatingPointFormatStyle<Decimal>.Currency` as an example for protocol conformance. It would implement the `match` function with `Match` being a `Decimal`. It could also add a static function `.localizedCurrency(code:)` as a member of `RegexComponent`, so it can be referred as `.localizedCurrency(code:)` in the `Regex` result builder:
 
 ```swift
-extension FloatingPointFormatStyle<Decimal>.Currency : CustomMatchingRegexComponent { 
-    public func match(
+extension FloatingPointFormatStyle<Decimal>.Currency : CustomPrefixMatchRegexComponent { 
+    public func consuming(
         _ input: String,
         startingAt index: String.Index,
         in bounds: Range<String.Index>
@@ -389,7 +391,7 @@ extension BidirectionalCollection where SubSequence == Substring {
 }
 ```
 
-#### First match
+#### Match
 
 ```swift
 extension BidirectionalCollection where SubSequence == Substring {
@@ -398,6 +400,16 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Returns: The first match of `regex` in the collection, or `nil` if
     /// there isn't a match.
     public func firstMatch<R: RegexComponent>(of regex: R) -> RegexMatch<R.Match>?
+    
+    /// Match a regex in its entirety.
+    /// - Parameter r: The regex to match against.
+    /// - Returns: The match if there is one, or `nil` if none.
+    public func wholeMatch<R: RegexComponent>(of r: R) -> Regex<R.Output>.Match? 
+    
+    /// Match part of the regex, starting at the beginning.
+    /// - Parameter r: The regex to match against.
+    /// - Returns: The match if there is one, or `nil` if none.
+    public func prefixMatch<R: RegexComponent>(of r: R) -> Regex<R.Output>.Match?
 }
 ```
 
@@ -473,7 +485,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     /// - Returns: A new collection in which all occurrences of subsequence
     /// matching `regex` in `subrange` are replaced by `replacement`.
     public func replacing<R: RegexComponent, Replacement: Collection>(
-        _ regex: R,
+        _ r: R,
         with replacement: Replacement,
         subrange: Range<Index>,
         maxReplacements: Int = .max
@@ -489,7 +501,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     /// - Returns: A new collection in which all occurrences of subsequence
     /// matching `regex` are replaced by `replacement`.
     public func replacing<R: RegexComponent, Replacement: Collection>(
-        _ regex: R,
+        _ r: R,
         with replacement: Replacement,
         maxReplacements: Int = .max
     ) -> Self where Replacement.Element == Element
@@ -502,7 +514,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     ///   - maxReplacements: A number specifying how many occurrences of the
     ///   sequence matching `regex` to replace. Default is `Int.max`.
     public mutating func replace<R: RegexComponent, Replacement: Collection>(
-        _ regex: R,
+        _ r: R,
         with replacement: Replacement,
         maxReplacements: Int = .max
     ) where Replacement.Element == Element
@@ -511,48 +523,48 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     /// the given regex are replaced by another regex match.
     /// - Parameters:
     ///   - regex: A regex describing the sequence to replace.
-    ///   - replacement: A closure that receives the full match information,
-    ///   including captures, and returns a replacement collection.
     ///   - subrange: The range in the collection in which to search for `regex`.
     ///   - maxReplacements: A number specifying how many occurrences of the
     ///   sequence matching `regex` to replace. Default is `Int.max`.
+    ///   - replacement: A closure that receives the full match information,
+    ///   including captures, and returns a replacement collection.
     /// - Returns: A new collection in which all occurrences of subsequence
     /// matching `regex` are replaced by `replacement`.
     public func replacing<R: RegexComponent, Replacement: Collection>(
         _ regex: R,
-        with replacement: (RegexMatch<R.Match>) throws -> Replacement,
         subrange: Range<Index>,
-        maxReplacements: Int = .max
+        maxReplacements: Int = .max,
+        with replacement: (RegexMatch<R.Match>) throws -> Replacement
     ) rethrows -> Self where Replacement.Element == Element
   
     /// Returns a new collection in which all occurrences of a sequence matching
     /// the given regex are replaced by another collection.
     /// - Parameters:
     ///   - regex: A regex describing the sequence to replace.
-    ///   - replacement: A closure that receives the full match information,
-    ///   including captures, and returns a replacement collection.
     ///   - maxReplacements: A number specifying how many occurrences of the
     ///   sequence matching `regex` to replace. Default is `Int.max`.
+    ///   - replacement: A closure that receives the full match information,
+    ///   including captures, and returns a replacement collection.
     /// - Returns: A new collection in which all occurrences of subsequence
     /// matching `regex` are replaced by `replacement`.
     public func replacing<R: RegexComponent, Replacement: Collection>(
         _ regex: R,
-        with replacement: (RegexMatch<R.Match>) throws -> Replacement,
-        maxReplacements: Int = .max
+        maxReplacements: Int = .max,
+        with replacement: (RegexMatch<R.Match>) throws -> Replacement
     ) rethrows -> Self where Replacement.Element == Element
   
     /// Replaces all occurrences of the sequence matching the given regex with
     /// a given collection.
     /// - Parameters:
     ///   - regex: A regex describing the sequence to replace.
-    ///   - replacement: A closure that receives the full match information,
-    ///   including captures, and returns a replacement collection.
     ///   - maxReplacements: A number specifying how many occurrences of the
     ///   sequence matching `regex` to replace. Default is `Int.max`.
+    ///   - replacement: A closure that receives the full match information,
+    ///   including captures, and returns a replacement collection.
     public mutating func replace<R: RegexComponent, Replacement: Collection>(
         _ regex: R,
-        with replacement: (RegexMatch<R.Match>) throws -> Replacement,
-        maxReplacements: Int = .max
+        maxReplacements: Int = .max,
+        with replacement: (RegexMatch<R.Match>) throws -> Replacement
     ) rethrows where Replacement.Element == Element
 }
 ```
@@ -609,4 +621,4 @@ Trimming a string from both sides shares a similar story. For example, `"ababa".
  
 ### Future API
 
-Some Python functions are not currently included in this proposal, such as trimming the suffix from a string/collection. This pitch aims to establish a pattern for using `RegexComponent` with string processing algorithms, so that further enhancement can to be introduced to the standard library easily in the future, and eventually close the gap between Swift and other popular scripting languages. 
+Some common string processing functions are not currently included in this proposal, such as trimming the suffix from a string/collection, and finding overlapping ranges of matched substrings. This pitch aims to establish a pattern for using `RegexComponent` with string processing algorithms, so that further enhancement can to be introduced to the standard library easily in the future, and eventually close the gap between Swift and other popular scripting languages. 

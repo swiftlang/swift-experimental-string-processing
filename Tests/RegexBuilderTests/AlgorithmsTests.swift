@@ -15,13 +15,11 @@ import _StringProcessing
 
 @available(SwiftStdlib 5.7, *)
 class RegexConsumerTests: XCTestCase {
-  // FIXME: enable this test when we update the return type of `matches(of:)`
-  // when SE-0346 is available
-  //  func testMatches() {
-  //    let regex = Capture(OneOrMore(.digit)) { 2 * Int($0)! }
-  //    let str = "foo 160 bar 99 baz"
-  //    XCTAssertEqual(str.matches(of: regex).map(\.result.1), [320, 198])
-  //  }
+  func testMatches() {
+    let regex = Capture(OneOrMore(.digit)) { 2 * Int($0)! }
+    let str = "foo 160 bar 99 baz"
+    XCTAssertEqual(str.matches(of: regex).map(\.output.1), [320, 198])
+  }
   
   func testMatchReplace() {
     func replaceTest<R: RegexComponent>(
@@ -61,5 +59,49 @@ class RegexConsumerTests: XCTestCase {
       input: "2x3 5x4x3 6x0 1x2x3x4",
       result: "6 60 0 6x4",
       { match in "\(match.output.1 * match.output.2 * (match.output.3 ?? 1))" })
+  }
+
+  func testMatchReplaceSubrange() {
+    func replaceTest<R: RegexComponent>(
+      _ regex: R,
+      input: String,
+      _ replace: (Regex<R.RegexOutput>.Match) -> String,
+      _ tests: (subrange: Range<String.Index>, maxReplacement: Int, result: String)...,
+      file: StaticString = #file,
+      line: UInt = #line
+    ) {
+      for (subrange, maxReplacement, result) in tests {
+        XCTAssertEqual(input.replacing(regex, subrange: subrange, maxReplacements: maxReplacement, with: replace), result, file: file, line: line)
+      }
+    }
+
+    let int = Capture(OneOrMore(.digit)) { Int($0)! }
+
+    let addition = "9+16, 0+3, 5+5, 99+1"
+
+    replaceTest(
+      Regex { int; "+"; int },
+      input: "9+16, 0+3, 5+5, 99+1",
+      { match in "\(match.output.1 + match.output.2)" },
+
+      (subrange: addition.startIndex..<addition.endIndex,
+       maxReplacement: 0,
+       result: "9+16, 0+3, 5+5, 99+1"),
+      (subrange: addition.startIndex..<addition.endIndex,
+       maxReplacement: .max,
+       result: "25, 3, 10, 100"),
+      (subrange: addition.startIndex..<addition.endIndex,
+       maxReplacement: 2,
+       result: "25, 3, 5+5, 99+1"),
+      (subrange: addition.index(addition.startIndex, offsetBy: 5) ..< addition.endIndex,
+       maxReplacement: .max,
+       result: "9+16, 3, 10, 100"),
+      (subrange: addition.startIndex ..< addition.index(addition.startIndex, offsetBy: 5),
+       maxReplacement: .max,
+       result: "25, 0+3, 5+5, 99+1"),
+      (subrange: addition.index(addition.startIndex, offsetBy: 5) ..< addition.endIndex,
+       maxReplacement: 2,
+       result: "9+16, 3, 10, 99+1")
+    )
   }
 }

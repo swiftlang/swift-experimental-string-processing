@@ -501,8 +501,26 @@ extension RegexTests {
     parseTest(#"[[:a]]"#, charClass(charClass(":", "a")))
     parseTest(#"[[:}]]"#, charClass(charClass(":", "}")))
     parseTest(#"[[:{]]"#, charClass(charClass(":", "{")))
-    parseTest(#"[[:{:]]"#, charClass(posixProp_m(.other(key: nil, value: "{"))))
     parseTest(#"[[:}:]]"#, charClass(charClass(":", "}", ":")))
+
+    parseTest(
+      #"[:[:space:]:]"#,
+      charClass(":", posixProp_m(.binary(.whitespace)), ":")
+    )
+    parseTest(
+      #"[:a[:space:]b:]"#,
+      charClass(":", "a", posixProp_m(.binary(.whitespace)), "b", ":")
+    )
+
+    // ICU parses a custom character class if it sees any of its known escape
+    // sequences in a POSIX character property (though it appears to exclude
+    // character class escapes e.g '\d'). We do so for any escape sequence as
+    // '\' is not a valid character property character.
+    parseTest(#"[:\Q:]\E]"#, charClass(":", quote_m(":]")))
+    parseTest(#"[:\a:]"#, charClass(":", atom_m(.escaped(.alarm)), ":"))
+    parseTest(#"[:\d:]"#, charClass(":", atom_m(.escaped(.decimalDigit)), ":"))
+    parseTest(#"[:\\:]"#, charClass(":", "\\", ":"))
+    parseTest(#"[:\:]"#, charClass(":", ":"))
 
     parseTest(
       #"\D\S\W"#,
@@ -1140,14 +1158,6 @@ extension RegexTests {
     parseTest(
       #"\p{C}+"#,
       oneOrMore(of: prop(.generalCategory(.other))))
-
-    // TODO: Start erroring on these?
-    parseTest(#"\p{Lx}"#, prop(.other(key: nil, value: "Lx")))
-    parseTest(#"\p{gcL}"#, prop(.other(key: nil, value: "gcL")))
-    parseTest(#"\p{x=y}"#, prop(.other(key: "x", value: "y")))
-    parseTest(#"\p{aaa(b)}"#, prop(.other(key: nil, value: "aaa(b)")))
-    parseTest("[[:a():]]", charClass(posixProp_m(.other(key: nil, value: "a()"))))
-    parseTest(#"\p{aaa\p{b}}"#, concat(prop(.other(key: nil, value: #"aaa\p{b"#)), "}"))
 
     // UAX44-LM3 means all of the below are equivalent.
     let lowercaseLetter = prop(.generalCategory(.lowercaseLetter))
@@ -2231,12 +2241,12 @@ extension RegexTests {
     diagnosticTest(#"\x{5"#, .expected("}"))
     diagnosticTest(#"\N{A"#, .expected("}"))
     diagnosticTest(#"\N{U+A"#, .expected("}"))
-    diagnosticTest(#"\p{a"#, .expected("}"))
+    diagnosticTest(#"\p{a"#, .unknownProperty(key: nil, value: "a"))
     diagnosticTest(#"\p{a="#, .emptyProperty)
     diagnosticTest(#"\p{a=}"#, .emptyProperty)
-    diagnosticTest(#"\p{a=b"#, .expected("}"))
-    diagnosticTest(#"\p{aaa[b]}"#, .expected("}"))
-    diagnosticTest(#"\p{a=b=c}"#, .expected("}"))
+    diagnosticTest(#"\p{a=b"#, .unknownProperty(key: "a", value: "b"))
+    diagnosticTest(#"\p{aaa[b]}"#, .unknownProperty(key: nil, value: "aaa"))
+    diagnosticTest(#"\p{a=b=c}"#, .unknownProperty(key: "a", value: "b"))
     diagnosticTest(#"(?#"#, .expected(")"))
     diagnosticTest(#"(?x"#, .expected(")"))
 
@@ -2320,6 +2330,16 @@ extension RegexTests {
     diagnosticTest(#"\e\#u{301}"#, .invalidEscape("e\u{301}"))
     diagnosticTest(#"\\#u{E9}"#, .invalidEscape("é"))
     diagnosticTest(#"\˂"#, .invalidEscape("˂"))
+
+    // MARK: Character properties
+
+    diagnosticTest(#"\p{Lx}"#, .unknownProperty(key: nil, value: "Lx"))
+    diagnosticTest(#"\p{gcL}"#, .unknownProperty(key: nil, value: "gcL"))
+    diagnosticTest(#"\p{x=y}"#, .unknownProperty(key: "x", value: "y"))
+    diagnosticTest(#"\p{aaa(b)}"#, .unknownProperty(key: nil, value: "aaa(b)"))
+    diagnosticTest("[[:a():]]", .unknownProperty(key: nil, value: "a()"))
+    diagnosticTest(#"\p{aaa\p{b}}"#, .unknownProperty(key: nil, value: "aaa"))
+    diagnosticTest(#"[[:{:]]"#, .unknownProperty(key: nil, value: "{"))
 
     // MARK: Matching options
 

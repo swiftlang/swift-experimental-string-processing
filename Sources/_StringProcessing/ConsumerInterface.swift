@@ -105,7 +105,7 @@ extension DSLTree.Atom {
       return nil
 
     case let .unconverted(a):
-      return try a.generateConsumer(opts)
+      return try a.ast.generateConsumer(opts)
     }
 
   }
@@ -423,10 +423,6 @@ extension AST.Atom.CharacterProperty {
 
       case .onigurumaSpecial(let s):
         throw Unsupported("TODO: map Oniguruma special: \(s)")
-
-      case let .other(key, value):
-        throw Unsupported(
-          "TODO: map other \(key ?? "")=\(value)")
       }
     }()
 

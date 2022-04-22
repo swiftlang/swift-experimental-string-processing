@@ -28,11 +28,13 @@ public struct _CharacterClassModel: Hashable {
   var isInverted: Bool = false
 
   // TODO: Split out builtin character classes into their own type?
-    public enum Representation: Hashable {
+  public enum Representation: Hashable {
     /// Any character
     case any
     /// Any grapheme cluster
     case anyGrapheme
+    /// Any Unicode scalar
+    case anyScalar
     /// Character.isDigit
     case digit
     /// Character.isHexDigit
@@ -52,10 +54,14 @@ public struct _CharacterClassModel: Hashable {
     case custom([CharacterSetComponent])
   }
 
-  public typealias SetOperator = AST.CustomCharacterClass.SetOp
+  public enum SetOperator: Hashable {
+    case subtraction
+    case intersection
+    case symmetricDifference
+  }
 
   /// A binary set operation that forms a character class component.
-    public struct SetOperation: Hashable {
+  public struct SetOperation: Hashable {
     var lhs: CharacterSetComponent
     var op: SetOperator
     var rhs: CharacterSetComponent
@@ -72,7 +78,7 @@ public struct _CharacterClassModel: Hashable {
     }
   }
 
-    public enum CharacterSetComponent: Hashable {
+  public enum CharacterSetComponent: Hashable {
     case character(Character)
     case range(ClosedRange<Character>)
 
@@ -155,8 +161,12 @@ public struct _CharacterClassModel: Hashable {
     case .graphemeCluster:
       let c = str[i]
       var matched: Bool
+      var next = str.index(after: i)
       switch cc {
       case .any, .anyGrapheme: matched = true
+      case .anyScalar:
+        matched = true
+        next = str.unicodeScalars.index(after: i)
       case .digit:
         matched = c.isNumber && (c.isASCII || !options.usesASCIIDigits)
       case .hexDigit:
@@ -174,12 +184,13 @@ public struct _CharacterClassModel: Hashable {
       if isInverted {
         matched.toggle()
       }
-      return matched ? str.index(after: i) : nil
+      return matched ? next : nil
     case .unicodeScalar:
       let c = str.unicodeScalars[i]
       var matched: Bool
       switch cc {
       case .any: matched = true
+      case .anyScalar: matched = true
       case .anyGrapheme: fatalError("Not matched in this mode")
       case .digit:
         matched = c.properties.numericType != nil && (c.isASCII || !options.usesASCIIDigits)
@@ -222,6 +233,10 @@ extension _CharacterClassModel {
 
   public static var anyGrapheme: _CharacterClassModel {
     .init(cc: .anyGrapheme, matchLevel: .graphemeCluster)
+  }
+
+  public static var anyUnicodeScalar: _CharacterClassModel {
+    .init(cc: .any, matchLevel: .unicodeScalar)
   }
 
   public static var whitespace: _CharacterClassModel {
@@ -275,6 +290,7 @@ extension _CharacterClassModel.Representation: CustomStringConvertible {
     switch self {
     case .any: return "<any>"
     case .anyGrapheme: return "<any grapheme>"
+    case .anyScalar: return "<any scalar>"
     case .digit: return "<digit>"
     case .hexDigit: return "<hex digit>"
     case .horizontalWhitespace: return "<horizontal whitespace>"
@@ -294,7 +310,17 @@ extension _CharacterClassModel: CustomStringConvertible {
 }
 
 extension _CharacterClassModel {
-  public func makeAST() -> AST.Node? {
+  public func makeDSLTreeCharacterClass() -> DSLTree.CustomCharacterClass? {
+    // FIXME: Implement in DSLTree instead of wrapping an AST atom
+    switch makeAST() {
+    case .atom(let atom):
+      return .init(members: [.atom(.unconverted(.init(ast: atom)))])
+    default:
+      return nil
+    }
+  }
+  
+  internal func makeAST() -> AST.Node? {
     let inv = isInverted
 
     func esc(_ b: AST.Atom.EscapedBuiltin) -> AST.Node {
@@ -375,7 +401,7 @@ extension DSLTree.Atom {
     var characterClass: _CharacterClassModel? {
     switch self {
     case let .unconverted(a):
-      return a.characterClass
+      return a.ast.characterClass
 
     default: return nil
     }
@@ -431,6 +457,7 @@ extension AST.Atom.EscapedBuiltin {
     case .notWordCharacter: return .word.inverted
 
     case .graphemeCluster: return .anyGrapheme
+    case .trueAnychar: return .anyUnicodeScalar
 
     default:
       return nil
