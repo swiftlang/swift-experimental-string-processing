@@ -1,7 +1,7 @@
 # Unicode for String Processing
 
 Proposal: [SE-NNNN](NNNN-filename.md)  
-Authors: [Nate Cook](https://github.com/natecook1000), [Michael Ilseman](https://github.com/milseman), [Alejandro Alonso](https://github.com/Azoy)
+Authors: [Nate Cook](https://github.com/natecook1000), [Alejandro Alonso](https://github.com/Azoy)
 Review Manager: TBD  
 Implementation: [apple/swift-experimental-string-processing][repo]  
 Status: **Draft**
