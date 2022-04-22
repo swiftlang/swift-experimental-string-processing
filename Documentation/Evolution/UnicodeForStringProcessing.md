@@ -77,7 +77,38 @@ str.contains(/.+e\u{301}/)  // true
 str.contains(/\w+é/)        // true
 ```
 
-Swift's `Regex` follows the level 2 guidelines for Unicode support in regular expressions described in [Unicode Technical Standard #18][uts18], with support for Unicode character classes, canonical equivalence, grapheme cluster matching semantics, and level 2 word boundaries enabled by default. `Regex` provides options for selecting different matching behaviors, such as ASCII character classes or Unicode scalar semantics, which corresponds more closely with other regex engines.
+
+For compatibility with other regex engines and the flexibility to match at both `Character` and Unicode scalar level, you can switch between matching levels for an entire regex or within select portions. This powerful capability provides the expected default behavior when working with strings, while allowing you to drop down for Unicode scalar-specific matching.
+
+By default, literal characters and Unicode scalar values (e.g. `\u{301}`) are coalesced into characters in the same way as a normal string, as shown above. Metacharacters, like `.` and `\w`, and custom character classes each match a single element at the current matching level.
+
+For example, these matches fail, because by the time the parser encounters the "`\u{301}`" Unicode scalar literal, the full `"é"` character has been matched:
+
+```swift
+str.contains(/Caf.\u{301})    // false - `.` matches "é" character
+str.contains(/Caf\w\u{301})   // false - `\w` matches "é" character
+str.contains(/.+\u{301})      // false - `.+` matches each character
+```
+
+Alternatively, we can drop down to use Unicode scalar semantics if we want to match specific Unicode sequences. For example, these regexes matches an `"e"` followed by any modifier with the specified parameters:
+
+```swift
+str.contains(/e[\u{300}-\u{314}]/.matchingSemantics(.unicodeScalar))
+// true - matches an "e" followed by a Unicode scalar in the range U+0300 - U+0314
+str.contains(/e\p{Nonspacing Mark}/.matchingSemantics(.unicodeScalar))
+// true - matches an "e" followed by a Unicode scalar with general category "Nonspacing Mark"
+```
+
+Matching in Unicode scalar mode is analogous to comparing against a string's `UnicodeScalarView` — individual Unicode scalars are matched without combining them into characters or testing for canonical equivalence.
+
+```swift
+str.contains(/Café/.matchingSemantics(.unicodeScalar))
+// false - "e\u{301}" doesn't match with /é/
+str.contains(/Cafe\u{301}/.matchingSemantics(.unicodeScalar))
+// true - "e\u{301}" matches with /e\u{301}/
+```
+
+Swift's `Regex` follows the level 2 guidelines for Unicode support in regular expressions described in [Unicode Technical Standard #18][uts18], with support for Unicode character classes, canonical equivalence, grapheme cluster matching semantics, and level 2 word boundaries enabled by default. In addition to selecting the matching semantics, `Regex` provides options for selecting different matching behaviors, such as ASCII character classes or Unicode scalar semantics, which corresponds more closely with other regex engines.
 
 ## Detailed design
 
@@ -262,9 +293,9 @@ extension RegexComponent {
 
 #### Unicode word boundaries
 
-By default, matching word boundaries with the `\b` and `Anchor.wordBoundary` anchors uses Unicode default word boundaries, specified as [Unicode level 2 regular expression support][level2-word-boundaries]. 
+By default, matching word boundaries with the `\b` and `Anchor.wordBoundary` anchors uses Unicode _default word boundaries,_ specified as [Unicode level 2 regular expression support][level2-word-boundaries]. 
 
-Disabling the `w` option switches to [simple word boundaries][level1-word-boundaries], finding word boundaries at points in the input where `\b\B` or `\B\b` match. Depending on the other matching options that are enabled, this may be more compatible with the behavior other regex engines.
+Disabling the `w` option switches to _[simple word boundaries][level1-word-boundaries],_ finding word boundaries at points in the input where `\b\B` or `\B\b` match. Depending on the other matching options that are enabled, this may be more compatible with the behavior other regex engines.
 
 As shown in this example, the default matching behavior finds the whole first word of the string, while the match with simple word boundaries stops at the apostrophe:
 
@@ -338,7 +369,7 @@ When matching with grapheme cluster semantics (the default), metacharacters like
 
 When matching with Unicode scalar semantics, metacharacters and character classes always match a single Unicode scalar value, even if that scalar comprises part of a grapheme cluster.
 
-These semantic levels can lead to different results, especially when working with strings that have decomposed characters. In the following example, `queRegex` matches any 3-character string that begins with `"q"`.
+These semantic levels lead to different results, especially when working with strings that have decomposed characters. In the following example, `queRegex` matches any 3-character string that begins with `"q"`.
 
 ```swift
 let composed = "qué"
@@ -360,6 +391,38 @@ print(composed.contains(queRegexScalar))
 // Prints "true"
 print(decomposed.contains(queRegexScalar))
 // Prints "false"
+```
+
+With grapheme cluster semantics, a grapheme cluster boundary is naturally enforced at the start and end of the match and every capture group. Matching with Unicode scalar semantics, on the other hand, including using the `\O` metacharacter or `.anyUnicodeScalar` character class, can yield string indices that aren't aligned to character boundaries. Take care when using indices that aren't aligned with grapheme cluster boundaries, as they may have to be rounded to a boundary if used in a `String` instance.
+
+```swift
+let family = "👨‍👨‍👧‍👦 is a family"
+
+// Grapheme-cluster mode: Yields a character
+let firstCharacter = /^./
+let characterMatch = family.firstMatch(of: firstCharacter)!.output
+print(characterMatch)
+// Prints "👨‍👨‍👧‍👦"
+
+// Unicode-scalar mode: Yields only part of a character
+let firstUnicodeScalar = /^./.matchingSemantics(.unicodeScalar)
+let unicodeScalarMatch = family.firstMatch(of: firstUnicodeScalar)!.output
+print(unicodeScalarMatch)
+// Prints "👨"
+
+// The end of `unicodeScalarMatch` is not aligned on a character boundary
+print(unicodeScalarMatch.endIndex == family.index(after: family.startIndex))
+// Prints "false"
+```
+
+When a regex proceeds with grapheme cluster semantics from a position that _isn't_ grapheme cluster aligned, it attempts to match the partial grapheme cluster that starts at that point. In the first call to `contains(_:)` below, `\O` matches a single Unicode scalar value, as shown above, and then the engine tries to match `\s` against the remainder of the family emoji character. Because that character is not whitespace, the match fails. The second call uses `\X`, which matches the entire emoji character, and then successfully matches the following space.
+
+```swift
+// \O matches a single Unicode scalar, whatever the current semantics
+family.contains(/^\O\s/))   // false
+
+// \X matches a single character, whatever the current semantics
+family.contains(/^\X\s/)    // true
 ```
 
 **Regex syntax:** `(?X)...` or `(?X...)` for grapheme cluster semantics, `(?u)...` or `(?u...)` for Unicode scalar semantics.
@@ -494,8 +557,8 @@ for match in data.matches(of: /(.),/.matchingSemantics(.unicodeScalar)) {
 
 `Regex` also provides ways to select a specific level of "any" matching, without needing to change semantic levels.
 
-- The **any grapheme cluster** character class is written as `\X` or `CharacterClass.anyGraphemeCluster`, and matches from the current location up to the next grapheme cluster boundary. This includes matching newlines, regardless of any option settings.
-- The **any Unicode scalar** character class is written as `\O` or `CharacterClass.anyUnicodeScalar`, and matches exactly one Unicode scalar value at the current location. This includes matching newlines, regardless of any option settings, but only the first scalar in an `\r\n` cluster.
+- The **any grapheme cluster** character class is written as `\X` or `CharacterClass.anyGraphemeCluster`, and matches from the current location up to the next grapheme cluster boundary. This includes matching newlines, regardless of any option settings. This metacharacter is equivalent to the regex syntax `(?s-u:.)`.
+- The **any Unicode scalar** character class is written as `\O` or `CharacterClass.anyUnicodeScalar`, and matches exactly one Unicode scalar value at the current location. This includes matching newlines, regardless of any option settings, but only the first scalar in an `\r\n` cluster. This metacharacter is equivalent to the regex syntax `(?su:.)`.
 
 #### Digits
 
@@ -641,10 +704,11 @@ Inside regexes, custom classes are enclosed in square brackets `[...]`, and can 
 With `RegexBuilder`'s `CharacterClass` type, you can use built-in character classes with ranges and groups of characters. For example, to parse a valid octodecimal number, you could define a custom character class that combines `.digit` with a range of characters.
 
 ```swift
-let octoDecimalRegex: Regex<Substring, Int> = Regex {
+let octoDecimalRegex: Regex<(Substring, Int?)> = Regex {
     let charClass = CharacterClass(.digit, "a"..."h").ignoresCase()
-    Capture(OneOrMore(charClass))
-        transform: { Int($0, radix: 18) }
+    Capture {
+      OneOrMore(charClass)
+    } transform: { Int($0, radix: 18) }
 }
 ```
 
@@ -693,19 +757,27 @@ extension RegexComponent where Self == CharacterClass {
 
 // Unicode properties
 extension CharacterClass {
+  /// Returns a character class that matches elements in the given Unicode
+  /// general category.
   public static func generalCategory(_ category: Unicode.GeneralCategory) -> CharacterClass
 }
 
 // Set algebra methods
 extension CharacterClass {
+  /// Creates a character class that combines the given classes in a union.
   public init(_ first: CharacterClass, _ rest: CharacterClass...)
   
+  /// Returns a character class from the union of this class and the given class.
   public func union(_ other: CharacterClass) -> CharacterClass
   
+  /// Returns a character class from the intersection of this class and the given class.
   public func intersection(_ other: CharacterClass) -> CharacterClass
   
+  /// Returns a character class by subtracting the given class from this class.
   public func subtracting(_ other: CharacterClass) -> CharacterClass
   
+  /// Returns a character class matching elements in one or the other, but not both,
+  /// of this class and the given class.
   public func symmetricDifference(_ other: CharacterClass) -> CharacterClass
 }
 
@@ -742,6 +814,10 @@ An earlier version of this pitch described adding standard library APIs to `Char
 ### Byte semantic mode
 
 A future `Regex` version could support a byte-level semantic mode in addition to grapheme cluster and Unicode scalar semantics. Byte-level semantics would allow matching individual bytes, potentially providing the capability of parsing string and non-string data together.
+
+### More general `CharacterSet` replacement
+
+Foundation's `CharacterSet` type is in some ways similar to the `CharacterClass` type defined in this proposal. `CharacterSet` is primarily a set type that is defined over Unicode scalars, and can therefore sometimes be awkward to use in conjunction with Swift `String`s. The proposed `CharacterClass` type is a `RegexBuilder`-specific type, and as such isn't intended to be a full general purpose replacement. Future work could involve expanding upon the `CharacterClass` API or introducing a different type to fill that role.
 
 ## Alternatives considered
 
