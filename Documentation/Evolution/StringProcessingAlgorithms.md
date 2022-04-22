@@ -402,12 +402,12 @@ extension BidirectionalCollection where SubSequence == Substring {
     public func firstMatch<R: RegexComponent>(of regex: R) -> Regex<R.RegexOutput>.Match?
     
     /// Match a regex in its entirety.
-    /// - Parameter r: The regex to match against.
+    /// - Parameter regex: The regex to match against.
     /// - Returns: The match if there is one, or `nil` if none.
     public func wholeMatch<R: RegexComponent>(of regex: R) -> Regex<R.RegexOutput>.Match? 
     
     /// Match part of the regex, starting at the beginning.
-    /// - Parameter r: The regex to match against.
+    /// - Parameter regex: The regex to match against.
     /// - Returns: The match if there is one, or `nil` if none.
     public func prefixMatch<R: RegexComponent>(of regex: R) -> Regex<R.RegexOutput>.Match?
 }
