@@ -46,6 +46,20 @@ extension BidirectionalCollection where Element: Comparable {
   }
 }
 
+// Overload breakers
+
+extension StringProtocol {
+  @available(SwiftStdlib 5.7, *)
+  public func contains(_ other: String) -> Bool {
+    firstRange(of: other) != nil
+  }
+  
+  @available(SwiftStdlib 5.7, *)
+  public func contains(_ other: Substring) -> Bool {
+    firstRange(of: other) != nil
+  }
+}
+
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
