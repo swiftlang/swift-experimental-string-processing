@@ -101,8 +101,17 @@ let defaultAvailableAttr = "@available(SwiftStdlib 5.7, *)"
 @main
 struct VariadicsGenerator: ParsableCommand {
   @Option(help: "The maximum arity of declarations to generate.")
-  var maxArity: Int
+  var maxArity: Int = 10
+  
+  @Flag(help: "Suppress status messages while generating.")
+  var silent: Bool = false
 
+  func log(_ message: String, terminator: String = "\n") {
+    if !silent {
+      print(message, terminator: terminator, to: &standardError)
+    }
+  }
+  
   func run() throws {
     precondition(maxArity > 1)
     precondition(maxArity < Counter.bitWidth)
@@ -126,14 +135,12 @@ struct VariadicsGenerator: ParsableCommand {
 
       """)
 
-    print("Generating concatenation overloads...", to: &standardError)
+    log("Generating concatenation overloads...")
     for (leftArity, rightArity) in Permutations(totalArity: maxArity) {
       guard rightArity != 0 else {
         continue
       }
-      print(
-        "  Left arity: \(leftArity)  Right arity: \(rightArity)",
-        to: &standardError)
+      log("  Left arity: \(leftArity)  Right arity: \(rightArity)")
       emitConcatenation(leftArity: leftArity, rightArity: rightArity)
     }
 
@@ -143,42 +150,40 @@ struct VariadicsGenerator: ParsableCommand {
 
     output("\n\n")
 
-    print("Generating quantifiers...", to: &standardError)
+    log("Generating quantifiers...")
     for arity in 0...maxArity {
-      print("  Arity \(arity): ", terminator: "", to: &standardError)
+      log("  Arity \(arity): ", terminator: "")
       for kind in QuantifierKind.allCases {
-        print("\(kind.rawValue) ", terminator: "", to: &standardError)
+        log("\(kind.rawValue) ", terminator: "")
         emitQuantifier(kind: kind, arity: arity)
       }
-      print("repeating ", terminator: "", to: &standardError)
+      log("repeating ", terminator: "")
       emitRepeating(arity: arity)
-      print(to: &standardError)
+      log("")
     }
 
-    print("Generating atomic groups...", to: &standardError)
+    log("Generating atomic groups...")
     for arity in 0...maxArity {
-      print("  Arity \(arity): ", terminator: "", to: &standardError)
+      log("  Arity \(arity): ", terminator: "")
       emitAtomicGroup(arity: arity)
-      print(to: &standardError)
+      log("")
     }
 
-    print("Generating alternation overloads...", to: &standardError)
+    log("Generating alternation overloads...")
     for (leftArity, rightArity) in Permutations(totalArity: maxArity) {
-      print(
-        "  Left arity: \(leftArity)  Right arity: \(rightArity)",
-        to: &standardError)
+      log("  Left arity: \(leftArity)  Right arity: \(rightArity)")
       emitAlternation(leftArity: leftArity, rightArity: rightArity)
     }
 
-    print("Generating 'AlternationBuilder.buildBlock(_:)' overloads...", to: &standardError)
+    log("Generating 'AlternationBuilder.buildBlock(_:)' overloads...")
     for arity in 1...maxArity {
-      print("  Capture arity: \(arity)", to: &standardError)
+      log("  Capture arity: \(arity)")
       emitUnaryAlternationBuildBlock(arity: arity)
     }
 
-    print("Generating 'capture' and 'tryCapture' overloads...", to: &standardError)
+    log("Generating 'capture' and 'tryCapture' overloads...")
     for arity in 0...maxArity {
-      print("  Capture arity: \(arity)", to: &standardError)
+      log("  Capture arity: \(arity)")
       emitCapture(arity: arity)
     }
 
@@ -186,7 +191,7 @@ struct VariadicsGenerator: ParsableCommand {
 
     output("// END AUTO-GENERATED CONTENT\n")
 
-    print("Done!", to: &standardError)
+    log("Done!")
   }
 
   func tupleType(arity: Int, genericParameters: () -> String) -> String {
