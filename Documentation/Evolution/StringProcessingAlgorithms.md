@@ -245,6 +245,16 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Returns: `true` if the regex was found in the collection, otherwise
     /// `false`.
     public func contains(_ regex: some RegexComponent) -> Bool
+
+    /// Returns a Boolean value indicating whether the collection contains the
+    /// given regex.
+    /// - Parameter content: A closure to produce a `RegexComponent` to search for
+    /// within this collection.
+    /// - Returns: `true` if the regex was found in the collection, otherwise
+    /// `false`.
+    public func contains(
+        @RegexComponentBuilder _ content: () -> some RegexComponent
+    ) -> Bool
 }
 ```
 
@@ -258,6 +268,15 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Returns: `true` if the initial elements of the sequence matches the
     /// beginning of `regex`; otherwise, `false`.
     public func starts(with regex: some RegexComponent) -> Bool
+    
+    /// Returns a Boolean value indicating whether the initial elements of the
+    /// sequence are the same as the elements in the specified regex.
+    /// - Parameter content: A closure to produce a `RegexComponent` to compare.
+    /// - Returns: `true` if the initial elements of the sequence matches the
+    /// beginning of `regex`; otherwise, `false`.
+    public func starts(
+        @RegexComponentBuilder _ content: () -> some RegexComponent
+    ) -> Bool
 }
 ```
 
@@ -324,6 +343,15 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Returns: A new subsequence containing the elements of the collection
     /// that does not match `prefix` from the start.
     public func trimmingPrefix(_ regex: some RegexComponent) -> SubSequence
+    
+    /// Returns a new collection of the same type by removing `prefix` from the
+    /// start.
+    /// - Parameter _content A closure to produce a `RegexComponent` to be removed.
+    /// - Returns: A collection containing the elements that does not match
+    /// `prefix` from the start.
+    public func trimmingPrefix(
+        @RegexComponentBuilder _ content: () -> some RegexComponent
+    ) -> SubSequence
 }
 
 extension RangeReplaceableCollection
@@ -332,6 +360,12 @@ extension RangeReplaceableCollection
     /// Removes the initial elements that matches the given regex.
     /// - Parameter regex: The regex to remove from this collection.
     public mutating func trimPrefix(_ regex: some RegexComponent)
+    
+    /// Removes the initial elements that matches the given regex.
+    /// - Parameter content: A closure to produce a `RegexComponent` to be removed.
+    public mutating func trimPrefix(
+        @RegexComponentBuilder _ content: () -> some RegexComponent
+    )
 }
 ```
 
@@ -365,6 +399,16 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Returns: A range in the collection of the first occurrence of `regex`.
     /// Returns `nil` if `regex` is not found.
     public func firstRange(of regex: some RegexComponent) -> Range<Index>?
+    
+    /// Finds and returns the range of the first occurrence of a given regex
+    /// within the collection.
+    /// - Parameter content: A closure to produce a `RegexComponent` to search for
+    /// within this collection.
+    /// - Returns: A range in the collection of the first occurrence of regex.
+    /// Returns `nil` if not found.
+    public func firstRange(
+        @RegexComponentBuilder _ content: () -> some RegexComponent
+    ) -> Range<Index>? 
 }
 ```
 
@@ -388,6 +432,16 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Returns: A collection or ranges in the receiver of all occurrences of
     /// `regex`. Returns an empty collection if `regex` is not found.
     public func ranges(of regex: some RegexComponent) -> some Collection<Range<Index>>
+    
+    /// Finds and returns the ranges of the all occurrences of a given sequence
+    /// within the collection.
+    /// - Parameter content: A closure to produce a `RegexComponent` to search for
+    /// within this collection.
+    /// - Returns: A collection or ranges in the receiver of all occurrences of
+    /// regex. Returns an empty collection if not found.
+    public func ranges(
+        @RegexComponentBuilder _ content: () -> some RegexComponent
+    ) -> some Collection<Range<Index>>
 }
 ```
 
@@ -401,15 +455,38 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// there isn't a match.
     public func firstMatch<R: RegexComponent>(of regex: R) -> Regex<R.RegexOutput>.Match?
     
+    /// Returns the first match of the specified regex within the collection.
+    /// - Parameter content: A closure to produce a `RegexComponent` to search for.
+    /// - Returns: The first match of regex in the collection, or `nil` if
+    /// there isn't a match.
+    public func firstMatch<R: RegexComponent>(
+        @RegexComponentBuilder _ content: () -> R
+    ) -> Regex<R.RegexOutput>.Match? 
+    
     /// Match a regex in its entirety.
     /// - Parameter regex: The regex to match against.
     /// - Returns: The match if there is one, or `nil` if none.
     public func wholeMatch<R: RegexComponent>(of regex: R) -> Regex<R.RegexOutput>.Match? 
     
+    /// Match a regex in its entirety.
+    /// - Parameter content: A closure to produce a `RegexComponent` to match against.
+    /// - Returns: The match if there is one, or `nil` if none.
+    public func wholeMatch<R: RegexComponent>(
+        @RegexComponentBuilder _ content: () -> R
+    ) -> Regex<R.RegexOutput>.Match? 
+    
     /// Match part of the regex, starting at the beginning.
     /// - Parameter regex: The regex to match against.
     /// - Returns: The match if there is one, or `nil` if none.
     public func prefixMatch<R: RegexComponent>(of regex: R) -> Regex<R.RegexOutput>.Match?
+    
+    /// Match part of the regex, starting at the beginning.
+    /// - Parameter content: A closure to produce a `RegexComponent` to match against.
+    /// - Returns: The match if there is one, or `nil` if none.
+    @available(SwiftStdlib 5.7, *)
+    public func prefixMatch<R: RegexComponent>(
+        @RegexComponentBuilder _ content: () -> R
+    ) -> Regex<R.RegexOutput>.Match?
 }
 ```
 
@@ -421,6 +498,13 @@ extension BidirectionalCollection where SubSequence == Substring {
     /// - Parameter regex: The regex to search for.
     /// - Returns: A collection of matches of `regex`.
     public func matches<R: RegexComponent>(of regex: R) -> some Collection<Regex<R.RegexOuput>.Match>
+    
+    /// Returns a collection containing all matches of the specified regex.
+    /// - Parameter content: A closure to produce a `RegexComponent` to search for.
+    /// - Returns: A collection of matches of `regex`.
+    public func matches<R: RegexComponent>(
+        @RegexComponentBuilder _ content: () -> R
+    ) -> some Collection<Regex<R.RegexOutput>.Match>
 }
 ```
 
@@ -490,6 +574,23 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         subrange: Range<Index>,
         maxReplacements: Int = .max
     ) -> Self where Replacement.Element == Element
+
+    /// Returns a new collection in which all occurrences of a sequence matching
+    /// the given regex are replaced by another collection.
+    /// - Parameters:
+    ///   - replacement: The new elements to add to the collection.
+    ///   - subrange: The range in the collection in which to search for `regex`.
+    ///   - maxReplacements: A number specifying how many occurrences of the
+    ///   sequence matching `regex` to replace. Default is `Int.max`.
+    ///   - content: A closure to produce a `RegexComponent` to replace.
+    /// - Returns: A new collection in which all occurrences of subsequence
+    /// matching `regex` in `subrange` are replaced by `replacement`.
+    public func replacing<Replacement: Collection>(
+        with replacement: Replacement,
+        subrange: Range<Index>,
+        maxReplacements: Int = .max,
+        @RegexComponentBuilder content: () -> some RegexComponent
+    ) -> Self where Replacement.Element == Element
   
     /// Returns a new collection in which all occurrences of a sequence matching
     /// the given regex are replaced by another collection.
@@ -506,6 +607,21 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         maxReplacements: Int = .max
     ) -> Self where Replacement.Element == Element
   
+    /// Returns a new collection in which all occurrences of a sequence matching
+    /// the given regex are replaced by another collection.
+    /// - Parameters:
+    ///   - replacement: The new elements to add to the collection.
+    ///   - maxReplacements: A number specifying how many occurrences of the
+    ///   sequence matching `regex` to replace. Default is `Int.max`.
+    ///   - content: A closure to produce a `RegexComponent` to replace.
+    /// - Returns: A new collection in which all occurrences of subsequence
+    /// matching `regex` are replaced by `replacement`.
+    public func replacing<Replacement: Collection>(
+        with replacement: Replacement,
+        maxReplacements: Int = .max,
+        @RegexComponentBuilder _ content: () -> some RegexComponent
+    ) -> Self where Replacement.Element == Element 
+  
     /// Replaces all occurrences of the sequence matching the given regex with
     /// a given collection.
     /// - Parameters:
@@ -518,6 +634,19 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         with replacement: Replacement,
         maxReplacements: Int = .max
     ) where Replacement.Element == Element
+    
+    /// Replaces all occurrences of the sequence matching the given regex with
+    /// a given collection.
+    /// - Parameters:
+    ///   - replacement: The new elements to add to the collection.
+    ///   - maxReplacements: A number specifying how many occurrences of the
+    ///   sequence matching `regex` to replace. Default is `Int.max`.
+    ///   - content: A closure to produce a `RegexComponent` to replace.
+    public mutating func replace<Replacement: Collection>(
+        with replacement: Replacement,
+        maxReplacements: Int = .max,
+        @RegexComponentBuilder _ content: () -> some RegexComponent
+    ) -> Self where Replacement.Element == Element 
   
     /// Returns a new collection in which all occurrences of a sequence matching
     /// the given regex are replaced by another regex match.
@@ -536,6 +665,24 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         maxReplacements: Int = .max,
         with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
     ) rethrows -> Self where Replacement.Element == Element
+    
+    /// Returns a new collection in which all occurrences of a sequence matching
+    /// the given regex are replaced by another regex match.
+    /// - Parameters:
+    ///   - subrange: The range in the collection in which to search for `regex`.
+    ///   - maxReplacements: A number specifying how many occurrences of the
+    ///   sequence matching `regex` to replace. Default is `Int.max`.
+    ///   - content: A closure to produce a `RegexComponent` to replace.
+    ///   - replacement: A closure that receives the full match information,
+    ///   including captures, and returns a replacement collection.
+    /// - Returns: A new collection in which all occurrences of subsequence
+    /// matching `regex` are replaced by `replacement`.
+    public func replacing<R: RegexComponent, Replacement: Collection>(
+        subrange: Range<Index>,
+        maxReplacements: Int = .max,
+        @RegexComponentBuilder _ content: () -> R,
+        with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
+    ) rethrows -> Self where Replacement.Element == Element
   
     /// Returns a new collection in which all occurrences of a sequence matching
     /// the given regex are replaced by another collection.
@@ -552,6 +699,22 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         maxReplacements: Int = .max,
         with replacement: (Regex<R.RegexOuput>.Match) throws -> Replacement
     ) rethrows -> Self where Replacement.Element == Element
+    
+    /// Returns a new collection in which all occurrences of a sequence matching
+    /// the given regex are replaced by another collection.
+    /// - Parameters:
+    ///   - maxReplacements: A number specifying how many occurrences of the
+    ///   sequence matching `regex` to replace. Default is `Int.max`.
+    ///   - content: A closure to produce a `RegexComponent` to replace.
+    ///   - replacement: A closure that receives the full match information,
+    ///   including captures, and returns a replacement collection.
+    /// - Returns: A new collection in which all occurrences of subsequence
+    /// matching `regex` are replaced by `replacement`.
+    public func replacing<R: RegexComponent, Replacement: Collection>(
+        maxReplacements: Int = .max,
+        @RegexComponentBuilder content: () -> R,
+        with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
+    ) rethrows -> Self where Replacement.Element == Element
   
     /// Replaces all occurrences of the sequence matching the given regex with
     /// a given collection.
@@ -564,6 +727,20 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     public mutating func replace<R: RegexComponent, Replacement: Collection>(
         _ regex: R,
         maxReplacements: Int = .max,
+        with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
+    ) rethrows where Replacement.Element == Element
+    
+    /// Replaces all occurrences of the sequence matching the given regex with
+    /// a given collection.
+    /// - Parameters:
+    ///   - maxReplacements: A number specifying how many occurrences of the
+    ///   sequence matching `regex` to replace. Default is `Int.max`.
+    ///   - content: A closure to produce a `RegexComponent` to replace.
+    ///   - replacement: A closure that receives the full match information,
+    ///   including captures, and returns a replacement collection.
+    public mutating func replace<R: RegexComponent, Replacement: Collection>(
+        maxReplacements: Int = .max,
+        @RegexComponentBuilder _ content: () -> R,
         with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
     ) rethrows where Replacement.Element == Element
 }
@@ -612,6 +789,25 @@ extension BidirectionalCollection where SubSequence == Substring {
         separator: some RegexComponent,
         maxSplits: Int = Int.max,
         omittingEmptySubsequences: Bool = true
+    ) -> some Collection<Substring>
+    
+    /// Returns the longest possible subsequences of the collection, in order,
+    /// around subsequence that match the given separator regex.
+    ///
+    /// - Parameters:
+    ///   - maxSplits: The maximum number of times to split the collection, 
+    ///     or one less than the number of subsequences to return.
+    ///   - omittingEmptySubsequences: If `false`, an empty subsequence is 
+    ///     returned in the result for each consecutive pair of matches
+    ///     and for each match at the start or end of the collection. If
+    ///     `true`, only nonempty subsequences are returned.
+    ///   - separator: A closure to produce a `RegexComponent` to be split upon.
+    /// - Returns: A collection of substrings, split from this collection's
+    ///   elements.
+    public func split(
+        maxSplits: Int = Int.max,
+        omittingEmptySubsequences: Bool = true,
+        @RegexComponentBuilder _ separator: () -> some RegexComponent
     ) -> some Collection<Substring>
 }
 ```
