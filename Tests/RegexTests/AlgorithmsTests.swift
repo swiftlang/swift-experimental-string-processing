@@ -24,6 +24,14 @@ func output<T>(_ s: @autoclosure () -> T) {
   }
 }
 
+func makeSingleUseSequence<T>(element: T, count: Int) -> UnfoldSequence<T, Void> {
+  var count = count
+  return sequence(state: ()) { _ in
+    defer { count -= 1 }
+    return count > 0 ? element : nil
+  }
+}
+
 class RegexConsumerTests: XCTestCase {
   func testRanges() {
     func expectRanges(
@@ -79,6 +87,53 @@ class RegexConsumerTests: XCTestCase {
     expectSplit("a", "", ["", "a", ""])
     expectSplit("a", "x", ["a"])
     expectSplit("a", "a", ["", ""])
+  
+  func testTrim() {
+    func expectTrim(
+      _ string: String,
+      _ regex: String,
+      _ expected: Substring,
+      file: StaticString = #file, line: UInt = #line
+    ) {
+      let regex = try! Regex(regex)
+      let actual = string.trimmingPrefix(regex)
+      XCTAssertEqual(actual, expected, file: file, line: line)
+    }
+
+    expectTrim("", "", "")
+    expectTrim("", "x", "")
+    expectTrim("a", "", "a")
+    expectTrim("a", "x", "a")
+    expectTrim("___a", "_", "__a")
+    expectTrim("___a", "_+", "a")
+    
+    XCTAssertEqual("".trimmingPrefix("a"), "")
+    XCTAssertEqual("a".trimmingPrefix("a"), "")
+    XCTAssertEqual("b".trimmingPrefix("a"), "b")
+    XCTAssertEqual("a".trimmingPrefix(""), "a")
+    XCTAssertEqual("___a".trimmingPrefix("_"), "__a")
+    XCTAssertEqual("___a".trimmingPrefix("___"), "a")
+    XCTAssertEqual("___a".trimmingPrefix("____"), "___a")
+    XCTAssertEqual("___a".trimmingPrefix("___a"), "")
+    
+    do {
+      let prefix = makeSingleUseSequence(element: "_" as Character, count: 5)
+      XCTAssertEqual("_____a".trimmingPrefix(prefix), "a")
+      XCTAssertEqual("_____a".trimmingPrefix(prefix), "_____a")
+    }
+    do {
+      let prefix = makeSingleUseSequence(element: "_" as Character, count: 5)
+      XCTAssertEqual("a".trimmingPrefix(prefix), "a")
+      // The result of this next call is technically undefined, so this
+      // is just to test that it doesn't crash.
+      XCTAssertNotEqual("_____a".trimmingPrefix(prefix), "")
+    }
+
+    XCTAssertEqual("".trimmingPrefix(while: \.isWhitespace), "")
+    XCTAssertEqual("a".trimmingPrefix(while: \.isWhitespace), "a")
+    XCTAssertEqual("   ".trimmingPrefix(while: \.isWhitespace), "")
+    XCTAssertEqual("  a".trimmingPrefix(while: \.isWhitespace), "a")
+    XCTAssertEqual("a  ".trimmingPrefix(while: \.isWhitespace), "a  ")
   }
   
   func testReplace() {
