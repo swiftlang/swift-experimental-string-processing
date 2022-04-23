@@ -102,21 +102,26 @@ extension RangeReplaceableCollection where Self: BidirectionalCollection {
 // MARK: Predicate algorithms
 
 extension Collection {
-  // TODO: Non-escaping and throwing
-  func trimmingPrefix(
-    while predicate: @escaping (Element) -> Bool
-  ) -> SubSequence {
-    trimmingPrefix(ManyConsumer(base: PredicateConsumer(predicate: predicate)))
+  fileprivate func endOfPrefix(while predicate: (Element) throws -> Bool) rethrows -> Index {
+    try firstIndex(where: { try !predicate($0) }) ?? endIndex
+  }
+
+  @available(SwiftStdlib 5.7, *)
+  public func trimmingPrefix(
+    while predicate: (Element) throws -> Bool
+  ) rethrows -> SubSequence {
+    let end = try endOfPrefix(while: predicate)
+    return self[end...]
   }
 }
 
 extension Collection where SubSequence == Self {
   @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix(
-    while predicate: @escaping (Element) -> Bool
-  ) {
-    trimPrefix(ManyConsumer(
-      base: PredicateConsumer<SubSequence>(predicate: predicate)))
+    while predicate: (Element) throws -> Bool
+  ) throws {
+    let end = try endOfPrefix(while: predicate)
+    self = self[end...]
   }
 }
 
@@ -124,9 +129,10 @@ extension RangeReplaceableCollection {
   @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix(
-    while predicate: @escaping (Element) -> Bool
-  ) {
-    trimPrefix(ManyConsumer(base: PredicateConsumer(predicate: predicate)))
+    while predicate: (Element) throws -> Bool
+  ) rethrows {
+    let end = try endOfPrefix(while: predicate)
+    removeSubrange(startIndex..<end)
   }
 }
 
