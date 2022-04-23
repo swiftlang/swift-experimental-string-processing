@@ -517,7 +517,7 @@ struct VariadicsGenerator: ParsableCommand {
         \(params.disfavored)\
         public init<\(params.genericParams), R: RangeExpression>(
           _ expression: R,
-          _ behavior: QuantificationBehavior? = nil,
+          _ behavior: RegexRepetitionBehavior? = nil,
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.repeatingWhereClause) {
           self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
