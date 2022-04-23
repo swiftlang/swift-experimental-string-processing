@@ -78,7 +78,7 @@ class RegexConsumerTests: XCTestCase {
       file: StaticString = #file, line: UInt = #line
     ) {
       let regex = try! Regex(regex)
-      let actual = Array(string.split(by: regex))
+      let actual = Array(string.split(separator: regex, omittingEmptySubsequences: false))
       XCTAssertEqual(actual, expected, file: file, line: line)
     }
 
@@ -87,6 +87,88 @@ class RegexConsumerTests: XCTestCase {
     expectSplit("a", "", ["", "a", ""])
     expectSplit("a", "x", ["a"])
     expectSplit("a", "a", ["", ""])
+    expectSplit("a____a____a", "_+", ["a", "a", "a"])
+    expectSplit("____a____a____a____", "_+", ["", "a", "a", "a", ""])
+  }
+  
+  func testSplitPermutations() throws {
+    let splitRegex = try Regex(#"\|"#)
+    XCTAssertEqual(
+      "a|a|||a|a".split(separator: splitRegex),
+      ["a", "a", "a", "a"])
+    XCTAssertEqual(
+      "a|a|||a|a".split(separator: splitRegex, omittingEmptySubsequences: false),
+      ["a", "a", "", "", "a", "a"])
+    XCTAssertEqual(
+      "a|a|||a|a".split(separator: splitRegex, maxSplits: 2),
+      ["a", "a", "||a|a"])
+    
+    XCTAssertEqual(
+      "a|a|||a|a|||a|a|||".split(separator: "|||"),
+      ["a|a", "a|a", "a|a"])
+    XCTAssertEqual(
+      "a|a|||a|a|||a|a|||".split(separator: "|||", omittingEmptySubsequences: false),
+      ["a|a", "a|a", "a|a", ""])
+    XCTAssertEqual(
+      "a|a|||a|a|||a|a|||".split(separator: "|||", maxSplits: 2),
+      ["a|a", "a|a", "a|a|||"])
+
+    XCTAssertEqual(
+      "aaaa".split(separator: ""),
+      ["a", "a", "a", "a"])
+    XCTAssertEqual(
+      "aaaa".split(separator: "", omittingEmptySubsequences: false),
+      ["", "a", "a", "a", "a", ""])
+    XCTAssertEqual(
+      "aaaa".split(separator: "", maxSplits: 2),
+      ["a", "a", "aa"])
+    XCTAssertEqual(
+      "aaaa".split(separator: "", maxSplits: 2, omittingEmptySubsequences: false),
+      ["", "a", "aaa"])
+
+    // Fuzzing the input and parameters
+    for _ in 1...1_000 {
+      // Make strings that look like:
+      //   "aaaaaaa"
+      //   "|||aaaa||||"
+      //   "a|a|aa|aa|"
+      //   "|a||||aaa|a|||"
+      //   "a|aa"
+      let keepCount = Int.random(in: 0...10)
+      let splitCount = Int.random(in: 0...10)
+      let str = [repeatElement("a", count: keepCount), repeatElement("|", count: splitCount)]
+        .joined()
+        .shuffled()
+        .joined()
+      
+      let omitEmpty = Bool.random()
+      let maxSplits = Bool.random() ? Int.max : Int.random(in: 0...10)
+      
+      // Use the stdlib behavior as the expected outcome
+      let expected = str.split(
+        separator: "|" as Character,
+        maxSplits: maxSplits,
+        omittingEmptySubsequences: omitEmpty)
+      let regexActual = str.split(
+        separator: splitRegex,
+        maxSplits: maxSplits,
+        omittingEmptySubsequences: omitEmpty)
+      let stringActual = str.split(
+        separator: "|" as String,
+        maxSplits: maxSplits,
+        omittingEmptySubsequences: omitEmpty)
+      XCTAssertEqual(regexActual, expected, """
+        Mismatch in regex split of '\(str)', maxSplits: \(maxSplits), omitEmpty: \(omitEmpty)
+          expected: \(expected.map(String.init))
+          actual:   \(regexActual.map(String.init))
+        """)
+      XCTAssertEqual(stringActual, expected, """
+        Mismatch in string split of '\(str)', maxSplits: \(maxSplits), omitEmpty: \(omitEmpty)
+          expected: \(expected.map(String.init))
+          actual:   \(regexActual.map(String.init))
+        """)
+    }
+  }
   
   func testTrim() {
     func expectTrim(
