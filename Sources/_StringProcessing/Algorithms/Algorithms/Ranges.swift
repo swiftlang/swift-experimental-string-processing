@@ -175,9 +175,9 @@ extension BidirectionalCollection {
 // MARK: Fixed pattern algorithms
 
 extension Collection where Element: Equatable {
-  func ranges<S: Sequence>(
-    of other: S
-  ) -> RangesCollection<ZSearcher<Self>> where S.Element == Element {
+  func ranges<C: Collection>(
+    of other: C
+  ) -> RangesCollection<ZSearcher<Self>> where C.Element == Element {
     ranges(of: ZSearcher(pattern: Array(other), by: ==))
   }
 
@@ -188,9 +188,9 @@ extension Collection where Element: Equatable {
   /// - Returns: A collection of ranges of all occurrences of `other`. Returns
   ///  an empty collection if `other` is not found.
   @available(SwiftStdlib 5.7, *)
-  public func ranges<S: Sequence>(
-    of other: S
-  ) -> [Range<Index>] where S.Element == Element {
+  public func ranges<C: Collection>(
+    of other: C
+  ) -> [Range<Index>] where C.Element == Element {
     ranges(of: ZSearcher(pattern: Array(other), by: ==)).map { $0 }
   }
 }
@@ -207,10 +207,10 @@ extension BidirectionalCollection where Element: Equatable {
 }
 
 extension BidirectionalCollection where Element: Comparable {
-  func ranges<S: Sequence>(
-    of other: S
+  func ranges<C: Collection>(
+    of other: C
   ) -> RangesCollection<PatternOrEmpty<TwoWaySearcher<Self>>>
-    where S.Element == Element
+    where C.Element == Element
   {
     ranges(of: PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(other))))
   }
@@ -247,6 +247,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   // FIXME: Return `some Collection<Range<Index>>` for SE-0346
   /// Finds and returns the ranges of the all occurrences of a given sequence
   /// within the collection.
+  /// 
   /// - Parameter regex: The regex to search for.
   /// - Returns: A collection or ranges in the receiver of all occurrences of
   /// `regex`. Returns an empty collection if `regex` is not found.
