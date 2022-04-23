@@ -90,12 +90,12 @@ extension UTF16 {
 }
 
 extension String.Index {
-  internal var _encodedOffset: Int {
+  internal var _encodedOffsetSP: Int {
     // The encoded offset is found in the top 48 bits.
     Int(unsafeBitCast(self, to: UInt64.self) >> 16)
   }
 
-  internal init(_encodedOffset offset: Int) {
+  internal init(_encodedOffsetSP offset: Int) {
     self = unsafeBitCast(offset << 16, to: Self.self)
   }
 }

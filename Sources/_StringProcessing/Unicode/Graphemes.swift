@@ -226,7 +226,7 @@ extension String {
     startingAt index: Int,
     nextScalar: (Int) -> (Unicode.Scalar, end: Int)
   ) -> Int {
-    _internalInvariant(index != endIndex._encodedOffset)
+    _internalInvariant(index != endIndex._encodedOffsetSP)
     var state = _GraphemeBreakingState()
     var index = index
 
@@ -234,7 +234,7 @@ extension String {
       let (scalar1, nextIdx) = nextScalar(index)
       index = nextIdx
 
-      guard index != endIndex._encodedOffset else {
+      guard index != endIndex._encodedOffsetSP else {
         break
       }
 
@@ -254,7 +254,7 @@ extension String {
     endingAt index: Int,
     previousScalar: (Int) -> (Unicode.Scalar, start: Int)
   ) -> Int {
-    _internalInvariant(index != startIndex._encodedOffset)
+    _internalInvariant(index != startIndex._encodedOffsetSP)
     var state = _GraphemeBreakingState()
     var index = index
 
@@ -262,7 +262,7 @@ extension String {
       let (scalar2, previousIdx) = previousScalar(index)
       index = previousIdx
 
-      guard index != startIndex._encodedOffset else {
+      guard index != startIndex._encodedOffsetSP else {
         break
       }
 
@@ -494,7 +494,7 @@ extension String {
   //                    know that we are in an emoji sequence so our initial
   //                    break question is answered as NO.
   internal func checkIfInEmojiSequence(_ index: Int) -> Bool {
-    var emojiIdx = String.Index(_encodedOffset: index)
+    var emojiIdx = String.Index(_encodedOffsetSP: index)
 
     guard emojiIdx != startIndex else {
       return false
@@ -551,7 +551,7 @@ extension String {
   //         | = Is a linking consonant and we've seen a virama, so this is a
   //             legitimate indic sequence, so do NOT break the initial question.
   internal func checkIfInIndicSequence(_ index: Int) -> Bool {
-    var indicIdx = String.Index(_encodedOffset: index)
+    var indicIdx = String.Index(_encodedOffsetSP: index)
 
     guard indicIdx != startIndex else {
       return false
@@ -639,7 +639,7 @@ extension String {
   internal func countRIs(
     _ index: Int
   ) -> Bool {
-    var riIdx = String.Index(_encodedOffset: index)
+    var riIdx = String.Index(_encodedOffsetSP: index)
 
     guard riIdx != startIndex else {
       return false
