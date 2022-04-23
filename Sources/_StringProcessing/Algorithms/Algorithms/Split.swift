@@ -266,10 +266,10 @@ extension BidirectionalCollection where Element: Equatable {
 }
 
 extension BidirectionalCollection where Element: Comparable {
-  func split<S: Sequence>(
-    by separator: S
+  func split<C: Collection>(
+    by separator: C
   ) -> SplitCollection<PatternOrEmpty<TwoWaySearcher<Self>>>
-    where S.Element == Element
+    where C.Element == Element
   {
     split(
       by: PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(separator))))

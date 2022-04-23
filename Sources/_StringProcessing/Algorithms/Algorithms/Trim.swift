@@ -188,7 +188,7 @@ extension Collection where Element: Equatable {
   /// - Returns: A collection containing the elements of the collection that are
   ///  not removed by `predicate`.
   @available(SwiftStdlib 5.7, *)
-  public func trimmingPrefix<Prefix: Collection>(
+  public func trimmingPrefix<Prefix: Sequence>(
     _ prefix: Prefix
   ) -> SubSequence where Prefix.Element == Element {
     trimmingPrefix(FixedPatternConsumer(pattern: prefix))
@@ -202,7 +202,7 @@ extension Collection where SubSequence == Self, Element: Equatable {
   /// as its argument and returns a Boolean value indicating whether the
   /// element should be removed from the collection.
   @available(SwiftStdlib 5.7, *)
-  public mutating func trimPrefix<Prefix: Collection>(
+  public mutating func trimPrefix<Prefix: Sequence>(
     _ prefix: Prefix
   ) where Prefix.Element == Element {
     trimPrefix(FixedPatternConsumer<SubSequence, Prefix>(pattern: prefix))
@@ -217,7 +217,7 @@ extension RangeReplaceableCollection where Element: Equatable {
   /// as its argument and returns a Boolean value indicating whether the
   /// element should be removed from the collection.
   @available(SwiftStdlib 5.7, *)
-  public mutating func trimPrefix<Prefix: Collection>(
+  public mutating func trimPrefix<Prefix: Sequence>(
     _ prefix: Prefix
   ) where Prefix.Element == Element {
     trimPrefix(FixedPatternConsumer(pattern: prefix))
