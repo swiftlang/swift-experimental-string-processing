@@ -13,7 +13,7 @@ import _StringProcessing
 import XCTest
 
 // TODO: Protocol-powered testing
-class AlgorithmTests: XCTestCase {
+class RegexConsumerTests: XCTestCase {
 
 }
 
@@ -32,7 +32,25 @@ func makeSingleUseSequence<T>(element: T, count: Int) -> UnfoldSequence<T, Void>
   }
 }
 
-class RegexConsumerTests: XCTestCase {
+class AlgorithmTests: XCTestCase {
+  func testContains() {
+    XCTAssertTrue("".contains(""))
+    XCTAssertTrue("abcde".contains(""))
+    XCTAssertTrue("abcde".contains("abcd"))
+    XCTAssertTrue("abcde".contains("bcde"))
+    XCTAssertTrue("abcde".contains("bcd"))
+    XCTAssertTrue("ababacabababa".contains("abababa"))
+    
+    XCTAssertFalse("".contains("abcd"))
+    
+    for start in 0..<9 {
+      for end in start..<9 {
+        XCTAssertTrue((0..<10).contains(start...end))
+        XCTAssertFalse((0..<10).contains(start...10))
+      }
+    }
+  }
+  
   func testRanges() {
     func expectRanges(
       _ string: String,
@@ -48,6 +66,9 @@ class RegexConsumerTests: XCTestCase {
       // `IndexingIterator` tests the collection conformance
       let actualCol: [Range<Int>] = string[...].ranges(of: regex)[...].map(string.offsets(of:))
       XCTAssertEqual(actualCol, expected, file: file, line: line)
+      
+      let firstRange = string.firstRange(of: regex).map(string.offsets(of:))
+      XCTAssertEqual(firstRange, expected.first, file: file, line: line)
     }
 
     expectRanges("", "", [0..<0])
@@ -68,6 +89,31 @@ class RegexConsumerTests: XCTestCase {
     expectRanges("abc", "(a|b)*", [0..<2, 2..<2, 3..<3])
     expectRanges("abc", "(b|c)+", [1..<3])
     expectRanges("abc", "(b|c)*", [0..<0, 1..<3, 3..<3])
+    
+    func expectStringRanges(
+      _ input: String,
+      _ pattern: String,
+      _ expected: [Range<Int>],
+      file: StaticString = #file, line: UInt = #line
+    ) {
+      let actualSeq: [Range<Int>] = input.ranges(of: pattern).map(input.offsets(of:))
+      XCTAssertEqual(actualSeq, expected, file: file, line: line)
+
+      // `IndexingIterator` tests the collection conformance
+      let actualCol: [Range<Int>] = input.ranges(of: pattern)[...].map(input.offsets(of:))
+      XCTAssertEqual(actualCol, expected, file: file, line: line)
+      
+      let firstRange = input.firstRange(of: pattern).map(input.offsets(of:))
+      XCTAssertEqual(firstRange, expected.first, file: file, line: line)
+    }
+
+    expectStringRanges("", "", [0..<0])
+    expectStringRanges("abcde", "", [0..<0, 1..<1, 2..<2, 3..<3, 4..<4, 5..<5])
+    expectStringRanges("abcde", "abcd", [0..<4])
+    expectStringRanges("abcde", "bcde", [1..<5])
+    expectStringRanges("abcde", "bcd", [1..<4])
+    expectStringRanges("ababacabababa", "abababa", [6..<13])
+    expectStringRanges("ababacabababa", "aba", [0..<3, 6..<9, 10..<13])
   }
 
   func testSplit() {
