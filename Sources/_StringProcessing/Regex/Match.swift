@@ -185,3 +185,15 @@ extension Regex {
     self.init(node: .quotedLiteral(string))
   }
 }
+
+@available(SwiftStdlib 5.7, *)
+public func ~=<Output>(regex: Regex<Output>, input: String) -> Bool {
+  guard let _ = try? regex.wholeMatch(in: input) else { return false }
+  return true
+}
+
+@available(SwiftStdlib 5.7, *)
+public func ~=<Output>(regex: Regex<Output>, input: Substring) -> Bool {
+  guard let _ = try? regex.wholeMatch(in: input) else { return false }
+  return true
+}
