@@ -666,7 +666,7 @@ The protocol requirement is `var regex: Regex<RegexOutput>`, i.e. any type that 
 Another alternative is to have a second protocol just for generic API. But without a compelling semantic distinction or practical utility, we'd prefer to avoid adding protocols just for names. If a clearly superior name exists, we should just choose that.
 
 
-```
+```swift
 protocol CustomConsumingRegexComponent {
     func consume(...)
 }
