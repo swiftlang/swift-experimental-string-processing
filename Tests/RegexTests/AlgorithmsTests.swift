@@ -135,6 +135,12 @@ class AlgorithmTests: XCTestCase {
     expectSplit("a", "a", ["", ""])
     expectSplit("a____a____a", "_+", ["a", "a", "a"])
     expectSplit("____a____a____a____", "_+", ["", "a", "a", "a", ""])
+    
+    // Test that original `split` functions are still accessible
+    let splitRef = "abcd".split
+    XCTAssert(type(of: splitRef) == ((Character, Int, Bool) -> [Substring]).self)
+    let splitParamsRef = "abcd".split(separator:maxSplits:omittingEmptySubsequences:)
+    XCTAssert(type(of: splitParamsRef) == ((Character, Int, Bool) -> [Substring]).self)
   }
   
   func testSplitPermutations() throws {
