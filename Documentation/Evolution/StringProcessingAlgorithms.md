@@ -668,7 +668,7 @@ Another alternative is to have a second protocol just for generic API. But witho
 
 ```swift
 protocol CustomConsumingRegexComponent {
-    func consume(...)
+    func consuming(...)
 }
 ```
 
