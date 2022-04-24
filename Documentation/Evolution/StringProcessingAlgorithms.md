@@ -649,7 +649,7 @@ We've seen the [Regex type and overview](https://github.com/apple/swift-evolutio
 (The other proposal with a significant amount of API is [Unicode for String Processing](https://forums.swift.org/t/pitch-unicode-for-string-processing/56907), which is in the pitch phase. It is a technical niche and less impactful on these naming discussions. We'll still want to design those names for consistency, of course.)
 
 
-```
+```swift
 protocol RegexComponent {
     associatedtype RegexOutput
 }
