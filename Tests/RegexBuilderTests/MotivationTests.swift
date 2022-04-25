@@ -16,6 +16,8 @@ import XCTest
 import _StringProcessing
 import RegexBuilder
 
+#if os(macOS)
+
 private struct Transaction: Hashable {
   enum Kind: Hashable {
     case credit
@@ -254,12 +256,11 @@ extension RegexDSLTests {
         XCTFail()
         continue
       }
-
     }
-
   }
-
 }
+
+#endif
 
 extension RegexDSLTests {
   func testProposalExample() {
