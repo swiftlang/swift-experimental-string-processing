@@ -238,7 +238,7 @@ extension Collection where Element: Equatable {
         where S.Element == Element
 }
 
-extension BidirectionalCollection where SubSequence == Substring {
+extension Collection where SubSequence == Substring {
     /// Returns a Boolean value indicating whether the collection contains the
     /// given regex.
     /// - Parameter regex: A regex to search for within this collection.
@@ -262,7 +262,7 @@ extension BidirectionalCollection where SubSequence == Substring {
 #### Starts with
 
 ```swift
-extension BidirectionalCollection where SubSequence == Substring {
+extension Collection where SubSequence == Substring {
     /// Returns a Boolean value indicating whether the initial elements of the
     /// sequence are the same as the elements in the specified regex.
     /// - Parameter regex: A regex to compare to this sequence.
@@ -339,7 +339,7 @@ extension RangeReplaceableCollection where Element: Equatable {
         where Prefix.Element == Element
 }
 
-extension BidirectionalCollection where SubSequence == Substring {
+extension Collection where SubSequence == Substring {
     /// Returns a new subsequence by removing the initial elements that matches
     /// the given regex.
     /// - Parameter regex: The regex to remove from this collection.
@@ -404,7 +404,7 @@ extension BidirectionalCollection where Element: Comparable {
         where C.Element == Element
 }
 
-extension BidirectionalCollection where SubSequence == Substring {
+extension Collection where SubSequence == Substring {
     /// Finds and returns the range of the first occurrence of a given regex
     /// within the collection.
     /// - Parameter regex: The regex to search for.
@@ -438,7 +438,7 @@ extension Collection where Element: Equatable {
         where C.Element == Element
 }
 
-extension BidirectionalCollection where SubSequence == Substring {
+extension Collection where SubSequence == Substring {
     /// Finds and returns the ranges of the all occurrences of a given sequence
     /// within the collection.
     /// - Parameter regex: The regex to search for.
@@ -462,7 +462,7 @@ extension BidirectionalCollection where SubSequence == Substring {
 #### Match
 
 ```swift
-extension BidirectionalCollection where SubSequence == Substring {
+extension Collection where SubSequence == Substring {
     /// Returns the first match of the specified regex within the collection.
     /// - Parameter regex: The regex to search for.
     /// - Returns: The first match of `regex` in the collection, or `nil` if
@@ -512,7 +512,7 @@ extension BidirectionalCollection where SubSequence == Substring {
 #### Matches
 
 ```swift
-extension BidirectionalCollection where SubSequence == Substring {
+extension Collection where SubSequence == Substring {
     /// Returns a collection containing all matches of the specified regex.
     /// - Parameter regex: The regex to search for.
     /// - Returns: A collection of matches of `regex`.
@@ -814,7 +814,7 @@ extension Collection where Element: Equatable {
     ) -> some Collection<SubSequence> where C.Element == Element
 }
 
-extension BidirectionalCollection where SubSequence == Substring {
+extension Collection where SubSequence == Substring {
     /// Returns the longest possible subsequences of the collection, in order,
     /// around subsequence that match the given separator regex.
     ///
