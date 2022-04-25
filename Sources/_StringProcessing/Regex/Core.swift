@@ -63,6 +63,13 @@ public struct Regex<Output>: RegexComponent {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
+  public init(quoting string: String) {
+    self.init(node: .quotedLiteral(string))
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Regex {
   /// A program representation that caches any lowered representation for
   /// execution.
   internal class Program {
