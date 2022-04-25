@@ -56,11 +56,14 @@ extension Source {
   var currentPosition: Position { bounds.lowerBound }
 }
 
-protocol _LocatedErrorProtocol: Error {}
+public protocol LocatedErrorProtocol: Error {
+  var location: SourceLocation { get }
+  var _typeErasedError: Error { get }
+}
 
 extension Source {
   /// An error with source location info
-  public struct LocatedError<E: Error>: Error, _LocatedErrorProtocol {
+  public struct LocatedError<E: Error>: Error, LocatedErrorProtocol {
     public let error: E
     public let location: SourceLocation
 
@@ -117,5 +120,9 @@ extension Source.LocatedError: CustomStringConvertible {
     // Just return the underlying error's description, which is currently how
     // we present the message to the compiler.
     "\(error)"
+  }
+
+  public var _typeErasedError: Error {
+    return error
   }
 }
