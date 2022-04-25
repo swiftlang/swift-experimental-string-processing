@@ -205,3 +205,28 @@ extension Regex.Match where Output == AnyRegexOutput {
     fatalError("FIXME: Not implemented")
   }
 }
+
+@available(SwiftStdlib 5.7, *)
+extension Regex where Output == AnyRegexOutput {
+  /// Returns whether a named-capture with `name` exists
+  public func contains(namedCapture name: String) -> Bool {
+    fatalError("FIXME: not implemented")
+  }
+
+  /// Creates a type-erased regex from an existing regex.
+  ///
+  /// Use this initializer to fit a regex with strongly typed captures into the
+  /// use site of a dynamic regex, i.e. one that was created from a string.
+  public init<Output>(_ match: Regex<Output>) {
+    fatalError("FIXME: Not implemented")
+  }
+
+  /// Returns a typed regex by converting the underlying types.
+  ///
+  /// - Parameter type: The expected output type.
+  /// - Returns: A regex generic over the output type if the underlying types can be converted.
+  ///   Returns `nil` otherwise.
+  public func `as`<Output>(_ type: Output.Type) -> Regex<Output>? {
+    fatalError("FIXME: Not implemented")
+  }
+}
