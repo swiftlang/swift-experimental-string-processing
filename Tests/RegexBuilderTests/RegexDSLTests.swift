@@ -830,6 +830,38 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(result[b], 42)
     }
 
+    do {
+      let key = Reference(Substring.self)
+      let value = Reference(Int.self)
+      let input = "      "
+      let regex = Regex {
+        Capture(as: key) {
+          Optionally {
+            OneOrMore(.word)
+          }
+        }
+        ":"
+        Optionally {
+          Capture(as: value) {
+            OneOrMore(.digit)
+          } transform: { Int($0)! }
+        }
+      }
+
+      let result1 = try XCTUnwrap("age:123".wholeMatch(of: regex))
+      XCTAssertEqual(result1[key], "age")
+      XCTAssertEqual(result1[value], 123)
+
+      let result2 = try XCTUnwrap(":567".wholeMatch(of: regex))
+      XCTAssertEqual(result2[key], "")
+      XCTAssertEqual(result2[value], 567)
+
+      let result3 = try XCTUnwrap("status:".wholeMatch(of: regex))
+      XCTAssertEqual(result3[key], "status")
+      // Traps:
+      // XCTAssertEqual(result3[value], nil)
+    }
+    
     // Post-hoc captured references
     // #"(?:\w\1|:(\w):)+"#
     try _testDSLCaptures(
