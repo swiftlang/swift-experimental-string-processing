@@ -835,6 +835,46 @@ extension RangeReplaceableCollection where Element: Equatable {
 
 Most of the proposed algorithms are necessarily on `Collection` due to the use of indices or mutation.  `Sequence` does not support multi-pass iteration, so even `trimPrefix` would problematic on `Sequence` because it needs to look 1 `Element` ahead to know when to stop trimming.
 
+### Cross-proposal API naming consistency
+
+The regex work is broken down into 6 proposals based on technical domain, which is advantageous for deeper technical discussions and makes reviewing the large body of work manageable. The disadvantage of this approach is that relatively-shallow cross-cutting concerns, such as API naming consistency, are harder to evaluate until we've built up intuition from multiple proposals.
+
+We've seen the [Regex type and overview](https://github.com/apple/swift-evolution/blob/main/proposals/0350-regex-type-overview.md), the [Regex builder DSL](https://github.com/apple/swift-evolution/blob/main/proposals/0351-regex-builder.md), and here we present lots of ways to use regex. Now's a good time to go over API naming consistency.
+
+(The other proposal with a significant amount of API is [Unicode for String Processing](https://forums.swift.org/t/pitch-unicode-for-string-processing/56907), which is in the pitch phase. It is a technical niche and less impactful on these naming discussions. We'll still want to design those names for consistency, of course.)
+
+
+```swift
+protocol RegexComponent {
+    associatedtype RegexOutput
+}
+```
+
+The associatedtype name is "RegexOutput" to help libraries conform their parsers to this protocol (e.g. via `CustomConsumingRegexComponent`). Regex's capture representation is regexy: it has the overall matched portion as the first capture and the regex builders know how to combine these kinds of capture lists together. This could be different than how e.g. a parser combinator library's output types might be represented. Thus, we chose a more specific name to avoid any potential conflicts.
+
+The name "RegexComponent" accentuates that any conformer can be used as part of a larger regex, while it de-emphasizes that `Regex` instances themselves can be used directly. We propose methods that are generic over `RegexComponent` and developers will be considering whether they should make their functions that otherwise take a `Regex` also be generic over `RegexComponent`.
+
+It's possible there might be some initial confusion around the word "component", i.e. a developer may have a regex and not be sure how to make it into a component or how to get the component out. The word "component" carries a lot of value in the context of the regex DSL. An alternative name might be `RegexProtocol`, which implies that a Regex can be used at the site and would be clearly the way to make a function taking a concrete `Regex` generic. But, it's otherwise a naming workaround that doesn't carry the additional regex builder connotations.
+
+The protocol requirement is `var regex: Regex<RegexOutput>`, i.e. any type that can produce a regex or hook into the engine's customization hooks (this is what `consuming` does) can be used as a component of the DSL and with these generic API. An alternative name could be "CustomRegexConvertible", but we don't feel that communicates component composability very well, nor is it particularly enlightening when encountering these generic API.
+
+Another alternative is to have a second protocol just for generic API. But without a compelling semantic distinction or practical utility, we'd prefer to avoid adding protocols just for names. If a clearly superior name exists, we should just choose that.
+
+
+```swift
+protocol CustomConsumingRegexComponent {
+    func consuming(...)
+}
+```
+
+This is not a normal developer-facing protocol or concept; it's an advanced library-extensibility feature. Explicit, descriptive, and careful names are more important than concise names. The "custom" implies that we're not just vending a regex directly ourselves, we're instead customizing behavior by hooking into the run-time engine directly.
+
+Older versions of the pitch had `func match(...) -> (String.Index, T)?` as the protocol requirement. As [Regex type and overview](https://github.com/apple/swift-evolution/blob/main/proposals/0350-regex-type-overview.md) went through review, naming convention settled on using the word "match" as a noun and in context with operations that produce a `Match` instance. Since this is the engine's customization hook, it produces the value and position to resume execution from directly, and hence different terminology is apt and avoids confusion or future ambiguities. "Consuming" is the nomenclature we're going with for something that chews off the front of its input in order to produces a value.
+
+This protocol customizes the basic consume-from-the-front functionality. A protocol for customizing search is future work and involves accommodating different kinds of state and ways that a searcher may wish to speed up subsequent searches. Alternative names for the protocol include `CustomRegexComponent`, `CustomConsumingRegex`, etc., but we don't feel brevity is the key consideration here.
+
+
+
 ## Future directions
 
 ### Backward algorithms
