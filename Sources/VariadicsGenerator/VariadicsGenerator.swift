@@ -59,10 +59,10 @@ struct Permutations: Sequence {
 }
 
 func captureTypeList(_ arity: Int) -> String {
-  (0..<arity).map { "C\($0)" }.joined(separator: ", ")
+  (0..<arity).map { "C\($0+1)" }.joined(separator: ", ")
 }
 func optionalCaptureTypeList(_ arity: Int) -> String {
-  (0..<arity).map { "C\($0)?" }.joined(separator: ", ")
+  (0..<arity).map { "C\($0+1)?" }.joined(separator: ", ")
 }
 
 func output(_ content: String) {
