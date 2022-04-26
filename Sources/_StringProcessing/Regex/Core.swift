@@ -55,6 +55,12 @@ public struct Regex<Output>: RegexComponent {
     // in libswiftParseRegexLiteral.
     self.init(ast: try! parseWithDelimiters(pattern))
   }
+  
+  @_spi(RegexBuilder)
+  public init<T>(castingCaptures regex: Regex<T>, to outputType: Output.Type = Output.self) {
+    // TODO: Validate that `Output` and `T` are compatible?
+    self.program = Program(tree: regex.program.tree)
+  }
 
   public var regex: Regex<Output> {
     self

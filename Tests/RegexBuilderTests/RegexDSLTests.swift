@@ -887,48 +887,51 @@ class RegexDSLTests: XCTestCase {
       }
     }
   }
+}
+
+extension RegexDSLTests {
+  struct SemanticVersion: Equatable {
+    var major: Int
+    var minor: Int
+    var patch: Int
+    var dev: String?
+  }
   
-  func testSemanticVersionExample() {
-    struct SemanticVersion: Equatable {
-      var major: Int
-      var minor: Int
-      var patch: Int
-      var dev: String?
-    }
-    struct SemanticVersionParser: CustomConsumingRegexComponent {
-      typealias RegexOutput = SemanticVersion
-      func consuming(
-        _ input: String,
-        startingAt index: String.Index,
-        in bounds: Range<String.Index>
-      ) throws -> (upperBound: String.Index, output: SemanticVersion)? {
-        let regex = Regex {
-          TryCapture(OneOrMore(.digit)) { Int($0) }
+  struct SemanticVersionParser: CustomConsumingRegexComponent {
+    typealias RegexOutput = SemanticVersion
+    func consuming(
+      _ input: String,
+      startingAt index: String.Index,
+      in bounds: Range<String.Index>
+    ) throws -> (upperBound: String.Index, output: SemanticVersion)? {
+      let regex = Regex {
+        TryCapture(OneOrMore(.digit)) { Int($0) }
+        "."
+        TryCapture(OneOrMore(.digit)) { Int($0) }
+        Optionally {
           "."
           TryCapture(OneOrMore(.digit)) { Int($0) }
-          Optionally {
-            "."
-            TryCapture(OneOrMore(.digit)) { Int($0) }
-          }
-          Optionally {
-            "-"
-            Capture(OneOrMore(.word))
-          }
         }
-
-        guard let match = input[index..<bounds.upperBound].firstMatch(of: regex),
-              match.range.lowerBound == index
-        else { return nil }
-
-        let result = SemanticVersion(
-          major: match.output.1,
-          minor: match.output.2,
-          patch: match.output.3 ?? 0,
-          dev: match.output.4.map(String.init))
-        return (match.range.upperBound, result)
+        Optionally {
+          "-"
+          Capture(OneOrMore(.word))
+        }
       }
-    }
 
+      guard let match = input[index..<bounds.upperBound].firstMatch(of: regex),
+            match.range.lowerBound == index
+      else { return nil }
+
+      let result = SemanticVersion(
+        major: match.output.1,
+        minor: match.output.2,
+        patch: match.output.3 ?? 0,
+        dev: match.output.4.map(String.init))
+      return (match.range.upperBound, result)
+    }
+  }
+  
+  func testSemanticVersionExample() {
     let versions = [
       ("1.0", SemanticVersion(major: 1, minor: 0, patch: 0)),
       ("1.0.1", SemanticVersion(major: 1, minor: 0, patch: 1)),
@@ -959,3 +962,96 @@ func == <T0: Equatable, T1: Equatable, T2: Equatable, T3: Equatable, T4: Equatab
 ) -> Bool {
   l.0 == r.0 && (l.1, l.2, l.3, l.4, l.5, l.6) == (r.1, r.2, r.3, r.4, r.5, r.6)
 }
+
+// MARK: Unwrapping tests
+
+extension RegexDSLTests {
+  func testUnwrapping() throws {
+    let optionalCapture = Optionally(Capture("-"))
+    
+    do {
+      let regex = Regex {
+        ChoiceOf {
+          optionalCapture
+        }.compactingCapture1()
+      }
+      let _: (Substring, Substring?).Type = type(of: regex).RegexOutput.self
+    }
+
+    do {
+      let regex = Regex {
+        ChoiceOf {
+          optionalCapture
+          optionalCapture
+        }.compactingCapture1().compactingCapture2()
+      }
+      let _: (Substring, Substring?, Substring?).Type = type(of: regex).RegexOutput.self
+    }
+
+    do {
+      let regex = Regex {
+        ChoiceOf {
+          optionalCapture
+          Capture("-", transform: { Int($0) })
+        }.compactingCapture1().compactingCapture2()
+      }
+      let _: (Substring, Substring?, Int?).Type = type(of: regex).RegexOutput.self
+    }
+
+    do {
+      let parser = SemanticVersionParser()
+      let regex = Regex {
+        ChoiceOf {
+          Capture("abcd")
+          Optionally(Capture(parser))
+        }.compactingCapture2()
+      }
+      let _: (Substring, Substring?, SemanticVersion?).Type = type(of: regex).RegexOutput.self
+      
+      do {
+        let match = try XCTUnwrap("abcd".firstMatch(of: regex)?.output)
+        XCTAssertEqual(match.1, "abcd")
+        XCTAssertNil(match.2)
+      } catch {}
+      do {
+        let match = try XCTUnwrap("1.2.3".firstMatch(of: regex)?.output)
+        XCTAssertNil(match.1)
+        XCTAssertEqual(match.2, SemanticVersion(major: 1, minor: 2, patch: 3))
+      } catch {}
+    }
+    
+    do {
+      let regex = Regex {
+        ZeroOrMore {
+          optionalCapture
+          optionalCapture
+        }
+        ChoiceOf {
+          optionalCapture
+          ZeroOrMore {
+            optionalCapture
+          }
+        }
+        Optionally {
+          Repeat(...5) {
+            optionalCapture
+          }
+        }
+      }
+      let flattenedRegex = regex
+        .compactingCapture1()
+        .compactingCapture2()
+        .compactingCapture3()
+        .compactingCapture4()
+        .compactingCapture4()
+        .compactingCapture5()
+        .compactingCapture5()
+      
+      let _: (Substring, Substring??, Substring??, Substring??, Substring???, Substring???).Type
+        = type(of: regex).RegexOutput.self
+      let _: (Substring, Substring?, Substring?, Substring?, Substring?, Substring?).Type
+        = type(of: flattenedRegex).RegexOutput.self
+    }
+  }
+}
+

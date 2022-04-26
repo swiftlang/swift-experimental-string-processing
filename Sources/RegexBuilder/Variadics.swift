@@ -4172,6 +4172,421 @@ extension TryCapture {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
+extension RegexComponent {
+  public func compactingCapture1<C1>()
+    -> Regex<(Substring, C1?)>
+    where RegexOutput == (Substring, C1??)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1?).self)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexComponent {
+  public func compactingCapture1<C1, C2>()
+    -> Regex<(Substring, C1?, C2)>
+    where RegexOutput == (Substring, C1??, C2)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1?, C2).self)
+  }
+
+  public func compactingCapture2<C1, C2>()
+    -> Regex<(Substring, C1, C2?)>
+    where RegexOutput == (Substring, C1, C2??)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2?).self)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexComponent {
+  public func compactingCapture1<C1, C2, C3>()
+    -> Regex<(Substring, C1?, C2, C3)>
+    where RegexOutput == (Substring, C1??, C2, C3)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1?, C2, C3).self)
+  }
+
+  public func compactingCapture2<C1, C2, C3>()
+    -> Regex<(Substring, C1, C2?, C3)>
+    where RegexOutput == (Substring, C1, C2??, C3)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2?, C3).self)
+  }
+
+  public func compactingCapture3<C1, C2, C3>()
+    -> Regex<(Substring, C1, C2, C3?)>
+    where RegexOutput == (Substring, C1, C2, C3??)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3?).self)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexComponent {
+  public func compactingCapture1<C1, C2, C3, C4>()
+    -> Regex<(Substring, C1?, C2, C3, C4)>
+    where RegexOutput == (Substring, C1??, C2, C3, C4)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1?, C2, C3, C4).self)
+  }
+
+  public func compactingCapture2<C1, C2, C3, C4>()
+    -> Regex<(Substring, C1, C2?, C3, C4)>
+    where RegexOutput == (Substring, C1, C2??, C3, C4)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2?, C3, C4).self)
+  }
+
+  public func compactingCapture3<C1, C2, C3, C4>()
+    -> Regex<(Substring, C1, C2, C3?, C4)>
+    where RegexOutput == (Substring, C1, C2, C3??, C4)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3?, C4).self)
+  }
+
+  public func compactingCapture4<C1, C2, C3, C4>()
+    -> Regex<(Substring, C1, C2, C3, C4?)>
+    where RegexOutput == (Substring, C1, C2, C3, C4??)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4?).self)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexComponent {
+  public func compactingCapture1<C1, C2, C3, C4, C5>()
+    -> Regex<(Substring, C1?, C2, C3, C4, C5)>
+    where RegexOutput == (Substring, C1??, C2, C3, C4, C5)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1?, C2, C3, C4, C5).self)
+  }
+
+  public func compactingCapture2<C1, C2, C3, C4, C5>()
+    -> Regex<(Substring, C1, C2?, C3, C4, C5)>
+    where RegexOutput == (Substring, C1, C2??, C3, C4, C5)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2?, C3, C4, C5).self)
+  }
+
+  public func compactingCapture3<C1, C2, C3, C4, C5>()
+    -> Regex<(Substring, C1, C2, C3?, C4, C5)>
+    where RegexOutput == (Substring, C1, C2, C3??, C4, C5)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3?, C4, C5).self)
+  }
+
+  public func compactingCapture4<C1, C2, C3, C4, C5>()
+    -> Regex<(Substring, C1, C2, C3, C4?, C5)>
+    where RegexOutput == (Substring, C1, C2, C3, C4??, C5)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4?, C5).self)
+  }
+
+  public func compactingCapture5<C1, C2, C3, C4, C5>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5?)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5??)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5?).self)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexComponent {
+  public func compactingCapture1<C1, C2, C3, C4, C5, C6>()
+    -> Regex<(Substring, C1?, C2, C3, C4, C5, C6)>
+    where RegexOutput == (Substring, C1??, C2, C3, C4, C5, C6)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1?, C2, C3, C4, C5, C6).self)
+  }
+
+  public func compactingCapture2<C1, C2, C3, C4, C5, C6>()
+    -> Regex<(Substring, C1, C2?, C3, C4, C5, C6)>
+    where RegexOutput == (Substring, C1, C2??, C3, C4, C5, C6)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2?, C3, C4, C5, C6).self)
+  }
+
+  public func compactingCapture3<C1, C2, C3, C4, C5, C6>()
+    -> Regex<(Substring, C1, C2, C3?, C4, C5, C6)>
+    where RegexOutput == (Substring, C1, C2, C3??, C4, C5, C6)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3?, C4, C5, C6).self)
+  }
+
+  public func compactingCapture4<C1, C2, C3, C4, C5, C6>()
+    -> Regex<(Substring, C1, C2, C3, C4?, C5, C6)>
+    where RegexOutput == (Substring, C1, C2, C3, C4??, C5, C6)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4?, C5, C6).self)
+  }
+
+  public func compactingCapture5<C1, C2, C3, C4, C5, C6>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5?, C6)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5??, C6)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5?, C6).self)
+  }
+
+  public func compactingCapture6<C1, C2, C3, C4, C5, C6>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6?)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6??)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6?).self)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexComponent {
+  public func compactingCapture1<C1, C2, C3, C4, C5, C6, C7>()
+    -> Regex<(Substring, C1?, C2, C3, C4, C5, C6, C7)>
+    where RegexOutput == (Substring, C1??, C2, C3, C4, C5, C6, C7)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1?, C2, C3, C4, C5, C6, C7).self)
+  }
+
+  public func compactingCapture2<C1, C2, C3, C4, C5, C6, C7>()
+    -> Regex<(Substring, C1, C2?, C3, C4, C5, C6, C7)>
+    where RegexOutput == (Substring, C1, C2??, C3, C4, C5, C6, C7)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2?, C3, C4, C5, C6, C7).self)
+  }
+
+  public func compactingCapture3<C1, C2, C3, C4, C5, C6, C7>()
+    -> Regex<(Substring, C1, C2, C3?, C4, C5, C6, C7)>
+    where RegexOutput == (Substring, C1, C2, C3??, C4, C5, C6, C7)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3?, C4, C5, C6, C7).self)
+  }
+
+  public func compactingCapture4<C1, C2, C3, C4, C5, C6, C7>()
+    -> Regex<(Substring, C1, C2, C3, C4?, C5, C6, C7)>
+    where RegexOutput == (Substring, C1, C2, C3, C4??, C5, C6, C7)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4?, C5, C6, C7).self)
+  }
+
+  public func compactingCapture5<C1, C2, C3, C4, C5, C6, C7>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5?, C6, C7)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5??, C6, C7)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5?, C6, C7).self)
+  }
+
+  public func compactingCapture6<C1, C2, C3, C4, C5, C6, C7>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6?, C7)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6??, C7)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6?, C7).self)
+  }
+
+  public func compactingCapture7<C1, C2, C3, C4, C5, C6, C7>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7?)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7??)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6, C7?).self)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexComponent {
+  public func compactingCapture1<C1, C2, C3, C4, C5, C6, C7, C8>()
+    -> Regex<(Substring, C1?, C2, C3, C4, C5, C6, C7, C8)>
+    where RegexOutput == (Substring, C1??, C2, C3, C4, C5, C6, C7, C8)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1?, C2, C3, C4, C5, C6, C7, C8).self)
+  }
+
+  public func compactingCapture2<C1, C2, C3, C4, C5, C6, C7, C8>()
+    -> Regex<(Substring, C1, C2?, C3, C4, C5, C6, C7, C8)>
+    where RegexOutput == (Substring, C1, C2??, C3, C4, C5, C6, C7, C8)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2?, C3, C4, C5, C6, C7, C8).self)
+  }
+
+  public func compactingCapture3<C1, C2, C3, C4, C5, C6, C7, C8>()
+    -> Regex<(Substring, C1, C2, C3?, C4, C5, C6, C7, C8)>
+    where RegexOutput == (Substring, C1, C2, C3??, C4, C5, C6, C7, C8)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3?, C4, C5, C6, C7, C8).self)
+  }
+
+  public func compactingCapture4<C1, C2, C3, C4, C5, C6, C7, C8>()
+    -> Regex<(Substring, C1, C2, C3, C4?, C5, C6, C7, C8)>
+    where RegexOutput == (Substring, C1, C2, C3, C4??, C5, C6, C7, C8)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4?, C5, C6, C7, C8).self)
+  }
+
+  public func compactingCapture5<C1, C2, C3, C4, C5, C6, C7, C8>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5?, C6, C7, C8)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5??, C6, C7, C8)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5?, C6, C7, C8).self)
+  }
+
+  public func compactingCapture6<C1, C2, C3, C4, C5, C6, C7, C8>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6?, C7, C8)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6??, C7, C8)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6?, C7, C8).self)
+  }
+
+  public func compactingCapture7<C1, C2, C3, C4, C5, C6, C7, C8>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7?, C8)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7??, C8)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6, C7?, C8).self)
+  }
+
+  public func compactingCapture8<C1, C2, C3, C4, C5, C6, C7, C8>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8?)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8??)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6, C7, C8?).self)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexComponent {
+  public func compactingCapture1<C1, C2, C3, C4, C5, C6, C7, C8, C9>()
+    -> Regex<(Substring, C1?, C2, C3, C4, C5, C6, C7, C8, C9)>
+    where RegexOutput == (Substring, C1??, C2, C3, C4, C5, C6, C7, C8, C9)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1?, C2, C3, C4, C5, C6, C7, C8, C9).self)
+  }
+
+  public func compactingCapture2<C1, C2, C3, C4, C5, C6, C7, C8, C9>()
+    -> Regex<(Substring, C1, C2?, C3, C4, C5, C6, C7, C8, C9)>
+    where RegexOutput == (Substring, C1, C2??, C3, C4, C5, C6, C7, C8, C9)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2?, C3, C4, C5, C6, C7, C8, C9).self)
+  }
+
+  public func compactingCapture3<C1, C2, C3, C4, C5, C6, C7, C8, C9>()
+    -> Regex<(Substring, C1, C2, C3?, C4, C5, C6, C7, C8, C9)>
+    where RegexOutput == (Substring, C1, C2, C3??, C4, C5, C6, C7, C8, C9)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3?, C4, C5, C6, C7, C8, C9).self)
+  }
+
+  public func compactingCapture4<C1, C2, C3, C4, C5, C6, C7, C8, C9>()
+    -> Regex<(Substring, C1, C2, C3, C4?, C5, C6, C7, C8, C9)>
+    where RegexOutput == (Substring, C1, C2, C3, C4??, C5, C6, C7, C8, C9)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4?, C5, C6, C7, C8, C9).self)
+  }
+
+  public func compactingCapture5<C1, C2, C3, C4, C5, C6, C7, C8, C9>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5?, C6, C7, C8, C9)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5??, C6, C7, C8, C9)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5?, C6, C7, C8, C9).self)
+  }
+
+  public func compactingCapture6<C1, C2, C3, C4, C5, C6, C7, C8, C9>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6?, C7, C8, C9)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6??, C7, C8, C9)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6?, C7, C8, C9).self)
+  }
+
+  public func compactingCapture7<C1, C2, C3, C4, C5, C6, C7, C8, C9>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7?, C8, C9)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7??, C8, C9)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6, C7?, C8, C9).self)
+  }
+
+  public func compactingCapture8<C1, C2, C3, C4, C5, C6, C7, C8, C9>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8?, C9)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8??, C9)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6, C7, C8?, C9).self)
+  }
+
+  public func compactingCapture9<C1, C2, C3, C4, C5, C6, C7, C8, C9>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9?)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9??)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9?).self)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexComponent {
+  public func compactingCapture1<C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>()
+    -> Regex<(Substring, C1?, C2, C3, C4, C5, C6, C7, C8, C9, C10)>
+    where RegexOutput == (Substring, C1??, C2, C3, C4, C5, C6, C7, C8, C9, C10)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1?, C2, C3, C4, C5, C6, C7, C8, C9, C10).self)
+  }
+
+  public func compactingCapture2<C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>()
+    -> Regex<(Substring, C1, C2?, C3, C4, C5, C6, C7, C8, C9, C10)>
+    where RegexOutput == (Substring, C1, C2??, C3, C4, C5, C6, C7, C8, C9, C10)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2?, C3, C4, C5, C6, C7, C8, C9, C10).self)
+  }
+
+  public func compactingCapture3<C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>()
+    -> Regex<(Substring, C1, C2, C3?, C4, C5, C6, C7, C8, C9, C10)>
+    where RegexOutput == (Substring, C1, C2, C3??, C4, C5, C6, C7, C8, C9, C10)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3?, C4, C5, C6, C7, C8, C9, C10).self)
+  }
+
+  public func compactingCapture4<C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>()
+    -> Regex<(Substring, C1, C2, C3, C4?, C5, C6, C7, C8, C9, C10)>
+    where RegexOutput == (Substring, C1, C2, C3, C4??, C5, C6, C7, C8, C9, C10)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4?, C5, C6, C7, C8, C9, C10).self)
+  }
+
+  public func compactingCapture5<C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5?, C6, C7, C8, C9, C10)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5??, C6, C7, C8, C9, C10)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5?, C6, C7, C8, C9, C10).self)
+  }
+
+  public func compactingCapture6<C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6?, C7, C8, C9, C10)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6??, C7, C8, C9, C10)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6?, C7, C8, C9, C10).self)
+  }
+
+  public func compactingCapture7<C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7?, C8, C9, C10)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7??, C8, C9, C10)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6, C7?, C8, C9, C10).self)
+  }
+
+  public func compactingCapture8<C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8?, C9, C10)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8??, C9, C10)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6, C7, C8?, C9, C10).self)
+  }
+
+  public func compactingCapture9<C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9?, C10)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9??, C10)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9?, C10).self)
+  }
+
+  public func compactingCapture10<C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>()
+    -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10?)>
+    where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10??)
+  {
+    Regex(castingCaptures: self.regex, to: (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10?).self)
+  }
+}
+
 
 
 // END AUTO-GENERATED CONTENT

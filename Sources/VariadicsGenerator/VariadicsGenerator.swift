@@ -198,6 +198,12 @@ struct VariadicsGenerator: ParsableCommand {
       emitCapture(arity: arity)
     }
 
+    log("Generating 'compactingCapture' overloads...")
+    for arity in 1...maxArity {
+      log("  Capture arity: \(arity)")
+      emitCompactingCapture(arity: arity)
+    }
+    
     output("\n\n")
 
     output("// END AUTO-GENERATED CONTENT\n")
@@ -782,5 +788,39 @@ struct VariadicsGenerator: ParsableCommand {
 
 
       """)
+  }
+  
+  func emitCompactingCapture(arity: Int) {
+    output("""
+      \(defaultAvailableAttr)
+      extension RegexComponent {
+      
+      """)
+    let genericParameters = (1...arity).map { "C\($0)" }
+    
+    let genericParamDecl = genericParameters.joined(separator: ", ")
+    let outputTupleParameters = ["Substring"] + genericParameters
+    
+    for captureNumber in 1...arity {
+      var resultTupleParameters = outputTupleParameters
+      resultTupleParameters[captureNumber] += "?"
+      var constraintTupleParameters = outputTupleParameters
+      constraintTupleParameters[captureNumber] += "??"
+      
+      output("""
+          public func compactingCapture\(captureNumber)<\(genericParamDecl)>()
+            -> Regex<(\(resultTupleParameters.joined(separator: ", ")))>
+            where RegexOutput == (\(constraintTupleParameters.joined(separator: ", ")))
+          {
+            Regex(castingCaptures: self.regex, to: (\(resultTupleParameters.joined(separator: ", "))).self)
+          }
+
+        """)
+      if captureNumber != arity {
+        output("\n")
+      }
+    }
+    
+    output("}\n\n")
   }
 }
