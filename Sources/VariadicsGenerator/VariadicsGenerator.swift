@@ -58,11 +58,15 @@ struct Permutations: Sequence {
   }
 }
 
-func captureTypeList(_ arity: Int) -> String {
-  (0..<arity).map { "C\($0+1)" }.joined(separator: ", ")
-}
-func optionalCaptureTypeList(_ arity: Int) -> String {
-  (0..<arity).map { "C\($0+1)?" }.joined(separator: ", ")
+func captureTypeList(
+  _ arity: Int,
+  lowerBound: Int = 0,
+  optional: Bool = false
+) -> String {
+  let opt = optional ? "?" : ""
+  return (lowerBound..<arity).map {
+    "C\($0+1)\(opt)"
+  }.joined(separator: ", ")
 }
 
 func output(_ content: String) {
@@ -211,10 +215,8 @@ struct VariadicsGenerator: ParsableCommand {
 
   func emitConcatenation(leftArity: Int, rightArity: Int) {
     let genericParams: String = {
-      var result = "W0, W1"
-      result += (0..<leftArity+rightArity).map {
-        ", C\($0)"
-      }.joined()
+      var result = "W0, W1, "
+      result += captureTypeList(leftArity+rightArity)
       result += ", R0: \(regexComponentProtocolName), R1: \(regexComponentProtocolName)"
       return result
     }()
@@ -226,16 +228,16 @@ struct VariadicsGenerator: ParsableCommand {
       if leftArity == 0 {
         result += "W0"
       } else {
-        result += "(W0"
-        result += (0..<leftArity).map { ", C\($0)" }.joined()
+        result += "(W0, "
+        result += captureTypeList(leftArity)
         result += ")"
       }
       result += ", R1.\(outputAssociatedTypeName) == "
       if rightArity == 0 {
         result += "W1"
       } else {
-        result += "(W1"
-        result += (leftArity..<leftArity+rightArity).map { ", C\($0)" }.joined()
+        result += "(W1, "
+        result += captureTypeList(leftArity+rightArity, lowerBound: leftArity)
         result += ")"
       }
       return result
@@ -246,7 +248,7 @@ struct VariadicsGenerator: ParsableCommand {
         return baseMatchTypeName
       } else {
         return "(\(baseMatchTypeName), "
-          + (0..<leftArity+rightArity).map { "C\($0)" }.joined(separator: ", ")
+          + captureTypeList(leftArity+rightArity)
           + ")"
       }
     }()
@@ -363,7 +365,7 @@ struct VariadicsGenerator: ParsableCommand {
       self.quantifiedCaptures = {
         switch kind {
         case .zeroOrOne, .zeroOrMore:
-          return optionalCaptureTypeList(arity)
+          return captureTypeList(arity, optional: true)
         case .oneOrMore:
           return capturesJoined
         }
@@ -602,7 +604,7 @@ struct VariadicsGenerator: ParsableCommand {
       where R: \(regexComponentProtocolName), \
       R.\(outputAssociatedTypeName) == (W, \(captures))
       """
-    let resultCaptures = optionalCaptureTypeList(arity)
+    let resultCaptures = captureTypeList(arity, optional: true)
     output("""
       \(defaultAvailableAttr)
       extension \(altBuilderName) {

@@ -16,495 +16,495 @@
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C0) {
+  ) -> Regex<(Substring, C1)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C0, C1) {
+  ) -> Regex<(Substring, C1, C2)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C0, C1, C2) {
+  ) -> Regex<(Substring, C1, C2, C3)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C0, C1, C2, C3) {
+  ) -> Regex<(Substring, C1, C2, C3, C4)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C0, C1, C2, C3, C4) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4, C5) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C0, C1, C2, C3, C4, C5) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C0, C1, C2, C3, C4, C5, C6) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C0, C1, C2, C3, C4, C5, C6, C7) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7, C8) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1)>  where R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1) {
+  ) -> Regex<(Substring, C1, C2)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2)>  where R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2) {
+  ) -> Regex<(Substring, C1, C2, C3)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3)>  where R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3) {
+  ) -> Regex<(Substring, C1, C2, C3, C4)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3, C4) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3, C4, C5) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7, C8) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7, C8) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7, C8, C9) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2)>  where R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2) {
+  ) -> Regex<(Substring, C1, C2, C3)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3)>  where R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3) {
+  ) -> Regex<(Substring, C1, C2, C3, C4)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3, C4) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7, C8) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7, C8) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7, C8, C9) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7, C8, C9) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7, C8, C9, C10) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3)>  where R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3) {
+  ) -> Regex<(Substring, C1, C2, C3, C4)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3, C4) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7, C8) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7, C8) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7, C8, C9) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7, C8, C9) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7, C8, C9, C10) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4)>  where R0.RegexOutput == (W0, C0, C1, C2, C3), R1.RegexOutput == (W1, C4) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5)>  where R0.RegexOutput == (W0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.RegexOutput == (W0, C0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7, C8) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7, C8) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7, C8, C9) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7, C8, C9) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7, C8, C9, C10) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7, C8) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7, C8) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7, C8, C9) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7, C8, C9) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7, C8, C9, C10) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7, C8) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7, C8) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7, C8, C9) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7, C8, C9) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7, C8, C9, C10) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6, C7), R1.RegexOutput == (W1, C8) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7, C8) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6, C7), R1.RegexOutput == (W1, C8, C9) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7, C8, C9) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6, C7), R1.RegexOutput == (W1, C8, C9, C10) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7), R1.RegexOutput == (W1, C8) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6, C7, C8), R1.RegexOutput == (W1, C9) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7), R1.RegexOutput == (W1, C8, C9) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6, C7, C8), R1.RegexOutput == (W1, C9, C10) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension RegexComponentBuilder {
   @available(SwiftStdlib 5.7, *)
-  public static func buildPartialBlock<W0, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
+  public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
-  ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8), R1.RegexOutput == (W1, C9) {
+  ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6, C7, C8, C9), R1.RegexOutput == (W1, C10) {
     .init(node: accumulated.regex.root.appending(next.regex.root))
   }
 }
