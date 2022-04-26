@@ -940,6 +940,27 @@ extension Collection where Element: Equatable {
         omittingEmptySubsequences: Bool = true
     ) -> some Collection<SubSequence> where C.Element == Element
 }
+extension BidirectionalCollection where Element: Comparable {
+    /// Returns the longest possible subsequences of the collection, in order,
+    /// around elements equal to the given separator collection.
+    ///
+    /// - Parameters:
+    ///   - separator: A collection of elements to be split upon.
+    ///   - maxSplits: The maximum number of times to split the collection,
+    ///     or one less than the number of subsequences to return.
+    ///   - omittingEmptySubsequences: If `false`, an empty subsequence is
+    ///     returned in the result for each consecutive pair of separator
+    ///     sequences in the collection and for each instance of separator
+    ///     sequences at the start or end of the collection. If `true`, only
+    ///     nonempty subsequences are returned.
+    /// - Returns: A collection of subsequences, split from this collection's
+    ///   elements.
+    public func split<C: Collection>(
+        separator: C,
+        maxSplits: Int = Int.max,
+        omittingEmptySubsequences: Bool = true
+    ) -> some Collection<SubSequence> where C.Element == Element
+}
 ```
 
 And a regex-taking variant for string types:
