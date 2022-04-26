@@ -308,7 +308,7 @@ extension Collection where SubSequence == Substring {
 
 #### Trim prefix
 
-We propose generic `trimPrefix` for collections taking a `Element` predicate or a specific `Element`.
+We propose generic `trimmingPrefix` and `trimPrefix` methods for collections that trim elements matching a predicate or a possible prefix sequence.
 
 ```swift
 extension Collection {
