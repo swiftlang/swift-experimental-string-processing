@@ -128,14 +128,17 @@ class AlgorithmTests: XCTestCase {
       XCTAssertEqual(actual, expected, file: file, line: line)
     }
 
-    expectSplit("", "", ["", ""])
+    expectSplit("", "", [""])
     expectSplit("", "x", [""])
     expectSplit("a", "", ["", "a", ""])
     expectSplit("a", "x", ["a"])
     expectSplit("a", "a", ["", ""])
     expectSplit("a____a____a", "_+", ["a", "a", "a"])
     expectSplit("____a____a____a____", "_+", ["", "a", "a", "a", ""])
-    
+
+    XCTAssertEqual("".split(separator: ""), [])
+    XCTAssertEqual("".split(separator: "", omittingEmptySubsequences: false), [""])
+
     // Test that original `split` functions are still accessible
     let splitRef = "abcd".split
     XCTAssert(type(of: splitRef) == ((Character, Int, Bool) -> [Substring]).self)

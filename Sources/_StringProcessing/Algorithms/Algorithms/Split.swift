@@ -75,6 +75,10 @@ extension SplitCollection: Sequence {
           : base[index...]
       }
       
+      if index == base.endIndex {
+        return finish()
+      }
+      
       if splitCounter >= maxSplits {
         return finish()
       }
