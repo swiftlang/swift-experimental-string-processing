@@ -32,6 +32,9 @@ public struct PrettyPrinter {
 
   // The indentation level
   fileprivate var indentLevel = 0
+  
+  // The current default quantification behavior
+  public var quantificationBehavior: AST.Quantification.Kind = .eager
 }
 
 // MARK: - Raw interface
