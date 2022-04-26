@@ -116,6 +116,9 @@ class RegexConsumerTests: XCTestCase {
       }:
         XCTFail()
 
+      case OneOrMore { CharacterClass.whitespace }:
+        XCTFail()
+
       case "abc":
         XCTFail()
 
