@@ -863,9 +863,33 @@ class RegexDSLTests: XCTestCase {
     }
     
     // Post-hoc captured references
-    // #"(?:\w\1|:(\w):)+"#
+    // #"(?:\w\1|(\w):)+"#
+    //
+    // This tests that the reference `a` simply fails to match instead of
+    // erroring when encountered before a match is captured into `a`. The
+    // matching process here goes like this:
+    //  - the first time through, the first alternation is taken
+    //    - `.word` matches on "a"
+    //    - the `a` backreference fails on ":", because `a` hasn't matched yet
+    //    - backtrack to the beginning of the input
+    //  - now the second alternation is taken
+    //    - `.word` matches on "a" and is captured as `a`
+    //    - the literal ":" matches
+    //  - proceeding from the position of the first "b" in the first alternation
+    //    - `.word` matches on "b"
+    //    - the `a` backreference now contains "a", and matches on "a"
+    //  - proceeding from the position of the first "c" in the first alternation
+    //    - `.word` matches on "c"
+    //    - the `a` backreference still contains "a", and matches on "a"
+    //  - proceeding from the position of the first "o" in the first alternation
+    //    - `.word` matches on "o"
+    //    - the `a` backreference still contains "a", so it fails on ":"
+    //  - now the second alternation is taken
+    //    - `.word` matches on "o" and is captured as `a`
+    //    - the literal ":" matches
+    //  - continuing as above from the second "b"...
     try _testDSLCaptures(
-      (":a:baca:o:boco", (":a:baca:o:boco", "o")),
+      ("a:bacao:boco", ("a:bacao:boco", "o")),
       matchType: (Substring, Substring?).self,
       ==
     ) {
@@ -879,7 +903,6 @@ class RegexDSLTests: XCTestCase {
             a
           }
           Regex {
-            ":"
             Capture(.word, as: a)
             ":"
           }
