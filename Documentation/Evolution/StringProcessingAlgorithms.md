@@ -1073,7 +1073,7 @@ Older versions of the pitch had `func match(...) -> (String.Index, T)?` as the p
 This protocol customizes the basic consume-from-the-front functionality. A protocol for customizing search is future work and involves accommodating different kinds of state and ways that a searcher may wish to speed up subsequent searches. Alternative names for the protocol include `CustomRegexComponent`, `CustomConsumingRegex`, etc., but we don't feel brevity is the key consideration here.
 
 
-### Why `where SubSequence == Substring`
+### Why `where SubSequence == Substring`?
 
 A `Substring` slice requirement allows the regex engine to produce indicies in the original collection by operating over a portion of the input. Unfortunately, this is not one of the requirements of `StringProtocol`.
 
