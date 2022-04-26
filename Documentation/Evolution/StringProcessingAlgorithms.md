@@ -31,7 +31,7 @@ while let r = str.range(of: "banana", options: [], range: idx..<str.endIndex) {
 print(ranges.count)
 ```
 
-While in Python this is as simple as 
+While in Python this is as simple as
 
 ```python
 str = "A banana a day keeps the doctor away. I love bananas; banana are my favorite fruit."
@@ -45,7 +45,7 @@ We propose adding string processing algorithms so common tasks as such can be ac
 
 Note: Only a subset of Python's string processing API are included in this table for the following reasons:
 
-- Functions to query if all characters in the string are of a specified category, such as `isalnum()` and `isalpha()`, are omitted. These are achievable in Swift by passing in the corresponding character set to `allSatisfy(_:)`, so they're omitted in this table for simplicity. 
+- Functions to query if all characters in the string are of a specified category, such as `isalnum()` and `isalpha()`, are omitted. These are achievable in Swift by passing in the corresponding character set to `allSatisfy(_:)`, so they're omitted in this table for simplicity.
 - String formatting functions such as `center(length, character)` and `ljust(width, fillchar)` are also excluded here as this proposal focuses on matching and searching functionalities.
 
 ##### Search and replace
@@ -53,8 +53,8 @@ Note: Only a subset of Python's string processing API are included in this table
 |Python |Swift  |
 |---    |---    |
 | `count(sub, start, end)` |  |
-| `find(sub, start, end)`, `index(sub, start, end)` | `firstIndex(where:)` | 
-| `rfind(sub, start, end)`, `rindex(sub, start, end)` | `lastIndex(where:)` | 
+| `find(sub, start, end)`, `index(sub, start, end)` | `firstIndex(where:)` |
+| `rfind(sub, start, end)`, `rindex(sub, start, end)` | `lastIndex(where:)` |
 | `expandtabs(tabsize)`, `replace(old, new, count)` | `Foundation.replacingOccurrences(of:with:)` |
 | `maketrans(x, y, z)` + `translate(table)` |
 
@@ -62,8 +62,8 @@ Note: Only a subset of Python's string processing API are included in this table
 
 |Python |Swift  |
 |---    |---    |
-| `startswith(prefix, start, end)` | `starts(with:)` or `hasPrefix(:)`| 
-| `endswith(suffix, start, end)` | `hasSuffix(:)` | 
+| `startswith(prefix, start, end)` | `starts(with:)` or `hasPrefix(:)`|
+| `endswith(suffix, start, end)` | `hasSuffix(:)` |
 | `removeprefix(prefix)` | Test if string has prefix with `hasPrefix(:)`, then drop the prefix with `dropFirst(:)`|
 | `removesuffix(suffix)` | Test if string has suffix with `hasSuffix(:)`, then drop the suffix with `dropLast(:)` |
 
@@ -82,7 +82,7 @@ Note: Only a subset of Python's string processing API are included in this table
 | `partition(sep)` | `Foundation.components(separatedBy:)` |
 | `rpartition(sep)` |  |
 | `split(sep, maxsplit)` | `split(separator:maxSplits:...)` |
-| `splitlines(keepends)` | `split(separator:maxSplits:...)` | 
+| `splitlines(keepends)` | `split(separator:maxSplits:...)` |
 | `rsplit(sep, maxsplit)` |  |
 
 </details>
@@ -133,13 +133,13 @@ Parsing a currency string such as `$3,020.85` with regex is also tricky, as it c
 ### Complex string processing
 
 We propose a `CustomConsumingRegexComponent` protocol which allows types from outside the standard library participate in regex builders and `RegexComponent` algorithms. This allows types, such as `Date.ParseStrategy` and `FloatingPointFormatStyle.Currency`, to be used directly within a regex:
-                           
+
 ```swift
 let dateRegex = Regex {
     Capture(dateParser)
 }
 
-let date: Date = header.firstMatch(of: dateRegex).map(\.result.1) 
+let date: Date = header.firstMatch(of: dateRegex).map(\.result.1)
 
 let currencyRegex = Regex {
     Capture(.localizedCurrency(code: "USD").sign(strategy: .accounting))
@@ -174,7 +174,7 @@ We also propose the following regex-powered algorithms as well as their generic 
 `CustomConsumingRegexComponent` inherits from `RegexComponent` and satisfies its sole requirement. Conformers can be used with all of the string algorithms generic over `RegexComponent`.
 
 ```swift
-/// A protocol allowing custom types to function as regex components by 
+/// A protocol allowing custom types to function as regex components by
 /// providing the raw functionality backing `prefixMatch`.
 public protocol CustomConsumingRegexComponent: RegexComponent {
     /// Process the input string within the specified bounds, beginning at the given index, and return
@@ -199,7 +199,7 @@ public protocol CustomConsumingRegexComponent: RegexComponent {
 We use Foundation `FloatingPointFormatStyle<Decimal>.Currency` as an example for protocol conformance. It would implement the `match` function with `Match` being a `Decimal`. It could also add a static function `.localizedCurrency(code:)` as a member of `RegexComponent`, so it can be referred as `.localizedCurrency(code:)` in the `Regex` result builder:
 
 ```swift
-extension FloatingPointFormatStyle<Decimal>.Currency : CustomConsumingRegexComponent { 
+extension FloatingPointFormatStyle<Decimal>.Currency : CustomConsumingRegexComponent {
     public func consuming(
         _ input: String,
         startingAt index: String.Index,
@@ -223,9 +223,11 @@ let regex = Regex {
 </details>
 
 
-### String algorithm additions
+### String and Collection algorithm additions
 
 #### Contains
+
+We propose a `contains` variant over collections that tests for subsequence membership. The second algorithm allows for specialization using e.g. the [two way search algorithm](https://en.wikipedia.org/wiki/Two-way_string-matching_algorithm).
 
 ```swift
 extension Collection where Element: Equatable {
@@ -237,7 +239,20 @@ extension Collection where Element: Equatable {
     public func contains<C: Collection>(_ other: C) -> Bool
         where S.Element == Element
 }
+extension BidirectionalCollection where Element: Comparable {
+    /// Returns a Boolean value indicating whether the collection contains the
+    /// given sequence.
+    /// - Parameter other: A sequence to search for within this collection.
+    /// - Returns: `true` if the collection contains the specified sequence,
+    /// otherwise `false`.
+    public func contains<C: Collection>(_ other: C) -> Bool
+        where S.Element == Element
+}
+```
 
+We propose a regex-taking variant over string types (those that produce a `Substring` upon slicing).
+
+```swift
 extension Collection where SubSequence == Substring {
     /// Returns a Boolean value indicating whether the collection contains the
     /// given regex.
@@ -245,7 +260,10 @@ extension Collection where SubSequence == Substring {
     /// - Returns: `true` if the regex was found in the collection, otherwise
     /// `false`.
     public func contains(_ regex: some RegexComponent) -> Bool
+}
 
+// In RegexBuilder module
+extension Collection where SubSequence == Substring {
     /// Returns a Boolean value indicating whether this collection contains a
     /// match for the regex, where the regex is created by the given closure.
     ///
@@ -261,6 +279,8 @@ extension Collection where SubSequence == Substring {
 
 #### Starts with
 
+We propose a regex-taking `starts(with:)` variant for string types:
+
 ```swift
 extension Collection where SubSequence == Substring {
     /// Returns a Boolean value indicating whether the initial elements of the
@@ -269,7 +289,10 @@ extension Collection where SubSequence == Substring {
     /// - Returns: `true` if the initial elements of the sequence matches the
     /// beginning of `regex`; otherwise, `false`.
     public func starts(with regex: some RegexComponent) -> Bool
-    
+}
+
+// In RegexBuilder module
+extension Collection where SubSequence == Substring {
     /// Returns a Boolean value indicating whether the initial elements of this
     /// collection are a match for the regex created by the given closure.
     ///
@@ -284,6 +307,8 @@ extension Collection where SubSequence == Substring {
 ```
 
 #### Trim prefix
+
+We propose generic `trimPrefix` for collections.
 
 ```swift
 extension Collection {
@@ -338,7 +363,11 @@ extension RangeReplaceableCollection where Element: Equatable {
     public mutating func trimPrefix<Prefix: Sequence>(_ prefix: Prefix)
         where Prefix.Element == Element
 }
+```
 
+We propose regex-taking variants for string types:
+
+```swift
 extension Collection where SubSequence == Substring {
     /// Returns a new subsequence by removing the initial elements that matches
     /// the given regex.
@@ -346,7 +375,10 @@ extension Collection where SubSequence == Substring {
     /// - Returns: A new subsequence containing the elements of the collection
     /// that does not match `prefix` from the start.
     public func trimmingPrefix(_ regex: some RegexComponent) -> SubSequence
-    
+}
+
+// In RegexBuilder module
+extension Collection where SubSequence == Substring {
     /// Returns a subsequence of this collection by removing the elements
     /// matching the regex from the start, where the regex is created by
     /// the given closure.
@@ -362,13 +394,14 @@ extension Collection where SubSequence == Substring {
     ) -> SubSequence
 }
 
-extension RangeReplaceableCollection
-  where Self: BidirectionalCollection, SubSequence == Substring
-{
+extension RangeReplaceableCollection where SubSequence == Substring {
     /// Removes the initial elements that matches the given regex.
     /// - Parameter regex: The regex to remove from this collection.
     public mutating func trimPrefix(_ regex: some RegexComponent)
-    
+}
+
+// In RegexBuilder module
+extension RangeReplaceableCollection where SubSequence == Substring {
     /// Removes the initial elements matching the regex from the start of
     /// this collection, if the initial elements match, using the given closure
     /// to create the regex.
@@ -383,6 +416,8 @@ extension RangeReplaceableCollection
 
 #### First range
 
+We propose a generic collection algorithm for finding the first range of a given subsequence:
+
 ```swift
 extension Collection where Element: Equatable {
     /// Finds and returns the range of the first occurrence of a given sequence
@@ -390,7 +425,7 @@ extension Collection where Element: Equatable {
     /// - Parameter sequence: The sequence to search for.
     /// - Returns: A range in the collection of the first occurrence of `sequence`.
     /// Returns nil if `sequence` is not found.
-    public func firstRange<C: Collection>(of other: C) -> Range<Index>? 
+    public func firstRange<C: Collection>(of other: C) -> Range<Index>?
         where C.Element == Element
 }
 
@@ -403,6 +438,11 @@ extension BidirectionalCollection where Element: Comparable {
     public func firstRange<C: BidirectionalCollection>(of other: C) -> Range<Index>?
         where C.Element == Element
 }
+```
+
+We propose a regex-taking variant for string types.
+
+```swift
 
 extension Collection where SubSequence == Substring {
     /// Finds and returns the range of the first occurrence of a given regex
@@ -411,7 +451,10 @@ extension Collection where SubSequence == Substring {
     /// - Returns: A range in the collection of the first occurrence of `regex`.
     /// Returns `nil` if `regex` is not found.
     public func firstRange(of regex: some RegexComponent) -> Range<Index>?
-    
+}
+
+// In RegexBuilder module
+extension Collection where SubSequence == Substring {
     /// Returns the range of the first match for the regex within this collection,
     /// where the regex is created by the given closure.
     ///
@@ -421,11 +464,13 @@ extension Collection where SubSequence == Substring {
     ///   for the regex is found.
     public func firstRange(
         @RegexComponentBuilder of content: () -> some RegexComponent
-    ) -> Range<Index>? 
+    ) -> Range<Index>?
 }
 ```
 
 #### Ranges
+
+We propose a generic collection algorithm for iterating over all (non-overlapping) ranges of a given subsequence.
 
 ```swift
 extension Collection where Element: Equatable {
@@ -438,6 +483,20 @@ extension Collection where Element: Equatable {
         where C.Element == Element
 }
 
+extension BidirectionalCollection where Element: Comparable {
+    /// Finds and returns the ranges of the all occurrences of a given sequence
+    /// within the collection.
+    /// - Parameter other: The sequence to search for.
+    /// - Returns: A collection of ranges of all occurrences of `other`. Returns
+    ///  an empty collection if `other` is not found.
+    public func ranges<C: Collection>(of other: C) -> some Collection<Range<Index>>
+        where C.Element == Element
+}
+```
+
+And of course regex-taking versions for string types:
+
+```swift
 extension Collection where SubSequence == Substring {
     /// Finds and returns the ranges of the all occurrences of a given sequence
     /// within the collection.
@@ -445,7 +504,10 @@ extension Collection where SubSequence == Substring {
     /// - Returns: A collection or ranges in the receiver of all occurrences of
     /// `regex`. Returns an empty collection if `regex` is not found.
     public func ranges(of regex: some RegexComponent) -> some Collection<Range<Index>>
-    
+}
+
+// In RegexBuilder module
+extension Collection where SubSequence == Substring {
     /// Returns the ranges of the all non-overlapping matches for the regex
     /// within this collection, where the regex is created by the given closure.
     ///
@@ -461,6 +523,8 @@ extension Collection where SubSequence == Substring {
 
 #### Match
 
+We propose algorithms for extracting a `Match` instance from a given regex from the start, anywhere in the middle, or over the entire `self`.
+
 ```swift
 extension Collection where SubSequence == Substring {
     /// Returns the first match of the specified regex within the collection.
@@ -468,7 +532,20 @@ extension Collection where SubSequence == Substring {
     /// - Returns: The first match of `regex` in the collection, or `nil` if
     /// there isn't a match.
     public func firstMatch<R: RegexComponent>(of regex: R) -> Regex<R.RegexOutput>.Match?
-    
+
+    /// Match a regex in its entirety.
+    /// - Parameter regex: The regex to match against.
+    /// - Returns: The match if there is one, or `nil` if none.
+    public func wholeMatch<R: RegexComponent>(of regex: R) -> Regex<R.RegexOutput>.Match?
+
+    /// Match part of the regex, starting at the beginning.
+    /// - Parameter regex: The regex to match against.
+    /// - Returns: The match if there is one, or `nil` if none.
+    public func prefixMatch<R: RegexComponent>(of regex: R) -> Regex<R.RegexOutput>.Match?
+}
+
+// In RegexBuilder module
+extension Collection where SubSequence == Substring {
     /// Returns the first match for the regex within this collection, where
     /// the regex is created by the given closure.
     ///
@@ -477,13 +554,8 @@ extension Collection where SubSequence == Substring {
     ///   collection, or `nil` if no match is found.
     public func firstMatch<R: RegexComponent>(
         @RegexComponentBuilder of content: () -> R
-    ) -> Regex<R.RegexOutput>.Match? 
-    
-    /// Match a regex in its entirety.
-    /// - Parameter regex: The regex to match against.
-    /// - Returns: The match if there is one, or `nil` if none.
-    public func wholeMatch<R: RegexComponent>(of regex: R) -> Regex<R.RegexOutput>.Match? 
-    
+    ) -> Regex<R.RegexOutput>.Match?
+
     /// Matches a regex in its entirety, where the regex is created by
     /// the given closure.
     ///
@@ -491,13 +563,8 @@ extension Collection where SubSequence == Substring {
     /// - Returns: The match if there is one, or `nil` if none.
     public func wholeMatch<R: RegexComponent>(
         @RegexComponentBuilder of content: () -> R
-    ) -> Regex<R.RegexOutput>.Match? 
-    
-    /// Match part of the regex, starting at the beginning.
-    /// - Parameter regex: The regex to match against.
-    /// - Returns: The match if there is one, or `nil` if none.
-    public func prefixMatch<R: RegexComponent>(of regex: R) -> Regex<R.RegexOutput>.Match?
-    
+    ) -> Regex<R.RegexOutput>.Match?
+
     /// Matches part of the regex, starting at the beginning, where the regex
     /// is created by the given closure.
     ///
@@ -511,13 +578,18 @@ extension Collection where SubSequence == Substring {
 
 #### Matches
 
+We propose an algorithm for iterating over all (non-overlapping) matches of a given regex:
+
 ```swift
 extension Collection where SubSequence == Substring {
     /// Returns a collection containing all matches of the specified regex.
     /// - Parameter regex: The regex to search for.
     /// - Returns: A collection of matches of `regex`.
     public func matches<R: RegexComponent>(of regex: R) -> some Collection<Regex<R.RegexOuput>.Match>
-    
+}
+
+// In RegexBuilder module
+extension Collection where SubSequence == Substring {
     /// Returns a collection containing all non-overlapping matches of
     /// the regex, created by the given closure.
     ///
@@ -532,6 +604,8 @@ extension Collection where SubSequence == Substring {
 
 #### Replace
 
+We propose generic collection algorithms that will replace all occurences of a given subsequence:
+
 ```swift
 extension RangeReplaceableCollection where Element: Equatable {
     /// Returns a new collection in which all occurrences of a target sequence
@@ -543,14 +617,14 @@ extension RangeReplaceableCollection where Element: Equatable {
     ///   - maxReplacements: A number specifying how many occurrences of `other`
     ///   to replace. Default is `Int.max`.
     /// - Returns: A new collection in which all occurrences of `other` in
-    /// `subrange` of the collection are replaced by `replacement`.    
+    /// `subrange` of the collection are replaced by `replacement`.
     public func replacing<C: Collection, Replacement: Collection>(
         _ other: C,
         with replacement: Replacement,
         subrange: Range<Index>,
         maxReplacements: Int = .max
     ) -> Self where C.Element == Element, Replacement.Element == Element
-  
+
     /// Returns a new collection in which all occurrences of a target sequence
     /// are replaced by another collection.
     /// - Parameters:
@@ -565,7 +639,7 @@ extension RangeReplaceableCollection where Element: Equatable {
         with replacement: Replacement,
         maxReplacements: Int = .max
     ) -> Self where C.Element == Element, Replacement.Element == Element
-  
+
     /// Replaces all occurrences of a target sequence with a given collection
     /// - Parameters:
     ///   - other: The sequence to replace.
@@ -578,7 +652,56 @@ extension RangeReplaceableCollection where Element: Equatable {
         maxReplacements: Int = .max
     ) where C.Element == Element, Replacement.Element == Element
 }
+extension RangeReplaceableCollection where Self: BidirectionalCollection, Element: Comparable {
+    /// Returns a new collection in which all occurrences of a target sequence
+    /// are replaced by another collection.
+    /// - Parameters:
+    ///   - other: The sequence to replace.
+    ///   - replacement: The new elements to add to the collection.
+    ///   - subrange: The range in the collection in which to search for `other`.
+    ///   - maxReplacements: A number specifying how many occurrences of `other`
+    ///   to replace. Default is `Int.max`.
+    /// - Returns: A new collection in which all occurrences of `other` in
+    /// `subrange` of the collection are replaced by `replacement`.
+    public func replacing<C: Collection, Replacement: Collection>(
+        _ other: C,
+        with replacement: Replacement,
+        subrange: Range<Index>,
+        maxReplacements: Int = .max
+    ) -> Self where C.Element == Element, Replacement.Element == Element
 
+    /// Returns a new collection in which all occurrences of a target sequence
+    /// are replaced by another collection.
+    /// - Parameters:
+    ///   - other: The sequence to replace.
+    ///   - replacement: The new elements to add to the collection.
+    ///   - maxReplacements: A number specifying how many occurrences of `other`
+    ///   to replace. Default is `Int.max`.
+    /// - Returns: A new collection in which all occurrences of `other` in
+    /// `subrange` of the collection are replaced by `replacement`.
+    public func replacing<C: Collection, Replacement: Collection>(
+        _ other: C,
+        with replacement: Replacement,
+        maxReplacements: Int = .max
+    ) -> Self where C.Element == Element, Replacement.Element == Element
+
+    /// Replaces all occurrences of a target sequence with a given collection
+    /// - Parameters:
+    ///   - other: The sequence to replace.
+    ///   - replacement: The new elements to add to the collection.
+    ///   - maxReplacements: A number specifying how many occurrences of `other`
+    ///   to replace. Default is `Int.max`.
+    public mutating func replace<C: Collection, Replacement: Collection>(
+        _ other: C,
+        with replacement: Replacement,
+        maxReplacements: Int = .max
+    ) where C.Element == Element, Replacement.Element == Element
+}
+```
+
+We propose regex-taking variants for string types as well as variants that take a closure which will generate the replacement portion from a regex match (e.g. by reading captures).
+
+```swift
 extension RangeReplaceableCollection where SubSequence == Substring {
     /// Returns a new collection in which all occurrences of a sequence matching
     /// the given regex are replaced by another collection.
@@ -597,27 +720,6 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         maxReplacements: Int = .max
     ) -> Self where Replacement.Element == Element
 
-    /// Returns a new collection in which all matches for the regex
-    /// are replaced, using the given closure to create the regex.
-    ///
-    /// - Parameters:
-    ///   - replacement: The new elements to add to the collection in place of
-    ///     each match for the regex, using `content` to create the regex.
-    ///   - subrange: The range in the collection in which to search for
-    ///     the regex.
-    ///   - maxReplacements: A number specifying how many occurrences of
-    ///     the regex to replace.
-    ///   - content: A closure that returns the collection to search for
-    ///     and replace.
-    /// - Returns: A new collection in which all matches for regex in `subrange`
-    ///   are replaced by `replacement`, using `content` to create the regex.      
-    public func replacing<Replacement: Collection>(
-        with replacement: Replacement,
-        subrange: Range<Index>,
-        maxReplacements: Int = .max,
-        @RegexComponentBuilder content: () -> some RegexComponent
-    ) -> Self where Replacement.Element == Element
-  
     /// Returns a new collection in which all occurrences of a sequence matching
     /// the given regex are replaced by another collection.
     /// - Parameters:
@@ -632,25 +734,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         with replacement: Replacement,
         maxReplacements: Int = .max
     ) -> Self where Replacement.Element == Element
-  
-    /// Returns a new collection in which all matches for the regex
-    /// are replaced, using the given closure to create the regex.
-    ///
-    /// - Parameters:
-    ///   - replacement: The new elements to add to the collection in place of
-    ///     each match for the regex, using `content` to create the regex.
-    ///   - maxReplacements: A number specifying how many occurrences of regex
-    ///     to replace.
-    ///   - content: A closure that returns the collection to search for
-    ///     and replace.
-    /// - Returns: A new collection in which all matches for regex in `subrange`
-    ///   are replaced by `replacement`, using `content` to create the regex.
-    public func replacing<Replacement: Collection>(
-        with replacement: Replacement,
-        maxReplacements: Int = .max,
-        @RegexComponentBuilder content: () -> some RegexComponent
-    ) -> Self where Replacement.Element == Element 
-  
+
     /// Replaces all occurrences of the sequence matching the given regex with
     /// a given collection.
     /// - Parameters:
@@ -663,23 +747,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         with replacement: Replacement,
         maxReplacements: Int = .max
     ) where Replacement.Element == Element
-    
-    /// Replaces all matches for the regex in this collection, using the given
-    /// closure to create the regex.
-    ///
-    /// - Parameters:
-    ///   - replacement: The new elements to add to the collection in place of
-    ///     each match for the regex, using `content` to create the regex.
-    ///   - maxReplacements: A number specifying how many occurrences of
-    ///     the regex to replace.
-    ///   - content: A closure that returns the collection to search for
-    ///     and replace.
-    public mutating func replace<Replacement: Collection>(
-        with replacement: Replacement,
-        maxReplacements: Int = .max,
-        @RegexComponentBuilder content: () -> some RegexComponent
-    ) where Replacement.Element == Element 
-  
+
     /// Returns a new collection in which all occurrences of a sequence matching
     /// the given regex are replaced by another regex match.
     /// - Parameters:
@@ -697,6 +765,94 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         maxReplacements: Int = .max,
         with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
     ) rethrows -> Self where Replacement.Element == Element
+
+    /// Returns a new collection in which all occurrences of a sequence matching
+    /// the given regex are replaced by another collection.
+    /// - Parameters:
+    ///   - regex: A regex describing the sequence to replace.
+    ///   - maxReplacements: A number specifying how many occurrences of the
+    ///   sequence matching `regex` to replace. Default is `Int.max`.
+    ///   - replacement: A closure that receives the full match information,
+    ///   including captures, and returns a replacement collection.
+    /// - Returns: A new collection in which all occurrences of subsequence
+    /// matching `regex` are replaced by `replacement`.
+    public func replacing<R: RegexComponent, Replacement: Collection>(
+        _ regex: R,
+        maxReplacements: Int = .max,
+        with replacement: (Regex<R.RegexOuput>.Match) throws -> Replacement
+    ) rethrows -> Self where Replacement.Element == Element
+
+    /// Replaces all occurrences of the sequence matching the given regex with
+    /// a given collection.
+    /// - Parameters:
+    ///   - regex: A regex describing the sequence to replace.
+    ///   - maxReplacements: A number specifying how many occurrences of the
+    ///   sequence matching `regex` to replace. Default is `Int.max`.
+    ///   - replacement: A closure that receives the full match information,
+    ///   including captures, and returns a replacement collection.
+    public mutating func replace<R: RegexComponent, Replacement: Collection>(
+        _ regex: R,
+        maxReplacements: Int = .max,
+        with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
+    ) rethrows where Replacement.Element == Element
+}
+
+// In RegexBuilder module
+extension Collection where SubSequence == Substring {
+    /// Returns a new collection in which all matches for the regex
+    /// are replaced, using the given closure to create the regex.
+    ///
+    /// - Parameters:
+    ///   - replacement: The new elements to add to the collection in place of
+    ///     each match for the regex, using `content` to create the regex.
+    ///   - subrange: The range in the collection in which to search for
+    ///     the regex.
+    ///   - maxReplacements: A number specifying how many occurrences of
+    ///     the regex to replace.
+    ///   - content: A closure that returns the collection to search for
+    ///     and replace.
+    /// - Returns: A new collection in which all matches for regex in `subrange`
+    ///   are replaced by `replacement`, using `content` to create the regex.
+    public func replacing<Replacement: Collection>(
+        with replacement: Replacement,
+        subrange: Range<Index>,
+        maxReplacements: Int = .max,
+        @RegexComponentBuilder content: () -> some RegexComponent
+    ) -> Self where Replacement.Element == Element
+
+    /// Returns a new collection in which all matches for the regex
+    /// are replaced, using the given closure to create the regex.
+    ///
+    /// - Parameters:
+    ///   - replacement: The new elements to add to the collection in place of
+    ///     each match for the regex, using `content` to create the regex.
+    ///   - maxReplacements: A number specifying how many occurrences of regex
+    ///     to replace.
+    ///   - content: A closure that returns the collection to search for
+    ///     and replace.
+    /// - Returns: A new collection in which all matches for regex in `subrange`
+    ///   are replaced by `replacement`, using `content` to create the regex.
+    public func replacing<Replacement: Collection>(
+        with replacement: Replacement,
+        maxReplacements: Int = .max,
+        @RegexComponentBuilder content: () -> some RegexComponent
+    ) -> Self where Replacement.Element == Element
+
+    /// Replaces all matches for the regex in this collection, using the given
+    /// closure to create the regex.
+    ///
+    /// - Parameters:
+    ///   - replacement: The new elements to add to the collection in place of
+    ///     each match for the regex, using `content` to create the regex.
+    ///   - maxReplacements: A number specifying how many occurrences of
+    ///     the regex to replace.
+    ///   - content: A closure that returns the collection to search for
+    ///     and replace.
+    public mutating func replace<Replacement: Collection>(
+        with replacement: Replacement,
+        maxReplacements: Int = .max,
+        @RegexComponentBuilder content: () -> some RegexComponent
+    ) where Replacement.Element == Element
 
     /// Returns a new collection in which all matches for the regex
     /// are replaced, using the given closures to create the replacement
@@ -720,23 +876,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         @RegexComponentBuilder content: () -> R,
         with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
     ) rethrows -> Self where Replacement.Element == Element
-  
-    /// Returns a new collection in which all occurrences of a sequence matching
-    /// the given regex are replaced by another collection.
-    /// - Parameters:
-    ///   - regex: A regex describing the sequence to replace.
-    ///   - maxReplacements: A number specifying how many occurrences of the
-    ///   sequence matching `regex` to replace. Default is `Int.max`.
-    ///   - replacement: A closure that receives the full match information,
-    ///   including captures, and returns a replacement collection.
-    /// - Returns: A new collection in which all occurrences of subsequence
-    /// matching `regex` are replaced by `replacement`.
-    public func replacing<R: RegexComponent, Replacement: Collection>(
-        _ regex: R,
-        maxReplacements: Int = .max,
-        with replacement: (Regex<R.RegexOuput>.Match) throws -> Replacement
-    ) rethrows -> Self where Replacement.Element == Element
-    
+
     /// Returns a new collection in which all matches for the regex
     /// are replaced, using the given closures to create the replacement
     /// and the regex.
@@ -756,20 +896,6 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         @RegexComponentBuilder content: () -> R,
         with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
     ) rethrows -> Self where Replacement.Element == Element
-  
-    /// Replaces all occurrences of the sequence matching the given regex with
-    /// a given collection.
-    /// - Parameters:
-    ///   - regex: A regex describing the sequence to replace.
-    ///   - maxReplacements: A number specifying how many occurrences of the
-    ///   sequence matching `regex` to replace. Default is `Int.max`.
-    ///   - replacement: A closure that receives the full match information,
-    ///   including captures, and returns a replacement collection.
-    public mutating func replace<R: RegexComponent, Replacement: Collection>(
-        _ regex: R,
-        maxReplacements: Int = .max,
-        with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
-    ) rethrows where Replacement.Element == Element
 
     /// Replaces all matches for the regex in this collection, using the
     /// given closures to create the replacement and the regex.
@@ -791,6 +917,8 @@ extension RangeReplaceableCollection where SubSequence == Substring {
 
 #### Split
 
+We propose a generic collection `split` that can take a subsequence separator:
+
 ```swift
 extension Collection where Element: Equatable {
     /// Returns the longest possible subsequences of the collection, in order,
@@ -798,11 +926,11 @@ extension Collection where Element: Equatable {
     ///
     /// - Parameters:
     ///   - separator: A collection of elements to be split upon.
-    ///   - maxSplits: The maximum number of times to split the collection, 
+    ///   - maxSplits: The maximum number of times to split the collection,
     ///     or one less than the number of subsequences to return.
-    ///   - omittingEmptySubsequences: If `false`, an empty subsequence is 
-    ///     returned in the result for each consecutive pair of separator 
-    ///     sequences in the collection and for each instance of separator 
+    ///   - omittingEmptySubsequences: If `false`, an empty subsequence is
+    ///     returned in the result for each consecutive pair of separator
+    ///     sequences in the collection and for each instance of separator
     ///     sequences at the start or end of the collection. If `true`, only
     ///     nonempty subsequences are returned.
     /// - Returns: A collection of subsequences, split from this collection's
@@ -813,6 +941,11 @@ extension Collection where Element: Equatable {
         omittingEmptySubsequences: Bool = true
     ) -> some Collection<SubSequence> where C.Element == Element
 }
+```
+
+And a regex-taking variant for string types:
+
+```swift
 
 extension Collection where SubSequence == Substring {
     /// Returns the longest possible subsequences of the collection, in order,
@@ -820,9 +953,9 @@ extension Collection where SubSequence == Substring {
     ///
     /// - Parameters:
     ///   - separator: A regex to be split upon.
-    ///   - maxSplits: The maximum number of times to split the collection, 
+    ///   - maxSplits: The maximum number of times to split the collection,
     ///     or one less than the number of subsequences to return.
-    ///   - omittingEmptySubsequences: If `false`, an empty subsequence is 
+    ///   - omittingEmptySubsequences: If `false`, an empty subsequence is
     ///     returned in the result for each consecutive pair of matches
     ///     and for each match at the start or end of the collection. If
     ///     `true`, only nonempty subsequences are returned.
@@ -833,7 +966,10 @@ extension Collection where SubSequence == Substring {
         maxSplits: Int = Int.max,
         omittingEmptySubsequences: Bool = true
     ) -> some Collection<Substring>
-    
+}
+
+// In RegexBuilder module
+extension Collection where SubSequence == Substring {
     /// Returns the longest possible subsequences of the collection, in order,
     /// around subsequence that match the regex created by the given closure.
     ///
@@ -918,24 +1054,30 @@ Older versions of the pitch had `func match(...) -> (String.Index, T)?` as the p
 This protocol customizes the basic consume-from-the-front functionality. A protocol for customizing search is future work and involves accommodating different kinds of state and ways that a searcher may wish to speed up subsequent searches. Alternative names for the protocol include `CustomRegexComponent`, `CustomConsumingRegex`, etc., but we don't feel brevity is the key consideration here.
 
 
+### Why `where SubSequence == Substring`
+
+A `Substring` slice requirement allows the regex engine to produce indicies in the original collection by operating over a portion of the input. Unfortunately, this is not one of the requirements of `StringProtocol`.
+
+A new protocol for types that can produce a `Substring` on request (e.g. from UTF-8 contents) would have to eagerly produce a `String` copy first and would need requirements to translate indices. When higher-level algorithms are implemented via multiple calls to the lower-level algorithms, these copies could happen many times. Shared strings are future work but a much better solution to this.
+
 
 ## Future directions
 
 ### Backward algorithms
 
-It would be useful to have algorithms that operate from the back of a collection, including ability to find the last non-overlapping range of a pattern in a string, and/or that to find the first range of a pattern when searching from the back, and trimming a string from both sides. They are deferred from this proposal as the API that could clarify the nuances of backward algorithms are still being explored. 
+It would be useful to have algorithms that operate from the back of a collection, including ability to find the last non-overlapping range of a pattern in a string, and/or that to find the first range of a pattern when searching from the back, and trimming a string from both sides. They are deferred from this proposal as the API that could clarify the nuances of backward algorithms are still being explored.
 
 <details>
 <summary> Nuances of backward algorithms </summary>
 
-There is a subtle difference between finding the last non-overlapping range of a pattern in a string, and finding the first range of this pattern when searching from the back. 
+There is a subtle difference between finding the last non-overlapping range of a pattern in a string, and finding the first range of this pattern when searching from the back.
 
-The currently proposed algorithm that finds a pattern from the front, e.g. `"aaaaa".ranges(of: "aa")`, produces two non-overlapping ranges, splitting the string in the chunks `aa|aa|a`. It would not be completely unreasonable to expect to introduce a counterpart, such as `"aaaaa".lastRange(of: "aa")`, to return the range that contains the third and fourth characters of the string. This would be a shorthand for `"aaaaa".ranges(of: "aa").last`. Yet, it would also be reasonable to expect the function to return the first range of `"aa"` when searching from the back of the string, i.e. the range that contains the fourth and fifth characters. 
+The currently proposed algorithm that finds a pattern from the front, e.g. `"aaaaa".ranges(of: "aa")`, produces two non-overlapping ranges, splitting the string in the chunks `aa|aa|a`. It would not be completely unreasonable to expect to introduce a counterpart, such as `"aaaaa".lastRange(of: "aa")`, to return the range that contains the third and fourth characters of the string. This would be a shorthand for `"aaaaa".ranges(of: "aa").last`. Yet, it would also be reasonable to expect the function to return the first range of `"aa"` when searching from the back of the string, i.e. the range that contains the fourth and fifth characters.
 
-Trimming a string from both sides shares a similar story. For example, `"ababa".trimming("aba")` can return either `"ba"` or `"ab"`, depending on whether the prefix or the suffix was trimmed first. 
+Trimming a string from both sides shares a similar story. For example, `"ababa".trimming("aba")` can return either `"ba"` or `"ab"`, depending on whether the prefix or the suffix was trimmed first.
 </details>
 
- 
+
 ### Future API
 
-Some common string processing functions are not currently included in this proposal, such as trimming the suffix from a string/collection, and finding overlapping ranges of matched substrings. This pitch aims to establish a pattern for using `RegexComponent` with string processing algorithms, so that further enhancement can to be introduced to the standard library easily in the future, and eventually close the gap between Swift and other popular scripting languages. 
+Some common string processing functions are not currently included in this proposal, such as trimming the suffix from a string/collection, and finding overlapping ranges of matched substrings. This pitch aims to establish a pattern for using `RegexComponent` with string processing algorithms, so that further enhancement can to be introduced to the standard library easily in the future, and eventually close the gap between Swift and other popular scripting languages.
