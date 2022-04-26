@@ -209,7 +209,7 @@ extension Regex.Match where Output == AnyRegexOutput {
 @available(SwiftStdlib 5.7, *)
 extension Regex where Output == AnyRegexOutput {
   /// Returns whether a named-capture with `name` exists
-  public func contains(namedCapture name: String) -> Bool {
+  public func contains(captureNamed name: String) -> Bool {
     fatalError("FIXME: not implemented")
   }
 
