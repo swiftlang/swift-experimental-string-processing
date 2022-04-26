@@ -58,6 +58,13 @@ struct Permutations: Sequence {
   }
 }
 
+func captureTypeList(_ arity: Int) -> String {
+  (0..<arity).map { "C\($0)" }.joined(separator: ", ")
+}
+func optionalCaptureTypeList(_ arity: Int) -> String {
+  (0..<arity).map { "C\($0)?" }.joined(separator: ", ")
+}
+
 func output(_ content: String) {
   print(content, terminator: "")
 }
@@ -344,20 +351,19 @@ struct VariadicsGenerator: ParsableCommand {
       self.genericParams = {
         var result = ""
         if arity > 0 {
-          result += "W"
-          result += (0..<arity).map { ", C\($0)" }.joined()
+          result += "W, "
+          result += captureTypeList(arity)
           result += ", "
         }
         result += "Component: \(regexComponentProtocolName)"
         return result
       }()
-      
-      let captures = (0..<arity).map { "C\($0)" }
-      let capturesJoined = captures.joined(separator: ", ")
+
+      let capturesJoined = captureTypeList(arity)
       self.quantifiedCaptures = {
         switch kind {
         case .zeroOrOne, .zeroOrMore:
-          return captures.map { "\($0)?" }.joined(separator: ", ")
+          return optionalCaptureTypeList(arity)
         case .oneOrMore:
           return capturesJoined
         }
@@ -434,15 +440,14 @@ struct VariadicsGenerator: ParsableCommand {
     let genericParams: String = {
       var result = ""
       if arity > 0 {
-        result += "W"
-        result += (0..<arity).map { ", C\($0)" }.joined()
+        result += "W, "
+        result += captureTypeList(arity)
         result += ", "
       }
       result += "Component: \(regexComponentProtocolName)"
       return result
     }()
-    let captures = (0..<arity).map { "C\($0)" }
-    let capturesJoined = captures.joined(separator: ", ")
+    let capturesJoined = captureTypeList(arity)
     let matchType = arity == 0
       ? baseMatchTypeName
       : "(\(baseMatchTypeName), \(capturesJoined))"
@@ -586,7 +591,7 @@ struct VariadicsGenerator: ParsableCommand {
 
   func emitUnaryAlternationBuildBlock(arity: Int) {
     assert(arity > 0)
-    let captures = (0..<arity).map { "C\($0)" }.joined(separator: ", ")
+    let captures = captureTypeList(arity)
     let genericParams: String = {
       if arity == 0 {
         return "R"
@@ -597,7 +602,7 @@ struct VariadicsGenerator: ParsableCommand {
       where R: \(regexComponentProtocolName), \
       R.\(outputAssociatedTypeName) == (W, \(captures))
       """
-    let resultCaptures = (0..<arity).map { "C\($0)?" }.joined(separator: ", ")
+    let resultCaptures = optionalCaptureTypeList(arity)
     output("""
       \(defaultAvailableAttr)
       extension \(altBuilderName) {
@@ -614,14 +619,14 @@ struct VariadicsGenerator: ParsableCommand {
     let disfavored = arity == 0 ? "@_disfavoredOverload\n" : ""
     let genericParams = arity == 0
       ? "R: \(regexComponentProtocolName), W"
-      : "R: \(regexComponentProtocolName), W, " + (0..<arity).map { "C\($0)" }.joined(separator: ", ")
+      : "R: \(regexComponentProtocolName), W, " + captureTypeList(arity)
     let matchType = arity == 0
       ? "W"
-      : "(W, " + (0..<arity).map { "C\($0)" }.joined(separator: ", ") + ")"
+      : "(W, " + captureTypeList(arity) + ")"
     func newMatchType(newCaptureType: String) -> String {
       return arity == 0
         ? "(\(baseMatchTypeName), \(newCaptureType))"
-        : "(\(baseMatchTypeName), \(newCaptureType), " + (0..<arity).map { "C\($0)" }.joined(separator: ", ") + ")"
+        : "(\(baseMatchTypeName), \(newCaptureType), " + captureTypeList(arity) + ")"
     }
     let rawNewMatchType = newMatchType(newCaptureType: "W")
     let transformedNewMatchType = newMatchType(newCaptureType: "NewCapture")
