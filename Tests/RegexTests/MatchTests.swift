@@ -406,7 +406,8 @@ extension RegexTests {
       "a++a",
       ("babc", nil),
       ("baaabc", nil),
-      ("bb", nil))
+      ("bb", nil),
+      xfail: true)
     firstMatchTests(
       "a+?a",
       ("babc", nil),
@@ -468,15 +469,11 @@ extension RegexTests {
       "a{2,4}+a",
       ("babc", nil),
       ("baabc", nil),
-      ("baaabc", nil),
       ("baaaaabc", "aaaaa"),
       ("baaaaaaaabc", "aaaaa"),
       ("bb", nil))
     firstMatchTests(
       "a{,4}+a",
-      ("babc", nil),
-      ("baabc", nil),
-      ("baaabc", nil),
       ("baaaaabc", "aaaaa"),
       ("baaaaaaaabc", "aaaaa"),
       ("bb", nil))
@@ -484,6 +481,21 @@ extension RegexTests {
       "a{2,}+a",
       ("babc", nil),
       ("baabc", nil),
+      ("bb", nil))
+    
+    // XFAIL'd versions of the above
+    firstMatchTests(
+      "a{2,4}+a",
+      ("baaabc", nil),
+      xfail: true)
+    firstMatchTests(
+      "a{,4}+a",
+      ("babc", nil),
+      ("baabc", nil),
+      ("baaabc", nil),
+      xfail: true)
+    firstMatchTests(
+      "a{2,}+a",
       ("baaabc", nil),
       ("baaaaabc", nil),
       ("baaaaaaaabc", nil),
@@ -964,7 +976,11 @@ extension RegexTests {
     firstMatchTests(
       #"\u{65}"#,             // Scalar 'e' is present in both
       ("Cafe\u{301}", nil),   // but scalar mode requires boundary at end of match
+      xfail: true)
+    firstMatchTests(
+      #"\u{65}"#,             // Scalar 'e' is present in both
       ("Sol Cafe", "e"))      // standalone is okay
+
     firstMatchTests(
       #"\u{65}\y"#,           // Grapheme boundary assertion
       ("Cafe\u{301}", nil),
@@ -1379,7 +1395,8 @@ extension RegexTests {
     firstMatchTest(#"\u{65}\u{301}$"#, input: eDecomposed, match: eDecomposed)
     firstMatchTest(#"\u{65}\u{301}$"#, input: eComposed, match: eComposed)
 
-    firstMatchTest(#"\u{65}"#, input: eDecomposed, match: "e",
+    // FIXME: Implicit \y at end of match
+    firstMatchTest(#"\u{65}"#, input: eDecomposed, match: nil,
       xfail: true)
     firstMatchTest(#"\u{65}$"#, input: eDecomposed, match: nil)
     // FIXME: \y is unsupported

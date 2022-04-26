@@ -177,10 +177,14 @@ public struct _CharacterClassModel: Hashable {
       return matched ? str.index(after: i) : nil
     case .unicodeScalar:
       let c = str.unicodeScalars[i]
+      var nextIndex = str.unicodeScalars.index(after: i)
       var matched: Bool
       switch cc {
-      case .any: matched = true
-      case .anyGrapheme: fatalError("Not matched in this mode")
+      case .any:
+        matched = true
+      case .anyGrapheme:
+        matched = true
+        nextIndex = str.index(after: i)
       case .digit:
         matched = c.properties.numericType != nil && (c.isASCII || !options.usesASCIIDigits)
       case .hexDigit:
@@ -197,7 +201,7 @@ public struct _CharacterClassModel: Hashable {
       if isInverted {
         matched.toggle()
       }
-      return matched ? str.unicodeScalars.index(after: i) : nil
+      return matched ? nextIndex : nil
     }
   }
 }

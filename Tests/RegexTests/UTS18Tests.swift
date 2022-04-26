@@ -343,11 +343,16 @@ extension UTS18Tests {
   // matching against an arbitrary extended grapheme cluster, Character Classes
   // with Strings, and extended grapheme cluster boundaries.
   func testExtendedGraphemeClusters() {
-    XCTExpectFailure { XCTFail("Implement tests") }
+    XCTAssertTrue("abcdef🇬🇭".contains(#/abcdef.$/#))
+    XCTAssertTrue("abcdef🇬🇭".contains(#/abcdef\X$/#))
+    XCTAssertTrue("abcdef🇬🇭".contains(#/abcdef\X$/#.matchingSemantics(.unicodeScalar)))
+    XCTAssertTrue("abcdef🇬🇭".contains(#/abcdef.+\y/#.matchingSemantics(.unicodeScalar)))
   }
   
   func testCharacterClassesWithStrings() {
-    XCTExpectFailure { XCTFail("Implement tests") }
+    let regex = #/[a-z🧐🇧🇪🇧🇫🇧🇬]/#
+    XCTAssertTrue("🧐".contains(regex))
+    XCTAssertTrue("🇧🇫".contains(regex))
   }
   
   // RL2.3 Default Word Boundaries
