@@ -1549,5 +1549,20 @@ extension RegexTests {
   // TODO: Add test for implied grapheme cluster requirement at group boundaries
   
   // TODO: Add test for grapheme boundaries at start/end of match
+
+  func testNestedOptional() {
+    let regex: Regex<(Substring, Substring??)> = try! Regex(#"""
+    ab|(c|)?
+    """#)
+
+    XCTAssertEqual("", "".wholeMatch(of: regex)!.0)
+    XCTAssertEqual("ab", "ab".wholeMatch(of: regex)!.0)
+    XCTAssertEqual("c", "c".wholeMatch(of: regex)!.0)
+
+    XCTAssertEqual(.some(.some("c")), "c".wholeMatch(of: regex)!.1)
+    XCTAssertEqual(.some(.some("")), "".wholeMatch(of: regex)!.1)
+    XCTAssertEqual(.some(nil), "ab".wholeMatch(of: regex)!.1)
+
+  }
 }
 
