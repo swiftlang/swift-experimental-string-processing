@@ -257,7 +257,6 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(concatBuilderName) {
-        \(defaultAvailableAttr)
         public static func buildPartialBlock<\(genericParams)>(
           accumulated: R0, next: R1
         ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
@@ -386,7 +385,6 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(kind.rawValue) {
-        \(defaultAvailableAttr)
         \(params.disfavored)\
         public init<\(params.genericParams)>(
           _ component: Component,
@@ -399,7 +397,6 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension \(kind.rawValue) {
-        \(defaultAvailableAttr)
         \(params.disfavored)\
         public init<\(params.genericParams)>(
           _ behavior: RegexRepetitionBehavior? = nil,
@@ -414,7 +411,6 @@ struct VariadicsGenerator: ParsableCommand {
         """
         \(defaultAvailableAttr)
         extension \(concatBuilderName) {
-          \(defaultAvailableAttr)
           public static func buildLimitedAvailability<\(params.genericParams)>(
             _ component: Component
           ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
@@ -493,7 +489,6 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension Repeat {
-        \(defaultAvailableAttr)
         \(params.disfavored)\
         public init<\(params.genericParams)>(
           _ component: Component,
@@ -504,7 +499,6 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(node: .quantification(.exactly(count), .default, component.regex.root))
         }
 
-        \(defaultAvailableAttr)
         \(params.disfavored)\
         public init<\(params.genericParams)>(
           count: Int,
@@ -515,7 +509,6 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(node: .quantification(.exactly(count), .default, component().regex.root))
         }
 
-        \(defaultAvailableAttr)
         \(params.disfavored)\
         public init<\(params.genericParams), R: RangeExpression>(
           _ component: Component,
@@ -525,7 +518,6 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
         }
 
-        \(defaultAvailableAttr)
         \(params.disfavored)\
         public init<\(params.genericParams), R: RangeExpression>(
           _ expression: R,
@@ -580,7 +572,6 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(altBuilderName) {
-        \(defaultAvailableAttr)
         public static func buildPartialBlock<\(genericParams)>(
           accumulated: R0, next: R1
         ) -> ChoiceOf<\(matchType)> \(whereClause) {
@@ -608,7 +599,6 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(altBuilderName) {
-        \(defaultAvailableAttr)
         public static func buildPartialBlock<\(genericParams)>(first regex: R) -> ChoiceOf<(W, \(resultCaptures))> \(whereClause) {
           .init(node: .orderedChoice([regex.regex.root]))
         }
@@ -639,7 +629,6 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension Capture {
-        \(defaultAvailableAttr)
         \(disfavored)\
         public init<\(genericParams)>(
           _ component: R
@@ -647,7 +636,6 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(node: .capture(component.regex.root))
         }
 
-        \(defaultAvailableAttr)
         \(disfavored)\
         public init<\(genericParams)>(
           _ component: R, as reference: Reference<W>
@@ -655,7 +643,6 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(node: .capture(reference: reference.id, component.regex.root))
         }
 
-        \(defaultAvailableAttr)
         \(disfavored)\
         public init<\(genericParams), NewCapture>(
           _ component: R,
@@ -668,7 +655,6 @@ struct VariadicsGenerator: ParsableCommand {
             component.regex.root)))
         }
 
-        \(defaultAvailableAttr)
         \(disfavored)\
         public init<\(genericParams), NewCapture>(
           _ component: R,
@@ -687,7 +673,6 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension TryCapture {
-        \(defaultAvailableAttr)
         \(disfavored)\
         public init<\(genericParams), NewCapture>(
           _ component: R,
@@ -700,7 +685,6 @@ struct VariadicsGenerator: ParsableCommand {
             component.regex.root)))
         }
 
-        \(defaultAvailableAttr)
         \(disfavored)\
         public init<\(genericParams), NewCapture>(
           _ component: R,
@@ -721,7 +705,6 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension Capture {
-        \(defaultAvailableAttr)
         \(disfavored)\
         public init<\(genericParams)>(
           @\(concatBuilderName) _ component: () -> R
@@ -729,7 +712,6 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(node: .capture(component().regex.root))
         }
 
-        \(defaultAvailableAttr)
         \(disfavored)\
         public init<\(genericParams)>(
           as reference: Reference<W>,
@@ -740,7 +722,6 @@ struct VariadicsGenerator: ParsableCommand {
             component().regex.root))
         }
 
-        \(defaultAvailableAttr)
         \(disfavored)\
         public init<\(genericParams), NewCapture>(
           @\(concatBuilderName) _ component: () -> R,
@@ -753,7 +734,6 @@ struct VariadicsGenerator: ParsableCommand {
             component().regex.root)))
         }
 
-        \(defaultAvailableAttr)
         \(disfavored)\
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
@@ -772,7 +752,6 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension TryCapture {
-        \(defaultAvailableAttr)
         \(disfavored)\
         public init<\(genericParams), NewCapture>(
           @\(concatBuilderName) _ component: () -> R,
@@ -785,7 +764,6 @@ struct VariadicsGenerator: ParsableCommand {
             component().regex.root)))
         }
 
-        \(defaultAvailableAttr)
         \(disfavored)\
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
