@@ -1096,6 +1096,9 @@ The currently proposed algorithm that finds a pattern from the front, e.g. `"aaa
 Trimming a string from both sides shares a similar story. For example, `"ababa".trimming("aba")` can return either `"ba"` or `"ab"`, depending on whether the prefix or the suffix was trimmed first.
 </details>
 
+### Split preserving the separator
+
+Future work is a split variant that interweaves the separator with the separated portions. For example, when splitting over `\p{punctuation}` it might be useful to be able to preserve the punctionation as a separate entry in the returned collection.
 
 ### Future API
 
