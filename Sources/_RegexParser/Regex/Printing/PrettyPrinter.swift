@@ -57,7 +57,7 @@ extension PrettyPrinter {
   /// Outputs a string directly, without termination or
   /// indentation, and without updating any internal state.
   ///
-  /// This is the low-level interface to the pret
+  /// This is the low-level interface to the pretty printer.
   ///
   /// - Note: If `s` includes a newline, even at the end,
   ///   this method does not update any tracking state.
