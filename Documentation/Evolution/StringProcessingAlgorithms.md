@@ -308,7 +308,7 @@ extension Collection where SubSequence == Substring {
 
 #### Trim prefix
 
-We propose generic `trimPrefix` for collections.
+We propose generic `trimPrefix` for collections taking a `Element` predicate or a specific `Element`.
 
 ```swift
 extension Collection {
@@ -443,7 +443,6 @@ extension BidirectionalCollection where Element: Comparable {
 We propose a regex-taking variant for string types.
 
 ```swift
-
 extension Collection where SubSequence == Substring {
     /// Finds and returns the range of the first occurrence of a given regex
     /// within the collection.
@@ -946,7 +945,6 @@ extension Collection where Element: Equatable {
 And a regex-taking variant for string types:
 
 ```swift
-
 extension Collection where SubSequence == Substring {
     /// Returns the longest possible subsequences of the collection, in order,
     /// around subsequence that match the given separator regex.
