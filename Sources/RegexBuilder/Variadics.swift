@@ -678,7 +678,7 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, Component: RegexComponent>(
+  public init<W, C1, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
@@ -689,7 +689,7 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, Component: RegexComponent>(
+  public init<W, C1, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
@@ -708,7 +708,7 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, Component: RegexComponent>(
+  public init<W, C1, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
@@ -719,7 +719,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, Component: RegexComponent>(
+  public init<W, C1, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
@@ -731,7 +731,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, Component: RegexComponent>(
+  public init<W, C1, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1), Component.RegexOutput == (W, C1) {
@@ -742,7 +742,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, Component: RegexComponent>(
+  public init<W, C1, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1), Component.RegexOutput == (W, C1) {
@@ -754,7 +754,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
-    public init<W, C1, Component: RegexComponent>(
+  public init<W, C1, Component: RegexComponent>(
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
@@ -763,7 +763,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
-    public init<W, C1, Component: RegexComponent>(
+  public init<W, C1, Component: RegexComponent>(
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
@@ -772,7 +772,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
-    public init<W, C1, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
@@ -780,7 +780,7 @@ extension Repeat {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
 
-    public init<W, C1, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
@@ -790,7 +790,7 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, Component: RegexComponent>(
+  public init<W, C1, C2, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
@@ -801,7 +801,7 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, Component: RegexComponent>(
+  public init<W, C1, C2, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
@@ -820,7 +820,7 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, Component: RegexComponent>(
+  public init<W, C1, C2, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
@@ -831,7 +831,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, Component: RegexComponent>(
+  public init<W, C1, C2, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
@@ -843,7 +843,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, Component: RegexComponent>(
+  public init<W, C1, C2, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2), Component.RegexOutput == (W, C1, C2) {
@@ -854,7 +854,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, Component: RegexComponent>(
+  public init<W, C1, C2, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2), Component.RegexOutput == (W, C1, C2) {
@@ -866,7 +866,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
-    public init<W, C1, C2, Component: RegexComponent>(
+  public init<W, C1, C2, Component: RegexComponent>(
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
@@ -875,7 +875,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
-    public init<W, C1, C2, Component: RegexComponent>(
+  public init<W, C1, C2, Component: RegexComponent>(
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
@@ -884,7 +884,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
-    public init<W, C1, C2, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
@@ -892,7 +892,7 @@ extension Repeat {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
 
-    public init<W, C1, C2, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
@@ -902,7 +902,7 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, Component: RegexComponent>(
+  public init<W, C1, C2, C3, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
@@ -913,7 +913,7 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, Component: RegexComponent>(
+  public init<W, C1, C2, C3, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
@@ -932,7 +932,7 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, Component: RegexComponent>(
+  public init<W, C1, C2, C3, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
@@ -943,7 +943,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, Component: RegexComponent>(
+  public init<W, C1, C2, C3, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
@@ -955,7 +955,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, Component: RegexComponent>(
+  public init<W, C1, C2, C3, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3), Component.RegexOutput == (W, C1, C2, C3) {
@@ -966,7 +966,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, Component: RegexComponent>(
+  public init<W, C1, C2, C3, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3), Component.RegexOutput == (W, C1, C2, C3) {
@@ -978,7 +978,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
-    public init<W, C1, C2, C3, Component: RegexComponent>(
+  public init<W, C1, C2, C3, Component: RegexComponent>(
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
@@ -987,7 +987,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, Component: RegexComponent>(
+  public init<W, C1, C2, C3, Component: RegexComponent>(
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
@@ -996,7 +996,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
-    public init<W, C1, C2, C3, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
@@ -1004,7 +1004,7 @@ extension Repeat {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
@@ -1014,7 +1014,7 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
@@ -1025,7 +1025,7 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
@@ -1044,7 +1044,7 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
@@ -1055,7 +1055,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
@@ -1067,7 +1067,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4), Component.RegexOutput == (W, C1, C2, C3, C4) {
@@ -1078,7 +1078,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4), Component.RegexOutput == (W, C1, C2, C3, C4) {
@@ -1090,7 +1090,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
-    public init<W, C1, C2, C3, C4, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
@@ -1099,7 +1099,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
@@ -1108,7 +1108,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
@@ -1116,7 +1116,7 @@ extension Repeat {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
@@ -1126,7 +1126,7 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
@@ -1137,7 +1137,7 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
@@ -1156,7 +1156,7 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
@@ -1167,7 +1167,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
@@ -1179,7 +1179,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
@@ -1190,7 +1190,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
@@ -1202,7 +1202,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
-    public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
@@ -1211,7 +1211,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
@@ -1220,7 +1220,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, C5, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
@@ -1228,7 +1228,7 @@ extension Repeat {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, C5, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
@@ -1238,7 +1238,7 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
@@ -1249,7 +1249,7 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
@@ -1268,7 +1268,7 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
@@ -1279,7 +1279,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
@@ -1291,7 +1291,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
@@ -1302,7 +1302,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
@@ -1314,7 +1314,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
-    public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
@@ -1323,7 +1323,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
@@ -1332,7 +1332,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
@@ -1340,7 +1340,7 @@ extension Repeat {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
@@ -1350,7 +1350,7 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
@@ -1361,7 +1361,7 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
@@ -1380,7 +1380,7 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
@@ -1391,7 +1391,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
@@ -1403,7 +1403,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
@@ -1414,7 +1414,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
@@ -1426,7 +1426,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
@@ -1435,7 +1435,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
@@ -1444,7 +1444,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
@@ -1452,7 +1452,7 @@ extension Repeat {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
@@ -1462,7 +1462,7 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -1473,7 +1473,7 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -1492,7 +1492,7 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -1503,7 +1503,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -1515,7 +1515,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -1526,7 +1526,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -1538,7 +1538,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -1547,7 +1547,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -1556,7 +1556,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
@@ -1564,7 +1564,7 @@ extension Repeat {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
@@ -1574,7 +1574,7 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -1585,7 +1585,7 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -1604,7 +1604,7 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -1615,7 +1615,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -1627,7 +1627,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -1638,7 +1638,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -1650,7 +1650,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -1659,7 +1659,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -1668,7 +1668,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
@@ -1676,7 +1676,7 @@ extension Repeat {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
@@ -1686,7 +1686,7 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
@@ -1697,7 +1697,7 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
@@ -1716,7 +1716,7 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
@@ -1727,7 +1727,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
@@ -1739,7 +1739,7 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
@@ -1750,7 +1750,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
@@ -1762,7 +1762,7 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
@@ -1771,7 +1771,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
@@ -1780,7 +1780,7 @@ extension Repeat {
     self.init(node: .quantification(.exactly(count), .default, component().regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
@@ -1788,7 +1788,7 @@ extension Repeat {
     self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
   }
 
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent, R: RangeExpression>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
@@ -1820,7 +1820,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, Component: RegexComponent>(
+  public init<W, C1, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1), Component.RegexOutput == (W, C1) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
@@ -1830,7 +1830,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, Component: RegexComponent>(
+  public init<W, C1, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1), Component.RegexOutput == (W, C1) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
@@ -1839,7 +1839,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, Component: RegexComponent>(
+  public init<W, C1, C2, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2), Component.RegexOutput == (W, C1, C2) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
@@ -1849,7 +1849,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, Component: RegexComponent>(
+  public init<W, C1, C2, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2), Component.RegexOutput == (W, C1, C2) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
@@ -1858,7 +1858,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, Component: RegexComponent>(
+  public init<W, C1, C2, C3, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3), Component.RegexOutput == (W, C1, C2, C3) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
@@ -1868,7 +1868,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, Component: RegexComponent>(
+  public init<W, C1, C2, C3, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3), Component.RegexOutput == (W, C1, C2, C3) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
@@ -1877,7 +1877,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4), Component.RegexOutput == (W, C1, C2, C3, C4) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
@@ -1887,7 +1887,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4), Component.RegexOutput == (W, C1, C2, C3, C4) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
@@ -1896,7 +1896,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
@@ -1906,7 +1906,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
@@ -1915,7 +1915,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
@@ -1925,7 +1925,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
@@ -1934,7 +1934,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
@@ -1944,7 +1944,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
@@ -1953,7 +1953,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
@@ -1963,7 +1963,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
@@ -1972,7 +1972,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
@@ -1982,7 +1982,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
@@ -1991,7 +1991,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
@@ -2001,7 +2001,7 @@ extension Local {
 @available(SwiftStdlib 5.7, *)
 extension Local {
   @available(SwiftStdlib 5.7, *)
-    public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
+  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
     self.init(node: .nonCapturingGroup(.atomicNonCapturing, component().regex.root))
@@ -2746,19 +2746,19 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1>(
+  public init<R: RegexComponent, W, C1>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1), R.RegexOutput == (W, C1) {
     self.init(node: .capture(component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1>(
+  public init<R: RegexComponent, W, C1>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1), R.RegexOutput == (W, C1) {
     self.init(node: .capture(reference: reference.id, component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, NewCapture>(
+  public init<R: RegexComponent, W, C1, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1), R.RegexOutput == (W, C1) {
@@ -2769,7 +2769,7 @@ extension Capture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, NewCapture>(
+  public init<R: RegexComponent, W, C1, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture
@@ -2786,7 +2786,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, NewCapture>(
+  public init<R: RegexComponent, W, C1, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1), R.RegexOutput == (W, C1) {
@@ -2797,7 +2797,7 @@ extension TryCapture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, NewCapture>(
+  public init<R: RegexComponent, W, C1, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -2816,13 +2816,13 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1>(
+  public init<R: RegexComponent, W, C1>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1), R.RegexOutput == (W, C1) {
     self.init(node: .capture(component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1>(
+  public init<R: RegexComponent, W, C1>(
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1), R.RegexOutput == (W, C1) {
@@ -2831,7 +2831,7 @@ extension Capture {
       component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, NewCapture>(
+  public init<R: RegexComponent, W, C1, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1), R.RegexOutput == (W, C1) {
@@ -2842,7 +2842,7 @@ extension Capture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, NewCapture>(
+  public init<R: RegexComponent, W, C1, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
@@ -2859,7 +2859,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, NewCapture>(
+  public init<R: RegexComponent, W, C1, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1), R.RegexOutput == (W, C1) {
@@ -2870,7 +2870,7 @@ extension TryCapture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, NewCapture>(
+  public init<R: RegexComponent, W, C1, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -2889,19 +2889,19 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2>(
+  public init<R: RegexComponent, W, C1, C2>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2), R.RegexOutput == (W, C1, C2) {
     self.init(node: .capture(component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2>(
+  public init<R: RegexComponent, W, C1, C2>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2), R.RegexOutput == (W, C1, C2) {
     self.init(node: .capture(reference: reference.id, component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2), R.RegexOutput == (W, C1, C2) {
@@ -2912,7 +2912,7 @@ extension Capture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture
@@ -2929,7 +2929,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2), R.RegexOutput == (W, C1, C2) {
@@ -2940,7 +2940,7 @@ extension TryCapture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -2959,13 +2959,13 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2>(
+  public init<R: RegexComponent, W, C1, C2>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2), R.RegexOutput == (W, C1, C2) {
     self.init(node: .capture(component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2>(
+  public init<R: RegexComponent, W, C1, C2>(
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2), R.RegexOutput == (W, C1, C2) {
@@ -2974,7 +2974,7 @@ extension Capture {
       component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2), R.RegexOutput == (W, C1, C2) {
@@ -2985,7 +2985,7 @@ extension Capture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3002,7 +3002,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2), R.RegexOutput == (W, C1, C2) {
@@ -3013,7 +3013,7 @@ extension TryCapture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3032,19 +3032,19 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3>(
+  public init<R: RegexComponent, W, C1, C2, C3>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
     self.init(node: .capture(component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3>(
+  public init<R: RegexComponent, W, C1, C2, C3>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
     self.init(node: .capture(reference: reference.id, component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
@@ -3055,7 +3055,7 @@ extension Capture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3072,7 +3072,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
@@ -3083,7 +3083,7 @@ extension TryCapture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3102,13 +3102,13 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3>(
+  public init<R: RegexComponent, W, C1, C2, C3>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
     self.init(node: .capture(component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3>(
+  public init<R: RegexComponent, W, C1, C2, C3>(
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
@@ -3117,7 +3117,7 @@ extension Capture {
       component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
@@ -3128,7 +3128,7 @@ extension Capture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3145,7 +3145,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
@@ -3156,7 +3156,7 @@ extension TryCapture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3175,19 +3175,19 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
     self.init(node: .capture(component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
     self.init(node: .capture(reference: reference.id, component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
@@ -3198,7 +3198,7 @@ extension Capture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3215,7 +3215,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
@@ -3226,7 +3226,7 @@ extension TryCapture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3245,13 +3245,13 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
     self.init(node: .capture(component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4>(
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
@@ -3260,7 +3260,7 @@ extension Capture {
       component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
@@ -3271,7 +3271,7 @@ extension Capture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3288,7 +3288,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
@@ -3299,7 +3299,7 @@ extension TryCapture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3318,19 +3318,19 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
     self.init(node: .capture(component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
     self.init(node: .capture(reference: reference.id, component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
@@ -3341,7 +3341,7 @@ extension Capture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3358,7 +3358,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
@@ -3369,7 +3369,7 @@ extension TryCapture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3388,13 +3388,13 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
     self.init(node: .capture(component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
@@ -3403,7 +3403,7 @@ extension Capture {
       component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
@@ -3414,7 +3414,7 @@ extension Capture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3431,7 +3431,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
@@ -3442,7 +3442,7 @@ extension TryCapture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3461,19 +3461,19 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
     self.init(node: .capture(component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
     self.init(node: .capture(reference: reference.id, component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
@@ -3484,7 +3484,7 @@ extension Capture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3501,7 +3501,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
@@ -3512,7 +3512,7 @@ extension TryCapture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3531,13 +3531,13 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
     self.init(node: .capture(component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
@@ -3546,7 +3546,7 @@ extension Capture {
       component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
@@ -3557,7 +3557,7 @@ extension Capture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3574,7 +3574,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
@@ -3585,7 +3585,7 @@ extension TryCapture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3604,19 +3604,19 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
     self.init(node: .capture(component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
     self.init(node: .capture(reference: reference.id, component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
@@ -3627,7 +3627,7 @@ extension Capture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3644,7 +3644,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
@@ -3655,7 +3655,7 @@ extension TryCapture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3674,13 +3674,13 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
     self.init(node: .capture(component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
@@ -3689,7 +3689,7 @@ extension Capture {
       component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
@@ -3700,7 +3700,7 @@ extension Capture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3717,7 +3717,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
@@ -3728,7 +3728,7 @@ extension TryCapture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3747,19 +3747,19 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
     self.init(node: .capture(component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
     self.init(node: .capture(reference: reference.id, component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -3770,7 +3770,7 @@ extension Capture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3787,7 +3787,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -3798,7 +3798,7 @@ extension TryCapture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3817,13 +3817,13 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
     self.init(node: .capture(component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -3832,7 +3832,7 @@ extension Capture {
       component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -3843,7 +3843,7 @@ extension Capture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3860,7 +3860,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
@@ -3871,7 +3871,7 @@ extension TryCapture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3890,19 +3890,19 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     self.init(node: .capture(component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     self.init(node: .capture(reference: reference.id, component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -3913,7 +3913,7 @@ extension Capture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture
@@ -3930,7 +3930,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -3941,7 +3941,7 @@ extension TryCapture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -3960,13 +3960,13 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     self.init(node: .capture(component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -3975,7 +3975,7 @@ extension Capture {
       component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -3986,7 +3986,7 @@ extension Capture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
@@ -4003,7 +4003,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
@@ -4014,7 +4014,7 @@ extension TryCapture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -4033,19 +4033,19 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
     self.init(node: .capture(component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
     self.init(node: .capture(reference: reference.id, component.regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
@@ -4056,7 +4056,7 @@ extension Capture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture
@@ -4073,7 +4073,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     _ component: R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
@@ -4084,7 +4084,7 @@ extension TryCapture {
       component.regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     _ component: R,
     as reference: Reference<NewCapture>,
     transform: @escaping (Substring) throws -> NewCapture?
@@ -4103,13 +4103,13 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
     self.init(node: .capture(component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
@@ -4118,7 +4118,7 @@ extension Capture {
       component().regex.root))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
@@ -4129,7 +4129,7 @@ extension Capture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture
@@ -4146,7 +4146,7 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
@@ -4157,7 +4157,7 @@ extension TryCapture {
       component().regex.root)))
   }
 
-    public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
+  public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     as reference: Reference<NewCapture>,
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (Substring) throws -> NewCapture?

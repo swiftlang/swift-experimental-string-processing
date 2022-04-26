@@ -348,7 +348,7 @@ struct VariadicsGenerator: ParsableCommand {
     }
     
     init(kind: QuantifierKind, arity: Int) {
-      self.disfavored = arity == 0 ? "@_disfavoredOverload\n" : ""
+      self.disfavored = arity == 0 ? "  @_disfavoredOverload\n" : ""
       self.genericParams = {
         var result = ""
         if arity > 0 {
@@ -385,7 +385,7 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(kind.rawValue) {
-        \(params.disfavored)\
+      \(params.disfavored)\
         public init<\(params.genericParams)>(
           _ component: Component,
           _ behavior: RegexRepetitionBehavior? = nil
@@ -397,7 +397,7 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension \(kind.rawValue) {
-        \(params.disfavored)\
+      \(params.disfavored)\
         public init<\(params.genericParams)>(
           _ behavior: RegexRepetitionBehavior? = nil,
           @\(concatBuilderName) _ component: () -> Component
@@ -434,7 +434,7 @@ struct VariadicsGenerator: ParsableCommand {
       """
     }
 
-    let disfavored = arity == 0 ? "@_disfavoredOverload\n" : ""
+    let disfavored = arity == 0 ? "  @_disfavoredOverload\n" : ""
     let genericParams: String = {
       var result = ""
       if arity > 0 {
@@ -456,7 +456,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(defaultAvailableAttr)
       extension \(groupName) {
         \(defaultAvailableAttr)
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams)>(
           _ component: Component
         ) \(whereClauseForInit) {
@@ -467,7 +467,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(defaultAvailableAttr)
       extension \(groupName) {
         \(defaultAvailableAttr)
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams)>(
           @\(concatBuilderName) _ component: () -> Component
         ) \(whereClauseForInit) {
@@ -489,7 +489,7 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension Repeat {
-        \(params.disfavored)\
+      \(params.disfavored)\
         public init<\(params.genericParams)>(
           _ component: Component,
           count: Int
@@ -499,7 +499,7 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(node: .quantification(.exactly(count), .default, component.regex.root))
         }
 
-        \(params.disfavored)\
+      \(params.disfavored)\
         public init<\(params.genericParams)>(
           count: Int,
           @\(concatBuilderName) _ component: () -> Component
@@ -509,7 +509,7 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(node: .quantification(.exactly(count), .default, component().regex.root))
         }
 
-        \(params.disfavored)\
+      \(params.disfavored)\
         public init<\(params.genericParams), R: RangeExpression>(
           _ component: Component,
           _ expression: R,
@@ -518,7 +518,7 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
         }
 
-        \(params.disfavored)\
+      \(params.disfavored)\
         public init<\(params.genericParams), R: RangeExpression>(
           _ expression: R,
           _ behavior: RegexRepetitionBehavior? = nil,
@@ -608,7 +608,7 @@ struct VariadicsGenerator: ParsableCommand {
   }
 
   func emitCapture(arity: Int) {
-    let disfavored = arity == 0 ? "@_disfavoredOverload\n" : ""
+    let disfavored = arity == 0 ? "  @_disfavoredOverload\n" : ""
     let genericParams = arity == 0
       ? "R: \(regexComponentProtocolName), W"
       : "R: \(regexComponentProtocolName), W, " + captureTypeList(arity)
@@ -629,21 +629,21 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension Capture {
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams)>(
           _ component: R
         ) \(whereClauseRaw) {
           self.init(node: .capture(component.regex.root))
         }
 
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams)>(
           _ component: R, as reference: Reference<W>
         ) \(whereClauseRaw) {
           self.init(node: .capture(reference: reference.id, component.regex.root))
         }
 
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams), NewCapture>(
           _ component: R,
           transform: @escaping (Substring) throws -> NewCapture
@@ -655,7 +655,7 @@ struct VariadicsGenerator: ParsableCommand {
             component.regex.root)))
         }
 
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams), NewCapture>(
           _ component: R,
           as reference: Reference<NewCapture>,
@@ -673,7 +673,7 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension TryCapture {
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams), NewCapture>(
           _ component: R,
           transform: @escaping (Substring) throws -> NewCapture?
@@ -685,7 +685,7 @@ struct VariadicsGenerator: ParsableCommand {
             component.regex.root)))
         }
 
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams), NewCapture>(
           _ component: R,
           as reference: Reference<NewCapture>,
@@ -705,14 +705,14 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension Capture {
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams)>(
           @\(concatBuilderName) _ component: () -> R
         ) \(whereClauseRaw) {
           self.init(node: .capture(component().regex.root))
         }
 
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams)>(
           as reference: Reference<W>,
           @\(concatBuilderName) _ component: () -> R
@@ -722,7 +722,7 @@ struct VariadicsGenerator: ParsableCommand {
             component().regex.root))
         }
 
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams), NewCapture>(
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (Substring) throws -> NewCapture
@@ -734,7 +734,7 @@ struct VariadicsGenerator: ParsableCommand {
             component().regex.root)))
         }
 
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
           @\(concatBuilderName) _ component: () -> R,
@@ -752,7 +752,7 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension TryCapture {
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams), NewCapture>(
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (Substring) throws -> NewCapture?
@@ -764,7 +764,7 @@ struct VariadicsGenerator: ParsableCommand {
             component().regex.root)))
         }
 
-        \(disfavored)\
+      \(disfavored)\
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
           @\(concatBuilderName) _ component: () -> R,
