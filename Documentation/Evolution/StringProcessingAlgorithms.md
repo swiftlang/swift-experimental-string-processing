@@ -1059,7 +1059,7 @@ let moreParts = hello.split(separator: "", omittingEmptySubsequences: false)
 // parts == ["", "h", "e", "l", "l", "o", ""]
 ```
 
-Finally, searching for an empty string within an empty string yield, as you might imagine, the empty string:
+Finally, searching for an empty string within an empty string yields, as you might imagine, the empty string:
 
 ```swift
 let empty = ""
