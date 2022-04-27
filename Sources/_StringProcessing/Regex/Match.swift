@@ -165,7 +165,7 @@ extension Regex {
 }
 
 @available(SwiftStdlib 5.7, *)
-extension String {
+extension BidirectionalCollection where SubSequence == Substring {
   /// Checks for a match against the string in its entirety.
   ///
   /// - Parameter r: The regular expression being matched.
