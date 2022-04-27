@@ -191,7 +191,6 @@ extension String {
 extension RegexComponent {
   public static func ~=(regex: Self, input: String) -> Bool {
     input.wholeMatch(of: regex) != nil
-    try? r.regex.wholeMatch(in: self)
   }
 
   public static func ~=(regex: Self, input: Substring) -> Bool {
