@@ -9,9 +9,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// TODO: Remove and serialize CaptureList instead
+// TODO: Remove and directly serialize CaptureList instead
 
-// A tree representing the type of some captures.
+// A tree representing the type of some captures, used for communication
+// with the compiler.
 enum CaptureStructure: Equatable {
   case atom(name: String? = nil, type: AnyType? = nil)
   indirect case optional(CaptureStructure)
@@ -224,5 +225,37 @@ extension AST {
   /// The capture structure of this AST tree.
   var captureStructure: CaptureStructure {
     root._captureList._captureStructure(nestOptionals: true)
+  }
+}
+
+// MARK: Convert CaptureList into CaptureStructure
+
+extension CaptureList {
+  func _captureStructure(nestOptionals: Bool) -> CaptureStructure {
+    if captures.isEmpty { return .empty }
+    if captures.count == 1 {
+      return captures.first!._captureStructure(nestOptionals: nestOptionals)
+    }
+    return .tuple(captures.map {
+      $0._captureStructure(nestOptionals: nestOptionals)
+    })
+  }
+}
+
+extension CaptureList.Capture {
+  func _captureStructure(nestOptionals: Bool) -> CaptureStructure {
+    if optionalDepth == 0 {
+      if let ty = type {
+        return .atom(name: name, type: .init(ty))
+      }
+      return .atom(name: name)
+    }
+    var copy = self
+    copy.optionalDepth = 0
+    var base = copy._captureStructure(nestOptionals: false)
+    for _ in 0..<(nestOptionals ? optionalDepth : 1) {
+      base = .optional(base)
+    }
+    return base
   }
 }

@@ -39,8 +39,9 @@ extension CaptureList {
   }
 }
 
-extension AST.Node {
+// MARK: Generating from AST
 
+extension AST.Node {
   public func _addCaptures(
     to list: inout CaptureList,
     optionalNesting nesting: Int
@@ -110,32 +111,38 @@ extension AST.Node {
   }
 }
 
-extension CaptureList {
-  func _captureStructure(nestOptionals: Bool) -> CaptureStructure {
-    if captures.isEmpty { return .empty }
-    if captures.count == 1 {
-      return captures.first!._captureStructure(nestOptionals: nestOptionals)
+// MARK: Convenience for testing and inspection
+
+extension CaptureList.Capture: Equatable {
+  public static func == (lhs: Self, rhs: Self) -> Bool {
+    lhs.name == rhs.name &&
+    lhs.optionalDepth == rhs.optionalDepth &&
+    lhs.type == rhs.type
+  }
+}
+extension CaptureList: Equatable {}
+
+extension CaptureList.Capture: CustomStringConvertible {
+  public var description: String {
+    let typeStr: String
+    if let ty = type {
+      typeStr = "\(ty)"
+    } else {
+      typeStr = "Substring"
     }
-    return .tuple(captures.map {
-      $0._captureStructure(nestOptionals: nestOptionals)
-    })
+    let suffix = String(repeating: "?", count: optionalDepth)
+    return typeStr + suffix
+  }
+}
+extension CaptureList: CustomStringConvertible {
+  public var description: String {
+    "(" + captures.map(\.description).joined(separator: ", ") + ")"
   }
 }
 
-extension CaptureList.Capture {
-  func _captureStructure(nestOptionals: Bool) -> CaptureStructure {
-    if optionalDepth == 0 {
-      if let ty = type {
-        return .atom(name: name, type: .init(ty))
-      }
-      return .atom(name: name)
-    }
-    var copy = self
-    copy.optionalDepth = 0
-    var base = copy._captureStructure(nestOptionals: false)
-    for _ in 0..<(nestOptionals ? optionalDepth : 1) {
-      base = .optional(base)
-    }
-    return base
+extension CaptureList: ExpressibleByArrayLiteral {
+  public init(arrayLiteral elements: Capture...) {
+    self.init()
+    self.captures = Array(elements)
   }
 }
