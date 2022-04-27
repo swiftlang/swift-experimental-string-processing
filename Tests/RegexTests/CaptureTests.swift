@@ -37,6 +37,15 @@ extension CaptureList.Capture {
   static var opt_opt_opt_opt_opt_opt: Self {
     return Self(optionalDepth: 6)
   }
+
+  static func named(_ name: String) -> Self {
+    return Self(name: name, optionalDepth: 0)
+  }
+}
+extension CaptureList {
+  static func caps(count: Int) -> Self {
+    Self(Array(repeating: .cap, count: count))
+  }
 }
 
 extension StructuredCapture {

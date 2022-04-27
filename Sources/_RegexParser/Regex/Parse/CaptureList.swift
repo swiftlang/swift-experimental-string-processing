@@ -12,8 +12,8 @@
 public struct CaptureList {
   public var captures: [Capture]
 
-  public init() {
-    captures = []
+  public init<S: Sequence>(_ s: S) where S.Element == Capture {
+    captures = Array(s)
   }
 
   public mutating func append(_ c: Capture) {
@@ -111,6 +111,13 @@ extension AST.Node {
   }
 }
 
+extension AST {
+  /// Get the capture list for this AST
+  public var captureList: CaptureList {
+    root._captureList
+  }
+}
+
 // MARK: Convenience for testing and inspection
 
 extension CaptureList.Capture: Equatable {
@@ -142,7 +149,6 @@ extension CaptureList: CustomStringConvertible {
 
 extension CaptureList: ExpressibleByArrayLiteral {
   public init(arrayLiteral elements: Capture...) {
-    self.init()
-    self.captures = Array(elements)
+    self.init(elements)
   }
 }

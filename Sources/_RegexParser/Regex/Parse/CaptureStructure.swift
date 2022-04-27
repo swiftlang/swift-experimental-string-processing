@@ -222,7 +222,7 @@ extension CaptureStructure: CustomStringConvertible {
 }
 
 extension AST {
-  /// The capture structure of this AST tree.
+  /// The capture structure of this AST for compiler communication.
   var captureStructure: CaptureStructure {
     root._captureList._captureStructure(nestOptionals: true)
   }

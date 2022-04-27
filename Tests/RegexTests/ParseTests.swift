@@ -39,7 +39,7 @@ class RegexTests: XCTestCase {}
 func parseTest(
   _ input: String, _ expectedAST: AST.Node,
   syntax: SyntaxOptions = .traditional,
-  captures expectedCaptures: CaptureStructure = .empty,
+  captures expectedCaptures: CaptureList = [],
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -52,7 +52,7 @@ func parseTest(
 func parseTest(
   _ input: String, _ expectedAST: AST,
   syntax: SyntaxOptions = .traditional,
-  captures expectedCaptures: CaptureStructure = .empty,
+  captures expectedCaptures: CaptureList = [],
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -68,7 +68,7 @@ func parseTest(
             file: file, line: line)
     return
   }
-  let captures = ast.captureStructure
+  let captures = ast.captureList
   guard captures == expectedCaptures else {
     XCTFail("""
 
@@ -78,13 +78,16 @@ func parseTest(
             file: file, line: line)
     return
   }
+
   // Test capture structure round trip serialization.
+  let capStruct = captures._captureStructure(nestOptionals: true)
   let serializedCapturesSize = CaptureStructure.serializationBufferSize(
     forInputUTF8CodeUnitCount: input.utf8.count)
   let serializedCaptures = UnsafeMutableRawBufferPointer.allocate(
     byteCount: serializedCapturesSize,
     alignment: MemoryLayout<Int8>.alignment)
-  captures.encode(to: serializedCaptures)
+
+  capStruct.encode(to: serializedCaptures)
   guard let decodedCaptures = CaptureStructure(
     decoding: UnsafeRawBufferPointer(serializedCaptures)
   ) else {
@@ -95,7 +98,7 @@ func parseTest(
       """)
     return
   }
-  guard decodedCaptures == captures else {
+  guard decodedCaptures == capStruct else {
     XCTFail("""
 
               Expected captures:  \(expectedCaptures)
@@ -310,7 +313,7 @@ extension RegexTests {
       concat("a", "b", "c", "+", zeroOrMore(of: "d")))
     parseTest(
       "a(b)", concat("a", capture("b")),
-      captures: .atom())
+      captures: [.cap])
     parseTest(
       "abc(?:de)+fghi*k|j",
       alt(
@@ -336,15 +339,13 @@ extension RegexTests {
       concat(
         zeroOrMore(of: capture(atom(.any))),
         capture(zeroOrMore(of: atom(.any)))),
-      captures: .tuple([.optional(.atom()), .atom()]))
+      captures: [.opt, .cap])
     parseTest(
       "((.))*((.)?)",
       concat(
         zeroOrMore(of: capture(capture(atom(.any)))),
         capture(zeroOrOne(of: capture(atom(.any))))),
-      captures: .tuple([
-        .optional(.atom()), .optional(.atom()), .atom(), .optional(.atom())
-      ]))
+      captures: [.opt, .opt, .cap, .opt])
     parseTest(
       #"abc\d"#,
       concat("a", "b", "c", escaped(.decimalDigit)))
@@ -357,33 +358,33 @@ extension RegexTests {
     parseTest(
       "(a|b)c",
       concat(capture(alt("a", "b")), "c"),
-      captures: .atom())
+      captures: [.cap])
     parseTest(
       "(a)|b",
       alt(capture("a"), "b"),
-      captures: .optional(.atom()))
+      captures: [.opt])
     parseTest(
       "(a)|(b)|c",
       alt(capture("a"), capture("b"), "c"),
-      captures: .tuple(.optional(.atom()), .optional(.atom())))
+      captures: [.opt, .opt])
     parseTest(
       "((a|b))c",
       concat(capture(capture(alt("a", "b"))), "c"),
-      captures: .tuple([.atom(), .atom()]))
+      captures: [.cap, .cap])
     parseTest(
       "(?:((a|b)))*?c",
       concat(quant(
         .zeroOrMore, .reluctant,
         nonCapture(capture(capture(alt("a", "b"))))), "c"),
-      captures: .tuple(.optional(.atom()), .optional(.atom())))
+      captures: [.opt, .opt])
     parseTest(
       "(a)|b|(c)d",
       alt(capture("a"), "b", concat(capture("c"), "d")),
-      captures: .tuple([.optional(.atom()), .optional(.atom())]))
+      captures: [.opt, .opt])
 
     // Alternations with empty branches are permitted.
     parseTest("|", alt(empty(), empty()))
-    parseTest("(|)", capture(alt(empty(), empty())), captures: .atom())
+    parseTest("(|)", capture(alt(empty(), empty())), captures: [.cap])
     parseTest("a|", alt("a", empty()))
     parseTest("|b", alt(empty(), "b"))
     parseTest("|b|", alt(empty(), "b", empty()))
@@ -768,32 +769,32 @@ extension RegexTests {
     parseTest(
       #"a(?<label>b)c"#,
       concat("a", namedCapture("label", "b"), "c"),
-      captures: .atom(name: "label"))
+      captures: [.named("label")])
     parseTest(
       #"a(?<label1>b)c(?<label2>d)"#,
       concat(
         "a", namedCapture("label1", "b"), "c", namedCapture("label2", "d")),
-      captures: .tuple([.atom(name: "label1"), .atom(name: "label2")]))
+      captures: [.named("label1"), .named("label2")])
     parseTest(
       #"a(?'label'b)c"#,
       concat("a", namedCapture("label", "b"), "c"),
-      captures: .atom(name: "label"))
+      captures: [.named("label")])
     parseTest(
       #"a(?P<label>b)c"#,
       concat("a", namedCapture("label", "b"), "c"),
-      captures: .atom(name: "label"))
+      captures: [.named("label")])
     parseTest(
       #"a(?P<label>b)c"#,
       concat("a", namedCapture("label", "b"), "c"),
-      captures: .atom(name: "label"))
+      captures: [.named("label")])
 
     // Balanced captures
     parseTest(#"(?<a-c>)"#, balancedCapture(name: "a", priorName: "c", empty()),
-              captures: .atom(name: "a"))
+              captures: [.named("a")])
     parseTest(#"(?<-c>)"#, balancedCapture(name: nil, priorName: "c", empty()),
-              captures: .atom())
+              captures: [.cap])
     parseTest(#"(?'a-b'c)"#, balancedCapture(name: "a", priorName: "b", "c"),
-              captures: .atom(name: "a"))
+              captures: [.named("a")])
 
     // Other groups
     parseTest(
@@ -933,7 +934,7 @@ extension RegexTests {
         )),
         "d"
       ),
-      captures: .atom()
+      captures: [.cap]
     )
     parseTest(
       "(a(?i)b(c)d)", capture(concat(
@@ -943,7 +944,7 @@ extension RegexTests {
         capture("c"),
         "d"
       )),
-      captures: .tuple(.atom(), .atom())
+      captures: [.cap, .cap]
     )
     parseTest(
       "(a(?i)b(?#hello)c)", capture(concat(
@@ -952,7 +953,7 @@ extension RegexTests {
         "b",
         "c"
       )),
-      captures: .atom()
+      captures: [.cap]
     )
 
     parseTest("ab(?i)c|def|gh", alt(
@@ -974,7 +975,7 @@ extension RegexTests {
         "c"
       ),
       "d"
-    )), captures: .atom())
+    )), captures: [.cap])
 
     // MARK: References
 
@@ -985,7 +986,7 @@ extension RegexTests {
         "()()()()()()()()()\\\(i)",
         concat(Array(repeating: capture(empty()), count: 9)
                + [backreference(.absolute(i))]),
-        captures: .tuple(Array(repeating: .atom(), count: 9))
+        captures: .caps(count: 9)
       )
     }
 
@@ -998,17 +999,17 @@ extension RegexTests {
       #"()()()()()()()()()()\10"#,
       concat(Array(repeating: capture(empty()), count: 10)
              + [backreference(.absolute(10))]),
-      captures: .tuple(Array(repeating: .atom(), count: 10))
+      captures: .caps(count: 10)
     )
     parseTest(
       #"()()()()()()()()()\10()"#,
       concat(Array(repeating: capture(empty()), count: 9)
              + [backreference(.absolute(10)), capture(empty())]),
-      captures: .tuple(Array(repeating: .atom(), count: 10))
+      captures: .caps(count: 10)
     )
     parseTest(#"()()\10"#, concat(
       capture(empty()), capture(empty()), backreference(.absolute(10))),
-              captures: .tuple(.atom(), .atom())
+              captures: [.cap, .cap]
     )
 
     // A capture of three empty captures.
@@ -1019,21 +1020,21 @@ extension RegexTests {
       // There are 9 capture groups in total here.
       #"((()()())(()()()))\10"#, concat(capture(concat(
         fourCaptures, fourCaptures)), backreference(.absolute(10))),
-      captures: .tuple(Array(repeating: .atom(), count: 9))
+      captures: .caps(count: 9)
     )
     parseTest(
       // There are 10 capture groups in total here.
       #"((()()())()(()()()))\10"#,
       concat(capture(concat(fourCaptures, capture(empty()), fourCaptures)),
              backreference(.absolute(10))),
-      captures: .tuple(Array(repeating: .atom(), count: 10))
+      captures: .caps(count: 10)
     )
     parseTest(
       // There are 10 capture groups in total here.
       #"((((((((((\10))))))))))"#,
       capture(capture(capture(capture(capture(capture(capture(capture(capture(
         capture(backreference(.absolute(10)))))))))))),
-      captures: .tuple(Array(repeating: .atom(), count: 10))
+      captures: .caps(count: 10)
     )
 
     // The cases from http://pcre.org/current/doc/html/pcre2pattern.html#digitsafterbackslash:
@@ -1041,14 +1042,14 @@ extension RegexTests {
     parseTest(
       String(repeating: "()", count: 40) + #"\040"#,
       concat(Array(repeating: capture(empty()), count: 40) + [scalar(" ")]),
-      captures: .tuple(Array(repeating: .atom(), count: 40))
+      captures: .caps(count: 40)
     )
     parseTest(#"\40"#, backreference(.absolute(40)))
     parseTest(
       String(repeating: "()", count: 40) + #"\40"#,
       concat(Array(repeating: capture(empty()), count: 40)
              + [backreference(.absolute(40))]),
-      captures: .tuple(Array(repeating: .atom(), count: 40))
+      captures: .caps(count: 40)
     )
 
     parseTest(#"\7"#, backreference(.absolute(7)))
@@ -1058,13 +1059,13 @@ extension RegexTests {
       String(repeating: "()", count: 11) + #"\11"#,
       concat(Array(repeating: capture(empty()), count: 11)
              + [backreference(.absolute(11))]),
-      captures: .tuple(Array(repeating: .atom(), count: 11))
+      captures: .caps(count: 11)
     )
     parseTest(#"\011"#, scalar("\u{9}"))
     parseTest(
       String(repeating: "()", count: 11) + #"\011"#,
       concat(Array(repeating: capture(empty()), count: 11) + [scalar("\u{9}")]),
-      captures: .tuple(Array(repeating: .atom(), count: 11))
+      captures: .caps(count: 11)
     )
 
     parseTest(#"\0113"#, scalar("\u{4B}"))
@@ -1231,7 +1232,7 @@ extension RegexTests {
       .groupMatched(ref(1)),
       trueBranch: capture(alt("a", "b", "c")),
       falseBranch: "d"
-    ), captures: .optional(.atom()))
+    ), captures: [.opt])
 
     parseTest(#"(?(+3))"#, conditional(
       .groupMatched(ref(plus: 3)), trueBranch: empty(), falseBranch: empty()))
@@ -1261,7 +1262,7 @@ extension RegexTests {
         .groupMatched(ref("a", recursionLevel: 5)),
         trueBranch: empty(), falseBranch: empty()
       )),
-      captures: .atom(name: "a")
+      captures: [.named("a")]
     )
     parseTest(
       #"(?<a1>)(?(a1-5))"#,
@@ -1269,7 +1270,7 @@ extension RegexTests {
         .groupMatched(ref("a1", recursionLevel: -5)),
         trueBranch: empty(), falseBranch: empty()
       )),
-      captures: .atom(name: "a1")
+      captures: [.named("a1")]
     )
 
     parseTest(#"(?(1))?"#, zeroOrOne(of: conditional(
@@ -1290,7 +1291,7 @@ extension RegexTests {
     parseTest(#"(?(abc)a|b)"#, conditional(
       groupCondition(.capture, concat("a", "b", "c")),
       trueBranch: "a", falseBranch: "b"
-    ), captures: .atom())
+    ), captures: [.cap])
 
     parseTest(#"(?(?:abc)a|b)"#, conditional(
       groupCondition(.nonCapture, concat("a", "b", "c")),
@@ -1320,9 +1321,7 @@ extension RegexTests {
       )),
       trueBranch: oneOrMore(of: capture("a")),
       falseBranch: "b"
-    ), captures: .tuple([
-      .atom(), .optional(.atom()), .atom(), .optional(.atom())
-    ]))
+    ), captures: [.cap, .opt, .cap, .opt])
 
     parseTest(#"(?(?:(a)?(b))(a)+|b)"#, conditional(
       groupCondition(.nonCapture, concat(
@@ -1330,14 +1329,12 @@ extension RegexTests {
       )),
       trueBranch: oneOrMore(of: capture("a")),
       falseBranch: "b"
-    ), captures: .tuple([
-      .optional(.atom()), .atom(), .optional(.atom())
-    ]))
+    ), captures: [.opt, .cap, .opt])
 
     parseTest(#"(?<xxx>y)(?(xxx)a|b)"#, concat(
       namedCapture("xxx", "y"),
       conditional(.groupMatched(ref("xxx")), trueBranch: "a", falseBranch: "b")
-    ), captures: .atom(name: "xxx"))
+    ), captures: [.named("xxx")])
 
     parseTest(#"(?(1)(?(2)(?(3)))|a)"#, conditional(
       .groupMatched(ref(1)),
@@ -1419,22 +1416,22 @@ extension RegexTests {
     parseTest("(?~a+)", absentRepeater(oneOrMore(of: "a")))
     parseTest("(?~~)", absentRepeater("~"))
     parseTest("(?~a|b|c)", absentRepeater(alt("a", "b", "c")))
-    parseTest("(?~(a))", absentRepeater(capture("a")), captures: .empty)
+    parseTest("(?~(a))", absentRepeater(capture("a")), captures: [])
     parseTest("(?~)*", zeroOrMore(of: absentRepeater(empty())))
 
     parseTest("(?~|abc)", absentStopper(concat("a", "b", "c")))
     parseTest("(?~|a+)", absentStopper(oneOrMore(of: "a")))
     parseTest("(?~|~)", absentStopper("~"))
-    parseTest("(?~|(a))", absentStopper(capture("a")), captures: .empty)
+    parseTest("(?~|(a))", absentStopper(capture("a")), captures: [])
     parseTest("(?~|a){2}", exactly(2, of: absentStopper("a")))
 
     parseTest("(?~|a|b)", absentExpression("a", "b"))
     parseTest("(?~|~|~)", absentExpression("~", "~"))
     parseTest("(?~|(a)|(?:b))", absentExpression(capture("a"), nonCapture("b")),
-              captures: .empty)
+              captures: [])
     parseTest("(?~|(a)|(?:(b)|c))", absentExpression(
       capture("a"), nonCapture(alt(capture("b"), "c"))
-    ), captures: .optional(.atom()))
+    ), captures: [.opt])
     parseTest("(?~|a|b)?", zeroOrOne(of: absentExpression("a", "b")))
 
     parseTest("(?~|)", absentRangeClear())
