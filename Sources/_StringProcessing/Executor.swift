@@ -35,15 +35,13 @@ struct Executor {
       return nil
     }
 
-    let capList = CaptureList(
+    let capList = MECaptureList(
       values: cpu.storedCaptures,
       referencedCaptureOffsets: engine.program.referencedCaptureOffsets,
       namedCaptureOffsets: engine.program.namedCaptureOffsets)
 
-    let capStruct = engine.program.captureStructure
     let range = inputRange.lowerBound..<endIdx
-    let caps = try capStruct.structuralize(
-        capList, input)
+    let caps = engine.program.captureList.structuralize(capList, input)
 
     // FIXME: This is a workaround for not tracking (or
     // specially compiling) whole-match values.

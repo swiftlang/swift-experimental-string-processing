@@ -2,10 +2,6 @@
 
 public protocol _TreeNode {
   var children: [Self]? { get }
-
-  func _captureStructure(
-    _: inout CaptureStructure.Constructor
-  ) -> CaptureStructure
 }
 
 extension _TreeNode {

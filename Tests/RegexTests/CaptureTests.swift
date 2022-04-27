@@ -11,7 +11,7 @@
 
 import XCTest
 @testable @_spi(RegexBuilder) import _StringProcessing
-import _RegexParser
+@testable import _RegexParser
 
 extension StructuredCapture {
   func formatStringCapture(input: String) -> String {
@@ -131,7 +131,7 @@ func captureTest(
   }
 
   // Ensure DSLTree preserves literal captures
-  let dslCapStructure = ast.dslTree.captureStructure
+  let dslCapStructure = ast.dslTree.root._captureList._captureStructure(nestOptionals: true)
   guard dslCapStructure == capStructure else {
     XCTFail("""
       DSLTree did not preserve structure:

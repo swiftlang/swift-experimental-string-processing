@@ -161,7 +161,7 @@ extension BinaryInteger {
 }
 
 /// A wrapper of an existential metatype, equatable and hashable by reference.
-public struct AnyType: Equatable, Hashable {
+public struct AnyType: Hashable {
   public var base: Any.Type
 
   public init(_ type: Any.Type) {
@@ -176,3 +176,5 @@ public struct AnyType: Equatable, Hashable {
     hasher.combine(ObjectIdentifier(base))
   }
 }
+
+

@@ -570,6 +570,7 @@ class RegexDSLTests: XCTestCase {
     }
     let _: (Substring, Substring, Substring).Type
       = type(of: regex1).RegexOutput.self
+
     let regex2 = Regex {
       OneOrMore("a")
       Capture {
@@ -581,6 +582,7 @@ class RegexDSLTests: XCTestCase {
     }
     let _: (Substring, Substring, Int?).Type
       = type(of: regex2).RegexOutput.self
+
     let regex3 = Regex {
       OneOrMore("a")
       Capture {
@@ -593,6 +595,7 @@ class RegexDSLTests: XCTestCase {
     }
     let _: (Substring, Substring, Int, Double?).Type
       = type(of: regex3).RegexOutput.self
+
     let regex4 = Regex {
       OneOrMore("a")
       Capture {
