@@ -28,21 +28,35 @@ extension Collection where Element: Equatable {
   /// - Returns: `true` if the collection contains the specified sequence,
   /// otherwise `false`.
   @available(SwiftStdlib 5.7, *)
-  public func contains<S: Sequence>(_ other: S) -> Bool
-    where S.Element == Element
+  public func contains<C: Collection>(_ other: C) -> Bool
+    where C.Element == Element
   {
     firstRange(of: other) != nil
   }
 }
 
 extension BidirectionalCollection where Element: Comparable {
-  func contains<S: Sequence>(_ other: S) -> Bool
-    where S.Element == Element
+  func contains<C: Collection>(_ other: C) -> Bool
+    where C.Element == Element
   {
     if #available(SwiftStdlib 5.7, *) {
       return firstRange(of: other) != nil
     }
     fatalError()
+  }
+}
+
+// Overload breakers
+
+extension StringProtocol {
+  @available(SwiftStdlib 5.7, *)
+  public func contains(_ other: String) -> Bool {
+    firstRange(of: other) != nil
+  }
+  
+  @available(SwiftStdlib 5.7, *)
+  public func contains(_ other: Substring) -> Bool {
+    firstRange(of: other) != nil
   }
 }
 

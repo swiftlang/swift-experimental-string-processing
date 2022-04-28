@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-struct FixedPatternConsumer<Consumed: Collection, Pattern: Collection>
+struct FixedPatternConsumer<Consumed: Collection, Pattern: Sequence>
   where Consumed.Element: Equatable, Pattern.Element == Consumed.Element
 {
   let pattern: Pattern
@@ -21,20 +21,17 @@ extension FixedPatternConsumer: CollectionConsumer {
     in range: Range<Consumed.Index>
   ) -> Consumed.Index? {
     var index = range.lowerBound
-    var patternIndex = pattern.startIndex
+    var patternIterator = pattern.makeIterator()
     
-    while true {
-      if patternIndex == pattern.endIndex {
-        return index
-      }
-      
-      if index == range.upperBound || consumed[index] != pattern[patternIndex] {
+    while let element = patternIterator.next() {
+      if index == range.upperBound || consumed[index] != element {
         return nil
       }
       
       consumed.formIndex(after: &index)
-      pattern.formIndex(after: &patternIndex)
     }
+    
+    return index
   }
 }
 

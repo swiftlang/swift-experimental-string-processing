@@ -12,7 +12,7 @@
 @available(SwiftStdlib 5.7, *)
 /// A protocol allowing custom types to function as regex components by
 /// providing the raw functionality backing `prefixMatch`.
-public protocol CustomPrefixMatchRegexComponent: RegexComponent {
+public protocol CustomConsumingRegexComponent: RegexComponent {
   /// Process the input string within the specified bounds, beginning at the given index, and return
   /// the end position (upper bound) of the match and the produced output.
   /// - Parameters:
@@ -29,7 +29,7 @@ public protocol CustomPrefixMatchRegexComponent: RegexComponent {
 }
 
 @available(SwiftStdlib 5.7, *)
-extension CustomPrefixMatchRegexComponent {
+extension CustomConsumingRegexComponent {
   public var regex: Regex<RegexOutput> {
     let node: DSLTree.Node = .matcher(RegexOutput.self, { input, index, bounds in
       try consuming(input, startingAt: index, in: bounds)

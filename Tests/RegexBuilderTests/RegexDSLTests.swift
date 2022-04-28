@@ -11,7 +11,7 @@
 
 import XCTest
 import _StringProcessing
-@testable import RegexBuilder
+import RegexBuilder
 
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
@@ -570,6 +570,7 @@ class RegexDSLTests: XCTestCase {
     }
     let _: (Substring, Substring, Substring).Type
       = type(of: regex1).RegexOutput.self
+
     let regex2 = Regex {
       OneOrMore("a")
       Capture {
@@ -581,6 +582,7 @@ class RegexDSLTests: XCTestCase {
     }
     let _: (Substring, Substring, Int?).Type
       = type(of: regex2).RegexOutput.self
+
     let regex3 = Regex {
       OneOrMore("a")
       Capture {
@@ -593,6 +595,7 @@ class RegexDSLTests: XCTestCase {
     }
     let _: (Substring, Substring, Int, Double?).Type
       = type(of: regex3).RegexOutput.self
+
     let regex4 = Regex {
       OneOrMore("a")
       Capture {
@@ -830,6 +833,38 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(result[b], 42)
     }
 
+    do {
+      let key = Reference(Substring.self)
+      let value = Reference(Int.self)
+      let input = "      "
+      let regex = Regex {
+        Capture(as: key) {
+          Optionally {
+            OneOrMore(.word)
+          }
+        }
+        ":"
+        Optionally {
+          Capture(as: value) {
+            OneOrMore(.digit)
+          } transform: { Int($0)! }
+        }
+      }
+
+      let result1 = try XCTUnwrap("age:123".wholeMatch(of: regex))
+      XCTAssertEqual(result1[key], "age")
+      XCTAssertEqual(result1[value], 123)
+
+      let result2 = try XCTUnwrap(":567".wholeMatch(of: regex))
+      XCTAssertEqual(result2[key], "")
+      XCTAssertEqual(result2[value], 567)
+
+      let result3 = try XCTUnwrap("status:".wholeMatch(of: regex))
+      XCTAssertEqual(result3[key], "status")
+      // Traps:
+      // XCTAssertEqual(result3[value], nil)
+    }
+    
     // Post-hoc captured references
     // #"(?:\w\1|:(\w):)+"#
     try _testDSLCaptures(
@@ -863,7 +898,7 @@ class RegexDSLTests: XCTestCase {
       var patch: Int
       var dev: String?
     }
-    struct SemanticVersionParser: CustomPrefixMatchRegexComponent {
+    struct SemanticVersionParser: CustomConsumingRegexComponent {
       typealias RegexOutput = SemanticVersion
       func consuming(
         _ input: String,
