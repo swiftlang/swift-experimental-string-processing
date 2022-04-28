@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@testable import _RegexParser
+@testable @_spi(CompilerInterface) import _RegexParser
 
 import XCTest
 @testable import _StringProcessing
@@ -281,24 +281,20 @@ func delimiterLexingDiagnosticTest(
   }
 }
 
-func libswiftDiagnosticMessageTest(
-  _ input: String, _ expectedErr: String, file: StaticString = #file,
-  line: UInt = #line
+func compilerInterfaceDiagnosticMessageTest(
+  _ input: String, _ expectedErr: String,
+  file: StaticString = #file, line: UInt = #line
 ) {
-  var errPtr: UnsafePointer<CChar>?
-  var version: CUnsignedInt = 0
-
-  libswiftParseRegexLiteral(
-    input, &errPtr, &version, /*captureStructure*/ nil,
-    /*captureStructureSize*/ 0
-  )
-
-  guard let errPtr = errPtr else {
-    XCTFail("Unexpected test pass", file: file, line: line)
-    return
+  do {
+    let captureBuffer = UnsafeMutableRawBufferPointer(start: nil, count: 0)
+    _ = try swiftCompilerParseRegexLiteral(
+      input, captureBufferOut: captureBuffer)
+    XCTFail("Expected parse error", file: file, line: line)
+  } catch let error as CompilerParseError {
+    XCTAssertEqual(expectedErr, error.message, file: file, line: line)
+  } catch {
+    fatalError("Expected CompilerParseError")
   }
-  let err = String(cString: errPtr)
-  XCTAssertEqual(expectedErr, err, file: file, line: line)
 }
 
 extension RegexTests {
@@ -2547,8 +2543,8 @@ extension RegexTests {
     delimiterLexingDiagnosticTest("#/\n#/#", .multilineClosingNotOnNewline)
   }
 
-  func testlibswiftDiagnostics() {
-    libswiftDiagnosticMessageTest(
+  func testCompilerInterfaceDiagnostics() {
+    compilerInterfaceDiagnosticMessageTest(
       "#/[x*/#", "cannot parse regular expression: expected ']'")
   }
 }
