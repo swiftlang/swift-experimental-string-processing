@@ -58,7 +58,7 @@ extension PrettyPrinter {
     // TODO: Handle global options...
     let node = ast.root.dslTreeNode
     
-    // If we have any named captures, create referencs to those above the regex.
+    // If we have any named captures, create references to those above the regex.
     let namedCaptures = node.getNamedCaptures()
     
     for namedCapture in namedCaptures {
@@ -226,6 +226,23 @@ extension PrettyPrinter {
     
     var charMembers = ""
     
+
+    // This iterates through all of the character class members collecting all
+    // of the members who can be stuffed into a singular '.anyOf(...)' vs.
+    // having multiple. This does alter the original representation, but the
+    // result is the same. For example:
+    //
+    // Convert: '[abc\d\Qxyz\E[:space:]def]'
+    //
+    // CharacterClass(
+    //   .anyOf("abcxyzdef"),
+    //   .digit,
+    //   .whitespace
+    // )
+    //
+    // This also allows us to determine if after collecting all of the members
+    // and stuffing them if we can just emit a standalone '.anyOf' instead of
+    // initializing a 'CharacterClass'.
     let nonCharMembers = ccc.members.filter {
       switch $0 {
       case let .atom(a):
