@@ -11,6 +11,11 @@
 
 import _StringProcessing
 
+// FIXME(rdar://92459215): We should be using 'some RegexComponent' instead of
+// <R: RegexComponent> for the methods below that don't impose any additional
+// requirements on the type. Currently the generic parameter is needed to work
+// around a compiler issue.
+
 extension BidirectionalCollection where SubSequence == Substring {
   /// Matches a regex in its entirety, where the regex is created by
   /// the given closure.
@@ -94,10 +99,10 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: A collection of substrings, split from this collection's
   ///   elements.
   @available(SwiftStdlib 5.7, *)
-  public func split(
+  public func split<R: RegexComponent>(
     maxSplits: Int = Int.max,
     omittingEmptySubsequences: Bool = true,
-    @RegexComponentBuilder separator: () -> some RegexComponent
+    @RegexComponentBuilder separator: () -> R
   ) -> [SubSequence] {
     split(separator: separator(), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
   }
@@ -191,11 +196,11 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   /// - Returns: A new collection in which all matches for regex in `subrange`
   ///   are replaced by `replacement`, using `content` to create the regex.
   @available(SwiftStdlib 5.7, *)
-  public func replacing<Replacement: Collection>(
+  public func replacing<R: RegexComponent, Replacement: Collection>(
     with replacement: Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max,
-    @RegexComponentBuilder content: () -> some RegexComponent
+    @RegexComponentBuilder content: () -> R
   ) -> Self where Replacement.Element == Element {
     replacing(content(), with: replacement, subrange: subrange, maxReplacements: maxReplacements)
   }
@@ -213,10 +218,10 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   /// - Returns: A new collection in which all matches for regex in `subrange`
   ///   are replaced by `replacement`, using `content` to create the regex.
   @available(SwiftStdlib 5.7, *)
-  public func replacing<Replacement: Collection>(
+  public func replacing<R: RegexComponent, Replacement: Collection>(
     with replacement: Replacement,
     maxReplacements: Int = .max,
-    @RegexComponentBuilder content: () -> some RegexComponent
+    @RegexComponentBuilder content: () -> R
   ) -> Self where Replacement.Element == Element {
     replacing(content(), with: replacement, maxReplacements: maxReplacements)
   }
@@ -232,10 +237,10 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   ///   - content: A closure that returns the collection to search for
   ///     and replace.
   @available(SwiftStdlib 5.7, *)
-  public mutating func replace<Replacement: Collection>(
+  public mutating func replace<R: RegexComponent, Replacement: Collection>(
     with replacement: Replacement,
     maxReplacements: Int = .max,
-    @RegexComponentBuilder content: () -> some RegexComponent
+    @RegexComponentBuilder content: () -> R
   ) where Replacement.Element == Element {
     replace(content(), with: replacement, maxReplacements: maxReplacements)
   }
