@@ -38,9 +38,7 @@ extension MEProgram where Input.Element: Hashable {
     // Special addresses or instructions
     var failAddressToken: AddressToken? = nil
 
-    // TODO: Should we have better API for building this up
-    // as we compile?
-    var captureStructure: CaptureStructure = .empty
+    var captureList = CaptureList()
 
     // Symbolic reference resolution
     var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
@@ -353,7 +351,7 @@ extension MEProgram.Builder {
       staticTransformFunctions: transformFunctions,
       staticMatcherFunctions: matcherFunctions,
       registerInfo: regInfo,
-      captureStructure: captureStructure,
+      captureList: captureList,
       referencedCaptureOffsets: referencedCaptureOffsets,
       namedCaptureOffsets: namedCaptureOffsets)
   }

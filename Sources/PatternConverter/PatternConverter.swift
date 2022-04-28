@@ -30,9 +30,6 @@ struct PatternConverter: ParsableCommand {
   @Flag(help: "Whether to show canonical regex literal")
   var showCanonical: Bool = false
 
-  @Flag(help: "Whether to show capture structure")
-  var showCaptureStructure: Bool = false
-
   @Flag(help: "Whether to skip result builder DSL")
   var skipDSL: Bool = false
 
@@ -68,13 +65,6 @@ struct PatternConverter: ParsableCommand {
       print("Canonical:")
       print()
       print(ast.renderAsCanonical())
-      print()
-    }
-
-    if showCaptureStructure {
-      print("Capture structure:")
-      print()
-      print(ast.captureStructure)
       print()
     }
 
