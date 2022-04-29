@@ -78,12 +78,12 @@ extension RangeReplaceableCollection where Element: Equatable {
   /// - Returns: A new collection in which all occurrences of `other` in
   /// `subrange` of the collection are replaced by `replacement`.
   @available(SwiftStdlib 5.7, *)
-  public func replacing<S: Sequence, Replacement: Collection>(
-    _ other: S,
+  public func replacing<C: Collection, Replacement: Collection>(
+    _ other: C,
     with replacement: Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max
-  ) -> Self where S.Element == Element, Replacement.Element == Element {
+  ) -> Self where C.Element == Element, Replacement.Element == Element {
     replacing(
       ZSearcher(pattern: Array(other), by: ==),
       with: replacement,
@@ -101,11 +101,11 @@ extension RangeReplaceableCollection where Element: Equatable {
   /// - Returns: A new collection in which all occurrences of `other` in
   /// `subrange` of the collection are replaced by `replacement`.
   @available(SwiftStdlib 5.7, *)
-  public func replacing<S: Sequence, Replacement: Collection>(
-    _ other: S,
+  public func replacing<C: Collection, Replacement: Collection>(
+    _ other: C,
     with replacement: Replacement,
     maxReplacements: Int = .max
-  ) -> Self where S.Element == Element, Replacement.Element == Element {
+  ) -> Self where C.Element == Element, Replacement.Element == Element {
     replacing(
       other,
       with: replacement,
@@ -120,11 +120,11 @@ extension RangeReplaceableCollection where Element: Equatable {
   ///   - maxReplacements: A number specifying how many occurrences of `other`
   ///   to replace. Default is `Int.max`.
   @available(SwiftStdlib 5.7, *)
-  public mutating func replace<S: Sequence, Replacement: Collection>(
-    _ other: S,
+  public mutating func replace<C: Collection, Replacement: Collection>(
+    _ other: C,
     with replacement: Replacement,
     maxReplacements: Int = .max
-  ) where S.Element == Element, Replacement.Element == Element {
+  ) where C.Element == Element, Replacement.Element == Element {
     self = replacing(
       other,
       with: replacement,
@@ -136,12 +136,12 @@ extension RangeReplaceableCollection where Element: Equatable {
 extension RangeReplaceableCollection
   where Self: BidirectionalCollection, Element: Comparable
 {
-  func replacing<S: Sequence, Replacement: Collection>(
-    _ other: S,
+  func replacing<C: Collection, Replacement: Collection>(
+    _ other: C,
     with replacement: Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max
-  ) -> Self where S.Element == Element, Replacement.Element == Element {
+  ) -> Self where C.Element == Element, Replacement.Element == Element {
     replacing(
       PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(other))),
       with: replacement,
@@ -149,11 +149,11 @@ extension RangeReplaceableCollection
       maxReplacements: maxReplacements)
   }
       
-  func replacing<S: Sequence, Replacement: Collection>(
-    _ other: S,
+  func replacing<C: Collection, Replacement: Collection>(
+    _ other: C,
     with replacement: Replacement,
     maxReplacements: Int = .max
-  ) -> Self where S.Element == Element, Replacement.Element == Element {
+  ) -> Self where C.Element == Element, Replacement.Element == Element {
     replacing(
       other,
       with: replacement,
@@ -161,11 +161,11 @@ extension RangeReplaceableCollection
       maxReplacements: maxReplacements)
   }
   
-  mutating func replace<S: Sequence, Replacement: Collection>(
-    _ other: S,
+  mutating func replace<C: Collection, Replacement: Collection>(
+    _ other: C,
     with replacement: Replacement,
     maxReplacements: Int = .max
-  ) where S.Element == Element, Replacement.Element == Element {
+  ) where C.Element == Element, Replacement.Element == Element {
     self = replacing(
       other,
       with: replacement,

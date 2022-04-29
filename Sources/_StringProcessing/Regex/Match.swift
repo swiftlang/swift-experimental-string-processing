@@ -19,7 +19,7 @@ extension Regex {
   public struct Match {
     let input: String
 
-    /// The range of the overall match
+    /// The range of the overall match.
     public let range: Range<String.Index>
 
     let rawCaptures: [StructuredCapture]
@@ -34,7 +34,7 @@ extension Regex {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex.Match {
-  /// The produced output from the match operation
+  /// The output produced from the match operation.
   public var output: Output {
     if Output.self == AnyRegexOutput.self {
       let wholeMatchAsCapture = StructuredCapture(
@@ -62,12 +62,12 @@ extension Regex.Match {
     }
   }
 
-  /// Lookup a capture by name or number
+  /// Accesses a capture by its name or number.
   public subscript<T>(dynamicMember keyPath: KeyPath<Output, T>) -> T {
     output[keyPath: keyPath]
   }
 
-  // Allows `.0` when `Match` is not a tuple.
+  /// Accesses a capture using the `.0` syntax, even when the match isn't a tuple.
   @_disfavoredOverload
   public subscript(
     dynamicMember keyPath: KeyPath<(Output, _doNotUse: ()), Output>
@@ -88,44 +88,50 @@ extension Regex.Match {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  /// Match a string in its entirety.
+  /// Matches a string in its entirety.
   ///
-  /// Returns `nil` if no match and throws on abort
+  /// - Parameter s: The string to match this regular expression against.
+  /// - Returns: The match, or `nil` if no match was found.
   public func wholeMatch(in s: String) throws -> Regex<Output>.Match? {
     try _match(s, in: s.startIndex..<s.endIndex, mode: .wholeString)
   }
 
-  /// Match part of the string, starting at the beginning.
+  /// Matches part of a string, starting at its beginning.
   ///
-  /// Returns `nil` if no match and throws on abort
+  /// - Parameter s: The string to match this regular expression against.
+  /// - Returns: The match, or `nil` if no match was found.
   public func prefixMatch(in s: String) throws -> Regex<Output>.Match? {
     try _match(s, in: s.startIndex..<s.endIndex, mode: .partialFromFront)
   }
 
-  /// Find the first match in a string
+  /// Finds the first match in a string.
   ///
-  /// Returns `nil` if no match is found and throws on abort
+  /// - Parameter s: The string to match this regular expression against.
+  /// - Returns: The match, or `nil` if no match was found.
   public func firstMatch(in s: String) throws -> Regex<Output>.Match? {
     try _firstMatch(s, in: s.startIndex..<s.endIndex)
   }
 
-  /// Match a substring in its entirety.
+  /// Matches a substring in its entirety.
   ///
-  /// Returns `nil` if no match and throws on abort
+  /// - Parameter s: The substring to match this regular expression against.
+  /// - Returns: The match, or `nil` if no match was found.
   public func wholeMatch(in s: Substring) throws -> Regex<Output>.Match? {
     try _match(s.base, in: s.startIndex..<s.endIndex, mode: .wholeString)
   }
 
-  /// Match part of the string, starting at the beginning.
+  /// Matches part of a substring, starting at its beginning.
   ///
-  /// Returns `nil` if no match and throws on abort
+  /// - Parameter s: The substring to match this regular expression against.
+  /// - Returns: The match, or `nil` if no match was found.
   public func prefixMatch(in s: Substring) throws -> Regex<Output>.Match? {
     try _match(s.base, in: s.startIndex..<s.endIndex, mode: .partialFromFront)
   }
 
-  /// Find the first match in a substring
+  /// Finds the first match in a substring.
   ///
-  /// Returns `nil` if no match is found and throws on abort
+  /// - Parameter s: The substring to match this regular expression against.
+  /// - Returns: The match, or `nil` if no match was found.
   public func firstMatch(in s: Substring) throws -> Regex<Output>.Match? {
     try _firstMatch(s.base, in: s.startIndex..<s.endIndex)
   }
@@ -160,18 +166,20 @@ extension Regex {
 
 @available(SwiftStdlib 5.7, *)
 extension BidirectionalCollection where SubSequence == Substring {
-  /// Match a regex in its entirety.
-  /// - Parameter r: The regex to match against.
-  /// - Returns: The match if there is one, or `nil` if none.
+  /// Checks for a match against the string in its entirety.
+  ///
+  /// - Parameter r: The regular expression being matched.
+  /// - Returns: The match, or `nil` if no match was found.
   public func wholeMatch<R: RegexComponent>(
     of r: R
   ) -> Regex<R.RegexOutput>.Match? {
     try? r.regex.wholeMatch(in: self[...].base)
   }
 
-  /// Match part of the regex, starting at the beginning.
-  /// - Parameter r: The regex to match against.
-  /// - Returns: The match if there is one, or `nil` if none.
+  /// Checks for a match against the string, starting at its beginning.
+  ///
+  /// - Parameter r: The regular expression being matched.
+  /// - Returns: The match, or `nil` if no match was found.
   public func prefixMatch<R: RegexComponent>(
     of r: R
   ) -> Regex<R.RegexOutput>.Match? {
@@ -180,8 +188,12 @@ extension BidirectionalCollection where SubSequence == Substring {
 }
 
 @available(SwiftStdlib 5.7, *)
-extension Regex {
-  public init(quoting string: String) {
-    self.init(node: .quotedLiteral(string))
+extension RegexComponent {
+  public static func ~=(regex: Self, input: String) -> Bool {
+    input.wholeMatch(of: regex) != nil
+  }
+
+  public static func ~=(regex: Self, input: Substring) -> Bool {
+    input.wholeMatch(of: regex) != nil
   }
 }

@@ -34,7 +34,7 @@ struct MEProgram<Input: Collection> where Input.Element: Equatable {
 
   var enableTracing: Bool = false
 
-  let captureStructure: CaptureStructure
+  let captureList: CaptureList
   let referencedCaptureOffsets: [ReferenceID: Int]
   let namedCaptureOffsets: [String: Int]
 }

@@ -19,7 +19,7 @@ public protocol RegexComponent {
   var regex: Regex<RegexOutput> { get }
 }
 
-/// A regex represents a string processing algorithm.
+/// A regular expression.
 ///
 ///     let regex = try Regex("a(.*)b")
 ///     let match = "cbaxb".firstMatch(of: regex)
@@ -58,6 +58,13 @@ public struct Regex<Output>: RegexComponent {
 
   public var regex: Regex<Output> {
     self
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Regex {
+  public init(quoting string: String) {
+    self.init(node: .quotedLiteral(string))
   }
 }
 

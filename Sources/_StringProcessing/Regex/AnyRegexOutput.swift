@@ -13,7 +13,9 @@
 
 @available(SwiftStdlib 5.7, *)
 extension Regex where Output == AnyRegexOutput {
-  /// Parse and compile `pattern`, resulting in an existentially-typed capture list.
+  /// Parses and compiles a regular expression, resulting in an existentially-typed capture list.
+  ///
+  /// - Parameter pattern: The regular expression.
   public init(_ pattern: String) throws {
     self.init(ast: try parse(pattern, .traditional))
   }
@@ -21,7 +23,10 @@ extension Regex where Output == AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  /// Parse and compile `pattern`, resulting in a strongly-typed capture list.
+  /// Parses and compiles a regular expression.
+  ///
+  /// - Parameter pattern: The regular expression.
+  /// - Parameter as: The desired type for the output.
   public init(
     _ pattern: String,
     as: Output.Type = Output.self
@@ -32,7 +37,7 @@ extension Regex {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex.Match where Output == AnyRegexOutput {
-  // Ensures `.0` always refers to the whole match.
+  /// Accesses the whole match using the `.0` syntax.
   public subscript(
     dynamicMember keyPath: KeyPath<(Substring, _doNotUse: ()), Substring>
   ) -> Substring {
@@ -44,7 +49,7 @@ extension Regex.Match where Output == AnyRegexOutput {
   }
 }
 
-/// A type-erased regex output
+/// A type-erased regex output.
 @available(SwiftStdlib 5.7, *)
 public struct AnyRegexOutput {
   let input: String
@@ -67,7 +72,7 @@ extension AnyRegexOutput {
   /// Creates a type-erased regex output from an existing output.
   ///
   /// Use this initializer to fit a regex with strongly typed captures into the
-  /// use site of a dynamic regex, i.e. one that was created from a string.
+  /// use site of a dynamic regex, like one that was created from a string.
   public init<Output>(_ match: Regex<Output>.Match) {
     // Note: We use type equality instead of `match.output as? ...` to prevent
     // unexpected optional flattening.
@@ -84,7 +89,7 @@ extension AnyRegexOutput {
   ///
   /// - Parameter type: The expected output type.
   /// - Returns: The output, if the underlying value can be converted to the
-  ///   output type, or nil otherwise.
+  ///   output type; otherwise `nil`.
   public func `as`<Output>(_ type: Output.Type) -> Output? {
     let elements = _elements.map {
       StructuredCapture(
@@ -190,7 +195,7 @@ extension Regex.Match where Output == AnyRegexOutput {
   /// Creates a type-erased regex match from an existing match.
   ///
   /// Use this initializer to fit a regex match with strongly typed captures into the
-  /// use site of a dynamic regex match, i.e. one that was created from a string.
+  /// use site of a dynamic regex match, like one that was created from a string.
   public init<Output>(_ match: Regex<Output>.Match) {
     fatalError("FIXME: Not implemented")
   }
@@ -199,9 +204,34 @@ extension Regex.Match where Output == AnyRegexOutput {
   /// types.
   ///
   /// - Parameter type: The expected output type.
-  /// - Returns: A match generic over the output type if the underlying values can be converted to the
-  ///   output type. Returns `nil` otherwise.
+  /// - Returns: A match generic over the output type, if the underlying values
+  ///   can be converted to the output type; otherwise, `nil`.
   public func `as`<Output>(_ type: Output.Type) -> Regex<Output>.Match? {
+    fatalError("FIXME: Not implemented")
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Regex where Output == AnyRegexOutput {
+  /// Returns whether a named-capture with `name` exists
+  public func contains(captureNamed name: String) -> Bool {
+    fatalError("FIXME: not implemented")
+  }
+
+  /// Creates a type-erased regex from an existing regex.
+  ///
+  /// Use this initializer to fit a regex with strongly typed captures into the
+  /// use site of a dynamic regex, i.e. one that was created from a string.
+  public init<Output>(_ match: Regex<Output>) {
+    fatalError("FIXME: Not implemented")
+  }
+
+  /// Returns a typed regex by converting the underlying types.
+  ///
+  /// - Parameter type: The expected output type.
+  /// - Returns: A regex generic over the output type if the underlying types can be converted.
+  ///   Returns `nil` otherwise.
+  public func `as`<Output>(_ type: Output.Type) -> Regex<Output>? {
     fatalError("FIXME: Not implemented")
   }
 }
