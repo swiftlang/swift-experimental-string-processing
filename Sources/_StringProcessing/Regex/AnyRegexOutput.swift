@@ -62,6 +62,7 @@ public struct AnyRegexOutput {
     /// The depth of `Optioals`s wrapping the underlying value. For example,
     /// `Substring` has optional depth `0`, and `Int??` has optional depth `2`.
     let optionalDepth: Int
+
     /// The bounds of the output element.
     let bounds: Range<String.Index>?
   }
@@ -212,17 +213,22 @@ extension Regex.Match where Output == AnyRegexOutput {
 }
 
 @available(SwiftStdlib 5.7, *)
-extension Regex where Output == AnyRegexOutput {
+extension Regex {
   /// Returns whether a named-capture with `name` exists
   public func contains(captureNamed name: String) -> Bool {
-    fatalError("FIXME: not implemented")
+    program.tree.root._captureList.captures.contains(where: {
+      $0.name == name
+    })
   }
+}
 
+@available(SwiftStdlib 5.7, *)
+extension Regex where Output == AnyRegexOutput {
   /// Creates a type-erased regex from an existing regex.
   ///
   /// Use this initializer to fit a regex with strongly typed captures into the
   /// use site of a dynamic regex, i.e. one that was created from a string.
-  public init<Output>(_ match: Regex<Output>) {
+  public init<Output>(_ regex: Regex<Output>) {
     fatalError("FIXME: Not implemented")
   }
 
