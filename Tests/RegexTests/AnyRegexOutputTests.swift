@@ -2,9 +2,59 @@
 import _StringProcessing
 import XCTest
 
+// Test that our existential capture and concrete captures are
+// the same
+private func checkSame(
+  _ aro: AnyRegexOutput,
+  _ concrete: (Substring, fieldA: Substring, fieldB: Substring)
+) {
+  XCTAssertEqual(aro[0].substring, concrete.0)
+
+  XCTAssertEqual(aro["fieldA"]!.substring, concrete.1)
+  XCTAssertEqual(aro["fieldA"]!.substring, concrete.fieldA)
+
+  XCTAssertEqual(aro[1].substring, concrete.1)
+
+  XCTAssertEqual(aro["fieldB"]!.substring, concrete.2)
+  XCTAssertEqual(aro["fieldB"]!.substring, concrete.fieldB)
+
+  XCTAssertEqual(aro[2].substring, concrete.2)
+
+}
+private func checkSame(
+  _ aro: Regex<AnyRegexOutput>.Match,
+  _ concrete: Regex<(Substring, fieldA: Substring, fieldB: Substring)>.Match
+) {
+  checkSame(aro.output, concrete.output)
+
+  XCTAssertEqual(aro.0, concrete.0)
+  XCTAssertEqual(aro[0].substring, concrete.0)
+
+  XCTAssertEqual(aro["fieldA"]!.substring, concrete.1)
+  XCTAssertEqual(aro["fieldA"]!.substring, concrete.fieldA)
+  XCTAssertEqual(aro[1].substring, concrete.1)
+
+  XCTAssertEqual(aro["fieldB"]!.substring, concrete.2)
+  XCTAssertEqual(aro["fieldB"]!.substring, concrete.fieldB)
+  XCTAssertEqual(aro[2].substring, concrete.2)
+}
+private func checkSame(
+  _ aro: Regex<AnyRegexOutput>,
+  _ concrete: Regex<(Substring, fieldA: Substring, fieldB: Substring)>
+) {
+  XCTAssertEqual(
+    aro.contains(captureNamed: "fieldA"),
+    concrete.contains(captureNamed: "fieldA"))
+  XCTAssertEqual(
+    aro.contains(captureNamed: "fieldB"),
+    concrete.contains(captureNamed: "fieldB"))
+  XCTAssertEqual(
+    aro.contains(captureNamed: "notAField"),
+    concrete.contains(captureNamed: "notAField"))
+}
+
 extension RegexTests {
   func testFoo1() {
-
     let regex = try! Regex(#"""
     (?x)
     (?<fieldA> [^,]*)
@@ -32,6 +82,7 @@ extension RegexTests {
     XCTAssert(regex.contains(captureNamed: "fieldB"))
     XCTAssertFalse(regex.contains(captureNamed: "notAField"))
 
+    // MARK: Check equivalence with concrete
 
     let regexConcrete:
       Regex<(Substring, fieldA: Substring, fieldB: Substring)>
@@ -41,39 +92,29 @@ extension RegexTests {
     ,
     (?<fieldB> [^,]*)
     """#)
+    checkSame(regex, regexConcrete)
+
     let matchConcrete = "abc,def".wholeMatch(of: regexConcrete)!
-    XCTAssertEqual(matchConcrete.0, match.0)
-    XCTAssertEqual(match[0].substring, match.0)
+    checkSame(match, matchConcrete)
 
-    XCTAssertEqual(matchConcrete.fieldA, match["fieldA"]!.substring)
-    XCTAssertEqual(matchConcrete.output.fieldA, match.output["fieldA"]!.substring)
-    XCTAssertEqual(matchConcrete.1, match[1].substring)
-
-    XCTAssertEqual(matchConcrete.fieldB, match["fieldB"]!.substring)
-    XCTAssertEqual(matchConcrete.output.fieldB, match.output["fieldB"]!.substring)
-    XCTAssertEqual(matchConcrete.2, match[2].substring)
-
-    // XCTAssertEqual(matchConcrete, match["notACapture"])
-    // XCTAssertEqual(matchConcrete, match.output["notACapture"])
-
-    // TODO: Do we want this?
-    // XCTAssertEqual(matchConcrete, match.count)
-
-    XCTAssertEqual(regexConcrete.contains(captureNamed: "fieldA"), regex.contains(captureNamed: "fieldA"))
-    XCTAssertEqual(regexConcrete.contains(captureNamed: "fieldB"), regex.contains(captureNamed: "fieldB"))
-    XCTAssertEqual(regexConcrete.contains(captureNamed: "notAField"), regex.contains(captureNamed: "notAField"))
-
+    let output = match.output
+    let concreteOutput = matchConcrete.output
+    checkSame(output, concreteOutput)
 
     // TODO: ARO init from concrete match tuple
 
-    // TODO: ARO as cast to concrete match tuple
+    let concreteOutputCasted = output.as(
+      (Substring, fieldA: Substring, fieldB: Substring).self
+    )!
+    checkSame(output, concreteOutputCasted)
 
-    // Note on SE that Element means it must ARC the input
+    var concreteOutputCopy = concreteOutput
+    concreteOutputCopy = output.as()!
+    checkSame(output, concreteOutputCopy)
 
-    // TODO: Match of ARO: init from tuple match and as to tuple match
+    // TODO: Regex<ARO>.Match: init from tuple match and as to tuple match
 
-    // TODO: init from output regex and as cast to output regex
-
+    // TODO: Regex<ARO>: init from tuple regex and as cast to tuple regex
 
   }
 }

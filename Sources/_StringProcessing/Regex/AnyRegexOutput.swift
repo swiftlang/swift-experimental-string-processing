@@ -91,7 +91,7 @@ extension AnyRegexOutput {
   /// - Parameter type: The expected output type.
   /// - Returns: The output, if the underlying value can be converted to the
   ///   output type; otherwise `nil`.
-  public func `as`<Output>(_ type: Output.Type) -> Output? {
+  public func `as`<Output>(_ type: Output.Type = Output.self) -> Output? {
     let elements = _elements.map {
       StructuredCapture(
         optionalCount: $0.optionalDepth,
@@ -207,7 +207,9 @@ extension Regex.Match where Output == AnyRegexOutput {
   /// - Parameter type: The expected output type.
   /// - Returns: A match generic over the output type, if the underlying values
   ///   can be converted to the output type; otherwise, `nil`.
-  public func `as`<Output>(_ type: Output.Type) -> Regex<Output>.Match? {
+  public func `as`<Output>(
+    _ type: Output.Type = Output.self
+  ) -> Regex<Output>.Match? {
     fatalError("FIXME: Not implemented")
   }
 }
@@ -237,7 +239,9 @@ extension Regex where Output == AnyRegexOutput {
   /// - Parameter type: The expected output type.
   /// - Returns: A regex generic over the output type if the underlying types can be converted.
   ///   Returns `nil` otherwise.
-  public func `as`<Output>(_ type: Output.Type) -> Regex<Output>? {
+  public func `as`<Output>(
+    _ type: Output.Type = Output.self
+  ) -> Regex<Output>? {
     fatalError("FIXME: Not implemented")
   }
 }
