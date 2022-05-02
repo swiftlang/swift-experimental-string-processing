@@ -54,7 +54,7 @@ private func checkSame(
 }
 
 extension RegexTests {
-  func testFoo1() {
+  func testAnyRegexOutput() {
     let regex = try! Regex(#"""
     (?x)
     (?<fieldA> [^,]*)
@@ -116,5 +116,42 @@ extension RegexTests {
 
     // TODO: Regex<ARO>: init from tuple regex and as cast to tuple regex
 
+  }
+
+  func testDynamicCaptures() throws {
+    do {
+      let regex = try Regex("aabcc.")
+      let line = "aabccd"
+      let match = try XCTUnwrap(line.wholeMatch(of: regex))
+      XCTAssertEqual(match.0, line[...])
+      let output = match.output
+      XCTAssertEqual(output[0].substring, line[...])
+    }
+    do {
+      let regex = try Regex(
+          #"""
+          (?<lower>[0-9A-F]+)(?:\.\.(?<upper>[0-9A-F]+))?\s+;\s+(?<desc>\w+).*
+          """#)
+      let line = """
+        A6F0..A6F1    ; Extend # Mn   [2] BAMUM COMBINING MARK KOQNDON..BAMUM \
+        COMBINING MARK TUKWENTIS
+        """
+      let match = try XCTUnwrap(line.wholeMatch(of: regex))
+      XCTAssertEqual(match.0, line[...])
+      let output = match.output
+      XCTAssertEqual(output[0].substring, line[...])
+      XCTAssertTrue(output[1].substring == "A6F0")
+      XCTAssertTrue(output["lower"]?.substring == "A6F0")
+      XCTAssertTrue(output[2].substring == "A6F1")
+      XCTAssertTrue(output["upper"]?.substring == "A6F1")
+      XCTAssertTrue(output[3].substring == "Extend")
+      XCTAssertTrue(output["desc"]?.substring == "Extend")
+      let typedOutput = try XCTUnwrap(output.as(
+        (Substring, lower: Substring, upper: Substring?, Substring).self))
+      XCTAssertEqual(typedOutput.0, line[...])
+      XCTAssertTrue(typedOutput.lower == "A6F0")
+      XCTAssertTrue(typedOutput.upper == "A6F1")
+      XCTAssertTrue(typedOutput.3 == "Extend")
+    }
   }
 }
