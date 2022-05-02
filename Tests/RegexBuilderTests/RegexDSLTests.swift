@@ -115,7 +115,7 @@ class RegexDSLTests: XCTestCase {
     {
       let disallowedChars = CharacterClass.hexDigit
         .symmetricDifference("a"..."z")
-      Lookahead(disallowedChars, negative: true)      // No: 0-9 + g-z
+      NegativeLookahead(disallowedChars)      // No: 0-9 + g-z
 
       OneOrMore(("b"..."g").union("d"..."n"))         // b-n
       
@@ -487,7 +487,7 @@ class RegexDSLTests: XCTestCase {
     {
       OneOrMore("a")
       Lookahead(CharacterClass.digit)
-      Lookahead("2", negative: true)
+      NegativeLookahead { "2" }
       CharacterClass.word
     }
   }
