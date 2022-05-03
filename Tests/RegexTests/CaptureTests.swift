@@ -55,20 +55,20 @@ extension CaptureList {
   }
 }
 
-extension StructuredCapture {
+extension AnyRegexOutput.Element {
   func formatStringCapture(input: String) -> String {
-    var res = String(repeating: "some(", count: someCount)
-    if let r = self.storedCapture?.range {
+    var res = String(repeating: "some(", count: optionalDepth)
+    if let r = range {
       res += input[r]
     } else {
       res += "none"
     }
-    res += String(repeating: ")", count: someCount)
+    res += String(repeating: ")", count: optionalDepth)
     return res
   }
 }
 
-extension Sequence where Element == StructuredCapture {
+extension AnyRegexOutput {
   func formatStringCaptures(input: String) -> String {
     var res = "["
     res += self.map {
@@ -118,13 +118,13 @@ extension StringCapture: CustomStringConvertible {
 
 extension StringCapture {
   func isEqual(
-    to structCap: StructuredCapture,
+    to structCap: AnyRegexOutput.Element,
     in input: String
   ) -> Bool {
-    guard optionalCount == structCap.optionalCount else {
+    guard optionalCount == structCap.optionalDepth else {
       return false
     }
-    guard let r = structCap.storedCapture?.range else {
+    guard let r = structCap.range else {
       return contents == nil
     }
     guard let s = contents else {
@@ -201,7 +201,7 @@ func captureTest(
       return
     }
 
-    let caps = result.rawCaptures
+    let caps = result.anyRegexOutput
     guard caps.count == output.count else {
       XCTFail("""
       Mismatch capture count:
@@ -212,7 +212,7 @@ func captureTest(
       """)
       continue
     }
-
+    
     guard output.elementsEqual(caps, by: {
       $0.isEqual(to: $1, in: input)
     }) else {

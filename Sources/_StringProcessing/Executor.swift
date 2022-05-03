@@ -55,14 +55,19 @@ struct Executor {
     } else {
       value = nil
     }
-
-    return .init(
+    
+    let anyRegexOutput = AnyRegexOutput(
       input: input,
-      range: range,
-      rawCaptures: caps,
-      referencedCaptureOffsets: capList.referencedCaptureOffsets,
       namedCaptureOffsets: capList.namedCaptureOffsets,
-      value: value)
+      elements: caps
+    )
+    
+    return .init(
+      anyRegexOutput: anyRegexOutput,
+      range: range,
+      referencedCaptureOffsets: capList.referencedCaptureOffsets,
+      value: value
+    )
   }
 
   @available(SwiftStdlib 5.7, *)
