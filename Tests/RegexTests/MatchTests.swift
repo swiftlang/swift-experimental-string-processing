@@ -693,6 +693,12 @@ extension RegexTests {
     firstMatchTest(#"\p{gc=L}"#, input: "123abcXYZ", match: "a")
     firstMatchTest(#"\p{Lu}"#, input: "123abcXYZ", match: "X")
 
+    // U+0374 GREEK NUMERAL SIGN (Lm)
+    // U+00AA FEMININE ORDINAL INDICATOR (Lo)
+    firstMatchTest(#"\p{L}"#, input: "\u{0374}\u{00AA}123abcXYZ", match: "\u{0374}")
+    firstMatchTest(#"\p{Lc}"#, input: "\u{0374}\u{00AA}123abcXYZ", match: "a")
+    firstMatchTest(#"\p{Lc}"#, input: "\u{0374}\u{00AA}123XYZ", match: "X")
+
     firstMatchTest(
       #"\P{Cc}"#, input: "\n\n\nXYZ", match: "X")
     firstMatchTest(
