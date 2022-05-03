@@ -691,8 +691,9 @@ extension Unicode.ExtendedGeneralCategory {
       ])
 
     case .casedLetter:
-      throw Unsupported(
-        "TODO: cased letter? not the property?")
+      return consumeScalarGCs([
+        .uppercaseLetter, .lowercaseLetter, .titlecaseLetter
+      ])
 
     case .control:
       return consumeScalarGC(.control)
