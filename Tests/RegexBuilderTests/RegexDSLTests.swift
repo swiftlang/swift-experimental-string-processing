@@ -11,7 +11,7 @@
 
 import XCTest
 import _StringProcessing
-@testable import RegexBuilder
+import RegexBuilder
 
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
@@ -445,6 +445,14 @@ class RegexDSLTests: XCTestCase {
       Repeat(2...) { "e" }
       Repeat(0...) { "f" }
     }
+    
+    let octoDecimalRegex: Regex<(Substring, Int?)> = Regex {
+      let charClass = CharacterClass(.digit, "a"..."h")//.ignoringCase()
+      Capture {
+        OneOrMore(charClass)
+      } transform: { Int($0, radix: 18) }
+    }
+    XCTAssertEqual("ab12".firstMatch(of: octoDecimalRegex)!.output.1, 61904)
   }
   
   func testAssertions() throws {
@@ -742,7 +750,9 @@ class RegexDSLTests: XCTestCase {
     }
     do {
       let regex = try Regex(
-        #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#)
+          #"""
+          (?<lower>[0-9A-F]+)(?:\.\.(?<upper>[0-9A-F]+))?\s+;\s+(?<desc>\w+).*
+          """#)
       let line = """
         A6F0..A6F1    ; Extend # Mn   [2] BAMUM COMBINING MARK KOQNDON..BAMUM \
         COMBINING MARK TUKWENTIS
@@ -752,13 +762,16 @@ class RegexDSLTests: XCTestCase {
       let output = match.output
       XCTAssertEqual(output[0].substring, line[...])
       XCTAssertTrue(output[1].substring == "A6F0")
+      XCTAssertTrue(output["lower"]?.substring == "A6F0")
       XCTAssertTrue(output[2].substring == "A6F1")
+      XCTAssertTrue(output["upper"]?.substring == "A6F1")
       XCTAssertTrue(output[3].substring == "Extend")
+      XCTAssertTrue(output["desc"]?.substring == "Extend")
       let typedOutput = try XCTUnwrap(output.as(
-        (Substring, Substring, Substring?, Substring).self))
+        (Substring, lower: Substring, upper: Substring?, Substring).self))
       XCTAssertEqual(typedOutput.0, line[...])
-      XCTAssertTrue(typedOutput.1 == "A6F0")
-      XCTAssertTrue(typedOutput.2 == "A6F1")
+      XCTAssertTrue(typedOutput.lower == "A6F0")
+      XCTAssertTrue(typedOutput.upper == "A6F1")
       XCTAssertTrue(typedOutput.3 == "Extend")
     }
   }
@@ -817,6 +830,38 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(result[b], 42)
     }
 
+    do {
+      let key = Reference(Substring.self)
+      let value = Reference(Int.self)
+      let input = "      "
+      let regex = Regex {
+        Capture(as: key) {
+          Optionally {
+            OneOrMore(.word)
+          }
+        }
+        ":"
+        Optionally {
+          Capture(as: value) {
+            OneOrMore(.digit)
+          } transform: { Int($0)! }
+        }
+      }
+
+      let result1 = try XCTUnwrap("age:123".wholeMatch(of: regex))
+      XCTAssertEqual(result1[key], "age")
+      XCTAssertEqual(result1[value], 123)
+
+      let result2 = try XCTUnwrap(":567".wholeMatch(of: regex))
+      XCTAssertEqual(result2[key], "")
+      XCTAssertEqual(result2[value], 567)
+
+      let result3 = try XCTUnwrap("status:".wholeMatch(of: regex))
+      XCTAssertEqual(result3[key], "status")
+      // Traps:
+      // XCTAssertEqual(result3[value], nil)
+    }
+    
     // Post-hoc captured references
     // #"(?:\w\1|:(\w):)+"#
     try _testDSLCaptures(
