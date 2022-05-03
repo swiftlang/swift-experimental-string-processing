@@ -698,6 +698,8 @@ extension RegexTests {
     firstMatchTest(#"\p{L}"#, input: "\u{0374}\u{00AA}123abcXYZ", match: "\u{0374}")
     firstMatchTest(#"\p{Lc}"#, input: "\u{0374}\u{00AA}123abcXYZ", match: "a")
     firstMatchTest(#"\p{Lc}"#, input: "\u{0374}\u{00AA}123XYZ", match: "X")
+    firstMatchTest(#"\p{L&}"#, input: "\u{0374}\u{00AA}123abcXYZ", match: "a")
+    firstMatchTest(#"\p{L&}"#, input: "\u{0374}\u{00AA}123XYZ", match: "X")
 
     firstMatchTest(
       #"\P{Cc}"#, input: "\n\n\nXYZ", match: "X")

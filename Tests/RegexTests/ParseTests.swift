@@ -1156,6 +1156,9 @@ extension RegexTests {
       #"\p{C}+"#,
       oneOrMore(of: prop(.generalCategory(.other))))
 
+    // L& defined by PCRE.
+    parseTest(#"\p{L&}"#, prop(.generalCategory(.casedLetter)))
+
     // UAX44-LM3 means all of the below are equivalent.
     let lowercaseLetter = prop(.generalCategory(.lowercaseLetter))
     parseTest(#"\p{ll}"#, lowercaseLetter)
