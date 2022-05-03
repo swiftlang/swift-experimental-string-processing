@@ -17,19 +17,7 @@
 //                              const Metadata * const *elements,
 //                              const char *labels,
 //                              const ValueWitnessTable *proposedWitnesses);
-//
-//   SWIFT_RUNTIME_EXPORT SWIFT_CC(swift)
-//   MetadataResponse
-//   swift_getTupleTypeMetadata2(MetadataRequest request,
-//                               const Metadata *elt0, const Metadata *elt1,
-//                               const char *labels,
-//                               const ValueWitnessTable *proposedWitnesses);
-//   SWIFT_RUNTIME_EXPORT SWIFT_CC(swift)
-//   MetadataResponse
-//   swift_getTupleTypeMetadata3(MetadataRequest request,
-//                               const Metadata *elt0, const Metadata *elt1,
-//                               const Metadata *elt2, const char *labels,
-//                               const ValueWitnessTable *proposedWitnesses);
+
 
 @_silgen_name("swift_getTupleTypeMetadata")
 private func swift_getTupleTypeMetadata(
@@ -40,31 +28,13 @@ private func swift_getTupleTypeMetadata(
   proposedWitnesses: UnsafeRawPointer?
 ) -> (value: Any.Type, state: Int)
 
-@_silgen_name("swift_getTupleTypeMetadata2")
-private func swift_getTupleTypeMetadata2(
-  request: Int,
-  element1: Any.Type,
-  element2: Any.Type,
-  labels: UnsafePointer<Int8>?,
-  proposedWitnesses: UnsafeRawPointer?
-) -> (value: Any.Type, state: Int)
-
-@_silgen_name("swift_getTupleTypeMetadata3")
-private func swift_getTupleTypeMetadata3(
-  request: Int,
-  element1: Any.Type,
-  element2: Any.Type,
-  element3: Any.Type,
-  labels: UnsafePointer<Int8>?,
-  proposedWitnesses: UnsafeRawPointer?
-) -> (value: Any.Type, state: Int)
-
 public enum TypeConstruction {
   /// Returns a tuple metatype of the given element types.
   public static func tupleType<
     ElementTypes: BidirectionalCollection
   >(
-    of elementTypes: __owned ElementTypes
+    of elementTypes: __owned ElementTypes,
+    labels: String? = nil
   ) -> Any.Type where ElementTypes.Element == Any.Type {
     // From swift/ABI/Metadata.h:
     //   template <typename int_type>
@@ -78,39 +48,50 @@ public enum TypeConstruction {
     let elementCountFlag = 0x0000FFFF
     assert(elementTypes.count != 1, "A one-element tuple is not a realistic Swift type")
     assert(elementTypes.count <= elementCountFlag, "Tuple size exceeded \(elementCountFlag)")
-    switch elementTypes.count {
-    case 2:
-      return swift_getTupleTypeMetadata2(
-        request: 0,
-        element1: elementTypes[elementTypes.startIndex],
-        element2: elementTypes[elementTypes.index(elementTypes.startIndex, offsetBy: 1)],
-        labels: nil,
-        proposedWitnesses: nil).value
-    case 3:
-      return swift_getTupleTypeMetadata3(
-        request: 0,
-        element1: elementTypes[elementTypes.startIndex],
-        element2: elementTypes[elementTypes.index(elementTypes.startIndex, offsetBy: 1)],
-        element3: elementTypes[elementTypes.index(elementTypes.startIndex, offsetBy: 2)],
-        labels: nil,
-        proposedWitnesses: nil).value
-    default:
-      let result = elementTypes.withContiguousStorageIfAvailable { elementTypesBuffer in
-        swift_getTupleTypeMetadata(
+    
+    var flags = elementTypes.count
+    
+    // If we have labels to provide, then say the label pointer is not constant
+    // because the lifetime of said pointer will only be vaild for the lifetime
+    // of the 'swift_getTupleTypeMetadata' call. If we don't have labels, then
+    // our label pointer will be empty and constant.
+    if labels != nil {
+      // Has non constant labels
+      flags |= 0x10000
+    }
+    
+    let result = elementTypes.withContiguousStorageIfAvailable { elementTypesBuffer in
+      if let labels = labels {
+        return labels.withCString { labelsPtr in
+          swift_getTupleTypeMetadata(
+            request: 0,
+            flags: flags,
+            elements: elementTypesBuffer.baseAddress,
+            labels: labelsPtr,
+            proposedWitnesses: nil
+          )
+        }
+      } else {
+        return swift_getTupleTypeMetadata(
           request: 0,
-          flags: elementTypesBuffer.count,
+          flags: flags,
           elements: elementTypesBuffer.baseAddress,
           labels: nil,
-          proposedWitnesses: nil).value
+          proposedWitnesses: nil
+        )
       }
-      guard let result = result else {
-        fatalError("""
-          The collection of element types does not support an internal representation of
-          contiguous storage
-          """)
-      }
-      return result
     }
+    
+    guard let result = result else {
+      fatalError(
+        """
+        The collection of element types does not support an internal representation of
+        contiguous storage
+        """
+      )
+    }
+    
+    return result.value
   }
 
   /// Creates a type-erased tuple with the given elements.
