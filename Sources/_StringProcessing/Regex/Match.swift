@@ -17,16 +17,12 @@ extension Regex {
   /// providing direct access to captures.
   @dynamicMemberLookup
   public struct Match {
-    let input: String
+    let anyRegexOutput: AnyRegexOutput
 
     /// The range of the overall match.
     public let range: Range<String.Index>
 
-    let rawCaptures: [StructuredCapture]
-
     let referencedCaptureOffsets: [ReferenceID: Int]
-
-    let namedCaptureOffsets: [String: Int]
 
     let value: Any?
   }
@@ -37,18 +33,23 @@ extension Regex.Match {
   /// The output produced from the match operation.
   public var output: Output {
     if Output.self == AnyRegexOutput.self {
-      let wholeMatchAsCapture = StructuredCapture(
-        optionalCount: 0,
-        storedCapture: StoredCapture(range: range, value: nil))
+      let wholeMatchCapture = AnyRegexOutput.ElementRepresentation(
+        optionalDepth: 0,
+        bounds: range,
+        value: nil
+      )
+      
       let output = AnyRegexOutput(
-        input: input,
-        namedCaptureOffsets: namedCaptureOffsets,
-        elements: [wholeMatchAsCapture] + rawCaptures)
+        input: anyRegexOutput.input,
+        namedCaptureOffsets: anyRegexOutput.namedCaptureOffsets,
+        _elements: [wholeMatchCapture] + anyRegexOutput._elements
+      )
+      
       return output as! Output
     } else if Output.self == Substring.self {
       // FIXME: Plumb whole match (`.0`) through the matching engine.
-      return input[range] as! Output
-    } else if rawCaptures.isEmpty, value != nil {
+      return anyRegexOutput.input[range] as! Output
+    } else if anyRegexOutput.isEmpty, value != nil {
       // FIXME: This is a workaround for whole-match values not
       // being modeled as part of captures. We might want to
       // switch to a model where results are alongside captures
@@ -57,7 +58,9 @@ extension Regex.Match {
       guard value == nil else {
         fatalError("FIXME: what would this mean?")
       }
-      let typeErasedMatch = rawCaptures.existentialOutput(from: input[range])
+      let typeErasedMatch = anyRegexOutput.existentialOutput(
+        from: anyRegexOutput.input[range]
+      )
       return typeErasedMatch as! Output
     }
   }
@@ -81,8 +84,9 @@ extension Regex.Match {
       preconditionFailure(
         "Reference did not capture any match in the regex")
     }
-    return rawCaptures[offset].existentialOutputComponent(from: input[...])
-      as! Capture
+    return anyRegexOutput[offset].existentialOutputComponent(
+      from: anyRegexOutput.input[...]
+    ) as! Capture
   }
 }
 
