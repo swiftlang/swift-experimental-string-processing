@@ -231,7 +231,7 @@ extension Regex where Output == AnyRegexOutput {
   /// Use this initializer to fit a regex with strongly typed captures into the
   /// use site of a dynamic regex, i.e. one that was created from a string.
   public init<Output>(_ regex: Regex<Output>) {
-    fatalError("FIXME: Not implemented")
+    self.init(node: regex.root)
   }
 
   /// Returns a typed regex by converting the underlying types.
@@ -242,6 +242,12 @@ extension Regex where Output == AnyRegexOutput {
   public func `as`<Output>(
     _ type: Output.Type = Output.self
   ) -> Regex<Output>? {
-    fatalError("FIXME: Not implemented")
+    let result = Regex<Output>(node: root)
+    
+    guard result._verifyType() else {
+      return nil
+    }
+    
+    return result
   }
 }
