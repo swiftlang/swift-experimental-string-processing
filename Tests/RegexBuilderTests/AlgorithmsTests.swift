@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
-import _StringProcessing
+@testable import _StringProcessing
 import RegexBuilder
 
 @available(SwiftStdlib 5.7, *)
