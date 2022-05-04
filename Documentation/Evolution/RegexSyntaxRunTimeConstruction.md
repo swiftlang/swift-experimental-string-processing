@@ -1,13 +1,18 @@
 
 # Regex Syntax and Run-time Construction
 
-- Authors: [Hamish Knight](https://github.com/hamishknight), [Michael Ilseman](https://github.com/milseman)
+* Proposal: [SE-NNNN](NNNN-filename.md)
+* Authors: [Hamish Knight](https://github.com/hamishknight), [Michael Ilseman](https://github.com/milseman)
+* Review Manager: [Ben Cohen](https://github.com/airspeedswift)
+* Status: **Awaiting review**
+* Implementation: https://github.com/apple/swift-experimental-string-processing
+  * Available in nightly toolchain snapshots with `import _StringProcessing`
 
 ## Introduction
 
 A regex declares a string processing algorithm using syntax familiar across a variety of languages and tools throughout programming history. We propose the ability to create a regex at run time from a string containing regex syntax (detailed here), API for accessing the match and captures, and a means to convert between an existential capture representation and concrete types.
 
-The overall story is laid out in [Regex Type and Overview][overview] and each individual component is tracked in [Pitch and Proposal Status](https://github.com/apple/swift-experimental-string-processing/issues/107).
+The overall story is laid out in [SE-0350 Regex Type and Overview][overview] and each individual component is tracked in [Pitch and Proposal Status][pitches].
 
 ## Motivation
 
@@ -50,11 +55,11 @@ We propose run-time construction of `Regex` from a best-in-class treatment of fa
 
 ```swift
 let pattern = #"(\w+)\s\s+(\S+)\s\s+((?:(?!\s\s).)*)\s\s+(.*)"#
-let regex = try! Regex(compiling: pattern)
+let regex = try! Regex(pattern)
 // regex: Regex<AnyRegexOutput>
 
 let regex: Regex<(Substring, Substring, Substring, Substring, Substring)> =
-  try! Regex(compiling: pattern)
+  try! Regex(pattern)
 ```
 
 ### Syntax
@@ -81,11 +86,11 @@ We propose initializers to declare and compile a regex from syntax. Upon failure
 ```swift
 extension Regex {
   /// Parse and compile `pattern`, resulting in a strongly-typed capture list.
-  public init(compiling pattern: String, as: Output.Type = Output.self) throws
+  public init(_ pattern: String, as: Output.Type = Output.self) throws
 }
 extension Regex where Output == AnyRegexOutput {
   /// Parse and compile `pattern`, resulting in an existentially-typed capture list.
-  public init(compiling pattern: String) throws
+  public init(_ pattern: String) throws
 }
 ```
 
@@ -153,6 +158,20 @@ extension Regex.Match where Output == AnyRegexOutput {
   /// - Returns: A match generic over the output type if the underlying values can be converted to the
   ///   output type. Returns `nil` otherwise.
   public func `as`<Output>(_ type: Output.Type) -> Regex<Output>.Match?
+}
+```
+
+We propose adding API to query and access captures by name in an existentially typed regex match:
+
+```swift
+extension Regex.Match where Output == AnyRegexOutput {
+  /// If a named-capture with `name` is present, returns its value. Otherwise `nil`.
+  public subscript(_ name: String) -> AnyRegexOutput.Element? { get }
+}
+
+extension AnyRegexOutput {
+  /// If a named-capture with `name` is present, returns its value. Otherwise `nil`.
+  public subscript(_ name: String) -> AnyRegexOutput.Element? { get }
 }
 ```
 
@@ -322,7 +341,7 @@ BuiltinCharClass -> '.' | '\C' | '\d' | '\D' | '\h' | '\H' | '\N' | '\O' | '\R' 
 - `\W`: Non-word character.
 - `\X`: Any extended grapheme cluster.
 
-Precise definitions of character classes is discussed in [Character Classes for String Processing](https://forums.swift.org/t/pitch-character-classes-for-string-processing/52920).
+Precise definitions of character classes is discussed in [Unicode for String Processing][pitches].
 
 #### Unicode scalars
 
@@ -392,7 +411,7 @@ For non-Unicode properties, only a value is required. These include:
 - The special PCRE2 properties `Xan`, `Xps`, `Xsp`, `Xuc`, `Xwd`.
 - The special Java properties `javaLowerCase`, `javaUpperCase`, `javaWhitespace`, `javaMirrored`.
 
-Note that the internal `PropertyContents` syntax is shared by both the `\p{...}` and POSIX-style `[:...:]` syntax, allowing e.g `[:script=Latin:]` as well as `\p{alnum}`.
+Note that the internal `PropertyContents` syntax is shared by both the `\p{...}` and POSIX-style `[:...:]` syntax, allowing e.g `[:script=Latin:]` as well as `\p{alnum}`. Both spellings may be used inside and outside of a custom character class.
 
 #### `\K`
 
@@ -534,6 +553,7 @@ These operators have a lower precedence than the implicit union of members, e.g 
 
 To avoid ambiguity between .NET's subtraction syntax and range syntax, .NET specifies that a subtraction will only be parsed if the right-hand-side is a nested custom character class. We propose following this behavior.
 
+Note that a custom character class may begin with the `:` character, and only becomes a POSIX character property if a closing `:]` is present. For example, `[:a]` is the character class of `:` and `a`.
 
 ### Matching options
 
@@ -863,7 +883,23 @@ PCRE supports `\N` meaning "not a newline", however there are engines that treat
 
 ### Extended character property syntax
 
-ICU unifies the character property syntax `\p{...}` with the syntax for POSIX character classes `[:...:]`, such that they follow the same internal grammar, which allows referencing any Unicode character property in addition to the POSIX properties. We propose supporting this, though it is a purely additive feature, and therefore should not conflict with regex engines that implement a more limited POSIX syntax.
+ICU unifies the character property syntax `\p{...}` with the syntax for POSIX character classes `[:...:]`. This has two effects:
+
+- They share the same internal grammar, which allows the use of any Unicode character properties in addition to the POSIX properties.
+- The POSIX syntax may be used outside of custom character classes, unlike in PCRE and Oniguruma.
+
+We propose following both of these rules. The former is purely additive, and therefore should not conflict with regex engines that implement a more limited POSIX syntax. The latter does conflict with other engines, but we feel it is much more likely that a user would expect e.g `[:space:]` to be a character property rather than the character class `[:aceps]`. We do however feel that a warning might be warranted in order to avoid confusion.
+
+### POSIX character property disambiguation
+
+PCRE, Oniguruma and ICU allow `[:` to be part of a custom character class if a closing `:]` is not present. For example, `[:a]` is the character class of `:` and `a`. However they each have different rules for detecting the closing `:]`:
+
+- PCRE will scan ahead until it hits either `:]`, `]`, or `[:`.
+- Oniguruma will scan ahead until it hits either `:]`, `]`, or the length exceeds 20 characters.
+- ICU will scan ahead until it hits a known escape sequence (e.g `\a`, `\e`, `\Q`, ...), or `:]`. Note this excludes character class escapes e.g `\d`. It also excludes `]`, meaning that even `[:a][:]` is parsed as a POSIX character property.
+
+We propose unifying these behaviors by scanning ahead until we hit either `[`, `]`, `:]`, or `\`. Additionally, we will stop on encountering `}` or a second occurrence of `=`. These fall out the fact that they would be invalid contents of the alternative `\p{...}` syntax.
+
 
 ### Script properties
 
@@ -973,8 +1009,8 @@ This proposal regards _syntactic_ support, and does not necessarily mean that ev
 [unicode-scripts]: https://www.unicode.org/reports/tr24/#Script
 [unicode-script-extensions]: https://www.unicode.org/reports/tr24/#Script_Extensions
 [balancing-groups]: https://docs.microsoft.com/en-us/dotnet/standard/base-types/grouping-constructs-in-regular-expressions#balancing-group-definitions
-[overview]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/RegexTypeOverview.md
-[pitches]: https://github.com/apple/swift-experimental-string-processing/issues/107
+[overview]: https://github.com/apple/swift-evolution/blob/main/proposals/0350-regex-type-overview.md
+[pitches]: https://github.com/apple/swift-experimental-string-processing/blob/main/Documentation/Evolution/ProposalOverview.md
 
 
 

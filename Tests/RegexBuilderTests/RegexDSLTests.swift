@@ -11,7 +11,7 @@
 
 import XCTest
 import _StringProcessing
-@testable import RegexBuilder
+import RegexBuilder
 
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
@@ -115,7 +115,7 @@ class RegexDSLTests: XCTestCase {
     {
       let disallowedChars = CharacterClass.hexDigit
         .symmetricDifference("a"..."z")
-      Lookahead(disallowedChars, negative: true)      // No: 0-9 + g-z
+      NegativeLookahead(disallowedChars)      // No: 0-9 + g-z
 
       OneOrMore(("b"..."g").union("d"..."n"))         // b-n
       
@@ -272,7 +272,7 @@ class RegexDSLTests: XCTestCase {
             OneOrMore(.word)
             Anchor.wordBoundary
           }
-          OneOrMore(.any, .reluctantly)
+          OneOrMore(.any, .reluctant)
           "stop"
           " "
           
@@ -281,7 +281,7 @@ class RegexDSLTests: XCTestCase {
             Anchor.wordBoundary
           }
           .wordBoundaryKind(.unicodeLevel1)
-          OneOrMore(.any, .reluctantly)
+          OneOrMore(.any, .reluctant)
           "stop"
         }
     }
@@ -293,14 +293,14 @@ class RegexDSLTests: XCTestCase {
         Capture {
           // Reluctant behavior due to option
           OneOrMore(.anyOf("abcd"))
-            .reluctantQuantifiers()
+            .repetitionBehavior(.reluctant)
         }
         ZeroOrMore("a"..."z")
         
         Capture {
           // Eager behavior due to explicit parameter, despite option
-          OneOrMore(.digit, .eagerly)
-            .reluctantQuantifiers()
+          OneOrMore(.digit, .eager)
+            .repetitionBehavior(.reluctant)
         }
         ZeroOrMore(.digit)
       }
@@ -319,6 +319,7 @@ class RegexDSLTests: XCTestCase {
   }
   
   func testQuantificationBehavior() throws {
+    // Eager by default
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "2")),
       matchType: (Substring, Substring).self, ==)
@@ -328,41 +329,93 @@ class RegexDSLTests: XCTestCase {
       ZeroOrMore(.any)
     }
 
+    // Explicitly reluctant
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
     {
-      OneOrMore(.word, .reluctantly)
+      OneOrMore(.word, .reluctant)
       Capture(.digit)
       ZeroOrMore(.any)
     }
-    
-#if os(macOS)
-    try XCTExpectFailure("'relucantCaptures()' API should only affect regex literals") {
-      try _testDSLCaptures(
-        ("abc1def2", ("abc1def2", "2")),
-        matchType: (Substring, Substring).self, ==)
-      {
-        Regex {
-          OneOrMore(.word)
-          Capture(.digit)
-          ZeroOrMore(.any)
-        }.reluctantQuantifiers()
-      }
-    }
-#endif
-    
+    // Explicitly reluctant overrides default option
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
     {
-      OneOrMore(.reluctantly) {
+      OneOrMore(.reluctant) {
         .word
-      }
+      }.repetitionBehavior(.possessive)
       Capture(.digit)
       ZeroOrMore(.any)
     }
+    // Default set to reluctant
+    try _testDSLCaptures(
+      ("abc1def2", ("abc1def2", "1")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      Regex {
+        OneOrMore(.word)
+        Capture(.digit)
+        ZeroOrMore(.any)
+      }.repetitionBehavior(.reluctant)
+    }
+    // Default set to reluctant applies to regex syntax
+    try _testDSLCaptures(
+      ("abc1def2", ("abc1def2", "1")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      try! Regex(#"\w+(\d).*"#, as: (Substring, Substring).self)
+        .repetitionBehavior(.reluctant)
+    }
     
+    // Explicitly possessive
+    try _testDSLCaptures(
+      ("aaaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Regex {
+        OneOrMore("a", .possessive)
+        "a"
+      }
+    }
+    // Default set to possessive
+    try _testDSLCaptures(
+      ("aaaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Regex {
+        OneOrMore("a")
+        "a"
+      }.repetitionBehavior(.possessive)
+    }
+    // More specific default set to eager
+    try _testDSLCaptures(
+      ("aaaa", ("aaaa", "aaa")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      Regex {
+        Capture {
+          OneOrMore("a")
+            .repetitionBehavior(.eager)
+        }
+        OneOrMore("a")
+      }.repetitionBehavior(.possessive)
+    }
+    // More specific default set to reluctant
+    try _testDSLCaptures(
+      ("aaaa", ("aaaa", "a")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      Regex {
+        Capture {
+          OneOrMore("a")
+            .repetitionBehavior(.reluctant)
+        }
+        OneOrMore("a")
+      }.repetitionBehavior(.possessive)
+    }
+
     try _testDSLCaptures(
       ("abc1def2", "abc1def2"),
       matchType: Substring.self, ==)
@@ -392,6 +445,14 @@ class RegexDSLTests: XCTestCase {
       Repeat(2...) { "e" }
       Repeat(0...) { "f" }
     }
+    
+    let octoDecimalRegex: Regex<(Substring, Int?)> = Regex {
+      let charClass = CharacterClass(.digit, "a"..."h")//.ignoringCase()
+      Capture {
+        OneOrMore(charClass)
+      } transform: { Int($0, radix: 18) }
+    }
+    XCTAssertEqual("ab12".firstMatch(of: octoDecimalRegex)!.output.1, 61904)
   }
   
   func testAssertions() throws {
@@ -426,7 +487,7 @@ class RegexDSLTests: XCTestCase {
     {
       OneOrMore("a")
       Lookahead(CharacterClass.digit)
-      Lookahead("2", negative: true)
+      NegativeLookahead { "2" }
       CharacterClass.word
     }
   }
@@ -509,6 +570,7 @@ class RegexDSLTests: XCTestCase {
     }
     let _: (Substring, Substring, Substring).Type
       = type(of: regex1).RegexOutput.self
+
     let regex2 = Regex {
       OneOrMore("a")
       Capture {
@@ -520,6 +582,7 @@ class RegexDSLTests: XCTestCase {
     }
     let _: (Substring, Substring, Int?).Type
       = type(of: regex2).RegexOutput.self
+
     let regex3 = Regex {
       OneOrMore("a")
       Capture {
@@ -532,6 +595,7 @@ class RegexDSLTests: XCTestCase {
     }
     let _: (Substring, Substring, Int, Double?).Type
       = type(of: regex3).RegexOutput.self
+
     let regex4 = Regex {
       OneOrMore("a")
       Capture {
@@ -666,7 +730,7 @@ class RegexDSLTests: XCTestCase {
 
     do {
       let regexLiteral = try Regex(
-        compiling: #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
+          #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#,
         as: (Substring, Substring, Substring?, Substring).self)
       let maybeMatchResult = line.wholeMatch(of: regexLiteral)
       let matchResult = try XCTUnwrap(maybeMatchResult)
@@ -675,43 +739,6 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(lower, "A6F0")
       XCTAssertEqual(upper, "A6F1")
       XCTAssertEqual(propertyString, "Extend")
-    }
-  }
-
-  func testDynamicCaptures() throws {
-    do {
-      let regex = try Regex(compiling: "aabcc.")
-      let line = "aabccd"
-      let match = try XCTUnwrap(line.wholeMatch(of: regex))
-      XCTAssertEqual(match.0, line[...])
-      let output = match.output
-      XCTAssertEqual(output[0].substring, line[...])
-    }
-    do {
-      let regex = try Regex(
-        compiling: #"""
-          (?<lower>[0-9A-F]+)(?:\.\.(?<upper>[0-9A-F]+))?\s+;\s+(?<desc>\w+).*
-          """#)
-      let line = """
-        A6F0..A6F1    ; Extend # Mn   [2] BAMUM COMBINING MARK KOQNDON..BAMUM \
-        COMBINING MARK TUKWENTIS
-        """
-      let match = try XCTUnwrap(line.wholeMatch(of: regex))
-      XCTAssertEqual(match.0, line[...])
-      let output = match.output
-      XCTAssertEqual(output[0].substring, line[...])
-      XCTAssertTrue(output[1].substring == "A6F0")
-      XCTAssertTrue(output["lower"]?.substring == "A6F0")
-      XCTAssertTrue(output[2].substring == "A6F1")
-      XCTAssertTrue(output["upper"]?.substring == "A6F1")
-      XCTAssertTrue(output[3].substring == "Extend")
-      XCTAssertTrue(output["desc"]?.substring == "Extend")
-      let typedOutput = try XCTUnwrap(output.as(
-        (Substring, lower: Substring, upper: Substring?, Substring).self))
-      XCTAssertEqual(typedOutput.0, line[...])
-      XCTAssertTrue(typedOutput.lower == "A6F0")
-      XCTAssertTrue(typedOutput.upper == "A6F1")
-      XCTAssertTrue(typedOutput.3 == "Extend")
     }
   }
 
@@ -769,6 +796,38 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(result[b], 42)
     }
 
+    do {
+      let key = Reference(Substring.self)
+      let value = Reference(Int.self)
+      let input = "      "
+      let regex = Regex {
+        Capture(as: key) {
+          Optionally {
+            OneOrMore(.word)
+          }
+        }
+        ":"
+        Optionally {
+          Capture(as: value) {
+            OneOrMore(.digit)
+          } transform: { Int($0)! }
+        }
+      }
+
+      let result1 = try XCTUnwrap("age:123".wholeMatch(of: regex))
+      XCTAssertEqual(result1[key], "age")
+      XCTAssertEqual(result1[value], 123)
+
+      let result2 = try XCTUnwrap(":567".wholeMatch(of: regex))
+      XCTAssertEqual(result2[key], "")
+      XCTAssertEqual(result2[value], 567)
+
+      let result3 = try XCTUnwrap("status:".wholeMatch(of: regex))
+      XCTAssertEqual(result3[key], "status")
+      // Traps:
+      // XCTAssertEqual(result3[value], nil)
+    }
+    
     // Post-hoc captured references
     // #"(?:\w\1|:(\w):)+"#
     try _testDSLCaptures(
@@ -802,9 +861,9 @@ class RegexDSLTests: XCTestCase {
       var patch: Int
       var dev: String?
     }
-    struct SemanticVersionParser: CustomMatchingRegexComponent {
+    struct SemanticVersionParser: CustomConsumingRegexComponent {
       typealias RegexOutput = SemanticVersion
-      func match(
+      func consuming(
         _ input: String,
         startingAt index: String.Index,
         in bounds: Range<String.Index>

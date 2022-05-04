@@ -24,7 +24,7 @@ API convention:
 extension Error {
   func addingLocation(_ loc: Range<Source.Position>) -> Error {
     // If we're already a LocatedError, don't change the location.
-    if self is _LocatedErrorProtocol {
+    if self is LocatedErrorProtocol {
       return self
     }
     return Source.LocatedError<Self>(self, loc)
@@ -616,7 +616,7 @@ extension Source {
       case "i": return advanceAndReturn(.caseInsensitive)
       case "J": return advanceAndReturn(.allowDuplicateGroupNames)
       case "m": return advanceAndReturn(.multiline)
-      case "n": return advanceAndReturn(.noAutoCapture)
+      case "n": return advanceAndReturn(.namedCapturesOnly)
       case "s": return advanceAndReturn(.singleLine)
       case "U": return advanceAndReturn(.reluctantByDefault)
       case "x":
@@ -914,6 +914,10 @@ extension Source {
         }
         // TODO: (name:)
 
+        // If (?n) is set, a bare (...) group is non-capturing.
+        if context.syntax.contains(.namedCapturesOnly) {
+          return .nonCapture
+        }
         return .capture
       }
     }
@@ -1175,6 +1179,14 @@ extension Source {
         // Ending of '\p{'. We cover this for POSIX too as it's not a valid
         // character property name anyway, and it's nice not to have diverging
         // logic for these cases.
+        return true
+      case "\\":
+        // An escape sequence, which may include e.g '\Q :] \E'. ICU bails here
+        // for all its known escape sequences (e.g '\a', '\e' '\f', ...). It
+        // seems character class escapes e.g '\d' are excluded, however it's not
+        // clear that is intentional. Let's apply the rule for any escape, as a
+        // backslash would never be a valid character property name, and we can
+        // diagnose any invalid escapes when parsing as a character class.
         return true
       default:
         // We may want to handle other metacharacters here, e.g '{', '(', ')',

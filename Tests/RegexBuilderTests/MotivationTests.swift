@@ -9,17 +9,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-// FIXME: macOS CI seems to be busted and Linux doesn't have FormatStyle
-// So, we disable this file for now
-
-#if false
-
-import _MatchingEngine
-
 import XCTest
 import _StringProcessing
-
 import RegexBuilder
+
+// FIXME: macOS CI seems to be busted and Linux doesn't have FormatStyle
+// So, we disable this larger test for now.
+#if false
 
 private struct Transaction: Hashable {
   enum Kind: Hashable {
@@ -139,24 +135,26 @@ private func processWithRuntimeDynamicRegex(
   _ line: String
 ) -> Transaction? {
   // FIXME: Shouldn't this init throw?
-  let regex = try! Regex(compiling: pattern)
+  let regex = try! Regex(pattern)
+  let dateStrat = Date.FormatStyle(date: .numeric).parseStrategy
+  
+  guard let result = line.wholeMatch(of: regex)?.output,
+        let kind = Transaction.Kind(result[1].substring!),
+        let date = try? Date(String(result[2].substring!), strategy: dateStrat),
+        let account = result[3].substring.map(String.init),
+        let amount = try? Decimal(
+          String(result[4].substring!), format: .currency(code: "USD")) else {
+    return nil
+  }
 
-//      guard let result = line.match(regex) else { return nil }
-//
-//      // TODO: We should have Regex<DynamicCaptures> or somesuch and `.1`
-//      // should be the same as `\1`.
-//      let dynCaps = result.1
-//
-//
-//      let kind = Transaction.Kind(result.1.first!.capture as Substring)
-
-  return nil
+  return Transaction(
+    kind: kind, date: date, account: account, amount: amount)
 }
 
 @available(macOS 12.0, *)
 private func processWithRuntimeStaticRegex(_ line: String) -> Transaction? {
   let regex: Regex<(Substring, Substring, Substring, Substring, Substring)>
-  = try! Regex(compiling: pattern)
+  = try! Regex(pattern)
 
   return process(line, using: regex)
 }
@@ -239,7 +237,8 @@ extension RegexDSLTests {
       XCTAssertEqual(
         referenceOutput, processWithNSRegularExpression(line))
 
-      _ = processWithRuntimeDynamicRegex(line)
+      XCTAssertEqual(
+        referenceOutput, processWithRuntimeDynamicRegex(line))
 
       // Static run-time regex
       XCTAssertEqual(
@@ -256,12 +255,104 @@ extension RegexDSLTests {
         XCTFail()
         continue
       }
-
     }
-
   }
-
 }
 
 #endif
 
+extension RegexDSLTests {
+  func testProposalExample() {
+    let statement = """
+      CREDIT    04062020    PayPal transfer    $4.99
+      CREDIT    04032020    Payroll            $69.73
+      DEBIT     04022020    ACH transfer       $38.25
+      DEBIT     03242020    IRS tax payment    $52249.98
+      """
+    let expectation: [(TransactionKind, Date, Substring, Double)] = [
+      (.credit, Date(mmddyyyy: "04062020")!, "PayPal transfer",  4.99),
+      (.credit, Date(mmddyyyy: "04032020")!, "Payroll",          69.73),
+      (.debit,  Date(mmddyyyy: "04022020")!, "ACH transfer",     38.25),
+      (.debit,  Date(mmddyyyy: "03242020")!, "IRS tax payment",  52249.98),
+    ]
+    
+    enum TransactionKind: String {
+      case credit = "CREDIT"
+      case debit = "DEBIT"
+    }
+    
+    struct Date: Hashable {
+      var month: Int
+      var day: Int
+      var year: Int
+      
+      init?(mmddyyyy: String) {
+        guard let (_, m, d, y) = mmddyyyy.wholeMatch(of: Regex {
+          Capture(Repeat(.digit, count: 2), transform: { Int($0)! })
+          Capture(Repeat(.digit, count: 2), transform: { Int($0)! })
+          Capture(Repeat(.digit, count: 4), transform: { Int($0)! })
+        })?.output else {
+          return nil
+        }
+        
+        self.month = m
+        self.day = d
+        self.year = y
+      }
+    }
+    
+    let statementRegex = Regex {
+      // First, lets capture the transaction kind by wrapping our ChoiceOf in a
+      // TryCapture because we want
+      TryCapture {
+        ChoiceOf {
+          "CREDIT"
+          "DEBIT"
+        }
+      } transform: {
+        TransactionKind(rawValue: String($0))
+      }
+      
+      OneOrMore(.whitespace)
+      
+      // Next, lets represent our date as 3 separate repeat quantifiers. The first
+      // two will require 2 digit characters, and the last will require 4. Then
+      // we'll take the entire substring and try to parse a date out.
+      TryCapture {
+        Repeat(.digit, count: 2)
+        Repeat(.digit, count: 2)
+        Repeat(.digit, count: 4)
+      } transform: {
+        Date(mmddyyyy: String($0))
+      }
+      
+      OneOrMore(.whitespace)
+      
+      // Next, grab the description which can be any combination of word characters,
+      // digits, etc.
+      Capture {
+        OneOrMore(.any, .reluctant)
+      }
+      
+      OneOrMore(.whitespace)
+      
+      "$"
+      
+      // Finally, we'll grab one or more digits which will represent the whole
+      // dollars, match the decimal point, and finally get 2 digits which will be
+      // our cents.
+      TryCapture {
+        OneOrMore(.digit)
+        "."
+        Repeat(.digit, count: 2)
+      } transform: {
+        Double($0)
+      }
+    }
+    
+    for (i, match) in statement.matches(of: statementRegex).enumerated() {
+      let (_, kind, date, description, amount) = match.output
+      XCTAssert((kind, date, description, amount) == expectation[i])
+    }
+  }
+}

@@ -105,7 +105,7 @@ extension DSLTree.Atom {
       return nil
 
     case let .unconverted(a):
-      return try a.generateConsumer(opts)
+      return try a.ast.generateConsumer(opts)
     }
 
   }
@@ -698,8 +698,9 @@ extension Unicode.ExtendedGeneralCategory {
       ])
 
     case .casedLetter:
-      throw Unsupported(
-        "TODO: cased letter? not the property?")
+      return consumeScalarGCs([
+        .uppercaseLetter, .lowercaseLetter, .titlecaseLetter
+      ])
 
     case .control:
       return consumeScalarGC(.control)

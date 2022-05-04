@@ -729,6 +729,14 @@ extension RegexTests {
     firstMatchTest(#"\p{gc=L}"#, input: "123abcXYZ", match: "a")
     firstMatchTest(#"\p{Lu}"#, input: "123abcXYZ", match: "X")
 
+    // U+0374 GREEK NUMERAL SIGN (Lm)
+    // U+00AA FEMININE ORDINAL INDICATOR (Lo)
+    firstMatchTest(#"\p{L}"#, input: "\u{0374}\u{00AA}123abcXYZ", match: "\u{0374}")
+    firstMatchTest(#"\p{Lc}"#, input: "\u{0374}\u{00AA}123abcXYZ", match: "a")
+    firstMatchTest(#"\p{Lc}"#, input: "\u{0374}\u{00AA}123XYZ", match: "X")
+    firstMatchTest(#"\p{L&}"#, input: "\u{0374}\u{00AA}123abcXYZ", match: "a")
+    firstMatchTest(#"\p{L&}"#, input: "\u{0374}\u{00AA}123XYZ", match: "X")
+
     firstMatchTest(
       #"\P{Cc}"#, input: "\n\n\nXYZ", match: "X")
     firstMatchTest(
@@ -1330,11 +1338,11 @@ extension RegexTests {
       04: Arkansas
       05: California
       """
-    XCTAssertTrue(string.contains(try Regex(compiling: #"^\d+"#)))
-    XCTAssertEqual(string.ranges(of: try Regex(compiling: #"^\d+"#)).count, 1)
-    XCTAssertEqual(string.ranges(of: try Regex(compiling: #"(?m)^\d+"#)).count, 5)
+    XCTAssertTrue(string.contains(try Regex(#"^\d+"#)))
+    XCTAssertEqual(string.ranges(of: try Regex(#"^\d+"#)).count, 1)
+    XCTAssertEqual(string.ranges(of: try Regex(#"(?m)^\d+"#)).count, 5)
 
-    let regex = try Regex(compiling: #"^\d+: [\w ]+$"#)
+    let regex = try Regex(#"^\d+: [\w ]+$"#)
     XCTAssertFalse(string.contains(regex))
     let allRanges = string.ranges(of: regex.anchorsMatchLineEndings())
     XCTAssertEqual(allRanges.count, 5)
@@ -1373,7 +1381,7 @@ extension RegexTests {
   }
   
   func testOptionMethods() throws {
-    let regex = try Regex(compiling: "c.f.")
+    let regex = try Regex("c.f.")
     XCTAssertTrue ("cafe".contains(regex))
     XCTAssertFalse("CaFe".contains(regex))
     
@@ -1551,13 +1559,11 @@ extension RegexTests {
       (eDecomposed, false))
     
     // FIXME: \O is unsupported
-    firstMatchTest(#"\O\u{301}"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
-    firstMatchTest(#"e\O"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
-    firstMatchTest(#"\O\u{301}"#, input: eComposed, match: nil,
-              xfail: true)
-    firstMatchTest(#"e\O"#, input: eComposed, match: nil,
+    firstMatchTest(#"(?u)\O\u{301}"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(#"(?u)e\O"#, input: eDecomposed, match: eDecomposed,
+      xfail: true)
+    firstMatchTest(#"\O"#, input: eComposed, match: eComposed)
+    firstMatchTest(#"\O"#, input: eDecomposed, match: nil,
               xfail: true)
 
     matchTest(
@@ -1590,5 +1596,6 @@ extension RegexTests {
   // TODO: Add test for implied grapheme cluster requirement at group boundaries
   
   // TODO: Add test for grapheme boundaries at start/end of match
+
 }
 

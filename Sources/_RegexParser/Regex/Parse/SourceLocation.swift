@@ -56,11 +56,14 @@ extension Source {
   var currentPosition: Position { bounds.lowerBound }
 }
 
-protocol _LocatedErrorProtocol: Error {}
+public protocol LocatedErrorProtocol: Error {
+  var location: SourceLocation { get }
+  var _typeErasedError: Error { get }
+}
 
 extension Source {
-  /// An error with source location info
-  public struct LocatedError<E: Error>: Error, _LocatedErrorProtocol {
+  /// An error that includes information about the location in source code.
+  public struct LocatedError<E: Error>: Error, LocatedErrorProtocol {
     public let error: E
     public let location: SourceLocation
 
@@ -74,10 +77,10 @@ extension Source {
     }
   }
 
-  /// Located value: a value wrapped with a source range
+  /// A value wrapped with a source range.
   ///
-  /// Note: source location is part of value identity, so that the same
-  /// e.g. `Character` appearing twice can be stored in a data structure
+  /// Note: Source location is part of value identity so that, for example, the
+  /// same `Character` value appearing twice can be stored in a data structure
   /// distinctly. To ignore source locations, use `.value` directly.
   public struct Located<T> {
     public var value: T
@@ -117,5 +120,9 @@ extension Source.LocatedError: CustomStringConvertible {
     // Just return the underlying error's description, which is currently how
     // we present the message to the compiler.
     "\(error)"
+  }
+
+  public var _typeErasedError: Error {
+    return error
   }
 }

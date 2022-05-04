@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-struct Delimiter: Hashable {
+public struct Delimiter: Hashable {
   let kind: Kind
   let poundCount: Int
 
@@ -74,8 +74,8 @@ extension Delimiter {
   }
 }
 
-struct DelimiterLexError: Error, CustomStringConvertible {
-  enum Kind: Hashable {
+public struct DelimiterLexError: Error, CustomStringConvertible {
+  public enum Kind: Hashable {
     case unterminated
     case invalidUTF8 // TODO: better range reporting
     case unknownDelimiter
@@ -83,17 +83,17 @@ struct DelimiterLexError: Error, CustomStringConvertible {
     case multilineClosingNotOnNewline
   }
 
-  var kind: Kind
+  public var kind: Kind
 
   /// The pointer at which to resume lexing.
-  var resumePtr: UnsafeRawPointer
+  public var resumePtr: UnsafeRawPointer
 
   init(_ kind: Kind, resumeAt resumePtr: UnsafeRawPointer) {
     self.kind = kind
     self.resumePtr = resumePtr
   }
 
-  var description: String {
+  public var description: String {
     switch kind {
     case .unterminated: return "unterminated regex literal"
     case .invalidUTF8: return "invalid UTF-8 found in source file"
@@ -461,4 +461,10 @@ func lexRegex(
 ) throws -> (contents: String, Delimiter, end: UnsafeRawPointer) {
   var lexer = DelimiterLexer(start: start, end: end, delimiters: delimiters)
   return try lexer.lex()
+}
+
+public func lexRegex(
+  start: UnsafeRawPointer, end: UnsafeRawPointer
+) throws -> (contents: String, Delimiter, end: UnsafeRawPointer)  {
+  return try lexRegex(start: start, end: end, delimiters: Delimiter.enabledDelimiters)
 }

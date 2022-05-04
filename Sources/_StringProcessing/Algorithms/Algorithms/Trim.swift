@@ -102,21 +102,26 @@ extension RangeReplaceableCollection where Self: BidirectionalCollection {
 // MARK: Predicate algorithms
 
 extension Collection {
-  // TODO: Non-escaping and throwing
-  func trimmingPrefix(
-    while predicate: @escaping (Element) -> Bool
-  ) -> SubSequence {
-    trimmingPrefix(ManyConsumer(base: PredicateConsumer(predicate: predicate)))
+  fileprivate func endOfPrefix(while predicate: (Element) throws -> Bool) rethrows -> Index {
+    try firstIndex(where: { try !predicate($0) }) ?? endIndex
+  }
+
+  @available(SwiftStdlib 5.7, *)
+  public func trimmingPrefix(
+    while predicate: (Element) throws -> Bool
+  ) rethrows -> SubSequence {
+    let end = try endOfPrefix(while: predicate)
+    return self[end...]
   }
 }
 
 extension Collection where SubSequence == Self {
   @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix(
-    while predicate: @escaping (Element) -> Bool
-  ) {
-    trimPrefix(ManyConsumer(
-      base: PredicateConsumer<SubSequence>(predicate: predicate)))
+    while predicate: (Element) throws -> Bool
+  ) throws {
+    let end = try endOfPrefix(while: predicate)
+    self = self[end...]
   }
 }
 
@@ -124,9 +129,10 @@ extension RangeReplaceableCollection {
   @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix(
-    while predicate: @escaping (Element) -> Bool
-  ) {
-    trimPrefix(ManyConsumer(base: PredicateConsumer(predicate: predicate)))
+    while predicate: (Element) throws -> Bool
+  ) rethrows {
+    let end = try endOfPrefix(while: predicate)
+    removeSubrange(startIndex..<end)
   }
 }
 
@@ -188,7 +194,7 @@ extension Collection where Element: Equatable {
   /// - Returns: A collection containing the elements of the collection that are
   ///  not removed by `predicate`.
   @available(SwiftStdlib 5.7, *)
-  public func trimmingPrefix<Prefix: Collection>(
+  public func trimmingPrefix<Prefix: Sequence>(
     _ prefix: Prefix
   ) -> SubSequence where Prefix.Element == Element {
     trimmingPrefix(FixedPatternConsumer(pattern: prefix))
@@ -202,7 +208,7 @@ extension Collection where SubSequence == Self, Element: Equatable {
   /// as its argument and returns a Boolean value indicating whether the
   /// element should be removed from the collection.
   @available(SwiftStdlib 5.7, *)
-  public mutating func trimPrefix<Prefix: Collection>(
+  public mutating func trimPrefix<Prefix: Sequence>(
     _ prefix: Prefix
   ) where Prefix.Element == Element {
     trimPrefix(FixedPatternConsumer<SubSequence, Prefix>(pattern: prefix))
@@ -217,7 +223,7 @@ extension RangeReplaceableCollection where Element: Equatable {
   /// as its argument and returns a Boolean value indicating whether the
   /// element should be removed from the collection.
   @available(SwiftStdlib 5.7, *)
-  public mutating func trimPrefix<Prefix: Collection>(
+  public mutating func trimPrefix<Prefix: Sequence>(
     _ prefix: Prefix
   ) where Prefix.Element == Element {
     trimPrefix(FixedPatternConsumer(pattern: prefix))
