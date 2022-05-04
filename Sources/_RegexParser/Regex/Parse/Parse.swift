@@ -287,23 +287,34 @@ extension Parser {
   private mutating func applySyntaxOptions(
     of opts: AST.MatchingOptionSequence
   ) {
-    // We skip this for multi-line, as extended syntax is always enabled there.
-    if context.syntax.contains(.multilineExtendedSyntax) { return }
+    func mapOption(_ option: SyntaxOptions,
+                   _ pred: (AST.MatchingOption) -> Bool) {
+      if opts.resetsCurrentOptions {
+        context.syntax.remove(option)
+      }
+      if opts.adding.contains(where: pred) {
+        context.syntax.insert(option)
+      }
+      if opts.removing.contains(where: pred) {
+        context.syntax.remove(option)
+      }
+    }
+    func mapOption(_ option: SyntaxOptions, _ kind: AST.MatchingOption.Kind) {
+      mapOption(option, { $0.kind == kind })
+    }
 
-    // Check if we're introducing or removing extended syntax.
+    // (?n)
+    mapOption(.namedCapturesOnly, .namedCapturesOnly)
+
+    // (?x), (?xx)
+    // We skip this for multi-line, as extended syntax is always enabled there.
     // TODO: PCRE differentiates between (?x) and (?xx) where only the latter
     // handles non-semantic whitespace in a custom character class. Other
     // engines such as Oniguruma, Java, and ICU do this under (?x). Therefore,
     // treat (?x) and (?xx) as the same option here. If we ever get a strict
     // PCRE mode, we will need to change this to handle that.
-    if opts.resetsCurrentOptions {
-      context.syntax.remove(.extendedSyntax)
-    }
-    if opts.adding.contains(where: \.isAnyExtended) {
-      context.syntax.insert(.extendedSyntax)
-    }
-    if opts.removing.contains(where: \.isAnyExtended) {
-      context.syntax.remove(.extendedSyntax)
+    if !context.syntax.contains(.multilineExtendedSyntax) {
+      mapOption(.extendedSyntax, \.isAnyExtended)
     }
   }
 

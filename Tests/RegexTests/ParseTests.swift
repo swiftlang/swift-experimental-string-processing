@@ -906,7 +906,7 @@ extension RegexTests {
     ))
 
     let allOptions: [AST.MatchingOption.Kind] = [
-      .caseInsensitive, .allowDuplicateGroupNames, .multiline, .noAutoCapture,
+      .caseInsensitive, .allowDuplicateGroupNames, .multiline, .namedCapturesOnly,
       .singleLine, .reluctantByDefault, .extraExtended, .extended,
       .unicodeWordBoundaries, .asciiOnlyDigit, .asciiOnlyPOSIXProps,
       .asciiOnlySpace, .asciiOnlyWord, .textSegmentGraphemeMode,
@@ -972,6 +972,13 @@ extension RegexTests {
       ),
       "d"
     )), captures: [.cap])
+
+    parseTest("(?n)(?^:())(?<x>)()", concat(
+      changeMatchingOptions(matchingOptions(adding: .namedCapturesOnly)),
+      changeMatchingOptions(unsetMatchingOptions(), capture(empty())),
+      namedCapture("x", empty()),
+      nonCapture(empty())
+    ), captures: [.cap, .named("x")])
 
     // MARK: References
 
