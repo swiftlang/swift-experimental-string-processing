@@ -914,6 +914,10 @@ extension Source {
         }
         // TODO: (name:)
 
+        // If (?n) is set, a bare (...) group is non-capturing.
+        if context.syntax.contains(.namedCapturesOnly) {
+          return .nonCapture
+        }
         return .capture
       }
     }

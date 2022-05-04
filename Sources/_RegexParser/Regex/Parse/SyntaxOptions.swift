@@ -63,6 +63,9 @@ public struct SyntaxOptions: OptionSet {
     return [Self(1 << 6), .extendedSyntax]
   }
 
+  /// `(?n)`
+  public static var namedCapturesOnly: Self { Self(1 << 7) }
+
   /*
 
     /// `<digit>*` == `[[:digit:]]*` == `\d*`

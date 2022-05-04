@@ -973,6 +973,13 @@ extension RegexTests {
       "d"
     )), captures: [.cap])
 
+    parseTest("(?n)(?^:())(?<x>)()", concat(
+      changeMatchingOptions(matchingOptions(adding: .namedCapturesOnly)),
+      changeMatchingOptions(unsetMatchingOptions(), capture(empty())),
+      namedCapture("x", empty()),
+      nonCapture(empty())
+    ), captures: [.cap, .named("x")])
+
     // MARK: References
 
     // \1 ... \9 are always backreferences.
