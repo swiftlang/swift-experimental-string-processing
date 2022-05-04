@@ -906,7 +906,7 @@ extension RegexTests {
     ))
 
     let allOptions: [AST.MatchingOption.Kind] = [
-      .caseInsensitive, .allowDuplicateGroupNames, .multiline, .noAutoCapture,
+      .caseInsensitive, .allowDuplicateGroupNames, .multiline, .namedCapturesOnly,
       .singleLine, .reluctantByDefault, .extraExtended, .extended,
       .unicodeWordBoundaries, .asciiOnlyDigit, .asciiOnlyPOSIXProps,
       .asciiOnlySpace, .asciiOnlyWord, .textSegmentGraphemeMode,

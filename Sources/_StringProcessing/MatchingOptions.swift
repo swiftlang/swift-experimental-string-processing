@@ -135,7 +135,7 @@ extension MatchingOptions {
     case caseInsensitive
     case allowDuplicateGroupNames
     case multiline
-    case noAutoCapture
+    case namedCapturesOnly
     case singleLine
     case reluctantByDefault
 
@@ -174,8 +174,8 @@ extension MatchingOptions {
         self = .allowDuplicateGroupNames
       case .multiline:
         self = .multiline
-      case .noAutoCapture:
-        self = .noAutoCapture
+      case .namedCapturesOnly:
+        self = .namedCapturesOnly
       case .singleLine:
         self = .singleLine
       case .reluctantByDefault:
