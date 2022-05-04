@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
 @available(SwiftStdlib 5.7, *)
@@ -21,19 +21,10 @@ public struct CharacterClass {
   }
   
   init(unconverted model: _CharacterClassModel) {
-    // FIXME: Implement in DSLTree instead of wrapping an AST atom
-    switch model.makeAST() {
-    case .atom(let atom):
-      self.ccc = .init(members: [.atom(.unconverted(atom))])
-    default:
-      fatalError("Unsupported _CharacterClassModel")
+    guard let ccc = model.makeDSLTreeCharacterClass() else {
+      fatalError("Unsupported character class")
     }
-  }
-  
-  init(property: AST.Atom.CharacterProperty) {
-    // FIXME: Implement in DSLTree instead of wrapping an AST atom
-    let astAtom = AST.Atom(.property(property), .fake)
-    self.ccc = .init(members: [.atom(.unconverted(astAtom))])
+    self.ccc = ccc
   }
 }
 
@@ -109,7 +100,7 @@ extension RegexComponent where Self == CharacterClass {
       members: s.map { .atom(.char($0)) }))
   }
   
-  /// Returns a character class that matches any unicode scalar in the given
+  /// Returns a character class that matches any Unicode scalar in the given
   /// sequence.
   public static func anyOf<S: Sequence>(_ s: S) -> CharacterClass
     where S.Element == UnicodeScalar
@@ -123,15 +114,11 @@ extension RegexComponent where Self == CharacterClass {
 @available(SwiftStdlib 5.7, *)
 extension CharacterClass {
   public static func generalCategory(_ category: Unicode.GeneralCategory) -> CharacterClass {
-    guard let extendedCategory = category.extendedGeneralCategory else {
-      fatalError("Unexpected general category")
-    }
-    return CharacterClass(property:
-        .init(.generalCategory(extendedCategory), isInverted: false, isPOSIX: false))
+    return CharacterClass(.generalCategory(category))
   }
 }
 
-/// Range syntax for characters in `CharacterClass`es.
+/// Returns a character class that includes the characters in the given range.
 @available(SwiftStdlib 5.7, *)
 public func ...(lhs: Character, rhs: Character) -> CharacterClass {
   let range: DSLTree.CustomCharacterClass.Member = .range(.char(lhs), .char(rhs))
@@ -139,51 +126,13 @@ public func ...(lhs: Character, rhs: Character) -> CharacterClass {
   return CharacterClass(ccc)
 }
 
-/// Range syntax for unicode scalars in `CharacterClass`es.
+/// Returns a character class that includes the Unicode scalars in the given range.
 @_disfavoredOverload
 @available(SwiftStdlib 5.7, *)
 public func ...(lhs: UnicodeScalar, rhs: UnicodeScalar) -> CharacterClass {
   let range: DSLTree.CustomCharacterClass.Member = .range(.scalar(lhs), .scalar(rhs))
   let ccc = DSLTree.CustomCharacterClass(members: [range], isInverted: false)
   return CharacterClass(ccc)
-}
-
-extension Unicode.GeneralCategory {
-  var extendedGeneralCategory: Unicode.ExtendedGeneralCategory? {
-    switch self {
-    case .uppercaseLetter: return .uppercaseLetter
-    case .lowercaseLetter: return .lowercaseLetter
-    case .titlecaseLetter: return .titlecaseLetter
-    case .modifierLetter: return .modifierLetter
-    case .otherLetter: return .otherLetter
-    case .nonspacingMark: return .nonspacingMark
-    case .spacingMark: return .spacingMark
-    case .enclosingMark: return .enclosingMark
-    case .decimalNumber: return .decimalNumber
-    case .letterNumber: return .letterNumber
-    case .otherNumber: return .otherNumber
-    case .connectorPunctuation: return .connectorPunctuation
-    case .dashPunctuation: return .dashPunctuation
-    case .openPunctuation: return .openPunctuation
-    case .closePunctuation: return .closePunctuation
-    case .initialPunctuation: return .initialPunctuation
-    case .finalPunctuation: return .finalPunctuation
-    case .otherPunctuation: return .otherPunctuation
-    case .mathSymbol: return .mathSymbol
-    case .currencySymbol: return .currencySymbol
-    case .modifierSymbol: return .modifierSymbol
-    case .otherSymbol: return .otherSymbol
-    case .spaceSeparator: return .spaceSeparator
-    case .lineSeparator: return .lineSeparator
-    case .paragraphSeparator: return .paragraphSeparator
-    case .control: return .control
-    case .format: return .format
-    case .surrogate: return .surrogate
-    case .privateUse: return .privateUse
-    case .unassigned: return .unassigned
-    @unknown default: return nil
-    }
-  }
 }
 
 // MARK: - Set algebra methods

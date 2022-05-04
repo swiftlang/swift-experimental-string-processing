@@ -88,14 +88,3 @@ extension UTF16 {
       (UInt32(lead & 0x03ff) &<< 10 | UInt32(trail & 0x03ff)))
   }
 }
-
-extension String.Index {
-  internal var _encodedOffsetSP: Int {
-    // The encoded offset is found in the top 48 bits.
-    Int(unsafeBitCast(self, to: UInt64.self) >> 16)
-  }
-
-  internal init(_encodedOffsetSP offset: Int) {
-    self = unsafeBitCast(offset << 16, to: Self.self)
-  }
-}

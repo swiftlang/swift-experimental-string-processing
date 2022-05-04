@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
 @available(SwiftStdlib 5.7, *)
@@ -95,8 +95,8 @@ extension UnicodeScalar: RegexComponent {
 // Note: Quantifiers are currently gyb'd.
 
 extension DSLTree.Node {
-  /// Generates a DSLTree node for a repeated range of the given DSLTree node.
-  /// Individual public API functions are in the generated Variadics.swift file.
+  // Individual public API functions are in the generated Variadics.swift file.
+  /// Generates a DSL tree node for a repeated range of the given node.
   @available(SwiftStdlib 5.7, *)
   static func repeating(
     _ range: Range<Int>,
@@ -116,13 +116,13 @@ extension DSLTree.Node {
       return .quantification(.oneOrMore, kind, node)
     case _ where range.count == 1: // ..<1 or ...0 or any range with count == 1
       // Note: `behavior` is ignored in this case
-      return .quantification(.exactly(.init(faking: range.lowerBound)), .default, node)
+      return .quantification(.exactly(range.lowerBound), .default, node)
     case (0, _): // 0..<n or 0...n or ..<n or ...n
-      return .quantification(.upToN(.init(faking: range.upperBound)), kind, node)
+      return .quantification(.upToN(range.upperBound), kind, node)
     case (_, Int.max): // n...
-      return .quantification(.nOrMore(.init(faking: range.lowerBound)), kind, node)
+      return .quantification(.nOrMore(range.lowerBound), kind, node)
     default: // any other range
-      return .quantification(.range(.init(faking: range.lowerBound), .init(faking: range.upperBound)), kind, node)
+      return .quantification(.range(range.lowerBound, range.upperBound), kind, node)
     }
   }
 }
@@ -251,8 +251,10 @@ public struct TryCapture<Output>: _BuiltinRegexComponent {
 
 // MARK: - Groups
 
-/// An atomic group, i.e. opens a local backtracking scope which, upon successful exit,
-/// discards any remaining backtracking points from within the scope
+/// An atomic group.
+///
+/// This group opens a local backtracking scope which, upon successful exit,
+/// discards any remaining backtracking points from within the scope.
 @available(SwiftStdlib 5.7, *)
 public struct Local<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
@@ -265,6 +267,7 @@ public struct Local<Output>: _BuiltinRegexComponent {
 // MARK: - Backreference
 
 @available(SwiftStdlib 5.7, *)
+/// A backreference.
 public struct Reference<Capture>: RegexComponent {
   let id = ReferenceID()
 
