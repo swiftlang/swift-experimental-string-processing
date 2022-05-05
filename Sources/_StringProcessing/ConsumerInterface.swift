@@ -144,6 +144,19 @@ extension String {
   }
 }
 
+func consumeName(_ name: String, opts: MatchingOptions) -> MEProgram<String>.ConsumeFunction {
+  let consume = opts.semanticLevel == .graphemeCluster
+    ? consumeCharacterWithSingleScalar
+    : consumeScalar
+  
+  return consume(propertyScalarPredicate {
+    // FIXME: name aliases not covered by $0.nameAlias are missed
+    // e.g. U+FEFF has both 'BYTE ORDER MARK' and 'BOM' as aliases
+    $0.name?.isEqualByUAX44LM2(to: name) == true
+      || $0.nameAlias?.isEqualByUAX44LM2(to: name) == true
+  })
+}
+
 // TODO: This is basically an AST interpreter, which would
 // be good or interesting to build regardless, and serves
 // as a compiler fall-back path
@@ -206,12 +219,7 @@ extension AST.Atom {
       return try p.generateConsumer(opts)
 
     case let .namedCharacter(name):
-      return consumeScalar(propertyScalarPredicate {
-        // FIXME: name aliases not covered by $0.nameAlias are missed
-        // e.g. U+FEFF is also 'FORM FEED', 'BYTE ORDER MARK', and 'BOM'
-        $0.name?.isEqualByUAX44LM2(to: name) == true
-          || $0.nameAlias?.isEqualByUAX44LM2(to: name) == true
-      })
+      return consumeName(name, opts: opts)
       
     case .any:
       assertionFailure(
@@ -479,6 +487,9 @@ extension AST.Atom.CharacterProperty {
 
       case .scriptExtension(let s):
         return consume(scriptExtensionScalarPredicate(s))
+        
+      case .named(let n):
+        return consumeName(n, opts: opts)
 
       case .posix(let p):
         return p.generateConsumer(opts)
