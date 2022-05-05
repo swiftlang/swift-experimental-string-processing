@@ -67,7 +67,6 @@ let package = Package(
             name: "RegexTests",
             dependencies: ["_StringProcessing"],
             swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-enable-experimental-string-processing"]),
                 .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
             ]),
         .testTarget(
