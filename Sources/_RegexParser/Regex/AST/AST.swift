@@ -25,12 +25,6 @@ public struct AST: Hashable {
 extension AST {
   /// Whether this AST tree contains at least one capture nested inside of it.
   public var hasCapture: Bool { root.hasCapture }
-
-  /// The capture structure of this AST tree.
-  public var captureStructure: CaptureStructure {
-    var constructor = CaptureStructure.Constructor(.flatten)
-    return root._captureStructure(&constructor)
-  }
 }
 
 extension AST {

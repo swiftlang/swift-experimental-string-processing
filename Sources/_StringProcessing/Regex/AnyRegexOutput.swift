@@ -62,6 +62,7 @@ public struct AnyRegexOutput {
     /// The depth of `Optioals`s wrapping the underlying value. For example,
     /// `Substring` has optional depth `0`, and `Int??` has optional depth `2`.
     let optionalDepth: Int
+
     /// The bounds of the output element.
     let bounds: Range<String.Index>?
   }
@@ -90,7 +91,7 @@ extension AnyRegexOutput {
   /// - Parameter type: The expected output type.
   /// - Returns: The output, if the underlying value can be converted to the
   ///   output type; otherwise `nil`.
-  public func `as`<Output>(_ type: Output.Type) -> Output? {
+  public func `as`<Output>(_ type: Output.Type = Output.self) -> Output? {
     let elements = _elements.map {
       StructuredCapture(
         optionalCount: $0.optionalDepth,
@@ -206,23 +207,30 @@ extension Regex.Match where Output == AnyRegexOutput {
   /// - Parameter type: The expected output type.
   /// - Returns: A match generic over the output type, if the underlying values
   ///   can be converted to the output type; otherwise, `nil`.
-  public func `as`<Output>(_ type: Output.Type) -> Regex<Output>.Match? {
+  public func `as`<Output>(
+    _ type: Output.Type = Output.self
+  ) -> Regex<Output>.Match? {
     fatalError("FIXME: Not implemented")
   }
 }
 
 @available(SwiftStdlib 5.7, *)
-extension Regex where Output == AnyRegexOutput {
+extension Regex {
   /// Returns whether a named-capture with `name` exists
   public func contains(captureNamed name: String) -> Bool {
-    fatalError("FIXME: not implemented")
+    program.tree.root._captureList.captures.contains(where: {
+      $0.name == name
+    })
   }
+}
 
+@available(SwiftStdlib 5.7, *)
+extension Regex where Output == AnyRegexOutput {
   /// Creates a type-erased regex from an existing regex.
   ///
   /// Use this initializer to fit a regex with strongly typed captures into the
   /// use site of a dynamic regex, i.e. one that was created from a string.
-  public init<Output>(_ match: Regex<Output>) {
+  public init<Output>(_ regex: Regex<Output>) {
     fatalError("FIXME: Not implemented")
   }
 
@@ -231,7 +239,9 @@ extension Regex where Output == AnyRegexOutput {
   /// - Parameter type: The expected output type.
   /// - Returns: A regex generic over the output type if the underlying types can be converted.
   ///   Returns `nil` otherwise.
-  public func `as`<Output>(_ type: Output.Type) -> Regex<Output>? {
+  public func `as`<Output>(
+    _ type: Output.Type = Output.self
+  ) -> Regex<Output>? {
     fatalError("FIXME: Not implemented")
   }
 }

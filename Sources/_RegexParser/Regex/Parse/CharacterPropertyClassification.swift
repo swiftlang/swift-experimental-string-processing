@@ -32,8 +32,8 @@ extension Source {
   static private func classifyGeneralCategory(
     _ str: String
   ) -> Unicode.ExtendedGeneralCategory? {
-    // This uses the aliases defined in
-    // https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt.
+    // This uses the aliases defined in https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt.
+    // Additionally, uses the `L& = Lc` alias defined by PCRE.
     withNormalizedForms(str) { str in
       switch str {
       case "c", "other":                   return .other
@@ -43,7 +43,7 @@ extension Source {
       case "co", "privateuse":             return .privateUse
       case "cs", "surrogate":              return .surrogate
       case "l", "letter":                  return .letter
-      case "lc", "casedletter":            return .casedLetter
+      case "lc", "l&", "casedletter":      return .casedLetter
       case "ll", "lowercaseletter":        return .lowercaseLetter
       case "lm", "modifierletter":         return .modifierLetter
       case "lo", "otherletter":            return .otherLetter
