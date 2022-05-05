@@ -408,7 +408,13 @@ extension UTS18Tests {
     XCTAssertTrue("\u{1F514}".contains(#/\N{BELL}/#))
     XCTAssertTrue("🐯".contains(#/\N{TIGER FACE}/#))
     XCTAssertFalse("🐯".contains(#/\N{TIEGR FACE}/#))
-    
+
+    // Loose matching
+    XCTAssertTrue("\u{263A}".contains(#/\N{whitesmilingface}/#))
+    XCTAssertTrue("\u{263A}".contains(#/\N{wHiTe_sMiLiNg_fAcE}/#))
+    XCTAssertTrue("\u{263A}".contains(#/\N{White Smiling-Face}/#))
+    XCTAssertTrue("\u{FEFF}".contains(#/\N{zerowidthno breakspace}/#))
+
     // Matching semantic level
     XCTAssertFalse("👩‍👩‍👧‍👦".contains(#/.\N{ZERO WIDTH JOINER}/#))
     XCTAssertTrue("👩‍👩‍👧‍👦".contains(#/(?u).\N{ZERO WIDTH JOINER}/#))
@@ -421,9 +427,7 @@ extension UTS18Tests {
     }
     
     XCTExpectFailure("Other named char failures -- investigate") {
-      XCTAssertTrue("\u{263A}".contains(#/\N{whitesmilingface}/#))
       XCTAssertTrue("\u{C}".contains(#/\N{FORM FEED}/#))
-      XCTAssertTrue("\u{FEFF}".contains(#/\N{zerowidthno breakspace}/#))
       XCTAssertTrue("\u{FEFF}".contains(#/\N{BYTE ORDER MARK}/#))
       XCTAssertTrue("\u{FEFF}".contains(#/\N{BOM}/#))
       XCTAssertTrue("\u{7}".contains(#/\N{BEL}/#))

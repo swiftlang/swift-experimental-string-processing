@@ -111,6 +111,38 @@ extension DSLTree.Atom {
   }
 }
 
+extension String {
+  /// Compares this string to `other` using the loose matching rule UAX44-LM2,
+  /// which ignores case, whitespace, underscores, and nearly all medial
+  /// hyphens.
+  ///
+  /// FIXME: Only ignore medial hyphens
+  /// FIXME: Special case for U+1180 HANGUL JUNGSEONG O-E
+  /// See https://www.unicode.org/reports/tr44/#Matching_Rules
+  fileprivate func isEqualByUAX44LM2(to other: String) -> Bool {
+    var i = startIndex
+    var j = other.startIndex
+    
+    while i < endIndex {
+      if self[i].isWhitespace || self[i] == "-" || self[i] == "_" {
+        formIndex(after: &i)
+        continue
+      }
+      if other[j].isWhitespace || other[j] == "-" || other[j] == "_" {
+        other.formIndex(after: &j)
+        continue
+      }
+      
+      if self[i] != other[j] && self[i].lowercased() != other[j].lowercased() {
+        return false
+      }
+
+      formIndex(after: &i)
+      other.formIndex(after: &j)
+    }
+    return i == endIndex && j == other.endIndex
+  }
+}
 
 // TODO: This is basically an AST interpreter, which would
 // be good or interesting to build regardless, and serves
@@ -174,10 +206,12 @@ extension AST.Atom {
       return try p.generateConsumer(opts)
 
     case let .namedCharacter(name):
-      return consumeScalarProp {
-        // TODO: alias? casing?
-        $0.name == name || $0.nameAlias == name
-      }
+      return consumeScalar(propertyScalarPredicate {
+        // FIXME: name aliases not covered by $0.nameAlias are missed
+        // e.g. U+FEFF is also 'FORM FEED', 'BYTE ORDER MARK', and 'BOM'
+        $0.name?.isEqualByUAX44LM2(to: name) == true
+          || $0.nameAlias?.isEqualByUAX44LM2(to: name) == true
+      })
       
     case .any:
       assertionFailure(
