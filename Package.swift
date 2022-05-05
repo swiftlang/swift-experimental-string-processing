@@ -67,7 +67,7 @@ let package = Package(
             name: "RegexTests",
             dependencies: ["_StringProcessing"],
             swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
+                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
             ]),
         .testTarget(
             name: "RegexBuilderTests",

@@ -169,6 +169,8 @@ func firstMatchTest(
       XCTAssertEqual(found, match, file: file, line: line)
     }
   } catch {
+    // FIXME: This allows non-matches to succeed even when xfail'd
+    // When xfail == true, this should report failure for match == nil
     if !xfail && match != nil {
       XCTFail("\(error)", file: file, line: line)
     }
@@ -182,7 +184,9 @@ func firstMatchTests(
   syntax: SyntaxOptions = .traditional,
   enableTracing: Bool = false,
   dumpAST: Bool = false,
-  xfail: Bool = false
+  xfail: Bool = false,
+  file: StaticString = #filePath,
+  line: UInt = #line
 ) {
   for (input, match) in tests {
     firstMatchTest(
@@ -192,7 +196,9 @@ func firstMatchTests(
       syntax: syntax,
       enableTracing: enableTracing,
       dumpAST: dumpAST,
-      xfail: xfail)
+      xfail: xfail,
+      file: file,
+      line: line)
   }
 }
 
@@ -400,7 +406,8 @@ extension RegexTests {
       "a++a",
       ("babc", nil),
       ("baaabc", nil),
-      ("bb", nil))
+      ("bb", nil),
+      xfail: true)
     firstMatchTests(
       "a+?a",
       ("babc", nil),
@@ -462,15 +469,11 @@ extension RegexTests {
       "a{2,4}+a",
       ("babc", nil),
       ("baabc", nil),
-      ("baaabc", nil),
       ("baaaaabc", "aaaaa"),
       ("baaaaaaaabc", "aaaaa"),
       ("bb", nil))
     firstMatchTests(
       "a{,4}+a",
-      ("babc", nil),
-      ("baabc", nil),
-      ("baaabc", nil),
       ("baaaaabc", "aaaaa"),
       ("baaaaaaaabc", "aaaaa"),
       ("bb", nil))
@@ -478,11 +481,44 @@ extension RegexTests {
       "a{2,}+a",
       ("babc", nil),
       ("baabc", nil),
+      ("bb", nil))
+    
+    // XFAIL'd versions of the above
+    firstMatchTests(
+      "a{2,4}+a",
+      ("baaabc", nil),
+      xfail: true)
+    firstMatchTests(
+      "a{,4}+a",
+      ("babc", nil),
+      ("baabc", nil),
+      ("baaabc", nil),
+      xfail: true)
+    firstMatchTests(
+      "a{2,}+a",
       ("baaabc", nil),
       ("baaaaabc", nil),
       ("baaaaaaaabc", nil),
-      ("bb", nil))
+      xfail: true)
 
+    // XFAIL'd possessive tests
+    firstMatchTests(
+      "a?+a",
+      ("a", nil),
+      xfail: true)
+    firstMatchTests(
+      "(a|a)?+a",
+      ("a", nil),
+      xfail: true)
+    firstMatchTests(
+      "(a|a){2,4}+a",
+      ("a", nil),
+      ("aa", nil))
+    firstMatchTests(
+      "(a|a){2,4}+a",
+      ("aaa", nil),
+      ("aaaa", nil),
+      xfail: true)
 
     firstMatchTests(
       "(?:a{2,4}?b)+",
@@ -946,15 +982,19 @@ extension RegexTests {
 
     // TODO: Oniguruma \y and \Y
     firstMatchTests(
-      #"\u{65}"#,             // Scalar 'e' is present in both:
-      ("Cafe\u{301}", "e"),   // composed and
-      ("Sol Cafe", "e"))      // standalone
+      #"\u{65}"#,             // Scalar 'e' is present in both
+      ("Cafe\u{301}", nil),   // but scalar mode requires boundary at end of match
+      xfail: true)
+    firstMatchTests(
+      #"\u{65}"#,             // Scalar 'e' is present in both
+      ("Sol Cafe", "e"))      // standalone is okay
+
     firstMatchTests(
       #"\u{65}\y"#,           // Grapheme boundary assertion
       ("Cafe\u{301}", nil),
       ("Sol Cafe", "e"))
     firstMatchTests(
-      #"\u{65}\Y"#,           // Grapheme non-boundary assertion
+      #"(?u)\u{65}\Y"#,       // Grapheme non-boundary assertion
       ("Cafe\u{301}", "e"),
       ("Sol Cafe", nil))
   }
@@ -1361,11 +1401,11 @@ extension RegexTests {
     // as a character.
 
     firstMatchTest(#"\u{65}\u{301}$"#, input: eDecomposed, match: eDecomposed)
-    // FIXME: Decomposed character in regex literal doesn't match an equivalent character
-    firstMatchTest(#"\u{65}\u{301}$"#, input: eComposed, match: eComposed,
-      xfail: true)
+    firstMatchTest(#"\u{65}\u{301}$"#, input: eComposed, match: eComposed)
 
-    firstMatchTest(#"\u{65}"#, input: eDecomposed, match: "e")
+    // FIXME: Implicit \y at end of match
+    firstMatchTest(#"\u{65}"#, input: eDecomposed, match: nil,
+      xfail: true)
     firstMatchTest(#"\u{65}$"#, input: eDecomposed, match: nil)
     // FIXME: \y is unsupported
     firstMatchTest(#"\u{65}\y"#, input: eDecomposed, match: nil,
@@ -1389,12 +1429,10 @@ extension RegexTests {
       (eComposed, true),
       (eDecomposed, true))
 
-    // FIXME: Decomposed character in regex literal doesn't match an equivalent character
     matchTest(
       #"e\u{301}$"#,
       (eComposed, true),
-      (eDecomposed, true),
-      xfail: true)
+      (eDecomposed, true))
 
     matchTest(
       #"e$"#,
@@ -1415,9 +1453,7 @@ extension RegexTests {
       (eDecomposed, true))
     // \p{Letter}
     firstMatchTest(#"\p{Letter}$"#, input: eComposed, match: eComposed)
-    // FIXME: \p{Letter} doesn't match a decomposed character
-    firstMatchTest(#"\p{Letter}$"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
+    firstMatchTest(#"\p{Letter}$"#, input: eDecomposed, match: eDecomposed)
     
     // \d
     firstMatchTest(#"\d"#, input: "5", match: "5")
@@ -1480,7 +1516,8 @@ extension RegexTests {
     firstMatchTest(#"\u{1F1F0}\u{1F1F7}"#, input: flag, match: flag)
     
     // First Unicode scalar followed by CCC of regional indicators
-    firstMatchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag)
+    firstMatchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag,
+              xfail: true)
 
     // FIXME: CCC of Regional Indicator doesn't match with both parts of a flag character
     // A CCC of regional indicators x 2
@@ -1521,8 +1558,7 @@ extension RegexTests {
     
     // FIXME: \O is unsupported
     firstMatchTest(#"(?u)\O\u{301}"#, input: eDecomposed, match: eDecomposed)
-    firstMatchTest(#"(?u)e\O"#, input: eDecomposed, match: eDecomposed,
-      xfail: true)
+    firstMatchTest(#"(?u)e\O"#, input: eDecomposed, match: eDecomposed)
     firstMatchTest(#"\O"#, input: eComposed, match: eComposed)
     firstMatchTest(#"\O"#, input: eDecomposed, match: nil,
               xfail: true)
