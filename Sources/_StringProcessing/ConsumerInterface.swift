@@ -120,27 +120,27 @@ extension String {
   /// FIXME: Special case for U+1180 HANGUL JUNGSEONG O-E
   /// See https://www.unicode.org/reports/tr44/#Matching_Rules
   fileprivate func isEqualByUAX44LM2(to other: String) -> Bool {
-    var i = startIndex
-    var j = other.startIndex
+    var index = startIndex
+    var otherIndex = other.startIndex
     
-    while i < endIndex {
-      if self[i].isWhitespace || self[i] == "-" || self[i] == "_" {
-        formIndex(after: &i)
+    while index < endIndex && otherIndex < other.endIndex {
+      if self[index].isWhitespace || self[index] == "-" || self[index] == "_" {
+        formIndex(after: &index)
         continue
       }
-      if other[j].isWhitespace || other[j] == "-" || other[j] == "_" {
-        other.formIndex(after: &j)
+      if other[otherIndex].isWhitespace || other[otherIndex] == "-" || other[otherIndex] == "_" {
+        other.formIndex(after: &otherIndex)
         continue
       }
       
-      if self[i] != other[j] && self[i].lowercased() != other[j].lowercased() {
+      if self[index] != other[otherIndex] && self[index].lowercased() != other[otherIndex].lowercased() {
         return false
       }
 
-      formIndex(after: &i)
-      other.formIndex(after: &j)
+      formIndex(after: &index)
+      other.formIndex(after: &otherIndex)
     }
-    return i == endIndex && j == other.endIndex
+    return index == endIndex && otherIndex == other.endIndex
   }
 }
 
