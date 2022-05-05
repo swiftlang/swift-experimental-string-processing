@@ -168,7 +168,15 @@ extension Compiler.ByteCodeGen {
   }
   
   mutating func emitCharacter(_ c: Character) throws {
-    // FIXME: Does semantic level matter?
+    // Unicode scalar matches the specific scalars that comprise a character
+    if options.semanticLevel == .unicodeScalar {
+      print("emitting '\(c)' as a sequence of \(c.unicodeScalars.count) scalars")
+      for scalar in c.unicodeScalars {
+        try emitScalar(scalar)
+      }
+      return
+    }
+    
     if options.isCaseInsensitive && c.isCased {
       // TODO: buildCaseInsensitiveMatch(c) or buildMatch(c, caseInsensitive: true)
       builder.buildConsume { input, bounds in
@@ -625,22 +633,44 @@ extension Compiler.ByteCodeGen {
       try emitAtom(a)
 
     case let .quotedLiteral(s):
-      // TODO: Should this incorporate options?
-      if options.isCaseInsensitive {
-        // TODO: buildCaseInsensitiveMatchSequence(c) or alternative
-        builder.buildConsume { input, bounds in
-          var iterator = s.makeIterator()
+      if options.semanticLevel == .graphemeCluster {
+        if options.isCaseInsensitive {
+          // TODO: buildCaseInsensitiveMatchSequence(c) or alternative
+          builder.buildConsume { input, bounds in
+            var iterator = s.makeIterator()
+            var currentIndex = bounds.lowerBound
+            while let ch = iterator.next() {
+              guard currentIndex < bounds.upperBound,
+                    ch.lowercased() == input[currentIndex].lowercased()
+              else { return nil }
+              input.formIndex(after: &currentIndex)
+            }
+            return currentIndex
+          }
+        } else {
+          builder.buildMatchSequence(s)
+        }
+      } else {
+        builder.buildConsume {
+          [caseInsensitive = options.isCaseInsensitive] input, bounds in
+          // TODO: Case folding
+          var iterator = s.unicodeScalars.makeIterator()
           var currentIndex = bounds.lowerBound
-          while let ch = iterator.next() {
-            guard currentIndex < bounds.upperBound,
-                  ch.lowercased() == input[currentIndex].lowercased()
-            else { return nil }
-            input.formIndex(after: &currentIndex)
+          while let scalar = iterator.next() {
+            guard currentIndex < bounds.upperBound else { return nil }
+            if caseInsensitive {
+              if scalar.properties.lowercaseMapping != input.unicodeScalars[currentIndex].properties.lowercaseMapping {
+                return nil
+              }
+            } else {
+              if scalar != input.unicodeScalars[currentIndex] {
+                return nil
+              }
+            }
+            input.unicodeScalars.formIndex(after: &currentIndex)
           }
           return currentIndex
         }
-      } else {
-        builder.buildMatchSequence(s)
       }
 
     case let .regexLiteral(l):
