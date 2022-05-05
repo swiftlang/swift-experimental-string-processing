@@ -353,8 +353,9 @@ extension DSLTree.CustomCharacterClass {
         }
       }
       if isInverted {
-        // FIXME: semantic level
-        return input.index(after: bounds.lowerBound)
+        return opts.semanticLevel == .graphemeCluster
+          ? input.index(after: bounds.lowerBound)
+          : input.unicodeScalars.index(after: bounds.lowerBound)
       }
       return nil
     }
@@ -362,38 +363,26 @@ extension DSLTree.CustomCharacterClass {
 }
 
 // NOTE: Conveniences, though not most performant
-private func consumeScalarScript(
-  _ s: Unicode.Script
-) -> MEProgram<String>.ConsumeFunction {
-  consumeScalar {
-    Unicode.Script($0) == s
-  }
+typealias ScalarPredicate = (UnicodeScalar) -> Bool
+
+private func scriptScalarPredicate(_ s: Unicode.Script) -> ScalarPredicate {
+  { Unicode.Script($0) == s }
 }
-private func consumeScalarScriptExtension(
-  _ s: Unicode.Script
-) -> MEProgram<String>.ConsumeFunction {
-  consumeScalar {
-    let extensions = Unicode.Script.extensions(for: $0)
-    return extensions.contains(s)
-  }
+private func scriptExtensionScalarPredicate(_ s: Unicode.Script) -> ScalarPredicate {
+  { Unicode.Script.extensions(for: $0).contains(s) }
 }
-private func consumeScalarGC(
-  _ gc: Unicode.GeneralCategory
-) -> MEProgram<String>.ConsumeFunction {
-  consumeScalar { gc == $0.properties.generalCategory }
+private func categoryScalarPredicate(_ gc: Unicode.GeneralCategory) -> ScalarPredicate {
+  { gc == $0.properties.generalCategory }
 }
-private func consumeScalarGCs(
-  _ gcs: [Unicode.GeneralCategory]
-) -> MEProgram<String>.ConsumeFunction {
-  consumeScalar { gcs.contains($0.properties.generalCategory) }
+private func categoriesScalarPredicate(_ gcs: [Unicode.GeneralCategory]) -> ScalarPredicate {
+  { gcs.contains($0.properties.generalCategory) }
 }
-private func consumeScalarProp(
-  _ p: @escaping (Unicode.Scalar.Properties) -> Bool
-) -> MEProgram<String>.ConsumeFunction {
-  consumeScalar { p($0.properties) }
+private func propertyScalarPredicate(_ p: @escaping (Unicode.Scalar.Properties) -> Bool) -> ScalarPredicate {
+  { p($0.properties) }
 }
+
 func consumeScalar(
-  _ p: @escaping (Unicode.Scalar) -> Bool
+  _ p: @escaping ScalarPredicate
 ) -> MEProgram<String>.ConsumeFunction {
   { input, bounds in
     // TODO: bounds check?
@@ -404,6 +393,37 @@ func consumeScalar(
     }
     return nil
   }
+}
+func consumeCharacterWithLeadingScalar(
+  _ p: @escaping ScalarPredicate
+) -> MEProgram<String>.ConsumeFunction {
+  { input, bounds in
+    let curIdx = bounds.lowerBound
+    if p(input[curIdx].unicodeScalars.first!) {
+      return input.index(after: curIdx)
+    }
+    return nil
+  }
+}
+func consumeCharacterWithSingleScalar(
+  _ p: @escaping ScalarPredicate
+) -> MEProgram<String>.ConsumeFunction {
+  { input, bounds in
+    let curIdx = bounds.lowerBound
+    
+    if input[curIdx].hasExactlyOneScalar && p(input[curIdx].unicodeScalars.first!) {
+      return input.index(after: curIdx)
+    }
+    return nil
+  }
+}
+
+func consumeFunction(
+  for opts: MatchingOptions
+) -> (@escaping ScalarPredicate) -> MEProgram<String>.ConsumeFunction {
+  opts.semanticLevel == .graphemeCluster
+    ? consumeCharacterWithLeadingScalar
+    : consumeScalar
 }
 
 extension AST.Atom.CharacterProperty {
@@ -416,16 +436,15 @@ extension AST.Atom.CharacterProperty {
     ) -> MEProgram<String>.ConsumeFunction {
       return { input, bounds in
         if p(input, bounds) != nil { return nil }
-        // TODO: semantic level
+
         // TODO: bounds check
-        return input.unicodeScalars.index(
-          after: bounds.lowerBound)
+        return opts.semanticLevel == .graphemeCluster
+          ? input.index(after: bounds.lowerBound)
+          : input.unicodeScalars.index(after: bounds.lowerBound)
       }
     }
 
-    // FIXME: Below is largely scalar based, for convenience,
-    // but we want a comprehensive treatment to semantic mode
-    // switching.
+    let consume = consumeFunction(for: opts)
     let preInversion: MEProgram<String>.ConsumeFunction =
     try {
       switch kind {
@@ -436,11 +455,16 @@ extension AST.Atom.CharacterProperty {
           return input.index(after: bounds.lowerBound)
         }
       case .assigned:
-        return consumeScalar {
+        return consume {
           $0.properties.generalCategory != .unassigned
         }
       case .ascii:
-        return consumeScalar(\.isASCII)
+        // Note: ASCII must look at the whole character, not just the first
+        // scalar. That is, "e\u{301}" is not an ASCII character, even though
+        // the first scalar is.
+        return opts.semanticLevel == .graphemeCluster
+          ? consumeCharacterWithSingleScalar(\.isASCII)
+          : consumeScalar(\.isASCII)
 
       case .generalCategory(let p):
         return try p.generateConsumer(opts)
@@ -451,10 +475,10 @@ extension AST.Atom.CharacterProperty {
         return value ? cons : invert(cons)
 
       case .script(let s):
-        return consumeScalarScript(s)
+        return consume(scriptScalarPredicate(s))
 
       case .scriptExtension(let s):
-        return consumeScalarScriptExtension(s)
+        return consume(scriptExtensionScalarPredicate(s))
 
       case .posix(let p):
         return p.generateConsumer(opts)
@@ -477,49 +501,48 @@ extension Unicode.BinaryProperty {
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram<String>.ConsumeFunction {
+    let consume = consumeFunction(for: opts)
+    
     switch self {
-
     case .asciiHexDigit:
-      return consumeScalarProp {
+      return consume(propertyScalarPredicate {
         $0.isHexDigit && $0.isASCIIHexDigit
-      }
+      })
     case .alphabetic:
-      return consumeScalarProp(\.isAlphabetic)
+      return consume(propertyScalarPredicate(\.isAlphabetic))
     case .bidiControl:
       break
-
-
-    case .bidiMirrored: 
-      return consumeScalarProp(\.isBidiMirrored)
+    case .bidiMirrored:
+      return consume(propertyScalarPredicate(\.isBidiMirrored))
     case .cased:
-      return consumeScalarProp(\.isCased)
+      return consume(propertyScalarPredicate(\.isCased))
     case .compositionExclusion:
       break
     case .caseIgnorable:
-      return consumeScalarProp(\.isCaseIgnorable)
+      return consume(propertyScalarPredicate(\.isCaseIgnorable))
     case .changesWhenCasefolded:
-      return consumeScalarProp(\.changesWhenCaseFolded)
+      return consume(propertyScalarPredicate(\.changesWhenCaseFolded))
     case .changesWhenCasemapped:
-      return consumeScalarProp(\.changesWhenCaseMapped)
+      return consume(propertyScalarPredicate(\.changesWhenCaseMapped))
     case .changesWhenNFKCCasefolded:
-      return consumeScalarProp(\.changesWhenNFKCCaseFolded)
+      return consume(propertyScalarPredicate(\.changesWhenNFKCCaseFolded))
     case .changesWhenLowercased:
-      return consumeScalarProp(\.changesWhenLowercased)
+      return consume(propertyScalarPredicate(\.changesWhenLowercased))
     case .changesWhenTitlecased:
-      return consumeScalarProp(\.changesWhenTitlecased)
+      return consume(propertyScalarPredicate(\.changesWhenTitlecased))
     case .changesWhenUppercased:
-      return consumeScalarProp(\.changesWhenUppercased)
+      return consume(propertyScalarPredicate(\.changesWhenUppercased))
     case .dash:
-      return consumeScalarProp(\.isDash)
+      return consume(propertyScalarPredicate(\.isDash))
     case .deprecated:
-      return consumeScalarProp(\.isDeprecated)
+      return consume(propertyScalarPredicate(\.isDeprecated))
     case .defaultIgnorableCodePoint:
-      return consumeScalarProp(\.isDefaultIgnorableCodePoint)
+      return consume(propertyScalarPredicate(\.isDefaultIgnorableCodePoint))
     case .diacratic: // spelling?
-      return consumeScalarProp(\.isDiacritic)
+      return consume(propertyScalarPredicate(\.isDiacritic))
     case .emojiModifierBase:
       if #available(macOS 10.12.2, iOS 10.2, tvOS 10.1, watchOS 3.1.1, *) {
-        return consumeScalarProp(\.isEmojiModifierBase)
+        return consume(propertyScalarPredicate(\.isEmojiModifierBase))
       } else {
         throw Unsupported(
           "isEmojiModifierBase on old OSes")
@@ -528,59 +551,59 @@ extension Unicode.BinaryProperty {
       break
     case .emojiModifier:
       if #available(macOS 10.12.2, iOS 10.2, tvOS 10.1, watchOS 3.1.1, *) {
-        return consumeScalarProp(\.isEmojiModifier)
+        return consume(propertyScalarPredicate(\.isEmojiModifier))
       } else {
         throw Unsupported("isEmojiModifier on old OSes")
       }
     case .emoji:
       if #available(macOS 10.12.2, iOS 10.2, tvOS 10.1, watchOS 3.1.1, *) {
-        return consumeScalarProp(\.isEmoji)
+        return consume(propertyScalarPredicate(\.isEmoji))
       } else {
         throw Unsupported("isEmoji on old OSes")
       }
     case .emojiPresentation:
       if #available(macOS 10.12.2, iOS 10.2, tvOS 10.1, watchOS 3.1.1, *) {
-        return consumeScalarProp(\.isEmojiPresentation)
+        return consume(propertyScalarPredicate(\.isEmojiPresentation))
       } else {
         throw Unsupported(
           "isEmojiPresentation on old OSes")
       }
     case .extender:
-      return consumeScalarProp(\.isExtender)
+      return consume(propertyScalarPredicate(\.isExtender))
     case .extendedPictographic:
       break // NOTE: Stdlib has this data internally
     case .fullCompositionExclusion:
-      return consumeScalarProp(\.isFullCompositionExclusion)
+      return consume(propertyScalarPredicate(\.isFullCompositionExclusion))
     case .graphemeBase:
-      return consumeScalarProp(\.isGraphemeBase)
+      return consume(propertyScalarPredicate(\.isGraphemeBase))
     case .graphemeExtended:
-      return consumeScalarProp(\.isGraphemeExtend)
+      return consume(propertyScalarPredicate(\.isGraphemeExtend))
     case .graphemeLink:
       break
     case .hexDigit:
-      return consumeScalarProp(\.isHexDigit)
+      return consume(propertyScalarPredicate(\.isHexDigit))
     case .hyphen:
       break
     case .idContinue:
-      return consumeScalarProp(\.isIDContinue)
+      return consume(propertyScalarPredicate(\.isIDContinue))
     case .ideographic:
-      return consumeScalarProp(\.isIdeographic)
+      return consume(propertyScalarPredicate(\.isIdeographic))
     case .idStart:
-      return consumeScalarProp(\.isIDStart)
+      return consume(propertyScalarPredicate(\.isIDStart))
     case .idsBinaryOperator:
-      return consumeScalarProp(\.isIDSBinaryOperator)
+      return consume(propertyScalarPredicate(\.isIDSBinaryOperator))
     case .idsTrinaryOperator:
-      return consumeScalarProp(\.isIDSTrinaryOperator)
+      return consume(propertyScalarPredicate(\.isIDSTrinaryOperator))
     case .joinControl:
-      return consumeScalarProp(\.isJoinControl)
+      return consume(propertyScalarPredicate(\.isJoinControl))
     case .logicalOrderException:
-      return consumeScalarProp(\.isLogicalOrderException)
+      return consume(propertyScalarPredicate(\.isLogicalOrderException))
     case .lowercase:
-      return consumeScalarProp(\.isLowercase)
+      return consume(propertyScalarPredicate(\.isLowercase))
     case .math:
-      return consumeScalarProp(\.isMath)
+      return consume(propertyScalarPredicate(\.isMath))
     case .noncharacterCodePoint:
-      return consumeScalarProp(\.isNoncharacterCodePoint)
+      return consume(propertyScalarPredicate(\.isNoncharacterCodePoint))
     case .otherAlphabetic:
       break
     case .otherDefaultIgnorableCodePoint:
@@ -598,37 +621,37 @@ extension Unicode.BinaryProperty {
     case .otherUppercase:
       break
     case .patternSyntax:
-      return consumeScalarProp(\.isPatternSyntax)
+      return consume(propertyScalarPredicate(\.isPatternSyntax))
     case .patternWhitespace:
-      return consumeScalarProp(\.isPatternWhitespace)
+      return consume(propertyScalarPredicate(\.isPatternWhitespace))
     case .prependedConcatenationMark:
       break
     case .quotationMark:
-      return consumeScalarProp(\.isQuotationMark)
+      return consume(propertyScalarPredicate(\.isQuotationMark))
     case .radical:
-      return consumeScalarProp(\.isRadical)
+      return consume(propertyScalarPredicate(\.isRadical))
     case .regionalIndicator:
-      return consumeScalar { s in
+      return consume { s in
         (0x1F1E6...0x1F1FF).contains(s.value)
       }
     case .softDotted:
-      return consumeScalarProp(\.isSoftDotted)
+      return consume(propertyScalarPredicate(\.isSoftDotted))
     case .sentenceTerminal:
-      return consumeScalarProp(\.isSentenceTerminal)
+      return consume(propertyScalarPredicate(\.isSentenceTerminal))
     case .terminalPunctuation:
-      return consumeScalarProp(\.isTerminalPunctuation)
+      return consume(propertyScalarPredicate(\.isTerminalPunctuation))
     case .unifiedIdiograph: // spelling?
-      return consumeScalarProp(\.isUnifiedIdeograph)
+      return consume(propertyScalarPredicate(\.isUnifiedIdeograph))
     case .uppercase:
-      return consumeScalarProp(\.isUppercase)
+      return consume(propertyScalarPredicate(\.isUppercase))
     case .variationSelector:
-      return consumeScalarProp(\.isVariationSelector)
+      return consume(propertyScalarPredicate(\.isVariationSelector))
     case .whitespace:
-      return consumeScalarProp(\.isWhitespace)
+      return consume(propertyScalarPredicate(\.isWhitespace))
     case .xidContinue:
-      return consumeScalarProp(\.isXIDContinue)
+      return consume(propertyScalarPredicate(\.isXIDContinue))
     case .xidStart:
-      return consumeScalarProp(\.isXIDStart)
+      return consume(propertyScalarPredicate(\.isXIDStart))
     case .expandsOnNFC, .expandsOnNFD, .expandsOnNFKD,
         .expandsOnNFKC:
       throw Unsupported("Unicode-deprecated: \(self)")
@@ -643,42 +666,44 @@ extension Unicode.POSIXProperty {
   func generateConsumer(
     _ opts: MatchingOptions
   ) -> MEProgram<String>.ConsumeFunction {
-    // FIXME: semantic levels, modes, etc
+    let consume = consumeFunction(for: opts)
+
+    // FIXME: modes, etc
     switch self {
     case .alnum:
-      return consumeScalarProp {
+      return consume(propertyScalarPredicate {
         $0.isAlphabetic || $0.numericType != nil
-      }
+      })
     case .blank:
-      return consumeScalar { s in
+      return consume { s in
         s.properties.generalCategory == .spaceSeparator ||
         s == "\t"
       }
 
     case .graph:
-      return consumeScalarProp { p in
+      return consume(propertyScalarPredicate { p in
         !(
           p.isWhitespace ||
           p.generalCategory == .control ||
           p.generalCategory == .surrogate ||
           p.generalCategory == .unassigned
         )
-      }
+      })
     case .print:
-      return consumeScalarProp { p in
+      return consume(propertyScalarPredicate { p in
         // FIXME: better def
         p.generalCategory != .control
-      }
+      })
     case .word:
-      return consumeScalarProp { p in
+      return consume(propertyScalarPredicate { p in
         // FIXME: better def
         p.isAlphabetic || p.numericType != nil
         || p.isJoinControl
         || p.isDash// marks and connectors...
-      }
+      })
 
     case .xdigit:
-      return consumeScalarProp(\.isHexDigit) // or number
+      return consume(propertyScalarPredicate(\.isHexDigit)) // or number
 
     }
   }
@@ -689,113 +714,115 @@ extension Unicode.ExtendedGeneralCategory {
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram<String>.ConsumeFunction {
+    let consume = consumeFunction(for: opts)
+
     switch self {
     case .letter:
-      return consumeScalarGCs([
+      return consume(categoriesScalarPredicate([
         .uppercaseLetter, .lowercaseLetter,
         .titlecaseLetter, .modifierLetter,
         .otherLetter
-      ])
+      ]))
 
     case .mark:
-      return consumeScalarGCs([
+      return consume(categoriesScalarPredicate([
         .nonspacingMark, .spacingMark, .enclosingMark
-      ])
+      ]))
 
     case .number:
-      return consumeScalarGCs([
+      return consume(categoriesScalarPredicate([
         .decimalNumber, .letterNumber, .otherNumber
-      ])
+      ]))
 
     case .symbol:
-      return consumeScalarGCs([
+      return consume(categoriesScalarPredicate([
         .mathSymbol, .currencySymbol, .modifierSymbol,
         .otherSymbol
-      ])
+      ]))
 
     case .punctuation:
-      return consumeScalarGCs([
+      return consume(categoriesScalarPredicate([
         .connectorPunctuation, .dashPunctuation,
         .openPunctuation, .closePunctuation,
         .initialPunctuation, .finalPunctuation,
         .otherPunctuation
-      ])
+      ]))
 
     case .separator:
-      return consumeScalarGCs([
+      return consume(categoriesScalarPredicate([
         .spaceSeparator, .lineSeparator, .paragraphSeparator
-      ])
+      ]))
 
     case .other:
-      return consumeScalarGCs([
+      return consume(categoriesScalarPredicate([
         .control, .format, .surrogate, .privateUse, .unassigned
-      ])
+      ]))
 
     case .casedLetter:
-      return consumeScalarGCs([
+      return consume(categoriesScalarPredicate([
         .uppercaseLetter, .lowercaseLetter, .titlecaseLetter
-      ])
+      ]))
 
     case .control:
-      return consumeScalarGC(.control)
+      return consume(categoryScalarPredicate(.control))
     case .format:
-      return consumeScalarGC(.format)
+      return consume(categoryScalarPredicate(.format))
     case .unassigned:
-      return consumeScalarGC(.unassigned)
+      return consume(categoryScalarPredicate(.unassigned))
     case .privateUse:
-      return consumeScalarGC(.privateUse)
+      return consume(categoryScalarPredicate(.privateUse))
     case .surrogate:
-      return consumeScalarGC(.surrogate)
+      return consume(categoryScalarPredicate(.surrogate))
     case .lowercaseLetter:
-      return consumeScalarGC(.lowercaseLetter)
+      return consume(categoryScalarPredicate(.lowercaseLetter))
     case .modifierLetter:
-      return consumeScalarGC(.modifierLetter)
+      return consume(categoryScalarPredicate(.modifierLetter))
     case .otherLetter:
-      return consumeScalarGC(.otherLetter)
+      return consume(categoryScalarPredicate(.otherLetter))
     case .titlecaseLetter:
-      return consumeScalarGC(.titlecaseLetter)
+      return consume(categoryScalarPredicate(.titlecaseLetter))
     case .uppercaseLetter:
-      return consumeScalarGC(.uppercaseLetter)
+      return consume(categoryScalarPredicate(.uppercaseLetter))
     case .spacingMark:
-      return consumeScalarGC(.spacingMark)
+      return consume(categoryScalarPredicate(.spacingMark))
     case .enclosingMark:
-      return consumeScalarGC(.enclosingMark)
+      return consume(categoryScalarPredicate(.enclosingMark))
     case .nonspacingMark:
-      return consumeScalarGC(.nonspacingMark)
+      return consume(categoryScalarPredicate(.nonspacingMark))
     case .decimalNumber:
-      return consumeScalarGC(.decimalNumber)
+      return consume(categoryScalarPredicate(.decimalNumber))
     case .letterNumber:
-      return consumeScalarGC(.letterNumber)
+      return consume(categoryScalarPredicate(.letterNumber))
     case .otherNumber:
-      return consumeScalarGC(.otherNumber)
+      return consume(categoryScalarPredicate(.otherNumber))
     case .connectorPunctuation:
-      return consumeScalarGC(.connectorPunctuation)
+      return consume(categoryScalarPredicate(.connectorPunctuation))
     case .dashPunctuation:
-      return consumeScalarGC(.dashPunctuation)
+      return consume(categoryScalarPredicate(.dashPunctuation))
     case .closePunctuation:
-      return consumeScalarGC(.closePunctuation)
+      return consume(categoryScalarPredicate(.closePunctuation))
     case .finalPunctuation:
-      return consumeScalarGC(.finalPunctuation)
+      return consume(categoryScalarPredicate(.finalPunctuation))
     case .initialPunctuation:
-      return consumeScalarGC(.initialPunctuation)
+      return consume(categoryScalarPredicate(.initialPunctuation))
     case .otherPunctuation:
-      return consumeScalarGC(.otherPunctuation)
+      return consume(categoryScalarPredicate(.otherPunctuation))
     case .openPunctuation:
-      return consumeScalarGC(.openPunctuation)
+      return consume(categoryScalarPredicate(.openPunctuation))
     case .currencySymbol:
-      return consumeScalarGC(.currencySymbol)
+      return consume(categoryScalarPredicate(.currencySymbol))
     case .modifierSymbol:
-      return consumeScalarGC(.modifierSymbol)
+      return consume(categoryScalarPredicate(.modifierSymbol))
     case .mathSymbol:
-      return consumeScalarGC(.mathSymbol)
+      return consume(categoryScalarPredicate(.mathSymbol))
     case .otherSymbol:
-      return consumeScalarGC(.otherSymbol)
+      return consume(categoryScalarPredicate(.otherSymbol))
     case .lineSeparator:
-      return consumeScalarGC(.lineSeparator)
+      return consume(categoryScalarPredicate(.lineSeparator))
     case .paragraphSeparator:
-      return consumeScalarGC(.paragraphSeparator)
+      return consume(categoryScalarPredicate(.paragraphSeparator))
     case .spaceSeparator:
-      return consumeScalarGC(.spaceSeparator)
+      return consume(categoryScalarPredicate(.spaceSeparator))
     }
   }
 }

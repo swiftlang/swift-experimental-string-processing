@@ -499,7 +499,7 @@ extension RegexTests {
       ("baaabc", nil),
       ("baaaaabc", nil),
       ("baaaaaaaabc", nil),
-      ("bb", nil))
+      xfail: true)
 
     // XFAIL'd possessive tests
     firstMatchTests(
@@ -1454,8 +1454,7 @@ extension RegexTests {
     // \p{Letter}
     firstMatchTest(#"\p{Letter}$"#, input: eComposed, match: eComposed)
     // FIXME: \p{Letter} doesn't match a decomposed character
-    firstMatchTest(#"\p{Letter}$"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
+    firstMatchTest(#"\p{Letter}$"#, input: eDecomposed, match: eDecomposed)
     
     // \d
     firstMatchTest(#"\d"#, input: "5", match: "5")
@@ -1560,8 +1559,7 @@ extension RegexTests {
     
     // FIXME: \O is unsupported
     firstMatchTest(#"(?u)\O\u{301}"#, input: eDecomposed, match: eDecomposed)
-    firstMatchTest(#"(?u)e\O"#, input: eDecomposed, match: eDecomposed,
-      xfail: true)
+    firstMatchTest(#"(?u)e\O"#, input: eDecomposed, match: eDecomposed)
     firstMatchTest(#"\O"#, input: eComposed, match: eComposed)
     firstMatchTest(#"\O"#, input: eDecomposed, match: nil,
               xfail: true)

@@ -15,9 +15,9 @@ import _StringProcessing
 
 class UTS18Tests: XCTestCase {
   var input: String {
-    "ABCdefghîøü\u{FFF0} -–—[]123"
-  // 012345678901       234567890
-  // 0         10               20
+    "ABCdefghîøu\u{308}\u{FFF0} -–—[]123"
+  // 01234567890       1       234567890
+  // 0                10               20
   }
 }
 
