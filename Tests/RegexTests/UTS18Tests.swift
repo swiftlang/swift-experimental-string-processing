@@ -492,9 +492,10 @@ extension UTS18Tests {
     // IDS_Binary_Operator
     // IDS_Trinary_Operator
     // Equivalent_Unified_Ideograph
-    XCTExpectFailure()
-    XCTFail(#"Unsupported: \(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#)"#)
-    // XCTAssertTrue("⼚⺁厂".contains(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#))
+    XCTExpectFailure {
+      XCTFail(#"Unsupported: \(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#)"#)
+      // XCTAssertTrue("⼚⺁厂".contains(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#))
+    }
 
     // MARK: Case
     // Uppercase
