@@ -187,16 +187,7 @@ extension Compiler.ByteCodeGen {
           : nil
       }
     } else {
-      let done = builder.makeAddress()
-      let next = builder.makeAddress()
-      builder.buildSave(next)
-      for scalar in c.unicodeScalars {
-        try emitScalar(scalar)
-      }
-      builder.buildBranch(to: done)
-      builder.label(next)
       builder.buildMatch(c)
-      builder.label(done)      
     }
   }
 

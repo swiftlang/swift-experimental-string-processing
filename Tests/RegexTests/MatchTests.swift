@@ -1453,7 +1453,6 @@ extension RegexTests {
       (eDecomposed, true))
     // \p{Letter}
     firstMatchTest(#"\p{Letter}$"#, input: eComposed, match: eComposed)
-    // FIXME: \p{Letter} doesn't match a decomposed character
     firstMatchTest(#"\p{Letter}$"#, input: eDecomposed, match: eDecomposed)
     
     // \d
