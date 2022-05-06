@@ -863,6 +863,31 @@ class RegexDSLTests: XCTestCase {
     }
     
     // Post-hoc captured references
+    // #"(?:\w\1|:(\w):)+"#
+    try _testDSLCaptures(
+      (":a:baca:o:boco", (":a:baca:o:boco", "o")),
+      matchType: (Substring, Substring?).self,
+      ==
+    ) {
+      // NOTE: "expression too complex to type check" when inferring the generic
+      // parameter.
+      OneOrMore {
+        let a = Reference(Substring.self)
+        ChoiceOf<(Substring, Substring?)> {
+          Regex {
+            .word
+            a
+          }
+          Regex {
+            ":"
+            Capture(.word, as: a)
+            ":"
+          }
+        }
+      }
+    }
+
+    // Post-hoc captured reference w/ attempted match before capture
     // #"(?:\w\1|(\w):)+"#
     //
     // This tests that the reference `a` simply fails to match instead of
