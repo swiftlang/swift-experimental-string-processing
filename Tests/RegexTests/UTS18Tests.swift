@@ -284,10 +284,14 @@ extension UTS18Tests {
     lines = lineInput.matches(
       of: regex(#"\d{2}\R^"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 11)
+    XCTAssertNotNil(lineInput.firstMatch(
+      of: regex(#"08\R^"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings()))
     // Unicode scalar semantics - \v matches all except for \r\n sequence
     lines = lineInput.matches(
       of: regex(#"\d{2}\v^"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 10)
+    XCTAssertNil(lineInput.firstMatch(
+      of: regex(#"08\v^"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings()))
 
     // Does not contain an empty line
     XCTAssertFalse(lineInput.contains(regex(#"^$"#)))
