@@ -1219,6 +1219,13 @@ extension RegexTests {
     parseTest(#"\p{word}"#,  prop(.posix(.word)))
     parseTest(#"\p{xdigit}"#, prop(.posix(.xdigit)))
 
+    parseTest(#"\p{name=A}"#, prop(.named("A")))
+    parseTest(#"\p{Name=B}"#, prop(.named("B")))
+    parseTest(#"\p{isName=C}"#, prop(.named("C")))
+    parseTest(#"\p{na=D}"#, prop(.named("D")))
+    parseTest(#"\p{NA=E}"#, prop(.named("E")))
+    parseTest(#"\p{na=isI}"#, prop(.named("isI")))
+
     // MARK: Conditionals
 
     parseTest(#"(?(1))"#, conditional(

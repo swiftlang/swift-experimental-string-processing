@@ -389,25 +389,34 @@ extension UTS18Tests {
   //
   // To meet this requirement, an implementation shall support individually
   // named characters.
-  func testNameProperty_XFail() {
-    XCTExpectFailure("Need \\p{name=...} support") {
-      XCTFail(#"\(#/\p{name=BOM}/#)"#)
-      // Name property
-      // XCTAssertTrue("\u{FEFF}".contains(#/\p{name=ZERO WIDTH NO-BREAK SPACE}/#))
-      // Name property and Matching Rules
-      // XCTAssertTrue("\u{FEFF}".contains(#/\p{name=zerowidthno breakspace}/#))
+  func testNameProperty() throws {
+    // Name property
+    XCTAssertTrue("\u{FEFF}".contains(regex(#"\p{name=ZERO WIDTH NO-BREAK SPACE}"#)))
+    // Name property and Matching Rules
+    XCTAssertTrue("\u{FEFF}".contains(regex(#"\p{name=zerowidthno breakspace}"#)))
+    
+    // Computed name
+    XCTAssertTrue("강".contains(regex(#"\p{name=HANGUL SYLLABLE GANG}"#)))
+    
+    // Graphic symbol
+    XCTAssertTrue("\u{1F514}".contains(regex(#"\p{name=BELL}"#)))
+    
+    // Name match failures
+    XCTAssertFalse("\u{FEFF}".contains(regex(#"\p{name=ZERO WIDTH NO-BRAKE SPACE}"#)))
+    XCTAssertFalse("\u{FEFF}".contains(regex(#"\p{name=ZERO WIDTH NO-BREAK SPACE ZZZZ}"#)))
+    XCTAssertFalse("\u{FEFF}".contains(regex(#"\p{name=ZERO WIDTH NO-BREAK}"#)))
+    XCTAssertFalse("\u{FEFF}".contains(regex(#"\p{name=z}"#)))
+  }
+  
+  func testNameProperty_XFail() throws {
+    XCTExpectFailure("Need more expansive name alias matching") {
       // Name_Alias property
-      // XCTAssertTrue("\u{FEFF}".contains(#/\p{name=BYTE ORDER MARK}/#))
+      XCTAssertTrue("\u{FEFF}".contains(regex(#"\p{name=BYTE ORDER MARK}"#)))
       // Name_Alias property (again)
-      // XCTAssertTrue("\u{FEFF}".contains(#/\p{name=BOM}/#))
-
-      // Computed name
-      // XCTAssertTrue("강".contains(#/\p{name=HANGUL SYLLABLE GANG}/#))
-
+      XCTAssertTrue("\u{FEFF}".contains(regex(#"\p{name=BOM}"#)))
+      
       // Control character
-      // XCTAssertTrue("\u{7}".contains(#/\p{name=BEL}/#))
-      // Graphic symbol
-      // XCTAssertTrue("\u{1F514}".contains(#/\p{name=BELL}/#))
+      XCTAssertTrue("\u{7}".contains(regex(#"\p{name=BEL}"#)))
     }
   }
   

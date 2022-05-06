@@ -396,6 +396,9 @@ extension AST.Atom.CharacterProperty {
     case script(Unicode.Script)
     case scriptExtension(Unicode.Script)
 
+    /// Character name in the form `\p{name=...}`
+    case named(String)
+    
     case posix(Unicode.POSIXProperty)
 
     /// Some special properties implemented by PCRE and Oniguruma.

@@ -428,6 +428,8 @@ extension Source {
         if let cat = classifyGeneralCategory(value) {
           return .generalCategory(cat)
         }
+      case "name", "na":
+        return .named(value)
       default:
         break
       }
