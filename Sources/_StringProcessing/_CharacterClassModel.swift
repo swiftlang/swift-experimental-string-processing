@@ -98,7 +98,7 @@ public struct _CharacterClassModel: Hashable {
       switch self {
       case .character(let c):
         if options.isCaseInsensitive {
-          return c.lowercased() == character.lowercased()
+          return c.caseFoldedEquals(character)
         } else {
           return c == character
         }

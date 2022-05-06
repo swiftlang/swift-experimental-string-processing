@@ -67,7 +67,7 @@ extension DSLTree.Atom {
       return { input, bounds in
         let low = bounds.lowerBound
         if isCaseInsensitive && c.isCased {
-          return input[low].lowercased() == c.lowercased()
+          return input[low].caseFoldedEquals(c)
             ? input.index(after: low)
             : nil
         } else {

@@ -180,9 +180,7 @@ extension Compiler.ByteCodeGen {
     if options.isCaseInsensitive && c.isCased {
       // TODO: buildCaseInsensitiveMatch(c) or buildMatch(c, caseInsensitive: true)
       builder.buildConsume { input, bounds in
-        let inputChar = input[bounds.lowerBound].lowercased()
-        let matchChar = c.lowercased()
-        return inputChar == matchChar
+        return input[bounds.lowerBound].caseFoldedEquals(c)
           ? input.index(after: bounds.lowerBound)
           : nil
       }
@@ -637,11 +635,13 @@ extension Compiler.ByteCodeGen {
         if options.isCaseInsensitive {
           // TODO: buildCaseInsensitiveMatchSequence(c) or alternative
           builder.buildConsume { input, bounds in
+            // FIXME: This needs to iterate over the case-folded strings, not
+            // iterate and then case-fold as we go.
             var iterator = s.makeIterator()
             var currentIndex = bounds.lowerBound
             while let ch = iterator.next() {
               guard currentIndex < bounds.upperBound,
-                    ch.lowercased() == input[currentIndex].lowercased()
+                    ch.caseFoldedEquals(input[currentIndex])
               else { return nil }
               input.formIndex(after: &currentIndex)
             }
