@@ -178,15 +178,18 @@ public struct _CharacterClassModel: Hashable {
         matched = c.isNumber && (c.isASCII || !options.usesASCIIDigits)
       case .hexDigit:
         matched = c.isHexDigit && (c.isASCII || !options.usesASCIIDigits)
-      case .horizontalWhitespace: fatalError("Not implemented")
-      case .newlineSequence:
-        matched = c.isNewline && (c.isASCII || !options.usesASCIISpaces)
-      case .verticalWhitespace: fatalError("Not implemented")
+      case .horizontalWhitespace:
+        matched = c.unicodeScalars.first?.isHorizontalWhitespace == true
+          && (c.isASCII || !options.usesASCIISpaces)
+      case .newlineSequence, .verticalWhitespace:
+        matched = c.unicodeScalars.first?.isVerticalWhitespace == true
+          && (c.isASCII || !options.usesASCIISpaces)
       case .whitespace:
         matched = c.isWhitespace && (c.isASCII || !options.usesASCIISpaces)
       case .word:
         matched = c.isWordCharacter && (c.isASCII || !options.usesASCIIWord)
-      case .custom(let set): matched = set.any { $0.matches(c, with: options) }
+      case .custom(let set):
+        matched = set.any { $0.matches(c, with: options) }
       }
       if isInverted {
         matched.toggle()
@@ -206,14 +209,21 @@ public struct _CharacterClassModel: Hashable {
         matched = c.properties.numericType != nil && (c.isASCII || !options.usesASCIIDigits)
       case .hexDigit:
         matched = Character(c).isHexDigit && (c.isASCII || !options.usesASCIIDigits)
-      case .horizontalWhitespace: fatalError("Not implemented")
-      case .newlineSequence: fatalError("Not implemented")
-      case .verticalWhitespace: fatalError("Not implemented")
+      case .horizontalWhitespace:
+        matched = c.isHorizontalWhitespace && (c.isASCII || !options.usesASCIISpaces)
+      case .verticalWhitespace:
+        matched = c.isVerticalWhitespace && (c.isASCII || !options.usesASCIISpaces)
+      case .newlineSequence:
+        matched = c.isVerticalWhitespace && (c.isASCII || !options.usesASCIISpaces)
+        if c == "\r" && nextIndex != str.endIndex && str.unicodeScalars[nextIndex] == "\n" {
+          str.unicodeScalars.formIndex(after: &nextIndex)
+        }
       case .whitespace:
         matched = c.properties.isWhitespace && (c.isASCII || !options.usesASCIISpaces)
       case .word:
         matched = (c.properties.isAlphabetic || c == "_") && (c.isASCII || !options.usesASCIIWord)
-      case .custom: fatalError("Not supported")
+      case .custom(let set):
+        matched = set.any { $0.matches(Character(c), with: options) }
       }
       if isInverted {
         matched.toggle()
