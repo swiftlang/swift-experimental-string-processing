@@ -189,11 +189,11 @@ extension BidirectionalCollection where SubSequence == Substring {
 
 @available(SwiftStdlib 5.7, *)
 extension RegexComponent {
-  /*public*/ static func ~=(regex: Self, input: String) -> Bool {
+  public static func ~=(regex: Self, input: String) -> Bool {
     input.wholeMatch(of: regex) != nil
   }
 
-  /*public*/ static func ~=(regex: Self, input: Substring) -> Bool {
+  public static func ~=(regex: Self, input: Substring) -> Bool {
     input.wholeMatch(of: regex) != nil
   }
 }

@@ -334,4 +334,18 @@ class AlgorithmTests: XCTestCase {
       ["aa"])
   }
 
+  func testSwitches() {
+    switch "abcde" {
+    case try! Regex("a.*f"):
+      XCTFail()
+    case try! Regex("abc"):
+      XCTFail()
+
+    case try! Regex("a.*e"):
+      break // success
+
+    default:
+      XCTFail()
+    }
+  }
 }

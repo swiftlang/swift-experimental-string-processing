@@ -616,7 +616,7 @@ extension Source {
       case "i": return advanceAndReturn(.caseInsensitive)
       case "J": return advanceAndReturn(.allowDuplicateGroupNames)
       case "m": return advanceAndReturn(.multiline)
-      case "n": return advanceAndReturn(.noAutoCapture)
+      case "n": return advanceAndReturn(.namedCapturesOnly)
       case "s": return advanceAndReturn(.singleLine)
       case "U": return advanceAndReturn(.reluctantByDefault)
       case "x":
@@ -914,6 +914,10 @@ extension Source {
         }
         // TODO: (name:)
 
+        // If (?n) is set, a bare (...) group is non-capturing.
+        if context.syntax.contains(.namedCapturesOnly) {
+          return .nonCapture
+        }
         return .capture
       }
     }

@@ -17,7 +17,7 @@ extension AST {
       case caseInsensitive          // i
       case allowDuplicateGroupNames // J
       case multiline                // m
-      case noAutoCapture            // n
+      case namedCapturesOnly        // n
       case singleLine               // s
       case reluctantByDefault       // U
       case extended                 // x
