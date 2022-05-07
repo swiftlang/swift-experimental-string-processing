@@ -70,6 +70,9 @@ extension UTS18Tests {
   func testHexNotation() {
     expectFirstMatch("ab", regex(#"\u{61}\u{62}"#), "ab")
     expectFirstMatch("𝄞", regex(#"\u{1D11E}"#), "𝄞")
+    expectFirstMatch("\n", regex(#"\u{0A}"#), "\n")
+    expectFirstMatch("\r", regex(#"\u{0D}"#), "\r")
+    expectFirstMatch("\r\n", regex(#"\u{0D}\u{0A}"#), "\r\n")
   }
   
   // 1.1.1 Hex Notation and Normalization
@@ -188,7 +191,7 @@ extension UTS18Tests {
     
     // Non-ASCII lowercase + non-lowercase ASCII
     expectFirstMatch(input, regex(#"[\p{lowercase}~~\p{ascii}]+"#), input[pos: ..<3])
-    XCTAssertTrue("123%&^ABC".contains(regex(#"^[\p{lowercase}~~\p{ascii}]+$"#)))
+    XCTAssertTrue("123%&^ABCDéîøü".contains(regex(#"^[\p{lowercase}~~\p{ascii}]+$"#)))
   }
   
   func testSubtractionAndIntersectionPrecedence() {
@@ -478,10 +481,20 @@ extension UTS18Tests {
   func testFullProperties() {
     // MARK: General
     // Name (Name_Alias)
+    XCTAssertTrue("a".contains(regex(#"\p{name=latin small letter a}"#)))
+
     // Block
+    XCTExpectFailure {
+      XCTFail(#"Unsupported: \(#/^\p{block=Block Elements}+$/#)"#)
+      // XCTAssertTrue("▂▃▄▅▆▇".contains(regex(#"^\p{block=Block Elements}+$"#)))
+    }
+
     // Age
     // General_Category
     // Script (Script_Extensions)
+    XCTAssertTrue("a".contains(regex(#"\p{script=latin}"#)))
+    XCTAssertTrue("강".contains(regex(#"\p{script=hangul}"#)))
+    
     // White_Space
     // Alphabetic
     // Hangul_Syllable_Type
@@ -528,15 +541,36 @@ extension UTS18Tests {
     // Simple_Case_Folding
     // Soft_Dotted
     // Cased
+    XCTAssertTrue("A".contains(regex(#"\p{Cased}"#)))
+    XCTAssertTrue("A".contains(regex(#"\p{Is_Cased}"#)))
+    XCTAssertFalse("0".contains(regex(#"\p{Cased}"#)))
+
     // Case_Ignorable
+    XCTAssertTrue(":".contains(regex(#"\p{Case_Ignorable}"#)))
+    XCTAssertFalse("a".contains(regex(#"\p{Case_Ignorable}"#)))
+
     // Changes_When_Lowercased
+    XCTAssertTrue("A".contains(regex(#"\p{Changes_When_Lowercased}"#)))
+    XCTAssertTrue("A".contains(regex(#"\p{Changes_When_Lowercased=true}"#)))
+    XCTAssertFalse("a".contains(regex(#"\p{Changes_When_Lowercased}"#)))
+
     // Changes_When_Uppercased
     XCTAssertTrue("a".contains(regex(#"\p{Changes_When_Uppercased}"#)))
     XCTAssertTrue("a".contains(regex(#"\p{Changes_When_Uppercased=true}"#)))
     XCTAssertFalse("A".contains(regex(#"\p{Changes_When_Uppercased}"#)))
+    
     // Changes_When_Titlecased
+    XCTAssertTrue("a".contains(regex(#"\p{Changes_When_Titlecased=true}"#)))
+    XCTAssertFalse("A".contains(regex(#"\p{Changes_When_Titlecased}"#)))
+
     // Changes_When_Casefolded
+    XCTAssertTrue("A".contains(regex(#"\p{Changes_When_Casefolded=true}"#)))
+    XCTAssertFalse("a".contains(regex(#"\p{Changes_When_Casefolded}"#)))
+    XCTAssertFalse(":".contains(regex(#"\p{Changes_When_Casefolded}"#)))
+
     // Changes_When_Casemapped
+    XCTAssertTrue("a".contains(regex(#"\p{Changes_When_Casemapped}"#)))
+    XCTAssertFalse(":".contains(regex(#"\p{Changes_When_Casemapped}"#)))
 
     // MARK: Normalization
     // Canonical_Combining_Class
