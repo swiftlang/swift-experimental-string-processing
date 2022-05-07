@@ -13,17 +13,17 @@ extension Source {
   typealias PropertyKind = AST.Atom.CharacterProperty.Kind
 
   static private func withNormalizedForms<T>(
-    _ str: String, match: (String) -> T?
-  ) -> T? {
+    _ str: String, match: (String) throws -> T?
+  ) rethrows -> T? {
     // This follows the rules provided by UAX44-LM3, including trying to drop an
     // "is" prefix, which isn't required by UTS#18 RL1.2, but is nice for
     // consistency with other engines and the Unicode.Scalar.Properties names.
     let str = str.filter { !$0.isWhitespace && $0 != "_" && $0 != "-" }
                  .lowercased()
-    if let m = match(str) {
+    if let m = try match(str) {
       return m
     }
-    if str.hasPrefix("is"), let m = match(String(str.dropFirst(2))) {
+    if str.hasPrefix("is"), let m = try match(String(str.dropFirst(2))) {
       return m
     }
     return nil
@@ -435,24 +435,28 @@ extension Source {
 
     // This uses the aliases defined in
     // https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt.
-    let match = withNormalizedForms(key) { key -> PropertyKind? in
+    let match = try withNormalizedForms(key) { key -> PropertyKind? in
       switch key {
       case "script", "sc":
-        if let script = classifyScriptProperty(value) {
-          return .script(script)
+        guard let script = classifyScriptProperty(value) else {
+          throw ParseError.unrecognizedScript(value)
         }
+        return .script(script)
       case "scriptextensions", "scx":
-        if let script = classifyScriptProperty(value) {
-          return .scriptExtension(script)
+        guard let script = classifyScriptProperty(value) else {
+          throw ParseError.unrecognizedScript(value)
         }
+        return .scriptExtension(script)
       case "gc", "generalcategory":
-        if let cat = classifyGeneralCategory(value) {
-          return .generalCategory(cat)
+        guard let cat = classifyGeneralCategory(value) else {
+          throw ParseError.unrecognizedCategory(value)
         }
+        return .generalCategory(cat)
       case "age":
-        if let (major, minor) = parseAge(value) {
-          return .age(major: major, minor: minor)
+        guard let (major, minor) = parseAge(value) else {
+          throw ParseError.invalidAge(value)
         }
+        return .age(major: major, minor: minor)
       case "name", "na":
         return .named(value)
       default:

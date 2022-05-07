@@ -2257,6 +2257,12 @@ extension RegexTests {
     diagnosticTest(#"\p{a=b"#, .unknownProperty(key: "a", value: "b"))
     diagnosticTest(#"\p{aaa[b]}"#, .unknownProperty(key: nil, value: "aaa"))
     diagnosticTest(#"\p{a=b=c}"#, .unknownProperty(key: "a", value: "b"))
+    diagnosticTest(#"\p{script=Not_A_Script}"#, .unrecognizedScript("Not_A_Script"))
+    diagnosticTest(#"\p{scx=Not_A_Script}"#, .unrecognizedScript("Not_A_Script"))
+    diagnosticTest(#"\p{gc=Not_A_Category}"#, .unrecognizedCategory("Not_A_Category"))
+    diagnosticTest(#"\p{age=3}"#, .invalidAge("3"))
+    diagnosticTest(#"\p{age=V3}"#, .invalidAge("V3"))
+    diagnosticTest(#"\p{age=3.0.1}"#, .invalidAge("3.0.1"))
     diagnosticTest(#"(?#"#, .expected(")"))
     diagnosticTest(#"(?x"#, .expected(")"))
 

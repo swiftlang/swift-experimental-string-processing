@@ -170,7 +170,6 @@ extension Compiler.ByteCodeGen {
   mutating func emitCharacter(_ c: Character) throws {
     // Unicode scalar matches the specific scalars that comprise a character
     if options.semanticLevel == .unicodeScalar {
-      print("emitting '\(c)' as a sequence of \(c.unicodeScalars.count) scalars")
       for scalar in c.unicodeScalars {
         try emitScalar(scalar)
       }

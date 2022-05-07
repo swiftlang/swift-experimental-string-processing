@@ -59,6 +59,9 @@ enum ParseError: Error, Hashable {
 
   case emptyProperty
   case unknownProperty(key: String?, value: String)
+  case unrecognizedScript(String)
+  case unrecognizedCategory(String)
+  case invalidAge(String)
 
   case expectedGroupSpecifier
   case unbalancedEndOfGroup
@@ -167,6 +170,12 @@ extension ParseError: CustomStringConvertible {
       return "extended syntax may not be disabled in multi-line mode"
     case .expectedCalloutArgument:
       return "expected argument to callout"
+    case .unrecognizedScript(let value):
+      return "unrecognized script '\(value)'"
+    case .unrecognizedCategory(let value):
+      return "unrecognized category '\(value)'"
+    case .invalidAge(let value):
+      return "invalid age format for '\(value)'. Use '3.0' or 'V3_0' formats."
     }
   }
 }
