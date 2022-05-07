@@ -399,6 +399,9 @@ extension AST.Atom.CharacterProperty {
     /// Character name in the form `\p{name=...}`
     case named(String)
     
+    /// Character age, as per UnicodeScalar.Properties.age.
+    case age(major: Int, minor: Int)
+    
     case posix(Unicode.POSIXProperty)
 
     /// Some special properties implemented by PCRE and Oniguruma.

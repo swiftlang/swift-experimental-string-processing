@@ -145,10 +145,7 @@ extension String {
 }
 
 func consumeName(_ name: String, opts: MatchingOptions) -> MEProgram<String>.ConsumeFunction {
-  let consume = opts.semanticLevel == .graphemeCluster
-    ? consumeCharacterWithSingleScalar
-    : consumeScalar
-  
+  let consume = consumeFunction(for: opts)
   return consume(propertyScalarPredicate {
     // FIXME: name aliases not covered by $0.nameAlias are missed
     // e.g. U+FEFF has both 'BYTE ORDER MARK' and 'BOM' as aliases
@@ -491,6 +488,12 @@ extension AST.Atom.CharacterProperty {
       case .named(let n):
         return consumeName(n, opts: opts)
 
+      case .age(let major, let minor):
+        return consume {
+          guard let age = $0.properties.age else { return false }
+          return age <= (major, minor)
+        }
+        
       case .posix(let p):
         return p.generateConsumer(opts)
 

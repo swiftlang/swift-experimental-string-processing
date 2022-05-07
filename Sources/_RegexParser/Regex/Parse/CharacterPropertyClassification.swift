@@ -361,6 +361,27 @@ extension Source {
       }
     }
   }
+  
+  static func parseAge(_ value: String) -> Unicode.Version? {
+    // Age can be specified in the form '3.0' or 'V3_0'.
+    // Other formats are not supported.
+    var str = value[...]
+    
+    let separator: Character
+    if str.first == "V" {
+      str.removeFirst()
+      separator = "_"
+    } else {
+      separator = "."
+    }
+    
+    guard let sepIndex = str.firstIndex(of: separator),
+          let major = Int(str[..<sepIndex]),
+          let minor = Int(str[sepIndex...].dropFirst())
+    else { return nil }
+    
+    return (major, minor)
+  }
 
   static func classifyCharacterPropertyValueOnly(
     _ value: String
@@ -427,6 +448,10 @@ extension Source {
       case "gc", "generalcategory":
         if let cat = classifyGeneralCategory(value) {
           return .generalCategory(cat)
+        }
+      case "age":
+        if let (major, minor) = parseAge(value) {
+          return .age(major: major, minor: minor)
         }
       case "name", "na":
         return .named(value)

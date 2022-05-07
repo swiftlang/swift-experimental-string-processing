@@ -143,9 +143,7 @@ extension UTS18Tests {
   }
   
   func testProperties_XFail() {
-    XCTExpectFailure("Need to support 'age' and 'block' properties") {
-      // XCTAssertFalse("z".contains(#/\p{age=3.1}/#))
-      XCTFail(#"\(#/\p{age=3.1}/#)"#)
+    XCTExpectFailure("Need to support 'block' properties") {
       // XCTAssertTrue("\u{1F00}".contains(#/\p{Block=Greek}/#))
       XCTFail(#"\(#/\p{Block=Greek}/#)"#)
     }
@@ -490,6 +488,18 @@ extension UTS18Tests {
     }
 
     // Age
+    XCTAssertTrue("a".contains(regex(#"\p{age=1.1}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{age=V1_1}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{age=14.0}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{age=V99_99}"#)))
+    
+    XCTAssertTrue("🥱".contains(regex(#"\p{age=12.0}"#)))
+    XCTAssertFalse("🥱".contains(regex(#"\p{age=11.0}"#)))
+
+    XCTAssertTrue("⌁".contains(regex(#"\p{age=3.0}"#)))
+    XCTAssertFalse("⌁".contains(regex(#"\p{age=2.0}"#)))
+    XCTAssertTrue("⌁".contains(regex(#"[\p{age=3.0}--\p{age=2.0}]"#)))
+
     // General_Category
     // Script (Script_Extensions)
     XCTAssertTrue("a".contains(regex(#"\p{script=latin}"#)))
