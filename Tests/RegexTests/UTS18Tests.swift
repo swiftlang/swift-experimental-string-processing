@@ -22,6 +22,14 @@ import XCTest
 @testable // for internal `matches(of:)`
 import _StringProcessing
 
+extension UnicodeScalar {
+  var value4Digits: String {
+    let valueString = String(value, radix: 16, uppercase: true)
+    if valueString.count >= 4 { return valueString }
+    return String(repeating: "0", count: 4 - valueString.count) + valueString
+  }
+}
+
 class UTS18Tests: XCTestCase {
   var input: String {
     "ABCdefghîøu\u{308}\u{FFF0} -–—[]123"
@@ -292,6 +300,16 @@ extension UTS18Tests {
     XCTAssertEqual(lines.count, 10)
     XCTAssertNil(lineInput.firstMatch(
       of: regex(#"08\v^"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings()))
+
+    XCTAssertNotNil(lineInput.firstMatch(of: regex(#"08\u{d}\u{a}"#).matchingSemantics(.unicodeScalar)))
+    XCTAssertNotNil(lineInput.firstMatch(
+      of: regex(#"08..09"#).matchingSemantics(.unicodeScalar).dotMatchesNewlines()))
+
+    for _ in 0..<10 { print("---") }
+    for (i, s) in lineInput.unicodeScalars.enumerated() {
+      print("\(i): scalar U+\(s.value4Digits)")
+    }
+    for _ in 0..<10 { print("---") }
 
     // Does not contain an empty line
     XCTAssertFalse(lineInput.contains(regex(#"^$"#)))
