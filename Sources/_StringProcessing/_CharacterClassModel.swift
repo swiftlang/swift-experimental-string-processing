@@ -182,7 +182,7 @@ public struct _CharacterClassModel: Hashable {
         matched = c.unicodeScalars.first?.isHorizontalWhitespace == true
           && (c.isASCII || !options.usesASCIISpaces)
       case .newlineSequence, .verticalWhitespace:
-        matched = c.unicodeScalars.first?.isVerticalWhitespace == true
+        matched = c.unicodeScalars.first?.isNewline == true
           && (c.isASCII || !options.usesASCIISpaces)
       case .whitespace:
         matched = c.isWhitespace && (c.isASCII || !options.usesASCIISpaces)
@@ -212,9 +212,9 @@ public struct _CharacterClassModel: Hashable {
       case .horizontalWhitespace:
         matched = c.isHorizontalWhitespace && (c.isASCII || !options.usesASCIISpaces)
       case .verticalWhitespace:
-        matched = c.isVerticalWhitespace && (c.isASCII || !options.usesASCIISpaces)
+        matched = c.isNewline && (c.isASCII || !options.usesASCIISpaces)
       case .newlineSequence:
-        matched = c.isVerticalWhitespace && (c.isASCII || !options.usesASCIISpaces)
+        matched = c.isNewline && (c.isASCII || !options.usesASCIISpaces)
         if c == "\r" && nextIndex != str.endIndex && str.unicodeScalars[nextIndex] == "\n" {
           str.unicodeScalars.formIndex(after: &nextIndex)
         }

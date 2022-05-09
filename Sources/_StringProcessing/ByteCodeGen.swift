@@ -80,10 +80,16 @@ extension Compiler.ByteCodeGen {
       }
 
     case .endOfSubjectBeforeNewline:
-      builder.buildAssert { (input, pos, bounds) in
+      builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
         if pos == input.endIndex { return true }
-        return input.index(after: pos) == input.endIndex
-         && input[pos].isNewline
+        switch semanticLevel {
+        case .graphemeCluster:
+          return input.index(after: pos) == input.endIndex
+           && input[pos].isNewline
+        case .unicodeScalar:
+          return input.unicodeScalars.index(after: pos) == input.endIndex
+           && input.unicodeScalars[pos].isNewline
+        }
       }
 
     case .endOfSubject:
@@ -115,8 +121,14 @@ extension Compiler.ByteCodeGen {
 
     case .startOfLine:
       if options.anchorsMatchNewlines {
-        builder.buildAssert { (input, pos, bounds) in
-          pos == input.startIndex || input[input.index(before: pos)].isNewline
+        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
+          if pos == input.startIndex { return true }
+          switch semanticLevel {
+          case .graphemeCluster:
+            return input[input.index(before: pos)].isNewline
+          case .unicodeScalar:
+            return input.unicodeScalars[input.unicodeScalars.index(before: pos)].isNewline
+          }
         }
       } else {
         builder.buildAssert { (input, pos, bounds) in
@@ -126,8 +138,14 @@ extension Compiler.ByteCodeGen {
       
     case .endOfLine:
       if options.anchorsMatchNewlines {
-        builder.buildAssert { (input, pos, bounds) in
-          pos == input.endIndex || input[pos].isNewline
+        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
+          if pos == input.endIndex { return true }
+          switch semanticLevel {
+          case .graphemeCluster:
+            return input[pos].isNewline
+          case .unicodeScalar:
+            return input.unicodeScalars[pos].isNewline
+          }
         }
       } else {
         builder.buildAssert { (input, pos, bounds) in

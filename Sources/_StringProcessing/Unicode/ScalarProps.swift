@@ -52,7 +52,7 @@ extension UnicodeScalar {
     value == 0x09 || properties.generalCategory == .spaceSeparator
   }
   
-  var isVerticalWhitespace: Bool {
+  var isNewline: Bool {
     switch value {
       case 0x000A...0x000D /* LF ... CR */: return true
       case 0x0085 /* NEXT LINE (NEL) */: return true
