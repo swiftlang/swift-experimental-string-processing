@@ -717,7 +717,7 @@ extension RegexTests {
     firstMatchTest(
       #"\N{ASTERISK}+"#, input: "123***xyz", match: "***")
     firstMatchTest(
-      #"\N {2}"#, input: "123  xyz", match: "3  ")
+      #"\N {2}"#, input: "123  xyz", match: "3  ", xfail: true)
 
     firstMatchTest(#"\N{U+2C}"#, input: "123,xyz", match: ",")
     firstMatchTest(#"\N{U+1F4BF}"#, input: "123💿xyz", match: "💿")
@@ -1014,7 +1014,7 @@ extension RegexTests {
     firstMatchTest(
       #"a(?:b)c"#, input: "123abcxyz", match: "abc")
     firstMatchTest(
-      "(?|(a)|(b)|(c))", input: "123abcxyz", match: "a")
+      "(?|(a)|(b)|(c))", input: "123abcxyz", match: "a", xfail: true)
 
     firstMatchTest(
       #"(?:a|.b)c"#, input: "123abcacxyz", match: "abc")
@@ -1130,6 +1130,8 @@ extension RegexTests {
     firstMatchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
     firstMatchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba", xfail: true)
     firstMatchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
+
+    firstMatchTest(#"\1(.)"#, input: "112", match: nil)
   }
   
   func testMatchExamples() {

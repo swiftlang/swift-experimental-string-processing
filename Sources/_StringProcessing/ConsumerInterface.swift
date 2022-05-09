@@ -513,7 +513,10 @@ extension Unicode.BinaryProperty {
     _ opts: MatchingOptions
   ) throws -> MEProgram<String>.ConsumeFunction {
     let consume = consumeFunction(for: opts)
-    
+
+    // Note if you implement support for any of the below, you need to adjust
+    // the switch in Sema.swift to not have it be diagnosed as unsupported
+    // (potentially guarded on deployment version).
     switch self {
     case .asciiHexDigit:
       return consume(propertyScalarPredicate {
