@@ -543,11 +543,6 @@ extension Parser {
       // Range between atoms.
       if let (dashLoc, rhs) =
           try source.lexCustomCharClassRangeEnd(context: context) {
-        guard atom.isValidCharacterClassRangeBound &&
-              rhs.isValidCharacterClassRangeBound else {
-          throw ParseError.invalidCharacterClassRangeOperand
-        }
-        // TODO: Validate lower <= upper?
         members.append(.range(.init(atom, dashLoc, rhs)))
         continue
       }
@@ -575,7 +570,14 @@ public func parse<S: StringProtocol>(
 {
   let source = Source(String(regex))
   var parser = Parser(source, syntax: syntax)
-  return try parser.parse()
+  let ast = try parser.parse()
+  switch stage {
+  case .syntactic:
+    break
+  case .semantic:
+    try validate(ast)
+  }
+  return ast
 }
 
 /// Retrieve the default set of syntax options that a delimiter and literal

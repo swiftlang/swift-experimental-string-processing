@@ -38,8 +38,8 @@ extension CaptureList.Capture {
     return Self(optionalDepth: 6)
   }
 
-  static func named(_ name: String) -> Self {
-    return Self(name: name, optionalDepth: 0)
+  static func named(_ name: String, opt: Int = 0) -> Self {
+    return Self(name: name, optionalDepth: opt)
   }
 }
 extension CaptureList {

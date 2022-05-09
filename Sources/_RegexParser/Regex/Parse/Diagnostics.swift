@@ -15,6 +15,8 @@ enum ParseError: Error, Hashable {
   // TODO: I wonder if it makes sense to store the string.
   // This can make equality weird.
 
+  // MARK: Syntactic Errors
+
   case numberOverflow(String)
   case expectedNumDigits(String, Int)
   case expectedNumber(String, kind: RadixKind)
@@ -55,7 +57,6 @@ enum ParseError: Error, Hashable {
   case cannotRemoveMatchingOptionsAfterCaret
 
   case expectedCustomCharacterClassMembers
-  case invalidCharacterClassRangeOperand
 
   case emptyProperty
   case unknownProperty(key: String?, value: String)
@@ -73,6 +74,15 @@ enum ParseError: Error, Hashable {
   case cannotRemoveExtendedSyntaxInMultilineMode
 
   case expectedCalloutArgument
+
+  // MARK: Semantic Errors
+
+  case unsupported(String)
+  case deprecatedUnicode(String)
+  case invalidReference(Int)
+  case duplicateNamedCapture(String)
+  case invalidCharacterClassRangeOperand
+  case invalidQuantifierRange(Int, Int)
 }
 
 extension IdentifierKind {
@@ -88,6 +98,7 @@ extension IdentifierKind {
 extension ParseError: CustomStringConvertible {
   var description: String {
     switch self {
+    // MARK: Syntactic Errors
     case let .numberOverflow(s):
       return "number overflow: \(s)"
     case let .expectedNumDigits(s, i):
@@ -167,6 +178,19 @@ extension ParseError: CustomStringConvertible {
       return "extended syntax may not be disabled in multi-line mode"
     case .expectedCalloutArgument:
       return "expected argument to callout"
+
+    // MARK: Semantic Errors
+
+    case let .unsupported(kind):
+      return "\(kind) is not currently supported"
+    case let .deprecatedUnicode(kind):
+      return "\(kind) is a deprecated Unicode property, and is not supported"
+    case let .invalidReference(i):
+      return "no capture numbered \(i)"
+    case let .duplicateNamedCapture(str):
+      return "group named '\(str)' already exists"
+    case let .invalidQuantifierRange(lhs, rhs):
+      return "range lower bound '\(lhs)' must be less than or equal to upper bound '\(rhs)'"
     }
   }
 }

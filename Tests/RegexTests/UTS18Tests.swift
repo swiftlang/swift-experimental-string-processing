@@ -444,7 +444,7 @@ extension UTS18Tests {
 
   func testIndividuallyNamedCharacters_XFail() {
     XCTExpectFailure("Need to support named chars in custom character classes") {
-      XCTFail("\(regex(#"[\N{GREEK SMALL LETTER ALPHA}-\N{GREEK SMALL LETTER BETA}]+"#))")
+      XCTFail(#"[\N{GREEK SMALL LETTER ALPHA}-\N{GREEK SMALL LETTER BETA}]+"#)
       // XCTAssertTrue("^\u{3B1}\u{3B2}$".contains(#/[\N{GREEK SMALL LETTER ALPHA}-\N{GREEK SMALL LETTER BETA}]+/#))
     }
     
