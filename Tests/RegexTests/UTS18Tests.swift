@@ -22,6 +22,14 @@ import XCTest
 @testable // for internal `matches(of:)`
 import _StringProcessing
 
+extension UnicodeScalar {
+  var value4Digits: String {
+    let valueString = String(value, radix: 16, uppercase: true)
+    if valueString.count >= 4 { return valueString }
+    return String(repeating: "0", count: 4 - valueString.count) + valueString
+  }
+}
+
 class UTS18Tests: XCTestCase {
   var input: String {
     "ABCdefghîøu\u{308}\u{FFF0} -–—[]123"
@@ -262,21 +270,33 @@ extension UTS18Tests {
       09\u{85}\
       10\u{2028}\
       11\u{2029}\
-      
+      12
       """
     // Check the input counts
     var lines = lineInput.matches(of: regex(#"\d{2}"#))
-    XCTAssertEqual(lines.count, 11)
+    XCTAssertEqual(lines.count, 12)
     // Test \R - newline sequence
-    lines = lineInput.matches(of: regex(#"\d{2}\R"#))
+    lines = lineInput.matches(of: regex(#"\d{2}\R^"#).anchorsMatchLineEndings())
+    XCTAssertEqual(lines.count, 11)
+    // Test \v - vertical space
+    lines = lineInput.matches(of: regex(#"\d{2}\v^"#).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 11)
     // Test anchors as line boundaries
     lines = lineInput.matches(of: regex(#"^\d{2}$"#).anchorsMatchLineEndings())
-    XCTAssertEqual(lines.count, 11)
+    XCTAssertEqual(lines.count, 12)
     // Test that dot does not match line endings
     lines = lineInput.matches(of: regex(#".+"#))
-    XCTAssertEqual(lines.count, 11)
+    XCTAssertEqual(lines.count, 12)
     
+    // Unicode scalar semantics - \R still matches all, including \r\n sequence
+    lines = lineInput.matches(
+      of: regex(#"\d{2}\R(?=\d)"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
+    XCTAssertEqual(lines.count, 11)
+    // Unicode scalar semantics - \v matches all except for \r\n sequence
+    lines = lineInput.matches(
+      of: regex(#"\d{2}\v(?=\d)"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
+    XCTAssertEqual(lines.count, 10)
+
     // Does not contain an empty line
     XCTAssertFalse(lineInput.contains(regex(#"^$"#)))
     // Does contain an empty line (between \n and \r, which are reversed here)

@@ -182,7 +182,7 @@ extension RegexValidator {
     _ esc: AST.Atom.EscapedBuiltin, at loc: SourceLocation
   ) throws {
     switch esc {
-    case .resetStartOfMatch, .singleDataUnit, .verticalTab, .notVerticalTab,
+    case .resetStartOfMatch, .singleDataUnit,
         // '\N' needs to be emitted using 'emitAny'.
         .notNewline:
       throw error(.unsupported("'\\\(esc.character)'"), at: loc)
@@ -190,7 +190,8 @@ extension RegexValidator {
     // Character classes.
     case .decimalDigit, .notDecimalDigit, .whitespace, .notWhitespace,
         .wordCharacter, .notWordCharacter, .graphemeCluster, .trueAnychar,
-        .horizontalWhitespace, .notHorizontalWhitespace:
+        .horizontalWhitespace, .notHorizontalWhitespace,
+        .verticalTab, .notVerticalTab:
       break
 
     case .newlineSequence:
