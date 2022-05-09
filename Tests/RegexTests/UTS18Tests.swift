@@ -305,11 +305,15 @@ extension UTS18Tests {
     XCTAssertNotNil(lineInput.firstMatch(
       of: regex(#"08..09"#).matchingSemantics(.unicodeScalar).dotMatchesNewlines()))
 
-    for _ in 0..<10 { print("---") }
+    for _ in 0..<5 { print("---") }
     for (i, s) in lineInput.unicodeScalars.enumerated() {
       print("\(i): scalar U+\(s.value4Digits)")
     }
-    for _ in 0..<10 { print("---") }
+    for _ in 0..<5 { print("---") }
+    for match in lineInput.matches(of: regex(#"\v"#).matchingSemantics(.unicodeScalar)) {
+      print(lineInput.unicodeScalars.offsets(of: match.0.startIndex..<match.0.endIndex))
+    }
+    for _ in 0..<5 { print("---") }
 
     // Does not contain an empty line
     XCTAssertFalse(lineInput.contains(regex(#"^$"#)))
