@@ -2263,6 +2263,10 @@ extension RegexTests {
     diagnosticTest(#"\p{age=3}"#, .invalidAge("3"))
     diagnosticTest(#"\p{age=V3}"#, .invalidAge("V3"))
     diagnosticTest(#"\p{age=3.0.1}"#, .invalidAge("3.0.1"))
+    diagnosticTest(#"\p{nv=A}"#, .invalidNumericValue("A"))
+    diagnosticTest(#"\p{Numeric_Value=1.2.3.4}"#, .invalidNumericValue("1.2.3.4"))
+    diagnosticTest(#"\p{nt=Not_A_NumericType}"#, .unrecognizedNumericType("Not_A_NumericType"))
+    diagnosticTest(#"\p{Numeric_Type=Nuemric}"#, .unrecognizedNumericType("Nuemric"))
     diagnosticTest(#"(?#"#, .expected(")"))
     diagnosticTest(#"(?x"#, .expected(")"))
 

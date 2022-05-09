@@ -399,6 +399,12 @@ extension AST.Atom.CharacterProperty {
     /// Character name in the form `\p{name=...}`
     case named(String)
     
+    /// Numeric type.
+    case numericType(Unicode.NumericType)
+    
+    /// Numeric value.
+    case numericValue(Double)
+    
     /// Character age, as per UnicodeScalar.Properties.age.
     case age(major: Int, minor: Int)
     

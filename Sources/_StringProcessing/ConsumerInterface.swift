@@ -494,6 +494,12 @@ extension AST.Atom.CharacterProperty {
           return age <= (major, minor)
         }
         
+      case .numericValue(let value):
+        return consume { $0.properties.numericValue == value }
+        
+      case .numericType(let type):
+        return consume { $0.properties.numericType == type }
+        
       case .posix(let p):
         return p.generateConsumer(opts)
 

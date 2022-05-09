@@ -62,6 +62,8 @@ enum ParseError: Error, Hashable {
   case unrecognizedScript(String)
   case unrecognizedCategory(String)
   case invalidAge(String)
+  case invalidNumericValue(String)
+  case unrecognizedNumericType(String)
 
   case expectedGroupSpecifier
   case unbalancedEndOfGroup
@@ -174,8 +176,12 @@ extension ParseError: CustomStringConvertible {
       return "unrecognized script '\(value)'"
     case .unrecognizedCategory(let value):
       return "unrecognized category '\(value)'"
+    case .unrecognizedNumericType(let value):
+      return "unrecognized numeric type '\(value)'"
     case .invalidAge(let value):
-      return "invalid age format for '\(value)'. Use '3.0' or 'V3_0' formats."
+      return "invalid age format for '\(value)' - use '3.0' or 'V3_0' formats"
+    case .invalidNumericValue(let value):
+      return "invalid numeric value '\(value)'"
     }
   }
 }

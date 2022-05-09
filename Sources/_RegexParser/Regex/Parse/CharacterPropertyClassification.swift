@@ -79,6 +79,19 @@ extension Source {
     }
   }
 
+  static private func classifyNumericType(
+    _ str: String
+  ) -> Unicode.NumericType? {
+    withNormalizedForms(str) { str in
+      switch str {
+      case "decimal":   return .decimal
+      case "digit":     return .digit
+      case "numeric":   return .numeric
+      default:          return nil
+      }
+    }
+  }
+
   static private func classifyBoolProperty(
     _ str: String
   ) -> Unicode.BinaryProperty? {
@@ -459,6 +472,16 @@ extension Source {
         return .age(major: major, minor: minor)
       case "name", "na":
         return .named(value)
+      case "numericvalue", "nv":
+        guard let numericValue = Double(value) else {
+          throw ParseError.invalidNumericValue(value)
+        }
+        return .numericValue(numericValue)
+      case "numerictype", "nt":
+        guard let type = classifyNumericType(value) else {
+          throw ParseError.unrecognizedNumericType(value)
+        }
+        return .numericType(type)
       default:
         break
       }

@@ -552,7 +552,15 @@ extension UTS18Tests {
 
     // MARK: Numeric
     // Numeric_Value
+    XCTAssertTrue("3".contains(regex(#"\p{Numeric_Value=3}"#)))
+    XCTAssertFalse("4".contains(regex(#"\p{Numeric_Value=3}"#)))
+    XCTAssertTrue("④".contains(regex(#"\p{Numeric_Value=4}"#)))
+    XCTAssertTrue("⅕".contains(regex(#"\p{Numeric_Value=0.2}"#)))
+
     // Numeric_Type
+    XCTAssertTrue("3".contains(regex(#"\p{Numeric_Type=Decimal}"#)))
+    XCTAssertFalse("4".contains(regex(#"\p{Numeric_Type=Digit}"#)))
+
     // Hex_Digit
     XCTAssertTrue("0123456789abcdef０１２３４５６７８９ＡＢＣＤＥＦ"
       .contains(regex(#"^\p{Hex_Digit}+$"#)))
