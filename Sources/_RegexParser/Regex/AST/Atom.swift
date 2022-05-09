@@ -677,6 +677,23 @@ extension AST.Atom.EscapedBuiltin {
       return nil
     }
   }
+
+  public var isQuantifiable: Bool {
+    switch self {
+    case .alarm, .escape, .formfeed, .newline, .carriageReturn, .tab,
+        .singleDataUnit, .decimalDigit, .notDecimalDigit, .horizontalWhitespace,
+        .notHorizontalWhitespace, .notNewline, .newlineSequence, .whitespace,
+        .notWhitespace, .verticalTab, .notVerticalTab, .wordCharacter,
+        .notWordCharacter, .backspace, .graphemeCluster, .trueAnychar:
+      return true
+
+    case .wordBoundary, .notWordBoundary, .startOfSubject,
+        .endOfSubjectBeforeNewline, .endOfSubject,
+        .firstMatchingPositionInSubject, .resetStartOfMatch, .textSegment,
+        .notTextSegment:
+      return false
+    }
+  }
 }
 
 extension AST.Atom {
@@ -758,6 +775,8 @@ extension AST.Atom {
     case .changeMatchingOptions:
       return false
     // TODO: Are callouts quantifiable?
+    case .escaped(let esc):
+      return esc.isQuantifiable
     default:
       return true
     }

@@ -227,9 +227,6 @@ extension Parser {
         if let (amt, kind, trivia) =
             try source.lexQuantifier(context: context) {
           let location = loc(_start)
-          guard operand.isQuantifiable else {
-            throw Source.LocatedError(ParseError.notQuantifiable, location)
-          }
           result.append(.quantification(
             .init(amt, kind, operand, location, trivia: trivia)))
         } else {
@@ -543,11 +540,6 @@ extension Parser {
       // Range between atoms.
       if let (dashLoc, rhs) =
           try source.lexCustomCharClassRangeEnd(context: context) {
-        guard atom.isValidCharacterClassRangeBound &&
-              rhs.isValidCharacterClassRangeBound else {
-          throw ParseError.invalidCharacterClassRangeOperand
-        }
-        // TODO: Validate lower <= upper?
         members.append(.range(.init(atom, dashLoc, rhs)))
         continue
       }
@@ -558,13 +550,31 @@ extension Parser {
   }
 }
 
+public enum ASTStage {
+  /// The regex is parsed, and a syntactically valid AST is returned. Otherwise
+  /// an error is thrown. This is useful for e.g syntax coloring.
+  case syntactic
+
+  /// The regex is parsed, and a syntactically and semantically valid AST is
+  /// returned. Otherwise an error is thrown. A semantically valid AST has been
+  /// checked for e.g unsupported constructs and invalid backreferences.
+  case semantic
+}
+
 public func parse<S: StringProtocol>(
-  _ regex: S, _ syntax: SyntaxOptions
+  _ regex: S, _ stage: ASTStage, _ syntax: SyntaxOptions
 ) throws -> AST where S.SubSequence == Substring
 {
   let source = Source(String(regex))
   var parser = Parser(source, syntax: syntax)
-  return try parser.parse()
+  let ast = try parser.parse()
+  switch stage {
+  case .syntactic:
+    break
+  case .semantic:
+    try validate(ast)
+  }
+  return ast
 }
 
 /// Retrieve the default set of syntax options that a delimiter and literal
@@ -591,11 +601,12 @@ fileprivate func defaultSyntaxOptions(
 /// Parses a given regex string with delimiters, inferring the syntax options
 /// from the delimiters used.
 public func parseWithDelimiters<S: StringProtocol>(
-  _ regex: S
+  _ regex: S, _ stage: ASTStage
 ) throws -> AST where S.SubSequence == Substring {
   let (contents, delim) = droppingRegexDelimiters(String(regex))
   do {
-    return try parse(contents, defaultSyntaxOptions(delim, contents: contents))
+    let syntax = defaultSyntaxOptions(delim, contents: contents)
+    return try parse(contents, stage, syntax)
   } catch let error as LocatedErrorProtocol {
     // Convert the range in 'contents' to the range in 'regex'.
     let delimCount = delim.opening.count

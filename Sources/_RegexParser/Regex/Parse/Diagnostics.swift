@@ -15,6 +15,8 @@ enum ParseError: Error, Hashable {
   // TODO: I wonder if it makes sense to store the string.
   // This can make equality weird.
 
+  // MARK: Syntactic Errors
+
   case numberOverflow(String)
   case expectedNumDigits(String, Int)
   case expectedNumber(String, kind: RadixKind)
@@ -43,7 +45,6 @@ enum ParseError: Error, Hashable {
 
   case cannotReferToWholePattern
 
-  case notQuantifiable
   case quantifierRequiresOperand(String)
 
   case backtrackingDirectiveMustHaveName(String)
@@ -55,7 +56,6 @@ enum ParseError: Error, Hashable {
   case cannotRemoveMatchingOptionsAfterCaret
 
   case expectedCustomCharacterClassMembers
-  case invalidCharacterClassRangeOperand
 
   case emptyProperty
   case unknownProperty(key: String?, value: String)
@@ -78,6 +78,17 @@ enum ParseError: Error, Hashable {
   case cannotRemoveExtendedSyntaxInMultilineMode
 
   case expectedCalloutArgument
+
+  // MARK: Semantic Errors
+
+  case unsupported(String)
+  case deprecatedUnicode(String)
+  case invalidReference(Int)
+  case duplicateNamedCapture(String)
+  case invalidCharacterClassRangeOperand
+  case invalidQuantifierRange(Int, Int)
+  case invalidCharacterRange(from: Character, to: Character)
+  case notQuantifiable
 }
 
 extension IdentifierKind {
@@ -93,6 +104,7 @@ extension IdentifierKind {
 extension ParseError: CustomStringConvertible {
   var description: String {
     switch self {
+    // MARK: Syntactic Errors
     case let .numberOverflow(s):
       return "number overflow: \(s)"
     case let .expectedNumDigits(s, i):
@@ -119,8 +131,6 @@ extension ParseError: CustomStringConvertible {
       return "invalid escape sequence '\\\(c)'"
     case .cannotReferToWholePattern:
       return "cannot refer to whole pattern here"
-    case .notQuantifiable:
-      return "expression is not quantifiable"
     case .quantifierRequiresOperand(let q):
       return "quantifier '\(q)' must appear after expression"
     case .backtrackingDirectiveMustHaveName(let b):
@@ -182,6 +192,23 @@ extension ParseError: CustomStringConvertible {
       return "invalid age format for '\(value)' - use '3.0' or 'V3_0' formats"
     case .invalidNumericValue(let value):
       return "invalid numeric value '\(value)'"
+
+    // MARK: Semantic Errors
+
+    case let .unsupported(kind):
+      return "\(kind) is not currently supported"
+    case let .deprecatedUnicode(kind):
+      return "\(kind) is a deprecated Unicode property, and is not supported"
+    case let .invalidReference(i):
+      return "no capture numbered \(i)"
+    case let .duplicateNamedCapture(str):
+      return "group named '\(str)' already exists"
+    case let .invalidQuantifierRange(lhs, rhs):
+      return "range lower bound '\(lhs)' must be less than or equal to upper bound '\(rhs)'"
+    case let .invalidCharacterRange(from: lhs, to: rhs):
+      return "character '\(lhs)' must compare less than or equal to '\(rhs)'"
+    case .notQuantifiable:
+      return "expression is not quantifiable"
     }
   }
 }
