@@ -270,11 +270,11 @@ extension UTS18Tests {
       09\u{85}\
       10\u{2028}\
       11\u{2029}\
-      
+      12
       """
     // Check the input counts
     var lines = lineInput.matches(of: regex(#"\d{2}"#))
-    XCTAssertEqual(lines.count, 11)
+    XCTAssertEqual(lines.count, 12)
     // Test \R - newline sequence
     lines = lineInput.matches(of: regex(#"\d{2}\R^"#).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 11)
@@ -283,20 +283,35 @@ extension UTS18Tests {
     XCTAssertEqual(lines.count, 11)
     // Test anchors as line boundaries
     lines = lineInput.matches(of: regex(#"^\d{2}$"#).anchorsMatchLineEndings())
-    XCTAssertEqual(lines.count, 11)
+    XCTAssertEqual(lines.count, 12)
     // Test that dot does not match line endings
     lines = lineInput.matches(of: regex(#".+"#))
-    XCTAssertEqual(lines.count, 11)
+    XCTAssertEqual(lines.count, 12)
     
     // Unicode scalar semantics - \R still matches all, including \r\n sequence
     lines = lineInput.matches(
       of: regex(#"\d{2}\R^"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 11)
+    lines = lineInput.matches(
+      of: regex(#"\d{2}\R(?=\d)"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
+    XCTAssertEqual(lines.count, 11)
     XCTAssertNotNil(lineInput.firstMatch(
       of: regex(#"08\R^"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings()))
     // Unicode scalar semantics - \v matches all except for \r\n sequence
+    print("\n\n\n-------", #line, "\n\n\n")
     lines = lineInput.matches(
       of: regex(#"\d{2}\v^"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
+    
+    print(lines.map {
+      "\n\n```\($0.0)```\n\n"
+      +
+      "```\($0.0.unicodeScalars.map { $0.value4Digits })```"
+    }.joined())
+    
+    XCTAssertEqual(lines.count, 10)
+    print("\n\n\n-------", #line, "\n\n\n")
+    lines = lineInput.matches(
+      of: regex(#"\d{2}\v(?=\d)"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 10)
     XCTAssertNil(lineInput.firstMatch(
       of: regex(#"08\v^"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings()))
