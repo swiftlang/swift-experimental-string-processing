@@ -34,6 +34,7 @@ extension RegexValidator {
     for opt in ast.globalOptions?.options ?? [] {
       try validateGlobalMatchingOption(opt)
     }
+    try validateCaptures()
     try validateNode(ast.root)
   }
 
@@ -56,6 +57,17 @@ extension RegexValidator {
       // We haven't yet implemented the '\R' matching specifics of these.
       throw error(
         .unsupported("newline sequence matching mode"), at: opt.location)
+    }
+  }
+
+  func validateCaptures() throws {
+    // TODO: Should this be validated when creating the capture list?
+    var usedNames = Set<String>()
+    for capture in captures.captures {
+      guard let name = capture.name else { continue }
+      guard usedNames.insert(name).inserted else {
+        throw error(.duplicateNamedCapture(name), at: capture.location)
+      }
     }
   }
 

@@ -94,7 +94,7 @@ func parseTest(
             file: file, line: line)
     return
   }
-  let captures = ast.captureList
+  let captures = ast.captureList.withoutLocs
   guard captures == expectedCaptures else {
     XCTFail("""
 
@@ -872,7 +872,7 @@ extension RegexTests {
     parseTest(
       "(?|(?<x>a)|(?<x>b))",
       nonCaptureReset(alt(namedCapture("x", "a"), namedCapture("x", "b"))),
-      throwsError: .unsupported, captures: [.named("x", opt: 1), .named("x", opt: 1)]
+      throwsError: .invalid, captures: [.named("x", opt: 1), .named("x", opt: 1)]
     )
 
     // TODO: Reject mismatched names?
@@ -2538,6 +2538,12 @@ extension RegexTests {
     diagnosticTest(#"(?'a-b-c')"#, .expected("'"))
 
     diagnosticTest("(?x)(? : )", .unknownGroupKind("? "))
+
+    diagnosticTest("(?<x>)(?<x>)", .duplicateNamedCapture("x"))
+    diagnosticTest("(?<x>)|(?<x>)", .duplicateNamedCapture("x"))
+    diagnosticTest("((?<x>))(?<x>)", .duplicateNamedCapture("x"))
+    diagnosticTest("(|(?<x>))(?<x>)", .duplicateNamedCapture("x"))
+    diagnosticTest("(?<x>)(?<y>)(?<x>)", .duplicateNamedCapture("x"))
 
     // MARK: Quantifiers
 
