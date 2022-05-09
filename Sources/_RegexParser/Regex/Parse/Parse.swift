@@ -227,9 +227,6 @@ extension Parser {
         if let (amt, kind, trivia) =
             try source.lexQuantifier(context: context) {
           let location = loc(_start)
-          guard operand.isQuantifiable else {
-            throw Source.LocatedError(ParseError.notQuantifiable, location)
-          }
           result.append(.quantification(
             .init(amt, kind, operand, location, trivia: trivia)))
         } else {

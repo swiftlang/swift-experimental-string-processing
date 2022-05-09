@@ -45,7 +45,6 @@ enum ParseError: Error, Hashable {
 
   case cannotReferToWholePattern
 
-  case notQuantifiable
   case quantifierRequiresOperand(String)
 
   case backtrackingDirectiveMustHaveName(String)
@@ -83,6 +82,8 @@ enum ParseError: Error, Hashable {
   case duplicateNamedCapture(String)
   case invalidCharacterClassRangeOperand
   case invalidQuantifierRange(Int, Int)
+  case invalidCharacterRange(from: Character, to: Character)
+  case notQuantifiable
 }
 
 extension IdentifierKind {
@@ -125,8 +126,6 @@ extension ParseError: CustomStringConvertible {
       return "invalid escape sequence '\\\(c)'"
     case .cannotReferToWholePattern:
       return "cannot refer to whole pattern here"
-    case .notQuantifiable:
-      return "expression is not quantifiable"
     case .quantifierRequiresOperand(let q):
       return "quantifier '\(q)' must appear after expression"
     case .backtrackingDirectiveMustHaveName(let b):
@@ -191,6 +190,10 @@ extension ParseError: CustomStringConvertible {
       return "group named '\(str)' already exists"
     case let .invalidQuantifierRange(lhs, rhs):
       return "range lower bound '\(lhs)' must be less than or equal to upper bound '\(rhs)'"
+    case let .invalidCharacterRange(from: lhs, to: rhs):
+      return "character '\(lhs)' must compare less than or equal to '\(rhs)'"
+    case .notQuantifiable:
+      return "expression is not quantifiable"
     }
   }
 }

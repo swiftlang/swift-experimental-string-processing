@@ -503,6 +503,8 @@ extension RegexTests {
     parseTest("[-a-]", charClass("-", "a", "-"))
 
     parseTest("[a-z]", charClass(range_m("a", "z")))
+    parseTest("[a-a]", charClass(range_m("a", "a")))
+    parseTest("[B-a]", charClass(range_m("B", "a")))
 
     // FIXME: AST builder helpers for custom char class types
     parseTest("[a-d--a-c]", charClass(
@@ -2442,6 +2444,11 @@ extension RegexTests {
 
     diagnosticTest(#"|([\d-c])?"#, .invalidCharacterClassRangeOperand)
 
+    diagnosticTest(#"[_-A]"#, .invalidCharacterRange(from: "_", to: "A"))
+    diagnosticTest(#"(?i)[_-A]"#, .invalidCharacterRange(from: "_", to: "A"))
+    diagnosticTest(#"[c-b]"#, .invalidCharacterRange(from: "c", to: "b"))
+    diagnosticTest(#"[\u{66}-\u{65}]"#, .invalidCharacterRange(from: "\u{66}", to: "\u{65}"))
+
     // MARK: Bad escapes
 
     diagnosticTest("\\", .expectedEscape)
@@ -2555,6 +2562,17 @@ extension RegexTests {
     diagnosticTest("{1,3}", .quantifierRequiresOperand("{1,3}"))
     diagnosticTest("a{3,2}", .invalidQuantifierRange(3, 2))
 
+    // These are not quantifiable.
+    diagnosticTest(#"\b?"#, .notQuantifiable)
+    diagnosticTest(#"\B*"#, .notQuantifiable)
+    diagnosticTest(#"\A+"#, .notQuantifiable)
+    diagnosticTest(#"\Z??"#, .notQuantifiable)
+    diagnosticTest(#"\G*?"#, .notQuantifiable)
+    diagnosticTest(#"\z+?"#, .notQuantifiable)
+    diagnosticTest(#"\K{1}"#, .unsupported(#"'\K'"#))
+    diagnosticTest(#"\y{2,5}"#, .notQuantifiable)
+    diagnosticTest(#"\Y{3,}"#, .notQuantifiable)
+
     // MARK: Unicode scalars
 
     diagnosticTest(#"\u{G}"#, .expectedNumber("G", kind: .hex))
@@ -2641,13 +2659,13 @@ extension RegexTests {
 
     diagnosticTest("(*MARK)", .backtrackingDirectiveMustHaveName("MARK"))
     diagnosticTest("(*:)", .expectedNonEmptyContents)
-    diagnosticTest("(*MARK:a)?", .notQuantifiable)
-    diagnosticTest("(*FAIL)+", .notQuantifiable)
-    diagnosticTest("(*COMMIT:b)*", .notQuantifiable)
-    diagnosticTest("(*PRUNE:a)??", .notQuantifiable)
-    diagnosticTest("(*SKIP:a)*?", .notQuantifiable)
-    diagnosticTest("(*F)+?", .notQuantifiable)
-    diagnosticTest("(*:a){2}", .notQuantifiable)
+    diagnosticTest("(*MARK:a)?", .unsupported("backtracking directive"))
+    diagnosticTest("(*FAIL)+", .unsupported("backtracking directive"))
+    diagnosticTest("(*COMMIT:b)*", .unsupported("backtracking directive"))
+    diagnosticTest("(*PRUNE:a)??", .unsupported("backtracking directive"))
+    diagnosticTest("(*SKIP:a)*?", .unsupported("backtracking directive"))
+    diagnosticTest("(*F)+?", .unsupported("backtracking directive"))
+    diagnosticTest("(*:a){2}", .unsupported("backtracking directive"))
 
     // MARK: Oniguruma absent functions
 

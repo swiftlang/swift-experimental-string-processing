@@ -182,17 +182,15 @@ extension RegexValidator {
     _ esc: AST.Atom.EscapedBuiltin, at loc: SourceLocation
   ) throws {
     switch esc {
-    case .resetStartOfMatch, .singleDataUnit, .horizontalWhitespace,
-        .notHorizontalWhitespace, .verticalTab, .notVerticalTab,
+    case .resetStartOfMatch, .singleDataUnit, .verticalTab, .notVerticalTab,
         // '\N' needs to be emitted using 'emitAny'.
         .notNewline:
       throw error(.unsupported("'\\\(esc.character)'"), at: loc)
 
     // Character classes.
     case .decimalDigit, .notDecimalDigit, .whitespace, .notWhitespace,
-        .wordCharacter, .notWordCharacter, .graphemeCluster, .trueAnychar:
-      // TODO: What about scalar matching mode for .graphemeCluster? We
-      // currently crash at runtime.
+        .wordCharacter, .notWordCharacter, .graphemeCluster, .trueAnychar,
+        .horizontalWhitespace, .notHorizontalWhitespace:
       break
 
     case .newlineSequence:
@@ -271,18 +269,20 @@ extension RegexValidator {
       throw error(.invalidCharacterClassRangeOperand, at: rhs.location)
     }
 
-    guard lhs.literalCharacterValue != nil else {
+    guard let lhsChar = lhs.literalCharacterValue else {
       throw error(
         .unsupported("character class range operand"), at: lhs.location)
     }
 
-    guard rhs.literalCharacterValue != nil else {
+    guard let rhsChar = rhs.literalCharacterValue else {
       throw error(
         .unsupported("character class range operand"), at: rhs.location)
     }
 
-    // TODO: Validate lhs <= rhs? That may require knowledge of case
-    // insensitivity though.
+    guard lhsChar <= rhsChar else {
+      throw error(
+        .invalidCharacterRange(from: lhsChar, to: rhsChar), at: range.dashLoc)
+    }
   }
 
   func validateCharacterClassMember(
@@ -341,6 +341,9 @@ extension RegexValidator {
 
   func validateQuantification(_ quant: AST.Quantification) throws {
     try validateNode(quant.child)
+    guard quant.child.isQuantifiable else {
+      throw error(.notQuantifiable, at: quant.child.location)
+    }
     switch quant.amount.value {
     case .range(let lhs, let rhs):
       guard lhs.value <= rhs.value else {
