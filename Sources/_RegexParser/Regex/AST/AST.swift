@@ -125,7 +125,9 @@ extension AST.Node {
     switch self {
     case .atom(let a):
       return a.isQuantifiable
-    case .group, .conditional, .customCharacterClass, .absentFunction:
+    case .group(let g):
+      return g.isQuantifiable
+    case .conditional, .customCharacterClass, .absentFunction:
       return true
     case .alternation, .concatenation, .quantification, .quote, .trivia,
         .empty:

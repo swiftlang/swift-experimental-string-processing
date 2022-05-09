@@ -768,6 +768,8 @@ extension AST.Atom {
     // TODO: Are callouts quantifiable?
     case .escaped(let esc):
       return esc.isQuantifiable
+    case .startOfLine, .endOfLine:
+      return false
     default:
       return true
     }

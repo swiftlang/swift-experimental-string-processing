@@ -136,3 +136,18 @@ extension AST.Group {
     }
   }
 }
+
+extension AST.Group {
+  var isQuantifiable: Bool {
+    switch kind.value {
+    case .capture, .namedCapture, .balancedCapture, .nonCapture,
+        .nonCaptureReset, .atomicNonCapturing, .scriptRun, .atomicScriptRun:
+      return true
+      
+    case .lookahead, .negativeLookahead, .nonAtomicLookahead,
+        .lookbehind, .negativeLookbehind, .nonAtomicLookbehind,
+        .changeMatchingOptions:
+      return false
+    }
+  }
+}
