@@ -164,11 +164,16 @@ extension UTS18Tests {
     expectFirstMatch(input, regex(#"[[:xdigit:]]+"#), input[pos: ..<6])
     expectFirstMatch(input, regex(#"[[:alnum:]]+"#), input[pos: ..<11])
     expectFirstMatch(input, regex(#"[[:space:]]+"#), input[pos: 12..<13])
-    // TODO: blank
-    // TODO: cntrl
     expectFirstMatch(input, regex(#"[[:graph:]]+"#), input[pos: ..<11])
     expectFirstMatch(input, regex(#"[[:print:]]+"#), input[...])
     expectFirstMatch(input, regex(#"[[:word:]]+"#), input[pos: ..<11])
+
+    let blankAndControl = """
+     \t\u{01}\u{19}
+    """
+    // \t - tab is in both [:blank:] and [:cntrl:]
+    expectFirstMatch(blankAndControl, regex(#"[[:blank:]]+"#), blankAndControl[pos: ..<2])
+    expectFirstMatch(blankAndControl, regex(#"[[:cntrl:]]+"#), blankAndControl[pos: 1...])
   }
   
   //RL1.3 Subtraction and Intersection
@@ -361,12 +366,15 @@ extension UTS18Tests {
     XCTAssertTrue("abcdef🇬🇭".contains(regex(#"abcdef\X$"#)))
     XCTAssertTrue("abcdef🇬🇭".contains(regex(#"abcdef\X$"#).matchingSemantics(.unicodeScalar)))
     XCTAssertTrue("abcdef🇬🇭".contains(regex(#"abcdef.+\y"#).matchingSemantics(.unicodeScalar)))
+    XCTAssertFalse("abcdef🇬🇭".contains(regex(#"abcdef.$"#).matchingSemantics(.unicodeScalar)))
   }
   
   func testCharacterClassesWithStrings() {
     let regex = regex(#"[a-z🧐🇧🇪🇧🇫🇧🇬]"#)
     XCTAssertTrue("🧐".contains(regex))
     XCTAssertTrue("🇧🇫".contains(regex))
+    XCTAssertTrue("🧐".contains(regex.matchingSemantics(.unicodeScalar)))
+    XCTAssertTrue("🇧🇫".contains(regex.matchingSemantics(.unicodeScalar)))
   }
   
   // RL2.3 Default Word Boundaries
@@ -449,7 +457,7 @@ extension UTS18Tests {
       // XCTAssertTrue("^\u{3B1}\u{3B2}$".contains(#/[\N{GREEK SMALL LETTER ALPHA}-\N{GREEK SMALL LETTER BETA}]+/#))
     }
     
-    XCTExpectFailure("Other named char failures -- investigate") {
+    XCTExpectFailure("Other named char failures -- name aliases") {
       XCTAssertTrue("\u{C}".contains(regex(#"\N{FORM FEED}"#)))
       XCTAssertTrue("\u{FEFF}".contains(regex(#"\N{BYTE ORDER MARK}"#)))
       XCTAssertTrue("\u{FEFF}".contains(regex(#"\N{BOM}"#)))
@@ -501,24 +509,58 @@ extension UTS18Tests {
     XCTAssertTrue("⌁".contains(regex(#"[\p{age=3.0}--\p{age=2.0}]"#)))
 
     // General_Category
+    XCTAssertTrue("a".contains(regex(#"\p{Ll}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{gc=Ll}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{gc=Ll}"#)))
+    XCTAssertFalse("A".contains(regex(#"\p{gc=Ll}"#)))
+    XCTAssertTrue("A".contains(regex(#"\p{gc=L}"#)))
+
+    XCTAssertTrue("a".contains(regex(#"\p{Any}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{Assigned}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{ASCII}"#)))
+
     // Script (Script_Extensions)
     XCTAssertTrue("a".contains(regex(#"\p{script=latin}"#)))
     XCTAssertTrue("강".contains(regex(#"\p{script=hangul}"#)))
     
     // White_Space
+    XCTAssertTrue(" ".contains(regex(#"\p{whitespace}"#)))
+    XCTAssertTrue("\n".contains(regex(#"\p{White_Space}"#)))
+    XCTAssertFalse("a".contains(regex(#"\p{whitespace}"#)))
+
     // Alphabetic
+    XCTAssertTrue("aéîøüƒ".contains(regex(#"^\p{Alphabetic}+$"#)))
+
     // Hangul_Syllable_Type
+    XCTExpectFailure {
+      XCTFail(#"Unsupported: \(#/\p{Hangul_Syllable_Type=L}/#)"#)
+      // XCTAssertTrue("ㄱ".contains(regex(#"\p{Hangul_Syllable_Type=L}"#)))
+    }
+
     // Noncharacter_Code_Point
+    XCTAssertTrue("\u{10FFFF}".contains(regex(#"\p{Noncharacter_Code_Point}"#)))
+    
     // Default_Ignorable_Code_Point
+    XCTAssertTrue("\u{00AD}".contains(regex(#"\p{Default_Ignorable_Code_Point}"#)))
+
     // Deprecated
+    XCTAssertTrue("ŉ".contains(regex(#"\p{Deprecated}"#)))
     // Logical_Order_Exception
+    XCTAssertTrue("ແ".contains(regex(#"\p{Logical_Order_Exception}"#)))
     // Variation_Selector
+    XCTAssertTrue("\u{FE07}".contains(regex(#"\p{Variation_Selector}"#)))
 
     // MARK: Numeric
     // Numeric_Value
     // Numeric_Type
     // Hex_Digit
+    XCTAssertTrue("0123456789abcdef０１２３４５６７８９ＡＢＣＤＥＦ"
+      .contains(regex(#"^\p{Hex_Digit}+$"#)))
+    XCTAssertFalse("0123456789abcdefg".contains(regex(#"^\p{Hex_Digit}+$"#)))
     // ASCII_Hex_Digit
+    XCTAssertTrue("0123456789abcdef".contains(regex(#"^\p{ASCII_Hex_Digit}+$"#)))
+    XCTAssertFalse("0123456789abcdef０１２３４５６７８９ＡＢＣＤＥＦ"
+      .contains(regex(#"^\p{ASCII_Hex_Digit}+$"#)))
 
     // MARK: Identifiers
     // ID_Continue
