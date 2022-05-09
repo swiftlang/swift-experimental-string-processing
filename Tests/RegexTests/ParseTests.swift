@@ -1756,10 +1756,6 @@ extension RegexTests {
         charClass("a", "b")
       ))
 
-    parseTest(#"(?i:)?"#, zeroOrOne(of: changeMatchingOptions(
-      matchingOptions(adding: .caseInsensitive), empty()
-    )))
-
     // Test multi-line comment handling.
     parseTest(
       """
@@ -2573,6 +2569,7 @@ extension RegexTests {
     diagnosticTest(#"$?"#, .notQuantifiable)
     diagnosticTest(#"(?=a)+"#, .notQuantifiable)
     diagnosticTest(#"(?i)*"#, .notQuantifiable)
+    diagnosticTest(#"(?i:)?"#, .notQuantifiable)
     diagnosticTest(#"\K{1}"#, .unsupported(#"'\K'"#))
     diagnosticTest(#"\y{2,5}"#, .notQuantifiable)
     diagnosticTest(#"\Y{3,}"#, .notQuantifiable)
