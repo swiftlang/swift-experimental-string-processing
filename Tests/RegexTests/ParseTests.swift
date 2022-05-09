@@ -170,8 +170,8 @@ func parseNotEqualTest(
   syntax: SyntaxOptions = .traditional,
   file: StaticString = #file, line: UInt = #line
 ) {
-  let lhsAST = try! parse(lhs, syntax)
-  let rhsAST = try! parse(rhs, syntax)
+  let lhsAST = try! parse(lhs, .syntactic, syntax)
+  let rhsAST = try! parse(rhs, .syntactic, syntax)
   if lhsAST == rhsAST || lhsAST._dump() == rhsAST._dump() {
     XCTFail("""
               AST: \(lhsAST._dump())
@@ -187,7 +187,7 @@ func rangeTest(
   at locFn: (AST.Node) -> SourceLocation = \.location,
   file: StaticString = #file, line: UInt = #line
 ) {
-  let ast = try! parse(input, syntax).root
+  let ast = try! parse(input, .syntactic, syntax).root
   let range = input.offsets(of: locFn(ast).range)
   let expected = expectedRange(input)
 
@@ -207,7 +207,7 @@ func diagnosticTest(
   file: StaticString = #file, line: UInt = #line
 ) {
   do {
-    let ast = try parse(input, syntax)
+    let ast = try parse(input, .semantic, syntax)
     XCTFail("""
 
       Passed \(ast)
@@ -236,7 +236,7 @@ func diagnosticWithDelimitersTest(
     input, ignoreTrailing: ignoreTrailing, file: file, line: line)
 
   do {
-    let orig = try parseWithDelimiters(literal)
+    let orig = try parseWithDelimiters(literal, .semantic)
     let ast = orig.root
     XCTFail("""
 

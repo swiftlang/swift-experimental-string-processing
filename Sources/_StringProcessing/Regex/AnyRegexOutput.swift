@@ -17,7 +17,7 @@ extension Regex where Output == AnyRegexOutput {
   ///
   /// - Parameter pattern: The regular expression.
   public init(_ pattern: String) throws {
-    self.init(ast: try parse(pattern, .traditional))
+    self.init(ast: try parse(pattern, .semantic, .traditional))
   }
 }
 
@@ -31,7 +31,7 @@ extension Regex {
     _ pattern: String,
     as: Output.Type = Output.self
   ) throws {
-    self.init(ast: try parse(pattern, .traditional))
+    self.init(ast: try parse(pattern, .semantic, .traditional))
   }
 }
 

@@ -150,7 +150,7 @@ func captureTest(
   file: StaticString = #file,
   line: UInt = #line
 ) {
-  let ast = try! parse(regex, .traditional)
+  let ast = try! parse(regex, .semantic, .traditional)
   let capList = ast.root._captureList
   guard capList == expected else {
     XCTFail("""
