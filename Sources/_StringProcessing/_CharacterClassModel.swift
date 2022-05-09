@@ -464,8 +464,12 @@ extension AST.Atom.EscapedBuiltin {
     case .notHorizontalWhitespace:
       return .horizontalWhitespace.inverted
 
-    case .notNewline: return .newlineSequence.inverted
     case .newlineSequence: return .newlineSequence
+
+    // FIXME: This is more like '.' than inverted '\R', as it is affected
+    // by e.g (*CR). We should therefore really be emitting it through
+    // emitAny(). For now we treat it as semantically invalid.
+    case .notNewline: return .newlineSequence.inverted
 
     case .whitespace:    return .whitespace
     case .notWhitespace: return .whitespace.inverted
