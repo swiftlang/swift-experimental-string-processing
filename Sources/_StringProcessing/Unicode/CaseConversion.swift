@@ -17,9 +17,9 @@ extension Character {
   /// Whether this character and `c` are equal when case folded.
   func caseFoldedEquals(_ c: Character) -> Bool {
     guard #available(SwiftStdlib 5.7, *) else { fatalError() }
-    let foldedSelf = unicodeScalars.map(\.properties._caseFolded).joined()
-    let foldedOther = c.unicodeScalars.map(\.properties._caseFolded).joined()
-    return foldedSelf == foldedOther
+    let foldedSelf = unicodeScalars.lazy.map(\.properties._caseFolded).joined()
+    let foldedOther = c.unicodeScalars.lazy.map(\.properties._caseFolded).joined()
+    return foldedSelf.elementsEqual(foldedOther)
   }
 }
 
