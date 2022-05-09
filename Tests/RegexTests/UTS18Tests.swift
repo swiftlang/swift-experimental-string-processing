@@ -290,45 +290,12 @@ extension UTS18Tests {
     
     // Unicode scalar semantics - \R still matches all, including \r\n sequence
     lines = lineInput.matches(
-      of: regex(#"\d{2}\R^"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
-    XCTAssertEqual(lines.count, 11)
-    lines = lineInput.matches(
       of: regex(#"\d{2}\R(?=\d)"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 11)
-    XCTAssertNotNil(lineInput.firstMatch(
-      of: regex(#"08\R^"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings()))
     // Unicode scalar semantics - \v matches all except for \r\n sequence
-    print("\n\n\n-------", #line, "\n\n\n")
-    lines = lineInput.matches(
-      of: regex(#"\d{2}\v^"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
-    
-    print(lines.map {
-      "\n\n```\($0.0)```\n\n"
-      +
-      "```\($0.0.unicodeScalars.map { $0.value4Digits })```"
-    }.joined())
-    
-    XCTAssertEqual(lines.count, 10)
-    print("\n\n\n-------", #line, "\n\n\n")
     lines = lineInput.matches(
       of: regex(#"\d{2}\v(?=\d)"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 10)
-    XCTAssertNil(lineInput.firstMatch(
-      of: regex(#"08\v^"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings()))
-
-    XCTAssertNotNil(lineInput.firstMatch(of: regex(#"08\u{d}\u{a}"#).matchingSemantics(.unicodeScalar)))
-    XCTAssertNotNil(lineInput.firstMatch(
-      of: regex(#"08..09"#).matchingSemantics(.unicodeScalar).dotMatchesNewlines()))
-
-    for _ in 0..<5 { print("---") }
-    for (i, s) in lineInput.unicodeScalars.enumerated() {
-      print("\(i): scalar U+\(s.value4Digits)")
-    }
-    for _ in 0..<5 { print("---") }
-    for match in lineInput.matches(of: regex(#"\v"#).matchingSemantics(.unicodeScalar)) {
-      print(lineInput.unicodeScalars.offsets(of: match.0.startIndex..<match.0.endIndex))
-    }
-    for _ in 0..<5 { print("---") }
 
     // Does not contain an empty line
     XCTAssertFalse(lineInput.contains(regex(#"^$"#)))
