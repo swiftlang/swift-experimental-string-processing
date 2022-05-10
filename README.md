@@ -8,7 +8,7 @@ See [Declarative String Processing Overview][decl-string]
 
 ## Requirements
 
-- [Swift Trunk Development Snapshot](https://www.swift.org/download/#snapshots) DEVELOPMENT-SNAPSHOT-2022-03-09 or later.
+- [Swift Trunk Development Snapshot](https://www.swift.org/download/#snapshots) DEVELOPMENT-SNAPSHOT-2022-04-20 or later.
 
 ## Integration with Swift
 
