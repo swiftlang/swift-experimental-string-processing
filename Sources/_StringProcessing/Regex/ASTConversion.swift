@@ -102,7 +102,7 @@ extension AST.Node {
             curIdx = nextIdx
           } else {
             children.append(astChildren[curIdx].dslTreeNode)
-            children.formIndex(after: &curIdx)
+            astChildren.formIndex(after: &curIdx)
           }
         }
         return .concatenation(children)
