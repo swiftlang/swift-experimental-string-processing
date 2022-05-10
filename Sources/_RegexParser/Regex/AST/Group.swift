@@ -141,12 +141,12 @@ extension AST.Group {
   var isQuantifiable: Bool {
     switch kind.value {
     case .capture, .namedCapture, .balancedCapture, .nonCapture,
-        .nonCaptureReset, .atomicNonCapturing, .scriptRun, .atomicScriptRun:
+        .nonCaptureReset, .atomicNonCapturing, .scriptRun, .atomicScriptRun,
+        .changeMatchingOptions:
       return true
       
     case .lookahead, .negativeLookahead, .nonAtomicLookahead,
-        .lookbehind, .negativeLookbehind, .nonAtomicLookbehind,
-        .changeMatchingOptions:
+        .lookbehind, .negativeLookbehind, .nonAtomicLookbehind:
       return false
     }
   }
