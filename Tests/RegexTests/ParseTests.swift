@@ -394,6 +394,12 @@ extension RegexTests {
       #"abc\d"#,
       concat("a", "b", "c", escaped(.decimalDigit)))
 
+    // MARK: Allowed combining characters
+
+    parseTest("e\u{301}", "e\u{301}")
+    parseTest("1\u{358}", "1\u{358}")
+    parseTest(#"\ \#u{361}"#, " \u{361}")
+
     // MARK: Alternations
 
     parseTest(
@@ -475,6 +481,8 @@ extension RegexTests {
 
     parseTest(#"\u{    a   }"#, scalar("\u{A}"))
     parseTest(#"\u{  a  }\u{ B }"#, concat(scalar("\u{A}"), scalar("\u{B}")))
+
+    parseTest(#"[\u{301}]"#, charClass(scalar_m("\u{301}")))
 
     // MARK: Scalar sequences
 
@@ -2553,6 +2561,18 @@ extension RegexTests {
     diagnosticTest(#"\\#u{E9}"#, .invalidEscape("é"))
     diagnosticTest(#"\˂"#, .invalidEscape("˂"))
     diagnosticTest(#"\d\#u{301}"#, .invalidEscape("d\u{301}"))
+
+    // MARK: Confusable characters
+
+    diagnosticTest("[\u{301}]", .confusableCharacter("[\u{301}"))
+    diagnosticTest("(\u{358})", .confusableCharacter("(\u{358}"))
+    diagnosticTest("{\u{35B}}", .confusableCharacter("{\u{35B}"))
+    diagnosticTest(#"\\#u{35C}"#, .confusableCharacter(#"\\#u{35C}"#))
+    diagnosticTest("^\u{35D}", .confusableCharacter("^\u{35D}"))
+    diagnosticTest("$\u{35E}", .confusableCharacter("$\u{35E}"))
+    diagnosticTest(".\u{35F}", .confusableCharacter(".\u{35F}"))
+    diagnosticTest("|\u{360}", .confusableCharacter("|\u{360}"))
+    diagnosticTest(" \u{361}", .confusableCharacter(" \u{361}"))
 
     // MARK: Character properties
 
