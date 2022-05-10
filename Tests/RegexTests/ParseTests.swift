@@ -804,6 +804,20 @@ extension RegexTests {
       #"a(?#. comment)b"#,
       concat("a", "b"))
 
+    // MARK: Interpolation
+
+    // These are literal as there's no closing '}>'
+    parseTest("<{", concat("<", "{"))
+    parseTest("<{a", concat("<", "{", "a"))
+    parseTest("<{a}", concat("<", "{", "a", "}"))
+    parseTest("<{<{}", concat("<", "{", "<", "{", "}"))
+
+    // Literal as escaped
+    parseTest(#"\<{}>"#, concat("<", "{", "}", ">"))
+
+    // A quantification
+    parseTest(#"<{2}"#, exactly(2, of: "<"))
+
     // MARK: Quantification
 
     parseTest("a*", zeroOrMore(of: "a"))
@@ -2573,6 +2587,15 @@ extension RegexTests {
     diagnosticTest(".\u{35F}", .confusableCharacter(".\u{35F}"))
     diagnosticTest("|\u{360}", .confusableCharacter("|\u{360}"))
     diagnosticTest(" \u{361}", .confusableCharacter(" \u{361}"))
+
+    // MARK: Interpolation (currently unsupported)
+
+    diagnosticTest("<{}>", .unsupported("interpolation"))
+    diagnosticTest("<{...}>", .unsupported("interpolation"))
+    diagnosticTest("<{)}>", .unsupported("interpolation"))
+    diagnosticTest("<{}}>", .unsupported("interpolation"))
+    diagnosticTest("<{<{}>", .unsupported("interpolation"))
+    diagnosticTest("(<{)}>", .unsupported("interpolation"))
 
     // MARK: Character properties
 

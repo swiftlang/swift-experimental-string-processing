@@ -589,6 +589,26 @@ extension Source {
     return AST.Quote(str.value, str.location)
   }
 
+  /// Try to consume an interpolation sequence.
+  ///
+  ///     Interpolation -> '<{' String '}>'
+  ///
+  mutating func lexInterpolation() throws -> AST.Interpolation? {
+    let contents = try recordLoc { src -> String? in
+      try src.tryEating { src in
+        guard src.tryEat(sequence: "<{") else { return nil }
+        _ = src.lexUntil { $0.isEmpty || $0.starts(with: "}>") }
+        guard src.tryEat(sequence: "}>") else { return nil }
+
+        // Not currently supported. We error here instead of during Sema to
+        // get a better error for something like `(<{)}>`.
+        throw ParseError.unsupported("interpolation")
+      }
+    }
+    guard let contents = contents else { return nil }
+    return .init(contents.value, contents.location)
+  }
+
   /// Try to consume a comment
   ///
   ///     Comment -> '(?#' [^')']* ')'

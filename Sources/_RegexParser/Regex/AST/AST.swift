@@ -53,6 +53,9 @@ extension AST {
     /// Comments, non-semantic whitespace, etc
     case trivia(Trivia)
 
+    /// Intepolation `<{...}>`, currently reserved for future use.
+    case interpolation(Interpolation)
+
     case atom(Atom)
 
     case customCharacterClass(CustomCharacterClass)
@@ -78,6 +81,7 @@ extension AST.Node {
     case let .quantification(v):        return v
     case let .quote(v):                 return v
     case let .trivia(v):                return v
+    case let .interpolation(v):         return v
     case let .atom(v):                  return v
     case let .customCharacterClass(v):  return v
     case let .empty(v):                 return v
@@ -128,7 +132,7 @@ extension AST.Node {
     case .group, .conditional, .customCharacterClass, .absentFunction:
       return true
     case .alternation, .concatenation, .quantification, .quote, .trivia,
-        .empty:
+        .empty, .interpolation:
       return false
     }
   }
@@ -189,6 +193,16 @@ extension AST {
     init(_ v: Located<String>) {
       self.contents = v.value
       self.location = v.location
+    }
+  }
+
+  public struct Interpolation: Hashable, _ASTNode {
+    public let contents: String
+    public let location: SourceLocation
+
+    public init(_ contents: String, _ location: SourceLocation) {
+      self.contents = contents
+      self.location = location
     }
   }
 
