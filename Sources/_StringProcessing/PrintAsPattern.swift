@@ -676,7 +676,7 @@ extension AST.Atom {
       return String(c)
 
     case let .scalar(s):
-      let hex = String(s.value, radix: 16, uppercase: true)
+      let hex = String(s.value.value, radix: 16, uppercase: true)
       return "\\u{\(hex)}"
 
     case let .property(p):
@@ -773,7 +773,7 @@ extension AST.Atom {
       return String(c)
       
     case let .scalar(s):
-      let hex = String(s.value, radix: 16, uppercase: true)
+      let hex = String(s.value.value, radix: 16, uppercase: true)
       return "\\u{\(hex)}"
       
     case let .property(p):

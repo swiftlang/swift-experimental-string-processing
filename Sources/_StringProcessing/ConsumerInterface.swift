@@ -178,7 +178,7 @@ extension AST.Atom {
 
   var singleScalar: UnicodeScalar? {
     switch kind {
-    case .scalar(let s): return s
+    case .scalar(let s): return s.value
     default: return nil
     }
   }
@@ -200,7 +200,7 @@ extension AST.Atom {
     case let .scalar(s):
       assertionFailure(
         "Should have been handled by tree conversion")
-      return consumeScalar { $0 == s }
+      return consumeScalar { $0 == s.value }
 
     case let .char(c):
       assertionFailure(

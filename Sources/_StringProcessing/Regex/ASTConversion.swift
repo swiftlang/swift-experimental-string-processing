@@ -211,7 +211,7 @@ extension AST.Atom {
 
     switch self.kind {
     case let .char(c):                    return .char(c)
-    case let .scalar(s):                  return .char(Character(s))
+    case let .scalar(s):                  return .char(Character(s.value))
     case .any:                            return .any
     case let .backreference(r):           return .backreference(.init(ast: r))
     case let .changeMatchingOptions(seq): return .changeMatchingOptions(.init(ast: seq))

@@ -2272,6 +2272,12 @@ extension RegexTests {
       $0.as(CustomCC.self)!.members[0].as(CustomCC.Range.self)!.dashLoc
     })
 
+    // MARK: Unicode scalars
+
+    rangeTest(#"\u{65}"#, range(3 ..< 5), at: {
+      $0.as(AST.Atom.self)!.as(AST.Atom.Scalar.self)!.location
+    })
+
     // MARK: References
 
     rangeTest(#"\k<a+2>"#, range(3 ..< 6), at: {

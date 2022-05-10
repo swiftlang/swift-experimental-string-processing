@@ -29,7 +29,7 @@ extension AST {
       /// A Unicode scalar value written as a literal
       ///
       /// \u{...}, \0dd, \x{...}, ...
-      case scalar(Unicode.Scalar)
+      case scalar(Scalar)
 
       /// A Unicode property, category, or script, including those written using
       /// POSIX syntax.
@@ -103,6 +103,18 @@ extension AST.Atom {
 
   func `as`<T>(_ t: T.Type = T.self) -> T? {
     _associatedValue as? T
+  }
+}
+
+extension AST.Atom {
+  public struct Scalar: Hashable {
+    public var value: UnicodeScalar
+    public var location: SourceLocation
+
+    public init(_ value: UnicodeScalar, _ location: SourceLocation) {
+      self.value = value
+      self.location = location
+    }
   }
 }
 
@@ -697,7 +709,7 @@ extension AST.Atom {
     case .char(let c):
       return c
     case .scalar(let s):
-      return Character(s)
+      return Character(s.value)
 
     case .escaped(let c):
       return c.scalarValue.map(Character.init)
@@ -742,7 +754,7 @@ extension AST.Atom {
     case .char(let c):
       return String(c)
     case .scalar(let s):
-      return "\\u{\(String(s.value, radix: 16, uppercase: true))}"
+      return "\\u{\(String(s.value.value, radix: 16, uppercase: true))}"
 
     case .keyboardControl(let x):
       return "\\C-\(x)"
