@@ -45,7 +45,9 @@ extension Regex.Match where Output == AnyRegexOutput {
   }
 
   public subscript(name: String) -> AnyRegexOutput.Element? {
-    anyRegexOutput.namedCaptureOffsets[name].map { self[$0 + 1] }
+    anyRegexOutput.first {
+      $0.name == name
+    }
   }
 }
 
@@ -53,7 +55,6 @@ extension Regex.Match where Output == AnyRegexOutput {
 @available(SwiftStdlib 5.7, *)
 public struct AnyRegexOutput {
   let input: String
-  let namedCaptureOffsets: [String: Int]
   let _elements: [ElementRepresentation]
 
   /// The underlying representation of the element of a type-erased regex
@@ -65,6 +66,10 @@ public struct AnyRegexOutput {
 
     /// The bounds of the output element.
     let bounds: Range<String.Index>?
+    
+    /// The name of the capture.
+    var name: String? = nil
+    
     /// If the output vaule is strongly typed, then this will be set.
     var value: Any? = nil
   }
@@ -96,27 +101,16 @@ extension AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput {
-  internal init<C: Collection>(
-    input: String, namedCaptureOffsets: [String: Int], elements: C
-  ) where C.Element == StructuredCapture {
+  internal init(input: String, elements: [ElementRepresentation]) {
     self.init(
       input: input,
-      namedCaptureOffsets: namedCaptureOffsets,
-      _elements: elements.map(ElementRepresentation.init)
+      _elements: elements
     )
   }
 }
 
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput.ElementRepresentation {
-  init(_ element: StructuredCapture) {
-    self.init(
-      optionalDepth: element.optionalCount,
-      bounds: element.storedCapture.flatMap(\.range),
-      value: element.storedCapture.flatMap(\.value)
-    )
-  }
-
   func value(forInput input: String) -> Any {
     // Ok for now because `existentialMatchComponent`
     // wont slice the input if there's no range to slice with
@@ -128,7 +122,8 @@ extension AnyRegexOutput.ElementRepresentation {
       from: input,
       in: bounds,
       value: nil,
-      optionalCount: optionalDepth)
+      optionalCount: optionalDepth
+    )
   }
 }
 
@@ -141,7 +136,11 @@ extension AnyRegexOutput: RandomAccessCollection {
     var optionalDepth: Int {
       representation.optionalDepth
     }
-
+    
+    var name: String? {
+      representation.name
+    }
+    
     /// The range over which a value was captured. `nil` for no-capture.
     public var range: Range<String.Index>? {
       representation.bounds
@@ -186,7 +185,9 @@ extension AnyRegexOutput: RandomAccessCollection {
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput {
   public subscript(name: String) -> Element? {
-    namedCaptureOffsets[name].map { self[$0 + 1] }
+    first {
+      $0.name == name
+    }
   }
 }
 
