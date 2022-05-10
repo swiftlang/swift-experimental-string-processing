@@ -290,10 +290,54 @@ extension Source {
     return try Source.validateUnicodeScalar(str, .hex)
   }
 
+  /// Try to lex a seqence of hex digit unicode scalars.
+  ///
+  ///     UniScalarSequence   -> Whitespace? UniScalarSequencElt+
+  ///     UniScalarSequencElt -> HexDigit{1...} Whitespace?
+  ///
+  mutating func expectUnicodeScalarSequence(
+    eating ending: Character
+  ) throws -> AST.Atom.Kind {
+    try recordLoc { src in
+      var scalars = [AST.Atom.Scalar]()
+      var trivia = [AST.Trivia]()
+
+      // Eat up any leading whitespace.
+      if let t = src.lexWhitespace() { trivia.append(t) }
+
+      while true {
+        let str = src.lexUntil { src in
+          // Hit the ending, stop lexing.
+          if src.isEmpty || src.peek() == ending {
+            return true
+          }
+          // Eat up trailing whitespace, and stop lexing to record the scalar.
+          if let t = src.lexWhitespace() {
+            trivia.append(t)
+            return true
+          }
+          // Not the ending or trivia, must be a digit of the scalar.
+          return false
+        }
+        guard !str.value.isEmpty else { break }
+        scalars.append(try Source.validateUnicodeScalar(str, .hex))
+      }
+      guard !scalars.isEmpty else {
+        throw ParseError.expectedNumber("", kind: .hex)
+      }
+      try src.expect(ending)
+
+      if scalars.count == 1 {
+        return .scalar(scalars[0])
+      }
+      return .scalarSequence(.init(scalars, trivia: trivia))
+    }.value
+  }
+
   /// Eat a scalar off the front, starting from after the
   /// backslash and base character (e.g. `\u` or `\x`).
   ///
-  ///     UniScalar -> 'u{' HexDigit{1...} '}'
+  ///     UniScalar -> 'u{' UniScalarSequence '}'
   ///                | 'u'  HexDigit{4}
   ///                | 'x{' HexDigit{1...} '}'
   ///                | 'x'  HexDigit{0...2}
@@ -314,7 +358,10 @@ extension Source {
       // TODO: PCRE offers a different behavior if PCRE2_ALT_BSUX is set.
       switch base {
       // Hex numbers.
-      case "u" where src.tryEat("{"), "x" where src.tryEat("{"):
+      case "u" where src.tryEat("{"):
+        return try src.expectUnicodeScalarSequence(eating: "}")
+
+      case "x" where src.tryEat("{"):
         let str = try src.lexUntil(eating: "}")
         return .scalar(try Source.validateUnicodeScalar(str, .hex))
 
@@ -598,6 +645,16 @@ extension Source {
     // inside a custom character class (and only treats whitespace as
     // non-semantic there for the extra-extended `(?xx)` mode). If we get a
     // strict-PCRE mode, we'll need to add a case for that.
+    return lexWhitespace()
+  }
+
+  /// Try to consume whitespace as trivia
+  ///
+  ///     Whitespace -> WhitespaceChar+
+  ///
+  /// Unlike `lexNonSemanticWhitespace`, this will always attempt to lex
+  /// whitespace.
+  mutating func lexWhitespace() -> AST.Trivia? {
     let trivia: Located<String>? = recordLoc { src in
       src.tryEatPrefix(\.isPatternWhitespace)?.string
     }

@@ -671,13 +671,19 @@ extension AST.Atom {
   }
   
   var _dslBase: String {
+    func scalarLiteral(_ s: UnicodeScalar) -> String {
+      let hex = String(s.value, radix: 16, uppercase: true)
+      return "\\u{\(hex)}"
+    }
     switch kind {
     case let .char(c):
       return String(c)
 
     case let .scalar(s):
-      let hex = String(s.value.value, radix: 16, uppercase: true)
-      return "\\u{\(hex)}"
+      return scalarLiteral(s.value)
+
+    case let .scalarSequence(seq):
+      return seq.scalarValues.map(scalarLiteral).joined()
 
     case let .property(p):
       return p._dslBase
@@ -769,13 +775,9 @@ extension AST.Atom {
   
   var _regexBase: String {
     switch kind {
-    case let .char(c):
-      return String(c)
-      
-    case let .scalar(s):
-      let hex = String(s.value.value, radix: 16, uppercase: true)
-      return "\\u{\(hex)}"
-      
+    case .char, .scalar, .scalarSequence:
+      return literalStringValue!
+
     case let .property(p):
       return p._regexBase
       

@@ -481,6 +481,22 @@ extension RegexTests {
     parseTest(#"\x5X"#, concat(scalar("\u{5}"), "X"))
     parseTest(#"\x12ab"#, concat(scalar("\u{12}"), "a", "b"))
 
+    parseTest(#"\u{    a   }"#, scalar("\u{A}"))
+    parseTest(#"\u{  a  }\u{ B }"#, concat(scalar("\u{A}"), scalar("\u{B}")))
+
+    // MARK: Scalar sequences
+
+    parseTest(#"\u{A bC}"#, scalarSeq("\u{A}", "\u{BC}"))
+    parseTest(#"\u{ A bC }"#, scalarSeq("\u{A}", "\u{BC}"))
+    parseTest(#"\u{A bC }"#, scalarSeq("\u{A}", "\u{BC}"))
+    parseTest(#"\u{ A bC}"#, scalarSeq("\u{A}", "\u{BC}"))
+    parseTest(#"\u{  A   b C }"#, scalarSeq("\u{A}", "\u{B}", "\u{C}"))
+
+    parseTest(
+      #"\u{3b1 3b3 3b5 3b9}"#,
+      scalarSeq("\u{3b1}", "\u{3b3}", "\u{3b5}", "\u{3b9}")
+    )
+
     // MARK: Character classes
 
     parseTest(#"abc\d"#, concat("a", "b", "c", escaped(.decimalDigit)))
@@ -657,6 +673,28 @@ extension RegexTests {
       #"[\N{DOLLAR SIGN}-\N{APOSTROPHE}]"#, charClass(
         range_m(.namedCharacter("DOLLAR SIGN"), .namedCharacter("APOSTROPHE"))),
       throwsError: .unsupported)
+
+    parseTest(
+      #"[\u{AA}-\u{BB}]"#,
+      charClass(range_m(scalar_a("\u{AA}"), scalar_a("\u{BB}")))
+    )
+
+    // Not currently supported, we need to figure out what their semantics are.
+    parseTest(
+      #"[\u{AA BB}-\u{CC}]"#,
+      charClass(range_m(scalarSeq_a("\u{AA}", "\u{BB}"), scalar_a("\u{CC}"))),
+      throwsError: .unsupported
+    )
+    parseTest(
+      #"[\u{CC}-\u{AA BB}]"#,
+      charClass(range_m(scalar_a("\u{CC}"), scalarSeq_a("\u{AA}", "\u{BB}"))),
+      throwsError: .unsupported
+    )
+    parseTest(
+      #"[\u{a b c}]"#,
+      charClass(scalarSeq_m("\u{A}", "\u{B}", "\u{C}")),
+      throwsError: .unsupported
+    )
 
     // MARK: Operators
 
@@ -2071,6 +2109,16 @@ extension RegexTests {
       /#
       """#, prop(.generalCategory(.decimalNumber)))
 
+    parseWithDelimitersTest(#"""
+      #/
+      \u{
+        aB
+          B
+      c
+      }
+      /#
+      """#, scalarSeq("\u{AB}", "\u{B}", "\u{C}"))
+
     // MARK: Delimiter skipping: Make sure we can skip over the ending delimiter
     // if it's clear that it's part of the regex syntax.
 
@@ -2144,6 +2192,12 @@ extension RegexTests {
     parseNotEqualTest(#" "#, #""#)
 
     parseNotEqualTest(#"[\p{Any}]"#, #"[[:Any:]]"#)
+
+    parseNotEqualTest(#"\u{A}"#, #"\u{B}"#)
+    parseNotEqualTest(#"\u{A B}"#, #"\u{B A}"#)
+    parseNotEqualTest(#"\u{AB}"#, #"\u{A B}"#)
+    parseNotEqualTest(#"[\u{AA BB}-\u{CC}]"#, #"[\u{AA DD}-\u{CC}]"#)
+    parseNotEqualTest(#"[\u{AA BB}-\u{DD}]"#, #"[\u{AA BB}-\u{CC}]"#)
 
     parseNotEqualTest(#"[abc[:space:]\d]+"#,
                       #"[abc[:upper:]\d]+"#)
@@ -2491,6 +2545,7 @@ extension RegexTests {
     diagnosticTest(#"\e\#u{301}"#, .invalidEscape("e\u{301}"))
     diagnosticTest(#"\\#u{E9}"#, .invalidEscape("é"))
     diagnosticTest(#"\˂"#, .invalidEscape("˂"))
+    diagnosticTest(#"\d\#u{301}"#, .invalidEscape("d\u{301}"))
 
     // MARK: Character properties
 
@@ -2596,6 +2651,22 @@ extension RegexTests {
     // MARK: Unicode scalars
 
     diagnosticTest(#"\u{G}"#, .expectedNumber("G", kind: .hex))
+
+    diagnosticTest(#"\u{"#, .expectedNumber("", kind: .hex))
+    diagnosticTest(#"\u{ "#, .expectedNumber("", kind: .hex))
+    diagnosticTest(#"\u{}"#, .expectedNumber("", kind: .hex))
+    diagnosticTest(#"\u{ }"#, .expectedNumber("", kind: .hex))
+    diagnosticTest(#"\u{  }"#, .expectedNumber("", kind: .hex))
+    diagnosticTest(#"\u{ G}"#, .expectedNumber("G", kind: .hex))
+    diagnosticTest(#"\u{G }"#, .expectedNumber("G", kind: .hex))
+    diagnosticTest(#"\u{ G }"#, .expectedNumber("G", kind: .hex))
+    diagnosticTest(#"\u{ GH }"#, .expectedNumber("GH", kind: .hex))
+    diagnosticTest(#"\u{ G H }"#, .expectedNumber("G", kind: .hex))
+    diagnosticTest(#"\u{ ABC G }"#, .expectedNumber("G", kind: .hex))
+    diagnosticTest(#"\u{ FFFFFFFFF A }"#, .numberOverflow("FFFFFFFFF"))
+
+    diagnosticTest(#"[\d--\u{a b}]"#, .unsupported("scalar sequence in custom character class"))
+    diagnosticTest(#"[\d--[\u{a b}]]"#, .unsupported("scalar sequence in custom character class"))
 
     // MARK: Matching options
 

@@ -230,9 +230,9 @@ extension AST.Atom {
       // handled in emitAssertion
       return nil
 
-    case .escaped, .keyboardControl, .keyboardMeta, .keyboardMetaControl,
-        .backreference, .subpattern, .callout, .backtrackingDirective,
-        .changeMatchingOptions:
+    case .scalarSequence, .escaped, .keyboardControl, .keyboardMeta,
+        .keyboardMetaControl, .backreference, .subpattern, .callout,
+        .backtrackingDirective, .changeMatchingOptions:
       // FIXME: implement
       return nil
     }
