@@ -105,3 +105,12 @@ extension Regex {
     self.program = Program(tree: .init(node, options: nil))
   }
 }
+
+@available(SwiftStdlib 5.7, *)
+extension Regex: CustomPlaygroundDisplayConvertible {
+  public var playgroundDescription: Any {
+    // Note: The use of `String.init(describing:)` will prevent the module name
+    // `_StringProcessing` from being shown.
+    String(describing: Self.self)
+  }
+}
