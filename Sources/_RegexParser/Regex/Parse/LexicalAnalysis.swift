@@ -503,13 +503,22 @@ extension Source {
   private mutating func lexUntil(
     _ predicate: (inout Source) throws -> Bool
   ) rethrows -> Located<String> {
+    // We track locations outside of recordLoc, as the predicate may advance the
+    // input when we hit the end, and we don't want that to affect the location
+    // of what was lexed in the `result`. We still want the recordLoc call to
+    // attach locations to any thrown errors though.
+    // TODO: We should find a better way of doing this, `lexUntil` seems full
+    // of footguns.
+    let start = currentPosition
+    var end = currentPosition
+    var result = ""
     try recordLoc { src in
-      var result = ""
       while try !predicate(&src) {
         result.append(src.eat())
+        end = src.currentPosition
       }
-      return result
     }
+    return .init(result, start ..< end)
   }
 
   private mutating func lexUntil(eating end: String) throws -> Located<String> {

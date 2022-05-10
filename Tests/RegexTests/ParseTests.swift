@@ -2332,6 +2332,14 @@ extension RegexTests {
       $0.as(AST.Atom.self)!.as(AST.Atom.Scalar.self)!.location
     })
 
+    rangeTest(#"\u{  65 58 }"#, range(5 ..< 7), at: {
+      $0.as(AST.Atom.self)!.as(AST.Atom.ScalarSequence.self)!.scalars[0].location
+    })
+
+    rangeTest(#"\u{  65 58 }"#, range(8 ..< 10), at: {
+      $0.as(AST.Atom.self)!.as(AST.Atom.ScalarSequence.self)!.scalars[1].location
+    })
+
     // MARK: References
 
     rangeTest(#"\k<a+2>"#, range(3 ..< 6), at: {
