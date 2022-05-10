@@ -461,17 +461,17 @@ extension RegexTests {
   
   func testTypeVerification() throws {
     let opaque1 = try Regex("abc")
-    let concrete1 = try XCTUnwrap(opaque1.as(Substring.self))
+    _ = try XCTUnwrap(opaque1.as(Substring.self))
     XCTAssertNil(opaque1.as((Substring, Substring).self))
     XCTAssertNil(opaque1.as(Int.self))
     
     let opaque2 = try Regex("(abc)")
-    let concrete2 = try XCTUnwrap(opaque2.as((Substring, Substring).self))
+    _ = try XCTUnwrap(opaque2.as((Substring, Substring).self))
     XCTAssertNil(opaque2.as(Substring.self))
     XCTAssertNil(opaque2.as((Substring, Int).self))
     
     let opaque3 = try Regex("(?<someLabel>abc)")
-    let concrete3 = try XCTUnwrap(opaque3.as((Substring, someLabel: Substring).self))
+    _ = try XCTUnwrap(opaque3.as((Substring, someLabel: Substring).self))
     XCTAssertNil(opaque3.as((Substring, Substring).self))
     XCTAssertNil(opaque3.as(Substring.self))
   }

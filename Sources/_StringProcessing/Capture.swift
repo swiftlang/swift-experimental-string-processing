@@ -11,27 +11,6 @@
 
 @_implementationOnly import _RegexParser
 
-/// A structured capture
-struct StructuredCapture {
-  /// The `.optional` height of the result
-  var optionalCount = 0
-
-  var storedCapture: StoredCapture?
-
-  var someCount: Int {
-    storedCapture == nil ? optionalCount - 1 : optionalCount
-  }
-}
-
-/// A storage form for a successful capture
-struct StoredCapture {
-  // TODO: drop optional when engine tracks all ranges
-  var range: Range<String.Index>?
-
-  // If strongly typed, value is set
-  var value: Any? = nil
-}
-
 // TODO: Where should this live? Inside TypeConstruction?
 func constructExistentialOutputComponent(
   from input: Substring,

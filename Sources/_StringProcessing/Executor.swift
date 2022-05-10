@@ -41,7 +41,7 @@ struct Executor {
       namedCaptureOffsets: engine.program.namedCaptureOffsets)
 
     let range = inputRange.lowerBound..<endIdx
-    let caps = engine.program.captureList.structuralize(capList, input)
+    let caps = engine.program.captureList.createElements(capList, input)
 
     // FIXME: This is a workaround for not tracking (or
     // specially compiling) whole-match values.
@@ -58,7 +58,6 @@ struct Executor {
     
     let anyRegexOutput = AnyRegexOutput(
       input: input,
-      namedCaptureOffsets: capList.namedCaptureOffsets,
       elements: caps
     )
     

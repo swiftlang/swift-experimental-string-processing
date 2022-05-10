@@ -41,7 +41,6 @@ extension Regex.Match {
       
       let output = AnyRegexOutput(
         input: anyRegexOutput.input,
-        namedCaptureOffsets: anyRegexOutput.namedCaptureOffsets,
         _elements: [wholeMatchCapture] + anyRegexOutput._elements
       )
       

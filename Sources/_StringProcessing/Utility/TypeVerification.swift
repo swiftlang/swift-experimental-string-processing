@@ -42,7 +42,10 @@ extension Regex {
     
     let createdType = TypeConstruction.tupleType(
       of: tupleElements,
-      labels: labels
+      
+      // If all of our labels are spaces, that means no actual label was added
+      // to the tuple. In that case, don't pass a label string.
+      labels: labels.all { $0 == " " } ? nil : labels
     )
     
     return Output.self == createdType
