@@ -105,13 +105,17 @@ extension ParseError: CustomStringConvertible {
     case let .expectedNumDigits(s, i):
       return "expected \(i) digits in '\(s)'"
     case let .expectedNumber(s, kind: kind):
-      let radix: String
-      if kind == .decimal {
-        radix = ""
-      } else {
-        radix = " of radix \(kind.radix)"
+      let number: String
+      switch kind {
+      case .octal:
+        number = "octal number"
+      case .decimal:
+        number = "number"
+      case .hex:
+        number = "hexadecimal number"
       }
-      return "expected a numbers in '\(s)'\(radix)"
+      let suffix = s.isEmpty ? "" : " in '\(s)'"
+      return "expected \(number)\(suffix)"
     case let .expected(s):
       return "expected '\(s)'"
     case .unexpectedEndOfInput:

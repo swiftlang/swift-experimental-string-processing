@@ -2739,5 +2739,7 @@ extension RegexTests {
       "#/[x*/#", "cannot parse regular expression: expected ']'")
     compilerInterfaceDiagnosticMessageTest(
       "/a{3,2}/", "cannot parse regular expression: range lower bound '3' must be less than or equal to upper bound '2'")
+    compilerInterfaceDiagnosticMessageTest(
+      #"#/\u{}/#"#, "cannot parse regular expression: expected hexadecimal number")
   }
 }
