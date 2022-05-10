@@ -2061,6 +2061,16 @@ extension RegexTests {
       """, changeMatchingOptions(matchingOptions(adding: .extended))
     )
 
+    parseWithDelimitersTest(#"""
+      #/
+      \p{
+        gc
+         =
+        digit
+      }
+      /#
+      """#, prop(.generalCategory(.decimalNumber)))
+
     // MARK: Delimiter skipping: Make sure we can skip over the ending delimiter
     // if it's clear that it's part of the regex syntax.
 
@@ -2485,6 +2495,10 @@ extension RegexTests {
     diagnosticTest("[[:a():]]", .unknownProperty(key: nil, value: "a()"))
     diagnosticTest(#"\p{aaa\p{b}}"#, .unknownProperty(key: nil, value: "aaa"))
     diagnosticTest(#"[[:{:]]"#, .unknownProperty(key: nil, value: "{"))
+
+    // We only filter pattern whitespace, which doesn't include things like
+    // non-breaking spaces.
+    diagnosticTest(#"\p{L\#u{A0}l}"#, .unknownProperty(key: nil, value: "L\u{A0}l"))
 
     // MARK: Matching options
 
