@@ -466,14 +466,6 @@ extension RegexTests {
     parseTest(#"[\08]"#, charClass(scalar_m("\u{0}"), "8"))
     parseTest(#"[\0707]"#, charClass(scalar_m("\u{1C7}")))
 
-    // TODO: These are treated as octal sequences by PCRE, we should warn and
-    // suggest user prefix with 0.
-    parseTest(#"[\1]"#, charClass("1"))
-    parseTest(#"[\123]"#, charClass("1", "2", "3"))
-    parseTest(#"[\101]"#, charClass("1", "0", "1"))
-    parseTest(#"[\7777]"#, charClass("7", "7", "7", "7"))
-    parseTest(#"[\181]"#, charClass("1", "8", "1"))
-
     // We take *up to* the first two valid digits for \x. No valid digits is 0.
     parseTest(#"\x"#, scalar("\u{0}"))
     parseTest(#"\x5"#, scalar("\u{5}"))
@@ -1266,10 +1258,6 @@ extension RegexTests {
     parseTest(#"\g'-01'"#, subpattern(.relative(-1)), throwsError: .unsupported)
     parseTest(#"\g'+30'"#, subpattern(.relative(30)), throwsError: .unsupported)
     parseTest(#"\g'abc'"#, subpattern(.named("abc")), throwsError: .unsupported)
-
-    // Backreferences are not valid in custom character classes.
-    parseTest(#"[\8]"#, charClass("8"))
-    parseTest(#"[\9]"#, charClass("9"))
 
     // These are valid references.
     parseTest(#"()\1"#, concat(
@@ -2546,6 +2534,17 @@ extension RegexTests {
 
     // TODO: Custom diagnostic for missing '\Q'
     diagnosticTest(#"\E"#, .invalidEscape("E"))
+
+    // PCRE treats these as octal, but we require a `0` prefix.
+    diagnosticTest(#"[\1]"#, .invalidEscape("1"))
+    diagnosticTest(#"[\123]"#, .invalidEscape("1"))
+    diagnosticTest(#"[\101]"#, .invalidEscape("1"))
+    diagnosticTest(#"[\7777]"#, .invalidEscape("7"))
+    diagnosticTest(#"[\181]"#, .invalidEscape("1"))
+
+    // Backreferences are not valid in custom character classes.
+    diagnosticTest(#"[\8]"#, .invalidEscape("8"))
+    diagnosticTest(#"[\9]"#, .invalidEscape("9"))
 
     // Non-ASCII non-whitespace cases.
     diagnosticTest(#"\🔥"#, .invalidEscape("🔥"))

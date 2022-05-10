@@ -1674,9 +1674,10 @@ extension Source {
         break
       }
 
-      // We only allow unknown escape sequences for non-letter ASCII, and
-      // non-ASCII whitespace.
-      guard (char.isASCII && !char.isLetter) ||
+      // We only allow unknown escape sequences for non-letter non-number ASCII,
+      // and non-ASCII whitespace.
+      // TODO: Once we have fix-its, suggest a `0` prefix for octal `[\7]`.
+      guard (char.isASCII && !char.isLetter && !char.isNumber) ||
               (!char.isASCII && char.isWhitespace)
       else {
         throw ParseError.invalidEscape(char)
