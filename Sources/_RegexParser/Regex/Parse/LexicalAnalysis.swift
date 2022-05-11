@@ -157,6 +157,19 @@ extension Source {
     return .init(start ..< currentPosition)
   }
 
+  /// Attempt to eat a given prefix that satisfies a given predicate, with the
+  /// source location recorded.
+  mutating func tryEatLocatedPrefix(
+    maxLength: Int? = nil,
+    _ f: (Char) -> Bool
+  ) -> Located<String>? {
+    let result = recordLoc { src in
+      src.tryEatPrefix(maxLength: maxLength, f)
+    }
+    guard let result = result else { return nil }
+    return result.map(\.string)
+  }
+
   /// Throws an expected ASCII character error if not matched
   mutating func expectASCII() throws -> Located<Character> {
     try recordLoc { src in
@@ -217,13 +230,13 @@ extension Source {
   /// return the scalar value, or throw an error if the string is malformed or
   /// would overflow the scalar.
   private static func validateUnicodeScalar(
-    _ str: String, _ kind: RadixKind
-  ) throws -> Unicode.Scalar {
-    let num = try validateNumber(str, UInt32.self, kind)
+    _ str: Source.Located<String>, _ kind: RadixKind
+  ) throws -> AST.Atom.Scalar {
+    let num = try validateNumber(str.value, UInt32.self, kind)
     guard let scalar = Unicode.Scalar(num) else {
       throw ParseError.misc("Invalid scalar value U+\(num.hexStr)")
     }
-    return scalar
+    return .init(scalar, str.location)
   }
 
   /// Try to eat a number of a particular type and radix off the front.
@@ -266,20 +279,65 @@ extension Source {
   /// Eat a scalar value from hexadecimal notation off the front
   private mutating func expectUnicodeScalar(
     numDigits: Int
-  ) throws -> Located<Unicode.Scalar> {
-    try recordLoc { src in
+  ) throws -> AST.Atom.Scalar {
+    let str = try recordLoc { src -> String in
       let str = src.eat(upToCount: numDigits).string
       guard str.count == numDigits else {
         throw ParseError.expectedNumDigits(str, numDigits)
       }
-      return try Source.validateUnicodeScalar(str, .hex)
+      return str
     }
+    return try Source.validateUnicodeScalar(str, .hex)
+  }
+
+  /// Try to lex a seqence of hex digit unicode scalars.
+  ///
+  ///     UniScalarSequence   -> Whitespace? UniScalarSequencElt+
+  ///     UniScalarSequencElt -> HexDigit{1...} Whitespace?
+  ///
+  mutating func expectUnicodeScalarSequence(
+    eating ending: Character
+  ) throws -> AST.Atom.Kind {
+    try recordLoc { src in
+      var scalars = [AST.Atom.Scalar]()
+      var trivia = [AST.Trivia]()
+
+      // Eat up any leading whitespace.
+      if let t = src.lexWhitespace() { trivia.append(t) }
+
+      while true {
+        let str = src.lexUntil { src in
+          // Hit the ending, stop lexing.
+          if src.isEmpty || src.peek() == ending {
+            return true
+          }
+          // Eat up trailing whitespace, and stop lexing to record the scalar.
+          if let t = src.lexWhitespace() {
+            trivia.append(t)
+            return true
+          }
+          // Not the ending or trivia, must be a digit of the scalar.
+          return false
+        }
+        guard !str.value.isEmpty else { break }
+        scalars.append(try Source.validateUnicodeScalar(str, .hex))
+      }
+      guard !scalars.isEmpty else {
+        throw ParseError.expectedNumber("", kind: .hex)
+      }
+      try src.expect(ending)
+
+      if scalars.count == 1 {
+        return .scalar(scalars[0])
+      }
+      return .scalarSequence(.init(scalars, trivia: trivia))
+    }.value
   }
 
   /// Eat a scalar off the front, starting from after the
   /// backslash and base character (e.g. `\u` or `\x`).
   ///
-  ///     UniScalar -> 'u{' HexDigit{1...} '}'
+  ///     UniScalar -> 'u{' UniScalarSequence '}'
   ///                | 'u'  HexDigit{4}
   ///                | 'x{' HexDigit{1...} '}'
   ///                | 'x'  HexDigit{0...2}
@@ -289,49 +347,60 @@ extension Source {
   ///
   mutating func expectUnicodeScalar(
     escapedCharacter base: Character
-  ) throws -> Located<Unicode.Scalar> {
+  ) throws -> AST.Atom.Kind {
     try recordLoc { src in
+
+      func nullScalar() -> AST.Atom.Kind {
+        let pos = src.currentPosition
+        return .scalar(.init(UnicodeScalar(0), SourceLocation(pos ..< pos)))
+      }
+
       // TODO: PCRE offers a different behavior if PCRE2_ALT_BSUX is set.
       switch base {
       // Hex numbers.
-      case "u" where src.tryEat("{"), "x" where src.tryEat("{"):
-        let str = try src.lexUntil(eating: "}").value
-        return try Source.validateUnicodeScalar(str, .hex)
+      case "u" where src.tryEat("{"):
+        return try src.expectUnicodeScalarSequence(eating: "}")
+
+      case "x" where src.tryEat("{"):
+        let str = try src.lexUntil(eating: "}")
+        return .scalar(try Source.validateUnicodeScalar(str, .hex))
 
       case "x":
         // \x expects *up to* 2 digits.
-        guard let digits = src.tryEatPrefix(maxLength: 2, \.isHexDigit) else {
+        guard let digits = src.tryEatLocatedPrefix(maxLength: 2, \.isHexDigit)
+        else {
           // In PCRE, \x without any valid hex digits is \u{0}.
           // TODO: This doesn't appear to be followed by ICU or Oniguruma, so
           // could be changed to throw an error if we had a parsing mode for
           // them.
-          return Unicode.Scalar(0)
+          return nullScalar()
         }
-        return try Source.validateUnicodeScalar(digits.string, .hex)
+        return .scalar(try Source.validateUnicodeScalar(digits, .hex))
 
       case "u":
-        return try src.expectUnicodeScalar(numDigits: 4).value
+        return .scalar(try src.expectUnicodeScalar(numDigits: 4))
       case "U":
-        return try src.expectUnicodeScalar(numDigits: 8).value
+        return .scalar(try src.expectUnicodeScalar(numDigits: 8))
 
       // Octal numbers.
       case "o" where src.tryEat("{"):
-        let str = try src.lexUntil(eating: "}").value
-        return try Source.validateUnicodeScalar(str, .octal)
+        let str = try src.lexUntil(eating: "}")
+        return .scalar(try Source.validateUnicodeScalar(str, .octal))
 
       case "0":
         // We can read *up to* 3 more octal digits.
         // FIXME: PCRE can only read up to 2 octal digits, if we get a strict
         // PCRE mode, we should limit it here.
-        guard let digits = src.tryEatPrefix(maxLength: 3, \.isOctalDigit) else {
-          return Unicode.Scalar(0)
+        guard let digits = src.tryEatLocatedPrefix(maxLength: 3, \.isOctalDigit)
+        else {
+          return nullScalar()
         }
-        return try Source.validateUnicodeScalar(digits.string, .octal)
+        return .scalar(try Source.validateUnicodeScalar(digits, .octal))
 
       default:
         fatalError("Unexpected scalar start")
       }
-    }
+    }.value
   }
 
   /// Try to consume a quantifier
@@ -434,13 +503,22 @@ extension Source {
   private mutating func lexUntil(
     _ predicate: (inout Source) throws -> Bool
   ) rethrows -> Located<String> {
+    // We track locations outside of recordLoc, as the predicate may advance the
+    // input when we hit the end, and we don't want that to affect the location
+    // of what was lexed in the `result`. We still want the recordLoc call to
+    // attach locations to any thrown errors though.
+    // TODO: We should find a better way of doing this, `lexUntil` seems full
+    // of footguns.
+    let start = currentPosition
+    var end = currentPosition
+    var result = ""
     try recordLoc { src in
-      var result = ""
       while try !predicate(&src) {
         result.append(src.eat())
+        end = src.currentPosition
       }
-      return result
     }
+    return .init(result, start ..< end)
   }
 
   private mutating func lexUntil(eating end: String) throws -> Located<String> {
@@ -576,6 +654,16 @@ extension Source {
     // inside a custom character class (and only treats whitespace as
     // non-semantic there for the extra-extended `(?xx)` mode). If we get a
     // strict-PCRE mode, we'll need to add a case for that.
+    return lexWhitespace()
+  }
+
+  /// Try to consume whitespace as trivia
+  ///
+  ///     Whitespace -> WhitespaceChar+
+  ///
+  /// Unlike `lexNonSemanticWhitespace`, this will always attempt to lex
+  /// whitespace.
+  mutating func lexWhitespace() -> AST.Trivia? {
     let trivia: Located<String>? = recordLoc { src in
       src.tryEatPrefix(\.isPatternWhitespace)?.string
     }
@@ -1153,7 +1241,7 @@ extension Source {
 
       // We should either have a unicode scalar.
       if src.tryEat(sequence: "U+") {
-        let str = try src.lexUntil(eating: "}").value
+        let str = try src.lexUntil(eating: "}")
         return .scalar(try Source.validateUnicodeScalar(str, .hex))
       }
 
@@ -1581,8 +1669,7 @@ extension Source {
       switch char {
       // Hexadecimal and octal unicode scalars.
       case "u", "x", "U", "o", "0":
-        return try .scalar(
-          src.expectUnicodeScalar(escapedCharacter: char).value)
+        return try src.expectUnicodeScalar(escapedCharacter: char)
       default:
         break
       }

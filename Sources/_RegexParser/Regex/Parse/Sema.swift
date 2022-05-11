@@ -210,7 +210,7 @@ extension RegexValidator {
     }
   }
 
-  func validateAtom(_ atom: AST.Atom) throws {
+  func validateAtom(_ atom: AST.Atom, inCustomCharacterClass: Bool) throws {
     switch atom.kind {
     case .escaped(let esc):
       try validateEscaped(esc, at: atom.location)
@@ -243,6 +243,13 @@ extension RegexValidator {
       // TODO: We should error on unknown Unicode scalar names.
       break
 
+    case .scalarSequence:
+      // Not currently supported in a custom character class.
+      if inCustomCharacterClass {
+        throw error(.unsupported("scalar sequence in custom character class"),
+                    at: atom.location)
+      }
+
     case .char, .scalar, .startOfLine, .endOfLine, .any:
       break
     }
@@ -260,8 +267,8 @@ extension RegexValidator {
     let lhs = range.lhs
     let rhs = range.rhs
 
-    try validateAtom(lhs)
-    try validateAtom(rhs)
+    try validateAtom(lhs, inCustomCharacterClass: true)
+    try validateAtom(rhs, inCustomCharacterClass: true)
 
     guard lhs.isValidCharacterClassRangeBound else {
       throw error(.invalidCharacterClassRangeOperand, at: lhs.location)
@@ -297,7 +304,7 @@ extension RegexValidator {
       try validateCharacterClassRange(r)
 
     case .atom(let a):
-      try validateAtom(a)
+      try validateAtom(a, inCustomCharacterClass: true)
 
     case .setOperation(let lhs, _, let rhs):
       for lh in lhs { try validateCharacterClassMember(lh) }
@@ -379,7 +386,7 @@ extension RegexValidator {
       try validateQuantification(q)
 
     case .atom(let a):
-      try validateAtom(a)
+      try validateAtom(a, inCustomCharacterClass: false)
 
     case .customCharacterClass(let c):
       try validateCustomCharacterClass(c)

@@ -285,7 +285,20 @@ extension RegexTests {
     firstMatchTest(#"\0707"#, input: "12387\u{1C7}xyz", match: "\u{1C7}")
 
     // code point sequence
-    firstMatchTest(#"\u{61 62 63}"#, input: "123abcxyz", match: "abc", xfail: true)
+    firstMatchTest(#"\u{61 62 63}"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"3\u{  61  62 63 }"#, input: "123abcxyz", match: "3abc")
+    firstMatchTest(#"\u{61 62}\u{63}"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"\u{61}\u{62 63}"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"9|\u{61 62 63}"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"(?:\u{61 62 63})"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"23\u{61 62 63}xy"#, input: "123abcxyz", match: "23abcxy")
+
+    // o + horn + dot_below
+    firstMatchTest(
+      #"\u{006f 031b 0323}"#,
+      input: "\u{006f}\u{031b}\u{0323}",
+      match: "\u{006f}\u{031b}\u{0323}"
+    )
 
     // Escape sequences that represent scalar values.
     firstMatchTest(#"\a[\b]\e\f\n\r\t"#,
@@ -1405,6 +1418,9 @@ extension RegexTests {
     firstMatchTest(#"\u{65}\u{301}$"#, input: eDecomposed, match: eDecomposed)
     firstMatchTest(#"\u{65}\u{301}$"#, input: eComposed, match: eComposed)
 
+    firstMatchTest(#"\u{65 301}$"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(#"\u{65 301}$"#, input: eComposed, match: eComposed)
+
     // FIXME: Implicit \y at end of match
     firstMatchTest(#"\u{65}"#, input: eDecomposed, match: nil,
       xfail: true)
@@ -1516,7 +1532,8 @@ extension RegexTests {
     firstMatchTest(#"🇰🇷"#, input: flag, match: flag)
     firstMatchTest(#"[🇰🇷]"#, input: flag, match: flag)
     firstMatchTest(#"\u{1F1F0}\u{1F1F7}"#, input: flag, match: flag)
-    
+    firstMatchTest(#"\u{1F1F0 1F1F7}"#, input: flag, match: flag)
+
     // First Unicode scalar followed by CCC of regional indicators
     firstMatchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag,
               xfail: true)

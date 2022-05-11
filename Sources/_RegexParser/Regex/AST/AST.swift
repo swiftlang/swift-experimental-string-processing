@@ -29,7 +29,6 @@ extension AST {
 
 extension AST {
   /// A node in the regex AST.
-  @frozen
   public indirect enum Node:
     Hashable, _TreeNode //, _ASTPrintable ASTValue, ASTAction
   {
@@ -125,7 +124,9 @@ extension AST.Node {
     switch self {
     case .atom(let a):
       return a.isQuantifiable
-    case .group, .conditional, .customCharacterClass, .absentFunction:
+    case .group(let g):
+      return g.isQuantifiable
+    case .conditional, .customCharacterClass, .absentFunction:
       return true
     case .alternation, .concatenation, .quantification, .quote, .trivia,
         .empty:
@@ -247,7 +248,6 @@ extension AST {
   }
 
   public struct Reference: Hashable {
-    @frozen
     public enum Kind: Hashable {
       // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
       // Oniguruma: \k<n>, \k'n'

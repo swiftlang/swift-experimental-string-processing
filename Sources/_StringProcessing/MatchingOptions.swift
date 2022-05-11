@@ -205,9 +205,6 @@ extension MatchingOptions {
       // Whitespace options are only relevant during parsing, not compilation.
       case .extended, .extraExtended:
         return nil
-      @unknown default:
-        // Ignore unknown 
-        return nil
       }
     }
     
