@@ -11,6 +11,7 @@
 
 import _StringProcessing
 import XCTest
+//import RegexBuilder
 
 // TODO: Protocol-powered testing
 class RegexConsumerTests: XCTestCase {
@@ -89,6 +90,17 @@ class AlgorithmTests: XCTestCase {
     // `Array<CountedOptionSet>`.
     XCTAssertFalse(cosArray.contains([]))
     XCTAssertEqual(CountedOptionSet.arrayLiteralCreationCount, 3)
+
+    // For these references to resolve to the `Element`-based stdlib function,
+    // the `String`- and `Substring`-based `contains` functions need to be
+    // marked as `@_disfavoredOverload`. However, that means that Foundation's
+    // `String.contains` get selected instead, which has inconsistent behavior.
+    
+    // Test that original `contains` functions are still accessible
+    // let containsRef = "abcd".contains
+    // XCTAssert(type(of: containsRef) == ((Character) -> Bool).self)
+    // let containsParamsRef = "abcd".contains(_:)
+    // XCTAssert(type(of: containsParamsRef) == ((Character) -> Bool).self)
   }
   
   func testRegexRanges() {
@@ -204,12 +216,6 @@ class AlgorithmTests: XCTestCase {
 
     XCTAssertEqual("".split(separator: ""), [])
     XCTAssertEqual("".split(separator: "", omittingEmptySubsequences: false), [""])
-
-    // Test that original `split` functions are still accessible
-    let splitRef = "abcd".split
-    XCTAssert(type(of: splitRef) == ((Character, Int, Bool) -> [Substring]).self)
-    let splitParamsRef = "abcd".split(separator:maxSplits:omittingEmptySubsequences:)
-    XCTAssert(type(of: splitParamsRef) == ((Character, Int, Bool) -> [Substring]).self)
   }
   
   func testSplitSourceCompatibility() {
@@ -228,6 +234,12 @@ class AlgorithmTests: XCTestCase {
     // `Array<CountedOptionSet>`.
     XCTAssertEqual(cosArray.split(separator: []).count, 1)
     XCTAssertEqual(CountedOptionSet.arrayLiteralCreationCount, 3)
+
+    // Test that original `split` functions are still accessible
+    let splitRef = "abcd".split
+    XCTAssert(type(of: splitRef) == ((Character, Int, Bool) -> [Substring]).self)
+    let splitParamsRef = "abcd".split(separator:maxSplits:omittingEmptySubsequences:)
+    XCTAssert(type(of: splitParamsRef) == ((Character, Int, Bool) -> [Substring]).self)
   }
 
   func testSplitPermutations() throws {
