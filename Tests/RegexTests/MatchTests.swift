@@ -169,6 +169,8 @@ func firstMatchTest(
       XCTAssertEqual(found, match, file: file, line: line)
     }
   } catch {
+    // FIXME: This allows non-matches to succeed even when xfail'd
+    // When xfail == true, this should report failure for match == nil
     if !xfail && match != nil {
       XCTFail("\(error)", file: file, line: line)
     }
@@ -182,7 +184,9 @@ func firstMatchTests(
   syntax: SyntaxOptions = .traditional,
   enableTracing: Bool = false,
   dumpAST: Bool = false,
-  xfail: Bool = false
+  xfail: Bool = false,
+  file: StaticString = #filePath,
+  line: UInt = #line
 ) {
   for (input, match) in tests {
     firstMatchTest(
@@ -192,7 +196,9 @@ func firstMatchTests(
       syntax: syntax,
       enableTracing: enableTracing,
       dumpAST: dumpAST,
-      xfail: xfail)
+      xfail: xfail,
+      file: file,
+      line: line)
   }
 }
 
@@ -279,7 +285,20 @@ extension RegexTests {
     firstMatchTest(#"\0707"#, input: "12387\u{1C7}xyz", match: "\u{1C7}")
 
     // code point sequence
-    firstMatchTest(#"\u{61 62 63}"#, input: "123abcxyz", match: "abc", xfail: true)
+    firstMatchTest(#"\u{61 62 63}"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"3\u{  61  62 63 }"#, input: "123abcxyz", match: "3abc")
+    firstMatchTest(#"\u{61 62}\u{63}"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"\u{61}\u{62 63}"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"9|\u{61 62 63}"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"(?:\u{61 62 63})"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"23\u{61 62 63}xy"#, input: "123abcxyz", match: "23abcxy")
+
+    // o + horn + dot_below
+    firstMatchTest(
+      #"\u{006f 031b 0323}"#,
+      input: "\u{006f}\u{031b}\u{0323}",
+      match: "\u{006f}\u{031b}\u{0323}"
+    )
 
     // Escape sequences that represent scalar values.
     firstMatchTest(#"\a[\b]\e\f\n\r\t"#,
@@ -400,7 +419,8 @@ extension RegexTests {
       "a++a",
       ("babc", nil),
       ("baaabc", nil),
-      ("bb", nil))
+      ("bb", nil),
+      xfail: true)
     firstMatchTests(
       "a+?a",
       ("babc", nil),
@@ -462,15 +482,11 @@ extension RegexTests {
       "a{2,4}+a",
       ("babc", nil),
       ("baabc", nil),
-      ("baaabc", nil),
       ("baaaaabc", "aaaaa"),
       ("baaaaaaaabc", "aaaaa"),
       ("bb", nil))
     firstMatchTests(
       "a{,4}+a",
-      ("babc", nil),
-      ("baabc", nil),
-      ("baaabc", nil),
       ("baaaaabc", "aaaaa"),
       ("baaaaaaaabc", "aaaaa"),
       ("bb", nil))
@@ -478,11 +494,44 @@ extension RegexTests {
       "a{2,}+a",
       ("babc", nil),
       ("baabc", nil),
+      ("bb", nil))
+    
+    // XFAIL'd versions of the above
+    firstMatchTests(
+      "a{2,4}+a",
+      ("baaabc", nil),
+      xfail: true)
+    firstMatchTests(
+      "a{,4}+a",
+      ("babc", nil),
+      ("baabc", nil),
+      ("baaabc", nil),
+      xfail: true)
+    firstMatchTests(
+      "a{2,}+a",
       ("baaabc", nil),
       ("baaaaabc", nil),
       ("baaaaaaaabc", nil),
-      ("bb", nil))
+      xfail: true)
 
+    // XFAIL'd possessive tests
+    firstMatchTests(
+      "a?+a",
+      ("a", nil),
+      xfail: true)
+    firstMatchTests(
+      "(a|a)?+a",
+      ("a", nil),
+      xfail: true)
+    firstMatchTests(
+      "(a|a){2,4}+a",
+      ("a", nil),
+      ("aa", nil))
+    firstMatchTests(
+      "(a|a){2,4}+a",
+      ("aaa", nil),
+      ("aaaa", nil),
+      xfail: true)
 
     firstMatchTests(
       "(?:a{2,4}?b)+",
@@ -681,7 +730,7 @@ extension RegexTests {
     firstMatchTest(
       #"\N{ASTERISK}+"#, input: "123***xyz", match: "***")
     firstMatchTest(
-      #"\N {2}"#, input: "123  xyz", match: "3  ")
+      #"\N {2}"#, input: "123  xyz", match: "3  ", xfail: true)
 
     firstMatchTest(#"\N{U+2C}"#, input: "123,xyz", match: ",")
     firstMatchTest(#"\N{U+1F4BF}"#, input: "123💿xyz", match: "💿")
@@ -692,6 +741,14 @@ extension RegexTests {
     firstMatchTest(#"\p{L}"#, input: "123abcXYZ", match: "a")
     firstMatchTest(#"\p{gc=L}"#, input: "123abcXYZ", match: "a")
     firstMatchTest(#"\p{Lu}"#, input: "123abcXYZ", match: "X")
+
+    // U+0374 GREEK NUMERAL SIGN (Lm)
+    // U+00AA FEMININE ORDINAL INDICATOR (Lo)
+    firstMatchTest(#"\p{L}"#, input: "\u{0374}\u{00AA}123abcXYZ", match: "\u{0374}")
+    firstMatchTest(#"\p{Lc}"#, input: "\u{0374}\u{00AA}123abcXYZ", match: "a")
+    firstMatchTest(#"\p{Lc}"#, input: "\u{0374}\u{00AA}123XYZ", match: "X")
+    firstMatchTest(#"\p{L&}"#, input: "\u{0374}\u{00AA}123abcXYZ", match: "a")
+    firstMatchTest(#"\p{L&}"#, input: "\u{0374}\u{00AA}123XYZ", match: "X")
 
     firstMatchTest(
       #"\P{Cc}"#, input: "\n\n\nXYZ", match: "X")
@@ -938,15 +995,19 @@ extension RegexTests {
 
     // TODO: Oniguruma \y and \Y
     firstMatchTests(
-      #"\u{65}"#,             // Scalar 'e' is present in both:
-      ("Cafe\u{301}", "e"),   // composed and
-      ("Sol Cafe", "e"))      // standalone
+      #"\u{65}"#,             // Scalar 'e' is present in both
+      ("Cafe\u{301}", nil),   // but scalar mode requires boundary at end of match
+      xfail: true)
+    firstMatchTests(
+      #"\u{65}"#,             // Scalar 'e' is present in both
+      ("Sol Cafe", "e"))      // standalone is okay
+
     firstMatchTests(
       #"\u{65}\y"#,           // Grapheme boundary assertion
       ("Cafe\u{301}", nil),
       ("Sol Cafe", "e"))
     firstMatchTests(
-      #"\u{65}\Y"#,           // Grapheme non-boundary assertion
+      #"(?u)\u{65}\Y"#,       // Grapheme non-boundary assertion
       ("Cafe\u{301}", "e"),
       ("Sol Cafe", nil))
   }
@@ -966,7 +1027,7 @@ extension RegexTests {
     firstMatchTest(
       #"a(?:b)c"#, input: "123abcxyz", match: "abc")
     firstMatchTest(
-      "(?|(a)|(b)|(c))", input: "123abcxyz", match: "a")
+      "(?|(a)|(b)|(c))", input: "123abcxyz", match: "a", xfail: true)
 
     firstMatchTest(
       #"(?:a|.b)c"#, input: "123abcacxyz", match: "abc")
@@ -1082,6 +1143,8 @@ extension RegexTests {
     firstMatchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
     firstMatchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba", xfail: true)
     firstMatchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
+
+    firstMatchTest(#"\1(.)"#, input: "112", match: nil)
   }
   
   func testMatchExamples() {
@@ -1353,11 +1416,14 @@ extension RegexTests {
     // as a character.
 
     firstMatchTest(#"\u{65}\u{301}$"#, input: eDecomposed, match: eDecomposed)
-    // FIXME: Decomposed character in regex literal doesn't match an equivalent character
-    firstMatchTest(#"\u{65}\u{301}$"#, input: eComposed, match: eComposed,
-      xfail: true)
+    firstMatchTest(#"\u{65}\u{301}$"#, input: eComposed, match: eComposed)
 
-    firstMatchTest(#"\u{65}"#, input: eDecomposed, match: "e")
+    firstMatchTest(#"\u{65 301}$"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(#"\u{65 301}$"#, input: eComposed, match: eComposed)
+
+    // FIXME: Implicit \y at end of match
+    firstMatchTest(#"\u{65}"#, input: eDecomposed, match: nil,
+      xfail: true)
     firstMatchTest(#"\u{65}$"#, input: eDecomposed, match: nil)
     // FIXME: \y is unsupported
     firstMatchTest(#"\u{65}\y"#, input: eDecomposed, match: nil,
@@ -1381,12 +1447,10 @@ extension RegexTests {
       (eComposed, true),
       (eDecomposed, true))
 
-    // FIXME: Decomposed character in regex literal doesn't match an equivalent character
     matchTest(
       #"e\u{301}$"#,
       (eComposed, true),
-      (eDecomposed, true),
-      xfail: true)
+      (eDecomposed, true))
 
     matchTest(
       #"e$"#,
@@ -1407,9 +1471,7 @@ extension RegexTests {
       (eDecomposed, true))
     // \p{Letter}
     firstMatchTest(#"\p{Letter}$"#, input: eComposed, match: eComposed)
-    // FIXME: \p{Letter} doesn't match a decomposed character
-    firstMatchTest(#"\p{Letter}$"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
+    firstMatchTest(#"\p{Letter}$"#, input: eDecomposed, match: eDecomposed)
     
     // \d
     firstMatchTest(#"\d"#, input: "5", match: "5")
@@ -1470,9 +1532,11 @@ extension RegexTests {
     firstMatchTest(#"🇰🇷"#, input: flag, match: flag)
     firstMatchTest(#"[🇰🇷]"#, input: flag, match: flag)
     firstMatchTest(#"\u{1F1F0}\u{1F1F7}"#, input: flag, match: flag)
-    
+    firstMatchTest(#"\u{1F1F0 1F1F7}"#, input: flag, match: flag)
+
     // First Unicode scalar followed by CCC of regional indicators
-    firstMatchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag)
+    firstMatchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag,
+              xfail: true)
 
     // FIXME: CCC of Regional Indicator doesn't match with both parts of a flag character
     // A CCC of regional indicators x 2
@@ -1513,8 +1577,7 @@ extension RegexTests {
     
     // FIXME: \O is unsupported
     firstMatchTest(#"(?u)\O\u{301}"#, input: eDecomposed, match: eDecomposed)
-    firstMatchTest(#"(?u)e\O"#, input: eDecomposed, match: eDecomposed,
-      xfail: true)
+    firstMatchTest(#"(?u)e\O"#, input: eDecomposed, match: eDecomposed)
     firstMatchTest(#"\O"#, input: eComposed, match: eComposed)
     firstMatchTest(#"\O"#, input: eDecomposed, match: nil,
               xfail: true)

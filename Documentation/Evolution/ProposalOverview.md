@@ -3,6 +3,7 @@
 
 ## Regex Type and Overview
 
+- [Second review](https://forums.swift.org/t/se-0350-second-review-regex-type-and-overview/56886)
 - [Proposal](https://github.com/apple/swift-evolution/blob/main/proposals/0350-regex-type-overview.md), [Thread](https://forums.swift.org/t/se-0350-regex-type-and-overview/56530)
 - [Pitch thread](https://forums.swift.org/t/pitch-regex-type-and-overview/56029)
 

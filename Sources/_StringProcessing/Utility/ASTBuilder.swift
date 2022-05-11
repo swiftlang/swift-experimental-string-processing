@@ -338,10 +338,26 @@ func escaped(
   atom(.escaped(e))
 }
 func scalar(_ s: Unicode.Scalar) -> AST.Node {
-  atom(.scalar(s))
+  .atom(scalar_a(s))
+}
+func scalar_a(_ s: Unicode.Scalar) -> AST.Atom {
+  atom_a(.scalar(.init(s, .fake)))
 }
 func scalar_m(_ s: Unicode.Scalar) -> AST.CustomCharacterClass.Member {
-  atom_m(.scalar(s))
+  .atom(scalar_a(s))
+}
+
+func scalarSeq(_ s: Unicode.Scalar...) -> AST.Node {
+  .atom(scalarSeq_a(s))
+}
+func scalarSeq_a(_ s: Unicode.Scalar...) -> AST.Atom {
+  scalarSeq_a(s)
+}
+func scalarSeq_a(_ s: [Unicode.Scalar]) -> AST.Atom {
+  atom_a(.scalarSequence(.init(s.map { .init($0, .fake) }, trivia: [])))
+}
+func scalarSeq_m(_ s: Unicode.Scalar...) -> AST.CustomCharacterClass.Member {
+  .atom(scalarSeq_a(s))
 }
 
 func backreference(_ r: AST.Reference.Kind, recursionLevel: Int? = nil) -> AST.Node {

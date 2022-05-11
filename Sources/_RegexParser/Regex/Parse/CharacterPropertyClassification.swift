@@ -18,7 +18,7 @@ extension Source {
     // This follows the rules provided by UAX44-LM3, including trying to drop an
     // "is" prefix, which isn't required by UTS#18 RL1.2, but is nice for
     // consistency with other engines and the Unicode.Scalar.Properties names.
-    let str = str.filter { !$0.isWhitespace && $0 != "_" && $0 != "-" }
+    let str = str.filter { !$0.isPatternWhitespace && $0 != "_" && $0 != "-" }
                  .lowercased()
     if let m = match(str) {
       return m
@@ -32,8 +32,8 @@ extension Source {
   static private func classifyGeneralCategory(
     _ str: String
   ) -> Unicode.ExtendedGeneralCategory? {
-    // This uses the aliases defined in
-    // https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt.
+    // This uses the aliases defined in https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt.
+    // Additionally, uses the `L& = Lc` alias defined by PCRE.
     withNormalizedForms(str) { str in
       switch str {
       case "c", "other":                   return .other
@@ -43,7 +43,7 @@ extension Source {
       case "co", "privateuse":             return .privateUse
       case "cs", "surrogate":              return .surrogate
       case "l", "letter":                  return .letter
-      case "lc", "casedletter":            return .casedLetter
+      case "lc", "l&", "casedletter":      return .casedLetter
       case "ll", "lowercaseletter":        return .lowercaseLetter
       case "lm", "modifierletter":         return .modifierLetter
       case "lo", "otherletter":            return .otherLetter
@@ -428,6 +428,8 @@ extension Source {
         if let cat = classifyGeneralCategory(value) {
           return .generalCategory(cat)
         }
+      case "name", "na":
+        return .named(value)
       default:
         break
       }

@@ -60,18 +60,24 @@ extension AST.Node {
           var result = ""
           var idx = idx
           while idx < astChildren.endIndex {
-            let atom: AST.Atom? = astChildren[idx].as()
+            guard let atom: AST.Atom = astChildren[idx].as() else { break }
 
             // TODO: For printing, nice to coalesce
             // scalars literals too. We likely need a different
             // approach even before we have a better IR.
-            guard let char = atom?.singleCharacter else {
+            if let char = atom.singleCharacter  {
+              result.append(char)
+            } else if let scalar = atom.singleScalar {
+              result.append(Character(scalar))
+            } else if case .scalarSequence(let seq) = atom.kind {
+              result += seq.scalarValues.map(Character.init)
+            } else {
               break
             }
-            result.append(char)
+            
             astChildren.formIndex(after: &idx)
           }
-          return result.count <= 1 ? nil : (idx, result)
+          return result.isEmpty ? nil : (idx, result)
         }
 
         // No need to nest single children concatenations
@@ -96,7 +102,7 @@ extension AST.Node {
             curIdx = nextIdx
           } else {
             children.append(astChildren[curIdx].dslTreeNode)
-            children.formIndex(after: &curIdx)
+            astChildren.formIndex(after: &curIdx)
           }
         }
         return .concatenation(children)
@@ -132,7 +138,15 @@ extension AST.Node {
         return .trivia(v.contents)
 
       case let .atom(v):
-        return .atom(v.dslTreeAtom)
+        switch v.kind {
+        case .scalarSequence(let seq):
+          // Scalar sequences are splatted into concatenated scalars, which
+          // becomes a quoted literal. Sequences nested in concatenations have
+          // already been coalesced, this just handles the lone atom case.
+          return .quotedLiteral(String(seq.scalarValues.map(Character.init)))
+        default:
+          return .atom(v.dslTreeAtom)
+        }
 
       case let .customCharacterClass(ccc):
         return .customCharacterClass(ccc.dslTreeClass)
@@ -207,7 +221,7 @@ extension AST.Atom {
 
     switch self.kind {
     case let .char(c):                    return .char(c)
-    case let .scalar(s):                  return .scalar(s)
+    case let .scalar(s):                  return .char(Character(s.value))
     case .any:                            return .any
     case let .backreference(r):           return .backreference(.init(ast: r))
     case let .changeMatchingOptions(seq): return .changeMatchingOptions(.init(ast: seq))
