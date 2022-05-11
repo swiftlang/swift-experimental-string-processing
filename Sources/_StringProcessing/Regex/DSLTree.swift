@@ -507,8 +507,6 @@ extension DSLTree.Node {
         child._addCaptures(to: &list, optionalNesting: nesting)
       case .clearer, .repeater, .stopper:
         break
-      @unknown default:
-        fatalError()
       }
 
     case let .convertedRegexLiteral(n, _):
