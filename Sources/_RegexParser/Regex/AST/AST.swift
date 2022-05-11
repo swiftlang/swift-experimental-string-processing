@@ -29,7 +29,6 @@ extension AST {
 
 extension AST {
   /// A node in the regex AST.
-  @frozen
   public indirect enum Node:
     Hashable, _TreeNode //, _ASTPrintable ASTValue, ASTAction
   {
@@ -249,7 +248,6 @@ extension AST {
   }
 
   public struct Reference: Hashable {
-    @frozen
     public enum Kind: Hashable {
       // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
       // Oniguruma: \k<n>, \k'n'

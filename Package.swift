@@ -7,10 +7,18 @@ let availabilityDefinition = PackageDescription.SwiftSetting.unsafeFlags([
     "-Xfrontend",
     "-define-availability",
     "-Xfrontend",
-    #"SwiftStdlib 5.7:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999"#,
+    "SwiftStdlib 5.7:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999",
 ])
 
-let stdlibSettings: [PackageDescription.SwiftSetting] = [
+/// Swift settings for building a private stdlib-like module that is to be used
+/// by other stdlib-like modules only.
+let privateStdlibSettings: [PackageDescription.SwiftSetting] = [
+    .unsafeFlags(["-Xfrontend", "-disable-implicit-concurrency-module-import"]),
+    .unsafeFlags(["-Xfrontend", "-disable-implicit-string-processing-module-import"]),
+]
+
+/// Swift settings for building a user-facing stdlib-like module.
+let publicStdlibSettings: [PackageDescription.SwiftSetting] = [
     .unsafeFlags(["-enable-library-evolution"]),
     .unsafeFlags(["-Xfrontend", "-disable-implicit-concurrency-module-import"]),
     .unsafeFlags(["-Xfrontend", "-disable-implicit-string-processing-module-import"]),
@@ -43,7 +51,7 @@ let package = Package(
         .target(
             name: "_RegexParser",
             dependencies: [],
-            swiftSettings: stdlibSettings),
+            swiftSettings: privateStdlibSettings),
         .testTarget(
             name: "MatchingEngineTests",
             dependencies: [
@@ -55,11 +63,11 @@ let package = Package(
         .target(
             name: "_StringProcessing",
             dependencies: ["_RegexParser", "_CUnicode"],
-            swiftSettings: stdlibSettings),
+            swiftSettings: publicStdlibSettings),
         .target(
             name: "RegexBuilder",
             dependencies: ["_StringProcessing", "_RegexParser"],
-            swiftSettings: stdlibSettings),
+            swiftSettings: publicStdlibSettings),
         .testTarget(
             name: "RegexTests",
             dependencies: ["_StringProcessing"],
