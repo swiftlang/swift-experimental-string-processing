@@ -472,7 +472,7 @@ extension DSLTree.Node {
       list.append(.init(
         name: name,
         type: child.valueCaptureType?.base,
-        optionalDepth: nesting))
+        optionalDepth: nesting, .fake))
       child._addCaptures(to: &list, optionalNesting: nesting)
 
     case let .nonCapturingGroup(kind, child):

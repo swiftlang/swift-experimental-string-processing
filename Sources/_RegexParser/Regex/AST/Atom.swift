@@ -29,7 +29,13 @@ extension AST {
       /// A Unicode scalar value written as a literal
       ///
       /// \u{...}, \0dd, \x{...}, ...
-      case scalar(Unicode.Scalar)
+      case scalar(Scalar)
+
+      /// A whitespace-separated sequence of Unicode scalar values which are
+      /// implicitly splatted out.
+      ///
+      /// `\u{A B C}` -> `\u{A}\u{B}\u{C}`
+      case scalarSequence(ScalarSequence)
 
       /// A Unicode property, category, or script, including those written using
       /// POSIX syntax.
@@ -84,6 +90,7 @@ extension AST.Atom {
     switch kind {
     case .char(let v):                  return v
     case .scalar(let v):                return v
+    case .scalarSequence(let v):        return v
     case .property(let v):              return v
     case .escaped(let v):               return v
     case .keyboardControl(let v):       return v
@@ -103,6 +110,30 @@ extension AST.Atom {
 
   func `as`<T>(_ t: T.Type = T.self) -> T? {
     _associatedValue as? T
+  }
+}
+
+extension AST.Atom {
+  public struct Scalar: Hashable {
+    public var value: UnicodeScalar
+    public var location: SourceLocation
+
+    public init(_ value: UnicodeScalar, _ location: SourceLocation) {
+      self.value = value
+      self.location = location
+    }
+  }
+
+  public struct ScalarSequence: Hashable {
+    public var scalars: [Scalar]
+    public var trivia: [AST.Trivia]
+
+    public init(_ scalars: [Scalar], trivia: [AST.Trivia]) {
+      precondition(scalars.count > 1, "Expected multiple scalars")
+      self.scalars = scalars
+      self.trivia = trivia
+    }
+    public var scalarValues: [Unicode.Scalar] { scalars.map(\.value) }
   }
 }
 
@@ -396,6 +427,9 @@ extension AST.Atom.CharacterProperty {
     case script(Unicode.Script)
     case scriptExtension(Unicode.Script)
 
+    /// Character name in the form `\p{name=...}`
+    case named(String)
+    
     case posix(Unicode.POSIXProperty)
 
     /// Some special properties implemented by PCRE and Oniguruma.
@@ -665,6 +699,23 @@ extension AST.Atom.EscapedBuiltin {
       return nil
     }
   }
+
+  public var isQuantifiable: Bool {
+    switch self {
+    case .alarm, .escape, .formfeed, .newline, .carriageReturn, .tab,
+        .singleDataUnit, .decimalDigit, .notDecimalDigit, .horizontalWhitespace,
+        .notHorizontalWhitespace, .notNewline, .newlineSequence, .whitespace,
+        .notWhitespace, .verticalTab, .notVerticalTab, .wordCharacter,
+        .notWordCharacter, .backspace, .graphemeCluster, .trueAnychar:
+      return true
+
+    case .wordBoundary, .notWordBoundary, .startOfSubject,
+        .endOfSubjectBeforeNewline, .endOfSubject,
+        .firstMatchingPositionInSubject, .resetStartOfMatch, .textSegment,
+        .notTextSegment:
+      return false
+    }
+  }
 }
 
 extension AST.Atom {
@@ -677,7 +728,7 @@ extension AST.Atom {
     case .char(let c):
       return c
     case .scalar(let s):
-      return Character(s)
+      return Character(s.value)
 
     case .escaped(let c):
       return c.scalarValue.map(Character.init)
@@ -693,8 +744,9 @@ extension AST.Atom {
       // the AST? Or defer for the matching engine?
       return nil
 
-    case .property, .any, .startOfLine, .endOfLine, .backreference, .subpattern,
-        .callout, .backtrackingDirective, .changeMatchingOptions:
+    case .scalarSequence, .property, .any, .startOfLine, .endOfLine,
+        .backreference, .subpattern, .callout, .backtrackingDirective,
+        .changeMatchingOptions:
       return nil
     }
   }
@@ -716,13 +768,21 @@ extension AST.Atom {
   /// A string literal representation of the atom, if possible.
   ///
   /// Individual characters are returned as-is, and Unicode scalars are
-  /// presented using "\u{nnnn}" syntax.
+  /// presented using "\u{nn nn ...}" syntax.
   public var literalStringValue: String? {
+    func scalarLiteral(_ u: [UnicodeScalar]) -> String {
+      let digits = u.map { String($0.value, radix: 16, uppercase: true) }
+        .joined(separator: " ")
+      return "\\u{\(digits)}"
+    }
     switch kind {
     case .char(let c):
       return String(c)
     case .scalar(let s):
-      return "\\u{\(String(s.value, radix: 16, uppercase: true))}"
+      return scalarLiteral([s.value])
+
+    case .scalarSequence(let s):
+      return scalarLiteral(s.scalarValues)
 
     case .keyboardControl(let x):
       return "\\C-\(x)"
@@ -746,6 +806,10 @@ extension AST.Atom {
     case .changeMatchingOptions:
       return false
     // TODO: Are callouts quantifiable?
+    case .escaped(let esc):
+      return esc.isQuantifiable
+    case .startOfLine, .endOfLine:
+      return false
     default:
       return true
     }

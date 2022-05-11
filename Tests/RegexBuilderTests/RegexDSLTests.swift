@@ -115,7 +115,7 @@ class RegexDSLTests: XCTestCase {
     {
       let disallowedChars = CharacterClass.hexDigit
         .symmetricDifference("a"..."z")
-      Lookahead(disallowedChars, negative: true)      // No: 0-9 + g-z
+      NegativeLookahead(disallowedChars)      // No: 0-9 + g-z
 
       OneOrMore(("b"..."g").union("d"..."n"))         // b-n
       
@@ -487,7 +487,7 @@ class RegexDSLTests: XCTestCase {
     {
       OneOrMore("a")
       Lookahead(CharacterClass.digit)
-      Lookahead("2", negative: true)
+      NegativeLookahead { "2" }
       CharacterClass.word
     }
   }
@@ -742,43 +742,6 @@ class RegexDSLTests: XCTestCase {
     }
   }
 
-  func testDynamicCaptures() throws {
-    do {
-      let regex = try Regex("aabcc.")
-      let line = "aabccd"
-      let match = try XCTUnwrap(line.wholeMatch(of: regex))
-      XCTAssertEqual(match.0, line[...])
-      let output = match.output
-      XCTAssertEqual(output[0].substring, line[...])
-    }
-    do {
-      let regex = try Regex(
-          #"""
-          (?<lower>[0-9A-F]+)(?:\.\.(?<upper>[0-9A-F]+))?\s+;\s+(?<desc>\w+).*
-          """#)
-      let line = """
-        A6F0..A6F1    ; Extend # Mn   [2] BAMUM COMBINING MARK KOQNDON..BAMUM \
-        COMBINING MARK TUKWENTIS
-        """
-      let match = try XCTUnwrap(line.wholeMatch(of: regex))
-      XCTAssertEqual(match.0, line[...])
-      let output = match.output
-      XCTAssertEqual(output[0].substring, line[...])
-      XCTAssertTrue(output[1].substring == "A6F0")
-      XCTAssertTrue(output["lower"]?.substring == "A6F0")
-      XCTAssertTrue(output[2].substring == "A6F1")
-      XCTAssertTrue(output["upper"]?.substring == "A6F1")
-      XCTAssertTrue(output[3].substring == "Extend")
-      XCTAssertTrue(output["desc"]?.substring == "Extend")
-      let typedOutput = try XCTUnwrap(output.as(
-        (Substring, lower: Substring, upper: Substring?, Substring).self))
-      XCTAssertEqual(typedOutput.0, line[...])
-      XCTAssertTrue(typedOutput.lower == "A6F0")
-      XCTAssertTrue(typedOutput.upper == "A6F1")
-      XCTAssertTrue(typedOutput.3 == "Extend")
-    }
-  }
-
   func testBackreference() throws {
     try _testDSLCaptures(
       ("abc#41#42abcabcabc", ("abc#41#42abcabcabc", "abc", 42, "abc", nil)),
@@ -883,6 +846,54 @@ class RegexDSLTests: XCTestCase {
           }
           Regex {
             ":"
+            Capture(.word, as: a)
+            ":"
+          }
+        }
+      }
+    }
+
+    // Post-hoc captured reference w/ attempted match before capture
+    // #"(?:\w\1|(\w):)+"#
+    //
+    // This tests that the reference `a` simply fails to match instead of
+    // erroring when encountered before a match is captured into `a`. The
+    // matching process here goes like this:
+    //  - the first time through, the first alternation is taken
+    //    - `.word` matches on "a"
+    //    - the `a` backreference fails on ":", because `a` hasn't matched yet
+    //    - backtrack to the beginning of the input
+    //  - now the second alternation is taken
+    //    - `.word` matches on "a" and is captured as `a`
+    //    - the literal ":" matches
+    //  - proceeding from the position of the first "b" in the first alternation
+    //    - `.word` matches on "b"
+    //    - the `a` backreference now contains "a", and matches on "a"
+    //  - proceeding from the position of the first "c" in the first alternation
+    //    - `.word` matches on "c"
+    //    - the `a` backreference still contains "a", and matches on "a"
+    //  - proceeding from the position of the first "o" in the first alternation
+    //    - `.word` matches on "o"
+    //    - the `a` backreference still contains "a", so it fails on ":"
+    //  - now the second alternation is taken
+    //    - `.word` matches on "o" and is captured as `a`
+    //    - the literal ":" matches
+    //  - continuing as above from the second "b"...
+    try _testDSLCaptures(
+      ("a:bacao:boco", ("a:bacao:boco", "o")),
+      matchType: (Substring, Substring?).self,
+      ==
+    ) {
+      // NOTE: "expression too complex to type check" when inferring the generic
+      // parameter.
+      OneOrMore {
+        let a = Reference(Substring.self)
+        ChoiceOf<(Substring, Substring?)> {
+          Regex {
+            .word
+            a
+          }
+          Regex {
             Capture(.word, as: a)
             ":"
           }
