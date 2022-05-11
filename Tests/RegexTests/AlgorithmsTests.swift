@@ -11,7 +11,6 @@
 
 import _StringProcessing
 import XCTest
-//import RegexBuilder
 
 // TODO: Protocol-powered testing
 class RegexConsumerTests: XCTestCase {
