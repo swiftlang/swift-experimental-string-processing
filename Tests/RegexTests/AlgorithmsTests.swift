@@ -32,8 +32,30 @@ func makeSingleUseSequence<T>(element: T, count: Int) -> UnfoldSequence<T, Void>
   }
 }
 
+struct CountedOptionSet: OptionSet {
+  static var arrayLiteralCreationCount = 0
+  
+  var rawValue: Int
+  
+  static var one = Self(rawValue: 1)
+  static var two = Self(rawValue: 1)
+}
+
+extension CountedOptionSet {
+  init(arrayLiteral: Self...) {
+    Self.arrayLiteralCreationCount += 1
+    self.rawValue = 0
+    for element in arrayLiteral {
+      self.insert(element)
+    }
+  }
+}
+
 class AlgorithmTests: XCTestCase {
   func testContains() {
+    XCTAssertTrue("abcde".contains("a"))
+    XCTAssertTrue("abcde".contains("e" as Character))
+
     XCTAssertTrue("".contains(""))
     XCTAssertTrue("abcde".contains(""))
     XCTAssertTrue("abcde".contains("abcd"))
@@ -51,7 +73,25 @@ class AlgorithmTests: XCTestCase {
     }
   }
   
-  func testRanges() {
+  func testContainsSourceCompatibility() {
+    CountedOptionSet.arrayLiteralCreationCount = 0
+    
+    let both: CountedOptionSet = [.one, .two]
+    let none: CountedOptionSet = []
+    XCTAssertEqual(CountedOptionSet.arrayLiteralCreationCount, 2)
+    
+    let cosArray = [both, .one, .two]
+    XCTAssertFalse(cosArray.contains(none))
+    
+    // This tests that `contains([])` uses the element-based `contains(_:)`
+    // method, interpreting `[]` as an instance of `CountedOptionSet`, rather
+    // than the collection-based overload, which would interpret `[]` as an
+    // `Array<CountedOptionSet>`.
+    XCTAssertFalse(cosArray.contains([]))
+    XCTAssertEqual(CountedOptionSet.arrayLiteralCreationCount, 3)
+  }
+  
+  func testRegexRanges() {
     func expectRanges(
       _ string: String,
       _ regex: String,
@@ -78,6 +118,7 @@ class AlgorithmTests: XCTestCase {
     expectRanges("", "x", [])
     expectRanges("", "x+", [])
     expectRanges("", "x*", [0..<0])
+    expectRanges("aaa", "a*", [0..<3, 3..<3])
     expectRanges("abc", "", [0..<0, 1..<1, 2..<2, 3..<3])
     expectRanges("abc", "x", [])
     expectRanges("abc", "x+", [])
@@ -92,8 +133,10 @@ class AlgorithmTests: XCTestCase {
     expectRanges("abc", "(a|b)*", [0..<2, 2..<2, 3..<3])
     expectRanges("abc", "(b|c)+", [1..<3])
     expectRanges("abc", "(b|c)*", [0..<0, 1..<3, 3..<3])
-    
-    func expectStringRanges(
+  }
+  
+  func testStringRanges() {
+    func expectRanges(
       _ input: String,
       _ pattern: String,
       _ expected: [Range<Int>],
@@ -110,16 +153,16 @@ class AlgorithmTests: XCTestCase {
       XCTAssertEqual(firstRange, expected.first, file: file, line: line)
     }
 
-    expectStringRanges("", "", [0..<0])
-    expectStringRanges("abcde", "", [0..<0, 1..<1, 2..<2, 3..<3, 4..<4, 5..<5])
-    expectStringRanges("abcde", "abcd", [0..<4])
-    expectStringRanges("abcde", "bcde", [1..<5])
-    expectStringRanges("abcde", "bcd", [1..<4])
-    expectStringRanges("ababacabababa", "abababa", [6..<13])
-    expectStringRanges("ababacabababa", "aba", [0..<3, 6..<9, 10..<13])
+    expectRanges("", "", [0..<0])
+    expectRanges("abcde", "", [0..<0, 1..<1, 2..<2, 3..<3, 4..<4, 5..<5])
+    expectRanges("abcde", "abcd", [0..<4])
+    expectRanges("abcde", "bcde", [1..<5])
+    expectRanges("abcde", "bcd", [1..<4])
+    expectRanges("ababacabababa", "abababa", [6..<13])
+    expectRanges("ababacabababa", "aba", [0..<3, 6..<9, 10..<13])
   }
 
-  func testSplit() {
+  func testRegexSplit() {
     func expectSplit(
       _ string: String,
       _ regex: String,
@@ -138,6 +181,26 @@ class AlgorithmTests: XCTestCase {
     expectSplit("a", "a", ["", ""])
     expectSplit("a____a____a", "_+", ["a", "a", "a"])
     expectSplit("____a____a____a____", "_+", ["", "a", "a", "a", ""])
+  }
+  
+  func testStringSplit() {
+    func expectSplit(
+      _ string: String,
+      _ separator: String,
+      _ expected: [Substring],
+      file: StaticString = #file, line: UInt = #line
+    ) {
+      let actual = Array(string.split(separator: separator, omittingEmptySubsequences: false))
+      XCTAssertEqual(actual, expected, file: file, line: line)
+    }
+
+    expectSplit("", "", [""])
+    expectSplit("", "x", [""])
+    expectSplit("a", "", ["", "a", ""])
+    expectSplit("a", "x", ["a"])
+    expectSplit("a", "a", ["", ""])
+    expectSplit("a__a__a", "_", ["a", "", "a", "", "a"])
+    expectSplit("_a_a_a_", "_", ["", "a", "a", "a", ""])
 
     XCTAssertEqual("".split(separator: ""), [])
     XCTAssertEqual("".split(separator: "", omittingEmptySubsequences: false), [""])
@@ -149,6 +212,24 @@ class AlgorithmTests: XCTestCase {
     XCTAssert(type(of: splitParamsRef) == ((Character, Int, Bool) -> [Substring]).self)
   }
   
+  func testSplitSourceCompatibility() {
+    CountedOptionSet.arrayLiteralCreationCount = 0
+    
+    let both: CountedOptionSet = [.one, .two]
+    let none: CountedOptionSet = []
+    XCTAssertEqual(CountedOptionSet.arrayLiteralCreationCount, 2)
+    
+    let cosArray = [both, .one, .two]
+    XCTAssertEqual(cosArray.split(separator: none).count, 1)
+    
+    // This tests that `contains([])` uses the element-based `contains(_:)`
+    // method, interpreting `[]` as an instance of `CountedOptionSet`, rather
+    // than the collection-based overload, which would interpret `[]` as an
+    // `Array<CountedOptionSet>`.
+    XCTAssertEqual(cosArray.split(separator: []).count, 1)
+    XCTAssertEqual(CountedOptionSet.arrayLiteralCreationCount, 3)
+  }
+
   func testSplitPermutations() throws {
     let splitRegex = try Regex(#"\|"#)
     XCTAssertEqual(
@@ -276,7 +357,7 @@ class AlgorithmTests: XCTestCase {
     XCTAssertEqual("a  ".trimmingPrefix(while: \.isWhitespace), "a  ")
   }
   
-  func testReplace() {
+  func testRegexReplace() {
     func expectReplace(
       _ string: String,
       _ regex: String,
@@ -300,8 +381,33 @@ class AlgorithmTests: XCTestCase {
     expectReplace("aab", "a", "X", "XXb")
     expectReplace("aab", "a+", "X", "Xb")
     expectReplace("aab", "a*", "X", "XXbX")
+    
+    // FIXME: Test maxReplacements
+    // FIXME: Test closure-based replacement
   }
 
+  func testStringReplace() {
+    func expectReplace(
+      _ string: String,
+      _ pattern: String,
+      _ replacement: String,
+      _ expected: String,
+      file: StaticString = #file, line: UInt = #line
+    ) {
+      let actual = string.replacing(pattern, with: replacement)
+      XCTAssertEqual(actual, expected, file: file, line: line)
+    }
+    
+    expectReplace("", "", "X", "X")
+    expectReplace("", "x", "X", "")
+    expectReplace("a", "", "X", "XaX")
+    expectReplace("a", "x", "X", "a")
+    expectReplace("a", "a", "X", "X")
+    expectReplace("aab", "a", "X", "XXb")
+    
+    // FIXME: Test maxReplacements
+  }
+  
   func testSubstring() throws {
     let s = "aaa | aaaaaa | aaaaaaaaaa"
     let s1 = s.dropFirst(6)  // "aaaaaa | aaaaaaaaaa"
