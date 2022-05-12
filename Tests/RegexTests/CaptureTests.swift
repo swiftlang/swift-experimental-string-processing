@@ -467,6 +467,16 @@ extension RegexTests {
     _ = try XCTUnwrap(opaque3.as((Substring, someLabel: Substring).self))
     XCTAssertNil(opaque3.as((Substring, Substring).self))
     XCTAssertNil(opaque3.as(Substring.self))
+    
+    let opaque4 = try Regex("(?<somethingHere>abc)?")
+    _ = try XCTUnwrap(opaque4.as((Substring, somethingHere: Substring?).self))
+    XCTAssertNil(opaque4.as((Substring, somethignHere: Substring).self))
+    XCTAssertNil(opaque4.as((Substring, Substring?).self))
+    
+    let opaque5 = try Regex("((a)?bc)?")
+    _ = try XCTUnwrap(opaque5.as((Substring, Substring?, Substring??).self))
+    XCTAssertNil(opaque5.as((Substring, somethingHere: Substring?, here: Substring??).self))
+    XCTAssertNil(opaque5.as((Substring, Substring?, Substring?).self))
   }
 }
 
