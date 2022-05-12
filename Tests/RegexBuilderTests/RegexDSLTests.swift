@@ -66,7 +66,7 @@ class RegexDSLTests: XCTestCase {
       ("a c", ("a c", " ", "c")),
       matchType: (Substring, Substring, Substring).self, ==)
     {
-      .any
+      One(.any)
       Capture(.whitespace) // Substring
       Capture("c") // Substring
     }
@@ -344,7 +344,7 @@ class RegexDSLTests: XCTestCase {
       matchType: (Substring, Substring).self, ==)
     {
       OneOrMore(.reluctant) {
-        .word
+        One(.word)
       }.repetitionBehavior(.possessive)
       Capture(.digit)
       ZeroOrMore(.any)
@@ -604,13 +604,13 @@ class RegexDSLTests: XCTestCase {
   func testUnicodeScalarPostProcessing() throws {
     let spaces = Regex {
       ZeroOrMore {
-        .whitespace
+        One(.whitespace)
       }
     }
 
     let unicodeScalar = Regex {
       OneOrMore {
-        .hexDigit
+        One(.hexDigit)
       }
       spaces
     }
@@ -626,14 +626,10 @@ class RegexDSLTests: XCTestCase {
       spaces
 
       Capture {
-        OneOrMore {
-          .word
-        }
+        OneOrMore(.word)
       }
 
-      ZeroOrMore {
-        .any
-      }
+      ZeroOrMore(.any)
     }
 
     // Assert the inferred capture type.
@@ -830,7 +826,7 @@ class RegexDSLTests: XCTestCase {
         let a = Reference(Substring.self)
         ChoiceOf<(Substring, Substring?)> {
           Regex {
-            .word
+            One(.word)
             a
           }
           Regex {
