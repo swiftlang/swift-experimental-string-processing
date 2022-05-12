@@ -437,30 +437,57 @@ extension PrettyPrinter {
       break
       
     case .intersection(let first, let second):
-      printAsPattern(first)
+      if wrap, first.isSimplePrint {
+        indent()
+        output("One(")
+      }
+      
+      printAsPattern(first, wrap: false)
       printIndented { printer in
         printer.indent()
         printer.output(".intersection(")
-        printer.printAsPattern(second, terminateLine: false)
+        printer.printAsPattern(second, wrap: false, terminateLine: false)
         printer.output(")")
+      }
+      
+      if wrap, first.isSimplePrint {
+        output(")")
       }
       
     case .subtraction(let first, let second):
-      printAsPattern(first)
+      if wrap, first.isSimplePrint {
+        indent()
+        output("One(")
+      }
+      
+      printAsPattern(first, wrap: false)
       printIndented { printer in
         printer.indent()
         printer.output(".subtracting(")
-        printer.printAsPattern(second, terminateLine: false)
+        printer.printAsPattern(second, wrap: false, terminateLine: false)
         printer.output(")")
       }
       
+      if wrap, first.isSimplePrint {
+        output(")")
+      }
+      
     case .symmetricDifference(let first, let second):
-      printAsPattern(first)
+      if wrap, first.isSimplePrint {
+        indent()
+        output("One(")
+      }
+      
+      printAsPattern(first, wrap: false)
       printIndented { printer in
         printer.indent()
         printer.output(".symmetricDifference(")
-        printer.printAsPattern(second, terminateLine: false)
+        printer.printAsPattern(second, wrap: false, terminateLine: false)
         printer.output(")")
+      }
+      
+      if wrap, first.isSimplePrint {
+        output(")")
       }
     }
   }
