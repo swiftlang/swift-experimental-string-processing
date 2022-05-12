@@ -39,8 +39,7 @@ extension CaptureList.Capture {
   }
 
   static func named(_ name: String, opt: Int = 0) -> Self {
-    return Self(name: name, optionalDepth: opt, .fake)
-  }
+    return Self(name: name, optionalDepth: opt, .fake)  }
 }
 extension CaptureList {
   static func caps(count: Int) -> Self {

@@ -2669,6 +2669,10 @@ extension RegexTests {
     diagnosticTest(#"[\d--\u{a b}]"#, .unsupported("scalar sequence in custom character class"))
     diagnosticTest(#"[\d--[\u{a b}]]"#, .unsupported("scalar sequence in custom character class"))
 
+    // MARK: Unicode scalars
+
+    diagnosticTest(#"\u{G}"#, .expectedNumber("G", kind: .hex))
+
     // MARK: Matching options
 
     diagnosticTest(#"(?^-"#, .cannotRemoveMatchingOptionsAfterCaret)

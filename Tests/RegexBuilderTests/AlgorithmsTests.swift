@@ -13,6 +13,7 @@ import XCTest
 import _StringProcessing
 import RegexBuilder
 
+@available(SwiftStdlib 5.7, *)
 class RegexConsumerTests: XCTestCase {
   func testMatches() {
     let regex = Capture(OneOrMore(.digit)) { 2 * Int($0)! }
