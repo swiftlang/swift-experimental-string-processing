@@ -127,6 +127,19 @@ extension DSLTree.Node {
   }
 }
 
+/// A regex component that matches exactly one occurrence of its underlying
+/// component.
+@available(SwiftStdlib 5.7, *)
+public struct One<Output>: RegexComponent {
+  public var regex: Regex<Output>
+
+  public init<Component: RegexComponent>(
+    _ component: Component
+  ) where Component.RegexOutput == Output {
+    self.regex = component.regex
+  }
+}
+
 @available(SwiftStdlib 5.7, *)
 public struct OneOrMore<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
