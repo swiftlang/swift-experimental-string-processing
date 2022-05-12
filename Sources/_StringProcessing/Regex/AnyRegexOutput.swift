@@ -70,6 +70,9 @@ public struct AnyRegexOutput {
     /// The name of the capture.
     var name: String? = nil
     
+    /// The capture reference this element refers to.
+    var referenceID: ReferenceID? = nil
+    
     /// If the output vaule is strongly typed, then this will be set.
     var value: Any? = nil
   }
@@ -145,7 +148,11 @@ extension AnyRegexOutput: RandomAccessCollection {
     public var range: Range<String.Index>? {
       representation.bounds
     }
-
+    
+    var referenceID: ReferenceID? {
+      representation.referenceID
+    }
+    
     /// The slice of the input over which a value was captured. `nil` for no-capture.
     public var substring: Substring? {
       range.map { input[$0] }
@@ -201,7 +208,6 @@ extension Regex.Match where Output == AnyRegexOutput {
     self.init(
       anyRegexOutput: match.anyRegexOutput,
       range: match.range,
-      referencedCaptureOffsets: match.referencedCaptureOffsets,
       value: match.value
     )
   }

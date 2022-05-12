@@ -1,4 +1,5 @@
 @_implementationOnly import _RegexParser
+
 extension CaptureList {
   @available(SwiftStdlib 5.7, *)
   func createElements(
@@ -9,11 +10,12 @@ extension CaptureList {
     
     var result = [AnyRegexOutput.ElementRepresentation]()
     
-    for (cap, meStored) in zip(captures, list.values) {
+    for (i, (cap, meStored)) in zip(captures, list.values).enumerated() {
       let element = AnyRegexOutput.ElementRepresentation(
         optionalDepth: cap.optionalDepth,
         bounds: meStored.latest,
         name: cap.name,
+        referenceID: list.referencedCaptureOffsets.first { $1 == i }?.key,
         value: meStored.latestValue
       )
       
