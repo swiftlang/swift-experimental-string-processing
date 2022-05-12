@@ -22,8 +22,6 @@ extension Regex {
     /// The range of the overall match.
     public let range: Range<String.Index>
 
-    let referencedCaptureOffsets: [ReferenceID: Int]
-
     let value: Any?
   }
 }
@@ -35,8 +33,7 @@ extension Regex.Match {
     if Output.self == AnyRegexOutput.self {
       let wholeMatchCapture = AnyRegexOutput.ElementRepresentation(
         optionalDepth: 0,
-        bounds: range,
-        value: nil
+        bounds: range
       )
       
       let output = AnyRegexOutput(
@@ -79,11 +76,13 @@ extension Regex.Match {
 
   @_spi(RegexBuilder)
   public subscript<Capture>(_ id: ReferenceID) -> Capture {
-    guard let offset = referencedCaptureOffsets[id] else {
-      preconditionFailure(
-        "Reference did not capture any match in the regex")
+    guard let element = anyRegexOutput.first(
+      where: { $0.referenceID == id }
+    ) else {
+      preconditionFailure("Reference did not capture any match in the regex")
     }
-    return anyRegexOutput[offset].existentialOutputComponent(
+    
+    return element.existentialOutputComponent(
       from: anyRegexOutput.input[...]
     ) as! Capture
   }

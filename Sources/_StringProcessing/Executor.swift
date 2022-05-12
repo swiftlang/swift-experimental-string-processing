@@ -64,7 +64,6 @@ struct Executor {
     return .init(
       anyRegexOutput: anyRegexOutput,
       range: range,
-      referencedCaptureOffsets: capList.referencedCaptureOffsets,
       value: value
     )
   }
