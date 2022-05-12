@@ -528,23 +528,7 @@ extension RegexTests {
     ))
 
     parseTest("[-]", charClass("-"))
-
-    // Empty character classes are forbidden, therefore these are character
-    // classes containing literal ']'.
-    parseTest("[]]", charClass("]"))
-    parseTest("[]a]", charClass("]", "a"))
-    parseTest("(?x)[ ]]", concat(
-      changeMatchingOptions(matchingOptions(adding: .extended)),
-      charClass("]")
-    ))
-    parseTest("(?x)[ ]  ]", concat(
-      changeMatchingOptions(matchingOptions(adding: .extended)),
-      charClass("]")
-    ))
-    parseTest("(?x)[ ] a ]", concat(
-      changeMatchingOptions(matchingOptions(adding: .extended)),
-      charClass("]", "a")
-    ))
+    parseTest(#"[\]]"#, charClass("]"))
 
     // These are metacharacters in certain contexts, but normal characters
     // otherwise.
@@ -2497,10 +2481,15 @@ extension RegexTests {
 
     diagnosticTest("[a", .expected("]"))
 
-    // The first ']' of a custom character class is literal, so these are
-    // missing the closing bracket.
-    diagnosticTest("[]", .expected("]"))
-    diagnosticTest("(?x)[  ]", .expected("]"))
+    // Character classes may not be empty.
+    diagnosticTest("[]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("[]]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("[]a]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[  ]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[ ]  ]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[ ] a ]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?xx)[ ] a ]+", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[ ]]", .expectedCustomCharacterClassMembers)
 
     diagnosticTest("[&&]", .expectedCustomCharacterClassMembers)
     diagnosticTest("[a&&]", .expectedCustomCharacterClassMembers)

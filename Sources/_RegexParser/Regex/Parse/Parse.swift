@@ -465,16 +465,6 @@ extension Parser {
     var members: Array<Member> = []
     try parseCCCMembers(into: &members)
 
-    // If we didn't parse any semantic members, we can eat a ']' character, as
-    // PCRE, Oniguruma, and ICU forbid empty character classes, and assume an
-    // initial ']' is literal.
-    if members.none(\.isSemantic) {
-      if let loc = source.tryEatWithLoc("]") {
-        members.append(.atom(.init(.char("]"), loc)))
-        try parseCCCMembers(into: &members)
-      }
-    }
-
     // If we have a binary set operator, parse it and the next members. Note
     // that this means we left associate for a chain of operators.
     // TODO: We may want to diagnose and require users to disambiguate, at least
