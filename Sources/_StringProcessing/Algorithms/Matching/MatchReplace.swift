@@ -12,7 +12,7 @@
 // MARK: `MatchingCollectionSearcher` algorithms
 
 extension RangeReplaceableCollection {
-  func replacing<
+  func _replacing<
     Searcher: MatchingCollectionSearcher, Replacement: Collection
   >(
     _ searcher: Searcher,
@@ -28,7 +28,7 @@ extension RangeReplaceableCollection {
     var result = Self()
     result.append(contentsOf: self[..<index])
 
-    for match in self[subrange].matches(of: searcher)
+    for match in self[subrange]._matches(of: searcher)
           .prefix(maxReplacements)
     {
       result.append(contentsOf: self[index..<match.range.lowerBound])
@@ -40,7 +40,7 @@ extension RangeReplaceableCollection {
     return result
   }
 
-  func replacing<
+  func _replacing<
     Searcher: MatchingCollectionSearcher, Replacement: Collection
   >(
     _ searcher: Searcher,
@@ -49,14 +49,14 @@ extension RangeReplaceableCollection {
   ) rethrows -> Self where Searcher.Searched == SubSequence,
                            Replacement.Element == Element
   {
-    try replacing(
+    try _replacing(
       searcher,
       with: replacement,
       subrange: startIndex..<endIndex,
       maxReplacements: maxReplacements)
   }
 
-  mutating func replace<
+  mutating func _replace<
     Searcher: MatchingCollectionSearcher, Replacement: Collection
   >(
     _ searcher: Searcher,
@@ -65,7 +65,7 @@ extension RangeReplaceableCollection {
   ) rethrows where Searcher.Searched == SubSequence,
                    Replacement.Element == Element
   {
-    self = try replacing(
+    self = try _replacing(
       searcher,
       with: replacement,
       maxReplacements: maxReplacements)
@@ -76,13 +76,13 @@ extension RangeReplaceableCollection {
 
 extension RangeReplaceableCollection where SubSequence == Substring {
   @available(SwiftStdlib 5.7, *)
-  func replacing<R: RegexComponent, Replacement: Collection>(
+  func _replacing<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max
   ) rethrows -> Self where Replacement.Element == Element {
-    try replacing(
+    try _replacing(
       RegexConsumer(regex),
       with: replacement,
       subrange: subrange,
@@ -90,12 +90,12 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   }
 
   @available(SwiftStdlib 5.7, *)
-  func replacing<R: RegexComponent, Replacement: Collection>(
+  func _replacing<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
     maxReplacements: Int = .max
   ) rethrows -> Self where Replacement.Element == Element {
-    try replacing(
+    try _replacing(
       regex,
       with: replacement,
       subrange: startIndex..<endIndex,
@@ -103,12 +103,12 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   }
 
   @available(SwiftStdlib 5.7, *)
-  mutating func replace<R: RegexComponent, Replacement: Collection>(
+  mutating func _replace<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
     with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
     maxReplacements: Int = .max
   ) rethrows where Replacement.Element == Element {
-    self = try replacing(
+    self = try _replacing(
       regex,
       with: replacement,
       maxReplacements: maxReplacements)
