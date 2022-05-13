@@ -158,7 +158,11 @@ extension Regex {
       if let m = try _match(input, in: low..<high, mode: .partialFromFront) {
         return m
       }
-      input.formIndex(after: &low)
+      if regex.program.loweredProgram.initialOptions.semanticLevel == .graphemeCluster {
+        input.formIndex(after: &low)
+      } else {
+        input.unicodeScalars.formIndex(after: &low)
+      }
     }
     return nil
   }
