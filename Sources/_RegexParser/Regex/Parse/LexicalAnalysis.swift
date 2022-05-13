@@ -589,6 +589,26 @@ extension Source {
     return AST.Quote(str.value, str.location)
   }
 
+  /// Try to consume an interpolation sequence.
+  ///
+  ///     Interpolation -> '<{' String '}>'
+  ///
+  mutating func lexInterpolation() throws -> AST.Interpolation? {
+    let contents = try recordLoc { src -> String? in
+      try src.tryEating { src in
+        guard src.tryEat(sequence: "<{") else { return nil }
+        _ = src.lexUntil { $0.isEmpty || $0.starts(with: "}>") }
+        guard src.tryEat(sequence: "}>") else { return nil }
+
+        // Not currently supported. We error here instead of during Sema to
+        // get a better error for something like `(<{)}>`.
+        throw ParseError.unsupported("interpolation")
+      }
+    }
+    guard let contents = contents else { return nil }
+    return .init(contents.value, contents.location)
+  }
+
   /// Try to consume a comment
   ///
   ///     Comment -> '(?#' [^')']* ')'
@@ -1674,9 +1694,10 @@ extension Source {
         break
       }
 
-      // We only allow unknown escape sequences for non-letter ASCII, and
-      // non-ASCII whitespace.
-      guard (char.isASCII && !char.isLetter) ||
+      // We only allow unknown escape sequences for non-letter non-number ASCII,
+      // and non-ASCII whitespace.
+      // TODO: Once we have fix-its, suggest a `0` prefix for octal `[\7]`.
+      guard (char.isASCII && !char.isLetter && !char.isNumber) ||
               (!char.isASCII && char.isWhitespace)
       else {
         throw ParseError.invalidEscape(char)
@@ -1981,10 +2002,21 @@ extension Source {
 
       case "]":
         assert(!customCC, "parser should have prevented this")
-        fallthrough
+        break
 
-      default: return .char(char)
+      default:
+        // Reject non-letter non-number non-`\r\n` ASCII characters that have
+        // multiple scalars. These may be confusable for metacharacters, e.g
+        // `[\u{301}]` wouldn't be interpreted as a custom character class due
+        // to the combining accent (assuming it is literal, not `\u{...}`).
+        let scalars = char.unicodeScalars
+        if scalars.count > 1 && scalars.first!.isASCII && char != "\r\n" &&
+            !char.isLetter && !char.isNumber {
+          throw ParseError.confusableCharacter(char)
+        }
+        break
       }
+      return .char(char)
     }
     guard let kind = kind else { return nil }
     return AST.Atom(kind.value, kind.location)

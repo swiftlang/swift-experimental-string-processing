@@ -137,6 +137,9 @@ extension AST.Node {
       case let .trivia(v):
         return .trivia(v.contents)
 
+      case .interpolation:
+        throw Unsupported("TODO: interpolation")
+
       case let .atom(v):
         switch v.kind {
         case .scalarSequence(let seq):

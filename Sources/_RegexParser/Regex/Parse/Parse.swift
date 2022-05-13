@@ -222,6 +222,13 @@ extension Parser {
         result.append(.quote(quote))
         continue
       }
+
+      // Interpolation -> `lexInterpolation`
+      if let interpolation = try source.lexInterpolation() {
+        result.append(.interpolation(interpolation))
+        continue
+      }
+
       //     Quantification  -> QuantOperand Quantifier?
       if let operand = try parseQuantifierOperand() {
         if let (amt, kind, trivia) =
