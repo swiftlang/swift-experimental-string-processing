@@ -17,10 +17,10 @@ extension AlgorithmTests {
   func testAdHoc() {
     let r = try! Regex("a|b+")
 
-    XCTAssert("palindrome".contains(r))
-    XCTAssert("botany".contains(r))
-    XCTAssert("antiquing".contains(r))
-    XCTAssertFalse("cdef".contains(r))
+    XCTAssert("palindrome".contains(pattern: r))
+    XCTAssert("botany".contains(pattern: r))
+    XCTAssert("antiquing".contains(pattern: r))
+    XCTAssertFalse("cdef".contains(pattern: r))
 
     let str = "a string with the letter b in it"
     let first = str.firstRange(of: r)

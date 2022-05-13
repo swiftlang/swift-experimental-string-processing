@@ -309,11 +309,11 @@ extension Collection where Element: Equatable {
   ///   elements.
   @available(SwiftStdlib 5.7, *)
   public func split<C: Collection>(
-    separator: C,
+    pattern: C,
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [SubSequence] where C.Element == Element {
-    Array(split(by: ZSearcher(pattern: Array(separator), by: ==), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences))
+    Array(split(by: ZSearcher(pattern: Array(pattern), by: ==), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences))
   }
 }
 
@@ -384,10 +384,10 @@ extension BidirectionalCollection where SubSequence == Substring {
   ///   elements.
   @_disfavoredOverload
   public func split<R: RegexComponent>(
-    separator: R,
+    pattern: R,
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [SubSequence] {
-    Array(split(by: RegexConsumer(separator), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences))
+    Array(split(by: RegexConsumer(pattern), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences))
   }
 }

@@ -28,7 +28,7 @@ extension Collection where Element: Equatable {
   /// - Returns: `true` if the collection contains the specified sequence,
   /// otherwise `false`.
   @available(SwiftStdlib 5.7, *)
-  public func contains<C: Collection>(_ other: C) -> Bool
+  public func contains<C: Collection>(pattern other: C) -> Bool
     where C.Element == Element
   {
     firstRange(of: other) != nil
@@ -46,20 +46,6 @@ extension BidirectionalCollection where Element: Comparable {
   }
 }
 
-// Overload breakers
-
-extension StringProtocol {
-  @available(SwiftStdlib 5.7, *)
-  public func contains(_ other: String) -> Bool {
-    firstRange(of: other) != nil
-  }
-  
-  @available(SwiftStdlib 5.7, *)
-  public func contains(_ other: Substring) -> Bool {
-    firstRange(of: other) != nil
-  }
-}
-
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
@@ -69,7 +55,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: `true` if the regex was found in the collection, otherwise
   /// `false`.
   @available(SwiftStdlib 5.7, *)
-  public func contains<R: RegexComponent>(_ regex: R) -> Bool {
+  public func contains<R: RegexComponent>(pattern regex: R) -> Bool {
     contains(RegexConsumer(regex))
   }
 }

@@ -52,7 +52,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   public func contains<R: RegexComponent>(
     @RegexComponentBuilder _ content: () -> R
   ) -> Bool {
-    contains(content())
+    contains(pattern: content())
   }
 
   /// Returns the range of the first match for the regex within this collection,
@@ -104,7 +104,7 @@ extension BidirectionalCollection where SubSequence == Substring {
     omittingEmptySubsequences: Bool = true,
     @RegexComponentBuilder separator: () -> R
   ) -> [SubSequence] {
-    split(separator: separator(), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
+    split(pattern: separator(), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
   }
 
   /// Returns a Boolean value indicating whether the initial elements of this

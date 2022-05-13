@@ -119,17 +119,17 @@ extension UTS18Tests {
     
     // Script and Script_Extensions
     //    U+3042  あ  HIRAGANA LETTER A  Hira  {Hira}
-    XCTAssertTrue("\u{3042}".contains(regex(#"\p{Hira}"#)))
-    XCTAssertTrue("\u{3042}".contains(regex(#"\p{sc=Hira}"#)))
-    XCTAssertTrue("\u{3042}".contains(regex(#"\p{scx=Hira}"#)))
+    XCTAssertTrue("\u{3042}".contains(pattern: regex(#"\p{Hira}"#)))
+    XCTAssertTrue("\u{3042}".contains(pattern: regex(#"\p{sc=Hira}"#)))
+    XCTAssertTrue("\u{3042}".contains(pattern: regex(#"\p{scx=Hira}"#)))
     //    U+30FC  ー  KATAKANA-HIRAGANA PROLONGED SOUND MARK  Zyyy = Common  {Hira, Kana}
-    XCTAssertTrue("\u{30FC}".contains(regex(#"\p{Hira}"#)))      // Implicit = Script_Extensions
-    XCTAssertTrue("\u{30FC}".contains(regex(#"\p{Kana}"#)))
-    XCTAssertTrue("\u{30FC}".contains(regex(#"\p{sc=Zyyy}"#)))   // Explicit = Script
-    XCTAssertTrue("\u{30FC}".contains(regex(#"\p{scx=Hira}"#)))
-    XCTAssertTrue("\u{30FC}".contains(regex(#"\p{scx=Kana}"#)))
-    XCTAssertFalse("\u{30FC}".contains(regex(#"\p{sc=Hira}"#)))
-    XCTAssertFalse("\u{30FC}".contains(regex(#"\p{sc=Kana}"#)))
+    XCTAssertTrue("\u{30FC}".contains(pattern: regex(#"\p{Hira}"#)))      // Implicit = Script_Extensions
+    XCTAssertTrue("\u{30FC}".contains(pattern: regex(#"\p{Kana}"#)))
+    XCTAssertTrue("\u{30FC}".contains(pattern: regex(#"\p{sc=Zyyy}"#)))   // Explicit = Script
+    XCTAssertTrue("\u{30FC}".contains(pattern: regex(#"\p{scx=Hira}"#)))
+    XCTAssertTrue("\u{30FC}".contains(pattern: regex(#"\p{scx=Kana}"#)))
+    XCTAssertFalse("\u{30FC}".contains(pattern: regex(#"\p{sc=Hira}"#)))
+    XCTAssertFalse("\u{30FC}".contains(pattern: regex(#"\p{sc=Kana}"#)))
     
     // Uppercase, etc
     expectFirstMatch(input, regex(#"\p{Uppercase}+"#), input[pos: ..<3])
@@ -143,8 +143,8 @@ extension UTS18Tests {
     // Block vs Writing System
     let greekScalar = "Θ" // U+0398
     let greekExtendedScalar = "ἀ" // U+1F00
-    XCTAssertTrue(greekScalar.contains(regex(#"\p{Greek}"#)))
-    XCTAssertTrue(greekExtendedScalar.contains(regex(#"\p{Greek}"#)))
+    XCTAssertTrue(greekScalar.contains(pattern: regex(#"\p{Greek}"#)))
+    XCTAssertTrue(greekExtendedScalar.contains(pattern: regex(#"\p{Greek}"#)))
   }
   
   func testProperties_XFail() {
@@ -196,7 +196,7 @@ extension UTS18Tests {
     
     // Non-ASCII lowercase + non-lowercase ASCII
     expectFirstMatch(input, regex(#"[\p{lowercase}~~\p{ascii}]+"#), input[pos: ..<3])
-    XCTAssertTrue("123%&^ABC".contains(regex(#"^[\p{lowercase}~~\p{ascii}]+$"#)))
+    XCTAssertTrue("123%&^ABC".contains(pattern: regex(#"^[\p{lowercase}~~\p{ascii}]+$"#)))
   }
   
   func testSubtractionAndIntersectionPrecedence() {
@@ -298,10 +298,10 @@ extension UTS18Tests {
     XCTAssertEqual(lines.count, 10)
 
     // Does not contain an empty line
-    XCTAssertFalse(lineInput.contains(regex(#"^$"#)))
+    XCTAssertFalse(lineInput.contains(pattern: regex(#"^$"#)))
     // Does contain an empty line (between \n and \r, which are reversed here)
     let empty = "\n\r"
-    XCTAssertTrue(empty.contains(regex(#"^$"#).anchorsMatchLineEndings()))
+    XCTAssertTrue(empty.contains(pattern: regex(#"^$"#).anchorsMatchLineEndings()))
   }
   
   // RL1.7 Supplementary Code Points
@@ -312,9 +312,9 @@ extension UTS18Tests {
   // surrogate followed by a trailing surrogate shall be handled as a single
   // code point in matching.
   func testSupplementaryCodePoints() {
-    XCTAssertTrue("👍".contains(regex(#"\u{1F44D}"#)))
-    XCTAssertTrue("👍".contains(regex(#"[\u{1F440}-\u{1F44F}]"#)))
-    XCTAssertTrue("👍👎".contains(regex(#"^[\u{1F440}-\u{1F44F}]+$"#)))
+    XCTAssertTrue("👍".contains(pattern: regex(#"\u{1F44D}"#)))
+    XCTAssertTrue("👍".contains(pattern: regex(#"[\u{1F440}-\u{1F44F}]"#)))
+    XCTAssertTrue("👍👎".contains(pattern: regex(#"^[\u{1F440}-\u{1F44F}]+$"#)))
   }
 }
 
@@ -348,7 +348,7 @@ extension UTS18Tests {
     for (regexNum, regex) in regexes.enumerated() {
       for (equivNum, equiv) in equivalents.enumerated() {
         XCTAssertTrue(
-          equiv.contains(regex),
+          equiv.contains(pattern: regex),
           "Grapheme cluster semantics: Regex \(regexNum) didn't match with string \(equivNum)")
       }
     }
@@ -359,11 +359,11 @@ extension UTS18Tests {
         let regex = regex.matchingSemantics(.unicodeScalar)
         if regexNum == equivNum {
           XCTAssertTrue(
-            equiv.contains(regex),
+            equiv.contains(pattern: regex),
             "Unicode scalar semantics: Regex \(regexNum) didn't match with string \(equivNum)")
         } else {
           XCTAssertFalse(
-            equiv.contains(regex),
+            equiv.contains(pattern: regex),
             "Unicode scalar semantics: Regex \(regexNum) incorrectly matched with string \(equivNum)")
         }
       }
@@ -376,16 +376,16 @@ extension UTS18Tests {
   // matching against an arbitrary extended grapheme cluster, Character Classes
   // with Strings, and extended grapheme cluster boundaries.
   func testExtendedGraphemeClusters() {
-    XCTAssertTrue("abcdef🇬🇭".contains(regex(#"abcdef.$"#)))
-    XCTAssertTrue("abcdef🇬🇭".contains(regex(#"abcdef\X$"#)))
-    XCTAssertTrue("abcdef🇬🇭".contains(regex(#"abcdef\X$"#).matchingSemantics(.unicodeScalar)))
-    XCTAssertTrue("abcdef🇬🇭".contains(regex(#"abcdef.+\y"#).matchingSemantics(.unicodeScalar)))
+    XCTAssertTrue("abcdef🇬🇭".contains(pattern: regex(#"abcdef.$"#)))
+    XCTAssertTrue("abcdef🇬🇭".contains(pattern: regex(#"abcdef\X$"#)))
+    XCTAssertTrue("abcdef🇬🇭".contains(pattern: regex(#"abcdef\X$"#).matchingSemantics(.unicodeScalar)))
+    XCTAssertTrue("abcdef🇬🇭".contains(pattern: regex(#"abcdef.+\y"#).matchingSemantics(.unicodeScalar)))
   }
   
   func testCharacterClassesWithStrings() {
     let regex = regex(#"[a-z🧐🇧🇪🇧🇫🇧🇬]"#)
-    XCTAssertTrue("🧐".contains(regex))
-    XCTAssertTrue("🇧🇫".contains(regex))
+    XCTAssertTrue("🧐".contains(pattern: regex))
+    XCTAssertTrue("🇧🇫".contains(pattern: regex))
   }
   
   // RL2.3 Default Word Boundaries
@@ -411,55 +411,55 @@ extension UTS18Tests {
   // named characters.
   func testNameProperty() throws {
     // Name property
-    XCTAssertTrue("\u{FEFF}".contains(regex(#"\p{name=ZERO WIDTH NO-BREAK SPACE}"#)))
+    XCTAssertTrue("\u{FEFF}".contains(pattern: regex(#"\p{name=ZERO WIDTH NO-BREAK SPACE}"#)))
     // Name property and Matching Rules
-    XCTAssertTrue("\u{FEFF}".contains(regex(#"\p{name=zerowidthno breakspace}"#)))
+    XCTAssertTrue("\u{FEFF}".contains(pattern: regex(#"\p{name=zerowidthno breakspace}"#)))
     
     // Computed name
-    XCTAssertTrue("강".contains(regex(#"\p{name=HANGUL SYLLABLE GANG}"#)))
+    XCTAssertTrue("강".contains(pattern: regex(#"\p{name=HANGUL SYLLABLE GANG}"#)))
     
     // Graphic symbol
-    XCTAssertTrue("\u{1F514}".contains(regex(#"\p{name=BELL}"#)))
+    XCTAssertTrue("\u{1F514}".contains(pattern: regex(#"\p{name=BELL}"#)))
     
     // Name match failures
-    XCTAssertFalse("\u{FEFF}".contains(regex(#"\p{name=ZERO WIDTH NO-BRAKE SPACE}"#)))
-    XCTAssertFalse("\u{FEFF}".contains(regex(#"\p{name=ZERO WIDTH NO-BREAK SPACE ZZZZ}"#)))
-    XCTAssertFalse("\u{FEFF}".contains(regex(#"\p{name=ZERO WIDTH NO-BREAK}"#)))
-    XCTAssertFalse("\u{FEFF}".contains(regex(#"\p{name=z}"#)))
+    XCTAssertFalse("\u{FEFF}".contains(pattern: regex(#"\p{name=ZERO WIDTH NO-BRAKE SPACE}"#)))
+    XCTAssertFalse("\u{FEFF}".contains(pattern: regex(#"\p{name=ZERO WIDTH NO-BREAK SPACE ZZZZ}"#)))
+    XCTAssertFalse("\u{FEFF}".contains(pattern: regex(#"\p{name=ZERO WIDTH NO-BREAK}"#)))
+    XCTAssertFalse("\u{FEFF}".contains(pattern: regex(#"\p{name=z}"#)))
   }
   
   func testNameProperty_XFail() throws {
     XCTExpectFailure("Need more expansive name alias matching") {
       // Name_Alias property
-      XCTAssertTrue("\u{FEFF}".contains(regex(#"\p{name=BYTE ORDER MARK}"#)))
+      XCTAssertTrue("\u{FEFF}".contains(pattern: regex(#"\p{name=BYTE ORDER MARK}"#)))
       // Name_Alias property (again)
-      XCTAssertTrue("\u{FEFF}".contains(regex(#"\p{name=BOM}"#)))
+      XCTAssertTrue("\u{FEFF}".contains(pattern: regex(#"\p{name=BOM}"#)))
       
       // Control character
-      XCTAssertTrue("\u{7}".contains(regex(#"\p{name=BEL}"#)))
+      XCTAssertTrue("\u{7}".contains(pattern: regex(#"\p{name=BEL}"#)))
     }
   }
   
   func testIndividuallyNamedCharacters() {
-    XCTAssertTrue("\u{263A}".contains(regex(#"\N{WHITE SMILING FACE}"#)))
-    XCTAssertTrue("\u{3B1}".contains(regex(#"\N{GREEK SMALL LETTER ALPHA}"#)))
-    XCTAssertTrue("\u{10450}".contains(regex(#"\N{SHAVIAN LETTER PEEP}"#)))
+    XCTAssertTrue("\u{263A}".contains(pattern: regex(#"\N{WHITE SMILING FACE}"#)))
+    XCTAssertTrue("\u{3B1}".contains(pattern: regex(#"\N{GREEK SMALL LETTER ALPHA}"#)))
+    XCTAssertTrue("\u{10450}".contains(pattern: regex(#"\N{SHAVIAN LETTER PEEP}"#)))
     
-    XCTAssertTrue("\u{FEFF}".contains(regex(#"\N{ZERO WIDTH NO-BREAK SPACE}"#)))
-    XCTAssertTrue("강".contains(regex(#"\N{HANGUL SYLLABLE GANG}"#)))
-    XCTAssertTrue("\u{1F514}".contains(regex(#"\N{BELL}"#)))
-    XCTAssertTrue("🐯".contains(regex(#"\N{TIGER FACE}"#)))
-    XCTAssertFalse("🐯".contains(regex(#"\N{TIEGR FACE}"#)))
+    XCTAssertTrue("\u{FEFF}".contains(pattern: regex(#"\N{ZERO WIDTH NO-BREAK SPACE}"#)))
+    XCTAssertTrue("강".contains(pattern: regex(#"\N{HANGUL SYLLABLE GANG}"#)))
+    XCTAssertTrue("\u{1F514}".contains(pattern: regex(#"\N{BELL}"#)))
+    XCTAssertTrue("🐯".contains(pattern: regex(#"\N{TIGER FACE}"#)))
+    XCTAssertFalse("🐯".contains(pattern: regex(#"\N{TIEGR FACE}"#)))
 
     // Loose matching
-    XCTAssertTrue("\u{263A}".contains(regex(#"\N{whitesmilingface}"#)))
-    XCTAssertTrue("\u{263A}".contains(regex(#"\N{wHiTe_sMiLiNg_fAcE}"#)))
-    XCTAssertTrue("\u{263A}".contains(regex(#"\N{White Smiling-Face}"#)))
-    XCTAssertTrue("\u{FEFF}".contains(regex(#"\N{zerowidthno breakspace}"#)))
+    XCTAssertTrue("\u{263A}".contains(pattern: regex(#"\N{whitesmilingface}"#)))
+    XCTAssertTrue("\u{263A}".contains(pattern: regex(#"\N{wHiTe_sMiLiNg_fAcE}"#)))
+    XCTAssertTrue("\u{263A}".contains(pattern: regex(#"\N{White Smiling-Face}"#)))
+    XCTAssertTrue("\u{FEFF}".contains(pattern: regex(#"\N{zerowidthno breakspace}"#)))
 
     // Matching semantic level
-    XCTAssertFalse("👩‍👩‍👧‍👦".contains(regex(#".\N{ZERO WIDTH JOINER}"#)))
-    XCTAssertTrue("👩‍👩‍👧‍👦".contains(regex(#"(?u).\N{ZERO WIDTH JOINER}"#)))
+    XCTAssertFalse("👩‍👩‍👧‍👦".contains(pattern: regex(#".\N{ZERO WIDTH JOINER}"#)))
+    XCTAssertTrue("👩‍👩‍👧‍👦".contains(pattern: regex(#"(?u).\N{ZERO WIDTH JOINER}"#)))
   }
 
   func testIndividuallyNamedCharacters_XFail() {
@@ -469,15 +469,15 @@ extension UTS18Tests {
     }
     
     XCTExpectFailure("Other named char failures -- investigate") {
-      XCTAssertTrue("\u{C}".contains(regex(#"\N{FORM FEED}"#)))
-      XCTAssertTrue("\u{FEFF}".contains(regex(#"\N{BYTE ORDER MARK}"#)))
-      XCTAssertTrue("\u{FEFF}".contains(regex(#"\N{BOM}"#)))
-      XCTAssertTrue("\u{7}".contains(regex(#"\N{BEL}"#)))
+      XCTAssertTrue("\u{C}".contains(pattern: regex(#"\N{FORM FEED}"#)))
+      XCTAssertTrue("\u{FEFF}".contains(pattern: regex(#"\N{BYTE ORDER MARK}"#)))
+      XCTAssertTrue("\u{FEFF}".contains(pattern: regex(#"\N{BOM}"#)))
+      XCTAssertTrue("\u{7}".contains(pattern: regex(#"\N{BEL}"#)))
     }
     
     XCTExpectFailure("Need to recognize invalid names at compile time") {
       XCTFail("This should be a compilation error, not a match failure:")
-      XCTAssertFalse("abc".contains(regex(#"\N{NOT AN ACTUAL CHARACTER NAME}"#)))
+      XCTAssertFalse("abc".contains(pattern: regex(#"\N{NOT AN ACTUAL CHARACTER NAME}"#)))
     }
   }
 
@@ -551,9 +551,9 @@ extension UTS18Tests {
     // Case_Ignorable
     // Changes_When_Lowercased
     // Changes_When_Uppercased
-    XCTAssertTrue("a".contains(regex(#"\p{Changes_When_Uppercased}"#)))
-    XCTAssertTrue("a".contains(regex(#"\p{Changes_When_Uppercased=true}"#)))
-    XCTAssertFalse("A".contains(regex(#"\p{Changes_When_Uppercased}"#)))
+    XCTAssertTrue("a".contains(pattern: regex(#"\p{Changes_When_Uppercased}"#)))
+    XCTAssertTrue("a".contains(pattern: regex(#"\p{Changes_When_Uppercased=true}"#)))
+    XCTAssertFalse("A".contains(pattern: regex(#"\p{Changes_When_Uppercased}"#)))
     // Changes_When_Titlecased
     // Changes_When_Casefolded
     // Changes_When_Casemapped

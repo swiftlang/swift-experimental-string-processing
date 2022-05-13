@@ -45,8 +45,8 @@ class AlgorithmTests: XCTestCase {
     
     for start in 0..<9 {
       for end in start..<9 {
-        XCTAssertTrue((0..<10).contains(start...end))
-        XCTAssertFalse((0..<10).contains(start...10))
+        XCTAssertTrue((0..<10).contains(pattern: start...end))
+        XCTAssertFalse((0..<10).contains(pattern: start...10))
       }
     }
   }
@@ -124,7 +124,7 @@ class AlgorithmTests: XCTestCase {
       file: StaticString = #file, line: UInt = #line
     ) {
       let regex = try! Regex(regex)
-      let actual = Array(string.split(separator: regex, omittingEmptySubsequences: false))
+      let actual = Array(string.split(pattern: regex, omittingEmptySubsequences: false))
       XCTAssertEqual(actual, expected, file: file, line: line)
     }
 
@@ -136,8 +136,8 @@ class AlgorithmTests: XCTestCase {
     expectSplit("a____a____a", "_+", ["a", "a", "a"])
     expectSplit("____a____a____a____", "_+", ["", "a", "a", "a", ""])
 
-    XCTAssertEqual("".split(separator: ""), [])
-    XCTAssertEqual("".split(separator: "", omittingEmptySubsequences: false), [""])
+    XCTAssertEqual("".split(pattern: ""), [])
+    XCTAssertEqual("".split(pattern: "", omittingEmptySubsequences: false), [""])
 
     // Test that original `split` functions are still accessible
     let splitRef = "abcd".split
@@ -149,36 +149,36 @@ class AlgorithmTests: XCTestCase {
   func testSplitPermutations() throws {
     let splitRegex = try Regex(#"\|"#)
     XCTAssertEqual(
-      "a|a|||a|a".split(separator: splitRegex),
+      "a|a|||a|a".split(pattern: splitRegex),
       ["a", "a", "a", "a"])
     XCTAssertEqual(
-      "a|a|||a|a".split(separator: splitRegex, omittingEmptySubsequences: false),
+      "a|a|||a|a".split(pattern: splitRegex, omittingEmptySubsequences: false),
       ["a", "a", "", "", "a", "a"])
     XCTAssertEqual(
-      "a|a|||a|a".split(separator: splitRegex, maxSplits: 2),
+      "a|a|||a|a".split(pattern: splitRegex, maxSplits: 2),
       ["a", "a", "||a|a"])
     
     XCTAssertEqual(
-      "a|a|||a|a|||a|a|||".split(separator: "|||"),
+      "a|a|||a|a|||a|a|||".split(pattern: "|||"),
       ["a|a", "a|a", "a|a"])
     XCTAssertEqual(
-      "a|a|||a|a|||a|a|||".split(separator: "|||", omittingEmptySubsequences: false),
+      "a|a|||a|a|||a|a|||".split(pattern: "|||", omittingEmptySubsequences: false),
       ["a|a", "a|a", "a|a", ""])
     XCTAssertEqual(
-      "a|a|||a|a|||a|a|||".split(separator: "|||", maxSplits: 2),
+      "a|a|||a|a|||a|a|||".split(pattern: "|||", maxSplits: 2),
       ["a|a", "a|a", "a|a|||"])
 
     XCTAssertEqual(
-      "aaaa".split(separator: ""),
+      "aaaa".split(pattern: ""),
       ["a", "a", "a", "a"])
     XCTAssertEqual(
-      "aaaa".split(separator: "", omittingEmptySubsequences: false),
+      "aaaa".split(pattern: "", omittingEmptySubsequences: false),
       ["", "a", "a", "a", "a", ""])
     XCTAssertEqual(
-      "aaaa".split(separator: "", maxSplits: 2),
+      "aaaa".split(pattern: "", maxSplits: 2),
       ["a", "a", "aa"])
     XCTAssertEqual(
-      "aaaa".split(separator: "", maxSplits: 2, omittingEmptySubsequences: false),
+      "aaaa".split(pattern: "", maxSplits: 2, omittingEmptySubsequences: false),
       ["", "a", "aaa"])
 
     // Fuzzing the input and parameters
@@ -205,11 +205,11 @@ class AlgorithmTests: XCTestCase {
         maxSplits: maxSplits,
         omittingEmptySubsequences: omitEmpty)
       let regexActual = str.split(
-        separator: splitRegex,
+        pattern: splitRegex,
         maxSplits: maxSplits,
         omittingEmptySubsequences: omitEmpty)
       let stringActual = str.split(
-        separator: "|" as String,
+        pattern: "|",
         maxSplits: maxSplits,
         omittingEmptySubsequences: omitEmpty)
       XCTAssertEqual(regexActual, expected, """

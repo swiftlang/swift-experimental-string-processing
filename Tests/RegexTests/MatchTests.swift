@@ -1352,12 +1352,12 @@ extension RegexTests {
       04: Arkansas
       05: California
       """
-    XCTAssertTrue(string.contains(try Regex(#"^\d+"#)))
+    XCTAssertTrue(string.contains(pattern: try Regex(#"^\d+"#)))
     XCTAssertEqual(string.ranges(of: try Regex(#"^\d+"#)).count, 1)
     XCTAssertEqual(string.ranges(of: try Regex(#"(?m)^\d+"#)).count, 5)
 
     let regex = try Regex(#"^\d+: [\w ]+$"#)
-    XCTAssertFalse(string.contains(regex))
+    XCTAssertFalse(string.contains(pattern: regex))
     let allRanges = string.ranges(of: regex.anchorsMatchLineEndings())
     XCTAssertEqual(allRanges.count, 5)
   }
@@ -1396,12 +1396,12 @@ extension RegexTests {
   
   func testOptionMethods() throws {
     let regex = try Regex("c.f.")
-    XCTAssertTrue ("cafe".contains(regex))
-    XCTAssertFalse("CaFe".contains(regex))
+    XCTAssertTrue ("cafe".contains(pattern: regex))
+    XCTAssertFalse("CaFe".contains(pattern: regex))
     
     let caseInsensitiveRegex = regex.ignoresCase()
-    XCTAssertTrue("cafe".contains(caseInsensitiveRegex))
-    XCTAssertTrue("CaFe".contains(caseInsensitiveRegex))
+    XCTAssertTrue("cafe".contains(pattern: caseInsensitiveRegex))
+    XCTAssertTrue("CaFe".contains(pattern: caseInsensitiveRegex))
   }
   
   // MARK: Character Semantics
