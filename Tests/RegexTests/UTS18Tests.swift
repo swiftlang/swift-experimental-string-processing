@@ -591,21 +591,61 @@ extension UTS18Tests {
       .contains(regex(#"^\p{ASCII_Hex_Digit}+$"#)))
 
     // MARK: Identifiers
-    // ID_Continue
     // ID_Start
-    // XID_Continue
+    XCTAssertTrue("ABcd".contains(regex(#"^\p{ID_Start}+$"#)))
+    XCTAssertFalse(" ':`-".contains(regex(#"\p{ID_Start}"#)))
+
+    // ID_Continue
+    XCTAssertTrue("ABcd_1234".contains(regex(#"^\p{ID_Continue}+$"#)))
+    XCTAssertFalse(" ':`-".contains(regex(#"\p{ID_Continue}"#)))
+    
     // XID_Start
+    XCTAssertTrue("ABcd".contains(regex(#"^\p{XID_Start}+$"#)))
+    XCTAssertFalse(" ':`-".contains(regex(#"\p{XID_Start}"#)))
+
+    // XID_Continue
+    XCTAssertTrue("ABcd_1234".contains(regex(#"^\p{XID_Continue}+$"#)))
+    XCTAssertFalse(" ':`-".contains(regex(#"\p{XID_Continue}"#)))
+    
     // Pattern_Syntax
+    XCTAssertTrue(".+-:".contains(regex(#"^\p{Pattern_Syntax}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Pattern_Syntax}"#)))
+    
     // Pattern_White_Space
+    XCTAssertTrue(" \t\n".contains(regex(#"^\p{Pattern_White_Space}+$"#)))
+    XCTAssertFalse("abc123".contains(regex(#"\p{Pattern_White_Space}"#)))
+    
     // Identifier_Status
+    XCTExpectFailure {
+      XCTFail(#"Unsupported: \(#/\p{Identifier_Status=Allowed}/#)"#)
+      // XCTAssertTrue("A".contains(regex(#"\p{Identifier_Status=Allowed}"#)))
+      // XCTAssertFalse(" ".contains(regex(#"\p{Identifier_Status=Allowed}"#)))
+      // XCTAssertTrue(" ".contains(regex(#"\p{Identifier_Status=Restricted}"#)))
+    }
     // Identifier_Type
+    XCTExpectFailure {
+      XCTFail(#"Unsupported: \(#/\p{Identifier_Type=Inclusion}/#)"#)
+      // XCTAssertTrue("'".contains(regex(#"\p{Identifier_Type=Inclusion}"#)))
+    }
 
     // MARK: CJK
     // Ideographic
+    XCTAssertTrue("微笑".contains(regex(#"^\p{IsIdeographic}+$"#)))
+    XCTAssertFalse("abc123".contains(regex(#"\p{Ideographic}"#)))
+    
     // Unified_Ideograph
+    XCTAssertTrue("微笑".contains(regex(#"^\p{Unified_Ideograph}+$"#)))
+    XCTAssertFalse("abc123".contains(regex(#"\p{Unified_Ideograph}"#)))
+    
     // Radical
+    XCTAssertTrue("⺁⺂⺆".contains(regex(#"^\p{Radical}+$"#)))
+    
     // IDS_Binary_Operator
+    XCTAssertTrue("⿰⿸⿻".contains(regex(#"^\p{IDS_Binary_Operator}+$"#)))
+    
     // IDS_Trinary_Operator
+    XCTAssertTrue("⿲⿳".contains(regex(#"^\p{IDS_Trinary_Operator}+$"#)))
+
     // Equivalent_Unified_Ideograph
     XCTExpectFailure {
       XCTFail(#"Unsupported: \(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#)"#)
@@ -614,7 +654,13 @@ extension UTS18Tests {
 
     // MARK: Case
     // Uppercase
+    XCTAssertTrue("AÉÎØÜ".contains(regex(#"^\p{isUppercase}+$"#)))
+    XCTAssertFalse("123abc".contains(regex(#"^\p{isUppercase}+$"#)))
+
     // Lowercase
+    XCTAssertTrue("aéîøü".contains(regex(#"^\p{Lowercase}+$"#)))
+    XCTAssertFalse("123abc".contains(regex(#"\p{Lowercase}+$"#)))
+
     // Simple_Lowercase_Mapping
     // Simple_Titlecase_Mapping
     // Simple_Uppercase_Mapping
