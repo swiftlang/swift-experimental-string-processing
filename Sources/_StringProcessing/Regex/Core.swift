@@ -102,6 +102,6 @@ extension Regex {
 
   @_spi(RegexBuilder)
   public init(node: DSLTree.Node) {
-    self.program = Program(tree: .init(node, options: nil))
+    self.program = Program(tree: .init(node))
   }
 }
