@@ -34,7 +34,7 @@ struct SplitCollection<Searcher: CollectionSearcher> {
     maxSplits: Int,
     omittingEmptySubsequences: Bool)
   {
-    self.ranges = base.ranges(of: searcher)
+    self.ranges = base._ranges(of: searcher)
     self.maxSplits = maxSplits
     self.omittingEmptySubsequences = omittingEmptySubsequences
   }
@@ -183,7 +183,7 @@ struct ReversedSplitCollection<Searcher: BackwardCollectionSearcher> {
   }
 
   init(base: Base, searcher: Searcher) {
-    self.ranges = base.rangesFromBack(of: searcher)
+    self.ranges = base._rangesFromBack(of: searcher)
   }
 }
 

@@ -12,10 +12,10 @@
 // MARK: `CollectionSearcher` algorithms
 
 extension Collection {
-  func contains<Searcher: CollectionSearcher>(
+  func _contains<Searcher: CollectionSearcher>(
     _ searcher: Searcher
   ) -> Bool where Searcher.Searched == Self {
-    firstRange(of: searcher) != nil
+    _firstRange(of: searcher) != nil
   }
 }
 
@@ -36,7 +36,7 @@ extension Collection where Element: Equatable {
 }
 
 extension BidirectionalCollection where Element: Comparable {
-  func contains<C: Collection>(_ other: C) -> Bool
+  func _contains<C: Collection>(_ other: C) -> Bool
     where C.Element == Element
   {
     if #available(SwiftStdlib 5.7, *) {
@@ -70,6 +70,6 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// `false`.
   @available(SwiftStdlib 5.7, *)
   public func contains<R: RegexComponent>(_ regex: R) -> Bool {
-    contains(RegexConsumer(regex))
+    _contains(RegexConsumer(regex))
   }
 }
