@@ -33,30 +33,56 @@ extension AST.CustomCharacterClass.Member: ExpressibleByExtendedGraphemeClusterL
   }
 }
 
+enum SemanticErrorKind {
+  case unsupported, invalid
+}
 
 class RegexTests: XCTestCase {}
 
 func parseTest(
   _ input: String, _ expectedAST: AST.Node,
+  throwsError errorKind: SemanticErrorKind? = nil,
   syntax: SyntaxOptions = .traditional,
   captures expectedCaptures: CaptureList = [],
   file: StaticString = #file,
   line: UInt = #line
 ) {
   parseTest(
-    input, .init(expectedAST, globalOptions: nil), syntax: syntax,
-    captures: expectedCaptures, file: file, line: line
+    input, .init(expectedAST, globalOptions: nil), throwsError: errorKind,
+    syntax: syntax, captures: expectedCaptures, file: file, line: line
   )
 }
 
 func parseTest(
   _ input: String, _ expectedAST: AST,
+  throwsError errorKind: SemanticErrorKind? = nil,
   syntax: SyntaxOptions = .traditional,
   captures expectedCaptures: CaptureList = [],
   file: StaticString = #file,
   line: UInt = #line
 ) {
-  let ast = try! parse(input, syntax)
+  let ast: AST
+  do {
+    ast = try parse(input, errorKind != nil ? .syntactic : .semantic, syntax)
+  } catch {
+    XCTFail("unexpected error: \(error)", file: file, line: line)
+    return
+  }
+  if let errorKind = errorKind {
+    do {
+      _ = try parse(input, .semantic, syntax)
+      XCTFail("expected semantically invalid AST", file: file, line: line)
+    } catch let e as Source.LocatedError<ParseError> {
+      switch e.error {
+      case .unsupported:
+        XCTAssertEqual(errorKind, .unsupported, "\(e)", file: file, line: line)
+      default:
+        XCTAssertEqual(errorKind, .invalid, "\(e)", file: file, line: line)
+      }
+    } catch {
+      XCTFail("Error without source location: \(error)", file: file, line: line)
+    }
+  }
   guard ast == expectedAST
           || ast._dump() == expectedAST._dump() // EQ workaround
   else {
@@ -68,7 +94,7 @@ func parseTest(
             file: file, line: line)
     return
   }
-  let captures = ast.captureList
+  let captures = ast.captureList.withoutLocs
   guard captures == expectedCaptures else {
     XCTFail("""
 
@@ -143,15 +169,37 @@ func delimiterLexingTest(
 /// true, there may be additional characters that follow the literal that are
 /// not considered part of it.
 func parseWithDelimitersTest(
-  _ input: String, _ expecting: AST.Node, ignoreTrailing: Bool = false,
-  file: StaticString = #file, line: UInt = #line
+  _ input: String, _ expecting: AST.Node,
+  throwsError errorKind: SemanticErrorKind? = nil,
+  ignoreTrailing: Bool = false, file: StaticString = #file, line: UInt = #line
 ) {
   // First try lexing.
   let literal = delimiterLexingTest(
     input, ignoreTrailing: ignoreTrailing, file: file, line: line)
 
-  let orig = try! parseWithDelimiters(literal)
-  let ast = orig.root
+  let ast: AST.Node
+  do {
+    ast = try parseWithDelimiters(
+      literal, errorKind != nil ? .syntactic : .semantic).root
+  } catch {
+    XCTFail("unexpected error: \(error)", file: file, line: line)
+    return
+  }
+  if let errorKind = errorKind {
+    do {
+      _ = try parseWithDelimiters(input, .semantic)
+      XCTFail("expected semantically invalid AST", file: file, line: line)
+    } catch let e as Source.LocatedError<ParseError> {
+      switch e.error {
+      case .unsupported:
+        XCTAssertEqual(errorKind, .unsupported, "\(e)", file: file, line: line)
+      default:
+        XCTAssertEqual(errorKind, .invalid, "\(e)", file: file, line: line)
+      }
+    } catch {
+      XCTFail("Error without source location: \(error)", file: file, line: line)
+    }
+  }
   guard ast == expecting
           || ast._dump() == expecting._dump() // EQ workaround
   else {
@@ -170,8 +218,8 @@ func parseNotEqualTest(
   syntax: SyntaxOptions = .traditional,
   file: StaticString = #file, line: UInt = #line
 ) {
-  let lhsAST = try! parse(lhs, syntax)
-  let rhsAST = try! parse(rhs, syntax)
+  let lhsAST = try! parse(lhs, .syntactic, syntax)
+  let rhsAST = try! parse(rhs, .syntactic, syntax)
   if lhsAST == rhsAST || lhsAST._dump() == rhsAST._dump() {
     XCTFail("""
               AST: \(lhsAST._dump())
@@ -187,7 +235,7 @@ func rangeTest(
   at locFn: (AST.Node) -> SourceLocation = \.location,
   file: StaticString = #file, line: UInt = #line
 ) {
-  let ast = try! parse(input, syntax).root
+  let ast = try! parse(input, .syntactic, syntax).root
   let range = input.offsets(of: locFn(ast).range)
   let expected = expectedRange(input)
 
@@ -207,7 +255,7 @@ func diagnosticTest(
   file: StaticString = #file, line: UInt = #line
 ) {
   do {
-    let ast = try parse(input, syntax)
+    let ast = try parse(input, .semantic, syntax)
     XCTFail("""
 
       Passed \(ast)
@@ -236,7 +284,7 @@ func diagnosticWithDelimitersTest(
     input, ignoreTrailing: ignoreTrailing, file: file, line: line)
 
   do {
-    let orig = try parseWithDelimiters(literal)
+    let orig = try parseWithDelimiters(literal, .semantic)
     let ast = orig.root
     XCTFail("""
 
@@ -433,9 +481,31 @@ extension RegexTests {
     parseTest(#"\x5X"#, concat(scalar("\u{5}"), "X"))
     parseTest(#"\x12ab"#, concat(scalar("\u{12}"), "a", "b"))
 
+    parseTest(#"\u{    a   }"#, scalar("\u{A}"))
+    parseTest(#"\u{  a  }\u{ B }"#, concat(scalar("\u{A}"), scalar("\u{B}")))
+
+    // MARK: Scalar sequences
+
+    parseTest(#"\u{A bC}"#, scalarSeq("\u{A}", "\u{BC}"))
+    parseTest(#"\u{ A bC }"#, scalarSeq("\u{A}", "\u{BC}"))
+    parseTest(#"\u{A bC }"#, scalarSeq("\u{A}", "\u{BC}"))
+    parseTest(#"\u{ A bC}"#, scalarSeq("\u{A}", "\u{BC}"))
+    parseTest(#"\u{  A   b C }"#, scalarSeq("\u{A}", "\u{B}", "\u{C}"))
+
+    parseTest(
+      #"\u{3b1 3b3 3b5 3b9}"#,
+      scalarSeq("\u{3b1}", "\u{3b3}", "\u{3b5}", "\u{3b9}")
+    )
+
     // MARK: Character classes
 
     parseTest(#"abc\d"#, concat("a", "b", "c", escaped(.decimalDigit)))
+
+    // FIXME: '\N' should be emitted through 'emitAny', not through the
+    // _CharacterClassModel model.
+    parseTest(#"\N"#, escaped(.notNewline), throwsError: .unsupported)
+
+    parseTest(#"\R"#, escaped(.newlineSequence))
 
     parseTest(
       "[-|$^:?+*())(*-+-]",
@@ -449,6 +519,8 @@ extension RegexTests {
     parseTest("[-a-]", charClass("-", "a", "-"))
 
     parseTest("[a-z]", charClass(range_m("a", "z")))
+    parseTest("[a-a]", charClass(range_m("a", "a")))
+    parseTest("[B-a]", charClass(range_m("B", "a")))
 
     // FIXME: AST builder helpers for custom char class types
     parseTest("[a-d--a-c]", charClass(
@@ -456,23 +528,7 @@ extension RegexTests {
     ))
 
     parseTest("[-]", charClass("-"))
-
-    // Empty character classes are forbidden, therefore these are character
-    // classes containing literal ']'.
-    parseTest("[]]", charClass("]"))
-    parseTest("[]a]", charClass("]", "a"))
-    parseTest("(?x)[ ]]", concat(
-      changeMatchingOptions(matchingOptions(adding: .extended)),
-      charClass("]")
-    ))
-    parseTest("(?x)[ ]  ]", concat(
-      changeMatchingOptions(matchingOptions(adding: .extended)),
-      charClass("]")
-    ))
-    parseTest("(?x)[ ] a ]", concat(
-      changeMatchingOptions(matchingOptions(adding: .extended)),
-      charClass("]", "a")
-    ))
+    parseTest(#"[\]]"#, charClass("]"))
 
     // These are metacharacters in certain contexts, but normal characters
     // otherwise.
@@ -595,10 +651,34 @@ extension RegexTests {
       range_m(.keyboardControl("A"), .keyboardControl("B")),
       range_m(.keyboardMetaControl("A"), .keyboardMetaControl("B")),
       range_m(.keyboardMeta("A"), .keyboardMeta("B"))
-    ))
+    ), throwsError: .unsupported)
 
-    parseTest(#"[\N{DOLLAR SIGN}-\N{APOSTROPHE}]"#, charClass(
-      range_m(.namedCharacter("DOLLAR SIGN"), .namedCharacter("APOSTROPHE"))))
+    parseTest(
+      #"[\N{DOLLAR SIGN}-\N{APOSTROPHE}]"#, charClass(
+        range_m(.namedCharacter("DOLLAR SIGN"), .namedCharacter("APOSTROPHE"))),
+      throwsError: .unsupported)
+
+    parseTest(
+      #"[\u{AA}-\u{BB}]"#,
+      charClass(range_m(scalar_a("\u{AA}"), scalar_a("\u{BB}")))
+    )
+
+    // Not currently supported, we need to figure out what their semantics are.
+    parseTest(
+      #"[\u{AA BB}-\u{CC}]"#,
+      charClass(range_m(scalarSeq_a("\u{AA}", "\u{BB}"), scalar_a("\u{CC}"))),
+      throwsError: .unsupported
+    )
+    parseTest(
+      #"[\u{CC}-\u{AA BB}]"#,
+      charClass(range_m(scalar_a("\u{CC}"), scalarSeq_a("\u{AA}", "\u{BB}"))),
+      throwsError: .unsupported
+    )
+    parseTest(
+      #"[\u{a b c}]"#,
+      charClass(scalarSeq_m("\u{A}", "\u{B}", "\u{C}")),
+      throwsError: .unsupported
+    )
 
     // MARK: Operators
 
@@ -691,13 +771,13 @@ extension RegexTests {
     parseTest(#"\\#u{3000}"#, "\u{3000}")
 
     // Control and meta controls.
-    parseTest(#"\c "#, atom(.keyboardControl(" ")))
-    parseTest(#"\c!"#, atom(.keyboardControl("!")))
-    parseTest(#"\c~"#, atom(.keyboardControl("~")))
-    parseTest(#"\C--"#, atom(.keyboardControl("-")))
-    parseTest(#"\M-\C-a"#, atom(.keyboardMetaControl("a")))
-    parseTest(#"\M-\C--"#, atom(.keyboardMetaControl("-")))
-    parseTest(#"\M-a"#, atom(.keyboardMeta("a")))
+    parseTest(#"\c "#, atom(.keyboardControl(" ")), throwsError: .unsupported)
+    parseTest(#"\c!"#, atom(.keyboardControl("!")), throwsError: .unsupported)
+    parseTest(#"\c~"#, atom(.keyboardControl("~")), throwsError: .unsupported)
+    parseTest(#"\C--"#, atom(.keyboardControl("-")), throwsError: .unsupported)
+    parseTest(#"\M-\C-a"#, atom(.keyboardMetaControl("a")), throwsError: .unsupported)
+    parseTest(#"\M-\C--"#, atom(.keyboardMetaControl("-")), throwsError: .unsupported)
+    parseTest(#"\M-a"#, atom(.keyboardMeta("a")), throwsError: .unsupported)
 
     // MARK: Comments
 
@@ -734,6 +814,9 @@ extension RegexTests {
     parseTest(
       #"a{0,0}"#,
       quantRange(0...0, of: "a"))
+    parseTest(
+      #"a{1,1}"#,
+      quantRange(1...1, of: "a"))
 
     // Make sure ranges get treated as literal if invalid.
     parseTest("{", "{")
@@ -786,11 +869,42 @@ extension RegexTests {
 
     // Balanced captures
     parseTest(#"(?<a-c>)"#, balancedCapture(name: "a", priorName: "c", empty()),
-              captures: [.named("a")])
+              throwsError: .unsupported, captures: [.named("a")])
     parseTest(#"(?<-c>)"#, balancedCapture(name: nil, priorName: "c", empty()),
-              captures: [.cap])
+              throwsError: .unsupported, captures: [.cap])
     parseTest(#"(?'a-b'c)"#, balancedCapture(name: "a", priorName: "b", "c"),
-              captures: [.named("a")])
+              throwsError: .unsupported, captures: [.named("a")])
+
+    // Capture resets.
+    // FIXME: The captures in each branch should be unified. For now, we don't
+    // treat any capture reset as semantically valid.
+    parseTest(
+      "(?|(a)|(b))",
+      nonCaptureReset(alt(capture("a"), capture("b"))),
+      throwsError: .unsupported, captures: [.opt, .opt]
+    )
+    parseTest(
+      "(?|(?<x>a)|(b))",
+      nonCaptureReset(alt(namedCapture("x", "a"), capture("b"))),
+      throwsError: .unsupported, captures: [.named("x", opt: 1), .opt]
+    )
+    parseTest(
+      "(?|(a)|(?<x>b))",
+      nonCaptureReset(alt(capture("a"), namedCapture("x", "b"))),
+      throwsError: .unsupported, captures: [.opt, .named("x", opt: 1)]
+    )
+    parseTest(
+      "(?|(?<x>a)|(?<x>b))",
+      nonCaptureReset(alt(namedCapture("x", "a"), namedCapture("x", "b"))),
+      throwsError: .invalid, captures: [.named("x", opt: 1), .named("x", opt: 1)]
+    )
+
+    // TODO: Reject mismatched names?
+    parseTest(
+      "(?|(?<x>a)|(?<y>b))",
+      nonCaptureReset(alt(namedCapture("x", "a"), namedCapture("y", "b"))),
+      throwsError: .unsupported, captures: [.named("x", opt: 1), .named("y", opt: 1)]
+    )
 
     // Other groups
     parseTest(
@@ -798,13 +912,13 @@ extension RegexTests {
       concat("a", nonCapture("b"), "c"))
     parseTest(
       #"a(?|b)c"#,
-      concat("a", nonCaptureReset("b"), "c"))
+      concat("a", nonCaptureReset("b"), "c"), throwsError: .unsupported)
     parseTest(
       #"a(?>b)c"#,
-      concat("a", atomicNonCapturing("b"), "c"))
+      concat("a", atomicNonCapturing("b"), "c"), throwsError: .unsupported)
     parseTest(
       "a(*atomic:b)c",
-      concat("a", atomicNonCapturing("b"), "c"))
+      concat("a", atomicNonCapturing("b"), "c"), throwsError: .unsupported)
 
     parseTest("a(?=b)c", concat("a", lookahead("b"), "c"))
     parseTest("a(*pla:b)c", concat("a", lookahead("b"), "c"))
@@ -815,31 +929,42 @@ extension RegexTests {
     parseTest("a(*negative_lookahead:b)c",
               concat("a", negativeLookahead("b"), "c"))
 
-    parseTest("a(?<=b)c", concat("a", lookbehind("b"), "c"))
-    parseTest("a(*plb:b)c", concat("a", lookbehind("b"), "c"))
-    parseTest("a(*positive_lookbehind:b)c", concat("a", lookbehind("b"), "c"))
+    parseTest("a(?<=b)c",
+              concat("a", lookbehind("b"), "c"), throwsError: .unsupported)
+    parseTest("a(*plb:b)c",
+              concat("a", lookbehind("b"), "c"), throwsError: .unsupported)
+    parseTest("a(*positive_lookbehind:b)c",
+              concat("a", lookbehind("b"), "c"), throwsError: .unsupported)
 
-    parseTest("a(?<!b)c", concat("a", negativeLookbehind("b"), "c"))
-    parseTest("a(*nlb:b)c", concat("a", negativeLookbehind("b"), "c"))
+    parseTest("a(?<!b)c",
+              concat("a", negativeLookbehind("b"), "c"), throwsError: .unsupported)
+    parseTest("a(*nlb:b)c",
+              concat("a", negativeLookbehind("b"), "c"), throwsError: .unsupported)
     parseTest("a(*negative_lookbehind:b)c",
-              concat("a", negativeLookbehind("b"), "c"))
+              concat("a", negativeLookbehind("b"), "c"), throwsError: .unsupported)
 
-    parseTest("a(?*b)c", concat("a", nonAtomicLookahead("b"), "c"))
-    parseTest("a(*napla:b)c", concat("a", nonAtomicLookahead("b"), "c"))
+    parseTest("a(?*b)c",
+              concat("a", nonAtomicLookahead("b"), "c"), throwsError: .unsupported)
+    parseTest("a(*napla:b)c",
+              concat("a", nonAtomicLookahead("b"), "c"), throwsError: .unsupported)
     parseTest("a(*non_atomic_positive_lookahead:b)c",
-              concat("a", nonAtomicLookahead("b"), "c"))
+              concat("a", nonAtomicLookahead("b"), "c"), throwsError: .unsupported)
 
-    parseTest("a(?<*b)c", concat("a", nonAtomicLookbehind("b"), "c"))
-    parseTest("a(*naplb:b)c", concat("a", nonAtomicLookbehind("b"), "c"))
+    parseTest("a(?<*b)c",
+              concat("a", nonAtomicLookbehind("b"), "c"), throwsError: .unsupported)
+    parseTest("a(*naplb:b)c",
+              concat("a", nonAtomicLookbehind("b"), "c"), throwsError: .unsupported)
     parseTest("a(*non_atomic_positive_lookbehind:b)c",
-              concat("a", nonAtomicLookbehind("b"), "c"))
+              concat("a", nonAtomicLookbehind("b"), "c"), throwsError: .unsupported)
 
-    parseTest("a(*sr:b)c", concat("a", scriptRun("b"), "c"))
-    parseTest("a(*script_run:b)c", concat("a", scriptRun("b"), "c"))
+    parseTest("a(*sr:b)c", concat("a", scriptRun("b"), "c"), throwsError: .unsupported)
+    parseTest("a(*script_run:b)c",
+              concat("a", scriptRun("b"), "c"), throwsError: .unsupported)
 
-    parseTest("a(*asr:b)c", concat("a", atomicScriptRun("b"), "c"))
+    parseTest("a(*asr:b)c",
+              concat("a", atomicScriptRun("b"), "c"), throwsError: .unsupported)
     parseTest("a(*atomic_script_run:b)c",
-              concat("a", atomicScriptRun("b"), "c"))
+              concat("a", atomicScriptRun("b"), "c"), throwsError: .unsupported)
 
     // Matching option changing groups.
     parseTest("(?-)", changeMatchingOptions(
@@ -900,10 +1025,10 @@ extension RegexTests {
     ))
     parseTest("(?^J:)", changeMatchingOptions(
       unsetMatchingOptions(adding: .allowDuplicateGroupNames), empty()
-    ))
+    ), throwsError: .unsupported)
     parseTest("(?^y{w}:)", changeMatchingOptions(
       unsetMatchingOptions(adding: .textSegmentWordMode), empty()
-    ))
+    ), throwsError: .unsupported)
 
     let allOptions: [AST.MatchingOption.Kind] = [
       .caseInsensitive, .allowDuplicateGroupNames, .multiline, .namedCapturesOnly,
@@ -915,10 +1040,10 @@ extension RegexTests {
     ]
     parseTest("(?iJmnsUxxxwDPSWy{g}y{w}Xub-iJmnsUxxxwDPSW)", changeMatchingOptions(
       matchingOptions(adding: allOptions, removing: allOptions.dropLast(5))
-    ))
+    ), throwsError: .unsupported)
     parseTest("(?iJmnsUxxxwDPSWy{g}y{w}Xub-iJmnsUxxxwDPSW:)", changeMatchingOptions(
       matchingOptions(adding: allOptions, removing: allOptions.dropLast(5)), empty()
-    ))
+    ), throwsError: .unsupported)
 
     parseTest(
       "a(b(?i)c)d", concat(
@@ -984,7 +1109,7 @@ extension RegexTests {
 
     // \1 ... \9 are always backreferences.
     for i in 1 ... 9 {
-      parseTest("\\\(i)", backreference(.absolute(i)))
+      parseTest("\\\(i)", backreference(.absolute(i)), throwsError: .invalid)
       parseTest(
         "()()()()()()()()()\\\(i)",
         concat(Array(repeating: capture(empty()), count: 9)
@@ -993,10 +1118,10 @@ extension RegexTests {
       )
     }
 
-    parseTest(#"\10"#, backreference(.absolute(10)))
-    parseTest(#"\18"#, backreference(.absolute(18)))
-    parseTest(#"\7777"#, backreference(.absolute(7777)))
-    parseTest(#"\91"#, backreference(.absolute(91)))
+    parseTest(#"\10"#, backreference(.absolute(10)), throwsError: .invalid)
+    parseTest(#"\18"#, backreference(.absolute(18)), throwsError: .invalid)
+    parseTest(#"\7777"#, backreference(.absolute(7777)), throwsError: .invalid)
+    parseTest(#"\91"#, backreference(.absolute(91)), throwsError: .invalid)
 
     parseTest(
       #"()()()()()()()()()()\10"#,
@@ -1012,7 +1137,7 @@ extension RegexTests {
     )
     parseTest(#"()()\10"#, concat(
       capture(empty()), capture(empty()), backreference(.absolute(10))),
-              captures: [.cap, .cap]
+              throwsError: .invalid, captures: [.cap, .cap]
     )
 
     // A capture of three empty captures.
@@ -1023,7 +1148,7 @@ extension RegexTests {
       // There are 9 capture groups in total here.
       #"((()()())(()()()))\10"#, concat(capture(concat(
         fourCaptures, fourCaptures)), backreference(.absolute(10))),
-      captures: .caps(count: 9)
+      throwsError: .invalid, captures: .caps(count: 9)
     )
     parseTest(
       // There are 10 capture groups in total here.
@@ -1047,7 +1172,7 @@ extension RegexTests {
       concat(Array(repeating: capture(empty()), count: 40) + [scalar(" ")]),
       captures: .caps(count: 40)
     )
-    parseTest(#"\40"#, backreference(.absolute(40)))
+    parseTest(#"\40"#, backreference(.absolute(40)), throwsError: .invalid)
     parseTest(
       String(repeating: "()", count: 40) + #"\40"#,
       concat(Array(repeating: capture(empty()), count: 40)
@@ -1055,14 +1180,14 @@ extension RegexTests {
       captures: .caps(count: 40)
     )
 
-    parseTest(#"\7"#, backreference(.absolute(7)))
+    parseTest(#"\7"#, backreference(.absolute(7)), throwsError: .invalid)
 
-    parseTest(#"\11"#, backreference(.absolute(11)))
+    parseTest(#"\11"#, backreference(.absolute(11)), throwsError: .invalid)
     parseTest(
-      String(repeating: "()", count: 11) + #"\11"#,
-      concat(Array(repeating: capture(empty()), count: 11)
+      String(repeating: "()", count: 12) + #"\11"#,
+      concat(Array(repeating: capture(empty()), count: 12)
              + [backreference(.absolute(11))]),
-      captures: .caps(count: 11)
+      captures: .caps(count: 12)
     )
     parseTest(#"\011"#, scalar("\u{9}"))
     parseTest(
@@ -1072,63 +1197,77 @@ extension RegexTests {
     )
 
     parseTest(#"\0113"#, scalar("\u{4B}"))
-    parseTest(#"\113"#, backreference(.absolute(113)))
-    parseTest(#"\377"#, backreference(.absolute(377)))
-    parseTest(#"\81"#, backreference(.absolute(81)))
+    parseTest(#"\113"#, backreference(.absolute(113)), throwsError: .invalid)
+    parseTest(#"\377"#, backreference(.absolute(377)), throwsError: .invalid)
+    parseTest(#"\81"#, backreference(.absolute(81)), throwsError: .invalid)
 
-    parseTest(#"\g1"#, backreference(.absolute(1)))
-    parseTest(#"\g001"#, backreference(.absolute(1)))
-    parseTest(#"\g52"#, backreference(.absolute(52)))
-    parseTest(#"\g-01"#, backreference(.relative(-1)))
-    parseTest(#"\g+30"#, backreference(.relative(30)))
+    parseTest(#"\g1"#, backreference(.absolute(1)), throwsError: .invalid)
+    parseTest(#"\g001"#, backreference(.absolute(1)), throwsError: .invalid)
+    parseTest(#"\g52"#, backreference(.absolute(52)), throwsError: .invalid)
+    parseTest(#"\g-01"#, backreference(.relative(-1)), throwsError: .unsupported)
+    parseTest(#"\g+30"#, backreference(.relative(30)), throwsError: .unsupported)
 
-    parseTest(#"\g{1}"#, backreference(.absolute(1)))
-    parseTest(#"\g{001}"#, backreference(.absolute(1)))
-    parseTest(#"\g{52}"#, backreference(.absolute(52)))
-    parseTest(#"\g{-01}"#, backreference(.relative(-1)))
-    parseTest(#"\g{+30}"#, backreference(.relative(30)))
-    parseTest(#"\k<+4>"#, backreference(.relative(4)))
-    parseTest(#"\k<2>"#, backreference(.absolute(2)))
-    parseTest(#"\k'-3'"#, backreference(.relative(-3)))
-    parseTest(#"\k'1'"#, backreference(.absolute(1)))
+    parseTest(#"\g{1}"#, backreference(.absolute(1)), throwsError: .invalid)
+    parseTest(#"\g{001}"#, backreference(.absolute(1)), throwsError: .invalid)
+    parseTest(#"\g{52}"#, backreference(.absolute(52)), throwsError: .invalid)
+    parseTest(#"\g{-01}"#, backreference(.relative(-1)), throwsError: .unsupported)
+    parseTest(#"\g{+30}"#, backreference(.relative(30)), throwsError: .unsupported)
+    parseTest(#"\k<+4>"#, backreference(.relative(4)), throwsError: .unsupported)
+    parseTest(#"\k<2>"#, backreference(.absolute(2)), throwsError: .invalid)
+    parseTest(#"\k'-3'"#, backreference(.relative(-3)), throwsError: .unsupported)
+    parseTest(#"\k'1'"#, backreference(.absolute(1)), throwsError: .invalid)
 
-    parseTest(#"\k{a0}"#, backreference(.named("a0")))
-    parseTest(#"\k<bc>"#, backreference(.named("bc")))
-    parseTest(#"\g{abc}"#, backreference(.named("abc")))
-    parseTest(#"(?P=abc)"#, backreference(.named("abc")))
+    parseTest(#"\k{a0}"#, backreference(.named("a0")), throwsError: .unsupported)
+    parseTest(#"\k<bc>"#, backreference(.named("bc")), throwsError: .unsupported)
+    parseTest(#"\g{abc}"#, backreference(.named("abc")), throwsError: .unsupported)
+    parseTest(#"(?P=abc)"#, backreference(.named("abc")), throwsError: .unsupported)
 
     // Oniguruma recursion levels.
-    parseTest(#"\k<bc-0>"#, backreference(.named("bc"), recursionLevel: 0))
-    parseTest(#"\k<a+0>"#, backreference(.named("a"), recursionLevel: 0))
-    parseTest(#"\k<1+1>"#, backreference(.absolute(1), recursionLevel: 1))
-    parseTest(#"\k<3-8>"#, backreference(.absolute(3), recursionLevel: -8))
-    parseTest(#"\k'-3-8'"#, backreference(.relative(-3), recursionLevel: -8))
-    parseTest(#"\k'bc-8'"#, backreference(.named("bc"), recursionLevel: -8))
-    parseTest(#"\k'+3-8'"#, backreference(.relative(3), recursionLevel: -8))
-    parseTest(#"\k'+3+8'"#, backreference(.relative(3), recursionLevel: 8))
+    parseTest(#"\k<bc-0>"#, backreference(.named("bc"), recursionLevel: 0), throwsError: .unsupported)
+    parseTest(#"\k<a+0>"#, backreference(.named("a"), recursionLevel: 0), throwsError: .unsupported)
+    parseTest(#"\k<1+1>"#, backreference(.absolute(1), recursionLevel: 1), throwsError: .invalid)
+    parseTest(#"\k<3-8>"#, backreference(.absolute(3), recursionLevel: -8), throwsError: .invalid)
+    parseTest(#"\k'-3-8'"#, backreference(.relative(-3), recursionLevel: -8), throwsError: .unsupported)
+    parseTest(#"\k'bc-8'"#, backreference(.named("bc"), recursionLevel: -8), throwsError: .unsupported)
+    parseTest(#"\k'+3-8'"#, backreference(.relative(3), recursionLevel: -8), throwsError: .unsupported)
+    parseTest(#"\k'+3+8'"#, backreference(.relative(3), recursionLevel: 8), throwsError: .unsupported)
 
-    parseTest(#"(?R)"#, subpattern(.recurseWholePattern))
-    parseTest(#"(?0)"#, subpattern(.recurseWholePattern))
-    parseTest(#"(?1)"#, subpattern(.absolute(1)))
-    parseTest(#"(?+12)"#, subpattern(.relative(12)))
-    parseTest(#"(?-2)"#, subpattern(.relative(-2)))
-    parseTest(#"(?&hello)"#, subpattern(.named("hello")))
-    parseTest(#"(?P>P)"#, subpattern(.named("P")))
+    parseTest(#"(?R)"#, subpattern(.recurseWholePattern), throwsError: .unsupported)
+    parseTest(#"(?0)"#, subpattern(.recurseWholePattern), throwsError: .unsupported)
+    parseTest(#"(?1)"#, subpattern(.absolute(1)), throwsError: .unsupported)
+    parseTest(#"(?+12)"#, subpattern(.relative(12)), throwsError: .unsupported)
+    parseTest(#"(?-2)"#, subpattern(.relative(-2)), throwsError: .unsupported)
+    parseTest(#"(?&hello)"#, subpattern(.named("hello")), throwsError: .unsupported)
+    parseTest(#"(?P>P)"#, subpattern(.named("P")), throwsError: .unsupported)
 
     parseTest(#"[(?R)]"#, charClass("(", "?", "R", ")"))
     parseTest(#"[(?&a)]"#, charClass("(", "?", "&", "a", ")"))
     parseTest(#"[(?1)]"#, charClass("(", "?", "1", ")"))
 
-    parseTest(#"\g<1>"#, subpattern(.absolute(1)))
-    parseTest(#"\g<001>"#, subpattern(.absolute(1)))
-    parseTest(#"\g'52'"#, subpattern(.absolute(52)))
-    parseTest(#"\g'-01'"#, subpattern(.relative(-1)))
-    parseTest(#"\g'+30'"#, subpattern(.relative(30)))
-    parseTest(#"\g'abc'"#, subpattern(.named("abc")))
+    parseTest(#"\g<1>"#, subpattern(.absolute(1)), throwsError: .unsupported)
+    parseTest(#"\g<001>"#, subpattern(.absolute(1)), throwsError: .unsupported)
+    parseTest(#"\g'52'"#, subpattern(.absolute(52)), throwsError: .unsupported)
+    parseTest(#"\g'-01'"#, subpattern(.relative(-1)), throwsError: .unsupported)
+    parseTest(#"\g'+30'"#, subpattern(.relative(30)), throwsError: .unsupported)
+    parseTest(#"\g'abc'"#, subpattern(.named("abc")), throwsError: .unsupported)
 
     // Backreferences are not valid in custom character classes.
     parseTest(#"[\8]"#, charClass("8"))
     parseTest(#"[\9]"#, charClass("9"))
+
+    // These are valid references.
+    parseTest(#"()\1"#, concat(
+      capture(empty()), backreference(.absolute(1))
+    ), captures: [.cap])
+    parseTest(#"\1()"#, concat(
+      backreference(.absolute(1)), capture(empty())
+    ), captures: [.cap])
+    parseTest(#"()()\2"#, concat(
+      capture(empty()), capture(empty()), backreference(.absolute(2))
+    ), captures: [.cap, .cap])
+    parseTest(#"()\2()"#, concat(
+      capture(empty()), backreference(.absolute(2)), capture(empty())
+    ), captures: [.cap, .cap])
 
     // MARK: Character names.
 
@@ -1137,7 +1276,7 @@ extension RegexTests {
     parseTest(#"\N{abc}+"#, oneOrMore(of: atom(.namedCharacter("abc"))))
     parseTest(
       #"\N {2}"#,
-      concat(atom(.escaped(.notNewline)), exactly(2, of: " "))
+      concat(atom(.escaped(.notNewline)), exactly(2, of: " ")), throwsError: .unsupported
     )
 
     parseTest(#"\N{AA}"#, atom(.namedCharacter("AA")))
@@ -1203,13 +1342,13 @@ extension RegexTests {
     parseTest(#"\p{isAlphabetic}"#, prop(.binary(.alphabetic)))
     parseTest(#"\p{isAlpha=isFalse}"#, prop(.binary(.alphabetic, value: false)))
 
-    parseTest(#"\p{In_Runic}"#, prop(.onigurumaSpecial(.inRunic)))
+    parseTest(#"\p{In_Runic}"#, prop(.onigurumaSpecial(.inRunic)), throwsError: .unsupported)
 
-    parseTest(#"\p{Xan}"#, prop(.pcreSpecial(.alphanumeric)))
-    parseTest(#"\p{Xps}"#, prop(.pcreSpecial(.posixSpace)))
-    parseTest(#"\p{Xsp}"#, prop(.pcreSpecial(.perlSpace)))
-    parseTest(#"\p{Xuc}"#, prop(.pcreSpecial(.universallyNamed)))
-    parseTest(#"\p{Xwd}"#, prop(.pcreSpecial(.perlWord)))
+    parseTest(#"\p{Xan}"#, prop(.pcreSpecial(.alphanumeric)), throwsError: .unsupported)
+    parseTest(#"\p{Xps}"#, prop(.pcreSpecial(.posixSpace)), throwsError: .unsupported)
+    parseTest(#"\p{Xsp}"#, prop(.pcreSpecial(.perlSpace)), throwsError: .unsupported)
+    parseTest(#"\p{Xuc}"#, prop(.pcreSpecial(.universallyNamed)), throwsError: .unsupported)
+    parseTest(#"\p{Xwd}"#, prop(.pcreSpecial(.perlWord)), throwsError: .unsupported)
 
     parseTest(#"\p{alnum}"#, prop(.posix(.alnum)))
     parseTest(#"\p{is_alnum}"#, prop(.posix(.alnum)))
@@ -1219,48 +1358,55 @@ extension RegexTests {
     parseTest(#"\p{word}"#,  prop(.posix(.word)))
     parseTest(#"\p{xdigit}"#, prop(.posix(.xdigit)))
 
+    parseTest(#"\p{name=A}"#, prop(.named("A")))
+    parseTest(#"\p{Name=B}"#, prop(.named("B")))
+    parseTest(#"\p{isName=C}"#, prop(.named("C")))
+    parseTest(#"\p{na=D}"#, prop(.named("D")))
+    parseTest(#"\p{NA=E}"#, prop(.named("E")))
+    parseTest(#"\p{na=isI}"#, prop(.named("isI")))
+
     // MARK: Conditionals
 
     parseTest(#"(?(1))"#, conditional(
-      .groupMatched(ref(1)), trueBranch: empty(), falseBranch: empty()))
+      .groupMatched(ref(1)), trueBranch: empty(), falseBranch: empty()), throwsError: .unsupported)
     parseTest(#"(?(1)|)"#, conditional(
-      .groupMatched(ref(1)), trueBranch: empty(), falseBranch: empty()))
+      .groupMatched(ref(1)), trueBranch: empty(), falseBranch: empty()), throwsError: .unsupported)
     parseTest(#"(?(1)a)"#, conditional(
-      .groupMatched(ref(1)), trueBranch: "a", falseBranch: empty()))
+      .groupMatched(ref(1)), trueBranch: "a", falseBranch: empty()), throwsError: .unsupported)
     parseTest(#"(?(1)a|)"#, conditional(
-      .groupMatched(ref(1)), trueBranch: "a", falseBranch: empty()))
+      .groupMatched(ref(1)), trueBranch: "a", falseBranch: empty()), throwsError: .unsupported)
     parseTest(#"(?(1)|b)"#, conditional(
-      .groupMatched(ref(1)), trueBranch: empty(), falseBranch: "b"))
+      .groupMatched(ref(1)), trueBranch: empty(), falseBranch: "b"), throwsError: .unsupported)
     parseTest(#"(?(1)a|b)"#, conditional(
-      .groupMatched(ref(1)), trueBranch: "a", falseBranch: "b"))
+      .groupMatched(ref(1)), trueBranch: "a", falseBranch: "b"), throwsError: .unsupported)
 
     parseTest(#"(?(1)(a|b|c)|d)"#, conditional(
       .groupMatched(ref(1)),
       trueBranch: capture(alt("a", "b", "c")),
       falseBranch: "d"
-    ), captures: [.opt])
+    ), throwsError: .unsupported, captures: [.opt])
 
     parseTest(#"(?(+3))"#, conditional(
-      .groupMatched(ref(plus: 3)), trueBranch: empty(), falseBranch: empty()))
+      .groupMatched(ref(plus: 3)), trueBranch: empty(), falseBranch: empty()), throwsError: .unsupported)
     parseTest(#"(?(-21))"#, conditional(
-      .groupMatched(ref(minus: 21)), trueBranch: empty(), falseBranch: empty()))
+      .groupMatched(ref(minus: 21)), trueBranch: empty(), falseBranch: empty()), throwsError: .unsupported)
 
     // Oniguruma recursion levels.
     parseTest(#"(?(1+1))"#, conditional(
       .groupMatched(ref(1, recursionLevel: 1)),
-      trueBranch: empty(), falseBranch: empty())
+      trueBranch: empty(), falseBranch: empty()), throwsError: .unsupported
     )
     parseTest(#"(?(-1+1))"#, conditional(
       .groupMatched(ref(minus: 1, recursionLevel: 1)),
-      trueBranch: empty(), falseBranch: empty())
+      trueBranch: empty(), falseBranch: empty()), throwsError: .unsupported
     )
     parseTest(#"(?(1-3))"#, conditional(
       .groupMatched(ref(1, recursionLevel: -3)),
-      trueBranch: empty(), falseBranch: empty())
+      trueBranch: empty(), falseBranch: empty()), throwsError: .unsupported
     )
     parseTest(#"(?(+1-3))"#, conditional(
       .groupMatched(ref(plus: 1, recursionLevel: -3)),
-      trueBranch: empty(), falseBranch: empty())
+      trueBranch: empty(), falseBranch: empty()), throwsError: .unsupported
     )
     parseTest(
       #"(?<a>)(?(a+5))"#,
@@ -1268,7 +1414,7 @@ extension RegexTests {
         .groupMatched(ref("a", recursionLevel: 5)),
         trueBranch: empty(), falseBranch: empty()
       )),
-      captures: [.named("a")]
+      throwsError: .unsupported, captures: [.named("a")]
     )
     parseTest(
       #"(?<a1>)(?(a1-5))"#,
@@ -1276,50 +1422,50 @@ extension RegexTests {
         .groupMatched(ref("a1", recursionLevel: -5)),
         trueBranch: empty(), falseBranch: empty()
       )),
-      captures: [.named("a1")]
+      throwsError: .unsupported, captures: [.named("a1")]
     )
 
     parseTest(#"(?(1))?"#, zeroOrOne(of: conditional(
-      .groupMatched(ref(1)), trueBranch: empty(), falseBranch: empty())))
+      .groupMatched(ref(1)), trueBranch: empty(), falseBranch: empty())), throwsError: .unsupported)
 
     parseTest(#"(?(R)a|b)"#, conditional(
-      .recursionCheck, trueBranch: "a", falseBranch: "b"))
+      .recursionCheck, trueBranch: "a", falseBranch: "b"), throwsError: .unsupported)
     parseTest(#"(?(R1))"#, conditional(
-      .groupRecursionCheck(ref(1)), trueBranch: empty(), falseBranch: empty()))
+      .groupRecursionCheck(ref(1)), trueBranch: empty(), falseBranch: empty()), throwsError: .unsupported)
     parseTest(#"(?(R&abc)a|b)"#, conditional(
-      .groupRecursionCheck(ref("abc")), trueBranch: "a", falseBranch: "b"))
+      .groupRecursionCheck(ref("abc")), trueBranch: "a", falseBranch: "b"), throwsError: .unsupported)
 
     parseTest(#"(?(<abc>)a|b)"#, conditional(
-      .groupMatched(ref("abc")), trueBranch: "a", falseBranch: "b"))
+      .groupMatched(ref("abc")), trueBranch: "a", falseBranch: "b"), throwsError: .unsupported)
     parseTest(#"(?('abc')a|b)"#, conditional(
-      .groupMatched(ref("abc")), trueBranch: "a", falseBranch: "b"))
+      .groupMatched(ref("abc")), trueBranch: "a", falseBranch: "b"), throwsError: .unsupported)
 
     parseTest(#"(?(abc)a|b)"#, conditional(
       groupCondition(.capture, concat("a", "b", "c")),
       trueBranch: "a", falseBranch: "b"
-    ), captures: [.cap])
+    ), throwsError: .unsupported, captures: [.cap])
 
     parseTest(#"(?(?:abc)a|b)"#, conditional(
       groupCondition(.nonCapture, concat("a", "b", "c")),
       trueBranch: "a", falseBranch: "b"
-    ))
+    ), throwsError: .unsupported)
 
     parseTest(#"(?(?=abc)a|b)"#, conditional(
       groupCondition(.lookahead, concat("a", "b", "c")),
       trueBranch: "a", falseBranch: "b"
-    ))
+    ), throwsError: .unsupported)
     parseTest(#"(?(?!abc)a|b)"#, conditional(
       groupCondition(.negativeLookahead, concat("a", "b", "c")),
       trueBranch: "a", falseBranch: "b"
-    ))
+    ), throwsError: .unsupported)
     parseTest(#"(?(?<=abc)a|b)"#, conditional(
       groupCondition(.lookbehind, concat("a", "b", "c")),
       trueBranch: "a", falseBranch: "b"
-    ))
+    ), throwsError: .unsupported)
     parseTest(#"(?(?<!abc)a|b)"#, conditional(
       groupCondition(.negativeLookbehind, concat("a", "b", "c")),
       trueBranch: "a", falseBranch: "b"
-    ))
+    ), throwsError: .unsupported)
 
     parseTest(#"(?((a)?(b))(a)+|b)"#, conditional(
       groupCondition(.capture, concat(
@@ -1327,7 +1473,7 @@ extension RegexTests {
       )),
       trueBranch: oneOrMore(of: capture("a")),
       falseBranch: "b"
-    ), captures: [.cap, .opt, .cap, .opt])
+    ), throwsError: .unsupported, captures: [.cap, .opt, .cap, .opt])
 
     parseTest(#"(?(?:(a)?(b))(a)+|b)"#, conditional(
       groupCondition(.nonCapture, concat(
@@ -1335,12 +1481,12 @@ extension RegexTests {
       )),
       trueBranch: oneOrMore(of: capture("a")),
       falseBranch: "b"
-    ), captures: [.opt, .cap, .opt])
+    ), throwsError: .unsupported, captures: [.opt, .cap, .opt])
 
     parseTest(#"(?<xxx>y)(?(xxx)a|b)"#, concat(
       namedCapture("xxx", "y"),
       conditional(.groupMatched(ref("xxx")), trueBranch: "a", falseBranch: "b")
-    ), captures: [.named("xxx")])
+    ), throwsError: .unsupported, captures: [.named("xxx")])
 
     parseTest(#"(?(1)(?(2)(?(3)))|a)"#, conditional(
       .groupMatched(ref(1)),
@@ -1349,115 +1495,119 @@ extension RegexTests {
                                                       trueBranch: empty(),
                                                       falseBranch: empty()),
                               falseBranch: empty()),
-      falseBranch: "a"))
+      falseBranch: "a"), throwsError: .unsupported)
 
     parseTest(#"(?(DEFINE))"#, conditional(
-      .defineGroup, trueBranch: empty(), falseBranch: empty()))
+      .defineGroup, trueBranch: empty(), falseBranch: empty()), throwsError: .unsupported)
 
     parseTest(#"(?(VERSION>=3.1))"#, conditional(
       pcreVersionCheck(.greaterThanOrEqual, 3, 1),
-      trueBranch: empty(), falseBranch: empty())
+      trueBranch: empty(), falseBranch: empty()), throwsError: .unsupported
     )
     parseTest(#"(?(VERSION=0.1))"#, conditional(
       pcreVersionCheck(.equal, 0, 1),
-      trueBranch: empty(), falseBranch: empty())
+      trueBranch: empty(), falseBranch: empty()), throwsError: .unsupported
     )
 
     // MARK: Callouts
 
     // PCRE callouts
 
-    parseTest(#"(?C)"#, pcreCallout(.number(0)))
-    parseTest(#"(?C0)"#, pcreCallout(.number(0)))
-    parseTest(#"(?C20)"#, pcreCallout(.number(20)))
-    parseTest("(?C{abc})", pcreCallout(.string("abc")))
+    parseTest(#"(?C)"#, pcreCallout(.number(0)), throwsError: .unsupported)
+    parseTest(#"(?C0)"#, pcreCallout(.number(0)), throwsError: .unsupported)
+    parseTest(#"(?C20)"#, pcreCallout(.number(20)), throwsError: .unsupported)
+    parseTest("(?C{abc})", pcreCallout(.string("abc")), throwsError: .unsupported)
 
     for delim in ["`", "'", "\"", "^", "%", "#", "$"] {
-      parseTest("(?C\(delim)hello\(delim))", pcreCallout(.string("hello")))
+      parseTest("(?C\(delim)hello\(delim))", pcreCallout(.string("hello")),
+                throwsError: .unsupported)
     }
 
     // Oniguruma named callouts
 
-    parseTest("(*X)", onigurumaNamedCallout("X"))
-    parseTest("(*foo[t])", onigurumaNamedCallout("foo", tag: "t"))
-    parseTest("(*foo[a0]{b})", onigurumaNamedCallout("foo", tag: "a0", args: "b"))
-    parseTest("(*foo{b})", onigurumaNamedCallout("foo", args: "b"))
-    parseTest("(*foo[a]{a,b,c})", onigurumaNamedCallout("foo", tag: "a", args: "a", "b", "c"))
-    parseTest("(*foo{a,b,c})", onigurumaNamedCallout("foo", args: "a", "b", "c"))
-    parseTest("(*foo{%%$,!!,>>})", onigurumaNamedCallout("foo", args: "%%$", "!!", ">>"))
-    parseTest("(*foo{a, b, c})", onigurumaNamedCallout("foo", args: "a", " b", " c"))
+    parseTest("(*X)", onigurumaNamedCallout("X"), throwsError: .unsupported)
+    parseTest("(*foo[t])", onigurumaNamedCallout("foo", tag: "t"), throwsError: .unsupported)
+    parseTest("(*foo[a0]{b})", onigurumaNamedCallout("foo", tag: "a0", args: "b"), throwsError: .unsupported)
+    parseTest("(*foo{b})", onigurumaNamedCallout("foo", args: "b"), throwsError: .unsupported)
+    parseTest("(*foo[a]{a,b,c})", onigurumaNamedCallout("foo", tag: "a", args: "a", "b", "c"), throwsError: .unsupported)
+    parseTest("(*foo{a,b,c})", onigurumaNamedCallout("foo", args: "a", "b", "c"), throwsError: .unsupported)
+    parseTest("(*foo{%%$,!!,>>})", onigurumaNamedCallout("foo", args: "%%$", "!!", ">>"), throwsError: .unsupported)
+    parseTest("(*foo{a, b, c})", onigurumaNamedCallout("foo", args: "a", " b", " c"), throwsError: .unsupported)
 
     // Oniguruma 'of contents' callouts
 
-    parseTest("(?{x})", onigurumaCalloutOfContents("x"))
-    parseTest("(?{{{x}}y}}})", onigurumaCalloutOfContents("x}}y"))
-    parseTest("(?{{{x}}})", onigurumaCalloutOfContents("x"))
-    parseTest("(?{x}[tag])", onigurumaCalloutOfContents("x", tag: "tag"))
-    parseTest("(?{x}[tag]<)", onigurumaCalloutOfContents("x", tag: "tag", direction: .inRetraction))
-    parseTest("(?{x}X)", onigurumaCalloutOfContents("x", direction: .both))
-    parseTest("(?{x}>)", onigurumaCalloutOfContents("x"))
-    parseTest("(?{\\x})", onigurumaCalloutOfContents("\\x"))
-    parseTest("(?{\\})", onigurumaCalloutOfContents("\\"))
+    parseTest("(?{x})", onigurumaCalloutOfContents("x"), throwsError: .unsupported)
+    parseTest("(?{{{x}}y}}})", onigurumaCalloutOfContents("x}}y"), throwsError: .unsupported)
+    parseTest("(?{{{x}}})", onigurumaCalloutOfContents("x"), throwsError: .unsupported)
+    parseTest("(?{x}[tag])", onigurumaCalloutOfContents("x", tag: "tag"), throwsError: .unsupported)
+    parseTest("(?{x}[tag]<)", onigurumaCalloutOfContents("x", tag: "tag", direction: .inRetraction), throwsError: .unsupported)
+    parseTest("(?{x}X)", onigurumaCalloutOfContents("x", direction: .both), throwsError: .unsupported)
+    parseTest("(?{x}>)", onigurumaCalloutOfContents("x"), throwsError: .unsupported)
+    parseTest("(?{\\x})", onigurumaCalloutOfContents("\\x"), throwsError: .unsupported)
+    parseTest("(?{\\})", onigurumaCalloutOfContents("\\"), throwsError: .unsupported)
 
     // MARK: Backtracking directives
 
-    parseTest("(*ACCEPT)?", zeroOrOne(of: backtrackingDirective(.accept)))
+    parseTest("(*ACCEPT)?", zeroOrOne(of: backtrackingDirective(.accept)), throwsError: .unsupported)
     parseTest(
       "(*ACCEPT:a)??",
-      zeroOrOne(.reluctant, of: backtrackingDirective(.accept, name: "a"))
+      zeroOrOne(.reluctant, of: backtrackingDirective(.accept, name: "a")),
+      throwsError: .unsupported
     )
-    parseTest("(*:a)", backtrackingDirective(.mark, name: "a"))
-    parseTest("(*MARK:a)", backtrackingDirective(.mark, name: "a"))
-    parseTest("(*F)", backtrackingDirective(.fail))
-    parseTest("(*COMMIT)", backtrackingDirective(.commit))
-    parseTest("(*SKIP)", backtrackingDirective(.skip))
-    parseTest("(*SKIP:SKIP)", backtrackingDirective(.skip, name: "SKIP"))
-    parseTest("(*PRUNE)", backtrackingDirective(.prune))
-    parseTest("(*THEN)", backtrackingDirective(.then))
+    parseTest("(*:a)", backtrackingDirective(.mark, name: "a"), throwsError: .unsupported)
+    parseTest("(*MARK:a)", backtrackingDirective(.mark, name: "a"), throwsError: .unsupported)
+    parseTest("(*F)", backtrackingDirective(.fail), throwsError: .unsupported)
+    parseTest("(*COMMIT)", backtrackingDirective(.commit), throwsError: .unsupported)
+    parseTest("(*SKIP)", backtrackingDirective(.skip), throwsError: .unsupported)
+    parseTest("(*SKIP:SKIP)", backtrackingDirective(.skip, name: "SKIP"), throwsError: .unsupported)
+    parseTest("(*PRUNE)", backtrackingDirective(.prune), throwsError: .unsupported)
+    parseTest("(*THEN)", backtrackingDirective(.then), throwsError: .unsupported)
 
     // MARK: Oniguruma absent functions
 
-    parseTest("(?~)", absentRepeater(empty()))
-    parseTest("(?~abc)", absentRepeater(concat("a", "b", "c")))
-    parseTest("(?~a+)", absentRepeater(oneOrMore(of: "a")))
-    parseTest("(?~~)", absentRepeater("~"))
-    parseTest("(?~a|b|c)", absentRepeater(alt("a", "b", "c")))
-    parseTest("(?~(a))", absentRepeater(capture("a")), captures: [])
-    parseTest("(?~)*", zeroOrMore(of: absentRepeater(empty())))
+    parseTest("(?~)", absentRepeater(empty()), throwsError: .unsupported)
+    parseTest("(?~abc)", absentRepeater(concat("a", "b", "c")), throwsError: .unsupported)
+    parseTest("(?~a+)", absentRepeater(oneOrMore(of: "a")), throwsError: .unsupported)
+    parseTest("(?~~)", absentRepeater("~"), throwsError: .unsupported)
+    parseTest("(?~a|b|c)", absentRepeater(alt("a", "b", "c")), throwsError: .unsupported)
+    parseTest("(?~(a))", absentRepeater(capture("a")), throwsError: .unsupported, captures: [])
+    parseTest("(?~)*", zeroOrMore(of: absentRepeater(empty())), throwsError: .unsupported)
 
-    parseTest("(?~|abc)", absentStopper(concat("a", "b", "c")))
-    parseTest("(?~|a+)", absentStopper(oneOrMore(of: "a")))
-    parseTest("(?~|~)", absentStopper("~"))
-    parseTest("(?~|(a))", absentStopper(capture("a")), captures: [])
-    parseTest("(?~|a){2}", exactly(2, of: absentStopper("a")))
+    parseTest("(?~|abc)", absentStopper(concat("a", "b", "c")), throwsError: .unsupported)
+    parseTest("(?~|a+)", absentStopper(oneOrMore(of: "a")), throwsError: .unsupported)
+    parseTest("(?~|~)", absentStopper("~"), throwsError: .unsupported)
+    parseTest("(?~|(a))", absentStopper(capture("a")), throwsError: .unsupported, captures: [])
+    parseTest("(?~|a){2}", exactly(2, of: absentStopper("a")), throwsError: .unsupported)
 
-    parseTest("(?~|a|b)", absentExpression("a", "b"))
-    parseTest("(?~|~|~)", absentExpression("~", "~"))
+    parseTest("(?~|a|b)", absentExpression("a", "b"), throwsError: .unsupported)
+    parseTest("(?~|~|~)", absentExpression("~", "~"), throwsError: .unsupported)
     parseTest("(?~|(a)|(?:b))", absentExpression(capture("a"), nonCapture("b")),
-              captures: [])
+              throwsError: .unsupported, captures: [])
     parseTest("(?~|(a)|(?:(b)|c))", absentExpression(
       capture("a"), nonCapture(alt(capture("b"), "c"))
-    ), captures: [.opt])
-    parseTest("(?~|a|b)?", zeroOrOne(of: absentExpression("a", "b")))
+    ), throwsError: .unsupported, captures: [.opt])
+    parseTest("(?~|a|b)?", zeroOrOne(of: absentExpression("a", "b")), throwsError: .unsupported)
 
-    parseTest("(?~|)", absentRangeClear())
+    parseTest("(?~|)", absentRangeClear(), throwsError: .unsupported)
 
     // TODO: It's not really clear what this means, but Oniguruma parses it...
     // Maybe we should diagnose it?
-    parseTest("(?~|)+", oneOrMore(of: absentRangeClear()))
+    parseTest("(?~|)+", oneOrMore(of: absentRangeClear()), throwsError: .unsupported)
 
     // MARK: Global matching options
 
     parseTest("(*CR)(*UTF)(*LIMIT_DEPTH=3)", ast(
       empty(), opts: .newlineMatching(.carriageReturnOnly), .utfMode,
       .limitDepth(.init(faking: 3))
-    ))
+    ), throwsError: .unsupported)
 
     parseTest(
-      "(*BSR_UNICODE)3", ast("3", opts: .newlineSequenceMatching(.anyUnicode)))
+      "(*BSR_UNICODE)3", ast("3", opts: .newlineSequenceMatching(.anyUnicode)),
+      throwsError: .unsupported)
     parseTest(
       "(*BSR_ANYCRLF)", ast(
-        empty(), opts: .newlineSequenceMatching(.anyCarriageReturnOrLinefeed)))
+        empty(), opts: .newlineSequenceMatching(.anyCarriageReturnOrLinefeed)),
+      throwsError: .unsupported)
 
     // TODO: Diagnose on multiple line matching modes?
     parseTest(
@@ -1465,7 +1615,7 @@ extension RegexTests {
       ast(empty(), opts: [
         .carriageReturnOnly, .linefeedOnly, .carriageAndLinefeedOnly,
         .anyCarriageReturnOrLinefeed, .anyUnicode, .nulCharacter
-      ].map { .newlineMatching($0) }))
+      ].map { .newlineMatching($0) }), throwsError: .unsupported)
 
     parseTest(
       """
@@ -1478,7 +1628,7 @@ extension RegexTests {
         .limitMatch(.init(faking: 2)), .notEmpty, .notEmptyAtStart,
         .noAutoPossess, .noDotStarAnchor, .noJIT, .noStartOpt, .utfMode,
         .unicodeProperties
-      )
+      ), throwsError: .unsupported
     )
 
     parseTest("[(*CR)]", charClass("(", "*", "C", "R", ")"))
@@ -1692,7 +1842,7 @@ extension RegexTests {
       # h
       """,
       ast(empty(), opts: .newlineMatching(.carriageReturnOnly)),
-      syntax: .extendedSyntax
+      throwsError: .unsupported, syntax: .extendedSyntax
     )
     parseTest(
       """
@@ -1703,7 +1853,7 @@ extension RegexTests {
       # h
       """,
       ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.carriageReturnOnly)),
-      syntax: .extendedSyntax
+      throwsError: .unsupported, syntax: .extendedSyntax
     )
     parseTest(
       """
@@ -1714,7 +1864,7 @@ extension RegexTests {
       # h
       """,
       ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.linefeedOnly)),
-      syntax: .extendedSyntax
+      throwsError: .unsupported, syntax: .extendedSyntax
     )
     parseTest(
       """
@@ -1725,7 +1875,7 @@ extension RegexTests {
       # h
       """,
       ast(empty(), opts: .newlineMatching(.carriageAndLinefeedOnly)),
-      syntax: .extendedSyntax
+      throwsError: .unsupported, syntax: .extendedSyntax
     )
     parseTest(
       """
@@ -1736,7 +1886,7 @@ extension RegexTests {
       # h
       """,
       ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.carriageAndLinefeedOnly)),
-      syntax: .extendedSyntax
+      throwsError: .unsupported, syntax: .extendedSyntax
     )
     parseTest(
       """
@@ -1747,7 +1897,7 @@ extension RegexTests {
       # h
       """,
       ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyCarriageReturnOrLinefeed)),
-      syntax: .extendedSyntax
+      throwsError: .unsupported, syntax: .extendedSyntax
     )
     parseTest(
       """
@@ -1758,7 +1908,7 @@ extension RegexTests {
       # h
       """,
       ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyCarriageReturnOrLinefeed)),
-      syntax: .extendedSyntax
+      throwsError: .unsupported, syntax: .extendedSyntax
     )
     parseTest(
       """
@@ -1769,7 +1919,7 @@ extension RegexTests {
       # h
       """,
       ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyCarriageReturnOrLinefeed)),
-      syntax: .extendedSyntax
+      throwsError: .unsupported, syntax: .extendedSyntax
     )
     parseTest(
       """
@@ -1780,7 +1930,7 @@ extension RegexTests {
       # h
       """,
       ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyUnicode)),
-      syntax: .extendedSyntax
+      throwsError: .unsupported, syntax: .extendedSyntax
     )
     parseTest(
       """
@@ -1801,7 +1951,7 @@ extension RegexTests {
       # h
       """,
       ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.anyUnicode)),
-      syntax: .extendedSyntax
+      throwsError: .unsupported, syntax: .extendedSyntax
     )
     parseTest(
       """
@@ -1812,7 +1962,7 @@ extension RegexTests {
       # h
       """,
       ast(concat("e", "f"), opts: .newlineMatching(.nulCharacter)),
-      syntax: .extendedSyntax
+      throwsError: .unsupported, syntax: .extendedSyntax
     )
     parseTest(
       """
@@ -1823,7 +1973,7 @@ extension RegexTests {
       # h
       """,
       ast(concat("b", "c", "e", "f"), opts: .newlineMatching(.nulCharacter)),
-      syntax: .extendedSyntax
+      throwsError: .unsupported, syntax: .extendedSyntax
     )
     parseTest(
       """
@@ -1837,7 +1987,7 @@ extension RegexTests {
           opts: .newlineMatching(.carriageReturnOnly),
                 .newlineMatching(.nulCharacter)
          ),
-      syntax: .extendedSyntax
+      throwsError: .unsupported, syntax: .extendedSyntax
     )
 
     // MARK: Parse with delimiters
@@ -1933,6 +2083,26 @@ extension RegexTests {
       """, changeMatchingOptions(matchingOptions(adding: .extended))
     )
 
+    parseWithDelimitersTest(#"""
+      #/
+      \p{
+        gc
+         =
+        digit
+      }
+      /#
+      """#, prop(.generalCategory(.decimalNumber)))
+
+    parseWithDelimitersTest(#"""
+      #/
+      \u{
+        aB
+          B
+      c
+      }
+      /#
+      """#, scalarSeq("\u{AB}", "\u{B}", "\u{C}"))
+
     // MARK: Delimiter skipping: Make sure we can skip over the ending delimiter
     // if it's clear that it's part of the regex syntax.
 
@@ -1940,30 +2110,37 @@ extension RegexTests {
       #"re'(?'a_bcA0'\')'"#, namedCapture("a_bcA0", "'"))
     parseWithDelimitersTest(
       #"re'(?'a_bcA0-c1A'x*)'"#,
-      balancedCapture(name: "a_bcA0", priorName: "c1A", zeroOrMore(of: "x")))
+      balancedCapture(name: "a_bcA0", priorName: "c1A", zeroOrMore(of: "x")),
+      throwsError: .unsupported)
 
     parseWithDelimitersTest(
       #"rx' (?'a_bcA0' a b)'"#, concat(namedCapture("a_bcA0", concat("a", "b"))))
 
     parseWithDelimitersTest(
       #"re'(?('a_bcA0')x|y)'"#, conditional(
-        .groupMatched(ref("a_bcA0")), trueBranch: "x", falseBranch: "y"))
+        .groupMatched(ref("a_bcA0")), trueBranch: "x", falseBranch: "y"),
+      throwsError: .unsupported
+    )
     parseWithDelimitersTest(
       #"re'(?('+20')\')'"#, conditional(
-        .groupMatched(ref(plus: 20)), trueBranch: "'", falseBranch: empty()))
+        .groupMatched(ref(plus: 20)), trueBranch: "'", falseBranch: empty()),
+      throwsError: .unsupported
+    )
+    parseWithDelimitersTest(
+      #"re'a\k'b0A''"#, concat("a", backreference(.named("b0A"))), throwsError: .unsupported)
+    parseWithDelimitersTest(
+      #"re'\k'+2-1''"#, backreference(.relative(2), recursionLevel: -1),
+      throwsError: .unsupported
+    )
 
     parseWithDelimitersTest(
-      #"re'a\k'b0A''"#, concat("a", backreference(.named("b0A"))))
+      #"re'a\g'b0A''"#, concat("a", subpattern(.named("b0A"))), throwsError: .unsupported)
     parseWithDelimitersTest(
-      #"re'\k'+2-1''"#, backreference(.relative(2), recursionLevel: -1))
+      #"re'\g'-1'\''"#, concat(subpattern(.relative(-1)), "'"), throwsError: .unsupported)
 
     parseWithDelimitersTest(
-      #"re'a\g'b0A''"#, concat("a", subpattern(.named("b0A"))))
-    parseWithDelimitersTest(
-      #"re'\g'-1'\''"#, concat(subpattern(.relative(-1)), "'"))
-
-    parseWithDelimitersTest(
-      #"re'(?C'a*b\c 🔥_ ;')'"#, pcreCallout(.string(#"a*b\c 🔥_ ;"#)))
+      #"re'(?C'a*b\c 🔥_ ;')'"#, pcreCallout(.string(#"a*b\c 🔥_ ;"#)),
+      throwsError: .unsupported)
 
     // Fine, because we don't end up skipping.
     delimiterLexingTest(#"re'(?'"#)
@@ -1999,6 +2176,12 @@ extension RegexTests {
     parseNotEqualTest(#" "#, #""#)
 
     parseNotEqualTest(#"[\p{Any}]"#, #"[[:Any:]]"#)
+
+    parseNotEqualTest(#"\u{A}"#, #"\u{B}"#)
+    parseNotEqualTest(#"\u{A B}"#, #"\u{B A}"#)
+    parseNotEqualTest(#"\u{AB}"#, #"\u{A B}"#)
+    parseNotEqualTest(#"[\u{AA BB}-\u{CC}]"#, #"[\u{AA DD}-\u{CC}]"#)
+    parseNotEqualTest(#"[\u{AA BB}-\u{DD}]"#, #"[\u{AA BB}-\u{CC}]"#)
 
     parseNotEqualTest(#"[abc[:space:]\d]+"#,
                       #"[abc[:upper:]\d]+"#)
@@ -2125,6 +2308,20 @@ extension RegexTests {
 
     rangeTest("[a-z]", range(2 ..< 3), at: {
       $0.as(CustomCC.self)!.members[0].as(CustomCC.Range.self)!.dashLoc
+    })
+
+    // MARK: Unicode scalars
+
+    rangeTest(#"\u{65}"#, range(3 ..< 5), at: {
+      $0.as(AST.Atom.self)!.as(AST.Atom.Scalar.self)!.location
+    })
+
+    rangeTest(#"\u{  65 58 }"#, range(5 ..< 7), at: {
+      $0.as(AST.Atom.self)!.as(AST.Atom.ScalarSequence.self)!.scalars[0].location
+    })
+
+    rangeTest(#"\u{  65 58 }"#, range(8 ..< 10), at: {
+      $0.as(AST.Atom.self)!.as(AST.Atom.ScalarSequence.self)!.scalars[1].location
     })
 
     // MARK: References
@@ -2284,10 +2481,15 @@ extension RegexTests {
 
     diagnosticTest("[a", .expected("]"))
 
-    // The first ']' of a custom character class is literal, so these are
-    // missing the closing bracket.
-    diagnosticTest("[]", .expected("]"))
-    diagnosticTest("(?x)[  ]", .expected("]"))
+    // Character classes may not be empty.
+    diagnosticTest("[]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("[]]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("[]a]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[  ]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[ ]  ]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[ ] a ]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?xx)[ ] a ]+", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[ ]]", .expectedCustomCharacterClassMembers)
 
     diagnosticTest("[&&]", .expectedCustomCharacterClassMembers)
     diagnosticTest("[a&&]", .expectedCustomCharacterClassMembers)
@@ -2306,6 +2508,13 @@ extension RegexTests {
     diagnosticTest("[:=:]", .emptyProperty)
     diagnosticTest("[[::]]", .emptyProperty)
     diagnosticTest("[[:=:]]", .emptyProperty)
+
+    diagnosticTest(#"|([\d-c])?"#, .invalidCharacterClassRangeOperand)
+
+    diagnosticTest(#"[_-A]"#, .invalidCharacterRange(from: "_", to: "A"))
+    diagnosticTest(#"(?i)[_-A]"#, .invalidCharacterRange(from: "_", to: "A"))
+    diagnosticTest(#"[c-b]"#, .invalidCharacterRange(from: "c", to: "b"))
+    diagnosticTest(#"[\u{66}-\u{65}]"#, .invalidCharacterRange(from: "\u{66}", to: "\u{65}"))
 
     // MARK: Bad escapes
 
@@ -2333,6 +2542,7 @@ extension RegexTests {
     diagnosticTest(#"\e\#u{301}"#, .invalidEscape("e\u{301}"))
     diagnosticTest(#"\\#u{E9}"#, .invalidEscape("é"))
     diagnosticTest(#"\˂"#, .invalidEscape("˂"))
+    diagnosticTest(#"\d\#u{301}"#, .invalidEscape("d\u{301}"))
 
     // MARK: Character properties
 
@@ -2343,6 +2553,10 @@ extension RegexTests {
     diagnosticTest("[[:a():]]", .unknownProperty(key: nil, value: "a()"))
     diagnosticTest(#"\p{aaa\p{b}}"#, .unknownProperty(key: nil, value: "aaa"))
     diagnosticTest(#"[[:{:]]"#, .unknownProperty(key: nil, value: "{"))
+
+    // We only filter pattern whitespace, which doesn't include things like
+    // non-breaking spaces.
+    diagnosticTest(#"\p{L\#u{A0}l}"#, .unknownProperty(key: nil, value: "L\u{A0}l"))
 
     // MARK: Matching options
 
@@ -2404,6 +2618,12 @@ extension RegexTests {
 
     diagnosticTest("(?x)(? : )", .unknownGroupKind("? "))
 
+    diagnosticTest("(?<x>)(?<x>)", .duplicateNamedCapture("x"))
+    diagnosticTest("(?<x>)|(?<x>)", .duplicateNamedCapture("x"))
+    diagnosticTest("((?<x>))(?<x>)", .duplicateNamedCapture("x"))
+    diagnosticTest("(|(?<x>))(?<x>)", .duplicateNamedCapture("x"))
+    diagnosticTest("(?<x>)(?<y>)(?<x>)", .duplicateNamedCapture("x"))
+
     // MARK: Quantifiers
 
     diagnosticTest("*", .quantifierRequiresOperand("*"))
@@ -2412,6 +2632,42 @@ extension RegexTests {
     diagnosticTest("*?", .quantifierRequiresOperand("*?"))
     diagnosticTest("{5}", .quantifierRequiresOperand("{5}"))
     diagnosticTest("{1,3}", .quantifierRequiresOperand("{1,3}"))
+    diagnosticTest("a{3,2}", .invalidQuantifierRange(3, 2))
+
+    // These are not quantifiable.
+    diagnosticTest(#"\b?"#, .notQuantifiable)
+    diagnosticTest(#"\B*"#, .notQuantifiable)
+    diagnosticTest(#"\A+"#, .notQuantifiable)
+    diagnosticTest(#"\Z??"#, .notQuantifiable)
+    diagnosticTest(#"\G*?"#, .notQuantifiable)
+    diagnosticTest(#"\z+?"#, .notQuantifiable)
+    diagnosticTest(#"^*"#, .notQuantifiable)
+    diagnosticTest(#"$?"#, .notQuantifiable)
+    diagnosticTest(#"(?=a)+"#, .notQuantifiable)
+    diagnosticTest(#"(?i)*"#, .notQuantifiable)
+    diagnosticTest(#"\K{1}"#, .unsupported(#"'\K'"#))
+    diagnosticTest(#"\y{2,5}"#, .notQuantifiable)
+    diagnosticTest(#"\Y{3,}"#, .notQuantifiable)
+
+    // MARK: Unicode scalars
+
+    diagnosticTest(#"\u{G}"#, .expectedNumber("G", kind: .hex))
+
+    diagnosticTest(#"\u{"#, .expectedNumber("", kind: .hex))
+    diagnosticTest(#"\u{ "#, .expectedNumber("", kind: .hex))
+    diagnosticTest(#"\u{}"#, .expectedNumber("", kind: .hex))
+    diagnosticTest(#"\u{ }"#, .expectedNumber("", kind: .hex))
+    diagnosticTest(#"\u{  }"#, .expectedNumber("", kind: .hex))
+    diagnosticTest(#"\u{ G}"#, .expectedNumber("G", kind: .hex))
+    diagnosticTest(#"\u{G }"#, .expectedNumber("G", kind: .hex))
+    diagnosticTest(#"\u{ G }"#, .expectedNumber("G", kind: .hex))
+    diagnosticTest(#"\u{ GH }"#, .expectedNumber("GH", kind: .hex))
+    diagnosticTest(#"\u{ G H }"#, .expectedNumber("G", kind: .hex))
+    diagnosticTest(#"\u{ ABC G }"#, .expectedNumber("G", kind: .hex))
+    diagnosticTest(#"\u{ FFFFFFFFF A }"#, .numberOverflow("FFFFFFFFF"))
+
+    diagnosticTest(#"[\d--\u{a b}]"#, .unsupported("scalar sequence in custom character class"))
+    diagnosticTest(#"[\d--[\u{a b}]]"#, .unsupported("scalar sequence in custom character class"))
 
     // MARK: Unicode scalars
 
@@ -2451,6 +2707,16 @@ extension RegexTests {
 
     diagnosticTest(#"\k<a->"#, .expectedNumber("", kind: .decimal))
     diagnosticTest(#"\k<1+>"#, .expectedNumber("", kind: .decimal))
+    diagnosticTest(#"()\k<1+1>"#, .unsupported("recursion level"))
+    diagnosticTest(#"()\k<1-1>"#, .unsupported("recursion level"))
+
+    diagnosticTest(#"\k<0>"#, .cannotReferToWholePattern)
+    diagnosticTest(#"\1"#, .invalidReference(1))
+    diagnosticTest(#"(?:)\1"#, .invalidReference(1))
+    diagnosticTest(#"()\2"#, .invalidReference(2))
+    diagnosticTest(#"\2()"#, .invalidReference(2))
+    diagnosticTest(#"(?:)()\2"#, .invalidReference(2))
+    diagnosticTest(#"(?:)(?:)\2"#, .invalidReference(2))
 
     // MARK: Conditionals
 
@@ -2489,13 +2755,13 @@ extension RegexTests {
 
     diagnosticTest("(*MARK)", .backtrackingDirectiveMustHaveName("MARK"))
     diagnosticTest("(*:)", .expectedNonEmptyContents)
-    diagnosticTest("(*MARK:a)?", .notQuantifiable)
-    diagnosticTest("(*FAIL)+", .notQuantifiable)
-    diagnosticTest("(*COMMIT:b)*", .notQuantifiable)
-    diagnosticTest("(*PRUNE:a)??", .notQuantifiable)
-    diagnosticTest("(*SKIP:a)*?", .notQuantifiable)
-    diagnosticTest("(*F)+?", .notQuantifiable)
-    diagnosticTest("(*:a){2}", .notQuantifiable)
+    diagnosticTest("(*MARK:a)?", .unsupported("backtracking directive"))
+    diagnosticTest("(*FAIL)+", .unsupported("backtracking directive"))
+    diagnosticTest("(*COMMIT:b)*", .unsupported("backtracking directive"))
+    diagnosticTest("(*PRUNE:a)??", .unsupported("backtracking directive"))
+    diagnosticTest("(*SKIP:a)*?", .unsupported("backtracking directive"))
+    diagnosticTest("(*F)+?", .unsupported("backtracking directive"))
+    diagnosticTest("(*:a){2}", .unsupported("backtracking directive"))
 
     // MARK: Oniguruma absent functions
 
@@ -2553,5 +2819,9 @@ extension RegexTests {
   func testCompilerInterfaceDiagnostics() {
     compilerInterfaceDiagnosticMessageTest(
       "#/[x*/#", "cannot parse regular expression: expected ']'")
+    compilerInterfaceDiagnosticMessageTest(
+      "/a{3,2}/", "cannot parse regular expression: range lower bound '3' must be less than or equal to upper bound '2'")
+    compilerInterfaceDiagnosticMessageTest(
+      #"#/\u{}/#"#, "cannot parse regular expression: expected hexadecimal number")
   }
 }

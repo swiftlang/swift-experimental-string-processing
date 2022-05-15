@@ -848,6 +848,54 @@ class RegexDSLTests: XCTestCase {
         }
       }
     }
+
+    // Post-hoc captured reference w/ attempted match before capture
+    // #"(?:\w\1|(\w):)+"#
+    //
+    // This tests that the reference `a` simply fails to match instead of
+    // erroring when encountered before a match is captured into `a`. The
+    // matching process here goes like this:
+    //  - the first time through, the first alternation is taken
+    //    - `.word` matches on "a"
+    //    - the `a` backreference fails on ":", because `a` hasn't matched yet
+    //    - backtrack to the beginning of the input
+    //  - now the second alternation is taken
+    //    - `.word` matches on "a" and is captured as `a`
+    //    - the literal ":" matches
+    //  - proceeding from the position of the first "b" in the first alternation
+    //    - `.word` matches on "b"
+    //    - the `a` backreference now contains "a", and matches on "a"
+    //  - proceeding from the position of the first "c" in the first alternation
+    //    - `.word` matches on "c"
+    //    - the `a` backreference still contains "a", and matches on "a"
+    //  - proceeding from the position of the first "o" in the first alternation
+    //    - `.word` matches on "o"
+    //    - the `a` backreference still contains "a", so it fails on ":"
+    //  - now the second alternation is taken
+    //    - `.word` matches on "o" and is captured as `a`
+    //    - the literal ":" matches
+    //  - continuing as above from the second "b"...
+    try _testDSLCaptures(
+      ("a:bacao:boco", ("a:bacao:boco", "o")),
+      matchType: (Substring, Substring?).self,
+      ==
+    ) {
+      // NOTE: "expression too complex to type check" when inferring the generic
+      // parameter.
+      OneOrMore {
+        let a = Reference(Substring.self)
+        ChoiceOf<(Substring, Substring?)> {
+          Regex {
+            One(.word)
+            a
+          }
+          Regex {
+            Capture(.word, as: a)
+            ":"
+          }
+        }
+      }
+    }
   }
   
   func testSemanticVersionExample() {

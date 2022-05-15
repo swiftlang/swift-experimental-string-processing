@@ -20,7 +20,7 @@ extension RegexTests {
     XCTAssert(SourceLocation.fake.isFake)
     XCTAssert(group(.capture, "a").location.isFake)
 
-    let ast = try! parse("(a)", .traditional).root
+    let ast = try! parse("(a)", .semantic, .traditional).root
     XCTAssert(ast.location.isReal)
   }
 
@@ -31,7 +31,7 @@ extension RegexTests {
     //
     // Input should be a concatenation or alternation
     func flatTest(_ str: String, _ expected: [String]) {
-      guard let ast = try? parse(str, .traditional).root else {
+      guard let ast = try? parse(str, .semantic, .traditional).root else {
         XCTFail("Fail to parse: \(str)")
         return
       }
@@ -54,7 +54,7 @@ extension RegexTests {
 
     func renderTest(_ str: String, _ expected: [String]) {
       let lines = try! parse(
-        str, .traditional
+        str, .semantic, .traditional
       )._render(in: str)
       func fail() {
         XCTFail("""

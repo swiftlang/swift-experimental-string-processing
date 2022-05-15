@@ -16,35 +16,42 @@ import XCTest
 
 extension CaptureList.Capture {
   static var cap: Self {
-    return Self(optionalDepth: 0)
+    return Self(optionalDepth: 0, .fake)
   }
 
   static var opt: Self {
-    return Self(optionalDepth: 1)
+    return Self(optionalDepth: 1, .fake)
   }
   static var opt_opt: Self {
-    return Self(optionalDepth: 2)
+    return Self(optionalDepth: 2, .fake)
   }
   static var opt_opt_opt: Self {
-    return Self(optionalDepth: 3)
+    return Self(optionalDepth: 3, .fake)
   }
   static var opt_opt_opt_opt: Self {
-    return Self(optionalDepth: 4)
+    return Self(optionalDepth: 4, .fake)
   }
   static var opt_opt_opt_opt_opt: Self {
-    return Self(optionalDepth: 5)
+    return Self(optionalDepth: 5, .fake)
   }
   static var opt_opt_opt_opt_opt_opt: Self {
-    return Self(optionalDepth: 6)
+    return Self(optionalDepth: 6, .fake)
   }
 
-  static func named(_ name: String) -> Self {
-    return Self(name: name, optionalDepth: 0)
-  }
+  static func named(_ name: String, opt: Int = 0) -> Self {
+    return Self(name: name, optionalDepth: opt, .fake)  }
 }
 extension CaptureList {
   static func caps(count: Int) -> Self {
     Self(Array(repeating: .cap, count: count))
+  }
+
+  var withoutLocs: Self {
+    var copy = self
+    for idx in copy.captures.indices {
+      copy.captures[idx].location = .fake
+    }
+    return copy
   }
 }
 
@@ -150,8 +157,8 @@ func captureTest(
   file: StaticString = #file,
   line: UInt = #line
 ) {
-  let ast = try! parse(regex, .traditional)
-  let capList = ast.root._captureList
+  let ast = try! parse(regex, .semantic, .traditional)
+  let capList = ast.root._captureList.withoutLocs
   guard capList == expected else {
     XCTFail("""
       Expected:

@@ -117,7 +117,6 @@ extension MatchingOptions {
 
 // Deprecated CharacterClass.MatchLevel API
 extension MatchingOptions {
-  @available(*, deprecated)
   var matchLevel: _CharacterClassModel.MatchLevel {
     switch semanticLevel {
     case .graphemeCluster:
@@ -205,9 +204,6 @@ extension MatchingOptions {
         
       // Whitespace options are only relevant during parsing, not compilation.
       case .extended, .extraExtended:
-        return nil
-      @unknown default:
-        // Ignore unknown 
         return nil
       }
     }

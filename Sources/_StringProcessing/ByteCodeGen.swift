@@ -80,10 +80,16 @@ extension Compiler.ByteCodeGen {
       }
 
     case .endOfSubjectBeforeNewline:
-      builder.buildAssert { (input, pos, bounds) in
+      builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
         if pos == input.endIndex { return true }
-        return input.index(after: pos) == input.endIndex
-         && input[pos].isNewline
+        switch semanticLevel {
+        case .graphemeCluster:
+          return input.index(after: pos) == input.endIndex
+           && input[pos].isNewline
+        case .unicodeScalar:
+          return input.unicodeScalars.index(after: pos) == input.endIndex
+           && input.unicodeScalars[pos].isNewline
+        }
       }
 
     case .endOfSubject:
@@ -115,8 +121,14 @@ extension Compiler.ByteCodeGen {
 
     case .startOfLine:
       if options.anchorsMatchNewlines {
-        builder.buildAssert { (input, pos, bounds) in
-          pos == input.startIndex || input[input.index(before: pos)].isNewline
+        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
+          if pos == input.startIndex { return true }
+          switch semanticLevel {
+          case .graphemeCluster:
+            return input[input.index(before: pos)].isNewline
+          case .unicodeScalar:
+            return input.unicodeScalars[input.unicodeScalars.index(before: pos)].isNewline
+          }
         }
       } else {
         builder.buildAssert { (input, pos, bounds) in
@@ -126,8 +138,14 @@ extension Compiler.ByteCodeGen {
       
     case .endOfLine:
       if options.anchorsMatchNewlines {
-        builder.buildAssert { (input, pos, bounds) in
-          pos == input.endIndex || input[pos].isNewline
+        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
+          if pos == input.endIndex { return true }
+          switch semanticLevel {
+          case .graphemeCluster:
+            return input[pos].isNewline
+          case .unicodeScalar:
+            return input.unicodeScalars[pos].isNewline
+          }
         }
       } else {
         builder.buildAssert { (input, pos, bounds) in
@@ -168,7 +186,14 @@ extension Compiler.ByteCodeGen {
   }
   
   mutating func emitCharacter(_ c: Character) throws {
-    // FIXME: Does semantic level matter?
+    // Unicode scalar matches the specific scalars that comprise a character
+    if options.semanticLevel == .unicodeScalar {
+      for scalar in c.unicodeScalars {
+        try emitScalar(scalar)
+      }
+      return
+    }
+    
     if options.isCaseInsensitive && c.isCased {
       // TODO: buildCaseInsensitiveMatch(c) or buildMatch(c, caseInsensitive: true)
       builder.buildConsume { input, bounds in
@@ -625,22 +650,44 @@ extension Compiler.ByteCodeGen {
       try emitAtom(a)
 
     case let .quotedLiteral(s):
-      // TODO: Should this incorporate options?
-      if options.isCaseInsensitive {
-        // TODO: buildCaseInsensitiveMatchSequence(c) or alternative
-        builder.buildConsume { input, bounds in
-          var iterator = s.makeIterator()
+      if options.semanticLevel == .graphemeCluster {
+        if options.isCaseInsensitive {
+          // TODO: buildCaseInsensitiveMatchSequence(c) or alternative
+          builder.buildConsume { input, bounds in
+            var iterator = s.makeIterator()
+            var currentIndex = bounds.lowerBound
+            while let ch = iterator.next() {
+              guard currentIndex < bounds.upperBound,
+                    ch.lowercased() == input[currentIndex].lowercased()
+              else { return nil }
+              input.formIndex(after: &currentIndex)
+            }
+            return currentIndex
+          }
+        } else {
+          builder.buildMatchSequence(s)
+        }
+      } else {
+        builder.buildConsume {
+          [caseInsensitive = options.isCaseInsensitive] input, bounds in
+          // TODO: Case folding
+          var iterator = s.unicodeScalars.makeIterator()
           var currentIndex = bounds.lowerBound
-          while let ch = iterator.next() {
-            guard currentIndex < bounds.upperBound,
-                  ch.lowercased() == input[currentIndex].lowercased()
-            else { return nil }
-            input.formIndex(after: &currentIndex)
+          while let scalar = iterator.next() {
+            guard currentIndex < bounds.upperBound else { return nil }
+            if caseInsensitive {
+              if scalar.properties.lowercaseMapping != input.unicodeScalars[currentIndex].properties.lowercaseMapping {
+                return nil
+              }
+            } else {
+              if scalar != input.unicodeScalars[currentIndex] {
+                return nil
+              }
+            }
+            input.unicodeScalars.formIndex(after: &currentIndex)
           }
           return currentIndex
         }
-      } else {
-        builder.buildMatchSequence(s)
       }
 
     case let .regexLiteral(l):

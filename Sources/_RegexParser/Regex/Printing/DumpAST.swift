@@ -138,6 +138,9 @@ extension AST.Atom {
     switch kind {
     case .escaped(let c): return "\\\(c.character)"
 
+    case .scalarSequence(let s):
+      return s.scalars.map(\.value.halfWidthCornerQuoted).joined()
+
     case .namedCharacter(let charName):
       return "\\N{\(charName)}"
 

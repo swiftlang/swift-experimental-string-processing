@@ -178,15 +178,18 @@ public struct _CharacterClassModel: Hashable {
         matched = c.isNumber && (c.isASCII || !options.usesASCIIDigits)
       case .hexDigit:
         matched = c.isHexDigit && (c.isASCII || !options.usesASCIIDigits)
-      case .horizontalWhitespace: fatalError("Not implemented")
-      case .newlineSequence:
-        matched = c.isNewline && (c.isASCII || !options.usesASCIISpaces)
-      case .verticalWhitespace: fatalError("Not implemented")
+      case .horizontalWhitespace:
+        matched = c.unicodeScalars.first?.isHorizontalWhitespace == true
+          && (c.isASCII || !options.usesASCIISpaces)
+      case .newlineSequence, .verticalWhitespace:
+        matched = c.unicodeScalars.first?.isNewline == true
+          && (c.isASCII || !options.usesASCIISpaces)
       case .whitespace:
         matched = c.isWhitespace && (c.isASCII || !options.usesASCIISpaces)
       case .word:
         matched = c.isWordCharacter && (c.isASCII || !options.usesASCIIWord)
-      case .custom(let set): matched = set.any { $0.matches(c, with: options) }
+      case .custom(let set):
+        matched = set.any { $0.matches(c, with: options) }
       }
       if isInverted {
         matched.toggle()
@@ -194,28 +197,38 @@ public struct _CharacterClassModel: Hashable {
       return matched ? next : nil
     case .unicodeScalar:
       let c = str.unicodeScalars[i]
+      var nextIndex = str.unicodeScalars.index(after: i)
       var matched: Bool
       switch cc {
       case .any: matched = true
       case .anyScalar: matched = true
-      case .anyGrapheme: fatalError("Not matched in this mode")
+      case .anyGrapheme:
+        matched = true
+        nextIndex = str.index(after: i)
       case .digit:
         matched = c.properties.numericType != nil && (c.isASCII || !options.usesASCIIDigits)
       case .hexDigit:
         matched = Character(c).isHexDigit && (c.isASCII || !options.usesASCIIDigits)
-      case .horizontalWhitespace: fatalError("Not implemented")
-      case .newlineSequence: fatalError("Not implemented")
-      case .verticalWhitespace: fatalError("Not implemented")
+      case .horizontalWhitespace:
+        matched = c.isHorizontalWhitespace && (c.isASCII || !options.usesASCIISpaces)
+      case .verticalWhitespace:
+        matched = c.isNewline && (c.isASCII || !options.usesASCIISpaces)
+      case .newlineSequence:
+        matched = c.isNewline && (c.isASCII || !options.usesASCIISpaces)
+        if c == "\r" && nextIndex != str.endIndex && str.unicodeScalars[nextIndex] == "\n" {
+          str.unicodeScalars.formIndex(after: &nextIndex)
+        }
       case .whitespace:
         matched = c.properties.isWhitespace && (c.isASCII || !options.usesASCIISpaces)
       case .word:
         matched = (c.properties.isAlphabetic || c == "_") && (c.isASCII || !options.usesASCIIWord)
-      case .custom: fatalError("Not supported")
+      case .custom(let set):
+        matched = set.any { $0.matches(Character(c), with: options) }
       }
       if isInverted {
         matched.toggle()
       }
-      return matched ? str.unicodeScalars.index(after: i) : nil
+      return matched ? nextIndex : nil
     }
   }
 }
@@ -451,8 +464,12 @@ extension AST.Atom.EscapedBuiltin {
     case .notHorizontalWhitespace:
       return .horizontalWhitespace.inverted
 
-    case .notNewline: return .newlineSequence.inverted
     case .newlineSequence: return .newlineSequence
+
+    // FIXME: This is more like '.' than inverted '\R', as it is affected
+    // by e.g (*CR). We should therefore really be emitting it through
+    // emitAny(). For now we treat it as semantically invalid.
+    case .notNewline: return .newlineSequence.inverted
 
     case .whitespace:    return .whitespace
     case .notWhitespace: return .whitespace.inverted
