@@ -154,13 +154,13 @@ extension Regex {
 
     var low = inputRange.lowerBound
     let high = inputRange.upperBound
-    while low < high {
+    while true {
       if let m = try _match(input, in: low..<high, mode: .partialFromFront) {
         return m
       }
+      if low == high { return nil }
       input.formIndex(after: &low)
     }
-    return nil
   }
 }
 

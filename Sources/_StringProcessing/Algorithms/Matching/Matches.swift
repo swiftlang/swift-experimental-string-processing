@@ -213,14 +213,22 @@ extension BidirectionalCollection where SubSequence == Substring {
     let regex = r.regex
 
     var result = [Regex<R.RegexOutput>.Match]()
-    while start < end {
+    while start <= end {
       guard let match = try? regex._firstMatch(
         slice.base, in: start..<end
       ) else {
         break
       }
       result.append(match)
-      start = match.range.upperBound
+      if match.range.isEmpty {
+        if match.range.upperBound == end {
+          break
+        }
+        // FIXME: semantic level
+        start = slice.index(after: match.range.upperBound)
+      } else {
+        start = match.range.upperBound
+      }
     }
     return result
   }
