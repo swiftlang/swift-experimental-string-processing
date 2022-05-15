@@ -17,20 +17,26 @@
 //       incremental conversion, such that leaves remain
 //       as canonical regex literals.
 
+/// Renders an AST tree as a Pattern DSL.
+///
+/// - Parameters:
+///   - ast: A `_RegexParser.AST` instance.
+///   - maxTopDownLevels: The number of levels down from the root of the tree
+///     to perform conversion. `nil` means no limit.
+///   - minBottomUpLevels: The number of levels up from the leaves of the tree
+///     to perform conversion. `nil` means no limit.
+/// - Returns: A string representation of `ast` in the `RegexBuilder` syntax.
 @_spi(PatternConverter)
-extension AST {
-  /// Renders as a Pattern DSL.
-  @_spi(PatternConverter)
-  public func renderAsBuilderDSL(
-    maxTopDownLevels: Int? = nil,
-    minBottomUpLevels: Int? = nil
-  ) -> String {
-    var printer = PrettyPrinter(
-      maxTopDownLevels: maxTopDownLevels,
-      minBottomUpLevels: minBottomUpLevels)
-    printer.printAsPattern(self)
-    return printer.finish()
-  }
+public func renderAsBuilderDSL(
+  ast: Any,
+  maxTopDownLevels: Int? = nil,
+  minBottomUpLevels: Int? = nil
+) -> String {
+  var printer = PrettyPrinter(
+    maxTopDownLevels: maxTopDownLevels,
+    minBottomUpLevels: minBottomUpLevels)
+  printer.printAsPattern(ast as! AST)
+  return printer.finish()
 }
 
 extension PrettyPrinter {
