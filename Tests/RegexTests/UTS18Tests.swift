@@ -151,10 +151,8 @@ extension UTS18Tests {
   }
   
   func testProperties_XFail() {
-    XCTExpectFailure("Need to support 'block' properties") {
-      // XCTAssertTrue("\u{1F00}".contains(#/\p{Block=Greek}/#))
-      XCTFail(#"\(#/\p{Block=Greek}/#)"#)
-    }
+    // Certain properties are unsupported, see below.
+    XCTAssertThrowsError(try Regex(#"\p{Block=Greek}"#))
   }
   
   // RL1.2a	Compatibility Properties
@@ -495,7 +493,8 @@ extension UTS18Tests {
   // To meet this requirement, an implementation shall support wildcards in
   // Unicode property values.
   func testWildcardsInPropertyValues() {
-    XCTExpectFailure { XCTFail("Implement tests") }
+    // Unsupported
+    XCTAssertThrowsError(try Regex(#"\p{name=/a/"#))
   }
   
   // RL2.7 Full Properties
@@ -510,10 +509,7 @@ extension UTS18Tests {
     XCTAssertTrue("a".contains(regex(#"\p{name=latin small letter a}"#)))
 
     // Block
-    XCTExpectFailure {
-      XCTFail(#"Unsupported: \(#/^\p{block=Block Elements}+$/#)"#)
-      // XCTAssertTrue("▂▃▄▅▆▇".contains(regex(#"^\p{block=Block Elements}+$"#)))
-    }
+    // Unsupported
 
     // Age
     XCTAssertTrue("a".contains(regex(#"\p{age=1.1}"#)))
@@ -552,10 +548,7 @@ extension UTS18Tests {
     XCTAssertTrue("aéîøüƒ".contains(regex(#"^\p{Alphabetic}+$"#)))
 
     // Hangul_Syllable_Type
-    XCTExpectFailure {
-      XCTFail(#"Unsupported: \(#/\p{Hangul_Syllable_Type=L}/#)"#)
-      // XCTAssertTrue("ㄱ".contains(regex(#"\p{Hangul_Syllable_Type=L}"#)))
-    }
+    // Unsupported
 
     // Noncharacter_Code_Point
     XCTAssertTrue("\u{10FFFF}".contains(regex(#"\p{Noncharacter_Code_Point}"#)))
@@ -616,17 +609,10 @@ extension UTS18Tests {
     XCTAssertFalse("abc123".contains(regex(#"\p{Pattern_White_Space}"#)))
     
     // Identifier_Status
-    XCTExpectFailure {
-      XCTFail(#"Unsupported: \(#/\p{Identifier_Status=Allowed}/#)"#)
-      // XCTAssertTrue("A".contains(regex(#"\p{Identifier_Status=Allowed}"#)))
-      // XCTAssertFalse(" ".contains(regex(#"\p{Identifier_Status=Allowed}"#)))
-      // XCTAssertTrue(" ".contains(regex(#"\p{Identifier_Status=Restricted}"#)))
-    }
+    // Unsupported
+
     // Identifier_Type
-    XCTExpectFailure {
-      XCTFail(#"Unsupported: \(#/\p{Identifier_Type=Inclusion}/#)"#)
-      // XCTAssertTrue("'".contains(regex(#"\p{Identifier_Type=Inclusion}"#)))
-    }
+    // Unsupported
 
     // MARK: CJK
     // Ideographic
@@ -647,10 +633,7 @@ extension UTS18Tests {
     XCTAssertTrue("⿲⿳".contains(regex(#"^\p{IDS_Trinary_Operator}+$"#)))
 
     // Equivalent_Unified_Ideograph
-    XCTExpectFailure {
-      XCTFail(#"Unsupported: \(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#)"#)
-      // XCTAssertTrue("⼚⺁厂".contains(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#))
-    }
+    // Unsupported
 
     // MARK: Case
     // Uppercase
@@ -674,8 +657,7 @@ extension UTS18Tests {
     XCTAssertFalse("bBå".contains(regex(#"\p{Simple_Uppercase_Mapping=A}"#)))
 
     // Simple_Case_Folding
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Simple_Case_Folding}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Simple_Case_Folding}"#)))
+    // Unsupported
 
     // Soft_Dotted
     XCTAssertTrue("ijɨʝⅈⅉ".contains(regex(#"^\p{Soft_Dotted}+$"#)))
@@ -712,35 +694,29 @@ extension UTS18Tests {
     // Changes_When_Casemapped
     XCTAssertTrue("a".contains(regex(#"\p{Changes_When_Casemapped}"#)))
     XCTAssertFalse(":".contains(regex(#"\p{Changes_When_Casemapped}"#)))
-
+    
     // MARK: Normalization
     // Canonical_Combining_Class
     XCTAssertTrue("\u{0321}\u{0322}\u{1DD0}".contains(regex(#"^\p{Canonical_Combining_Class=202}+$"#)))
     XCTAssertFalse("123".contains(regex(#"\p{Canonical_Combining_Class=202}"#)))
-
+    
     // Decomposition_Type
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Decomposition_Type}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Decomposition_Type}"#)))
-
+    // Unsupported
+    
     // NFC_Quick_Check
-//    XCTAssertTrue("abc".contains(regex(#"^\p{NFC_Quick_Check}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{NFC_Quick_Check}"#)))
-
+    // Unsupported
+    
     // NFKC_Quick_Check
-//    XCTAssertTrue("abc".contains(regex(#"^\p{NFKC_Quick_Check}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{NFKC_Quick_Check}"#)))
-
+    // Unsupported
+    
     // NFD_Quick_Check
-//    XCTAssertTrue("abc".contains(regex(#"^\p{NFD_Quick_Check}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{NFD_Quick_Check}"#)))
+    // Unsupported
 
     // NFKD_Quick_Check
-//    XCTAssertTrue("abc".contains(regex(#"^\p{NFKD_Quick_Check}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{NFKD_Quick_Check}"#)))
+    // Unsupported
 
     // NFKC_Casefold
-//    XCTAssertTrue("abc".contains(regex(#"^\p{NFKC_Casefold}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{NFKC_Casefold}"#)))
+    // Unsupported
 
     // Changes_When_NFKC_Casefolded
     XCTAssertTrue("ABCÊÖ".contains(regex(#"^\p{Changes_When_NFKC_Casefolded}+$"#)))
@@ -764,40 +740,31 @@ extension UTS18Tests {
     XCTAssertFalse("123 🧠".contains(regex(#"\p{Emoji_Modifier_Base}"#)))
 
     // Emoji_Component
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Emoji_Component}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Emoji_Component}"#)))
+    // Unsupported
 
     // Extended_Pictographic
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Extended_Pictographic}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Extended_Pictographic}"#)))
+    // Unsupported
 
     // Basic_Emoji*
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Basic_Emoji*}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Basic_Emoji*}"#)))
+    // Unsupported
 
     // Emoji_Keycap_Sequence*
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Emoji_Keycap_Sequence*}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Emoji_Keycap_Sequence*}"#)))
+    // Unsupported
 
     // RGI_Emoji_Modifier_Sequence*
-//    XCTAssertTrue("abc".contains(regex(#"^\p{RGI_Emoji_Modifier_Sequence*}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{RGI_Emoji_Modifier_Sequence*}"#)))
+    // Unsupported
 
     // RGI_Emoji_Flag_Sequence*
-//    XCTAssertTrue("abc".contains(regex(#"^\p{RGI_Emoji_Flag_Sequence*}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{RGI_Emoji_Flag_Sequence*}"#)))
+    // Unsupported
 
     // RGI_Emoji_Tag_Sequence*
-//    XCTAssertTrue("abc".contains(regex(#"^\p{RGI_Emoji_Tag_Sequence*}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{RGI_Emoji_Tag_Sequence*}"#)))
+    // Unsupported
 
     // RGI_Emoji_ZWJ_Sequence*
-//    XCTAssertTrue("abc".contains(regex(#"^\p{RGI_Emoji_ZWJ_Sequence*}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{RGI_Emoji_ZWJ_Sequence*}"#)))
+    // Unsupported
 
     // RGI_Emoji*
-//    XCTAssertTrue("abc".contains(regex(#"^\p{RGI_Emoji*}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{RGI_Emoji*}"#)))
+    // Unsupported
 
     // MARK: Shaping and Rendering
     // Join_Control
@@ -805,45 +772,35 @@ extension UTS18Tests {
     XCTAssertFalse("123".contains(regex(#"\p{Join_Control}"#)))
 
     // Joining_Group
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Joining_Group}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Joining_Group}"#)))
+    // Unsupported
 
     // Joining_Type
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Joining_Type}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Joining_Type}"#)))
+    // Unsupported
 
     // Vertical_Orientation
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Vertical_Orientation}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Vertical_Orientation}"#)))
+    // Unsupported
 
     // Line_Break
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Line_Break}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Line_Break}"#)))
+    // Unsupported
 
     // Grapheme_Cluster_Break
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Grapheme_Cluster_Break}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Grapheme_Cluster_Break}"#)))
+    // Unsupported
 
     // Sentence_Break
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Sentence_Break}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Sentence_Break}"#)))
+    // Unsupported
 
     // Word_Break
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Word_Break}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Word_Break}"#)))
+    // Unsupported
 
     // East_Asian_Width
-//    XCTAssertTrue("abc".contains(regex(#"^\p{East_Asian_Width}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{East_Asian_Width}"#)))
+    // Unsupported
 
     // Prepended_Concatenation_Mark
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Prepended_Concatenation_Mark}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Prepended_Concatenation_Mark}"#)))
+    // Unsupported
 
     // MARK: Bidirectional
     // Bidi_Class
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Bidi_Class}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Bidi_Class}"#)))
+    // Unsupported
 
     // Bidi_Control
     XCTAssertTrue("\u{200E}\u{200F}\u{2069}".contains(regex(#"^\p{Bidi_Control}+$"#)))
@@ -854,17 +811,13 @@ extension UTS18Tests {
     XCTAssertFalse("abc 123".contains(regex(#"\p{Bidi_Mirrored}"#)))
 
     // Bidi_Mirroring_Glyph
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Bidi_Mirroring_Glyph}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Bidi_Mirroring_Glyph}"#)))
+    // Unsupported
 
     // Bidi_Paired_Bracket
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Bidi_Paired_Bracket}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Bidi_Paired_Bracket}"#)))
+    // Unsupported
 
     // Bidi_Paired_Bracket_Type
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Bidi_Paired_Bracket_Type}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Bidi_Paired_Bracket_Type}"#)))
-
+    // Unsupported
 
     // MARK: Miscellaneous
     // Math
@@ -906,5 +859,109 @@ extension UTS18Tests {
     // Regional_Indicator
     XCTAssertTrue("🇰🇷🇬🇭🇵🇪".contains(regex(#"^\p{Regional_Indicator}+$"#)))
     XCTAssertFalse("abc 123".contains(regex(#"\p{Regional_Indicator}"#)))
+  }
+
+  func testFullProperties_Unsupported() {
+    // Block
+    XCTAssertThrowsError(try Regex(#"\p{block=Block_Elements}"#))
+
+    // Hangul_Syllable_Type
+    XCTAssertThrowsError(try Regex(#"\p{Hangul_Syllable_Type=L}/"#))
+
+    // Identifier_Status
+    XCTAssertThrowsError(try Regex(#"\p{Identifier_Status=Allowed}"#))
+    
+    // Identifier_Type
+    XCTAssertThrowsError(try Regex(#"\p{Identifier_Type=Inclusion}/"#))
+
+    // Equivalent_Unified_Ideograph
+    XCTAssertThrowsError(try Regex(#"\p{Equivalent_Unified_Ideograph=⼚}"#))
+
+    // Simple_Case_Folding
+    XCTAssertThrowsError(try Regex(#"\p{Simple_Case_Folding=a}/"#))
+    
+    // Decomposition_Type
+    XCTAssertThrowsError(try Regex(#"\p{Decomposition_Type}"#))
+    
+    // NFC_Quick_Check
+    XCTAssertThrowsError(try Regex(#"\p{NFC_Quick_Check}"#))
+    
+    // NFKC_Quick_Check
+    XCTAssertThrowsError(try Regex(#"\p{NFKC_Quick_Check}"#))
+    
+    // NFD_Quick_Check
+    XCTAssertThrowsError(try Regex(#"\p{NFD_Quick_Check}"#))
+    
+    // NFKD_Quick_Check
+    XCTAssertThrowsError(try Regex(#"\p{NFKD_Quick_Check}"#))
+    
+    // NFKC_Casefold
+    XCTAssertThrowsError(try Regex(#"\p{NFKC_Casefold}"#))
+
+    // Emoji_Component
+    XCTAssertThrowsError(try Regex(#"\p{Emoji_Component}"#))
+
+    // Extended_Pictographic
+    XCTAssertThrowsError(try Regex(#"\p{Extended_Pictographic}"#))
+
+    // Basic_Emoji*
+    XCTAssertThrowsError(try Regex(#"\p{Basic_Emoji*}"#))
+
+    // Emoji_Keycap_Sequence*
+    XCTAssertThrowsError(try Regex(#"\p{Emoji_Keycap_Sequence*}"#))
+
+    // RGI_Emoji_Modifier_Sequence*
+    XCTAssertThrowsError(try Regex(#"\p{RGI_Emoji_Modifier_Sequence*}"#))
+
+    // RGI_Emoji_Flag_Sequence*
+    XCTAssertThrowsError(try Regex(#"\p{RGI_Emoji_Flag_Sequence*}"#))
+
+    // RGI_Emoji_Tag_Sequence*
+    XCTAssertThrowsError(try Regex(#"\p{RGI_Emoji_Tag_Sequence*}"#))
+
+    // RGI_Emoji_ZWJ_Sequence*
+    XCTAssertThrowsError(try Regex(#"\p{RGI_Emoji_ZWJ_Sequence*}"#))
+
+    // RGI_Emoji*
+    XCTAssertThrowsError(try Regex(#"\p{RGI_Emoji*}"#))
+
+    // Joining_Group
+    XCTAssertThrowsError(try Regex(#"\p{Joining_Group}"#))
+
+    // Joining_Type
+    XCTAssertThrowsError(try Regex(#"\p{Joining_Type}"#))
+
+    // Vertical_Orientation
+    XCTAssertThrowsError(try Regex(#"\p{Vertical_Orientation}"#))
+
+    // Line_Break
+    XCTAssertThrowsError(try Regex(#"\p{Line_Break}"#))
+
+    // Grapheme_Cluster_Break
+    XCTAssertThrowsError(try Regex(#"\p{Grapheme_Cluster_Break}"#))
+
+    // Sentence_Break
+    XCTAssertThrowsError(try Regex(#"\p{Sentence_Break}"#))
+
+    // Word_Break
+    XCTAssertThrowsError(try Regex(#"\p{Word_Break}"#))
+
+    // East_Asian_Width
+    XCTAssertThrowsError(try Regex(#"\p{East_Asian_Width}"#))
+
+    // Prepended_Concatenation_Mark
+    XCTAssertThrowsError(try Regex(#"\p{Prepended_Concatenation_Mark}"#))
+
+    // Bidi_Class
+    XCTAssertThrowsError(try Regex(#"\p{Bidi_Class}"#))
+
+    // Bidi_Mirroring_Glyph
+    XCTAssertThrowsError(try Regex(#"\p{Bidi_Mirroring_Glyph}"#))
+
+    // Bidi_Paired_Bracket
+    XCTAssertThrowsError(try Regex(#"\p{Bidi_Paired_Bracket}"#))
+
+    // Bidi_Paired_Bracket_Type
+    XCTAssertThrowsError(try Regex(#"\p{Bidi_Paired_Bracket_Type}"#))
   }
 }
