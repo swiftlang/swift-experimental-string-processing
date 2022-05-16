@@ -60,7 +60,13 @@ enum ParseError: Error, Hashable {
 
   case emptyProperty
   case unknownProperty(key: String?, value: String)
-
+  case unrecognizedScript(String)
+  case unrecognizedCategory(String)
+  case invalidAge(String)
+  case invalidNumericValue(String)
+  case unrecognizedNumericType(String)
+  case invalidCCC(String)
+  
   case expectedGroupSpecifier
   case unbalancedEndOfGroup
 
@@ -184,6 +190,18 @@ extension ParseError: CustomStringConvertible {
       return "extended syntax may not be disabled in multi-line mode"
     case .expectedCalloutArgument:
       return "expected argument to callout"
+    case .unrecognizedScript(let value):
+      return "unrecognized script '\(value)'"
+    case .unrecognizedCategory(let value):
+      return "unrecognized category '\(value)'"
+    case .unrecognizedNumericType(let value):
+      return "unrecognized numeric type '\(value)'"
+    case .invalidAge(let value):
+      return "invalid age format for '\(value)' - use '3.0' or 'V3_0' formats"
+    case .invalidNumericValue(let value):
+      return "invalid numeric value '\(value)'"
+    case .invalidCCC(let value):
+      return "invalid canonical combining class '\(value)'"
 
     // MARK: Semantic Errors
 

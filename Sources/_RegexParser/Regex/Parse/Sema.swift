@@ -127,8 +127,8 @@ extension RegexValidator {
     _ prop: Unicode.BinaryProperty, at loc: SourceLocation
   ) throws {
     switch prop {
-    case .asciiHexDigit, .alphabetic, .bidiMirrored, .cased, .caseIgnorable,
-        .changesWhenCasefolded, .changesWhenCasemapped,
+    case .asciiHexDigit, .alphabetic, .bidiControl, .bidiMirrored, .cased,
+        .caseIgnorable, .changesWhenCasefolded, .changesWhenCasemapped,
         .changesWhenNFKCCasefolded, .changesWhenLowercased,
         .changesWhenTitlecased, .changesWhenUppercased, .dash, .deprecated,
         .defaultIgnorableCodePoint, .diacratic, .extender,
@@ -150,7 +150,7 @@ extension RegexValidator {
     case .expandsOnNFC, .expandsOnNFD, .expandsOnNFKD, .expandsOnNFKC:
       throw error(.deprecatedUnicode(prop.rawValue.quoted), at: loc)
 
-    case .bidiControl, .compositionExclusion, .emojiComponent,
+    case .compositionExclusion, .emojiComponent,
         .extendedPictographic, .graphemeLink, .hyphen, .otherAlphabetic,
         .otherDefaultIgnorableCodePoint, .otherGraphemeExtended,
         .otherIDContinue, .otherIDStart, .otherLowercase, .otherMath,
@@ -169,7 +169,7 @@ extension RegexValidator {
     case .binary(let b, _):
       try validateBinaryProperty(b, at: loc)
     case .any, .assigned, .ascii, .generalCategory, .posix, .named, .script,
-        .scriptExtension:
+        .scriptExtension, .age, .numericType, .numericValue, .mapping, .ccc:
       break
     case .pcreSpecial:
       throw error(.unsupported("PCRE property"), at: loc)
