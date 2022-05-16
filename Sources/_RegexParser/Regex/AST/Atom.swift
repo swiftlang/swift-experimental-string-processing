@@ -427,11 +427,32 @@ extension AST.Atom.CharacterProperty {
     /// Character name in the form `\p{name=...}`
     case named(String)
     
+    /// Numeric type.
+    case numericType(Unicode.NumericType)
+    
+    /// Numeric value.
+    case numericValue(Double)
+    
+    /// Case mapping.
+    case mapping(MapKind, String)
+    
+    /// Canonical Combining Class.
+    case ccc(Unicode.CanonicalCombiningClass)
+    
+    /// Character age, as per UnicodeScalar.Properties.age.
+    case age(major: Int, minor: Int)
+    
     case posix(Unicode.POSIXProperty)
 
     /// Some special properties implemented by PCRE and Oniguruma.
     case pcreSpecial(PCRESpecialCategory)
     case onigurumaSpecial(OnigurumaSpecialProperty)
+    
+    public enum MapKind: Hashable {
+      case lowercase
+      case uppercase
+      case titlecase
+    }
   }
 
   // TODO: erm, separate out or fold into something? splat it in?

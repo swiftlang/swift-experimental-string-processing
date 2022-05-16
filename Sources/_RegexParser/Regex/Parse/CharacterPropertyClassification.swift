@@ -13,17 +13,17 @@ extension Source {
   typealias PropertyKind = AST.Atom.CharacterProperty.Kind
 
   static private func withNormalizedForms<T>(
-    _ str: String, match: (String) -> T?
-  ) -> T? {
+    _ str: String, match: (String) throws -> T?
+  ) rethrows -> T? {
     // This follows the rules provided by UAX44-LM3, including trying to drop an
     // "is" prefix, which isn't required by UTS#18 RL1.2, but is nice for
     // consistency with other engines and the Unicode.Scalar.Properties names.
     let str = str.filter { !$0.isPatternWhitespace && $0 != "_" && $0 != "-" }
                  .lowercased()
-    if let m = match(str) {
+    if let m = try match(str) {
       return m
     }
-    if str.hasPrefix("is"), let m = match(String(str.dropFirst(2))) {
+    if str.hasPrefix("is"), let m = try match(String(str.dropFirst(2))) {
       return m
     }
     return nil
@@ -75,6 +75,19 @@ extension Source {
       case "zp", "paragraphseparator":     return .paragraphSeparator
       case "zs", "spaceseparator":         return .spaceSeparator
       default:                             return nil
+      }
+    }
+  }
+
+  static private func classifyNumericType(
+    _ str: String
+  ) -> Unicode.NumericType? {
+    withNormalizedForms(str) { str in
+      switch str {
+      case "decimal":   return .decimal
+      case "digit":     return .digit
+      case "numeric":   return .numeric
+      default:          return nil
       }
     }
   }
@@ -361,6 +374,27 @@ extension Source {
       }
     }
   }
+  
+  static func parseAge(_ value: String) -> Unicode.Version? {
+    // Age can be specified in the form '3.0' or 'V3_0'.
+    // Other formats are not supported.
+    var str = value[...]
+    
+    let separator: Character
+    if str.first == "V" {
+      str.removeFirst()
+      separator = "_"
+    } else {
+      separator = "."
+    }
+    
+    guard let sepIndex = str.firstIndex(of: separator),
+          let major = Int(str[..<sepIndex]),
+          let minor = Int(str[sepIndex...].dropFirst())
+    else { return nil }
+    
+    return (major, minor)
+  }
 
   static func classifyCharacterPropertyValueOnly(
     _ value: String
@@ -414,22 +448,51 @@ extension Source {
 
     // This uses the aliases defined in
     // https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt.
-    let match = withNormalizedForms(key) { key -> PropertyKind? in
-      switch key {
+    let match = try withNormalizedForms(key) { normalizedKey -> PropertyKind? in
+      switch normalizedKey {
       case "script", "sc":
-        if let script = classifyScriptProperty(value) {
-          return .script(script)
+        guard let script = classifyScriptProperty(value) else {
+          throw ParseError.unrecognizedScript(value)
         }
+        return .script(script)
       case "scriptextensions", "scx":
-        if let script = classifyScriptProperty(value) {
-          return .scriptExtension(script)
+        guard let script = classifyScriptProperty(value) else {
+          throw ParseError.unrecognizedScript(value)
         }
+        return .scriptExtension(script)
       case "gc", "generalcategory":
-        if let cat = classifyGeneralCategory(value) {
-          return .generalCategory(cat)
+        guard let cat = classifyGeneralCategory(value) else {
+          throw ParseError.unrecognizedCategory(value)
         }
+        return .generalCategory(cat)
+      case "age":
+        guard let (major, minor) = parseAge(value) else {
+          throw ParseError.invalidAge(value)
+        }
+        return .age(major: major, minor: minor)
       case "name", "na":
         return .named(value)
+      case "numericvalue", "nv":
+        guard let numericValue = Double(value) else {
+          throw ParseError.invalidNumericValue(value)
+        }
+        return .numericValue(numericValue)
+      case "numerictype", "nt":
+        guard let type = classifyNumericType(value) else {
+          throw ParseError.unrecognizedNumericType(value)
+        }
+        return .numericType(type)
+      case "slc", "simplelowercasemapping":
+        return .mapping(.lowercase, value)
+      case "suc", "simpleuppercasemapping":
+        return .mapping(.uppercase, value)
+      case "stc", "simpletitlecasemapping":
+        return .mapping(.titlecase, value)
+      case "ccc", "canonicalcombiningclass":
+        guard let cccValue = UInt8(value), cccValue <= 254 else {
+          throw ParseError.invalidCCC(value)
+        }
+        return .ccc(.init(rawValue: cccValue))
       default:
         break
       }
