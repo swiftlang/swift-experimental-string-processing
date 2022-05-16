@@ -80,7 +80,8 @@ struct PatternConverter: ParsableCommand {
 
     print()
     if !skipDSL {
-      let render = ast.renderAsBuilderDSL(
+      let render = renderAsBuilderDSL(
+        ast: ast,
         maxTopDownLevels: topDownConversionLimit,
         minBottomUpLevels: bottomUpConversionLimit
       )
