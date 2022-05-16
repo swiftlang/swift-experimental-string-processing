@@ -15,6 +15,8 @@ enum ParseError: Error, Hashable {
   // TODO: I wonder if it makes sense to store the string.
   // This can make equality weird.
 
+  // MARK: Syntactic Errors
+
   case numberOverflow(String)
   case expectedNumDigits(String, Int)
   case expectedNumber(String, kind: RadixKind)
@@ -40,10 +42,10 @@ enum ParseError: Error, Hashable {
   case expectedNonEmptyContents
   case expectedEscape
   case invalidEscape(Character)
+  case confusableCharacter(Character)
 
   case cannotReferToWholePattern
 
-  case notQuantifiable
   case quantifierRequiresOperand(String)
 
   case backtrackingDirectiveMustHaveName(String)
@@ -55,7 +57,6 @@ enum ParseError: Error, Hashable {
   case cannotRemoveMatchingOptionsAfterCaret
 
   case expectedCustomCharacterClassMembers
-  case invalidCharacterClassRangeOperand
 
   case emptyProperty
   case unknownProperty(key: String?, value: String)
@@ -73,6 +74,17 @@ enum ParseError: Error, Hashable {
   case cannotRemoveExtendedSyntaxInMultilineMode
 
   case expectedCalloutArgument
+
+  // MARK: Semantic Errors
+
+  case unsupported(String)
+  case deprecatedUnicode(String)
+  case invalidReference(Int)
+  case duplicateNamedCapture(String)
+  case invalidCharacterClassRangeOperand
+  case invalidQuantifierRange(Int, Int)
+  case invalidCharacterRange(from: Character, to: Character)
+  case notQuantifiable
 }
 
 extension IdentifierKind {
@@ -88,18 +100,23 @@ extension IdentifierKind {
 extension ParseError: CustomStringConvertible {
   var description: String {
     switch self {
+    // MARK: Syntactic Errors
     case let .numberOverflow(s):
       return "number overflow: \(s)"
     case let .expectedNumDigits(s, i):
       return "expected \(i) digits in '\(s)'"
     case let .expectedNumber(s, kind: kind):
-      let radix: String
-      if kind == .decimal {
-        radix = ""
-      } else {
-        radix = " of radix \(kind.radix)"
+      let number: String
+      switch kind {
+      case .octal:
+        number = "octal number"
+      case .decimal:
+        number = "number"
+      case .hex:
+        number = "hexadecimal number"
       }
-      return "expected a numbers in '\(s)'\(radix)"
+      let suffix = s.isEmpty ? "" : " in '\(s)'"
+      return "expected \(number)\(suffix)"
     case let .expected(s):
       return "expected '\(s)'"
     case .unexpectedEndOfInput:
@@ -112,10 +129,10 @@ extension ParseError: CustomStringConvertible {
       return "expected escape sequence"
     case .invalidEscape(let c):
       return "invalid escape sequence '\\\(c)'"
+    case .confusableCharacter(let c):
+      return "'\(c)' is confusable for a metacharacter; use '\\u{...}' instead"
     case .cannotReferToWholePattern:
       return "cannot refer to whole pattern here"
-    case .notQuantifiable:
-      return "expression is not quantifiable"
     case .quantifierRequiresOperand(let q):
       return "quantifier '\(q)' must appear after expression"
     case .backtrackingDirectiveMustHaveName(let b):
@@ -167,6 +184,23 @@ extension ParseError: CustomStringConvertible {
       return "extended syntax may not be disabled in multi-line mode"
     case .expectedCalloutArgument:
       return "expected argument to callout"
+
+    // MARK: Semantic Errors
+
+    case let .unsupported(kind):
+      return "\(kind) is not currently supported"
+    case let .deprecatedUnicode(kind):
+      return "\(kind) is a deprecated Unicode property, and is not supported"
+    case let .invalidReference(i):
+      return "no capture numbered \(i)"
+    case let .duplicateNamedCapture(str):
+      return "group named '\(str)' already exists"
+    case let .invalidQuantifierRange(lhs, rhs):
+      return "range lower bound '\(lhs)' must be less than or equal to upper bound '\(rhs)'"
+    case let .invalidCharacterRange(from: lhs, to: rhs):
+      return "character '\(lhs)' must compare less than or equal to '\(rhs)'"
+    case .notQuantifiable:
+      return "expression is not quantifiable"
     }
   }
 }

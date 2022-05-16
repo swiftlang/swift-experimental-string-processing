@@ -22,6 +22,14 @@ import XCTest
 @testable // for internal `matches(of:)`
 import _StringProcessing
 
+extension UnicodeScalar {
+  var value4Digits: String {
+    let valueString = String(value, radix: 16, uppercase: true)
+    if valueString.count >= 4 { return valueString }
+    return String(repeating: "0", count: 4 - valueString.count) + valueString
+  }
+}
+
 class UTS18Tests: XCTestCase {
   var input: String {
     "ABCdefghîøu\u{308}\u{FFF0} -–—[]123"
@@ -273,21 +281,33 @@ extension UTS18Tests {
       09\u{85}\
       10\u{2028}\
       11\u{2029}\
-      
+      12
       """
     // Check the input counts
     var lines = lineInput.matches(of: regex(#"\d{2}"#))
-    XCTAssertEqual(lines.count, 11)
+    XCTAssertEqual(lines.count, 12)
     // Test \R - newline sequence
-    lines = lineInput.matches(of: regex(#"\d{2}\R"#))
+    lines = lineInput.matches(of: regex(#"\d{2}\R^"#).anchorsMatchLineEndings())
+    XCTAssertEqual(lines.count, 11)
+    // Test \v - vertical space
+    lines = lineInput.matches(of: regex(#"\d{2}\v^"#).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 11)
     // Test anchors as line boundaries
     lines = lineInput.matches(of: regex(#"^\d{2}$"#).anchorsMatchLineEndings())
-    XCTAssertEqual(lines.count, 11)
+    XCTAssertEqual(lines.count, 12)
     // Test that dot does not match line endings
     lines = lineInput.matches(of: regex(#".+"#))
-    XCTAssertEqual(lines.count, 11)
+    XCTAssertEqual(lines.count, 12)
     
+    // Unicode scalar semantics - \R still matches all, including \r\n sequence
+    lines = lineInput.matches(
+      of: regex(#"\d{2}\R(?=\d)"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
+    XCTAssertEqual(lines.count, 11)
+    // Unicode scalar semantics - \v matches all except for \r\n sequence
+    lines = lineInput.matches(
+      of: regex(#"\d{2}\v(?=\d)"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
+    XCTAssertEqual(lines.count, 10)
+
     // Does not contain an empty line
     XCTAssertFalse(lineInput.contains(regex(#"^$"#)))
     // Does contain an empty line (between \n and \r, which are reversed here)
@@ -400,25 +420,34 @@ extension UTS18Tests {
   //
   // To meet this requirement, an implementation shall support individually
   // named characters.
-  func testNameProperty_XFail() {
-    XCTExpectFailure("Need \\p{name=...} support") {
-      XCTFail(#"\(#/\p{name=BOM}/#)"#)
-      // Name property
-      // XCTAssertTrue("\u{FEFF}".contains(#/\p{name=ZERO WIDTH NO-BREAK SPACE}/#))
-      // Name property and Matching Rules
-      // XCTAssertTrue("\u{FEFF}".contains(#/\p{name=zerowidthno breakspace}/#))
+  func testNameProperty() throws {
+    // Name property
+    XCTAssertTrue("\u{FEFF}".contains(regex(#"\p{name=ZERO WIDTH NO-BREAK SPACE}"#)))
+    // Name property and Matching Rules
+    XCTAssertTrue("\u{FEFF}".contains(regex(#"\p{name=zerowidthno breakspace}"#)))
+    
+    // Computed name
+    XCTAssertTrue("강".contains(regex(#"\p{name=HANGUL SYLLABLE GANG}"#)))
+    
+    // Graphic symbol
+    XCTAssertTrue("\u{1F514}".contains(regex(#"\p{name=BELL}"#)))
+    
+    // Name match failures
+    XCTAssertFalse("\u{FEFF}".contains(regex(#"\p{name=ZERO WIDTH NO-BRAKE SPACE}"#)))
+    XCTAssertFalse("\u{FEFF}".contains(regex(#"\p{name=ZERO WIDTH NO-BREAK SPACE ZZZZ}"#)))
+    XCTAssertFalse("\u{FEFF}".contains(regex(#"\p{name=ZERO WIDTH NO-BREAK}"#)))
+    XCTAssertFalse("\u{FEFF}".contains(regex(#"\p{name=z}"#)))
+  }
+  
+  func testNameProperty_XFail() throws {
+    XCTExpectFailure("Need more expansive name alias matching") {
       // Name_Alias property
-      // XCTAssertTrue("\u{FEFF}".contains(#/\p{name=BYTE ORDER MARK}/#))
+      XCTAssertTrue("\u{FEFF}".contains(regex(#"\p{name=BYTE ORDER MARK}"#)))
       // Name_Alias property (again)
-      // XCTAssertTrue("\u{FEFF}".contains(#/\p{name=BOM}/#))
-
-      // Computed name
-      // XCTAssertTrue("강".contains(#/\p{name=HANGUL SYLLABLE GANG}/#))
-
+      XCTAssertTrue("\u{FEFF}".contains(regex(#"\p{name=BOM}"#)))
+      
       // Control character
-      // XCTAssertTrue("\u{7}".contains(#/\p{name=BEL}/#))
-      // Graphic symbol
-      // XCTAssertTrue("\u{1F514}".contains(#/\p{name=BELL}/#))
+      XCTAssertTrue("\u{7}".contains(regex(#"\p{name=BEL}"#)))
     }
   }
   
@@ -446,7 +475,7 @@ extension UTS18Tests {
 
   func testIndividuallyNamedCharacters_XFail() {
     XCTExpectFailure("Need to support named chars in custom character classes") {
-      XCTFail("\(regex(#"[\N{GREEK SMALL LETTER ALPHA}-\N{GREEK SMALL LETTER BETA}]+"#))")
+      XCTFail(#"[\N{GREEK SMALL LETTER ALPHA}-\N{GREEK SMALL LETTER BETA}]+"#)
       // XCTAssertTrue("^\u{3B1}\u{3B2}$".contains(#/[\N{GREEK SMALL LETTER ALPHA}-\N{GREEK SMALL LETTER BETA}]+/#))
     }
     

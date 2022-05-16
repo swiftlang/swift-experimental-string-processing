@@ -101,6 +101,10 @@ extension AST.Trivia {
   }
 }
 
+extension AST.Interpolation {
+  public var _dumpBase: String { "interpolation <\(contents)>" }
+}
+
 extension AST.Empty {
   public var _dumpBase: String { "" }
 }
@@ -137,6 +141,9 @@ extension AST.Atom {
 
     switch kind {
     case .escaped(let c): return "\\\(c.character)"
+
+    case .scalarSequence(let s):
+      return s.scalars.map(\.value.halfWidthCornerQuoted).joined()
 
     case .namedCharacter(let charName):
       return "\\N{\(charName)}"

@@ -18,7 +18,7 @@ extension Source {
     // This follows the rules provided by UAX44-LM3, including trying to drop an
     // "is" prefix, which isn't required by UTS#18 RL1.2, but is nice for
     // consistency with other engines and the Unicode.Scalar.Properties names.
-    let str = str.filter { !$0.isWhitespace && $0 != "_" && $0 != "-" }
+    let str = str.filter { !$0.isPatternWhitespace && $0 != "_" && $0 != "-" }
                  .lowercased()
     if let m = match(str) {
       return m
@@ -428,6 +428,8 @@ extension Source {
         if let cat = classifyGeneralCategory(value) {
           return .generalCategory(cat)
         }
+      case "name", "na":
+        return .named(value)
       default:
         break
       }

@@ -24,7 +24,7 @@ struct TwoWaySearcher<Searched: BidirectionalCollection>
     let (criticalIndex, periodOfSecondPart) = pattern._criticalFactorization(<)
     let periodIsExact = pattern[criticalIndex...]
       .prefix(periodOfSecondPart)
-      .ends(with: pattern[..<criticalIndex])
+      ._ends(with: pattern[..<criticalIndex])
     
     self.pattern = pattern
     self.criticalIndex = criticalIndex

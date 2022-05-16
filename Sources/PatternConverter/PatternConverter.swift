@@ -50,7 +50,7 @@ struct PatternConverter: ParsableCommand {
     print("Converting '\(delim)\(regex)\(delim)'")
 
     let ast = try _RegexParser.parse(
-      regex,
+      regex, .semantic,
       experimentalSyntax ? .experimental : .traditional)
 
     // Show rendered source ranges
@@ -70,7 +70,8 @@ struct PatternConverter: ParsableCommand {
 
     print()
     if !skipDSL {
-      let render = ast.renderAsBuilderDSL(
+      let render = renderAsBuilderDSL(
+        ast: ast,
         maxTopDownLevels: topDownConversionLimit,
         minBottomUpLevels: bottomUpConversionLimit
       )

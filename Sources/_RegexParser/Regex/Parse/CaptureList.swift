@@ -26,15 +26,18 @@ extension CaptureList {
     public var name: String?
     public var type: Any.Type?
     public var optionalDepth: Int
+    public var location: SourceLocation
 
     public init(
       name: String? = nil,
       type: Any.Type? = nil,
-      optionalDepth: Int
+      optionalDepth: Int,
+      _ location: SourceLocation
     ) {
       self.name = name
       self.type = type
       self.optionalDepth = optionalDepth
+      self.location = location
     }
   }
 }
@@ -61,13 +64,14 @@ extension AST.Node {
     case let .group(g):
       switch g.kind.value {
       case .capture:
-        list.append(.init(optionalDepth: nesting))
+        list.append(.init(optionalDepth: nesting, g.location))
 
       case .namedCapture(let name):
-        list.append(.init(name: name.value, optionalDepth: nesting))
+        list.append(.init(name: name.value, optionalDepth: nesting, g.location))
 
       case .balancedCapture(let b):
-        list.append(.init(name: b.name?.value, optionalDepth: nesting))
+        list.append(.init(name: b.name?.value, optionalDepth: nesting,
+                          g.location))
 
       default: break
       }
@@ -99,7 +103,7 @@ extension AST.Node {
         break
       }
 
-    case .quote, .trivia, .atom, .customCharacterClass, .empty:
+    case .quote, .trivia, .atom, .customCharacterClass, .empty, .interpolation:
       break
     }
   }
@@ -124,7 +128,8 @@ extension CaptureList.Capture: Equatable {
   public static func == (lhs: Self, rhs: Self) -> Bool {
     lhs.name == rhs.name &&
     lhs.optionalDepth == rhs.optionalDepth &&
-    lhs.type == rhs.type
+    lhs.type == rhs.type &&
+    lhs.location == rhs.location
   }
 }
 extension CaptureList: Equatable {}

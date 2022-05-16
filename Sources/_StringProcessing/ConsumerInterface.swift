@@ -144,6 +144,19 @@ extension String {
   }
 }
 
+func consumeName(_ name: String, opts: MatchingOptions) -> MEProgram<String>.ConsumeFunction {
+  let consume = opts.semanticLevel == .graphemeCluster
+    ? consumeCharacterWithSingleScalar
+    : consumeScalar
+  
+  return consume(propertyScalarPredicate {
+    // FIXME: name aliases not covered by $0.nameAlias are missed
+    // e.g. U+FEFF has both 'BYTE ORDER MARK' and 'BOM' as aliases
+    $0.name?.isEqualByUAX44LM2(to: name) == true
+      || $0.nameAlias?.isEqualByUAX44LM2(to: name) == true
+  })
+}
+
 // TODO: This is basically an AST interpreter, which would
 // be good or interesting to build regardless, and serves
 // as a compiler fall-back path
@@ -165,7 +178,7 @@ extension AST.Atom {
 
   var singleScalar: UnicodeScalar? {
     switch kind {
-    case .scalar(let s): return s
+    case .scalar(let s): return s.value
     default: return nil
     }
   }
@@ -187,7 +200,7 @@ extension AST.Atom {
     case let .scalar(s):
       assertionFailure(
         "Should have been handled by tree conversion")
-      return consumeScalar { $0 == s }
+      return consumeScalar { $0 == s.value }
 
     case let .char(c):
       assertionFailure(
@@ -206,12 +219,7 @@ extension AST.Atom {
       return try p.generateConsumer(opts)
 
     case let .namedCharacter(name):
-      return consumeScalar(propertyScalarPredicate {
-        // FIXME: name aliases not covered by $0.nameAlias are missed
-        // e.g. U+FEFF is also 'FORM FEED', 'BYTE ORDER MARK', and 'BOM'
-        $0.name?.isEqualByUAX44LM2(to: name) == true
-          || $0.nameAlias?.isEqualByUAX44LM2(to: name) == true
-      })
+      return consumeName(name, opts: opts)
       
     case .any:
       assertionFailure(
@@ -222,9 +230,9 @@ extension AST.Atom {
       // handled in emitAssertion
       return nil
 
-    case .escaped, .keyboardControl, .keyboardMeta, .keyboardMetaControl,
-        .backreference, .subpattern, .callout, .backtrackingDirective,
-        .changeMatchingOptions:
+    case .scalarSequence, .escaped, .keyboardControl, .keyboardMeta,
+        .keyboardMetaControl, .backreference, .subpattern, .callout,
+        .backtrackingDirective, .changeMatchingOptions:
       // FIXME: implement
       return nil
     }
@@ -318,7 +326,7 @@ extension DSLTree.CustomCharacterClass.Member {
     case .quotedLiteral(let s):
       if opts.isCaseInsensitive {
         return { input, bounds in
-          guard s.lowercased().contains(input[bounds.lowerBound].lowercased()) else {
+          guard s.lowercased()._contains(input[bounds.lowerBound].lowercased()) else {
             return nil
           }
           return input.index(after: bounds.lowerBound)
@@ -479,6 +487,9 @@ extension AST.Atom.CharacterProperty {
 
       case .scriptExtension(let s):
         return consume(scriptExtensionScalarPredicate(s))
+        
+      case .named(let n):
+        return consumeName(n, opts: opts)
 
       case .posix(let p):
         return p.generateConsumer(opts)
@@ -502,7 +513,10 @@ extension Unicode.BinaryProperty {
     _ opts: MatchingOptions
   ) throws -> MEProgram<String>.ConsumeFunction {
     let consume = consumeFunction(for: opts)
-    
+
+    // Note if you implement support for any of the below, you need to adjust
+    // the switch in Sema.swift to not have it be diagnosed as unsupported
+    // (potentially guarded on deployment version).
     switch self {
     case .asciiHexDigit:
       return consume(propertyScalarPredicate {

@@ -29,7 +29,6 @@ extension AST {
 
 extension AST {
   /// A node in the regex AST.
-  @frozen
   public indirect enum Node:
     Hashable, _TreeNode //, _ASTPrintable ASTValue, ASTAction
   {
@@ -52,6 +51,9 @@ extension AST {
 
     /// Comments, non-semantic whitespace, etc
     case trivia(Trivia)
+
+    /// Intepolation `<{...}>`, currently reserved for future use.
+    case interpolation(Interpolation)
 
     case atom(Atom)
 
@@ -78,6 +80,7 @@ extension AST.Node {
     case let .quantification(v):        return v
     case let .quote(v):                 return v
     case let .trivia(v):                return v
+    case let .interpolation(v):         return v
     case let .atom(v):                  return v
     case let .customCharacterClass(v):  return v
     case let .empty(v):                 return v
@@ -125,10 +128,12 @@ extension AST.Node {
     switch self {
     case .atom(let a):
       return a.isQuantifiable
-    case .group, .conditional, .customCharacterClass, .absentFunction:
+    case .group(let g):
+      return g.isQuantifiable
+    case .conditional, .customCharacterClass, .absentFunction:
       return true
     case .alternation, .concatenation, .quantification, .quote, .trivia,
-        .empty:
+        .empty, .interpolation:
       return false
     }
   }
@@ -192,6 +197,16 @@ extension AST {
     }
   }
 
+  public struct Interpolation: Hashable, _ASTNode {
+    public let contents: String
+    public let location: SourceLocation
+
+    public init(_ contents: String, _ location: SourceLocation) {
+      self.contents = contents
+      self.location = location
+    }
+  }
+
   public struct Empty: Hashable, _ASTNode {
     public let location: SourceLocation
 
@@ -247,7 +262,6 @@ extension AST {
   }
 
   public struct Reference: Hashable {
-    @frozen
     public enum Kind: Hashable {
       // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
       // Oniguruma: \k<n>, \k'n'

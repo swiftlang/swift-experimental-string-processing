@@ -218,6 +218,12 @@ extension RegexTests {
     firstMatchTest(
       #"abc\d"#, input: "xyzabc123", match: "abc1")
 
+    // MARK: Allowed combining characters
+
+    firstMatchTest("e\u{301}", input: "e\u{301}", match: "e\u{301}")
+    firstMatchTest("1\u{358}", input: "1\u{358}", match: "1\u{358}")
+    firstMatchTest(#"\ \#u{361}"#, input: " \u{361}", match: " \u{361}")
+
     // MARK: Alternations
 
     firstMatchTest(
@@ -285,7 +291,20 @@ extension RegexTests {
     firstMatchTest(#"\0707"#, input: "12387\u{1C7}xyz", match: "\u{1C7}")
 
     // code point sequence
-    firstMatchTest(#"\u{61 62 63}"#, input: "123abcxyz", match: "abc", xfail: true)
+    firstMatchTest(#"\u{61 62 63}"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"3\u{  61  62 63 }"#, input: "123abcxyz", match: "3abc")
+    firstMatchTest(#"\u{61 62}\u{63}"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"\u{61}\u{62 63}"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"9|\u{61 62 63}"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"(?:\u{61 62 63})"#, input: "123abcxyz", match: "abc")
+    firstMatchTest(#"23\u{61 62 63}xy"#, input: "123abcxyz", match: "23abcxy")
+
+    // o + horn + dot_below
+    firstMatchTest(
+      #"\u{006f 031b 0323}"#,
+      input: "\u{006f}\u{031b}\u{0323}",
+      match: "\u{006f}\u{031b}\u{0323}"
+    )
 
     // Escape sequences that represent scalar values.
     firstMatchTest(#"\a[\b]\e\f\n\r\t"#,
@@ -717,7 +736,7 @@ extension RegexTests {
     firstMatchTest(
       #"\N{ASTERISK}+"#, input: "123***xyz", match: "***")
     firstMatchTest(
-      #"\N {2}"#, input: "123  xyz", match: "3  ")
+      #"\N {2}"#, input: "123  xyz", match: "3  ", xfail: true)
 
     firstMatchTest(#"\N{U+2C}"#, input: "123,xyz", match: ",")
     firstMatchTest(#"\N{U+1F4BF}"#, input: "123💿xyz", match: "💿")
@@ -1014,7 +1033,7 @@ extension RegexTests {
     firstMatchTest(
       #"a(?:b)c"#, input: "123abcxyz", match: "abc")
     firstMatchTest(
-      "(?|(a)|(b)|(c))", input: "123abcxyz", match: "a")
+      "(?|(a)|(b)|(c))", input: "123abcxyz", match: "a", xfail: true)
 
     firstMatchTest(
       #"(?:a|.b)c"#, input: "123abcacxyz", match: "abc")
@@ -1130,6 +1149,8 @@ extension RegexTests {
     firstMatchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
     firstMatchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba", xfail: true)
     firstMatchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
+
+    firstMatchTest(#"\1(.)"#, input: "112", match: nil)
   }
   
   func testMatchExamples() {
@@ -1267,7 +1288,6 @@ extension RegexTests {
     firstMatchTest(#"(?xx)[ \t]+"#, input: " \t \t", match: "\t")
 
     firstMatchTest("(?xx)[ a && ab ]+", input: " aaba ", match: "aa")
-    firstMatchTest("(?xx)[ ] a ]+", input: " a]]a ] ", match: "a]]a")
   }
   
   func testASCIIClasses() {
@@ -1403,6 +1423,9 @@ extension RegexTests {
     firstMatchTest(#"\u{65}\u{301}$"#, input: eDecomposed, match: eDecomposed)
     firstMatchTest(#"\u{65}\u{301}$"#, input: eComposed, match: eComposed)
 
+    firstMatchTest(#"\u{65 301}$"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(#"\u{65 301}$"#, input: eComposed, match: eComposed)
+
     // FIXME: Implicit \y at end of match
     firstMatchTest(#"\u{65}"#, input: eDecomposed, match: nil,
       xfail: true)
@@ -1514,7 +1537,8 @@ extension RegexTests {
     firstMatchTest(#"🇰🇷"#, input: flag, match: flag)
     firstMatchTest(#"[🇰🇷]"#, input: flag, match: flag)
     firstMatchTest(#"\u{1F1F0}\u{1F1F7}"#, input: flag, match: flag)
-    
+    firstMatchTest(#"\u{1F1F0 1F1F7}"#, input: flag, match: flag)
+
     // First Unicode scalar followed by CCC of regional indicators
     firstMatchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag,
               xfail: true)

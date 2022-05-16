@@ -19,7 +19,6 @@ extension Unicode {
   // other script types.
 
   /// Character script types.
-  @frozen
   public enum Script: String, Hashable {
     case adlam = "Adlam"
     case ahom = "Ahom"
@@ -188,7 +187,6 @@ extension Unicode {
 
   /// POSIX character properties not already covered by general categories or
   /// binary properties.
-  @frozen
   public enum POSIXProperty: String, Hashable {
     case alnum = "alnum"
     case blank = "blank"
@@ -206,7 +204,6 @@ extension Unicode {
 
   /// Unicode.GeneralCategory + cases for "meta categories" such as "L", which
   /// encompasses Lu | Ll | Lt | Lm | Lo.
-  @frozen
   public enum ExtendedGeneralCategory: String, Hashable {
     case other = "C"
     case control = "Cc"
@@ -257,7 +254,6 @@ extension Unicode {
   /// A list of Unicode properties that can either be true or false.
   ///
   /// https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt
-  @frozen
   public enum BinaryProperty: String, Hashable {
     case asciiHexDigit = "ASCII_Hex_Digit"
     case alphabetic = "Alphabetic"
@@ -333,7 +329,6 @@ extension Unicode {
 // property.
 
 /// Oniguruma properties that are not covered by Unicode spellings.
-@frozen
 public enum OnigurumaSpecialProperty: String, Hashable {
   case inBasicLatin = "In_Basic_Latin"
   case inLatin1Supplement = "In_Latin_1_Supplement"
