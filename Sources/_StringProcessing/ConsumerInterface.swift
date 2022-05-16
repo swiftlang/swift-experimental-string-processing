@@ -248,10 +248,10 @@ extension DSLTree.CustomCharacterClass.Member {
       return c
     case let .range(low, high):
       // TODO:
-      guard let lhs = low.literalCharacterValue else {
+      guard let lhs = low.literalCharacterValue, lhs.hasExactlyOneScalar else {
         throw Unsupported("\(low) in range")
       }
-      guard let rhs = high.literalCharacterValue else {
+      guard let rhs = high.literalCharacterValue, rhs.hasExactlyOneScalar else {
         throw Unsupported("\(high) in range")
       }
 
@@ -262,6 +262,7 @@ extension DSLTree.CustomCharacterClass.Member {
         return { input, bounds in
           // TODO: check for out of bounds?
           let curIdx = bounds.lowerBound
+          guard input[curIdx].hasExactlyOneScalar else { return nil }
           if (lhsLower...rhsLower).contains(input[curIdx].lowercased()) {
             // TODO: semantic level
             return input.index(after: curIdx)
@@ -273,6 +274,7 @@ extension DSLTree.CustomCharacterClass.Member {
         return { input, bounds in
           // TODO: check for out of bounds?
           let curIdx = bounds.lowerBound
+          guard input[curIdx].hasExactlyOneScalar else { return nil }
           if (lhs...rhs).contains(input[curIdx]) {
             // TODO: semantic level
             return input.index(after: curIdx)
