@@ -2473,6 +2473,8 @@ extension RegexTests {
     diagnosticTest(#"\p{Numeric_Value=1.2.3.4}"#, .invalidNumericValue("1.2.3.4"))
     diagnosticTest(#"\p{nt=Not_A_NumericType}"#, .unrecognizedNumericType("Not_A_NumericType"))
     diagnosticTest(#"\p{Numeric_Type=Nuemric}"#, .unrecognizedNumericType("Nuemric"))
+    diagnosticTest(#"\p{Simple_Lowercase_Mapping}"#, .unknownProperty(key: nil, value: "Simple_Lowercase_Mapping"))
+    diagnosticTest(#"\p{Simple_Lowercase_Mapping=}"#, .emptyProperty)
     diagnosticTest(#"(?#"#, .expected(")"))
     diagnosticTest(#"(?x"#, .expected(")"))
 

@@ -433,6 +433,9 @@ extension AST.Atom.CharacterProperty {
     /// Numeric value.
     case numericValue(Double)
     
+    /// Case mapping.
+    case mapping(MapKind, String)
+    
     /// Character age, as per UnicodeScalar.Properties.age.
     case age(major: Int, minor: Int)
     
@@ -441,6 +444,12 @@ extension AST.Atom.CharacterProperty {
     /// Some special properties implemented by PCRE and Oniguruma.
     case pcreSpecial(PCRESpecialCategory)
     case onigurumaSpecial(OnigurumaSpecialProperty)
+    
+    public enum MapKind: Hashable {
+      case lowercase
+      case uppercase
+      case titlecase
+    }
   }
 
   // TODO: erm, separate out or fold into something? splat it in?

@@ -448,8 +448,8 @@ extension Source {
 
     // This uses the aliases defined in
     // https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt.
-    let match = try withNormalizedForms(key) { key -> PropertyKind? in
-      switch key {
+    let match = try withNormalizedForms(key) { normalizedKey -> PropertyKind? in
+      switch normalizedKey {
       case "script", "sc":
         guard let script = classifyScriptProperty(value) else {
           throw ParseError.unrecognizedScript(value)
@@ -482,6 +482,12 @@ extension Source {
           throw ParseError.unrecognizedNumericType(value)
         }
         return .numericType(type)
+      case "slc", "simplelowercasemapping":
+        return .mapping(.lowercase, value)
+      case "suc", "simpleuppercasemapping":
+        return .mapping(.uppercase, value)
+      case "stc", "simpletitlecasemapping":
+        return .mapping(.titlecase, value)
       default:
         break
       }

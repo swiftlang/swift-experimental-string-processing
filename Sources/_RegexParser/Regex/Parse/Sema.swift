@@ -169,7 +169,7 @@ extension RegexValidator {
     case .binary(let b, _):
       try validateBinaryProperty(b, at: loc)
     case .any, .assigned, .ascii, .generalCategory, .posix, .named, .script,
-        .scriptExtension, .age, .numericType, .numericValue:
+        .scriptExtension, .age, .numericType, .numericValue, .mapping:
       break
     case .pcreSpecial:
       throw error(.unsupported("PCRE property"), at: loc)

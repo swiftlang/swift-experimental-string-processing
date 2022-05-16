@@ -500,6 +500,15 @@ extension AST.Atom.CharacterProperty {
       case .numericType(let type):
         return consume { $0.properties.numericType == type }
         
+      case .mapping(.lowercase, let value):
+        return consume { $0.properties.lowercaseMapping == value }
+
+      case .mapping(.uppercase, let value):
+        return consume { $0.properties.uppercaseMapping == value }
+
+      case .mapping(.titlecase, let value):
+        return consume { $0.properties.titlecaseMapping == value }
+
       case .posix(let p):
         return p.generateConsumer(opts)
 

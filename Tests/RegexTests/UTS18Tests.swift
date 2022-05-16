@@ -662,16 +662,16 @@ extension UTS18Tests {
     XCTAssertFalse("123ABC".contains(regex(#"\p{Lowercase}+$"#)))
 
     // Simple_Lowercase_Mapping
-//    XCTAssertTrue("ABC".contains(regex(#"^\p{Simple_Lowercase_Mapping}+$"#)))
-//    XCTAssertFalse("abc123".contains(regex(#"\p{Simple_Lowercase_Mapping}"#)))
+    XCTAssertTrue("aAa".contains(regex(#"^\p{Simple_Lowercase_Mapping=a}+$"#)))
+    XCTAssertFalse("bBå".contains(regex(#"\p{Simple_Lowercase_Mapping=a}"#)))
 
     // Simple_Titlecase_Mapping
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Simple_Titlecase_Mapping}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Simple_Titlecase_Mapping}"#)))
+    XCTAssertTrue("aAa".contains(regex(#"^\p{Simple_Titlecase_Mapping=A}+$"#)))
+    XCTAssertFalse("bBå".contains(regex(#"\p{Simple_Titlecase_Mapping=A}"#)))
 
     // Simple_Uppercase_Mapping
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Simple_Uppercase_Mapping}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Simple_Uppercase_Mapping}"#)))
+    XCTAssertTrue("aAa".contains(regex(#"^\p{Simple_Uppercase_Mapping=A}+$"#)))
+    XCTAssertFalse("bBå".contains(regex(#"\p{Simple_Uppercase_Mapping=A}"#)))
 
     // Simple_Case_Folding
 //    XCTAssertTrue("abc".contains(regex(#"^\p{Simple_Case_Folding}+$"#)))
