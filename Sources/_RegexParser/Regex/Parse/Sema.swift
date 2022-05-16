@@ -395,6 +395,11 @@ extension RegexValidator {
       // These are Oniguruma specific.
       throw error(.unsupported("absent function"), at: a.location)
 
+    case .interpolation(let i):
+      // This is currently rejected in the parser for better diagnostics, but
+      // reject here too until we get runtime support.
+      throw error(.unsupported("interpolation"), at: i.location)
+
     case .quote, .trivia, .empty:
       break
     }
