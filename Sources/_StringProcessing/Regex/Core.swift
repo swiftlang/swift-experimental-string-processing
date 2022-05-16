@@ -91,6 +91,18 @@ extension Regex {
       self.tree = tree
     }
   }
+  
+  /// The set of matching options that applies to the start of this regex.
+  ///
+  /// Note that the initial options may not apply to the entire regex. For
+  /// example, in this regex, only case insensitivity (`i`) and Unicode scalar
+  /// semantics (set by API) apply to the entire regex, while ASCII character
+  /// classes (`P`) is part of `initialOptions` but not global:
+  ///
+  ///     let regex = /(?i)(?P:\d+\s*)abc/.semanticLevel(.unicodeScalar)
+  var initialOptions: MatchingOptions {
+    program.loweredProgram.initialOptions
+  }
 }
 
 @available(SwiftStdlib 5.7, *)

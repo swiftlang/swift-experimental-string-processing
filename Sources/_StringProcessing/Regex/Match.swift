@@ -159,7 +159,7 @@ extension Regex {
         return m
       }
       if low >= high { return nil }
-      if regex.program.loweredProgram.initialOptions.semanticLevel == .graphemeCluster {
+      if regex.initialOptions.semanticLevel == .graphemeCluster {
         input.formIndex(after: &low)
       } else {
         input.unicodeScalars.formIndex(after: &low)
