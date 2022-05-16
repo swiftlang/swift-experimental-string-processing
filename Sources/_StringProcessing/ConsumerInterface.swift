@@ -500,6 +500,9 @@ extension AST.Atom.CharacterProperty {
       case .numericType(let type):
         return consume { $0.properties.numericType == type }
         
+      case .ccc(let ccc):
+        return consume { $0.properties.canonicalCombiningClass == ccc }
+        
       case .mapping(.lowercase, let value):
         return consume { $0.properties.lowercaseMapping == value }
 

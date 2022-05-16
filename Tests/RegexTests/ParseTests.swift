@@ -2475,6 +2475,8 @@ extension RegexTests {
     diagnosticTest(#"\p{Numeric_Type=Nuemric}"#, .unrecognizedNumericType("Nuemric"))
     diagnosticTest(#"\p{Simple_Lowercase_Mapping}"#, .unknownProperty(key: nil, value: "Simple_Lowercase_Mapping"))
     diagnosticTest(#"\p{Simple_Lowercase_Mapping=}"#, .emptyProperty)
+    diagnosticTest(#"\p{ccc=255}"#, .invalidCCC("255"))
+    diagnosticTest(#"\p{ccc=Nada}"#, .invalidCCC("Nada"))
     diagnosticTest(#"(?#"#, .expected(")"))
     diagnosticTest(#"(?x"#, .expected(")"))
 

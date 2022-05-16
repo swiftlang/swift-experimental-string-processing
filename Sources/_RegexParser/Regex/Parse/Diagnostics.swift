@@ -64,7 +64,7 @@ enum ParseError: Error, Hashable {
   case invalidAge(String)
   case invalidNumericValue(String)
   case unrecognizedNumericType(String)
-  case expectedMapping(String)
+  case invalidCCC(String)
   
   case expectedGroupSpecifier
   case unbalancedEndOfGroup
@@ -197,8 +197,8 @@ extension ParseError: CustomStringConvertible {
       return "invalid age format for '\(value)' - use '3.0' or 'V3_0' formats"
     case .invalidNumericValue(let value):
       return "invalid numeric value '\(value)'"
-    case .expectedMapping(let mapping):
-      return "missing value for '\(mapping)'"
+    case .invalidCCC(let value):
+      return "invalid canonical combining class '\(value)'"
 
     // MARK: Semantic Errors
 

@@ -488,6 +488,11 @@ extension Source {
         return .mapping(.uppercase, value)
       case "stc", "simpletitlecasemapping":
         return .mapping(.titlecase, value)
+      case "ccc", "canonicalcombiningclass":
+        guard let cccValue = UInt8(value), cccValue <= 254 else {
+          throw ParseError.invalidCCC(value)
+        }
+        return .ccc(.init(rawValue: cccValue))
       default:
         break
       }

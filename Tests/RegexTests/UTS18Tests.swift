@@ -715,8 +715,8 @@ extension UTS18Tests {
 
     // MARK: Normalization
     // Canonical_Combining_Class
-//    XCTAssertTrue("abc".contains(regex(#"^\p{Canonical_Combining_Class}+$"#)))
-//    XCTAssertFalse("123".contains(regex(#"\p{Canonical_Combining_Class}"#)))
+    XCTAssertTrue("\u{0321}\u{0322}\u{1DD0}".contains(regex(#"^\p{Canonical_Combining_Class=202}+$"#)))
+    XCTAssertFalse("123".contains(regex(#"\p{Canonical_Combining_Class=202}"#)))
 
     // Decomposition_Type
 //    XCTAssertTrue("abc".contains(regex(#"^\p{Decomposition_Type}+$"#)))

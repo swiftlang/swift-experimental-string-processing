@@ -436,6 +436,9 @@ extension AST.Atom.CharacterProperty {
     /// Case mapping.
     case mapping(MapKind, String)
     
+    /// Canonical Combining Class.
+    case ccc(Unicode.CanonicalCombiningClass)
+    
     /// Character age, as per UnicodeScalar.Properties.age.
     case age(major: Int, minor: Int)
     
