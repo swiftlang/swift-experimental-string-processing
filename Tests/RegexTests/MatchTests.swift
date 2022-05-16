@@ -218,6 +218,12 @@ extension RegexTests {
     firstMatchTest(
       #"abc\d"#, input: "xyzabc123", match: "abc1")
 
+    // MARK: Allowed combining characters
+
+    firstMatchTest("e\u{301}", input: "e\u{301}", match: "e\u{301}")
+    firstMatchTest("1\u{358}", input: "1\u{358}", match: "1\u{358}")
+    firstMatchTest(#"\ \#u{361}"#, input: " \u{361}", match: " \u{361}")
+
     // MARK: Alternations
 
     firstMatchTest(
@@ -1282,7 +1288,6 @@ extension RegexTests {
     firstMatchTest(#"(?xx)[ \t]+"#, input: " \t \t", match: "\t")
 
     firstMatchTest("(?xx)[ a && ab ]+", input: " aaba ", match: "aa")
-    firstMatchTest("(?xx)[ ] a ]+", input: " a]]a ] ", match: "a]]a")
   }
   
   func testASCIIClasses() {

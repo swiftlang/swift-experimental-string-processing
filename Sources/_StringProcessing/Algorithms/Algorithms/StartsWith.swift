@@ -12,7 +12,7 @@
 // MARK: `CollectionConsumer` algorithms
 
 extension Collection {
-  func starts<C: CollectionConsumer>(with consumer: C) -> Bool
+  func _starts<C: CollectionConsumer>(with consumer: C) -> Bool
     where C.Consumed == SubSequence
   {
     consumer.consuming(self[...]) != nil
@@ -20,7 +20,7 @@ extension Collection {
 }
 
 extension BidirectionalCollection {
-  func ends<C: BidirectionalCollectionConsumer>(with consumer: C) -> Bool
+  func _ends<C: BidirectionalCollectionConsumer>(with consumer: C) -> Bool
     where C.Consumed == SubSequence
   {
     consumer.consumingBack(self[...]) != nil
@@ -30,18 +30,18 @@ extension BidirectionalCollection {
 // MARK: Fixed pattern algorithms
 
 extension Collection where Element: Equatable {
-  func starts<C: Collection>(with prefix: C) -> Bool
+  func _starts<C: Collection>(with prefix: C) -> Bool
     where C.Element == Element
   {
-    starts(with: FixedPatternConsumer(pattern: prefix))
+    _starts(with: FixedPatternConsumer(pattern: prefix))
   }
 }
 
 extension BidirectionalCollection where Element: Equatable {
-  func ends<C: BidirectionalCollection>(with suffix: C) -> Bool
+  func _ends<C: BidirectionalCollection>(with suffix: C) -> Bool
     where C.Element == Element
   {
-    ends(with: FixedPatternConsumer(pattern: suffix))
+    _ends(with: FixedPatternConsumer(pattern: suffix))
   }
 }
 
@@ -56,10 +56,10 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: `true` if the initial elements of the sequence matches the
   ///   beginning of `regex`; otherwise, `false`.
   public func starts<R: RegexComponent>(with regex: R) -> Bool {
-    starts(with: RegexConsumer(regex))
+    _starts(with: RegexConsumer(regex))
   }
   
-  func ends<R: RegexComponent>(with regex: R) -> Bool {
-    ends(with: RegexConsumer(regex))
+  func _ends<R: RegexComponent>(with regex: R) -> Bool {
+    _ends(with: RegexConsumer(regex))
   }
 }

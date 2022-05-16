@@ -101,6 +101,10 @@ extension AST.Trivia {
   }
 }
 
+extension AST.Interpolation {
+  public var _dumpBase: String { "interpolation <\(contents)>" }
+}
+
 extension AST.Empty {
   public var _dumpBase: String { "" }
 }

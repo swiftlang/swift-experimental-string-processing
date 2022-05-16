@@ -394,6 +394,12 @@ extension RegexTests {
       #"abc\d"#,
       concat("a", "b", "c", escaped(.decimalDigit)))
 
+    // MARK: Allowed combining characters
+
+    parseTest("e\u{301}", "e\u{301}")
+    parseTest("1\u{358}", "1\u{358}")
+    parseTest(#"\ \#u{361}"#, " \u{361}")
+
     // MARK: Alternations
 
     parseTest(
@@ -466,14 +472,6 @@ extension RegexTests {
     parseTest(#"[\08]"#, charClass(scalar_m("\u{0}"), "8"))
     parseTest(#"[\0707]"#, charClass(scalar_m("\u{1C7}")))
 
-    // TODO: These are treated as octal sequences by PCRE, we should warn and
-    // suggest user prefix with 0.
-    parseTest(#"[\1]"#, charClass("1"))
-    parseTest(#"[\123]"#, charClass("1", "2", "3"))
-    parseTest(#"[\101]"#, charClass("1", "0", "1"))
-    parseTest(#"[\7777]"#, charClass("7", "7", "7", "7"))
-    parseTest(#"[\181]"#, charClass("1", "8", "1"))
-
     // We take *up to* the first two valid digits for \x. No valid digits is 0.
     parseTest(#"\x"#, scalar("\u{0}"))
     parseTest(#"\x5"#, scalar("\u{5}"))
@@ -483,6 +481,8 @@ extension RegexTests {
 
     parseTest(#"\u{    a   }"#, scalar("\u{A}"))
     parseTest(#"\u{  a  }\u{ B }"#, concat(scalar("\u{A}"), scalar("\u{B}")))
+
+    parseTest(#"[\u{301}]"#, charClass(scalar_m("\u{301}")))
 
     // MARK: Scalar sequences
 
@@ -528,23 +528,7 @@ extension RegexTests {
     ))
 
     parseTest("[-]", charClass("-"))
-
-    // Empty character classes are forbidden, therefore these are character
-    // classes containing literal ']'.
-    parseTest("[]]", charClass("]"))
-    parseTest("[]a]", charClass("]", "a"))
-    parseTest("(?x)[ ]]", concat(
-      changeMatchingOptions(matchingOptions(adding: .extended)),
-      charClass("]")
-    ))
-    parseTest("(?x)[ ]  ]", concat(
-      changeMatchingOptions(matchingOptions(adding: .extended)),
-      charClass("]")
-    ))
-    parseTest("(?x)[ ] a ]", concat(
-      changeMatchingOptions(matchingOptions(adding: .extended)),
-      charClass("]", "a")
-    ))
+    parseTest(#"[\]]"#, charClass("]"))
 
     // These are metacharacters in certain contexts, but normal characters
     // otherwise.
@@ -803,6 +787,20 @@ extension RegexTests {
     parseTest(
       #"a(?#. comment)b"#,
       concat("a", "b"))
+
+    // MARK: Interpolation
+
+    // These are literal as there's no closing '}>'
+    parseTest("<{", concat("<", "{"))
+    parseTest("<{a", concat("<", "{", "a"))
+    parseTest("<{a}", concat("<", "{", "a", "}"))
+    parseTest("<{<{}", concat("<", "{", "<", "{", "}"))
+
+    // Literal as escaped
+    parseTest(#"\<{}>"#, concat("<", "{", "}", ">"))
+
+    // A quantification
+    parseTest(#"<{2}"#, exactly(2, of: "<"))
 
     // MARK: Quantification
 
@@ -1266,10 +1264,6 @@ extension RegexTests {
     parseTest(#"\g'-01'"#, subpattern(.relative(-1)), throwsError: .unsupported)
     parseTest(#"\g'+30'"#, subpattern(.relative(30)), throwsError: .unsupported)
     parseTest(#"\g'abc'"#, subpattern(.named("abc")), throwsError: .unsupported)
-
-    // Backreferences are not valid in custom character classes.
-    parseTest(#"[\8]"#, charClass("8"))
-    parseTest(#"[\9]"#, charClass("9"))
 
     // These are valid references.
     parseTest(#"()\1"#, concat(
@@ -2511,10 +2505,15 @@ extension RegexTests {
 
     diagnosticTest("[a", .expected("]"))
 
-    // The first ']' of a custom character class is literal, so these are
-    // missing the closing bracket.
-    diagnosticTest("[]", .expected("]"))
-    diagnosticTest("(?x)[  ]", .expected("]"))
+    // Character classes may not be empty.
+    diagnosticTest("[]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("[]]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("[]a]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[  ]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[ ]  ]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[ ] a ]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?xx)[ ] a ]+", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[ ]]", .expectedCustomCharacterClassMembers)
 
     diagnosticTest("[&&]", .expectedCustomCharacterClassMembers)
     diagnosticTest("[a&&]", .expectedCustomCharacterClassMembers)
@@ -2561,6 +2560,17 @@ extension RegexTests {
     // TODO: Custom diagnostic for missing '\Q'
     diagnosticTest(#"\E"#, .invalidEscape("E"))
 
+    // PCRE treats these as octal, but we require a `0` prefix.
+    diagnosticTest(#"[\1]"#, .invalidEscape("1"))
+    diagnosticTest(#"[\123]"#, .invalidEscape("1"))
+    diagnosticTest(#"[\101]"#, .invalidEscape("1"))
+    diagnosticTest(#"[\7777]"#, .invalidEscape("7"))
+    diagnosticTest(#"[\181]"#, .invalidEscape("1"))
+
+    // Backreferences are not valid in custom character classes.
+    diagnosticTest(#"[\8]"#, .invalidEscape("8"))
+    diagnosticTest(#"[\9]"#, .invalidEscape("9"))
+
     // Non-ASCII non-whitespace cases.
     diagnosticTest(#"\🔥"#, .invalidEscape("🔥"))
     diagnosticTest(#"\🇩🇰"#, .invalidEscape("🇩🇰"))
@@ -2568,6 +2578,27 @@ extension RegexTests {
     diagnosticTest(#"\\#u{E9}"#, .invalidEscape("é"))
     diagnosticTest(#"\˂"#, .invalidEscape("˂"))
     diagnosticTest(#"\d\#u{301}"#, .invalidEscape("d\u{301}"))
+
+    // MARK: Confusable characters
+
+    diagnosticTest("[\u{301}]", .confusableCharacter("[\u{301}"))
+    diagnosticTest("(\u{358})", .confusableCharacter("(\u{358}"))
+    diagnosticTest("{\u{35B}}", .confusableCharacter("{\u{35B}"))
+    diagnosticTest(#"\\#u{35C}"#, .confusableCharacter(#"\\#u{35C}"#))
+    diagnosticTest("^\u{35D}", .confusableCharacter("^\u{35D}"))
+    diagnosticTest("$\u{35E}", .confusableCharacter("$\u{35E}"))
+    diagnosticTest(".\u{35F}", .confusableCharacter(".\u{35F}"))
+    diagnosticTest("|\u{360}", .confusableCharacter("|\u{360}"))
+    diagnosticTest(" \u{361}", .confusableCharacter(" \u{361}"))
+
+    // MARK: Interpolation (currently unsupported)
+
+    diagnosticTest("<{}>", .unsupported("interpolation"))
+    diagnosticTest("<{...}>", .unsupported("interpolation"))
+    diagnosticTest("<{)}>", .unsupported("interpolation"))
+    diagnosticTest("<{}}>", .unsupported("interpolation"))
+    diagnosticTest("<{<{}>", .unsupported("interpolation"))
+    diagnosticTest("(<{)}>", .unsupported("interpolation"))
 
     // MARK: Character properties
 

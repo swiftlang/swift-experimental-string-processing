@@ -166,7 +166,7 @@ extension ReversedMatchesCollection: Sequence {
 // MARK: `CollectionSearcher` algorithms
 
 extension Collection {
-  func matches<S: MatchingCollectionSearcher>(
+  func _matches<S: MatchingCollectionSearcher>(
     of searcher: S
   ) -> MatchesCollection<S> where S.Searched == Self {
     MatchesCollection(base: self, searcher: searcher)
@@ -174,7 +174,7 @@ extension Collection {
 }
 
 extension BidirectionalCollection {
-  func matchesFromBack<S: BackwardMatchingCollectionSearcher>(
+  func _matchesFromBack<S: BackwardMatchingCollectionSearcher>(
     of searcher: S
   ) -> ReversedMatchesCollection<S> where S.BackwardSearched == Self {
     ReversedMatchesCollection(base: self, searcher: searcher)
@@ -186,17 +186,17 @@ extension BidirectionalCollection {
 extension BidirectionalCollection where SubSequence == Substring {
   @available(SwiftStdlib 5.7, *)
   @_disfavoredOverload
-  func matches<R: RegexComponent>(
+  func _matches<R: RegexComponent>(
     of regex: R
   ) -> MatchesCollection<RegexConsumer<R, Self>> {
-    matches(of: RegexConsumer(regex))
+    _matches(of: RegexConsumer(regex))
   }
 
   @available(SwiftStdlib 5.7, *)
-  func matchesFromBack<R: RegexComponent>(
+  func _matchesFromBack<R: RegexComponent>(
     of regex: R
   ) -> ReversedMatchesCollection<RegexConsumer<R, Self>> {
-    matchesFromBack(of: RegexConsumer(regex))
+    _matchesFromBack(of: RegexConsumer(regex))
   }
 
   // FIXME: Return `some Collection<Regex<R.Output>.Match> for SE-0346
@@ -213,14 +213,22 @@ extension BidirectionalCollection where SubSequence == Substring {
     let regex = r.regex
 
     var result = [Regex<R.RegexOutput>.Match]()
-    while start < end {
+    while start <= end {
       guard let match = try? regex._firstMatch(
         slice.base, in: start..<end
       ) else {
         break
       }
       result.append(match)
-      start = match.range.upperBound
+      if match.range.isEmpty {
+        if match.range.upperBound == end {
+          break
+        }
+        // FIXME: semantic level
+        start = slice.index(after: match.range.upperBound)
+      } else {
+        start = match.range.upperBound
+      }
     }
     return result
   }

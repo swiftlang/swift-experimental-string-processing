@@ -67,6 +67,9 @@ class AlgorithmTests: XCTestCase {
       let actualCol: [Range<Int>] = string[...].ranges(of: regex)[...].map(string.offsets(of:))
       XCTAssertEqual(actualCol, expected, file: file, line: line)
       
+      let matchRanges = string.matches(of: regex).map { string.offsets(of: $0.range) }
+      XCTAssertEqual(matchRanges, expected, file: file, line: line)
+
       let firstRange = string.firstRange(of: regex).map(string.offsets(of:))
       XCTAssertEqual(firstRange, expected.first, file: file, line: line)
     }
@@ -332,6 +335,11 @@ class AlgorithmTests: XCTestCase {
     XCTAssertEqual(
       s2.matches(of: regex).map(\.0),
       ["aa"])
+    
+    XCTAssertEqual(
+      s2.matches(of: try Regex("a*?")).map { s2.offsets(of: $0.range) }, [0..<0, 1..<1, 2..<2])
+    XCTAssertEqual(
+      s2.ranges(of: try Regex("a*?")).map(s2.offsets(of:)), [0..<0, 1..<1, 2..<2])
   }
 
   func testSwitches() {

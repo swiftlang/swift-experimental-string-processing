@@ -323,7 +323,7 @@ extension DSLTree.CustomCharacterClass.Member {
     case .quotedLiteral(let s):
       if opts.isCaseInsensitive {
         return { input, bounds in
-          guard s.lowercased().contains(input[bounds.lowerBound].lowercased()) else {
+          guard s.lowercased()._contains(input[bounds.lowerBound].lowercased()) else {
             return nil
           }
           return input.index(after: bounds.lowerBound)

@@ -222,6 +222,13 @@ extension Parser {
         result.append(.quote(quote))
         continue
       }
+
+      // Interpolation -> `lexInterpolation`
+      if let interpolation = try source.lexInterpolation() {
+        result.append(.interpolation(interpolation))
+        continue
+      }
+
       //     Quantification  -> QuantOperand Quantifier?
       if let operand = try parseQuantifierOperand() {
         if let (amt, kind, trivia) =
@@ -464,16 +471,6 @@ extension Parser {
     typealias Member = CustomCC.Member
     var members: Array<Member> = []
     try parseCCCMembers(into: &members)
-
-    // If we didn't parse any semantic members, we can eat a ']' character, as
-    // PCRE, Oniguruma, and ICU forbid empty character classes, and assume an
-    // initial ']' is literal.
-    if members.none(\.isSemantic) {
-      if let loc = source.tryEatWithLoc("]") {
-        members.append(.atom(.init(.char("]"), loc)))
-        try parseCCCMembers(into: &members)
-      }
-    }
 
     // If we have a binary set operator, parse it and the next members. Note
     // that this means we left associate for a chain of operators.
