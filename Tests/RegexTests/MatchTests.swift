@@ -1618,5 +1618,15 @@ extension RegexTests {
   
   // TODO: Add test for grapheme boundaries at start/end of match
 
+  func testCase() {
+    let regex = try! Regex(#".\N{SPARKLING HEART}."#)
+    let input = "🧟‍♀️💖🧠 or 🧠💖☕️"
+    let characterMatches = input.matches(of: regex)
+    XCTAssertEqual(characterMatches.map { $0.0 }, ["🧟‍♀️💖🧠", "🧠💖☕️"])
+
+    let scalarMatches = input.matches(of: regex.matchingSemantics(.unicodeScalar))
+    let scalarExpected: [Substring] = ["\u{FE0F}💖🧠", "🧠💖☕"]
+    XCTAssertEqual(scalarMatches.map { $0.0 }, scalarExpected)
+  }
 }
 

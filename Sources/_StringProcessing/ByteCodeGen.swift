@@ -35,6 +35,9 @@ extension Compiler.ByteCodeGen {
       builder.buildUnresolvedReference(id: id)
 
     case let .changeMatchingOptions(optionSequence):
+      if !builder.hasReceivedInstructions {
+        builder.initialOptions.apply(optionSequence.ast)
+      }
       options.apply(optionSequence.ast)
 
     case let .unconverted(astAtom):
@@ -379,6 +382,9 @@ extension Compiler.ByteCodeGen {
       throw Unreachable("These should produce a capture node")
 
     case .changeMatchingOptions(let optionSequence):
+      if !builder.hasReceivedInstructions {
+        builder.initialOptions.apply(optionSequence)
+      }
       options.apply(optionSequence)
       try emitNode(child)
 

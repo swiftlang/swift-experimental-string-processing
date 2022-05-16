@@ -14,11 +14,9 @@
 @_spi(RegexBuilder)
 public struct DSLTree {
   var root: Node
-  var options: Options?
 
-  init(_ r: Node, options: Options?) {
+  init(_ r: Node) {
     self.root = r
-    self.options = options
   }
 }
 

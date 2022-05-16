@@ -39,6 +39,7 @@ extension MEProgram where Input.Element: Hashable {
     var failAddressToken: AddressToken? = nil
 
     var captureList = CaptureList()
+    var initialOptions = MatchingOptions()
 
     // Symbolic reference resolution
     var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
@@ -76,6 +77,11 @@ extension MEProgram.Builder {
 
   var lastInstructionAddress: InstructionAddress {
     .init(instructions.endIndex - 1)
+  }
+  
+  /// `true` if the builder has received any instructions.
+  var hasReceivedInstructions: Bool {
+    !instructions.isEmpty
   }
 
   mutating func buildNop(_ r: StringRegister? = nil) {
@@ -353,7 +359,8 @@ extension MEProgram.Builder {
       registerInfo: regInfo,
       captureList: captureList,
       referencedCaptureOffsets: referencedCaptureOffsets,
-      namedCaptureOffsets: namedCaptureOffsets)
+      namedCaptureOffsets: namedCaptureOffsets,
+      initialOptions: initialOptions)
   }
 
   mutating func reset() { self = Self() }

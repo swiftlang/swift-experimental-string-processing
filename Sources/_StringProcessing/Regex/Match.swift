@@ -158,8 +158,12 @@ extension Regex {
       if let m = try _match(input, in: low..<high, mode: .partialFromFront) {
         return m
       }
-      if low == high { return nil }
-      input.formIndex(after: &low)
+      if low >= high { return nil }
+      if regex.initialOptions.semanticLevel == .graphemeCluster {
+        input.formIndex(after: &low)
+      } else {
+        input.unicodeScalars.formIndex(after: &low)
+      }
     }
   }
 }
