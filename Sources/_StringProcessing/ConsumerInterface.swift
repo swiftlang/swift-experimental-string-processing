@@ -534,7 +534,7 @@ extension Unicode.BinaryProperty {
     case .alphabetic:
       return consume(propertyScalarPredicate(\.isAlphabetic))
     case .bidiControl:
-      break
+      return consume(propertyScalarPredicate(\.isBidiControl))
     case .bidiMirrored:
       return consume(propertyScalarPredicate(\.isBidiMirrored))
     case .cased:

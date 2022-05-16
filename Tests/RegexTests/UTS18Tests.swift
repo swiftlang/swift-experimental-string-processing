@@ -659,13 +659,28 @@ extension UTS18Tests {
 
     // Lowercase
     XCTAssertTrue("aéîøü".contains(regex(#"^\p{Lowercase}+$"#)))
-    XCTAssertFalse("123abc".contains(regex(#"\p{Lowercase}+$"#)))
+    XCTAssertFalse("123ABC".contains(regex(#"\p{Lowercase}+$"#)))
 
     // Simple_Lowercase_Mapping
+//    XCTAssertTrue("ABC".contains(regex(#"^\p{Simple_Lowercase_Mapping}+$"#)))
+//    XCTAssertFalse("abc123".contains(regex(#"\p{Simple_Lowercase_Mapping}"#)))
+
     // Simple_Titlecase_Mapping
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Simple_Titlecase_Mapping}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Simple_Titlecase_Mapping}"#)))
+
     // Simple_Uppercase_Mapping
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Simple_Uppercase_Mapping}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Simple_Uppercase_Mapping}"#)))
+
     // Simple_Case_Folding
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Simple_Case_Folding}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Simple_Case_Folding}"#)))
+
     // Soft_Dotted
+    XCTAssertTrue("ijɨʝⅈⅉ".contains(regex(#"^\p{Soft_Dotted}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Soft_Dotted}"#)))
+
     // Cased
     XCTAssertTrue("A".contains(regex(#"\p{Cased}"#)))
     XCTAssertTrue("A".contains(regex(#"\p{Is_Cased}"#)))
@@ -700,59 +715,196 @@ extension UTS18Tests {
 
     // MARK: Normalization
     // Canonical_Combining_Class
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Canonical_Combining_Class}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Canonical_Combining_Class}"#)))
+
     // Decomposition_Type
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Decomposition_Type}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Decomposition_Type}"#)))
+
     // NFC_Quick_Check
+//    XCTAssertTrue("abc".contains(regex(#"^\p{NFC_Quick_Check}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{NFC_Quick_Check}"#)))
+
     // NFKC_Quick_Check
+//    XCTAssertTrue("abc".contains(regex(#"^\p{NFKC_Quick_Check}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{NFKC_Quick_Check}"#)))
+
     // NFD_Quick_Check
+//    XCTAssertTrue("abc".contains(regex(#"^\p{NFD_Quick_Check}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{NFD_Quick_Check}"#)))
+
     // NFKD_Quick_Check
+//    XCTAssertTrue("abc".contains(regex(#"^\p{NFKD_Quick_Check}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{NFKD_Quick_Check}"#)))
+
     // NFKC_Casefold
+//    XCTAssertTrue("abc".contains(regex(#"^\p{NFKC_Casefold}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{NFKC_Casefold}"#)))
+
     // Changes_When_NFKC_Casefolded
+    XCTAssertTrue("ABCÊÖ".contains(regex(#"^\p{Changes_When_NFKC_Casefolded}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Changes_When_NFKC_Casefolded}"#)))
 
     // MARK: Emoji
     // Emoji
+    XCTAssertTrue("🥰🥳🤩".contains(regex(#"^\p{Emoji}+$"#)))
+    XCTAssertFalse("abc ◎✩℥".contains(regex(#"\p{Emoji}"#)))
+
     // Emoji_Presentation
+    XCTAssertTrue("⌚☕☔".contains(regex(#"^\p{Emoji_Presentation}+$"#)))
+    XCTAssertFalse("abc ǽǮ".contains(regex(#"\p{Emoji_Presentation}"#)))
+
     // Emoji_Modifier
+    XCTAssertTrue("\u{1F3FB}\u{1F3FC}\u{1F3FD}".contains(regex(#"^\p{Emoji_Modifier}+$"#)))
+    XCTAssertFalse("🧒".contains(regex(#"\p{Emoji_Modifier}"#)))
+
     // Emoji_Modifier_Base
+    XCTAssertTrue("🧒".contains(regex(#"^\p{Emoji_Modifier_Base}+$"#)))
+    XCTAssertFalse("123 🧠".contains(regex(#"\p{Emoji_Modifier_Base}"#)))
+
     // Emoji_Component
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Emoji_Component}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Emoji_Component}"#)))
+
     // Extended_Pictographic
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Extended_Pictographic}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Extended_Pictographic}"#)))
+
     // Basic_Emoji*
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Basic_Emoji*}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Basic_Emoji*}"#)))
+
     // Emoji_Keycap_Sequence*
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Emoji_Keycap_Sequence*}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Emoji_Keycap_Sequence*}"#)))
+
     // RGI_Emoji_Modifier_Sequence*
+//    XCTAssertTrue("abc".contains(regex(#"^\p{RGI_Emoji_Modifier_Sequence*}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{RGI_Emoji_Modifier_Sequence*}"#)))
+
     // RGI_Emoji_Flag_Sequence*
+//    XCTAssertTrue("abc".contains(regex(#"^\p{RGI_Emoji_Flag_Sequence*}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{RGI_Emoji_Flag_Sequence*}"#)))
+
     // RGI_Emoji_Tag_Sequence*
+//    XCTAssertTrue("abc".contains(regex(#"^\p{RGI_Emoji_Tag_Sequence*}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{RGI_Emoji_Tag_Sequence*}"#)))
+
     // RGI_Emoji_ZWJ_Sequence*
+//    XCTAssertTrue("abc".contains(regex(#"^\p{RGI_Emoji_ZWJ_Sequence*}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{RGI_Emoji_ZWJ_Sequence*}"#)))
+
     // RGI_Emoji*
+//    XCTAssertTrue("abc".contains(regex(#"^\p{RGI_Emoji*}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{RGI_Emoji*}"#)))
 
     // MARK: Shaping and Rendering
     // Join_Control
+    XCTAssertTrue("\u{200C}\u{200D}".contains(regex(#"^\p{Join_Control}+$"#)))
+    XCTAssertFalse("123".contains(regex(#"\p{Join_Control}"#)))
+
     // Joining_Group
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Joining_Group}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Joining_Group}"#)))
+
     // Joining_Type
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Joining_Type}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Joining_Type}"#)))
+
     // Vertical_Orientation
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Vertical_Orientation}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Vertical_Orientation}"#)))
+
     // Line_Break
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Line_Break}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Line_Break}"#)))
+
     // Grapheme_Cluster_Break
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Grapheme_Cluster_Break}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Grapheme_Cluster_Break}"#)))
+
     // Sentence_Break
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Sentence_Break}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Sentence_Break}"#)))
+
     // Word_Break
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Word_Break}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Word_Break}"#)))
+
     // East_Asian_Width
+//    XCTAssertTrue("abc".contains(regex(#"^\p{East_Asian_Width}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{East_Asian_Width}"#)))
+
     // Prepended_Concatenation_Mark
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Prepended_Concatenation_Mark}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Prepended_Concatenation_Mark}"#)))
 
     // MARK: Bidirectional
     // Bidi_Class
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Bidi_Class}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Bidi_Class}"#)))
+
     // Bidi_Control
+    XCTAssertTrue("\u{200E}\u{200F}\u{2069}".contains(regex(#"^\p{Bidi_Control}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Bidi_Control}"#)))
+
     // Bidi_Mirrored
+    XCTAssertTrue("()<>{}❮❯«»".contains(regex(#"^\p{Bidi_Mirrored}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Bidi_Mirrored}"#)))
+
     // Bidi_Mirroring_Glyph
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Bidi_Mirroring_Glyph}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Bidi_Mirroring_Glyph}"#)))
+
     // Bidi_Paired_Bracket
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Bidi_Paired_Bracket}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Bidi_Paired_Bracket}"#)))
+
     // Bidi_Paired_Bracket_Type
+//    XCTAssertTrue("abc".contains(regex(#"^\p{Bidi_Paired_Bracket_Type}+$"#)))
+//    XCTAssertFalse("123".contains(regex(#"\p{Bidi_Paired_Bracket_Type}"#)))
+
 
     // MARK: Miscellaneous
     // Math
+    XCTAssertTrue("𝒶𝖇𝕔𝖽𝗲𝘧𝙜𝚑𝛊𝜅𝝀𝝡𝞰𝟙𝟐𝟯𝟺".contains(regex(#"^\p{Math}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Math}"#)))
+
     // Quotation_Mark
+    XCTAssertTrue(#"“«‘"’»”"#.contains(regex(#"^\p{Quotation_Mark}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Quotation_Mark}"#)))
+
     // Dash
+    XCTAssertTrue("—-–".contains(regex(#"^\p{Dash}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Dash}"#)))
+
     // Sentence_Terminal
+    XCTAssertTrue(".!?".contains(regex(#"^\p{Sentence_Terminal}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Sentence_Terminal}"#)))
+
     // Terminal_Punctuation
+    XCTAssertTrue(":?!.".contains(regex(#"^\p{Terminal_Punctuation}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Terminal_Punctuation}"#)))
+
     // Diacritic
+    XCTAssertTrue("¨`^¯ʸ".contains(regex(#"^\p{Diacritic}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Diacritic}"#)))
+
     // Extender
+    XCTAssertTrue("ᪧː々".contains(regex(#"^\p{Extender}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Extender}"#)))
+
     // Grapheme_Base
+    XCTAssertTrue("abc".contains(regex(#"^\p{Grapheme_Base}+$"#)))
+    XCTAssertFalse("\u{301}\u{FE0F}".contains(regex(#"\p{Grapheme_Base}"#)))
+
     // Grapheme_Extend
+    XCTAssertTrue("\u{301}\u{302}\u{303}".contains(regex(#"^\p{Grapheme_Extend}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Grapheme_Extend}"#)))
+
     // Regional_Indicator
+    XCTAssertTrue("🇰🇷🇬🇭🇵🇪".contains(regex(#"^\p{Regional_Indicator}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Regional_Indicator}"#)))
   }
 }
