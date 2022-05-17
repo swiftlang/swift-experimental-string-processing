@@ -17,20 +17,26 @@
 //       incremental conversion, such that leaves remain
 //       as canonical regex literals.
 
+/// Renders an AST tree as a Pattern DSL.
+///
+/// - Parameters:
+///   - ast: A `_RegexParser.AST` instance.
+///   - maxTopDownLevels: The number of levels down from the root of the tree
+///     to perform conversion. `nil` means no limit.
+///   - minBottomUpLevels: The number of levels up from the leaves of the tree
+///     to perform conversion. `nil` means no limit.
+/// - Returns: A string representation of `ast` in the `RegexBuilder` syntax.
 @_spi(PatternConverter)
-extension AST {
-  /// Render as a Pattern DSL
-  @_spi(PatternConverter)
-  public func renderAsBuilderDSL(
-    maxTopDownLevels: Int? = nil,
-    minBottomUpLevels: Int? = nil
-  ) -> String {
-    var printer = PrettyPrinter(
-      maxTopDownLevels: maxTopDownLevels,
-      minBottomUpLevels: minBottomUpLevels)
-    printer.printAsPattern(self)
-    return printer.finish()
-  }
+public func renderAsBuilderDSL(
+  ast: Any,
+  maxTopDownLevels: Int? = nil,
+  minBottomUpLevels: Int? = nil
+) -> String {
+  var printer = PrettyPrinter(
+    maxTopDownLevels: maxTopDownLevels,
+    minBottomUpLevels: minBottomUpLevels)
+  printer.printAsPattern(ast as! AST)
+  return printer.finish()
 }
 
 extension PrettyPrinter {
@@ -68,7 +74,7 @@ extension PrettyPrinter {
   private mutating func printAsPattern(
     convertedFromAST node: DSLTree.Node
   ) {
-    if patternBackoff(node) {
+    if patternBackoff(DSLTree._Tree(node)) {
       printBackoff(node)
       return
     }
@@ -90,7 +96,7 @@ extension PrettyPrinter {
       }
 
     case let .nonCapturingGroup(kind, child):
-      let kind = kind._patternBase
+      let kind = kind.ast._patternBase
       printBlock("Group(\(kind))") { printer in
         printer.printAsPattern(convertedFromAST: child)
       }
@@ -108,8 +114,8 @@ extension PrettyPrinter {
       print("/* TODO: conditional */")
 
     case let .quantification(amount, kind, child):
-      let amount = amount._patternBase
-      let kind = kind._patternBase
+      let amount = amount.ast._patternBase
+      let kind = (kind.ast ?? .eager)._patternBase
       printBlock("\(amount)(\(kind))") { printer in
         printer.printAsPattern(convertedFromAST: child)
       }
@@ -129,7 +135,7 @@ extension PrettyPrinter {
       case let .unconverted(a):
         // TODO: is this always right?
         // TODO: Convert built-in character classes
-        print(a._patternBase)
+        print(a.ast._patternBase)
 
       case .assertion:
         print("/* TODO: assertions */")
@@ -400,11 +406,6 @@ extension AST.Quantification.Kind {
 
 extension DSLTree.QuantificationKind {
   var _patternBase: String {
-    switch self {
-    case .explicit(let kind), .syntax(let kind):
-      return kind._patternBase
-    case .default:
-      return ".eager"
-    }
+    (ast ?? .eager)._patternBase
   }
 }

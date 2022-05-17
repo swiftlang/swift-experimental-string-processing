@@ -26,22 +26,22 @@ extension Compiler.ByteCodeGen {
       try emitScalar(s)
       
     case let .assertion(kind):
-      try emitAssertion(kind)
+      try emitAssertion(kind.ast)
 
     case let .backreference(ref):
-      try emitBackreference(ref)
+      try emitBackreference(ref.ast)
 
     case let .symbolicReference(id):
       builder.buildUnresolvedReference(id: id)
 
     case let .changeMatchingOptions(optionSequence):
-      options.apply(optionSequence)
+      options.apply(optionSequence.ast)
 
     case let .unconverted(astAtom):
-      if let consumer = try astAtom.generateConsumer(options) {
+      if let consumer = try astAtom.ast.generateConsumer(options) {
         builder.buildConsume(by: consumer)
       } else {
-        throw Unsupported("\(astAtom._patternBase)")
+        throw Unsupported("\(astAtom.ast._patternBase)")
       }
     }
   }
@@ -370,9 +370,9 @@ extension Compiler.ByteCodeGen {
     let updatedKind: AST.Quantification.Kind
     switch kind {
     case .explicit(let kind):
-      updatedKind = kind
+      updatedKind = kind.ast
     case .syntax(let kind):
-      updatedKind = kind.applying(options)
+      updatedKind = kind.ast.applying(options)
     case .default:
       updatedKind = options.defaultQuantificationKind
     }
@@ -602,13 +602,13 @@ extension Compiler.ByteCodeGen {
       }
 
     case let .nonCapturingGroup(kind, child):
-      try emitNoncapturingGroup(kind, child)
+      try emitNoncapturingGroup(kind.ast, child)
 
     case .conditional:
       throw Unsupported("Conditionals")
 
     case let .quantification(amt, kind, child):
-      try emitQuantification(amt, kind, child)
+      try emitQuantification(amt.ast, kind, child)
 
     case let .customCharacterClass(ccc):
       if ccc.containsAny {
@@ -644,7 +644,7 @@ extension Compiler.ByteCodeGen {
       }
 
     case let .regexLiteral(l):
-      try emitNode(l.dslTreeNode)
+      try emitNode(l.ast.dslTreeNode)
 
     case let .convertedRegexLiteral(n, _):
       try emitNode(n)
