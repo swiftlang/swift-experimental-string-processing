@@ -164,7 +164,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   public func wholeMatch<R: RegexComponent>(
     of r: R
   ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.wholeMatch(in: self[...].base)
+    try? r.regex.wholeMatch(in: self[...])
   }
 
   /// Checks for a match against the string, starting at its beginning.
