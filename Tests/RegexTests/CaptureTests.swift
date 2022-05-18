@@ -56,20 +56,20 @@ extension CaptureList {
   }
 }
 
-extension StructuredCapture {
+extension AnyRegexOutput.Element {
   func formatStringCapture(input: String) -> String {
-    var res = String(repeating: "some(", count: someCount)
-    if let r = self.storedCapture?.range {
+    var res = String(repeating: "some(", count: optionalDepth)
+    if let r = range {
       res += input[r]
     } else {
       res += "none"
     }
-    res += String(repeating: ")", count: someCount)
+    res += String(repeating: ")", count: optionalDepth)
     return res
   }
 }
 
-extension Sequence where Element == StructuredCapture {
+extension AnyRegexOutput {
   func formatStringCaptures(input: String) -> String {
     var res = "["
     res += self.map {
@@ -119,13 +119,13 @@ extension StringCapture: CustomStringConvertible {
 
 extension StringCapture {
   func isEqual(
-    to structCap: StructuredCapture,
+    to structCap: AnyRegexOutput.Element,
     in input: String
   ) -> Bool {
-    guard optionalCount == structCap.optionalCount else {
+    guard optionalCount == structCap.optionalDepth else {
       return false
     }
-    guard let r = structCap.storedCapture?.range else {
+    guard let r = structCap.range else {
       return contents == nil
     }
     guard let s = contents else {
@@ -202,7 +202,7 @@ func captureTest(
       return
     }
 
-    let caps = result.rawCaptures
+    let caps = result.anyRegexOutput
     guard caps.count == output.count else {
       XCTFail("""
       Mismatch capture count:
@@ -213,7 +213,7 @@ func captureTest(
       """)
       continue
     }
-
+    
     guard output.elementsEqual(caps, by: {
       $0.isEqual(to: $1, in: input)
     }) else {
@@ -459,7 +459,33 @@ extension RegexTests {
     //    TODO: "((a|b)|c)*"
 
   }
-
+  
+  func testTypeVerification() throws {
+    let opaque1 = try Regex("abc")
+    _ = try XCTUnwrap(opaque1.as(Substring.self))
+    XCTAssertNil(opaque1.as((Substring, Substring).self))
+    XCTAssertNil(opaque1.as(Int.self))
+    
+    let opaque2 = try Regex("(abc)")
+    _ = try XCTUnwrap(opaque2.as((Substring, Substring).self))
+    XCTAssertNil(opaque2.as(Substring.self))
+    XCTAssertNil(opaque2.as((Substring, Int).self))
+    
+    let opaque3 = try Regex("(?<someLabel>abc)")
+    _ = try XCTUnwrap(opaque3.as((Substring, someLabel: Substring).self))
+    XCTAssertNil(opaque3.as((Substring, Substring).self))
+    XCTAssertNil(opaque3.as(Substring.self))
+    
+    let opaque4 = try Regex("(?<somethingHere>abc)?")
+    _ = try XCTUnwrap(opaque4.as((Substring, somethingHere: Substring?).self))
+    XCTAssertNil(opaque4.as((Substring, somethignHere: Substring).self))
+    XCTAssertNil(opaque4.as((Substring, Substring?).self))
+    
+    let opaque5 = try Regex("((a)?bc)?")
+    _ = try XCTUnwrap(opaque5.as((Substring, Substring?, Substring??).self))
+    XCTAssertNil(opaque5.as((Substring, somethingHere: Substring?, here: Substring??).self))
+    XCTAssertNil(opaque5.as((Substring, Substring?, Substring?).self))
+  }
 }
 
 

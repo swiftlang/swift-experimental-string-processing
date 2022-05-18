@@ -11,27 +11,6 @@
 
 @_implementationOnly import _RegexParser
 
-/// A structured capture
-struct StructuredCapture {
-  /// The `.optional` height of the result
-  var optionalCount = 0
-
-  var storedCapture: StoredCapture?
-
-  var someCount: Int {
-    storedCapture == nil ? optionalCount - 1 : optionalCount
-  }
-}
-
-/// A storage form for a successful capture
-struct StoredCapture {
-  // TODO: drop optional when engine tracks all ranges
-  var range: Range<String.Index>?
-
-  // If strongly typed, value is set
-  var value: Any? = nil
-}
-
 // TODO: Where should this live? Inside TypeConstruction?
 func constructExistentialOutputComponent(
   from input: Substring,
@@ -61,26 +40,30 @@ func constructExistentialOutputComponent(
   return underlying
 }
 
-extension StructuredCapture {
+@available(SwiftStdlib 5.7, *)
+extension AnyRegexOutput.Element {
   func existentialOutputComponent(
     from input: Substring
   ) -> Any {
     constructExistentialOutputComponent(
       from: input,
-      in: storedCapture?.range,
-      value: storedCapture?.value,
-      optionalCount: optionalCount)
+      in: range,
+      value: value,
+      optionalCount: optionalDepth
+    )
   }
 
   func slice(from input: String) -> Substring? {
-    guard let r = storedCapture?.range else { return nil }
+    guard let r = range else { return nil }
     return input[r]
   }
 }
 
-extension Sequence where Element == StructuredCapture {
+@available(SwiftStdlib 5.7, *)
+extension Sequence where Element == AnyRegexOutput.Element {
   // FIXME: This is a stop gap where we still slice the input
   // and traffic through existentials
+  @available(SwiftStdlib 5.7, *)
   func existentialOutput(
     from input: Substring
   ) -> Any {

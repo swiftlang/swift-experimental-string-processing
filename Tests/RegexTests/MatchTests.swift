@@ -35,7 +35,7 @@ extension Executor {
         in: start..<input.endIndex,
         .partialFromFront
       ) {
-        let caps = result.rawCaptures.slices(from: input)
+        let caps = result.anyRegexOutput.slices(from: input)
         return (input[result.range], caps)
       } else if start == input.endIndex {
         throw MatchError("match not found for \(regex) in \(input)")
