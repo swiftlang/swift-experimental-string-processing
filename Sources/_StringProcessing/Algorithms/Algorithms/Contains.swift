@@ -50,11 +50,13 @@ extension BidirectionalCollection where Element: Comparable {
 // Overload breakers
 
 extension StringProtocol {
+  @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func contains(_ other: String) -> Bool {
     firstRange(of: other) != nil
   }
   
+  @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func contains(_ other: Substring) -> Bool {
     firstRange(of: other) != nil

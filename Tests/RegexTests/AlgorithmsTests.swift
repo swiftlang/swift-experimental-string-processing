@@ -96,10 +96,10 @@ class AlgorithmTests: XCTestCase {
     // `String.contains` get selected instead, which has inconsistent behavior.
     
     // Test that original `contains` functions are still accessible
-    // let containsRef = "abcd".contains
-    // XCTAssert(type(of: containsRef) == ((Character) -> Bool).self)
-    // let containsParamsRef = "abcd".contains(_:)
-    // XCTAssert(type(of: containsParamsRef) == ((Character) -> Bool).self)
+    let containsRef = "abcd".contains
+    XCTAssert(type(of: containsRef) == ((Character) -> Bool).self)
+    let containsParamsRef = "abcd".contains(_:)
+    XCTAssert(type(of: containsParamsRef) == ((Character) -> Bool).self)
   }
   
   func testRegexRanges() {
