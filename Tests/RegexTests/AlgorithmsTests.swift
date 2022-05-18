@@ -300,6 +300,19 @@ class AlgorithmTests: XCTestCase {
     expectReplace("aab", "a", "X", "XXb")
     expectReplace("aab", "a+", "X", "Xb")
     expectReplace("aab", "a*", "X", "XXbX")
+    
+    XCTAssertEqual(
+      "a:b abc:123".replacing(try! Regex(#"(\w+):(\w+)"#), withTemplate: "$2:$1"),
+      "b:a 123:abc")
+    XCTAssertEqual(
+      "a:b abc:123".replacing(try! Regex(#"(\w+):(\w+)"#), withTemplate: "$2:$1$9"),
+      "b:a 123:abc")
+    XCTAssertEqual(
+      "100 200 31 4".replacing(try! Regex(#"\d+"#), withTemplate: "${0}0"),
+      "1000 2000 310 40")
+    XCTAssertEqual(
+      "100 200 31 4".replacing(try! Regex(#"\d+"#), withTemplate: "$00"),
+      "100 200 31 4")
   }
 
   func testSubstring() throws {

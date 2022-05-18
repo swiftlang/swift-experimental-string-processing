@@ -173,6 +173,47 @@ extension RangeReplaceableCollection where SubSequence == Substring {
       maxReplacements: maxReplacements,
       with: replacement)
   }
+  
+  @available(SwiftStdlib 5.7, *)
+  public func replacing(
+    _ regex: some RegexComponent,
+    maxReplacements: Int = .max,
+    withTemplate templateString: String
+  ) -> Self {
+    precondition(maxReplacements >= 0)
+    
+    let replacementRegex = try! Regex(#"(?D)\$(?:(\d++)|{(\d++)})"#)
+    let subrange = startIndex..<endIndex
+    var index = subrange.lowerBound
+    var result = Self()
+    result.append(contentsOf: self[..<index])
+
+    for match in self[subrange].matches(of: regex)
+      .prefix(maxReplacements)
+    {
+      result.append(contentsOf: self[index..<match.range.lowerBound])
+
+      let erasedMatch = Regex<AnyRegexOutput>.Match(match)
+      // TODO: Manually inline this so that we aren't searching every time
+      result.append(contentsOf: templateString.replacing(replacementRegex) {
+        replacementMatch -> Substring in
+        guard let captureNumberString = replacementMatch.output[1].substring
+                ?? replacementMatch.output[2].substring,
+              let captureNumber = Int(captureNumberString),
+              captureNumber < erasedMatch.output.count
+        else {
+          return ""
+        }
+        
+        return erasedMatch.output[captureNumber].substring ?? ""
+      })
+      
+      index = match.range.upperBound
+    }
+
+    result.append(contentsOf: self[index...])
+    return result
+  }
 
   /// Replaces all occurrences of the sequence matching the given regex with
   /// a given collection.
