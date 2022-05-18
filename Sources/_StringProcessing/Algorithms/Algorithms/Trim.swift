@@ -291,7 +291,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: A collection containing the elements that does not match
   /// `prefix` from the start.
   @available(SwiftStdlib 5.7, *)
-  public func trimmingPrefix<R: RegexComponent>(_ regex: R) -> SubSequence {
+  public func trimmingPrefix(_ regex: some RegexComponent) -> SubSequence {
     _trimmingPrefix(RegexConsumer(regex))
   }
 
@@ -312,7 +312,7 @@ extension RangeReplaceableCollection
   /// Removes the initial elements that matches the given regex.
   /// - Parameter regex: The regex to remove from this collection.
   @available(SwiftStdlib 5.7, *)
-  public mutating func trimPrefix<R: RegexComponent>(_ regex: R) {
+  public mutating func trimPrefix(_ regex: some RegexComponent) {
     _trimPrefix(RegexConsumer(regex))
   }
 

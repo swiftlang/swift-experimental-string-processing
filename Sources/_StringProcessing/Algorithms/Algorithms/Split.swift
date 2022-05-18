@@ -383,8 +383,8 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: A collection of substrings, split from this collection's
   ///   elements.
   @_disfavoredOverload
-  public func split<R: RegexComponent>(
-    separator: R,
+  public func split(
+    separator: some RegexComponent,
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [SubSequence] {

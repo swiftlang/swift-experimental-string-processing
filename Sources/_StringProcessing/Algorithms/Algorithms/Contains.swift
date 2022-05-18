@@ -69,7 +69,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: `true` if the regex was found in the collection, otherwise
   /// `false`.
   @available(SwiftStdlib 5.7, *)
-  public func contains<R: RegexComponent>(_ regex: R) -> Bool {
+  public func contains(_ regex: some RegexComponent) -> Bool {
     _contains(RegexConsumer(regex))
   }
 }
