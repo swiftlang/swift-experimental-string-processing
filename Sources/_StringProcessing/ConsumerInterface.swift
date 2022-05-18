@@ -60,24 +60,53 @@ extension DSLTree.Atom {
     _ opts: MatchingOptions
   ) throws -> MEProgram<String>.ConsumeFunction? {
     let isCaseInsensitive = opts.isCaseInsensitive
-    
+    let isCharacterSemantics = opts.semanticLevel == .graphemeCluster
+
     switch self {
     case let .char(c):
-      // TODO: Match level?
       return { input, bounds in
-        let low = bounds.lowerBound
+        let nextIndex = isCharacterSemantics
+          ? input.index(after: bounds.lowerBound)
+          : input.unicodeScalars.index(after: bounds.lowerBound)
+
+        var curIdx = bounds.lowerBound
         if isCaseInsensitive && c.isCased {
-          return input[low].lowercased() == c.lowercased()
-            ? input.index(after: low)
-            : nil
+          if isCharacterSemantics {
+            return input[curIdx].lowercased() == c.lowercased()
+              ? nextIndex
+              : nil
+          } else {
+            // FIXME: How do multi-scalar characters match in case insensitive mode?
+            return input.unicodeScalars[curIdx].properties.lowercaseMapping == c.lowercased()
+              ? nextIndex
+              : nil
+          }
         } else {
-          return input[low] == c
-            ? input.index(after: low)
-            : nil
+          if isCharacterSemantics {
+            return input[curIdx] == c
+              ? nextIndex
+              : nil
+          } else {
+            // Try to match the sequence of unicodeScalars in `input` and `c`
+            var patternIndex = c.unicodeScalars.startIndex
+            while curIdx < input.endIndex, patternIndex < c.unicodeScalars.endIndex {
+              if input.unicodeScalars[curIdx] != c.unicodeScalars[patternIndex] {
+                return nil
+              }
+              input.unicodeScalars.formIndex(after: &curIdx)
+              c.unicodeScalars.formIndex(after: &patternIndex)
+            }
+            
+            // Match succeeded if all scalars in `c.unicodeScalars` matched
+            return patternIndex == c.unicodeScalars.endIndex
+              ? curIdx
+              : nil
+          }
         }
       }
     case let .scalar(s):
-      return consumeScalar {
+      let consume = consumeFunction(for: opts)
+      return consume {
         isCaseInsensitive
           ? $0.properties.lowercaseMapping == s.properties.lowercaseMapping
           : $0 == s
@@ -255,6 +284,8 @@ extension DSLTree.CustomCharacterClass.Member {
         throw Unsupported("\(high) in range")
       }
 
+      let isCharacterSemantic = opts.semanticLevel == .graphemeCluster
+      
       if opts.isCaseInsensitive {
         let lhsLower = lhs.lowercased()
         let rhsLower = rhs.lowercased()
@@ -262,10 +293,15 @@ extension DSLTree.CustomCharacterClass.Member {
         return { input, bounds in
           // TODO: check for out of bounds?
           let curIdx = bounds.lowerBound
-          guard input[curIdx].hasExactlyOneScalar else { return nil }
-          if (lhsLower...rhsLower).contains(input[curIdx].lowercased()) {
-            // TODO: semantic level
-            return input.index(after: curIdx)
+          if isCharacterSemantic {
+            guard input[curIdx].hasExactlyOneScalar else { return nil }
+            if (lhsLower...rhsLower).contains(input[curIdx].lowercased()) {
+              return input.index(after: curIdx)
+            }
+          } else {
+            if (lhsLower...rhsLower).contains(input.unicodeScalars[curIdx].properties.lowercaseMapping) {
+              return input.unicodeScalars.index(after: curIdx)
+            }
           }
           return nil
         }
@@ -274,10 +310,15 @@ extension DSLTree.CustomCharacterClass.Member {
         return { input, bounds in
           // TODO: check for out of bounds?
           let curIdx = bounds.lowerBound
-          guard input[curIdx].hasExactlyOneScalar else { return nil }
-          if (lhs...rhs).contains(input[curIdx]) {
-            // TODO: semantic level
-            return input.index(after: curIdx)
+          if isCharacterSemantic {
+            guard input[curIdx].hasExactlyOneScalar else { return nil }
+            if (lhs...rhs).contains(input[curIdx]) {
+              return input.index(after: curIdx)
+            }
+          } else {
+            if (lhs...rhs).contains(Character(input.unicodeScalars[curIdx])) {
+              return input.unicodeScalars.index(after: curIdx)
+            }
           }
           return nil
         }

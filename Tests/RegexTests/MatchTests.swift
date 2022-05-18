@@ -673,6 +673,11 @@ extension RegexTests {
     }
     firstMatchTest(#"[\t-\t]"#, input: "\u{8}\u{A}\u{9}", match: "\u{9}")
 
+    firstMatchTest(#"[12]"#, input: "1️⃣", match: nil)
+    firstMatchTest(#"[1-2]"#, input: "1️⃣", match: nil)
+    firstMatchTest(#"[\d]"#, input: "1️⃣", match: "1️⃣")
+    firstMatchTest(#"(?P)[\d]"#, input: "1️⃣", match: nil)
+
     // Currently not supported in the matching engine.
     for c: UnicodeScalar in ["a", "b", "c"] {
       firstMatchTest(#"[\c!-\C-#]"#, input: "def\(c)", match: "\(c)",
@@ -1507,31 +1512,28 @@ extension RegexTests {
   }
   
   func testCanonicalEquivalenceCustomCharacterClass() throws {
-    // Expectation: Concatenations with custom character classes should be able
-    // to match within a grapheme cluster. That is, a regex should be able to
-    // match the scalar values that comprise a grapheme cluster in separate,
-    // or repeated, custom character classes.
+    // Expectation: Custom character class matches do not cross grapheme
+    // character boundaries by default. When matching with Unicode scalar
+    // semantics, grapheme cluster boundaries are ignored, so matching
+    // sequences of custom character classes can succeed.
     
     matchTest(
       #"[áéíóú]$"#,
       (eComposed, true),
       (eDecomposed, true))
 
-    // FIXME: Custom char classes don't use canonical equivalence with composed characters
-    firstMatchTest(#"e[\u{301}]$"#, input: eComposed, match: eComposed,
-              xfail: true)
-    firstMatchTest(#"e[\u{300}-\u{320}]$"#, input: eComposed, match: eComposed,
-              xfail: true)
-    firstMatchTest(#"[a-z][\u{300}-\u{320}]$"#, input: eComposed, match: eComposed,
-              xfail: true)
+    // Unicode scalar semantics
+    firstMatchTest(#"(?u)e[\u{301}]$"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(#"(?u)e[\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(#"(?u)[e][\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(#"(?u)[e-e][\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(#"(?u)[a-z][\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed)
 
-    // FIXME: Custom char classes don't match decomposed characters
-    firstMatchTest(#"e[\u{301}]$"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
-    firstMatchTest(#"e[\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
-    firstMatchTest(#"[a-z][\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
+    // Grapheme cluster semantics
+    firstMatchTest(#"e[\u{301}]$"#, input: eComposed, match: nil)
+    firstMatchTest(#"e[\u{300}-\u{320}]$"#, input: eComposed, match: nil)
+    firstMatchTest(#"[e][\u{300}-\u{320}]$"#, input: eComposed, match: nil)
+    firstMatchTest(#"[a-z][\u{300}-\u{320}]$"#, input: eComposed, match: nil)
 
     let flag = "🇰🇷"
     firstMatchTest(#"🇰🇷"#, input: flag, match: flag)
@@ -1540,27 +1542,15 @@ extension RegexTests {
     firstMatchTest(#"\u{1F1F0 1F1F7}"#, input: flag, match: flag)
 
     // First Unicode scalar followed by CCC of regional indicators
-    firstMatchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag,
-              xfail: true)
-
-    // FIXME: CCC of Regional Indicator doesn't match with both parts of a flag character
-    // A CCC of regional indicators x 2
-    firstMatchTest(#"[\u{1F1E6}-\u{1F1FF}]{2}"#, input: flag, match: flag,
-              xfail: true)
-
-    // FIXME: A single CCC of regional indicators matches the whole flag character
+    firstMatchTest(#"(?u)^\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]$"#, input: flag, match: flag)
     // A CCC of regional indicators followed by the second Unicode scalar
-    firstMatchTest(#"[\u{1F1E6}-\u{1F1FF}]\u{1F1F7}"#, input: flag, match: flag,
-              xfail: true)
+    firstMatchTest(#"(?u)^[\u{1F1E6}-\u{1F1FF}]\u{1F1F7}$"#, input: flag, match: flag)
+    // A CCC of regional indicators x 2
+    firstMatchTest(#"(?u)^[\u{1F1E6}-\u{1F1FF}]{2}$"#, input: flag, match: flag)
+
     // A single CCC of regional indicators
-    firstMatchTest(#"[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: nil,
-              xfail: true)
-    
-    // A single CCC of actual flag emojis / combined regional indicators
-    firstMatchTest(#"[🇦🇫-🇿🇼]"#, input: flag, match: flag)
-    // This succeeds (correctly) because \u{1F1F0} is lexicographically
-    // within the CCC range
-    firstMatchTest(#"[🇦🇫-🇿🇼]"#, input: "\u{1F1F0}abc", match: "\u{1F1F0}")
+    firstMatchTest(#"^[\u{1F1E6}-\u{1F1FF}]$"#, input: flag, match: nil)
+    firstMatchTest(#"^(?u)[\u{1F1E6}-\u{1F1FF}]$"#, input: flag, match: nil)
   }
   
   func testAnyChar() throws {
