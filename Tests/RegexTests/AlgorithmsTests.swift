@@ -320,7 +320,7 @@ class AlgorithmTests: XCTestCase {
     }
   }
   
-  func testTrim() {
+  func testRegexTrim() {
     func expectTrim(
       _ string: String,
       _ regex: String,
@@ -330,6 +330,10 @@ class AlgorithmTests: XCTestCase {
       let regex = try! Regex(regex)
       let actual = string.trimmingPrefix(regex)
       XCTAssertEqual(actual, expected, file: file, line: line)
+      
+      var actual2 = string
+      actual2.trimPrefix(regex)
+      XCTAssertEqual(actual2[...], expected, file: file, line: line)
     }
 
     expectTrim("", "", "")
@@ -338,15 +342,54 @@ class AlgorithmTests: XCTestCase {
     expectTrim("a", "x", "a")
     expectTrim("___a", "_", "__a")
     expectTrim("___a", "_+", "a")
-    
-    XCTAssertEqual("".trimmingPrefix("a"), "")
-    XCTAssertEqual("a".trimmingPrefix("a"), "")
-    XCTAssertEqual("b".trimmingPrefix("a"), "b")
-    XCTAssertEqual("a".trimmingPrefix(""), "a")
-    XCTAssertEqual("___a".trimmingPrefix("_"), "__a")
-    XCTAssertEqual("___a".trimmingPrefix("___"), "a")
-    XCTAssertEqual("___a".trimmingPrefix("____"), "___a")
-    XCTAssertEqual("___a".trimmingPrefix("___a"), "")
+  }
+  
+  func testPredicateTrim() {
+    func expectTrim(
+      _ string: String,
+      _ predicate: (Character) -> Bool,
+      _ expected: Substring,
+      file: StaticString = #file, line: UInt = #line
+    ) {
+      let actual = string.trimmingPrefix(while: predicate)
+      XCTAssertEqual(actual, expected, file: file, line: line)
+      
+      var actual2 = string
+      actual2.trimPrefix(while: predicate)
+      XCTAssertEqual(actual2[...], expected, file: file, line: line)
+    }
+
+    expectTrim("",    \.isWhitespace, "")
+    expectTrim("a",   \.isWhitespace, "a")
+    expectTrim("   ", \.isWhitespace, "")
+    expectTrim("  a", \.isWhitespace, "a")
+    expectTrim("a  ", \.isWhitespace, "a  ")
+  }
+  
+  func testStringTrim() {
+    func expectTrim(
+      _ string: String,
+      _ pattern: String,
+      _ expected: Substring,
+      file: StaticString = #file, line: UInt = #line
+    ) {
+      let actual = string.trimmingPrefix(pattern)
+      XCTAssertEqual(actual, expected, file: file, line: line)
+      
+      var actual2 = string
+      actual2.trimPrefix(pattern)
+      XCTAssertEqual(actual2[...], expected, file: file, line: line)
+    }
+
+    expectTrim("", "", "")
+    expectTrim("", "x", "")
+    expectTrim("a", "", "a")
+    expectTrim("a", "x", "a")
+    expectTrim("a", "a", "")
+    expectTrim("___a", "_", "__a")
+    expectTrim("___a", "___", "a")
+    expectTrim("___a", "____", "___a")
+    expectTrim("___a", "___a", "")
     
     do {
       let prefix = makeSingleUseSequence(element: "_" as Character, count: 5)
@@ -360,12 +403,6 @@ class AlgorithmTests: XCTestCase {
       // is just to test that it doesn't crash.
       XCTAssertNotEqual("_____a".trimmingPrefix(prefix), "")
     }
-
-    XCTAssertEqual("".trimmingPrefix(while: \.isWhitespace), "")
-    XCTAssertEqual("a".trimmingPrefix(while: \.isWhitespace), "a")
-    XCTAssertEqual("   ".trimmingPrefix(while: \.isWhitespace), "")
-    XCTAssertEqual("  a".trimmingPrefix(while: \.isWhitespace), "a")
-    XCTAssertEqual("a  ".trimmingPrefix(while: \.isWhitespace), "a  ")
   }
   
   func testRegexReplace() {

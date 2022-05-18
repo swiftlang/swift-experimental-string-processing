@@ -311,6 +311,7 @@ extension RangeReplaceableCollection
 {
   /// Removes the initial elements that matches the given regex.
   /// - Parameter regex: The regex to remove from this collection.
+  @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix<R: RegexComponent>(_ regex: R) {
     _trimPrefix(RegexConsumer(regex))
