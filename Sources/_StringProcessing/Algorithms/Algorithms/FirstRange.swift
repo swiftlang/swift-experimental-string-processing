@@ -75,6 +75,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter regex: The regex to search for.
   /// - Returns: A range in the collection of the first occurrence of `regex`.
   /// Returns `nil` if `regex` is not found.
+  @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func firstRange<R: RegexComponent>(of regex: R) -> Range<Index>? {
     _firstRange(of: RegexConsumer(regex))
