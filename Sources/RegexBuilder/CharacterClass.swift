@@ -108,6 +108,24 @@ extension RegexComponent where Self == CharacterClass {
     CharacterClass(DSLTree.CustomCharacterClass(
       members: s.map { .atom(.scalar($0)) }))
   }
+
+  /// Returns a character class that matches any character in the given string
+  /// or sequence.
+  public static func noneOf<S: Sequence>(_ s: S) -> CharacterClass
+    where S.Element == Character
+  {
+    CharacterClass(DSLTree.CustomCharacterClass(
+      members: s.map { .atom(.char($0)) })).inverted
+  }
+  
+  /// Returns a character class that matches any Unicode scalar in the given
+  /// sequence.
+  public static func noneOf<S: Sequence>(_ s: S) -> CharacterClass
+    where S.Element == UnicodeScalar
+  {
+    CharacterClass(DSLTree.CustomCharacterClass(
+      members: s.map { .atom(.scalar($0)) })).inverted
+  }
 }
 
 // Unicode properties
@@ -143,8 +161,8 @@ extension RegexComponent where Self == CharacterClass {
     if rest.isEmpty {
       self.init(first.ccc)
     } else {
-      let members: [DSLTree.CustomCharacterClass.Member] =
-        (CollectionOfOne(first) + rest).map { .custom($0.ccc) }
+      var members: [DSLTree.CustomCharacterClass.Member] = [.custom(first.ccc)]
+      members.append(contentsOf: rest.lazy.map { .custom($0.ccc) })
       self.init(.init(members: members))
     }
   }
