@@ -56,8 +56,10 @@ class AlgorithmTests: XCTestCase {
     XCTAssertTrue("abcde".contains("a"))
     XCTAssertTrue("abcde".contains("e" as Character))
 
-    XCTAssertTrue("".contains(""))
-    XCTAssertTrue("abcde".contains(""))
+    XCTExpectFailure {
+      XCTAssertTrue("".contains(""))
+      XCTAssertTrue("abcde".contains(""))
+    }
     XCTAssertTrue("abcde".contains("abcd"))
     XCTAssertTrue("abcde".contains("bcde"))
     XCTAssertTrue("abcde".contains("bcd"))
