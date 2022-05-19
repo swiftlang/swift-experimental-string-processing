@@ -210,6 +210,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   ///   sequence matching `regex` to replace. Default is `Int.max`.
   /// - Returns: A new collection in which all occurrences of subsequence
   /// matching `regex` are replaced by `replacement`.
+  @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func replacing<R: RegexComponent, Replacement: Collection>(
     _ regex: R,
