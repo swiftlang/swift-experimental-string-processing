@@ -276,54 +276,48 @@ extension DSLTree.CustomCharacterClass.Member {
       }
       return c
     case let .range(low, high):
-      // TODO:
       guard let lhs = low.literalCharacterValue, lhs.hasExactlyOneScalar else {
         throw Unsupported("\(low) in range")
       }
       guard let rhs = high.literalCharacterValue, rhs.hasExactlyOneScalar else {
         throw Unsupported("\(high) in range")
       }
-
-      let isCharacterSemantic = opts.semanticLevel == .graphemeCluster
-      
-      if opts.isCaseInsensitive {
-        let lhsLower = lhs.lowercased()
-        let rhsLower = rhs.lowercased()
-        guard lhsLower <= rhsLower else { throw Unsupported("Invalid range \(lhs)-\(rhs)") }
-        return { input, bounds in
-          // TODO: check for out of bounds?
-          let curIdx = bounds.lowerBound
-          if isCharacterSemantic {
-            guard input[curIdx].hasExactlyOneScalar else { return nil }
-            if (lhsLower...rhsLower).contains(input[curIdx].lowercased()) {
-              return input.index(after: curIdx)
-            }
-          } else {
-            if (lhsLower...rhsLower).contains(input.unicodeScalars[curIdx].properties.lowercaseMapping) {
-              return input.unicodeScalars.index(after: curIdx)
-            }
-          }
-          return nil
-        }
-      } else {
-        guard lhs <= rhs else { throw Unsupported("Invalid range \(lhs)-\(rhs)") }
-        return { input, bounds in
-          // TODO: check for out of bounds?
-          let curIdx = bounds.lowerBound
-          if isCharacterSemantic {
-            guard input[curIdx].hasExactlyOneScalar else { return nil }
-            if (lhs...rhs).contains(input[curIdx]) {
-              return input.index(after: curIdx)
-            }
-          } else {
-            if (lhs...rhs).contains(Character(input.unicodeScalars[curIdx])) {
-              return input.unicodeScalars.index(after: curIdx)
-            }
-          }
-          return nil
-        }
+      guard lhs <= rhs else {
+        throw Unsupported("Invalid range \(low)-\(high)")
       }
 
+      let isCaseInsensitive = opts.isCaseInsensitive
+      let isCharacterSemantic = opts.semanticLevel == .graphemeCluster
+      
+      return { input, bounds in
+        // TODO: check for out of bounds?
+        let curIdx = bounds.lowerBound
+        let nextIndex = isCharacterSemantic
+          ? input.index(after: curIdx)
+          : input.unicodeScalars.index(after: curIdx)
+        if isCharacterSemantic && !input[curIdx].hasExactlyOneScalar {
+          return nil
+        }
+        let scalar = input.unicodeScalars[curIdx]
+        let scalarRange = lhs.unicodeScalars.first! ... rhs.unicodeScalars.first!
+        if scalarRange.contains(scalar) {
+          return nextIndex
+        }
+        if !isCaseInsensitive {
+          return nil
+        }
+        
+        let stringRange = String(lhs)...String(rhs)
+        if (scalar.properties.changesWhenLowercased
+            && stringRange.contains(scalar.properties.lowercaseMapping))
+          || (scalar.properties.changesWhenUppercased
+            && stringRange.contains(scalar.properties.uppercaseMapping)) {
+          return nextIndex
+        }
+        
+        return nil
+      }
+      
     case let .custom(ccc):
       return try ccc.generateConsumer(opts)
 

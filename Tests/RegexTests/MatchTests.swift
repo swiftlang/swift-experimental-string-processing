@@ -731,6 +731,33 @@ extension RegexTests {
     firstMatchTest(#"["abc"]+"#, input: #""abc""#, match: "abc",
                    syntax: .experimental)
     firstMatchTest(#"["abc"]+"#, input: #""abc""#, match: #""abc""#)
+    
+    // Case sensitivity and ranges.
+    for ch in "abcD" {
+      firstMatchTest("[a-cD]", input: String(ch), match: String(ch))
+    }
+    for ch in "ABCd" {
+      firstMatchTest("[a-cD]", input: String(ch), match: nil)
+    }
+
+    for ch in "abcABCdD" {
+      firstMatchTest("(?i)[a-cd]", input: String(ch), match: String(ch))
+      firstMatchTest("(?i)[A-CD]", input: String(ch), match: String(ch))
+      firstMatchTest("(?iu)[a-cd]", input: String(ch), match: String(ch))
+      firstMatchTest("(?iu)[A-CD]", input: String(ch), match: String(ch))
+    }
+
+    for ch in "XYZ[\\]^_`abcd" {
+      firstMatchTest("[X-cd]", input: String(ch), match: String(ch))
+      firstMatchTest("[X-cd]", input: String(ch), match: String(ch))
+      firstMatchTest("(?u)[X-cd]", input: String(ch), match: String(ch))
+      firstMatchTest("(?u)[X-cd]", input: String(ch), match: String(ch))
+    }
+
+    for ch in "XYZ[\\]^_`abcxyzABCdD" {
+      firstMatchTest("(?i)[X-cd]", input: String(ch), match: String(ch))
+      firstMatchTest("(?iu)[X-cD]", input: String(ch), match: String(ch))
+    }
   }
 
   func testCharacterProperties() {
