@@ -134,6 +134,10 @@ extension CharacterClass {
   public static func generalCategory(_ category: Unicode.GeneralCategory) -> CharacterClass {
     return CharacterClass(.generalCategory(category))
   }
+  
+  public static func binaryProperty(_ property: KeyPath<UnicodeScalar.Properties, Bool>, value: Bool = true) -> CharacterClass {
+    return CharacterClass(.binaryProperty(property, value: value))
+  }
 }
 
 /// Returns a character class that includes the characters in the given range.

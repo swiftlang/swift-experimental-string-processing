@@ -145,7 +145,97 @@ extension DSLTree {
       let astAtom = AST.Atom(.property(property), .fake)
       return .init(members: [.atom(.unconverted(.init(ast: astAtom)))])
     }
-    
+
+    public static func binaryProperty(
+      _ property: KeyPath<UnicodeScalar.Properties, Bool>,
+      value: Bool
+    ) -> Self {
+      let binProp: Unicode.BinaryProperty
+      switch property {
+      case \.isAlphabetic: binProp = .alphabetic
+      case \.isASCIIHexDigit: binProp = .asciiHexDigit
+      case \.isBidiControl: binProp = .bidiControl
+      case \.isBidiMirrored: binProp = .bidiMirrored
+      case \.isCased: binProp = .cased
+//      case \.compositionExclusion: binProp = .compositionExclusion
+      case \.isCaseIgnorable: binProp = .caseIgnorable
+      case \.changesWhenCaseFolded: binProp = .changesWhenCasefolded
+      case \.changesWhenCaseMapped: binProp = .changesWhenCasemapped
+      case \.changesWhenNFKCCaseFolded: binProp = .changesWhenNFKCCasefolded
+      case \.changesWhenLowercased: binProp = .changesWhenLowercased
+      case \.changesWhenTitlecased: binProp = .changesWhenTitlecased
+      case \.changesWhenUppercased: binProp = .changesWhenUppercased
+      case \.isDash: binProp = .dash
+      case \.isDefaultIgnorableCodePoint: binProp = .defaultIgnorableCodePoint
+      case \.isDeprecated: binProp = .deprecated
+      case \.isDiacritic: binProp = .diacratic
+      case \.isExtender: binProp = .extender
+//      case \.extendedPictographic: binProp = .extendedPictographic
+      case \.isFullCompositionExclusion: binProp = .fullCompositionExclusion
+      case \.isGraphemeBase: binProp = .graphemeBase
+      case \.isGraphemeExtend: binProp = .graphemeExtended
+//      case \.graphemeLink: binProp = .graphemeLink
+      case \.isHexDigit: binProp = .hexDigit
+//      case \.hyphen: binProp = .hyphen
+      case \.isIDContinue: binProp = .idContinue
+      case \.isIdeographic: binProp = .ideographic
+      case \.isIDStart: binProp = .idStart
+      case \.isIDSBinaryOperator: binProp = .idsBinaryOperator
+      case \.isIDSTrinaryOperator: binProp = .idsTrinaryOperator
+      case \.isJoinControl: binProp = .joinControl
+      case \.isLogicalOrderException: binProp = .logicalOrderException
+      case \.isLowercase: binProp = .lowercase
+      case \.isMath: binProp = .math
+      case \.isNoncharacterCodePoint: binProp = .noncharacterCodePoint
+//      case \.otherAlphabetic: binProp = .otherAlphabetic
+//      case \.otherDefaultIgnorableCodePoint: binProp = .otherDefaultIgnorableCodePoint
+//      case \.otherGraphemeExtended: binProp = .otherGraphemeExtended
+//      case \.otherIDContinue: binProp = .otherIDContinue
+//      case \.otherIDStart: binProp = .otherIDStart
+//      case \.otherLowercase: binProp = .otherLowercase
+//      case \.otherMath: binProp = .otherMath
+//      case \.otherUppercase: binProp = .otherUppercase
+      case \.isPatternSyntax: binProp = .patternSyntax
+      case \.isPatternWhitespace: binProp = .patternWhitespace
+//      case \.prependedConcatenationMark: binProp = .prependedConcatenationMark
+      case \.isQuotationMark: binProp = .quotationMark
+      case \.isRadical: binProp = .radical
+//      case \.regionalIndicator: binProp = .regionalIndicator
+      case \.isSoftDotted: binProp = .softDotted
+      case \.isSentenceTerminal: binProp = .sentenceTerminal
+      case \.isTerminalPunctuation: binProp = .terminalPunctuation
+      case \.isUnifiedIdeograph: binProp = .unifiedIdiograph
+      case \.isUppercase: binProp = .uppercase
+      case \.isVariationSelector: binProp = .variationSelector
+      case \.isWhitespace: binProp = .whitespace
+      case \.isXIDContinue: binProp = .xidContinue
+      case \.isXIDStart: binProp = .xidStart
+//      case \.expandsOnNFC: binProp = .expandsOnNFC
+//      case \.expandsOnNFD: binProp = .expandsOnNFD
+//      case \.expandsOnNFKC: binProp = .expandsOnNFKC
+//      case \.expandsOnNFKD: binProp = .expandsOnNFKD
+      default:
+        if #available(macOS 10.12.2, iOS 10.2, tvOS 10.1, watchOS 3.1.1, *) {
+          // FIXME: Other platforms
+          switch property {
+          case \.isEmojiModifierBase: binProp = .emojiModifierBase
+    //      case \.emojiComponent: binProp = .emojiComponent
+          case \.isEmojiModifier: binProp = .emojiModifier
+          case \.isEmoji: binProp = .emoji
+          case \.isEmojiPresentation: binProp = .emojiPresentation
+          default:
+            fatalError()
+          }
+        } else {
+          fatalError()
+        }
+      }
+      
+      let atomProperty = AST.Atom.CharacterProperty(.binary(binProp, value: value), isInverted: false, isPOSIX: false)
+      let astAtom = AST.Atom(.property(atomProperty), .fake)
+      return .init(members: [.atom(.unconverted(.init(ast: astAtom)))])
+    }
+
     public var inverted: CustomCharacterClass {
       var result = self
       result.isInverted.toggle()
