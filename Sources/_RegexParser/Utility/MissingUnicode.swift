@@ -19,7 +19,7 @@ extension Unicode {
   // other script types.
 
   /// Character script types.
-  public enum Script: String, Hashable {
+  public enum Script: String, Hashable, Sendable {
     case adlam = "Adlam"
     case ahom = "Ahom"
     case anatolianHieroglyphs = "Anatolian_Hieroglyphs"
@@ -187,7 +187,7 @@ extension Unicode {
 
   /// POSIX character properties not already covered by general categories or
   /// binary properties.
-  public enum POSIXProperty: String, Hashable {
+  public enum POSIXProperty: String, Hashable, Sendable {
     case alnum = "alnum"
     case blank = "blank"
     case graph = "graph"
@@ -204,7 +204,7 @@ extension Unicode {
 
   /// Unicode.GeneralCategory + cases for "meta categories" such as "L", which
   /// encompasses Lu | Ll | Lt | Lm | Lo.
-  public enum ExtendedGeneralCategory: String, Hashable {
+  public enum ExtendedGeneralCategory: String, Hashable, Sendable {
     case other = "C"
     case control = "Cc"
     case format = "Cf"
@@ -254,7 +254,7 @@ extension Unicode {
   /// A list of Unicode properties that can either be true or false.
   ///
   /// https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt
-  public enum BinaryProperty: String, Hashable {
+  public enum BinaryProperty: String, Hashable, Sendable {
     case asciiHexDigit = "ASCII_Hex_Digit"
     case alphabetic = "Alphabetic"
     case bidiControl = "Bidi_Control"
@@ -329,7 +329,7 @@ extension Unicode {
 // property.
 
 /// Oniguruma properties that are not covered by Unicode spellings.
-public enum OnigurumaSpecialProperty: String, Hashable {
+public enum OnigurumaSpecialProperty: String, Hashable, Sendable {
   case inBasicLatin = "In_Basic_Latin"
   case inLatin1Supplement = "In_Latin_1_Supplement"
   case inLatinExtendedA = "In_Latin_Extended_A"
