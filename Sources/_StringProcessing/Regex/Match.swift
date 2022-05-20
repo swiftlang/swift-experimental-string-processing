@@ -154,13 +154,17 @@ extension Regex {
 
     var low = inputRange.lowerBound
     let high = inputRange.upperBound
-    while low < high {
+    while true {
       if let m = try _match(input, in: low..<high, mode: .partialFromFront) {
         return m
       }
-      input.formIndex(after: &low)
+      if low >= high { return nil }
+      if regex.initialOptions.semanticLevel == .graphemeCluster {
+        input.formIndex(after: &low)
+      } else {
+        input.unicodeScalars.formIndex(after: &low)
+      }
     }
-    return nil
   }
 }
 

@@ -24,7 +24,7 @@ extension AlgorithmTests {
 
     let str = "a string with the letter b in it"
     let first = str.firstRange(of: r)
-    let last = str.lastRange(of: r)
+    let last = str._lastRange(of: r)
     let (expectFirst, expectLast) = (
       str.index(atOffset: 0)..<str.index(atOffset: 1),
       str.index(atOffset: 25)..<str.index(atOffset: 26))
@@ -38,10 +38,10 @@ extension AlgorithmTests {
       [expectFirst, expectLast], Array(str.ranges(of: r)))
 
     XCTAssertTrue(str.starts(with: r))
-    XCTAssertFalse(str.ends(with: r))
+    XCTAssertFalse(str._ends(with: r))
 
     XCTAssertEqual(str.dropFirst(), str.trimmingPrefix(r))
-    XCTAssertEqual("x", "axb".trimming(r))
-    XCTAssertEqual("x", "axbb".trimming(r))
+    XCTAssertEqual("x", "axb"._trimming(r))
+    XCTAssertEqual("x", "axbb"._trimming(r))
   }
 }

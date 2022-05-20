@@ -88,4 +88,51 @@ extension RegexTests {
       try testCompilationEquivalence(row)
     }
   }
+  
+  func testCompileInitialOptions() throws {
+    func expectInitialOptions<T>(
+      _ regex: Regex<T>,
+      _ optionSequence: AST.MatchingOptionSequence,
+      file: StaticString = #file,
+      line: UInt = #line
+    ) throws {
+      var options = MatchingOptions()
+      options.apply(optionSequence)
+      
+      XCTAssertTrue(
+        regex.program.loweredProgram.initialOptions._equal(to: options),
+        file: file, line: line)
+    }
+    
+    func expectInitialOptions(
+      _ pattern: String,
+      _ optionSequence: AST.MatchingOptionSequence,
+      file: StaticString = #file,
+      line: UInt = #line
+    ) throws {
+      let regex = try Regex(pattern)
+      try expectInitialOptions(regex, optionSequence, file: file, line: line)
+    }
+
+    try expectInitialOptions(".", matchingOptions())
+    try expectInitialOptions("(?i)(?-i).", matchingOptions())
+
+    try expectInitialOptions("(?i).", matchingOptions(adding: [.caseInsensitive]))
+    try expectInitialOptions("(?i).(?-i)", matchingOptions(adding: [.caseInsensitive]))
+
+    try expectInitialOptions(
+      "(?im)(?s).",
+      matchingOptions(adding: [.caseInsensitive, .multiline, .singleLine]))
+    try expectInitialOptions(".", matchingOptions())
+    try expectInitialOptions(
+      "(?im)(?s).(?u)",
+      matchingOptions(adding: [.caseInsensitive, .multiline, .singleLine]))
+    
+    try expectInitialOptions(
+      "(?i:.)",
+      matchingOptions(adding: [.caseInsensitive]))
+    try expectInitialOptions(
+      "(?i:.)(?m:.)",
+      matchingOptions(adding: [.caseInsensitive]))
+  }
 }
