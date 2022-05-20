@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 @_implementationOnly import _RegexParser
-
+@_implementationOnly import Atomics
 
 /// A type that represents a regular expression.
 @available(SwiftStdlib 5.7, *)
@@ -68,11 +68,12 @@ extension Regex {
   }
 }
 
+
 @available(SwiftStdlib 5.7, *)
 extension Regex {
   /// A program representation that caches any lowered representation for
   /// execution.
-  internal class Program {
+  internal final class Program: @unchecked Sendable {
     /// The underlying IR.
     ///
     /// FIXME: If Regex is the unit of composition, then it should be a Node instead,
@@ -80,8 +81,22 @@ extension Regex {
     /// likely, compilation/caching.
     let tree: DSLTree
 
+    private final class ProgramBox {
+      let value: MEProgram<String>
+      init(_ value: MEProgram<String>) { self.value = value }
+    }
+
+    private var _loweredProgramStorage: UnsafeAtomicLazyReference<ProgramBox>
+      = .create()
+    
     /// The program for execution with the matching engine.
-    lazy private(set) var loweredProgram = try! Compiler(tree: tree).emit()
+    var loweredProgram: MEProgram<String> {
+      if let lowered = _loweredProgramStorage.load() {
+        return lowered.value
+      }
+      let lowered = try! ProgramBox(Compiler(tree: tree).emit())
+      return _loweredProgramStorage.storeIfNilThenLoad(lowered).value
+    }
 
     init(ast: AST) {
       self.tree = ast.dslTree
@@ -89,6 +104,10 @@ extension Regex {
 
     init(tree: DSLTree) {
       self.tree = tree
+    }
+    
+    deinit {
+      _loweredProgramStorage.destroy()
     }
   }
   
