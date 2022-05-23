@@ -27,39 +27,23 @@ extension RegexComponent {
   /// - Parameter useASCII: A Boolean value indicating whether to match only
   ///   ASCII characters as word characters.
   /// - Returns: The modified regular expression.
-  public func asciiOnlyWordCharacters(_ useASCII: Bool = true) -> Regex<RegexOutput> {
-    wrapInOption(.asciiOnlyWord, addingIf: useASCII)
+  public func asciiOnlyClasses(_ kinds: RegexCharacterClassKind = .all) -> Regex<RegexOutput> {
+    if kinds == [] {
+      return Regex(node: .nonCapturingGroup(
+        .init(ast: .changeMatchingOptions(AST.MatchingOptionSequence(removing: [
+          .init(.asciiOnlyDigit, location: .fake),
+          .init(.asciiOnlySpace, location: .fake),
+          .init(.asciiOnlyWord, location: .fake),
+          .init(.asciiOnlyPOSIXProps, location: .fake),
+        ]))), regex.root))
+    }
+    return self
+      .wrapInOption(.asciiOnlyDigit, addingIf: kinds.contains(.digit))
+      .wrapInOption(.asciiOnlySpace, addingIf: kinds.contains(.whitespace))
+      .wrapInOption(.asciiOnlyWord, addingIf: kinds.contains(.wordCharacter))
+      .wrapInOption(.asciiOnlyPOSIXProps, addingIf: kinds.contains(.all))
   }
 
-  /// Returns a regular expression that matches only ASCII characters as digits.
-  ///
-  /// - Parameter useasciiOnlyDigits: A Boolean value indicating whether to
-  ///   match only ASCII characters as digits.
-  /// - Returns: The modified regular expression.
-  public func asciiOnlyDigits(_ useASCII: Bool = true) -> Regex<RegexOutput> {
-    wrapInOption(.asciiOnlyDigit, addingIf: useASCII)
-  }
-
-  /// Returns a regular expression that matches only ASCII characters as space
-  /// characters.
-  ///
-  /// - Parameter asciiOnlyWhitespace: A Boolean value indicating whether to
-  /// match only ASCII characters as space characters.
-  /// - Returns: The modified regular expression.
-  public func asciiOnlyWhitespace(_ useASCII: Bool = true) -> Regex<RegexOutput> {
-    wrapInOption(.asciiOnlySpace, addingIf: useASCII)
-  }
-
-  /// Returns a regular expression that matches only ASCII characters when
-  /// matching character classes.
-  ///
-  /// - Parameter useASCII: A Boolean value indicating whether to match only
-  ///   ASCII characters when matching character classes.
-  /// - Returns: The modified regular expression.
-  public func asciiOnlyCharacterClasses(_ useASCII: Bool = true) -> Regex<RegexOutput> {
-    wrapInOption(.asciiOnlyPOSIXProps, addingIf: useASCII)
-  }
-  
   /// Returns a regular expression that uses the specified word boundary algorithm.
   ///
   /// - Parameter wordBoundaryKind: The algorithm to use for determining word boundaries.
@@ -161,8 +145,47 @@ extension RegexComponent {
   }
 }
 
+/// A built-in regex character class kind.
+///
+/// Pass one or more `RegexCharacterClassKind` classes to `asciiOnlyClasses(_:)`
+/// to control whether character classes match any character or only members
+/// of the ASCII character set.
 @available(SwiftStdlib 5.7, *)
+public struct RegexCharacterClassKind: OptionSet, Hashable {
+  public var rawValue: Int
+  
+  public init(rawValue: Int) {
+    self.rawValue = rawValue
+  }
+
+  /// Regex digit-matching character classes, like `\d`, `[:digit:]`, and
+  /// `\p{HexDigit}`.
+  public static var digit: RegexCharacterClassKind {
+    .init(rawValue: 1)
+  }
+
+  /// Regex whitespace-matching character classes, like `\s`, `[:space:]`,
+  /// and `\p{Whitespace}`.
+  public static var whitespace: RegexCharacterClassKind {
+    .init(rawValue: 1 << 1)
+  }
+
+  /// Regex word character-matching character classes, like `\w`.
+  public static var wordCharacter: RegexCharacterClassKind {
+    .init(rawValue: 1 << 2)
+  }
+
+  /// All built-in regex character classes.
+  public static var all: RegexCharacterClassKind {
+    .init(rawValue: 1 << 3)
+  }
+
+  /// No built-in regex character classes.
+  public static var none: RegexCharacterClassKind { [] }
+}
+
 /// A semantic level to use during regex matching.
+@available(SwiftStdlib 5.7, *)
 public struct RegexSemanticLevel: Hashable {
   internal enum Representation {
     case graphemeCluster

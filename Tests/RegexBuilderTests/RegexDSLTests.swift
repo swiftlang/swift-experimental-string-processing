@@ -312,7 +312,7 @@ class RegexDSLTests: XCTestCase {
         Capture {
           OneOrMore(.word)
         }
-        .asciiOnlyWordCharacters()
+        .asciiOnlyClasses(.wordCharacter)
         
         ZeroOrMore(.any)
       }
