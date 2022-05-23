@@ -49,7 +49,7 @@ extension RegexComponent {
   /// - Parameter wordBoundaryKind: The algorithm to use for determining word boundaries.
   /// - Returns: The modified regular expression.
   public func wordBoundaryKind(_ wordBoundaryKind: RegexWordBoundaryKind) -> Regex<RegexOutput> {
-    wrapInOption(.unicodeWordBoundaries, addingIf: wordBoundaryKind == .unicodeLevel2)
+    wrapInOption(.unicodeWordBoundaries, addingIf: wordBoundaryKind == .defaultBoundaries)
   }
   
   /// Returns a regular expression where the start and end of input
@@ -211,8 +211,8 @@ public struct RegexSemanticLevel: Hashable {
   }
 }
 
-@available(SwiftStdlib 5.7, *)
 /// A word boundary algorithm to use during regex matching.
+@available(SwiftStdlib 5.7, *)
 public struct RegexWordBoundaryKind: Hashable {
   internal enum Representation {
     case unicodeLevel1
@@ -228,7 +228,7 @@ public struct RegexWordBoundaryKind: Hashable {
   /// that match `/\w\W/` or `/\W\w/`, or between the start or end of the input
   /// and a `\w` character. Word boundaries therefore depend on the option-
   /// defined behavior of `\w`.
-  public static var unicodeLevel1: Self {
+  public static var simpleBoundaries: Self {
     .init(base: .unicodeLevel1)
   }
 
@@ -238,7 +238,7 @@ public struct RegexWordBoundaryKind: Hashable {
   /// Default word boundaries use a Unicode algorithm that handles some cases
   /// better than simple word boundaries, such as words with internal
   /// punctuation, changes in script, and Emoji.
-  public static var unicodeLevel2: Self {
+  public static var defaultBoundaries: Self {
     .init(base: .unicodeLevel2)
   }
 }

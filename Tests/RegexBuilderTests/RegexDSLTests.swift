@@ -280,7 +280,7 @@ class RegexDSLTests: XCTestCase {
             OneOrMore(.word)
             Anchor.wordBoundary
           }
-          .wordBoundaryKind(.unicodeLevel1)
+          .wordBoundaryKind(.simpleBoundaries)
           OneOrMore(.any, .reluctant)
           "stop"
         }
