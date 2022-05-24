@@ -140,102 +140,122 @@ extension DSLTree {
       self.isInverted = isInverted
     }
     
-    public static func generalCategory(_ category: Unicode.GeneralCategory) -> Self {
-      let property = AST.Atom.CharacterProperty(.generalCategory(category.extendedGeneralCategory!), isInverted: false, isPOSIX: false)
+    private static func astCharacterProperty(
+      _ property: AST.Atom.CharacterProperty.Kind
+    ) -> Self {
+      let property = AST.Atom.CharacterProperty(property, isInverted: false, isPOSIX: false)
       let astAtom = AST.Atom(.property(property), .fake)
       return .init(members: [.atom(.unconverted(.init(ast: astAtom)))])
+    }
+    
+    public static func generalCategory(_ category: Unicode.GeneralCategory) -> Self {
+      astCharacterProperty(.generalCategory(category.extendedGeneralCategory!))
     }
 
     public static func binaryProperty(
       _ property: KeyPath<UnicodeScalar.Properties, Bool>,
       value: Bool
     ) -> Self {
-      let binProp: Unicode.BinaryProperty
+      var binaryProperty: Unicode.BinaryProperty? = nil
       switch property {
-      case \.isAlphabetic: binProp = .alphabetic
-      case \.isASCIIHexDigit: binProp = .asciiHexDigit
-      case \.isBidiControl: binProp = .bidiControl
-      case \.isBidiMirrored: binProp = .bidiMirrored
-      case \.isCased: binProp = .cased
-//      case \.compositionExclusion: binProp = .compositionExclusion
-      case \.isCaseIgnorable: binProp = .caseIgnorable
-      case \.changesWhenCaseFolded: binProp = .changesWhenCasefolded
-      case \.changesWhenCaseMapped: binProp = .changesWhenCasemapped
-      case \.changesWhenNFKCCaseFolded: binProp = .changesWhenNFKCCasefolded
-      case \.changesWhenLowercased: binProp = .changesWhenLowercased
-      case \.changesWhenTitlecased: binProp = .changesWhenTitlecased
-      case \.changesWhenUppercased: binProp = .changesWhenUppercased
-      case \.isDash: binProp = .dash
-      case \.isDefaultIgnorableCodePoint: binProp = .defaultIgnorableCodePoint
-      case \.isDeprecated: binProp = .deprecated
-      case \.isDiacritic: binProp = .diacratic
-      case \.isExtender: binProp = .extender
-//      case \.extendedPictographic: binProp = .extendedPictographic
-      case \.isFullCompositionExclusion: binProp = .fullCompositionExclusion
-      case \.isGraphemeBase: binProp = .graphemeBase
-      case \.isGraphemeExtend: binProp = .graphemeExtended
-//      case \.graphemeLink: binProp = .graphemeLink
-      case \.isHexDigit: binProp = .hexDigit
-//      case \.hyphen: binProp = .hyphen
-      case \.isIDContinue: binProp = .idContinue
-      case \.isIdeographic: binProp = .ideographic
-      case \.isIDStart: binProp = .idStart
-      case \.isIDSBinaryOperator: binProp = .idsBinaryOperator
-      case \.isIDSTrinaryOperator: binProp = .idsTrinaryOperator
-      case \.isJoinControl: binProp = .joinControl
-      case \.isLogicalOrderException: binProp = .logicalOrderException
-      case \.isLowercase: binProp = .lowercase
-      case \.isMath: binProp = .math
-      case \.isNoncharacterCodePoint: binProp = .noncharacterCodePoint
-//      case \.otherAlphabetic: binProp = .otherAlphabetic
-//      case \.otherDefaultIgnorableCodePoint: binProp = .otherDefaultIgnorableCodePoint
-//      case \.otherGraphemeExtended: binProp = .otherGraphemeExtended
-//      case \.otherIDContinue: binProp = .otherIDContinue
-//      case \.otherIDStart: binProp = .otherIDStart
-//      case \.otherLowercase: binProp = .otherLowercase
-//      case \.otherMath: binProp = .otherMath
-//      case \.otherUppercase: binProp = .otherUppercase
-      case \.isPatternSyntax: binProp = .patternSyntax
-      case \.isPatternWhitespace: binProp = .patternWhitespace
-//      case \.prependedConcatenationMark: binProp = .prependedConcatenationMark
-      case \.isQuotationMark: binProp = .quotationMark
-      case \.isRadical: binProp = .radical
-//      case \.regionalIndicator: binProp = .regionalIndicator
-      case \.isSoftDotted: binProp = .softDotted
-      case \.isSentenceTerminal: binProp = .sentenceTerminal
-      case \.isTerminalPunctuation: binProp = .terminalPunctuation
-      case \.isUnifiedIdeograph: binProp = .unifiedIdiograph
-      case \.isUppercase: binProp = .uppercase
-      case \.isVariationSelector: binProp = .variationSelector
-      case \.isWhitespace: binProp = .whitespace
-      case \.isXIDContinue: binProp = .xidContinue
-      case \.isXIDStart: binProp = .xidStart
-//      case \.expandsOnNFC: binProp = .expandsOnNFC
-//      case \.expandsOnNFD: binProp = .expandsOnNFD
-//      case \.expandsOnNFKC: binProp = .expandsOnNFKC
-//      case \.expandsOnNFKD: binProp = .expandsOnNFKD
+      case \.isAlphabetic: binaryProperty = .alphabetic
+      case \.isASCIIHexDigit: binaryProperty = .asciiHexDigit
+      case \.isBidiControl: binaryProperty = .bidiControl
+      case \.isBidiMirrored: binaryProperty = .bidiMirrored
+      case \.isCased: binaryProperty = .cased
+      case \.isCaseIgnorable: binaryProperty = .caseIgnorable
+      case \.changesWhenCaseFolded: binaryProperty = .changesWhenCasefolded
+      case \.changesWhenCaseMapped: binaryProperty = .changesWhenCasemapped
+      case \.changesWhenNFKCCaseFolded: binaryProperty = .changesWhenNFKCCasefolded
+      case \.changesWhenLowercased: binaryProperty = .changesWhenLowercased
+      case \.changesWhenTitlecased: binaryProperty = .changesWhenTitlecased
+      case \.changesWhenUppercased: binaryProperty = .changesWhenUppercased
+      case \.isDash: binaryProperty = .dash
+      case \.isDefaultIgnorableCodePoint: binaryProperty = .defaultIgnorableCodePoint
+      case \.isDeprecated: binaryProperty = .deprecated
+      case \.isDiacritic: binaryProperty = .diacratic
+      case \.isExtender: binaryProperty = .extender
+      case \.isFullCompositionExclusion: binaryProperty = .fullCompositionExclusion
+      case \.isGraphemeBase: binaryProperty = .graphemeBase
+      case \.isGraphemeExtend: binaryProperty = .graphemeExtended
+      case \.isHexDigit: binaryProperty = .hexDigit
+      case \.isIDContinue: binaryProperty = .idContinue
+      case \.isIdeographic: binaryProperty = .ideographic
+      case \.isIDStart: binaryProperty = .idStart
+      case \.isIDSBinaryOperator: binaryProperty = .idsBinaryOperator
+      case \.isIDSTrinaryOperator: binaryProperty = .idsTrinaryOperator
+      case \.isJoinControl: binaryProperty = .joinControl
+      case \.isLogicalOrderException: binaryProperty = .logicalOrderException
+      case \.isLowercase: binaryProperty = .lowercase
+      case \.isMath: binaryProperty = .math
+      case \.isNoncharacterCodePoint: binaryProperty = .noncharacterCodePoint
+      case \.isPatternSyntax: binaryProperty = .patternSyntax
+      case \.isPatternWhitespace: binaryProperty = .patternWhitespace
+      case \.isQuotationMark: binaryProperty = .quotationMark
+      case \.isRadical: binaryProperty = .radical
+      case \.isSoftDotted: binaryProperty = .softDotted
+      case \.isSentenceTerminal: binaryProperty = .sentenceTerminal
+      case \.isTerminalPunctuation: binaryProperty = .terminalPunctuation
+      case \.isUnifiedIdeograph: binaryProperty = .unifiedIdiograph
+      case \.isUppercase: binaryProperty = .uppercase
+      case \.isVariationSelector: binaryProperty = .variationSelector
+      case \.isWhitespace: binaryProperty = .whitespace
+      case \.isXIDContinue: binaryProperty = .xidContinue
+      case \.isXIDStart: binaryProperty = .xidStart
       default:
         if #available(macOS 10.12.2, iOS 10.2, tvOS 10.1, watchOS 3.1.1, *) {
           // FIXME: Other platforms
           switch property {
-          case \.isEmojiModifierBase: binProp = .emojiModifierBase
-    //      case \.emojiComponent: binProp = .emojiComponent
-          case \.isEmojiModifier: binProp = .emojiModifier
-          case \.isEmoji: binProp = .emoji
-          case \.isEmojiPresentation: binProp = .emojiPresentation
+          case \.isEmojiModifierBase: binaryProperty = .emojiModifierBase
+          case \.isEmojiModifier: binaryProperty = .emojiModifier
+          case \.isEmoji: binaryProperty = .emoji
+          case \.isEmojiPresentation: binaryProperty = .emojiPresentation
           default:
-            fatalError()
+            break
           }
-        } else {
-          fatalError()
         }
       }
       
-      let atomProperty = AST.Atom.CharacterProperty(.binary(binProp, value: value), isInverted: false, isPOSIX: false)
-      let astAtom = AST.Atom(.property(atomProperty), .fake)
-      return .init(members: [.atom(.unconverted(.init(ast: astAtom)))])
+      if let binaryProperty = binaryProperty {
+        return astCharacterProperty(.binary(binaryProperty, value: value))
+      } else {
+        // FIXME: Support via a _UnicodeScalarPredicate interface?
+        fatalError("Unsupported Unicode binary property")
+      }
     }
 
+    public static func age(_ version: Unicode.Version) -> Self {
+      astCharacterProperty(.age(major: version.major, minor: version.minor))
+    }
+    
+    public static func named(_ name: String) -> Self {
+      astCharacterProperty(.named(name))
+    }
+    
+    public static func numericType(_ type: Unicode.NumericType) -> Self {
+      astCharacterProperty(.numericType(type))
+    }
+    
+    public static func numericValue(_ value: Double) -> Self {
+      astCharacterProperty(.numericValue(value))
+    }
+    
+    public static func ccc(_ combiningClass: Unicode.CanonicalCombiningClass) -> Self {
+      astCharacterProperty(.ccc(combiningClass))
+    }
+    
+    public static func lowercaseMapping(_ value: String) -> Self {
+      astCharacterProperty(.mapping(.lowercase, value))
+    }
+    
+    public static func uppercaseMapping(_ value: String) -> Self {
+      astCharacterProperty(.mapping(.uppercase, value))
+    }
+    
+    public static func titlecaseMapping(_ value: String) -> Self {
+      astCharacterProperty(.mapping(.titlecase, value))
+    }
+    
     public var inverted: CustomCharacterClass {
       var result = self
       result.isInverted.toggle()
