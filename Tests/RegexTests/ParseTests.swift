@@ -832,6 +832,10 @@ extension RegexTests {
       #"a{1,1}"#,
       quantRange(1...1, of: "a"))
 
+    parseTest("x{3, 5}", quantRange(3 ... 5, of: "x"))
+    parseTest("x{ 3 , 5  }", quantRange(3 ... 5, of: "x"))
+    parseTest("x{3 }", exactly(3, of: "x"))
+
     // Make sure ranges get treated as literal if invalid.
     parseTest("{", "{")
     parseTest("{,", concat("{", ","))
@@ -850,11 +854,6 @@ extension RegexTests {
     parseTest("x{6,", concat("x", "{", "6", ","))
     parseTest("x{+", concat("x", oneOrMore(of: "{")))
     parseTest("x{6,+", concat("x", "{", "6", oneOrMore(of: ",")))
-
-    // TODO: We should emit a diagnostic for this.
-    parseTest("x{3, 5}", concat("x", "{", "3", ",", " ", "5", "}"))
-    parseTest("{3, 5}", concat("{", "3", ",", " ", "5", "}"))
-    parseTest("{3 }", concat("{", "3", " ", "}"))
 
     // MARK: Groups
 
@@ -1771,10 +1770,10 @@ extension RegexTests {
 
     // PCRE states that whitespace won't be ignored within a range.
     // http://pcre.org/current/doc/html/pcre2api.html#SEC20
-    // TODO: We ought to warn on this, and produce a range anyway.
+    // We however do ignore it.
     parseTest("(?x)a{1, 3}", concat(
       changeMatchingOptions(matchingOptions(adding: .extended)),
-      "a", "{", "1", ",", "3", "}"
+      quantRange(1 ... 3, of: "a")
     ))
 
     // Test that we cover the list of whitespace characters covered by PCRE.
@@ -2694,6 +2693,9 @@ extension RegexTests {
     diagnosticTest("{5}", .quantifierRequiresOperand("{5}"))
     diagnosticTest("{1,3}", .quantifierRequiresOperand("{1,3}"))
     diagnosticTest("a{3,2}", .invalidQuantifierRange(3, 2))
+
+    diagnosticTest("{3, 5}", .quantifierRequiresOperand("{3, 5}"))
+    diagnosticTest("{3 }", .quantifierRequiresOperand("{3 }"))
 
     // These are not quantifiable.
     diagnosticTest(#"\b?"#, .notQuantifiable)
