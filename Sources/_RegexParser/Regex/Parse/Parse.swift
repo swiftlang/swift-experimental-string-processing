@@ -429,7 +429,7 @@ extension Parser {
     }
 
     // Check if we have the start of a custom character class '['.
-    if let cccStart = try source.lexCustomCCStart() {
+    if let cccStart = source.lexCustomCCStart() {
       return .customCharacterClass(
         try parseCustomCharacterClass(cccStart))
     }
@@ -513,7 +513,7 @@ extension Parser {
           source.peekCCBinOp() == nil {
 
       // Nested custom character class.
-      if let cccStart = try source.lexCustomCCStart() {
+      if let cccStart = source.lexCustomCCStart() {
         members.append(.custom(try parseCustomCharacterClass(cccStart)))
         continue
       }
@@ -527,7 +527,7 @@ extension Parser {
       // Lex non-semantic whitespace if we're allowed.
       // TODO: ICU allows end-of-line comments in custom character classes,
       // which we ought to support if we want to support multi-line regex.
-      if let trivia = try source.lexNonSemanticWhitespace(context: context) {
+      if let trivia = source.lexNonSemanticWhitespace(context: context) {
         members.append(.trivia(trivia))
         continue
       }
