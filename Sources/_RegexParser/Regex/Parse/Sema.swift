@@ -72,20 +72,20 @@ extension RegexValidator {
   }
 
   func validateReference(_ ref: AST.Reference) throws {
+    if let recLevel = ref.recursionLevel {
+      throw error(.unsupported("recursion level"), at: recLevel.location)
+    }
     switch ref.kind {
     case .absolute(let i):
       guard i <= captures.captures.count else {
         throw error(.invalidReference(i), at: ref.innerLoc)
       }
+    case .named(let name):
+      guard captures.captures.contains(where: { $0.name == name }) else {
+        throw error(.invalidNamedReference(name), at: ref.innerLoc)
+      }
     case .relative:
       throw error(.unsupported("relative capture reference"), at: ref.innerLoc)
-    case .named:
-      // TODO: This could be implemented by querying the capture list for an
-      // index.
-      throw error(.unsupported("named capture reference"), at: ref.innerLoc)
-    }
-    if let recLevel = ref.recursionLevel {
-      throw error(.unsupported("recursion level"), at: recLevel.location)
     }
   }
 

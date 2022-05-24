@@ -1231,16 +1231,37 @@ extension RegexTests {
     parseTest(#"\k'-3'"#, backreference(.relative(-3)), throwsError: .unsupported)
     parseTest(#"\k'1'"#, backreference(.absolute(1)), throwsError: .invalid)
 
-    parseTest(#"\k{a0}"#, backreference(.named("a0")), throwsError: .unsupported)
-    parseTest(#"\k<bc>"#, backreference(.named("bc")), throwsError: .unsupported)
-    parseTest(#"\g{abc}"#, backreference(.named("abc")), throwsError: .unsupported)
-    parseTest(#"(?P=abc)"#, backreference(.named("abc")), throwsError: .unsupported)
+    parseTest(
+      #"(?<a>)\k<a>"#, concat(
+        namedCapture("a", empty()), backreference(.named("a"))
+      ), captures: [.named("a")]
+    )
+    parseTest(
+      #"(?<a>)\k{a}"#, concat(
+        namedCapture("a", empty()), backreference(.named("a"))
+      ), captures: [.named("a")]
+    )
+    parseTest(
+      #"(?<a>)\g{a}"#, concat(
+        namedCapture("a", empty()), backreference(.named("a"))
+      ), captures: [.named("a")]
+    )
+    parseTest(
+      #"(?<a>)(?P=a)"#, concat(
+        namedCapture("a", empty()), backreference(.named("a"))
+      ), captures: [.named("a")]
+    )
+
+    parseTest(#"\k{a0}"#, backreference(.named("a0")), throwsError: .invalid)
+    parseTest(#"\k<bc>"#, backreference(.named("bc")), throwsError: .invalid)
+    parseTest(#"\g{abc}"#, backreference(.named("abc")), throwsError: .invalid)
+    parseTest(#"(?P=abc)"#, backreference(.named("abc")), throwsError: .invalid)
 
     // Oniguruma recursion levels.
     parseTest(#"\k<bc-0>"#, backreference(.named("bc"), recursionLevel: 0), throwsError: .unsupported)
     parseTest(#"\k<a+0>"#, backreference(.named("a"), recursionLevel: 0), throwsError: .unsupported)
-    parseTest(#"\k<1+1>"#, backreference(.absolute(1), recursionLevel: 1), throwsError: .invalid)
-    parseTest(#"\k<3-8>"#, backreference(.absolute(3), recursionLevel: -8), throwsError: .invalid)
+    parseTest(#"\k<1+1>"#, backreference(.absolute(1), recursionLevel: 1), throwsError: .unsupported)
+    parseTest(#"\k<3-8>"#, backreference(.absolute(3), recursionLevel: -8), throwsError: .unsupported)
     parseTest(#"\k'-3-8'"#, backreference(.relative(-3), recursionLevel: -8), throwsError: .unsupported)
     parseTest(#"\k'bc-8'"#, backreference(.named("bc"), recursionLevel: -8), throwsError: .unsupported)
     parseTest(#"\k'+3-8'"#, backreference(.relative(3), recursionLevel: -8), throwsError: .unsupported)
@@ -2137,7 +2158,7 @@ extension RegexTests {
       throwsError: .unsupported
     )
     parseWithDelimitersTest(
-      #"re'a\k'b0A''"#, concat("a", backreference(.named("b0A"))), throwsError: .unsupported)
+      #"re'a\k'b0A''"#, concat("a", backreference(.named("b0A"))), throwsError: .invalid)
     parseWithDelimitersTest(
       #"re'\k'+2-1''"#, backreference(.relative(2), recursionLevel: -1),
       throwsError: .unsupported
@@ -2769,6 +2790,12 @@ extension RegexTests {
     diagnosticTest(#"\2()"#, .invalidReference(2))
     diagnosticTest(#"(?:)()\2"#, .invalidReference(2))
     diagnosticTest(#"(?:)(?:)\2"#, .invalidReference(2))
+
+    diagnosticTest(#"\k<a>"#, .invalidNamedReference("a"))
+    diagnosticTest(#"(?:)\k<a>"#, .invalidNamedReference("a"))
+    diagnosticTest(#"()\k<a>"#, .invalidNamedReference("a"))
+    diagnosticTest(#"()\k<a>()"#, .invalidNamedReference("a"))
+    diagnosticTest(#"(?<b>)\k<a>()"#, .invalidNamedReference("a"))
 
     // MARK: Conditionals
 

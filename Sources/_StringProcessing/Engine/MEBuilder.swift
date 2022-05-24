@@ -38,13 +38,24 @@ extension MEProgram where Input.Element: Hashable {
     // Special addresses or instructions
     var failAddressToken: AddressToken? = nil
 
-    var captureList = CaptureList()
+    private(set) var namedCaptureOffsets: [String: Int] = [:]
+
+    var captureList = CaptureList() {
+      didSet {
+        // Named references are guaranteed to be unique for literal ASTs by
+        // Sema. The DSL tree does not use named references.
+        for (i, capture) in captureList.captures.enumerated() {
+          guard let name = capture.name else { continue }
+          namedCaptureOffsets[name] = i
+        }
+      }
+    }
     var initialOptions = MatchingOptions()
 
     // Symbolic reference resolution
     var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
     var referencedCaptureOffsets: [ReferenceID: Int] = [:]
-    var namedCaptureOffsets: [String: Int] = [:]
+
     var captureCount: Int {
       // We currently deduce the capture count from the capture register number.
       nextCaptureRegister.rawValue
@@ -284,6 +295,13 @@ extension MEProgram.Builder {
     unresolvedReferences[id, default: []].append(lastInstructionAddress)
   }
 
+  mutating func buildNamedReference(_ name: String) throws {
+    guard let index = namedCaptureOffsets[name] else {
+      throw RegexCompilationError.uncapturedReference
+    }
+    buildBackreference(.init(index))
+  }
+
   // TODO: Mutating because of fail address fixup, drop when
   // that's removed
   mutating func assemble() throws -> MEProgram {
@@ -456,9 +474,9 @@ extension MEProgram.Builder {
       assert(preexistingValue == nil)
     }
     if let name = name {
-      // TODO: Reject duplicate capture names unless `(?J)`?
-      namedCaptureOffsets.updateValue(captureCount, forKey: name)
+      assert(namedCaptureOffsets[name] == nextCaptureRegister.rawValue)
     }
+    assert(nextCaptureRegister.rawValue < captureList.captures.count)
     return nextCaptureRegister
   }
 
