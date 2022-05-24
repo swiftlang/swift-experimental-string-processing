@@ -319,6 +319,14 @@ func charClass(
   return .custom(cc)
 }
 
+func setOp(
+  _ lhs: AST.CustomCharacterClass.Member...,
+  op: AST.CustomCharacterClass.SetOp,
+  _ rhs: AST.CustomCharacterClass.Member...
+) -> AST.CustomCharacterClass.Member {
+  .setOperation(lhs, .init(faking: op), rhs)
+}
+
 func quote(_ s: String) -> AST.Node {
   .quote(.init(s, .fake))
 }

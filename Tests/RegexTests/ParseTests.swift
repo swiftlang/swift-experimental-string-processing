@@ -522,9 +522,8 @@ extension RegexTests {
     parseTest("[a-a]", charClass(range_m("a", "a")))
     parseTest("[B-a]", charClass(range_m("B", "a")))
 
-    // FIXME: AST builder helpers for custom char class types
     parseTest("[a-d--a-c]", charClass(
-      .setOperation([range_m("a", "d")], .init(faking: .subtraction), [range_m("a", "c")])
+      setOp(range_m("a", "d"), op: .subtraction, range_m("a", "c"))
     ))
 
     parseTest("[-]", charClass("-"))
@@ -684,30 +683,31 @@ extension RegexTests {
 
     parseTest(
       #"[a[bc]de&&[^bc]\d]+"#,
-      oneOrMore(of: charClass(
-        .setOperation(
-          ["a", charClass("b", "c"), "d", "e"],
-          .init(faking: .intersection),
-          [charClass("b", "c", inverted: true), atom_m(.escaped(.decimalDigit))]
-        ))))
+      oneOrMore(of: charClass(setOp(
+        "a", charClass("b", "c"), "d", "e",
+        op: .intersection,
+        charClass("b", "c", inverted: true), atom_m(.escaped(.decimalDigit))
+      )))
+    )
 
     parseTest(
-      "[a&&b]",
-      charClass(
-        .setOperation(["a"], .init(faking: .intersection), ["b"])))
+      "[a&&b]", charClass(setOp("a", op: .intersection, "b"))
+    )
 
     parseTest(
       "[abc--def]",
-      charClass(.setOperation(["a", "b", "c"], .init(faking: .subtraction), ["d", "e", "f"])))
+      charClass(setOp("a", "b", "c", op: .subtraction, "d", "e", "f"))
+    )
 
     // We left-associate for chained operators.
     parseTest(
       "[ab&&b~~cd]",
-      charClass(
-        .setOperation(
-          [.setOperation(["a", "b"], .init(faking: .intersection), ["b"])],
-          .init(faking: .symmetricDifference),
-          ["c", "d"])))
+      charClass(setOp(
+        setOp("a", "b", op: .intersection, "b"),
+        op: .symmetricDifference,
+        "c", "d"
+      ))
+    )
 
     // Operators are only valid in custom character classes.
     parseTest(
@@ -723,11 +723,11 @@ extension RegexTests {
 
     parseTest(
       "[ &&  ]",
-      charClass(.setOperation([" "], .init(faking: .intersection), [" ", " "]))
+      charClass(setOp(" ", op: .intersection, " ", " "))
     )
     parseTest("(?x)[ a && b ]", concat(
       changeMatchingOptions(matchingOptions(adding: .extended)),
-      charClass(.setOperation(["a"], .init(faking: .intersection), ["b"]))
+      charClass(setOp("a", op: .intersection, "b"))
     ))
 
     // MARK: Quotes
