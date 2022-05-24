@@ -2039,20 +2039,11 @@ extension Source {
     return AST.Atom(kind.value, kind.location)
   }
 
-  /// Try to lex the end of a range in a custom character class, which consists
-  /// of a '-' character followed by an atom.
-  mutating func lexCustomCharClassRangeEnd(
-    context: ParsingContext
-  ) throws -> (dashLoc: SourceLocation, AST.Atom)? {
-    // Make sure we don't have a binary operator e.g '--', and the '-' is not
-    // ending the custom character class (in which case it is literal).
-    guard peekCCBinOp() == nil, !starts(with: "-]"),
-          let dash = tryEatWithLoc("-"),
-          let end = try lexAtom(context: context)
-    else {
-      return nil
-    }
-    return (dash, end)
+  /// Try to lex the range operator '-' for a custom character class.
+  mutating func lexCustomCharacterClassRangeOperator() -> SourceLocation? {
+    // Eat a '-', making sure we don't have a binary op such as '--'.
+    guard peekCCBinOp() == nil else { return nil }
+    return tryEatWithLoc("-")
   }
 
   /// Try to consume a newline sequence matching option kind.

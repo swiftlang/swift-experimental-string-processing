@@ -517,6 +517,8 @@ extension RegexTests {
       "[a-b-c]", charClass(range_m("a", "b"), "-", "c"))
 
     parseTest("[-a-]", charClass("-", "a", "-"))
+    parseTest("[[a]-]", charClass(charClass("a"), "-"))
+    parseTest("[[a]-b]", charClass(charClass("a"), "-", "b"))
 
     parseTest("[a-z]", charClass(range_m("a", "z")))
     parseTest("[a-a]", charClass(range_m("a", "a")))
@@ -678,6 +680,16 @@ extension RegexTests {
       charClass(scalarSeq_m("\u{A}", "\u{B}", "\u{C}")),
       throwsError: .unsupported
     )
+
+    parseTest(#"(?x)[  a -  b  ]"#, concat(
+      changeMatchingOptions(matchingOptions(adding: .extended)),
+      charClass(range_m("a", "b"))
+    ))
+
+    parseTest(#"(?x)[a - b]"#, concat(
+      changeMatchingOptions(matchingOptions(adding: .extended)),
+      charClass(range_m("a", "b"))
+    ))
 
     // MARK: Operators
 
@@ -2119,6 +2131,17 @@ extension RegexTests {
         d]
       /#
       """#, charClass("a", range_m("b", "c"), "d"))
+
+    parseWithDelimitersTest(#"""
+      #/
+      [
+        a # interesting
+        -   #a
+         b
+      ]
+      /#
+      """#, charClass(range_m("a", "b")))
+
 
     // MARK: Delimiter skipping: Make sure we can skip over the ending delimiter
     // if it's clear that it's part of the regex syntax.

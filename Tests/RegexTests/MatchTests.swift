@@ -594,6 +594,8 @@ extension RegexTests {
     firstMatchTest("[a-z]", input: "123ABCxyz", match: "x")
     firstMatchTest("[a-z]", input: "123-abcxyz", match: "a")
 
+    firstMatchTest("(?x)[ a - z ]+", input: " 123-abcxyz", match: "abcxyz")
+
     // Character class subtraction
     firstMatchTest("[a-d--a-c]", input: "123abcdxyz", match: "d")
 
