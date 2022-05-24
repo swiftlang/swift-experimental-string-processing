@@ -342,7 +342,11 @@ extension RegexTests {
     firstMatchTest(
       #"a{1,2}"#, input: "123aaaxyz", match: "aa")
     firstMatchTest(
+      #"a{ 1 , 2 }"#, input: "123aaaxyz", match: "aa")
+    firstMatchTest(
       #"a{,2}"#, input: "123aaaxyz", match: "")
+    firstMatchTest(
+      #"a{ , 2 }"#, input: "123aaaxyz", match: "")
     firstMatchTest(
       #"a{,2}x"#, input: "123aaaxyz", match: "aax")
     firstMatchTest(
@@ -351,6 +355,8 @@ extension RegexTests {
       #"a{2,}"#, input: "123aaaxyz", match: "aaa")
     firstMatchTest(
       #"a{1}"#, input: "123aaaxyz", match: "a")
+    firstMatchTest(
+      #"a{ 1 }"#, input: "123aaaxyz", match: "a")
     firstMatchTest(
       #"a{1,2}?"#, input: "123aaaxyz", match: "a")
     firstMatchTest(

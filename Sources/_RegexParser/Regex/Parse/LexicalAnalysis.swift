@@ -430,7 +430,7 @@ extension Source {
 
       return try src.tryEating { src in
         guard src.tryEat("{"),
-              let range = try src.lexRange(context: context),
+              let range = try src.lexRange(context: context, trivia: &trivia),
               src.tryEat("}")
         else { return nil }
         return range.value
@@ -456,10 +456,16 @@ extension Source {
   ///                  | ExpRange
   ///     ExpRange    -> '..<' <Int> | '...' <Int>
   ///                  | <Int> '..<' <Int> | <Int> '...' <Int>?
-  mutating func lexRange(context: ParsingContext) throws -> Located<Quant.Amount>? {
+  mutating func lexRange(
+    context: ParsingContext, trivia: inout [AST.Trivia]
+  ) throws -> Located<Quant.Amount>? {
     try recordLoc { src in
       try src.tryEating { src in
+        if let t = src.lexWhitespace() { trivia.append(t) }
+
         let lowerOpt = try src.lexNumber()
+
+        if let t = src.lexWhitespace() { trivia.append(t) }
 
         // ',' or '...' or '..<' or nothing
         // TODO: We ought to try and consume whitespace here and emit a
@@ -480,10 +486,14 @@ extension Source {
           closedRange = nil
         }
 
+        if let t = src.lexWhitespace() { trivia.append(t) }
+
         let upperOpt = try src.lexNumber()?.map { upper in
           // If we have an open range, the upper bound should be adjusted down.
           closedRange == true ? upper : upper - 1
         }
+
+        if let t = src.lexWhitespace() { trivia.append(t) }
 
         switch (lowerOpt, closedRange, upperOpt) {
         case let (l?, nil, nil):
