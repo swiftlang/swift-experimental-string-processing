@@ -416,7 +416,7 @@ func prop_m(
 func range_m(
   _ lower: AST.Atom, _ upper: AST.Atom
 ) -> AST.CustomCharacterClass.Member {
-  .range(.init(lower, .fake, upper))
+  .range(.init(lower, .fake, upper, trivia: []))
 }
 func range_m(
   _ lower: AST.Atom.Kind, _ upper: AST.Atom.Kind
