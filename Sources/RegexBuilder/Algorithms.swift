@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _StringProcessing
+@_spi(RegexBuilder) import _StringProcessing
 
 // FIXME(rdar://92459215): We should be using 'some RegexComponent' instead of
 // <R: RegexComponent> for the methods below that don't impose any additional
@@ -311,5 +311,33 @@ where Self: BidirectionalCollection, SubSequence == Substring {
     with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
   ) rethrows where Replacement.Element == Element {
     try replace(content(), maxReplacements: maxReplacements, with: replacement)
+  }
+}
+
+// String split overload breakers
+
+extension StringProtocol where SubSequence == Substring {
+  @available(SwiftStdlib 5.7, *)
+  public func split(
+    separator: String,
+    maxSplits: Int = .max,
+    omittingEmptySubsequences: Bool = true
+  ) -> [Substring] {
+    return _split(
+      separator: separator,
+      maxSplits: maxSplits,
+      omittingEmptySubsequences: omittingEmptySubsequences)
+  }
+  
+  @available(SwiftStdlib 5.7, *)
+  public func split(
+    separator: Substring,
+    maxSplits: Int = .max,
+    omittingEmptySubsequences: Bool = true
+  ) -> [Substring] {
+    return _split(
+      separator: separator,
+      maxSplits: maxSplits,
+      omittingEmptySubsequences: omittingEmptySubsequences)
   }
 }
