@@ -639,7 +639,7 @@ extension Source {
   ///
   mutating func lexComment(context: ParsingContext) throws -> AST.Trivia? {
     let trivia: Located<String>? = try recordLoc { src in
-      if src.tryEat(sequence: "(?#") {
+      if !context.isInCustomCharacterClass && src.tryEat(sequence: "(?#") {
         return try src.lexUntil(eating: ")").value
       }
       if context.experimentalComments, src.tryEat(sequence: "/*") {

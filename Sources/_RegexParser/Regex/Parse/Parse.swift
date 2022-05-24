@@ -515,10 +515,8 @@ extension Parser {
         continue
       }
 
-      // Lex non-semantic whitespace if we're allowed.
-      // TODO: ICU allows end-of-line comments in custom character classes,
-      // which we ought to support if we want to support multi-line regex.
-      if let trivia = source.lexNonSemanticWhitespace(context: context) {
+      // Lex trivia if we're allowed.
+      if let trivia = try source.lexTrivia(context: context) {
         members.append(.trivia(trivia))
         continue
       }
