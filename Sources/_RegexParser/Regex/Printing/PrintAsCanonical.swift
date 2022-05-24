@@ -97,6 +97,9 @@ extension PrettyPrinter {
     case let .trivia(t):
       output(t._canonicalBase)
 
+    case let .interpolation(i):
+      output(i._canonicalBase)
+
     case let .atom(a):
       output(a._canonicalBase)
 
@@ -175,6 +178,12 @@ extension AST.Quote {
   var _canonicalBase: String {
     // TODO: Is this really what we want?
     "\\Q\(literal)\\E"
+  }
+}
+
+extension AST.Interpolation {
+  var _canonicalBase: String {
+    "<{\(contents)}>"
   }
 }
 

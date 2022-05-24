@@ -103,7 +103,7 @@ extension AST.Node {
         break
       }
 
-    case .quote, .trivia, .atom, .customCharacterClass, .empty:
+    case .quote, .trivia, .atom, .customCharacterClass, .empty, .interpolation:
       break
     }
   }
