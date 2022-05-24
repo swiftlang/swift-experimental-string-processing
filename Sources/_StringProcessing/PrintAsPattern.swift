@@ -576,7 +576,7 @@ extension PrettyPrinter {
 extension String {
   // TODO: Escaping?
   fileprivate var _quoted: String {
-    "\"\(self._replacing("\"", with: "\\\""))\""
+    "\"\(self._replacing("\\", with: "\\\\")._replacing("\"", with: "\\\""))\""
   }
 }
 
