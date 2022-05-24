@@ -1648,6 +1648,9 @@ extension RegexTests {
     parseTest("[(?#abc)]", charClass("(", "?", "#", "a", "b", "c", ")"))
     parseTest("# abc", concat("#", " ", "a", "b", "c"))
 
+    parseTest("(?#)", empty())
+    parseTest("/**/", empty(), syntax: .experimental)
+
     // MARK: Matching option changing
 
     parseTest(
