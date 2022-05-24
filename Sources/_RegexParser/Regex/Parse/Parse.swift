@@ -485,16 +485,7 @@ extension Parser {
         throw Source.LocatedError(
           ParseError.expectedCustomCharacterClassMembers, start.location)
       }
-
-      // If we're done, bail early
-      let setOp = Member.setOperation(members, binOp, rhs)
-      if source.tryEat("]") {
-        return CustomCC(
-          start, [setOp], loc(start.location.start))
-      }
-
-      // Otherwise it's just another member to accumulate
-      members = [setOp]
+      members = [.setOperation(members, binOp, rhs)]
     }
     if members.none(\.isSemantic) {
       throw Source.LocatedError(
