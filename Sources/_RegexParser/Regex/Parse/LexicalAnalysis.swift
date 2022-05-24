@@ -630,10 +630,10 @@ extension Source {
   mutating func lexComment(context: ParsingContext) throws -> AST.Trivia? {
     let trivia: Located<String>? = try recordLoc { src in
       if src.tryEat(sequence: "(?#") {
-        return try src.expectQuoted(endingWith: ")").value
+        return try src.lexUntil(eating: ")").value
       }
       if context.experimentalComments, src.tryEat(sequence: "/*") {
-        return try src.expectQuoted(endingWith: "*/").value
+        return try src.lexUntil(eating: "*/").value
       }
       if context.endOfLineComments, src.tryEat("#") {
         // Try eat until we either exhaust the input, or hit a newline. Note
