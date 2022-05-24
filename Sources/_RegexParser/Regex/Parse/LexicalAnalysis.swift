@@ -149,6 +149,14 @@ extension Source {
     return result
   }
 
+  /// Perform a lookahead using a temporary source. Within the body of the
+  /// lookahead, any modifications to the source will not be reflected outside
+  /// the body.
+  func lookahead<T>(_ body: (inout Source) throws -> T) rethrows -> T {
+    var src = self
+    return try body(&src)
+  }
+
   /// Attempt to eat the given character, returning its source location if
   /// successful, `nil` otherwise.
   mutating func tryEatWithLoc(_ c: Character) -> SourceLocation? {
@@ -1240,8 +1248,9 @@ extension Source {
 
   private func canLexPOSIXCharacterProperty() -> Bool {
     do {
-      var src = self
-      return try src.lexPOSIXCharacterProperty() != nil
+      return try lookahead { src in
+        try src.lexPOSIXCharacterProperty() != nil
+      }
     } catch {
       // We want to tend on the side of lexing a POSIX character property, so
       // even if it is invalid in some way (e.g invalid property names), still
@@ -1394,10 +1403,11 @@ extension Source {
 
   /// Checks whether a numbered reference can be lexed.
   private func canLexNumberedReference() -> Bool {
-    var src = self
-    _ = src.tryEat(anyOf: "+", "-")
-    guard let next = src.peek() else { return false }
-    return RadixKind.decimal.characterFilter(next)
+    lookahead { src in
+      _ = src.tryEat(anyOf: "+", "-")
+      guard let next = src.peek() else { return false }
+      return RadixKind.decimal.characterFilter(next)
+    }
   }
 
   /// Eat a named reference up to a given closing delimiter.
@@ -1587,53 +1597,55 @@ extension Source {
 
   /// Whether we can lex a group-like reference after the specifier '(?'.
   private func canLexGroupLikeReference() -> Bool {
-    var src = self
-    if src.tryEat("P") {
-      return src.tryEat(anyOf: "=", ">") != nil
+    lookahead { src in
+      if src.tryEat("P") {
+        return src.tryEat(anyOf: "=", ">") != nil
+      }
+      if src.tryEat(anyOf: "&", "R") != nil {
+        return true
+      }
+      return src.canLexNumberedReference()
     }
-    if src.tryEat(anyOf: "&", "R") != nil {
-      return true
-    }
-    return src.canLexNumberedReference()
   }
 
   private func canLexMatchingOptionsAsAtom(context: ParsingContext) -> Bool {
-    var src = self
-
-    // See if we can lex a matching option sequence that terminates in ')'. Such
-    // a sequence is an atom. If an error is thrown, there are invalid elements
-    // of the matching option sequence. In such a case, we can lex as a group
-    // and diagnose the invalid group kind.
-    guard (try? src.lexMatchingOptionSequence(context: context)) != nil else {
-      return false
+    lookahead { src in
+      // See if we can lex a matching option sequence that terminates in ')'.
+      // Such a sequence is an atom. If an error is thrown, there are invalid
+      // elements of the matching option sequence. In such a case, we can lex as
+      // a group and diagnose the invalid group kind.
+      guard (try? src.lexMatchingOptionSequence(context: context)) != nil else {
+        return false
+      }
+      return src.tryEat(")")
     }
-    return src.tryEat(")")
   }
 
   /// Whether a group specifier should be lexed as an atom instead of a group.
   private func shouldLexGroupLikeAtom(context: ParsingContext) -> Bool {
-    var src = self
-    guard src.tryEat("(") else { return false }
+    lookahead { src in
+      guard src.tryEat("(") else { return false }
 
-    if src.tryEat("?") {
-      // The start of a reference '(?P=', '(?R', ...
-      if src.canLexGroupLikeReference() { return true }
+      if src.tryEat("?") {
+        // The start of a reference '(?P=', '(?R', ...
+        if src.canLexGroupLikeReference() { return true }
 
-      // The start of a PCRE callout.
-      if src.tryEat("C") { return true }
+        // The start of a PCRE callout.
+        if src.tryEat("C") { return true }
 
-      // The start of an Oniguruma 'of-contents' callout.
-      if src.tryEat("{") { return true }
+        // The start of an Oniguruma 'of-contents' callout.
+        if src.tryEat("{") { return true }
 
-      // A matching option atom (?x), (?i), ...
-      if src.canLexMatchingOptionsAsAtom(context: context) { return true }
+        // A matching option atom (?x), (?i), ...
+        if src.canLexMatchingOptionsAsAtom(context: context) { return true }
+
+        return false
+      }
+      // The start of a backreference directive or Oniguruma named callout.
+      if src.tryEat("*") { return true }
 
       return false
     }
-    // The start of a backreference directive or Oniguruma named callout.
-    if src.tryEat("*") { return true }
-
-    return false
   }
 
   /// Consume an escaped atom, starting from after the backslash
