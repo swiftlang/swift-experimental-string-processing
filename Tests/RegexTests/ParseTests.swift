@@ -1677,12 +1677,8 @@ extension RegexTests {
       )
     )
 
-    // End of line comments aren't applicable in custom char classes.
-    // TODO: ICU supports this.
-    parseTest("(?x)[ # abc]", concat(
-      changeMatchingOptions(matchingOptions(adding: .extended)),
-      charClass("#", "a", "b", "c")
-    ))
+    parseTest("[ # abc]", charClass(" ", "#", " ", "a", "b", "c"))
+    parseTest("[#]", charClass("#"))
 
     parseTest("(?x)a b c[d e f]", concat(
       changeMatchingOptions(matchingOptions(adding: .extended)),
@@ -2115,6 +2111,15 @@ extension RegexTests {
       /#
       """#, scalarSeq("\u{AB}", "\u{B}", "\u{C}"))
 
+    parseWithDelimitersTest(#"""
+      #/
+      [
+        a # interesting
+      b-c #a
+        d]
+      /#
+      """#, charClass("a", range_m("b", "c"), "d"))
+
     // MARK: Delimiter skipping: Make sure we can skip over the ending delimiter
     // if it's clear that it's part of the regex syntax.
 
@@ -2543,6 +2548,12 @@ extension RegexTests {
     diagnosticTest(#"(?i)[_-A]"#, .invalidCharacterRange(from: "_", to: "A"))
     diagnosticTest(#"[c-b]"#, .invalidCharacterRange(from: "c", to: "b"))
     diagnosticTest(#"[\u{66}-\u{65}]"#, .invalidCharacterRange(from: "\u{66}", to: "\u{65}"))
+
+    diagnosticTest("(?x)[(?#)]", .expected("]"))
+    diagnosticTest("(?x)[(?#abc)]", .expected("]"))
+
+    diagnosticTest("(?x)[#]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[ # abc]", .expectedCustomCharacterClassMembers)
 
     // MARK: Bad escapes
 
