@@ -421,9 +421,7 @@ extension Source {
   ) throws -> (Located<Quant.Amount>, Located<Quant.Kind>, [AST.Trivia])? {
     var trivia: [AST.Trivia] = []
 
-    if let t = try lexNonSemanticWhitespace(context: context) {
-      trivia.append(t)
-    }
+    if let t = lexNonSemanticWhitespace(context: context) { trivia.append(t) }
 
     let amt: Located<Quant.Amount>? = try recordLoc { src in
       if src.tryEat("*") { return .zeroOrMore }
@@ -441,9 +439,7 @@ extension Source {
     guard let amt = amt else { return nil }
 
     // PCRE allows non-semantic whitespace here in extended syntax mode.
-    if let t = try lexNonSemanticWhitespace(context: context) {
-      trivia.append(t)
-    }
+    if let t = lexNonSemanticWhitespace(context: context) { trivia.append(t) }
 
     let kind: Located<Quant.Kind> = recordLoc { src in
       if src.tryEat("?") { return .reluctant  }
@@ -675,7 +671,7 @@ extension Source {
   /// Does nothing unless `SyntaxOptions.nonSemanticWhitespace` is set
   mutating func lexNonSemanticWhitespace(
     context: ParsingContext
-  ) throws -> AST.Trivia? {
+  ) -> AST.Trivia? {
     guard context.ignoreWhitespace else { return nil }
 
     // FIXME: PCRE only treats space and tab characters as whitespace when
@@ -707,7 +703,7 @@ extension Source {
     if let comment = try lexComment(context: context) {
       return comment
     }
-    if let whitespace = try lexNonSemanticWhitespace(context: context) {
+    if let whitespace = lexNonSemanticWhitespace(context: context) {
       return whitespace
     }
     return nil
@@ -1186,8 +1182,7 @@ extension Source {
     }
   }
 
-  mutating func lexCustomCCStart(
-  ) throws -> Located<CustomCC.Start>? {
+  mutating func lexCustomCCStart() -> Located<CustomCC.Start>? {
     recordLoc { src in
       // Make sure we don't have a POSIX character property. This may require
       // walking to its ending to make sure we have a closing ':]', as otherwise
