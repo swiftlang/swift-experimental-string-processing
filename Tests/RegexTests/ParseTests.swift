@@ -2210,6 +2210,8 @@ extension RegexTests {
 
     parseNotEqualTest(#"[abc]"#, #"[a b c]"#)
 
+    parseNotEqualTest("[abc]", "[^abc]")
+
     parseNotEqualTest(#"\1"#, #"\10"#)
 
     parseNotEqualTest("(?^:)", ("(?-:)"))

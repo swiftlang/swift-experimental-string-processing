@@ -309,7 +309,7 @@ extension AST.CustomCharacterClass: _ASTNode {
     // comparisons of dumped output in tests.
     // TODO: We should eventually have some way of filtering out trivia for
     // tests, so that it can appear in regular dumps.
-    return "customCharacterClass(\(strippingTriviaShallow.members))"
+    return "customCharacterClass(inverted: \(isInverted), \(strippingTriviaShallow.members))"
   }
 }
 
