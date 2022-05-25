@@ -86,6 +86,7 @@ enum ParseError: Error, Hashable {
   case unsupported(String)
   case deprecatedUnicode(String)
   case invalidReference(Int)
+  case invalidNamedReference(String)
   case duplicateNamedCapture(String)
   case invalidCharacterClassRangeOperand
   case invalidQuantifierRange(Int, Int)
@@ -211,6 +212,8 @@ extension ParseError: CustomStringConvertible {
       return "\(kind) is a deprecated Unicode property, and is not supported"
     case let .invalidReference(i):
       return "no capture numbered \(i)"
+    case let .invalidNamedReference(name):
+      return "no capture named '\(name)'"
     case let .duplicateNamedCapture(str):
       return "group named '\(str)' already exists"
     case let .invalidQuantifierRange(lhs, rhs):

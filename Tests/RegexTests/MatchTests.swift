@@ -1134,7 +1134,6 @@ extension RegexTests {
   }
 
   func testMatchReferences() {
-    // TODO: Implement backreference/subpattern matching.
     firstMatchTest(
       #"(.)\1"#,
       input: "112", match: "11")
@@ -1143,14 +1142,24 @@ extension RegexTests {
       input: "aaaaaaaaabbc", match: "aaaaaaaaabb")
 
     firstMatchTest(
+      #"(.)(.)(.)(.)(.)(.)(.)(.)(.)(?<a1>.)(?P=a1)"#,
+      input: "aaaaaaaaabbc", match: "aaaaaaaaabb")
+
+    firstMatchTest(
       #"(.)\g001"#,
       input: "112", match: "11")
 
-    firstMatchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
-    firstMatchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba", xfail: true)
-    firstMatchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
+    firstMatchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba")
+
+    firstMatchTest(#"(?<a>.)(?<b>.)(?<c>.)\k<c>\k<a>\k<b>"#,
+                   input: "xyzzxy", match: "xyzzxy")
 
     firstMatchTest(#"\1(.)"#, input: "112", match: nil)
+    firstMatchTest(#"\k<a>(?<a>.)"#, input: "112", match: nil)
+
+    // TODO: Implement subpattern matching.
+    firstMatchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
+    firstMatchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
   }
   
   func testMatchExamples() {
