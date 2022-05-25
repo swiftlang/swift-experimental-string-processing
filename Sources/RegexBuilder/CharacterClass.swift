@@ -265,10 +265,19 @@ extension RegexComponent where Self == CharacterClass {
     if rest.isEmpty {
       self.init(first.ccc)
     } else {
-      var members: [DSLTree.CustomCharacterClass.Member] = [.custom(first.ccc)]
-      members.append(contentsOf: rest.lazy.map { .custom($0.ccc) })
-      self.init(.init(members: members))
+      self.init([[first], rest].joined())
     }
+  }
+  
+  /// Returns a character class that combines the characters classes in the
+  /// given sequence or collection via union.
+  ///
+  /// - Parameter characterClasses: A sequence or collection of character class
+  ///   instances.
+  public init<S: Sequence>(_ characterClasses: S) where S.Element == CharacterClass {
+    let members: [DSLTree.CustomCharacterClass.Member] =
+      characterClasses.map { .custom($0.ccc) }
+    self.init(.init(members: members))
   }
 }
 
