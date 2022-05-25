@@ -366,7 +366,6 @@ extension MEProgram.Builder {
       registerInfo: regInfo,
       captureList: captureList,
       referencedCaptureOffsets: referencedCaptureOffsets,
-      namedCaptureOffsets: namedCaptureOffsets,
       initialOptions: initialOptions)
   }
 
