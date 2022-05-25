@@ -68,12 +68,6 @@ extension RegexComponent where Self == CharacterClass {
   public static var anyGrapheme: CharacterClass {
     .init(unconverted: .anyGrapheme)
   }
-  
-  /// A character class that matches any single Unicode scalar, regardless
-  /// of the current semantic level.
-  public static var anyUnicodeScalar: CharacterClass {
-    .init(unconverted: .anyUnicodeScalar)
-  }
 
   /// A character class that matches any digit.
   public static var digit: CharacterClass {
