@@ -54,11 +54,22 @@ extension RegexComponent where Self == CharacterClass {
   /// A character class that matches any element.
   ///
   /// This character class is unaffected by the `dotMatchesNewlines()` method.
+  /// To match any character that isn't a newline, see
+  /// ``CharacterClass.anyNonNewline``.
+  ///
+  /// This character class is equivalent to the regex syntax "dot"
+  /// metacharacter in single-line mode: `(?s:.)`.
   public static var any: CharacterClass {
     .init(DSLTree.CustomCharacterClass(members: [.atom(.any)]))
   }
 
   /// A character class that matches any element that isn't a newline.
+  ///
+  /// This character class is unaffected by the `dotMatchesNewlines()` method.
+  /// To match any character, including newlines, see ``CharacterClass.any``.
+  ///
+  /// This character class is equivalent to the regex syntax "dot"
+  /// metacharacter with single-line mode disabled: `(?-s:.)`.
   public static var anyNonNewline: CharacterClass {
     .init(DSLTree.CustomCharacterClass(members: [.atom(.any)]))
   }
