@@ -116,7 +116,7 @@ extension RenderDSLTests {
   }
   
   func testQuoting() throws {
-    try testConversion(#"\\\"a\""#, #"""
+    try testConversion(#"\\"a""#, #"""
       Regex {
         "\\\"a\""
       }
