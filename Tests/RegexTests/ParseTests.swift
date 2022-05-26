@@ -754,6 +754,14 @@ extension RegexTests {
     // This follows the PCRE behavior.
     parseTest(#"\Q\\E"#, quote("\\"))
 
+    // ICU allows quotes to be empty outside of custom character classes.
+    parseTest(#"\Q\E"#, quote(""))
+
+    // Quotes may be unterminated.
+    parseTest(#"\Qab"#, quote("ab"))
+    parseTest(#"\Q"#, quote(""))
+    parseTest("\\Qab\\", quote("ab\\"))
+
     parseTest(#"a" ."b"#, concat("a", quote(" ."), "b"),
               syntax: .experimental)
     parseTest(#"a" .""b""#, concat("a", quote(" ."), quote("b")),
@@ -2592,8 +2600,6 @@ extension RegexTests {
     diagnosticTest(#"(?P"#, .expected(")"))
     diagnosticTest(#"(?R"#, .expected(")"))
 
-    diagnosticTest(#"\Qab"#, .expected("\\E"))
-    diagnosticTest("\\Qab\\", .expected("\\E"))
     diagnosticTest(#""ab"#, .expected("\""), syntax: .experimental)
     diagnosticTest(#""ab\""#, .expected("\""), syntax: .experimental)
     diagnosticTest("\"ab\\", .expectedEscape, syntax: .experimental)
@@ -2671,6 +2677,9 @@ extension RegexTests {
 
     // TODO: Custom diagnostic for missing '\Q'
     diagnosticTest(#"\E"#, .invalidEscape("E"))
+
+    diagnosticTest(#"[\Q\E]"#, .expectedNonEmptyContents)
+    diagnosticTest(#"[\Q]"#, .expected("]"))
 
     // PCRE treats these as octal, but we require a `0` prefix.
     diagnosticTest(#"[\1]"#, .invalidEscape("1"))
@@ -2766,6 +2775,26 @@ extension RegexTests {
       /#
       """, .cannotRemoveExtendedSyntaxInMultilineMode
     )
+
+    diagnosticWithDelimitersTest(#"""
+      #/
+      \Q
+      \E
+      /#
+      """#, .quoteMayNotSpanMultipleLines)
+
+    diagnosticWithDelimitersTest(#"""
+      #/
+        \Qabc
+          \E
+      /#
+      """#, .quoteMayNotSpanMultipleLines)
+
+    diagnosticWithDelimitersTest(#"""
+      #/
+        \Q
+      /#
+      """#, .quoteMayNotSpanMultipleLines)
 
     // MARK: Group specifiers
 
