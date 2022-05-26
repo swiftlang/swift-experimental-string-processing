@@ -592,6 +592,13 @@ public func parse<S: StringProtocol>(
   return ast
 }
 
+extension String {
+  /// Whether the given string is considered multi-line for a regex literal.
+  var spansMultipleLinesInRegexLiteral: Bool {
+    unicodeScalars.contains(where: { $0 == "\n" || $0 == "\r" })
+  }
+}
+
 /// Retrieve the default set of syntax options that a delimiter and literal
 /// contents indicates.
 fileprivate func defaultSyntaxOptions(
@@ -601,8 +608,7 @@ fileprivate func defaultSyntaxOptions(
   case .forwardSlash:
     // For an extended syntax forward slash e.g #/.../#, extended syntax is
     // permitted if it spans multiple lines.
-    if delim.poundCount > 0 &&
-        contents.unicodeScalars.contains(where: { $0 == "\n" || $0 == "\r" }) {
+    if delim.poundCount > 0 && contents.spansMultipleLinesInRegexLiteral {
       return .multilineExtendedSyntax
     }
     return .traditional

@@ -44,6 +44,8 @@ enum ParseError: Error, Hashable {
   case invalidEscape(Character)
   case confusableCharacter(Character)
 
+  case quoteMayNotSpanMultipleLines
+
   case cannotReferToWholePattern
 
   case quantifierRequiresOperand(String)
@@ -138,6 +140,8 @@ extension ParseError: CustomStringConvertible {
       return "invalid escape sequence '\\\(c)'"
     case .confusableCharacter(let c):
       return "'\(c)' is confusable for a metacharacter; use '\\u{...}' instead"
+    case .quoteMayNotSpanMultipleLines:
+      return "quoted sequence may not span multiple lines in multi-line literal"
     case .cannotReferToWholePattern:
       return "cannot refer to whole pattern here"
     case .quantifierRequiresOperand(let q):
