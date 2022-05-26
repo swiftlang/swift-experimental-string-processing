@@ -60,6 +60,7 @@ enum ParseError: Error, Hashable {
   case cannotRemoveMatchingOptionsAfterCaret
 
   case expectedCustomCharacterClassMembers
+  case dotNetSubtractionMustBeLast
 
   case emptyProperty
   case unknownProperty(key: String?, value: String)
@@ -173,6 +174,8 @@ extension ParseError: CustomStringConvertible {
       return "expected ASCII for '\(c)'"
     case .expectedCustomCharacterClassMembers:
       return "expected custom character class members"
+    case .dotNetSubtractionMustBeLast:
+      return "character class members may not appear after .NET subtraction"
     case .invalidCharacterClassRangeOperand:
       return "invalid character class range"
     case .emptyProperty:

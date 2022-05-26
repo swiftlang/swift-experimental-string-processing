@@ -190,7 +190,7 @@ extension AST.CustomCharacterClass {
           isInverted: false)
 
         switch op.value {
-        case .subtraction:
+        case .subtraction, .dotNetSubtraction:
           return .subtraction(lhs, rhs)
         case .intersection:
           return .intersection(lhs, rhs)

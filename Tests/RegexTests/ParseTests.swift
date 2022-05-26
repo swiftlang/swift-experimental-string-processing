@@ -693,6 +693,55 @@ extension RegexTests {
       charClass(range_m("a", "b"))
     ))
 
+    // .NET subtraction
+    parseTest(#"[abc-[def]]"#, charClass(
+      setOp("a", "b", "c", op: .dotNetSubtraction, charClass("d", "e", "f"))
+    ))
+    parseTest(#"[abc-[^def]]"#, charClass(setOp(
+      "a", "b", "c",
+      op: .dotNetSubtraction,
+      charClass("d", "e", "f", inverted: true))
+    ))
+    parseTest(#"[\d\u{0}[a]-[b-[c]]]"#, charClass(setOp(
+      atom_m(.escaped(.decimalDigit)), scalar_m("\u{0}"), charClass("a"),
+      op: .dotNetSubtraction,
+      charClass(setOp("b", op: .dotNetSubtraction, charClass("c")))
+    )))
+    parseTest(#"[a-z-[d-w-[m-o]]]"#, charClass(setOp(
+      range_m("a", "z"),
+      op: .dotNetSubtraction,
+      charClass(setOp(
+        range_m("d", "w"),
+        op: .dotNetSubtraction,
+        charClass(range_m("m", "o"))
+      ))
+    )))
+    parseTest(#"[a-[:b]]"#, charClass(setOp(
+      "a", op: .dotNetSubtraction, charClass(":", "b")
+    )))
+    parseTest(#"[[a]-[b]]"#, charClass(setOp(
+      charClass("a"),
+      op: .dotNetSubtraction,
+      charClass("b")
+    )))
+
+    parseTest(#"[ -[ ]]"#, charClass(setOp(
+      " ", op: .dotNetSubtraction, charClass(" ")
+    )))
+    parseTest(#"[ - [ ]]"#, charClass(
+      range_m(" ", " "), charClass(" ")
+    ))
+    parseTest(#"[ - [ ] ]"#, charClass(
+      range_m(" ", " "), charClass(" "), " "
+    ))
+
+    parseTest(#"(?x)[a  -  [b]  ]"#, concat(
+      changeMatchingOptions(matchingOptions(adding: .extended)),
+      charClass(setOp(
+        "a", op: .dotNetSubtraction, charClass("b")
+      ))
+    ))
+
     // MARK: Operators
 
     parseTest(
@@ -2270,6 +2319,15 @@ extension RegexTests {
       /#
       """#, charClass(range_m("a", "b")))
 
+    parseWithDelimitersTest(#"""
+      #/
+      [
+        a # interesting
+        -   #a
+         [ b] # comment
+        ]
+      /#
+      """#, charClass(setOp("a", op: .dotNetSubtraction, charClass("b"))))
 
     // MARK: Delimiter skipping: Make sure we can skip over the ending delimiter
     // if it's clear that it's part of the regex syntax.
@@ -2703,6 +2761,19 @@ extension RegexTests {
 
     diagnosticTest("(?x)[#]", .expectedCustomCharacterClassMembers)
     diagnosticTest("(?x)[ # abc]", .expectedCustomCharacterClassMembers)
+
+    diagnosticTest("[abc-[def]g]", .dotNetSubtractionMustBeLast)
+    diagnosticTest("[abc-[def] ]", .dotNetSubtractionMustBeLast)
+
+    diagnosticTest(#"[-[a]]"#, .expectedCustomCharacterClassMembers)
+    diagnosticTest(#"[a-[]]"#, .expectedCustomCharacterClassMembers)
+    diagnosticTest(#"[-[]]"#, .expectedCustomCharacterClassMembers)
+    diagnosticTest(#"(?x)[ - [ ] ]"#, .expectedCustomCharacterClassMembers)
+    diagnosticTest(#"(?x)[ -[b]]"#, .expectedCustomCharacterClassMembers)
+    diagnosticTest(#"(?x)[a-[ ] ]"#, .expectedCustomCharacterClassMembers)
+
+    // .NET subtraction can't be used with POSIX properties.
+    diagnosticTest(#"[a-[:digit:]]"#, .invalidCharacterClassRangeOperand)
 
     // MARK: Bad escapes
 

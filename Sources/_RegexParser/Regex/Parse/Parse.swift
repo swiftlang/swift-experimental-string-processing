@@ -486,7 +486,7 @@ internal typealias CustomCC = AST.CustomCharacterClass
 extension Parser {
   /// Parse a custom character class
   ///
-  ///     CustomCharClass -> Start Set (SetOp Set)* ']'
+  ///     CustomCharClass -> Start Set (SetOp Set)* DotNetSubtraction? ']'
   ///     Set             -> Member+
   ///     Member          -> CustomCharClass | !']' !SetOp (Range | Atom)
   ///     Range           -> Atom `-` Atom
@@ -502,31 +502,57 @@ extension Parser {
     var members: Array<Member> = []
     try parseCCCMembers(into: &members)
 
+    // Make sure we have at least one semantic member.
+    if members.none(\.isSemantic) {
+      throw Source.LocatedError(
+        ParseError.expectedCustomCharacterClassMembers, start.location)
+    }
+
     // If we have a binary set operator, parse it and the next members. Note
     // that this means we left associate for a chain of operators.
     // TODO: We may want to diagnose and require users to disambiguate, at least
     // for chains of separate operators.
     // TODO: What about precedence?
-    while let binOp = try source.lexCustomCCBinOp() {
+    while let binOp = source.lexStandardCharClassOp() {
       var rhs: Array<Member> = []
       try parseCCCMembers(into: &rhs)
 
-      if members.none(\.isSemantic) || rhs.none(\.isSemantic) {
+      if rhs.none(\.isSemantic) {
         throw Source.LocatedError(
-          ParseError.expectedCustomCharacterClassMembers, start.location)
+          ParseError.expectedCustomCharacterClassMembers,
+          loc(source.currentPosition)
+        )
       }
       members = [.setOperation(members, binOp, rhs)]
     }
-    if members.none(\.isSemantic) {
-      throw Source.LocatedError(
-        ParseError.expectedCustomCharacterClassMembers, start.location)
+
+    // Try to parse a .NET subtraction at the end of a character class.
+    if let (dashLoc, trivia, ccStart) =
+        try source.lexDotNetCharClassSubtraction(context: context)
+    {
+      members += trivia.map(Member.trivia)
+      let charClass = try parseCustomCharacterClass(ccStart)
+      members = [.setOperation(
+        members, .init(.dotNetSubtraction, dashLoc), [.custom(charClass)]
+      )]
+      while let t = try source.lexTrivia(context: context) {
+        members.append(.trivia(t))
+      }
+      // Members may not come after a .NET subtraction.
+      guard source.peek() == "]" else {
+        throw Source.LocatedError(
+          ParseError.dotNetSubtractionMustBeLast, loc(source.currentPosition))
+      }
     }
+
     try source.expect("]")
     return CustomCC(start, members, loc(start.location.start))
   }
 
   mutating func parseCCCMember() throws -> CustomCC.Member? {
-    guard !source.isEmpty && source.peek() != "]" && source.peekCCBinOp() == nil
+    guard !source.isEmpty && source.peek() != "]" &&
+            !source.canLexStandardCharClassOp() &&
+            !source.canLexDotNetCharClassSubtraction(context: context)
     else { return nil }
 
     // Nested custom character class.
@@ -569,9 +595,9 @@ extension Parser {
           members.append(.trivia(t))
         }
 
-        guard let dash = source.lexCustomCharacterClassRangeOperator() else {
-          continue
-        }
+        guard let dash = source.lexCharClassRangeOperator(context: context)
+        else { continue }
+
         // If we can't parse a range, '-' becomes literal, e.g `[6-]`.
         members.append(.atom(.init(.char("-"), dash)))
 

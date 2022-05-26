@@ -692,6 +692,25 @@ extension RegexTests {
     firstMatchTest(
       "~~*", input: "123~~~xyz", match: "~~~")
 
+    firstMatchTest(
+      #"[d-w--[m-o]]+"#,
+      input: "abcmnoxyzdefghijklpqrstuvw", match: "defghijklpqrstuvw"
+    )
+
+    firstMatchTest(
+      #"[a-z--[d-w--[m-o]]]+"#,
+      input: "defghijklpqrstuvwabcmnoxyz", match: "abcmnoxyz"
+    )
+
+    firstMatchTest(
+      #"[a-z-[d-w-[m-o]]]+"#,
+      input: "defghijklpqrstuvwabcmnoxyz", match: "abcmnoxyz"
+    )
+
+    firstMatchTest(
+      #"(?x)[ a - z - [ d - w - [ m - o ] ] ]+"#,
+      input: " defghijklpqrstuvwabcmnoxyz", match: "abcmnoxyz"
+    )
 
     // Quotes in character classes.
     firstMatchTest(#"[\Qabc\E]"#, input: "QEa", match: "a")

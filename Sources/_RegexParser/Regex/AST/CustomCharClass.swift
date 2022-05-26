@@ -67,6 +67,9 @@ extension AST {
       case subtraction = "--"
       case intersection = "&&"
       case symmetricDifference = "~~"
+
+      // A .NET subtraction that may be used with a custom character class RHS.
+      case dotNetSubtraction = "-"
     }
     public enum Start: String, Hashable {
       case normal = "["

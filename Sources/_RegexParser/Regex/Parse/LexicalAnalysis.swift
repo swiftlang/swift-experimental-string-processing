@@ -165,6 +165,12 @@ extension Source {
     return .init(start ..< currentPosition)
   }
 
+  mutating func eatWithLoc() -> Located<Char> {
+    recordLoc { src in
+      src.eat()
+    }
+  }
+
   /// Attempt to eat a given prefix that satisfies a given predicate, with the
   /// source location recorded.
   mutating func tryEatLocatedPrefix(
@@ -1223,26 +1229,55 @@ extension Source {
     }
   }
 
-  /// Try to consume a binary operator from within a custom character class
+  /// Try to consume a standard binary operator from within a custom character
+  /// class. This excludes .NET subtraction '-'.
   ///
   ///     CustomCCBinOp -> '--' | '~~' | '&&'
   ///
-  mutating func lexCustomCCBinOp() throws -> Located<CustomCC.SetOp>? {
+  mutating func lexStandardCharClassOp() -> Located<CustomCC.SetOp>? {
     recordLoc { src in
       // TODO: Perhaps a syntax options check (!PCRE)
-      // TODO: Better AST types here
-      guard let binOp = src.peekCCBinOp() else { return nil }
-      try! src.expect(sequence: binOp.rawValue)
-      return binOp
+      if src.tryEat(sequence: "--") { return .subtraction }
+      if src.tryEat(sequence: "~~") { return .symmetricDifference }
+      if src.tryEat(sequence: "&&") { return .intersection }
+      return nil
     }
   }
 
   // Check to see if we can lex a binary operator.
-  func peekCCBinOp() -> CustomCC.SetOp? {
-    if starts(with: "--") { return .subtraction }
-    if starts(with: "~~") { return .symmetricDifference }
-    if starts(with: "&&") { return .intersection }
-    return nil
+  func canLexStandardCharClassOp() -> Bool {
+    lookahead { src in
+      src.lexStandardCharClassOp() != nil
+    }
+  }
+
+  /// Try to consume a .NET character class subtraction.
+  ///
+  ///     DotNetSubtraction -> '-' Trivia? CustomCharClass
+  ///
+  mutating func lexDotNetCharClassSubtraction(
+    context: ParsingContext
+  ) throws -> (
+    dashLoc: SourceLocation, trivia: [AST.Trivia], Located<CustomCC.Start>
+  )? {
+    try tryEating { src in
+      // We can lex '-' as a .NET subtraction if it precedes a custom character
+      // class.
+      var trivia = [AST.Trivia]()
+      guard let dashLoc = src.tryEatWithLoc("-") else { return nil }
+      while let t = try src.lexTrivia(context: context) {
+        trivia.append(t)
+      }
+      guard let start = src.lexCustomCCStart() else { return nil }
+      return (dashLoc, trivia, start)
+    }
+  }
+
+  /// Check to see if we can lex a .NET subtraction.
+  func canLexDotNetCharClassSubtraction(context: ParsingContext) -> Bool {
+    lookahead { src in
+      (try? src.lexDotNetCharClassSubtraction(context: context)) != nil
+    }
   }
 
   private mutating func lexPOSIXCharacterProperty(
@@ -2052,10 +2087,16 @@ extension Source {
   }
 
   /// Try to lex the range operator '-' for a custom character class.
-  mutating func lexCustomCharacterClassRangeOperator() -> SourceLocation? {
-    // Eat a '-', making sure we don't have a binary op such as '--'.
-    guard peekCCBinOp() == nil else { return nil }
-    return tryEatWithLoc("-")
+  mutating func lexCharClassRangeOperator(
+    context: ParsingContext
+  ) -> SourceLocation? {
+    // Eat a '-', making sure we don't have a binary op such as '--', or a .NET
+    // subtraction.
+    guard peek() == "-" &&
+          !canLexStandardCharClassOp() &&
+          !canLexDotNetCharClassSubtraction(context: context)
+    else { return nil }
+    return eatWithLoc().location
   }
 
   /// Try to consume a newline sequence matching option kind.
