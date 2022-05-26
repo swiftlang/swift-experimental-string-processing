@@ -80,14 +80,28 @@ extension RegexComponent {
   /// Returns a regular expression where quantifiers use the specified behavior
   /// by default.
   ///
-  /// This setting does not affect calls to quantifier methods, such as
-  /// `OneOrMore`, that include an explicit `behavior` parameter.
+  /// You can call this method to change the default repetition behavior for
+  /// quantifier operators in regex syntax and `RegexBuilder` quantifier
+  /// methods. For example, in the following example, both regexes use
+  /// possessive quantification when matching a quotation surround by `"`
+  /// quote marks:
   ///
-  /// Passing `.eager` or `.reluctant` to this method corresponds to applying
-  /// the `(?-U)` or `(?U)` option in regex syntax, respectively.
+  ///     let regex1 = /"[^"]*"/.defaultRepetitionBehavior(.possessive)
+  ///
+  ///     let quoteMark = "\""
+  ///     let regex2 = Regex {
+  ///         quoteMark
+  ///         ZeroOrMore(.noneOf(quoteMark))
+  ///         quoteMark
+  ///     }.defaultRepetitionBehavior(.possessive)
+  ///
+  /// This setting only changes the default behavior of quantifiers, and does
+  /// not affect regex syntax operators with an explicit behavior indicator,
+  /// such as `*?` or `++`. Likewise, calls to quantifier methods such as
+  /// `OneOrMore` always use the explicit `behavior`, when given.
   ///
   /// - Parameter behavior: The default behavior to use for quantifiers.
-  public func repetitionBehavior(_ behavior: RegexRepetitionBehavior) -> Regex<RegexOutput> {
+  public func defaultRepetitionBehavior(_ behavior: RegexRepetitionBehavior) -> Regex<RegexOutput> {
     if behavior == .possessive {
       return wrapInOption(.possessiveByDefault, addingIf: true)
     } else {

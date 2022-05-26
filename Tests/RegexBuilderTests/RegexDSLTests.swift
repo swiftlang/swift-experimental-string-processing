@@ -293,14 +293,14 @@ class RegexDSLTests: XCTestCase {
         Capture {
           // Reluctant behavior due to option
           OneOrMore(.anyOf("abcd"))
-            .repetitionBehavior(.reluctant)
+            .defaultRepetitionBehavior(.reluctant)
         }
         ZeroOrMore("a"..."z")
         
         Capture {
           // Eager behavior due to explicit parameter, despite option
           OneOrMore(.digit, .eager)
-            .repetitionBehavior(.reluctant)
+            .defaultRepetitionBehavior(.reluctant)
         }
         ZeroOrMore(.digit)
       }
@@ -345,7 +345,7 @@ class RegexDSLTests: XCTestCase {
     {
       OneOrMore(.reluctant) {
         One(.word)
-      }.repetitionBehavior(.possessive)
+      }.defaultRepetitionBehavior(.possessive)
       Capture(.digit)
       ZeroOrMore(.any)
     }
@@ -358,7 +358,7 @@ class RegexDSLTests: XCTestCase {
         OneOrMore(.word)
         Capture(.digit)
         ZeroOrMore(.any)
-      }.repetitionBehavior(.reluctant)
+      }.defaultRepetitionBehavior(.reluctant)
     }
     // Default set to reluctant applies to regex syntax
     try _testDSLCaptures(
@@ -366,7 +366,7 @@ class RegexDSLTests: XCTestCase {
       matchType: (Substring, Substring).self, ==)
     {
       try! Regex(#"\w+(\d).*"#, as: (Substring, Substring).self)
-        .repetitionBehavior(.reluctant)
+        .defaultRepetitionBehavior(.reluctant)
     }
     
     // Explicitly possessive
@@ -387,7 +387,7 @@ class RegexDSLTests: XCTestCase {
       Regex {
         OneOrMore("a")
         "a"
-      }.repetitionBehavior(.possessive)
+      }.defaultRepetitionBehavior(.possessive)
     }
     // More specific default set to eager
     try _testDSLCaptures(
@@ -397,10 +397,10 @@ class RegexDSLTests: XCTestCase {
       Regex {
         Capture {
           OneOrMore("a")
-            .repetitionBehavior(.eager)
+            .defaultRepetitionBehavior(.eager)
         }
         OneOrMore("a")
-      }.repetitionBehavior(.possessive)
+      }.defaultRepetitionBehavior(.possessive)
     }
     // More specific default set to reluctant
     try _testDSLCaptures(
@@ -410,10 +410,10 @@ class RegexDSLTests: XCTestCase {
       Regex {
         Capture {
           OneOrMore("a")
-            .repetitionBehavior(.reluctant)
+            .defaultRepetitionBehavior(.reluctant)
         }
         OneOrMore("a")
-      }.repetitionBehavior(.possessive)
+      }.defaultRepetitionBehavior(.possessive)
     }
 
     try _testDSLCaptures(
