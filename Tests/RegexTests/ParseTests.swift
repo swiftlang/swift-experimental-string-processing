@@ -34,7 +34,7 @@ extension AST.CustomCharacterClass.Member: ExpressibleByExtendedGraphemeClusterL
 }
 
 enum SemanticErrorKind {
-  case unsupported, invalid
+  case unsupported, invalid, unchecked
 }
 
 class RegexTests: XCTestCase {}
@@ -68,7 +68,7 @@ func parseTest(
     XCTFail("unexpected error: \(error)", file: file, line: line)
     return
   }
-  if let errorKind = errorKind {
+  if let errorKind = errorKind, errorKind != .unchecked {
     do {
       _ = try parse(input, .semantic, syntax)
       XCTFail("expected semantically invalid AST", file: file, line: line)
@@ -1384,7 +1384,56 @@ extension RegexTests {
     parseTest(#"\p{isAlphabetic}"#, prop(.binary(.alphabetic)))
     parseTest(#"\p{isAlpha=isFalse}"#, prop(.binary(.alphabetic, value: false)))
 
-    parseTest(#"\p{In_Runic}"#, prop(.onigurumaSpecial(.inRunic)), throwsError: .unsupported)
+    parseTest(#"\p{In_Runic}"#, prop(.block(.runic)), throwsError: .unsupported)
+
+    parseTest(#"\p{Hebrew}"#, prop(.scriptExtension(.hebrew)))
+    parseTest(#"\p{Is_Hebrew}"#, prop(.scriptExtension(.hebrew)))
+    parseTest(#"\p{In_Hebrew}"#, prop(.block(.hebrew)), throwsError: .unsupported)
+    parseTest(#"\p{Blk=Is_Hebrew}"#, prop(.block(.hebrew)), throwsError: .unsupported)
+
+    // These are the shorthand properties with an "in" prefix we currently
+    // recognize. Make sure they don't clash with block properties.
+    parseTest(#"\p{initialpunctuation}"#, prop(.generalCategory(.initialPunctuation)))
+    parseTest(#"\p{inscriptionalpahlavi}"#, prop(.scriptExtension(.inscriptionalPahlavi)))
+    parseTest(#"\p{inscriptionalparthian}"#, prop(.scriptExtension(.inscriptionalParthian)))
+    parseTest(#"\p{inherited}"#, prop(.scriptExtension(.inherited)))
+
+    // Make sure these are round-trippable.
+    for s in Unicode.Script.allCases {
+      parseTest(#"\p{\#(s.rawValue)}"#, prop(.scriptExtension(s)))
+      parseTest(#"\p{is\#(s.rawValue)}"#, prop(.scriptExtension(s)))
+    }
+    for g in Unicode.ExtendedGeneralCategory.allCases {
+      parseTest(#"\p{\#(g.rawValue)}"#, prop(.generalCategory(g)))
+      parseTest(#"\p{is\#(g.rawValue)}"#, prop(.generalCategory(g)))
+    }
+    for p in Unicode.POSIXProperty.allCases {
+      parseTest(#"\p{\#(p.rawValue)}"#, prop(.posix(p)))
+      parseTest(#"\p{is\#(p.rawValue)}"#, prop(.posix(p)))
+    }
+    for b in Unicode.BinaryProperty.allCases {
+      // Some of these are unsupported, so don't check for semantic errors.
+      parseTest(#"\p{\#(b.rawValue)}"#, prop(.binary(b, value: true)), throwsError: .unchecked)
+      parseTest(#"\p{is\#(b.rawValue)}"#, prop(.binary(b, value: true)), throwsError: .unchecked)
+    }
+
+    // Try prefixing each block property with "in" to make sure we don't stomp
+    // on any other property shorthands.
+    for b in Unicode.Block.allCases {
+      parseTest(#"\p{in\#(b.rawValue)}"#, prop(.block(b)), throwsError: .unsupported)
+    }
+
+    parseTest(#"\p{ASCII}"#, prop(.ascii))
+    parseTest(#"\p{isASCII}"#, prop(.ascii))
+    parseTest(#"\p{inASCII}"#, prop(.block(.basicLatin)), throwsError: .unsupported)
+
+    parseTest(#"\p{inBasicLatin}"#, prop(.block(.basicLatin)), throwsError: .unsupported)
+    parseTest(#"\p{In_Basic_Latin}"#, prop(.block(.basicLatin)), throwsError: .unsupported)
+    parseTest(#"\p{Blk=Basic_Latin}"#, prop(.block(.basicLatin)), throwsError: .unsupported)
+    parseTest(#"\p{Blk=Is_Basic_Latin}"#, prop(.block(.basicLatin)), throwsError: .unsupported)
+
+    parseTest(#"\p{isAny}"#, prop(.any))
+    parseTest(#"\p{isAssigned}"#, prop(.assigned))
 
     parseTest(#"\p{Xan}"#, prop(.pcreSpecial(.alphanumeric)), throwsError: .unsupported)
     parseTest(#"\p{Xps}"#, prop(.pcreSpecial(.posixSpace)), throwsError: .unsupported)
@@ -2668,6 +2717,9 @@ extension RegexTests {
     diagnosticTest("[[:a():]]", .unknownProperty(key: nil, value: "a()"))
     diagnosticTest(#"\p{aaa\p{b}}"#, .unknownProperty(key: nil, value: "aaa"))
     diagnosticTest(#"[[:{:]]"#, .unknownProperty(key: nil, value: "{"))
+
+    diagnosticTest(#"\p{Basic_Latin}"#, .unknownProperty(key: nil, value: "Basic_Latin"))
+    diagnosticTest(#"\p{Blk=In_Basic_Latin}"#, .unrecognizedBlock("In_Basic_Latin"))
 
     // We only filter pattern whitespace, which doesn't include things like
     // non-breaking spaces.
