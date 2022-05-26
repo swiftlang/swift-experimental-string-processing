@@ -44,11 +44,11 @@ func _compileRegex(
 }
 
 // An error produced when compiling a regular expression.
-public enum RegexCompilationError: Error, CustomStringConvertible {
+enum RegexCompilationError: Error, CustomStringConvertible {
   // TODO: Source location?
   case uncapturedReference
 
-  public var description: String {
+  var description: String {
     switch self {
     case .uncapturedReference:
       return "Found a reference used before it captured any match."
