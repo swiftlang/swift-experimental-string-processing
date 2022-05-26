@@ -764,11 +764,14 @@ extension Source {
       return .block(block)
     }
 
-    // PCRE special properties.
-    // TODO: Normalize?
+    // Special properties from other engines.
     typealias PCRESpecial = AST.Atom.CharacterProperty.PCRESpecialCategory
     if let pcreSpecial = PCRESpecial(rawValue: value) {
       return .pcreSpecial(pcreSpecial)
+    }
+    typealias JavaSpecial = AST.Atom.CharacterProperty.JavaSpecial
+    if let javaSpecial = JavaSpecial(rawValue: value) {
+      return .javaSpecial(javaSpecial)
     }
 
     // TODO: This should be versioned, and do we want a more lax behavior for

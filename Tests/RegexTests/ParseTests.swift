@@ -1385,6 +1385,10 @@ extension RegexTests {
       parseTest(#"\p{is\#(b.rawValue)}"#, prop(.binary(b, value: true)), throwsError: .unchecked)
     }
 
+    for j in AST.Atom.CharacterProperty.JavaSpecial.allCases {
+      parseTest(#"\p{\#(j.rawValue)}"#, prop(.javaSpecial(j)), throwsError: .unsupported)
+    }
+
     // Try prefixing each block property with "in" to make sure we don't stomp
     // on any other property shorthands.
     for b in Unicode.Block.allCases {
