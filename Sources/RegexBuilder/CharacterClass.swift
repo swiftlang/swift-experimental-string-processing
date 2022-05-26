@@ -76,11 +76,15 @@ extension RegexComponent where Self == CharacterClass {
 
   /// A character class that matches any single `Character`, or extended
   /// grapheme cluster, regardless of the current semantic level.
+  ///
+  /// This character class is equivalent to `\X` in regex syntax.
   public static var anyGrapheme: CharacterClass {
     .init(unconverted: .anyGrapheme)
   }
 
   /// A character class that matches any digit.
+  ///
+  /// This character class is equivalent to `\d` in regex syntax.
   public static var digit: CharacterClass {
     .init(unconverted: .digit)
   }
@@ -95,29 +99,39 @@ extension RegexComponent where Self == CharacterClass {
   }
 
   /// A character class that matches any element that is a "word character".
-  public static var wordCharacter: CharacterClass {
+  ///
+  /// This character class is equivalent to `\w` in regex syntax.
+  public static var word: CharacterClass {
     .init(unconverted: .word)
   }
 
   /// A character class that matches any element that is classified as
   /// whitespace.
+  ///
+  /// This character class is equivalent to `\s` in regex syntax.
   public static var whitespace: CharacterClass {
     .init(unconverted: .whitespace)
   }
   
   /// A character class that matches any element that is classified as
   /// horizontal whitespace.
+  ///
+  /// This character class is equivalent to `\h` in regex syntax.
   public static var horizontalWhitespace: CharacterClass {
     .init(unconverted: .horizontalWhitespace)
   }
 
   /// A character class that matches any element that is classified as
   /// vertical whitespace.
+  ///
+  /// This character class is equivalent to `\v` in regex syntax.
   public static var verticalWhitespace: CharacterClass {
     .init(unconverted: .verticalWhitespace)
   }
   
   /// A character class that matches any newline sequence.
+  ///
+  /// This character class is equivalent to `\R` or `\n` in regex syntax.
   public static var newlineSequence: CharacterClass {
     .init(unconverted: .newlineSequence)
   }
@@ -127,6 +141,15 @@ extension RegexComponent where Self == CharacterClass {
 extension RegexComponent where Self == CharacterClass {
   /// Returns a character class that matches any character in the given string
   /// or sequence.
+  ///
+  /// Calling this method with a group of characters is equivalent to listing
+  /// those characters in a custom character class in regex syntax. For example,
+  /// the two regexes in this example are equivalent:
+  ///
+  ///     let regex1 = /[abcd]+/
+  ///     let regex2 = OneOrMore(.anyOf("abcd"))
+  ///
+  /// - Parameter s: A sequence of characters to match against.
   public static func anyOf<S: Sequence>(_ s: S) -> CharacterClass
     where S.Element == Character
   {
@@ -136,6 +159,11 @@ extension RegexComponent where Self == CharacterClass {
   
   /// Returns a character class that matches any Unicode scalar in the given
   /// sequence.
+  ///
+  /// Calling this method with a group of Unicode scalars is equivalent to
+  /// listing them in a custom character class in regex syntax.
+  ///
+  /// - Parameter s: A sequence of Unicode scalar values to match against.
   public static func anyOf<S: Sequence>(_ s: S) -> CharacterClass
     where S.Element == UnicodeScalar
   {
@@ -145,6 +173,15 @@ extension RegexComponent where Self == CharacterClass {
 
   /// Returns a character class that matches none of the characters in the given
   /// string or sequence.
+  ///
+  /// Calling this method with a group of characters is equivalent to listing
+  /// those characters in a negated custom character class in regex syntax. For
+  /// example, the two regexes in this example are equivalent:
+  ///
+  ///     let regex1 = /[^abcd]+/
+  ///     let regex2 = OneOrMore(.noneOf("abcd"))
+  ///
+  /// - Parameter s: A sequence of characters to match against.
   public static func noneOf<S: Sequence>(_ s: S) -> CharacterClass
     where S.Element == Character
   {
@@ -154,6 +191,11 @@ extension RegexComponent where Self == CharacterClass {
   
   /// Returns a character class that matches none of the Unicode scalars in the
   /// given sequence.
+  ///
+  /// Calling this method with a group of Unicode scalars is equivalent to
+  /// listing them in a negated custom character class in regex syntax.
+  ///
+  /// - Parameter s: A sequence of Unicode scalar values to match against.
   public static func noneOf<S: Sequence>(_ s: S) -> CharacterClass
     where S.Element == UnicodeScalar
   {

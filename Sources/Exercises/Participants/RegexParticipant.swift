@@ -89,7 +89,7 @@ private func graphemeBreakPropertyData(
     OneOrMore(.whitespace)
     ";"
     OneOrMore(.whitespace)
-    TryCapture(OneOrMore(.wordCharacter)) { Unicode.GraphemeBreakProperty($0) }
+    TryCapture(OneOrMore(.word)) { Unicode.GraphemeBreakProperty($0) }
     ZeroOrMore(.any)
   }.map {
     let (_, lower, upper, property) = $0.output
