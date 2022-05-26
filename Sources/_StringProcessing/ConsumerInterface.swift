@@ -520,6 +520,9 @@ extension AST.Atom.CharacterProperty {
 
       case .pcreSpecial(let s):
         throw Unsupported("TODO: map PCRE special: \(s)")
+
+      case .javaSpecial(let s):
+        throw Unsupported("TODO: map Java special: \(s)")
       }
     }()
 

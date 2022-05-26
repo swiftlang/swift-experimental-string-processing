@@ -175,6 +175,8 @@ extension RegexValidator {
       throw error(.unsupported("PCRE property"), at: loc)
     case .block:
       throw error(.unsupported("Unicode block property"), at: loc)
+    case .javaSpecial:
+      throw error(.unsupported("Java property"), at: loc)
     }
   }
 
