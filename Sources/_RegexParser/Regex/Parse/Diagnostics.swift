@@ -62,6 +62,7 @@ enum ParseError: Error, Hashable {
   case unknownProperty(key: String?, value: String)
   case unrecognizedScript(String)
   case unrecognizedCategory(String)
+  case unrecognizedBlock(String)
   case invalidAge(String)
   case invalidNumericValue(String)
   case unrecognizedNumericType(String)
@@ -194,6 +195,8 @@ extension ParseError: CustomStringConvertible {
       return "unrecognized script '\(value)'"
     case .unrecognizedCategory(let value):
       return "unrecognized category '\(value)'"
+    case .unrecognizedBlock(let value):
+      return "unrecognized block '\(value)'"
     case .unrecognizedNumericType(let value):
       return "unrecognized numeric type '\(value)'"
     case .invalidAge(let value):

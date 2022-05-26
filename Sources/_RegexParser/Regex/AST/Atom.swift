@@ -441,13 +441,15 @@ extension AST.Atom.CharacterProperty {
     
     /// Character age, as per UnicodeScalar.Properties.age.
     case age(major: Int, minor: Int)
-    
+
+    /// A block property.
+    case block(Unicode.Block)
+
     case posix(Unicode.POSIXProperty)
 
     /// Some special properties implemented by PCRE and Oniguruma.
     case pcreSpecial(PCRESpecialCategory)
-    case onigurumaSpecial(OnigurumaSpecialProperty)
-    
+
     public enum MapKind: Hashable {
       case lowercase
       case uppercase
