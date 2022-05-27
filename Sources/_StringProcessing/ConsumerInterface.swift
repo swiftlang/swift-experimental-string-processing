@@ -512,14 +512,17 @@ extension AST.Atom.CharacterProperty {
       case .mapping(.titlecase, let value):
         return consume { $0.properties.titlecaseMapping == value }
 
+      case .block(let b):
+        throw Unsupported("TODO: map block: \(b)")
+
       case .posix(let p):
         return p.generateConsumer(opts)
 
       case .pcreSpecial(let s):
         throw Unsupported("TODO: map PCRE special: \(s)")
 
-      case .onigurumaSpecial(let s):
-        throw Unsupported("TODO: map Oniguruma special: \(s)")
+      case .javaSpecial(let s):
+        throw Unsupported("TODO: map Java special: \(s)")
       }
     }()
 
