@@ -13,15 +13,7 @@
 
 extension AST {
   var dslTree: DSLTree {
-    return DSLTree(
-      root.dslTreeNode, options: globalOptions?.dslTreeOptions)
-  }
-}
-
-extension AST.GlobalMatchingOptionSequence {
-  var dslTreeOptions: DSLTree.Options {
-    // TODO: map options
-    return .init()
+    return DSLTree(root.dslTreeNode)
   }
 }
 
@@ -136,6 +128,9 @@ extension AST.Node {
 
       case let .trivia(v):
         return .trivia(v.contents)
+
+      case .interpolation:
+        throw Unsupported("TODO: interpolation")
 
       case let .atom(v):
         switch v.kind {

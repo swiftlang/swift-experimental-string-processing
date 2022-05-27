@@ -13,7 +13,6 @@ import XCTest
 import _StringProcessing
 import RegexBuilder
 
-@available(SwiftStdlib 5.7, *)
 class RegexConsumerTests: XCTestCase {
   func testMatches() {
     let regex = Capture(OneOrMore(.digit)) { 2 * Int($0)! }
@@ -230,6 +229,16 @@ class AlgorithmsResultBuilderTests: XCTestCase {
   }
 
   func testMatches() throws {
+    do {
+      let regex = Regex { OneOrMore(.any) }
+      XCTAssertEqual("abc".wholeMatch(of: regex)!.0, "abc")
+      XCTAssertEqual("abc".prefixMatch(of: regex)!.0, "abc")
+      XCTAssertEqual("abc".firstMatch(of: regex)!.0, "abc")
+      XCTAssertEqual("abc".suffix(1).wholeMatch(of: regex)!.0, "c")
+      XCTAssertEqual("abc".suffix(1).prefixMatch(of: regex)!.0, "c")
+      XCTAssertEqual("abc".suffix(1).firstMatch(of: regex)!.0, "c")
+    }
+    
     let int = Capture(OneOrMore(.digit)) { Int($0)! }
 
     // Test syntax

@@ -222,6 +222,13 @@ extension Parser {
         result.append(.quote(quote))
         continue
       }
+
+      // Interpolation -> `lexInterpolation`
+      if let interpolation = try source.lexInterpolation() {
+        result.append(.interpolation(interpolation))
+        continue
+      }
+
       //     Quantification  -> QuantOperand Quantifier?
       if let operand = try parseQuantifierOperand() {
         if let (amt, kind, trivia) =
@@ -422,7 +429,7 @@ extension Parser {
     }
 
     // Check if we have the start of a custom character class '['.
-    if let cccStart = try source.lexCustomCCStart() {
+    if let cccStart = source.lexCustomCCStart() {
       return .customCharacterClass(
         try parseCustomCharacterClass(cccStart))
     }
@@ -465,16 +472,6 @@ extension Parser {
     var members: Array<Member> = []
     try parseCCCMembers(into: &members)
 
-    // If we didn't parse any semantic members, we can eat a ']' character, as
-    // PCRE, Oniguruma, and ICU forbid empty character classes, and assume an
-    // initial ']' is literal.
-    if members.none(\.isSemantic) {
-      if let loc = source.tryEatWithLoc("]") {
-        members.append(.atom(.init(.char("]"), loc)))
-        try parseCCCMembers(into: &members)
-      }
-    }
-
     // If we have a binary set operator, parse it and the next members. Note
     // that this means we left associate for a chain of operators.
     // TODO: We may want to diagnose and require users to disambiguate, at least
@@ -488,16 +485,7 @@ extension Parser {
         throw Source.LocatedError(
           ParseError.expectedCustomCharacterClassMembers, start.location)
       }
-
-      // If we're done, bail early
-      let setOp = Member.setOperation(members, binOp, rhs)
-      if source.tryEat("]") {
-        return CustomCC(
-          start, [setOp], loc(start.location.start))
-      }
-
-      // Otherwise it's just another member to accumulate
-      members = [setOp]
+      members = [.setOperation(members, binOp, rhs)]
     }
     if members.none(\.isSemantic) {
       throw Source.LocatedError(
@@ -507,45 +495,72 @@ extension Parser {
     return CustomCC(start, members, loc(start.location.start))
   }
 
+  mutating func parseCCCMember() throws -> CustomCC.Member? {
+    guard !source.isEmpty && source.peek() != "]" && source.peekCCBinOp() == nil
+    else { return nil }
+
+    // Nested custom character class.
+    if let cccStart = source.lexCustomCCStart() {
+      return .custom(try parseCustomCharacterClass(cccStart))
+    }
+
+    // Quoted sequence.
+    if let quote = try source.lexQuote(context: context) {
+      return .quote(quote)
+    }
+
+    // Lex triva if we're allowed.
+    if let trivia = try source.lexTrivia(context: context) {
+      return .trivia(trivia)
+    }
+
+    if let atom = try source.lexAtom(context: context) {
+      return .atom(atom)
+    }
+    return nil
+  }
+
   mutating func parseCCCMembers(
     into members: inout Array<CustomCC.Member>
   ) throws {
     // Parse members until we see the end of the custom char class or an
     // operator.
-    while !source.isEmpty && source.peek() != "]" &&
-          source.peekCCBinOp() == nil {
+    while let member = try parseCCCMember() {
+      members.append(member)
 
-      // Nested custom character class.
-      if let cccStart = try source.lexCustomCCStart() {
-        members.append(.custom(try parseCustomCharacterClass(cccStart)))
-        continue
+      // If we have an atom, we can try to parse a character class range. Each
+      // time we parse a component of the range, we append to `members` in case
+      // it ends up not being a range, and we bail. If we succeed in parsing, we
+      // remove the intermediate members.
+      if case .atom(let lhs) = member {
+        let membersBeforeRange = members.count - 1
+
+        while let t = try source.lexTrivia(context: context) {
+          members.append(.trivia(t))
+        }
+
+        guard let dash = source.lexCustomCharacterClassRangeOperator() else {
+          continue
+        }
+        // If we can't parse a range, '-' becomes literal, e.g `[6-]`.
+        members.append(.atom(.init(.char("-"), dash)))
+
+        while let t = try source.lexTrivia(context: context) {
+          members.append(.trivia(t))
+        }
+        guard let rhs = try parseCCCMember() else { continue }
+        members.append(rhs)
+
+        guard case let .atom(rhs) = rhs else { continue }
+
+        // We've successfully parsed an atom LHS and RHS, so form a range,
+        // collecting the trivia we've parsed, and replacing the members that
+        // would have otherwise been added to the custom character class.
+        let rangeMemberCount = members.count - membersBeforeRange
+        let trivia = members.suffix(rangeMemberCount).compactMap(\.asTrivia)
+        members.removeLast(rangeMemberCount)
+        members.append(.range(.init(lhs, dash, rhs, trivia: trivia)))
       }
-
-      // Quoted sequence.
-      if let quote = try source.lexQuote(context: context) {
-        members.append(.quote(quote))
-        continue
-      }
-
-      // Lex non-semantic whitespace if we're allowed.
-      // TODO: ICU allows end-of-line comments in custom character classes,
-      // which we ought to support if we want to support multi-line regex.
-      if let trivia = try source.lexNonSemanticWhitespace(context: context) {
-        members.append(.trivia(trivia))
-        continue
-      }
-
-      guard let atom = try source.lexAtom(context: context) else { break }
-
-      // Range between atoms.
-      if let (dashLoc, rhs) =
-          try source.lexCustomCharClassRangeEnd(context: context) {
-        members.append(.range(.init(atom, dashLoc, rhs)))
-        continue
-      }
-
-      members.append(.atom(atom))
-      continue
     }
   }
 }

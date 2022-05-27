@@ -37,11 +37,10 @@ struct Executor {
 
     let capList = MECaptureList(
       values: cpu.storedCaptures,
-      referencedCaptureOffsets: engine.program.referencedCaptureOffsets,
-      namedCaptureOffsets: engine.program.namedCaptureOffsets)
+      referencedCaptureOffsets: engine.program.referencedCaptureOffsets)
 
     let range = inputRange.lowerBound..<endIdx
-    let caps = engine.program.captureList.structuralize(capList, input)
+    let caps = engine.program.captureList.createElements(capList, input)
 
     // FIXME: This is a workaround for not tracking (or
     // specially compiling) whole-match values.
@@ -55,14 +54,17 @@ struct Executor {
     } else {
       value = nil
     }
-
-    return .init(
+    
+    let anyRegexOutput = AnyRegexOutput(
       input: input,
+      elements: caps
+    )
+    
+    return .init(
+      anyRegexOutput: anyRegexOutput,
       range: range,
-      rawCaptures: caps,
-      referencedCaptureOffsets: capList.referencedCaptureOffsets,
-      namedCaptureOffsets: capList.namedCaptureOffsets,
-      value: value)
+      value: value
+    )
   }
 
   @available(SwiftStdlib 5.7, *)

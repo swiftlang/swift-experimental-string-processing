@@ -35,7 +35,7 @@ extension Executor {
         in: start..<input.endIndex,
         .partialFromFront
       ) {
-        let caps = result.rawCaptures.slices(from: input)
+        let caps = result.anyRegexOutput.slices(from: input)
         return (input[result.range], caps)
       } else if start == input.endIndex {
         throw MatchError("match not found for \(regex) in \(input)")
@@ -218,6 +218,12 @@ extension RegexTests {
     firstMatchTest(
       #"abc\d"#, input: "xyzabc123", match: "abc1")
 
+    // MARK: Allowed combining characters
+
+    firstMatchTest("e\u{301}", input: "e\u{301}", match: "e\u{301}")
+    firstMatchTest("1\u{358}", input: "1\u{358}", match: "1\u{358}")
+    firstMatchTest(#"\ \#u{361}"#, input: " \u{361}", match: " \u{361}")
+
     // MARK: Alternations
 
     firstMatchTest(
@@ -336,7 +342,11 @@ extension RegexTests {
     firstMatchTest(
       #"a{1,2}"#, input: "123aaaxyz", match: "aa")
     firstMatchTest(
+      #"a{ 1 , 2 }"#, input: "123aaaxyz", match: "aa")
+    firstMatchTest(
       #"a{,2}"#, input: "123aaaxyz", match: "")
+    firstMatchTest(
+      #"a{ , 2 }"#, input: "123aaaxyz", match: "")
     firstMatchTest(
       #"a{,2}x"#, input: "123aaaxyz", match: "aax")
     firstMatchTest(
@@ -345,6 +355,8 @@ extension RegexTests {
       #"a{2,}"#, input: "123aaaxyz", match: "aaa")
     firstMatchTest(
       #"a{1}"#, input: "123aaaxyz", match: "a")
+    firstMatchTest(
+      #"a{ 1 }"#, input: "123aaaxyz", match: "a")
     firstMatchTest(
       #"a{1,2}?"#, input: "123aaaxyz", match: "a")
     firstMatchTest(
@@ -581,6 +593,8 @@ extension RegexTests {
     firstMatchTest("[a-z]", input: "123abcxyz", match: "a")
     firstMatchTest("[a-z]", input: "123ABCxyz", match: "x")
     firstMatchTest("[a-z]", input: "123-abcxyz", match: "a")
+
+    firstMatchTest("(?x)[ a - z ]+", input: " 123-abcxyz", match: "abcxyz")
 
     // Character class subtraction
     firstMatchTest("[a-d--a-c]", input: "123abcdxyz", match: "d")
@@ -1128,7 +1142,6 @@ extension RegexTests {
   }
 
   func testMatchReferences() {
-    // TODO: Implement backreference/subpattern matching.
     firstMatchTest(
       #"(.)\1"#,
       input: "112", match: "11")
@@ -1137,14 +1150,24 @@ extension RegexTests {
       input: "aaaaaaaaabbc", match: "aaaaaaaaabb")
 
     firstMatchTest(
+      #"(.)(.)(.)(.)(.)(.)(.)(.)(.)(?<a1>.)(?P=a1)"#,
+      input: "aaaaaaaaabbc", match: "aaaaaaaaabb")
+
+    firstMatchTest(
       #"(.)\g001"#,
       input: "112", match: "11")
 
-    firstMatchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
-    firstMatchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba", xfail: true)
-    firstMatchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
+    firstMatchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba")
+
+    firstMatchTest(#"(?<a>.)(?<b>.)(?<c>.)\k<c>\k<a>\k<b>"#,
+                   input: "xyzzxy", match: "xyzzxy")
 
     firstMatchTest(#"\1(.)"#, input: "112", match: nil)
+    firstMatchTest(#"\k<a>(?<a>.)"#, input: "112", match: nil)
+
+    // TODO: Implement subpattern matching.
+    firstMatchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
+    firstMatchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
   }
   
   func testMatchExamples() {
@@ -1282,7 +1305,6 @@ extension RegexTests {
     firstMatchTest(#"(?xx)[ \t]+"#, input: " \t \t", match: "\t")
 
     firstMatchTest("(?xx)[ a && ab ]+", input: " aaba ", match: "aa")
-    firstMatchTest("(?xx)[ ] a ]+", input: " a]]a ] ", match: "a]]a")
   }
   
   func testASCIIClasses() {
@@ -1613,5 +1635,15 @@ extension RegexTests {
   
   // TODO: Add test for grapheme boundaries at start/end of match
 
+  func testCase() {
+    let regex = try! Regex(#".\N{SPARKLING HEART}."#)
+    let input = "🧟‍♀️💖🧠 or 🧠💖☕️"
+    let characterMatches = input.matches(of: regex)
+    XCTAssertEqual(characterMatches.map { $0.0 }, ["🧟‍♀️💖🧠", "🧠💖☕️"])
+
+    let scalarMatches = input.matches(of: regex.matchingSemantics(.unicodeScalar))
+    let scalarExpected: [Substring] = ["\u{FE0F}💖🧠", "🧠💖☕"]
+    XCTAssertEqual(scalarMatches.map { $0.0 }, scalarExpected)
+  }
 }
 

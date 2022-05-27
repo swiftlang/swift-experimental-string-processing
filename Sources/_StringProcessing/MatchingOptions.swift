@@ -54,6 +54,13 @@ extension MatchingOptions {
     stack[stack.count - 1].apply(sequence)
     _invariantCheck()
   }
+  
+  // @testable
+  /// Returns true if the options at the top of `stack` are equal to those
+  /// for `other`.
+  func _equal(to other: MatchingOptions) -> Bool {
+    stack.last == other.stack.last
+  }
 }
 
 // MARK: Matching behavior API
@@ -127,6 +134,7 @@ extension MatchingOptions {
   }
 }
 
+// MARK: - Implementation
 extension MatchingOptions {
   /// An option that changes the behavior of a regular expression.
   fileprivate enum Option: Int {
@@ -204,9 +212,6 @@ extension MatchingOptions {
         
       // Whitespace options are only relevant during parsing, not compilation.
       case .extended, .extraExtended:
-        return nil
-      @unknown default:
-        // Ignore unknown 
         return nil
       }
     }

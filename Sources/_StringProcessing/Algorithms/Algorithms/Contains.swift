@@ -12,10 +12,10 @@
 // MARK: `CollectionSearcher` algorithms
 
 extension Collection {
-  func contains<Searcher: CollectionSearcher>(
+  func _contains<Searcher: CollectionSearcher>(
     _ searcher: Searcher
   ) -> Bool where Searcher.Searched == Self {
-    firstRange(of: searcher) != nil
+    _firstRange(of: searcher) != nil
   }
 }
 
@@ -27,6 +27,7 @@ extension Collection where Element: Equatable {
   /// - Parameter other: A sequence to search for within this collection.
   /// - Returns: `true` if the collection contains the specified sequence,
   /// otherwise `false`.
+  @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func contains<C: Collection>(_ other: C) -> Bool
     where C.Element == Element
@@ -36,7 +37,7 @@ extension Collection where Element: Equatable {
 }
 
 extension BidirectionalCollection where Element: Comparable {
-  func contains<C: Collection>(_ other: C) -> Bool
+  func _contains<C: Collection>(_ other: C) -> Bool
     where C.Element == Element
   {
     if #available(SwiftStdlib 5.7, *) {
@@ -49,11 +50,13 @@ extension BidirectionalCollection where Element: Comparable {
 // Overload breakers
 
 extension StringProtocol {
+  @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func contains(_ other: String) -> Bool {
     firstRange(of: other) != nil
   }
   
+  @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func contains(_ other: Substring) -> Bool {
     firstRange(of: other) != nil
@@ -68,8 +71,9 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter regex: A regex to search for within this collection.
   /// - Returns: `true` if the regex was found in the collection, otherwise
   /// `false`.
+  @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func contains<R: RegexComponent>(_ regex: R) -> Bool {
-    contains(RegexConsumer(regex))
+    _contains(RegexConsumer(regex))
   }
 }

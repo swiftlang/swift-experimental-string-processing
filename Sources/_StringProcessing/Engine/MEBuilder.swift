@@ -39,11 +39,12 @@ extension MEProgram where Input.Element: Hashable {
     var failAddressToken: AddressToken? = nil
 
     var captureList = CaptureList()
+    var initialOptions = MatchingOptions()
 
     // Symbolic reference resolution
     var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
     var referencedCaptureOffsets: [ReferenceID: Int] = [:]
-    var namedCaptureOffsets: [String: Int] = [:]
+
     var captureCount: Int {
       // We currently deduce the capture count from the capture register number.
       nextCaptureRegister.rawValue
@@ -76,6 +77,11 @@ extension MEProgram.Builder {
 
   var lastInstructionAddress: InstructionAddress {
     .init(instructions.endIndex - 1)
+  }
+  
+  /// `true` if the builder has received any instructions.
+  var hasReceivedInstructions: Bool {
+    !instructions.isEmpty
   }
 
   mutating func buildNop(_ r: StringRegister? = nil) {
@@ -278,6 +284,13 @@ extension MEProgram.Builder {
     unresolvedReferences[id, default: []].append(lastInstructionAddress)
   }
 
+  mutating func buildNamedReference(_ name: String) throws {
+    guard let index = captureList.indexOfCapture(named: name) else {
+      throw RegexCompilationError.uncapturedReference
+    }
+    buildBackreference(.init(index))
+  }
+
   // TODO: Mutating because of fail address fixup, drop when
   // that's removed
   mutating func assemble() throws -> MEProgram {
@@ -353,7 +366,7 @@ extension MEProgram.Builder {
       registerInfo: regInfo,
       captureList: captureList,
       referencedCaptureOffsets: referencedCaptureOffsets,
-      namedCaptureOffsets: namedCaptureOffsets)
+      initialOptions: initialOptions)
   }
 
   mutating func reset() { self = Self() }
@@ -449,9 +462,10 @@ extension MEProgram.Builder {
       assert(preexistingValue == nil)
     }
     if let name = name {
-      // TODO: Reject duplicate capture names unless `(?J)`?
-      namedCaptureOffsets.updateValue(captureCount, forKey: name)
+      let index = captureList.indexOfCapture(named: name)
+      assert(index == nextCaptureRegister.rawValue)
     }
+    assert(nextCaptureRegister.rawValue < captureList.captures.count)
     return nextCaptureRegister
   }
 

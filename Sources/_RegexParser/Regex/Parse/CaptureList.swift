@@ -42,6 +42,21 @@ extension CaptureList {
   }
 }
 
+extension CaptureList {
+  /// Retrieve the capture index of a given named capture, or `nil` if there is
+  /// no such capture.
+  public func indexOfCapture(named name: String) -> Int? {
+    // Named references are guaranteed to be unique for literal ASTs by Sema.
+    // The DSL tree does not use named references.
+    captures.indices.first(where: { captures[$0].name == name })
+  }
+
+  /// Whether the capture list has a given named capture.
+  public func hasCapture(named name: String) -> Bool {
+    indexOfCapture(named: name) != nil
+  }
+}
+
 // MARK: Generating from AST
 
 extension AST.Node {
@@ -103,7 +118,7 @@ extension AST.Node {
         break
       }
 
-    case .quote, .trivia, .atom, .customCharacterClass, .empty:
+    case .quote, .trivia, .atom, .customCharacterClass, .empty, .interpolation:
       break
     }
   }

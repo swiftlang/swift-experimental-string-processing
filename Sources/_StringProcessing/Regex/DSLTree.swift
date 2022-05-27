@@ -14,11 +14,9 @@
 @_spi(RegexBuilder)
 public struct DSLTree {
   var root: Node
-  var options: Options?
 
-  init(_ r: Node, options: Options?) {
+  init(_ r: Node) {
     self.root = r
-    self.options = options
   }
 }
 
@@ -507,8 +505,6 @@ extension DSLTree.Node {
         child._addCaptures(to: &list, optionalNesting: nesting)
       case .clearer, .repeater, .stopper:
         break
-      @unknown default:
-        fatalError()
       }
 
     case let .convertedRegexLiteral(n, _):
