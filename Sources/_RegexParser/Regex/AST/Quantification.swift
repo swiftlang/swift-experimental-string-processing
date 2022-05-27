@@ -36,7 +36,6 @@ extension AST {
       self.trivia = trivia
     }
 
-    @frozen
     public enum Amount: Hashable {
       case zeroOrMore              // *
       case oneOrMore               // +
@@ -47,7 +46,6 @@ extension AST {
       case range(Located<Int>, Located<Int>) // {n,m}
     }
 
-    @frozen
     public enum Kind: String, Hashable {
       case eager      = ""
       case reluctant  = "?"

@@ -72,20 +72,20 @@ extension RegexValidator {
   }
 
   func validateReference(_ ref: AST.Reference) throws {
+    if let recLevel = ref.recursionLevel {
+      throw error(.unsupported("recursion level"), at: recLevel.location)
+    }
     switch ref.kind {
     case .absolute(let i):
       guard i <= captures.captures.count else {
         throw error(.invalidReference(i), at: ref.innerLoc)
       }
+    case .named(let name):
+      guard captures.hasCapture(named: name) else {
+        throw error(.invalidNamedReference(name), at: ref.innerLoc)
+      }
     case .relative:
       throw error(.unsupported("relative capture reference"), at: ref.innerLoc)
-    case .named:
-      // TODO: This could be implemented by querying the capture list for an
-      // index.
-      throw error(.unsupported("named capture reference"), at: ref.innerLoc)
-    }
-    if let recLevel = ref.recursionLevel {
-      throw error(.unsupported("recursion level"), at: recLevel.location)
     }
   }
 
@@ -127,8 +127,8 @@ extension RegexValidator {
     _ prop: Unicode.BinaryProperty, at loc: SourceLocation
   ) throws {
     switch prop {
-    case .asciiHexDigit, .alphabetic, .bidiMirrored, .cased, .caseIgnorable,
-        .changesWhenCasefolded, .changesWhenCasemapped,
+    case .asciiHexDigit, .alphabetic, .bidiControl, .bidiMirrored, .cased,
+        .caseIgnorable, .changesWhenCasefolded, .changesWhenCasemapped,
         .changesWhenNFKCCasefolded, .changesWhenLowercased,
         .changesWhenTitlecased, .changesWhenUppercased, .dash, .deprecated,
         .defaultIgnorableCodePoint, .diacratic, .extender,
@@ -150,7 +150,7 @@ extension RegexValidator {
     case .expandsOnNFC, .expandsOnNFD, .expandsOnNFKD, .expandsOnNFKC:
       throw error(.deprecatedUnicode(prop.rawValue.quoted), at: loc)
 
-    case .bidiControl, .compositionExclusion, .emojiComponent,
+    case .compositionExclusion, .emojiComponent,
         .extendedPictographic, .graphemeLink, .hyphen, .otherAlphabetic,
         .otherDefaultIgnorableCodePoint, .otherGraphemeExtended,
         .otherIDContinue, .otherIDStart, .otherLowercase, .otherMath,
@@ -169,12 +169,14 @@ extension RegexValidator {
     case .binary(let b, _):
       try validateBinaryProperty(b, at: loc)
     case .any, .assigned, .ascii, .generalCategory, .posix, .named, .script,
-        .scriptExtension:
+        .scriptExtension, .age, .numericType, .numericValue, .mapping, .ccc:
       break
     case .pcreSpecial:
       throw error(.unsupported("PCRE property"), at: loc)
-    case .onigurumaSpecial:
+    case .block:
       throw error(.unsupported("Unicode block property"), at: loc)
+    case .javaSpecial:
+      throw error(.unsupported("Java property"), at: loc)
     }
   }
 
@@ -394,6 +396,11 @@ extension RegexValidator {
     case .absentFunction(let a):
       // These are Oniguruma specific.
       throw error(.unsupported("absent function"), at: a.location)
+
+    case .interpolation(let i):
+      // This is currently rejected in the parser for better diagnostics, but
+      // reject here too until we get runtime support.
+      throw error(.unsupported("interpolation"), at: i.location)
 
     case .quote, .trivia, .empty:
       break

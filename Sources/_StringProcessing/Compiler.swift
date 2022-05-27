@@ -27,8 +27,9 @@ class Compiler {
 
   __consuming func emit() throws -> Program {
     // TODO: Handle global options
-    var codegen = ByteCodeGen(options: options)
-    codegen.builder.captureList = tree.root._captureList
+    var codegen = ByteCodeGen(
+      options: options, captureList: tree.root._captureList
+    )
     try codegen.emitNode(tree.root)
     let program = try codegen.finish()
     return program
@@ -44,11 +45,11 @@ func _compileRegex(
 }
 
 // An error produced when compiling a regular expression.
-public enum RegexCompilationError: Error, CustomStringConvertible {
+enum RegexCompilationError: Error, CustomStringConvertible {
   // TODO: Source location?
   case uncapturedReference
 
-  public var description: String {
+  var description: String {
     switch self {
     case .uncapturedReference:
       return "Found a reference used before it captured any match."

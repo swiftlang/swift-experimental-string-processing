@@ -34,7 +34,7 @@ struct SplitCollection<Searcher: CollectionSearcher> {
     maxSplits: Int,
     omittingEmptySubsequences: Bool)
   {
-    self.ranges = base.ranges(of: searcher)
+    self.ranges = base._ranges(of: searcher)
     self.maxSplits = maxSplits
     self.omittingEmptySubsequences = omittingEmptySubsequences
   }
@@ -183,7 +183,7 @@ struct ReversedSplitCollection<Searcher: BackwardCollectionSearcher> {
   }
 
   init(base: Base, searcher: Searcher) {
-    self.ranges = base.rangesFromBack(of: searcher)
+    self.ranges = base._rangesFromBack(of: searcher)
   }
 }
 
@@ -307,13 +307,17 @@ extension Collection where Element: Equatable {
   /// - Parameter separator: The element to be split upon.
   /// - Returns: A collection of subsequences, split from this collection's
   ///   elements.
+  @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func split<C: Collection>(
     separator: C,
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [SubSequence] where C.Element == Element {
-    Array(split(by: ZSearcher(pattern: Array(separator), by: ==), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences))
+    Array(split(
+      by: ZSearcher(pattern: Array(separator), by: ==),
+      maxSplits: maxSplits,
+      omittingEmptySubsequences: omittingEmptySubsequences))
   }
 }
 
@@ -352,6 +356,45 @@ extension BidirectionalCollection where Element: Comparable {
 //  }
 }
 
+// String split overload breakers
+//
+// These are underscored and marked as SPI so that the *actual* public overloads
+// are only visible in RegexBuilder, to avoid breaking source with the
+// standard library's function of the same name that takes a `Character`
+// as the separator. *Those* overloads are necessary as tie-breakers between
+// the Collection-based and Regex-based `split`s, which in turn are both marked
+// @_disfavoredOverload to avoid the wrong overload being selected when a
+// collection's element type could be used interchangably with a collection of
+// that element (e.g. `Array<OptionSet>.split(separator: [])`).
+
+extension StringProtocol where SubSequence == Substring {
+  @_spi(RegexBuilder)
+  @available(SwiftStdlib 5.7, *)
+  public func _split(
+    separator: String,
+    maxSplits: Int = .max,
+    omittingEmptySubsequences: Bool = true
+  ) -> [Substring] {
+    Array(split(
+      by: ZSearcher(pattern: Array(separator), by: ==),
+      maxSplits: maxSplits,
+      omittingEmptySubsequences: omittingEmptySubsequences))
+  }
+  
+  @_spi(RegexBuilder)
+  @available(SwiftStdlib 5.7, *)
+  public func _split(
+    separator: Substring,
+    maxSplits: Int = .max,
+    omittingEmptySubsequences: Bool = true
+  ) -> [Substring] {
+    Array(split(
+      by: ZSearcher(pattern: Array(separator), by: ==),
+      maxSplits: maxSplits,
+      omittingEmptySubsequences: omittingEmptySubsequences))
+  }
+}
+
 // MARK: Regex algorithms
 
 @available(SwiftStdlib 5.7, *)
@@ -388,6 +431,9 @@ extension BidirectionalCollection where SubSequence == Substring {
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [SubSequence] {
-    Array(split(by: RegexConsumer(separator), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences))
+    Array(split(
+      by: RegexConsumer(separator),
+      maxSplits: maxSplits,
+      omittingEmptySubsequences: omittingEmptySubsequences))
   }
 }

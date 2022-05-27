@@ -149,6 +149,14 @@ extension Source {
     return result
   }
 
+  /// Perform a lookahead using a temporary source. Within the body of the
+  /// lookahead, any modifications to the source will not be reflected outside
+  /// the body.
+  func lookahead<T>(_ body: (inout Source) throws -> T) rethrows -> T {
+    var src = self
+    return try body(&src)
+  }
+
   /// Attempt to eat the given character, returning its source location if
   /// successful, `nil` otherwise.
   mutating func tryEatWithLoc(_ c: Character) -> SourceLocation? {
@@ -413,9 +421,7 @@ extension Source {
   ) throws -> (Located<Quant.Amount>, Located<Quant.Kind>, [AST.Trivia])? {
     var trivia: [AST.Trivia] = []
 
-    if let t = try lexNonSemanticWhitespace(context: context) {
-      trivia.append(t)
-    }
+    if let t = lexNonSemanticWhitespace(context: context) { trivia.append(t) }
 
     let amt: Located<Quant.Amount>? = try recordLoc { src in
       if src.tryEat("*") { return .zeroOrMore }
@@ -424,7 +430,7 @@ extension Source {
 
       return try src.tryEating { src in
         guard src.tryEat("{"),
-              let range = try src.lexRange(context: context),
+              let range = try src.lexRange(context: context, trivia: &trivia),
               src.tryEat("}")
         else { return nil }
         return range.value
@@ -433,9 +439,7 @@ extension Source {
     guard let amt = amt else { return nil }
 
     // PCRE allows non-semantic whitespace here in extended syntax mode.
-    if let t = try lexNonSemanticWhitespace(context: context) {
-      trivia.append(t)
-    }
+    if let t = lexNonSemanticWhitespace(context: context) { trivia.append(t) }
 
     let kind: Located<Quant.Kind> = recordLoc { src in
       if src.tryEat("?") { return .reluctant  }
@@ -452,10 +456,16 @@ extension Source {
   ///                  | ExpRange
   ///     ExpRange    -> '..<' <Int> | '...' <Int>
   ///                  | <Int> '..<' <Int> | <Int> '...' <Int>?
-  mutating func lexRange(context: ParsingContext) throws -> Located<Quant.Amount>? {
+  mutating func lexRange(
+    context: ParsingContext, trivia: inout [AST.Trivia]
+  ) throws -> Located<Quant.Amount>? {
     try recordLoc { src in
       try src.tryEating { src in
+        if let t = src.lexWhitespace() { trivia.append(t) }
+
         let lowerOpt = try src.lexNumber()
+
+        if let t = src.lexWhitespace() { trivia.append(t) }
 
         // ',' or '...' or '..<' or nothing
         // TODO: We ought to try and consume whitespace here and emit a
@@ -476,10 +486,14 @@ extension Source {
           closedRange = nil
         }
 
+        if let t = src.lexWhitespace() { trivia.append(t) }
+
         let upperOpt = try src.lexNumber()?.map { upper in
           // If we have an open range, the upper bound should be adjusted down.
           closedRange == true ? upper : upper - 1
         }
+
+        if let t = src.lexWhitespace() { trivia.append(t) }
 
         switch (lowerOpt, closedRange, upperOpt) {
         case let (l?, nil, nil):
@@ -589,6 +603,26 @@ extension Source {
     return AST.Quote(str.value, str.location)
   }
 
+  /// Try to consume an interpolation sequence.
+  ///
+  ///     Interpolation -> '<{' String '}>'
+  ///
+  mutating func lexInterpolation() throws -> AST.Interpolation? {
+    let contents = try recordLoc { src -> String? in
+      try src.tryEating { src in
+        guard src.tryEat(sequence: "<{") else { return nil }
+        _ = src.lexUntil { $0.isEmpty || $0.starts(with: "}>") }
+        guard src.tryEat(sequence: "}>") else { return nil }
+
+        // Not currently supported. We error here instead of during Sema to
+        // get a better error for something like `(<{)}>`.
+        throw ParseError.unsupported("interpolation")
+      }
+    }
+    guard let contents = contents else { return nil }
+    return .init(contents.value, contents.location)
+  }
+
   /// Try to consume a comment
   ///
   ///     Comment -> '(?#' [^')']* ')'
@@ -605,11 +639,11 @@ extension Source {
   ///
   mutating func lexComment(context: ParsingContext) throws -> AST.Trivia? {
     let trivia: Located<String>? = try recordLoc { src in
-      if src.tryEat(sequence: "(?#") {
-        return try src.expectQuoted(endingWith: ")").value
+      if !context.isInCustomCharacterClass && src.tryEat(sequence: "(?#") {
+        return try src.lexUntil(eating: ")").value
       }
       if context.experimentalComments, src.tryEat(sequence: "/*") {
-        return try src.expectQuoted(endingWith: "*/").value
+        return try src.lexUntil(eating: "*/").value
       }
       if context.endOfLineComments, src.tryEat("#") {
         // Try eat until we either exhaust the input, or hit a newline. Note
@@ -647,7 +681,7 @@ extension Source {
   /// Does nothing unless `SyntaxOptions.nonSemanticWhitespace` is set
   mutating func lexNonSemanticWhitespace(
     context: ParsingContext
-  ) throws -> AST.Trivia? {
+  ) -> AST.Trivia? {
     guard context.ignoreWhitespace else { return nil }
 
     // FIXME: PCRE only treats space and tab characters as whitespace when
@@ -679,7 +713,7 @@ extension Source {
     if let comment = try lexComment(context: context) {
       return comment
     }
-    if let whitespace = try lexNonSemanticWhitespace(context: context) {
+    if let whitespace = lexNonSemanticWhitespace(context: context) {
       return whitespace
     }
     return nil
@@ -1158,8 +1192,7 @@ extension Source {
     }
   }
 
-  mutating func lexCustomCCStart(
-  ) throws -> Located<CustomCC.Start>? {
+  mutating func lexCustomCCStart() -> Located<CustomCC.Start>? {
     recordLoc { src in
       // Make sure we don't have a POSIX character property. This may require
       // walking to its ending to make sure we have a closing ':]', as otherwise
@@ -1220,8 +1253,9 @@ extension Source {
 
   private func canLexPOSIXCharacterProperty() -> Bool {
     do {
-      var src = self
-      return try src.lexPOSIXCharacterProperty() != nil
+      return try lookahead { src in
+        try src.lexPOSIXCharacterProperty() != nil
+      }
     } catch {
       // We want to tend on the side of lexing a POSIX character property, so
       // even if it is invalid in some way (e.g invalid property names), still
@@ -1374,10 +1408,11 @@ extension Source {
 
   /// Checks whether a numbered reference can be lexed.
   private func canLexNumberedReference() -> Bool {
-    var src = self
-    _ = src.tryEat(anyOf: "+", "-")
-    guard let next = src.peek() else { return false }
-    return RadixKind.decimal.characterFilter(next)
+    lookahead { src in
+      _ = src.tryEat(anyOf: "+", "-")
+      guard let next = src.peek() else { return false }
+      return RadixKind.decimal.characterFilter(next)
+    }
   }
 
   /// Eat a named reference up to a given closing delimiter.
@@ -1567,53 +1602,55 @@ extension Source {
 
   /// Whether we can lex a group-like reference after the specifier '(?'.
   private func canLexGroupLikeReference() -> Bool {
-    var src = self
-    if src.tryEat("P") {
-      return src.tryEat(anyOf: "=", ">") != nil
+    lookahead { src in
+      if src.tryEat("P") {
+        return src.tryEat(anyOf: "=", ">") != nil
+      }
+      if src.tryEat(anyOf: "&", "R") != nil {
+        return true
+      }
+      return src.canLexNumberedReference()
     }
-    if src.tryEat(anyOf: "&", "R") != nil {
-      return true
-    }
-    return src.canLexNumberedReference()
   }
 
   private func canLexMatchingOptionsAsAtom(context: ParsingContext) -> Bool {
-    var src = self
-
-    // See if we can lex a matching option sequence that terminates in ')'. Such
-    // a sequence is an atom. If an error is thrown, there are invalid elements
-    // of the matching option sequence. In such a case, we can lex as a group
-    // and diagnose the invalid group kind.
-    guard (try? src.lexMatchingOptionSequence(context: context)) != nil else {
-      return false
+    lookahead { src in
+      // See if we can lex a matching option sequence that terminates in ')'.
+      // Such a sequence is an atom. If an error is thrown, there are invalid
+      // elements of the matching option sequence. In such a case, we can lex as
+      // a group and diagnose the invalid group kind.
+      guard (try? src.lexMatchingOptionSequence(context: context)) != nil else {
+        return false
+      }
+      return src.tryEat(")")
     }
-    return src.tryEat(")")
   }
 
   /// Whether a group specifier should be lexed as an atom instead of a group.
   private func shouldLexGroupLikeAtom(context: ParsingContext) -> Bool {
-    var src = self
-    guard src.tryEat("(") else { return false }
+    lookahead { src in
+      guard src.tryEat("(") else { return false }
 
-    if src.tryEat("?") {
-      // The start of a reference '(?P=', '(?R', ...
-      if src.canLexGroupLikeReference() { return true }
+      if src.tryEat("?") {
+        // The start of a reference '(?P=', '(?R', ...
+        if src.canLexGroupLikeReference() { return true }
 
-      // The start of a PCRE callout.
-      if src.tryEat("C") { return true }
+        // The start of a PCRE callout.
+        if src.tryEat("C") { return true }
 
-      // The start of an Oniguruma 'of-contents' callout.
-      if src.tryEat("{") { return true }
+        // The start of an Oniguruma 'of-contents' callout.
+        if src.tryEat("{") { return true }
 
-      // A matching option atom (?x), (?i), ...
-      if src.canLexMatchingOptionsAsAtom(context: context) { return true }
+        // A matching option atom (?x), (?i), ...
+        if src.canLexMatchingOptionsAsAtom(context: context) { return true }
+
+        return false
+      }
+      // The start of a backreference directive or Oniguruma named callout.
+      if src.tryEat("*") { return true }
 
       return false
     }
-    // The start of a backreference directive or Oniguruma named callout.
-    if src.tryEat("*") { return true }
-
-    return false
   }
 
   /// Consume an escaped atom, starting from after the backslash
@@ -1674,9 +1711,10 @@ extension Source {
         break
       }
 
-      // We only allow unknown escape sequences for non-letter ASCII, and
-      // non-ASCII whitespace.
-      guard (char.isASCII && !char.isLetter) ||
+      // We only allow unknown escape sequences for non-letter non-number ASCII,
+      // and non-ASCII whitespace.
+      // TODO: Once we have fix-its, suggest a `0` prefix for octal `[\7]`.
+      guard (char.isASCII && !char.isLetter && !char.isNumber) ||
               (!char.isASCII && char.isWhitespace)
       else {
         throw ParseError.invalidEscape(char)
@@ -1981,29 +2019,31 @@ extension Source {
 
       case "]":
         assert(!customCC, "parser should have prevented this")
-        fallthrough
+        break
 
-      default: return .char(char)
+      default:
+        // Reject non-letter non-number non-`\r\n` ASCII characters that have
+        // multiple scalars. These may be confusable for metacharacters, e.g
+        // `[\u{301}]` wouldn't be interpreted as a custom character class due
+        // to the combining accent (assuming it is literal, not `\u{...}`).
+        let scalars = char.unicodeScalars
+        if scalars.count > 1 && scalars.first!.isASCII && char != "\r\n" &&
+            !char.isLetter && !char.isNumber {
+          throw ParseError.confusableCharacter(char)
+        }
+        break
       }
+      return .char(char)
     }
     guard let kind = kind else { return nil }
     return AST.Atom(kind.value, kind.location)
   }
 
-  /// Try to lex the end of a range in a custom character class, which consists
-  /// of a '-' character followed by an atom.
-  mutating func lexCustomCharClassRangeEnd(
-    context: ParsingContext
-  ) throws -> (dashLoc: SourceLocation, AST.Atom)? {
-    // Make sure we don't have a binary operator e.g '--', and the '-' is not
-    // ending the custom character class (in which case it is literal).
-    guard peekCCBinOp() == nil, !starts(with: "-]"),
-          let dash = tryEatWithLoc("-"),
-          let end = try lexAtom(context: context)
-    else {
-      return nil
-    }
-    return (dash, end)
+  /// Try to lex the range operator '-' for a custom character class.
+  mutating func lexCustomCharacterClassRangeOperator() -> SourceLocation? {
+    // Eat a '-', making sure we don't have a binary op such as '--'.
+    guard peekCCBinOp() == nil else { return nil }
+    return tryEatWithLoc("-")
   }
 
   /// Try to consume a newline sequence matching option kind.

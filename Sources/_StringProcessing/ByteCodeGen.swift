@@ -5,6 +5,11 @@ extension Compiler {
     var options: MatchingOptions
     var builder = Program.Builder()
 
+    init(options: MatchingOptions, captureList: CaptureList) {
+      self.options = options
+      self.builder.captureList = captureList
+    }
+
     mutating func finish(
     ) throws -> Program {
       builder.buildAccept()
@@ -35,6 +40,9 @@ extension Compiler.ByteCodeGen {
       builder.buildUnresolvedReference(id: id)
 
     case let .changeMatchingOptions(optionSequence):
+      if !builder.hasReceivedInstructions {
+        builder.initialOptions.apply(optionSequence.ast)
+      }
       options.apply(optionSequence.ast)
 
     case let .unconverted(astAtom):
@@ -59,7 +67,9 @@ extension Compiler.ByteCodeGen {
     case .absolute(let i):
       // Backreferences number starting at 1
       builder.buildBackreference(.init(i-1))
-    case .relative, .named:
+    case .named(let name):
+      try builder.buildNamedReference(name)
+    case .relative:
       throw Unsupported("Backreference kind: \(ref)")
     }
   }
@@ -188,7 +198,6 @@ extension Compiler.ByteCodeGen {
   mutating func emitCharacter(_ c: Character) throws {
     // Unicode scalar matches the specific scalars that comprise a character
     if options.semanticLevel == .unicodeScalar {
-      print("emitting '\(c)' as a sequence of \(c.unicodeScalars.count) scalars")
       for scalar in c.unicodeScalars {
         try emitScalar(scalar)
       }
@@ -379,6 +388,9 @@ extension Compiler.ByteCodeGen {
       throw Unreachable("These should produce a capture node")
 
     case .changeMatchingOptions(let optionSequence):
+      if !builder.hasReceivedInstructions {
+        builder.initialOptions.apply(optionSequence)
+      }
       options.apply(optionSequence)
       try emitNode(child)
 

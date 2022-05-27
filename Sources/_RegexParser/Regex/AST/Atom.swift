@@ -19,7 +19,6 @@ extension AST {
       self.location = loc
     }
 
-    @frozen
     public enum Kind: Hashable {
       /// Just a character
       ///
@@ -146,7 +145,6 @@ extension AST.Atom {
 
   // Characters, character types, literals, etc., derived from
   // an escape sequence.
-  @frozen
   public enum EscapedBuiltin: Hashable {
     // TODO: better doc comments
 
@@ -399,7 +397,6 @@ extension AST.Atom {
 }
 
 extension AST.Atom.CharacterProperty {
-  @frozen
   public enum Kind: Hashable {
     /// Matches any character, equivalent to Oniguruma's '\O'.
     case any
@@ -430,15 +427,39 @@ extension AST.Atom.CharacterProperty {
     /// Character name in the form `\p{name=...}`
     case named(String)
     
+    /// Numeric type.
+    case numericType(Unicode.NumericType)
+    
+    /// Numeric value.
+    case numericValue(Double)
+    
+    /// Case mapping.
+    case mapping(MapKind, String)
+    
+    /// Canonical Combining Class.
+    case ccc(Unicode.CanonicalCombiningClass)
+    
+    /// Character age, as per UnicodeScalar.Properties.age.
+    case age(major: Int, minor: Int)
+
+    /// A block property.
+    case block(Unicode.Block)
+
     case posix(Unicode.POSIXProperty)
 
     /// Some special properties implemented by PCRE and Oniguruma.
     case pcreSpecial(PCRESpecialCategory)
-    case onigurumaSpecial(OnigurumaSpecialProperty)
+
+    /// Some special properties implemented by Java.
+    case javaSpecial(JavaSpecial)
+
+    public enum MapKind: Hashable {
+      case lowercase
+      case uppercase
+      case titlecase
+    }
   }
 
-  // TODO: erm, separate out or fold into something? splat it in?
-  @frozen
   public enum PCRESpecialCategory: String, Hashable {
     case alphanumeric     = "Xan"
     case posixSpace       = "Xps"
@@ -446,11 +467,33 @@ extension AST.Atom.CharacterProperty {
     case universallyNamed = "Xuc"
     case perlWord         = "Xwd"
   }
+
+  /// Special Java properties that correspond to methods on
+  /// `java.lang.Character`, with the `java` prefix replaced by `is`.
+  public enum JavaSpecial: String, Hashable, CaseIterable {
+    case alphabetic             = "javaAlphabetic"
+    case defined                = "javaDefined"
+    case digit                  = "javaDigit"
+    case identifierIgnorable    = "javaIdentifierIgnorable"
+    case ideographic            = "javaIdeographic"
+    case isoControl             = "javaISOControl"
+    case javaIdentifierPart     = "javaJavaIdentifierPart" // not a typo, that's actually the name
+    case javaIdentifierStart    = "javaJavaIdentifierStart" // not a typo, that's actually the name
+    case javaLetter             = "javaLetter"
+    case javaLetterOrDigit      = "javaLetterOrDigit"
+    case lowerCase              = "javaLowerCase"
+    case mirrored               = "javaMirrored"
+    case spaceChar              = "javaSpaceChar"
+    case titleCase              = "javaTitleCase"
+    case unicodeIdentifierPart  = "javaUnicodeIdentifierPart"
+    case unicodeIdentifierStart = "javaUnicodeIdentifierStart"
+    case upperCase              = "javaUpperCase"
+    case whitespace             = "javaWhitespace"
+  }
 }
 
 extension AST.Atom {
   /// Anchors and other built-in zero-width assertions.
-  @frozen
   public enum AssertionKind: String {
     /// \A
     case startOfSubject = #"\A"#
@@ -824,7 +867,7 @@ extension AST.Node {
     case .alternation, .concatenation, .group,
         .conditional, .quantification, .quote,
         .trivia, .customCharacterClass, .empty,
-        .absentFunction:
+        .absentFunction, .interpolation:
       return nil
     }
   }

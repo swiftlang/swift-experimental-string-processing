@@ -62,7 +62,7 @@ fileprivate func expectFirstMatch<Output: Equatable>(
 }
 
 #if os(Linux)
-func XCTExpectFailure(_ message: String? = nil, body: () -> Void) {}
+func XCTExpectFailure(_ message: String? = nil, body: () throws -> Void) rethrows {}
 #endif
 
 // MARK: - Basic Unicode Support: Level 1
@@ -78,6 +78,9 @@ extension UTS18Tests {
   func testHexNotation() {
     expectFirstMatch("ab", regex(#"\u{61}\u{62}"#), "ab")
     expectFirstMatch("𝄞", regex(#"\u{1D11E}"#), "𝄞")
+    expectFirstMatch("\n", regex(#"\u{0A}"#), "\n")
+    expectFirstMatch("\r", regex(#"\u{0D}"#), "\r")
+    expectFirstMatch("\r\n", regex(#"\u{0D}\u{0A}"#), "\r\n")
   }
   
   // 1.1.1 Hex Notation and Normalization
@@ -148,12 +151,8 @@ extension UTS18Tests {
   }
   
   func testProperties_XFail() {
-    XCTExpectFailure("Need to support 'age' and 'block' properties") {
-      // XCTAssertFalse("z".contains(#/\p{age=3.1}/#))
-      XCTFail(#"\(#/\p{age=3.1}/#)"#)
-      // XCTAssertTrue("\u{1F00}".contains(#/\p{Block=Greek}/#))
-      XCTFail(#"\(#/\p{Block=Greek}/#)"#)
-    }
+    // Certain properties are unsupported, see below.
+    XCTAssertThrowsError(try Regex(#"\p{Block=Greek}"#))
   }
   
   // RL1.2a	Compatibility Properties
@@ -171,11 +170,16 @@ extension UTS18Tests {
     expectFirstMatch(input, regex(#"[[:xdigit:]]+"#), input[pos: ..<6])
     expectFirstMatch(input, regex(#"[[:alnum:]]+"#), input[pos: ..<11])
     expectFirstMatch(input, regex(#"[[:space:]]+"#), input[pos: 12..<13])
-    // TODO: blank
-    // TODO: cntrl
     expectFirstMatch(input, regex(#"[[:graph:]]+"#), input[pos: ..<11])
     expectFirstMatch(input, regex(#"[[:print:]]+"#), input[...])
     expectFirstMatch(input, regex(#"[[:word:]]+"#), input[pos: ..<11])
+
+    let blankAndControl = """
+     \t\u{01}\u{19}
+    """
+    // \t - tab is in both [:blank:] and [:cntrl:]
+    expectFirstMatch(blankAndControl, regex(#"[[:blank:]]+"#), blankAndControl[pos: ..<2])
+    expectFirstMatch(blankAndControl, regex(#"[[:cntrl:]]+"#), blankAndControl[pos: 1...])
   }
   
   //RL1.3 Subtraction and Intersection
@@ -196,7 +200,7 @@ extension UTS18Tests {
     
     // Non-ASCII lowercase + non-lowercase ASCII
     expectFirstMatch(input, regex(#"[\p{lowercase}~~\p{ascii}]+"#), input[pos: ..<3])
-    XCTAssertTrue("123%&^ABC".contains(regex(#"^[\p{lowercase}~~\p{ascii}]+$"#)))
+    XCTAssertTrue("123%&^ABCDéîøü".contains(regex(#"^[\p{lowercase}~~\p{ascii}]+$"#)))
   }
   
   func testSubtractionAndIntersectionPrecedence() {
@@ -380,12 +384,15 @@ extension UTS18Tests {
     XCTAssertTrue("abcdef🇬🇭".contains(regex(#"abcdef\X$"#)))
     XCTAssertTrue("abcdef🇬🇭".contains(regex(#"abcdef\X$"#).matchingSemantics(.unicodeScalar)))
     XCTAssertTrue("abcdef🇬🇭".contains(regex(#"abcdef.+\y"#).matchingSemantics(.unicodeScalar)))
+    XCTAssertFalse("abcdef🇬🇭".contains(regex(#"abcdef.$"#).matchingSemantics(.unicodeScalar)))
   }
   
   func testCharacterClassesWithStrings() {
     let regex = regex(#"[a-z🧐🇧🇪🇧🇫🇧🇬]"#)
     XCTAssertTrue("🧐".contains(regex))
     XCTAssertTrue("🇧🇫".contains(regex))
+    XCTAssertTrue("🧐".contains(regex.matchingSemantics(.unicodeScalar)))
+    XCTAssertTrue("🇧🇫".contains(regex.matchingSemantics(.unicodeScalar)))
   }
   
   // RL2.3 Default Word Boundaries
@@ -468,7 +475,7 @@ extension UTS18Tests {
       // XCTAssertTrue("^\u{3B1}\u{3B2}$".contains(#/[\N{GREEK SMALL LETTER ALPHA}-\N{GREEK SMALL LETTER BETA}]+/#))
     }
     
-    XCTExpectFailure("Other named char failures -- investigate") {
+    XCTExpectFailure("Other named char failures -- name aliases") {
       XCTAssertTrue("\u{C}".contains(regex(#"\N{FORM FEED}"#)))
       XCTAssertTrue("\u{FEFF}".contains(regex(#"\N{BYTE ORDER MARK}"#)))
       XCTAssertTrue("\u{FEFF}".contains(regex(#"\N{BOM}"#)))
@@ -486,7 +493,8 @@ extension UTS18Tests {
   // To meet this requirement, an implementation shall support wildcards in
   // Unicode property values.
   func testWildcardsInPropertyValues() {
-    XCTExpectFailure { XCTFail("Implement tests") }
+    // Unsupported
+    XCTAssertThrowsError(try Regex(#"\p{name=/a/"#))
   }
   
   // RL2.7 Full Properties
@@ -498,121 +506,462 @@ extension UTS18Tests {
   func testFullProperties() {
     // MARK: General
     // Name (Name_Alias)
+    XCTAssertTrue("a".contains(regex(#"\p{name=latin small letter a}"#)))
+
     // Block
+    // Unsupported
+
     // Age
+    XCTAssertTrue("a".contains(regex(#"\p{age=1.1}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{age=V1_1}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{age=14.0}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{age=V99_99}"#)))
+    
+    XCTAssertTrue("🥱".contains(regex(#"\p{age=12.0}"#)))
+    XCTAssertFalse("🥱".contains(regex(#"\p{age=11.0}"#)))
+
+    XCTAssertTrue("⌁".contains(regex(#"\p{age=3.0}"#)))
+    XCTAssertFalse("⌁".contains(regex(#"\p{age=2.0}"#)))
+    XCTAssertTrue("⌁".contains(regex(#"[\p{age=3.0}--\p{age=2.0}]"#)))
+
     // General_Category
+    XCTAssertTrue("a".contains(regex(#"\p{Ll}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{gc=Ll}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{gc=Ll}"#)))
+    XCTAssertFalse("A".contains(regex(#"\p{gc=Ll}"#)))
+    XCTAssertTrue("A".contains(regex(#"\p{gc=L}"#)))
+
+    XCTAssertTrue("a".contains(regex(#"\p{Any}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{Assigned}"#)))
+    XCTAssertTrue("a".contains(regex(#"\p{ASCII}"#)))
+
     // Script (Script_Extensions)
+    XCTAssertTrue("a".contains(regex(#"\p{script=latin}"#)))
+    XCTAssertTrue("강".contains(regex(#"\p{script=hangul}"#)))
+    
     // White_Space
+    XCTAssertTrue(" ".contains(regex(#"\p{whitespace}"#)))
+    XCTAssertTrue("\n".contains(regex(#"\p{White_Space}"#)))
+    XCTAssertFalse("a".contains(regex(#"\p{whitespace}"#)))
+
     // Alphabetic
+    XCTAssertTrue("aéîøüƒ".contains(regex(#"^\p{Alphabetic}+$"#)))
+
     // Hangul_Syllable_Type
+    // Unsupported
+
     // Noncharacter_Code_Point
+    XCTAssertTrue("\u{10FFFF}".contains(regex(#"\p{Noncharacter_Code_Point}"#)))
+    
     // Default_Ignorable_Code_Point
+    XCTAssertTrue("\u{00AD}".contains(regex(#"\p{Default_Ignorable_Code_Point}"#)))
+
     // Deprecated
+    XCTAssertTrue("ŉ".contains(regex(#"\p{Deprecated}"#)))
     // Logical_Order_Exception
+    XCTAssertTrue("ແ".contains(regex(#"\p{Logical_Order_Exception}"#)))
     // Variation_Selector
+    XCTAssertTrue("\u{FE07}".contains(regex(#"\p{Variation_Selector}"#)))
 
     // MARK: Numeric
     // Numeric_Value
+    XCTAssertTrue("3".contains(regex(#"\p{Numeric_Value=3}"#)))
+    XCTAssertFalse("4".contains(regex(#"\p{Numeric_Value=3}"#)))
+    XCTAssertTrue("④".contains(regex(#"\p{Numeric_Value=4}"#)))
+    XCTAssertTrue("⅕".contains(regex(#"\p{Numeric_Value=0.2}"#)))
+
     // Numeric_Type
+    XCTAssertTrue("3".contains(regex(#"\p{Numeric_Type=Decimal}"#)))
+    XCTAssertFalse("4".contains(regex(#"\p{Numeric_Type=Digit}"#)))
+
     // Hex_Digit
+    XCTAssertTrue("0123456789abcdef０１２３４５６７８９ＡＢＣＤＥＦ"
+      .contains(regex(#"^\p{Hex_Digit}+$"#)))
+    XCTAssertFalse("0123456789abcdefg".contains(regex(#"^\p{Hex_Digit}+$"#)))
     // ASCII_Hex_Digit
+    XCTAssertTrue("0123456789abcdef".contains(regex(#"^\p{ASCII_Hex_Digit}+$"#)))
+    XCTAssertFalse("0123456789abcdef０１２３４５６７８９ＡＢＣＤＥＦ"
+      .contains(regex(#"^\p{ASCII_Hex_Digit}+$"#)))
 
     // MARK: Identifiers
-    // ID_Continue
     // ID_Start
-    // XID_Continue
+    XCTAssertTrue("ABcd".contains(regex(#"^\p{ID_Start}+$"#)))
+    XCTAssertFalse(" ':`-".contains(regex(#"\p{ID_Start}"#)))
+
+    // ID_Continue
+    XCTAssertTrue("ABcd_1234".contains(regex(#"^\p{ID_Continue}+$"#)))
+    XCTAssertFalse(" ':`-".contains(regex(#"\p{ID_Continue}"#)))
+    
     // XID_Start
+    XCTAssertTrue("ABcd".contains(regex(#"^\p{XID_Start}+$"#)))
+    XCTAssertFalse(" ':`-".contains(regex(#"\p{XID_Start}"#)))
+
+    // XID_Continue
+    XCTAssertTrue("ABcd_1234".contains(regex(#"^\p{XID_Continue}+$"#)))
+    XCTAssertFalse(" ':`-".contains(regex(#"\p{XID_Continue}"#)))
+    
     // Pattern_Syntax
+    XCTAssertTrue(".+-:".contains(regex(#"^\p{Pattern_Syntax}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Pattern_Syntax}"#)))
+    
     // Pattern_White_Space
+    XCTAssertTrue(" \t\n".contains(regex(#"^\p{Pattern_White_Space}+$"#)))
+    XCTAssertFalse("abc123".contains(regex(#"\p{Pattern_White_Space}"#)))
+    
     // Identifier_Status
+    // Unsupported
+
     // Identifier_Type
+    // Unsupported
 
     // MARK: CJK
     // Ideographic
+    XCTAssertTrue("微笑".contains(regex(#"^\p{IsIdeographic}+$"#)))
+    XCTAssertFalse("abc123".contains(regex(#"\p{Ideographic}"#)))
+    
     // Unified_Ideograph
+    XCTAssertTrue("微笑".contains(regex(#"^\p{Unified_Ideograph}+$"#)))
+    XCTAssertFalse("abc123".contains(regex(#"\p{Unified_Ideograph}"#)))
+    
     // Radical
+    XCTAssertTrue("⺁⺂⺆".contains(regex(#"^\p{Radical}+$"#)))
+    
     // IDS_Binary_Operator
+    XCTAssertTrue("⿰⿸⿻".contains(regex(#"^\p{IDS_Binary_Operator}+$"#)))
+    
     // IDS_Trinary_Operator
+    XCTAssertTrue("⿲⿳".contains(regex(#"^\p{IDS_Trinary_Operator}+$"#)))
+
     // Equivalent_Unified_Ideograph
-    XCTExpectFailure {
-      XCTFail(#"Unsupported: \(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#)"#)
-      // XCTAssertTrue("⼚⺁厂".contains(#/^\p{Equivalent_Unified_Ideograph=⼚}+$/#))
-    }
+    // Unsupported
 
     // MARK: Case
     // Uppercase
+    XCTAssertTrue("AÉÎØÜ".contains(regex(#"^\p{isUppercase}+$"#)))
+    XCTAssertFalse("123abc".contains(regex(#"^\p{isUppercase}+$"#)))
+
     // Lowercase
+    XCTAssertTrue("aéîøü".contains(regex(#"^\p{Lowercase}+$"#)))
+    XCTAssertFalse("123ABC".contains(regex(#"\p{Lowercase}+$"#)))
+
     // Simple_Lowercase_Mapping
+    XCTAssertTrue("aAa".contains(regex(#"^\p{Simple_Lowercase_Mapping=a}+$"#)))
+    XCTAssertFalse("bBå".contains(regex(#"\p{Simple_Lowercase_Mapping=a}"#)))
+
     // Simple_Titlecase_Mapping
+    XCTAssertTrue("aAa".contains(regex(#"^\p{Simple_Titlecase_Mapping=A}+$"#)))
+    XCTAssertFalse("bBå".contains(regex(#"\p{Simple_Titlecase_Mapping=A}"#)))
+
     // Simple_Uppercase_Mapping
+    XCTAssertTrue("aAa".contains(regex(#"^\p{Simple_Uppercase_Mapping=A}+$"#)))
+    XCTAssertFalse("bBå".contains(regex(#"\p{Simple_Uppercase_Mapping=A}"#)))
+
     // Simple_Case_Folding
+    // Unsupported
+
     // Soft_Dotted
+    XCTAssertTrue("ijɨʝⅈⅉ".contains(regex(#"^\p{Soft_Dotted}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Soft_Dotted}"#)))
+
     // Cased
+    XCTAssertTrue("A".contains(regex(#"\p{Cased}"#)))
+    XCTAssertTrue("A".contains(regex(#"\p{Is_Cased}"#)))
+    XCTAssertFalse("0".contains(regex(#"\p{Cased}"#)))
+
     // Case_Ignorable
+    XCTAssertTrue(":".contains(regex(#"\p{Case_Ignorable}"#)))
+    XCTAssertFalse("a".contains(regex(#"\p{Case_Ignorable}"#)))
+
     // Changes_When_Lowercased
+    XCTAssertTrue("A".contains(regex(#"\p{Changes_When_Lowercased}"#)))
+    XCTAssertTrue("A".contains(regex(#"\p{Changes_When_Lowercased=true}"#)))
+    XCTAssertFalse("a".contains(regex(#"\p{Changes_When_Lowercased}"#)))
+
     // Changes_When_Uppercased
     XCTAssertTrue("a".contains(regex(#"\p{Changes_When_Uppercased}"#)))
     XCTAssertTrue("a".contains(regex(#"\p{Changes_When_Uppercased=true}"#)))
     XCTAssertFalse("A".contains(regex(#"\p{Changes_When_Uppercased}"#)))
+    
     // Changes_When_Titlecased
-    // Changes_When_Casefolded
-    // Changes_When_Casemapped
+    XCTAssertTrue("a".contains(regex(#"\p{Changes_When_Titlecased=true}"#)))
+    XCTAssertFalse("A".contains(regex(#"\p{Changes_When_Titlecased}"#)))
 
+    // Changes_When_Casefolded
+    XCTAssertTrue("A".contains(regex(#"\p{Changes_When_Casefolded=true}"#)))
+    XCTAssertFalse("a".contains(regex(#"\p{Changes_When_Casefolded}"#)))
+    XCTAssertFalse(":".contains(regex(#"\p{Changes_When_Casefolded}"#)))
+
+    // Changes_When_Casemapped
+    XCTAssertTrue("a".contains(regex(#"\p{Changes_When_Casemapped}"#)))
+    XCTAssertFalse(":".contains(regex(#"\p{Changes_When_Casemapped}"#)))
+    
     // MARK: Normalization
     // Canonical_Combining_Class
+    XCTAssertTrue("\u{0321}\u{0322}\u{1DD0}".contains(regex(#"^\p{Canonical_Combining_Class=202}+$"#)))
+    XCTAssertFalse("123".contains(regex(#"\p{Canonical_Combining_Class=202}"#)))
+    
     // Decomposition_Type
+    // Unsupported
+    
     // NFC_Quick_Check
+    // Unsupported
+    
     // NFKC_Quick_Check
+    // Unsupported
+    
     // NFD_Quick_Check
+    // Unsupported
+
     // NFKD_Quick_Check
+    // Unsupported
+
     // NFKC_Casefold
+    // Unsupported
+
     // Changes_When_NFKC_Casefolded
+    XCTAssertTrue("ABCÊÖ".contains(regex(#"^\p{Changes_When_NFKC_Casefolded}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Changes_When_NFKC_Casefolded}"#)))
 
     // MARK: Emoji
     // Emoji
+    XCTAssertTrue("🥰🥳🤩".contains(regex(#"^\p{Emoji}+$"#)))
+    XCTAssertFalse("abc ◎✩℥".contains(regex(#"\p{Emoji}"#)))
+
     // Emoji_Presentation
+    XCTAssertTrue("⌚☕☔".contains(regex(#"^\p{Emoji_Presentation}+$"#)))
+    XCTAssertFalse("abc ǽǮ".contains(regex(#"\p{Emoji_Presentation}"#)))
+
     // Emoji_Modifier
+    XCTAssertTrue("\u{1F3FB}\u{1F3FC}\u{1F3FD}".contains(regex(#"^\p{Emoji_Modifier}+$"#)))
+    XCTAssertFalse("🧒".contains(regex(#"\p{Emoji_Modifier}"#)))
+
     // Emoji_Modifier_Base
+    XCTAssertTrue("🧒".contains(regex(#"^\p{Emoji_Modifier_Base}+$"#)))
+    XCTAssertFalse("123 🧠".contains(regex(#"\p{Emoji_Modifier_Base}"#)))
+
     // Emoji_Component
+    // Unsupported
+
     // Extended_Pictographic
+    // Unsupported
+
     // Basic_Emoji*
+    // Unsupported
+
     // Emoji_Keycap_Sequence*
+    // Unsupported
+
     // RGI_Emoji_Modifier_Sequence*
+    // Unsupported
+
     // RGI_Emoji_Flag_Sequence*
+    // Unsupported
+
     // RGI_Emoji_Tag_Sequence*
+    // Unsupported
+
     // RGI_Emoji_ZWJ_Sequence*
+    // Unsupported
+
     // RGI_Emoji*
+    // Unsupported
 
     // MARK: Shaping and Rendering
     // Join_Control
+    XCTAssertTrue("\u{200C}\u{200D}".contains(regex(#"^\p{Join_Control}+$"#)))
+    XCTAssertFalse("123".contains(regex(#"\p{Join_Control}"#)))
+
     // Joining_Group
+    // Unsupported
+
     // Joining_Type
+    // Unsupported
+
     // Vertical_Orientation
+    // Unsupported
+
     // Line_Break
+    // Unsupported
+
     // Grapheme_Cluster_Break
+    // Unsupported
+
     // Sentence_Break
+    // Unsupported
+
     // Word_Break
+    // Unsupported
+
     // East_Asian_Width
+    // Unsupported
+
     // Prepended_Concatenation_Mark
+    // Unsupported
 
     // MARK: Bidirectional
     // Bidi_Class
+    // Unsupported
+
     // Bidi_Control
+    XCTAssertTrue("\u{200E}\u{200F}\u{2069}".contains(regex(#"^\p{Bidi_Control}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Bidi_Control}"#)))
+
     // Bidi_Mirrored
+    XCTAssertTrue("()<>{}❮❯«»".contains(regex(#"^\p{Bidi_Mirrored}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Bidi_Mirrored}"#)))
+
     // Bidi_Mirroring_Glyph
+    // Unsupported
+
     // Bidi_Paired_Bracket
+    // Unsupported
+
     // Bidi_Paired_Bracket_Type
+    // Unsupported
 
     // MARK: Miscellaneous
     // Math
+    XCTAssertTrue("𝒶𝖇𝕔𝖽𝗲𝘧𝙜𝚑𝛊𝜅𝝀𝝡𝞰𝟙𝟐𝟯𝟺".contains(regex(#"^\p{Math}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Math}"#)))
+
     // Quotation_Mark
+    XCTAssertTrue(#"“«‘"’»”"#.contains(regex(#"^\p{Quotation_Mark}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Quotation_Mark}"#)))
+
     // Dash
+    XCTAssertTrue("—-–".contains(regex(#"^\p{Dash}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Dash}"#)))
+
     // Sentence_Terminal
+    XCTAssertTrue(".!?".contains(regex(#"^\p{Sentence_Terminal}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Sentence_Terminal}"#)))
+
     // Terminal_Punctuation
+    XCTAssertTrue(":?!.".contains(regex(#"^\p{Terminal_Punctuation}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Terminal_Punctuation}"#)))
+
     // Diacritic
+    XCTAssertTrue("¨`^¯ʸ".contains(regex(#"^\p{Diacritic}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Diacritic}"#)))
+
     // Extender
+    XCTAssertTrue("ᪧː々".contains(regex(#"^\p{Extender}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Extender}"#)))
+
     // Grapheme_Base
+    XCTAssertTrue("abc".contains(regex(#"^\p{Grapheme_Base}+$"#)))
+    XCTAssertFalse("\u{301}\u{FE0F}".contains(regex(#"\p{Grapheme_Base}"#)))
+
     // Grapheme_Extend
+    XCTAssertTrue("\u{301}\u{302}\u{303}".contains(regex(#"^\p{Grapheme_Extend}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Grapheme_Extend}"#)))
+
     // Regional_Indicator
+    XCTAssertTrue("🇰🇷🇬🇭🇵🇪".contains(regex(#"^\p{Regional_Indicator}+$"#)))
+    XCTAssertFalse("abc 123".contains(regex(#"\p{Regional_Indicator}"#)))
+  }
+
+  func testFullProperties_Unsupported() {
+    // Block
+    XCTAssertThrowsError(try Regex(#"\p{block=Block_Elements}"#))
+
+    // Hangul_Syllable_Type
+    XCTAssertThrowsError(try Regex(#"\p{Hangul_Syllable_Type=L}/"#))
+
+    // Identifier_Status
+    XCTAssertThrowsError(try Regex(#"\p{Identifier_Status=Allowed}"#))
+    
+    // Identifier_Type
+    XCTAssertThrowsError(try Regex(#"\p{Identifier_Type=Inclusion}/"#))
+
+    // Equivalent_Unified_Ideograph
+    XCTAssertThrowsError(try Regex(#"\p{Equivalent_Unified_Ideograph=⼚}"#))
+
+    // Simple_Case_Folding
+    XCTAssertThrowsError(try Regex(#"\p{Simple_Case_Folding=a}/"#))
+    
+    // Decomposition_Type
+    XCTAssertThrowsError(try Regex(#"\p{Decomposition_Type}"#))
+    
+    // NFC_Quick_Check
+    XCTAssertThrowsError(try Regex(#"\p{NFC_Quick_Check}"#))
+    
+    // NFKC_Quick_Check
+    XCTAssertThrowsError(try Regex(#"\p{NFKC_Quick_Check}"#))
+    
+    // NFD_Quick_Check
+    XCTAssertThrowsError(try Regex(#"\p{NFD_Quick_Check}"#))
+    
+    // NFKD_Quick_Check
+    XCTAssertThrowsError(try Regex(#"\p{NFKD_Quick_Check}"#))
+    
+    // NFKC_Casefold
+    XCTAssertThrowsError(try Regex(#"\p{NFKC_Casefold}"#))
+
+    // Emoji_Component
+    XCTAssertThrowsError(try Regex(#"\p{Emoji_Component}"#))
+
+    // Extended_Pictographic
+    XCTAssertThrowsError(try Regex(#"\p{Extended_Pictographic}"#))
+
+    // Basic_Emoji*
+    XCTAssertThrowsError(try Regex(#"\p{Basic_Emoji*}"#))
+
+    // Emoji_Keycap_Sequence*
+    XCTAssertThrowsError(try Regex(#"\p{Emoji_Keycap_Sequence*}"#))
+
+    // RGI_Emoji_Modifier_Sequence*
+    XCTAssertThrowsError(try Regex(#"\p{RGI_Emoji_Modifier_Sequence*}"#))
+
+    // RGI_Emoji_Flag_Sequence*
+    XCTAssertThrowsError(try Regex(#"\p{RGI_Emoji_Flag_Sequence*}"#))
+
+    // RGI_Emoji_Tag_Sequence*
+    XCTAssertThrowsError(try Regex(#"\p{RGI_Emoji_Tag_Sequence*}"#))
+
+    // RGI_Emoji_ZWJ_Sequence*
+    XCTAssertThrowsError(try Regex(#"\p{RGI_Emoji_ZWJ_Sequence*}"#))
+
+    // RGI_Emoji*
+    XCTAssertThrowsError(try Regex(#"\p{RGI_Emoji*}"#))
+
+    // Joining_Group
+    XCTAssertThrowsError(try Regex(#"\p{Joining_Group}"#))
+
+    // Joining_Type
+    XCTAssertThrowsError(try Regex(#"\p{Joining_Type}"#))
+
+    // Vertical_Orientation
+    XCTAssertThrowsError(try Regex(#"\p{Vertical_Orientation}"#))
+
+    // Line_Break
+    XCTAssertThrowsError(try Regex(#"\p{Line_Break}"#))
+
+    // Grapheme_Cluster_Break
+    XCTAssertThrowsError(try Regex(#"\p{Grapheme_Cluster_Break}"#))
+
+    // Sentence_Break
+    XCTAssertThrowsError(try Regex(#"\p{Sentence_Break}"#))
+
+    // Word_Break
+    XCTAssertThrowsError(try Regex(#"\p{Word_Break}"#))
+
+    // East_Asian_Width
+    XCTAssertThrowsError(try Regex(#"\p{East_Asian_Width}"#))
+
+    // Prepended_Concatenation_Mark
+    XCTAssertThrowsError(try Regex(#"\p{Prepended_Concatenation_Mark}"#))
+
+    // Bidi_Class
+    XCTAssertThrowsError(try Regex(#"\p{Bidi_Class}"#))
+
+    // Bidi_Mirroring_Glyph
+    XCTAssertThrowsError(try Regex(#"\p{Bidi_Mirroring_Glyph}"#))
+
+    // Bidi_Paired_Bracket
+    XCTAssertThrowsError(try Regex(#"\p{Bidi_Paired_Bracket}"#))
+
+    // Bidi_Paired_Bracket_Type
+    XCTAssertThrowsError(try Regex(#"\p{Bidi_Paired_Bracket_Type}"#))
   }
 }

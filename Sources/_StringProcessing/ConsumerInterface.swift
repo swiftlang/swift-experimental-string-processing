@@ -145,10 +145,7 @@ extension String {
 }
 
 func consumeName(_ name: String, opts: MatchingOptions) -> MEProgram<String>.ConsumeFunction {
-  let consume = opts.semanticLevel == .graphemeCluster
-    ? consumeCharacterWithSingleScalar
-    : consumeScalar
-  
+  let consume = consumeFunction(for: opts)
   return consume(propertyScalarPredicate {
     // FIXME: name aliases not covered by $0.nameAlias are missed
     // e.g. U+FEFF has both 'BYTE ORDER MARK' and 'BOM' as aliases
@@ -326,7 +323,7 @@ extension DSLTree.CustomCharacterClass.Member {
     case .quotedLiteral(let s):
       if opts.isCaseInsensitive {
         return { input, bounds in
-          guard s.lowercased().contains(input[bounds.lowerBound].lowercased()) else {
+          guard s.lowercased()._contains(input[bounds.lowerBound].lowercased()) else {
             return nil
           }
           return input.index(after: bounds.lowerBound)
@@ -491,14 +488,41 @@ extension AST.Atom.CharacterProperty {
       case .named(let n):
         return consumeName(n, opts: opts)
 
+      case .age(let major, let minor):
+        return consume {
+          guard let age = $0.properties.age else { return false }
+          return age <= (major, minor)
+        }
+        
+      case .numericValue(let value):
+        return consume { $0.properties.numericValue == value }
+        
+      case .numericType(let type):
+        return consume { $0.properties.numericType == type }
+        
+      case .ccc(let ccc):
+        return consume { $0.properties.canonicalCombiningClass == ccc }
+        
+      case .mapping(.lowercase, let value):
+        return consume { $0.properties.lowercaseMapping == value }
+
+      case .mapping(.uppercase, let value):
+        return consume { $0.properties.uppercaseMapping == value }
+
+      case .mapping(.titlecase, let value):
+        return consume { $0.properties.titlecaseMapping == value }
+
+      case .block(let b):
+        throw Unsupported("TODO: map block: \(b)")
+
       case .posix(let p):
         return p.generateConsumer(opts)
 
       case .pcreSpecial(let s):
         throw Unsupported("TODO: map PCRE special: \(s)")
 
-      case .onigurumaSpecial(let s):
-        throw Unsupported("TODO: map Oniguruma special: \(s)")
+      case .javaSpecial(let s):
+        throw Unsupported("TODO: map Java special: \(s)")
       }
     }()
 
@@ -525,7 +549,7 @@ extension Unicode.BinaryProperty {
     case .alphabetic:
       return consume(propertyScalarPredicate(\.isAlphabetic))
     case .bidiControl:
-      break
+      return consume(propertyScalarPredicate(\.isBidiControl))
     case .bidiMirrored:
       return consume(propertyScalarPredicate(\.isBidiMirrored))
     case .cased:
