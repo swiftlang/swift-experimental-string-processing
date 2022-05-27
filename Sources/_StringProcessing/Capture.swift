@@ -49,7 +49,7 @@ extension AnyRegexOutput.Element {
       from: input,
       in: range,
       value: value,
-      optionalCount: optionalDepth
+      optionalCount: representation.optionalDepth
     )
   }
 
