@@ -1395,6 +1395,14 @@ extension RegexTests {
     firstMatchTest(#"(?xx)[ \t]+"#, input: " \t \t", match: "\t")
 
     firstMatchTest("(?xx)[ a && ab ]+", input: " aaba ", match: "aa")
+    
+    // Preserve whitespace in quoted section inside extended syntax region
+    firstMatchTest(
+      #"(?x) a b \Q c d \E e f"#, input: "ab c d ef", match: "ab c d ef")
+    firstMatchTest(
+      #"(?x)[a b]+ _ [a\Q b\E]+"#, input: "aba_ a b a", match: "aba_ a b a")
+    firstMatchTest(
+      #"(?x)[a b]+ _ [a\Q b\E]+"#, input: "aba _ a b a", match: nil)
   }
   
   func testASCIIClasses() {
