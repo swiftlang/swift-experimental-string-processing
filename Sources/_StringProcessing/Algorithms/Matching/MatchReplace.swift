@@ -74,6 +74,11 @@ extension RangeReplaceableCollection {
 
 // MARK: Regex algorithms
 
+enum CaptureLookup {
+  case numbered(Int)
+  case named(Substring)
+}
+
 extension RangeReplaceableCollection where SubSequence == Substring {
   @available(SwiftStdlib 5.7, *)
   func _replacing<R: RegexComponent, Replacement: Collection>(
@@ -182,7 +187,23 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   ) -> Self {
     precondition(maxReplacements >= 0)
     
-    let replacementRegex = try! Regex(#"(?D)\$(?:(\d++)|{(\d++)})"#)
+    let replacementRegex = try! Regex(#"(?D)\$(?:(\d++)|{(?:(\d++)|([^}]++))})"#)
+    let replacements = templateString.matches(of: replacementRegex)
+      .compactMap { match -> (Range<String.Index>, CaptureLookup)? in
+        // Named capture?
+        if let captureName = match.output[3].substring {
+          return (match.range, .named(captureName))
+        }
+        
+        // Numbered capture?
+        if let captureNumberString = match.output[1].substring ?? match.output[2].substring,
+           let captureNumber = Int(captureNumberString) {
+          return (match.range, .numbered(captureNumber))
+        }
+        
+        return nil
+      }
+    
     let subrange = startIndex..<endIndex
     var index = subrange.lowerBound
     var result = Self()
@@ -194,19 +215,20 @@ extension RangeReplaceableCollection where SubSequence == Substring {
       result.append(contentsOf: self[index..<match.range.lowerBound])
 
       let erasedMatch = Regex<AnyRegexOutput>.Match(match)
-      // TODO: Manually inline this so that we aren't searching every time
-      result.append(contentsOf: templateString.replacing(replacementRegex) {
-        replacementMatch -> Substring in
-        guard let captureNumberString = replacementMatch.output[1].substring
-                ?? replacementMatch.output[2].substring,
-              let captureNumber = Int(captureNumberString),
-              captureNumber < erasedMatch.output.count
-        else {
-          return ""
+      var templateIndex = templateString.startIndex
+      for replacement in replacements {
+        result.append(contentsOf: templateString[templateIndex..<(replacement.0.lowerBound)])
+        switch replacement.1 {
+        case .numbered(let captureNumber) where captureNumber < erasedMatch.output.count:
+          result.append(contentsOf: erasedMatch.output[captureNumber].substring ?? "")
+        case .named:
+          fatalError("Replacing capture group by name is unsupported")
+        default:
+          break
         }
-        
-        return erasedMatch.output[captureNumber].substring ?? ""
-      })
+        templateIndex = replacement.0.upperBound
+      }
+      result.append(contentsOf: templateString[templateIndex...])
       
       index = match.range.upperBound
     }
