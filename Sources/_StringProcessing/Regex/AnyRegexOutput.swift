@@ -61,7 +61,7 @@ public struct AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput {
-  /// Creates a type-erased regex output from an existing output.
+  /// Creates a type-erased regex output from an existing match.
   ///
   /// Use this initializer to fit a regex with strongly typed captures into the
   /// use site of a dynamic regex, like one that was created from a string.
@@ -186,10 +186,12 @@ extension Regex where Output == AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  /// Creates a strongly-typed regex from a dynamic regex.
+  /// Creates a strongly-typed regex from a dynamic regex, i.e. one created
+  /// from a string.
   ///
   /// Use this initializer to create a strongly typed regex from
-  /// one that was created from a string.
+  /// one that was created from a string. Returns `nil` if the types
+  /// don't match.
   public init?(_ dynamic: Regex<AnyRegexOutput>) {
     self.init(node: dynamic.root)
     guard self._verifyType() else {
@@ -247,5 +249,14 @@ extension AnyRegexOutput.ElementRepresentation {
       value: nil,
       optionalCount: optionalDepth
     )
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Regex {
+  /// Produces a regex that matches `verbatim` exactly, as though every
+  /// metacharacter in it was escaped.
+  public init(verbatim: String) {
+    self.init(node: .quotedLiteral(verbatim))
   }
 }
