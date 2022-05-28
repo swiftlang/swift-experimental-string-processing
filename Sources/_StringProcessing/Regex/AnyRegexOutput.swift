@@ -22,13 +22,13 @@ public struct AnyRegexOutput {
 extension AnyRegexOutput {
   /// Creates a type-erased regex output from an existing match.
   ///
-  /// Use this initializer to fit a regex with strongly typed captures into the
-  /// use site of a dynamic regex, like one that was created from a string.
+  /// Use this initializer to fit a regex with strongly-typed captures into the
+  /// use site of a dynamic regex match, i.e. one created from a string.
   public init<Output>(_ match: Regex<Output>.Match) {
     self = match.anyRegexOutput
   }
 
-  /// Returns a typed output by converting dynamic values to the specified type.
+  /// Returns a strongly-typed output by converting type-erased values to the specified type.
   ///
   /// - Parameter type: The expected output type.
   /// - Returns: The output, if the underlying value can be converted to the
@@ -45,7 +45,7 @@ extension AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput: RandomAccessCollection {
-  /// An individual output value.
+  /// An individual type-erased output value.
   public struct Element {
     internal let representation: ElementRepresentation
     internal let input: String
@@ -61,9 +61,9 @@ extension AnyRegexOutput: RandomAccessCollection {
     }
 
     /// The captured value, `nil` for no-capture
-    /// TODO: clarify whether this is for non-default captured values, i.e. not the
-    /// default Substring but more like a Date or an explicit capture
     public var value: Any? {
+      // FIXME: Should this return the substring for default-typed
+      // values?
       representation.value
     }
 
@@ -108,8 +108,7 @@ extension AnyRegexOutput: RandomAccessCollection {
 
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput {
-  /// Lookup a capture by name. Returns `nil` if no capture
-  /// with that name was present in the Regex.
+  /// Access a capture by name. Returns `nil` if no capture with that name was present in the Regex.
   public subscript(name: String) -> Element? {
     first {
       $0.name == name
@@ -138,7 +137,7 @@ extension Regex.Match where Output == AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex where Output == AnyRegexOutput {
-  /// Parses and compiles a regular expression, resulting in an existentially-typed capture list.
+  /// Parses and compiles a regular expression, resulting in a type-erased capture list.
   ///
   /// - Parameter pattern: The regular expression.
   public init(_ pattern: String) throws {
@@ -179,8 +178,8 @@ extension Regex {
 extension Regex where Output == AnyRegexOutput {
   /// Creates a type-erased regex from an existing regex.
   ///
-  /// Use this initializer to fit a regex with strongly typed captures into the
-  /// use site of a dynamic regex, i.e. one that was created from a string.
+  /// Use this initializer to fit a regex with strongly-typed captures into the
+  /// use site of a type-erased regex, i.e. one that was created from a string.
   public init<Output>(_ regex: Regex<Output>) {
     self.init(node: regex.root)
   }
@@ -190,8 +189,8 @@ extension Regex where Output == AnyRegexOutput {
 extension Regex.Match where Output == AnyRegexOutput {
   /// Creates a type-erased regex match from an existing match.
   ///
-  /// Use this initializer to fit a regex match with strongly typed captures into the
-  /// use site of a dynamic regex match, like one that was created from a string.
+  /// Use this initializer to fit a regex match with strongly-typed captures into the
+  /// use site of a type-erased regex match, i.e. one that was created from a string.
   public init<Output>(_ match: Regex<Output>.Match) {
     self.init(
       anyRegexOutput: match.anyRegexOutput,
@@ -203,17 +202,16 @@ extension Regex.Match where Output == AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  /// Creates a strongly-typed regex from a dynamic regex, i.e. one created
-  /// from a string.
+  /// Creates a strongly-typed regex from a type-erased regex.
   ///
-  /// Use this initializer to create a strongly typed regex from
+  /// Use this initializer to create a strongly-typed regex from
   /// one that was created from a string. Returns `nil` if the types
   /// don't match.
   public init?(
-    _ dynamic: Regex<AnyRegexOutput>,
+    _ erased: Regex<AnyRegexOutput>,
     as: Output.Type = Output.self
   ) {
-    self.init(node: dynamic.root)
+    self.init(node: erased.root)
     guard self._verifyType() else {
       return nil
     }
