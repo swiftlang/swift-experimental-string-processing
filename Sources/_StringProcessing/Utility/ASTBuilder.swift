@@ -319,6 +319,14 @@ func charClass(
   return .custom(cc)
 }
 
+func setOp(
+  _ lhs: AST.CustomCharacterClass.Member...,
+  op: AST.CustomCharacterClass.SetOp,
+  _ rhs: AST.CustomCharacterClass.Member...
+) -> AST.CustomCharacterClass.Member {
+  .setOperation(lhs, .init(faking: op), rhs)
+}
+
 func quote(_ s: String) -> AST.Node {
   .quote(.init(s, .fake))
 }
@@ -408,7 +416,7 @@ func prop_m(
 func range_m(
   _ lower: AST.Atom, _ upper: AST.Atom
 ) -> AST.CustomCharacterClass.Member {
-  .range(.init(lower, .fake, upper))
+  .range(.init(lower, .fake, upper, trivia: []))
 }
 func range_m(
   _ lower: AST.Atom.Kind, _ upper: AST.Atom.Kind

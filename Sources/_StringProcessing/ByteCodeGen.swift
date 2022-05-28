@@ -5,6 +5,11 @@ extension Compiler {
     var options: MatchingOptions
     var builder = Program.Builder()
 
+    init(options: MatchingOptions, captureList: CaptureList) {
+      self.options = options
+      self.builder.captureList = captureList
+    }
+
     mutating func finish(
     ) throws -> Program {
       builder.buildAccept()
@@ -62,7 +67,9 @@ extension Compiler.ByteCodeGen {
     case .absolute(let i):
       // Backreferences number starting at 1
       builder.buildBackreference(.init(i-1))
-    case .relative, .named:
+    case .named(let name):
+      try builder.buildNamedReference(name)
+    case .relative:
       throw Unsupported("Backreference kind: \(ref)")
     }
   }

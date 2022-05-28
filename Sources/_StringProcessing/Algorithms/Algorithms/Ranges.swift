@@ -251,6 +251,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter regex: The regex to search for.
   /// - Returns: A collection or ranges in the receiver of all occurrences of
   /// `regex`. Returns an empty collection if `regex` is not found.
+  @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func ranges(
     of regex: some RegexComponent
