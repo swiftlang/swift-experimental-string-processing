@@ -60,7 +60,7 @@ public enum TypeConstruction {
       flags |= 0x10000
     }
     
-    let result = elementTypes.withContiguousStorageIfAvailable { elementTypesBuffer in
+    let result = elementTypes.withContiguousStorageIfAvailable { elementTypesBuffer -> (value: Any.Type, state: Int) in
       if let labels = labels {
         return labels.withCString { labelsPtr in
           swift_getTupleTypeMetadata(
