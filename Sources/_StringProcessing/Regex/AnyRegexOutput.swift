@@ -22,8 +22,8 @@ public struct AnyRegexOutput {
 extension AnyRegexOutput {
   /// Creates a type-erased regex output from an existing match.
   ///
-  /// Use this initializer to fit a regex with strongly-typed captures into the
-  /// use site of a dynamic regex match, i.e. one created from a string.
+  /// Use this initializer to fit a strongly-typed regex match into the
+  /// use site of a type-erased regex output.
   public init<Output>(_ match: Regex<Output>.Match) {
     self = match.anyRegexOutput
   }
@@ -190,7 +190,7 @@ extension Regex.Match where Output == AnyRegexOutput {
   /// Creates a type-erased regex match from an existing match.
   ///
   /// Use this initializer to fit a regex match with strongly-typed captures into the
-  /// use site of a type-erased regex match, i.e. one that was created from a string.
+  /// use site of a type-erased regex match.
   public init<Output>(_ match: Regex<Output>.Match) {
     self.init(
       anyRegexOutput: match.anyRegexOutput,
