@@ -62,6 +62,7 @@ enum ParseError: Error, Hashable {
   case unknownProperty(key: String?, value: String)
   case unrecognizedScript(String)
   case unrecognizedCategory(String)
+  case unrecognizedBlock(String)
   case invalidAge(String)
   case invalidNumericValue(String)
   case unrecognizedNumericType(String)
@@ -86,6 +87,7 @@ enum ParseError: Error, Hashable {
   case unsupported(String)
   case deprecatedUnicode(String)
   case invalidReference(Int)
+  case invalidNamedReference(String)
   case duplicateNamedCapture(String)
   case invalidCharacterClassRangeOperand
   case invalidQuantifierRange(Int, Int)
@@ -194,6 +196,8 @@ extension ParseError: CustomStringConvertible {
       return "unrecognized script '\(value)'"
     case .unrecognizedCategory(let value):
       return "unrecognized category '\(value)'"
+    case .unrecognizedBlock(let value):
+      return "unrecognized block '\(value)'"
     case .unrecognizedNumericType(let value):
       return "unrecognized numeric type '\(value)'"
     case .invalidAge(let value):
@@ -211,6 +215,8 @@ extension ParseError: CustomStringConvertible {
       return "\(kind) is a deprecated Unicode property, and is not supported"
     case let .invalidReference(i):
       return "no capture numbered \(i)"
+    case let .invalidNamedReference(name):
+      return "no capture named '\(name)'"
     case let .duplicateNamedCapture(str):
       return "group named '\(str)' already exists"
     case let .invalidQuantifierRange(lhs, rhs):

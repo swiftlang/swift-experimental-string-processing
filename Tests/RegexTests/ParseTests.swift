@@ -34,7 +34,7 @@ extension AST.CustomCharacterClass.Member: ExpressibleByExtendedGraphemeClusterL
 }
 
 enum SemanticErrorKind {
-  case unsupported, invalid
+  case unsupported, invalid, unchecked
 }
 
 class RegexTests: XCTestCase {}
@@ -68,7 +68,7 @@ func parseTest(
     XCTFail("unexpected error: \(error)", file: file, line: line)
     return
   }
-  if let errorKind = errorKind {
+  if let errorKind = errorKind, errorKind != .unchecked {
     do {
       _ = try parse(input, .semantic, syntax)
       XCTFail("expected semantically invalid AST", file: file, line: line)
@@ -517,14 +517,15 @@ extension RegexTests {
       "[a-b-c]", charClass(range_m("a", "b"), "-", "c"))
 
     parseTest("[-a-]", charClass("-", "a", "-"))
+    parseTest("[[a]-]", charClass(charClass("a"), "-"))
+    parseTest("[[a]-b]", charClass(charClass("a"), "-", "b"))
 
     parseTest("[a-z]", charClass(range_m("a", "z")))
     parseTest("[a-a]", charClass(range_m("a", "a")))
     parseTest("[B-a]", charClass(range_m("B", "a")))
 
-    // FIXME: AST builder helpers for custom char class types
     parseTest("[a-d--a-c]", charClass(
-      .setOperation([range_m("a", "d")], .init(faking: .subtraction), [range_m("a", "c")])
+      setOp(range_m("a", "d"), op: .subtraction, range_m("a", "c"))
     ))
 
     parseTest("[-]", charClass("-"))
@@ -680,34 +681,45 @@ extension RegexTests {
       throwsError: .unsupported
     )
 
+    parseTest(#"(?x)[  a -  b  ]"#, concat(
+      changeMatchingOptions(matchingOptions(adding: .extended)),
+      charClass(range_m("a", "b"))
+    ))
+
+    parseTest(#"(?x)[a - b]"#, concat(
+      changeMatchingOptions(matchingOptions(adding: .extended)),
+      charClass(range_m("a", "b"))
+    ))
+
     // MARK: Operators
 
     parseTest(
       #"[a[bc]de&&[^bc]\d]+"#,
-      oneOrMore(of: charClass(
-        .setOperation(
-          ["a", charClass("b", "c"), "d", "e"],
-          .init(faking: .intersection),
-          [charClass("b", "c", inverted: true), atom_m(.escaped(.decimalDigit))]
-        ))))
+      oneOrMore(of: charClass(setOp(
+        "a", charClass("b", "c"), "d", "e",
+        op: .intersection,
+        charClass("b", "c", inverted: true), atom_m(.escaped(.decimalDigit))
+      )))
+    )
 
     parseTest(
-      "[a&&b]",
-      charClass(
-        .setOperation(["a"], .init(faking: .intersection), ["b"])))
+      "[a&&b]", charClass(setOp("a", op: .intersection, "b"))
+    )
 
     parseTest(
       "[abc--def]",
-      charClass(.setOperation(["a", "b", "c"], .init(faking: .subtraction), ["d", "e", "f"])))
+      charClass(setOp("a", "b", "c", op: .subtraction, "d", "e", "f"))
+    )
 
     // We left-associate for chained operators.
     parseTest(
       "[ab&&b~~cd]",
-      charClass(
-        .setOperation(
-          [.setOperation(["a", "b"], .init(faking: .intersection), ["b"])],
-          .init(faking: .symmetricDifference),
-          ["c", "d"])))
+      charClass(setOp(
+        setOp("a", "b", op: .intersection, "b"),
+        op: .symmetricDifference,
+        "c", "d"
+      ))
+    )
 
     // Operators are only valid in custom character classes.
     parseTest(
@@ -723,11 +735,11 @@ extension RegexTests {
 
     parseTest(
       "[ &&  ]",
-      charClass(.setOperation([" "], .init(faking: .intersection), [" ", " "]))
+      charClass(setOp(" ", op: .intersection, " ", " "))
     )
     parseTest("(?x)[ a && b ]", concat(
       changeMatchingOptions(matchingOptions(adding: .extended)),
-      charClass(.setOperation(["a"], .init(faking: .intersection), ["b"]))
+      charClass(setOp("a", op: .intersection, "b"))
     ))
 
     // MARK: Quotes
@@ -832,6 +844,10 @@ extension RegexTests {
       #"a{1,1}"#,
       quantRange(1...1, of: "a"))
 
+    parseTest("x{3, 5}", quantRange(3 ... 5, of: "x"))
+    parseTest("x{ 3 , 5  }", quantRange(3 ... 5, of: "x"))
+    parseTest("x{3 }", exactly(3, of: "x"))
+
     // Make sure ranges get treated as literal if invalid.
     parseTest("{", "{")
     parseTest("{,", concat("{", ","))
@@ -850,11 +866,6 @@ extension RegexTests {
     parseTest("x{6,", concat("x", "{", "6", ","))
     parseTest("x{+", concat("x", oneOrMore(of: "{")))
     parseTest("x{6,+", concat("x", "{", "6", oneOrMore(of: ",")))
-
-    // TODO: We should emit a diagnostic for this.
-    parseTest("x{3, 5}", concat("x", "{", "3", ",", " ", "5", "}"))
-    parseTest("{3, 5}", concat("{", "3", ",", " ", "5", "}"))
-    parseTest("{3 }", concat("{", "3", " ", "}"))
 
     // MARK: Groups
 
@@ -1231,16 +1242,37 @@ extension RegexTests {
     parseTest(#"\k'-3'"#, backreference(.relative(-3)), throwsError: .unsupported)
     parseTest(#"\k'1'"#, backreference(.absolute(1)), throwsError: .invalid)
 
-    parseTest(#"\k{a0}"#, backreference(.named("a0")), throwsError: .unsupported)
-    parseTest(#"\k<bc>"#, backreference(.named("bc")), throwsError: .unsupported)
-    parseTest(#"\g{abc}"#, backreference(.named("abc")), throwsError: .unsupported)
-    parseTest(#"(?P=abc)"#, backreference(.named("abc")), throwsError: .unsupported)
+    parseTest(
+      #"(?<a>)\k<a>"#, concat(
+        namedCapture("a", empty()), backreference(.named("a"))
+      ), captures: [.named("a")]
+    )
+    parseTest(
+      #"(?<a>)\k{a}"#, concat(
+        namedCapture("a", empty()), backreference(.named("a"))
+      ), captures: [.named("a")]
+    )
+    parseTest(
+      #"(?<a>)\g{a}"#, concat(
+        namedCapture("a", empty()), backreference(.named("a"))
+      ), captures: [.named("a")]
+    )
+    parseTest(
+      #"(?<a>)(?P=a)"#, concat(
+        namedCapture("a", empty()), backreference(.named("a"))
+      ), captures: [.named("a")]
+    )
+
+    parseTest(#"\k{a0}"#, backreference(.named("a0")), throwsError: .invalid)
+    parseTest(#"\k<bc>"#, backreference(.named("bc")), throwsError: .invalid)
+    parseTest(#"\g{abc}"#, backreference(.named("abc")), throwsError: .invalid)
+    parseTest(#"(?P=abc)"#, backreference(.named("abc")), throwsError: .invalid)
 
     // Oniguruma recursion levels.
     parseTest(#"\k<bc-0>"#, backreference(.named("bc"), recursionLevel: 0), throwsError: .unsupported)
     parseTest(#"\k<a+0>"#, backreference(.named("a"), recursionLevel: 0), throwsError: .unsupported)
-    parseTest(#"\k<1+1>"#, backreference(.absolute(1), recursionLevel: 1), throwsError: .invalid)
-    parseTest(#"\k<3-8>"#, backreference(.absolute(3), recursionLevel: -8), throwsError: .invalid)
+    parseTest(#"\k<1+1>"#, backreference(.absolute(1), recursionLevel: 1), throwsError: .unsupported)
+    parseTest(#"\k<3-8>"#, backreference(.absolute(3), recursionLevel: -8), throwsError: .unsupported)
     parseTest(#"\k'-3-8'"#, backreference(.relative(-3), recursionLevel: -8), throwsError: .unsupported)
     parseTest(#"\k'bc-8'"#, backreference(.named("bc"), recursionLevel: -8), throwsError: .unsupported)
     parseTest(#"\k'+3-8'"#, backreference(.relative(3), recursionLevel: -8), throwsError: .unsupported)
@@ -1352,7 +1384,60 @@ extension RegexTests {
     parseTest(#"\p{isAlphabetic}"#, prop(.binary(.alphabetic)))
     parseTest(#"\p{isAlpha=isFalse}"#, prop(.binary(.alphabetic, value: false)))
 
-    parseTest(#"\p{In_Runic}"#, prop(.onigurumaSpecial(.inRunic)), throwsError: .unsupported)
+    parseTest(#"\p{In_Runic}"#, prop(.block(.runic)), throwsError: .unsupported)
+
+    parseTest(#"\p{Hebrew}"#, prop(.scriptExtension(.hebrew)))
+    parseTest(#"\p{Is_Hebrew}"#, prop(.scriptExtension(.hebrew)))
+    parseTest(#"\p{In_Hebrew}"#, prop(.block(.hebrew)), throwsError: .unsupported)
+    parseTest(#"\p{Blk=Is_Hebrew}"#, prop(.block(.hebrew)), throwsError: .unsupported)
+
+    // These are the shorthand properties with an "in" prefix we currently
+    // recognize. Make sure they don't clash with block properties.
+    parseTest(#"\p{initialpunctuation}"#, prop(.generalCategory(.initialPunctuation)))
+    parseTest(#"\p{inscriptionalpahlavi}"#, prop(.scriptExtension(.inscriptionalPahlavi)))
+    parseTest(#"\p{inscriptionalparthian}"#, prop(.scriptExtension(.inscriptionalParthian)))
+    parseTest(#"\p{inherited}"#, prop(.scriptExtension(.inherited)))
+
+    // Make sure these are round-trippable.
+    for s in Unicode.Script.allCases {
+      parseTest(#"\p{\#(s.rawValue)}"#, prop(.scriptExtension(s)))
+      parseTest(#"\p{is\#(s.rawValue)}"#, prop(.scriptExtension(s)))
+    }
+    for g in Unicode.ExtendedGeneralCategory.allCases {
+      parseTest(#"\p{\#(g.rawValue)}"#, prop(.generalCategory(g)))
+      parseTest(#"\p{is\#(g.rawValue)}"#, prop(.generalCategory(g)))
+    }
+    for p in Unicode.POSIXProperty.allCases {
+      parseTest(#"\p{\#(p.rawValue)}"#, prop(.posix(p)))
+      parseTest(#"\p{is\#(p.rawValue)}"#, prop(.posix(p)))
+    }
+    for b in Unicode.BinaryProperty.allCases {
+      // Some of these are unsupported, so don't check for semantic errors.
+      parseTest(#"\p{\#(b.rawValue)}"#, prop(.binary(b, value: true)), throwsError: .unchecked)
+      parseTest(#"\p{is\#(b.rawValue)}"#, prop(.binary(b, value: true)), throwsError: .unchecked)
+    }
+
+    for j in AST.Atom.CharacterProperty.JavaSpecial.allCases {
+      parseTest(#"\p{\#(j.rawValue)}"#, prop(.javaSpecial(j)), throwsError: .unsupported)
+    }
+
+    // Try prefixing each block property with "in" to make sure we don't stomp
+    // on any other property shorthands.
+    for b in Unicode.Block.allCases {
+      parseTest(#"\p{in\#(b.rawValue)}"#, prop(.block(b)), throwsError: .unsupported)
+    }
+
+    parseTest(#"\p{ASCII}"#, prop(.ascii))
+    parseTest(#"\p{isASCII}"#, prop(.ascii))
+    parseTest(#"\p{inASCII}"#, prop(.block(.basicLatin)), throwsError: .unsupported)
+
+    parseTest(#"\p{inBasicLatin}"#, prop(.block(.basicLatin)), throwsError: .unsupported)
+    parseTest(#"\p{In_Basic_Latin}"#, prop(.block(.basicLatin)), throwsError: .unsupported)
+    parseTest(#"\p{Blk=Basic_Latin}"#, prop(.block(.basicLatin)), throwsError: .unsupported)
+    parseTest(#"\p{Blk=Is_Basic_Latin}"#, prop(.block(.basicLatin)), throwsError: .unsupported)
+
+    parseTest(#"\p{isAny}"#, prop(.any))
+    parseTest(#"\p{isAssigned}"#, prop(.assigned))
 
     parseTest(#"\p{Xan}"#, prop(.pcreSpecial(.alphanumeric)), throwsError: .unsupported)
     parseTest(#"\p{Xps}"#, prop(.pcreSpecial(.posixSpace)), throwsError: .unsupported)
@@ -1648,6 +1733,9 @@ extension RegexTests {
     parseTest("[(?#abc)]", charClass("(", "?", "#", "a", "b", "c", ")"))
     parseTest("# abc", concat("#", " ", "a", "b", "c"))
 
+    parseTest("(?#)", empty())
+    parseTest("/**/", empty(), syntax: .experimental)
+
     // MARK: Matching option changing
 
     parseTest(
@@ -1675,12 +1763,8 @@ extension RegexTests {
       )
     )
 
-    // End of line comments aren't applicable in custom char classes.
-    // TODO: ICU supports this.
-    parseTest("(?x)[ # abc]", concat(
-      changeMatchingOptions(matchingOptions(adding: .extended)),
-      charClass("#", "a", "b", "c")
-    ))
+    parseTest("[ # abc]", charClass(" ", "#", " ", "a", "b", "c"))
+    parseTest("[#]", charClass("#"))
 
     parseTest("(?x)a b c[d e f]", concat(
       changeMatchingOptions(matchingOptions(adding: .extended)),
@@ -1768,10 +1852,10 @@ extension RegexTests {
 
     // PCRE states that whitespace won't be ignored within a range.
     // http://pcre.org/current/doc/html/pcre2api.html#SEC20
-    // TODO: We ought to warn on this, and produce a range anyway.
+    // We however do ignore it.
     parseTest("(?x)a{1, 3}", concat(
       changeMatchingOptions(matchingOptions(adding: .extended)),
-      "a", "{", "1", ",", "3", "}"
+      quantRange(1 ... 3, of: "a")
     ))
 
     // Test that we cover the list of whitespace characters covered by PCRE.
@@ -2113,6 +2197,26 @@ extension RegexTests {
       /#
       """#, scalarSeq("\u{AB}", "\u{B}", "\u{C}"))
 
+    parseWithDelimitersTest(#"""
+      #/
+      [
+        a # interesting
+      b-c #a
+        d]
+      /#
+      """#, charClass("a", range_m("b", "c"), "d"))
+
+    parseWithDelimitersTest(#"""
+      #/
+      [
+        a # interesting
+        -   #a
+         b
+      ]
+      /#
+      """#, charClass(range_m("a", "b")))
+
+
     // MARK: Delimiter skipping: Make sure we can skip over the ending delimiter
     // if it's clear that it's part of the regex syntax.
 
@@ -2137,7 +2241,7 @@ extension RegexTests {
       throwsError: .unsupported
     )
     parseWithDelimitersTest(
-      #"re'a\k'b0A''"#, concat("a", backreference(.named("b0A"))), throwsError: .unsupported)
+      #"re'a\k'b0A''"#, concat("a", backreference(.named("b0A"))), throwsError: .invalid)
     parseWithDelimitersTest(
       #"re'\k'+2-1''"#, backreference(.relative(2), recursionLevel: -1),
       throwsError: .unsupported
@@ -2209,6 +2313,8 @@ extension RegexTests {
                       #"([a-d&&e]*)+"#)
 
     parseNotEqualTest(#"[abc]"#, #"[a b c]"#)
+
+    parseNotEqualTest("[abc]", "[^abc]")
 
     parseNotEqualTest(#"\1"#, #"\10"#)
 
@@ -2540,6 +2646,12 @@ extension RegexTests {
     diagnosticTest(#"[c-b]"#, .invalidCharacterRange(from: "c", to: "b"))
     diagnosticTest(#"[\u{66}-\u{65}]"#, .invalidCharacterRange(from: "\u{66}", to: "\u{65}"))
 
+    diagnosticTest("(?x)[(?#)]", .expected("]"))
+    diagnosticTest("(?x)[(?#abc)]", .expected("]"))
+
+    diagnosticTest("(?x)[#]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("(?x)[ # abc]", .expectedCustomCharacterClassMembers)
+
     // MARK: Bad escapes
 
     diagnosticTest("\\", .expectedEscape)
@@ -2609,6 +2721,9 @@ extension RegexTests {
     diagnosticTest("[[:a():]]", .unknownProperty(key: nil, value: "a()"))
     diagnosticTest(#"\p{aaa\p{b}}"#, .unknownProperty(key: nil, value: "aaa"))
     diagnosticTest(#"[[:{:]]"#, .unknownProperty(key: nil, value: "{"))
+
+    diagnosticTest(#"\p{Basic_Latin}"#, .unknownProperty(key: nil, value: "Basic_Latin"))
+    diagnosticTest(#"\p{Blk=In_Basic_Latin}"#, .unrecognizedBlock("In_Basic_Latin"))
 
     // We only filter pattern whitespace, which doesn't include things like
     // non-breaking spaces.
@@ -2690,6 +2805,9 @@ extension RegexTests {
     diagnosticTest("{1,3}", .quantifierRequiresOperand("{1,3}"))
     diagnosticTest("a{3,2}", .invalidQuantifierRange(3, 2))
 
+    diagnosticTest("{3, 5}", .quantifierRequiresOperand("{3, 5}"))
+    diagnosticTest("{3 }", .quantifierRequiresOperand("{3 }"))
+
     // These are not quantifiable.
     diagnosticTest(#"\b?"#, .notQuantifiable)
     diagnosticTest(#"\B*"#, .notQuantifiable)
@@ -2769,6 +2887,12 @@ extension RegexTests {
     diagnosticTest(#"\2()"#, .invalidReference(2))
     diagnosticTest(#"(?:)()\2"#, .invalidReference(2))
     diagnosticTest(#"(?:)(?:)\2"#, .invalidReference(2))
+
+    diagnosticTest(#"\k<a>"#, .invalidNamedReference("a"))
+    diagnosticTest(#"(?:)\k<a>"#, .invalidNamedReference("a"))
+    diagnosticTest(#"()\k<a>"#, .invalidNamedReference("a"))
+    diagnosticTest(#"()\k<a>()"#, .invalidNamedReference("a"))
+    diagnosticTest(#"(?<b>)\k<a>()"#, .invalidNamedReference("a"))
 
     // MARK: Conditionals
 

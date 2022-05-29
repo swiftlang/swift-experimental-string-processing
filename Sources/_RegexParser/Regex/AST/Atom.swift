@@ -441,13 +441,18 @@ extension AST.Atom.CharacterProperty {
     
     /// Character age, as per UnicodeScalar.Properties.age.
     case age(major: Int, minor: Int)
-    
+
+    /// A block property.
+    case block(Unicode.Block)
+
     case posix(Unicode.POSIXProperty)
 
     /// Some special properties implemented by PCRE and Oniguruma.
     case pcreSpecial(PCRESpecialCategory)
-    case onigurumaSpecial(OnigurumaSpecialProperty)
-    
+
+    /// Some special properties implemented by Java.
+    case javaSpecial(JavaSpecial)
+
     public enum MapKind: Hashable, Sendable {
       case lowercase
       case uppercase
@@ -455,13 +460,35 @@ extension AST.Atom.CharacterProperty {
     }
   }
 
-  // TODO: erm, separate out or fold into something? splat it in?
   public enum PCRESpecialCategory: String, Hashable, Sendable {
     case alphanumeric     = "Xan"
     case posixSpace       = "Xps"
     case perlSpace        = "Xsp"
     case universallyNamed = "Xuc"
     case perlWord         = "Xwd"
+  }
+
+  /// Special Java properties that correspond to methods on
+  /// `java.lang.Character`, with the `java` prefix replaced by `is`.
+  public enum JavaSpecial: String, Hashable, CaseIterable, Sendable {
+    case alphabetic             = "javaAlphabetic"
+    case defined                = "javaDefined"
+    case digit                  = "javaDigit"
+    case identifierIgnorable    = "javaIdentifierIgnorable"
+    case ideographic            = "javaIdeographic"
+    case isoControl             = "javaISOControl"
+    case javaIdentifierPart     = "javaJavaIdentifierPart" // not a typo, that's actually the name
+    case javaIdentifierStart    = "javaJavaIdentifierStart" // not a typo, that's actually the name
+    case javaLetter             = "javaLetter"
+    case javaLetterOrDigit      = "javaLetterOrDigit"
+    case lowerCase              = "javaLowerCase"
+    case mirrored               = "javaMirrored"
+    case spaceChar              = "javaSpaceChar"
+    case titleCase              = "javaTitleCase"
+    case unicodeIdentifierPart  = "javaUnicodeIdentifierPart"
+    case unicodeIdentifierStart = "javaUnicodeIdentifierStart"
+    case upperCase              = "javaUpperCase"
+    case whitespace             = "javaWhitespace"
   }
 }
 

@@ -14,7 +14,7 @@
 
 /// A type that represents a regular expression.
 @available(SwiftStdlib 5.7, *)
-public protocol RegexComponent: Sendable {
+public protocol RegexComponent<RegexOutput>: Sendable {
   associatedtype RegexOutput
   var regex: Regex<RegexOutput> { get }
 }

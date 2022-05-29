@@ -105,6 +105,13 @@ let package = Package(
                 "_RegexParser",
                 "_StringProcessing"
             ]),
+        .executableTarget(
+            name: "RegexTester",
+            dependencies: [
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                "_RegexParser",
+                "_StringProcessing"
+            ]),
 
         // MARK: Exercises
         .target(

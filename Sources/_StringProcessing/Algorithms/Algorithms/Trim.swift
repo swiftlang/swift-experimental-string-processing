@@ -216,7 +216,6 @@ extension Collection where SubSequence == Self, Element: Equatable {
 }
 
 extension RangeReplaceableCollection where Element: Equatable {
-  @_disfavoredOverload
   /// Removes the initial elements that satisfy the given predicate from the
   /// start of the sequence.
   /// - Parameter predicate: A closure that takes an element of the sequence
@@ -290,8 +289,9 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter prefix: The collection to remove from this collection.
   /// - Returns: A collection containing the elements that does not match
   /// `prefix` from the start.
+  @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
-  public func trimmingPrefix<R: RegexComponent>(_ regex: R) -> SubSequence {
+  public func trimmingPrefix(_ regex: some RegexComponent) -> SubSequence {
     _trimmingPrefix(RegexConsumer(regex))
   }
 
@@ -311,8 +311,9 @@ extension RangeReplaceableCollection
 {
   /// Removes the initial elements that matches the given regex.
   /// - Parameter regex: The regex to remove from this collection.
+  @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
-  public mutating func trimPrefix<R: RegexComponent>(_ regex: R) {
+  public mutating func trimPrefix(_ regex: some RegexComponent) {
     _trimPrefix(RegexConsumer(regex))
   }
 

@@ -342,7 +342,11 @@ extension RegexTests {
     firstMatchTest(
       #"a{1,2}"#, input: "123aaaxyz", match: "aa")
     firstMatchTest(
+      #"a{ 1 , 2 }"#, input: "123aaaxyz", match: "aa")
+    firstMatchTest(
       #"a{,2}"#, input: "123aaaxyz", match: "")
+    firstMatchTest(
+      #"a{ , 2 }"#, input: "123aaaxyz", match: "")
     firstMatchTest(
       #"a{,2}x"#, input: "123aaaxyz", match: "aax")
     firstMatchTest(
@@ -351,6 +355,8 @@ extension RegexTests {
       #"a{2,}"#, input: "123aaaxyz", match: "aaa")
     firstMatchTest(
       #"a{1}"#, input: "123aaaxyz", match: "a")
+    firstMatchTest(
+      #"a{ 1 }"#, input: "123aaaxyz", match: "a")
     firstMatchTest(
       #"a{1,2}?"#, input: "123aaaxyz", match: "a")
     firstMatchTest(
@@ -587,6 +593,8 @@ extension RegexTests {
     firstMatchTest("[a-z]", input: "123abcxyz", match: "a")
     firstMatchTest("[a-z]", input: "123ABCxyz", match: "x")
     firstMatchTest("[a-z]", input: "123-abcxyz", match: "a")
+
+    firstMatchTest("(?x)[ a - z ]+", input: " 123-abcxyz", match: "abcxyz")
 
     // Character class subtraction
     firstMatchTest("[a-d--a-c]", input: "123abcdxyz", match: "d")
@@ -1134,7 +1142,6 @@ extension RegexTests {
   }
 
   func testMatchReferences() {
-    // TODO: Implement backreference/subpattern matching.
     firstMatchTest(
       #"(.)\1"#,
       input: "112", match: "11")
@@ -1143,14 +1150,24 @@ extension RegexTests {
       input: "aaaaaaaaabbc", match: "aaaaaaaaabb")
 
     firstMatchTest(
+      #"(.)(.)(.)(.)(.)(.)(.)(.)(.)(?<a1>.)(?P=a1)"#,
+      input: "aaaaaaaaabbc", match: "aaaaaaaaabb")
+
+    firstMatchTest(
       #"(.)\g001"#,
       input: "112", match: "11")
 
-    firstMatchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
-    firstMatchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba", xfail: true)
-    firstMatchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
+    firstMatchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba")
+
+    firstMatchTest(#"(?<a>.)(?<b>.)(?<c>.)\k<c>\k<a>\k<b>"#,
+                   input: "xyzzxy", match: "xyzzxy")
 
     firstMatchTest(#"\1(.)"#, input: "112", match: nil)
+    firstMatchTest(#"\k<a>(?<a>.)"#, input: "112", match: nil)
+
+    // TODO: Implement subpattern matching.
+    firstMatchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
+    firstMatchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
   }
   
   func testMatchExamples() {
@@ -1288,6 +1305,14 @@ extension RegexTests {
     firstMatchTest(#"(?xx)[ \t]+"#, input: " \t \t", match: "\t")
 
     firstMatchTest("(?xx)[ a && ab ]+", input: " aaba ", match: "aa")
+    
+    // Preserve whitespace in quoted section inside extended syntax region
+    firstMatchTest(
+      #"(?x) a b \Q c d \E e f"#, input: "ab c d ef", match: "ab c d ef")
+    firstMatchTest(
+      #"(?x)[a b]+ _ [a\Q b\E]+"#, input: "aba_ a b a", match: "aba_ a b a")
+    firstMatchTest(
+      #"(?x)[a b]+ _ [a\Q b\E]+"#, input: "aba _ a b a", match: nil)
   }
   
   func testASCIIClasses() {
