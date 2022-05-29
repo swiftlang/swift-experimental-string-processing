@@ -204,15 +204,15 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter regex: The regex to search for.
   /// - Returns: A collection of matches of `regex`.
   @available(SwiftStdlib 5.7, *)
-  public func matches<R: RegexComponent>(
-    of r: R
-  ) -> [Regex<R.RegexOutput>.Match] {
+  public func matches<Output>(
+    of r: some RegexComponent<Output>
+  ) -> [Regex<Output>.Match] {
     let slice = self[...]
     var start = self.startIndex
     let end = self.endIndex
     let regex = r.regex
 
-    var result = [Regex<R.RegexOutput>.Match]()
+    var result = [Regex<Output>.Match]()
     while start <= end {
       guard let match = try? regex._firstMatch(
         slice.base, in: start..<end

@@ -126,11 +126,11 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   /// - Returns: A new collection in which all occurrences of subsequence
   /// matching `regex` are replaced by `replacement`.
   @available(SwiftStdlib 5.7, *)
-  public func replacing<R: RegexComponent, Replacement: Collection>(
-    _ regex: R,
+  public func replacing<Output, Replacement: Collection>(
+    _ regex: some RegexComponent<Output>,
     subrange: Range<Index>,
     maxReplacements: Int = .max,
-    with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
+    with replacement: (Regex<Output>.Match) throws -> Replacement
   ) rethrows -> Self where Replacement.Element == Element {
 
     precondition(maxReplacements >= 0)
@@ -162,10 +162,10 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   /// - Returns: A new collection in which all occurrences of subsequence
   /// matching `regex` are replaced by `replacement`.
   @available(SwiftStdlib 5.7, *)
-  public func replacing<R: RegexComponent, Replacement: Collection>(
-    _ regex: R,
+  public func replacing<Output, Replacement: Collection>(
+    _ regex: some RegexComponent<Output>,
     maxReplacements: Int = .max,
-    with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
+    with replacement: (Regex<Output>.Match) throws -> Replacement
   ) rethrows -> Self where Replacement.Element == Element {
     try replacing(
       regex,
@@ -183,10 +183,10 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   ///   - replacement: A closure that receives the full match information,
   ///   including captures, and returns a replacement collection.
   @available(SwiftStdlib 5.7, *)
-  public mutating func replace<R: RegexComponent, Replacement: Collection>(
-    _ regex: R,
+  public mutating func replace<Output, Replacement: Collection>(
+    _ regex: some RegexComponent<Output>,
     maxReplacements: Int = .max,
-    with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
+    with replacement: (Regex<Output>.Match) throws -> Replacement
   ) rethrows where Replacement.Element == Element {
     self = try replacing(
       regex,
