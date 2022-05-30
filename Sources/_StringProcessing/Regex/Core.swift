@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 @_implementationOnly import _RegexParser
-@_implementationOnly import Atomics
+@_implementationOnly import _LazyAtomic
 
 /// A type that represents a regular expression.
 @available(SwiftStdlib 5.7, *)
