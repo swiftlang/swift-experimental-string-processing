@@ -183,13 +183,106 @@ extension BidirectionalCollection {
 
 // MARK: Regex algorithms
 
+@available(SwiftStdlib 5.7, *)
+struct RegexMatchesCollection<Output> {
+  let base: Substring
+  let regex: Regex<Output>
+  let startIndex: Index
+  
+  init(base: Substring, regex: Regex<Output>) {
+    self.base = base
+    self.regex = regex
+    self.startIndex = base.firstMatch(of: regex).map(Index.match) ?? .end
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexMatchesCollection: Collection {
+  enum Index: Comparable {
+    case match(Regex<Output>.Match)
+    case end
+    
+    static func == (lhs: Self, rhs: Self) -> Bool {
+      switch (lhs, rhs) {
+      case (.match(let lhs), .match(let rhs)):
+        return lhs.range == rhs.range
+      case (.end, .end):
+        return true
+      case (.end, .match), (.match, .end):
+        return false
+      }
+    }
+    
+    static func < (lhs: Self, rhs: Self) -> Bool {
+      switch (lhs, rhs) {
+      case (.match(let lhs), .match(let rhs)):
+        // This implementation uses a tuple comparison so that an empty
+        // range `i..<i` will be ordered before a non-empty range at that
+        // same starting point `i..<j`. As of 2022-05-30, `Regex` does not
+        // return matches of this kind, but that is one behavior under
+        // discussion for regexes like /a*|b/ when matched against "b".
+        return (lhs.range.lowerBound, lhs.range.upperBound)
+          < (rhs.range.lowerBound, rhs.range.upperBound)
+      case (.match, .end):
+        return true
+      case (.end, .match), (.end, .end):
+        return false
+      }
+    }
+  }
+  
+  var endIndex: Index {
+    Index.end
+  }
+  
+  func index(after i: Index) -> Index {
+    let currentMatch: Element
+    switch i {
+    case .match(let match):
+      currentMatch = match
+    case .end:
+      fatalError("Can't advance past the 'endIndex' of a match collection.")
+    }
+    
+    let start: String.Index
+    if currentMatch.range.isEmpty {
+      if currentMatch.range.lowerBound == base.endIndex {
+        return .end
+      }
+      
+      switch regex.initialOptions.semanticLevel {
+      case .graphemeCluster:
+        start = base.index(after: currentMatch.range.upperBound)
+      case .unicodeScalar:
+        start = base.unicodeScalars.index(after: currentMatch.range.upperBound)
+      }
+    } else {
+      start = currentMatch.range.upperBound
+    }
+
+    guard let nextMatch = try? regex.firstMatch(in: base[start...]) else {
+      return .end
+    }
+    return Index.match(nextMatch)
+  }
+  
+  subscript(position: Index) -> Regex<Output>.Match {
+    switch position {
+    case .match(let match):
+      return match
+    case .end:
+      fatalError("Can't subscript the 'endIndex' of a match collection.")
+    }
+  }
+}
+
 extension BidirectionalCollection where SubSequence == Substring {
   @available(SwiftStdlib 5.7, *)
   @_disfavoredOverload
   func _matches<R: RegexComponent>(
     of regex: R
-  ) -> MatchesCollection<RegexConsumer<R, Self>> {
-    _matches(of: RegexConsumer(regex))
+  ) -> RegexMatchesCollection<R.RegexOutput> {
+    RegexMatchesCollection(base: self[...], regex: regex.regex)
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -207,30 +300,6 @@ extension BidirectionalCollection where SubSequence == Substring {
   public func matches<Output>(
     of r: some RegexComponent<Output>
   ) -> [Regex<Output>.Match] {
-    let slice = self[...]
-    var start = self.startIndex
-    let end = self.endIndex
-    let regex = r.regex
-
-    var result = [Regex<Output>.Match]()
-    while start <= end {
-      guard let match = try? regex._firstMatch(
-        slice.base, in: start..<end
-      ) else {
-        break
-      }
-      result.append(match)
-      if match.range.isEmpty {
-        if match.range.upperBound == end {
-          break
-        }
-        // FIXME: semantic level
-        start = slice.index(after: match.range.upperBound)
-      } else {
-        start = match.range.upperBound
-      }
-    }
-    return result
+    Array(_matches(of: r))
   }
-
 }
