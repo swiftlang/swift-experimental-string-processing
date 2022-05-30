@@ -12,12 +12,12 @@
 // MARK: `CollectionSearcher` algorithms
 
 extension RangeReplaceableCollection {
-  func _replacing<Searcher: CollectionSearcher, Replacement: Collection>(
-    _ searcher: Searcher,
+  func _replacing<Ranges: Collection, Replacement: Collection>(
+    _ ranges: Ranges,
     with replacement: Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max
-  ) -> Self where Searcher.Searched == SubSequence,
+  ) -> Self where Ranges.Element == Range<Index>,
                   Replacement.Element == Element
   {
     precondition(maxReplacements >= 0)
@@ -26,7 +26,7 @@ extension RangeReplaceableCollection {
     var result = Self()
     result.append(contentsOf: self[..<index])
     
-    for range in self[subrange]._ranges(of: searcher).prefix(maxReplacements) {
+    for range in ranges.prefix(maxReplacements) {
       result.append(contentsOf: self[index..<range.lowerBound])
       result.append(contentsOf: replacement)
       index = range.upperBound
@@ -36,29 +36,29 @@ extension RangeReplaceableCollection {
     return result
   }
   
-  func _replacing<Searcher: CollectionSearcher, Replacement: Collection>(
-    _ searcher: Searcher,
+  func _replacing<Ranges: Collection, Replacement: Collection>(
+    _ ranges: Ranges,
     with replacement: Replacement,
     maxReplacements: Int = .max
-  ) -> Self where Searcher.Searched == SubSequence,
+  ) -> Self where Ranges.Element == Range<Index>,
                   Replacement.Element == Element
   {
     _replacing(
-      searcher,
+      ranges,
       with: replacement,
       subrange: startIndex..<endIndex,
       maxReplacements: maxReplacements)
   }
   
   mutating func _replace<
-    Searcher: CollectionSearcher, Replacement: Collection
+    Ranges: Collection, Replacement: Collection
   >(
-    _ searcher: Searcher,
+    _ ranges: Ranges,
     with replacement: Replacement,
     maxReplacements: Int = .max
-  ) where Searcher.Searched == SubSequence, Replacement.Element == Element {
+  ) where Ranges.Element == Range<Index>, Replacement.Element == Element {
     self = _replacing(
-      searcher,
+      ranges,
       with: replacement,
       maxReplacements: maxReplacements)
   }
@@ -85,7 +85,7 @@ extension RangeReplaceableCollection where Element: Equatable {
     maxReplacements: Int = .max
   ) -> Self where C.Element == Element, Replacement.Element == Element {
     _replacing(
-      ZSearcher(pattern: Array(other), by: ==),
+      _ranges(of: other),
       with: replacement,
       subrange: subrange,
       maxReplacements: maxReplacements)
@@ -143,7 +143,7 @@ extension RangeReplaceableCollection
     maxReplacements: Int = .max
   ) -> Self where C.Element == Element, Replacement.Element == Element {
     _replacing(
-      PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(other))),
+      _ranges(of: other),
       with: replacement,
       subrange: subrange,
       maxReplacements: maxReplacements)
@@ -195,7 +195,7 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     maxReplacements: Int = .max
   ) -> Self where Replacement.Element == Element {
     _replacing(
-      RegexConsumer(regex),
+      _ranges(of: regex),
       with: replacement,
       subrange: subrange,
       maxReplacements: maxReplacements)
