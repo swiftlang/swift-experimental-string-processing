@@ -16,7 +16,7 @@ public struct UnsafeAtomicLazyReference<Instance: AnyObject> {
   public typealias Value = Instance?
 
   @usableFromInline
-  internal typealias _Rep = Optional<Unmanaged<Instance>>.AtomicRepresentation
+  internal typealias _Rep = Unmanaged<Instance>.AtomicOptionalRepresentation
 
   @usableFromInline
   internal let _ptr: UnsafeMutablePointer<_Rep>

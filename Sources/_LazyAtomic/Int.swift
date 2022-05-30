@@ -13,7 +13,7 @@
 
 import _LazyAtomicShims
 
-extension Int: AtomicValue {
+extension Int {
   @frozen
   public struct AtomicRepresentation {
     public typealias Value = Int
@@ -43,7 +43,7 @@ where Pointee == Int.AtomicRepresentation {
   }
 }
 
-extension Int.AtomicRepresentation: AtomicStorage {
+extension Int.AtomicRepresentation {
   @_semantics("atomics.requires_constant_orderings")
   @_transparent @_alwaysEmitIntoClient
   public static func atomicLoad(
