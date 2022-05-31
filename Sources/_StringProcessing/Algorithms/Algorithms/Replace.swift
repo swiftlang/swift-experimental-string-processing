@@ -15,16 +15,14 @@ extension RangeReplaceableCollection {
   func _replacing<Ranges: Collection, Replacement: Collection>(
     _ ranges: Ranges,
     with replacement: Replacement,
-    subrange: Range<Index>,
     maxReplacements: Int = .max
   ) -> Self where Ranges.Element == Range<Index>,
                   Replacement.Element == Element
   {
     precondition(maxReplacements >= 0)
     
-    var index = subrange.lowerBound
     var result = Self()
-    result.append(contentsOf: self[..<index])
+    var index = startIndex
     
     for range in ranges.prefix(maxReplacements) {
       result.append(contentsOf: self[index..<range.lowerBound])
@@ -34,20 +32,6 @@ extension RangeReplaceableCollection {
     
     result.append(contentsOf: self[index...])
     return result
-  }
-  
-  func _replacing<Ranges: Collection, Replacement: Collection>(
-    _ ranges: Ranges,
-    with replacement: Replacement,
-    maxReplacements: Int = .max
-  ) -> Self where Ranges.Element == Range<Index>,
-                  Replacement.Element == Element
-  {
-    _replacing(
-      ranges,
-      with: replacement,
-      subrange: startIndex..<endIndex,
-      maxReplacements: maxReplacements)
   }
   
   mutating func _replace<
@@ -85,9 +69,8 @@ extension RangeReplaceableCollection where Element: Equatable {
     maxReplacements: Int = .max
   ) -> Self where C.Element == Element, Replacement.Element == Element {
     _replacing(
-      _ranges(of: other),
+      self[subrange]._ranges(of: other),
       with: replacement,
-      subrange: subrange,
       maxReplacements: maxReplacements)
   }
 
@@ -143,9 +126,8 @@ extension RangeReplaceableCollection
     maxReplacements: Int = .max
   ) -> Self where C.Element == Element, Replacement.Element == Element {
     _replacing(
-      _ranges(of: other),
+      self[subrange]._ranges(of: other),
       with: replacement,
-      subrange: subrange,
       maxReplacements: maxReplacements)
   }
       
@@ -195,9 +177,8 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     maxReplacements: Int = .max
   ) -> Self where Replacement.Element == Element {
     _replacing(
-      _ranges(of: regex),
+      self[subrange]._ranges(of: regex),
       with: replacement,
-      subrange: subrange,
       maxReplacements: maxReplacements)
   }
 
