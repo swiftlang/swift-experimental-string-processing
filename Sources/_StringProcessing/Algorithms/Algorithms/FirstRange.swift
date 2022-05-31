@@ -77,7 +77,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// Returns `nil` if `regex` is not found.
   @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
-  public func firstRange<R: RegexComponent>(of regex: R) -> Range<Index>? {
+  public func firstRange(of regex: some RegexComponent) -> Range<Index>? {
     _firstRange(of: RegexConsumer(regex))
   }
 

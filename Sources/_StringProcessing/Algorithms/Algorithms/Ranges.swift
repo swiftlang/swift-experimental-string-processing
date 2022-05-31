@@ -253,8 +253,8 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// `regex`. Returns an empty collection if `regex` is not found.
   @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
-  public func ranges<R: RegexComponent>(
-    of regex: R
+  public func ranges(
+    of regex: some RegexComponent
   ) -> [Range<Index>] {
     Array(_ranges(of: regex))
   }
