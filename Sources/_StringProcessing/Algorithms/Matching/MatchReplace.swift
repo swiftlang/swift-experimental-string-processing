@@ -210,7 +210,6 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     
     let replacements = templateString.matches(of: captureReplacementRegex)
       .compactMap { match -> (Range<String.Index>, CaptureLookup)? in
-        // TODO: Lookbehind support would fix this
         // Remove escaping '\' if `$` is escaped
         if match.output.1 != nil {
           return (match.range, .dollar)
@@ -230,19 +229,12 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         return nil
       }
     
-    var index = subrange.lowerBound
-    var result = Self()
-    result.append(contentsOf: self[..<index])
-
-    for match in self[subrange].matches(of: regex)
-      .prefix(maxReplacements)
-    {
-      result.append(contentsOf: self[index..<match.range.lowerBound])
-
+    return replacing(regex, subrange: subrange) { match in
       let erasedMatch = Regex<AnyRegexOutput>.Match(match)
-      var templateIndex = templateString.startIndex
+      var result = Self()
+      var index = templateString.startIndex
       for replacement in replacements {
-        result.append(contentsOf: templateString[templateIndex..<(replacement.0.lowerBound)])
+        result.append(contentsOf: templateString[index..<(replacement.0.lowerBound)])
         switch replacement.1 {
         case .numbered(let captureNumber) where captureNumber < erasedMatch.output.count:
           result.append(contentsOf: erasedMatch.output[captureNumber].substring ?? "")
@@ -253,15 +245,11 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         default:
           break
         }
-        templateIndex = replacement.0.upperBound
+        index = replacement.0.upperBound
       }
-      result.append(contentsOf: templateString[templateIndex...])
-      
-      index = match.range.upperBound
+      result.append(contentsOf: templateString[index...])
+      return result
     }
-
-    result.append(contentsOf: self[index...])
-    return result
   }
   
   @available(SwiftStdlib 5.7, *)
