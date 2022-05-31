@@ -229,7 +229,8 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         return nil
       }
     
-    return replacing(regex, subrange: subrange) { match in
+    return replacing(regex, subrange: subrange, maxReplacements: maxReplacements) {
+      match in
       let erasedMatch = Regex<AnyRegexOutput>.Match(match)
       var result = Self()
       var index = templateString.startIndex
