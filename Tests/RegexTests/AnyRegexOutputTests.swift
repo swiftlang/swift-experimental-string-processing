@@ -103,13 +103,13 @@ extension RegexTests {
 
     // TODO: ARO init from concrete match tuple
 
-    let concreteOutputCasted = output.as(
-      (Substring, fieldA: Substring, fieldB: Substring).self
+    let concreteOutputCasted = output.extractValues(
+      as: (Substring, fieldA: Substring, fieldB: Substring).self
     )!
     checkSame(output, concreteOutputCasted)
 
     var concreteOutputCopy = concreteOutput
-    concreteOutputCopy = output.as()!
+    concreteOutputCopy = output.extractValues()!
     checkSame(output, concreteOutputCopy)
 
     // TODO: Regex<ARO>.Match: init from tuple match and as to tuple match
@@ -146,12 +146,23 @@ extension RegexTests {
       XCTAssertTrue(output["upper"]?.substring == "A6F1")
       XCTAssertTrue(output[3].substring == "Extend")
       XCTAssertTrue(output["desc"]?.substring == "Extend")
-      let typedOutput = try XCTUnwrap(output.as(
-        (Substring, lower: Substring, upper: Substring?, Substring).self))
+      let typedOutput = try XCTUnwrap(
+        output.extractValues(
+          as: (Substring, lower: Substring, upper: Substring?, Substring).self))
       XCTAssertEqual(typedOutput.0, line[...])
       XCTAssertTrue(typedOutput.lower == "A6F0")
       XCTAssertTrue(typedOutput.upper == "A6F1")
       XCTAssertTrue(typedOutput.3 == "Extend")
+
+      // Extracting as different argument labels is allowed
+      let typedOutput2 = try XCTUnwrap(
+        output.extractValues(
+          as: (Substring, first: Substring, Substring?, third: Substring).self))
+      XCTAssertEqual(typedOutput2.0, line[...])
+      XCTAssertTrue(typedOutput2.first == "A6F0")
+      XCTAssertTrue(typedOutput2.2 == "A6F1")
+      XCTAssertTrue(typedOutput2.third == "Extend")
+
     }
   }
 }
