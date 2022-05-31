@@ -263,6 +263,32 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     result.append(contentsOf: self[index...])
     return result
   }
+  
+  @available(SwiftStdlib 5.7, *)
+  public func replacing(
+    _ regex: some RegexComponent,
+    withTemplate templateString: String,
+    maxReplacements: Int = .max
+  ) -> Self {
+    replacing(
+      regex,
+      withTemplate: templateString,
+      subrange: startIndex..<endIndex,
+      maxReplacements: maxReplacements)
+  }
+
+  @available(SwiftStdlib 5.7, *)
+  public mutating func replace(
+    _ regex: some RegexComponent,
+    withTemplate templateString: String,
+    maxReplacements: Int = .max
+  ) {
+    self = replacing(
+      regex,
+      withTemplate: templateString,
+      subrange: startIndex..<endIndex,
+      maxReplacements: maxReplacements)
+  }
 
   /// Replaces all occurrences of the sequence matching the given regex with
   /// a given collection.
