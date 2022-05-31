@@ -75,9 +75,29 @@ extension RangeReplaceableCollection {
 // MARK: Regex algorithms
 
 enum CaptureLookup {
+  case dollar
   case numbered(Int)
-  case named(Substring)
+  case named(String)
 }
+
+@available(SwiftStdlib 5.7, *)
+let captureReplacementRegex = try! Regex(
+  #"""
+  (?Px)
+  (?:
+  (\\\$)        # escaped $
+  |
+  \$(?:
+    (\d++)      # numbered
+    |
+    {(?:        # brackets
+      (\d++)    # numbered
+      |
+      (\w++)    # named
+    )}
+  ))
+  """#,
+  as: (Substring, Substring?, Substring?, Substring?, Substring?).self)
 
 extension RangeReplaceableCollection where SubSequence == Substring {
   @available(SwiftStdlib 5.7, *)
@@ -182,21 +202,27 @@ extension RangeReplaceableCollection where SubSequence == Substring {
   @available(SwiftStdlib 5.7, *)
   public func replacing(
     _ regex: some RegexComponent,
-    maxReplacements: Int = .max,
-    withTemplate templateString: String
+    withTemplate templateString: String,
+    subrange: Range<Index>,
+    maxReplacements: Int = .max
   ) -> Self {
     precondition(maxReplacements >= 0)
     
-    let replacementRegex = try! Regex(#"(?D)\$(?:(\d++)|{(?:(\d++)|([^}]++))})"#)
-    let replacements = templateString.matches(of: replacementRegex)
+    let replacements = templateString.matches(of: captureReplacementRegex)
       .compactMap { match -> (Range<String.Index>, CaptureLookup)? in
+        // TODO: Lookbehind support would fix this
+        // Remove escaping '\' if `$` is escaped
+        if match.output.1 != nil {
+          return (match.range, .dollar)
+        }
+          
         // Named capture?
-        if let captureName = match.output[3].substring {
-          return (match.range, .named(captureName))
+        if let captureName = match.output.4 {
+          return (match.range, .named(String(captureName)))
         }
         
         // Numbered capture?
-        if let captureNumberString = match.output[1].substring ?? match.output[2].substring,
+        if let captureNumberString = match.output.2 ?? match.output.3,
            let captureNumber = Int(captureNumberString) {
           return (match.range, .numbered(captureNumber))
         }
@@ -204,7 +230,6 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         return nil
       }
     
-    let subrange = startIndex..<endIndex
     var index = subrange.lowerBound
     var result = Self()
     result.append(contentsOf: self[..<index])
@@ -221,8 +246,10 @@ extension RangeReplaceableCollection where SubSequence == Substring {
         switch replacement.1 {
         case .numbered(let captureNumber) where captureNumber < erasedMatch.output.count:
           result.append(contentsOf: erasedMatch.output[captureNumber].substring ?? "")
-        case .named:
-          fatalError("Replacing capture group by name is unsupported")
+        case .named(let captureName):
+          result.append(contentsOf: erasedMatch.output[captureName]?.substring ?? "")
+        case .dollar:
+          result.append("$")
         default:
           break
         }
