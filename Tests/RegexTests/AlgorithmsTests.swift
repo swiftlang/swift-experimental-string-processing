@@ -361,6 +361,11 @@ class AlgorithmTests: XCTestCase {
     expectReplace("100 200 31 4", #"\d+"#, #"\$$0"#, "$100 $200 $31 $4")
     expectReplace("100 200 31 4", #"\d+"#, "\\$0$0", "$0100 $0200 $031 $04")
     expectReplace("100 200 31 4", #"\d+"#, "\\$0${0}", "$0100 $0200 $031 $04")
+    
+    // Other funny business
+    expectReplace("100 200 31 4", #"\d+"#, "${0", "${0 ${0 ${0 ${0")
+    expectReplace("100 200 31 4", #"\d+"#, "${0 }", "${0 } ${0 } ${0 } ${0 }")
+    expectReplace("100 200 31 4", #"(?<digits>\d+)"#, "${ digits }", "${ digits } ${ digits } ${ digits } ${ digits }")
   }
 
   func testSubstring() throws {
