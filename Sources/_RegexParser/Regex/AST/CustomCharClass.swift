@@ -51,11 +51,16 @@ extension AST {
       public var lhs: Atom
       public var dashLoc: SourceLocation
       public var rhs: Atom
+      public var trivia: [AST.Trivia]
 
-      public init(_ lhs: Atom, _ dashLoc: SourceLocation, _ rhs: Atom) {
+      public init(
+        _ lhs: Atom, _ dashLoc: SourceLocation, _ rhs: Atom,
+        trivia: [AST.Trivia]
+      ) {
         self.lhs = lhs
         self.dashLoc = dashLoc
         self.rhs = rhs
+        self.trivia = trivia
       }
     }
     public enum SetOp: String, Hashable {
@@ -93,6 +98,11 @@ extension CustomCC.Member {
   public var isTrivia: Bool {
     if case .trivia = self { return true }
     return false
+  }
+
+  public var asTrivia: AST.Trivia? {
+    guard case .trivia(let t) = self else { return nil }
+    return t
   }
 
   public var isSemantic: Bool {
