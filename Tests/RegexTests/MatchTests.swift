@@ -1653,5 +1653,35 @@ extension RegexTests {
     let scalarExpected: [Substring] = ["\u{FE0F}💖🧠", "🧠💖☕"]
     XCTAssertEqual(scalarMatches.map { $0.0 }, scalarExpected)
   }
+  
+  func testConcurrentAccess() async throws {
+    for _ in 0..<1000 {
+      let regex = try Regex(#"abc+d*e?"#)
+      let strings = [
+        "abc",
+        "abccccccccdddddddddde",
+        "abcccce",
+        "abddddde",
+      ]
+      let matches = await withTaskGroup(of: Optional<Regex<AnyRegexOutput>.Match>.self) { group -> [Regex<AnyRegexOutput>.Match] in
+        var result: [Regex<AnyRegexOutput>.Match] = []
+        
+        for str in strings {
+          group.addTask {
+            str.firstMatch(of: regex)
+          }
+        }
+        
+        for await match in group {
+          guard let match = match else { continue }
+          result.append(match)
+        }
+        
+        return result
+      }
+      
+      XCTAssertEqual(matches.count, 3)
+    }
+  }
 }
 

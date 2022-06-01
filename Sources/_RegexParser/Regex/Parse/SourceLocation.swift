@@ -11,7 +11,7 @@
 
 extension Source {
   /// The location in the input of a parsed entity, presented as a region over the input
-  public struct Location: Hashable {
+  public struct Location: Hashable, Sendable {
     public var range: Range<Source.Position>
 
     public var start: Source.Position { range.lowerBound }
@@ -114,6 +114,7 @@ extension AST {
 }
 extension AST.Located: Equatable where T: Equatable {}
 extension AST.Located: Hashable where T: Hashable {}
+extension AST.Located: Sendable where T: Sendable {}
 
 extension Source.LocatedError: CustomStringConvertible {
   public var description: String {

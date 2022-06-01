@@ -62,7 +62,10 @@ let package = Package(
             dependencies: []),
         .target(
             name: "_StringProcessing",
-            dependencies: ["_RegexParser", "_CUnicode"],
+            dependencies: [
+              "_RegexParser",
+              "_CUnicode",
+            ],
             swiftSettings: publicStdlibSettings),
         .target(
             name: "RegexBuilder",
