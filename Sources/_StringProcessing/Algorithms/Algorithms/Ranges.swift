@@ -234,7 +234,22 @@ struct RegexRangesCollection<Output> {
     self.base = RegexMatchesCollection(base: string, regex: regex)
   }
 }
+
+@available(SwiftStdlib 5.7, *)
+extension RegexRangesCollection: Sequence {
+  struct Iterator: IteratorProtocol {
+    var matchesBase: RegexMatchesCollection<Output>.Iterator
+    
+    mutating func next() -> Range<String.Index>? {
+      matchesBase.next().map(\.range)
+    }
+  }
   
+  func makeIterator() -> Iterator {
+    Iterator(matchesBase: base.makeIterator())
+  }
+}
+
 @available(SwiftStdlib 5.7, *)
 extension RegexRangesCollection: Collection {
   typealias Index = RegexMatchesCollection<Output>.Index
