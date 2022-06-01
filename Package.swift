@@ -61,17 +61,10 @@ let package = Package(
             name: "_CUnicode",
             dependencies: []),
         .target(
-            name: "_LazyAtomicShims",
-            dependencies: []),
-        .target(
-            name: "_LazyAtomic",
-            dependencies: ["_LazyAtomicShims"]),
-        .target(
             name: "_StringProcessing",
             dependencies: [
               "_RegexParser",
               "_CUnicode",
-              "_LazyAtomic",
             ],
             swiftSettings: publicStdlibSettings),
         .target(

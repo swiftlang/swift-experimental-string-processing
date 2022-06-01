@@ -10,7 +10,6 @@
 //===----------------------------------------------------------------------===//
 
 @_implementationOnly import _RegexParser
-@_implementationOnly import _LazyAtomic
 
 /// A type that represents a regular expression.
 @available(SwiftStdlib 5.7, *)
@@ -86,16 +85,20 @@ extension Regex {
       init(_ value: MEProgram<String>) { self.value = value }
     }
 
-    private var _loweredProgramStorage: UnsafeAtomicLazyReference<ProgramBox>
-      = .create()
+    private var _loweredProgramStorage: UnsafeMutablePointer<AnyObject?> = {
+      let pointer = UnsafeMutablePointer<AnyObject?>.allocate(capacity: 1)
+      pointer.initialize(to: nil)
+      return pointer
+    }()
     
     /// The program for execution with the matching engine.
     var loweredProgram: MEProgram<String> {
-      if let lowered = _loweredProgramStorage.load() {
-        return lowered.value
+      if let loweredObject = _stdlib_atomicLoadARCRef(object: _loweredProgramStorage) {
+        return (loweredObject as! ProgramBox).value
       }
-      let lowered = try! ProgramBox(Compiler(tree: tree).emit())
-      return _loweredProgramStorage.storeIfNilThenLoad(lowered).value
+      let lowered = try! Compiler(tree: tree).emit()
+      _stdlib_atomicInitializeARCRef(object: _loweredProgramStorage, desired: ProgramBox(lowered))
+      return lowered
     }
 
     init(ast: AST) {
@@ -107,7 +110,10 @@ extension Regex {
     }
     
     deinit {
-      _loweredProgramStorage.destroy()
+      if _loweredProgramStorage.pointee != nil {
+        _loweredProgramStorage.deinitialize(count: 1)
+      }
+      _loweredProgramStorage.deallocate()
     }
   }
   
