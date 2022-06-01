@@ -27,8 +27,9 @@ class Compiler {
 
   __consuming func emit() throws -> Program {
     // TODO: Handle global options
-    var codegen = ByteCodeGen(options: options)
-    codegen.builder.captureList = tree.root._captureList
+    var codegen = ByteCodeGen(
+      options: options, captureList: tree.root._captureList
+    )
     try codegen.emitNode(tree.root)
     let program = try codegen.finish()
     return program

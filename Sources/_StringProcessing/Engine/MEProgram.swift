@@ -36,7 +36,6 @@ struct MEProgram<Input: Collection> where Input.Element: Equatable {
 
   let captureList: CaptureList
   let referencedCaptureOffsets: [ReferenceID: Int]
-  let namedCaptureOffsets: [String: Int]
   
   var initialOptions: MatchingOptions
 }
