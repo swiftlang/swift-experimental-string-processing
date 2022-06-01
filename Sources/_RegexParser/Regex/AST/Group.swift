@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 extension AST {
-  public struct Group: Hashable {
+  public struct Group: Hashable, Sendable {
     public let kind: Located<Kind>
     public let child: AST.Node
 
@@ -24,7 +24,7 @@ extension AST {
       self.location = r
     }
 
-    public enum Kind: Hashable {
+    public enum Kind: Hashable, Sendable {
       // (...)
       case capture
 
@@ -116,7 +116,7 @@ extension AST.Group.Kind {
 }
 
 extension AST.Group {
-  public struct BalancedCapture: Hashable {
+  public struct BalancedCapture: Hashable, Sendable {
     /// The name of the group, or nil if the group has no name.
     public var name: AST.Located<String>?
 
