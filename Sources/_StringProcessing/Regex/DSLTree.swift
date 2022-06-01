@@ -97,6 +97,8 @@ extension DSLTree {
 
     // TODO: Would this just boil down to a consumer?
     case characterPredicate(_CharacterPredicateInterface)
+
+    case mapOutput(Any.Type, _MapOutputInterface, Node)
   }
 }
 
@@ -237,9 +239,11 @@ public typealias _MatcherInterface = (
 
 // Character-set (post grapheme segmentation)
 @_spi(RegexBuilder)
-public typealias _CharacterPredicateInterface = (
-  (Character) -> Bool
-)
+public typealias _CharacterPredicateInterface = (Character) -> Bool
+
+// Output mapping
+@_spi(RegexBuilder)
+public typealias _MapOutputInterface = (Any) -> Any
 
 /*
 
@@ -257,19 +261,21 @@ extension DSLTree.Node {
   public var children: [DSLTree.Node]? {
     switch self {
       
-    case let .orderedChoice(v):   return v
+    case let .orderedChoice(v): return v
     case let .concatenation(v): return v
 
     case let .convertedRegexLiteral(n, _):
       // Treat this transparently
       return n.children
 
-    case let .capture(_, _, n):           return [n]
-    case let .nonCapturingGroup(_, n):    return [n]
-    case let .transform(_, n):            return [n]
-    case let .quantification(_, _, n):    return [n]
+    case let .capture(_, _, n):         return [n]
+    case let .nonCapturingGroup(_, n):  return [n]
+    case let .transform(_, n):          return [n]
+    case let .quantification(_, _, n):  return [n]
+    case let .mapOutput(_, _, n):       return [n]
 
     case let .conditional(_, t, f): return [t,f]
+
 
     case .trivia, .empty, .quotedLiteral, .regexLiteral,
         .consumer, .matcher, .characterPredicate,
@@ -513,6 +519,9 @@ extension DSLTree.Node {
     case .matcher:
       break
 
+    case let .mapOutput(retTy, _, _):
+      fatalError("Add retTy's contents to capture list")
+
     case .transform(_, let child):
       child._addCaptures(to: &list, optionalNesting: nesting)
 
@@ -549,10 +558,11 @@ extension DSLTree {
         // Treat this transparently
         return _Tree(n).children
 
-      case let .capture(_, _, n):           return [_Tree(n)]
-      case let .nonCapturingGroup(_, n):    return [_Tree(n)]
-      case let .transform(_, n):            return [_Tree(n)]
-      case let .quantification(_, _, n):    return [_Tree(n)]
+      case let .capture(_, _, n):         return [_Tree(n)]
+      case let .nonCapturingGroup(_, n):  return [_Tree(n)]
+      case let .transform(_, n):          return [_Tree(n)]
+      case let .quantification(_, _, n):  return [_Tree(n)]
+      case let .mapOutput(_, _, n):       return [_Tree(n)]
 
       case let .conditional(_, t, f): return [_Tree(t), _Tree(f)]
 

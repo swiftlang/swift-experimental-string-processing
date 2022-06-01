@@ -234,6 +234,9 @@ extension PrettyPrinter {
     case .characterPredicate:
       print("/* TODO: character predicates */")
 
+    case .mapOutput:
+      print("/* TODO: map output */")
+
     case .absentFunction:
       print("/* TODO: absent function */")
     }

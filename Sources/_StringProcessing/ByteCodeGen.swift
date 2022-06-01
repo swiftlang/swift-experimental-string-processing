@@ -717,6 +717,9 @@ extension Compiler.ByteCodeGen {
     case let .matcher(_, f):
       emitMatcher(f)
 
+    case let .mapOutput(retTy, fun, child):
+      fatalError()
+
     case .transform:
       throw Unreachable(
         "Transforms only directly inside captures")

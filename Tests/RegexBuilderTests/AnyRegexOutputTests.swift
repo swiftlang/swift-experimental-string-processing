@@ -5,6 +5,17 @@ import RegexBuilder
 
 private let enablePrinting = false
 
+func addNote(
+  _ in: (Substring, Substring, Substring, Substring, Substring)
+) -> (Substring, Substring, note: Substring, Substring, Substring) {
+  return `in`
+}
+func removeName(
+  _ in: (Substring, Substring, Substring, Substring, Substring)
+) -> (Substring, Substring, Substring, Substring, Substring) {
+  return `in`
+}
+
 extension RegexDSLTests {
 
   func testContrivedAROExample() {
@@ -139,7 +150,7 @@ extension RegexDSLTests {
       let aro = Regex<AnyRegexOutput>(re)
 
       // FIXME: The below fatal errors
-      let casted = aro//try! XCTUnwrap(Regex(aro, as: Output.self))
+      let casted = try! XCTUnwrap(Regex(aro, as: Output.self))
 
       // contains(captureNamed:)
       checkContains(re, kind)
@@ -153,71 +164,123 @@ extension RegexDSLTests {
     }
 
     // Literals (mocked up via explicit `as` types)
-    check(try! Regex(#"""
+    let noCapBody = #"""
       (?x)
       \p{hexdigit}{4} -? \p{hexdigit}{4} -?
       \p{hexdigit}{4} -? \p{hexdigit}{4}
-      """#, as: Substring.self),
+      """#
+    let noCapType = Substring.self
+
+    let unnamedBody = #"""
+      (?x)
+      (\p{hexdigit}{4}) -? (\p{hexdigit}{4}) -?
+      (\p{hexdigit}{4}) -? (\p{hexdigit}{4})
+      """#
+    let unnamedType = (Substring, Substring, Substring, Substring, Substring).self
+
+    let salientBody = #"""
+      (?x)
+      (\p{hexdigit}{4}) -? (?<salient>\p{hexdigit}{4}) -?
+      (\p{hexdigit}{4}) -? (\p{hexdigit}{4})
+      """#
+    let salientType = (Substring, Substring, salient: Substring, Substring, Substring).self
+
+    let noteBody = #"""
+      (?x)
+      (\p{hexdigit}{4}) -? (?<note>\p{hexdigit}{4}) -?
+      (\p{hexdigit}{4}) -? (\p{hexdigit}{4})
+      """#
+    let noteType = (Substring, Substring, note: Substring, Substring, Substring).self
+
+    let unknownBody = #"""
+      (?x)
+      (\p{hexdigit}{4}) -? (?<unknown>\p{hexdigit}{4}) -?
+      (\p{hexdigit}{4}) -? (\p{hexdigit}{4})
+      """#
+    let unknownType = (Substring, Substring, unknown: Substring, Substring, Substring).self
+
+    // TODO: unknown body tests?
+
+
+    // Literals (mocked via exactly matching explicit types)
+    check(
+      try! Regex(noCapBody, as: noCapType),
       .none,
       noCapOutput
     )
-    check(try! Regex(#"""
-      (?x)
-      (\p{hexdigit}{4}) -? (\p{hexdigit}{4}) -?
-      (\p{hexdigit}{4}) -? (\p{hexdigit}{4})
-      """#, as: (Substring, Substring, Substring, Substring, Substring).self),
+    check(
+      try! Regex(unnamedBody, as: unnamedType),
       .unnamed,
       unnamedOutput    
     )
-    check(try! Regex(#"""
-      (?x)
-      (\p{hexdigit}{4}) -? (?<salient>\p{hexdigit}{4}) -?
-      (\p{hexdigit}{4}) -? (\p{hexdigit}{4})
-      """#, as: (Substring, Substring, Substring, Substring, Substring).self),
+    check(
+      try! Regex(salientBody, as: salientType),
       .salient,
       salientOutput
     )
-    check(try! Regex(#"""
-      (?x)
-      (\p{hexdigit}{4}) -? (?<note>\p{hexdigit}{4}) -?
-      (\p{hexdigit}{4}) -? (\p{hexdigit}{4})
-      """#, as: (Substring, Substring, Substring, Substring, Substring).self),
+    check(
+      try! Regex(noteBody, as: noteType),
       .note,
       noteOutput
     )
-
-    // Run-time strings (ARO)
-    check(try! Regex(#"""
-      (?x)
-      \p{hexdigit}{4} -? \p{hexdigit}{4} -?
-      \p{hexdigit}{4} -? \p{hexdigit}{4}
-      """#),
-      .none,
-      noCapOutput)
-    check(try! Regex(#"""
-      (?x)
-      (\p{hexdigit}{4}) -? (\p{hexdigit}{4}) -?
-      (\p{hexdigit}{4}) -? (\p{hexdigit}{4})
-      """#),
+    // Unknown behaves same as unnamed
+    check(
+      try! Regex(unknownBody, as: unknownType),
       .unnamed,
       unnamedOutput
     )
-    check(try! Regex(#"""
-      (?x)
-      (\p{hexdigit}{4}) -? (?<salient>\p{hexdigit}{4}) -?
-      (\p{hexdigit}{4}) -? (\p{hexdigit}{4})
-      """#),
+
+    // TODO: Try regexes `as` different types to pick up different behavior
+
+    // TODO: A `mapOutput` variant that takes no-cap and produces captures
+    // by matching the other regexes inside the mapping
+
+    // Run-time strings (ARO)
+    check(
+      try! Regex(noCapBody),
+      .none,
+      noCapOutput)
+    check(
+      try! Regex(unnamedBody),
+      .unnamed,
+      unnamedOutput
+    )
+    check(
+      try! Regex(salientBody),
       .salient,
       salientOutput
     )
-    check(try! Regex(#"""
-      (?x)
-      (\p{hexdigit}{4}) -? (?<note>\p{hexdigit}{4}) -?
-      (\p{hexdigit}{4}) -? (\p{hexdigit}{4})
-      """#),
+    check(
+      try! Regex(noteBody),
       .note,
       noteOutput
     )
+    // Unknown behaves same as no names
+    check(
+      try! Regex(unknownBody),
+      .unnamed,
+      unnamedOutput
+    )
+
+//    // Use `mapOutput` to add or remove capture names
+//    check(
+//      try! Regex(unnamedBody).mapOutput(addNote),
+//      .note,
+//      noteOutput
+//    )
+//    check(
+//      try! Regex(salientBody).mapOutput(addNote),
+//      .note,
+//      noteOutput
+//    )
+//    check(try! Regex(#"""
+//      (?x)
+//      (\p{hexdigit}{4}) -? (?<salient>\p{hexdigit}{4}) -?
+//      (\p{hexdigit}{4}) -? (\p{hexdigit}{4})
+//      """#).mapOutput(removeName),
+//      .unnamed,
+//      unnamedOutput
+//    )
 
     // Builders
     check(
@@ -234,23 +297,23 @@ extension RegexDSLTests {
       .none,
       noCapOutput
     )
+    let capDSL = Regex {
+      let doublet = Repeat(.hexDigit, count: 4)
+      Capture { doublet }
+      Optionally { "-" }
+      Capture { doublet }
+      Optionally { "-" }
+      Capture { doublet }
+      Optionally { "-" }
+      Capture { doublet }
+    }
     check(
-      Regex {
-        let doublet = Repeat(.hexDigit, count: 4)
-        Capture { doublet }
-        Optionally { "-" }
-        Capture { doublet }
-        Optionally { "-" }
-        Capture { doublet }
-        Optionally { "-" }
-        Capture { doublet }
-      },
+      capDSL,
       .unnamed,
       unnamedOutput
     )
 
-    // FIXME: `salient` and `note` builders using a semantically rich
-    // `mapOutput`
+    // TODO: add first-class capture names via `mapOutput` to DSL test
 
   }
 }

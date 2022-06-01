@@ -158,7 +158,15 @@ extension CaptureList.Capture: CustomStringConvertible {
       typeStr = "Substring"
     }
     let suffix = String(repeating: "?", count: optionalDepth)
-    return typeStr + suffix
+
+    let prefix: String
+    if let name = name {
+      prefix = name + ": "
+    } else {
+      prefix = ""
+    }
+
+    return prefix + typeStr + suffix
   }
 }
 extension CaptureList: CustomStringConvertible {
