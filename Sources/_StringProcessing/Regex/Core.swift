@@ -85,19 +85,16 @@ extension Regex {
       init(_ value: MEProgram<String>) { self.value = value }
     }
 
-    private var _loweredProgramStorage: UnsafeMutablePointer<AnyObject?> = {
-      let pointer = UnsafeMutablePointer<AnyObject?>.allocate(capacity: 1)
-      pointer.initialize(to: nil)
-      return pointer
-    }()
+    /// Do not use directly - all accesses must go through `loweredProgram`.
+    private var _loweredProgramStorage: AnyObject? = nil
     
     /// The program for execution with the matching engine.
     var loweredProgram: MEProgram<String> {
-      if let loweredObject = _stdlib_atomicLoadARCRef(object: _loweredProgramStorage) {
-        return (loweredObject as! ProgramBox).value
+      if let loweredObject = _loweredProgramStorage as? ProgramBox {
+        return loweredObject.value
       }
       let lowered = try! Compiler(tree: tree).emit()
-      _stdlib_atomicInitializeARCRef(object: _loweredProgramStorage, desired: ProgramBox(lowered))
+      _stdlib_atomicInitializeARCRef(object: &_loweredProgramStorage, desired: ProgramBox(lowered))
       return lowered
     }
 
@@ -107,13 +104,6 @@ extension Regex {
 
     init(tree: DSLTree) {
       self.tree = tree
-    }
-    
-    deinit {
-      if _loweredProgramStorage.pointee != nil {
-        _loweredProgramStorage.deinitialize(count: 1)
-      }
-      _loweredProgramStorage.deallocate()
     }
   }
   
