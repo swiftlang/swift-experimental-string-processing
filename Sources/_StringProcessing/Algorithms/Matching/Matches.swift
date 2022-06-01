@@ -185,14 +185,76 @@ extension BidirectionalCollection {
 
 @available(SwiftStdlib 5.7, *)
 struct RegexMatchesCollection<Output> {
-  let base: Substring
+  let input: Substring
   let regex: Regex<Output>
   let startIndex: Index
   
   init(base: Substring, regex: Regex<Output>) {
-    self.base = base
+    self.input = base
     self.regex = regex
     self.startIndex = base.firstMatch(of: regex).map(Index.match) ?? .end
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexMatchesCollection: Sequence {
+  /// Returns the index to start searching for the next match after `match`.
+  fileprivate func searchIndex(after match: Regex<Output>.Match) -> String.Index? {
+    if !match.range.isEmpty {
+      return match.range.upperBound
+    }
+    
+    // If the last match was an empty match, advance by one position and
+    // run again, unless at the end of `input`.
+    if match.range.lowerBound == input.endIndex {
+      return nil
+    }
+    
+    switch regex.initialOptions.semanticLevel {
+    case .graphemeCluster:
+      return input.index(after: match.range.upperBound)
+    case .unicodeScalar:
+      return input.unicodeScalars.index(after: match.range.upperBound)
+    }
+  }
+
+  struct Iterator: IteratorProtocol {
+    let base: RegexMatchesCollection
+    
+    // Because `RegexMatchesCollection` eagerly computes the first match for
+    // its `startIndex`, the iterator begins with this current match populated.
+    // For subsequent calls to `next()`, this value is `nil`, and `nextStart`
+    // is used to search for the next match.
+    var currentMatch: Regex<Output>.Match?
+    var nextStart: String.Index?
+    
+    init(_ matches: RegexMatchesCollection) {
+      self.base = matches
+      self.currentMatch = matches.startIndex.match
+      self.nextStart = currentMatch.flatMap(base.searchIndex(after:))
+    }
+    
+    mutating func next() -> Regex<Output>.Match? {
+      // Initial case with pre-computed first match
+      if let match = currentMatch {
+        currentMatch = nil
+        return match
+      }
+      
+      // `nextStart` is `nil` when iteration has completed
+      guard let start = nextStart else {
+        return nil
+      }
+      
+      // Otherwise, find the next match (if any) and compute `nextStart`
+      let match = try! base.regex.firstMatch(in: base.input[start...])
+      nextStart = match.flatMap(base.searchIndex(after:))
+      return match
+    }
+  }
+  
+  func makeIterator() -> Iterator {
+    Iterator(self)
   }
 }
 
@@ -201,6 +263,13 @@ extension RegexMatchesCollection: Collection {
   enum Index: Comparable {
     case match(Regex<Output>.Match)
     case end
+    
+    var match: Regex<Output>.Match? {
+      switch self {
+      case .match(let match): return match
+      case .end: return nil
+      }
+    }
     
     static func == (lhs: Self, rhs: Self) -> Bool {
       switch (lhs, rhs) {
@@ -236,43 +305,24 @@ extension RegexMatchesCollection: Collection {
   }
   
   func index(after i: Index) -> Index {
-    let currentMatch: Element
-    switch i {
-    case .match(let match):
-      currentMatch = match
-    case .end:
+    guard let currentMatch = i.match else {
       fatalError("Can't advance past the 'endIndex' of a match collection.")
     }
     
-    let start: String.Index
-    if currentMatch.range.isEmpty {
-      if currentMatch.range.lowerBound == base.endIndex {
-        return .end
-      }
-      
-      switch regex.initialOptions.semanticLevel {
-      case .graphemeCluster:
-        start = base.index(after: currentMatch.range.upperBound)
-      case .unicodeScalar:
-        start = base.unicodeScalars.index(after: currentMatch.range.upperBound)
-      }
-    } else {
-      start = currentMatch.range.upperBound
-    }
-
-    guard let nextMatch = try? regex.firstMatch(in: base[start...]) else {
+    guard
+      let start = searchIndex(after: currentMatch),
+      let nextMatch = try! regex.firstMatch(in: input[start...])
+    else {
       return .end
     }
     return Index.match(nextMatch)
   }
   
   subscript(position: Index) -> Regex<Output>.Match {
-    switch position {
-    case .match(let match):
-      return match
-    case .end:
+    guard let match = position.match else {
       fatalError("Can't subscript the 'endIndex' of a match collection.")
     }
+    return match
   }
 }
 
