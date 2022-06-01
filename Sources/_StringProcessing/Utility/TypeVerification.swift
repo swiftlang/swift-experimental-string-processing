@@ -14,18 +14,18 @@
 @available(SwiftStdlib 5.7, *)
 extension Regex {
   internal func _verifyType() -> Bool {
+    guard Output.self != AnyRegexOutput.self else { return true }
+
     var tupleElements: [Any.Type] = [Substring.self]
     var labels = " "
     
     for capture in program.tree.root._captureList.captures {
       var captureType: Any.Type = capture.type ?? Substring.self
-      var i = capture.optionalDepth
-      
-      while i != 0 {
+
+      for _ in 0..<capture.optionalDepth {
         captureType = TypeConstruction.optionalType(of: captureType)
-        i -= 1
       }
-      
+
       tupleElements.append(captureType)
       
       if let name = capture.name {
@@ -47,7 +47,7 @@ extension Regex {
       // to the tuple. In that case, don't pass a label string.
       labels: labels.all { $0 == " " } ? nil : labels
     )
-    
+
     return Output.self == createdType
   }
 }
