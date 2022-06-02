@@ -19,7 +19,7 @@ extension Unicode {
   // other script types.
 
   /// Character script types.
-  public enum Script: String, Hashable, CaseIterable {
+  public enum Script: String, Hashable, CaseIterable, Sendable {
     case adlam = "Adlam"
     case ahom = "Ahom"
     case anatolianHieroglyphs = "Anatolian_Hieroglyphs"
@@ -187,7 +187,7 @@ extension Unicode {
 
   /// POSIX character properties not already covered by general categories or
   /// binary properties.
-  public enum POSIXProperty: String, Hashable, CaseIterable {
+  public enum POSIXProperty: String, Hashable, CaseIterable, Sendable {
     case alnum = "alnum"
     case blank = "blank"
     case graph = "graph"
@@ -204,7 +204,7 @@ extension Unicode {
 
   /// Unicode.GeneralCategory + cases for "meta categories" such as "L", which
   /// encompasses Lu | Ll | Lt | Lm | Lo.
-  public enum ExtendedGeneralCategory: String, Hashable, CaseIterable {
+  public enum ExtendedGeneralCategory: String, Hashable, CaseIterable, Sendable {
     case other = "C"
     case control = "Cc"
     case format = "Cf"
@@ -254,7 +254,7 @@ extension Unicode {
   /// A list of Unicode properties that can either be true or false.
   ///
   /// https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt
-  public enum BinaryProperty: String, Hashable, CaseIterable {
+  public enum BinaryProperty: String, Hashable, CaseIterable, Sendable {
     case asciiHexDigit = "ASCII_Hex_Digit"
     case alphabetic = "Alphabetic"
     case bidiControl = "Bidi_Control"
@@ -326,7 +326,7 @@ extension Unicode {
 
   /// A list of unicode character blocks, including `No_Block`.
   /// https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt
-  public enum Block: String, Hashable, CaseIterable {
+  public enum Block: String, Hashable, CaseIterable, Sendable {
     /// 0000..007F; Basic Latin
     case basicLatin                                  = "Basic_Latin"
     /// 0080..00FF; Latin-1 Supplement

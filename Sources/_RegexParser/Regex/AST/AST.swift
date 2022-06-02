@@ -30,7 +30,7 @@ extension AST {
 extension AST {
   /// A node in the regex AST.
   public indirect enum Node:
-    Hashable, _TreeNode //, _ASTPrintable ASTValue, ASTAction
+    Hashable, _TreeNode, Sendable //, _ASTPrintable ASTValue, ASTAction
   {
     /// ... | ... | ...
     case alternation(Alternation)
@@ -143,7 +143,7 @@ extension AST.Node {
 
 extension AST {
 
-  public struct Alternation: Hashable, _ASTNode {
+  public struct Alternation: Hashable, Sendable, _ASTNode {
     public let children: [AST.Node]
     public let pipes: [SourceLocation]
 
@@ -162,7 +162,7 @@ extension AST {
     }
   }
 
-  public struct Concatenation: Hashable, _ASTNode {
+  public struct Concatenation: Hashable, Sendable, _ASTNode {
     public let children: [AST.Node]
     public let location: SourceLocation
 
@@ -172,7 +172,7 @@ extension AST {
     }
   }
 
-  public struct Quote: Hashable, _ASTNode {
+  public struct Quote: Hashable, Sendable, _ASTNode {
     public let literal: String
     public let location: SourceLocation
 
@@ -182,7 +182,7 @@ extension AST {
     }
   }
 
-  public struct Trivia: Hashable, _ASTNode {
+  public struct Trivia: Hashable, Sendable, _ASTNode {
     public let contents: String
     public let location: SourceLocation
 
@@ -197,7 +197,7 @@ extension AST {
     }
   }
 
-  public struct Interpolation: Hashable, _ASTNode {
+  public struct Interpolation: Hashable, Sendable, _ASTNode {
     public let contents: String
     public let location: SourceLocation
 
@@ -207,7 +207,7 @@ extension AST {
     }
   }
 
-  public struct Empty: Hashable, _ASTNode {
+  public struct Empty: Hashable, Sendable, _ASTNode {
     public let location: SourceLocation
 
     public init(_ location: SourceLocation) {
@@ -219,15 +219,15 @@ extension AST {
   ///
   /// This is used to model a pattern which should
   /// not be matched against across varying scopes.
-  public struct AbsentFunction: Hashable, _ASTNode {
-    public enum Start: Hashable {
+  public struct AbsentFunction: Hashable, Sendable, _ASTNode {
+    public enum Start: Hashable, Sendable {
       /// `(?~|`
       case withPipe
 
       /// `(?~`
       case withoutPipe
     }
-    public enum Kind: Hashable {
+    public enum Kind: Hashable, Sendable {
       /// An absent repeater `(?~absent)`. This is equivalent to `(?~|absent|.*)`
       /// and therefore matches as long as the pattern `absent` is not matched.
       case repeater(AST.Node)
@@ -261,8 +261,8 @@ extension AST {
     }
   }
 
-  public struct Reference: Hashable {
-    public enum Kind: Hashable {
+  public struct Reference: Hashable, Sendable {
+    public enum Kind: Hashable, Sendable {
       // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
       // Oniguruma: \k<n>, \k'n'
       case absolute(Int)
@@ -304,7 +304,7 @@ extension AST {
   }
 
   /// A set of global matching options in a regular expression literal.
-  public struct GlobalMatchingOptionSequence: Hashable {
+  public struct GlobalMatchingOptionSequence: Hashable, Sendable {
     public var options: [AST.GlobalMatchingOption]
 
     public init?(_ options: [AST.GlobalMatchingOption]) {
