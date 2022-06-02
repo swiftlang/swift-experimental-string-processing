@@ -222,23 +222,22 @@ extension RegexMatchesCollection: Sequence {
     let base: RegexMatchesCollection
     
     // Because `RegexMatchesCollection` eagerly computes the first match for
-    // its `startIndex`, the iterator begins with this current match populated.
-    // For subsequent calls to `next()`, this value is `nil`, and `nextStart`
-    // is used to search for the next match.
-    var currentMatch: Regex<Output>.Match?
+    // its `startIndex`, the iterator can use that match for its initial
+    // iteration. For subsequent calls to `next()`, this value is `false`, and
+    // `nextStart` is used to search for the next match.
+    var initialIteration = true
     var nextStart: String.Index?
     
     init(_ matches: RegexMatchesCollection) {
       self.base = matches
-      self.currentMatch = matches.startIndex.match
-      self.nextStart = currentMatch.flatMap(base.searchIndex(after:))
+      self.nextStart = base.startIndex.match.flatMap(base.searchIndex(after:))
     }
     
     mutating func next() -> Regex<Output>.Match? {
       // Initial case with pre-computed first match
-      if let match = currentMatch {
-        currentMatch = nil
-        return match
+      if initialIteration {
+        initialIteration = false
+        return base.startIndex.match
       }
       
       // `nextStart` is `nil` when iteration has completed
