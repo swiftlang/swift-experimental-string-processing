@@ -418,6 +418,18 @@ class AlgorithmTests: XCTestCase {
       let regex = try! Regex(regex)
       let actual = string.replacing(regex, with: replacement)
       XCTAssertEqual(actual, expected, file: file, line: line)
+      
+      var inplace = string
+      inplace.replace(regex, with: replacement)
+      XCTAssertEqual(inplace, expected, file: file, line: line)
+      
+      let tripled = String(repeating: string, count: 3)
+      let substring = tripled.dropFirst(string.count).dropLast(string.count)
+      let replaced = tripled.replacing(
+        regex,
+        with: replacement,
+        subrange: substring.startIndex..<substring.endIndex)
+      XCTAssertEqual(replaced, string + actual + string)
     }
     
     expectReplace("", "", "X", "X")
@@ -434,6 +446,60 @@ class AlgorithmTests: XCTestCase {
     
     // FIXME: Test maxReplacements
     // FIXME: Test closure-based replacement
+  }
+  
+  func testReplaceTemplate() {
+    func expectReplace(
+      _ string: String,
+      _ regex: String,
+      _ replacement: String,
+      _ expected: String,
+      file: StaticString = #file, line: UInt = #line
+    ) {
+      let regex = try! Regex(regex)
+      let actual = string.replacing(regex, withTemplate: replacement)
+      XCTAssertEqual(actual, expected, file: file, line: line)
+      
+      var inplace = string
+      inplace.replace(regex, withTemplate: replacement)
+      XCTAssertEqual(inplace, expected, file: file, line: line)
+
+      let tripled = String(repeating: string, count: 3)
+      let substring = tripled.dropFirst(string.count).dropLast(string.count)
+      let replaced = tripled.replacing(
+        regex,
+        withTemplate: replacement,
+        subrange: substring.startIndex..<substring.endIndex)
+      XCTAssertEqual(replaced, string + actual + string)
+    }
+
+    // Numbered replacements
+    expectReplace("a:b abc:123", #"(\w+):(\w+)"#, "$2:$1", "b:a 123:abc")
+    // Numbered replacements w/ named captures
+    expectReplace("a:b abc:123", #"(?<value>\w+):(?<key>\w+)"#, "$2:$1", "b:a 123:abc")
+    // Named replacements
+    expectReplace("a:b abc:123", #"(?<value>\w+):(?<key>\w+)"#, "${key}:${value}", "b:a 123:abc")
+
+    // Elide extra numbered replacements
+    expectReplace("a:b abc:123", #"(\w+):(\w+)"#, "$2:$1$9", "b:a 123:abc")
+    expectReplace("a:b abc:123", #"(\w+):(\w+)"#, "$2:$1${9}", "b:a 123:abc")
+    // Elide extra named replacements
+    expectReplace("a:b abc:123", #"(?<value>\w+):(?<key>\w+)"#, "${key}:${value}${nocap}", "b:a 123:abc")
+    
+    // Whole replacement
+    expectReplace("100 200 31 4", #"\d+"#, "${0}0", "1000 2000 310 40")
+    expectReplace("100 200 31 4", #"\d+"#, "$00", "100 200 31 4")
+    
+    // Escaped '$' handling
+    expectReplace("100 200 31 4", #"\d+"#, "\\$$0", "$100 $200 $31 $4")
+    expectReplace("100 200 31 4", #"\d+"#, #"\$$0"#, "$100 $200 $31 $4")
+    expectReplace("100 200 31 4", #"\d+"#, "\\$0$0", "$0100 $0200 $031 $04")
+    expectReplace("100 200 31 4", #"\d+"#, "\\$0${0}", "$0100 $0200 $031 $04")
+    
+    // Other funny business
+    expectReplace("100 200 31 4", #"\d+"#, "${0", "${0 ${0 ${0 ${0")
+    expectReplace("100 200 31 4", #"\d+"#, "${0 }", "${0 } ${0 } ${0 } ${0 }")
+    expectReplace("100 200 31 4", #"(?<digits>\d+)"#, "${ digits }", "${ digits } ${ digits } ${ digits } ${ digits }")
   }
 
   func testStringReplace() {

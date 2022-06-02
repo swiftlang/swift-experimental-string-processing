@@ -74,6 +74,31 @@ extension RangeReplaceableCollection {
 
 // MARK: Regex algorithms
 
+enum CaptureLookup {
+  case dollar
+  case numbered(Int)
+  case named(String)
+}
+
+@available(SwiftStdlib 5.7, *)
+let captureReplacementRegex = try! Regex(
+  #"""
+  (?Px)
+  (?:
+  (\\\$)        # escaped $
+  |
+  \$(?:
+    (\d++)      # numbered
+    |
+    {(?:        # brackets
+      (\d++)    # numbered
+      |
+      (\w++)    # named
+    )}
+  ))
+  """#,
+  as: (Substring, Substring?, Substring?, Substring?, Substring?).self)
+
 extension RangeReplaceableCollection where SubSequence == Substring {
   @available(SwiftStdlib 5.7, *)
   func _replacing<R: RegexComponent, Replacement: Collection>(
@@ -172,6 +197,86 @@ extension RangeReplaceableCollection where SubSequence == Substring {
       subrange: startIndex..<endIndex,
       maxReplacements: maxReplacements,
       with: replacement)
+  }
+  
+  @available(SwiftStdlib 5.7, *)
+  public func replacing(
+    _ regex: some RegexComponent,
+    withTemplate templateString: String,
+    subrange: Range<Index>,
+    maxReplacements: Int = .max
+  ) -> Self {
+    precondition(maxReplacements >= 0)
+    
+    let replacements = templateString.matches(of: captureReplacementRegex)
+      .compactMap { match -> (Range<String.Index>, CaptureLookup)? in
+        // Remove escaping '\' if `$` is escaped
+        if match.output.1 != nil {
+          return (match.range, .dollar)
+        }
+          
+        // Named capture?
+        if let captureName = match.output.4 {
+          return (match.range, .named(String(captureName)))
+        }
+        
+        // Numbered capture?
+        if let captureNumberString = match.output.2 ?? match.output.3,
+           let captureNumber = Int(captureNumberString) {
+          return (match.range, .numbered(captureNumber))
+        }
+        
+        return nil
+      }
+    
+    return replacing(regex, subrange: subrange, maxReplacements: maxReplacements) {
+      match in
+      let erasedMatch = Regex<AnyRegexOutput>.Match(match)
+      var result = Self()
+      var index = templateString.startIndex
+      for replacement in replacements {
+        result.append(contentsOf: templateString[index..<(replacement.0.lowerBound)])
+        switch replacement.1 {
+        case .numbered(let captureNumber) where captureNumber < erasedMatch.output.count:
+          result.append(contentsOf: erasedMatch.output[captureNumber].substring ?? "")
+        case .named(let captureName):
+          result.append(contentsOf: erasedMatch.output[captureName]?.substring ?? "")
+        case .dollar:
+          result.append("$")
+        default:
+          break
+        }
+        index = replacement.0.upperBound
+      }
+      result.append(contentsOf: templateString[index...])
+      return result
+    }
+  }
+  
+  @available(SwiftStdlib 5.7, *)
+  public func replacing(
+    _ regex: some RegexComponent,
+    withTemplate templateString: String,
+    maxReplacements: Int = .max
+  ) -> Self {
+    replacing(
+      regex,
+      withTemplate: templateString,
+      subrange: startIndex..<endIndex,
+      maxReplacements: maxReplacements)
+  }
+
+  @available(SwiftStdlib 5.7, *)
+  public mutating func replace(
+    _ regex: some RegexComponent,
+    withTemplate templateString: String,
+    maxReplacements: Int = .max
+  ) {
+    self = replacing(
+      regex,
+      withTemplate: templateString,
+      subrange: startIndex..<endIndex,
+      maxReplacements: maxReplacements)
   }
 
   /// Replaces all occurrences of the sequence matching the given regex with
