@@ -14,6 +14,10 @@
 @available(SwiftStdlib 5.7, *)
 extension Regex {
   internal func _verifyType() -> Bool {
+    guard Output.self != AnyRegexOutput.self else {
+      return true
+    }
+    
     var tupleElements: [Any.Type] = [Substring.self]
     var labels = " "
     
