@@ -62,9 +62,11 @@ extension AnyRegexOutput: RandomAccessCollection {
 
     /// The captured value, `nil` for no-capture
     public var value: Any? {
-      // FIXME: Should this return the substring for default-typed
-      // values?
-      representation.value
+      representation.value ?? substring
+    }
+
+    internal var type: Any.Type {
+      representation.type
     }
 
     /// The name of this capture, if it has one, otherwise `nil`.
@@ -262,5 +264,10 @@ extension AnyRegexOutput.ElementRepresentation {
       value: nil,
       optionalCount: optionalDepth
     )
+  }
+
+  var type: Any.Type {
+    value.map { Swift.type(of: $0) }
+      ?? TypeConstruction.optionalType(of: Substring.self, depth: optionalDepth)
   }
 }

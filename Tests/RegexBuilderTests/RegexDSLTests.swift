@@ -427,7 +427,19 @@ class RegexDSLTests: XCTestCase {
         CharacterClass.digit
       }
     }
-    
+
+    try _testDSLCaptures(
+      ("abcdef2", ("abcdef2", "f")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      Optionally {
+        ZeroOrMore {
+          Capture(CharacterClass.word)
+        }
+        CharacterClass.digit
+      }
+    }
+
     try _testDSLCaptures(
       ("aaabbbcccdddeeefff", "aaabbbcccdddeeefff"),
       ("aaaabbbcccdddeeefff", nil),
