@@ -78,11 +78,6 @@ extension MEProgram.Builder {
   var lastInstructionAddress: InstructionAddress {
     .init(instructions.endIndex - 1)
   }
-  
-  /// `true` if the builder has received any instructions.
-  var hasReceivedInstructions: Bool {
-    !instructions.isEmpty
-  }
 
   mutating func buildNop(_ r: StringRegister? = nil) {
     instructions.append(.init(.nop, .init(optionalString: r)))

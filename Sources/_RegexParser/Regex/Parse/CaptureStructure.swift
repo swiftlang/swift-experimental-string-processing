@@ -225,7 +225,7 @@ extension CaptureStructure: CustomStringConvertible {
 extension AST {
   /// The capture structure of this AST for compiler communication.
   var captureStructure: CaptureStructure {
-    root._captureList._captureStructure(nestOptionals: true)
+    captureList._captureStructure(nestOptionals: true)
   }
 }
 
@@ -246,10 +246,7 @@ extension CaptureList {
 extension CaptureList.Capture {
   func _captureStructure(nestOptionals: Bool) -> CaptureStructure {
     if optionalDepth == 0 {
-      if let ty = type {
-        return .atom(name: name, type: .init(ty))
-      }
-      return .atom(name: name)
+      return .atom(name: name, type: type == Substring.self ? nil : .init(type))
     }
     var copy = self
     copy.optionalDepth = 0

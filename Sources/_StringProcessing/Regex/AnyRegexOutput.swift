@@ -15,7 +15,7 @@
 @available(SwiftStdlib 5.7, *)
 public struct AnyRegexOutput {
   internal let input: String
-  internal let _elements: [ElementRepresentation]
+  internal var _elements: [ElementRepresentation]
 }
 
 @available(SwiftStdlib 5.7, *)
@@ -37,7 +37,7 @@ extension AnyRegexOutput {
     as type: Output.Type = Output.self
   ) -> Output? {
     let elements = map {
-      $0.existentialOutputComponent(from: input[...])
+      $0.existentialOutputComponent(from: input)
     }
     return TypeConstruction.tuple(of: elements) as? Output
   }
@@ -52,7 +52,7 @@ extension AnyRegexOutput: RandomAccessCollection {
 
     /// The range over which a value was captured. `nil` for no-capture.
     public var range: Range<String.Index>? {
-      representation.bounds
+      representation.content?.range
     }
 
     /// The slice of the input over which a value was captured. `nil` for no-capture.
@@ -60,12 +60,12 @@ extension AnyRegexOutput: RandomAccessCollection {
       range.map { input[$0] }
     }
 
-    /// The captured value, `nil` for no-capture
+    /// The captured value, `nil` for no-capture.
     public var value: Any? {
-      representation.value ?? substring
+      representation.value(forInput: input)
     }
 
-    internal var type: Any.Type {
+    public var type: Any.Type {
       representation.type
     }
 
@@ -168,7 +168,7 @@ extension Regex {
 
   /// Returns whether a named-capture with `name` exists
   public func contains(captureNamed name: String) -> Bool {
-    program.tree.root._captureList.captures.contains(where: {
+    program.tree.captureList.captures.contains(where: {
       $0.name == name
     })
   }
@@ -196,8 +196,7 @@ extension Regex.Match where Output == AnyRegexOutput {
   public init<Output>(_ match: Regex<Output>.Match) {
     self.init(
       anyRegexOutput: match.anyRegexOutput,
-      range: match.range,
-      value: match.value
+      range: match.range
     )
   }
 }
@@ -231,17 +230,15 @@ extension AnyRegexOutput {
     /// `Substring` has optional depth `0`, and `Int??` has optional depth `2`.
     let optionalDepth: Int
 
-    /// The bounds of the output element.
-    let bounds: Range<String.Index>?
+    /// The capture content representation, i.e. the element bounds and the
+    /// value (if available).
+    let content: (range: Range<String.Index>, value: Any?)?
 
     /// The name of the capture.
     var name: String? = nil
 
     /// The capture reference this element refers to.
     var referenceID: ReferenceID? = nil
-
-    /// If the output vaule is strongly typed, then this will be set.
-    var value: Any? = nil
   }
 
   internal init(input: String, elements: [ElementRepresentation]) {
@@ -252,22 +249,15 @@ extension AnyRegexOutput {
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput.ElementRepresentation {
   fileprivate func value(forInput input: String) -> Any {
-    // Ok for now because `existentialMatchComponent`
-    // wont slice the input if there's no range to slice with
-    //
-    // FIXME: This is ugly :-/
-    let input = bounds.map { input[$0] } ?? ""
-
-    return constructExistentialOutputComponent(
+    constructExistentialOutputComponent(
       from: input,
-      in: bounds,
-      value: nil,
+      component: content,
       optionalCount: optionalDepth
     )
   }
 
   var type: Any.Type {
-    value.map { Swift.type(of: $0) }
+    content?.value.map { Swift.type(of: $0) }
       ?? TypeConstruction.optionalType(of: Substring.self, depth: optionalDepth)
   }
 }

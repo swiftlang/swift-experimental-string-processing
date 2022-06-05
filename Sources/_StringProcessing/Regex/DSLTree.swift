@@ -37,7 +37,8 @@ extension DSLTree {
     ///
     ///     (...), (?<name>...)
     case capture(
-      name: String? = nil, reference: ReferenceID? = nil, Node)
+      name: String? = nil, reference: ReferenceID? = nil, Node,
+      CaptureTransform? = nil)
 
     /// Matches a noncapturing subpattern.
     case nonCapturingGroup(_AST.GroupKind, Node)
@@ -87,9 +88,6 @@ extension DSLTree {
     case convertedRegexLiteral(Node, _AST.ASTNode)
 
     // MARK: - Extensibility points
-
-    /// Transform a range into a value, most often used inside captures
-    case transform(CaptureTransform, Node)
 
     case consumer(_ConsumerInterface)
 
@@ -254,7 +252,7 @@ public typealias _CharacterPredicateInterface = (
 
 extension DSLTree.Node {
   @_spi(RegexBuilder)
-  public var children: [DSLTree.Node]? {
+  public var children: [DSLTree.Node] {
     switch self {
       
     case let .orderedChoice(v):   return v
@@ -264,9 +262,8 @@ extension DSLTree.Node {
       // Treat this transparently
       return n.children
 
-    case let .capture(_, _, n):           return [n]
+    case let .capture(_, _, n, _):        return [n]
     case let .nonCapturingGroup(_, n):    return [n]
-    case let .transform(_, n):            return [n]
     case let .quantification(_, _, n):    return [n]
 
     case let .conditional(_, t, f): return [t,f]
@@ -336,20 +333,7 @@ extension DSLTree.Node {
       return n.hasCapture
 
     default:
-      return self.children?.any(\.hasCapture) ?? false
-    }
-  }
-}
-
-extension DSLTree.Node {
-  /// For typed capture-producing nodes, the type produced.
-  var valueCaptureType: AnyType? {
-    switch self {
-    case let .matcher(t, _):
-      return AnyType(t)
-    case let .transform(t, _):
-      return AnyType(t.resultType)
-    default: return nil
+      return self.children.any(\.hasCapture)
     }
   }
 }
@@ -387,44 +371,97 @@ public struct ReferenceID: Hashable, Sendable {
 
 @_spi(RegexBuilder)
 public struct CaptureTransform: Hashable, CustomStringConvertible, Sendable {
-  public enum Closure: Sendable {
-    case failable(@Sendable (Substring) throws -> Any?)
-    case nonfailable(@Sendable (Substring) throws -> Any)
+  enum Closure: Sendable {
+    /// A failable transform.
+    case failable((Any) throws -> Any?)
+    /// Specialized case of `failable` for performance.
+    case substringFailable((Substring) throws -> Any?)
+    /// A non-failable transform.
+    case nonfailable((Any) throws -> Any)
+    /// Specialized case of `failable` for performance.
+    case substringNonfailable((Substring) throws -> Any?)
   }
-  public let resultType: Any.Type
-  public let closure: Closure
+  let argumentType: Any.Type
+  let resultType: Any.Type
+  let closure: Closure
 
-  public init(resultType: Any.Type, closure: Closure) {
+  init(argumentType: Any.Type, resultType: Any.Type, closure: Closure) {
+    self.argumentType = argumentType
     self.resultType = resultType
     self.closure = closure
   }
 
-  public init(
-    resultType: Any.Type,
-    _ closure: @Sendable @escaping (Substring) throws -> Any
+  public init<Argument, Result>(
+    _ userSpecifiedTransform: @escaping (Argument) throws -> Result
   ) {
-    self.init(resultType: resultType, closure: .nonfailable(closure))
+    let closure: Closure
+    if let substringTransform = userSpecifiedTransform
+      as? (Substring) throws -> Result {
+      closure = .substringNonfailable(substringTransform)
+    } else {
+      closure = .nonfailable {
+        try userSpecifiedTransform($0 as! Argument) as Any
+      }
+    }
+    self.init(
+      argumentType: Argument.self,
+      resultType: Result.self,
+      closure: closure)
   }
 
-  public init(
-    resultType: Any.Type,
-    _ closure: @Sendable @escaping (Substring) throws -> Any?
+  public init<Argument, Result>(
+    _ userSpecifiedTransform: @escaping (Argument) throws -> Result?
   ) {
-    self.init(resultType: resultType, closure: .failable(closure))
+    let closure: Closure
+    if let substringTransform = userSpecifiedTransform
+      as? (Substring) throws -> Result? {
+      closure = .substringFailable(substringTransform)
+    } else {
+      closure = .failable {
+        try userSpecifiedTransform($0 as! Argument) as Any?
+      }
+    }
+    self.init(
+      argumentType: Argument.self,
+      resultType: Result.self,
+      closure: closure)
   }
 
-  public func callAsFunction(_ input: Substring) throws -> Any? {
+  func callAsFunction(_ input: Any) throws -> Any? {
     switch closure {
-    case .nonfailable(let closure):
-      let result = try closure(input)
+    case .nonfailable(let transform):
+      let result = try transform(input)
       assert(type(of: result) == resultType)
       return result
-    case .failable(let closure):
-      guard let result = try closure(input) else {
+    case .substringNonfailable(let transform):
+      let result = try transform(input as! Substring)
+      assert(type(of: result) == resultType)
+      return result
+    case .failable(let transform):
+      guard let result = try transform(input) else {
         return nil
       }
       assert(type(of: result) == resultType)
       return result
+    case .substringFailable(let transform):
+      guard let result = try transform(input as! Substring) else {
+        return nil
+      }
+      assert(type(of: result) == resultType)
+      return result
+    }
+  }
+
+  func callAsFunction(_ input: Substring) throws -> Any? {
+    switch closure {
+    case .substringFailable(let transform):
+      return try transform(input)
+    case .substringNonfailable(let transform):
+      return try transform(input)
+    case .failable(let transform):
+      return try transform(input)
+    case .nonfailable(let transform):
+      return try transform(input)
     }
   }
 
@@ -440,7 +477,7 @@ public struct CaptureTransform: Hashable, CustomStringConvertible, Sendable {
   }
 
   public var description: String {
-    "<transform result_type=\(resultType)>"
+    "<transform argument_type=\(argumentType) result_type=\(resultType)>"
   }
 }
 
@@ -466,10 +503,10 @@ extension DSLTree.Node {
         child._addCaptures(to: &list, optionalNesting: nesting)
       }
 
-    case let .capture(name, _, child):
+    case let .capture(name, _, child, transform):
       list.append(.init(
         name: name,
-        type: child.valueCaptureType?.base,
+        type: transform?.resultType ?? child.wholeMatchType,
         optionalDepth: nesting, .fake))
       child._addCaptures(to: &list, optionalNesting: nesting)
 
@@ -513,23 +550,54 @@ extension DSLTree.Node {
     case .matcher:
       break
 
-    case .transform(_, let child):
-      child._addCaptures(to: &list, optionalNesting: nesting)
-
     case .customCharacterClass, .atom, .trivia, .empty,
         .quotedLiteral, .consumer, .characterPredicate:
       break
     }
   }
 
-  var _captureList: CaptureList {
-    var list = CaptureList()
-    self._addCaptures(to: &list, optionalNesting: 0)
-    return list
+  /// Returns true if the node is output-forwarding, i.e. not defining its own
+  /// output but forwarding its only child's output.
+  var isOutputForwarding: Bool {
+    switch self {
+    case .nonCapturingGroup:
+      return true
+    case .orderedChoice, .concatenation, .capture,
+         .conditional, .quantification, .customCharacterClass, .atom,
+         .trivia, .empty, .quotedLiteral, .regexLiteral, .absentFunction,
+         .convertedRegexLiteral, .consumer,
+         .characterPredicate, .matcher:
+      return false
+    }
+  }
+
+  /// Returns the output-defining node, peering through any output-forwarding
+  /// nodes.
+  var outputDefiningNode: Self {
+    if isOutputForwarding {
+      assert(children.count == 1)
+      return children[0].outputDefiningNode
+    }
+    return self
+  }
+
+  /// Returns the type of the whole match, i.e. `.0` element type of the output.
+  var wholeMatchType: Any.Type {
+    if case .matcher(let type, _) = outputDefiningNode {
+      return type
+    }
+    return Substring.self
   }
 }
 
 extension DSLTree {
+  var captureList: CaptureList {
+    var list = CaptureList()
+    list.append(.init(type: root.wholeMatchType, optionalDepth: 0, .fake))
+    root._addCaptures(to: &list, optionalNesting: 0)
+    return list
+  }
+
   /// Presents a wrapped version of `DSLTree.Node` that can provide an internal
   /// `_TreeNode` conformance.
   struct _Tree: _TreeNode {
@@ -549,9 +617,8 @@ extension DSLTree {
         // Treat this transparently
         return _Tree(n).children
 
-      case let .capture(_, _, n):           return [_Tree(n)]
+      case let .capture(_, _, n, _):        return [_Tree(n)]
       case let .nonCapturingGroup(_, n):    return [_Tree(n)]
-      case let .transform(_, n):            return [_Tree(n)]
       case let .quantification(_, _, n):    return [_Tree(n)]
 
       case let .conditional(_, t, f): return [_Tree(t), _Tree(f)]
@@ -688,6 +755,20 @@ extension DSLTree {
     @_spi(RegexBuilder)
     public struct Atom: Sendable {
       internal var ast: AST.Atom
+    }
+  }
+}
+
+extension DSLTree.Atom {
+  /// Returns a Boolean indicating whether the atom represents a pattern that's
+  /// matchable, e.g. a character or a scalar, not representing a change of
+  /// matching options or an assertion.
+  var isMatchable: Bool {
+    switch self {
+    case .changeMatchingOptions, .assertion:
+      return false
+    case .char, .scalar, .any, .backreference, .symbolicReference, .unconverted:
+      return true
     }
   }
 }
