@@ -28,6 +28,10 @@ extension Regex {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex.Match {
+  var input: String {
+    anyRegexOutput.input
+  }
+
   /// The output produced from the match operation.
   public var output: Output {
     if Output.self == AnyRegexOutput.self {
@@ -37,33 +41,48 @@ extension Regex.Match {
       )
       
       let output = AnyRegexOutput(
-        input: anyRegexOutput.input,
+        input: input,
         elements: [wholeMatchCapture] + anyRegexOutput._elements
       )
       
       return output as! Output
     } else if Output.self == Substring.self {
       // FIXME: Plumb whole match (`.0`) through the matching engine.
-      return anyRegexOutput.input[range] as! Output
-    } else if anyRegexOutput.isEmpty, value != nil {
+      return input[range] as! Output
+    } else if anyRegexOutput.isEmpty, let value {
       // FIXME: This is a workaround for whole-match values not
       // being modeled as part of captures. We might want to
       // switch to a model where results are alongside captures
-      return value! as! Output
+      return value as! Output
     } else {
       guard value == nil else {
         fatalError("FIXME: what would this mean?")
       }
       let typeErasedMatch = anyRegexOutput.existentialOutput(
-        from: anyRegexOutput.input[range]
+        from: input[range]
       )
       return typeErasedMatch as! Output
     }
   }
 
+  var wholeMatchType: Any.Type {
+    value.map { type(of: $0) } ?? Substring.self
+  }
+
   /// Accesses a capture by its name or number.
   public subscript<T>(dynamicMember keyPath: KeyPath<Output, T>) -> T {
-    output[keyPath: keyPath]
+    // Note: We should be able to get the element offset from the key path
+    // itself even at compile time. We need a better way of doing this.
+    guard let outputTupleOffset = MemoryLayout.tupleElementIndex(
+      of: keyPath, elementTypes: [wholeMatchType] + anyRegexOutput.map(\.type)
+    ) else {
+      return output[keyPath: keyPath]
+    }
+    if outputTupleOffset == 0 {
+      return value.map { $0 as! T } ?? (input[range] as! T)
+    } else {
+      return anyRegexOutput[outputTupleOffset - 1].value as! T
+    }
   }
 
   /// Accesses a capture using the `.0` syntax, even when the match isn't a tuple.
@@ -83,7 +102,7 @@ extension Regex.Match {
     }
     
     return element.existentialOutputComponent(
-      from: anyRegexOutput.input[...]
+      from: input[...]
     ) as! Capture
   }
 }
