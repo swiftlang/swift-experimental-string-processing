@@ -38,7 +38,7 @@ extension Regex.Match {
       
       let output = AnyRegexOutput(
         input: anyRegexOutput.input,
-        _elements: [wholeMatchCapture] + anyRegexOutput._elements
+        elements: [wholeMatchCapture] + anyRegexOutput._elements
       )
       
       return output as! Output
@@ -77,7 +77,7 @@ extension Regex.Match {
   @_spi(RegexBuilder)
   public subscript<Capture>(_ id: ReferenceID) -> Capture {
     guard let element = anyRegexOutput.first(
-      where: { $0.referenceID == id }
+      where: { $0.representation.referenceID == id }
     ) else {
       preconditionFailure("Reference did not capture any match in the regex")
     }
