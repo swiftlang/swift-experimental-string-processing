@@ -12,7 +12,7 @@
 @_implementationOnly import _RegexParser
 
 @_spi(RegexBuilder)
-public struct DSLTree: Sendable {
+public struct DSLTree {
   var root: Node
 
   init(_ r: Node) {
@@ -22,7 +22,7 @@ public struct DSLTree: Sendable {
 
 extension DSLTree {
   @_spi(RegexBuilder)
-  public indirect enum Node: Sendable {
+  public indirect enum Node {
     /// Matches each node in order.
     ///
     ///     ... | ... | ...
@@ -102,7 +102,7 @@ extension DSLTree {
 
 extension DSLTree {
   @_spi(RegexBuilder)
-  public enum QuantificationKind: Sendable {
+  public enum QuantificationKind {
     /// The default quantification kind, as set by options.
     case `default`
     /// An explicitly chosen kind, overriding any options.
@@ -120,7 +120,7 @@ extension DSLTree {
   }
   
   @_spi(RegexBuilder)
-  public struct CustomCharacterClass: Sendable {
+  public struct CustomCharacterClass {
     var members: [Member]
     var isInverted: Bool
     
@@ -153,7 +153,7 @@ extension DSLTree {
     }
 
     @_spi(RegexBuilder)
-    public enum Member: Sendable {
+    public enum Member {
       case atom(Atom)
       case range(Atom, Atom)
       case custom(CustomCharacterClass)
@@ -169,7 +169,7 @@ extension DSLTree {
   }
 
   @_spi(RegexBuilder)
-  public enum Atom: Sendable {
+  public enum Atom {
     case char(Character)
     case scalar(Unicode.Scalar)
     case any
@@ -224,21 +224,21 @@ extension Unicode.GeneralCategory {
 
 // CollectionConsumer
 @_spi(RegexBuilder)
-public typealias _ConsumerInterface = @Sendable (
+public typealias _ConsumerInterface = (
   String, Range<String.Index>
 ) throws -> String.Index?
 
 // Type producing consume
 // TODO: better name
 @_spi(RegexBuilder)
-public typealias _MatcherInterface = @Sendable (
+public typealias _MatcherInterface = (
   String, String.Index, Range<String.Index>
 ) throws -> (String.Index, Any)?
 
 // Character-set (post grapheme segmentation)
 @_spi(RegexBuilder)
 public typealias _CharacterPredicateInterface = (
-  @Sendable (Character) -> Bool
+  (Character) -> Bool
 )
 
 /*
@@ -375,7 +375,7 @@ extension DSLTree.Node {
 }
 
 @_spi(RegexBuilder)
-public struct ReferenceID: Hashable, Sendable {
+public struct ReferenceID: Hashable {
   private static var counter: Int = 0
   var base: Int
 
@@ -386,10 +386,10 @@ public struct ReferenceID: Hashable, Sendable {
 }
 
 @_spi(RegexBuilder)
-public struct CaptureTransform: Hashable, CustomStringConvertible, Sendable {
-  public enum Closure: Sendable {
-    case failable(@Sendable (Substring) throws -> Any?)
-    case nonfailable(@Sendable (Substring) throws -> Any)
+public struct CaptureTransform: Hashable, CustomStringConvertible {
+  public enum Closure {
+    case failable((Substring) throws -> Any?)
+    case nonfailable((Substring) throws -> Any)
   }
   public let resultType: Any.Type
   public let closure: Closure
@@ -401,14 +401,14 @@ public struct CaptureTransform: Hashable, CustomStringConvertible, Sendable {
 
   public init(
     resultType: Any.Type,
-    _ closure: @Sendable @escaping (Substring) throws -> Any
+    _ closure: @escaping (Substring) throws -> Any
   ) {
     self.init(resultType: resultType, closure: .nonfailable(closure))
   }
 
   public init(
     resultType: Any.Type,
-    _ closure: @Sendable @escaping (Substring) throws -> Any?
+    _ closure: @escaping (Substring) throws -> Any?
   ) {
     self.init(resultType: resultType, closure: .failable(closure))
   }
@@ -570,7 +570,7 @@ extension DSLTree {
   @_spi(RegexBuilder)
   public enum _AST {
     @_spi(RegexBuilder)
-    public struct GroupKind: Sendable {
+    public struct GroupKind {
       internal var ast: AST.Group.Kind
       
       public static var atomicNonCapturing: Self {
@@ -585,12 +585,12 @@ extension DSLTree {
     }
 
     @_spi(RegexBuilder)
-    public struct ConditionKind: Sendable {
+    public struct ConditionKind {
       internal var ast: AST.Conditional.Condition.Kind
     }
     
     @_spi(RegexBuilder)
-    public struct QuantificationKind: Sendable {
+    public struct QuantificationKind {
       internal var ast: AST.Quantification.Kind
       
       public static var eager: Self {
@@ -605,7 +605,7 @@ extension DSLTree {
     }
     
     @_spi(RegexBuilder)
-    public struct QuantificationAmount: Sendable {
+    public struct QuantificationAmount {
       internal var ast: AST.Quantification.Amount
       
       public static var zeroOrMore: Self {
@@ -632,17 +632,17 @@ extension DSLTree {
     }
     
     @_spi(RegexBuilder)
-    public struct ASTNode: Sendable {
+    public struct ASTNode {
       internal var ast: AST.Node
     }
     
     @_spi(RegexBuilder)
-    public struct AbsentFunction: Sendable {
+    public struct AbsentFunction {
       internal var ast: AST.AbsentFunction
     }
     
     @_spi(RegexBuilder)
-    public struct AssertionKind: Sendable {
+    public struct AssertionKind {
       internal var ast: AST.Atom.AssertionKind
       
       public static func startOfSubject(_ inverted: Bool = false) -> Self {
@@ -676,17 +676,17 @@ extension DSLTree {
     }
     
     @_spi(RegexBuilder)
-    public struct Reference: Sendable {
+    public struct Reference {
       internal var ast: AST.Reference
     }
     
     @_spi(RegexBuilder)
-    public struct MatchingOptionSequence: Sendable {
+    public struct MatchingOptionSequence {
       internal var ast: AST.MatchingOptionSequence
     }
     
     @_spi(RegexBuilder)
-    public struct Atom: Sendable {
+    public struct Atom {
       internal var ast: AST.Atom
     }
   }

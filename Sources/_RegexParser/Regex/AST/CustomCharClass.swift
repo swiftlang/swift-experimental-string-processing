@@ -11,7 +11,7 @@
 
 
 extension AST {
-  public struct CustomCharacterClass: Hashable, Sendable {
+  public struct CustomCharacterClass: Hashable {
     public var start: Located<Start>
     public var members: [Member]
 
@@ -27,7 +27,7 @@ extension AST {
       self.location = sr
     }
 
-    public enum Member: Hashable, Sendable {
+    public enum Member: Hashable {
       /// A nested custom character class `[[ab][cd]]`
       case custom(CustomCharacterClass)
 
@@ -47,7 +47,7 @@ extension AST {
       /// A binary operator applied to sets of members `abc&&def`
       case setOperation([Member], Located<SetOp>, [Member])
     }
-    public struct Range: Hashable, Sendable {
+    public struct Range: Hashable {
       public var lhs: Atom
       public var dashLoc: SourceLocation
       public var rhs: Atom
@@ -63,12 +63,12 @@ extension AST {
         self.trivia = trivia
       }
     }
-    public enum SetOp: String, Hashable, Sendable {
+    public enum SetOp: String, Hashable {
       case subtraction = "--"
       case intersection = "&&"
       case symmetricDifference = "~~"
     }
-    public enum Start: String, Hashable, Sendable {
+    public enum Start: String, Hashable {
       case normal = "["
       case inverted = "[^"
     }

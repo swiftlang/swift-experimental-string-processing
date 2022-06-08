@@ -11,8 +11,8 @@
 
 extension AST {
   /// An option, written in source, that changes matching semantics.
-  public struct MatchingOption: Hashable, Sendable {
-    public enum Kind: Hashable, Sendable {
+  public struct MatchingOption: Hashable {
+    public enum Kind: Hashable {
       // PCRE options
       case caseInsensitive          // i
       case allowDuplicateGroupNames // J
@@ -84,7 +84,7 @@ extension AST {
   }
 
   /// A sequence of matching options, written in source.
-  public struct MatchingOptionSequence: Hashable, Sendable {
+  public struct MatchingOptionSequence: Hashable {
     /// If the sequence starts with a caret '^', its source location, or nil
     /// otherwise. If this is set, it indicates that all the matching options
     /// are unset, except the ones in `adding`.
@@ -143,10 +143,10 @@ extension AST {
   /// Unlike `MatchingOptionSequence`,
   /// these options must appear at the start of the pattern,
   /// and they apply to the entire pattern.
-  public struct GlobalMatchingOption: _ASTNode, Hashable, Sendable {
+  public struct GlobalMatchingOption: _ASTNode, Hashable {
     /// Determines the definition of a newline for the '.' character class and
     /// when parsing end-of-line comments.
-    public enum NewlineMatching: Hashable, Sendable {
+    public enum NewlineMatching: Hashable {
       /// (*CR*)
       case carriageReturnOnly
       
@@ -166,14 +166,14 @@ extension AST {
       case nulCharacter
     }
     /// Determines what `\R` matches.
-    public enum NewlineSequenceMatching: Hashable, Sendable {
+    public enum NewlineSequenceMatching: Hashable {
       /// (*BSR_ANYCRLF)
       case anyCarriageReturnOrLinefeed
 
       /// (*BSR_UNICODE)
       case anyUnicode
     }
-    public enum Kind: Hashable, Sendable {
+    public enum Kind: Hashable {
       /// (*LIMIT_DEPTH=d)
       case limitDepth(Located<Int>)
 

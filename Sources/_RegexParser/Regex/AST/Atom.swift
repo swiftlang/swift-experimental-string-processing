@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 extension AST {
-  public struct Atom: Hashable, Sendable, _ASTNode {
+  public struct Atom: Hashable, _ASTNode {
     public let kind: Kind
     public let location: SourceLocation
 
@@ -19,7 +19,7 @@ extension AST {
       self.location = loc
     }
 
-    public enum Kind: Hashable, Sendable {
+    public enum Kind: Hashable {
       /// Just a character
       ///
       /// A, \*, \\, ...
@@ -113,7 +113,7 @@ extension AST.Atom {
 }
 
 extension AST.Atom {
-  public struct Scalar: Hashable, Sendable {
+  public struct Scalar: Hashable {
     public var value: UnicodeScalar
     public var location: SourceLocation
 
@@ -123,7 +123,7 @@ extension AST.Atom {
     }
   }
 
-  public struct ScalarSequence: Hashable, Sendable {
+  public struct ScalarSequence: Hashable {
     public var scalars: [Scalar]
     public var trivia: [AST.Trivia]
 
@@ -145,7 +145,7 @@ extension AST.Atom {
 
   // Characters, character types, literals, etc., derived from
   // an escape sequence.
-  public enum EscapedBuiltin: Hashable, Sendable {
+  public enum EscapedBuiltin: Hashable {
     // TODO: better doc comments
 
     // Literal single characters
@@ -374,7 +374,7 @@ extension AST.Atom.EscapedBuiltin {
 }
 
 extension AST.Atom {
-  public struct CharacterProperty: Hashable, Sendable {
+  public struct CharacterProperty: Hashable {
     public var kind: Kind
 
     /// Whether this is an inverted property e.g '\P{Ll}', '[:^ascii:]'.
@@ -397,7 +397,7 @@ extension AST.Atom {
 }
 
 extension AST.Atom.CharacterProperty {
-  public enum Kind: Hashable, Sendable {
+  public enum Kind: Hashable {
     /// Matches any character, equivalent to Oniguruma's '\O'.
     case any
 
@@ -453,14 +453,14 @@ extension AST.Atom.CharacterProperty {
     /// Some special properties implemented by Java.
     case javaSpecial(JavaSpecial)
 
-    public enum MapKind: Hashable, Sendable {
+    public enum MapKind: Hashable {
       case lowercase
       case uppercase
       case titlecase
     }
   }
 
-  public enum PCRESpecialCategory: String, Hashable, Sendable {
+  public enum PCRESpecialCategory: String, Hashable {
     case alphanumeric     = "Xan"
     case posixSpace       = "Xps"
     case perlSpace        = "Xsp"
@@ -470,7 +470,7 @@ extension AST.Atom.CharacterProperty {
 
   /// Special Java properties that correspond to methods on
   /// `java.lang.Character`, with the `java` prefix replaced by `is`.
-  public enum JavaSpecial: String, Hashable, CaseIterable, Sendable {
+  public enum JavaSpecial: String, Hashable, CaseIterable {
     case alphabetic             = "javaAlphabetic"
     case defined                = "javaDefined"
     case digit                  = "javaDigit"
@@ -494,7 +494,7 @@ extension AST.Atom.CharacterProperty {
 
 extension AST.Atom {
   /// Anchors and other built-in zero-width assertions.
-  public enum AssertionKind: String, Hashable, Sendable {
+  public enum AssertionKind: String, Hashable {
     /// \A
     case startOfSubject = #"\A"#
 
@@ -554,10 +554,10 @@ extension AST.Atom {
 }
 
 extension AST.Atom {
-  public enum Callout: Hashable, Sendable {
+  public enum Callout: Hashable {
     /// A PCRE callout written `(?C...)`
-    public struct PCRE: Hashable, Sendable {
-      public enum Argument: Hashable, Sendable {
+    public struct PCRE: Hashable {
+      public enum Argument: Hashable {
         case number(Int)
         case string(String)
       }
@@ -573,8 +573,8 @@ extension AST.Atom {
     }
 
     /// A named Oniguruma callout written `(*name[tag]{args, ...})`
-    public struct OnigurumaNamed: Hashable, Sendable {
-      public struct ArgList: Hashable, Sendable {
+    public struct OnigurumaNamed: Hashable {
+      public struct ArgList: Hashable {
         public var leftBrace: SourceLocation
         public var args: [AST.Located<String>]
         public var rightBrace: SourceLocation
@@ -604,8 +604,8 @@ extension AST.Atom {
     }
 
     /// An Oniguruma callout 'of contents', written `(?{...}[tag]D)`
-    public struct OnigurumaOfContents: Hashable, Sendable {
-      public enum Direction: Hashable, Sendable {
+    public struct OnigurumaOfContents: Hashable {
+      public enum Direction: Hashable {
         case inProgress   // > (the default)
         case inRetraction // <
         case both         // X
@@ -652,7 +652,7 @@ extension AST.Atom {
 
 extension AST.Atom.Callout {
   /// A tag specifier `[...]` that can appear in an Oniguruma callout.
-  public struct OnigurumaTag: Hashable, Sendable {
+  public struct OnigurumaTag: Hashable {
     public var leftBracket: SourceLocation
     public var name: AST.Located<String>
     public var rightBracket: SourceLocation
@@ -670,8 +670,8 @@ extension AST.Atom.Callout {
 }
 
 extension AST.Atom {
-  public struct BacktrackingDirective: Hashable, Sendable {
-    public enum Kind: Hashable, Sendable {
+  public struct BacktrackingDirective: Hashable {
+    public enum Kind: Hashable {
       /// (*ACCEPT)
       case accept
 
