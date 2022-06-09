@@ -339,6 +339,38 @@ fileprivate extension Compiler.ByteCodeGen {
     builder.label(success)
   }
 
+  mutating func emitAtomicNoncapturingGroup(
+    _ child: DSLTree.Node
+  ) throws {
+    /*
+      save(continuingAt: success)
+      save(restoringAt: intercept)
+      <sub-pattern>    // failure restores at intercept
+      clearThrough(intercept) // remove intercept and any leftovers from <sub-pattern>
+      fail             // ->success
+    intercept:
+      clearSavePoint   // remove success
+      fail             // propagate failure
+    success:
+      ...
+    */
+
+    let intercept = builder.makeAddress()
+    let success = builder.makeAddress()
+
+    builder.buildSaveAddress(success)
+    builder.buildSave(intercept)
+    try emitNode(child)
+    builder.buildClearThrough(intercept)
+    builder.buildFail()
+
+    builder.label(intercept)
+    builder.buildClear()
+    builder.buildFail()
+
+    builder.label(success)
+  }
+
   mutating func emitMatcher(
     _ matcher: @escaping _MatcherInterface
   ) -> ValueRegister {
@@ -384,6 +416,9 @@ fileprivate extension Compiler.ByteCodeGen {
       }
       options.apply(optionSequence)
       try emitNode(child)
+      
+    case .atomicNonCapturing:
+      try emitAtomicNoncapturingGroup(child)
 
     default:
       // FIXME: Other kinds...

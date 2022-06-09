@@ -467,6 +467,29 @@ class RegexDSLTests: XCTestCase {
     XCTAssertEqual("ab12".firstMatch(of: octoDecimalRegex)!.output.1, 61904)
   }
   
+  func testLocal() throws {
+    try _testDSLCaptures(
+      ("aaaaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Local {
+        OneOrMore("a")
+      }
+      "a"
+    }
+    
+    try _testDSLCaptures(
+      ("aa", "aa"),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Local {
+        OneOrMore("a", .reluctant)
+      }
+      "a"
+    }
+  }
+  
   func testAssertions() throws {
     try _testDSLCaptures(
       ("aaaaab", "aaaaab"),
