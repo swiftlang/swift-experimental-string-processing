@@ -891,8 +891,7 @@ extension RegexTests {
       input: "Price: 100 dollars", match: nil)
     firstMatchTest(
       #"(?=\d+ dollars)\d+"#,
-      input: "Price: 100 dollars", match: "100",
-      xfail: true) // TODO
+      input: "Price: 100 dollars", match: "100")
 
     firstMatchTest(
       #"\d+(*pla: dollars)"#,
@@ -916,6 +915,14 @@ extension RegexTests {
     firstMatchTest(
       #"\d+(*negative_lookahead: dollars)"#,
       input: "Price: 100 pesos", match: "100")
+
+    // More complex lookaheads
+    firstMatchTest(
+      #"(?=.*e)(?=.*o)(?!.*z)"#,
+      input: "hello", match: "")
+    firstMatchTest(
+      #"^(?=.*e)(?=.*o)(?!.*h)"#,
+      input: "hello", match: nil)
 
     firstMatchTest(
       #"(?<=USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
