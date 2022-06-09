@@ -120,7 +120,7 @@ extension Processor {
   mutating func advance(to nextIndex: Input.Index) {
     assert(nextIndex >= bounds.lowerBound)
     assert(nextIndex <= bounds.upperBound)
-    assert(nextIndex > currentPosition)
+    assert(nextIndex >= currentPosition)
     currentPosition = nextIndex
   }
 
