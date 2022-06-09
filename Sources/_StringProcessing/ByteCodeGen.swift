@@ -295,7 +295,7 @@ extension Compiler.ByteCodeGen {
       save(restoringAt: success)
       save(restoringAt: intercept)
       <sub-pattern>    // failure restores at intercept
-      clearSavePoint   // remove intercept
+      clearThrough(intercept) // remove intercept and any leftovers from <sub-pattern>
       <if negative>:
         clearSavePoint // remove success
       fail             // positive->success, negative propagates
@@ -313,7 +313,7 @@ extension Compiler.ByteCodeGen {
     builder.buildSave(success)
     builder.buildSave(intercept)
     try emitNode(child)
-    builder.buildClear()
+    builder.buildClearThrough(intercept)
     if !positive {
       builder.buildClear()
     }
