@@ -1053,14 +1053,25 @@ extension RegexTests {
     firstMatchTest(
       #"(?:a|.b)c"#, input: "123abcacxyz", match: "abc")
     firstMatchTest(
-      #"(?>a|.b)c"#, input: "123abcacxyz", match: "ac", xfail: true)
+      #"(?>a|.b)c"#, input: "123abcacxyz", match: "ac")
     firstMatchTest(
-      "(*atomic:a|.b)c", input: "123abcacxyz", match: "ac", xfail: true)
+      "(*atomic:a|.b)c", input: "123abcacxyz", match: "ac")
     firstMatchTest(
       #"(?:a+)[a-z]c"#, input: "123aacacxyz", match: "aac")
     firstMatchTest(
-      #"(?>a+)[a-z]c"#, input: "123aacacxyz", match: "ac", xfail: true)
+      #"(?>a+)[a-z]c"#, input: "123aacacxyz", match: nil)
+    
+    // Atomicity should stay in the atomic group
+    firstMatchTest(
+      #"(?:(?>a)|.b)c"#, input: "123abcacxyz", match: "abc")
 
+    // Quantifier behavior inside atomic
+    firstMatchTest(
+      #"^(?>a+?)a$"#, input: "aa", match: "aa")
+    firstMatchTest(
+      #"^(?>a+?)a$"#, input: "aaa", match: nil)
+    firstMatchTest(
+      #"(?>a++)a"#, input: "aaa", match: nil)
 
     // TODO: Test example where non-atomic is significant
     firstMatchTest(

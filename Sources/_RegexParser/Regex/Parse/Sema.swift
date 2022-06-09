@@ -320,7 +320,8 @@ extension RegexValidator {
   func validateGroup(_ group: AST.Group) throws {
     let kind = group.kind
     switch kind.value {
-    case .capture, .namedCapture, .nonCapture, .lookahead, .negativeLookahead:
+    case .capture, .namedCapture, .nonCapture, .lookahead, .negativeLookahead,
+        .atomicNonCapturing:
       break
 
     case .balancedCapture:
@@ -330,9 +331,6 @@ extension RegexValidator {
     case .nonCaptureReset:
       // We need to figure out how these interact with typed captures.
       throw error(.unsupported("branch reset group"), at: kind.location)
-
-    case .atomicNonCapturing:
-      throw error(.unsupported("atomic group"), at: kind.location)
 
     case .nonAtomicLookahead:
       throw error(.unsupported("non-atomic lookahead"), at: kind.location)
