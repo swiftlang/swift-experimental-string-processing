@@ -74,7 +74,7 @@ func flatCaptureTest(
 ) {
   for (test, expect) in tests {
     do {
-      guard let (_, caps) = try? _firstMatch(
+      guard var (_, caps) = try? _firstMatch(
         regex,
         input: test,
         syntax: syntax,
@@ -86,6 +86,8 @@ func flatCaptureTest(
           throw MatchError("Match failed")
         }
       }
+      // Peel off the whole match.
+      caps.removeFirst()
       guard let expect = expect else {
         throw MatchError("""
             Match of \(test) succeeded where failure expected in \(regex)

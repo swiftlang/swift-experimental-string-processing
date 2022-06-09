@@ -94,7 +94,9 @@ func parseTest(
             file: file, line: line)
     return
   }
-  let captures = ast.captureList.withoutLocs
+  var captures = ast.captureList.withoutLocs
+  // Peel off the whole match.
+  captures.captures.removeFirst()
   guard captures == expectedCaptures else {
     XCTFail("""
 

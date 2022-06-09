@@ -3,8 +3,7 @@
 extension CaptureList {
   @available(SwiftStdlib 5.7, *)
   func createElements(
-    _ list: MECaptureList,
-    _ input: String
+    _ list: MECaptureList
   ) -> [AnyRegexOutput.ElementRepresentation] {
     assert(list.values.count == captures.count)
     
@@ -13,10 +12,9 @@ extension CaptureList {
     for (i, (cap, meStored)) in zip(captures, list.values).enumerated() {
       let element = AnyRegexOutput.ElementRepresentation(
         optionalDepth: cap.optionalDepth,
-        bounds: meStored.latest,
+        content: meStored.latest,
         name: cap.name,
-        referenceID: list.referencedCaptureOffsets.first { $1 == i }?.key,
-        value: meStored.latestValue
+        referenceID: list.referencedCaptureOffsets.first { $1 == i }?.key
       )
       
       result.append(element)

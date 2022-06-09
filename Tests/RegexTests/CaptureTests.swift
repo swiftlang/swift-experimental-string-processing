@@ -158,7 +158,9 @@ func captureTest(
   line: UInt = #line
 ) {
   let ast = try! parse(regex, .semantic, .traditional)
-  let capList = ast.root._captureList.withoutLocs
+  var capList = ast.captureList.withoutLocs
+  // Peel off the whole match element.
+  capList.captures.removeFirst()
   guard capList == expected else {
     XCTFail("""
       Expected:
@@ -172,7 +174,9 @@ func captureTest(
   }
 
   // Ensure DSLTree preserves literal captures
-  let dslCapList = ast.dslTree.root._captureList
+  var dslCapList = ast.dslTree.captureList
+  // Peel off the whole match element.
+  dslCapList.captures.removeFirst()
   guard dslCapList == capList else {
     XCTFail("""
       DSLTree did not preserve structure:
@@ -201,7 +205,9 @@ func captureTest(
       return
     }
 
-    let caps = result.anyRegexOutput
+    var caps = result.anyRegexOutput
+    // Peel off the whole match element.
+    caps._elements.removeFirst()
     guard caps.count == output.count else {
       XCTFail("""
       Mismatch capture count:
