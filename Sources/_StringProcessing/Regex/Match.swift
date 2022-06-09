@@ -21,8 +21,6 @@ extension Regex {
 
     /// The range of the overall match.
     public let range: Range<String.Index>
-
-    let value: Any?
   }
 }
 
@@ -35,38 +33,12 @@ extension Regex.Match {
   /// The output produced from the match operation.
   public var output: Output {
     if Output.self == AnyRegexOutput.self {
-      let wholeMatchCapture = AnyRegexOutput.ElementRepresentation(
-        optionalDepth: 0,
-        bounds: range
-      )
-      
-      let output = AnyRegexOutput(
-        input: input,
-        elements: [wholeMatchCapture] + anyRegexOutput._elements
-      )
-      
-      return output as! Output
-    } else if Output.self == Substring.self {
-      // FIXME: Plumb whole match (`.0`) through the matching engine.
-      return input[range] as! Output
-    } else if anyRegexOutput.isEmpty, let value {
-      // FIXME: This is a workaround for whole-match values not
-      // being modeled as part of captures. We might want to
-      // switch to a model where results are alongside captures
-      return value as! Output
-    } else {
-      guard value == nil else {
-        fatalError("FIXME: what would this mean?")
-      }
-      let typeErasedMatch = anyRegexOutput.existentialOutput(
-        from: input[range]
-      )
-      return typeErasedMatch as! Output
+      return anyRegexOutput as! Output
     }
-  }
-
-  var wholeMatchType: Any.Type {
-    value.map { type(of: $0) } ?? Substring.self
+    let typeErasedMatch = anyRegexOutput.existentialOutput(
+      from: anyRegexOutput.input
+    )
+    return typeErasedMatch as! Output
   }
 
   /// Accesses a capture by its name or number.
@@ -74,15 +46,11 @@ extension Regex.Match {
     // Note: We should be able to get the element offset from the key path
     // itself even at compile time. We need a better way of doing this.
     guard let outputTupleOffset = MemoryLayout.tupleElementIndex(
-      of: keyPath, elementTypes: [wholeMatchType] + anyRegexOutput.map(\.type)
+      of: keyPath, elementTypes: anyRegexOutput.map(\.type)
     ) else {
       return output[keyPath: keyPath]
     }
-    if outputTupleOffset == 0 {
-      return value.map { $0 as! T } ?? (input[range] as! T)
-    } else {
-      return anyRegexOutput[outputTupleOffset - 1].value as! T
-    }
+    return anyRegexOutput[outputTupleOffset].value as! T
   }
 
   /// Accesses a capture using the `.0` syntax, even when the match isn't a tuple.
@@ -100,9 +68,8 @@ extension Regex.Match {
     ) else {
       preconditionFailure("Reference did not capture any match in the regex")
     }
-    
     return element.existentialOutputComponent(
-      from: input[...]
+      from: input
     ) as! Capture
   }
 }
