@@ -215,6 +215,7 @@ extension Processor {
     }
     let (opcode, payload) = fetch().destructure
 
+  OpCodeSwitch:
     switch opcode {
     case .invalid:
       fatalError("Invalid program")
@@ -288,9 +289,21 @@ extension Processor {
       if let _ = savePoints.popLast() {
         controller.step()
       } else {
-        fatalError("TODO: What should we do here?")
+        // TODO: What should we do here?
+        fatalError("Invalid code: Tried to clear save points when empty")
       }
 
+    case .clearThrough:
+      let addr = payload.addr
+      while let sp = savePoints.popLast() {
+        if sp.pc == addr {
+          controller.step()
+          break OpCodeSwitch
+        }
+      }
+      // TODO: What should we do here?
+      fatalError("Invalid code: Tried to clear save points when empty")
+      
     case .peek:
       fatalError()
 

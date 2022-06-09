@@ -158,6 +158,10 @@ extension MEProgram.Builder {
   mutating func buildClear() {
     instructions.append(.init(.clear))
   }
+  mutating func buildClearThrough(_ t: AddressToken) {
+    instructions.append(.init(.clearThrough))
+    fixup(to: t)
+  }
   mutating func buildRestore() {
     instructions.append(.init(.restore))
   }
@@ -322,7 +326,7 @@ extension MEProgram.Builder {
       case .condBranchZeroElseDecrement:
         payload = .init(addr: addr, int: inst.payload.int)
 
-      case .branch, .save, .saveAddress, .call:
+      case .branch, .save, .saveAddress, .call, .clearThrough:
         payload = .init(addr: addr)
 
       case .splitSaving:

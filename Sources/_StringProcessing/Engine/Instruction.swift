@@ -228,6 +228,13 @@ extension Instruction {
     /// Precondition: There is a save point to remove
     case clear
 
+    /// Remove save points up to and including the operand
+    ///
+    /// Operand: instruction address to look for
+    ///
+    /// Precondition: The operand is in the save point list
+    case clearThrough
+
     /// View the most recently saved point
     ///
     /// UNIMPLEMENTED
