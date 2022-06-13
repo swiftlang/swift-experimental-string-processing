@@ -525,6 +525,29 @@ class RegexDSLTests: XCTestCase {
      */
   }
 
+  func testCaptureTransform() throws {
+    try _testDSLCaptures(
+      ("aaaa1", ("aaaa1", "aaa")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      Capture {
+        OneOrMore("a")
+      } transform: {
+        $0.dropFirst()
+      }
+      One(.digit)
+    }
+    try _testDSLCaptures(
+      ("aaaa1", ("aaaa1", "a")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      ZeroOrMore {
+        Capture("a", transform: { Optional.some($0) })
+      }
+      One(.digit)
+    }
+  }
+
   func testCapturelessQuantification() throws {
     // This test is to make sure that a captureless quantification, when used
     // straight out of the quantifier (without being wrapped in a builder), is
