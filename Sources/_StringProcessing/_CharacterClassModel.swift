@@ -16,7 +16,7 @@
 // of parsing or to store in an AST
 
 @_spi(RegexBuilder)
-public struct _CharacterClassModel: Hashable, Sendable {
+public struct _CharacterClassModel: Hashable {
   /// The actual character class to match.
   var cc: Representation
   
@@ -28,7 +28,7 @@ public struct _CharacterClassModel: Hashable, Sendable {
   var isInverted: Bool = false
 
   // TODO: Split out builtin character classes into their own type?
-  public enum Representation: Hashable, Sendable {
+  public enum Representation: Hashable {
     /// Any character
     case any
     /// Any grapheme cluster
@@ -54,14 +54,14 @@ public struct _CharacterClassModel: Hashable, Sendable {
     case custom([CharacterSetComponent])
   }
 
-  public enum SetOperator: Hashable, Sendable {
+  public enum SetOperator: Hashable {
     case subtraction
     case intersection
     case symmetricDifference
   }
 
   /// A binary set operation that forms a character class component.
-  public struct SetOperation: Hashable, Sendable {
+  public struct SetOperation: Hashable {
     var lhs: CharacterSetComponent
     var op: SetOperator
     var rhs: CharacterSetComponent
@@ -78,7 +78,7 @@ public struct _CharacterClassModel: Hashable, Sendable {
     }
   }
 
-  public enum CharacterSetComponent: Hashable, Sendable {
+  public enum CharacterSetComponent: Hashable {
     case character(Character)
     case range(ClosedRange<Character>)
 
@@ -120,7 +120,7 @@ public struct _CharacterClassModel: Hashable, Sendable {
     }
   }
 
-  enum MatchLevel: Hashable, Sendable {
+  enum MatchLevel: Hashable {
     /// Match at the extended grapheme cluster level.
     case graphemeCluster
     /// Match at the Unicode scalar level.

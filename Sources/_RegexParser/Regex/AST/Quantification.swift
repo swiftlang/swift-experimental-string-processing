@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 extension AST {
-  public struct Quantification: Hashable, Sendable {
+  public struct Quantification: Hashable {
     public let amount: Located<Amount>
     public let kind: Located<Kind>
 
@@ -36,7 +36,7 @@ extension AST {
       self.trivia = trivia
     }
 
-    public enum Amount: Hashable, Sendable {
+    public enum Amount: Hashable {
       case zeroOrMore              // *
       case oneOrMore               // +
       case zeroOrOne               // ?
@@ -46,7 +46,7 @@ extension AST {
       case range(Located<Int>, Located<Int>) // {n,m}
     }
 
-    public enum Kind: String, Hashable, Sendable {
+    public enum Kind: String, Hashable {
       case eager      = ""
       case reluctant  = "?"
       case possessive = "+"
