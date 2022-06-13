@@ -1060,9 +1060,11 @@ extension RegexTests {
       .singleLine, .reluctantByDefault, .extraExtended, .extended,
       .unicodeWordBoundaries, .asciiOnlyDigit, .asciiOnlyPOSIXProps,
       .asciiOnlySpace, .asciiOnlyWord, .textSegmentGraphemeMode,
-      .textSegmentWordMode, .graphemeClusterSemantics, .unicodeScalarSemantics,
+      .textSegmentWordMode,
+      .graphemeClusterSemantics, .unicodeScalarSemantics,
       .byteSemantics
     ]
+    
     parseTest("(?iJmnsUxxxwDPSWy{g}y{w}Xub-iJmnsUxxxwDPSW)", changeMatchingOptions(
       matchingOptions(adding: allOptions, removing: allOptions.dropLast(5))
     ), throwsError: .unsupported)
@@ -2734,8 +2736,9 @@ extension RegexTests {
     diagnosticTest("(?-y{g})", .cannotRemoveTextSegmentOptions)
     diagnosticTest("(?-y{w})", .cannotRemoveTextSegmentOptions)
 
-    diagnosticTest("(?-X)", .cannotRemoveSemanticsOptions)
-    diagnosticTest("(?-u)", .cannotRemoveSemanticsOptions)
+    // FIXME: Reenable once we figure out (?X) and (?u) semantics
+    //diagnosticTest("(?-X)", .cannotRemoveSemanticsOptions)
+    //diagnosticTest("(?-u)", .cannotRemoveSemanticsOptions)
     diagnosticTest("(?-b)", .cannotRemoveSemanticsOptions)
 
     diagnosticTest("(?a)", .unknownGroupKind("?a"))

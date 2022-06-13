@@ -106,8 +106,13 @@ extension RegexValidator {
     case .byteSemantics:
       throw error(.unsupported("byte semantic mode"), at: loc)
 
+    case .unicodeScalarSemantics:
+      throw error(.unsupported("unicode scalar semantic mode"), at: loc)
+      
+    case .graphemeClusterSemantics:
+      throw error(.unsupported("grapheme semantic mode"), at: loc)
+      
     case .caseInsensitive, .possessiveByDefault, .reluctantByDefault,
-        .unicodeScalarSemantics, .graphemeClusterSemantics,
         .singleLine, .multiline, .namedCapturesOnly, .extended, .extraExtended,
         .asciiOnlyDigit, .asciiOnlyWord, .asciiOnlySpace, .asciiOnlyPOSIXProps:
       break
