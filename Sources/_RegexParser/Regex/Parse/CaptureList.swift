@@ -24,13 +24,13 @@ public struct CaptureList {
 extension CaptureList {
   public struct Capture {
     public var name: String?
-    public var type: Any.Type?
+    public var type: Any.Type
     public var optionalDepth: Int
     public var location: SourceLocation
 
     public init(
       name: String? = nil,
-      type: Any.Type? = nil,
+      type: Any.Type = Substring.self,
       optionalDepth: Int,
       _ location: SourceLocation
     ) {
@@ -122,18 +122,15 @@ extension AST.Node {
       break
     }
   }
-
-  public var _captureList: CaptureList {
-    var caps = CaptureList()
-    self._addCaptures(to: &caps, optionalNesting: 0)
-    return caps
-  }
 }
 
 extension AST {
-  /// Get the capture list for this AST
+  /// The capture list (including the whole match) of this AST.
   public var captureList: CaptureList {
-    root._captureList
+    var caps = CaptureList()
+    caps.append(.init(optionalDepth: 0, .fake))
+    root._addCaptures(to: &caps, optionalNesting: 0)
+    return caps
   }
 }
 
@@ -151,12 +148,7 @@ extension CaptureList: Equatable {}
 
 extension CaptureList.Capture: CustomStringConvertible {
   public var description: String {
-    let typeStr: String
-    if let ty = type {
-      typeStr = "\(ty)"
-    } else {
-      typeStr = "Substring"
-    }
+    let typeStr = String(describing: type)
     let suffix = String(repeating: "?", count: optionalDepth)
     return typeStr + suffix
   }

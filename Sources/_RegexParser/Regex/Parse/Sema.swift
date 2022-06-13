@@ -77,7 +77,7 @@ extension RegexValidator {
     }
     switch ref.kind {
     case .absolute(let i):
-      guard i <= captures.captures.count else {
+      guard i < captures.captures.count else {
         throw error(.invalidReference(i), at: ref.innerLoc)
       }
     case .named(let name):
