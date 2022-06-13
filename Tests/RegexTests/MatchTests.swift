@@ -1077,6 +1077,12 @@ extension RegexTests {
     firstMatchTest(
       #"(?>a++)a"#, input: "aaa", match: nil)
 
+    firstMatchTest(
+      #"(?>(\d+))\w+\1"#, input: "123x12", match: nil)
+    firstMatchTest(
+      #"(?>(\d+))\w+\1"#, input: "123x23", match: "23x23",
+      xfail: true)
+
     // TODO: Test example where non-atomic is significant
     firstMatchTest(
       #"\d+(?* dollars)"#,
