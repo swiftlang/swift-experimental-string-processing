@@ -371,7 +371,7 @@ public struct ReferenceID: Hashable {
 
 @_spi(RegexBuilder)
 public struct CaptureTransform: Hashable, CustomStringConvertible {
-  enum Closure: Sendable {
+  enum Closure {
     /// A failable transform.
     case failable((Any) throws -> Any?)
     /// Specialized case of `failable` for performance.
