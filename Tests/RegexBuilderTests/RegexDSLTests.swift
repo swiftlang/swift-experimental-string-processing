@@ -427,7 +427,19 @@ class RegexDSLTests: XCTestCase {
         CharacterClass.digit
       }
     }
-    
+
+    try _testDSLCaptures(
+      ("abcdef2", ("abcdef2", "f")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      Optionally {
+        ZeroOrMore {
+          Capture(CharacterClass.word)
+        }
+        CharacterClass.digit
+      }
+    }
+
     try _testDSLCaptures(
       ("aaabbbcccdddeeefff", "aaabbbcccdddeeefff"),
       ("aaaabbbcccdddeeefff", nil),
@@ -586,10 +598,10 @@ class RegexDSLTests: XCTestCase {
     let regex3 = Regex {
       OneOrMore("a")
       Capture {
-        TryCapture("b") { Int($0) }
-        ZeroOrMore {
-          TryCapture("c") { Double($0) }
-        }
+        TryCapture("b", transform: { Int($0) })
+        ZeroOrMore(
+          TryCapture("c", transform: { Double($0) })
+        )
         Optionally("e")
       }
     }
@@ -897,57 +909,64 @@ class RegexDSLTests: XCTestCase {
       }
     }
   }
-  
-  func testSemanticVersionExample() {
-    struct SemanticVersion: Equatable {
-      var major: Int
-      var minor: Int
-      var patch: Int
-      var dev: String?
-    }
-    struct SemanticVersionParser: CustomConsumingRegexComponent {
-      typealias RegexOutput = SemanticVersion
-      func consuming(
-        _ input: String,
-        startingAt index: String.Index,
-        in bounds: Range<String.Index>
-      ) throws -> (upperBound: String.Index, output: SemanticVersion)? {
-        let regex = Regex {
-          TryCapture(OneOrMore(.digit)) { Int($0) }
+
+  struct SemanticVersion: Equatable {
+    var major: Int
+    var minor: Int
+    var patch: Int
+    var dev: String?
+  }
+  struct SemanticVersionParser: CustomConsumingRegexComponent {
+    typealias RegexOutput = SemanticVersion
+    func consuming(
+      _ input: String,
+      startingAt index: String.Index,
+      in bounds: Range<String.Index>
+    ) throws -> (upperBound: String.Index, output: SemanticVersion)? {
+      let regex = Regex {
+        TryCapture(OneOrMore(.digit)) { Int($0) }
+        "."
+        TryCapture(OneOrMore(.digit)) { Int($0) }
+        Optionally {
           "."
           TryCapture(OneOrMore(.digit)) { Int($0) }
-          Optionally {
-            "."
-            TryCapture(OneOrMore(.digit)) { Int($0) }
-          }
-          Optionally {
-            "-"
-            Capture(OneOrMore(.word))
-          }
         }
+        Optionally {
+          "-"
+          Capture(OneOrMore(.word))
+        }
+      }
 
-        guard let match = input[index..<bounds.upperBound].firstMatch(of: regex),
-              match.range.lowerBound == index
-        else { return nil }
+      guard let match = input[index..<bounds.upperBound].firstMatch(of: regex),
+            match.range.lowerBound == index
+      else { return nil }
 
-        let result = SemanticVersion(
-          major: match.output.1,
-          minor: match.output.2,
-          patch: match.output.3 ?? 0,
-          dev: match.output.4.map(String.init))
-        return (match.range.upperBound, result)
+      let result = SemanticVersion(
+        major: match.output.1,
+        minor: match.output.2,
+        patch: match.output.3 ?? 0,
+        dev: match.output.4.map(String.init))
+      return (match.range.upperBound, result)
+    }
+  }
+
+  func testTransformCapturedMatcherOutput() {
+    let versions = [
+      ("version: 1.0", "1.0.0"),
+      ("version: 1.0.1", "1.0.1"),
+      ("version: 12.100.5-dev", "12.100.5-dev"),
+    ]
+    let parser = Regex {
+      "version:"
+      OneOrMore(.whitespace)
+      Capture {
+        SemanticVersionParser()
+      } transform: {
+        "\($0.major).\($0.minor).\($0.patch)\($0.dev.map { "-\($0)" } ?? "")"
       }
     }
-
-    let versions = [
-      ("1.0", SemanticVersion(major: 1, minor: 0, patch: 0)),
-      ("1.0.1", SemanticVersion(major: 1, minor: 0, patch: 1)),
-      ("12.100.5-dev", SemanticVersion(major: 12, minor: 100, patch: 5, dev: "dev")),
-    ]
-
-    let parser = SemanticVersionParser()
     for (str, version) in versions {
-      XCTAssertEqual(str.wholeMatch(of: parser)?.output, version)
+      XCTAssertEqual(str.wholeMatch(of: parser)?.1, version)
     }
   }
   

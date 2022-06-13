@@ -45,46 +45,25 @@ extension Processor {
     // By remembering the entire history, we waste space, but
     // we get flexibility for now.
     //
-    fileprivate var stack: Array<Range<Position>> = []
-
-    // Also save entire history of captured values -_-
-    //
-    // We will need to really zoom in on performance here...
-    fileprivate var valueStack: Array<Any> = []
+    fileprivate var history: Array<(range: Range<Position>, value: Any?)> = []
 
     // An in-progress capture start
     fileprivate var currentCaptureBegin: Position? = nil
 
     fileprivate func _invariantCheck() {
       if startState == nil {
-        assert(stack.isEmpty)
-        assert(valueStack.isEmpty)
+        assert(history.isEmpty)
         assert(currentCaptureBegin == nil)
       } else if currentCaptureBegin == nil {
-        assert(!stack.isEmpty || !valueStack.isEmpty)
-      }
-      if hasValues {
-        // FIXME: how?
-        // assert(valueStack.count == stack.count)
+        assert(!history.isEmpty)
       }
     }
 
     // MARK: - IPI
 
-    var isEmpty: Bool { stack.isEmpty }
+    var isEmpty: Bool { history.isEmpty }
 
-    var hasValues: Bool { !valueStack.isEmpty }
-
-    var history: Array<Range<Position>> {
-      stack
-    }
-    var valueHistory: Array<Any> {
-      valueStack
-    }
-
-    var latest: Range<Position>? { stack.last }
-
-    var latestValue: Any? { valueStack.last }
+    var latest: (range: Range<Position>, value: Any?)? { history.last }
 
     /// Start a new capture. If the previously started one was un-ended,
     /// will clear it and restart. If this is the first start, will save `initial`.
@@ -105,7 +84,7 @@ extension Processor {
       assert(currentCaptureBegin != nil)
       defer { _invariantCheck() }
 
-      stack.append(currentCaptureBegin! ..< idx)
+      history.append((currentCaptureBegin! ..< idx, value: nil))
     }
 
     mutating func registerValue(
@@ -117,16 +96,16 @@ extension Processor {
       if let sp = overwriteInitial {
         self.startState = sp
       }
-      valueStack.append(value)
+      history[history.endIndex - 1].value = value
     }
 
     mutating func fail(truncatingAt stackIdx: Int) {
       _invariantCheck()
-      assert(stackIdx <= stack.endIndex)
+      assert(stackIdx <= history.endIndex)
       defer { _invariantCheck() }
 
-      stack.removeSubrange(stackIdx...)
-      if stack.isEmpty {
+      history.removeSubrange(stackIdx...)
+      if history.isEmpty {
         startState = nil
       }
     }
@@ -135,9 +114,6 @@ extension Processor {
 
 extension Processor._StoredCapture: CustomStringConvertible {
   var description: String {
-    if hasValues {
-      return String(describing: valueStack)
-    }
     return String(describing: history)
   }
 }
@@ -146,16 +122,12 @@ struct MECaptureList {
   var values: Array<Processor<String>._StoredCapture>
   var referencedCaptureOffsets: [ReferenceID: Int]
 
-//  func extract(from s: String) -> Array<Array<Substring>> {
-//    caps.map { $0.map { s[$0] }  }
-//  }
-//
-  func latestUntyped(from s: String) -> Array<Substring?> {
+  func latestUntyped(from input: String) -> Array<Substring?> {
     values.map {
       guard let last = $0.latest else {
         return nil
       }
-      return s[last]
+      return input[last.0]
     }
   }
 }

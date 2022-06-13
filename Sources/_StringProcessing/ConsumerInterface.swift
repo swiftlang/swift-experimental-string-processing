@@ -45,8 +45,6 @@ extension DSLTree.Node {
       fatalError("FIXME: Is this where we handle them?")
     case .matcher:
       fatalError("FIXME: Is this where we handle them?")
-    case .transform:
-      fatalError("FIXME: Is this where we handle them?")
     case .characterPredicate:
       fatalError("FIXME: Is this where we handle them?")
     }

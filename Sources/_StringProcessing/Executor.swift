@@ -40,31 +40,10 @@ struct Executor {
       referencedCaptureOffsets: engine.program.referencedCaptureOffsets)
 
     let range = inputRange.lowerBound..<endIdx
-    let caps = engine.program.captureList.createElements(capList, input)
+    let caps = engine.program.captureList.createElements(capList)
 
-    // FIXME: This is a workaround for not tracking (or
-    // specially compiling) whole-match values.
-    let value: Any?
-    if Output.self != Substring.self,
-       Output.self != AnyRegexOutput.self,
-       caps.isEmpty
-    {
-      value = cpu.registers.values.first
-      assert(value != nil, "hmm, what would this mean?")
-    } else {
-      value = nil
-    }
-    
-    let anyRegexOutput = AnyRegexOutput(
-      input: input,
-      elements: caps
-    )
-    
-    return .init(
-      anyRegexOutput: anyRegexOutput,
-      range: range,
-      value: value
-    )
+    let anyRegexOutput = AnyRegexOutput(input: input, elements: caps)
+    return .init(anyRegexOutput: anyRegexOutput, range: range)
   }
 
   @available(SwiftStdlib 5.7, *)
