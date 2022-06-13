@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 extension AST {
-  public struct Conditional: Hashable, Sendable, _ASTNode {
+  public struct Conditional: Hashable, _ASTNode {
     public var location: SourceLocation
     public var condition: Condition
 
@@ -32,8 +32,8 @@ extension AST {
 }
 
 extension AST.Conditional {
-  public struct Condition: Hashable, Sendable {
-    public enum Kind: Hashable, Sendable {
+  public struct Condition: Hashable {
+    public enum Kind: Hashable {
       /// Check to see if a certain group was matched.
       case groupMatched(AST.Reference)
 
@@ -65,7 +65,7 @@ extension AST.Conditional {
 }
 
 extension AST.Conditional.Condition {
-  public struct PCREVersionNumber: Hashable, Sendable {
+  public struct PCREVersionNumber: Hashable {
     public var major: Int
     public var minor: Int
     public var location: SourceLocation
@@ -76,8 +76,8 @@ extension AST.Conditional.Condition {
       self.location = location
     }
   }
-  public struct PCREVersionCheck: Hashable, Sendable {
-    public enum Kind: Hashable, Sendable {
+  public struct PCREVersionCheck: Hashable {
+    public enum Kind: Hashable {
       case equal, greaterThanOrEqual
     }
     public var kind: AST.Located<Kind>
