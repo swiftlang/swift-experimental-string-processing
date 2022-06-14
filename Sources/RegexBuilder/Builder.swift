@@ -25,12 +25,4 @@ public enum RegexComponentBuilder {
   public static func buildExpression<R: RegexComponent>(_ regex: R) -> R {
     regex
   }
-
-  public static func buildEither<R: RegexComponent>(first component: R) -> R {
-    component
-  }
-
-  public static func buildEither<R: RegexComponent>(second component: R) -> R {
-    component
-  }
 }
