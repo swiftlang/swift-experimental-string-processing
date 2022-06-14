@@ -242,20 +242,31 @@ extension UTS18Tests {
     expectFirstMatch("Dåb", regex(#"Dåb"#).ignoresCase(), "Dåb")
     expectFirstMatch("dÅB", regex(#"Dåb"#).ignoresCase(), "dÅB")
     expectFirstMatch("D\u{212B}B", regex(#"Dåb"#).ignoresCase(), "D\u{212B}B")
+    
+    let sigmas = "σΣς"
+    expectFirstMatch(sigmas, regex(#"^σ+$"#).ignoresCase(), sigmas[...])
+    expectFirstMatch(sigmas, regex(#"^Σ+$"#).ignoresCase(), sigmas[...])
+    expectFirstMatch(sigmas, regex(#"^ς+$"#).ignoresCase(), sigmas[...])
+
+    // Custom character classes
+    for regexCh in sigmas {
+      for inputCh in sigmas {
+        expectFirstMatch(String(inputCh), regex("[\(regexCh)]").ignoresCase(), String(inputCh)[...])
+        if regexCh != inputCh {
+          XCTAssertFalse(String(inputCh).contains(regex("[\(regexCh)]")))
+        }
+      }
+    }
+    
+    expectFirstMatch("Strauß", regex("ß").ignoresCase(), "ß")
+    XCTExpectFailure {
+      expectFirstMatch("Strauss", regex("ß").ignoresCase(), "ss")
+    }
+    
+    // TODO: Test char classes, e.g. [\p{Block=Phonetic_Extensions} [A-E]]
+    // TODO: Document when full case folding applies
   }
 
-  func testSimpleLooseMatches_XFail() {
-    XCTExpectFailure("Need case folding support") {
-      let sigmas = "σΣς"
-      expectFirstMatch(sigmas, regex(#"σ+"#).ignoresCase(), sigmas[...])
-      expectFirstMatch(sigmas, regex(#"Σ+"#).ignoresCase(), sigmas[...])
-      expectFirstMatch(sigmas, regex(#"ς+"#).ignoresCase(), sigmas[...])
-      
-      // TODO: Test German sharp S
-      // TODO: Test char classes, e.g. [\p{Block=Phonetic_Extensions} [A-E]]
-    }
-  }
-  
   // RL1.6 Line Boundaries
   //
   // To meet this requirement, if an implementation provides for line-boundary
