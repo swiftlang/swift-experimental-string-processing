@@ -41,7 +41,10 @@ let package = Package(
             targets: ["_RegexParser"]),
         .executable(
             name: "VariadicsGenerator",
-            targets: ["VariadicsGenerator"])
+            targets: ["VariadicsGenerator"]),
+        .executable(
+            name: "RegexBenchmark",
+            targets: ["RegexBenchmark"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.0.0"),
@@ -111,6 +114,17 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 "_RegexParser",
                 "_StringProcessing"
+            ]),
+        .executableTarget(
+            name: "RegexBenchmark",
+            dependencies: [
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                "_RegexParser",
+                "_StringProcessing",
+                "RegexBuilder"
+            ],
+            swiftSettings: [
+                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
             ]),
 
         // MARK: Exercises
