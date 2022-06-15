@@ -7,7 +7,7 @@ import Foundation
 extension BenchmarkRunner {
   mutating func addBacktracking() {
     let r = "^ +A"
-    let s = String(repeating: " ", count: 1000)
+    let s = String(repeating: " ", count: 10000)
 
     let basicBacktrack = Benchmark(
       name: "BasicBacktrack",
