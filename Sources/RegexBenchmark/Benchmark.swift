@@ -15,13 +15,13 @@ public struct Benchmark: RegexBenchmark {
   public enum MatchType {
     case whole
     case first
-    case enumerate
+    case allMatches
   }
   
   public func run() {
     switch ty {
     case .whole: blackHole(target.wholeMatch(of: regex))
-    case .enumerate: blackHole(target.matches(of: regex))
+    case .allMatches: blackHole(target.matches(of: regex))
     case .first: blackHole(target.firstMatch(of: regex))
     }
   }
@@ -54,14 +54,14 @@ public struct BenchmarkRunner {
   // Register instances of Benchmark and run them
   let suiteName: String
   var suite: [any RegexBenchmark]
-  let samples: Int = 40
+  let samples: Int = 20
   
   public init(suiteName: String) {
     self.suiteName = suiteName
     self.suite = []
   }
 
-  public mutating func register(new: some RegexBenchmark) {
+  public mutating func register(_ new: some RegexBenchmark) {
     suite.append(new)
   }
   
