@@ -12,7 +12,7 @@ extension BenchmarkRunner {
     let basicBacktrack = Benchmark(
       name: "BasicBacktrack",
       regex: try! Regex(r),
-      ty: .enumerate,
+      ty: .allMatches,
       target: s
     )
 
@@ -37,9 +37,9 @@ extension BenchmarkRunner {
       target: s
     )
     
-    register(new: basicBacktrack)
-    register(new: basicBacktrackNS)
-    register(new: basicBacktrackFirstMatch)
-    register(new: basicBacktrackNSFirstMatch)
+    register(basicBacktrack)
+    register(basicBacktrackNS)
+    register(basicBacktrackFirstMatch)
+    register(basicBacktrackNSFirstMatch)
   }
 }

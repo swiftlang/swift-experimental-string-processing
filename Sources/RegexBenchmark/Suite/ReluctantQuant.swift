@@ -34,8 +34,8 @@ extension BenchmarkRunner {
       target: String(repeating: "a", count: size) + ";"
     )
     
-    register(new: reluctantQuant)
-    register(new: reluctantQuantWithTerminal)
-    register(new: eagarQuantWithTerminal)
+    register(reluctantQuant)
+    register(reluctantQuantWithTerminal)
+    register(eagarQuantWithTerminal)
   }
 }

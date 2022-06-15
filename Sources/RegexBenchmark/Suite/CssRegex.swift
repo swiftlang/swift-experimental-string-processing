@@ -1656,7 +1656,7 @@ extension BenchmarkRunner {
     let cssRegex = Benchmark(
       name: "cssRegex",
       regex: try! Regex(r),
-      ty: .enumerate,
+      ty: .allMatches,
       target: css
     )
 
@@ -1666,7 +1666,7 @@ extension BenchmarkRunner {
       ty: .all,
       target: css
     )
-    register(new: cssRegex)
-    register(new: cssRegexNS)
+    register(cssRegex)
+    register(cssRegexNS)
   }
 }
