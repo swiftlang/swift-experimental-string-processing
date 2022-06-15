@@ -32,9 +32,10 @@ let package = Package(
         .library(
             name: "_StringProcessing",
             targets: ["_StringProcessing"]),
-        .library(
-            name: "Prototypes",
-            targets: ["Prototypes"]),
+        // FIXME: Disabled due to rdar://94763190.
+        // .library(
+        //     name: "Prototypes",
+        //     targets: ["Prototypes"]),
         .library(
             name: "_RegexParser",
             targets: ["_RegexParser"]),
@@ -83,12 +84,13 @@ let package = Package(
             swiftSettings: [
                 .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
             ]),
-        .testTarget(
-            name: "Prototypes",
-            dependencies: ["_RegexParser", "_StringProcessing"],
-            swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
-            ]),
+        // FIXME: Disabled due to rdar://94763190.
+        // .testTarget(
+        //     name: "Prototypes",
+        //     dependencies: ["_RegexParser", "_StringProcessing"],
+        //     swiftSettings: [
+        //         .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
+        //     ]),
 
         // MARK: Scripts
         .executableTarget(
