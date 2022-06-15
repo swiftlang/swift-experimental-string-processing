@@ -4,6 +4,7 @@ import RegexBuilder
 extension BenchmarkRunner {
   mutating func addReluctantQuant() {
     let size = 500000
+    let s = String(repeating: "a", count: size)
     
     let reluctantQuant = Benchmark(
       name: "ReluctantQuant",
@@ -11,7 +12,7 @@ extension BenchmarkRunner {
           OneOrMore(.any, .reluctant)
       },
       ty: .whole,
-      target: String(repeating: "a", count: size)
+      target: s
     )
 
     let eagarQuantWithTerminal = Benchmark(
@@ -21,7 +22,7 @@ extension BenchmarkRunner {
           ";"
       },
       ty: .whole,
-      target: String(repeating: "a", count: size) + ";"
+      target: s + ";"
     )
 
     let reluctantQuantWithTerminal = Benchmark(
@@ -31,7 +32,7 @@ extension BenchmarkRunner {
           ";"
       },
       ty: .whole,
-      target: String(repeating: "a", count: size) + ";"
+      target: s + ";"
     )
     
     register(reluctantQuant)
