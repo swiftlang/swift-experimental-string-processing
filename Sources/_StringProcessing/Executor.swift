@@ -27,7 +27,42 @@ struct Executor {
   ) throws -> Regex<Output>.Match? {
     var cpu = engine.makeProcessor(
       input: input, bounds: inputRange, matchMode: mode)
-
+    return try consume(input, &cpu)
+  }
+  
+  @available(SwiftStdlib 5.7, *)
+  func firstMatch<Output>(
+    _ input: String,
+    in inputRange: Range<String.Index>,
+    level: MatchingOptions.SemanticLevel
+  ) throws -> Regex<Output>.Match? {
+    var low = inputRange.lowerBound
+    let high = inputRange.upperBound
+    let mode: MatchMode = .partialFromFront
+    var cpu = engine.makeProcessor(
+      input: input, bounds: inputRange, matchMode: mode)
+    
+    while true {
+      if let m: Regex<Output>.Match = try consume(input, &cpu) {
+        return m
+      }
+      
+      if low >= high { return nil }
+      if level == .graphemeCluster {
+        input.formIndex(after: &low)
+      } else {
+        input.unicodeScalars.formIndex(after: &low)
+      }
+      
+      cpu.reset(engine.program, newBounds: low..<high)
+    }
+  }
+  
+  @available(SwiftStdlib 5.7, *)
+  func consume<Output>(
+    _ input: String,
+    _ cpu: inout Processor<String>
+  ) throws -> Regex<Output>.Match? {
     guard let endIdx = cpu.consume() else {
       if let e = cpu.failureReason {
         throw e
@@ -40,7 +75,7 @@ struct Executor {
       referencedCaptureOffsets: engine.program.referencedCaptureOffsets,
       namedCaptureOffsets: engine.program.namedCaptureOffsets)
 
-    let range = inputRange.lowerBound..<endIdx
+    let range = cpu.bounds.lowerBound..<endIdx
     let caps = engine.program.captureList.createElements(capList, input)
 
     // FIXME: This is a workaround for not tracking (or
