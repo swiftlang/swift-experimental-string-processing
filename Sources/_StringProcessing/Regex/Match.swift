@@ -153,11 +153,14 @@ extension Regex {
   ) throws -> Regex<Output>.Match? {
     // FIXME: Something more efficient, likely an engine interface, and we
     // should scrap the RegexConsumer crap and call this
-
+    let executor = Executor(program: regex.program.loweredProgram)
+    
     var low = inputRange.lowerBound
     let high = inputRange.upperBound
     while true {
-      if let m = try _match(input, in: low..<high, mode: .partialFromFront) {
+      if let m: Regex<Output>.Match = try executor.match(
+        input, in: low..<high, .partialFromFront
+      ) {
         return m
       }
       if low >= high { return nil }
