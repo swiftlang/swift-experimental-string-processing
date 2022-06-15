@@ -579,7 +579,7 @@ extension Source {
 
   /// Try to consume quoted content
   ///
-  ///     Quote -> '\Q' (!'\E' .)* '\E'
+  ///     Quote -> '\Q' (!'\E' .)* '\E'?
   ///
   /// With `SyntaxOptions.experimentalQuotes`, also accepts
   ///
@@ -592,9 +592,24 @@ extension Source {
   mutating func lexQuote(context: ParsingContext) throws -> AST.Quote? {
     let str = try recordLoc { src -> String? in
       if src.tryEat(sequence: #"\Q"#) {
-        return try src.expectQuoted(endingWith: #"\E"#).value
+        let contents = src.lexUntil { src in
+          src.isEmpty || src.tryEat(sequence: #"\E"#)
+        }.value
+
+        // In multi-line literals, the quote may not span multiple lines.
+        if context.syntax.contains(.multilineExtendedSyntax),
+            contents.spansMultipleLinesInRegexLiteral {
+          throw ParseError.quoteMayNotSpanMultipleLines
+        }
+
+        // The sequence must not be empty in a custom character class.
+        if context.isInCustomCharacterClass && contents.isEmpty {
+          throw ParseError.expectedNonEmptyContents
+        }
+        return contents
       }
       if context.experimentalQuotes, src.tryEat("\"") {
+        // TODO: Can experimental quotes be empty?
         return try src.expectQuoted(endingWith: "\"", ignoreEscaped: true).value
       }
       return nil
