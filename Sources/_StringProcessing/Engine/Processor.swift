@@ -94,22 +94,17 @@ extension Processor {
     assert(currentPosition >= start)
     assert(currentPosition <= end)
   }
-  
-  // note: should processor just hold the entire program then?
-  mutating func reset(
-    _ program: MEProgram<Input>,
-    newBounds: Range<Position>)
+
+  mutating func reset(newBounds: Range<Position>)
   {
-    self.controller = Controller(pc: 0)
     self.bounds = newBounds
+
+    self.controller = Controller(pc: 0)
     self.currentPosition = bounds.lowerBound
-    
-    // note: implement registers.reset() and captures.reset()?
-    // this would avoid having to pass the program around
-    self.registers = Registers(program, bounds.upperBound)
-    self.storedCaptures = Array(
-       repeating: .init(), count: program.registerInfo.captures)
-    
+
+    self.registers.reset(bounds.upperBound)
+    self.storedCaptures = self.storedCaptures.map {_ in .init()}
+
     self.cycleCount = 0
     self.savePoints = []
     self.callStack = []

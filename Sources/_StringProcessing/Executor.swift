@@ -41,20 +41,20 @@ struct Executor {
     let mode: MatchMode = .partialFromFront
     var cpu = engine.makeProcessor(
       input: input, bounds: inputRange, matchMode: mode)
-    
+
     while true {
       if let m: Regex<Output>.Match = try consume(input, &cpu) {
         return m
       }
-      
+
       if low >= high { return nil }
       if level == .graphemeCluster {
         input.formIndex(after: &low)
       } else {
         input.unicodeScalars.formIndex(after: &low)
       }
-      
-      cpu.reset(engine.program, newBounds: low..<high)
+
+      cpu.reset(newBounds: low..<high)
     }
   }
   

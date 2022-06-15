@@ -18,6 +18,8 @@ struct SentinelValue: Hashable, CustomStringConvertible {
 extension Processor {
   /// Our register file
   struct Registers {
+    var info: MEProgram<Input>.RegisterInfo
+
     // currently, these are static readonly
     var elements: [Element]
 
@@ -114,7 +116,7 @@ extension Processor.Registers {
     _ program: MEProgram<Input>,
     _ sentinel: Input.Index
   ) {
-    let info = program.registerInfo
+    self.info = program.registerInfo
 
     self.elements = program.staticElements
     assert(elements.count == info.elements)
@@ -154,6 +156,22 @@ extension Processor.Registers {
 
     self.positionStackAddresses = Array(repeating: 0, count: info.positionStackAddresses)
 
+    self.savePointAddresses = Array(repeating: 0, count: info.savePointAddresses)
+  }
+
+  mutating func reset(_ sentinel: Input.Index) {
+    // note: Is there any issue with the program transform functions holding
+    // state and not getting reset here? Do we care?
+    self.bools = Array(repeating: false, count: info.bools)
+    self.ints = Array(repeating: 0, count: info.ints)
+    self.floats = Array(repeating: 0, count: info.floats)
+    self.positions = Array(repeating: sentinel, count: info.positions)
+    self.values = Array(
+      repeating: SentinelValue(), count: info.values)
+
+    self.instructionAddresses = Array(repeating: 0, count: info.instructionAddresses)
+    self.classStackAddresses = Array(repeating: 0, count: info.classStackAddresses)
+    self.positionStackAddresses = Array(repeating: 0, count: info.positionStackAddresses)
     self.savePointAddresses = Array(repeating: 0, count: info.savePointAddresses)
   }
 }

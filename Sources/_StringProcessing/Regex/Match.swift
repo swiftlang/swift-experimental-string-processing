@@ -151,8 +151,6 @@ extension Regex {
     _ input: String,
     in inputRange: Range<String.Index>
   ) throws -> Regex<Output>.Match? {
-    // FIXME: Something more efficient, likely an engine interface, and we
-    // should scrap the RegexConsumer crap and call this
     let executor = Executor(program: regex.program.loweredProgram)
     return try executor.firstMatch(
       input, in: inputRange,
