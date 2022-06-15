@@ -54,7 +54,7 @@ public struct BenchmarkRunner {
   // Register instances of Benchmark and run them
   let suiteName: String
   var suite: [any RegexBenchmark]
-  let samples: Int = 20
+  let samples: Int = 40
   
   public init(suiteName: String) {
     self.suiteName = suiteName
@@ -88,6 +88,9 @@ public struct BenchmarkRunner {
       let time = end.elapsedTime(since: start)
       times.append(time)
     }
+    // todo: compute stdev and warn if it's too large
+    
+    // return median time
     times.sort()
     return times[samples/2]
   }
