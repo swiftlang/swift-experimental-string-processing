@@ -54,11 +54,18 @@ public struct BenchmarkRunner {
   // Register instances of Benchmark and run them
   let suiteName: String
   var suite: [any RegexBenchmark]
-  let samples: Int = 20
+  let samples: Int
   
-  public init(suiteName: String) {
+  public init(_ suiteName: String) {
     self.suiteName = suiteName
     self.suite = []
+    self.samples = 20
+  }
+  
+  public init(_ suiteName: String, _ n: Int) {
+    self.suiteName = suiteName
+    self.suite = []
+    self.samples = n
   }
 
   public mutating func register(_ new: some RegexBenchmark) {
@@ -99,6 +106,15 @@ public struct BenchmarkRunner {
     print("Running")
     for b in suite {
       print("- \(b.name) \(measure(benchmark: b))")
+    }
+  }
+  
+  public func profile() {
+    print("Starting")
+    for b in suite {
+      print("- \(b.name)")
+      b.run()
+      print("- done")
     }
   }
 }
