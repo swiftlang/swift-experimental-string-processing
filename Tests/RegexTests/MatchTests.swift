@@ -1397,6 +1397,38 @@ extension RegexTests {
     XCTAssertEqual(allRanges.count, 5)
   }
   
+  func testSubstringAnchors() throws {
+    let string = "123abc456def789"
+    let trimmed = string.dropFirst(3).dropLast(3) // "abc456def"
+    let prefixLetters = try Regex(#"^[a-z]+"#, as: Substring.self)
+    let postfixLetters = try Regex(#"[a-z]+$"#, as: Substring.self)
+
+    XCTExpectFailure {
+      // start anchor (^) should match beginning of substring
+      XCTAssertEqual(trimmed.firstMatch(of: prefixLetters)?.output, "abc")
+      XCTAssertEqual(trimmed.replacing(prefixLetters, with: ""), "456def")
+      
+      // end anchor ($) should match end of substring
+      XCTAssertEqual(trimmed.firstMatch(of: postfixLetters)?.output, "def")
+      XCTAssertEqual(trimmed.replacing(postfixLetters, with: ""), "abc456")
+    }
+
+    // start anchor (^) should _not_ match beginning of subrange
+    XCTAssertEqual(
+      string.replacing(
+        prefixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      string)
+    // end anchor ($) should _not_ match beginning of subrange
+    XCTAssertEqual(
+      string.replacing(
+        postfixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      string)
+  }
+  
   func testMatchingOptionsScope() {
     // `.` only matches newlines when the 's' option (single-line mode)
     // is turned on. Standalone option-setting groups (e.g. `(?s)`) are
