@@ -3,7 +3,7 @@ import RegexBuilder
 
 extension BenchmarkRunner {
   mutating func addReluctantQuant() {
-    let size = 5000
+    let size = 500000
     
     let reluctantQuant = Benchmark(
       name: "ReluctantQuant",

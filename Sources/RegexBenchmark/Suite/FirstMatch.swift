@@ -4,7 +4,7 @@ import Foundation
 extension BenchmarkRunner {
   mutating func addFirstMatch() {
     let r = "a"
-    let s = String(repeating: " ", count: 5000)
+    let s = String(repeating: " ", count: 100000)
     
     let firstMatch = Benchmark(
       name: "FirstMatch",

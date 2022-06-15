@@ -4,6 +4,6 @@
 var benchmark = BenchmarkRunner(suiteName: "test benchmark")
 benchmark.addReluctantQuant()
 benchmark.addBacktracking()
-// benchmark.addCSS()
+benchmark.addCSS()
 benchmark.addFirstMatch()
 benchmark.run()
