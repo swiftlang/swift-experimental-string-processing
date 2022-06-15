@@ -32,7 +32,7 @@ struct Processor<
   typealias Element = Input.Element
 
   let input: Input
-  var bounds: Range<Position>
+  let bounds: Range<Position>
   let matchMode: MatchMode
   var currentPosition: Position
 
@@ -95,19 +95,18 @@ extension Processor {
     assert(currentPosition <= end)
   }
 
-  mutating func reset(newBounds: Range<Position>)
+  mutating func reset(newPosition: Position)
   {
-    self.bounds = newBounds
-
     self.controller = Controller(pc: 0)
-    self.currentPosition = bounds.lowerBound
+    self.currentPosition = newPosition
 
     self.registers.reset(bounds.upperBound)
-    self.storedCaptures = self.storedCaptures.map {_ in .init()}
+    for idx in storedCaptures.indices {
+      storedCaptures[idx] = .init()
+    }
 
-    self.cycleCount = 0
-    self.savePoints = []
-    self.callStack = []
+    self.savePoints.removeAll(keepingCapacity: true)
+    self.callStack.removeAll(keepingCapacity: true)
     self.state = .inProgress
     self.failureReason = nil
   }

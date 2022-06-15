@@ -162,17 +162,21 @@ extension Processor.Registers {
   mutating func reset(_ sentinel: Input.Index) {
     // note: Is there any issue with the program transform functions holding
     // state and not getting reset here? Do we care?
-    self.bools = Array(repeating: false, count: info.bools)
-    self.ints = Array(repeating: 0, count: info.ints)
-    self.floats = Array(repeating: 0, count: info.floats)
-    self.positions = Array(repeating: sentinel, count: info.positions)
-    self.values = Array(
-      repeating: SentinelValue(), count: info.values)
+    func clear<T>(_ xs: inout [T], _ v: T) {
+      for idx in xs.indices {
+        xs[idx] = v
+      }
+    }
 
-    self.instructionAddresses = Array(repeating: 0, count: info.instructionAddresses)
-    self.classStackAddresses = Array(repeating: 0, count: info.classStackAddresses)
-    self.positionStackAddresses = Array(repeating: 0, count: info.positionStackAddresses)
-    self.savePointAddresses = Array(repeating: 0, count: info.savePointAddresses)
+    clear(&self.bools, false)
+    clear(&self.ints, 0)
+    clear(&self.floats, 0)
+    clear(&self.positions, sentinel)
+    clear(&self.values, SentinelValue())
+    clear(&self.instructionAddresses, 0)
+    clear(&self.classStackAddresses, 0)
+    clear(&self.positionStackAddresses, 0)
+    clear(&self.savePointAddresses, 0)
   }
 }
 

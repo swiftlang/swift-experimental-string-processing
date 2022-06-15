@@ -27,7 +27,7 @@ struct Executor {
   ) throws -> Regex<Output>.Match? {
     var cpu = engine.makeProcessor(
       input: input, bounds: inputRange, matchMode: mode)
-    return try consume(input, &cpu)
+    return try consume(input, &cpu, startingFrom: inputRange.lowerBound)
   }
   
   @available(SwiftStdlib 5.7, *)
@@ -43,7 +43,11 @@ struct Executor {
       input: input, bounds: inputRange, matchMode: mode)
 
     while true {
-      if let m: Regex<Output>.Match = try consume(input, &cpu) {
+      if let m: Regex<Output>.Match = try consume(
+        input,
+        &cpu,
+        startingFrom: low
+      ) {
         return m
       }
 
@@ -54,14 +58,15 @@ struct Executor {
         input.unicodeScalars.formIndex(after: &low)
       }
 
-      cpu.reset(newBounds: low..<high)
+      cpu.reset(newPosition: low)
     }
   }
   
   @available(SwiftStdlib 5.7, *)
   func consume<Output>(
     _ input: String,
-    _ cpu: inout Processor<String>
+    _ cpu: inout Processor<String>,
+    startingFrom startIdx: String.Index
   ) throws -> Regex<Output>.Match? {
     guard let endIdx = cpu.consume() else {
       if let e = cpu.failureReason {
@@ -75,7 +80,7 @@ struct Executor {
       referencedCaptureOffsets: engine.program.referencedCaptureOffsets,
       namedCaptureOffsets: engine.program.namedCaptureOffsets)
 
-    let range = cpu.bounds.lowerBound..<endIdx
+    let range = startIdx..<endIdx
     let caps = engine.program.captureList.createElements(capList, input)
 
     // FIXME: This is a workaround for not tracking (or
