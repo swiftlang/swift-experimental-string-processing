@@ -8,7 +8,7 @@ public protocol RegexBenchmark {
 
 public struct Benchmark: RegexBenchmark {
   public let name: String
-  let regex: Regex<Substring> // need to figure out this type to allow for other regexes
+  let regex: Regex<Substring>
   let ty: MatchType
   let target: String
 
@@ -72,22 +72,13 @@ public struct BenchmarkRunner {
     suite.append(new)
   }
   
-  // requires the macos13 beta
-  //  public func measure() -> Duration {
-  //    let clock = SuspendingClock()
-  //    var times = (0..<samples).map { _ in clock.measure(run) }
-  //    assert(times.count == samples)
-  //
-  //    times.sort()
-  //    return times[samples/2]
-  //  }
-  
   func measure(benchmark: some RegexBenchmark) -> Time {
     var times: [Time] = []
     
     // initial run to make sure the regex has been compiled
     benchmark.run()
     
+    // fixme: use suspendingclock?
     for _ in 0..<samples {
       let start = Tick.now
       benchmark.run()
