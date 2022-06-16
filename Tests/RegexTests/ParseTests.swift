@@ -772,6 +772,9 @@ extension RegexTests {
               syntax: .experimental)
     parseTest(#""\"""#, quote("\""), syntax: .experimental)
 
+    parseTest(#"(abc)"#, capture(concat("a", "b", "c")),
+              syntax: .experimental, captures: [.cap])
+
     // Quotes in character classes.
     parseTest(#"[\Q-\E]"#, charClass(quote_m("-")))
     parseTest(#"[\Qa-b[[*+\\E]"#, charClass(quote_m("a-b[[*+\\")))

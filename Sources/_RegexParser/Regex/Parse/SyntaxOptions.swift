@@ -76,8 +76,8 @@ public struct SyntaxOptions: OptionSet {
   public static var traditional: Self { Self(0) }
 
   public static var experimental: Self {
-    // Experimental syntax enables everything except end-of-line comments.
-    Self(~0).subtracting(.endOfLineComments)
+    [.nonSemanticWhitespace, .experimentalQuotes, .experimentalComments,
+     .experimentalRanges, .experimentalCaptures]
   }
 
   // TODO: Probably want to model strict-PCRE etc. options too.
