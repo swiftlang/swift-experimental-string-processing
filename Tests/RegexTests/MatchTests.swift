@@ -1109,6 +1109,37 @@ extension RegexTests {
       (input: "23x23", match: "23x23"),
       (input: "123x23", match: "23x23"),
       xfail: true)
+    
+    // Backreferences in lookaheads
+    firstMatchTests(
+      #"^(?=.*(.)(.)\2\1).+$"#,
+      (input: "abbba", match: nil),
+      (input: "ABBA", match: "ABBA"),
+      (input: "defABBAdef", match: "defABBAdef"))
+    firstMatchTests(
+      #"^(?=.*(.)(.)\2\1).+\2$"#,
+      (input: "abbba", match: nil),
+      (input: "ABBA", match: nil),
+      (input: "defABBAdef", match: nil))
+    // FIXME: Backreferences don't escape positive lookaheads
+    firstMatchTests(
+      #"^(?=.*(.)(.)\2\1).+\2$"#,
+      (input: "ABBAB", match: "ABBAB"),
+      (input: "defABBAdefB", match: "defABBAdefB"),
+      xfail: true)
+    
+    firstMatchTests(
+      #"^(?!.*(.)(.)\2\1).+$"#,
+      (input: "abbba", match: "abbba"),
+      (input: "ABBA", match: nil),
+      (input: "defABBAdef", match: nil))
+    // Backreferences don't escape negative lookaheads;
+    // matching only proceeds when the lookahead fails
+    firstMatchTests(
+      #"^(?!.*(.)(.)\2\1).+\2$"#,
+      (input: "abbba", match: nil),
+      (input: "abbbab", match: nil),
+      (input: "ABBAB", match: nil))
 
     // TODO: Test example where non-atomic is significant
     firstMatchTest(
