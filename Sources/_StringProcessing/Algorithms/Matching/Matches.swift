@@ -246,7 +246,7 @@ extension RegexMatchesCollection: Sequence {
       }
       
       // Otherwise, find the next match (if any) and compute `nextStart`
-      let match = try! base.regex.firstMatch(in: base.input[start...])
+      let match = try? base.regex.firstMatch(in: base.input[start...])
       nextStart = match.flatMap(base.searchIndex(after:))
       return match
     }
