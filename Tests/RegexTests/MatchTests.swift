@@ -915,12 +915,12 @@ extension RegexTests {
       input: "Price: 100 pesos", match: "100")
 
     // More complex lookaheads
-    firstMatchTest(
-      #"(?=.*e)(?=.*o)(?!.*z)"#,
-      input: "hello", match: "")
-    firstMatchTest(
-      #"^(?=.*e)(?=.*o)(?!.*h)"#,
-      input: "hello", match: nil)
+    firstMatchTests(
+      #"(?=.*e)(?=.*o)(?!.*z)."#,
+      (input: "hello", match: "h"),
+      (input: "hzello", match: "e"),
+      (input: "hezllo", match: nil),
+      (input: "helloz", match: nil))
 
     firstMatchTest(
       #"(?<=USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
@@ -1065,18 +1065,43 @@ extension RegexTests {
     firstMatchTest(
       #"(?:(?>a)|.b)c"#, input: "123abcacxyz", match: "abc")
 
-    // Quantifier behavior inside atomic
-    firstMatchTest(
-      #"^(?>a+?)a$"#, input: "aa", match: "aa")
-    firstMatchTest(
-      #"^(?>a+?)a$"#, input: "aaa", match: nil)
-    firstMatchTest(
-      #"(?>a++)a"#, input: "aaa", match: nil)
+    // Quantifier behavior inside atomic groups
+    
+    // (?:a+?) matches as few 'a's as possible, after matching the first
+    // (?>a+?) always matches exactly one 'a'
+    firstMatchTests(
+      #"^(?:a+?)a$"#,
+      (input: "a", match: nil),
+      (input: "aa", match: "aa"),
+      (input: "aaa", match:  "aaa"))
+    firstMatchTests(
+      #"^(?>a+?)a$"#,
+      (input: "a", match: nil),
+      (input: "aa", match: "aa"),
+      (input: "aaa", match:  nil))
+    
+    // (?:a?+) and (?>a?+) are equivalent: they match one 'a' if available
+    firstMatchTests(
+      #"^(?:a?+)a$"#,
+      (input: "a", match: nil),
+      xfail: true)
+    firstMatchTests(
+      #"^(?:a?+)a$"#,
+      (input: "aa", match: "aa"),
+      (input: "aaa", match: nil))
+    firstMatchTests(
+      #"^(?>a?+)a$"#,
+      (input: "a", match: nil),
+      (input: "aa", match: "aa"),
+      (input: "aaa", match: nil))
 
-    firstMatchTest(
-      #"(?>(\d+))\w+\1"#, input: "123x12", match: nil)
-    firstMatchTest(
-      #"(?>(\d+))\w+\1"#, input: "123x23", match: "23x23",
+    firstMatchTests(
+      #"(?>(\d+))\w+\1"#,
+      (input: "123x12", match: nil))
+    firstMatchTests(
+      #"(?>(\d+))\w+\1"#,
+      (input: "23x23", match: "23x23"),
+      (input: "123x23", match: "23x23"),
       xfail: true)
 
     // TODO: Test example where non-atomic is significant

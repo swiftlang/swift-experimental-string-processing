@@ -204,6 +204,17 @@ extension Processor {
     }
   }
 
+  mutating func clearThrough(_ address: InstructionAddress) {
+    while let sp = savePoints.popLast() {
+      if sp.pc == address {
+        controller.step()
+        return
+      }
+    }
+    // TODO: What should we do here?
+    fatalError("Invalid code: Tried to clear save points when empty")
+  }
+  
   mutating func cycle() {
     _checkInvariants()
     assert(state == .inProgress)
@@ -215,7 +226,6 @@ extension Processor {
     }
     let (opcode, payload) = fetch().destructure
 
-  OpCodeSwitch:
     switch opcode {
     case .invalid:
       fatalError("Invalid program")
@@ -294,15 +304,7 @@ extension Processor {
       }
 
     case .clearThrough:
-      let addr = payload.addr
-      while let sp = savePoints.popLast() {
-        if sp.pc == addr {
-          controller.step()
-          break OpCodeSwitch
-        }
-      }
-      // TODO: What should we do here?
-      fatalError("Invalid code: Tried to clear save points when empty")
+      clearThrough(payload.addr)
       
     case .peek:
       fatalError()
