@@ -58,10 +58,10 @@ public struct SyntaxOptions: OptionSet {
   /// `(_: .*)` == `(?:.*)`
   public static var experimentalCaptures: Self { Self(1 << 5) }
 
-  /// The default syntax for a multi-line regex literal.
-  public static var multilineExtendedSyntax: Self {
-    return [Self(1 << 6), .extendedSyntax]
-  }
+  /// The syntax kind of a multi-line literal. This will always be set when
+  /// parsing a multi-line `#/.../#` literal. Note this does not imply extended
+  /// syntax, as that may be temporarily disabled while parsing.
+  public static var multilineCompilerLiteral: Self { Self(1 << 6) }
 
   /// `(?n)`
   public static var namedCapturesOnly: Self { Self(1 << 7) }

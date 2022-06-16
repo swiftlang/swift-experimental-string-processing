@@ -317,7 +317,7 @@ extension Parser {
     // engines such as Oniguruma, Java, and ICU do this under (?x). Therefore,
     // treat (?x) and (?xx) as the same option here. If we ever get a strict
     // PCRE mode, we will need to change this to handle that.
-    if !context.syntax.contains(.multilineExtendedSyntax) {
+    if !context.syntax.contains(.multilineCompilerLiteral) {
       mapOption(.extendedSyntax, \.isAnyExtended)
     }
   }
@@ -609,7 +609,7 @@ fileprivate func defaultSyntaxOptions(
     // For an extended syntax forward slash e.g #/.../#, extended syntax is
     // permitted if it spans multiple lines.
     if delim.poundCount > 0 && contents.spansMultipleLinesInRegexLiteral {
-      return .multilineExtendedSyntax
+      return [.multilineCompilerLiteral, .extendedSyntax]
     }
     return .traditional
   case .reSingleQuote:
