@@ -1403,13 +1403,19 @@ extension RegexTests {
     let prefixLetters = try Regex(#"^[a-z]+"#, as: Substring.self)
     let postfixLetters = try Regex(#"[a-z]+$"#, as: Substring.self)
 
+    // start anchor (^) should match beginning of substring
     XCTExpectFailure {
-      // start anchor (^) should match beginning of substring
       XCTAssertEqual(trimmed.firstMatch(of: prefixLetters)?.output, "abc")
+    }
+    XCTExpectFailure {
       XCTAssertEqual(trimmed.replacing(prefixLetters, with: ""), "456def")
-      
-      // end anchor ($) should match end of substring
+    }
+    
+    // end anchor ($) should match end of substring
+    XCTExpectFailure {
       XCTAssertEqual(trimmed.firstMatch(of: postfixLetters)?.output, "def")
+    }
+    XCTExpectFailure {
       XCTAssertEqual(trimmed.replacing(postfixLetters, with: ""), "abc456")
     }
 
