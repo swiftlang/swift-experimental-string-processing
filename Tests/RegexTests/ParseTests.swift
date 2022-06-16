@@ -2877,6 +2877,11 @@ extension RegexTests {
     diagnosticTest(#"[\d--\u{a b}]"#, .unsupported("scalar sequence in custom character class"))
     diagnosticTest(#"[\d--[\u{a b}]]"#, .unsupported("scalar sequence in custom character class"))
 
+    diagnosticTest(#"\u12"#, .expectedNumDigits("12", 4))
+    diagnosticTest(#"\U12"#, .expectedNumDigits("12", 8))
+    diagnosticTest(#"\u{123456789}"#, .numberOverflow("123456789"))
+    diagnosticTest(#"\x{123456789}"#, .numberOverflow("123456789"))
+
     // MARK: Matching options
 
     diagnosticTest(#"(?^-"#, .cannotRemoveMatchingOptionsAfterCaret)
