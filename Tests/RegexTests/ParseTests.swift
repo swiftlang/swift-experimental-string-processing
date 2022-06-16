@@ -2099,6 +2099,17 @@ extension RegexTests {
       throwsError: .unsupported, syntax: .extendedSyntax
     )
 
+    parseWithDelimitersTest(
+      #"""
+      #/
+        a\
+        b\
+        c
+      /#
+      """#,
+      concat("a", "\n", "b", "\n", "c")
+    )
+
     // MARK: Parse with delimiters
 
     parseWithDelimitersTest("/a b/", concat("a", " ", "b"))
