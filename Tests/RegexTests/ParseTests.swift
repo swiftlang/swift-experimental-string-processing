@@ -1002,6 +1002,9 @@ extension RegexTests {
               concat("a", atomicScriptRun("b"), "c"), throwsError: .unsupported)
 
     // Matching option changing groups.
+    parseTest("(?)", changeMatchingOptions(
+      matchingOptions()
+    ))
     parseTest("(?-)", changeMatchingOptions(
       matchingOptions()
     ))

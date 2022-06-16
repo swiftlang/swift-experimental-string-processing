@@ -802,6 +802,11 @@ extension Source {
   mutating func lexMatchingOptionSequence(
     context: ParsingContext
   ) throws -> AST.MatchingOptionSequence? {
+    // PCRE accepts '(?)'
+    // TODO: This is a no-op, should we warn?
+    if peek() == ")" {
+      return .init(caretLoc: nil, adding: [], minusLoc: nil, removing: [])
+    }
     let ateCaret = recordLoc { $0.tryEat("^") }
 
     // TODO: Warn on duplicate options, and options appearing in both adding
