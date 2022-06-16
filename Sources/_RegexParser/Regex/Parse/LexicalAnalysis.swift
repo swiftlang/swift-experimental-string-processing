@@ -840,11 +840,6 @@ extension Source {
         if opt.isSemanticMatchingLevel {
           throw ParseError.cannotRemoveSemanticsOptions
         }
-        // Extended syntax may not be removed if in multi-line mode.
-        if context.syntax.contains(.multilineCompilerLiteral) &&
-            opt.isAnyExtended {
-          throw ParseError.cannotRemoveExtendedSyntaxInMultilineMode
-        }
         removing.append(opt)
       }
       return .init(caretLoc: nil, adding: adding, minusLoc: ateMinus.location,
