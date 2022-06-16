@@ -342,8 +342,8 @@ extension Source {
     }.value
   }
 
-  /// Eat a scalar off the front, starting from after the
-  /// backslash and base character (e.g. `\u` or `\x`).
+  /// Try to eat a scalar off the front, starting from after the backslash and
+  /// base character (e.g. `\u` or `\x`).
   ///
   ///     UniScalar -> 'u{' UniScalarSequence '}'
   ///                | 'u'  HexDigit{4}
@@ -353,60 +353,60 @@ extension Source {
   ///                | 'o{' OctalDigit{1...} '}'
   ///                | '0' OctalDigit{0...3}
   ///
-  mutating func expectUnicodeScalar(
-    escapedCharacter base: Character
-  ) throws -> AST.Atom.Kind {
+  mutating func lexUnicodeScalar() throws -> AST.Atom.Kind? {
     try recordLoc { src in
+      try src.tryEating { src in
 
-      func nullScalar() -> AST.Atom.Kind {
-        let pos = src.currentPosition
-        return .scalar(.init(UnicodeScalar(0), SourceLocation(pos ..< pos)))
-      }
-
-      // TODO: PCRE offers a different behavior if PCRE2_ALT_BSUX is set.
-      switch base {
-      // Hex numbers.
-      case "u" where src.tryEat("{"):
-        return try src.expectUnicodeScalarSequence(eating: "}")
-
-      case "x" where src.tryEat("{"):
-        let str = try src.lexUntil(eating: "}")
-        return .scalar(try Source.validateUnicodeScalar(str, .hex))
-
-      case "x":
-        // \x expects *up to* 2 digits.
-        guard let digits = src.tryEatLocatedPrefix(maxLength: 2, \.isHexDigit)
-        else {
-          // In PCRE, \x without any valid hex digits is \u{0}.
-          // TODO: This doesn't appear to be followed by ICU or Oniguruma, so
-          // could be changed to throw an error if we had a parsing mode for
-          // them.
-          return nullScalar()
+        func nullScalar() -> AST.Atom.Kind {
+          let pos = src.currentPosition
+          return .scalar(.init(UnicodeScalar(0), SourceLocation(pos ..< pos)))
         }
-        return .scalar(try Source.validateUnicodeScalar(digits, .hex))
 
-      case "u":
-        return .scalar(try src.expectUnicodeScalar(numDigits: 4))
-      case "U":
-        return .scalar(try src.expectUnicodeScalar(numDigits: 8))
+        // TODO: PCRE offers a different behavior if PCRE2_ALT_BSUX is set.
+        switch src.tryEat() {
+        // Hex numbers.
+        case "u" where src.tryEat("{"):
+          return try src.expectUnicodeScalarSequence(eating: "}")
 
-      // Octal numbers.
-      case "o" where src.tryEat("{"):
-        let str = try src.lexUntil(eating: "}")
-        return .scalar(try Source.validateUnicodeScalar(str, .octal))
+        case "x" where src.tryEat("{"):
+          let str = try src.lexUntil(eating: "}")
+          return .scalar(try Source.validateUnicodeScalar(str, .hex))
 
-      case "0":
-        // We can read *up to* 3 more octal digits.
-        // FIXME: PCRE can only read up to 2 octal digits, if we get a strict
-        // PCRE mode, we should limit it here.
-        guard let digits = src.tryEatLocatedPrefix(maxLength: 3, \.isOctalDigit)
-        else {
-          return nullScalar()
+        case "x":
+          // \x expects *up to* 2 digits.
+          guard let digits = src.tryEatLocatedPrefix(maxLength: 2, \.isHexDigit)
+          else {
+            // In PCRE, \x without any valid hex digits is \u{0}.
+            // TODO: This doesn't appear to be followed by ICU or Oniguruma, so
+            // could be changed to throw an error if we had a parsing mode for
+            // them.
+            return nullScalar()
+          }
+          return .scalar(try Source.validateUnicodeScalar(digits, .hex))
+
+        case "u":
+          return .scalar(try src.expectUnicodeScalar(numDigits: 4))
+        case "U":
+          return .scalar(try src.expectUnicodeScalar(numDigits: 8))
+
+        // Octal numbers.
+        case "o" where src.tryEat("{"):
+          let str = try src.lexUntil(eating: "}")
+          return .scalar(try Source.validateUnicodeScalar(str, .octal))
+
+        case "0":
+          // We can read *up to* 3 more octal digits.
+          // FIXME: PCRE can only read up to 2 octal digits, if we get a strict
+          // PCRE mode, we should limit it here.
+          guard let digits = src.tryEatLocatedPrefix(maxLength: 3, \.isOctalDigit)
+          else {
+            return nullScalar()
+          }
+          return .scalar(try Source.validateUnicodeScalar(digits, .octal))
+
+        default:
+          return nil
         }
-        return .scalar(try Source.validateUnicodeScalar(digits, .octal))
-
-      default:
-        fatalError("Unexpected scalar start")
       }
     }.value
   }
@@ -1712,6 +1712,11 @@ extension Source {
         return ref
       }
 
+      // Hexadecimal and octal unicode scalars.
+      if let scalar = try src.lexUnicodeScalar() {
+        return scalar
+      }
+
       guard let char = src.tryEat() else {
         throw ParseError.expectedEscape
       }
@@ -1721,14 +1726,6 @@ extension Source {
         char, inCustomCharacterClass: ccc
       ) {
         return .escaped(builtin)
-      }
-
-      switch char {
-      // Hexadecimal and octal unicode scalars.
-      case "u", "x", "U", "o", "0":
-        return try src.expectUnicodeScalar(escapedCharacter: char)
-      default:
-        break
       }
 
       // We only allow unknown escape sequences for non-letter non-number ASCII,

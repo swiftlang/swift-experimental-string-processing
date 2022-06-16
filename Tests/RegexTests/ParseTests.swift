@@ -2665,6 +2665,8 @@ extension RegexTests {
 
     diagnosticTest("\\", .expectedEscape)
 
+    diagnosticTest(#"\o"#, .invalidEscape("o"))
+
     // TODO: Custom diagnostic for control sequence
     diagnosticTest(#"\c"#, .unexpectedEndOfInput)
 
