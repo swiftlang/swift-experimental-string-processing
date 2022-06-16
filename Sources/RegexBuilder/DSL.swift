@@ -41,18 +41,14 @@ extension _BuiltinRegexComponent {
 extension String: RegexComponent {
   public typealias Output = Substring
 
-  public var regex: Regex<Output> {
-    .init(node: .quotedLiteral(self))
-  }
+  public var regex: Regex<Output> { .init(verbatim: self) }
 }
 
 @available(SwiftStdlib 5.7, *)
 extension Substring: RegexComponent {
   public typealias Output = Substring
 
-  public var regex: Regex<Output> {
-    .init(node: .quotedLiteral(String(self)))
-  }
+  public var regex: Regex<Output> { String(self).regex }
 }
 
 @available(SwiftStdlib 5.7, *)
@@ -214,14 +210,6 @@ public struct AlternationBuilder {
 
   public static func buildExpression<R: RegexComponent>(_ regex: R) -> R {
     regex
-  }
-
-  public static func buildEither<R: RegexComponent>(first component: R) -> R {
-    component
-  }
-
-  public static func buildEither<R: RegexComponent>(second component: R) -> R {
-    component
   }
 }
 

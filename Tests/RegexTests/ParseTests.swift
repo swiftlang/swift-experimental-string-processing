@@ -94,7 +94,9 @@ func parseTest(
             file: file, line: line)
     return
   }
-  let captures = ast.captureList.withoutLocs
+  var captures = ast.captureList.withoutLocs
+  // Peel off the whole match.
+  captures.captures.removeFirst()
   guard captures == expectedCaptures else {
     XCTFail("""
 
@@ -754,6 +756,14 @@ extension RegexTests {
     // This follows the PCRE behavior.
     parseTest(#"\Q\\E"#, quote("\\"))
 
+    // ICU allows quotes to be empty outside of custom character classes.
+    parseTest(#"\Q\E"#, quote(""))
+
+    // Quotes may be unterminated.
+    parseTest(#"\Qab"#, quote("ab"))
+    parseTest(#"\Q"#, quote(""))
+    parseTest("\\Qab\\", quote("ab\\"))
+
     parseTest(#"a" ."b"#, concat("a", quote(" ."), "b"),
               syntax: .experimental)
     parseTest(#"a" .""b""#, concat("a", quote(" ."), quote("b")),
@@ -992,6 +1002,9 @@ extension RegexTests {
               concat("a", atomicScriptRun("b"), "c"), throwsError: .unsupported)
 
     // Matching option changing groups.
+    parseTest("(?)", changeMatchingOptions(
+      matchingOptions()
+    ))
     parseTest("(?-)", changeMatchingOptions(
       matchingOptions()
     ))
@@ -1060,9 +1073,11 @@ extension RegexTests {
       .singleLine, .reluctantByDefault, .extraExtended, .extended,
       .unicodeWordBoundaries, .asciiOnlyDigit, .asciiOnlyPOSIXProps,
       .asciiOnlySpace, .asciiOnlyWord, .textSegmentGraphemeMode,
-      .textSegmentWordMode, .graphemeClusterSemantics, .unicodeScalarSemantics,
+      .textSegmentWordMode,
+      .graphemeClusterSemantics, .unicodeScalarSemantics,
       .byteSemantics
     ]
+    
     parseTest("(?iJmnsUxxxwDPSWy{g}y{w}Xub-iJmnsUxxxwDPSW)", changeMatchingOptions(
       matchingOptions(adding: allOptions, removing: allOptions.dropLast(5))
     ), throwsError: .unsupported)
@@ -2592,8 +2607,6 @@ extension RegexTests {
     diagnosticTest(#"(?P"#, .expected(")"))
     diagnosticTest(#"(?R"#, .expected(")"))
 
-    diagnosticTest(#"\Qab"#, .expected("\\E"))
-    diagnosticTest("\\Qab\\", .expected("\\E"))
     diagnosticTest(#""ab"#, .expected("\""), syntax: .experimental)
     diagnosticTest(#""ab\""#, .expected("\""), syntax: .experimental)
     diagnosticTest("\"ab\\", .expectedEscape, syntax: .experimental)
@@ -2656,6 +2669,8 @@ extension RegexTests {
 
     diagnosticTest("\\", .expectedEscape)
 
+    diagnosticTest(#"\o"#, .invalidEscape("o"))
+
     // TODO: Custom diagnostic for control sequence
     diagnosticTest(#"\c"#, .unexpectedEndOfInput)
 
@@ -2671,6 +2686,9 @@ extension RegexTests {
 
     // TODO: Custom diagnostic for missing '\Q'
     diagnosticTest(#"\E"#, .invalidEscape("E"))
+
+    diagnosticTest(#"[\Q\E]"#, .expectedNonEmptyContents)
+    diagnosticTest(#"[\Q]"#, .expected("]"))
 
     // PCRE treats these as octal, but we require a `0` prefix.
     diagnosticTest(#"[\1]"#, .invalidEscape("1"))
@@ -2734,8 +2752,9 @@ extension RegexTests {
     diagnosticTest("(?-y{g})", .cannotRemoveTextSegmentOptions)
     diagnosticTest("(?-y{w})", .cannotRemoveTextSegmentOptions)
 
-    diagnosticTest("(?-X)", .cannotRemoveSemanticsOptions)
-    diagnosticTest("(?-u)", .cannotRemoveSemanticsOptions)
+    // FIXME: Reenable once we figure out (?X) and (?u) semantics
+    //diagnosticTest("(?-X)", .cannotRemoveSemanticsOptions)
+    //diagnosticTest("(?-u)", .cannotRemoveSemanticsOptions)
     diagnosticTest("(?-b)", .cannotRemoveSemanticsOptions)
 
     diagnosticTest("(?a)", .unknownGroupKind("?a"))
@@ -2766,6 +2785,26 @@ extension RegexTests {
       /#
       """, .cannotRemoveExtendedSyntaxInMultilineMode
     )
+
+    diagnosticWithDelimitersTest(#"""
+      #/
+      \Q
+      \E
+      /#
+      """#, .quoteMayNotSpanMultipleLines)
+
+    diagnosticWithDelimitersTest(#"""
+      #/
+        \Qabc
+          \E
+      /#
+      """#, .quoteMayNotSpanMultipleLines)
+
+    diagnosticWithDelimitersTest(#"""
+      #/
+        \Q
+      /#
+      """#, .quoteMayNotSpanMultipleLines)
 
     // MARK: Group specifiers
 
@@ -2842,6 +2881,11 @@ extension RegexTests {
 
     diagnosticTest(#"[\d--\u{a b}]"#, .unsupported("scalar sequence in custom character class"))
     diagnosticTest(#"[\d--[\u{a b}]]"#, .unsupported("scalar sequence in custom character class"))
+
+    diagnosticTest(#"\u12"#, .expectedNumDigits("12", 4))
+    diagnosticTest(#"\U12"#, .expectedNumDigits("12", 8))
+    diagnosticTest(#"\u{123456789}"#, .numberOverflow("123456789"))
+    diagnosticTest(#"\x{123456789}"#, .numberOverflow("123456789"))
 
     // MARK: Matching options
 

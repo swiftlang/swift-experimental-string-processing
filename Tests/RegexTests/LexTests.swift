@@ -61,41 +61,6 @@ extension RegexTests {
       _ = try src.lexNumber()
     }
 
-    func diagnoseUniScalarOverflow(_ input: String, base: Character) {
-      let scalars = input.first == "{"
-                  ? String(input.dropFirst().dropLast())
-                  : input
-      diagnose(
-        input,
-        expecting: .numberOverflow(scalars)
-      ) { src in
-        _ = try src.expectUnicodeScalar(escapedCharacter: base)
-      }
-    }
-    func diagnoseUniScalar(
-      _ input: String,
-      base: Character,
-      expectedDigits numDigits: Int
-    ) {
-      let scalars = input.first == "{"
-                  ? String(input.dropFirst().dropLast())
-                  : input
-      diagnose(
-        input,
-        expecting: .expectedNumDigits(scalars, numDigits)
-      ) { src in
-        _ = try src.expectUnicodeScalar(escapedCharacter: base)
-      }
-      _ = scalars
-    }
-
-    diagnoseUniScalar(
-      "12", base: "u", expectedDigits: 4)
-    diagnoseUniScalar(
-      "12", base: "U", expectedDigits: 8)
-    diagnoseUniScalarOverflow("{123456789}", base: "u")
-    diagnoseUniScalarOverflow("{123456789}", base: "x")
-
     // TODO: want to dummy print out source ranges, etc, test that.
   }
 

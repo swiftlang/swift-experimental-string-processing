@@ -120,7 +120,7 @@ public struct _CharacterClassModel: Hashable {
     }
   }
 
-  enum MatchLevel {
+  enum MatchLevel: Hashable {
     /// Match at the extended grapheme cluster level.
     case graphemeCluster
     /// Match at the Unicode scalar level.
