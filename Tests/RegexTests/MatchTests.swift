@@ -1095,6 +1095,12 @@ extension RegexTests {
       (input: "aa", match: "aa"),
       (input: "aaa", match: nil))
 
+    // Capture behavior in non-atomic vs atomic groups
+    firstMatchTests(
+      #"(\d+)\w+\1"#,
+      (input: "123x12", match: "123x12"), // `\w+` matches "3x" in this case
+      (input: "23x23", match: "23x23"),
+      (input: "123x23", match: "23x23"))
     firstMatchTests(
       #"(?>(\d+))\w+\1"#,
       (input: "123x12", match: nil))
