@@ -310,7 +310,7 @@ extension RegexMatchesCollection: Collection {
     
     guard
       let start = searchIndex(after: currentMatch),
-      let nextMatch = try! regex.firstMatch(in: input[start...])
+      let nextMatch = try? regex.firstMatch(in: input[start...])
     else {
       return .end
     }
