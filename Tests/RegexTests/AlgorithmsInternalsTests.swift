@@ -44,4 +44,39 @@ extension AlgorithmTests {
     XCTAssertEqual("x", "axb"._trimming(r))
     XCTAssertEqual("x", "axbb"._trimming(r))
   }
+  
+  func testMatchesCollection() {
+    let r = try! Regex("a|b+|c*", as: Substring.self)
+    
+    let str = "zaabbbbbbcde"
+    let matches = str._matches(of: r)
+    let expected: [Substring] = [
+      "", // before 'z'
+      "a",
+      "a",
+      "bbbbbb",
+      "c",
+      "", // after 'c'
+      "", // after 'd'
+      "", // after 'e'
+    ]
+
+    // Make sure we're getting the right collection type
+    let _: RegexMatchesCollection<Substring> = matches
+
+    XCTAssertEqual(matches.map(\.output), expected)
+    
+    let i = matches.index(matches.startIndex, offsetBy: 3)
+    XCTAssertEqual(matches[i].output, expected[3])
+    let j = matches.index(i, offsetBy: 5)
+    XCTAssertEqual(j, matches.endIndex)
+    
+    var index = matches.startIndex
+    while index < matches.endIndex {
+      XCTAssertEqual(
+        matches[index].output,
+        expected[matches.distance(from: matches.startIndex, to: index)])
+      matches.formIndex(after: &index)
+    }
+  }
 }

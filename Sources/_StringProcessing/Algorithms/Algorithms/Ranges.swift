@@ -226,17 +226,53 @@ extension BidirectionalCollection where Element: Comparable {
 //  }
 }
 
+@available(SwiftStdlib 5.7, *)
+struct RegexRangesCollection<Output> {
+  let base: RegexMatchesCollection<Output>
+  
+  init(string: Substring, regex: Regex<Output>) {
+    self.base = RegexMatchesCollection(base: string, regex: regex)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexRangesCollection: Sequence {
+  struct Iterator: IteratorProtocol {
+    var matchesBase: RegexMatchesCollection<Output>.Iterator
+    
+    mutating func next() -> Range<String.Index>? {
+      matchesBase.next().map(\.range)
+    }
+  }
+  
+  func makeIterator() -> Iterator {
+    Iterator(matchesBase: base.makeIterator())
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension RegexRangesCollection: Collection {
+  typealias Index = RegexMatchesCollection<Output>.Index
+
+  var startIndex: Index { base.startIndex }
+  var endIndex: Index { base.endIndex }
+  func index(after i: Index) -> Index { base.index(after: i) }
+  subscript(position: Index) -> Range<String.Index> { base[position].range }
+}
+
 // MARK: Regex algorithms
 
-extension BidirectionalCollection where SubSequence == Substring {
+extension Collection where SubSequence == Substring {
   @available(SwiftStdlib 5.7, *)
   @_disfavoredOverload
   func _ranges<R: RegexComponent>(
     of regex: R
-  ) -> RangesCollection<RegexConsumer<R, Self>> {
-    _ranges(of: RegexConsumer(regex))
+  ) -> RegexRangesCollection<R.RegexOutput> {
+    RegexRangesCollection(string: self[...], regex: regex.regex)
   }
+}
 
+extension BidirectionalCollection where SubSequence == Substring {
   @available(SwiftStdlib 5.7, *)
   func _rangesFromBack<R: RegexComponent>(
     of regex: R
