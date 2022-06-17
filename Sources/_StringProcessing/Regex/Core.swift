@@ -13,7 +13,7 @@
 
 /// A type that represents a regular expression.
 @available(SwiftStdlib 5.7, *)
-public protocol RegexComponent<RegexOutput>: Sendable {
+public protocol RegexComponent<RegexOutput> {
   associatedtype RegexOutput
   var regex: Regex<RegexOutput> { get }
 }
@@ -72,7 +72,7 @@ extension Regex {
 extension Regex {
   /// A program representation that caches any lowered representation for
   /// execution.
-  internal final class Program: @unchecked Sendable {
+  internal final class Program {
     /// The underlying IR.
     ///
     /// FIXME: If Regex is the unit of composition, then it should be a Node instead,
