@@ -124,15 +124,22 @@ extension RegexTests {
       "(?im)(?s).",
       matchingOptions(adding: [.caseInsensitive, .multiline, .singleLine]))
     try expectInitialOptions(".", matchingOptions())
-    try expectInitialOptions(
-      "(?im)(?s).(?u)",
-      matchingOptions(adding: [.caseInsensitive, .multiline, .singleLine]))
+    
+    // FIXME: Figure out (?X) and (?u) semantics
+    try XCTExpectFailure("Figure out (?X) and (?u) semantics") {
+      try expectInitialOptions(
+        "(?im)(?s).(?u)",
+        matchingOptions(adding: [.caseInsensitive, .multiline, .singleLine]))
+    }
     
     try expectInitialOptions(
       "(?i:.)",
       matchingOptions(adding: [.caseInsensitive]))
     try expectInitialOptions(
       "(?i:.)(?m:.)",
+      matchingOptions(adding: [.caseInsensitive]))
+    try expectInitialOptions(
+      "((?i:.))",
       matchingOptions(adding: [.caseInsensitive]))
   }
 }

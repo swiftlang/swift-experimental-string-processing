@@ -204,6 +204,17 @@ extension Processor {
     }
   }
 
+  mutating func clearThrough(_ address: InstructionAddress) {
+    while let sp = savePoints.popLast() {
+      if sp.pc == address {
+        controller.step()
+        return
+      }
+    }
+    // TODO: What should we do here?
+    fatalError("Invalid code: Tried to clear save points when empty")
+  }
+  
   mutating func cycle() {
     _checkInvariants()
     assert(state == .inProgress)
@@ -288,9 +299,13 @@ extension Processor {
       if let _ = savePoints.popLast() {
         controller.step()
       } else {
-        fatalError("TODO: What should we do here?")
+        // TODO: What should we do here?
+        fatalError("Invalid code: Tried to clear save points when empty")
       }
 
+    case .clearThrough:
+      clearThrough(payload.addr)
+      
     case .peek:
       fatalError()
 
@@ -419,7 +434,7 @@ extension Processor {
       //   Should we assert it's not finished yet?
       //   What's the behavior there?
       let cap = storedCaptures[capNum]
-      guard let range = cap.latest else {
+      guard let range = cap.latest?.range else {
         signalFailure()
         return
       }
@@ -446,13 +461,9 @@ extension Processor {
       let transform = registers[trans]
       let capNum = Int(asserting: cap.rawValue)
 
-      guard let range = storedCaptures[capNum].latest else {
-        fatalError(
-          "Unreachable: transforming without a capture")
-      }
       do {
         // FIXME: Pass input or the slice?
-        guard let value = try transform(input, range) else {
+        guard let value = try transform(input, storedCaptures[capNum]) else {
           signalFailure()
           return
         }

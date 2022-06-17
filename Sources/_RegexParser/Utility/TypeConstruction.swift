@@ -139,3 +139,62 @@ public enum TypeConstruction {
     return _openExistential(childType, do: helper)
   }
 }
+
+extension TypeConstruction {
+  public static func optionalType<Base>(
+    of base: Base.Type, depth: Int = 1
+  ) -> Any.Type {
+    switch depth {
+    case 0: return base
+    case 1: return Base?.self
+    case 2: return Base??.self
+    case 3: return Base???.self
+    case 4: return Base????.self
+    default:
+      return optionalType(of: Base????.self, depth: depth - 4)
+    }
+  }
+}
+
+extension MemoryLayout {
+  /// Returns the element index that corresponnds to the given tuple element key
+  /// path.
+  /// - Parameters:
+  ///   - keyPath: The key path from a tuple to one of its elements.
+  ///   - elementTypes: The element type of the tuple type.
+  // TODO: It possible to get element types from the type metadata, but it's
+  // more efficient to pass them in since we already know them in the matching
+  // engine.
+  public static func tupleElementIndex<ElementTypes: Collection>(
+    of keyPath: PartialKeyPath<T>,
+    elementTypes: ElementTypes
+  ) -> Int? where ElementTypes.Element == Any.Type {
+    guard let byteOffset = offset(of: keyPath) else {
+      return nil
+    }
+    if byteOffset == 0 { return 0 }
+    var currentOffset = 0
+    for (index, type) in elementTypes.enumerated() {
+      func sizeAndAlignMask<T>(_: T.Type) -> (Int, Int) {
+        (MemoryLayout<T>.size, MemoryLayout<T>.alignment - 1)
+      }
+      // The ABI of an offset-based key path only stores the byte offset, so
+      // this doesn't work if there's a 0-sized element, e.g. `Void`,
+      // `(Void, Void)`. (rdar://63819465)
+      if size == 0 {
+        return nil
+      }
+      let (size, alignMask) = _openExistential(type, do: sizeAndAlignMask)
+      // Align up the offset for this type.
+      currentOffset = (currentOffset + alignMask) & ~alignMask
+      // If it matches the offset we are looking for, `index` is the tuple
+      // element index.
+      if currentOffset == byteOffset {
+        return index
+      }
+      // Advance to the past-the-end offset for this element.
+      currentOffset += size
+    }
+    return nil
+  }
+}

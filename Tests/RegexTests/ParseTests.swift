@@ -94,7 +94,9 @@ func parseTest(
             file: file, line: line)
     return
   }
-  let captures = ast.captureList.withoutLocs
+  var captures = ast.captureList.withoutLocs
+  // Peel off the whole match.
+  captures.captures.removeFirst()
   guard captures == expectedCaptures else {
     XCTFail("""
 
@@ -754,6 +756,14 @@ extension RegexTests {
     // This follows the PCRE behavior.
     parseTest(#"\Q\\E"#, quote("\\"))
 
+    // ICU allows quotes to be empty outside of custom character classes.
+    parseTest(#"\Q\E"#, quote(""))
+
+    // Quotes may be unterminated.
+    parseTest(#"\Qab"#, quote("ab"))
+    parseTest(#"\Q"#, quote(""))
+    parseTest("\\Qab\\", quote("ab\\"))
+
     parseTest(#"a" ."b"#, concat("a", quote(" ."), "b"),
               syntax: .experimental)
     parseTest(#"a" .""b""#, concat("a", quote(" ."), quote("b")),
@@ -761,6 +771,9 @@ extension RegexTests {
     parseTest(#"a" .\"\"b""#, concat("a", quote(" .\"\"b")),
               syntax: .experimental)
     parseTest(#""\"""#, quote("\""), syntax: .experimental)
+
+    parseTest(#"(abc)"#, capture(concat("a", "b", "c")),
+              syntax: .experimental, captures: [.cap])
 
     // Quotes in character classes.
     parseTest(#"[\Q-\E]"#, charClass(quote_m("-")))
@@ -940,10 +953,10 @@ extension RegexTests {
       concat("a", nonCaptureReset("b"), "c"), throwsError: .unsupported)
     parseTest(
       #"a(?>b)c"#,
-      concat("a", atomicNonCapturing("b"), "c"), throwsError: .unsupported)
+      concat("a", atomicNonCapturing("b"), "c"))
     parseTest(
       "a(*atomic:b)c",
-      concat("a", atomicNonCapturing("b"), "c"), throwsError: .unsupported)
+      concat("a", atomicNonCapturing("b"), "c"))
 
     parseTest("a(?=b)c", concat("a", lookahead("b"), "c"))
     parseTest("a(*pla:b)c", concat("a", lookahead("b"), "c"))
@@ -992,6 +1005,9 @@ extension RegexTests {
               concat("a", atomicScriptRun("b"), "c"), throwsError: .unsupported)
 
     // Matching option changing groups.
+    parseTest("(?)", changeMatchingOptions(
+      matchingOptions()
+    ))
     parseTest("(?-)", changeMatchingOptions(
       matchingOptions()
     ))
@@ -1060,9 +1076,11 @@ extension RegexTests {
       .singleLine, .reluctantByDefault, .extraExtended, .extended,
       .unicodeWordBoundaries, .asciiOnlyDigit, .asciiOnlyPOSIXProps,
       .asciiOnlySpace, .asciiOnlyWord, .textSegmentGraphemeMode,
-      .textSegmentWordMode, .graphemeClusterSemantics, .unicodeScalarSemantics,
+      .textSegmentWordMode,
+      .graphemeClusterSemantics, .unicodeScalarSemantics,
       .byteSemantics
     ]
+    
     parseTest("(?iJmnsUxxxwDPSWy{g}y{w}Xub-iJmnsUxxxwDPSW)", changeMatchingOptions(
       matchingOptions(adding: allOptions, removing: allOptions.dropLast(5))
     ), throwsError: .unsupported)
@@ -1762,6 +1780,13 @@ extension RegexTests {
         " ", "b"
       )
     )
+    parseTest(
+      "(?x) a (?^: b)", concat(
+        changeMatchingOptions(matchingOptions(adding: .extended)),
+        "a",
+        changeMatchingOptions(unsetMatchingOptions(), concat(" ", "b"))
+      )
+    )
 
     parseTest("[ # abc]", charClass(" ", "#", " ", "a", "b", "c"))
     parseTest("[#]", charClass("#"))
@@ -2084,6 +2109,17 @@ extension RegexTests {
       throwsError: .unsupported, syntax: .extendedSyntax
     )
 
+    parseWithDelimitersTest(
+      #"""
+      #/
+        a\
+        b\
+        c
+      /#
+      """#,
+      concat("a", "\n", "b", "\n", "c")
+    )
+
     // MARK: Parse with delimiters
 
     parseWithDelimitersTest("/a b/", concat("a", " ", "b"))
@@ -2159,15 +2195,6 @@ extension RegexTests {
          /#
       """, concat("a", "b"))
 
-    // Make sure (?^) is ignored.
-    parseWithDelimitersTest("""
-      #/
-      (?^)
-      # comment
-      /#
-      """, changeMatchingOptions(unsetMatchingOptions())
-    )
-
     // (?x) has no effect.
     parseWithDelimitersTest("""
       #/
@@ -2175,6 +2202,33 @@ extension RegexTests {
       # comment
       /#
       """, changeMatchingOptions(matchingOptions(adding: .extended))
+    )
+
+    // Scoped removal of extended syntax is allowed as long as it does not span
+    // multiple lines.
+    parseWithDelimitersTest("""
+      #/
+      (?-x:a b)
+      /#
+      """, changeMatchingOptions(
+        matchingOptions(removing: .extended),
+        concat("a", " ", "b")
+      )
+    )
+    parseWithDelimitersTest("""
+      #/
+      (?-xx:a b)
+      /#
+      """, changeMatchingOptions(
+        matchingOptions(removing: .extraExtended),
+        concat("a", " ", "b")
+      )
+    )
+    parseWithDelimitersTest("""
+      #/
+      (?^: a b ) # comment
+      /#
+      """, changeMatchingOptions(unsetMatchingOptions(), concat(" ", "a", " ", "b", " "))
     )
 
     parseWithDelimitersTest(#"""
@@ -2592,8 +2646,6 @@ extension RegexTests {
     diagnosticTest(#"(?P"#, .expected(")"))
     diagnosticTest(#"(?R"#, .expected(")"))
 
-    diagnosticTest(#"\Qab"#, .expected("\\E"))
-    diagnosticTest("\\Qab\\", .expected("\\E"))
     diagnosticTest(#""ab"#, .expected("\""), syntax: .experimental)
     diagnosticTest(#""ab\""#, .expected("\""), syntax: .experimental)
     diagnosticTest("\"ab\\", .expectedEscape, syntax: .experimental)
@@ -2656,6 +2708,8 @@ extension RegexTests {
 
     diagnosticTest("\\", .expectedEscape)
 
+    diagnosticTest(#"\o"#, .invalidEscape("o"))
+
     // TODO: Custom diagnostic for control sequence
     diagnosticTest(#"\c"#, .unexpectedEndOfInput)
 
@@ -2671,6 +2725,9 @@ extension RegexTests {
 
     // TODO: Custom diagnostic for missing '\Q'
     diagnosticTest(#"\E"#, .invalidEscape("E"))
+
+    diagnosticTest(#"[\Q\E]"#, .expectedNonEmptyContents)
+    diagnosticTest(#"[\Q]"#, .expected("]"))
 
     // PCRE treats these as octal, but we require a `0` prefix.
     diagnosticTest(#"[\1]"#, .invalidEscape("1"))
@@ -2734,8 +2791,9 @@ extension RegexTests {
     diagnosticTest("(?-y{g})", .cannotRemoveTextSegmentOptions)
     diagnosticTest("(?-y{w})", .cannotRemoveTextSegmentOptions)
 
-    diagnosticTest("(?-X)", .cannotRemoveSemanticsOptions)
-    diagnosticTest("(?-u)", .cannotRemoveSemanticsOptions)
+    // FIXME: Reenable once we figure out (?X) and (?u) semantics
+    //diagnosticTest("(?-X)", .cannotRemoveSemanticsOptions)
+    //diagnosticTest("(?-u)", .cannotRemoveSemanticsOptions)
     diagnosticTest("(?-b)", .cannotRemoveSemanticsOptions)
 
     diagnosticTest("(?a)", .unknownGroupKind("?a"))
@@ -2754,18 +2812,71 @@ extension RegexTests {
       /#
       """, .cannotRemoveExtendedSyntaxInMultilineMode
     )
+
+    // Scoped removal of extended syntax may not span multiple lines
     diagnosticWithDelimitersTest("""
       #/
-      (?-x:a b)
+      (?-x:a b
+      )
       /#
-      """, .cannotRemoveExtendedSyntaxInMultilineMode
+      """, .unsetExtendedSyntaxMayNotSpanMultipleLines
     )
     diagnosticWithDelimitersTest("""
       #/
-      (?-xx:a b)
+      (?-x:a
+      b)
       /#
-      """, .cannotRemoveExtendedSyntaxInMultilineMode
+      """, .unsetExtendedSyntaxMayNotSpanMultipleLines
     )
+    diagnosticWithDelimitersTest("""
+      #/
+      (?-xx:
+      a b)
+      /#
+      """, .unsetExtendedSyntaxMayNotSpanMultipleLines
+    )
+    diagnosticWithDelimitersTest("""
+      #/
+      (?x-x:
+      a b)
+      /#
+      """, .unsetExtendedSyntaxMayNotSpanMultipleLines
+    )
+    diagnosticWithDelimitersTest("""
+      #/
+      (?^)
+      # comment
+      /#
+      """, .cannotResetExtendedSyntaxInMultilineMode
+    )
+    diagnosticWithDelimitersTest("""
+      #/
+      (?^:
+      # comment
+      )
+      /#
+      """, .unsetExtendedSyntaxMayNotSpanMultipleLines
+    )
+
+    diagnosticWithDelimitersTest(#"""
+      #/
+      \Q
+      \E
+      /#
+      """#, .quoteMayNotSpanMultipleLines)
+
+    diagnosticWithDelimitersTest(#"""
+      #/
+        \Qabc
+          \E
+      /#
+      """#, .quoteMayNotSpanMultipleLines)
+
+    diagnosticWithDelimitersTest(#"""
+      #/
+        \Q
+      /#
+      """#, .quoteMayNotSpanMultipleLines)
 
     // MARK: Group specifiers
 
@@ -2842,6 +2953,11 @@ extension RegexTests {
 
     diagnosticTest(#"[\d--\u{a b}]"#, .unsupported("scalar sequence in custom character class"))
     diagnosticTest(#"[\d--[\u{a b}]]"#, .unsupported("scalar sequence in custom character class"))
+
+    diagnosticTest(#"\u12"#, .expectedNumDigits("12", 4))
+    diagnosticTest(#"\U12"#, .expectedNumDigits("12", 8))
+    diagnosticTest(#"\u{123456789}"#, .numberOverflow("123456789"))
+    diagnosticTest(#"\x{123456789}"#, .numberOverflow("123456789"))
 
     // MARK: Matching options
 

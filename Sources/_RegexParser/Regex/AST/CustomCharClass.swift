@@ -68,7 +68,7 @@ extension AST {
       case intersection = "&&"
       case symmetricDifference = "~~"
     }
-    public enum Start: String {
+    public enum Start: String, Hashable {
       case normal = "["
       case inverted = "[^"
     }

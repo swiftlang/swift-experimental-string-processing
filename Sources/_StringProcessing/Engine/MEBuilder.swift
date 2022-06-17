@@ -78,11 +78,6 @@ extension MEProgram.Builder {
   var lastInstructionAddress: InstructionAddress {
     .init(instructions.endIndex - 1)
   }
-  
-  /// `true` if the builder has received any instructions.
-  var hasReceivedInstructions: Bool {
-    !instructions.isEmpty
-  }
 
   mutating func buildNop(_ r: StringRegister? = nil) {
     instructions.append(.init(.nop, .init(optionalString: r)))
@@ -157,6 +152,10 @@ extension MEProgram.Builder {
 
   mutating func buildClear() {
     instructions.append(.init(.clear))
+  }
+  mutating func buildClearThrough(_ t: AddressToken) {
+    instructions.append(.init(.clearThrough))
+    fixup(to: t)
   }
   mutating func buildRestore() {
     instructions.append(.init(.restore))
@@ -322,7 +321,7 @@ extension MEProgram.Builder {
       case .condBranchZeroElseDecrement:
         payload = .init(addr: addr, int: inst.payload.int)
 
-      case .branch, .save, .saveAddress, .call:
+      case .branch, .save, .saveAddress, .call, .clearThrough:
         payload = .init(addr: addr)
 
       case .splitSaving:

@@ -44,6 +44,9 @@ enum ParseError: Error, Hashable {
   case invalidEscape(Character)
   case confusableCharacter(Character)
 
+  case quoteMayNotSpanMultipleLines
+  case unsetExtendedSyntaxMayNotSpanMultipleLines
+
   case cannotReferToWholePattern
 
   case quantifierRequiresOperand(String)
@@ -79,6 +82,7 @@ enum ParseError: Error, Hashable {
   case cannotRemoveTextSegmentOptions
   case cannotRemoveSemanticsOptions
   case cannotRemoveExtendedSyntaxInMultilineMode
+  case cannotResetExtendedSyntaxInMultilineMode
 
   case expectedCalloutArgument
 
@@ -139,6 +143,10 @@ extension ParseError: CustomStringConvertible {
       return "invalid escape sequence '\\\(c)'"
     case .confusableCharacter(let c):
       return "'\(c)' is confusable for a metacharacter; use '\\u{...}' instead"
+    case .quoteMayNotSpanMultipleLines:
+      return "quoted sequence may not span multiple lines in multi-line literal"
+    case .unsetExtendedSyntaxMayNotSpanMultipleLines:
+      return "group that unsets extended syntax may not span multiple lines in multi-line literal"
     case .cannotReferToWholePattern:
       return "cannot refer to whole pattern here"
     case .quantifierRequiresOperand(let q):
@@ -190,6 +198,8 @@ extension ParseError: CustomStringConvertible {
       return "semantic level cannot be unset, only changed"
     case .cannotRemoveExtendedSyntaxInMultilineMode:
       return "extended syntax may not be disabled in multi-line mode"
+    case .cannotResetExtendedSyntaxInMultilineMode:
+      return "extended syntax may not be disabled in multi-line mode; use '(?^x)' instead"
     case .expectedCalloutArgument:
       return "expected argument to callout"
     case .unrecognizedScript(let value):

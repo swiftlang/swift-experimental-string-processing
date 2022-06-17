@@ -177,7 +177,6 @@ extension MEProgram {
     var positionStackAddresses = 0
     var savePointAddresses = 0
     var captures = 0
-
   }
 }
 

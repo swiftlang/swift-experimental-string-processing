@@ -77,7 +77,7 @@ extension RegexValidator {
     }
     switch ref.kind {
     case .absolute(let i):
-      guard i <= captures.captures.count else {
+      guard i < captures.captures.count else {
         throw error(.invalidReference(i), at: ref.innerLoc)
       }
     case .named(let name):
@@ -106,8 +106,13 @@ extension RegexValidator {
     case .byteSemantics:
       throw error(.unsupported("byte semantic mode"), at: loc)
 
+    case .unicodeScalarSemantics:
+      throw error(.unsupported("unicode scalar semantic mode"), at: loc)
+      
+    case .graphemeClusterSemantics:
+      throw error(.unsupported("grapheme semantic mode"), at: loc)
+      
     case .caseInsensitive, .possessiveByDefault, .reluctantByDefault,
-        .unicodeScalarSemantics, .graphemeClusterSemantics,
         .singleLine, .multiline, .namedCapturesOnly, .extended, .extraExtended,
         .asciiOnlyDigit, .asciiOnlyWord, .asciiOnlySpace, .asciiOnlyPOSIXProps:
       break
@@ -320,7 +325,8 @@ extension RegexValidator {
   func validateGroup(_ group: AST.Group) throws {
     let kind = group.kind
     switch kind.value {
-    case .capture, .namedCapture, .nonCapture, .lookahead, .negativeLookahead:
+    case .capture, .namedCapture, .nonCapture, .lookahead, .negativeLookahead,
+        .atomicNonCapturing:
       break
 
     case .balancedCapture:
@@ -330,9 +336,6 @@ extension RegexValidator {
     case .nonCaptureReset:
       // We need to figure out how these interact with typed captures.
       throw error(.unsupported("branch reset group"), at: kind.location)
-
-    case .atomicNonCapturing:
-      throw error(.unsupported("atomic group"), at: kind.location)
 
     case .nonAtomicLookahead:
       throw error(.unsupported("non-atomic lookahead"), at: kind.location)

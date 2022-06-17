@@ -78,11 +78,11 @@ extension TypedIndex: BidirectionalCollection where C: BidirectionalCollection {
 // failure in the Swift repo.
 #if false
 extension TypedIndex: RangeReplaceableCollection where C: RangeReplaceableCollection {
-  init() { rawValue = C() }
+  init() { content = C() }
 
   mutating func replaceSubrange<C>(_ subrange: Range<Index>, with newElements: C) where C : Collection, C.Element == Element {
-    let rawRange = subrange.lowerBound.rawValue ..< subrange.upperBound.rawValue
-    rawValue.replaceSubrange(rawRange, with: newElements)
+    let rawRange = subrange.lowerBound.content ..< subrange.upperBound.content
+    content.replaceSubrange(rawRange, with: newElements)
   }
 
   // TODO: append, and all the other customization hooks...
