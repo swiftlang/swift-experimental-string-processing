@@ -20,44 +20,17 @@ struct MatchError: Error {
     }
 }
 
-extension Executor {
-  func _firstMatch(
-    _ regex: String, input: String,
-    syntax: SyntaxOptions = .traditional,
-    enableTracing: Bool = false
-  ) throws -> (match: Substring, captures: [Substring?]) {
-    // TODO: This should be a CollectionMatcher API to call...
-    // Consumer -> searcher algorithm
-    var start = input.startIndex
-    while true {
-      if let result = try! self.dynamicMatch(
-        input,
-        in: start..<input.endIndex,
-        .partialFromFront
-      ) {
-        let caps = result.anyRegexOutput.slices(from: input)
-        return (input[result.range], caps)
-      } else if start == input.endIndex {
-        throw MatchError("match not found for \(regex) in \(input)")
-      } else {
-        input.formIndex(after: &start)
-      }
-    }
-  }
-}
-
 func _firstMatch(
-  _ regex: String,
+  _ regexStr: String,
   input: String,
-  syntax: SyntaxOptions = .traditional,
-  enableTracing: Bool = false
+  syntax: SyntaxOptions = .traditional
 ) throws -> (String, [String?]) {
-  var executor = try _compileRegex(regex, syntax)
-  executor.engine.enableTracing = enableTracing
-  let (str, caps) = try executor._firstMatch(
-    regex, input: input, enableTracing: enableTracing)
-  let capStrs = caps.map { $0 == nil ? nil : String($0!) }
-  return (String(str), capStrs)
+  let regex = try Regex(regexStr)
+  guard let result = try regex.firstMatch(in: input) else {
+    throw MatchError("match not found for \(regexStr) in \(input)")
+  }
+  let caps = result.output.slices(from: input)
+  return (String(input[result.range]), caps.map { $0.map(String.init) })
 }
 
 // TODO: multiple-capture variant
@@ -66,7 +39,6 @@ func flatCaptureTest(
   _ regex: String,
   _ tests: (input: String, expect: [String?]?)...,
   syntax: SyntaxOptions = .traditional,
-  enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
   file: StaticString = #file,
@@ -77,8 +49,7 @@ func flatCaptureTest(
       guard var (_, caps) = try? _firstMatch(
         regex,
         input: test,
-        syntax: syntax,
-        enableTracing: enableTracing
+        syntax: syntax
       ) else {
         if expect == nil {
           continue
@@ -162,8 +133,7 @@ func firstMatchTest(
     let (found, _) = try _firstMatch(
       regex,
       input: input,
-      syntax: syntax,
-      enableTracing: enableTracing)
+      syntax: syntax)
 
     if xfail {
       XCTAssertNotEqual(found, match, file: file, line: line)
