@@ -12,7 +12,7 @@ extension CaptureList {
     for (i, (cap, meStored)) in zip(captures, list.values).enumerated() {
       let element = AnyRegexOutput.ElementRepresentation(
         optionalDepth: cap.optionalDepth,
-        content: meStored.latest,
+        content: meStored.deconstructed,
         name: cap.name,
         referenceID: list.referencedCaptureOffsets.first { $1 == i }?.key
       )

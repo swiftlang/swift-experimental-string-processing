@@ -630,15 +630,19 @@ fileprivate extension Compiler.ByteCodeGen {
       }
       // If there's a capture transform, apply it now.
       if let transform = transform {
-        let fn = builder.makeTransformFunction { input, storedCapture in
+        let fn = builder.makeTransformFunction { input, cap in
           // If it's a substring capture with no custom value, apply the
           // transform directly to the substring to avoid existential traffic.
-          if let cap = storedCapture.latest, cap.value == nil {
-            return try transform(input[cap.range])
+          //
+          // FIXME: separate out this code path. This is fragile,
+          // slow, and these are clearly different constructs
+          if let range = cap.range, cap.value == nil {
+            return try transform(input[range])
           }
+
           let value = constructExistentialOutputComponent(
              from: input,
-             component: storedCapture.latest,
+             component: cap.deconstructed,
              optionalCount: 0)
           return try transform(value)
         }
