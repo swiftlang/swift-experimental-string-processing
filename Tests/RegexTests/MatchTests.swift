@@ -700,11 +700,11 @@ extension RegexTests {
     firstMatchTest(#"[\Qa-c\E]+"#, input: "a-c", match: "a-c")
 
     firstMatchTest(#"["a-c"]+"#, input: "abc", match: "a",
-                   syntax: .experimental)
+                   syntax: .experimental, xfail: true)
     firstMatchTest(#"["abc"]+"#, input: "cba", match: "cba",
                    syntax: .experimental)
     firstMatchTest(#"["abc"]+"#, input: #""abc""#, match: "abc",
-                   syntax: .experimental)
+                   syntax: .experimental, xfail: true)
     firstMatchTest(#"["abc"]+"#, input: #""abc""#, match: #""abc""#)
   }
 
@@ -1460,35 +1460,31 @@ extension RegexTests {
     let postfixLetters = try Regex(#"[a-z]+$"#, as: Substring.self)
 
     // start anchor (^) should match beginning of substring
-    XCTExpectFailure {
-      XCTAssertEqual(trimmed.firstMatch(of: prefixLetters)?.output, "abc")
-    }
-    XCTExpectFailure {
-      XCTAssertEqual(trimmed.replacing(prefixLetters, with: ""), "456def")
-    }
+    XCTAssertEqual(trimmed.firstMatch(of: prefixLetters)?.output, "abc")
+    XCTAssertEqual(trimmed.replacing(prefixLetters, with: ""), "456def")
     
     // end anchor ($) should match end of substring
-    XCTExpectFailure {
-      XCTAssertEqual(trimmed.firstMatch(of: postfixLetters)?.output, "def")
-    }
-    XCTExpectFailure {
-      XCTAssertEqual(trimmed.replacing(postfixLetters, with: ""), "abc456")
-    }
+    XCTAssertEqual(trimmed.firstMatch(of: postfixLetters)?.output, "def")
+    XCTAssertEqual(trimmed.replacing(postfixLetters, with: ""), "abc456")
 
     // start anchor (^) should _not_ match beginning of subrange
-    XCTAssertEqual(
-      string.replacing(
-        prefixLetters,
-        with: "",
-        subrange: trimmed.startIndex..<trimmed.endIndex),
-      string)
+    XCTExpectFailure {
+      XCTAssertEqual(
+        string.replacing(
+          prefixLetters,
+          with: "",
+          subrange: trimmed.startIndex..<trimmed.endIndex),
+        string)
+    }
     // end anchor ($) should _not_ match beginning of subrange
-    XCTAssertEqual(
-      string.replacing(
-        postfixLetters,
-        with: "",
-        subrange: trimmed.startIndex..<trimmed.endIndex),
-      string)
+    XCTExpectFailure {
+      XCTAssertEqual(
+        string.replacing(
+          postfixLetters,
+          with: "",
+          subrange: trimmed.startIndex..<trimmed.endIndex),
+        string)
+    }
   }
   
   func testMatchingOptionsScope() {
