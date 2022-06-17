@@ -160,12 +160,12 @@ extension Regex {
           throw e
         }
         
+        if low >= high { return nil }
         if regex.initialOptions.semanticLevel == .graphemeCluster {
           input.formIndex(after: &low)
         } else {
           input.unicodeScalars.formIndex(after: &low)
         }
-        if low >= high { return nil }
         
         continue
       }
@@ -174,7 +174,7 @@ extension Regex {
         values: cpu.storedCaptures,
         referencedCaptureOffsets: executor.engine.program.referencedCaptureOffsets)
 
-      let range = searchBounds.lowerBound..<endIdx
+      let range = low..<endIdx
       let caps = executor.engine.program.captureList.createElements(capList)
 
       let anyRegexOutput = AnyRegexOutput(input: input, elements: caps)
