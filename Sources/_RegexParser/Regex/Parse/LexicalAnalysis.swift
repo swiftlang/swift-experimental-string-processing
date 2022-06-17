@@ -597,7 +597,7 @@ extension Source {
         }.value
 
         // In multi-line literals, the quote may not span multiple lines.
-        if context.syntax.contains(.multilineExtendedSyntax),
+        if context.syntax.contains(.multilineCompilerLiteral),
             contents.spansMultipleLinesInRegexLiteral {
           throw ParseError.quoteMayNotSpanMultipleLines
         }
@@ -839,11 +839,6 @@ extension Source {
         // Matching semantics options can only be added, not removed.
         if opt.isSemanticMatchingLevel {
           throw ParseError.cannotRemoveSemanticsOptions
-        }
-        // Extended syntax may not be removed if in multi-line mode.
-        if context.syntax.contains(.multilineExtendedSyntax) &&
-            opt.isAnyExtended {
-          throw ParseError.cannotRemoveExtendedSyntaxInMultilineMode
         }
         removing.append(opt)
       }

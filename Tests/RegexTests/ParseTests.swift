@@ -772,6 +772,9 @@ extension RegexTests {
               syntax: .experimental)
     parseTest(#""\"""#, quote("\""), syntax: .experimental)
 
+    parseTest(#"(abc)"#, capture(concat("a", "b", "c")),
+              syntax: .experimental, captures: [.cap])
+
     // Quotes in character classes.
     parseTest(#"[\Q-\E]"#, charClass(quote_m("-")))
     parseTest(#"[\Qa-b[[*+\\E]"#, charClass(quote_m("a-b[[*+\\")))
@@ -1777,6 +1780,13 @@ extension RegexTests {
         " ", "b"
       )
     )
+    parseTest(
+      "(?x) a (?^: b)", concat(
+        changeMatchingOptions(matchingOptions(adding: .extended)),
+        "a",
+        changeMatchingOptions(unsetMatchingOptions(), concat(" ", "b"))
+      )
+    )
 
     parseTest("[ # abc]", charClass(" ", "#", " ", "a", "b", "c"))
     parseTest("[#]", charClass("#"))
@@ -2099,6 +2109,17 @@ extension RegexTests {
       throwsError: .unsupported, syntax: .extendedSyntax
     )
 
+    parseWithDelimitersTest(
+      #"""
+      #/
+        a\
+        b\
+        c
+      /#
+      """#,
+      concat("a", "\n", "b", "\n", "c")
+    )
+
     // MARK: Parse with delimiters
 
     parseWithDelimitersTest("/a b/", concat("a", " ", "b"))
@@ -2174,15 +2195,6 @@ extension RegexTests {
          /#
       """, concat("a", "b"))
 
-    // Make sure (?^) is ignored.
-    parseWithDelimitersTest("""
-      #/
-      (?^)
-      # comment
-      /#
-      """, changeMatchingOptions(unsetMatchingOptions())
-    )
-
     // (?x) has no effect.
     parseWithDelimitersTest("""
       #/
@@ -2190,6 +2202,33 @@ extension RegexTests {
       # comment
       /#
       """, changeMatchingOptions(matchingOptions(adding: .extended))
+    )
+
+    // Scoped removal of extended syntax is allowed as long as it does not span
+    // multiple lines.
+    parseWithDelimitersTest("""
+      #/
+      (?-x:a b)
+      /#
+      """, changeMatchingOptions(
+        matchingOptions(removing: .extended),
+        concat("a", " ", "b")
+      )
+    )
+    parseWithDelimitersTest("""
+      #/
+      (?-xx:a b)
+      /#
+      """, changeMatchingOptions(
+        matchingOptions(removing: .extraExtended),
+        concat("a", " ", "b")
+      )
+    )
+    parseWithDelimitersTest("""
+      #/
+      (?^: a b ) # comment
+      /#
+      """, changeMatchingOptions(unsetMatchingOptions(), concat(" ", "a", " ", "b", " "))
     )
 
     parseWithDelimitersTest(#"""
@@ -2773,17 +2812,50 @@ extension RegexTests {
       /#
       """, .cannotRemoveExtendedSyntaxInMultilineMode
     )
+
+    // Scoped removal of extended syntax may not span multiple lines
     diagnosticWithDelimitersTest("""
       #/
-      (?-x:a b)
+      (?-x:a b
+      )
       /#
-      """, .cannotRemoveExtendedSyntaxInMultilineMode
+      """, .unsetExtendedSyntaxMayNotSpanMultipleLines
     )
     diagnosticWithDelimitersTest("""
       #/
-      (?-xx:a b)
+      (?-x:a
+      b)
       /#
-      """, .cannotRemoveExtendedSyntaxInMultilineMode
+      """, .unsetExtendedSyntaxMayNotSpanMultipleLines
+    )
+    diagnosticWithDelimitersTest("""
+      #/
+      (?-xx:
+      a b)
+      /#
+      """, .unsetExtendedSyntaxMayNotSpanMultipleLines
+    )
+    diagnosticWithDelimitersTest("""
+      #/
+      (?x-x:
+      a b)
+      /#
+      """, .unsetExtendedSyntaxMayNotSpanMultipleLines
+    )
+    diagnosticWithDelimitersTest("""
+      #/
+      (?^)
+      # comment
+      /#
+      """, .cannotResetExtendedSyntaxInMultilineMode
+    )
+    diagnosticWithDelimitersTest("""
+      #/
+      (?^:
+      # comment
+      )
+      /#
+      """, .unsetExtendedSyntaxMayNotSpanMultipleLines
     )
 
     diagnosticWithDelimitersTest(#"""
