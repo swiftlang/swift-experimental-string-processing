@@ -24,7 +24,9 @@ extension RangeReplaceableCollection {
     var result = Self()
     var index = startIndex
     
-    for range in ranges.prefix(maxReplacements) {
+    // `maxRanges` is a workaround for https://github.com/apple/swift/issues/59522
+    let maxRanges = ranges.prefix(maxReplacements)
+    for range in maxRanges {
       result.append(contentsOf: self[index..<range.lowerBound])
       result.append(contentsOf: replacement)
       index = range.upperBound
