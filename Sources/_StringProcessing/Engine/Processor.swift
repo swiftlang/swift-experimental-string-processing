@@ -117,11 +117,15 @@ extension Processor {
     return true
   }
 
-  mutating func advance(to nextIndex: Input.Index) {
-    assert(nextIndex >= bounds.lowerBound)
-    assert(nextIndex <= bounds.upperBound)
-    assert(nextIndex >= currentPosition)
-    currentPosition = nextIndex
+  /// Continue matching at the specified index.
+  ///
+  /// - Precondition: `bounds.contains(index) || index == bounds.upperBound`
+  /// - Precondition: `index >= currentPosition`
+  mutating func resume(at index: Input.Index) {
+    assert(index >= bounds.lowerBound)
+    assert(index <= bounds.upperBound)
+    assert(index >= currentPosition)
+    currentPosition = index
   }
 
   func doPrint(_ s: String) {
@@ -358,7 +362,7 @@ extension Processor {
         signalFailure()
         return
       }
-      advance(to: nextIndex)
+      resume(at: nextIndex)
       controller.step()
 
     case .assertBy:
@@ -386,7 +390,7 @@ extension Processor {
           return
         }
         registers[valReg] = val
-        advance(to: nextIdx)
+        resume(at: nextIdx)
         controller.step()
       } catch {
         abort(error)
