@@ -32,30 +32,38 @@ struct Processor<
   typealias Element = Input.Element
 
   let input: Input
-  let bounds: Range<Position>
   let matchMode: MatchMode
+  let instructions: InstructionList<Instruction>
+
+  // MARK: Resettable state
+
+  // The subject bounds.
+  //
+  // FIXME: This also conflates search bounds too!
+  var bounds: Range<Position>
+
+  // The current position in the subject
   var currentPosition: Position
 
-  let instructions: InstructionList<Instruction>
   var controller: Controller
 
-  var cycleCount = 0
-
-  /// Our register file
   var registers: Registers
 
-  // Used for back tracking
   var savePoints: [SavePoint] = []
 
   var callStack: [InstructionAddress] = []
+
+  var storedCaptures: Array<_StoredCapture>
 
   var state: State = .inProgress
 
   var failureReason: Error? = nil
 
+
+  // MARK: Metrics, debugging, etc.
+  var cycleCount = 0
   var isTracingEnabled: Bool
 
-  var storedCaptures: Array<_StoredCapture>
 }
 
 extension Processor {
@@ -84,6 +92,30 @@ extension Processor {
     self.registers = Registers(program, bounds.upperBound)
     self.storedCaptures = Array(
        repeating: .init(), count: program.registerInfo.captures)
+
+    _checkInvariants()
+  }
+
+
+  mutating func reset(searchBounds: Range<Position>) {
+    // FIXME: We currently conflate both subject bounds and search bounds
+    // This should just reset search bounds
+    self.bounds = searchBounds
+    self.currentPosition = self.bounds.lowerBound
+
+    self.controller = Controller(pc: 0)
+
+    self.registers.reset(sentinel: bounds.upperBound)
+
+    self.savePoints.removeAll(keepingCapacity: true)
+    self.callStack.removeAll(keepingCapacity: true)
+
+    for idx in storedCaptures.indices {
+      storedCaptures[idx] = .init()
+    }
+
+    self.state = .inProgress
+    self.failureReason = nil
 
     _checkInvariants()
   }
