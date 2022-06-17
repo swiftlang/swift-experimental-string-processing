@@ -439,7 +439,7 @@ extension Processor {
       //   Should we assert it's not finished yet?
       //   What's the behavior there?
       let cap = storedCaptures[capNum]
-      guard let range = cap.latest?.range else {
+      guard let range = cap.range else {
         signalFailure()
         return
       }
@@ -449,9 +449,7 @@ extension Processor {
       let capNum = Int(
         asserting: payload.capture.rawValue)
 
-       let sp = makeSavePoint(self.currentPC)
-       storedCaptures[capNum].startCapture(
-         currentPosition, initial: sp)
+       storedCaptures[capNum].startCapture(currentPosition)
        controller.step()
 
      case .endCapture:
