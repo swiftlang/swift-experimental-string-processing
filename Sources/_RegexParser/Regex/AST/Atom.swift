@@ -494,7 +494,7 @@ extension AST.Atom.CharacterProperty {
 
 extension AST.Atom {
   /// Anchors and other built-in zero-width assertions.
-  public enum AssertionKind: String {
+  public enum AssertionKind: String, Hashable {
     /// \A
     case startOfSubject = #"\A"#
 

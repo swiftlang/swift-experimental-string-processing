@@ -74,7 +74,7 @@ func flatCaptureTest(
 ) {
   for (test, expect) in tests {
     do {
-      guard let (_, caps) = try? _firstMatch(
+      guard var (_, caps) = try? _firstMatch(
         regex,
         input: test,
         syntax: syntax,
@@ -86,6 +86,8 @@ func flatCaptureTest(
           throw MatchError("Match failed")
         }
       }
+      // Peel off the whole match.
+      caps.removeFirst()
       guard let expect = expect else {
         throw MatchError("""
             Match of \(test) succeeded where failure expected in \(regex)
@@ -1020,10 +1022,12 @@ extension RegexTests {
       #"\u{65}\y"#,           // Grapheme boundary assertion
       ("Cafe\u{301}", nil),
       ("Sol Cafe", "e"))
+    
+    // FIXME: Figure out (?X) and (?u) semantics
     firstMatchTests(
       #"(?u)\u{65}\Y"#,       // Grapheme non-boundary assertion
       ("Cafe\u{301}", "e"),
-      ("Sol Cafe", nil))
+      ("Sol Cafe", nil), xfail: true)
   }
 
   func testMatchGroups() {
@@ -1393,6 +1397,44 @@ extension RegexTests {
     XCTAssertEqual(allRanges.count, 5)
   }
   
+  func testSubstringAnchors() throws {
+    let string = "123abc456def789"
+    let trimmed = string.dropFirst(3).dropLast(3) // "abc456def"
+    let prefixLetters = try Regex(#"^[a-z]+"#, as: Substring.self)
+    let postfixLetters = try Regex(#"[a-z]+$"#, as: Substring.self)
+
+    // start anchor (^) should match beginning of substring
+    XCTExpectFailure {
+      XCTAssertEqual(trimmed.firstMatch(of: prefixLetters)?.output, "abc")
+    }
+    XCTExpectFailure {
+      XCTAssertEqual(trimmed.replacing(prefixLetters, with: ""), "456def")
+    }
+    
+    // end anchor ($) should match end of substring
+    XCTExpectFailure {
+      XCTAssertEqual(trimmed.firstMatch(of: postfixLetters)?.output, "def")
+    }
+    XCTExpectFailure {
+      XCTAssertEqual(trimmed.replacing(postfixLetters, with: ""), "abc456")
+    }
+
+    // start anchor (^) should _not_ match beginning of subrange
+    XCTAssertEqual(
+      string.replacing(
+        prefixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      string)
+    // end anchor ($) should _not_ match beginning of subrange
+    XCTAssertEqual(
+      string.replacing(
+        postfixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      string)
+  }
+  
   func testMatchingOptionsScope() {
     // `.` only matches newlines when the 's' option (single-line mode)
     // is turned on. Standalone option-setting groups (e.g. `(?s)`) are
@@ -1594,7 +1636,8 @@ extension RegexTests {
     // a single Unicode scalar value, leaving any other grapheme scalar
     // components to be matched.
     
-    firstMatchTest(#"(?u:.)"#, input: eDecomposed, match: "e")
+    // FIXME: Figure out (?X) and (?u) semantics
+    firstMatchTest(#"(?u:.)"#, input: eDecomposed, match: "e", xfail: true)
 
     matchTest(
       #".\u{301}"#,
@@ -1605,18 +1648,30 @@ extension RegexTests {
       (eComposed, false),
       (eDecomposed, false))
     
+    // FIXME: Figure out (?X) and (?u) semantics
     // FIXME: \O is unsupported
-    firstMatchTest(#"(?u)\O\u{301}"#, input: eDecomposed, match: eDecomposed)
-    firstMatchTest(#"(?u)e\O"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(
+      #"(?u)\O\u{301}"#,
+      input: eDecomposed,
+      match: eDecomposed,
+      xfail: true
+    )
+    firstMatchTest(
+      #"(?u)e\O"#,
+      input: eDecomposed,
+      match: eDecomposed,
+      xfail: true
+    )
     firstMatchTest(#"\O"#, input: eComposed, match: eComposed)
     firstMatchTest(#"\O"#, input: eDecomposed, match: nil,
               xfail: true)
 
+    // FIXME: Figure out (?X) and (?u) semantics
     matchTest(
       #"(?u).\u{301}"#,
       (eComposed, false),
-      (eDecomposed, true))
-    firstMatchTest(#"(?u).$"#, input: eComposed, match: eComposed)
+      (eDecomposed, true), xfail: true)
+    firstMatchTest(#"(?u).$"#, input: eComposed, match: eComposed, xfail: true)
     
     // Option permutations for 'u' and 's'
     matchTest(
@@ -1629,14 +1684,16 @@ extension RegexTests {
       ("e\u{301}ab", false),
       ("e\u{301}abc", true),
       ("e\u{301}\nab", true))
+    
+    // FIXME: Figure out (?X) and (?u) semantics
     matchTest(
       #"(?u)...."#,
       ("e\u{301}ab", true),
-      ("e\u{301}\na", false))
+      ("e\u{301}\na", false), xfail: true)
     matchTest(
       #"(?us)...."#,
       ("e\u{301}ab", true),
-      ("e\u{301}\na", true))
+      ("e\u{301}\na", true), xfail: true)
   }
   
   // TODO: Add test for implied grapheme cluster requirement at group boundaries
@@ -1652,6 +1709,36 @@ extension RegexTests {
     let scalarMatches = input.matches(of: regex.matchingSemantics(.unicodeScalar))
     let scalarExpected: [Substring] = ["\u{FE0F}💖🧠", "🧠💖☕"]
     XCTAssertEqual(scalarMatches.map { $0.0 }, scalarExpected)
+  }
+  
+  func testConcurrentAccess() async throws {
+    for _ in 0..<1000 {
+      let regex = try Regex(#"abc+d*e?"#)
+      let strings = [
+        "abc",
+        "abccccccccdddddddddde",
+        "abcccce",
+        "abddddde",
+      ]
+      let matches = await withTaskGroup(of: Optional<Regex<AnyRegexOutput>.Match>.self) { group -> [Regex<AnyRegexOutput>.Match] in
+        var result: [Regex<AnyRegexOutput>.Match] = []
+        
+        for str in strings {
+          group.addTask {
+            str.firstMatch(of: regex)
+          }
+        }
+        
+        for await match in group {
+          guard let match = match else { continue }
+          result.append(match)
+        }
+        
+        return result
+      }
+      
+      XCTAssertEqual(matches.count, 3)
+    }
   }
 }
 

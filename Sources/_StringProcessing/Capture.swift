@@ -13,18 +13,14 @@
 
 // TODO: Where should this live? Inside TypeConstruction?
 func constructExistentialOutputComponent(
-  from input: Substring,
-  in range: Range<String.Index>?,
-  value: Any?,
+  from input: String,
+  component: (range: Range<String.Index>, value: Any?)?,
   optionalCount: Int
 ) -> Any {
   let someCount: Int
   var underlying: Any
-  if let v = value {
-    underlying = v
-    someCount = optionalCount
-  } else if let r = range {
-    underlying = input[r]
+  if let component = component {
+    underlying = component.value ?? input[component.range]
     someCount = optionalCount
   } else {
     // Ok since we Any-box every step up the ladder
@@ -43,13 +39,12 @@ func constructExistentialOutputComponent(
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput.Element {
   func existentialOutputComponent(
-    from input: Substring
+    from input: String
   ) -> Any {
     constructExistentialOutputComponent(
       from: input,
-      in: range,
-      value: value,
-      optionalCount: optionalDepth
+      component: representation.content,
+      optionalCount: representation.optionalDepth
     )
   }
 
@@ -64,15 +59,13 @@ extension Sequence where Element == AnyRegexOutput.Element {
   // FIXME: This is a stop gap where we still slice the input
   // and traffic through existentials
   @available(SwiftStdlib 5.7, *)
-  func existentialOutput(
-    from input: Substring
-  ) -> Any {
-    var caps = Array<Any>()
-    caps.append(input)
-    caps.append(contentsOf: self.map {
+  func existentialOutput(from input: String) -> Any {
+    let elements = map {
       $0.existentialOutputComponent(from: input)
-    })
-    return TypeConstruction.tuple(of: caps)
+    }
+    return elements.count == 1
+      ? elements[0]
+      : TypeConstruction.tuple(of: elements)
   }
 
   func slices(from input: String) -> [Substring?] {

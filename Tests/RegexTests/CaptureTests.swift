@@ -58,13 +58,13 @@ extension CaptureList {
 
 extension AnyRegexOutput.Element {
   func formatStringCapture(input: String) -> String {
-    var res = String(repeating: "some(", count: optionalDepth)
+    var res = String(repeating: "some(", count: representation.optionalDepth)
     if let r = range {
       res += input[r]
     } else {
       res += "none"
     }
-    res += String(repeating: ")", count: optionalDepth)
+    res += String(repeating: ")", count: representation.optionalDepth)
     return res
   }
 }
@@ -122,7 +122,7 @@ extension StringCapture {
     to structCap: AnyRegexOutput.Element,
     in input: String
   ) -> Bool {
-    guard optionalCount == structCap.optionalDepth else {
+    guard optionalCount == structCap.representation.optionalDepth else {
       return false
     }
     guard let r = structCap.range else {
@@ -159,7 +159,9 @@ func captureTest(
   line: UInt = #line
 ) {
   let ast = try! parse(regex, .semantic, .traditional)
-  let capList = ast.root._captureList.withoutLocs
+  var capList = ast.captureList.withoutLocs
+  // Peel off the whole match element.
+  capList.captures.removeFirst()
   guard capList == expected else {
     XCTFail("""
       Expected:
@@ -173,7 +175,9 @@ func captureTest(
   }
 
   // Ensure DSLTree preserves literal captures
-  let dslCapList = ast.dslTree.root._captureList
+  var dslCapList = ast.dslTree.captureList
+  // Peel off the whole match element.
+  dslCapList.captures.removeFirst()
   guard dslCapList == capList else {
     XCTFail("""
       DSLTree did not preserve structure:
@@ -202,7 +206,9 @@ func captureTest(
       return
     }
 
-    let caps = result.anyRegexOutput
+    var caps = result.anyRegexOutput
+    // Peel off the whole match element.
+    caps._elements.removeFirst()
     guard caps.count == output.count else {
       XCTFail("""
       Mismatch capture count:
@@ -462,29 +468,29 @@ extension RegexTests {
   
   func testTypeVerification() throws {
     let opaque1 = try Regex("abc")
-    _ = try XCTUnwrap(opaque1.as(Substring.self))
-    XCTAssertNil(opaque1.as((Substring, Substring).self))
-    XCTAssertNil(opaque1.as(Int.self))
+    _ = try XCTUnwrap(Regex<Substring>(opaque1))
+    XCTAssertNil(Regex<(Substring, Substring)>(opaque1))
+    XCTAssertNil(Regex<Int>(opaque1))
     
     let opaque2 = try Regex("(abc)")
-    _ = try XCTUnwrap(opaque2.as((Substring, Substring).self))
-    XCTAssertNil(opaque2.as(Substring.self))
-    XCTAssertNil(opaque2.as((Substring, Int).self))
+    _ = try XCTUnwrap(Regex<(Substring, Substring)>(opaque2))
+    XCTAssertNil(Regex<Substring>(opaque2))
+    XCTAssertNil(Regex<(Substring, Int)>(opaque2))
     
     let opaque3 = try Regex("(?<someLabel>abc)")
-    _ = try XCTUnwrap(opaque3.as((Substring, someLabel: Substring).self))
-    XCTAssertNil(opaque3.as((Substring, Substring).self))
-    XCTAssertNil(opaque3.as(Substring.self))
+    _ = try XCTUnwrap(Regex<(Substring, someLabel: Substring)>(opaque3))
+    XCTAssertNil(Regex<(Substring, Substring)>(opaque3))
+    XCTAssertNil(Regex<Substring>(opaque3))
     
     let opaque4 = try Regex("(?<somethingHere>abc)?")
-    _ = try XCTUnwrap(opaque4.as((Substring, somethingHere: Substring?).self))
-    XCTAssertNil(opaque4.as((Substring, somethignHere: Substring).self))
-    XCTAssertNil(opaque4.as((Substring, Substring?).self))
+    _ = try XCTUnwrap(Regex<(Substring, somethingHere: Substring?)>(opaque4))
+    XCTAssertNil(Regex<(Substring, somethignHere: Substring)>(opaque4))
+    XCTAssertNil(Regex<(Substring, Substring?)>(opaque4))
     
     let opaque5 = try Regex("((a)?bc)?")
-    _ = try XCTUnwrap(opaque5.as((Substring, Substring?, Substring??).self))
-    XCTAssertNil(opaque5.as((Substring, somethingHere: Substring?, here: Substring??).self))
-    XCTAssertNil(opaque5.as((Substring, Substring?, Substring?).self))
+    _ = try XCTUnwrap(Regex<(Substring, Substring?, Substring??)>(opaque5))
+    XCTAssertNil(Regex<(Substring, somethingHere: Substring?, here: Substring??)>(opaque5))
+    XCTAssertNil(Regex<(Substring, Substring?, Substring?)>(opaque5))
   }
 }
 
