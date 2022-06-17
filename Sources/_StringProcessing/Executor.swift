@@ -22,11 +22,11 @@ struct Executor {
   @available(SwiftStdlib 5.7, *)
   func match<Output>(
     _ input: String,
-    in inputRange: Range<String.Index>,
+    in subjectBounds: Range<String.Index>,
     _ mode: MatchMode
   ) throws -> Regex<Output>.Match? {
     var cpu = engine.makeProcessor(
-      input: input, bounds: inputRange, matchMode: mode)
+      input: input, bounds: subjectBounds, matchMode: mode)
 
     guard let endIdx = cpu.consume() else {
       if let e = cpu.failureReason {
@@ -39,7 +39,7 @@ struct Executor {
       values: cpu.storedCaptures,
       referencedCaptureOffsets: engine.program.referencedCaptureOffsets)
 
-    let range = inputRange.lowerBound..<endIdx
+    let range = subjectBounds.lowerBound..<endIdx
     let caps = engine.program.captureList.createElements(capList)
 
     let anyRegexOutput = AnyRegexOutput(input: input, elements: caps)
@@ -49,9 +49,9 @@ struct Executor {
   @available(SwiftStdlib 5.7, *)
   func dynamicMatch(
     _ input: String,
-    in inputRange: Range<String.Index>,
+    in subjectBounds: Range<String.Index>,
     _ mode: MatchMode
   ) throws -> Regex<AnyRegexOutput>.Match? {
-    try match(input, in: inputRange, mode)
+    try match(input, in: subjectBounds, mode)
   }
 }

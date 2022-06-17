@@ -31,11 +31,33 @@ struct Processor<
 > where Input.Element: Equatable { // maybe Hashable?
   typealias Element = Input.Element
 
+  /// The base collection of the subject to search.
+  ///
+  /// Taken together, `input` and `subjectBounds` define the actual subject
+  /// of the search. `input` can be a "supersequence" of the subject, while
+  /// `input[subjectBounds]` is the logical entity that is being searched.
   let input: Input
-  let bounds: Range<Position>
-  let matchMode: MatchMode
+  
+  /// The bounds of the logical subject in `input`.
+  ///
+  ///
+  /// `subjectBounds` is equal to or a subrange of
+  /// `input.startIndex..<input.endIndex`.
+  let subjectBounds: Range<Position>
+  
+  /// The bounds within the subject for an individual search.
+  ///
+  /// `searchBounds` is equal to `subjectBounds` in most cases, but can be a
+  /// subrange when performing operations like `str.replacing(_:with:subrange:)`.
+  let searchBounds: Range<Position>
+  
+  /// The current search position while processing.
+  ///
+  /// `currentPosition` must always be in the range `subjectBounds` or equal
+  /// to `subjectBounds.upperBound`.
   var currentPosition: Position
-
+  
+  let matchMode: MatchMode
   let instructions: InstructionList<Instruction>
   var controller: Controller
 
@@ -61,27 +83,30 @@ struct Processor<
 extension Processor {
   typealias Position = Input.Index
 
-  var start: Position { bounds.lowerBound }
-  var end: Position { bounds.upperBound }
+  var start: Position { subjectBounds.lowerBound }
+  var end: Position { subjectBounds.upperBound }
 }
 
 extension Processor {
   init(
     program: MEProgram<Input>,
     input: Input,
-    bounds: Range<Position>,
+    subjectBounds: Range<Position>,
+    searchBounds: Range<Position>,
     matchMode: MatchMode,
     isTracingEnabled: Bool
   ) {
     self.controller = Controller(pc: 0)
     self.instructions = program.instructions
     self.input = input
-    self.bounds = bounds
+    self.subjectBounds = subjectBounds
+    self.searchBounds = searchBounds
     self.matchMode = matchMode
     self.isTracingEnabled = isTracingEnabled
-    self.currentPosition = bounds.lowerBound
+    self.currentPosition = searchBounds.lowerBound
 
-    self.registers = Registers(program, bounds.upperBound)
+    // Initialize registers with end of search bounds
+    self.registers = Registers(program, searchBounds.upperBound)
     self.storedCaptures = Array(
        repeating: .init(), count: program.registerInfo.captures)
 
@@ -100,7 +125,7 @@ extension Processor {
   var slice: Input.SubSequence {
     // TODO: Should we whole-scale switch to slices, or
     // does that depend on options for some anchors?
-    input[bounds]
+    input[subjectBounds]
   }
 
   // Advance in our input
@@ -123,8 +148,8 @@ extension Processor {
   /// - Precondition: `bounds.contains(index) || index == bounds.upperBound`
   /// - Precondition: `index >= currentPosition`
   mutating func resume(at index: Input.Index) {
-    assert(index >= bounds.lowerBound)
-    assert(index <= bounds.upperBound)
+    assert(index >= subjectBounds.lowerBound)
+    assert(index <= subjectBounds.upperBound)
     assert(index >= currentPosition)
     currentPosition = index
   }
@@ -199,7 +224,7 @@ extension Processor {
     switch (currentPosition, matchMode) {
     // When reaching the end of the match bounds or when we are only doing a
     // prefix match, transition to accept.
-    case (bounds.upperBound, _), (_, .partialFromFront):
+    case (subjectBounds.upperBound, _), (_, .partialFromFront):
       state = .accept
 
     // When we are doing a full match but did not reach the end of the match
@@ -371,9 +396,9 @@ extension Processor {
 
     case .consumeBy:
       let reg = payload.consumer
-      guard currentPosition < bounds.upperBound,
+      guard currentPosition < subjectBounds.upperBound,
             let nextIndex = registers[reg](
-              input, currentPosition..<bounds.upperBound)
+              input, currentPosition..<subjectBounds.upperBound)
       else {
         signalFailure()
         return
@@ -385,7 +410,7 @@ extension Processor {
       let reg = payload.assertion
       let assertion = registers[reg]
       do {
-        guard try assertion(input, currentPosition, bounds) else {
+        guard try assertion(input, currentPosition, subjectBounds) else {
           signalFailure()
           return
         }
@@ -400,7 +425,7 @@ extension Processor {
       let matcher = registers[matcherReg]
       do {
         guard let (nextIdx, val) = try matcher(
-          input, currentPosition, bounds
+          input, currentPosition, subjectBounds
         ) else {
           signalFailure()
           return

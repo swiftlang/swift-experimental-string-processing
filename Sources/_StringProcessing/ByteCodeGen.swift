@@ -97,25 +97,25 @@ fileprivate extension Compiler.ByteCodeGen {
     switch kind {
     case .startOfSubject:
       builder.buildAssert { (input, pos, bounds) in
-        pos == input.startIndex
+        pos == bounds.lowerBound
       }
 
     case .endOfSubjectBeforeNewline:
       builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
-        if pos == input.endIndex { return true }
+        if pos == bounds.upperBound { return true }
         switch semanticLevel {
         case .graphemeCluster:
-          return input.index(after: pos) == input.endIndex
+          return input.index(after: pos) == bounds.upperBound
            && input[pos].isNewline
         case .unicodeScalar:
-          return input.unicodeScalars.index(after: pos) == input.endIndex
+          return input.unicodeScalars.index(after: pos) == bounds.upperBound
            && input.unicodeScalars[pos].isNewline
         }
       }
 
     case .endOfSubject:
       builder.buildAssert { (input, pos, bounds) in
-        pos == input.endIndex
+        pos == bounds.upperBound
       }
 
     case .resetStartOfMatch:
@@ -124,9 +124,10 @@ fileprivate extension Compiler.ByteCodeGen {
 
     case .firstMatchingPositionInSubject:
       // TODO: We can probably build a nice model with API here
-      builder.buildAssert { (input, pos, bounds) in
-        pos == bounds.lowerBound
-      }
+      
+      // FIXME: This needs to be based on `searchBounds`,
+      // not the `subjectBounds` given as an argument here
+      builder.buildAssert { (input, pos, bounds) in false }
 
     case .textSegment:
       builder.buildAssert { (input, pos, _) in
@@ -141,9 +142,10 @@ fileprivate extension Compiler.ByteCodeGen {
       }
 
     case .startOfLine:
+      // FIXME: Anchor.startOfLine must always use this first branch
       if options.anchorsMatchNewlines {
         builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
-          if pos == input.startIndex { return true }
+          if pos == bounds.lowerBound { return true }
           switch semanticLevel {
           case .graphemeCluster:
             return input[input.index(before: pos)].isNewline
@@ -153,14 +155,15 @@ fileprivate extension Compiler.ByteCodeGen {
         }
       } else {
         builder.buildAssert { (input, pos, bounds) in
-          pos == input.startIndex
+          pos == bounds.lowerBound
         }
       }
       
     case .endOfLine:
+      // FIXME: Anchor.endOfLine must always use this first branch
       if options.anchorsMatchNewlines {
         builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
-          if pos == input.endIndex { return true }
+          if pos == bounds.upperBound { return true }
           switch semanticLevel {
           case .graphemeCluster:
             return input[pos].isNewline
@@ -170,7 +173,7 @@ fileprivate extension Compiler.ByteCodeGen {
         }
       } else {
         builder.buildAssert { (input, pos, bounds) in
-          pos == input.endIndex
+          pos == bounds.upperBound
         }
       }
 

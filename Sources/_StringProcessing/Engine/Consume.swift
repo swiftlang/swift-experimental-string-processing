@@ -18,8 +18,23 @@ extension Engine {
     Processor(
       program: program,
       input: input,
-      bounds: bounds,
+      subjectBounds: bounds,
+      searchBounds: bounds,
       matchMode: matchMode,
+      isTracingEnabled: enableTracing)
+  }
+  
+  func makeFirstMatchProcessor(
+    input: Input,
+    subjectBounds: Range<Input.Index>,
+    searchBounds: Range<Input.Index>
+  ) -> Processor<Input> {
+    Processor(
+      program: program,
+      input: input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds,
+      matchMode: .partialFromFront,
       isTracingEnabled: enableTracing)
   }
 }
