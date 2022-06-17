@@ -137,27 +137,10 @@ extension Regex {
     _ input: String,
     in inputRange: Range<String.Index>
   ) throws -> Regex<Output>.Match? {
-    // FIXME: Something more efficient, likely an engine interface, and we
-    // should scrap the RegexConsumer crap and call this
-
     let executor = Executor(program: regex.program.loweredProgram)
     let graphemeSemantic = regex.initialOptions.semanticLevel == .graphemeCluster
-
-    var low = inputRange.lowerBound
-    let high = inputRange.upperBound
-    while true {
-      if let m: Regex<Output>.Match = try executor.match(
-        input, in: low..<high, .partialFromFront
-      ) {
-        return m
-      }
-      if low >= high { return nil }
-      if graphemeSemantic {
-        input.formIndex(after: &low)
-      } else {
-        input.unicodeScalars.formIndex(after: &low)
-      }
-    }
+    return try executor.firstMatch(
+      input, in: inputRange, graphemeSemantic: graphemeSemantic)
   }
 }
 
