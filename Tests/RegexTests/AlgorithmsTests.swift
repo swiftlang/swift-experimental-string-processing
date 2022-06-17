@@ -499,8 +499,8 @@ class AlgorithmTests: XCTestCase {
   }
 
   func testUnicodeScalarSemantics() throws {
-    let regex = try Regex(#"(?u)."#, as: Substring.self)
-    let emptyRegex = try Regex(#"(?u)z?"#, as: Substring.self)
+    let regex = try Regex(#"."#, as: Substring.self).matchingSemantics(.unicodeScalar)
+    let emptyRegex = try Regex(#"z?"#, as: Substring.self).matchingSemantics(.unicodeScalar)
     
     XCTAssertEqual("".matches(of: regex).map(\.output), [])
     XCTAssertEqual("Café".matches(of: regex).map(\.output), ["C", "a", "f", "é"])
