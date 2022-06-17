@@ -1015,6 +1015,42 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(str.wholeMatch(of: parser)?.1, version)
     }
   }
+  
+  func testZeroWidthConsumer() throws {
+    struct Trace: CustomConsumingRegexComponent {
+      typealias RegexOutput = Void
+      var label: String
+      init(_ label: String) { self.label = label }
+
+      static var traceOutput = ""
+
+      func consuming(_ input: String, startingAt index: String.Index, in bounds: Range<String.Index>) throws -> (upperBound: String.Index, output: Void)? {
+        print("Matching '\(label)'", to: &Self.traceOutput)
+        print(input, to: &Self.traceOutput)
+        let dist = input.distance(from: input.startIndex, to: index)
+        print(String(repeating: " ", count: dist) + "^", to: &Self.traceOutput)
+        return (index, ())
+      }
+    }
+    
+    let regex = Regex {
+      OneOrMore(.word)
+      Trace("end of key")
+      ":"
+      Trace("start of value")
+      OneOrMore(.word)
+    }
+    XCTAssertNotNil("hello:goodbye".firstMatch(of: regex))
+    XCTAssertEqual(Trace.traceOutput, """
+      Matching 'end of key'
+      hello:goodbye
+           ^
+      Matching 'start of value'
+      hello:goodbye
+            ^
+      
+      """)
+  }
 }
 
 extension Unicode.Scalar {
