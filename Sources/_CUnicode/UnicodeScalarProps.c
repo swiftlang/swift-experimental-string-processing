@@ -14,7 +14,7 @@
 #include "include/UnicodeData.h"
 
 SWIFT_CC
-uint8_t _swift_stdlib_getScript(uint32_t scalar) {
+uint8_t _swift_string_processing_getScript(uint32_t scalar) {
   int lowerBoundIndex = 0;
   int endIndex = SCRIPTS_COUNT;
   int upperBoundIndex = endIndex - 1;
@@ -68,9 +68,9 @@ uint8_t _swift_stdlib_getScript(uint32_t scalar) {
 }
 
 SWIFT_CC
-const uint8_t *_swift_stdlib_getScriptExtensions(uint32_t scalar,
-                                                 uint8_t *count) {
-  intptr_t dataIdx = _swift_stdlib_getScalarBitArrayIdx(scalar,
+const uint8_t *_swift_string_processing_getScriptExtensions(uint32_t scalar,
+                                                            uint8_t *count) {
+  intptr_t dataIdx = _swift_string_processing_getScalarBitArrayIdx(scalar,
                                                 _swift_stdlib_script_extensions,
                                          _swift_stdlib_script_extensions_ranks);
   
