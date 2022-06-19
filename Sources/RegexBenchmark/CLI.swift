@@ -17,6 +17,7 @@ struct Runner: ParsableCommand {
     benchmark.addBacktracking()
     benchmark.addCSS()
     benchmark.addFirstMatch()
+    benchmark.addGraphemeBreak()
     return benchmark
   }
   mutating func run() throws {
