@@ -12,5 +12,14 @@ extension BenchmarkRunner {
       baseName: "GraphemeBreakNoCap", regex: regex, input: input)
     benchmark.register(&self)
   }
+
+  mutating func addHangulSyllable() {
+    let input = Inputs.graphemeBreakData
+    let regex = #"HANGUL SYLLABLE [A-Z]+(?:\.\.HANGUL SYLLABLE [A-Z]+)?"#
+
+    let benchmark = CrossBenchmark(
+      baseName: "HangulSyllable", regex: regex, input: input)
+    benchmark.register(&self)
+  }
 }
 

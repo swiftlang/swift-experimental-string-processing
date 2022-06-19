@@ -17,6 +17,7 @@ struct Runner: ParsableCommand {
     benchmark.addCSS()
     benchmark.addNotFound()
     benchmark.addGraphemeBreak()
+    benchmark.addHangulSyllable()
     return benchmark
   }
   mutating func run() throws {
