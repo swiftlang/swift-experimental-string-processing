@@ -22,6 +22,7 @@ struct Runner: ParsableCommand {
     benchmark.addGraphemeBreak()
     benchmark.addHangulSyllable()
     benchmark.addHTML()
+    benchmark.addEmail()
     return benchmark
   }
   
