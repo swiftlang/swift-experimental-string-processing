@@ -280,6 +280,9 @@ extension PrettyPrinter {
 
     case .absentFunction:
       print("/* TODO: absent function */")
+
+    case .typeErase:
+      print("/* TODO: type erasure */")
     }
   }
   

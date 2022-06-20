@@ -56,7 +56,13 @@ public struct Regex<Output>: RegexComponent {
   }
 
   public var regex: Regex<Output> {
-    self
+    if Output.self == AnyRegexOutput.self {
+      if case .typeErase = root {
+        return self
+      }
+      return .init(node: .typeErase(root))
+    }
+    return self
   }
 }
 

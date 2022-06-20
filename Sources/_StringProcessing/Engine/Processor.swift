@@ -442,6 +442,12 @@ extension Processor {
         value, overwriteInitial: sp)
       controller.step()
 
+    case .beginTypeErase:
+      fatalError("Unimplemented")
+
+    case .endTypeErase:
+      fatalError("Unimplemented")
+
     case .builtinAssertion:
       builtinAssertion()
 

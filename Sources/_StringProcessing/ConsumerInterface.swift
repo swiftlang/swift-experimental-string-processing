@@ -39,7 +39,7 @@ extension DSLTree.Node {
     case .orderedChoice, .conditional, .concatenation,
         .capture, .nonCapturingGroup,
         .quantification, .trivia, .empty,
-        .absentFunction: return nil
+        .absentFunction, .typeErase: return nil
 
     case .consumer:
       fatalError("FIXME: Is this where we handle them?")

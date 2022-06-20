@@ -1,5 +1,6 @@
 @_implementationOnly import _RegexParser
 
+@available(SwiftStdlib 5.7, *)
 extension Compiler {
   struct ByteCodeGen {
     var options: MatchingOptions
@@ -15,8 +16,15 @@ extension Compiler {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension Compiler.ByteCodeGen {
   mutating func emitRoot(_ root: DSLTree.Node) throws -> MEProgram {
+    // FIXME: Remove once output type erasure is represented in the matching
+    // engine. This workaround is to prevent a top-level `Regex<AnyRegexOutput>`
+    // from being emitted as a matcher, which would be an infinite recursion.
+    if case let .typeErase(child) = root {
+      return try emitRoot(child)
+    }
     // The whole match (`.0` element of output) is equivalent to an implicit
     // capture over the entire regex.
     try emitNode(.capture(name: nil, reference: nil, root))
@@ -25,6 +33,7 @@ extension Compiler.ByteCodeGen {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 fileprivate extension Compiler.ByteCodeGen {
   mutating func emitAtom(_ a: DSLTree.Atom) throws {
     defer {
@@ -764,6 +773,28 @@ fileprivate extension Compiler.ByteCodeGen {
 
     case .characterPredicate:
       throw Unsupported("character predicates")
+
+    case .typeErase(let child):
+      // FIXME: This is a workaround for `Regex<AnyRegexOutput>` not working in
+      // the DSL. This separates any `Regex<AnyRegexOutput>` into its own
+      // compilation unit, but is less efficient. We should instead represent
+      // output type erasure in the matching engine (`beginTypeErase`,
+      // `endTypeErase`).
+      //
+      // Long-term design:
+      //   beginTypeErase
+      //   <code for child>
+      //   endTypeErase
+      let program = try Compiler(tree: DSLTree(child)).emit()
+      let executor = Executor(program: program)
+      return emitMatcher { input, startIndex, range in
+        guard let match: Regex<AnyRegexOutput>.Match = try executor.match(
+          input, in: startIndex..<range.upperBound, .partialFromFront
+        ) else {
+          return nil
+        }
+        return (match.range.upperBound, match.output)
+      }
 
     case .trivia, .empty:
       return nil

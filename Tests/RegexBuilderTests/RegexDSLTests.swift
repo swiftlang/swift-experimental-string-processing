@@ -1071,6 +1071,78 @@ class RegexDSLTests: XCTestCase {
       }
     }
   }
+
+  func testTypeErasedRegexInDSL() throws {
+    do {
+      let input = "johnappleseed: 12."
+      let numberRegex = try! Regex(#"(\d+)\.?"#)
+      let regex = Regex {
+        Capture {
+          OneOrMore(.word)
+        }
+        ZeroOrMore(.whitespace)
+        ":"
+        ZeroOrMore(.whitespace)
+        numberRegex
+      }
+      let match = try XCTUnwrap(input.wholeMatch(of: regex))
+      XCTAssertEqual(match.0, input[...])
+      XCTAssertEqual(match.1, "johnappleseed")
+    }
+    do {
+      let input = "johnappleseed: 12."
+      let numberRegex = try! Regex(#"(\d+)\.?"#)
+      let regex = Regex {
+        Capture {
+          OneOrMore(.word)
+        }
+        ZeroOrMore(.whitespace)
+        ":"
+        ZeroOrMore(.whitespace)
+        Capture { numberRegex }
+      }
+      let match = try XCTUnwrap(input.wholeMatch(of: regex))
+      XCTAssertEqual(match.0, input[...])
+      XCTAssertEqual(match.1, "johnappleseed")
+      XCTAssertEqual(match.2[0].value as? Substring, "12.")
+      XCTAssertEqual(match.2[1].value as? Substring, "12")
+    }
+    do {
+      let input = "johnappleseed: 12."
+      // Anchors should be with respect to the entire input.
+      let numberRegex = try! Regex(#"^(\d+)\.?"#)
+      let regex = Regex {
+        Capture {
+          OneOrMore(.word)
+        }
+        ZeroOrMore(.whitespace)
+        ":"
+        ZeroOrMore(.whitespace)
+        Capture { numberRegex }
+      }
+      XCTAssertNil(input.wholeMatch(of: regex))
+    }
+    do {
+      let input = "johnappleseed: 12.[12]"
+      // Backreferences in a type-erased regex are scoped to the type-erased
+      // regex itself. `\1` here should refer to "12", not "johnappleseed"
+      let numberRegex = try! Regex(#"(\d+)\.?\[\1\]"#)
+      let regex = Regex {
+        Capture {
+          OneOrMore(.word)
+        }
+        ZeroOrMore(.whitespace)
+        ":"
+        ZeroOrMore(.whitespace)
+        Capture { numberRegex }
+      }
+      let match = try XCTUnwrap(input.wholeMatch(of: regex))
+      XCTAssertEqual(match.0, input[...])
+      XCTAssertEqual(match.1, "johnappleseed")
+      XCTAssertEqual(match.2[0].value as? Substring, "12.[12]")
+      XCTAssertEqual(match.2[1].value as? Substring, "12")
+    }
+  }
 }
 
 extension Unicode.Scalar {
