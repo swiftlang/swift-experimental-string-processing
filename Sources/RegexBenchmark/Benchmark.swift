@@ -75,6 +75,8 @@ public struct BenchmarkRunner {
     var times: [Time] = []
     
     // initial run to make sure the regex has been compiled
+    // todo: measure compile times, or at least how much this first run
+    //       differs from the later ones
     benchmark.run()
     
     // fixme: use suspendingclock?
@@ -110,9 +112,11 @@ public struct BenchmarkRunner {
   
   public func debug() {
     print("Debugging")
+    print("========================")
     for b in suite {
       print("- \(b.name) \(measure(benchmark: b))")
       b.debug()
+      print("========================")
     }
   }
 }

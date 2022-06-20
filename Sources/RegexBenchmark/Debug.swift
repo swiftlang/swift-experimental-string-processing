@@ -10,12 +10,12 @@ extension Benchmark {
           print("- Match: \(match.0)")
         }
       } else {
-        print("- No match found")
+        print("- Warning: No match found")
       }
     case .allMatches:
       let results = target.matches(of: regex)
       if results.isEmpty {
-        print("- No matches")
+        print("- Warning: No matches")
         return
       }
       
@@ -42,7 +42,7 @@ extension Benchmark {
           print("- Match: \(match.0)")
         }
       } else {
-        print("- No match found")
+        print("- Warning: No match found")
         return
       }
     }
@@ -55,7 +55,7 @@ extension NSBenchmark {
     case .allMatches:
       let results = regex.matches(in: target, range: range)
       if results.isEmpty {
-        print("- No matches")
+        print("- Warning: No matches")
         return
       }
       
@@ -81,7 +81,7 @@ extension NSBenchmark {
           print("- Match: \(target[Range(match.range, in: target)!])")
         }
       } else {
-        print("- No match found")
+        print("- Warning: No match found")
         return
       }
     }
