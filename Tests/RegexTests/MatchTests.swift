@@ -1467,24 +1467,34 @@ extension RegexTests {
     XCTAssertEqual(trimmed.firstMatch(of: postfixLetters)?.output, "def")
     XCTAssertEqual(trimmed.replacing(postfixLetters, with: ""), "abc456")
 
-    // start anchor (^) should _not_ match beginning of subrange
-    XCTExpectFailure {
-      XCTAssertEqual(
-        string.replacing(
-          prefixLetters,
-          with: "",
-          subrange: trimmed.startIndex..<trimmed.endIndex),
-        string)
-    }
-    // end anchor ($) should _not_ match beginning of subrange
-    XCTExpectFailure {
-      XCTAssertEqual(
-        string.replacing(
-          postfixLetters,
-          with: "",
-          subrange: trimmed.startIndex..<trimmed.endIndex),
-        string)
-    }
+    // start anchor (^) should _not_ match beginning of replaced subrange
+    XCTAssertEqual(
+      string.replacing(
+        prefixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      string)
+    // end anchor ($) should _not_ match end of replaced subrange
+    XCTAssertEqual(
+      string.replacing(
+        postfixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      string)
+    
+    // if subrange == actual subject bounds, anchors _do_ match
+    XCTAssertEqual(
+      trimmed.replacing(
+        prefixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      "456def")
+    XCTAssertEqual(
+      trimmed.replacing(
+        postfixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      "abc456")
   }
   
   func testMatchingOptionsScope() {
