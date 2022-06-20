@@ -18,8 +18,10 @@ public enum RegexComponentBuilder {
     _RegexFactory().empty()
   }
 
-  public static func buildPartialBlock<R: RegexComponent>(first: R ) -> R {
-    first
+  public static func buildPartialBlock<R: RegexComponent>(
+    first component: R
+  ) -> Regex<R.RegexOutput> {
+    component.regex
   }
 
   public static func buildExpression<R: RegexComponent>(_ regex: R) -> R {
