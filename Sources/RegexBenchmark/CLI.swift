@@ -5,22 +5,22 @@ struct Runner: ParsableCommand {
   @Argument(help: "Names of benchmarks to run")
   var specificBenchmarks: [String] = []
   
-  @Option(help: "Run only once for profiling purposes")
+  @Flag(help: "Run only once for profiling purposes")
   var profile = false
   
   @Option(help: "How many samples to collect for each benchmark")
   var samples = 20
   
-  @Option(help: "Debug benchmark regexes")
+  @Flag(help: "Debug benchmark regexes")
   var debug = false
   
   @Option(help: "Output folder")
   var outputPath = "./results/"
   
-  @Option(help: "Should the results be saved")
+  @Flag(help: "Should the results be saved")
   var save = false
   
-  @Option(help: "Compare this result with the latest saved result")
+  @Flag(help: "Compare this result with the latest saved result")
   var compare = false
     
   func makeRunner() -> BenchmarkRunner {
@@ -46,11 +46,11 @@ struct Runner: ParsableCommand {
     case (false, true): runner.debug()
     case (false, false):
       runner.run()
-      if save {
-        try runner.save()
-      }
       if compare {
         try runner.compare()
+      }
+      if save {
+        try runner.save()
       }
     }
   }

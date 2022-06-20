@@ -96,8 +96,8 @@ extension BenchmarkRunner {
     print("Saving result to \(resultJsonUrl.path)")
     try results.save(to: resultJsonUrl)
   }
-  
-  public func compare() throws {
+
+  func fetchLatestResult() throws -> (Date, SuiteResult) {
     var pastResults: [Date: SuiteResult] = [:]
     for resultFile in try FileManager.default.contentsOfDirectory(
       at: outputFolderUrl,
@@ -109,22 +109,34 @@ extension BenchmarkRunner {
       let date = try dateStyle.parse(dateString)
       pastResults.updateValue(try SuiteResult.load(from: resultFile), forKey: date)
     }
-    let sorted = pastResults
-      .filter({kv in startTime.timeIntervalSince(kv.0) > 1})
-      .sorted(by: {(kv1,kv2) in kv1.0 > kv2.0})
-    let latest = sorted[0]
-    let diff = results.compare(with: latest.1)
-    let regressions = diff.filter({kv in kv.1.seconds > 0})
-    let improvements = diff.filter({kv in kv.1.seconds < 0})
     
-    print("Comparing against benchmark done on \(latest.0.formatted(dateStyle))")
-    print("=== Regressions ===")
+    let sorted = pastResults
+      .sorted(by: {(kv1,kv2) in kv1.0 > kv2.0})
+    return sorted[0]
+  }
+
+  public func compare() throws {
+    // It just compares by the latest result for now, we probably want a CLI
+    // flag to set which result we want to compare against
+    let (compareDate, compareResult) = try fetchLatestResult()
+    let diff = results.compare(with: compareResult)
+    let regressions = diff.filter({(_, change) in change.seconds > 0})
+    let improvements = diff.filter({(_, change) in change.seconds < 0})
+    
+    print("Comparing against benchmark done on \(compareDate.formatted(dateStyle))")
+    print("=== Regressions ====================================================")
     for item in regressions {
-      print("- \(item.key) \(item.value)")
+      let oldVal = compareResult.results[item.key]!
+      let newVal = results.results[item.key]!
+      let percentage = item.value.seconds / oldVal.seconds
+      print("- \(item.key)\t\t\(newVal)\t\(oldVal)\t\(item.value)\t\((percentage * 100).rounded())%")
     }
-    print("=== Improvements ===")
+    print("=== Improvements ====================================================")
     for item in improvements {
-      print("- \(item.key) \(item.value)")
+      let oldVal = compareResult.results[item.key]!
+      let newVal = results.results[item.key]!
+      let percentage = item.value.seconds / oldVal.seconds
+      print("- \(item.key)\t\t\(newVal)\t\(oldVal)\t\(item.value)\t\((percentage * 100).rounded())%")
     }
   }
 }
@@ -141,7 +153,8 @@ struct SuiteResult {
     for item in results {
       if let otherVal = other.results[item.key] {
         let diff = item.value - otherVal
-        if diff.abs() > Time.millisecond{
+        // note: is this enough time difference?
+        if diff.abs() > Time.millisecond {
           output.updateValue(diff, forKey: item.key)
         }
       }
