@@ -13,9 +13,18 @@ struct Runner: ParsableCommand {
   
   @Option(help: "Debug benchmark regexes")
   var debug = false
+  
+  @Option(help: "Output folder")
+  var outputPath = "./results/"
+  
+  @Option(help: "Should the results be saved")
+  var save = false
+  
+  @Option(help: "Compare this result with the latest saved result")
+  var compare = false
     
   func makeRunner() -> BenchmarkRunner {
-    var benchmark = BenchmarkRunner("RegexBench", samples)
+    var benchmark = BenchmarkRunner("RegexBench", samples, outputPath)
     benchmark.addReluctantQuant()
     benchmark.addCSS()
     benchmark.addNotFound()
@@ -35,7 +44,14 @@ struct Runner: ParsableCommand {
     case (true, true): print("Cannot run both profile and debug")
     case (true, false): runner.profile()
     case (false, true): runner.debug()
-    case (false, false): runner.run()
+    case (false, false):
+      runner.run()
+      if save {
+        try runner.save()
+      }
+      if compare {
+        try runner.compare()
+      }
     }
   }
 }
