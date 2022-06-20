@@ -18,21 +18,19 @@ struct SentinelValue: Hashable, CustomStringConvertible {
 extension Processor {
   /// Our register file
   struct Registers {
-    // currently, these are static readonly
+
+    // MARK: static / read-only, non-resettable
+
+    // Verbatim elements to compare against
     var elements: [Element]
 
-    // currently, these are static readonly
+    // Verbatim sequences to compare against
     //
-    // TODO: We want to be `String` instead of `[Character]`...
+    // TODO: Degenericize Processor and store Strings
     var sequences: [[Element]] = []
 
-    // currently, hold output of assertions
-    var bools: [Bool] // TODO: bitset
-
-    // currently, these are static readonly
     var consumeFunctions: [MEProgram<Input>.ConsumeFunction]
 
-    // currently, these are static readonly
     var assertionFunctions: [MEProgram<Input>.AssertionFunction]
 
     // Captured-value constructors
@@ -44,68 +42,60 @@ extension Processor {
     // currently, these are for comments and abort messages
     var strings: [String]
 
+    // MARK: writeable, resettable
+
+    // currently, hold output of assertions
+    var bools: [Bool] // TODO: bitset
+
     // currently, useful for range-based quantification
     var ints: [Int]
-
-    // unused
-    var floats: [Double] = []
 
     // Currently, used for `movePosition` and `matchSlice`
     var positions: [Position] = []
 
     var values: [Any]
+  }
+}
 
-    // unused
-    var instructionAddresses: [InstructionAddress] = []
-
-    // unused, any application?
-    var classStackAddresses: [CallStackAddress] = []
-
-    // unused, any application?
-    var positionStackAddresses: [PositionStackAddress] = []
-
-    // unused, any application?
-    var savePointAddresses: [SavePointStackAddress] = []
-
-    subscript(_ i: StringRegister) -> String {
-      strings[i.rawValue]
+extension Processor.Registers {
+  subscript(_ i: StringRegister) -> String {
+    strings[i.rawValue]
+  }
+  subscript(_ i: SequenceRegister) -> [Input.Element] {
+    sequences[i.rawValue]
+  }
+  subscript(_ i: IntRegister) -> Int {
+    get { ints[i.rawValue] }
+    set { ints[i.rawValue] = newValue }
+  }
+  subscript(_ i: BoolRegister) -> Bool {
+    get { bools[i.rawValue] }
+    set { bools[i.rawValue] = newValue }
+  }
+  subscript(_ i: PositionRegister) -> Input.Index {
+    get { positions[i.rawValue] }
+    set { positions[i.rawValue] = newValue }
+  }
+  subscript(_ i: ValueRegister) -> Any {
+    get { values[i.rawValue] }
+    set {
+      values[i.rawValue] = newValue
     }
-    subscript(_ i: SequenceRegister) -> [Element] {
-      sequences[i.rawValue]
-    }
-    subscript(_ i: IntRegister) -> Int {
-      get { ints[i.rawValue] }
-      set { ints[i.rawValue] = newValue }
-    }
-    subscript(_ i: BoolRegister) -> Bool {
-      get { bools[i.rawValue] }
-      set { bools[i.rawValue] = newValue }
-    }
-    subscript(_ i: PositionRegister) -> Position {
-      get { positions[i.rawValue] }
-      set { positions[i.rawValue] = newValue }
-    }
-    subscript(_ i: ValueRegister) -> Any {
-      get { values[i.rawValue] }
-      set {
-        values[i.rawValue] = newValue
-      }
-    }
-    subscript(_ i: ElementRegister) -> Element {
-      elements[i.rawValue]
-    }
-    subscript(_ i: ConsumeFunctionRegister) -> MEProgram<Input>.ConsumeFunction {
-      consumeFunctions[i.rawValue]
-    }
-    subscript(_ i: AssertionFunctionRegister) -> MEProgram<Input>.AssertionFunction {
-      assertionFunctions[i.rawValue]
-    }
-    subscript(_ i: TransformRegister) -> MEProgram<Input>.TransformFunction {
-      transformFunctions[i.rawValue]
-    }
-    subscript(_ i: MatcherRegister) -> MEProgram<Input>.MatcherFunction {
-      matcherFunctions[i.rawValue]
-    }
+  }
+  subscript(_ i: ElementRegister) -> Input.Element {
+    elements[i.rawValue]
+  }
+  subscript(_ i: ConsumeFunctionRegister) -> MEProgram<Input>.ConsumeFunction {
+    consumeFunctions[i.rawValue]
+  }
+  subscript(_ i: AssertionFunctionRegister) -> MEProgram<Input>.AssertionFunction {
+    assertionFunctions[i.rawValue]
+  }
+  subscript(_ i: TransformRegister) -> MEProgram<Input>.TransformFunction {
+    transformFunctions[i.rawValue]
+  }
+  subscript(_ i: MatcherRegister) -> MEProgram<Input>.MatcherFunction {
+    matcherFunctions[i.rawValue]
   }
 }
 
@@ -141,20 +131,26 @@ extension Processor.Registers {
 
     self.ints = Array(repeating: 0, count: info.ints)
 
-    self.floats = Array(repeating: 0, count: info.floats)
-
     self.positions = Array(repeating: sentinel, count: info.positions)
 
     self.values = Array(
       repeating: SentinelValue(), count: info.values)
+  }
 
-    self.instructionAddresses = Array(repeating: 0, count: info.instructionAddresses)
+  mutating func reset(sentinel: Input.Index) {
+    self.bools._setAll(to: false)
+    self.ints._setAll(to: 0)
+    self.positions._setAll(to: sentinel)
+    self.values._setAll(to: SentinelValue())
+  }
+}
 
-    self.classStackAddresses = Array(repeating: 0, count: info.classStackAddresses)
-
-    self.positionStackAddresses = Array(repeating: 0, count: info.positionStackAddresses)
-
-    self.savePointAddresses = Array(repeating: 0, count: info.savePointAddresses)
+// TODO: Productize into general algorithm
+extension MutableCollection {
+  mutating func _setAll(to e: Element) {
+    for idx in self.indices {
+      self[idx] = e
+    }
   }
 }
 
@@ -196,12 +192,7 @@ extension Processor.Registers: CustomStringConvertible {
       \(formatRegisters("bools", bools))\
       \(formatRegisters("strings", strings))\
       \(formatRegisters("ints", ints))\
-      \(formatRegisters("floats", floats))\
       \(formatRegisters("positions", positions))\
-      \(formatRegisters("instructionAddresses", instructionAddresses))\
-      \(formatRegisters("classStackAddresses", classStackAddresses))\
-      \(formatRegisters("positionStackAddresses", positionStackAddresses))\
-      \(formatRegisters("savePointAddresses", savePointAddresses))\
 
       """    
   }

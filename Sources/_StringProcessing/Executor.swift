@@ -20,6 +20,36 @@ struct Executor {
   }
 
   @available(SwiftStdlib 5.7, *)
+  func firstMatch<Output>(
+    _ input: String,
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>,
+    graphemeSemantic: Bool
+  ) throws -> Regex<Output>.Match? {
+    var cpu = engine.makeFirstMatchProcessor(
+      input: input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds)
+
+    var low = searchBounds.lowerBound
+    let high = searchBounds.upperBound
+    while true {
+      if let m: Regex<Output>.Match = try _match(
+        input, in: low..<high, using: &cpu
+      ) {
+        return m
+      }
+      if low >= high { return nil }
+      if graphemeSemantic {
+        input.formIndex(after: &low)
+      } else {
+        input.unicodeScalars.formIndex(after: &low)
+      }
+      cpu.reset(searchBounds: low..<high)
+    }
+  }
+
+  @available(SwiftStdlib 5.7, *)
   func match<Output>(
     _ input: String,
     in subjectBounds: Range<String.Index>,
@@ -27,7 +57,15 @@ struct Executor {
   ) throws -> Regex<Output>.Match? {
     var cpu = engine.makeProcessor(
       input: input, bounds: subjectBounds, matchMode: mode)
+    return try _match(input, in: subjectBounds, using: &cpu)
+  }
 
+  @available(SwiftStdlib 5.7, *)
+  func _match<Output>(
+    _ input: String,
+    in subjectBounds: Range<String.Index>,
+    using cpu: inout Processor<String>
+  ) throws -> Regex<Output>.Match? {
     guard let endIdx = cpu.consume() else {
       if let e = cpu.failureReason {
         throw e

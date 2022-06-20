@@ -146,40 +146,12 @@ extension Regex {
     searchBounds: Range<String.Index>
   ) throws -> Regex<Output>.Match? {
     let executor = Executor(program: regex.program.loweredProgram)
-
-    var low = searchBounds.lowerBound
-    let high = searchBounds.upperBound
-    while true {
-      // FIXME: Make once and reset at this point (or after search)
-      var cpu = executor.engine.makeFirstMatchProcessor(
-        input: input, subjectBounds: subjectBounds, searchBounds: searchBounds)
-      cpu.currentPosition = low
-
-      guard let endIdx = cpu.consume() else {
-        if let e = cpu.failureReason {
-          throw e
-        }
-        
-        if low >= high { return nil }
-        if regex.initialOptions.semanticLevel == .graphemeCluster {
-          input.formIndex(after: &low)
-        } else {
-          input.unicodeScalars.formIndex(after: &low)
-        }
-        
-        continue
-      }
-
-      let capList = MECaptureList(
-        values: cpu.storedCaptures,
-        referencedCaptureOffsets: executor.engine.program.referencedCaptureOffsets)
-
-      let range = low..<endIdx
-      let caps = executor.engine.program.captureList.createElements(capList)
-
-      let anyRegexOutput = AnyRegexOutput(input: input, elements: caps)
-      return .init(anyRegexOutput: anyRegexOutput, range: range)
-    }
+    let graphemeSemantic = regex.initialOptions.semanticLevel == .graphemeCluster
+    return try executor.firstMatch(
+      input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds,
+      graphemeSemantic: graphemeSemantic)
   }
 }
 
