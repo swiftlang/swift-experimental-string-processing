@@ -4,11 +4,12 @@ import Foundation
 public protocol RegexBenchmark {
   var name: String { get }
   func run()
+  func debug()
 }
 
 public struct Benchmark: RegexBenchmark {
   public let name: String
-  let regex: Regex<Substring>
+  let regex: Regex<AnyRegexOutput>
   let type: MatchType
   let target: String
 
@@ -57,9 +58,7 @@ public struct BenchmarkRunner {
   let samples: Int
   
   public init(_ suiteName: String) {
-    self.suiteName = suiteName
-    self.suite = []
-    self.samples = 20
+    self.init(suiteName, 20)
   }
   
   public init(_ suiteName: String, _ n: Int) {
@@ -108,6 +107,14 @@ public struct BenchmarkRunner {
       print("- done")
     }
   }
+  
+  public func debug() {
+    print("Debugging")
+    for b in suite {
+      print("- \(b.name) \(measure(benchmark: b))")
+      b.debug()
+    }
+  }
 }
 
 /// A benchmark meant to be ran across multiple engines
@@ -130,7 +137,7 @@ struct CrossBenchmark {
   var isWhole: Bool = false
 
   func register(_ runner: inout BenchmarkRunner) {
-    let swiftRegex = try! Regex(regex, as: Substring.self)
+    let swiftRegex = try! Regex(regex)
 
     let nsPattern = isWhole ? "^" + regex + "$" : regex
     let nsRegex: NSRegularExpression
