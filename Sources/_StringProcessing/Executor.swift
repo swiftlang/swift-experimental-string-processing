@@ -45,7 +45,7 @@ struct Executor {
       } else {
         input.unicodeScalars.formIndex(after: &low)
       }
-      cpu.reset(searchBounds: low..<high)
+      cpu.reset(start: low, end: high)
     }
   }
 

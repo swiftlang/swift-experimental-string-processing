@@ -45,17 +45,17 @@ struct Processor<
   /// `input.startIndex..<input.endIndex`.
   let subjectBounds: Range<Position>
   
-  let matchMode: MatchMode
-  let instructions: InstructionList<Instruction>
-
-  // MARK: Resettable state
-
   /// The bounds within the subject for an individual search.
   ///
   /// `searchBounds` is equal to `subjectBounds` in some cases, but can be a
   /// subrange when performing operations like searching for matches iteratively
   /// or calling `str.replacing(_:with:subrange:)`.
-  var searchBounds: Range<Position>
+  let searchBounds: Range<Position>
+
+  let matchMode: MatchMode
+  let instructions: InstructionList<Instruction>
+
+  // MARK: Resettable state
   
   /// The current search position while processing.
   ///
@@ -115,13 +115,12 @@ extension Processor {
     _checkInvariants()
   }
 
-  mutating func reset(searchBounds: Range<Position>) {
-    self.searchBounds = searchBounds
-    self.currentPosition = self.searchBounds.lowerBound
+  mutating func reset(start: Position, end: Position) {
+    self.currentPosition = start
 
     self.controller = Controller(pc: 0)
 
-    self.registers.reset(sentinel: searchBounds.upperBound)
+    self.registers.reset(sentinel: end)
 
     self.savePoints.removeAll(keepingCapacity: true)
     self.callStack.removeAll(keepingCapacity: true)
