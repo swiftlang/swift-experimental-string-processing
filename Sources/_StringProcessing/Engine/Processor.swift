@@ -93,8 +93,8 @@ struct Processor<
 extension Processor {
   typealias Position = Input.Index
 
-  var start: Position { subjectBounds.lowerBound }
-  var end: Position { subjectBounds.upperBound }
+  var start: Position { searchBounds.lowerBound }
+  var end: Position { searchBounds.upperBound }
 }
 
 extension Processor {
@@ -144,10 +144,12 @@ extension Processor {
   }
 
   func _checkInvariants() {
-    assert(end <= input.endIndex)
-    assert(start >= input.startIndex)
-    assert(currentPosition >= start)
-    assert(currentPosition <= end)
+    assert(searchBounds.lowerBound >= subjectBounds.lowerBound)
+    assert(searchBounds.upperBound <= subjectBounds.upperBound)
+    assert(subjectBounds.lowerBound >= input.startIndex)
+    assert(subjectBounds.upperBound <= input.endIndex)
+    assert(currentPosition >= searchBounds.lowerBound)
+    assert(currentPosition <= searchBounds.upperBound)
   }
 }
 
