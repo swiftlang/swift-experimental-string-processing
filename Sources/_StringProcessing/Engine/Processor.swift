@@ -184,8 +184,8 @@ extension Processor {
   /// - Precondition: `bounds.contains(index) || index == bounds.upperBound`
   /// - Precondition: `index >= currentPosition`
   mutating func resume(at index: Input.Index) {
-    assert(index >= subjectBounds.lowerBound)
-    assert(index <= subjectBounds.upperBound)
+    assert(index >= searchBounds.lowerBound)
+    assert(index <= searchBounds.upperBound)
     assert(index >= currentPosition)
     currentPosition = index
   }
@@ -256,7 +256,7 @@ extension Processor {
     switch (currentPosition, matchMode) {
     // When reaching the end of the match bounds or when we are only doing a
     // prefix match, transition to accept.
-    case (subjectBounds.upperBound, _), (_, .partialFromFront):
+    case (searchBounds.upperBound, _), (_, .partialFromFront):
       state = .accept
 
     // When we are doing a full match but did not reach the end of the match
@@ -434,9 +434,9 @@ extension Processor {
 
     case .consumeBy:
       let reg = payload.consumer
-      guard currentPosition < subjectBounds.upperBound,
+      guard currentPosition < searchBounds.upperBound,
             let nextIndex = registers[reg](
-              input, currentPosition..<subjectBounds.upperBound)
+              input, currentPosition..<searchBounds.upperBound)
       else {
         signalFailure()
         return
