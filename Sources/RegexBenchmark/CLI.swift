@@ -22,21 +22,11 @@ struct Runner: ParsableCommand {
   
   @Flag(help: "Compare this result with the latest saved result")
   var compare = false
-    
-  func makeRunner() -> BenchmarkRunner {
-    var benchmark = BenchmarkRunner("RegexBench", samples, outputPath)
-    benchmark.addReluctantQuant()
-    benchmark.addCSS()
-    benchmark.addNotFound()
-    benchmark.addGraphemeBreak()
-    benchmark.addHangulSyllable()
-    benchmark.addHTML()
-    benchmark.addEmail()
-    return benchmark
-  }
-  
+      
   mutating func run() throws {
-    var runner = makeRunner()
+    var runner = BenchmarkRunner.makeRunner(samples, outputPath)
+    
+    // todo: regex based filter 
     if !self.specificBenchmarks.isEmpty {
       runner.suite = runner.suite.filter { b in specificBenchmarks.contains(b.name) }
     }

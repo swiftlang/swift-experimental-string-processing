@@ -1,8 +1,12 @@
 import Foundation
 
 public struct BenchmarkRunner {
+  public typealias RegisterFn = (inout BenchmarkRunner) -> Void
+  
   let suiteName: String
   var suite: [any RegexBenchmark] = []
+  var registrations: [RegisterFn] = []
+  
   let samples: Int
   var results: SuiteResult = SuiteResult()
   
@@ -40,7 +44,7 @@ public struct BenchmarkRunner {
     
     // return median time
     times.sort()
-    let median =  times[samples/2]
+    let median = times[samples/2]
     self.results.add(name: benchmark.name, time: median)
     return median
   }
@@ -73,14 +77,7 @@ public struct BenchmarkRunner {
 }
 
 extension BenchmarkRunner {
-  var dateStyle: Date.FormatStyle {
-    Date.FormatStyle()
-      .year(.twoDigits)
-      .month(.twoDigits)
-      .day(.twoDigits)
-      .hour(.twoDigits(amPM: .omitted))
-      .minute(.twoDigits)
-  }
+  var dateStyle: Date.ISO8601FormatStyle { Date.ISO8601FormatStyle() }
   
   var outputFolderUrl: URL {
     let url = URL(fileURLWithPath: outputPath, isDirectory: true)
@@ -153,8 +150,9 @@ struct SuiteResult {
     for item in results {
       if let otherVal = other.results[item.key] {
         let diff = item.value - otherVal
-        // note: is this enough time difference?
-        if diff.abs() > Time.millisecond {
+        // for now just use picosecond to get rid of the differences
+        // from floating point rounding error
+        if diff.abs() > Time.picosecond {
           output.updateValue(diff, forKey: item.key)
         }
       }
