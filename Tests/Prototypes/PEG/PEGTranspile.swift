@@ -12,7 +12,7 @@
 @testable import _StringProcessing
 
 extension PEG.VM where Input == String {
-  typealias MEProg = MEProgram<String>
+  typealias MEProg = MEProgram
   func transpile() throws -> MEProg {
     typealias Builder = MEProg.Builder
     var builder = MEProg.Builder()

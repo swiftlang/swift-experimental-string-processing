@@ -11,7 +11,7 @@
 
 @_implementationOnly import _RegexParser // For errors
 
-extension MEProgram where Input.Element: Hashable {
+extension MEProgram {
   struct Builder {
     var instructions: [Instruction] = []
 
@@ -71,7 +71,7 @@ extension MEProgram.Builder {
   // TODO: We want a better strategy for fixups, leaving
   // the operand in a different form isn't great...
 
-  init<S: Sequence>(staticElements: S) where S.Element == Input.Element {
+  init<S: Sequence>(staticElements: S) where S.Element == Character {
     staticElements.forEach { elements.store($0) }
   }
 
@@ -183,14 +183,14 @@ extension MEProgram.Builder {
     instructions.append(.init(.advance, .init(distance: n)))
   }
 
-  mutating func buildMatch(_ e: Input.Element) {
+  mutating func buildMatch(_ e: Character) {
     instructions.append(.init(
       .match, .init(element: elements.store(e))))
   }
 
   mutating func buildMatchSequence<S: Sequence>(
     _ s: S
-  ) where S.Element == Input.Element {
+  ) where S.Element == Character {
     instructions.append(.init(
       .matchSequence,
       .init(sequence: sequences.store(.init(s)))))
@@ -219,7 +219,7 @@ extension MEProgram.Builder {
   }
 
   mutating func buildAssert(
-    _ e: Input.Element, into cond: BoolRegister
+    _ e: Character, into cond: BoolRegister
   ) {
     instructions.append(.init(.assertion, .init(
       element: elements.store(e), bool: cond)))

@@ -13,8 +13,8 @@ var checkComments = true
 
 extension Engine {
   func makeProcessor(
-    input: Input, bounds: Range<Input.Index>, matchMode: MatchMode
-  ) -> Processor<Input> {
+    input: String, bounds: Range<String.Index>, matchMode: MatchMode
+  ) -> Processor {
     Processor(
       program: program,
       input: input,
@@ -24,7 +24,7 @@ extension Engine {
   }
 }
 
-extension Processor where Input == String {
+extension Processor {
   // TODO: Should we throw here?
   mutating func consume() -> Input.Index? {
     while true {
