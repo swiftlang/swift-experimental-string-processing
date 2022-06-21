@@ -96,26 +96,26 @@ fileprivate extension Compiler.ByteCodeGen {
     // need to supply both a slice bounds and a per-search bounds.
     switch kind {
     case .startOfSubject:
-      builder.buildAssert { (input, pos, bounds) in
-        pos == bounds.lowerBound
+      builder.buildAssert { (input, pos, subjectBounds) in
+        pos == subjectBounds.lowerBound
       }
 
     case .endOfSubjectBeforeNewline:
-      builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
-        if pos == bounds.upperBound { return true }
+      builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, subjectBounds) in
+        if pos == subjectBounds.upperBound { return true }
         switch semanticLevel {
         case .graphemeCluster:
-          return input.index(after: pos) == bounds.upperBound
+          return input.index(after: pos) == subjectBounds.upperBound
            && input[pos].isNewline
         case .unicodeScalar:
-          return input.unicodeScalars.index(after: pos) == bounds.upperBound
+          return input.unicodeScalars.index(after: pos) == subjectBounds.upperBound
            && input.unicodeScalars[pos].isNewline
         }
       }
 
     case .endOfSubject:
-      builder.buildAssert { (input, pos, bounds) in
-        pos == bounds.upperBound
+      builder.buildAssert { (input, pos, subjectBounds) in
+        pos == subjectBounds.upperBound
       }
 
     case .resetStartOfMatch:
@@ -127,7 +127,7 @@ fileprivate extension Compiler.ByteCodeGen {
       
       // FIXME: This needs to be based on `searchBounds`,
       // not the `subjectBounds` given as an argument here
-      builder.buildAssert { (input, pos, bounds) in false }
+      builder.buildAssert { (input, pos, subjectBounds) in false }
 
     case .textSegment:
       builder.buildAssert { (input, pos, _) in
@@ -144,8 +144,8 @@ fileprivate extension Compiler.ByteCodeGen {
     case .startOfLine:
       // FIXME: Anchor.startOfLine must always use this first branch
       if options.anchorsMatchNewlines {
-        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
-          if pos == bounds.lowerBound { return true }
+        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, subjectBounds) in
+          if pos == subjectBounds.lowerBound { return true }
           switch semanticLevel {
           case .graphemeCluster:
             return input[input.index(before: pos)].isNewline
@@ -154,16 +154,16 @@ fileprivate extension Compiler.ByteCodeGen {
           }
         }
       } else {
-        builder.buildAssert { (input, pos, bounds) in
-          pos == bounds.lowerBound
+        builder.buildAssert { (input, pos, subjectBounds) in
+          pos == subjectBounds.lowerBound
         }
       }
       
     case .endOfLine:
       // FIXME: Anchor.endOfLine must always use this first branch
       if options.anchorsMatchNewlines {
-        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
-          if pos == bounds.upperBound { return true }
+        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, subjectBounds) in
+          if pos == subjectBounds.upperBound { return true }
           switch semanticLevel {
           case .graphemeCluster:
             return input[pos].isNewline
@@ -172,25 +172,25 @@ fileprivate extension Compiler.ByteCodeGen {
           }
         }
       } else {
-        builder.buildAssert { (input, pos, bounds) in
-          pos == bounds.upperBound
+        builder.buildAssert { (input, pos, subjectBounds) in
+          pos == subjectBounds.upperBound
         }
       }
 
     case .wordBoundary:
       // TODO: May want to consider Unicode level
-      builder.buildAssert { [options] (input, pos, bounds) in
+      builder.buildAssert { [options] (input, pos, subjectBounds) in
         // TODO: How should we handle bounds?
         _CharacterClassModel.word.isBoundary(
-          input, at: pos, bounds: bounds, with: options)
+          input, at: pos, bounds: subjectBounds, with: options)
       }
 
     case .notWordBoundary:
       // TODO: May want to consider Unicode level
-      builder.buildAssert { [options] (input, pos, bounds) in
+      builder.buildAssert { [options] (input, pos, subjectBounds) in
         // TODO: How should we handle bounds?
         !_CharacterClassModel.word.isBoundary(
-          input, at: pos, bounds: bounds, with: options)
+          input, at: pos, bounds: subjectBounds, with: options)
       }
     }
   }
