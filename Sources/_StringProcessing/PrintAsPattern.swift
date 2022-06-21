@@ -71,8 +71,15 @@ extension PrettyPrinter {
       print("let \(namedCapture) = Reference(Substring.self)")
     }
     
-    printBlock("Regex") { printer in
-      printer.printAsPattern(convertedFromAST: node)
+    switch node {
+    case .concatenation(_):
+      printAsPattern(convertedFromAST: node)
+    case .convertedRegexLiteral(.concatenation(_), _):
+      printAsPattern(convertedFromAST: node)
+    default:
+      printBlock("Regex") { printer in
+        printer.printAsPattern(convertedFromAST: node)
+      }
     }
   }
 
@@ -99,8 +106,10 @@ extension PrettyPrinter {
       }
 
     case let .concatenation(c):
-      c.forEach {
-        printAsPattern(convertedFromAST: $0)
+      printBlock("Regex") { printer in
+        c.forEach {
+          printer.printAsPattern(convertedFromAST: $0)
+        }
       }
 
     case let .nonCapturingGroup(kind, child):
