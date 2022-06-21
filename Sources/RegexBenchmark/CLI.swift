@@ -22,7 +22,10 @@ struct Runner: ParsableCommand {
   
   @Flag(help: "Compare this result with the latest saved result")
   var compare = false
-      
+  
+  @Option(help: "The result file to compare against, if this flag is not set it will compare against the most recent result file")
+  var compareFile: String?
+  
   mutating func run() throws {
     var runner = BenchmarkRunner.makeRunner(samples, outputPath)
     
@@ -37,7 +40,7 @@ struct Runner: ParsableCommand {
     case (false, false):
       runner.run()
       if compare {
-        try runner.compare()
+        try runner.compare(against: compareFile)
       }
       if save {
         try runner.save()

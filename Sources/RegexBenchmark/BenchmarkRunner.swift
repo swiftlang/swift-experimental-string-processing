@@ -74,7 +74,18 @@ public struct BenchmarkRunner {
 }
 
 extension BenchmarkRunner {
+  
+#if _runtime(_ObjC)
   var dateStyle: Date.ISO8601FormatStyle { Date.ISO8601FormatStyle() }
+
+  func format(_ date: Date) -> String {
+    return dateStyle.format(date)
+  }
+#else
+  func format(_ date: Date) -> String {
+    return date.description
+  }
+#endif
   
   var outputFolderUrl: URL {
     let url = URL(fileURLWithPath: outputPath, isDirectory: true)
@@ -85,39 +96,65 @@ extension BenchmarkRunner {
   }
   
   public func save() throws {
-    let now = startTime.formatted(dateStyle)
+    let now = format(startTime)
     let resultJsonUrl = outputFolderUrl.appendingPathComponent(now + "-result.json")
     print("Saving result to \(resultJsonUrl.path)")
     try results.save(to: resultJsonUrl)
   }
-
-  func fetchLatestResult() throws -> (Date, SuiteResult) {
-    var pastResults: [Date: SuiteResult] = [:]
+  
+  func fetchLatestResult() throws -> (String, SuiteResult) {
+#if _runtime(_ObjC)
+    var pastResults: [Date: (String, SuiteResult)] = [:]
     for resultFile in try FileManager.default.contentsOfDirectory(
       at: outputFolderUrl,
       includingPropertiesForKeys: nil
     ) {
-      let dateString = resultFile.lastPathComponent.replacingOccurrences(
-        of: "-result.json",
-        with: "")
-      let date = try dateStyle.parse(dateString)
-      pastResults.updateValue(try SuiteResult.load(from: resultFile), forKey: date)
+      do {
+        let dateString = resultFile.lastPathComponent.replacingOccurrences(
+          of: "-result.json",
+          with: "")
+        let date = try dateStyle.parse(dateString)
+        let result = try SuiteResult.load(from: resultFile)
+        pastResults.updateValue((resultFile.lastPathComponent, result), forKey: date)
+      } catch {
+        print("Warning: Found invalid result file \(resultFile.lastPathComponent) in results directory, skipping")
+      }
     }
-    
+
     let sorted = pastResults
       .sorted(by: {(kv1,kv2) in kv1.0 > kv2.0})
-    return sorted[0]
+    return sorted[0].1
+#else
+    // corelibs-foundation lacks Date.FormatStyle entirely, so we don't have
+    // any way of parsing the dates. So use the filename sorting to pick out the
+    // latest one... this sucks
+    let items = try FileManager.default.contentsOfDirectory(
+      at: outputFolderUrl,
+      includingPropertiesForKeys: nil
+    )
+    let resultFile = items[items.count - 1]
+    let pastResult = try SuiteResult.load(from: resultFile)
+    return (resultFile.lastPathComponent, pastResult)
+#endif
   }
 
-  public func compare() throws {
-    // It just compares by the latest result for now, we probably want a CLI
-    // flag to set which result we want to compare against
-    let (compareDate, compareResult) = try fetchLatestResult()
+  public func compare(against: String?) throws {
+    let compareFile: String
+    let compareResult: SuiteResult
+    
+    if let compareFilePath = against {
+      let compareFileURL = URL(fileURLWithPath: compareFilePath)
+      compareResult = try SuiteResult.load(from: compareFileURL)
+      compareFile = compareFileURL.lastPathComponent
+    } else {
+      (compareFile, compareResult) = try fetchLatestResult()
+    }
+    
     let diff = results.compare(with: compareResult)
     let regressions = diff.filter({(_, change) in change.seconds > 0})
     let improvements = diff.filter({(_, change) in change.seconds < 0})
     
-    print("Comparing against benchmark done on \(compareDate.formatted(dateStyle))")
+    print("Comparing against benchmark result file \(compareFile)")
     print("=== Regressions ====================================================")
     for item in regressions {
       let oldVal = compareResult.results[item.key]!
