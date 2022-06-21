@@ -40,8 +40,12 @@ struct Processor<
   
   /// The bounds of the logical subject in `input`.
   ///
+  /// `subjectBounds` represents the bounds of the string or substring that a
+  /// regex operation is invoked upon. Anchors like `^` and `.startOfSubject`
+  /// always use `subjectBounds` as their reference points, instead of
+  /// `input`'s boundaries or `searchBounds`.
   ///
-  /// `subjectBounds` is equal to or a subrange of
+  /// `subjectBounds` is always equal to or a subrange of
   /// `input.startIndex..<input.endIndex`.
   let subjectBounds: Range<Position>
   
@@ -50,6 +54,10 @@ struct Processor<
   /// `searchBounds` is equal to `subjectBounds` in some cases, but can be a
   /// subrange when performing operations like searching for matches iteratively
   /// or calling `str.replacing(_:with:subrange:)`.
+  ///
+  /// Anchors like `^` and `.startOfSubject` use `subjectBounds` instead of
+  /// `searchBounds`. The "start of matching" anchor `\G` uses `searchBounds`
+  /// as its starting point.
   let searchBounds: Range<Position>
 
   let matchMode: MatchMode
