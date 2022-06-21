@@ -39,19 +39,10 @@ extension Processor {
     // Value-constructing matchers
     var matcherFunctions: [MEProgram.MatcherFunction]
 
-    // currently, these are for comments and abort messages
-    var strings: [String]
-
     // MARK: writeable, resettable
-
-    // currently, hold output of assertions
-    var bools: [Bool] // TODO: bitset
 
     // currently, useful for range-based quantification
     var ints: [Int]
-
-    // Currently, used for `movePosition` and `matchSlice`
-    var positions: [Position] = []
 
     var values: [Any]
   }
@@ -60,23 +51,12 @@ extension Processor {
 extension Processor.Registers {
   typealias Input = String
 
-  subscript(_ i: StringRegister) -> String {
-    strings[i.rawValue]
-  }
   subscript(_ i: SequenceRegister) -> [Input.Element] {
     sequences[i.rawValue]
   }
   subscript(_ i: IntRegister) -> Int {
     get { ints[i.rawValue] }
     set { ints[i.rawValue] = newValue }
-  }
-  subscript(_ i: BoolRegister) -> Bool {
-    get { bools[i.rawValue] }
-    set { bools[i.rawValue] = newValue }
-  }
-  subscript(_ i: PositionRegister) -> Input.Index {
-    get { positions[i.rawValue] }
-    set { positions[i.rawValue] = newValue }
   }
   subscript(_ i: ValueRegister) -> Any {
     get { values[i.rawValue] }
@@ -126,23 +106,14 @@ extension Processor.Registers {
     self.matcherFunctions = program.staticMatcherFunctions
     assert(matcherFunctions.count == info.matcherFunctions)
 
-    self.strings = program.staticStrings
-    assert(strings.count == info.strings)
-
-    self.bools = Array(repeating: false, count: info.bools)
-
     self.ints = Array(repeating: 0, count: info.ints)
-
-    self.positions = Array(repeating: sentinel, count: info.positions)
 
     self.values = Array(
       repeating: SentinelValue(), count: info.values)
   }
 
   mutating func reset(sentinel: Input.Index) {
-    self.bools._setAll(to: false)
     self.ints._setAll(to: 0)
-    self.positions._setAll(to: sentinel)
     self.values._setAll(to: SentinelValue())
   }
 }
@@ -191,10 +162,7 @@ extension Processor.Registers: CustomStringConvertible {
 
     return """
       \(formatRegisters("elements", elements))\
-      \(formatRegisters("bools", bools))\
-      \(formatRegisters("strings", strings))\
       \(formatRegisters("ints", ints))\
-      \(formatRegisters("positions", positions))\
 
       """    
   }
