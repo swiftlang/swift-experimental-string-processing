@@ -265,20 +265,6 @@ extension Processor {
     switch opcode {
     case .invalid:
       fatalError("Invalid program")
-    case .nop:
-      if checkComments,
-         let s = payload.optionalString
-      {
-        doPrint(registers[s])
-      }
-      controller.step()
-
-    case .decrement:
-      let (bool, int) = payload.pairedBoolInt
-      let newValue = registers[int] - 1
-      registers[bool] = newValue == 0
-      registers[int] = newValue
-      controller.step()
 
     case .moveImmediate:
       let (imm, reg) = payload.pairedImmediateInt
@@ -288,21 +274,8 @@ extension Processor {
       registers[reg] = int
       controller.step()
 
-    case .movePosition:
-      let reg = payload.position
-      registers[reg] = currentPosition
-      controller.step()
-
     case .branch:
       controller.pc = payload.addr
-
-    case .condBranch:
-      let (addr, cond) = payload.pairedAddrBool
-      if registers[cond] {
-        controller.pc = addr
-      } else {
-        controller.step()
-      }
 
     case .condBranchZeroElseDecrement:
       let (addr, int) = payload.pairedAddrInt
@@ -341,38 +314,6 @@ extension Processor {
 
     case .clearThrough:
       clearThrough(payload.addr)
-      
-    case .peek:
-      fatalError()
-
-    case .restore:
-      signalFailure()
-
-    case .push:
-      fatalError()
-
-    case .pop:
-      fatalError()
-
-    case .call:
-      controller.step()
-      callStack.append(controller.pc)
-      controller.pc = payload.addr
-
-    case .ret:
-      // TODO: Should empty stack mean success?
-      guard let r = callStack.popLast() else {
-        tryAccept()
-        return
-      }
-      controller.pc = r
-
-    case .abort:
-      // TODO: throw or otherwise propagate
-      if let s = payload.optionalString {
-        doPrint(registers[s])
-      }
-      state = .fail
 
     case .accept:
       tryAccept()
@@ -395,14 +336,6 @@ extension Processor {
       let reg = payload.sequence
       let seq = registers[reg]
       if matchSeq(seq) {
-        controller.step()
-      }
-
-    case .matchSlice:
-      let (lower, upper) = payload.pairedPosPos
-      let range = registers[lower]..<registers[upper]
-      let slice = input[range]
-      if matchSeq(slice) {
         controller.step()
       }
 
@@ -449,22 +382,6 @@ extension Processor {
         abort(error)
         return
       }
-
-    case .print:
-      // TODO: Debug stream
-      doPrint(registers[payload.string])
-
-    case .assertion:
-      let (element, cond) =
-        payload.pairedElementBool
-      let result: Bool
-      if let cur = load(), cur == registers[element] {
-        result = true
-      } else {
-        result = false
-      }
-      registers[cond] = result
-      controller.step()
 
     case .backreference:
       let capNum = Int(
@@ -524,7 +441,14 @@ extension Processor {
       storedCaptures[capNum].registerValue(
         value, overwriteInitial: sp)
       controller.step()
-    }
 
+    case .builtinAssertion:
+      builtinAssertion()
+
+    case .builtinCharacterClass:
+      builtinCharacterClass()
+    }
   }
 }
+
+
