@@ -123,12 +123,12 @@ extension Processor {
     _checkInvariants()
   }
 
-  mutating func reset(start: Position, end: Position) {
-    self.currentPosition = start
+  mutating func reset(currentPosition: Position) {
+    self.currentPosition = currentPosition
 
     self.controller = Controller(pc: 0)
 
-    self.registers.reset(sentinel: end)
+    self.registers.reset(sentinel: searchBounds.upperBound)
 
     self.savePoints.removeAll(keepingCapacity: true)
     self.callStack.removeAll(keepingCapacity: true)
