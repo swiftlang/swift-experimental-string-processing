@@ -81,15 +81,15 @@ extension Regex {
     let tree: DSLTree
 
     private final class ProgramBox {
-      let value: MEProgram<String>
-      init(_ value: MEProgram<String>) { self.value = value }
+      let value: MEProgram
+      init(_ value: MEProgram) { self.value = value }
     }
 
     /// Do not use directly - all accesses must go through `loweredProgram`.
     private var _loweredProgramStorage: AnyObject? = nil
     
     /// The program for execution with the matching engine.
-    var loweredProgram: MEProgram<String> {
+    var loweredProgram: MEProgram {
       if let loweredObject = _loweredProgramStorage as? ProgramBox {
         return loweredObject.value
       }
