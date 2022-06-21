@@ -3,7 +3,7 @@
 extension Compiler {
   struct ByteCodeGen {
     var options: MatchingOptions
-    var builder = Program.Builder()
+    var builder = MEProgram.Builder()
     /// A Boolean indicating whether the first matchable atom has been emitted.
     /// This is used to determine whether to apply initial options.
     var hasEmittedFirstMatchableAtom = false
@@ -16,7 +16,7 @@ extension Compiler {
 }
 
 extension Compiler.ByteCodeGen {
-  mutating func emitRoot(_ root: DSLTree.Node) throws -> Program {
+  mutating func emitRoot(_ root: DSLTree.Node) throws -> MEProgram {
     // The whole match (`.0` element of output) is equivalent to an implicit
     // capture over the entire regex.
     try emitNode(.capture(name: nil, reference: nil, root))
