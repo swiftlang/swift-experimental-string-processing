@@ -14,9 +14,10 @@ struct Runner: ParsableCommand {
   func makeRunner() -> BenchmarkRunner {
     var benchmark = BenchmarkRunner("RegexBench", samples)
     benchmark.addReluctantQuant()
-    benchmark.addBacktracking()
     benchmark.addCSS()
-    benchmark.addFirstMatch()
+    benchmark.addNotFound()
+    benchmark.addGraphemeBreak()
+    benchmark.addHangulSyllable()
     return benchmark
   }
   mutating func run() throws {
