@@ -157,7 +157,7 @@ extension Processor {
   var slice: Input.SubSequence {
     // TODO: Should we whole-scale switch to slices, or
     // does that depend on options for some anchors?
-    input[subjectBounds]
+    input[searchBounds]
   }
 
   // Advance in our input, without any checks or failure signalling
@@ -465,7 +465,7 @@ extension Processor {
       let matcher = registers[matcherReg]
       do {
         guard let (nextIdx, val) = try matcher(
-          input, currentPosition, subjectBounds
+          input, currentPosition, searchBounds
         ) else {
           signalFailure()
           return
