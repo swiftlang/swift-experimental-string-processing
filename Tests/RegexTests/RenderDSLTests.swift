@@ -97,19 +97,17 @@ extension RenderDSLTests {
       }
       """)
     
-    try XCTExpectFailure("Concatenations in alternations aren't grouped") {
-      try testConversion(#"\da|b"#, """
-        Regex {
-          ChoiceOf {
-            Regex {
-              .digit
-              "a"
-            }
-            "bc"
+    try testConversion(#"\da|bc"#, """
+      Regex {
+        ChoiceOf {
+          Regex {
+            One(.digit)
+            "a"
           }
+          "bc"
         }
-        """)
-    }
+      }
+      """)
   }
   
   func testQuoting() throws {
