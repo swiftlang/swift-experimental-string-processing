@@ -14,8 +14,6 @@ enum MatchMode {
   case partialFromFront
 }
 
-typealias Program = MEProgram<String>
-
 /// A concrete CU. Somehow will run the concrete logic and
 /// feed stuff back to generic code
 struct Controller {
@@ -26,9 +24,8 @@ struct Controller {
   }
 }
 
-struct Processor<
-  Input: BidirectionalCollection
-> where Input.Element: Equatable { // maybe Hashable?
+struct Processor {
+  typealias Input = String
   typealias Element = Input.Element
 
   let input: Input
@@ -75,7 +72,7 @@ extension Processor {
 
 extension Processor {
   init(
-    program: MEProgram<Input>,
+    program: MEProgram,
     input: Input,
     bounds: Range<Position>,
     matchMode: MatchMode,

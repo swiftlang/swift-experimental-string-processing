@@ -29,15 +29,15 @@ extension Processor {
     // TODO: Degenericize Processor and store Strings
     var sequences: [[Element]] = []
 
-    var consumeFunctions: [MEProgram<Input>.ConsumeFunction]
+    var consumeFunctions: [MEProgram.ConsumeFunction]
 
-    var assertionFunctions: [MEProgram<Input>.AssertionFunction]
+    var assertionFunctions: [MEProgram.AssertionFunction]
 
     // Captured-value constructors
-    var transformFunctions: [MEProgram<Input>.TransformFunction]
+    var transformFunctions: [MEProgram.TransformFunction]
 
     // Value-constructing matchers
-    var matcherFunctions: [MEProgram<Input>.MatcherFunction]
+    var matcherFunctions: [MEProgram.MatcherFunction]
 
     // currently, these are for comments and abort messages
     var strings: [String]
@@ -58,6 +58,8 @@ extension Processor {
 }
 
 extension Processor.Registers {
+  typealias Input = String
+
   subscript(_ i: StringRegister) -> String {
     strings[i.rawValue]
   }
@@ -85,24 +87,24 @@ extension Processor.Registers {
   subscript(_ i: ElementRegister) -> Input.Element {
     elements[i.rawValue]
   }
-  subscript(_ i: ConsumeFunctionRegister) -> MEProgram<Input>.ConsumeFunction {
+  subscript(_ i: ConsumeFunctionRegister) -> MEProgram.ConsumeFunction {
     consumeFunctions[i.rawValue]
   }
-  subscript(_ i: AssertionFunctionRegister) -> MEProgram<Input>.AssertionFunction {
+  subscript(_ i: AssertionFunctionRegister) -> MEProgram.AssertionFunction {
     assertionFunctions[i.rawValue]
   }
-  subscript(_ i: TransformRegister) -> MEProgram<Input>.TransformFunction {
+  subscript(_ i: TransformRegister) -> MEProgram.TransformFunction {
     transformFunctions[i.rawValue]
   }
-  subscript(_ i: MatcherRegister) -> MEProgram<Input>.MatcherFunction {
+  subscript(_ i: MatcherRegister) -> MEProgram.MatcherFunction {
     matcherFunctions[i.rawValue]
   }
 }
 
 extension Processor.Registers {
   init(
-    _ program: MEProgram<Input>,
-    _ sentinel: Input.Index
+    _ program: MEProgram,
+    _ sentinel: String.Index
   ) {
     let info = program.registerInfo
 

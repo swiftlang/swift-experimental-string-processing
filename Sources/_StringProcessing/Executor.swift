@@ -13,9 +13,9 @@
 
 struct Executor {
   // TODO: consider let, for now lets us toggle tracing
-  var engine: Engine<String>
+  var engine: Engine
 
-  init(program: Program, enablesTracing: Bool = false) {
+  init(program: MEProgram, enablesTracing: Bool = false) {
     self.engine = Engine(program, enableTracing: enablesTracing)
   }
 
@@ -61,7 +61,7 @@ struct Executor {
   func _match<Output>(
     _ input: String,
     in inputRange: Range<String.Index>,
-    using cpu: inout Processor<String>
+    using cpu: inout Processor
   ) throws -> Regex<Output>.Match? {
     guard let endIdx = cpu.consume() else {
       if let e = cpu.failureReason {
