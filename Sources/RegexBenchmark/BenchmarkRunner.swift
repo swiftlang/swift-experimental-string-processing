@@ -1,11 +1,8 @@
 import Foundation
 
 public struct BenchmarkRunner {
-  public typealias RegisterFn = (inout BenchmarkRunner) -> Void
-  
   let suiteName: String
   var suite: [any RegexBenchmark] = []
-  var registrations: [RegisterFn] = []
   
   let samples: Int
   var results: SuiteResult = SuiteResult()
