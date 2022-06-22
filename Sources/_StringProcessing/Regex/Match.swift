@@ -126,21 +126,32 @@ extension Regex {
 
   func _match(
     _ input: String,
-    in inputRange: Range<String.Index>,
+    in subjectBounds: Range<String.Index>,
     mode: MatchMode = .wholeString
   ) throws -> Regex<Output>.Match? {
     let executor = Executor(program: regex.program.loweredProgram)
-    return try executor.match(input, in: inputRange, mode)
+    return try executor.match(input, in: subjectBounds, mode)
   }
 
   func _firstMatch(
     _ input: String,
-    in inputRange: Range<String.Index>
+    in subjectBounds: Range<String.Index>
+  ) throws -> Regex<Output>.Match? {
+    try _firstMatch(input, subjectBounds: subjectBounds, searchBounds: subjectBounds)
+  }
+
+  func _firstMatch(
+    _ input: String,
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>
   ) throws -> Regex<Output>.Match? {
     let executor = Executor(program: regex.program.loweredProgram)
     let graphemeSemantic = regex.initialOptions.semanticLevel == .graphemeCluster
     return try executor.firstMatch(
-      input, in: inputRange, graphemeSemantic: graphemeSemantic)
+      input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds,
+      graphemeSemantic: graphemeSemantic)
   }
 }
 

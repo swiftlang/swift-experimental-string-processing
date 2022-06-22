@@ -22,17 +22,20 @@ struct Executor {
   @available(SwiftStdlib 5.7, *)
   func firstMatch<Output>(
     _ input: String,
-    in inputRange: Range<String.Index>,
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>,
     graphemeSemantic: Bool
   ) throws -> Regex<Output>.Match? {
-    var cpu = engine.makeProcessor(
-      input: input, bounds: inputRange, matchMode: .partialFromFront)
+    var cpu = engine.makeFirstMatchProcessor(
+      input: input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds)
 
-    var low = inputRange.lowerBound
-    let high = inputRange.upperBound
+    var low = searchBounds.lowerBound
+    let high = searchBounds.upperBound
     while true {
       if let m: Regex<Output>.Match = try _match(
-        input, in: low..<high, using: &cpu
+        input, from: low, using: &cpu
       ) {
         return m
       }
@@ -42,27 +45,29 @@ struct Executor {
       } else {
         input.unicodeScalars.formIndex(after: &low)
       }
-      cpu.reset(searchBounds: low..<high)
+      cpu.reset(currentPosition: low)
     }
   }
 
   @available(SwiftStdlib 5.7, *)
   func match<Output>(
     _ input: String,
-    in inputRange: Range<String.Index>,
+    in subjectBounds: Range<String.Index>,
     _ mode: MatchMode
   ) throws -> Regex<Output>.Match? {
     var cpu = engine.makeProcessor(
-      input: input, bounds: inputRange, matchMode: mode)
-    return try _match(input, in: inputRange, using: &cpu)
+      input: input, bounds: subjectBounds, matchMode: mode)
+    return try _match(input, from: subjectBounds.lowerBound, using: &cpu)
   }
 
   @available(SwiftStdlib 5.7, *)
   func _match<Output>(
     _ input: String,
-    in inputRange: Range<String.Index>,
+    from currentPosition: String.Index,
     using cpu: inout Processor
   ) throws -> Regex<Output>.Match? {
+    // FIXME: currentPosition is already encapsulated in cpu, don't pass in
+    // FIXME: cpu.consume() should return the matched range, not the upper bound
     guard let endIdx = cpu.consume() else {
       if let e = cpu.failureReason {
         throw e
@@ -74,7 +79,7 @@ struct Executor {
       values: cpu.storedCaptures,
       referencedCaptureOffsets: engine.program.referencedCaptureOffsets)
 
-    let range = inputRange.lowerBound..<endIdx
+    let range = currentPosition..<endIdx
     let caps = engine.program.captureList.createElements(capList)
 
     let anyRegexOutput = AnyRegexOutput(input: input, elements: caps)
@@ -84,9 +89,9 @@ struct Executor {
   @available(SwiftStdlib 5.7, *)
   func dynamicMatch(
     _ input: String,
-    in inputRange: Range<String.Index>,
+    in subjectBounds: Range<String.Index>,
     _ mode: MatchMode
   ) throws -> Regex<AnyRegexOutput>.Match? {
-    try match(input, in: inputRange, mode)
+    try match(input, in: subjectBounds, mode)
   }
 }
