@@ -150,24 +150,31 @@ extension BenchmarkRunner {
       (compareFile, compareResult) = try fetchLatestResult()
     }
     
-    let diff = results.compare(with: compareResult)
+    let diff = results
+      .compare(with: compareResult)
+      .filter({(name, _) in !name.contains("_NS")})
+      .sorted(by: {(a,b) in a.1 < b.1})
     let regressions = diff.filter({(_, change) in change.seconds > 0})
     let improvements = diff.filter({(_, change) in change.seconds < 0})
     
     print("Comparing against benchmark result file \(compareFile)")
-    print("=== Regressions ====================================================")
-    for item in regressions {
-      let oldVal = compareResult.results[item.key]!
-      let newVal = results.results[item.key]!
-      let percentage = item.value.seconds / oldVal.seconds
-      print("- \(item.key)\t\t\(newVal)\t\(oldVal)\t\(item.value)\t\((percentage * 100).rounded())%")
+    print("=== Regressions ======================================================================")
+    func printComparison(name: String, diff: Time) {
+      let oldVal = compareResult.results[name]!
+      let newVal = results.results[name]!
+      let percentage = (1000 * diff.seconds / oldVal.seconds).rounded()/10
+      let len = max(40 - name.count, 1)
+      let nameSpacing = String(repeating: " ", count: len)
+      print("- \(name)\(nameSpacing)\(newVal)\t\(oldVal)\t\(diff)\t\t\(percentage)%")
     }
-    print("=== Improvements ====================================================")
+    
+    for item in regressions {
+      printComparison(name: item.key, diff: item.value)
+    }
+    
+    print("=== Improvements =====================================================================")
     for item in improvements {
-      let oldVal = compareResult.results[item.key]!
-      let newVal = results.results[item.key]!
-      let percentage = item.value.seconds / oldVal.seconds
-      print("- \(item.key)\t\t\(newVal)\t\(oldVal)\t\(item.value)\t\((percentage * 100).rounded())%")
+      printComparison(name: item.key, diff: item.value)
     }
   }
 }
