@@ -25,7 +25,7 @@ func _firstMatch(
   input: String,
   syntax: SyntaxOptions = .traditional
 ) throws -> (String, [String?]) {
-  let regex = try Regex(regexStr)
+  let regex = try Regex(regexStr, syntax: syntax)
   guard let result = try regex.firstMatch(in: input) else {
     throw MatchError("match not found for \(regexStr) in \(input)")
   }
@@ -700,11 +700,11 @@ extension RegexTests {
     firstMatchTest(#"[\Qa-c\E]+"#, input: "a-c", match: "a-c")
 
     firstMatchTest(#"["a-c"]+"#, input: "abc", match: "a",
-                   syntax: .experimental, xfail: true)
+                   syntax: .experimental)
     firstMatchTest(#"["abc"]+"#, input: "cba", match: "cba",
                    syntax: .experimental)
     firstMatchTest(#"["abc"]+"#, input: #""abc""#, match: "abc",
-                   syntax: .experimental, xfail: true)
+                   syntax: .experimental)
     firstMatchTest(#"["abc"]+"#, input: #""abc""#, match: #""abc""#)
   }
 
