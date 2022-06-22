@@ -95,7 +95,7 @@ extension Processor._StoredCapture: CustomStringConvertible {
 }
 
 struct MECaptureList {
-  var values: Array<Processor<String>._StoredCapture>
+  var values: Array<Processor._StoredCapture>
   var referencedCaptureOffsets: [ReferenceID: Int]
 
   func latestUntyped(from input: String) -> Array<Substring?> {

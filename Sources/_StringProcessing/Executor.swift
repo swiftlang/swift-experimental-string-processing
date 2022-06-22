@@ -13,9 +13,9 @@
 
 struct Executor {
   // TODO: consider let, for now lets us toggle tracing
-  var engine: Engine<String>
+  var engine: Engine
 
-  init(program: Program, enablesTracing: Bool = false) {
+  init(program: MEProgram, enablesTracing: Bool = false) {
     self.engine = Engine(program, enableTracing: enablesTracing)
   }
 
@@ -64,7 +64,7 @@ struct Executor {
   func _match<Output>(
     _ input: String,
     from currentPosition: String.Index,
-    using cpu: inout Processor<String>
+    using cpu: inout Processor
   ) throws -> Regex<Output>.Match? {
     // FIXME: currentPosition is already encapsulated in cpu, don't pass in
     // FIXME: cpu.consume() should return the matched range, not the upper bound

@@ -372,6 +372,12 @@ extension BidirectionalCollection where SubSequence == Substring {
   public func matches<Output>(
     of r: some RegexComponent<Output>
   ) -> [Regex<Output>.Match] {
-    Array(_matches(of: r))
+    // FIXME: Array init calls count, which double-executes the regex :-(
+    // FIXME: just return some Collection<Regex<Output>.Match>
+    var result = Array<Regex<Output>.Match>()
+    for match in _matches(of: r) {
+      result.append(match)
+    }
+    return result
   }
 }
