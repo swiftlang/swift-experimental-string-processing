@@ -4,11 +4,12 @@ import Foundation
 public protocol RegexBenchmark {
   var name: String { get }
   func run()
+  func debug()
 }
 
 public struct Benchmark: RegexBenchmark {
   public let name: String
-  let regex: Regex<Substring>
+  let regex: Regex<AnyRegexOutput>
   let type: MatchType
   let target: String
 
@@ -50,66 +51,6 @@ public struct NSBenchmark: RegexBenchmark {
   }
 }
 
-public struct BenchmarkRunner {
-  // Register instances of Benchmark and run them
-  let suiteName: String
-  var suite: [any RegexBenchmark]
-  let samples: Int
-  
-  public init(_ suiteName: String) {
-    self.suiteName = suiteName
-    self.suite = []
-    self.samples = 20
-  }
-  
-  public init(_ suiteName: String, _ n: Int) {
-    self.suiteName = suiteName
-    self.suite = []
-    self.samples = n
-  }
-
-  public mutating func register(_ new: some RegexBenchmark) {
-    suite.append(new)
-  }
-  
-  func measure(benchmark: some RegexBenchmark) -> Time {
-    var times: [Time] = []
-    
-    // initial run to make sure the regex has been compiled
-    benchmark.run()
-    
-    // fixme: use suspendingclock?
-    for _ in 0..<samples {
-      let start = Tick.now
-      benchmark.run()
-      let end = Tick.now
-      let time = end.elapsedTime(since: start)
-      times.append(time)
-    }
-    // todo: compute stdev and warn if it's too large
-    
-    // return median time
-    times.sort()
-    return times[samples/2]
-  }
-  
-  public func run() {
-    print("Running")
-    for b in suite {
-      print("- \(b.name) \(measure(benchmark: b))")
-    }
-  }
-  
-  public func profile() {
-    print("Starting")
-    for b in suite {
-      print("- \(b.name)")
-      b.run()
-      print("- done")
-    }
-  }
-}
-
 /// A benchmark meant to be ran across multiple engines
 struct CrossBenchmark {
   /// The base name of the benchmark
@@ -130,7 +71,7 @@ struct CrossBenchmark {
   var isWhole: Bool = false
 
   func register(_ runner: inout BenchmarkRunner) {
-    let swiftRegex = try! Regex(regex, as: Substring.self)
+    let swiftRegex = try! Regex(regex)
 
     let nsPattern = isWhole ? "^" + regex + "$" : regex
     let nsRegex: NSRegularExpression
