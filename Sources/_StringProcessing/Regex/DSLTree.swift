@@ -179,14 +179,14 @@ extension DSLTree {
       init(_ val: UInt8, _ isInverted: Bool, _ isCaseInsensitive: Bool) {
         self.isInverted = isInverted
         self.isCaseInsensitive = isCaseInsensitive
-        setBit(val)
+        add(val)
       }
       
       init(low: UInt8, high: UInt8, isInverted: Bool, isCaseInsensitive: Bool) {
         self.isInverted = isInverted
         self.isCaseInsensitive = isCaseInsensitive
         for val in low...high {
-          setBit(val)
+          add(val)
         }
       }
       
@@ -202,9 +202,8 @@ extension DSLTree {
         self.b = b
       }
       
-      internal mutating func add(val: UInt8) {
+      internal mutating func add(_ val: UInt8) {
         setBit(val)
-        
         if isCaseInsensitive {
           let c = Character(Unicode.Scalar.init(val))
           let otherCase: String
