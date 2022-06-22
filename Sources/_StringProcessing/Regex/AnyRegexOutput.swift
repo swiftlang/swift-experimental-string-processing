@@ -11,156 +11,75 @@
 
 @_implementationOnly import _RegexParser
 
-@available(SwiftStdlib 5.7, *)
-extension Regex where Output == AnyRegexOutput {
-  /// Parses and compiles a regular expression, resulting in an existentially-typed capture list.
-  ///
-  /// - Parameter pattern: The regular expression.
-  public init(_ pattern: String) throws {
-    self.init(ast: try parse(pattern, .semantic, .traditional))
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Regex {
-  /// Parses and compiles a regular expression.
-  ///
-  /// - Parameter pattern: The regular expression.
-  /// - Parameter as: The desired type for the output.
-  public init(
-    _ pattern: String,
-    as: Output.Type = Output.self
-  ) throws {
-    self.init(ast: try parse(pattern, .semantic, .traditional))
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Regex.Match where Output == AnyRegexOutput {
-  /// Accesses the whole match using the `.0` syntax.
-  public subscript(
-    dynamicMember keyPath: KeyPath<(Substring, _doNotUse: ()), Substring>
-  ) -> Substring {
-    anyRegexOutput.input[range]
-  }
-
-  public subscript(name: String) -> AnyRegexOutput.Element? {
-    anyRegexOutput.first {
-      $0.name == name
-    }
-  }
-}
-
 /// A type-erased regex output.
 @available(SwiftStdlib 5.7, *)
 public struct AnyRegexOutput {
-  let input: String
-  let _elements: [ElementRepresentation]
-
-  /// The underlying representation of the element of a type-erased regex
-  /// output.
-  internal struct ElementRepresentation {
-    /// The depth of `Optioals`s wrapping the underlying value. For example,
-    /// `Substring` has optional depth `0`, and `Int??` has optional depth `2`.
-    let optionalDepth: Int
-
-    /// The bounds of the output element.
-    let bounds: Range<String.Index>?
-    
-    /// The name of the capture.
-    var name: String? = nil
-    
-    /// The capture reference this element refers to.
-    var referenceID: ReferenceID? = nil
-    
-    /// If the output vaule is strongly typed, then this will be set.
-    var value: Any? = nil
-  }
+  internal let input: String
+  internal var _elements: [ElementRepresentation]
 }
 
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput {
-  /// Creates a type-erased regex output from an existing output.
+  /// Creates a type-erased regex output from an existing match.
   ///
-  /// Use this initializer to fit a regex with strongly typed captures into the
-  /// use site of a dynamic regex, like one that was created from a string.
+  /// Use this initializer to fit a strongly-typed regex match into the
+  /// use site of a type-erased regex output.
   public init<Output>(_ match: Regex<Output>.Match) {
     self = match.anyRegexOutput
   }
 
-  /// Returns a typed output by converting the underlying value to the specified
-  /// type.
+  /// Returns a strongly-typed output by converting type-erased values to the specified type.
   ///
   /// - Parameter type: The expected output type.
   /// - Returns: The output, if the underlying value can be converted to the
   ///   output type; otherwise `nil`.
-  public func `as`<Output>(_ type: Output.Type = Output.self) -> Output? {
+  public func extractValues<Output>(
+    as type: Output.Type = Output.self
+  ) -> Output? {
     let elements = map {
-      $0.existentialOutputComponent(from: input[...])
+      $0.existentialOutputComponent(from: input)
     }
     return TypeConstruction.tuple(of: elements) as? Output
   }
 }
 
 @available(SwiftStdlib 5.7, *)
-extension AnyRegexOutput {
-  internal init(input: String, elements: [ElementRepresentation]) {
-    self.init(
-      input: input,
-      _elements: elements
-    )
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension AnyRegexOutput.ElementRepresentation {
-  func value(forInput input: String) -> Any {
-    // Ok for now because `existentialMatchComponent`
-    // wont slice the input if there's no range to slice with
-    //
-    // FIXME: This is ugly :-/
-    let input = bounds.map { input[$0] } ?? ""
-
-    return constructExistentialOutputComponent(
-      from: input,
-      in: bounds,
-      value: nil,
-      optionalCount: optionalDepth
-    )
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput: RandomAccessCollection {
+  /// An individual type-erased output value.
   public struct Element {
-    fileprivate let representation: ElementRepresentation
-    let input: String
-    
-    var optionalDepth: Int {
-      representation.optionalDepth
-    }
-    
-    var name: String? {
-      representation.name
-    }
-    
+    internal let representation: ElementRepresentation
+    internal let input: String
+
     /// The range over which a value was captured. `nil` for no-capture.
     public var range: Range<String.Index>? {
-      representation.bounds
+      representation.content?.range
     }
-    
-    var referenceID: ReferenceID? {
-      representation.referenceID
-    }
-    
+
     /// The slice of the input over which a value was captured. `nil` for no-capture.
     public var substring: Substring? {
       range.map { input[$0] }
     }
 
-    /// The captured value, `nil` for no-capture
+    /// The captured value, `nil` for no-capture.
     public var value: Any? {
-      representation.value
+      representation.value(forInput: input)
+    }
+
+    public var type: Any.Type {
+      representation.type
+    }
+
+    /// The name of this capture, if it has one, otherwise `nil`.
+    public var name: String? {
+      representation.name
+    }
+
+    // TODO: Consider making API, and figure out how
+    // DSL and this would work together...
+    /// Whether this capture is considered optional by the regex. I.e.,
+    /// whether it is inside an alternation or zero-or-n quantification.
+    var isOptional: Bool {
+      representation.optionalDepth != 0
     }
   }
 
@@ -191,6 +110,7 @@ extension AnyRegexOutput: RandomAccessCollection {
 
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput {
+  /// Access a capture by name. Returns `nil` if no capture with that name was present in the Regex.
   public subscript(name: String) -> Element? {
     first {
       $0.name == name
@@ -200,53 +120,144 @@ extension AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex.Match where Output == AnyRegexOutput {
+  /// Accesses the whole match using the `.0` syntax.
+  public subscript(
+    dynamicMember keyPath: KeyPath<(Substring, _doNotUse: ()), Substring>
+  ) -> Substring {
+    anyRegexOutput.input[range]
+  }
+
+  /// Access a capture by name. Returns `nil` if there's no capture with that name.
+  public subscript(name: String) -> AnyRegexOutput.Element? {
+    anyRegexOutput.first {
+      $0.name == name
+    }
+  }
+}
+
+// MARK: - Run-time regex creation and queries
+
+@available(SwiftStdlib 5.7, *)
+extension Regex where Output == AnyRegexOutput {
+  /// Parses and compiles a regular expression, resulting in a type-erased capture list.
+  ///
+  /// - Parameter pattern: The regular expression.
+  public init(_ pattern: String) throws {
+    self.init(ast: try parse(pattern, .semantic, .traditional))
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Regex {
+  /// Parses and compiles a regular expression.
+  ///
+  /// - Parameter pattern: The regular expression.
+  /// - Parameter as: The desired type for the output.
+  public init(
+    _ pattern: String,
+    as: Output.Type = Output.self
+  ) throws {
+    self.init(ast: try parse(pattern, .semantic, .traditional))
+  }
+
+  /// Produces a regex that matches `verbatim` exactly, as though every
+  /// metacharacter in it was escaped.
+  public init(verbatim: String) {
+    self.init(node: .quotedLiteral(verbatim))
+  }
+
+  /// Returns whether a named-capture with `name` exists
+  public func contains(captureNamed name: String) -> Bool {
+    program.tree.captureList.captures.contains(where: {
+      $0.name == name
+    })
+  }
+}
+
+// MARK: - Converting to/from ARO
+
+@available(SwiftStdlib 5.7, *)
+extension Regex where Output == AnyRegexOutput {
+  /// Creates a type-erased regex from an existing regex.
+  ///
+  /// Use this initializer to fit a regex with strongly-typed captures into the
+  /// use site of a type-erased regex, i.e. one that was created from a string.
+  public init<Output>(_ regex: Regex<Output>) {
+    self.init(node: regex.root)
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Regex.Match where Output == AnyRegexOutput {
   /// Creates a type-erased regex match from an existing match.
   ///
-  /// Use this initializer to fit a regex match with strongly typed captures into the
-  /// use site of a dynamic regex match, like one that was created from a string.
+  /// Use this initializer to fit a regex match with strongly-typed captures into the
+  /// use site of a type-erased regex match.
   public init<Output>(_ match: Regex<Output>.Match) {
     self.init(
       anyRegexOutput: match.anyRegexOutput,
-      range: match.range,
-      value: match.value
+      range: match.range
     )
   }
 }
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  /// Returns whether a named-capture with `name` exists
-  public func contains(captureNamed name: String) -> Bool {
-    program.tree.root._captureList.captures.contains(where: {
-      $0.name == name
-    })
+  /// Creates a strongly-typed regex from a type-erased regex.
+  ///
+  /// Use this initializer to create a strongly-typed regex from
+  /// one that was created from a string. Returns `nil` if the types
+  /// don't match.
+  public init?(
+    _ erased: Regex<AnyRegexOutput>,
+    as: Output.Type = Output.self
+  ) {
+    self.init(node: erased.root)
+    guard self._verifyType() else {
+      return nil
+    }
+  }
+}
+
+// MARK: - Internals
+
+@available(SwiftStdlib 5.7, *)
+extension AnyRegexOutput {
+  /// The underlying representation of the element of a type-erased regex
+  /// output.
+  internal struct ElementRepresentation {
+    /// The depth of `Optioals`s wrapping the underlying value. For example,
+    /// `Substring` has optional depth `0`, and `Int??` has optional depth `2`.
+    let optionalDepth: Int
+
+    /// The capture content representation, i.e. the element bounds and the
+    /// value (if available).
+    let content: (range: Range<String.Index>, value: Any?)?
+
+    /// The name of the capture.
+    var name: String? = nil
+
+    /// The capture reference this element refers to.
+    var referenceID: ReferenceID? = nil
+  }
+
+  internal init(input: String, elements: [ElementRepresentation]) {
+    self.init(input: input, _elements: elements)
   }
 }
 
 @available(SwiftStdlib 5.7, *)
-extension Regex where Output == AnyRegexOutput {
-  /// Creates a type-erased regex from an existing regex.
-  ///
-  /// Use this initializer to fit a regex with strongly typed captures into the
-  /// use site of a dynamic regex, i.e. one that was created from a string.
-  public init<Output>(_ regex: Regex<Output>) {
-    self.init(node: regex.root)
+extension AnyRegexOutput.ElementRepresentation {
+  fileprivate func value(forInput input: String) -> Any {
+    constructExistentialOutputComponent(
+      from: input,
+      component: content,
+      optionalCount: optionalDepth
+    )
   }
 
-  /// Returns a typed regex by converting the underlying types.
-  ///
-  /// - Parameter type: The expected output type.
-  /// - Returns: A regex generic over the output type if the underlying types can be converted.
-  ///   Returns `nil` otherwise.
-  public func `as`<Output>(
-    _ type: Output.Type = Output.self
-  ) -> Regex<Output>? {
-    let result = Regex<Output>(node: root)
-    
-    guard result._verifyType() else {
-      return nil
-    }
-    
-    return result
+  var type: Any.Type {
+    content?.value.map { Swift.type(of: $0) }
+      ?? TypeConstruction.optionalType(of: Substring.self, depth: optionalDepth)
   }
 }

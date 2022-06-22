@@ -44,6 +44,9 @@ enum ParseError: Error, Hashable {
   case invalidEscape(Character)
   case confusableCharacter(Character)
 
+  case quoteMayNotSpanMultipleLines
+  case unsetExtendedSyntaxMayNotSpanMultipleLines
+
   case cannotReferToWholePattern
 
   case quantifierRequiresOperand(String)
@@ -62,6 +65,7 @@ enum ParseError: Error, Hashable {
   case unknownProperty(key: String?, value: String)
   case unrecognizedScript(String)
   case unrecognizedCategory(String)
+  case unrecognizedBlock(String)
   case invalidAge(String)
   case invalidNumericValue(String)
   case unrecognizedNumericType(String)
@@ -78,6 +82,7 @@ enum ParseError: Error, Hashable {
   case cannotRemoveTextSegmentOptions
   case cannotRemoveSemanticsOptions
   case cannotRemoveExtendedSyntaxInMultilineMode
+  case cannotResetExtendedSyntaxInMultilineMode
 
   case expectedCalloutArgument
 
@@ -86,6 +91,7 @@ enum ParseError: Error, Hashable {
   case unsupported(String)
   case deprecatedUnicode(String)
   case invalidReference(Int)
+  case invalidNamedReference(String)
   case duplicateNamedCapture(String)
   case invalidCharacterClassRangeOperand
   case invalidQuantifierRange(Int, Int)
@@ -137,6 +143,10 @@ extension ParseError: CustomStringConvertible {
       return "invalid escape sequence '\\\(c)'"
     case .confusableCharacter(let c):
       return "'\(c)' is confusable for a metacharacter; use '\\u{...}' instead"
+    case .quoteMayNotSpanMultipleLines:
+      return "quoted sequence may not span multiple lines in multi-line literal"
+    case .unsetExtendedSyntaxMayNotSpanMultipleLines:
+      return "group that unsets extended syntax may not span multiple lines in multi-line literal"
     case .cannotReferToWholePattern:
       return "cannot refer to whole pattern here"
     case .quantifierRequiresOperand(let q):
@@ -188,12 +198,16 @@ extension ParseError: CustomStringConvertible {
       return "semantic level cannot be unset, only changed"
     case .cannotRemoveExtendedSyntaxInMultilineMode:
       return "extended syntax may not be disabled in multi-line mode"
+    case .cannotResetExtendedSyntaxInMultilineMode:
+      return "extended syntax may not be disabled in multi-line mode; use '(?^x)' instead"
     case .expectedCalloutArgument:
       return "expected argument to callout"
     case .unrecognizedScript(let value):
       return "unrecognized script '\(value)'"
     case .unrecognizedCategory(let value):
       return "unrecognized category '\(value)'"
+    case .unrecognizedBlock(let value):
+      return "unrecognized block '\(value)'"
     case .unrecognizedNumericType(let value):
       return "unrecognized numeric type '\(value)'"
     case .invalidAge(let value):
@@ -211,6 +225,8 @@ extension ParseError: CustomStringConvertible {
       return "\(kind) is a deprecated Unicode property, and is not supported"
     case let .invalidReference(i):
       return "no capture numbered \(i)"
+    case let .invalidNamedReference(name):
+      return "no capture named '\(name)'"
     case let .duplicateNamedCapture(str):
       return "group named '\(str)' already exists"
     case let .invalidQuantifierRange(lhs, rhs):

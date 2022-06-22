@@ -58,9 +58,9 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: The first match of `regex` in the collection, or `nil` if
   /// there isn't a match.
   @available(SwiftStdlib 5.7, *)
-  public func firstMatch<R: RegexComponent>(
-    of r: R
-  ) -> Regex<R.RegexOutput>.Match? {
+  public func firstMatch<Output>(
+    of r: some RegexComponent<Output>
+  ) -> Regex<Output>.Match? {
     let slice = self[...]
     return try? r.regex.firstMatch(in: slice)
   }

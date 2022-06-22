@@ -18,7 +18,7 @@ extension DSLTree.Node {
   /// the front of an input range
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction? {
+  ) throws -> MEProgram.ConsumeFunction? {
     switch self {
     case .atom(let a):
       return try a.generateConsumer(opts)
@@ -45,8 +45,6 @@ extension DSLTree.Node {
       fatalError("FIXME: Is this where we handle them?")
     case .matcher:
       fatalError("FIXME: Is this where we handle them?")
-    case .transform:
-      fatalError("FIXME: Is this where we handle them?")
     case .characterPredicate:
       fatalError("FIXME: Is this where we handle them?")
     }
@@ -58,7 +56,7 @@ extension DSLTree.Atom {
   // top-level nodes, but it's also invoked for `.atom` members of a custom CC
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction? {
+  ) throws -> MEProgram.ConsumeFunction? {
     let isCaseInsensitive = opts.isCaseInsensitive
     
     switch self {
@@ -144,7 +142,7 @@ extension String {
   }
 }
 
-func consumeName(_ name: String, opts: MatchingOptions) -> MEProgram<String>.ConsumeFunction {
+func consumeName(_ name: String, opts: MatchingOptions) -> MEProgram.ConsumeFunction {
   let consume = consumeFunction(for: opts)
   return consume(propertyScalarPredicate {
     // FIXME: name aliases not covered by $0.nameAlias are missed
@@ -182,7 +180,7 @@ extension AST.Atom {
 
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction? {
+  ) throws -> MEProgram.ConsumeFunction? {
     // TODO: Wean ourselves off of this type...
     if let cc = self.characterClass?.withMatchLevel(
       opts.matchLevel
@@ -239,7 +237,7 @@ extension AST.Atom {
 extension DSLTree.CustomCharacterClass.Member {
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction {
+  ) throws -> MEProgram.ConsumeFunction {
     switch self {
     case let .atom(a):
       guard let c = try a.generateConsumer(opts) else {
@@ -346,7 +344,7 @@ extension DSLTree.CustomCharacterClass.Member {
 extension DSLTree.CustomCharacterClass {
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction {
+  ) throws -> MEProgram.ConsumeFunction {
     // NOTE: Easy way to implement, obviously not performant
     let consumers = try members.map {
       try $0.generateConsumer(opts)
@@ -388,7 +386,7 @@ private func propertyScalarPredicate(_ p: @escaping (Unicode.Scalar.Properties) 
 
 func consumeScalar(
   _ p: @escaping ScalarPredicate
-) -> MEProgram<String>.ConsumeFunction {
+) -> MEProgram.ConsumeFunction {
   { input, bounds in
     // TODO: bounds check?
     let curIdx = bounds.lowerBound
@@ -401,7 +399,7 @@ func consumeScalar(
 }
 func consumeCharacterWithLeadingScalar(
   _ p: @escaping ScalarPredicate
-) -> MEProgram<String>.ConsumeFunction {
+) -> MEProgram.ConsumeFunction {
   { input, bounds in
     let curIdx = bounds.lowerBound
     if p(input[curIdx].unicodeScalars.first!) {
@@ -412,7 +410,7 @@ func consumeCharacterWithLeadingScalar(
 }
 func consumeCharacterWithSingleScalar(
   _ p: @escaping ScalarPredicate
-) -> MEProgram<String>.ConsumeFunction {
+) -> MEProgram.ConsumeFunction {
   { input, bounds in
     let curIdx = bounds.lowerBound
     
@@ -425,7 +423,7 @@ func consumeCharacterWithSingleScalar(
 
 func consumeFunction(
   for opts: MatchingOptions
-) -> (@escaping ScalarPredicate) -> MEProgram<String>.ConsumeFunction {
+) -> (@escaping ScalarPredicate) -> MEProgram.ConsumeFunction {
   opts.semanticLevel == .graphemeCluster
     ? consumeCharacterWithLeadingScalar
     : consumeScalar
@@ -434,11 +432,11 @@ func consumeFunction(
 extension AST.Atom.CharacterProperty {
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction {
+  ) throws -> MEProgram.ConsumeFunction {
     // Handle inversion for us, albeit not efficiently
     func invert(
-      _ p: @escaping MEProgram<String>.ConsumeFunction
-    ) -> MEProgram<String>.ConsumeFunction {
+      _ p: @escaping MEProgram.ConsumeFunction
+    ) -> MEProgram.ConsumeFunction {
       return { input, bounds in
         if p(input, bounds) != nil { return nil }
 
@@ -450,7 +448,7 @@ extension AST.Atom.CharacterProperty {
     }
 
     let consume = consumeFunction(for: opts)
-    let preInversion: MEProgram<String>.ConsumeFunction =
+    let preInversion: MEProgram.ConsumeFunction =
     try {
       switch kind {
         // TODO: is this modeled differently?
@@ -512,14 +510,17 @@ extension AST.Atom.CharacterProperty {
       case .mapping(.titlecase, let value):
         return consume { $0.properties.titlecaseMapping == value }
 
+      case .block(let b):
+        throw Unsupported("TODO: map block: \(b)")
+
       case .posix(let p):
         return p.generateConsumer(opts)
 
       case .pcreSpecial(let s):
         throw Unsupported("TODO: map PCRE special: \(s)")
 
-      case .onigurumaSpecial(let s):
-        throw Unsupported("TODO: map Oniguruma special: \(s)")
+      case .javaSpecial(let s):
+        throw Unsupported("TODO: map Java special: \(s)")
       }
     }()
 
@@ -532,7 +533,7 @@ extension Unicode.BinaryProperty {
   // FIXME: Semantic level, vet for precise defs
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction {
+  ) throws -> MEProgram.ConsumeFunction {
     let consume = consumeFunction(for: opts)
 
     // Note if you implement support for any of the below, you need to adjust
@@ -700,7 +701,7 @@ extension Unicode.POSIXProperty {
   // FIXME: Semantic level, vet for precise defs
   func generateConsumer(
     _ opts: MatchingOptions
-  ) -> MEProgram<String>.ConsumeFunction {
+  ) -> MEProgram.ConsumeFunction {
     let consume = consumeFunction(for: opts)
 
     // FIXME: modes, etc
@@ -748,7 +749,7 @@ extension Unicode.ExtendedGeneralCategory {
   // FIXME: Semantic level
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction {
+  ) throws -> MEProgram.ConsumeFunction {
     let consume = consumeFunction(for: opts)
 
     switch self {

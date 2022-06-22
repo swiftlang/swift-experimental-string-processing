@@ -11,11 +11,6 @@
 
 @_spi(RegexBuilder) import _StringProcessing
 
-// FIXME(rdar://92459215): We should be using 'some RegexComponent' instead of
-// <R: RegexComponent> for the methods below that don't impose any additional
-// requirements on the type. Currently the generic parameter is needed to work
-// around a compiler issue.
-
 extension BidirectionalCollection where SubSequence == Substring {
   /// Matches a regex in its entirety, where the regex is created by
   /// the given closure.
@@ -23,9 +18,9 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter content: A closure that returns a regex to match against.
   /// - Returns: The match if there is one, or `nil` if none.
   @available(SwiftStdlib 5.7, *)
-  public func wholeMatch<R: RegexComponent>(
-    @RegexComponentBuilder of content: () -> R
-  ) -> Regex<R.RegexOutput>.Match? {
+  public func wholeMatch<Output>(
+    @RegexComponentBuilder of content: () -> some RegexComponent<Output>
+  ) -> Regex<Output>.Match? {
     wholeMatch(of: content())
   }
 
@@ -35,9 +30,9 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter content: A closure that returns a regex to match against.
   /// - Returns: The match if there is one, or `nil` if none.
   @available(SwiftStdlib 5.7, *)
-  public func prefixMatch<R: RegexComponent>(
-    @RegexComponentBuilder of content: () -> R
-  ) -> Regex<R.RegexOutput>.Match? {
+  public func prefixMatch<Output>(
+    @RegexComponentBuilder of content: () -> some RegexComponent<Output>
+  ) -> Regex<Output>.Match? {
     prefixMatch(of: content())
   }
 
@@ -49,8 +44,8 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: `true` if the regex returned by `content` matched anywhere in
   ///   this collection, otherwise `false`.
   @available(SwiftStdlib 5.7, *)
-  public func contains<R: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> R
+  public func contains(
+    @RegexComponentBuilder _ content: () -> some RegexComponent
   ) -> Bool {
     contains(content())
   }
@@ -63,8 +58,8 @@ extension BidirectionalCollection where SubSequence == Substring {
   ///   match of if the regex returned by `content`. Returns `nil` if no match
   ///   for the regex is found.
   @available(SwiftStdlib 5.7, *)
-  public func firstRange<R: RegexComponent>(
-    @RegexComponentBuilder of content: () -> R
+  public func firstRange(
+    @RegexComponentBuilder of content: () -> some RegexComponent
   ) -> Range<Index>? {
     firstRange(of: content())
   }
@@ -78,8 +73,8 @@ extension BidirectionalCollection where SubSequence == Substring {
   ///   `content`. Returns an empty collection if no match for the regex
   ///   is found.
   @available(SwiftStdlib 5.7, *)
-  public func ranges<R: RegexComponent>(
-    @RegexComponentBuilder of content: () -> R
+  public func ranges(
+    @RegexComponentBuilder of content: () -> some RegexComponent
   ) -> [Range<Index>] {
     ranges(of: content())
   }
@@ -99,10 +94,10 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: A collection of substrings, split from this collection's
   ///   elements.
   @available(SwiftStdlib 5.7, *)
-  public func split<R: RegexComponent>(
+  public func split(
     maxSplits: Int = Int.max,
     omittingEmptySubsequences: Bool = true,
-    @RegexComponentBuilder separator: () -> R
+    @RegexComponentBuilder separator: () -> some RegexComponent
   ) -> [SubSequence] {
     split(separator: separator(), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
   }
@@ -115,8 +110,8 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: `true` if the initial elements of this collection match
   ///   regex returned by `content`; otherwise, `false`.
   @available(SwiftStdlib 5.7, *)
-  public func starts<R: RegexComponent>(
-    @RegexComponentBuilder with content: () -> R
+  public func starts(
+    @RegexComponentBuilder with content: () -> some RegexComponent
   ) -> Bool {
     starts(with: content())
   }
@@ -132,8 +127,8 @@ extension BidirectionalCollection where SubSequence == Substring {
   ///   the start of the collection, the entire contents of this collection
   ///   are returned.
   @available(SwiftStdlib 5.7, *)
-  public func trimmingPrefix<R: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> R
+  public func trimmingPrefix(
+    @RegexComponentBuilder _ content: () -> some RegexComponent
   ) -> SubSequence {
     trimmingPrefix(content())
   }
@@ -145,9 +140,9 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: The first match for the regex created by `content` in this
   ///   collection, or `nil` if no match is found.
   @available(SwiftStdlib 5.7, *)
-  public func firstMatch<R: RegexComponent>(
-    @RegexComponentBuilder of content: () -> R
-  ) -> Regex<R.RegexOutput>.Match? {
+  public func firstMatch<Output>(
+    @RegexComponentBuilder of content: () -> some RegexComponent<Output>
+  ) -> Regex<Output>.Match? {
     firstMatch(of: content())
   }
 
@@ -159,9 +154,9 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: A collection of matches for the regex returned by `content`.
   ///   If no matches are found, the returned collection is empty.
   @available(SwiftStdlib 5.7, *)
-  public func matches<R: RegexComponent>(
-    @RegexComponentBuilder of content: () -> R
-  ) -> [Regex<R.RegexOutput>.Match] {
+  public func matches<Output>(
+    @RegexComponentBuilder of content: () -> some RegexComponent<Output>
+  ) -> [Regex<Output>.Match] {
     matches(of: content())
   }
 }
@@ -175,8 +170,8 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   /// - Parameter content: A closure that returns the regex to search for
   ///   at the start of this collection.
   @available(SwiftStdlib 5.7, *)
-  public mutating func trimPrefix<R: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> R
+  public mutating func trimPrefix(
+    @RegexComponentBuilder _ content: () -> some RegexComponent
   ) {
     trimPrefix(content())
   }
@@ -196,11 +191,11 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   /// - Returns: A new collection in which all matches for regex in `subrange`
   ///   are replaced by `replacement`, using `content` to create the regex.
   @available(SwiftStdlib 5.7, *)
-  public func replacing<R: RegexComponent, Replacement: Collection>(
+  public func replacing<Replacement: Collection>(
     with replacement: Replacement,
     subrange: Range<Index>,
     maxReplacements: Int = .max,
-    @RegexComponentBuilder content: () -> R
+    @RegexComponentBuilder content: () -> some RegexComponent
   ) -> Self where Replacement.Element == Element {
     replacing(content(), with: replacement, subrange: subrange, maxReplacements: maxReplacements)
   }
@@ -218,10 +213,10 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   /// - Returns: A new collection in which all matches for regex in `subrange`
   ///   are replaced by `replacement`, using `content` to create the regex.
   @available(SwiftStdlib 5.7, *)
-  public func replacing<R: RegexComponent, Replacement: Collection>(
+  public func replacing<Replacement: Collection>(
     with replacement: Replacement,
     maxReplacements: Int = .max,
-    @RegexComponentBuilder content: () -> R
+    @RegexComponentBuilder content: () -> some RegexComponent
   ) -> Self where Replacement.Element == Element {
     replacing(content(), with: replacement, maxReplacements: maxReplacements)
   }
@@ -237,10 +232,10 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   ///   - content: A closure that returns the collection to search for
   ///     and replace.
   @available(SwiftStdlib 5.7, *)
-  public mutating func replace<R: RegexComponent, Replacement: Collection>(
+  public mutating func replace<Replacement: Collection>(
     with replacement: Replacement,
     maxReplacements: Int = .max,
-    @RegexComponentBuilder content: () -> R
+    @RegexComponentBuilder content: () -> some RegexComponent
   ) where Replacement.Element == Element {
     replace(content(), with: replacement, maxReplacements: maxReplacements)
   }
@@ -262,11 +257,11 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   ///   are replaced by the result of calling `replacement`, where regex
   ///   is the result of calling `content`.
   @available(SwiftStdlib 5.7, *)
-  public func replacing<R: RegexComponent, Replacement: Collection>(
+  public func replacing<Output, Replacement: Collection>(
     subrange: Range<Index>,
     maxReplacements: Int = .max,
-    @RegexComponentBuilder content: () -> R,
-    with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
+    @RegexComponentBuilder content: () -> some RegexComponent<Output>,
+    with replacement: (Regex<Output>.Match) throws -> Replacement
   ) rethrows -> Self where Replacement.Element == Element {
     try replacing(content(), subrange: subrange, maxReplacements: maxReplacements, with: replacement)
   }
@@ -286,10 +281,10 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   ///   are replaced by the result of calling `replacement`, where regex is
   ///   the result of calling `content`.
   @available(SwiftStdlib 5.7, *)
-  public func replacing<R: RegexComponent, Replacement: Collection>(
+  public func replacing<Output, Replacement: Collection>(
     maxReplacements: Int = .max,
-    @RegexComponentBuilder content: () -> R,
-    with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
+    @RegexComponentBuilder content: () -> some RegexComponent<Output>,
+    with replacement: (Regex<Output>.Match) throws -> Replacement
   ) rethrows -> Self where Replacement.Element == Element {
     try replacing(content(), maxReplacements: maxReplacements, with: replacement)
   }
@@ -305,10 +300,10 @@ where Self: BidirectionalCollection, SubSequence == Substring {
   ///   - replacement: A closure that receives the full match information,
   ///     including captures, and returns a replacement collection.
   @available(SwiftStdlib 5.7, *)
-  public mutating func replace<R: RegexComponent, Replacement: Collection>(
+  public mutating func replace<Output, Replacement: Collection>(
     maxReplacements: Int = .max,
-    @RegexComponentBuilder content: () -> R,
-    with replacement: (Regex<R.RegexOutput>.Match) throws -> Replacement
+    @RegexComponentBuilder content: () -> some RegexComponent<Output>,
+    with replacement: (Regex<Output>.Match) throws -> Replacement
   ) rethrows where Replacement.Element == Element {
     try replace(content(), maxReplacements: maxReplacements, with: replacement)
   }

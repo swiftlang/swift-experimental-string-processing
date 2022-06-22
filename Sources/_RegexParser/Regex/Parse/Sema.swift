@@ -72,20 +72,20 @@ extension RegexValidator {
   }
 
   func validateReference(_ ref: AST.Reference) throws {
+    if let recLevel = ref.recursionLevel {
+      throw error(.unsupported("recursion level"), at: recLevel.location)
+    }
     switch ref.kind {
     case .absolute(let i):
-      guard i <= captures.captures.count else {
+      guard i < captures.captures.count else {
         throw error(.invalidReference(i), at: ref.innerLoc)
+      }
+    case .named(let name):
+      guard captures.hasCapture(named: name) else {
+        throw error(.invalidNamedReference(name), at: ref.innerLoc)
       }
     case .relative:
       throw error(.unsupported("relative capture reference"), at: ref.innerLoc)
-    case .named:
-      // TODO: This could be implemented by querying the capture list for an
-      // index.
-      throw error(.unsupported("named capture reference"), at: ref.innerLoc)
-    }
-    if let recLevel = ref.recursionLevel {
-      throw error(.unsupported("recursion level"), at: recLevel.location)
     }
   }
 
@@ -106,8 +106,13 @@ extension RegexValidator {
     case .byteSemantics:
       throw error(.unsupported("byte semantic mode"), at: loc)
 
+    case .unicodeScalarSemantics:
+      throw error(.unsupported("unicode scalar semantic mode"), at: loc)
+      
+    case .graphemeClusterSemantics:
+      throw error(.unsupported("grapheme semantic mode"), at: loc)
+      
     case .caseInsensitive, .possessiveByDefault, .reluctantByDefault,
-        .unicodeScalarSemantics, .graphemeClusterSemantics,
         .singleLine, .multiline, .namedCapturesOnly, .extended, .extraExtended,
         .asciiOnlyDigit, .asciiOnlyWord, .asciiOnlySpace, .asciiOnlyPOSIXProps:
       break
@@ -173,8 +178,10 @@ extension RegexValidator {
       break
     case .pcreSpecial:
       throw error(.unsupported("PCRE property"), at: loc)
-    case .onigurumaSpecial:
+    case .block:
       throw error(.unsupported("Unicode block property"), at: loc)
+    case .javaSpecial:
+      throw error(.unsupported("Java property"), at: loc)
     }
   }
 
@@ -318,7 +325,8 @@ extension RegexValidator {
   func validateGroup(_ group: AST.Group) throws {
     let kind = group.kind
     switch kind.value {
-    case .capture, .namedCapture, .nonCapture, .lookahead, .negativeLookahead:
+    case .capture, .namedCapture, .nonCapture, .lookahead, .negativeLookahead,
+        .atomicNonCapturing:
       break
 
     case .balancedCapture:
@@ -328,9 +336,6 @@ extension RegexValidator {
     case .nonCaptureReset:
       // We need to figure out how these interact with typed captures.
       throw error(.unsupported("branch reset group"), at: kind.location)
-
-    case .atomicNonCapturing:
-      throw error(.unsupported("atomic group"), at: kind.location)
 
     case .nonAtomicLookahead:
       throw error(.unsupported("non-atomic lookahead"), at: kind.location)

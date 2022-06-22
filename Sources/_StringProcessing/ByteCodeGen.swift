@@ -3,28 +3,45 @@
 extension Compiler {
   struct ByteCodeGen {
     var options: MatchingOptions
-    var builder = Program.Builder()
+    var builder = MEProgram.Builder()
+    /// A Boolean indicating whether the first matchable atom has been emitted.
+    /// This is used to determine whether to apply initial options.
+    var hasEmittedFirstMatchableAtom = false
 
-    mutating func finish(
-    ) throws -> Program {
-      builder.buildAccept()
-      return try builder.assemble()
+    init(options: MatchingOptions, captureList: CaptureList) {
+      self.options = options
+      self.builder.captureList = captureList
     }
   }
 }
 
 extension Compiler.ByteCodeGen {
+  mutating func emitRoot(_ root: DSLTree.Node) throws -> MEProgram {
+    // The whole match (`.0` element of output) is equivalent to an implicit
+    // capture over the entire regex.
+    try emitNode(.capture(name: nil, reference: nil, root))
+    builder.buildAccept()
+    return try builder.assemble()
+  }
+}
+
+fileprivate extension Compiler.ByteCodeGen {
   mutating func emitAtom(_ a: DSLTree.Atom) throws {
+    defer {
+      if a.isMatchable {
+        hasEmittedFirstMatchableAtom = true
+      }
+    }
     switch a {
     case .any:
       emitAny()
 
     case let .char(c):
       try emitCharacter(c)
-      
+
     case let .scalar(s):
       try emitScalar(s)
-      
+
     case let .assertion(kind):
       try emitAssertion(kind.ast)
 
@@ -35,7 +52,7 @@ extension Compiler.ByteCodeGen {
       builder.buildUnresolvedReference(id: id)
 
     case let .changeMatchingOptions(optionSequence):
-      if !builder.hasReceivedInstructions {
+      if !hasEmittedFirstMatchableAtom {
         builder.initialOptions.apply(optionSequence.ast)
       }
       options.apply(optionSequence.ast)
@@ -60,9 +77,10 @@ extension Compiler.ByteCodeGen {
 
     switch ref.kind {
     case .absolute(let i):
-      // Backreferences number starting at 1
-      builder.buildBackreference(.init(i-1))
-    case .relative, .named:
+      builder.buildBackreference(.init(i))
+    case .named(let name):
+      try builder.buildNamedReference(name)
+    case .relative:
       throw Unsupported("Backreference kind: \(ref)")
     }
   }
@@ -288,7 +306,7 @@ extension Compiler.ByteCodeGen {
       save(restoringAt: success)
       save(restoringAt: intercept)
       <sub-pattern>    // failure restores at intercept
-      clearSavePoint   // remove intercept
+      clearThrough(intercept) // remove intercept and any leftovers from <sub-pattern>
       <if negative>:
         clearSavePoint // remove success
       fail             // positive->success, negative propagates
@@ -306,7 +324,7 @@ extension Compiler.ByteCodeGen {
     builder.buildSave(success)
     builder.buildSave(intercept)
     try emitNode(child)
-    builder.buildClear()
+    builder.buildClearThrough(intercept)
     if !positive {
       builder.buildClear()
     }
@@ -321,10 +339,41 @@ extension Compiler.ByteCodeGen {
     builder.label(success)
   }
 
+  mutating func emitAtomicNoncapturingGroup(
+    _ child: DSLTree.Node
+  ) throws {
+    /*
+      save(continuingAt: success)
+      save(restoringAt: intercept)
+      <sub-pattern>    // failure restores at intercept
+      clearThrough(intercept) // remove intercept and any leftovers from <sub-pattern>
+      fail             // ->success
+    intercept:
+      clearSavePoint   // remove success
+      fail             // propagate failure
+    success:
+      ...
+    */
+
+    let intercept = builder.makeAddress()
+    let success = builder.makeAddress()
+
+    builder.buildSaveAddress(success)
+    builder.buildSave(intercept)
+    try emitNode(child)
+    builder.buildClearThrough(intercept)
+    builder.buildFail()
+
+    builder.label(intercept)
+    builder.buildClear()
+    builder.buildFail()
+
+    builder.label(success)
+  }
+
   mutating func emitMatcher(
-    _ matcher: @escaping _MatcherInterface,
-    into capture: CaptureRegister? = nil
-  ) {
+    _ matcher: @escaping _MatcherInterface
+  ) -> ValueRegister {
 
     // TODO: Consider emitting consumer interface if
     // not captured. This may mean we should store
@@ -336,26 +385,7 @@ extension Compiler.ByteCodeGen {
 
     let valReg = builder.makeValueRegister()
     builder.buildMatcher(matcher, into: valReg)
-
-    // TODO: Instruction to store directly
-    if let cap = capture {
-      builder.buildMove(valReg, into: cap)
-    }
-  }
-
-  mutating func emitTransform(
-    _ t: CaptureTransform,
-    _ child: DSLTree.Node,
-    into cap: CaptureRegister
-  ) throws {
-    let transform = builder.makeTransformFunction {
-      input, range in
-      try t(input[range])
-    }
-    builder.buildBeginCapture(cap)
-    try emitNode(child)
-    builder.buildEndCapture(cap)
-    builder.buildTransformCapture(cap, transform)
+    return valReg
   }
 
   mutating func emitNoncapturingGroup(
@@ -381,11 +411,14 @@ extension Compiler.ByteCodeGen {
       throw Unreachable("These should produce a capture node")
 
     case .changeMatchingOptions(let optionSequence):
-      if !builder.hasReceivedInstructions {
+      if !hasEmittedFirstMatchableAtom {
         builder.initialOptions.apply(optionSequence)
       }
       options.apply(optionSequence)
       try emitNode(child)
+      
+    case .atomicNonCapturing:
+      try emitAtomicNoncapturingGroup(child)
 
     default:
       // FIXME: Other kinds...
@@ -605,7 +638,8 @@ extension Compiler.ByteCodeGen {
     builder.buildConsume(by: consumer)
   }
 
-  mutating func emitNode(_ node: DSLTree.Node) throws {
+  @discardableResult
+  mutating func emitNode(_ node: DSLTree.Node) throws -> ValueRegister? {
     switch node {
       
     case let .orderedChoice(children):
@@ -616,20 +650,38 @@ extension Compiler.ByteCodeGen {
         try emitConcatenationComponent(child)
       }
 
-    case let .capture(name, refId, child):
+    case let .capture(name, refId, child, transform):
       options.beginScope()
       defer { options.endScope() }
 
       let cap = builder.makeCapture(id: refId, name: name)
-      switch child {
-      case let .matcher(_, m):
-        emitMatcher(m, into: cap)
-      case let .transform(t, child):
-        try emitTransform(t, child, into: cap)
-      default:
-        builder.buildBeginCapture(cap)
-        try emitNode(child)
-        builder.buildEndCapture(cap)
+      builder.buildBeginCapture(cap)
+      let value = try emitNode(child)
+      builder.buildEndCapture(cap)
+      // If the child node produced a custom capture value, e.g. the result of
+      // a matcher, this should override the captured substring.
+      if let value {
+        builder.buildMove(value, into: cap)
+      }
+      // If there's a capture transform, apply it now.
+      if let transform = transform {
+        let fn = builder.makeTransformFunction { input, cap in
+          // If it's a substring capture with no custom value, apply the
+          // transform directly to the substring to avoid existential traffic.
+          //
+          // FIXME: separate out this code path. This is fragile,
+          // slow, and these are clearly different constructs
+          if let range = cap.range, cap.value == nil {
+            return try transform(input[range])
+          }
+
+          let value = constructExistentialOutputComponent(
+             from: input,
+             component: cap.deconstructed,
+             optionalCount: 0)
+          return try transform(value)
+        }
+        builder.buildTransformCapture(cap, fn)
       }
 
     case let .nonCapturingGroup(kind, child):
@@ -697,10 +749,10 @@ extension Compiler.ByteCodeGen {
       }
 
     case let .regexLiteral(l):
-      try emitNode(l.ast.dslTreeNode)
+      return try emitNode(l.ast.dslTreeNode)
 
     case let .convertedRegexLiteral(n, _):
-      try emitNode(n)
+      return try emitNode(n)
 
     case .absentFunction:
       throw Unsupported("absent function")
@@ -708,18 +760,14 @@ extension Compiler.ByteCodeGen {
       throw Unsupported("consumer")
 
     case let .matcher(_, f):
-      emitMatcher(f)
-
-    case .transform:
-      throw Unreachable(
-        "Transforms only directly inside captures")
+      return emitMatcher(f)
 
     case .characterPredicate:
       throw Unsupported("character predicates")
 
     case .trivia, .empty:
-      return
+      return nil
     }
+    return nil
   }
 }
-

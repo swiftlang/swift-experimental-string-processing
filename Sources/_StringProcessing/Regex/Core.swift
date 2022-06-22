@@ -11,10 +11,9 @@
 
 @_implementationOnly import _RegexParser
 
-
 /// A type that represents a regular expression.
 @available(SwiftStdlib 5.7, *)
-public protocol RegexComponent {
+public protocol RegexComponent<RegexOutput> {
   associatedtype RegexOutput
   var regex: Regex<RegexOutput> { get }
 }
@@ -68,11 +67,12 @@ extension Regex {
   }
 }
 
+
 @available(SwiftStdlib 5.7, *)
 extension Regex {
   /// A program representation that caches any lowered representation for
   /// execution.
-  internal class Program {
+  internal final class Program {
     /// The underlying IR.
     ///
     /// FIXME: If Regex is the unit of composition, then it should be a Node instead,
@@ -80,8 +80,23 @@ extension Regex {
     /// likely, compilation/caching.
     let tree: DSLTree
 
+    private final class ProgramBox {
+      let value: MEProgram
+      init(_ value: MEProgram) { self.value = value }
+    }
+
+    /// Do not use directly - all accesses must go through `loweredProgram`.
+    private var _loweredProgramStorage: AnyObject? = nil
+    
     /// The program for execution with the matching engine.
-    lazy private(set) var loweredProgram = try! Compiler(tree: tree).emit()
+    var loweredProgram: MEProgram {
+      if let loweredObject = _loweredProgramStorage as? ProgramBox {
+        return loweredObject.value
+      }
+      let lowered = try! Compiler(tree: tree).emit()
+      _stdlib_atomicInitializeARCRef(object: &_loweredProgramStorage, desired: ProgramBox(lowered))
+      return lowered
+    }
 
     init(ast: AST) {
       self.tree = ast.dslTree

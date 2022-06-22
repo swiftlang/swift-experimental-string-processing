@@ -74,7 +74,7 @@ func flatCaptureTest(
 ) {
   for (test, expect) in tests {
     do {
-      guard let (_, caps) = try? _firstMatch(
+      guard var (_, caps) = try? _firstMatch(
         regex,
         input: test,
         syntax: syntax,
@@ -86,6 +86,8 @@ func flatCaptureTest(
           throw MatchError("Match failed")
         }
       }
+      // Peel off the whole match.
+      caps.removeFirst()
       guard let expect = expect else {
         throw MatchError("""
             Match of \(test) succeeded where failure expected in \(regex)
@@ -342,7 +344,11 @@ extension RegexTests {
     firstMatchTest(
       #"a{1,2}"#, input: "123aaaxyz", match: "aa")
     firstMatchTest(
+      #"a{ 1 , 2 }"#, input: "123aaaxyz", match: "aa")
+    firstMatchTest(
       #"a{,2}"#, input: "123aaaxyz", match: "")
+    firstMatchTest(
+      #"a{ , 2 }"#, input: "123aaaxyz", match: "")
     firstMatchTest(
       #"a{,2}x"#, input: "123aaaxyz", match: "aax")
     firstMatchTest(
@@ -351,6 +357,8 @@ extension RegexTests {
       #"a{2,}"#, input: "123aaaxyz", match: "aaa")
     firstMatchTest(
       #"a{1}"#, input: "123aaaxyz", match: "a")
+    firstMatchTest(
+      #"a{ 1 }"#, input: "123aaaxyz", match: "a")
     firstMatchTest(
       #"a{1,2}?"#, input: "123aaaxyz", match: "a")
     firstMatchTest(
@@ -587,6 +595,8 @@ extension RegexTests {
     firstMatchTest("[a-z]", input: "123abcxyz", match: "a")
     firstMatchTest("[a-z]", input: "123ABCxyz", match: "x")
     firstMatchTest("[a-z]", input: "123-abcxyz", match: "a")
+
+    firstMatchTest("(?x)[ a - z ]+", input: " 123-abcxyz", match: "abcxyz")
 
     // Character class subtraction
     firstMatchTest("[a-d--a-c]", input: "123abcdxyz", match: "d")
@@ -881,8 +891,7 @@ extension RegexTests {
       input: "Price: 100 dollars", match: nil)
     firstMatchTest(
       #"(?=\d+ dollars)\d+"#,
-      input: "Price: 100 dollars", match: "100",
-      xfail: true) // TODO
+      input: "Price: 100 dollars", match: "100")
 
     firstMatchTest(
       #"\d+(*pla: dollars)"#,
@@ -906,6 +915,14 @@ extension RegexTests {
     firstMatchTest(
       #"\d+(*negative_lookahead: dollars)"#,
       input: "Price: 100 pesos", match: "100")
+
+    // More complex lookaheads
+    firstMatchTests(
+      #"(?=.*e)(?=.*o)(?!.*z)."#,
+      (input: "hello", match: "h"),
+      (input: "hzello", match: "e"),
+      (input: "hezllo", match: nil),
+      (input: "helloz", match: nil))
 
     firstMatchTest(
       #"(?<=USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
@@ -1012,10 +1029,12 @@ extension RegexTests {
       #"\u{65}\y"#,           // Grapheme boundary assertion
       ("Cafe\u{301}", nil),
       ("Sol Cafe", "e"))
+    
+    // FIXME: Figure out (?X) and (?u) semantics
     firstMatchTests(
       #"(?u)\u{65}\Y"#,       // Grapheme non-boundary assertion
       ("Cafe\u{301}", "e"),
-      ("Sol Cafe", nil))
+      ("Sol Cafe", nil), xfail: true)
   }
 
   func testMatchGroups() {
@@ -1038,14 +1057,93 @@ extension RegexTests {
     firstMatchTest(
       #"(?:a|.b)c"#, input: "123abcacxyz", match: "abc")
     firstMatchTest(
-      #"(?>a|.b)c"#, input: "123abcacxyz", match: "ac", xfail: true)
+      #"(?>a|.b)c"#, input: "123abcacxyz", match: "ac")
     firstMatchTest(
-      "(*atomic:a|.b)c", input: "123abcacxyz", match: "ac", xfail: true)
+      "(*atomic:a|.b)c", input: "123abcacxyz", match: "ac")
     firstMatchTest(
       #"(?:a+)[a-z]c"#, input: "123aacacxyz", match: "aac")
     firstMatchTest(
-      #"(?>a+)[a-z]c"#, input: "123aacacxyz", match: "ac", xfail: true)
+      #"(?>a+)[a-z]c"#, input: "123aacacxyz", match: nil)
+    
+    // Atomicity should stay in the atomic group
+    firstMatchTest(
+      #"(?:(?>a)|.b)c"#, input: "123abcacxyz", match: "abc")
 
+    // Quantifier behavior inside atomic groups
+    
+    // (?:a+?) matches as few 'a's as possible, after matching the first
+    // (?>a+?) always matches exactly one 'a'
+    firstMatchTests(
+      #"^(?:a+?)a$"#,
+      (input: "a", match: nil),
+      (input: "aa", match: "aa"),
+      (input: "aaa", match:  "aaa"))
+    firstMatchTests(
+      #"^(?>a+?)a$"#,
+      (input: "a", match: nil),
+      (input: "aa", match: "aa"),
+      (input: "aaa", match:  nil))
+    
+    // (?:a?+) and (?>a?+) are equivalent: they match one 'a' if available
+    firstMatchTests(
+      #"^(?:a?+)a$"#,
+      (input: "a", match: nil),
+      xfail: true)
+    firstMatchTests(
+      #"^(?:a?+)a$"#,
+      (input: "aa", match: "aa"),
+      (input: "aaa", match: nil))
+    firstMatchTests(
+      #"^(?>a?+)a$"#,
+      (input: "a", match: nil),
+      (input: "aa", match: "aa"),
+      (input: "aaa", match: nil))
+
+    // Capture behavior in non-atomic vs atomic groups
+    firstMatchTests(
+      #"(\d+)\w+\1"#,
+      (input: "123x12", match: "123x12"), // `\w+` matches "3x" in this case
+      (input: "23x23", match: "23x23"),
+      (input: "123x23", match: "23x23"))
+    firstMatchTests(
+      #"(?>(\d+))\w+\1"#,
+      (input: "123x12", match: nil))
+    firstMatchTests(
+      #"(?>(\d+))\w+\1"#,
+      (input: "23x23", match: "23x23"),
+      (input: "123x23", match: "23x23"),
+      xfail: true)
+    
+    // Backreferences in lookaheads
+    firstMatchTests(
+      #"^(?=.*(.)(.)\2\1).+$"#,
+      (input: "abbba", match: nil),
+      (input: "ABBA", match: "ABBA"),
+      (input: "defABBAdef", match: "defABBAdef"))
+    firstMatchTests(
+      #"^(?=.*(.)(.)\2\1).+\2$"#,
+      (input: "abbba", match: nil),
+      (input: "ABBA", match: nil),
+      (input: "defABBAdef", match: nil))
+    // FIXME: Backreferences don't escape positive lookaheads
+    firstMatchTests(
+      #"^(?=.*(.)(.)\2\1).+\2$"#,
+      (input: "ABBAB", match: "ABBAB"),
+      (input: "defABBAdefB", match: "defABBAdefB"),
+      xfail: true)
+    
+    firstMatchTests(
+      #"^(?!.*(.)(.)\2\1).+$"#,
+      (input: "abbba", match: "abbba"),
+      (input: "ABBA", match: nil),
+      (input: "defABBAdef", match: nil))
+    // Backreferences don't escape negative lookaheads;
+    // matching only proceeds when the lookahead fails
+    firstMatchTests(
+      #"^(?!.*(.)(.)\2\1).+\2$"#,
+      (input: "abbba", match: nil),
+      (input: "abbbab", match: nil),
+      (input: "ABBAB", match: nil))
 
     // TODO: Test example where non-atomic is significant
     firstMatchTest(
@@ -1134,7 +1232,6 @@ extension RegexTests {
   }
 
   func testMatchReferences() {
-    // TODO: Implement backreference/subpattern matching.
     firstMatchTest(
       #"(.)\1"#,
       input: "112", match: "11")
@@ -1143,14 +1240,24 @@ extension RegexTests {
       input: "aaaaaaaaabbc", match: "aaaaaaaaabb")
 
     firstMatchTest(
+      #"(.)(.)(.)(.)(.)(.)(.)(.)(.)(?<a1>.)(?P=a1)"#,
+      input: "aaaaaaaaabbc", match: "aaaaaaaaabb")
+
+    firstMatchTest(
       #"(.)\g001"#,
       input: "112", match: "11")
 
-    firstMatchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
-    firstMatchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba", xfail: true)
-    firstMatchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
+    firstMatchTest(#"(?<a>.)(.)\k<a>"#, input: "abac", match: "aba")
+
+    firstMatchTest(#"(?<a>.)(?<b>.)(?<c>.)\k<c>\k<a>\k<b>"#,
+                   input: "xyzzxy", match: "xyzzxy")
 
     firstMatchTest(#"\1(.)"#, input: "112", match: nil)
+    firstMatchTest(#"\k<a>(?<a>.)"#, input: "112", match: nil)
+
+    // TODO: Implement subpattern matching.
+    firstMatchTest(#"(.)(.)\g-02"#, input: "abac", match: "aba", xfail: true)
+    firstMatchTest(#"\g'+2'(.)(.)"#, input: "abac", match: "aba", xfail: true)
   }
   
   func testMatchExamples() {
@@ -1288,6 +1395,14 @@ extension RegexTests {
     firstMatchTest(#"(?xx)[ \t]+"#, input: " \t \t", match: "\t")
 
     firstMatchTest("(?xx)[ a && ab ]+", input: " aaba ", match: "aa")
+    
+    // Preserve whitespace in quoted section inside extended syntax region
+    firstMatchTest(
+      #"(?x) a b \Q c d \E e f"#, input: "ab c d ef", match: "ab c d ef")
+    firstMatchTest(
+      #"(?x)[a b]+ _ [a\Q b\E]+"#, input: "aba_ a b a", match: "aba_ a b a")
+    firstMatchTest(
+      #"(?x)[a b]+ _ [a\Q b\E]+"#, input: "aba _ a b a", match: nil)
   }
   
   func testASCIIClasses() {
@@ -1366,6 +1481,44 @@ extension RegexTests {
     XCTAssertFalse(string.contains(regex))
     let allRanges = string.ranges(of: regex.anchorsMatchLineEndings())
     XCTAssertEqual(allRanges.count, 5)
+  }
+  
+  func testSubstringAnchors() throws {
+    let string = "123abc456def789"
+    let trimmed = string.dropFirst(3).dropLast(3) // "abc456def"
+    let prefixLetters = try Regex(#"^[a-z]+"#, as: Substring.self)
+    let postfixLetters = try Regex(#"[a-z]+$"#, as: Substring.self)
+
+    // start anchor (^) should match beginning of substring
+    XCTExpectFailure {
+      XCTAssertEqual(trimmed.firstMatch(of: prefixLetters)?.output, "abc")
+    }
+    XCTExpectFailure {
+      XCTAssertEqual(trimmed.replacing(prefixLetters, with: ""), "456def")
+    }
+    
+    // end anchor ($) should match end of substring
+    XCTExpectFailure {
+      XCTAssertEqual(trimmed.firstMatch(of: postfixLetters)?.output, "def")
+    }
+    XCTExpectFailure {
+      XCTAssertEqual(trimmed.replacing(postfixLetters, with: ""), "abc456")
+    }
+
+    // start anchor (^) should _not_ match beginning of subrange
+    XCTAssertEqual(
+      string.replacing(
+        prefixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      string)
+    // end anchor ($) should _not_ match beginning of subrange
+    XCTAssertEqual(
+      string.replacing(
+        postfixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      string)
   }
   
   func testMatchingOptionsScope() {
@@ -1569,7 +1722,8 @@ extension RegexTests {
     // a single Unicode scalar value, leaving any other grapheme scalar
     // components to be matched.
     
-    firstMatchTest(#"(?u:.)"#, input: eDecomposed, match: "e")
+    // FIXME: Figure out (?X) and (?u) semantics
+    firstMatchTest(#"(?u:.)"#, input: eDecomposed, match: "e", xfail: true)
 
     matchTest(
       #".\u{301}"#,
@@ -1580,18 +1734,30 @@ extension RegexTests {
       (eComposed, false),
       (eDecomposed, false))
     
+    // FIXME: Figure out (?X) and (?u) semantics
     // FIXME: \O is unsupported
-    firstMatchTest(#"(?u)\O\u{301}"#, input: eDecomposed, match: eDecomposed)
-    firstMatchTest(#"(?u)e\O"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(
+      #"(?u)\O\u{301}"#,
+      input: eDecomposed,
+      match: eDecomposed,
+      xfail: true
+    )
+    firstMatchTest(
+      #"(?u)e\O"#,
+      input: eDecomposed,
+      match: eDecomposed,
+      xfail: true
+    )
     firstMatchTest(#"\O"#, input: eComposed, match: eComposed)
     firstMatchTest(#"\O"#, input: eDecomposed, match: nil,
               xfail: true)
 
+    // FIXME: Figure out (?X) and (?u) semantics
     matchTest(
       #"(?u).\u{301}"#,
       (eComposed, false),
-      (eDecomposed, true))
-    firstMatchTest(#"(?u).$"#, input: eComposed, match: eComposed)
+      (eDecomposed, true), xfail: true)
+    firstMatchTest(#"(?u).$"#, input: eComposed, match: eComposed, xfail: true)
     
     // Option permutations for 'u' and 's'
     matchTest(
@@ -1604,14 +1770,16 @@ extension RegexTests {
       ("e\u{301}ab", false),
       ("e\u{301}abc", true),
       ("e\u{301}\nab", true))
+    
+    // FIXME: Figure out (?X) and (?u) semantics
     matchTest(
       #"(?u)...."#,
       ("e\u{301}ab", true),
-      ("e\u{301}\na", false))
+      ("e\u{301}\na", false), xfail: true)
     matchTest(
       #"(?us)...."#,
       ("e\u{301}ab", true),
-      ("e\u{301}\na", true))
+      ("e\u{301}\na", true), xfail: true)
   }
   
   // TODO: Add test for implied grapheme cluster requirement at group boundaries
@@ -1627,6 +1795,36 @@ extension RegexTests {
     let scalarMatches = input.matches(of: regex.matchingSemantics(.unicodeScalar))
     let scalarExpected: [Substring] = ["\u{FE0F}💖🧠", "🧠💖☕"]
     XCTAssertEqual(scalarMatches.map { $0.0 }, scalarExpected)
+  }
+  
+  func testConcurrentAccess() async throws {
+    for _ in 0..<1000 {
+      let regex = try Regex(#"abc+d*e?"#)
+      let strings = [
+        "abc",
+        "abccccccccdddddddddde",
+        "abcccce",
+        "abddddde",
+      ]
+      let matches = await withTaskGroup(of: Optional<Regex<AnyRegexOutput>.Match>.self) { group -> [Regex<AnyRegexOutput>.Match] in
+        var result: [Regex<AnyRegexOutput>.Match] = []
+        
+        for str in strings {
+          group.addTask {
+            str.firstMatch(of: regex)
+          }
+        }
+        
+        for await match in group {
+          guard let match = match else { continue }
+          result.append(match)
+        }
+        
+        return result
+      }
+      
+      XCTAssertEqual(matches.count, 3)
+    }
   }
 }
 

@@ -55,7 +55,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter regex: A regex to compare to this sequence.
   /// - Returns: `true` if the initial elements of the sequence matches the
   ///   beginning of `regex`; otherwise, `false`.
-  public func starts<R: RegexComponent>(with regex: R) -> Bool {
+  public func starts(with regex: some RegexComponent) -> Bool {
     _starts(with: RegexConsumer(regex))
   }
   

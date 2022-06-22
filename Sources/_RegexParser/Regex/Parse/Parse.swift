@@ -289,8 +289,8 @@ extension Parser {
   /// Apply the syntax options of a given matching option sequence to the
   /// current set of options.
   private mutating func applySyntaxOptions(
-    of opts: AST.MatchingOptionSequence
-  ) {
+    of opts: AST.MatchingOptionSequence, isScoped: Bool
+  ) throws {
     func mapOption(_ option: SyntaxOptions,
                    _ pred: (AST.MatchingOption) -> Bool) {
       if opts.resetsCurrentOptions {
@@ -311,22 +311,41 @@ extension Parser {
     mapOption(.namedCapturesOnly, .namedCapturesOnly)
 
     // (?x), (?xx)
-    // We skip this for multi-line, as extended syntax is always enabled there.
+    // This cannot be unset in a multi-line literal, unless in a scoped group
+    // e.g (?-x:...). We later enforce that such a group does not span multiple
+    // lines.
     // TODO: PCRE differentiates between (?x) and (?xx) where only the latter
     // handles non-semantic whitespace in a custom character class. Other
     // engines such as Oniguruma, Java, and ICU do this under (?x). Therefore,
     // treat (?x) and (?xx) as the same option here. If we ever get a strict
     // PCRE mode, we will need to change this to handle that.
-    if !context.syntax.contains(.multilineExtendedSyntax) {
+    if !isScoped && context.syntax.contains(.multilineCompilerLiteral) {
+      // An unscoped removal of extended syntax is not allowed in a multi-line
+      // literal.
+      if let opt = opts.removing.first(where: \.isAnyExtended) {
+        throw Source.LocatedError(
+          ParseError.cannotRemoveExtendedSyntaxInMultilineMode, opt.location)
+      }
+      if opts.resetsCurrentOptions {
+        throw Source.LocatedError(
+          ParseError.cannotResetExtendedSyntaxInMultilineMode, opts.caretLoc!)
+      }
+      // The only remaning case is an unscoped addition of extended syntax,
+      // which is a no-op.
+    } else {
+      // We either have a scoped change of extended syntax, or this is a
+      // single-line literal.
       mapOption(.extendedSyntax, \.isAnyExtended)
     }
   }
 
   /// Apply the syntax options of a matching option changing group to the
   /// current set of options.
-  private mutating func applySyntaxOptions(of group: AST.Group.Kind) {
+  private mutating func applySyntaxOptions(
+    of group: AST.Group.Kind, isScoped: Bool
+  ) throws {
     if case .changeMatchingOptions(let seq) = group {
-      applySyntaxOptions(of: seq)
+      try applySyntaxOptions(of: seq, isScoped: isScoped)
     }
   }
 
@@ -337,14 +356,25 @@ extension Parser {
     context.recordGroup(kind.value)
 
     let currentSyntax = context.syntax
-    applySyntaxOptions(of: kind.value)
+    try applySyntaxOptions(of: kind.value, isScoped: true)
     defer {
       context.syntax = currentSyntax
     }
-
+    let unsetsExtendedSyntax = currentSyntax.contains(.extendedSyntax) &&
+                              !context.syntax.contains(.extendedSyntax)
     let child = try parseNode()
     try source.expect(")")
-    return .init(kind, child, loc(start))
+    let groupLoc = loc(start)
+
+    // In multi-line literals, the body of a group that unsets extended syntax
+    // may not span multiple lines.
+    if unsetsExtendedSyntax &&
+        context.syntax.contains(.multilineCompilerLiteral) &&
+        source[child.location.range].spansMultipleLinesInRegexLiteral {
+      throw Source.LocatedError(
+        ParseError.unsetExtendedSyntaxMayNotSpanMultipleLines, groupLoc)
+    }
+    return .init(kind, child, groupLoc)
   }
 
   /// Consume the body of an absent function.
@@ -429,7 +459,7 @@ extension Parser {
     }
 
     // Check if we have the start of a custom character class '['.
-    if let cccStart = try source.lexCustomCCStart() {
+    if let cccStart = source.lexCustomCCStart() {
       return .customCharacterClass(
         try parseCustomCharacterClass(cccStart))
     }
@@ -438,7 +468,7 @@ extension Parser {
       // If we have a change matching options atom, apply the syntax options. We
       // already take care of scoping syntax options within a group.
       if case .changeMatchingOptions(let opts) = atom.kind {
-        applySyntaxOptions(of: opts)
+        try applySyntaxOptions(of: opts, isScoped: false)
       }
       // TODO: track source locations
       return .atom(atom)
@@ -485,16 +515,7 @@ extension Parser {
         throw Source.LocatedError(
           ParseError.expectedCustomCharacterClassMembers, start.location)
       }
-
-      // If we're done, bail early
-      let setOp = Member.setOperation(members, binOp, rhs)
-      if source.tryEat("]") {
-        return CustomCC(
-          start, [setOp], loc(start.location.start))
-      }
-
-      // Otherwise it's just another member to accumulate
-      members = [setOp]
+      members = [.setOperation(members, binOp, rhs)]
     }
     if members.none(\.isSemantic) {
       throw Source.LocatedError(
@@ -504,45 +525,72 @@ extension Parser {
     return CustomCC(start, members, loc(start.location.start))
   }
 
+  mutating func parseCCCMember() throws -> CustomCC.Member? {
+    guard !source.isEmpty && source.peek() != "]" && source.peekCCBinOp() == nil
+    else { return nil }
+
+    // Nested custom character class.
+    if let cccStart = source.lexCustomCCStart() {
+      return .custom(try parseCustomCharacterClass(cccStart))
+    }
+
+    // Quoted sequence.
+    if let quote = try source.lexQuote(context: context) {
+      return .quote(quote)
+    }
+
+    // Lex triva if we're allowed.
+    if let trivia = try source.lexTrivia(context: context) {
+      return .trivia(trivia)
+    }
+
+    if let atom = try source.lexAtom(context: context) {
+      return .atom(atom)
+    }
+    return nil
+  }
+
   mutating func parseCCCMembers(
     into members: inout Array<CustomCC.Member>
   ) throws {
     // Parse members until we see the end of the custom char class or an
     // operator.
-    while !source.isEmpty && source.peek() != "]" &&
-          source.peekCCBinOp() == nil {
+    while let member = try parseCCCMember() {
+      members.append(member)
 
-      // Nested custom character class.
-      if let cccStart = try source.lexCustomCCStart() {
-        members.append(.custom(try parseCustomCharacterClass(cccStart)))
-        continue
+      // If we have an atom, we can try to parse a character class range. Each
+      // time we parse a component of the range, we append to `members` in case
+      // it ends up not being a range, and we bail. If we succeed in parsing, we
+      // remove the intermediate members.
+      if case .atom(let lhs) = member {
+        let membersBeforeRange = members.count - 1
+
+        while let t = try source.lexTrivia(context: context) {
+          members.append(.trivia(t))
+        }
+
+        guard let dash = source.lexCustomCharacterClassRangeOperator() else {
+          continue
+        }
+        // If we can't parse a range, '-' becomes literal, e.g `[6-]`.
+        members.append(.atom(.init(.char("-"), dash)))
+
+        while let t = try source.lexTrivia(context: context) {
+          members.append(.trivia(t))
+        }
+        guard let rhs = try parseCCCMember() else { continue }
+        members.append(rhs)
+
+        guard case let .atom(rhs) = rhs else { continue }
+
+        // We've successfully parsed an atom LHS and RHS, so form a range,
+        // collecting the trivia we've parsed, and replacing the members that
+        // would have otherwise been added to the custom character class.
+        let rangeMemberCount = members.count - membersBeforeRange
+        let trivia = members.suffix(rangeMemberCount).compactMap(\.asTrivia)
+        members.removeLast(rangeMemberCount)
+        members.append(.range(.init(lhs, dash, rhs, trivia: trivia)))
       }
-
-      // Quoted sequence.
-      if let quote = try source.lexQuote(context: context) {
-        members.append(.quote(quote))
-        continue
-      }
-
-      // Lex non-semantic whitespace if we're allowed.
-      // TODO: ICU allows end-of-line comments in custom character classes,
-      // which we ought to support if we want to support multi-line regex.
-      if let trivia = try source.lexNonSemanticWhitespace(context: context) {
-        members.append(.trivia(trivia))
-        continue
-      }
-
-      guard let atom = try source.lexAtom(context: context) else { break }
-
-      // Range between atoms.
-      if let (dashLoc, rhs) =
-          try source.lexCustomCharClassRangeEnd(context: context) {
-        members.append(.range(.init(atom, dashLoc, rhs)))
-        continue
-      }
-
-      members.append(.atom(atom))
-      continue
     }
   }
 }
@@ -574,6 +622,13 @@ public func parse<S: StringProtocol>(
   return ast
 }
 
+extension StringProtocol {
+  /// Whether the given string is considered multi-line for a regex literal.
+  var spansMultipleLinesInRegexLiteral: Bool {
+    unicodeScalars.contains(where: { $0 == "\n" || $0 == "\r" })
+  }
+}
+
 /// Retrieve the default set of syntax options that a delimiter and literal
 /// contents indicates.
 fileprivate func defaultSyntaxOptions(
@@ -583,9 +638,8 @@ fileprivate func defaultSyntaxOptions(
   case .forwardSlash:
     // For an extended syntax forward slash e.g #/.../#, extended syntax is
     // permitted if it spans multiple lines.
-    if delim.poundCount > 0 &&
-        contents.unicodeScalars.contains(where: { $0 == "\n" || $0 == "\r" }) {
-      return .multilineExtendedSyntax
+    if delim.poundCount > 0 && contents.spansMultipleLinesInRegexLiteral {
+      return [.multilineCompilerLiteral, .extendedSyntax]
     }
     return .traditional
   case .reSingleQuote:
