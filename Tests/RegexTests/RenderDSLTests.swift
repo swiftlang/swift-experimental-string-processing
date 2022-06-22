@@ -56,20 +56,17 @@ extension RenderDSLTests {
     
     try testConversion(#"\d+"#, """
       Regex {
-        OneOrMore {
-          .digit
-        }
+        OneOrMore(.digit)
       }
       """)
-    try XCTExpectFailure("Invalid leading dot syntax in non-initial position") {
-      try testConversion(#":\d:"#, """
-        Regex {
-          ":"
-          CharacterClass.digit
-          ":"
-        }
-        """)
-    }
+    
+    try testConversion(#":\d:"#, """
+      Regex {
+        ":"
+        One(.digit)
+        ":"
+      }
+      """)
   }
   
   func testOptions() throws {
@@ -100,19 +97,17 @@ extension RenderDSLTests {
       }
       """)
     
-    try XCTExpectFailure("Concatenations in alternations aren't grouped") {
-      try testConversion(#"\da|b"#, """
-        Regex {
-          ChoiceOf {
-            Regex {
-              .digit
-              "a"
-            }
-            "bc"
+    try testConversion(#"\da|bc"#, """
+      Regex {
+        ChoiceOf {
+          Regex {
+            One(.digit)
+            "a"
           }
+          "bc"
         }
-        """)
-    }
+      }
+      """)
   }
   
   func testQuoting() throws {

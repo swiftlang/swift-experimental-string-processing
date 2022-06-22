@@ -185,14 +185,26 @@ extension BidirectionalCollection {
 
 @available(SwiftStdlib 5.7, *)
 struct RegexMatchesCollection<Output> {
-  let input: Substring
+  let input: String
+  let subjectBounds: Range<String.Index>
+  let searchBounds: Range<String.Index>
   let regex: Regex<Output>
   let startIndex: Index
   
-  init(base: Substring, regex: Regex<Output>) {
-    self.input = base
+  init(
+    input: String,
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>,
+    regex: Regex<Output>
+  ) {
+    self.input = input
+    self.subjectBounds = subjectBounds
+    self.searchBounds = searchBounds
     self.regex = regex
-    self.startIndex = base.firstMatch(of: regex).map(Index.match) ?? .end
+    self.startIndex = (try? regex._firstMatch(
+      input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds)).map(Index.match) ?? .end
   }
 }
 
@@ -241,12 +253,15 @@ extension RegexMatchesCollection: Sequence {
       }
       
       // `nextStart` is `nil` when iteration has completed
-      guard let start = nextStart else {
+      guard let start = nextStart, start <= base.searchBounds.upperBound else {
         return nil
       }
       
       // Otherwise, find the next match (if any) and compute `nextStart`
-      let match = try? base.regex.firstMatch(in: base.input[start...])
+      let match = try? base.regex._firstMatch(
+        base.input,
+        subjectBounds: base.subjectBounds,
+        searchBounds: start..<base.searchBounds.upperBound)
       nextStart = match.flatMap(base.searchIndex(after:))
       return match
     }
@@ -310,7 +325,11 @@ extension RegexMatchesCollection: Collection {
     
     guard
       let start = searchIndex(after: currentMatch),
-      let nextMatch = try? regex.firstMatch(in: input[start...])
+      start <= searchBounds.upperBound,
+      let nextMatch = try? regex._firstMatch(
+        input,
+        subjectBounds: subjectBounds,
+        searchBounds: start..<searchBounds.upperBound)
     else {
       return .end
     }
@@ -331,7 +350,11 @@ extension BidirectionalCollection where SubSequence == Substring {
   func _matches<R: RegexComponent>(
     of regex: R
   ) -> RegexMatchesCollection<R.RegexOutput> {
-    RegexMatchesCollection(base: self[...], regex: regex.regex)
+    RegexMatchesCollection(
+      input: self[...].base,
+      subjectBounds: startIndex..<endIndex,
+      searchBounds: startIndex..<endIndex,
+      regex: regex.regex)
   }
 
   @available(SwiftStdlib 5.7, *)

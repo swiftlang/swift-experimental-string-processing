@@ -17,7 +17,6 @@ extension MEProgram {
 
     var elements = TypedSetVector<Input.Element, _ElementRegister>()
     var sequences = TypedSetVector<[Input.Element], _SequenceRegister>()
-    var strings = TypedSetVector<String, _StringRegister>()
 
     var asciiBitsets: [DSLTree.CustomCharacterClass.AsciiBitset] = []
     var consumeFunctions: [ConsumeFunction] = []
@@ -30,9 +29,7 @@ extension MEProgram {
     var addressFixups: [(InstructionAddress, AddressFixup)] = []
 
     // Registers
-    var nextBoolRegister = BoolRegister(0)
     var nextIntRegister = IntRegister(0)
-    var nextPositionRegister = PositionRegister(0)
     var nextCaptureRegister = CaptureRegister(0)
     var nextValueRegister = ValueRegister(0)
 
@@ -80,20 +77,6 @@ extension MEProgram.Builder {
     .init(instructions.endIndex - 1)
   }
 
-  mutating func buildNop(_ r: StringRegister? = nil) {
-    instructions.append(.init(.nop, .init(optionalString: r)))
-  }
-  mutating func buildNop(_ s: String) {
-    buildNop(strings.store(s))
-  }
-
-  mutating func buildDecrement(
-    _ i: IntRegister, nowZero: BoolRegister
-  ) {
-    instructions.append(.init(
-      .decrement, .init(bool: nowZero, int: i)))
-  }
-
   mutating func buildMoveImmediate(
     _ value: UInt64, into: IntRegister
   ) {
@@ -109,22 +92,8 @@ extension MEProgram.Builder {
     buildMoveImmediate(uint, into: into)
   }
 
-  mutating func buildMoveCurrentPosition(
-    into: PositionRegister
-  ) {
-    instructions.append(.init(
-      .movePosition, .init(position: into)))
-  }
-
   mutating func buildBranch(to t: AddressToken) {
     instructions.append(.init(.branch))
-    fixup(to: t)
-  }
-  mutating func buildCondBranch(
-    _ condition: BoolRegister, to t: AddressToken
-  ) {
-    instructions.append(
-      .init(.condBranch, .init(bool: condition)))
     fixup(to: t)
   }
 
@@ -158,26 +127,8 @@ extension MEProgram.Builder {
     instructions.append(.init(.clearThrough))
     fixup(to: t)
   }
-  mutating func buildRestore() {
-    instructions.append(.init(.restore))
-  }
   mutating func buildFail() {
     instructions.append(.init(.fail))
-  }
-  mutating func buildCall(_ t: AddressToken) {
-    instructions.append(.init(.call))
-    fixup(to: t)
-  }
-  mutating func buildRet() {
-    instructions.append(.init(.ret))
-  }
-
-  mutating func buildAbort(_ s: StringRegister? = nil) {
-    instructions.append(.init(
-      .abort, .init(optionalString: s)))
-  }
-  mutating func buildAbort(_ s: String) {
-    buildAbort(strings.store(s))
   }
 
   mutating func buildAdvance(_ n: Distance) {
@@ -197,14 +148,6 @@ extension MEProgram.Builder {
       .init(sequence: sequences.store(.init(s)))))
   }
 
-  mutating func buildMatchSlice(
-    lower: PositionRegister, upper: PositionRegister
-  ) {
-    instructions.append(.init(
-      .matchSlice,
-      .init(pos: lower, pos2: upper)))
-  }
-  
   mutating func buildMatchAsciiBitset(
     _ b: DSLTree.CustomCharacterClass.AsciiBitset
   ) {
@@ -228,19 +171,8 @@ extension MEProgram.Builder {
       .assertBy, .init(assertion: makeAssertionFunction(p))))
   }
 
-  mutating func buildAssert(
-    _ e: Character, into cond: BoolRegister
-  ) {
-    instructions.append(.init(.assertion, .init(
-      element: elements.store(e), bool: cond)))
-  }
-
   mutating func buildAccept() {
     instructions.append(.init(.accept))
-  }
-
-  mutating func buildPrint(_ s: StringRegister) {
-    instructions.append(.init(.print, .init(string: s)))
   }
 
   mutating func buildBeginCapture(
@@ -325,13 +257,10 @@ extension MEProgram.Builder {
       let payload: Instruction.Payload
 
       switch inst.opcode {
-      case .condBranch:
-        payload = .init(addr: addr, bool: inst.payload.bool)
-
       case .condBranchZeroElseDecrement:
         payload = .init(addr: addr, int: inst.payload.int)
 
-      case .branch, .save, .saveAddress, .call, .clearThrough:
+      case .branch, .save, .saveAddress, .clearThrough:
         payload = .init(addr: addr)
 
       case .splitSaving:
@@ -352,10 +281,7 @@ extension MEProgram.Builder {
     var regInfo = MEProgram.RegisterInfo()
     regInfo.elements = elements.count
     regInfo.sequences = sequences.count
-    regInfo.strings = strings.count
-    regInfo.bools = nextBoolRegister.rawValue
     regInfo.ints = nextIntRegister.rawValue
-    regInfo.positions = nextPositionRegister.rawValue
     regInfo.values = nextValueRegister.rawValue
     regInfo.bitsets = asciiBitsets.count
     regInfo.consumeFunctions = consumeFunctions.count
@@ -368,7 +294,6 @@ extension MEProgram.Builder {
       instructions: InstructionList(instructions),
       staticElements: elements.stored,
       staticSequences: sequences.stored,
-      staticStrings: strings.stored,
       staticBitsets: asciiBitsets,
       staticConsumeFunctions: consumeFunctions,
       staticAssertionFunctions: assertionFunctions,
@@ -480,17 +405,9 @@ extension MEProgram.Builder {
     return nextCaptureRegister
   }
 
-  mutating func makeBoolRegister() -> BoolRegister {
-    defer { nextBoolRegister.rawValue += 1 }
-    return nextBoolRegister
-  }
   mutating func makeIntRegister() -> IntRegister {
     defer { nextIntRegister.rawValue += 1 }
     return nextIntRegister
-  }
-  mutating func makePositionRegister() -> PositionRegister {
-    defer { nextPositionRegister.rawValue += 1 }
-    return nextPositionRegister
   }
   mutating func makeValueRegister() -> ValueRegister {
     defer { nextValueRegister.rawValue += 1 }
@@ -504,32 +421,6 @@ extension MEProgram.Builder {
     let r = makeIntRegister()
     self.buildMoveImmediate(initialValue, into: r)
     return r
-  }
-
-  // Allocate and initialize a register
-  mutating func makePositionRegister(
-    initializingWithCurrentPosition: ()
-  ) -> PositionRegister {
-    let r = makePositionRegister()
-    self.buildMoveCurrentPosition(into: r)
-    return r
-  }
-
-  // 'kill' or release allocated registers
-  mutating func kill(_ r: IntRegister) {
-    // TODO: Release/reuse registers, for now nop makes
-    // reading the code easier
-    buildNop("kill \(r)")
-  }
-  mutating func kill(_ r: BoolRegister) {
-    // TODO: Release/reuse registers, for now nop makes
-    // reading the code easier
-    buildNop("kill \(r)")
-  }
-  mutating func kill(_ r: PositionRegister) {
-    // TODO: Release/reuse registers, for now nop makes
-    // reading the code easier
-    buildNop("kill \(r)")
   }
 
   // TODO: A register-mapping helper struct, which could release

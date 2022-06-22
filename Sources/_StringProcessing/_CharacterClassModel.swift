@@ -577,12 +577,12 @@ extension _CharacterClassModel {
   ) -> Bool {
     // FIXME: How should we handle bounds?
     // We probably need two concepts
-    if input.isEmpty { return false }
-    if pos == input.startIndex {
+    if bounds.isEmpty { return false }
+    if pos == bounds.lowerBound {
       return self.matches(in: input, at: pos, with: options) != nil
     }
     let priorIdx = input.index(before: pos)
-    if pos == input.endIndex {
+    if pos == bounds.upperBound {
       return self.matches(in: input, at: priorIdx, with: options) != nil
     }
 

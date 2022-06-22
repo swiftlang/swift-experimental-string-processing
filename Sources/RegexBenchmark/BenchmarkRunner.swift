@@ -184,9 +184,7 @@ struct SuiteResult {
     for item in results {
       if let otherVal = other.results[item.key] {
         let diff = item.value - otherVal
-        // for now just use picosecond to get rid of the differences
-        // from floating point rounding error
-        if diff.abs() > Time.picosecond {
+        if abs(100 * diff.seconds / otherVal.seconds) > 0.5 {
           output.updateValue(diff, forKey: item.key)
         }
       }

@@ -20,44 +20,17 @@ struct MatchError: Error {
     }
 }
 
-extension Executor {
-  func _firstMatch(
-    _ regex: String, input: String,
-    syntax: SyntaxOptions = .traditional,
-    enableTracing: Bool = false
-  ) throws -> (match: Substring, captures: [Substring?]) {
-    // TODO: This should be a CollectionMatcher API to call...
-    // Consumer -> searcher algorithm
-    var start = input.startIndex
-    while true {
-      if let result = try! self.dynamicMatch(
-        input,
-        in: start..<input.endIndex,
-        .partialFromFront
-      ) {
-        let caps = result.anyRegexOutput.slices(from: input)
-        return (input[result.range], caps)
-      } else if start == input.endIndex {
-        throw MatchError("match not found for \(regex) in \(input)")
-      } else {
-        input.formIndex(after: &start)
-      }
-    }
-  }
-}
-
 func _firstMatch(
-  _ regex: String,
+  _ regexStr: String,
   input: String,
-  syntax: SyntaxOptions = .traditional,
-  enableTracing: Bool = false
+  syntax: SyntaxOptions = .traditional
 ) throws -> (String, [String?]) {
-  var executor = try _compileRegex(regex, syntax)
-  executor.engine.enableTracing = enableTracing
-  let (str, caps) = try executor._firstMatch(
-    regex, input: input, enableTracing: enableTracing)
-  let capStrs = caps.map { $0 == nil ? nil : String($0!) }
-  return (String(str), capStrs)
+  let regex = try Regex(regexStr, syntax: syntax)
+  guard let result = try regex.firstMatch(in: input) else {
+    throw MatchError("match not found for \(regexStr) in \(input)")
+  }
+  let caps = result.output.slices(from: input)
+  return (String(input[result.range]), caps.map { $0.map(String.init) })
 }
 
 // TODO: multiple-capture variant
@@ -66,7 +39,6 @@ func flatCaptureTest(
   _ regex: String,
   _ tests: (input: String, expect: [String?]?)...,
   syntax: SyntaxOptions = .traditional,
-  enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
   file: StaticString = #file,
@@ -77,8 +49,7 @@ func flatCaptureTest(
       guard var (_, caps) = try? _firstMatch(
         regex,
         input: test,
-        syntax: syntax,
-        enableTracing: enableTracing
+        syntax: syntax
       ) else {
         if expect == nil {
           continue
@@ -162,8 +133,7 @@ func firstMatchTest(
     let (found, _) = try _firstMatch(
       regex,
       input: input,
-      syntax: syntax,
-      enableTracing: enableTracing)
+      syntax: syntax)
 
     if xfail {
       XCTAssertNotEqual(found, match, file: file, line: line)
@@ -953,7 +923,7 @@ extension RegexTests {
       #"\d{3}(?<!USD\d{3})"#, input: "Price: JYP100", match: "100", xfail: true)
   }
 
-  func testMatchAnchors() {
+  func testMatchAnchors() throws {
     // MARK: Anchors
     firstMatchTests(
       #"^\d+"#,
@@ -1021,7 +991,13 @@ extension RegexTests {
       ("123 456", "23"))
 
     // TODO: \G and \K
-
+    do {
+      let regex = try Regex(#"\Gab"#, as: Substring.self)
+      XCTExpectFailure {
+        XCTAssertEqual("abab".matches(of: regex).map(\.output), ["ab", "ab"])
+      }
+    }
+    
     // TODO: Oniguruma \y and \Y
     firstMatchTests(
       #"\u{65}"#,             // Scalar 'e' is present in both
@@ -1496,35 +1472,41 @@ extension RegexTests {
     let postfixLetters = try Regex(#"[a-z]+$"#, as: Substring.self)
 
     // start anchor (^) should match beginning of substring
-    XCTExpectFailure {
-      XCTAssertEqual(trimmed.firstMatch(of: prefixLetters)?.output, "abc")
-    }
-    XCTExpectFailure {
-      XCTAssertEqual(trimmed.replacing(prefixLetters, with: ""), "456def")
-    }
+    XCTAssertEqual(trimmed.firstMatch(of: prefixLetters)?.output, "abc")
+    XCTAssertEqual(trimmed.replacing(prefixLetters, with: ""), "456def")
     
     // end anchor ($) should match end of substring
-    XCTExpectFailure {
-      XCTAssertEqual(trimmed.firstMatch(of: postfixLetters)?.output, "def")
-    }
-    XCTExpectFailure {
-      XCTAssertEqual(trimmed.replacing(postfixLetters, with: ""), "abc456")
-    }
+    XCTAssertEqual(trimmed.firstMatch(of: postfixLetters)?.output, "def")
+    XCTAssertEqual(trimmed.replacing(postfixLetters, with: ""), "abc456")
 
-    // start anchor (^) should _not_ match beginning of subrange
+    // start anchor (^) should _not_ match beginning of replaced subrange
     XCTAssertEqual(
       string.replacing(
         prefixLetters,
         with: "",
         subrange: trimmed.startIndex..<trimmed.endIndex),
       string)
-    // end anchor ($) should _not_ match beginning of subrange
+    // end anchor ($) should _not_ match end of replaced subrange
     XCTAssertEqual(
       string.replacing(
         postfixLetters,
         with: "",
         subrange: trimmed.startIndex..<trimmed.endIndex),
       string)
+    
+    // if subrange == actual subject bounds, anchors _do_ match
+    XCTAssertEqual(
+      trimmed.replacing(
+        prefixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      "456def")
+    XCTAssertEqual(
+      trimmed.replacing(
+        postfixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      "abc456")
   }
   
   func testMatchingOptionsScope() {

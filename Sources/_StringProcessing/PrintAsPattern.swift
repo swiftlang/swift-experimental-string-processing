@@ -71,8 +71,15 @@ extension PrettyPrinter {
       print("let \(namedCapture) = Reference(Substring.self)")
     }
     
-    printBlock("Regex") { printer in
-      printer.printAsPattern(convertedFromAST: node)
+    switch node {
+    case .concatenation(_):
+      printAsPattern(convertedFromAST: node)
+    case .convertedRegexLiteral(.concatenation(_), _):
+      printAsPattern(convertedFromAST: node)
+    default:
+      printBlock("Regex") { printer in
+        printer.printAsPattern(convertedFromAST: node)
+      }
     }
   }
 
@@ -99,8 +106,10 @@ extension PrettyPrinter {
       }
 
     case let .concatenation(c):
-      c.forEach {
-        printAsPattern(convertedFromAST: $0)
+      printBlock("Regex") { printer in
+        c.forEach {
+          printer.printAsPattern(convertedFromAST: $0)
+        }
       }
 
     case let .nonCapturingGroup(kind, child):
@@ -127,7 +136,7 @@ extension PrettyPrinter {
       print("/* TODO: conditional */")
 
     case let .quantification(amount, kind, child):
-      let amount = amount.ast._patternBase
+      let amountStr = amount.ast._patternBase
       var kind = kind.ast?._patternBase ?? ""
       
       // If we've updated our quantification behavior, then use that. This
@@ -137,10 +146,10 @@ extension PrettyPrinter {
         kind = quantificationBehavior._patternBase
       }
       
-      var blockName = "\(amount)(\(kind))"
+      var blockName = "\(amountStr)(\(kind))"
       
       if kind == ".eager" {
-        blockName = "\(amount)"
+        blockName = "\(amountStr)"
       }
       
       // Special case single child character classes for repetition nodes.
@@ -152,6 +161,20 @@ extension PrettyPrinter {
       //       One(.digit)
       //     }
       //
+      func printAtom(_ pattern: String) {
+        indent()
+        
+        if kind != ".eager" {
+          blockName.removeLast()
+          output("\(blockName), ")
+        } else {
+          output("\(blockName)(")
+        }
+        
+        output("\(pattern))")
+        terminateLine()
+      }
+      
       func printSimpleCCC(
         _ ccc: DSLTree.CustomCharacterClass
       ) {
@@ -169,23 +192,42 @@ extension PrettyPrinter {
         terminateLine()
       }
       
-      switch child {
-      case let .customCharacterClass(ccc):
-        if ccc.isSimplePrint {
-          printSimpleCCC(ccc)
-          return
+      // We can only do this for Optionally, ZeroOrMore, and OneOrMore. Cannot
+      // do it right now for Repeat.
+      if amount.ast.supportsInlineComponent {
+        switch child {
+        case let .atom(a):
+          if let pattern = a._patternBase(&self), pattern.canBeWrapped {
+            printAtom(pattern.0)
+            return
+          }
+          
+          break
+        case let .customCharacterClass(ccc):
+          if ccc.isSimplePrint {
+            printSimpleCCC(ccc)
+            return
+          }
+          
+          break
+          
+        case let .convertedRegexLiteral(.atom(a), _):
+          if let pattern = a._patternBase(&self), pattern.canBeWrapped {
+            printAtom(pattern.0)
+            return
+          }
+          
+          break
+        case let .convertedRegexLiteral(.customCharacterClass(ccc), _):
+          if ccc.isSimplePrint {
+            printSimpleCCC(ccc)
+            return
+          }
+          
+          break
+        default:
+          break
         }
-        
-        break
-      case let .convertedRegexLiteral(.customCharacterClass(ccc), _):
-        if ccc.isSimplePrint {
-          printSimpleCCC(ccc)
-          return
-        }
-        
-        break
-      default:
-        break
       }
       
       printBlock(blockName) { printer in
@@ -199,7 +241,11 @@ extension PrettyPrinter {
       }
       
       if let pattern = a._patternBase(&self) {
-        print(pattern)
+        if pattern.canBeWrapped {
+          print("One(\(pattern.0))")
+        } else {
+          print(pattern.0)
+        }
       }
 
     case .trivia:
@@ -391,9 +437,9 @@ extension PrettyPrinter {
       if let lhs = lhs._patternBase(&self), let rhs = rhs._patternBase(&self) {
         indent()
         output("(")
-        output(lhs)
+        output(lhs.0)
         output("...")
-        output(rhs)
+        output(rhs.0)
         output(")")
       }
       
@@ -939,6 +985,15 @@ extension AST.Quantification.Amount {
     case let .range(n, m): return "Repeat(\(n.value)...\(m.value))"
     }
   }
+  
+  var supportsInlineComponent: Bool {
+    switch self {
+    case .zeroOrMore: return true
+    case .oneOrMore: return true
+    case .zeroOrOne: return true
+    default: return false
+    }
+  }
 }
 
 extension AST.Quantification.Kind {
@@ -1033,33 +1088,35 @@ extension DSLTree.CustomCharacterClass {
 }
 
 extension DSLTree.Atom {
-  func _patternBase(_ printer: inout PrettyPrinter) -> String? {
+  func _patternBase(
+    _ printer: inout PrettyPrinter
+  ) -> (String, canBeWrapped: Bool)? {
     switch self {
     case .any:
-      return ".any"
+      return (".any", true)
       
     case let .char(c):
-      return String(c)._quoted
+      return (String(c)._quoted, false)
       
     case let .scalar(s):
       let hex = String(s.value, radix: 16, uppercase: true)
-      return "\\u{\(hex)}"._quoted
+      return ("\\u{\(hex)}"._quoted, false)
       
     case let .unconverted(a):
       if a.ast.isUnprintableAtom {
-        return "#/\(a.ast._regexBase)/#"
+        return ("#/\(a.ast._regexBase)/#", false)
       } else {
-        return a.ast._dslBase.0
+        return a.ast._dslBase
       }
       
     case .assertion(let a):
-      return a.ast._patternBase
+      return (a.ast._patternBase, false)
       
     case .backreference(_):
-      return "/* TOOD: backreferences */"
+      return ("/* TOOD: backreferences */", false)
       
     case .symbolicReference:
-      return "/* TOOD: symbolic references */"
+      return ("/* TOOD: symbolic references */", false)
       
     case .changeMatchingOptions(let matchingOptions):
       for add in matchingOptions.ast.adding {

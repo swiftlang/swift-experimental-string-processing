@@ -15,6 +15,7 @@ extension BenchmarkRunner {
     benchmark.addHangulSyllable()
     benchmark.addHTML()
     benchmark.addEmail()
+    benchmark.addCustomCharacterClasses()
     // -- end of registrations --
     return benchmark
   }
