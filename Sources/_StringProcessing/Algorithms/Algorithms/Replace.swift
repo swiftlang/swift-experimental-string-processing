@@ -179,7 +179,10 @@ extension RangeReplaceableCollection where SubSequence == Substring {
     maxReplacements: Int = .max
   ) -> Self where Replacement.Element == Element {
     _replacing(
-      self[subrange]._ranges(of: regex),
+      self._ranges(
+        of: regex,
+        subjectBounds: startIndex..<endIndex,
+        searchBounds: subrange),
       with: replacement,
       maxReplacements: maxReplacements)
   }

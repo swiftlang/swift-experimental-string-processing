@@ -229,9 +229,18 @@ extension BidirectionalCollection where Element: Comparable {
 @available(SwiftStdlib 5.7, *)
 struct RegexRangesCollection<Output> {
   let base: RegexMatchesCollection<Output>
-  
-  init(string: Substring, regex: Regex<Output>) {
-    self.base = RegexMatchesCollection(base: string, regex: regex)
+
+  init(
+    input: String,
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>,
+    regex: Regex<Output>
+  ) {
+    self.base = .init(
+      input: input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds,
+      regex: regex)
   }
 }
 
@@ -266,9 +275,26 @@ extension Collection where SubSequence == Substring {
   @available(SwiftStdlib 5.7, *)
   @_disfavoredOverload
   func _ranges<R: RegexComponent>(
+    of regex: R,
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>
+  ) -> RegexRangesCollection<R.RegexOutput> {
+    RegexRangesCollection(
+      input: self[...].base,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds,
+      regex: regex.regex)
+  }
+  
+  @available(SwiftStdlib 5.7, *)
+  @_disfavoredOverload
+  func _ranges<R: RegexComponent>(
     of regex: R
   ) -> RegexRangesCollection<R.RegexOutput> {
-    RegexRangesCollection(string: self[...], regex: regex.regex)
+    _ranges(
+      of: regex,
+      subjectBounds: startIndex..<endIndex,
+      searchBounds: startIndex..<endIndex)
   }
 }
 

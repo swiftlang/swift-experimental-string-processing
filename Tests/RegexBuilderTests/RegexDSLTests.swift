@@ -18,6 +18,7 @@ class RegexDSLTests: XCTestCase {
     _ tests: (input: String, expectedCaptures: MatchType?)...,
     matchType: MatchType.Type,
     _ equivalence: (MatchType, MatchType) -> Bool,
+    xfail: Bool = false,
     file: StaticString = #file,
     line: UInt = #line,
     @RegexComponentBuilder _ content: () -> Content
@@ -25,8 +26,13 @@ class RegexDSLTests: XCTestCase {
     let regex = content()
     for (input, maybeExpectedCaptures) in tests {
       let maybeMatch = input.wholeMatch(of: regex)
-      if let expectedCaptures = maybeExpectedCaptures {
-        let match = try XCTUnwrap(maybeMatch, file: file, line: line)
+      if let expectedCaptures = maybeExpectedCaptures,
+        let match = maybeMatch
+      {
+        if xfail {
+          XCTFail("Unexpectedly matched", file: file, line: line)
+          continue
+        }
         XCTAssertTrue(
           type(of: regex).RegexOutput.self == MatchType.self,
           """
@@ -39,7 +45,9 @@ class RegexDSLTests: XCTestCase {
           "'\(captures)' is not equal to the expected '\(expectedCaptures)'.",
           file: file, line: line)
       } else {
-        XCTAssertNil(maybeMatch, file: file, line: line)
+        if !xfail {
+          XCTAssertNil(maybeMatch, file: file, line: line)
+        }
       }
     }
   }
@@ -524,6 +532,35 @@ class RegexDSLTests: XCTestCase {
       Lookahead(CharacterClass.digit)
       NegativeLookahead { "2" }
       CharacterClass.word
+    }
+    
+    try _testDSLCaptures(
+      ("aaa", "aaa"),
+      ("\naaa", nil),
+      ("aaa\n", nil),
+      ("\naaa\n", nil),
+      matchType: Substring.self, ==)
+    {
+      Regex {
+        Anchor.startOfSubject
+        Repeat("a", count: 3)
+        Anchor.endOfSubject
+      }.anchorsMatchLineEndings()
+    }
+    
+    // FIXME: Anchor.start/endOfLine needs to always match line endings,
+    // even when the `anchorsMatchLineEndings()` option is turned off.
+    try _testDSLCaptures(
+      ("\naaa", "aaa"),
+      ("aaa\n", "aaa"),
+      ("\naaa\n", "aaa"),
+      matchType: Substring.self, ==, xfail: true)
+    {
+      Regex {
+        Anchor.startOfLine
+        Repeat("a", count: 3)
+        Anchor.endOfLine
+      }
     }
   }
 
