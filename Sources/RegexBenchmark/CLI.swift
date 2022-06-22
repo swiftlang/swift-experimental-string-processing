@@ -5,30 +5,46 @@ struct Runner: ParsableCommand {
   @Argument(help: "Names of benchmarks to run")
   var specificBenchmarks: [String] = []
   
-  @Option(help: "Run only once for profiling purposes")
+  @Flag(help: "Run only once for profiling purposes")
   var profile = false
   
   @Option(help: "How many samples to collect for each benchmark")
   var samples = 20
-    
-  func makeRunner() -> BenchmarkRunner {
-    var benchmark = BenchmarkRunner("RegexBench", samples)
-    benchmark.addReluctantQuant()
-    benchmark.addCSS()
-    benchmark.addNotFound()
-    benchmark.addGraphemeBreak()
-    benchmark.addHangulSyllable()
-    return benchmark
-  }
+  
+  @Flag(help: "Debug benchmark regexes")
+  var debug = false
+  
+  @Option(help: "Output folder")
+  var outputPath = "./results/"
+  
+  @Flag(help: "Should the results be saved")
+  var save = false
+  
+  @Flag(help: "Compare this result with the latest saved result")
+  var compare = false
+  
+  @Option(help: "The result file to compare against, if this flag is not set it will compare against the most recent result file")
+  var compareFile: String?
+  
   mutating func run() throws {
-    var runner = makeRunner()
+    var runner = BenchmarkRunner.makeRunner(samples, outputPath)
+    
+    // todo: regex based filter 
     if !self.specificBenchmarks.isEmpty {
       runner.suite = runner.suite.filter { b in specificBenchmarks.contains(b.name) }
     }
-    if profile {
-      runner.profile()
-    } else {
+    switch (profile, debug) {
+    case (true, true): print("Cannot run both profile and debug")
+    case (true, false): runner.profile()
+    case (false, true): runner.debug()
+    case (false, false):
       runner.run()
+      if compare {
+        try runner.compare(against: compareFile)
+      }
+      if save {
+        try runner.save()
+      }
     }
   }
 }
