@@ -232,7 +232,9 @@ extension DSLTree {
         }
       }
       
+      /// Joins another bitset from a Member of the same CustomCharacterClass
       internal func union(_ other: AsciiBitset) -> AsciiBitset {
+        precondition(self.isInverted == other.isInverted)
         return AsciiBitset(
           a: self.a | other.a,
           b: self.b | other.b,

@@ -601,6 +601,12 @@ extension RegexTests {
     // Character class subtraction
     firstMatchTest("[a-d--a-c]", input: "123abcdxyz", match: "d")
 
+    // Inverted character class
+    matchTest(#"[^a]"#,
+              ("💿", true),
+              ("A", true),
+              ("a", false))
+
     firstMatchTest("[-]", input: "123-abcxyz", match: "-")
 
     // These are metacharacters in certain contexts, but normal characters
@@ -1341,13 +1347,6 @@ extension RegexTests {
   func testSingleLineMode() {
     firstMatchTest(#".+"#, input: "a\nb", match: "a")
     firstMatchTest(#"(?s:.+)"#, input: "a\nb", match: "a\nb")
-  }
-  
-  func testInverted() {
-    matchTest(#"[^a]"#,
-              ("💿", true),
-              ("A", true),
-              ("a", false))
   }
   
   func testCaseSensitivity() {

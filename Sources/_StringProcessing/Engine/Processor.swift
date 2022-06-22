@@ -226,7 +226,6 @@ extension Processor {
       _uncheckedForcedConsumeOne()
       return true
     }
-
     signalFailure()
     return false
   }

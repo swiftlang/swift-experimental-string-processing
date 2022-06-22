@@ -299,11 +299,8 @@ extension DSLTree.CustomCharacterClass.Member {
       return a.isAscii()
     case let .range(low, high):
       return low.isAscii() && high.isAscii()
-    case let .custom(ccc):
-      return ccc.isAscii()
-    // lily note: remember to ask about what the other cases mean and if we
-    // should include them here
-    // (probably yes, but idk what trivia or quoted literal are)
+    // The remaining cases have nested character classes with possibly different
+    // inversion so leave them out of this optimization
     default:
       return false
     }
@@ -327,8 +324,6 @@ extension DSLTree.CustomCharacterClass.Member {
         isInverted: isInverted,
         isCaseInsensitive: opts.isCaseInsensitive
       )
-    case let .custom(ccc):
-      return ccc.asAsciiBitset(opts)
     default:
       fatalError("Should have been checked by isAscii first")
     }
@@ -446,7 +441,6 @@ extension DSLTree.CustomCharacterClass {
   }
   
   func asAsciiBitset(_ opts: MatchingOptions) -> AsciiBitset {
-    // lily todo: pipe in opts and isInverted
     return members.reduce(
       .init(isInverted: isInverted, isCaseInsensitive: opts.isCaseInsensitive),
       {result, member in result.union(member.asAsciiBitset(opts, isInverted))}
