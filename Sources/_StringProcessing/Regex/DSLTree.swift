@@ -164,6 +164,91 @@ extension DSLTree {
       indirect case subtraction(CustomCharacterClass, CustomCharacterClass)
       indirect case symmetricDifference(CustomCharacterClass, CustomCharacterClass)
     }
+    
+    public struct AsciiBitset {
+      let isInverted: Bool
+      let isCaseInsensitive: Bool
+      var a: UInt64 = 0
+      var b: UInt64 = 0
+      
+      init(isInverted: Bool, isCaseInsensitive: Bool) {
+        self.isInverted = isInverted
+        self.isCaseInsensitive = isCaseInsensitive
+      }
+      
+      init(_ val: UInt8, _ isInverted: Bool, _ isCaseInsensitive: Bool) {
+        self.isInverted = isInverted
+        self.isCaseInsensitive = isCaseInsensitive
+        setBit(val)
+      }
+      
+      init(low: UInt8, high: UInt8, isInverted: Bool, isCaseInsensitive: Bool) {
+        self.isInverted = isInverted
+        self.isCaseInsensitive = isCaseInsensitive
+        for val in low...high {
+          setBit(val)
+        }
+      }
+      
+      internal init(
+        a: UInt64,
+        b: UInt64,
+        isInverted: Bool,
+        isCaseInsensitive: Bool
+      ) {
+        self.isInverted = isInverted
+        self.isCaseInsensitive = isCaseInsensitive
+        self.a = a
+        self.b = b
+      }
+      
+      internal mutating func add(val: UInt8) {
+        setBit(val)
+        
+        if isCaseInsensitive {
+          let c = Character(Unicode.Scalar.init(val))
+          let otherCase: String
+          if c.isUppercase {
+            otherCase = c.lowercased()
+          } else {
+            otherCase = c.uppercased()
+          }
+          setBit(otherCase.first!.asciiValue!)
+        }
+      }
+      
+      internal mutating func setBit(_ val: UInt8) {
+        if val < 64 {
+          a = a | 1 << val
+        } else {
+          b = b | 1 << (val - 64)
+        }
+      }
+      
+      internal func matches(ascii val: UInt8) -> Bool {
+        let ret: Bool
+        if val < 64 {
+          ret = (a >> val) & 1 == 1
+        } else {
+          ret = (b >> (val - 64)) & 1 == 1
+        }
+        
+        if isInverted {
+          return !ret
+        } else {
+          return ret
+        }
+      }
+      
+      internal func union(_ other: AsciiBitset) -> AsciiBitset {
+        return AsciiBitset(
+          a: self.a | other.a,
+          b: self.b | other.b,
+          isInverted: self.isInverted,
+          isCaseInsensitive: self.isCaseInsensitive
+        )
+      }
+    }
   }
 
   @_spi(RegexBuilder)

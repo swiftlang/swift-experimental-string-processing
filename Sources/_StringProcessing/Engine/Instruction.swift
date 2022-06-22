@@ -153,6 +153,10 @@ extension Instruction {
     ///   - Lowerbound position in the input
     ///   - Upperbound position in the input
     case matchSlice
+    
+    /// Match against a set of valid ascii values stored in a bitset
+    /// Operand: Ascii bitset register containing the bitset
+    case matchBitset
 
     /// Save the current position in the input in a register
     ///

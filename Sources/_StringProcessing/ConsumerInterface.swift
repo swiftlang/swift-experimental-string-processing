@@ -51,7 +51,43 @@ extension DSLTree.Node {
   }
 }
 
+extension DSLTree._AST.Atom {
+  func isAscii() -> Bool {
+    return ast.isAscii()
+  }
+  
+  func toAsciiValue() -> UInt8 {
+    return ast.toAsciiValue()
+  }
+}
+
 extension DSLTree.Atom {
+  func isAscii() -> Bool {
+    switch self {
+    case let .char(c):
+      return c.isASCII
+    case let .scalar(s):
+      return s.isASCII
+    case let .unconverted(atom):
+      return atom.isAscii()
+    default:
+      return false
+    }
+  }
+  
+  func toAsciiValue() -> UInt8 {
+    switch self {
+    case let .char(c):
+      return c.asciiValue!
+    case let .scalar(s):
+      return UInt8(ascii: s)
+    case let .unconverted(atom):
+      return atom.toAsciiValue()
+    default:
+      fatalError("Should have been checked by isAscii first")
+    }
+  }
+  
   // TODO: If ByteCodeGen switches first, then this is unnecessary for
   // top-level nodes, but it's also invoked for `.atom` members of a custom CC
   func generateConsumer(
@@ -178,6 +214,28 @@ extension AST.Atom {
     }
   }
 
+  func isAscii() -> Bool {
+    switch kind {
+    case let .char(c):
+      return c.isASCII
+    case let .scalar(s):
+      return s.value.isASCII
+    default:
+      return false
+    }
+  }
+  
+  func toAsciiValue() -> UInt8 {
+    switch kind {
+    case let .char(c):
+      return c.asciiValue!
+    case let .scalar(s):
+      return UInt8(ascii: s.value)
+    default:
+      fatalError("Should have been checked by isAscii first")
+    }
+  }
+  
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram.ConsumeFunction? {
@@ -235,6 +293,47 @@ extension AST.Atom {
 }
 
 extension DSLTree.CustomCharacterClass.Member {
+  func isAscii() -> Bool {
+    switch self {
+    case let .atom(a):
+      return a.isAscii()
+    case let .range(low, high):
+      return low.isAscii() && high.isAscii()
+    case let .custom(ccc):
+      return ccc.isAscii()
+    // lily note: remember to ask about what the other cases mean and if we
+    // should include them here
+    // (probably yes, but idk what trivia or quoted literal are)
+    default:
+      return false
+    }
+  }
+  
+  func asAsciiBitset(
+    _ opts: MatchingOptions,
+    _ isInverted: Bool
+  ) -> DSLTree.CustomCharacterClass.AsciiBitset {
+    switch self {
+    case let .atom(a):
+      return DSLTree.CustomCharacterClass.AsciiBitset(
+        a.toAsciiValue(),
+        isInverted,
+        opts.isCaseInsensitive
+      )
+    case let .range(low, high):
+      return DSLTree.CustomCharacterClass.AsciiBitset(
+        low: low.toAsciiValue(),
+        high: high.toAsciiValue(),
+        isInverted: isInverted,
+        isCaseInsensitive: opts.isCaseInsensitive
+      )
+    case let .custom(ccc):
+      return ccc.asAsciiBitset(opts)
+    default:
+      fatalError("Should have been checked by isAscii first")
+    }
+  }
+  
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram.ConsumeFunction {
@@ -342,6 +441,18 @@ extension DSLTree.CustomCharacterClass.Member {
 }
 
 extension DSLTree.CustomCharacterClass {
+  func isAscii() -> Bool {
+    return members.allSatisfy { member in member.isAscii() }
+  }
+  
+  func asAsciiBitset(_ opts: MatchingOptions) -> AsciiBitset {
+    // lily todo: pipe in opts and isInverted
+    return members.reduce(
+      .init(isInverted: isInverted, isCaseInsensitive: opts.isCaseInsensitive),
+      {result, member in result.union(member.asAsciiBitset(opts, isInverted))}
+    )
+  }
+  
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram.ConsumeFunction {

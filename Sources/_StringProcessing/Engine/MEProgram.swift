@@ -27,6 +27,7 @@ struct MEProgram {
   var staticElements: [Input.Element]
   var staticSequences: [[Input.Element]]
   var staticStrings: [String]
+  var staticBitsets: [DSLTree.CustomCharacterClass.AsciiBitset]
   var staticConsumeFunctions: [ConsumeFunction]
   var staticAssertionFunctions: [AssertionFunction]
   var staticTransformFunctions: [TransformFunction]
