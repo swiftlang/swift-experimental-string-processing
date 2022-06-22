@@ -538,7 +538,6 @@ extension MEProgram.Builder {
   mutating func makeAsciiBitset(
     _ b: DSLTree.CustomCharacterClass.AsciiBitset
   ) -> AsciiBitsetRegister {
-    // lily todo: does this need @escaping?
     defer { asciiBitsets.append(b) }
     return AsciiBitsetRegister(asciiBitsets.count)
   }
