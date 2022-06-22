@@ -225,17 +225,10 @@ extension DSLTree {
       }
       
       internal func matches(ascii val: UInt8) -> Bool {
-        let ret: Bool
         if val < 64 {
-          ret = (a >> val) & 1 == 1
+          return (a >> val) & 1 == 1
         } else {
-          ret = (b >> (val - 64)) & 1 == 1
-        }
-        
-        if isInverted {
-          return !ret
-        } else {
-          return ret
+          return (b >> (val - 64)) & 1 == 1
         }
       }
       

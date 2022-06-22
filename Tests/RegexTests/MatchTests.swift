@@ -1343,6 +1343,13 @@ extension RegexTests {
     firstMatchTest(#"(?s:.+)"#, input: "a\nb", match: "a\nb")
   }
   
+  func testInverted() {
+    matchTest(#"[^a]"#,
+              ("💿", true),
+              ("A", true),
+              ("a", false))
+  }
+  
   func testCaseSensitivity() {
     matchTest(
       #"c..e"#,

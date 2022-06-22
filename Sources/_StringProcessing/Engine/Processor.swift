@@ -208,14 +208,27 @@ extension Processor {
   mutating func matchBitset(
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
   ) -> Bool {
-    guard let cur = load(),
-            cur.isASCII,
-            bitset.matches(ascii: cur.asciiValue!) else {
+    guard let cur = load() else {
       signalFailure()
       return false
     }
-    _uncheckedForcedConsumeOne()
-    return true
+
+    if cur.isASCII && bitset.matches(ascii: cur.asciiValue!) {
+      if bitset.isInverted {
+        signalFailure()
+        return false
+      }
+      _uncheckedForcedConsumeOne()
+      return true
+    }
+
+    if bitset.isInverted {
+      _uncheckedForcedConsumeOne()
+      return true
+    }
+
+    signalFailure()
+    return false
   }
 
   mutating func signalFailure() {
