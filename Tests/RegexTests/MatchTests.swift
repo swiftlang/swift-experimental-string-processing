@@ -917,7 +917,7 @@ extension RegexTests {
       #"\d{3}(?<!USD\d{3})"#, input: "Price: JYP100", match: "100", xfail: true)
   }
 
-  func testMatchAnchors() {
+  func testMatchAnchors() throws {
     // MARK: Anchors
     firstMatchTests(
       #"^\d+"#,
@@ -985,7 +985,13 @@ extension RegexTests {
       ("123 456", "23"))
 
     // TODO: \G and \K
-
+    do {
+      let regex = try Regex(#"\Gab"#, as: Substring.self)
+      XCTExpectFailure {
+        XCTAssertEqual("abab".matches(of: regex).map(\.output), ["ab", "ab"])
+      }
+    }
+    
     // TODO: Oniguruma \y and \Y
     firstMatchTests(
       #"\u{65}"#,             // Scalar 'e' is present in both
