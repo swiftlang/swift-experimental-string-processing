@@ -138,8 +138,7 @@ extension RegexDSLTests {
     ) {
       let aro = Regex<AnyRegexOutput>(re)
 
-      // FIXME: The below fatal errors
-      let casted = aro//try! XCTUnwrap(Regex(aro, as: Output.self))
+      let casted = try! XCTUnwrap(Regex(aro, as: Output.self))
 
       // contains(captureNamed:)
       checkContains(re, kind)
@@ -173,7 +172,7 @@ extension RegexDSLTests {
       (?x)
       (\p{hexdigit}{4}) -? (?<salient>\p{hexdigit}{4}) -?
       (\p{hexdigit}{4}) -? (\p{hexdigit}{4})
-      """#, as: (Substring, Substring, Substring, Substring, Substring).self),
+      """#, as: (Substring, Substring, salient: Substring, Substring, Substring).self),
       .salient,
       salientOutput
     )
@@ -181,7 +180,7 @@ extension RegexDSLTests {
       (?x)
       (\p{hexdigit}{4}) -? (?<note>\p{hexdigit}{4}) -?
       (\p{hexdigit}{4}) -? (\p{hexdigit}{4})
-      """#, as: (Substring, Substring, Substring, Substring, Substring).self),
+      """#, as: (Substring, Substring, note: Substring, Substring, Substring).self),
       .note,
       noteOutput
     )
