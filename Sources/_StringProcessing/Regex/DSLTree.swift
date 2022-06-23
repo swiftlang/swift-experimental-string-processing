@@ -224,12 +224,23 @@ extension DSLTree {
         }
       }
       
-      internal func matches(ascii val: UInt8) -> Bool {
-        if val < 64 {
-          return (a >> val) & 1 == 1
+      internal func matches(char: Character) -> Bool {
+        let ret: Bool
+        if let val = char.asciiValue {
+          if val < 64 {
+            ret = (a >> val) & 1 == 1
+          } else {
+            ret =  (b >> (val - 64)) & 1 == 1
+          }
         } else {
-          return (b >> (val - 64)) & 1 == 1
+          ret = false
         }
+
+        if isInverted {
+          return !ret
+        }
+
+        return ret
       }
       
       /// Joins another bitset from a Member of the same CustomCharacterClass
