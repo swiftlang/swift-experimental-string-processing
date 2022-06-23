@@ -102,6 +102,33 @@ class RegexDSLTests: XCTestCase {
         CharacterClass.whitespace.inverted
       }
     }
+
+    try _testDSLCaptures(
+      ("abc1def2", ("abc1def2", "abc1")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      Capture {
+        OneOrMore(CharacterClass.noneOf("def"))
+      }
+
+      OneOrMore {
+        CharacterClass.noneOf("abc")
+      }
+    }
+
+    try _testDSLCaptures(
+      ("a-5-É-ü", "a-5-É-ü"),
+      matchType: Substring.self, ==)
+    {
+      CharacterClass.binaryProperty(\.isLowercase)
+      "-"
+      Lookahead(CharacterClass.numericType(.decimal))
+      CharacterClass.numericValue(5)
+      "-"
+      CharacterClass.lowercaseMapping("é")
+      "-"
+      CharacterClass.uppercaseMapping("Ü")
+    }
   }
 
   func testCharacterClassOperations() throws {
