@@ -368,7 +368,6 @@ extension BidirectionalCollection where Element: Comparable {
 // that element (e.g. `Array<OptionSet>.split(separator: [])`).
 
 extension StringProtocol where SubSequence == Substring {
-  @_spi(RegexBuilder)
   @available(SwiftStdlib 5.7, *)
   public func _split(
     separator: String,
@@ -381,7 +380,6 @@ extension StringProtocol where SubSequence == Substring {
       omittingEmptySubsequences: omittingEmptySubsequences))
   }
   
-  @_spi(RegexBuilder)
   @available(SwiftStdlib 5.7, *)
   public func _split(
     separator: Substring,

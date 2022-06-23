@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_spi(RegexBuilder) import _StringProcessing
+import _StringProcessing
 
 extension BidirectionalCollection where SubSequence == Substring {
   /// Matches a regex in its entirety, where the regex is created by

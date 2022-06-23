@@ -10,18 +10,18 @@
 //===----------------------------------------------------------------------===//
 
 @_implementationOnly import _RegexParser
-@_spi(RegexBuilder) import _StringProcessing
+import _StringProcessing
 
 @available(SwiftStdlib 5.7, *)
 public struct CharacterClass {
-  internal var ccc: DSLTree.CustomCharacterClass
+  internal var ccc: _DSLTree._CustomCharacterClass
   
-  init(_ ccc: DSLTree.CustomCharacterClass) {
+  init(_ ccc: _DSLTree._CustomCharacterClass) {
     self.ccc = ccc
   }
   
   init(unconverted model: _CharacterClassModel) {
-    guard let ccc = model.makeDSLTreeCharacterClass() else {
+    guard let ccc = model._makeDSLTreeCharacterClass() else {
       fatalError("Unsupported character class")
     }
     self.ccc = ccc
@@ -31,41 +31,41 @@ public struct CharacterClass {
 @available(SwiftStdlib 5.7, *)
 extension CharacterClass: RegexComponent {
   public var regex: Regex<Substring> {
-    return Regex(node: DSLTree.Node.customCharacterClass(ccc))
+    return Regex(_node: _DSLTree._Node.customCharacterClass(ccc))
   }
 }
 
 @available(SwiftStdlib 5.7, *)
 extension CharacterClass {
   public var inverted: CharacterClass {
-    CharacterClass(ccc.inverted)
+    CharacterClass(ccc._inverted)
   }
 }
 
 @available(SwiftStdlib 5.7, *)
 extension RegexComponent where Self == CharacterClass {
   public static var any: CharacterClass {
-    .init(DSLTree.CustomCharacterClass(members: [.atom(.any)]))
+    .init(_DSLTree._CustomCharacterClass(_members: [.atom(.any)]))
   }
 
   public static var anyGrapheme: CharacterClass {
-    .init(unconverted: .anyGrapheme)
+    .init(unconverted: ._anyGrapheme)
   }
   
   public static var anyUnicodeScalar: CharacterClass {
-    .init(unconverted: .anyUnicodeScalar)
+    .init(unconverted: ._anyUnicodeScalar)
   }
 
   public static var whitespace: CharacterClass {
-    .init(unconverted: .whitespace)
+    .init(unconverted: ._whitespace)
   }
   
   public static var digit: CharacterClass {
-    .init(unconverted: .digit)
+    .init(unconverted: ._digit)
   }
   
   public static var hexDigit: CharacterClass {
-    .init(DSLTree.CustomCharacterClass(members: [
+    .init(_DSLTree._CustomCharacterClass(_members: [
       .range(.char("A"), .char("F")),
       .range(.char("a"), .char("f")),
       .range(.char("0"), .char("9")),
@@ -73,19 +73,19 @@ extension RegexComponent where Self == CharacterClass {
   }
 
   public static var horizontalWhitespace: CharacterClass {
-    .init(unconverted: .horizontalWhitespace)
+    .init(unconverted: ._horizontalWhitespace)
   }
 
   public static var newlineSequence: CharacterClass {
-    .init(unconverted: .newlineSequence)
+    .init(unconverted: ._newlineSequence)
   }
 
   public static var verticalWhitespace: CharacterClass {
-    .init(unconverted: .verticalWhitespace)
+    .init(unconverted: ._verticalWhitespace)
   }
 
   public static var word: CharacterClass {
-    .init(unconverted: .word)
+    .init(unconverted: ._word)
   }
 }
 
@@ -96,8 +96,8 @@ extension RegexComponent where Self == CharacterClass {
   public static func anyOf<S: Sequence>(_ s: S) -> CharacterClass
     where S.Element == Character
   {
-    CharacterClass(DSLTree.CustomCharacterClass(
-      members: s.map { .atom(.char($0)) }))
+    CharacterClass(_DSLTree._CustomCharacterClass(
+      _members: s.map { .atom(.char($0)) }))
   }
   
   /// Returns a character class that matches any Unicode scalar in the given
@@ -105,8 +105,8 @@ extension RegexComponent where Self == CharacterClass {
   public static func anyOf<S: Sequence>(_ s: S) -> CharacterClass
     where S.Element == UnicodeScalar
   {
-    CharacterClass(DSLTree.CustomCharacterClass(
-      members: s.map { .atom(.scalar($0)) }))
+    CharacterClass(_DSLTree._CustomCharacterClass(
+      _members: s.map { .atom(.scalar($0)) }))
   }
 }
 
@@ -121,8 +121,8 @@ extension CharacterClass {
 /// Returns a character class that includes the characters in the given range.
 @available(SwiftStdlib 5.7, *)
 public func ...(lhs: Character, rhs: Character) -> CharacterClass {
-  let range: DSLTree.CustomCharacterClass.Member = .range(.char(lhs), .char(rhs))
-  let ccc = DSLTree.CustomCharacterClass(members: [range], isInverted: false)
+  let range: _DSLTree._CustomCharacterClass._Member = .range(.char(lhs), .char(rhs))
+  let ccc = _DSLTree._CustomCharacterClass(_members: [range], isInverted: false)
   return CharacterClass(ccc)
 }
 
@@ -130,8 +130,8 @@ public func ...(lhs: Character, rhs: Character) -> CharacterClass {
 @_disfavoredOverload
 @available(SwiftStdlib 5.7, *)
 public func ...(lhs: UnicodeScalar, rhs: UnicodeScalar) -> CharacterClass {
-  let range: DSLTree.CustomCharacterClass.Member = .range(.scalar(lhs), .scalar(rhs))
-  let ccc = DSLTree.CustomCharacterClass(members: [range], isInverted: false)
+  let range: _DSLTree._CustomCharacterClass._Member = .range(.scalar(lhs), .scalar(rhs))
+  let ccc = _DSLTree._CustomCharacterClass(_members: [range], isInverted: false)
   return CharacterClass(ccc)
 }
 
@@ -143,9 +143,9 @@ extension RegexComponent where Self == CharacterClass {
     if rest.isEmpty {
       self.init(first.ccc)
     } else {
-      let members: [DSLTree.CustomCharacterClass.Member] =
+      let members: [_DSLTree._CustomCharacterClass._Member] =
         (CollectionOfOne(first) + rest).map { .custom($0.ccc) }
-      self.init(.init(members: members))
+      self.init(.init(_members: members))
     }
   }
 }
@@ -153,25 +153,25 @@ extension RegexComponent where Self == CharacterClass {
 @available(SwiftStdlib 5.7, *)
 extension CharacterClass {
   public func union(_ other: CharacterClass) -> CharacterClass {
-    CharacterClass(.init(members: [
+    CharacterClass(.init(_members: [
       .custom(self.ccc),
       .custom(other.ccc)]))
   }
   
   public func intersection(_ other: CharacterClass) -> CharacterClass {
-    CharacterClass(.init(members: [
+    CharacterClass(.init(_members: [
       .intersection(self.ccc, other.ccc)
     ]))
   }
   
   public func subtracting(_ other: CharacterClass) -> CharacterClass {
-    CharacterClass(.init(members: [
+    CharacterClass(.init(_members: [
       .subtraction(self.ccc, other.ccc)
     ]))
   }
   
   public func symmetricDifference(_ other: CharacterClass) -> CharacterClass {
-    CharacterClass(.init(members: [
+    CharacterClass(.init(_members: [
       .symmetricDifference(self.ccc, other.ccc)
     ]))
   }

@@ -12,7 +12,7 @@
 @_implementationOnly import _RegexParser
 
 class Compiler {
-  let tree: DSLTree
+  let tree: _DSLTree
 
   // TODO: Or are these stored on the tree?
   var options = MatchingOptions()
@@ -21,7 +21,7 @@ class Compiler {
     self.tree = ast.dslTree
   }
 
-  init(tree: DSLTree) {
+  init(tree: _DSLTree) {
     self.tree = tree
   }
 

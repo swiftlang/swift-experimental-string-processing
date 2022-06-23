@@ -31,9 +31,9 @@ public protocol CustomConsumingRegexComponent: RegexComponent {
 @available(SwiftStdlib 5.7, *)
 extension CustomConsumingRegexComponent {
   public var regex: Regex<RegexOutput> {
-    let node: DSLTree.Node = .matcher(RegexOutput.self, { input, index, bounds in
+    let node: _DSLTree._Node = .matcher(RegexOutput.self, { input, index, bounds in
       try consuming(input, startingAt: index, in: bounds)
     })
-    return Regex(node: node)
+    return Regex(_node: node)
   }
 }

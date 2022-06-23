@@ -231,11 +231,11 @@ public struct RegexRepetitionBehavior: Hashable {
 
   var kind: Kind
 
-  @_spi(RegexBuilder) public var dslTreeKind: DSLTree._AST.QuantificationKind {
+  public var _dslTreeKind: _DSLTree._AST._QuantificationKind {
     switch kind {
-    case .eager: return .eager
-    case .reluctant: return .reluctant
-    case .possessive: return .possessive
+    case .eager: return ._eager
+    case .reluctant: return ._reluctant
+    case .possessive: return ._possessive
     }
   }
 }
@@ -271,7 +271,7 @@ extension RegexComponent {
     let sequence = shouldAdd
       ? AST.MatchingOptionSequence(adding: [.init(option, location: .fake)])
       : AST.MatchingOptionSequence(removing: [.init(option, location: .fake)])
-    return Regex(node: .nonCapturingGroup(
-      .init(ast: .changeMatchingOptions(sequence)), regex.root))
+    return Regex(_node: .nonCapturingGroup(
+      .init(ast: .changeMatchingOptions(sequence)), regex._root))
   }
 }

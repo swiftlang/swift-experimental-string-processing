@@ -63,7 +63,7 @@ public struct Regex<Output>: RegexComponent {
 @available(SwiftStdlib 5.7, *)
 extension Regex {
   public init(quoting string: String) {
-    self.init(node: .quotedLiteral(string))
+    self.init(_node: .quotedLiteral(string))
   }
 }
 
@@ -78,7 +78,7 @@ extension Regex {
     /// FIXME: If Regex is the unit of composition, then it should be a Node instead,
     /// and we should have a separate type that handled both global options and,
     /// likely, compilation/caching.
-    let tree: DSLTree
+    let tree: _DSLTree
 
     private final class ProgramBox {
       let value: MEProgram
@@ -102,7 +102,7 @@ extension Regex {
       self.tree = ast.dslTree
     }
 
-    init(tree: DSLTree) {
+    init(tree: _DSLTree) {
       self.tree = tree
     }
   }
@@ -122,13 +122,11 @@ extension Regex {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  @_spi(RegexBuilder)
-  public var root: DSLTree.Node {
+  public var _root: _DSLTree._Node {
     program.tree.root
   }
 
-  @_spi(RegexBuilder)
-  public init(node: DSLTree.Node) {
-    self.program = Program(tree: .init(node))
+  public init(_node: _DSLTree._Node) {
+    self.program = Program(tree: .init(_node))
   }
 }

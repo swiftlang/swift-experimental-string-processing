@@ -39,8 +39,8 @@ extension MEProgram {
     var initialOptions = MatchingOptions()
 
     // Symbolic reference resolution
-    var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
-    var referencedCaptureOffsets: [ReferenceID: Int] = [:]
+    var unresolvedReferences: [_ReferenceID: [InstructionAddress]] = [:]
+    var referencedCaptureOffsets: [_ReferenceID: Int] = [:]
 
     var captureCount: Int {
       // We currently deduce the capture count from the capture register number.
@@ -210,7 +210,7 @@ extension MEProgram.Builder {
       .init(.backreference, .init(capture: cap)))
   }
 
-  mutating func buildUnresolvedReference(id: ReferenceID) {
+  mutating func buildUnresolvedReference(id: _ReferenceID) {
     buildBackreference(.init(0))
     unresolvedReferences[id, default: []].append(lastInstructionAddress)
   }
@@ -376,7 +376,7 @@ fileprivate extension MEProgram.Builder {
 // Register helpers
 extension MEProgram.Builder {
   mutating func makeCapture(
-    id: ReferenceID?, name: String?
+    id: _ReferenceID?, name: String?
   ) -> CaptureRegister {
     defer { nextCaptureRegister.rawValue += 1 }
     // Register the capture for later lookup via symbolic references.

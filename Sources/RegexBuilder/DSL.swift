@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 @_implementationOnly import _RegexParser
-@_spi(RegexBuilder) import _StringProcessing
+import _StringProcessing
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
@@ -26,13 +26,6 @@ extension Regex {
 @available(SwiftStdlib 5.7, *)
 internal protocol _BuiltinRegexComponent: RegexComponent {
   init(_ regex: Regex<RegexOutput>)
-}
-
-@available(SwiftStdlib 5.7, *)
-extension _BuiltinRegexComponent {
-  init(node: DSLTree.Node) {
-    self.init(Regex(node: node))
-  }
 }
 
 // MARK: - Primitive regex components
@@ -56,7 +49,7 @@ extension Character: RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> {
-    .init(node: .atom(.char(self)))
+    .init(_node: .atom(.char(self)))
   }
 }
 
@@ -65,7 +58,7 @@ extension UnicodeScalar: RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> {
-    .init(node: .atom(.scalar(self)))
+    .init(_node: .atom(.scalar(self)))
   }
 }
 
@@ -90,35 +83,36 @@ extension UnicodeScalar: RegexComponent {
 
 // Note: Quantifiers are currently gyb'd.
 
-extension DSLTree.Node {
+extension _DSLTree._Node {
   // Individual public API functions are in the generated Variadics.swift file.
   /// Generates a DSL tree node for a repeated range of the given node.
   @available(SwiftStdlib 5.7, *)
+  @usableFromInline
   static func repeating(
     _ range: Range<Int>,
     _ behavior: RegexRepetitionBehavior?,
-    _ node: DSLTree.Node
-  ) -> DSLTree.Node {
+    _ node: _DSLTree._Node
+  ) -> _DSLTree._Node {
     // TODO: Throw these as errors
     assert(range.lowerBound >= 0, "Cannot specify a negative lower bound")
     assert(!range.isEmpty, "Cannot specify an empty range")
     
-    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
+    let kind: _DSLTree._QuantificationKind = behavior.map { .explicit($0._dslTreeKind) } ?? .default
 
     switch (range.lowerBound, range.upperBound) {
     case (0, Int.max): // 0...
-      return .quantification(.zeroOrMore, kind, node)
+      return .quantification(._zeroOrMore, kind, node)
     case (1, Int.max): // 1...
-      return .quantification(.oneOrMore, kind, node)
+      return .quantification(._oneOrMore, kind, node)
     case _ where range.count == 1: // ..<1 or ...0 or any range with count == 1
       // Note: `behavior` is ignored in this case
-      return .quantification(.exactly(range.lowerBound), .default, node)
+      return .quantification(._exactly(range.lowerBound), .default, node)
     case (0, _): // 0..<n or 0...n or ..<n or ...n
-      return .quantification(.upToN(range.upperBound), kind, node)
+      return .quantification(._upToN(range.upperBound), kind, node)
     case (_, Int.max): // n...
-      return .quantification(.nOrMore(range.lowerBound), kind, node)
+      return .quantification(._nOrMore(range.lowerBound), kind, node)
     default: // any other range
-      return .quantification(.range(range.lowerBound, range.upperBound), kind, node)
+      return .quantification(._range(range.lowerBound, range.upperBound), kind, node)
     }
   }
 }
@@ -144,6 +138,11 @@ public struct OneOrMore<Output>: _BuiltinRegexComponent {
     self.regex = regex
   }
 
+  @usableFromInline
+  internal init(_node: _DSLTree._Node) {
+    self.init(Regex(_node: _node))
+  }
+  
   // Note: Public initializers and operators are currently gyb'd. See
   // Variadics.swift.
 }
@@ -156,6 +155,11 @@ public struct ZeroOrMore<Output>: _BuiltinRegexComponent {
     self.regex = regex
   }
 
+  @usableFromInline
+  internal init(_node: _DSLTree._Node) {
+    self.init(Regex(_node: _node))
+  }
+  
   // Note: Public initializers and operators are currently gyb'd. See
   // Variadics.swift.
 }
@@ -168,6 +172,11 @@ public struct Optionally<Output>: _BuiltinRegexComponent {
     self.regex = regex
   }
 
+  @usableFromInline
+  internal init(_node: _DSLTree._Node) {
+    self.init(Regex(_node: _node))
+  }
+  
   // Note: Public initializers and operators are currently gyb'd. See
   // Variadics.swift.
 }
@@ -180,6 +189,11 @@ public struct Repeat<Output>: _BuiltinRegexComponent {
     self.regex = regex
   }
 
+  @usableFromInline
+  internal init(_node: _DSLTree._Node) {
+    self.init(Regex(_node: _node))
+  }
+  
   // Note: Public initializers and operators are currently gyb'd. See
   // Variadics.swift.
 }
@@ -221,6 +235,11 @@ public struct ChoiceOf<Output>: _BuiltinRegexComponent {
     self.regex = regex
   }
 
+  @usableFromInline
+  internal init(_node: _DSLTree._Node) {
+    self.init(Regex(_node: _node))
+  }
+  
   public init(@AlternationBuilder _ builder: () -> Self) {
     self = builder()
   }
@@ -236,6 +255,11 @@ public struct Capture<Output>: _BuiltinRegexComponent {
     self.regex = regex
   }
 
+  @usableFromInline
+  internal init(_node: _DSLTree._Node) {
+    self.init(Regex(_node: _node))
+  }
+  
   // Note: Public initializers are currently gyb'd. See Variadics.swift.
 }
 
@@ -247,6 +271,11 @@ public struct TryCapture<Output>: _BuiltinRegexComponent {
     self.regex = regex
   }
 
+  @usableFromInline
+  internal init(_node: _DSLTree._Node) {
+    self.init(Regex(_node: _node))
+  }
+  
   // Note: Public initializers are currently gyb'd. See Variadics.swift.
 }
 
@@ -263,6 +292,11 @@ public struct Local<Output>: _BuiltinRegexComponent {
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
+  
+  @usableFromInline
+  internal init(_node: _DSLTree._Node) {
+    self.init(Regex(_node: _node))
+  }
 }
 
 // MARK: - Backreference
@@ -270,12 +304,13 @@ public struct Local<Output>: _BuiltinRegexComponent {
 @available(SwiftStdlib 5.7, *)
 /// A backreference.
 public struct Reference<Capture>: RegexComponent {
-  let id = ReferenceID()
+  @usableFromInline
+  let id = _ReferenceID()
 
   public init(_ captureType: Capture.Type = Capture.self) {}
 
   public var regex: Regex<Capture> {
-    .init(node: .atom(.symbolicReference(id)))
+    .init(_node: .atom(.symbolicReference(id)))
   }
 }
 

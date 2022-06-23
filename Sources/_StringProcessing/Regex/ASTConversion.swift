@@ -12,15 +12,15 @@
 @_implementationOnly import _RegexParser
 
 extension AST {
-  var dslTree: DSLTree {
-    return DSLTree(root.dslTreeNode)
+  var dslTree: _DSLTree {
+    return _DSLTree(root.dslTreeNode)
   }
 }
 
 extension AST.Node {
   /// Converts an AST node to a `convertedRegexLiteral` node.
-  var dslTreeNode: DSLTree.Node {
-    func wrap(_ node: DSLTree.Node) -> DSLTree.Node {
+  var dslTreeNode: _DSLTree._Node {
+    func wrap(_ node: _DSLTree._Node) -> _DSLTree._Node {
       switch node {
       case .convertedRegexLiteral:
         // FIXME: DSL can have one item concats
@@ -36,7 +36,7 @@ extension AST.Node {
     }
 
     // Convert the top-level node without wrapping
-    func convert() throws -> DSLTree.Node {
+    func convert() throws -> _DSLTree._Node {
       switch self {
       case let .alternation(v):
         let children = v.children.map(\.dslTreeNode)
@@ -86,7 +86,7 @@ extension AST.Node {
 
         // Coalesce adjacent string children
         var curIdx = astChildren.startIndex
-        var children = Array<DSLTree.Node>()
+        var children = Array<_DSLTree._Node>()
         while curIdx < astChildren.endIndex {
           if let (nextIdx, str) = coalesce(curIdx) {
             // TODO: Track source info...
@@ -162,11 +162,11 @@ extension AST.Node {
 }
 
 extension AST.CustomCharacterClass {
-  var dslTreeClass: DSLTree.CustomCharacterClass {
+  var dslTreeClass: _DSLTree._CustomCharacterClass {
     // TODO: Not quite 1-1
     func convert(
       _ member: Member
-    ) -> DSLTree.CustomCharacterClass.Member {
+    ) -> _DSLTree._CustomCharacterClass._Member {
       switch member {
       case let .custom(ccc):
         return .custom(ccc.dslTreeClass)
@@ -182,11 +182,11 @@ extension AST.CustomCharacterClass {
         return .quotedLiteral(q.literal)
 
       case let .setOperation(lhs, op, rhs):
-        let lhs = DSLTree.CustomCharacterClass(
-          members: lhs.map(convert),
+        let lhs = _DSLTree._CustomCharacterClass(
+          _members: lhs.map(convert),
           isInverted: false)
-        let rhs = DSLTree.CustomCharacterClass(
-          members: rhs.map(convert),
+        let rhs = _DSLTree._CustomCharacterClass(
+          _members: rhs.map(convert),
           isInverted: false)
 
         switch op.value {
@@ -203,13 +203,13 @@ extension AST.CustomCharacterClass {
     }
 
     return .init(
-      members: members.map(convert),
+      _members: members.map(convert),
       isInverted: self.isInverted)
   }
 }
 
 extension AST.Atom {
-  var dslTreeAtom: DSLTree.Atom {
+  var dslTreeAtom: _DSLTree._Atom {
     if let kind = assertionKind {
       return .assertion(.init(ast: kind))
     }

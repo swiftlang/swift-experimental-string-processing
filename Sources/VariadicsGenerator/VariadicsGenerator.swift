@@ -141,7 +141,7 @@ struct VariadicsGenerator: ParsableCommand {
 
       // BEGIN AUTO-GENERATED CONTENT
 
-      @_spi(RegexBuilder) import _StringProcessing
+      import _StringProcessing
 
 
       """)
@@ -257,10 +257,11 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(concatBuilderName) {
+        @_alwaysEmitIntoClient
         public static func buildPartialBlock<\(genericParams)>(
           accumulated: R0, next: R1
         ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
-          .init(node: accumulated.regex.root.appending(next.regex.root))
+          .init(_node: accumulated.regex._root._appending(next.regex._root))
         }
       }
 
@@ -273,6 +274,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(defaultAvailableAttr)
       extension \(concatBuilderName) {
         \(defaultAvailableAttr)
+        @_alwaysEmitIntoClient
         public static func buildPartialBlock<W0
       """)
     outputForEach(0..<leftArity) {
@@ -304,7 +306,7 @@ struct VariadicsGenerator: ParsableCommand {
     }
     output("""
         {
-          .init(node: accumulated.regex.root.appending(next.regex.root))
+          .init(_node: accumulated.regex._root._appending(next.regex._root))
         }
       }
 
@@ -326,9 +328,9 @@ struct VariadicsGenerator: ParsableCommand {
 
     var astQuantifierAmount: String {
       switch self {
-      case .zeroOrOne: return "zeroOrOne"
-      case .zeroOrMore: return "zeroOrMore"
-      case .oneOrMore: return "oneOrMore"
+      case .zeroOrOne: return "_zeroOrOne"
+      case .zeroOrMore: return "_zeroOrMore"
+      case .oneOrMore: return "_oneOrMore"
       }
     }
   }
@@ -385,25 +387,27 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(kind.rawValue) {
-      \(params.disfavored)\
+        \(params.disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
           _ component: Component,
           _ behavior: RegexRepetitionBehavior? = nil
         ) \(params.whereClauseForInit) {
-          let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
-          self.init(node: .quantification(.\(kind.astQuantifierAmount), kind, component.regex.root))
+          let kind:_DSLTree._QuantificationKind = behavior.map { .explicit($0._dslTreeKind) } ?? .default
+          self.init(_node: .quantification(.\(kind.astQuantifierAmount), kind, component.regex._root))
         }
       }
 
       \(defaultAvailableAttr)
       extension \(kind.rawValue) {
-      \(params.disfavored)\
+        \(params.disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
           _ behavior: RegexRepetitionBehavior? = nil,
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.whereClauseForInit) {
-          let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
-          self.init(node: .quantification(.\(kind.astQuantifierAmount), kind, component().regex.root))
+          let kind:_DSLTree._QuantificationKind = behavior.map { .explicit($0._dslTreeKind) } ?? .default
+          self.init(_node: .quantification(.\(kind.astQuantifierAmount), kind, component().regex._root))
         }
       }
 
@@ -411,10 +415,11 @@ struct VariadicsGenerator: ParsableCommand {
         """
         \(defaultAvailableAttr)
         extension \(concatBuilderName) {
+          @_alwaysEmitIntoClient
           public static func buildLimitedAvailability<\(params.genericParams)>(
             _ component: Component
           ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
-            .init(node: .quantification(.\(kind.astQuantifierAmount), .default, component.regex.root))
+            .init(_node: .quantification(.\(kind.astQuantifierAmount), .default, component.regex._root))
           }
         }
         """ : "")
@@ -428,9 +433,9 @@ struct VariadicsGenerator: ParsableCommand {
     let groupName = "Local"
     func node(builder: Bool) -> String {
       """
-      .nonCapturingGroup(.atomicNonCapturing, component\(
+      .nonCapturingGroup(._atomicNonCapturing, component\(
         builder ? "()" : ""
-      ).regex.root)
+      ).regex._root)
       """
     }
 
@@ -456,22 +461,24 @@ struct VariadicsGenerator: ParsableCommand {
       \(defaultAvailableAttr)
       extension \(groupName) {
         \(defaultAvailableAttr)
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           _ component: Component
         ) \(whereClauseForInit) {
-          self.init(node: \(node(builder: false)))
+          self.init(_node: \(node(builder: false)))
         }
       }
 
       \(defaultAvailableAttr)
       extension \(groupName) {
         \(defaultAvailableAttr)
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           @\(concatBuilderName) _ component: () -> Component
         ) \(whereClauseForInit) {
-          self.init(node: \(node(builder: true)))
+          self.init(_node: \(node(builder: true)))
         }
       }
 
@@ -489,42 +496,46 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension Repeat {
-      \(params.disfavored)\
+        \(params.disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
           _ component: Component,
           count: Int
         ) \(params.whereClauseForInit) {
           assert(count > 0, "Must specify a positive count")
           // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-          self.init(node: .quantification(.exactly(count), .default, component.regex.root))
+          self.init(_node: .quantification(._exactly(count), .default, component.regex._root))
         }
 
-      \(params.disfavored)\
+        \(params.disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
           count: Int,
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.whereClauseForInit) {
           assert(count > 0, "Must specify a positive count")
           // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-          self.init(node: .quantification(.exactly(count), .default, component().regex.root))
+          self.init(_node: .quantification(._exactly(count), .default, component().regex._root))
         }
 
-      \(params.disfavored)\
+        \(params.disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(params.genericParams), R: RangeExpression>(
           _ component: Component,
           _ expression: R,
           _ behavior: RegexRepetitionBehavior? = nil
         ) \(params.repeatingWhereClause) {
-          self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+          self.init(_node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex._root))
         }
 
-      \(params.disfavored)\
+        \(params.disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(params.genericParams), R: RangeExpression>(
           _ expression: R,
           _ behavior: RegexRepetitionBehavior? = nil,
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.repeatingWhereClause) {
-          self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+          self.init(_node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex._root))
         }
       }
       
@@ -572,10 +583,11 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(altBuilderName) {
+        @_alwaysEmitIntoClient
         public static func buildPartialBlock<\(genericParams)>(
           accumulated: R0, next: R1
         ) -> ChoiceOf<\(matchType)> \(whereClause) {
-          .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
+          .init(_node: accumulated.regex._root._appendingAlternationCase(next.regex._root))
         }
       }
 
@@ -599,8 +611,9 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(altBuilderName) {
+        @_alwaysEmitIntoClient
         public static func buildPartialBlock<\(genericParams)>(first regex: R) -> ChoiceOf<(W, \(resultCaptures))> \(whereClause) {
-          .init(node: .orderedChoice([regex.regex.root]))
+          .init(_node: .orderedChoice([regex.regex._root]))
         }
       }
       
@@ -629,65 +642,71 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension Capture {
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           _ component: R
         ) \(whereClauseRaw) {
-          self.init(node: .capture(component.regex.root))
+          self.init(_node: .capture(component.regex._root))
         }
 
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           _ component: R, as reference: Reference<W>
         ) \(whereClauseRaw) {
-          self.init(node: .capture(reference: reference.id, component.regex.root))
+          self.init(_node: .capture(reference: reference.id, component.regex._root))
         }
 
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           _ component: R,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            component.regex.root,
-            CaptureTransform(transform)))
+          self.init(_node: .capture(
+            component.regex._root,
+            _CaptureTransform(transform)))
         }
 
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           _ component: R,
           as reference: Reference<NewCapture>,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
+          self.init(_node: .capture(
             reference: reference.id,
-            component.regex.root,
-            CaptureTransform(transform)))
+            component.regex._root,
+            _CaptureTransform(transform)))
         }
       }
 
       \(defaultAvailableAttr)
       extension TryCapture {
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           _ component: R,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-          component.regex.root,
-          CaptureTransform(transform)))
+          self.init(_node: .capture(
+          component.regex._root,
+          _CaptureTransform(transform)))
         }
 
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           _ component: R,
           as reference: Reference<NewCapture>,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
+          self.init(_node: .capture(
             reference: reference.id,
-            component.regex.root,
-            CaptureTransform(transform)))
+            component.regex._root,
+            _CaptureTransform(transform)))
         }
       }
 
@@ -695,68 +714,74 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension Capture {
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           @\(concatBuilderName) _ component: () -> R
         ) \(whereClauseRaw) {
-          self.init(node: .capture(component().regex.root))
+          self.init(_node: .capture(component().regex._root))
         }
 
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           as reference: Reference<W>,
           @\(concatBuilderName) _ component: () -> R
         ) \(whereClauseRaw) {
-          self.init(node: .capture(
+          self.init(_node: .capture(
             reference: reference.id,
-            component().regex.root))
+            component().regex._root))
         }
 
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            component().regex.root,
-            CaptureTransform(transform)))
+          self.init(_node: .capture(
+            component().regex._root,
+            _CaptureTransform(transform)))
         }
 
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
+          self.init(_node: .capture(
             reference: reference.id,
-            component().regex.root,
-            CaptureTransform(transform)))
+            component().regex._root,
+            _CaptureTransform(transform)))
         }
       }
 
       \(defaultAvailableAttr)
       extension TryCapture {
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            component().regex.root,
-            CaptureTransform(transform)))
+          self.init(_node: .capture(
+            component().regex._root,
+            _CaptureTransform(transform)))
         }
 
-      \(disfavored)\
+        \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
+          self.init(_node: .capture(
             reference: reference.id,
-            component().regex.root,
-            CaptureTransform(transform)))
+            component().regex._root,
+            _CaptureTransform(transform)))
         }
       }
 

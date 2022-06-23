@@ -61,8 +61,7 @@ extension Regex.Match {
     output
   }
 
-  @_spi(RegexBuilder)
-  public subscript<Capture>(_ id: ReferenceID) -> Capture {
+  public subscript<Capture>(_ id: _ReferenceID) -> Capture {
     guard let element = anyRegexOutput.first(
       where: { $0.representation.referenceID == id }
     ) else {

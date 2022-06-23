@@ -53,7 +53,7 @@ extension PrettyPrinter {
     return false
   }
 
-  mutating func printBackoff(_ node: DSLTree.Node) {
+  mutating func printBackoff(_ node: _DSLTree._Node) {
     precondition(node.astNode != nil, "unconverted node")
     printAsCanonical(
       .init(node.astNode!, globalOptions: nil),
@@ -84,14 +84,14 @@ extension PrettyPrinter {
   }
 
   // FIXME: Use of back-offs like height and depth
-  // imply that this DSLTree node has a corresponding
+  // imply that this _DSLTree node has a corresponding
   // AST. That's not always true, and it would be nice
   // to have a non-backing-off pretty-printer that this
   // can defer to.
   private mutating func printAsPattern(
-    convertedFromAST node: DSLTree.Node
+    convertedFromAST node: _DSLTree._Node
   ) {
-    if patternBackoff(DSLTree._Tree(node)) {
+    if patternBackoff(_DSLTree._Tree(node)) {
       printBackoff(node)
       return
     }
@@ -176,7 +176,7 @@ extension PrettyPrinter {
       }
       
       func printSimpleCCC(
-        _ ccc: DSLTree.CustomCharacterClass
+        _ ccc: _DSLTree._CustomCharacterClass
       ) {
         indent()
         
@@ -284,7 +284,7 @@ extension PrettyPrinter {
   }
   
   mutating func printAsPattern(
-    _ ccc: DSLTree.CustomCharacterClass,
+    _ ccc: _DSLTree._CustomCharacterClass,
     wrap: Bool = true,
     terminateLine: Bool = true
   ) {
@@ -426,7 +426,7 @@ extension PrettyPrinter {
 
   // TODO: Some way to integrate this with conversion...
   mutating func printAsPattern(
-    _ member: DSLTree.CustomCharacterClass.Member,
+    _ member: _DSLTree._CustomCharacterClass._Member,
     wrap: Bool = true
   ) {
     switch member {
@@ -543,7 +543,7 @@ extension PrettyPrinter {
   }
   
   mutating func printAsRegex(
-    _ ccc: DSLTree.CustomCharacterClass,
+    _ ccc: _DSLTree._CustomCharacterClass,
     asFullRegex: Bool = true,
     terminateLine: Bool = true
   ) {
@@ -574,7 +574,7 @@ extension PrettyPrinter {
     }
   }
   
-  mutating func printAsRegex(_ member: DSLTree.CustomCharacterClass.Member) {
+  mutating func printAsRegex(_ member: _DSLTree._CustomCharacterClass._Member) {
     switch member {
     case let .custom(ccc):
       printAsRegex(ccc, terminateLine: false)
@@ -889,7 +889,7 @@ extension AST.Atom {
       case .notVerticalTab:
         return (".verticalWhitespace.inverted", true)
         
-      // Literal single characters all get converted into DSLTree.Atom.scalar
+      // Literal single characters all get converted into _DSLTree.Atom.scalar
         
       default:
         return ("TODO: escaped \(e)", false)
@@ -1006,13 +1006,13 @@ extension AST.Quantification.Kind {
   }
 }
 
-extension DSLTree.QuantificationKind {
+extension _DSLTree._QuantificationKind {
   var _patternBase: String {
     (ast ?? .eager)._patternBase
   }
 }
 
-extension DSLTree.CustomCharacterClass.Member {
+extension _DSLTree._CustomCharacterClass._Member {
   var isUnprintableMember: Bool {
     switch self {
     case .atom(.unconverted(let a)):
@@ -1033,7 +1033,7 @@ extension DSLTree.CustomCharacterClass.Member {
   }
 }
 
-extension DSLTree.CustomCharacterClass {
+extension _DSLTree._CustomCharacterClass {
   var hasUnprintableProperty: Bool {
     members.contains {
       $0.isUnprintableMember
@@ -1087,7 +1087,7 @@ extension DSLTree.CustomCharacterClass {
   }
 }
 
-extension DSLTree.Atom {
+extension _DSLTree._Atom {
   func _patternBase(
     _ printer: inout PrettyPrinter
   ) -> (String, canBeWrapped: Bool)? {
@@ -1170,7 +1170,7 @@ extension DSLTree.Atom {
   }
 }
 
-extension DSLTree.Node {
+extension _DSLTree._Node {
   func getNamedCaptures() -> [String] {
     var result: [String] = []
     

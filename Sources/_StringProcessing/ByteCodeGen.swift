@@ -16,7 +16,7 @@ extension Compiler {
 }
 
 extension Compiler.ByteCodeGen {
-  mutating func emitRoot(_ root: DSLTree.Node) throws -> MEProgram {
+  mutating func emitRoot(_ root: _DSLTree._Node) throws -> MEProgram {
     // The whole match (`.0` element of output) is equivalent to an implicit
     // capture over the entire regex.
     try emitNode(.capture(name: nil, reference: nil, root))
@@ -26,7 +26,7 @@ extension Compiler.ByteCodeGen {
 }
 
 fileprivate extension Compiler.ByteCodeGen {
-  mutating func emitAtom(_ a: DSLTree.Atom) throws {
+  mutating func emitAtom(_ a: _DSLTree._Atom) throws {
     defer {
       if a.isMatchable {
         hasEmittedFirstMatchableAtom = true
@@ -187,7 +187,7 @@ fileprivate extension Compiler.ByteCodeGen {
       // TODO: May want to consider Unicode level
       builder.buildAssert { [options] (input, pos, subjectBounds) in
         // TODO: How should we handle bounds?
-        _CharacterClassModel.word.isBoundary(
+        _CharacterClassModel._word.isBoundary(
           input, at: pos, bounds: subjectBounds, with: options)
       }
 
@@ -195,7 +195,7 @@ fileprivate extension Compiler.ByteCodeGen {
       // TODO: May want to consider Unicode level
       builder.buildAssert { [options] (input, pos, subjectBounds) in
         // TODO: How should we handle bounds?
-        !_CharacterClassModel.word.isBoundary(
+        !_CharacterClassModel._word.isBoundary(
           input, at: pos, bounds: subjectBounds, with: options)
       }
     }
@@ -264,7 +264,7 @@ fileprivate extension Compiler.ByteCodeGen {
   }
 
   mutating func emitAlternation(
-    _ children: [DSLTree.Node]
+    _ children: [_DSLTree._Node]
   ) throws {
     // Alternation: p0 | p1 | ... | pn
     //     save next_p1
@@ -295,7 +295,7 @@ fileprivate extension Compiler.ByteCodeGen {
   }
 
   mutating func emitConcatenationComponent(
-    _ node: DSLTree.Node
+    _ node: _DSLTree._Node
   ) throws {
     // TODO: Should we do anything special since we can
     // be glueing sub-grapheme components together?
@@ -304,7 +304,7 @@ fileprivate extension Compiler.ByteCodeGen {
 
   mutating func emitLookaround(
     _ kind: (forwards: Bool, positive: Bool),
-    _ child: DSLTree.Node
+    _ child: _DSLTree._Node
   ) throws {
     guard kind.forwards else {
       throw Unsupported("backwards assertions")
@@ -349,7 +349,7 @@ fileprivate extension Compiler.ByteCodeGen {
   }
 
   mutating func emitAtomicNoncapturingGroup(
-    _ child: DSLTree.Node
+    _ child: _DSLTree._Node
   ) throws {
     /*
       save(continuingAt: success)
@@ -399,7 +399,7 @@ fileprivate extension Compiler.ByteCodeGen {
 
   mutating func emitNoncapturingGroup(
     _ kind: AST.Group.Kind,
-    _ child: DSLTree.Node
+    _ child: _DSLTree._Node
   ) throws {
     assert(!kind.isCapturing)
 
@@ -437,8 +437,8 @@ fileprivate extension Compiler.ByteCodeGen {
 
   mutating func emitQuantification(
     _ amount: AST.Quantification.Amount,
-    _ kind: DSLTree.QuantificationKind,
-    _ child: DSLTree.Node
+    _ kind: _DSLTree._QuantificationKind,
+    _ child: _DSLTree._Node
   ) throws {
     let updatedKind: AST.Quantification.Kind
     switch kind {
@@ -641,14 +641,14 @@ fileprivate extension Compiler.ByteCodeGen {
   }
 
   mutating func emitCustomCharacterClass(
-    _ ccc: DSLTree.CustomCharacterClass
+    _ ccc: _DSLTree._CustomCharacterClass
   ) throws {
     let consumer = try ccc.generateConsumer(options)
     builder.buildConsume(by: consumer)
   }
 
   @discardableResult
-  mutating func emitNode(_ node: DSLTree.Node) throws -> ValueRegister? {
+  mutating func emitNode(_ node: _DSLTree._Node) throws -> ValueRegister? {
     switch node {
       
     case let .orderedChoice(children):

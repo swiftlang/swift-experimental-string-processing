@@ -36,7 +36,7 @@ struct MEProgram {
   var enableTracing: Bool = false
 
   let captureList: CaptureList
-  let referencedCaptureOffsets: [ReferenceID: Int]
+  let referencedCaptureOffsets: [_ReferenceID: Int]
   
   var initialOptions: MatchingOptions
 }

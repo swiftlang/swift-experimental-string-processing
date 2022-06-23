@@ -167,7 +167,7 @@ extension Regex {
   /// Produces a regex that matches `verbatim` exactly, as though every
   /// metacharacter in it was escaped.
   public init(verbatim: String) {
-    self.init(node: .quotedLiteral(verbatim))
+    self.init(_node: .quotedLiteral(verbatim))
   }
 
   /// Returns whether a named-capture with `name` exists
@@ -187,7 +187,7 @@ extension Regex where Output == AnyRegexOutput {
   /// Use this initializer to fit a regex with strongly-typed captures into the
   /// use site of a type-erased regex, i.e. one that was created from a string.
   public init<Output>(_ regex: Regex<Output>) {
-    self.init(node: regex.root)
+    self.init(_node: regex._root)
   }
 }
 
@@ -216,7 +216,7 @@ extension Regex {
     _ erased: Regex<AnyRegexOutput>,
     as: Output.Type = Output.self
   ) {
-    self.init(node: erased.root)
+    self.init(_node: erased._root)
     guard self._verifyType() else {
       return nil
     }
@@ -242,7 +242,7 @@ extension AnyRegexOutput {
     var name: String? = nil
 
     /// The capture reference this element refers to.
-    var referenceID: ReferenceID? = nil
+    var referenceID: _ReferenceID? = nil
   }
 
   internal init(input: String, elements: [ElementRepresentation]) {

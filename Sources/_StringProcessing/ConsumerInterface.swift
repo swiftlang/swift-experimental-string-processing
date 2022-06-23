@@ -11,7 +11,7 @@
 
 @_implementationOnly import _RegexParser
 
-extension DSLTree.Node {
+extension _DSLTree._Node {
   /// Attempt to generate a consumer from this AST node
   ///
   /// A consumer is a Swift closure that matches against
@@ -51,7 +51,7 @@ extension DSLTree.Node {
   }
 }
 
-extension DSLTree.Atom {
+extension _DSLTree._Atom {
   // TODO: If ByteCodeGen switches first, then this is unnecessary for
   // top-level nodes, but it's also invoked for `.atom` members of a custom CC
   func generateConsumer(
@@ -234,7 +234,7 @@ extension AST.Atom {
   }
 }
 
-extension DSLTree.CustomCharacterClass.Member {
+extension _DSLTree._CustomCharacterClass._Member {
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram.ConsumeFunction {
@@ -341,7 +341,7 @@ extension DSLTree.CustomCharacterClass.Member {
   }
 }
 
-extension DSLTree.CustomCharacterClass {
+extension _DSLTree._CustomCharacterClass {
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram.ConsumeFunction {
