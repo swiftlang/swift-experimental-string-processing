@@ -170,18 +170,18 @@ extension DSLTree {
       let isCaseInsensitive: Bool
       var a: UInt64 = 0
       var b: UInt64 = 0
-      
+  
       init(isInverted: Bool, isCaseInsensitive: Bool) {
         self.isInverted = isInverted
         self.isCaseInsensitive = isCaseInsensitive
       }
-      
+
       init(_ val: UInt8, _ isInverted: Bool, _ isCaseInsensitive: Bool) {
         self.isInverted = isInverted
         self.isCaseInsensitive = isCaseInsensitive
         add(val)
       }
-      
+
       init(low: UInt8, high: UInt8, isInverted: Bool, isCaseInsensitive: Bool) {
         self.isInverted = isInverted
         self.isCaseInsensitive = isCaseInsensitive
@@ -189,7 +189,7 @@ extension DSLTree {
           add(val)
         }
       }
-      
+
       internal init(
         a: UInt64,
         b: UInt64,
@@ -201,21 +201,19 @@ extension DSLTree {
         self.a = a
         self.b = b
       }
-      
+
       internal mutating func add(_ val: UInt8) {
         setBit(val)
         if isCaseInsensitive {
-          let c = Character(Unicode.Scalar.init(val))
-          let otherCase: String
-          if c.isUppercase {
-            otherCase = c.lowercased()
-          } else {
-            otherCase = c.uppercased()
+          if val >= 64 && val <= 90 {
+            setBit(val + 32)
           }
-          setBit(otherCase.first!.asciiValue!)
+          if val >= 97 && val <= 122 {
+            setBit(val - 32)
+          }
         }
       }
-      
+
       internal mutating func setBit(_ val: UInt8) {
         if val < 64 {
           a = a | 1 << val
@@ -223,7 +221,7 @@ extension DSLTree {
           b = b | 1 << (val - 64)
         }
       }
-      
+
       internal func matches(char: Character) -> Bool {
         let ret: Bool
         if let val = char.asciiValue {
@@ -242,7 +240,7 @@ extension DSLTree {
 
         return ret
       }
-      
+
       /// Joins another bitset from a Member of the same CustomCharacterClass
       internal func union(_ other: AsciiBitset) -> AsciiBitset {
         precondition(self.isInverted == other.isInverted)

@@ -52,39 +52,22 @@ extension DSLTree.Node {
 }
 
 extension DSLTree._AST.Atom {
-  func isAscii() -> Bool {
-    return ast.isAscii()
-  }
-  
-  func toAsciiValue() -> UInt8 {
-    return ast.toAsciiValue()
+  var asciiValue: UInt8? {
+    return ast.asciiValue
   }
 }
 
 extension DSLTree.Atom {
-  func isAscii() -> Bool {
+  var asciiValue: UInt8? {
     switch self {
-    case let .char(c):
-      return c.isASCII
-    case let .scalar(s):
-      return s.isASCII
-    case let .unconverted(atom):
-      return atom.isAscii()
-    default:
-      return false
-    }
-  }
-  
-  func toAsciiValue() -> UInt8 {
-    switch self {
-    case let .char(c):
-      return c.asciiValue!
-    case let .scalar(s):
+    case let .char(c) where c != "\r\n":
+      return c.asciiValue
+    case let .scalar(s) where s.isASCII:
       return UInt8(ascii: s)
     case let .unconverted(atom):
-      return atom.toAsciiValue()
+      return atom.asciiValue
     default:
-      fatalError("Should have been checked by isAscii first")
+      return nil
     }
   }
   
@@ -213,26 +196,15 @@ extension AST.Atom {
     default: return nil
     }
   }
-
-  func isAscii() -> Bool {
-    switch kind {
-    case let .char(c):
-      return c.isASCII
-    case let .scalar(s):
-      return s.value.isASCII
-    default:
-      return false
-    }
-  }
   
-  func toAsciiValue() -> UInt8 {
+  var asciiValue: UInt8? {
     switch kind {
-    case let .char(c):
-      return c.asciiValue!
-    case let .scalar(s):
+    case let .char(c) where c != "\r\n":
+      return c.asciiValue
+    case let .scalar(s) where s.value.isASCII:
       return UInt8(ascii: s.value)
     default:
-      fatalError("Should have been checked by isAscii first")
+      return nil
     }
   }
   
@@ -293,40 +265,32 @@ extension AST.Atom {
 }
 
 extension DSLTree.CustomCharacterClass.Member {
-  func isAscii() -> Bool {
-    switch self {
-    case let .atom(a):
-      return a.isAscii()
-    case let .range(low, high):
-      return low.isAscii() && high.isAscii()
-    // The remaining cases have nested character classes with possibly different
-    // inversion so leave them out of this optimization
-    default:
-      return false
-    }
-  }
-  
   func asAsciiBitset(
     _ opts: MatchingOptions,
     _ isInverted: Bool
-  ) -> DSLTree.CustomCharacterClass.AsciiBitset {
+  ) -> DSLTree.CustomCharacterClass.AsciiBitset? {
     switch self {
     case let .atom(a):
-      return DSLTree.CustomCharacterClass.AsciiBitset(
-        a.toAsciiValue(),
-        isInverted,
-        opts.isCaseInsensitive
-      )
+      if let val = a.asciiValue {
+        return DSLTree.CustomCharacterClass.AsciiBitset(
+          val,
+          isInverted,
+          opts.isCaseInsensitive
+        )
+      }
     case let .range(low, high):
-      return DSLTree.CustomCharacterClass.AsciiBitset(
-        low: low.toAsciiValue(),
-        high: high.toAsciiValue(),
-        isInverted: isInverted,
-        isCaseInsensitive: opts.isCaseInsensitive
-      )
+      if let lowVal = low.asciiValue, let highVal = high.asciiValue {
+        return DSLTree.CustomCharacterClass.AsciiBitset(
+          low: lowVal,
+          high: highVal,
+          isInverted: isInverted,
+          isCaseInsensitive: opts.isCaseInsensitive
+        )
+      }
     default:
-      fatalError("Should have been checked by isAscii first")
+      return nil
     }
+    return nil
   }
   
   func generateConsumer(
@@ -436,14 +400,16 @@ extension DSLTree.CustomCharacterClass.Member {
 }
 
 extension DSLTree.CustomCharacterClass {
-  func isAscii() -> Bool {
-    return members.allSatisfy { member in member.isAscii() }
-  }
-  
-  func asAsciiBitset(_ opts: MatchingOptions) -> AsciiBitset {
+  func asAsciiBitset(_ opts: MatchingOptions) -> AsciiBitset? {
     return members.reduce(
       .init(isInverted: isInverted, isCaseInsensitive: opts.isCaseInsensitive),
-      {result, member in result.union(member.asAsciiBitset(opts, isInverted))}
+      {result, member in
+        if let next = member.asAsciiBitset(opts, isInverted) {
+          return result?.union(next)
+        } else {
+          return nil
+        }
+      }
     )
   }
   
