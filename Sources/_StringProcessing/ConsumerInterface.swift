@@ -402,7 +402,7 @@ extension DSLTree.CustomCharacterClass.Member {
 extension DSLTree.CustomCharacterClass {
   func asAsciiBitset(_ opts: MatchingOptions) -> AsciiBitset? {
     return members.reduce(
-      .init(isInverted: isInverted, isCaseInsensitive: opts.isCaseInsensitive),
+      .init(isInverted: isInverted),
       {result, member in
         if let next = member.asAsciiBitset(opts, isInverted) {
           return result?.union(next)

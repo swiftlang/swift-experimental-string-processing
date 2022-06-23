@@ -167,42 +167,36 @@ extension DSLTree {
     
     public struct AsciiBitset {
       let isInverted: Bool
-      let isCaseInsensitive: Bool
       var a: UInt64 = 0
       var b: UInt64 = 0
   
-      init(isInverted: Bool, isCaseInsensitive: Bool) {
+      init(isInverted: Bool) {
         self.isInverted = isInverted
-        self.isCaseInsensitive = isCaseInsensitive
       }
 
       init(_ val: UInt8, _ isInverted: Bool, _ isCaseInsensitive: Bool) {
         self.isInverted = isInverted
-        self.isCaseInsensitive = isCaseInsensitive
-        add(val)
+        add(val, isCaseInsensitive)
       }
 
       init(low: UInt8, high: UInt8, isInverted: Bool, isCaseInsensitive: Bool) {
         self.isInverted = isInverted
-        self.isCaseInsensitive = isCaseInsensitive
         for val in low...high {
-          add(val)
+          add(val, isCaseInsensitive)
         }
       }
 
       internal init(
         a: UInt64,
         b: UInt64,
-        isInverted: Bool,
-        isCaseInsensitive: Bool
+        isInverted: Bool
       ) {
         self.isInverted = isInverted
-        self.isCaseInsensitive = isCaseInsensitive
         self.a = a
         self.b = b
       }
 
-      internal mutating func add(_ val: UInt8) {
+      internal mutating func add(_ val: UInt8, _ isCaseInsensitive: Bool) {
         setBit(val)
         if isCaseInsensitive {
           if val >= 64 && val <= 90 {
@@ -247,8 +241,7 @@ extension DSLTree {
         return AsciiBitset(
           a: self.a | other.a,
           b: self.b | other.b,
-          isInverted: self.isInverted,
-          isCaseInsensitive: self.isCaseInsensitive
+          isInverted: self.isInverted
         )
       }
     }
