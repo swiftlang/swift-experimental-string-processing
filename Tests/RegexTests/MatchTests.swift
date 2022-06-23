@@ -574,8 +574,26 @@ extension RegexTests {
     // Inverted character class
     matchTest(#"[^a]"#,
               ("💿", true),
+              ("a\u{301}", true),
               ("A", true),
               ("a", false))
+
+    matchTest("[a]",
+      ("a\u{301}", false))
+
+    // CR-LF special case: \r\n is a single character with ascii value equal
+    // to \n, so make sure the ascii bitset optimization handles this correctly
+    matchTest("[\r\n]",
+      ("\r\n", true),
+      ("\n", false),
+      ("\r", false))
+    matchTest("[^\r\n]",
+      ("\r\n", false),
+      ("\n", true),
+      ("\r", true))
+    matchTest("[\n\r]",
+      ("\n", true),
+      ("\r", true))
 
     firstMatchTest("[-]", input: "123-abcxyz", match: "-")
 

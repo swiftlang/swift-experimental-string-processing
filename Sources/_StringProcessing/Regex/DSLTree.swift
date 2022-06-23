@@ -169,7 +169,7 @@ extension DSLTree {
       let isInverted: Bool
       var a: UInt64 = 0
       var b: UInt64 = 0
-  
+
       init(isInverted: Bool) {
         self.isInverted = isInverted
       }
