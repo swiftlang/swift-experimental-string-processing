@@ -31,17 +31,17 @@ struct Runner: ParsableCommand {
   
   mutating func run() throws {
     var runner = BenchmarkRunner.makeRunner(samples, outputPath)
-    
-    if excludeNs {
-      self.specificBenchmarks.append("((?!NS).)*")
-    }
-    
+        
     if !self.specificBenchmarks.isEmpty {
       runner.suite = runner.suite.filter { b in
         specificBenchmarks.contains { pattern in
           try! Regex(pattern).wholeMatch(in: b.name) != nil
         }
       }
+    }
+    
+    if excludeNs {
+      runner.suite = runner.suite.filter { b in !b.name.contains("NS") }
     }
     
     switch (profile, debug) {
