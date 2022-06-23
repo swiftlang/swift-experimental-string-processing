@@ -1,3 +1,5 @@
+# DnaFasta.swift was generated with python3 Utils/generateFasta.py 100000
+
 # The Computer Language Benchmarks Game
 # https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 #
