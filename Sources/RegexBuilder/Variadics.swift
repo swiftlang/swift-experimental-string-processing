@@ -3008,7 +3008,7 @@ extension Capture {
   public init<R: RegexComponent, W>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W), R.RegexOutput == W {
-    self.init(_RegexFactory.node(component().regex._root))
+    self.init(_RegexFactory.capture(component().regex._root))
   }
 
   @_disfavoredOverload
@@ -3126,7 +3126,7 @@ extension Capture {
   public init<R: RegexComponent, W, C1>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1), R.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.node(component().regex._root))
+    self.init(_RegexFactory.capture(component().regex._root))
   }
 
   @_alwaysEmitIntoClient
@@ -3239,7 +3239,7 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2), R.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.node(component().regex._root))
+    self.init(_RegexFactory.capture(component().regex._root))
   }
 
   @_alwaysEmitIntoClient
@@ -3352,7 +3352,7 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.node(component().regex._root))
+    self.init(_RegexFactory.capture(component().regex._root))
   }
 
   @_alwaysEmitIntoClient
@@ -3465,7 +3465,7 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.node(component().regex._root))
+    self.init(_RegexFactory.capture(component().regex._root))
   }
 
   @_alwaysEmitIntoClient
@@ -3578,7 +3578,7 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.node(component().regex._root))
+    self.init(_RegexFactory.capture(component().regex._root))
   }
 
   @_alwaysEmitIntoClient
@@ -3691,7 +3691,7 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.node(component().regex._root))
+    self.init(_RegexFactory.capture(component().regex._root))
   }
 
   @_alwaysEmitIntoClient
@@ -3804,7 +3804,7 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.node(component().regex._root))
+    self.init(_RegexFactory.capture(component().regex._root))
   }
 
   @_alwaysEmitIntoClient
@@ -3917,7 +3917,7 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.node(component().regex._root))
+    self.init(_RegexFactory.capture(component().regex._root))
   }
 
   @_alwaysEmitIntoClient
@@ -4030,7 +4030,7 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.node(component().regex._root))
+    self.init(_RegexFactory.capture(component().regex._root))
   }
 
   @_alwaysEmitIntoClient
@@ -4143,7 +4143,7 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.node(component().regex._root))
+    self.init(_RegexFactory.capture(component().regex._root))
   }
 
   @_alwaysEmitIntoClient

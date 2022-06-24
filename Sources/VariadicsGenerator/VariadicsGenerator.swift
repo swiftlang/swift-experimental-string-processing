@@ -709,7 +709,7 @@ struct VariadicsGenerator: ParsableCommand {
         public init<\(genericParams)>(
           @\(concatBuilderName) _ component: () -> R
         ) \(whereClauseRaw) {
-          self.init(_RegexFactory.node(component().regex._root))
+          self.init(_RegexFactory.capture(component().regex._root))
         }
 
       \(disfavored)\

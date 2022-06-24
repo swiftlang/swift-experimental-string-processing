@@ -107,9 +107,9 @@ enum _RegexFactory {
   @usableFromInline
   static func capture<Output, W>(
     _ node: _Node,
-    _ reference: Reference<W>? = nil
+    _ reference: Reference<W>
   ) -> Regex<Output> {
-    .init(node: .capture(reference: reference?.id, node.node))
+    .init(node: .capture(reference: reference.id, node.node))
   }
   
   @available(SwiftStdlib 5.7, *)
