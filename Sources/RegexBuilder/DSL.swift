@@ -140,6 +140,7 @@ public struct One<Output>: RegexComponent {
 public struct OneOrMore<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -152,6 +153,7 @@ public struct OneOrMore<Output>: _BuiltinRegexComponent {
 public struct ZeroOrMore<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -164,6 +166,7 @@ public struct ZeroOrMore<Output>: _BuiltinRegexComponent {
 public struct Optionally<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -176,6 +179,7 @@ public struct Optionally<Output>: _BuiltinRegexComponent {
 public struct Repeat<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -217,6 +221,7 @@ public struct AlternationBuilder {
 public struct ChoiceOf<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -232,6 +237,7 @@ public struct ChoiceOf<Output>: _BuiltinRegexComponent {
 public struct Capture<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -243,6 +249,7 @@ public struct Capture<Output>: _BuiltinRegexComponent {
 public struct TryCapture<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -260,6 +267,7 @@ public struct TryCapture<Output>: _BuiltinRegexComponent {
 public struct Local<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
