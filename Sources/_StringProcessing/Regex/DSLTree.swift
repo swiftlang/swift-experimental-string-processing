@@ -199,11 +199,10 @@ extension DSLTree {
       internal mutating func add(_ val: UInt8, _ isCaseInsensitive: Bool) {
         setBit(val)
         if isCaseInsensitive {
-          if val >= 64 && val <= 90 {
-            setBit(val + 32)
-          }
-          if val >= 97 && val <= 122 {
-            setBit(val - 32)
+          switch val {
+            case 64...90: setBit(val + 32)
+            case 97...122: setBit(val - 32)
+            default: break
           }
         }
       }
