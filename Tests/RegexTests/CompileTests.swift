@@ -147,21 +147,25 @@ extension RegexTests {
     for regex: String,
     syntax: SyntaxOptions = .traditional,
     semanticLevel: RegexSemanticLevel? = nil,
-    contains target: Instruction.OpCode,
+    contains targets: Set<Instruction.OpCode>,
     file: StaticString = #file,
     line: UInt = #line
   ) {
     do {
       let prog = try _compileRegex(regex, syntax, semanticLevel)
+      var found: Set<Instruction.OpCode> = []
       for inst in prog.engine.instructions {
-        if inst.opcode == target {
-          return
+        if targets.contains(inst.opcode) {
+          found.insert(inst.opcode)
         }
       }
-      XCTFail(
-        "Compiled regex '\(regex)' did not contain desired opcode \(target)",
-        file: file,
-        line: line)
+
+      if !found.isSuperset(of: targets) {
+        XCTFail(
+          "Compiled regex '\(regex)' did not contain desired opcodes. Wanted: \(targets), found: \(found)",
+          file: file,
+          line: line)
+      }
     } catch {
       XCTFail(
         "Failed to compile regex '\(regex)': \(error)",
@@ -174,16 +178,16 @@ extension RegexTests {
     for regex: String,
     syntax: SyntaxOptions = .traditional,
     semanticLevel: RegexSemanticLevel? = nil,
-    doesNotContain target: Instruction.OpCode,
+    doesNotContain targets: Set<Instruction.OpCode>,
     file: StaticString = #file,
     line: UInt = #line
   ) {
     do {
       let prog = try _compileRegex(regex, syntax, semanticLevel)
       for inst in prog.engine.instructions {
-        if inst.opcode == target {
+        if targets.contains(inst.opcode) {
           XCTFail(
-            "Compiled regex '\(regex)' contains incorrect opcode \(target)",
+            "Compiled regex '\(regex)' contains incorrect opcode \(inst.opcode)",
             file: file,
             line: line)
           return
@@ -198,10 +202,10 @@ extension RegexTests {
   }
 
   func testBitsetCompile() {
-    expectProgram(for: "[abc]", contains: .matchBitset)
-    expectProgram(for: "[abc]", doesNotContain: .consumeBy)
+    expectProgram(for: "[abc]", contains: [.matchBitset])
+    expectProgram(for: "[abc]", doesNotContain: [.consumeBy])
 
-    expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, doesNotContain: .matchBitset)
-    expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, contains: .consumeBy)
+    expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, doesNotContain: [.matchBitset])
+    expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, contains: [.consumeBy])
   }
 }
