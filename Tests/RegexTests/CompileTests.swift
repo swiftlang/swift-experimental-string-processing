@@ -142,4 +142,50 @@ extension RegexTests {
       "((?i:.))",
       matchingOptions(adding: [.caseInsensitive]))
   }
+
+  private func expectProgram(
+    for regex: String,
+    syntax: SyntaxOptions = .traditional,
+    semanticLevel: RegexSemanticLevel? = nil,
+    contains target: Instruction.OpCode
+  ) {
+    do {
+      let prog = try _compileRegex(regex, syntax, semanticLevel)
+      for inst in prog.engine.instructions {
+        if inst.opcode == target {
+          return
+        }
+      }
+      XCTFail("Compiled regex '\(regex)' did not contain desired opcode \(target)")
+    } catch {
+      XCTFail("Failed compile regex '\(regex)': \(error)")
+    }
+  }
+
+  private func expectProgram(
+    for regex: String,
+    syntax: SyntaxOptions = .traditional,
+    semanticLevel: RegexSemanticLevel? = nil,
+    doesNotContain target: Instruction.OpCode
+  ) {
+    do {
+      let prog = try _compileRegex(regex, syntax, semanticLevel)
+      for inst in prog.engine.instructions {
+        if inst.opcode == target {
+          XCTFail("Compiled regex '\(regex)' did contains incorrect opcode \(target)")
+          return
+        }
+      }
+    } catch {
+      XCTFail("Failed compile regex '\(regex)': \(error)")
+    }
+  }
+
+  func testBitsetCompile() {
+    expectProgram(for: "[abc]", contains: .matchBitset)
+    expectProgram(for: "[abc]", doesNotContain: .consumeBy)
+
+    expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, doesNotContain: .matchBitset)
+    expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, contains: .consumeBy)
+  }
 }
