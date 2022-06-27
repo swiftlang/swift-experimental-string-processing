@@ -52,20 +52,20 @@ extension DSLTree.Node {
 }
 
 extension DSLTree._AST.Atom {
-  var asciiValue: UInt8? {
-    return ast.asciiValue
+  var singleScalarASCIIValue: UInt8? {
+    return ast.singleScalarASCIIValue
   }
 }
 
 extension DSLTree.Atom {
-  var asciiValue: UInt8? {
+  var singleScalarASCIIValue: UInt8? {
     switch self {
     case let .char(c) where c != "\r\n":
       return c.asciiValue
     case let .scalar(s) where s.isASCII:
       return UInt8(ascii: s)
     case let .unconverted(atom):
-      return atom.asciiValue
+      return atom.singleScalarASCIIValue
     default:
       return nil
     }
@@ -197,7 +197,7 @@ extension AST.Atom {
     }
   }
   
-  var asciiValue: UInt8? {
+  var singleScalarASCIIValue: UInt8? {
     switch kind {
     case let .char(c) where c != "\r\n":
       return c.asciiValue
@@ -271,7 +271,7 @@ extension DSLTree.CustomCharacterClass.Member {
   ) -> DSLTree.CustomCharacterClass.AsciiBitset? {
     switch self {
     case let .atom(a):
-      if let val = a.asciiValue {
+      if let val = a.singleScalarASCIIValue {
         return DSLTree.CustomCharacterClass.AsciiBitset(
           val,
           isInverted,
@@ -279,7 +279,7 @@ extension DSLTree.CustomCharacterClass.Member {
         )
       }
     case let .range(low, high):
-      if let lowVal = low.asciiValue, let highVal = high.asciiValue {
+      if let lowVal = low.singleScalarASCIIValue, let highVal = high.singleScalarASCIIValue {
         return DSLTree.CustomCharacterClass.AsciiBitset(
           low: lowVal,
           high: highVal,

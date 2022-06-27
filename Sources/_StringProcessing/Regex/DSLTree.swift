@@ -165,7 +165,7 @@ extension DSLTree {
       indirect case symmetricDifference(CustomCharacterClass, CustomCharacterClass)
     }
     
-    public struct AsciiBitset {
+    internal struct AsciiBitset {
       let isInverted: Bool
       var a: UInt64 = 0
       var b: UInt64 = 0
