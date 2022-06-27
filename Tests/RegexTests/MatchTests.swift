@@ -587,6 +587,20 @@ extension RegexTests {
       ("\r\n", true),
       ("\n", false),
       ("\r", false))
+    // check that in scalar mode this case is handled correctly
+    // in scalar semantics the character "\r\n" in the character class is
+    // interpreted as matching the scalars "\r" or "\n".
+    // It does not fully match the character "\r\n" because the character class
+    // in scalar mode will only match one scalar
+    do {
+      let regex = try Regex("[\r\n]").matchingSemantics(.unicodeScalar)
+      XCTAssertEqual("\r", try regex.wholeMatch(in: "\r")?.0)
+      XCTAssertEqual("\n", try regex.wholeMatch(in: "\n")?.0)
+      XCTAssertEqual(nil, try regex.wholeMatch(in: "\r\n")?.0)
+    } catch {
+      XCTFail("\(error)", file: #filePath, line: #line)
+    }
+
     matchTest("[^\r\n]",
       ("\r\n", false),
       ("\n", true),
