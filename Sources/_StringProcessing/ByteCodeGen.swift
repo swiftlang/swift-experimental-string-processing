@@ -645,6 +645,8 @@ fileprivate extension Compiler.ByteCodeGen {
   ) throws {
     if let asciiBitset = ccc.asAsciiBitset(options),
         options.semanticLevel == .graphemeCluster {
+      // future work: add a bit to .matchBitset to consume either a character
+      // or a scalar so we can have this optimization in scalar mode
       builder.buildMatchAsciiBitset(asciiBitset)
     } else {
       let consumer = try ccc.generateConsumer(options)

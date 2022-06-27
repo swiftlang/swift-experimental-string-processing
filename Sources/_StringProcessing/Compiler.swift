@@ -34,11 +34,28 @@ class Compiler {
   }
 }
 
+/// Regex.Program and CompilerInterface.swift call these parse/compilation methods directly, this method is
+/// only for testing purposes (see CompileTest.swift)
+@available(SwiftStdlib 5.7, *)
 func _compileRegex(
-  _ regex: String, _ syntax: SyntaxOptions = .traditional
+  _ regex: String,
+  _ syntax: SyntaxOptions = .traditional,
+  _ semanticLevel: RegexSemanticLevel? = nil
 ) throws -> Executor {
   let ast = try parse(regex, .semantic, syntax)
-  let program = try Compiler(ast: ast).emit()
+  let dsl: DSLTree
+
+  switch semanticLevel?.base {
+  case .graphemeCluster:
+    let sequence = AST.MatchingOptionSequence(adding: [.init(.graphemeClusterSemantics, location: .fake)])
+    dsl = DSLTree(.nonCapturingGroup(.init(ast: .changeMatchingOptions(sequence)), ast.dslTree.root))
+  case .unicodeScalar:
+    let sequence = AST.MatchingOptionSequence(adding: [.init(.unicodeScalarSemantics, location: .fake)])
+    dsl = DSLTree(.nonCapturingGroup(.init(ast: .changeMatchingOptions(sequence)), ast.dslTree.root))
+  case .none:
+    dsl = ast.dslTree
+  }
+  let program = try Compiler(tree: dsl).emit()
   return Executor(program: program)
 }
 
