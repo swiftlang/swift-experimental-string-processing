@@ -151,10 +151,8 @@ extension MEProgram.Builder {
   mutating func buildMatchAsciiBitset(
     _ b: DSLTree.CustomCharacterClass.AsciiBitset
   ) {
-    instructions.append(
-      Instruction.init(
-        Instruction.OpCode.matchBitset,
-        Instruction.Payload.init(bitset: makeAsciiBitset(b))))
+    instructions.append(.init(
+      .matchBitset, .init(bitset: makeAsciiBitset(b))))
   }
 
   mutating func buildConsume(
