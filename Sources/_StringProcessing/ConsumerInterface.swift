@@ -80,17 +80,32 @@ extension DSLTree.Atom {
     
     switch self {
     case let .char(c):
-      // TODO: Match level?
-      return { input, bounds in
-        let low = bounds.lowerBound
-        if isCaseInsensitive && c.isCased {
-          return input[low].lowercased() == c.lowercased()
-            ? input.index(after: low)
-            : nil
-        } else {
-          return input[low] == c
-            ? input.index(after: low)
-            : nil
+      if opts.semanticLevel == .graphemeCluster {
+        return { input, bounds in
+          let low = bounds.lowerBound
+          if isCaseInsensitive && c.isCased {
+            return input[low].lowercased() == c.lowercased()
+              ? input.index(after: low)
+              : nil
+          } else {
+            return input[low] == c
+              ? input.index(after: low)
+              : nil
+          }
+        }
+      } else {
+        let consumers = c.unicodeScalars.map { s in consumeScalar {
+          isCaseInsensitive
+            ? $0.properties.lowercaseMapping == s.properties.lowercaseMapping
+            : $0 == s
+        }}
+        return { input, bounds in
+          for fn in consumers {
+            if let idx = fn(input, bounds) {
+              return idx
+            }
+          }
+          return nil
         }
       }
     case let .scalar(s):

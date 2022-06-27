@@ -643,7 +643,8 @@ fileprivate extension Compiler.ByteCodeGen {
   mutating func emitCustomCharacterClass(
     _ ccc: DSLTree.CustomCharacterClass
   ) throws {
-    if let asciiBitset = ccc.asAsciiBitset(options) {
+    if let asciiBitset = ccc.asAsciiBitset(options),
+        options.semanticLevel == .graphemeCluster {
       builder.buildMatchAsciiBitset(asciiBitset)
     } else {
       let consumer = try ccc.generateConsumer(options)
