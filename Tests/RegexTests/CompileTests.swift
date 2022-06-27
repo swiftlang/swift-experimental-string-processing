@@ -147,7 +147,9 @@ extension RegexTests {
     for regex: String,
     syntax: SyntaxOptions = .traditional,
     semanticLevel: RegexSemanticLevel? = nil,
-    contains target: Instruction.OpCode
+    contains target: Instruction.OpCode,
+    file: StaticString = #file,
+    line: UInt = #line
   ) {
     do {
       let prog = try _compileRegex(regex, syntax, semanticLevel)
@@ -156,9 +158,15 @@ extension RegexTests {
           return
         }
       }
-      XCTFail("Compiled regex '\(regex)' did not contain desired opcode \(target)")
+      XCTFail(
+        "Compiled regex '\(regex)' did not contain desired opcode \(target)",
+        file: file,
+        line: line)
     } catch {
-      XCTFail("Failed compile regex '\(regex)': \(error)")
+      XCTFail(
+        "Failed to compile regex '\(regex)': \(error)",
+        file: file,
+        line: line)
     }
   }
 
@@ -166,18 +174,26 @@ extension RegexTests {
     for regex: String,
     syntax: SyntaxOptions = .traditional,
     semanticLevel: RegexSemanticLevel? = nil,
-    doesNotContain target: Instruction.OpCode
+    doesNotContain target: Instruction.OpCode,
+    file: StaticString = #file,
+    line: UInt = #line
   ) {
     do {
       let prog = try _compileRegex(regex, syntax, semanticLevel)
       for inst in prog.engine.instructions {
         if inst.opcode == target {
-          XCTFail("Compiled regex '\(regex)' did contains incorrect opcode \(target)")
+          XCTFail(
+            "Compiled regex '\(regex)' contains incorrect opcode \(target)",
+            file: file,
+            line: line)
           return
         }
       }
     } catch {
-      XCTFail("Failed compile regex '\(regex)': \(error)")
+      XCTFail(
+        "Failed to compile regex '\(regex)': \(error)",
+        file: file,
+        line: line)
     }
   }
 
