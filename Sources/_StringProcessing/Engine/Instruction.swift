@@ -83,6 +83,9 @@ extension Instruction {
     ///
     /// Operand: Sequence register to compare against.
     case matchSequence
+    
+    case matchScalar
+    case matchScalarUnchecked
 
     /// TODO: builtin assertions and anchors
     case builtinAssertion

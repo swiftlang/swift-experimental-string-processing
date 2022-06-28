@@ -146,6 +146,14 @@ extension MEProgram.Builder {
       .matchSequence,
       .init(sequence: sequences.store(.init(s)))))
   }
+  
+  mutating func buildMatchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) {
+    if boundaryCheck {
+      instructions.append(.init(.matchScalar, .init(scalar: s)))
+    } else {
+      instructions.append(.init(.matchScalarUnchecked, .init(scalar: s)))
+    }
+  }
 
   mutating func buildConsume(
     by p: @escaping MEProgram.ConsumeFunction

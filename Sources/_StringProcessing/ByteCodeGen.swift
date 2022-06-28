@@ -208,11 +208,20 @@ fileprivate extension Compiler.ByteCodeGen {
       builder.buildConsume(by: consumeScalar {
         $0.properties.lowercaseMapping == s.properties.lowercaseMapping
       })
-    } else {
-      builder.buildConsume(by: consumeScalar {
-        $0 == s
-      })
+      return
     }
+    
+    if s.value < 0x300 {
+      // lily todo: make sure this is correct + add compiler option check after it's merged in
+      // we unconditionally match against the scalar using consumeScalar in the else case
+      // so maybe this check is uneccessary??
+      builder.buildMatchScalar(s, boundaryCheck: false)
+      return
+    }
+    
+    builder.buildConsume(by: consumeScalar {
+      $0 == s
+    })
   }
   
   mutating func emitCharacter(_ c: Character) throws {
@@ -233,9 +242,27 @@ fileprivate extension Compiler.ByteCodeGen {
           ? input.index(after: bounds.lowerBound)
           : nil
       }
-    } else {
-      builder.buildMatch(c)
     }
+    
+//    if c.unicodeScalars.count == 1,
+//        let first = c.unicodeScalars.first,
+//        first.value < 0x300 { // lily todo: check this more carefully
+      // if we have a single scalar then this must not be an extended grapheme cluster
+      // so it must be a character that can be exactly matched by its first scalar
+      // cr-lf has two scalars right? yes it has two
+      
+      // i think one these two checks are redundant, I think we only need the second?
+      // ask alex?
+    
+    // we can only match against characters that have a single cannonical equivalence
+    // so I think that rules out any latin in here, so just use ascii for now
+    // we also need to exclude our good non-single-scalar-ascii friend cr-lf
+    if c.isASCII && c != "\r\n" {
+      builder.buildMatchScalar(c.unicodeScalars.first!, boundaryCheck: true)
+      return
+    }
+      
+    builder.buildMatch(c)
   }
 
   mutating func emitAny() {
@@ -732,7 +759,22 @@ fileprivate extension Compiler.ByteCodeGen {
             return currentIndex
           }
         } else {
-          builder.buildMatchSequence(s)
+          // if we have any extended latin in our characters then we have to
+          // respect cannoical equivalence, so we cannot match against scalars exactly
+          // so match against all single scalar ascii
+          
+          // lily todo: which strings are nfc invariant and matchable by direct scalar comparison?
+          // alternatively: loop over characters in s and emit either matchScalar or matchCharacter depending on if it is NFC invariant
+          // getting rid of matchSeq entirely does also get rid of the weird ARC
+          if s.allSatisfy({c in c.isASCII && c != "\r\n"}) {
+            for scalar in s.unicodeScalars.dropLast(1) {
+              builder.buildMatchScalar(scalar, boundaryCheck: false)
+            }
+            // check that we are on a boundary at the end and there isn't a combining character after this scalar
+            builder.buildMatchScalar(s.unicodeScalars.last!, boundaryCheck: true)
+          } else {
+            builder.buildMatchSequence(s)
+          }
         }
       } else {
         builder.buildConsume {

@@ -146,6 +146,13 @@ extension Instruction.Payload {
   var string: StringRegister {
     interpret()
   }
+  
+  init(scalar: Unicode.Scalar) {
+    self.init(UInt64(scalar.value))
+  }
+  var scalar: Unicode.Scalar {
+    return Unicode.Scalar(_value: UInt32(self.rawValue))
+  }
 
   init(sequence: SequenceRegister) {
     self.init(sequence)

@@ -226,6 +226,23 @@ extension Processor {
     }
     return true
   }
+  
+  func loadScalar() -> Unicode.Scalar? {
+    currentPosition < end ? input.unicodeScalars[currentPosition] : nil
+  }
+  
+  mutating func matchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) -> Bool {
+    guard let curScalar = loadScalar(),
+      curScalar == s,
+      let idx = input.unicodeScalars.index(currentPosition, offsetBy: 1, limitedBy: end),
+      (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx))
+    else {
+      signalFailure()
+      return false
+    }
+    currentPosition = idx
+    return true
+  }
 
   mutating func signalFailure() {
     guard let (pc, pos, stackEnd, capEnds, intRegisters) =
@@ -363,7 +380,17 @@ extension Processor {
       if matchSeq(seq) {
         controller.step()
       }
-
+    
+    case .matchScalar:
+      let scalar = payload.scalar
+      if matchScalar(scalar, boundaryCheck: true) {
+        controller.step()
+      }
+    case .matchScalarUnchecked:
+      let scalar = payload.scalar
+      if matchScalar(scalar, boundaryCheck: false) {
+        controller.step()
+      }
     case .consumeBy:
       let reg = payload.consumer
       guard currentPosition < searchBounds.upperBound,
