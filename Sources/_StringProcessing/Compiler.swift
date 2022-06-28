@@ -16,6 +16,7 @@ class Compiler {
 
   // TODO: Or are these stored on the tree?
   var options = MatchingOptions()
+  private var compileOptions: CompileOptions = .default
 
   init(ast: AST) {
     self.tree = ast.dslTree
@@ -25,17 +26,36 @@ class Compiler {
     self.tree = tree
   }
 
+  init(tree: DSLTree, compileOptions: CompileOptions) {
+    self.tree = tree
+    self.compileOptions = compileOptions
+  }
+
   __consuming func emit() throws -> MEProgram {
     // TODO: Handle global options
     var codegen = ByteCodeGen(
-      options: options, captureList: tree.captureList
-    )
+      options: options,
+      compileOptions:
+        compileOptions,
+      captureList: tree.captureList)
     return try codegen.emitRoot(tree.root)
   }
 }
 
-/// Regex.Program and CompilerInterface.swift call these parse/compilation methods directly, this method is
-/// only for testing purposes (see CompileTest.swift)
+// An error produced when compiling a regular expression.
+enum RegexCompilationError: Error, CustomStringConvertible {
+  // TODO: Source location?
+  case uncapturedReference
+
+  var description: String {
+    switch self {
+    case .uncapturedReference:
+      return "Found a reference used before it captured any match."
+    }
+  }
+}
+
+// Testing support
 @available(SwiftStdlib 5.7, *)
 func _compileRegex(
   _ regex: String,
@@ -59,15 +79,10 @@ func _compileRegex(
   return Executor(program: program)
 }
 
-// An error produced when compiling a regular expression.
-enum RegexCompilationError: Error, CustomStringConvertible {
-  // TODO: Source location?
-  case uncapturedReference
-
-  var description: String {
-    switch self {
-    case .uncapturedReference:
-      return "Found a reference used before it captured any match."
-    }
+extension Compiler {
+  struct CompileOptions: OptionSet {
+    let rawValue: Int
+    static let unoptimized = CompileOptions(rawValue: 1)
+    static let `default`: CompileOptions = []
   }
 }

@@ -14,15 +14,16 @@ import XCTest
 @testable import _StringProcessing
 
 struct MatchError: Error {
-    var message: String
-    init(_ message: String) {
-        self.message = message
-    }
+  var message: String
+  init(_ message: String) {
+    self.message = message
+  }
 }
 
 func _firstMatch(
   _ regexStr: String,
   input: String,
+  validate: Bool,
   syntax: SyntaxOptions = .traditional
 ) throws -> (String, [String?]) {
   let regex = try Regex(regexStr, syntax: syntax)
@@ -30,6 +31,15 @@ func _firstMatch(
     throw MatchError("match not found for \(regexStr) in \(input)")
   }
   let caps = result.output.slices(from: input)
+  
+  if validate {
+    var unoptRegex = try Regex(regexStr, syntax: syntax)
+    unoptRegex._setCompilerOptionsForTesting(.unoptimized)
+    guard let unoptResult = try unoptRegex.firstMatch(in: input) else {
+      throw MatchError("match not found for unoptimized \(regexStr) in \(input)")
+    }
+    XCTAssertEqual(String(input[result.range]), String(input[unoptResult.range]))
+  }
   return (String(input[result.range]), caps.map { $0.map(String.init) })
 }
 
@@ -41,6 +51,7 @@ func flatCaptureTest(
   syntax: SyntaxOptions = .traditional,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  validate: Bool = true,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -49,6 +60,7 @@ func flatCaptureTest(
       guard var (_, caps) = try? _firstMatch(
         regex,
         input: test,
+        validate: validate,
         syntax: syntax
       ) else {
         if expect == nil {
@@ -98,6 +110,7 @@ func matchTest(
   enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  validate: Bool = true,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -110,6 +123,7 @@ func matchTest(
       enableTracing: enableTracing,
       dumpAST: dumpAST,
       xfail: xfail,
+      validate: validate,
       file: file,
       line: line)
   }
@@ -126,6 +140,7 @@ func firstMatchTest(
   enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  validate: Bool = true,
   file: StaticString = #filePath,
   line: UInt = #line
 ) {
@@ -133,6 +148,7 @@ func firstMatchTest(
     let (found, _) = try _firstMatch(
       regex,
       input: input,
+      validate: validate,
       syntax: syntax)
 
     if xfail {

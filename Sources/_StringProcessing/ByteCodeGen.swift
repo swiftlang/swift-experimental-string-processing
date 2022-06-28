@@ -3,13 +3,19 @@
 extension Compiler {
   struct ByteCodeGen {
     var options: MatchingOptions
+    private let compileOptions: CompileOptions
     var builder = MEProgram.Builder()
     /// A Boolean indicating whether the first matchable atom has been emitted.
     /// This is used to determine whether to apply initial options.
     var hasEmittedFirstMatchableAtom = false
 
-    init(options: MatchingOptions, captureList: CaptureList) {
+    init(
+      options: MatchingOptions,
+      compileOptions: CompileOptions,
+      captureList: CaptureList
+    ) {
       self.options = options
+      self.compileOptions = compileOptions
       self.builder.captureList = captureList
     }
   }
@@ -644,7 +650,8 @@ fileprivate extension Compiler.ByteCodeGen {
     _ ccc: DSLTree.CustomCharacterClass
   ) throws {
     if let asciiBitset = ccc.asAsciiBitset(options),
-        options.semanticLevel == .graphemeCluster {
+        options.semanticLevel == .graphemeCluster,
+        !compileOptions.contains(.unoptimized) {
       // future work: add a bit to .matchBitset to consume either a character
       // or a scalar so we can have this optimization in scalar mode
       builder.buildMatchAsciiBitset(asciiBitset)
