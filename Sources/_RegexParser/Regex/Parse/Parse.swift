@@ -601,37 +601,20 @@ extension Parser {
   }
 }
 
-public enum ASTStage {
-  /// The regex is parsed, and a syntactically valid AST is returned. Otherwise
-  /// an error is thrown. This is useful for e.g syntax coloring.
-  case syntactic
-
-  /// The regex is parsed, and a syntactically and semantically valid AST is
-  /// returned. Otherwise an error is thrown. A semantically valid AST has been
-  /// checked for e.g unsupported constructs and invalid backreferences.
-  case semantic
-}
-
 public func parseWithRecovery<S: StringProtocol>(
-  _ regex: S, _ syntax: SyntaxOptions, stage: ASTStage = .semantic
+  _ regex: S, _ syntax: SyntaxOptions
 ) -> AST where S.SubSequence == Substring
 {
   let source = Source(String(regex))
   var parser = Parser(source, syntax: syntax)
-  let ast = parser.parse()
-  switch stage {
-  case .syntactic:
-    return ast
-  case .semantic:
-    return validate(ast)
-  }
+  return validate(parser.parse())
 }
 
 public func parse<S: StringProtocol>(
-  _ regex: S, _ stage: ASTStage, _ syntax: SyntaxOptions
+  _ regex: S, _ syntax: SyntaxOptions
 ) throws -> AST where S.SubSequence == Substring
 {
-  try parseWithRecovery(regex, syntax, stage: stage).ensureValid()
+  try parseWithRecovery(regex, syntax).ensureValid()
 }
 
 extension StringProtocol {
@@ -674,12 +657,12 @@ public func parseWithDelimitersWithRecovery<S: StringProtocol>(
 /// Parses a given regex string with delimiters, inferring the syntax options
 /// from the delimiters used.
 public func parseWithDelimiters<S: StringProtocol>(
-  _ regex: S, _ stage: ASTStage
+  _ regex: S
 ) throws -> AST where S.SubSequence == Substring {
   let (contents, delim) = droppingRegexDelimiters(String(regex))
   let syntax = defaultSyntaxOptions(delim, contents: contents)
   do {
-    return try parseWithRecovery(contents, syntax, stage: stage).ensureValid()
+    return try parseWithRecovery(contents, syntax).ensureValid()
   } catch let error as LocatedErrorProtocol {
     // Convert the range in 'contents' to the range in 'regex'.
     let delimCount = delim.opening.count
