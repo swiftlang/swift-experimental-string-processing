@@ -176,7 +176,7 @@ extension ParseError: CustomStringConvertible {
     case .invalidCharacterClassRangeOperand:
       return "invalid character class range"
     case .emptyProperty:
-      return "empty property"
+      return "expected property name"
     case .unknownProperty(let key, let value):
       if let key = key {
         return "unknown character property '\(key)=\(value)'"
