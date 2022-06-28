@@ -502,6 +502,12 @@ extension Parser {
     var members: Array<Member> = []
     try parseCCCMembers(into: &members)
 
+    // Make sure we have at least one semantic member.
+    if members.none(\.isSemantic) {
+      throw Source.LocatedError(
+        ParseError.expectedCustomCharacterClassMembers, start.location)
+    }
+
     // If we have a binary set operator, parse it and the next members. Note
     // that this means we left associate for a chain of operators.
     // TODO: We may want to diagnose and require users to disambiguate, at least
@@ -511,15 +517,11 @@ extension Parser {
       var rhs: Array<Member> = []
       try parseCCCMembers(into: &rhs)
 
-      if members.none(\.isSemantic) || rhs.none(\.isSemantic) {
+      if rhs.none(\.isSemantic) {
         throw Source.LocatedError(
           ParseError.expectedCustomCharacterClassMembers, start.location)
       }
       members = [.setOperation(members, binOp, rhs)]
-    }
-    if members.none(\.isSemantic) {
-      throw Source.LocatedError(
-        ParseError.expectedCustomCharacterClassMembers, start.location)
     }
     try source.expect("]")
     return CustomCC(start, members, loc(start.location.start))
