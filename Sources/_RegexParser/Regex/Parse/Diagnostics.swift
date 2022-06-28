@@ -55,6 +55,7 @@ enum ParseError: Error, Hashable {
 
   case unknownGroupKind(String)
   case unknownCalloutKind(String)
+  case unknownTextSegmentMatchingOption(Character)
 
   case invalidMatchingOption(Character)
   case cannotRemoveMatchingOptionsAfterCaret
@@ -165,6 +166,8 @@ extension ParseError: CustomStringConvertible {
       return "unknown group kind '(\(str)'"
     case let .unknownCalloutKind(str):
       return "unknown callout kind '\(str)'"
+    case let .unknownTextSegmentMatchingOption(m):
+      return "unknown text segment mode '\(m)'; expected 'w' or 'g'"
     case let .invalidMatchingOption(c):
       return "invalid matching option '\(c)'"
     case .cannotRemoveMatchingOptionsAfterCaret:
