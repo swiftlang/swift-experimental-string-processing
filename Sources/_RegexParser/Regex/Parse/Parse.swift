@@ -502,6 +502,12 @@ extension Parser {
     var members: Array<Member> = []
     try parseCCCMembers(into: &members)
 
+    // Make sure we have at least one semantic member.
+    if members.none(\.isSemantic) {
+      throw Source.LocatedError(
+        ParseError.expectedCustomCharacterClassMembers, start.location)
+    }
+
     // If we have a binary set operator, parse it and the next members. Note
     // that this means we left associate for a chain of operators.
     // TODO: We may want to diagnose and require users to disambiguate, at least
@@ -511,15 +517,11 @@ extension Parser {
       var rhs: Array<Member> = []
       try parseCCCMembers(into: &rhs)
 
-      if members.none(\.isSemantic) || rhs.none(\.isSemantic) {
+      if rhs.none(\.isSemantic) {
         throw Source.LocatedError(
           ParseError.expectedCustomCharacterClassMembers, start.location)
       }
       members = [.setOperation(members, binOp, rhs)]
-    }
-    if members.none(\.isSemantic) {
-      throw Source.LocatedError(
-        ParseError.expectedCustomCharacterClassMembers, start.location)
     }
     try source.expect("]")
     return CustomCC(start, members, loc(start.location.start))
@@ -550,47 +552,87 @@ extension Parser {
     return nil
   }
 
+  /// Attempt to parse a custom character class range into `members`, or regular
+  /// members if a range cannot be formed.
+  mutating func parsePotentialCCRange(
+    into members: inout [CustomCC.Member]
+  ) throws {
+    guard let lhs = members.last, lhs.isSemantic else { return }
+
+    // Try and see if we can parse a character class range. Each time we parse
+    // a component of the range, we append to `members` in case it ends up not
+    // being a range, and we bail. If we succeed in parsing, we remove the
+    // intermediate members.
+    let membersBeforeRange = members.count - 1
+    while let t = try source.lexTrivia(context: context) {
+      members.append(.trivia(t))
+    }
+    guard let dash = source.lexCustomCharacterClassRangeOperator() else {
+      return
+    }
+
+    // If we can't parse a range, '-' becomes literal, e.g `[6-]`.
+    members.append(.atom(.init(.char("-"), dash)))
+
+    while let t = try source.lexTrivia(context: context) {
+      members.append(.trivia(t))
+    }
+    guard let rhs = try parseCCCMember() else { return }
+    members.append(rhs)
+
+    func makeOperand(_ m: CustomCC.Member, isLHS: Bool) throws -> AST.Atom {
+      switch m {
+      case .atom(let a):
+        return a
+      case .custom:
+        // Not supported. While .NET allows `x-[...]` to spell subtraction, we
+        // require `x--[...]`. We also ban `[...]-x` for consistency.
+        if isLHS {
+          throw Source.LocatedError(
+            ParseError.invalidCharacterClassRangeOperand, m.location)
+        } else {
+          throw Source.LocatedError(
+            ParseError.unsupportedDotNetSubtraction, m.location)
+        }
+      case .quote:
+        // Currently unsupported, we need to figure out what the semantics
+        // would be for grapheme/scalar modes.
+        throw Source.LocatedError(
+          ParseError.unsupported("range with quoted sequence"), m.location)
+      case .trivia:
+        throw Unreachable("Should have been lexed separately")
+      case .range, .setOperation:
+        throw Unreachable("Parsed later")
+      }
+    }
+    let lhsOp = try makeOperand(lhs, isLHS: true)
+    let rhsOp = try makeOperand(rhs, isLHS: false)
+
+    // We've successfully parsed an atom LHS and RHS, so form a range,
+    // collecting the trivia we've parsed, and replacing the members that
+    // would have otherwise been added to the custom character class.
+    let rangeMemberCount = members.count - membersBeforeRange
+    let trivia = members.suffix(rangeMemberCount).compactMap(\.asTrivia)
+    members.removeLast(rangeMemberCount)
+    members.append(.range(.init(lhsOp, dash, rhsOp, trivia: trivia)))
+
+    // We need to specially check if we can lex a .NET character class
+    // subtraction here as e.g `[a-c-[...]]` is allowed in .NET. Otherwise we'd
+    // treat the second `-` as literal.
+    if let dashLoc = source.canLexDotNetCharClassSubtraction(context: context) {
+      throw Source.LocatedError(
+        ParseError.unsupportedDotNetSubtraction, dashLoc)
+    }
+  }
+
   mutating func parseCCCMembers(
     into members: inout Array<CustomCC.Member>
   ) throws {
-    // Parse members until we see the end of the custom char class or an
-    // operator.
+    // Parse members and ranges until we see the end of the custom char class
+    // or an operator.
     while let member = try parseCCCMember() {
       members.append(member)
-
-      // If we have an atom, we can try to parse a character class range. Each
-      // time we parse a component of the range, we append to `members` in case
-      // it ends up not being a range, and we bail. If we succeed in parsing, we
-      // remove the intermediate members.
-      if case .atom(let lhs) = member {
-        let membersBeforeRange = members.count - 1
-
-        while let t = try source.lexTrivia(context: context) {
-          members.append(.trivia(t))
-        }
-
-        guard let dash = source.lexCustomCharacterClassRangeOperator() else {
-          continue
-        }
-        // If we can't parse a range, '-' becomes literal, e.g `[6-]`.
-        members.append(.atom(.init(.char("-"), dash)))
-
-        while let t = try source.lexTrivia(context: context) {
-          members.append(.trivia(t))
-        }
-        guard let rhs = try parseCCCMember() else { continue }
-        members.append(rhs)
-
-        guard case let .atom(rhs) = rhs else { continue }
-
-        // We've successfully parsed an atom LHS and RHS, so form a range,
-        // collecting the trivia we've parsed, and replacing the members that
-        // would have otherwise been added to the custom character class.
-        let rangeMemberCount = members.count - membersBeforeRange
-        let trivia = members.suffix(rangeMemberCount).compactMap(\.asTrivia)
-        members.removeLast(rangeMemberCount)
-        members.append(.range(.init(lhs, dash, rhs, trivia: trivia)))
-      }
+      try parsePotentialCCRange(into: &members)
     }
   }
 }

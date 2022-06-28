@@ -1245,6 +1245,25 @@ extension Source {
     return nil
   }
 
+  /// Check to see if we can lex a .NET subtraction. Returns the
+  /// location of the `-`.
+  ///
+  ///     DotNetSubtraction -> Trivia* '-' Trivia* CustomCharClass
+  ///
+  func canLexDotNetCharClassSubtraction(
+    context: ParsingContext
+  ) -> SourceLocation? {
+    lookahead { src in
+      // We can lex '-' as a .NET subtraction if it precedes a custom character
+      // class.
+      while (try? src.lexTrivia(context: context)) != nil {}
+      guard let dashLoc = src.tryEatWithLoc("-") else { return nil }
+      while (try? src.lexTrivia(context: context)) != nil {}
+      guard src.lexCustomCCStart() != nil else { return nil }
+      return dashLoc
+    }
+  }
+
   private mutating func lexPOSIXCharacterProperty(
   ) throws -> Located<AST.Atom.CharacterProperty>? {
     try recordLoc { src in
