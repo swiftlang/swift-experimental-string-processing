@@ -96,8 +96,10 @@ struct ParsingContext {
   func isPriorGroupRef(_ ref: AST.Reference.Kind) -> Bool {
     switch ref {
     case .absolute(let i):
+      guard let i = i.value else { return false }
       return i <= priorGroupCount
     case .relative(let i):
+      guard let i = i.value else { return false }
       return i < 0
     case .named(let str):
       return usedGroupNames.contains(str)

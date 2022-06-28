@@ -113,6 +113,18 @@ extension AST.Atom {
 }
 
 extension AST.Atom {
+  public struct Number: Hashable {
+    /// The value, which may be `nil` in an invalid AST, e.g the parser expected
+    /// a number at a given location, or the parsed number overflowed.
+    public var value: Int?
+    public var location: SourceLocation
+
+    public init(_ value: Int?, at location: SourceLocation) {
+      self.value = value
+      self.location = location
+    }
+  }
+
   public struct Scalar: Hashable {
     public var value: UnicodeScalar
     public var location: SourceLocation
@@ -558,7 +570,7 @@ extension AST.Atom {
     /// A PCRE callout written `(?C...)`
     public struct PCRE: Hashable {
       public enum Argument: Hashable {
-        case number(Int)
+        case number(AST.Atom.Number)
         case string(String)
       }
       public var arg: AST.Located<Argument>

@@ -76,7 +76,10 @@ fileprivate extension Compiler.ByteCodeGen {
     }
 
     switch ref.kind {
-    case .absolute(let i):
+    case .absolute(let n):
+      guard let i = n.value else {
+        throw Unreachable("Expected a value")
+      }
       builder.buildBackreference(.init(i))
     case .named(let name):
       try builder.buildNamedReference(name)
@@ -451,6 +454,9 @@ fileprivate extension Compiler.ByteCodeGen {
     }
 
     let (low, high) = amount.bounds
+    guard let low = low else {
+      throw Unreachable("Must have a lower bound")
+    }
     switch (low, high) {
     case (_, 0):
       // TODO: Should error out earlier, maybe DSL and parser
