@@ -517,10 +517,36 @@ extension RegexTests {
 
     parseTest(
       "[a-b-c]", charClass(range_m("a", "b"), "-", "c"))
+    parseTest(
+      "[a-b-c-d]", charClass(range_m("a", "b"), "-", range_m("c", "d")))
+
+    parseTest("[a-c---]", charClass(
+      setOp(range_m("a", "c"), op: .subtraction, "-")
+    ))
+
+    parseTest("(?x)[a-c -- -]", concat(
+      changeMatchingOptions(matchingOptions(adding: .extended)),
+      charClass(setOp(range_m("a", "c"), op: .subtraction, "-"))
+    ))
+
+    parseTest("(?x)[a-c - - -]", concat(
+      changeMatchingOptions(matchingOptions(adding: .extended)),
+      charClass(range_m("a", "c"), range_m("-", "-"))
+    ))
 
     parseTest("[-a-]", charClass("-", "a", "-"))
     parseTest("[[a]-]", charClass(charClass("a"), "-"))
-    parseTest("[[a]-b]", charClass(charClass("a"), "-", "b"))
+    parseTest("[-[a]]", charClass("-", charClass("a")))
+
+    parseTest(#"(?x)[ -[b]]"#, concat(
+      changeMatchingOptions(matchingOptions(adding: .extended)),
+      charClass("-", charClass("b"))
+    ))
+
+    parseTest(#"[ - [ ]]"#, charClass(range_m(" ", " "), charClass(" ")))
+    parseTest(#"[ - [ ] ]"#, charClass(range_m(" ", " "), charClass(" "), " "))
+
+    parseTest(#"[a-c-\Qd\E]"#, charClass(range_m("a", "c"), "-", quote_m("d")))
 
     parseTest("[a-z]", charClass(range_m("a", "z")))
     parseTest("[a-a]", charClass(range_m("a", "a")))
@@ -2690,6 +2716,32 @@ extension RegexTests {
     diagnosticTest("[[:=:]]", .emptyProperty)
 
     diagnosticTest(#"|([\d-c])?"#, .invalidCharacterClassRangeOperand)
+    diagnosticTest("[[a]-b]", .invalidCharacterClassRangeOperand)
+
+    // .NET subtraction is banned, we require explicit '--'.
+    diagnosticTest("[a-[b]]", .unsupportedDotNetSubtraction)
+    diagnosticTest(#"[abc-[def]]"#, .unsupportedDotNetSubtraction)
+    diagnosticTest(#"[abc-[^def]]"#, .unsupportedDotNetSubtraction)
+    diagnosticTest(#"[\d\u{0}[a]-[b-[c]]]"#, .unsupportedDotNetSubtraction)
+    diagnosticTest("[a-z-[d-w-[m-o]]]", .unsupportedDotNetSubtraction)
+    diagnosticTest(#"[a-[:b]]"#, .unsupportedDotNetSubtraction)
+    diagnosticTest(#"[[a]-[b]]"#, .invalidCharacterClassRangeOperand)
+    diagnosticTest(#"[ -[ ]]"#, .unsupportedDotNetSubtraction)
+    diagnosticTest(#"(?x)[a  -  [b]  ]"#, .unsupportedDotNetSubtraction)
+
+    diagnosticTest(#"[a-[]]"#, .expectedCustomCharacterClassMembers)
+    diagnosticTest(#"[-[]]"#, .expectedCustomCharacterClassMembers)
+    diagnosticTest(#"(?x)[ - [ ] ]"#, .expectedCustomCharacterClassMembers)
+    diagnosticTest(#"(?x)[a-[ ] ]"#, .expectedCustomCharacterClassMembers)
+    diagnosticTest(#"[a-[:digit:]]"#, .invalidCharacterClassRangeOperand)
+
+    diagnosticTest("[--]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("[---]", .expectedCustomCharacterClassMembers)
+    diagnosticTest("[----]", .expectedCustomCharacterClassMembers)
+
+    // Quoted sequences aren't currently supported as range operands.
+    diagnosticTest(#"[a-\Qbc\E]"#, .unsupported("range with quoted sequence"))
+    diagnosticTest(#"[\Qbc\E-de]"#, .unsupported("range with quoted sequence"))
 
     diagnosticTest(#"[_-A]"#, .invalidCharacterRange(from: "_", to: "A"))
     diagnosticTest(#"(?i)[_-A]"#, .invalidCharacterRange(from: "_", to: "A"))
@@ -2874,6 +2926,17 @@ extension RegexTests {
         \Q
       /#
       """#, .quoteMayNotSpanMultipleLines)
+
+    // .NET subtraction
+    diagnosticWithDelimitersTest(#"""
+      #/
+      [
+        a # interesting
+        -   #a
+         [ b] # comment
+        ]
+      /#
+      """#, .unsupportedDotNetSubtraction)
 
     // MARK: Group specifiers
 

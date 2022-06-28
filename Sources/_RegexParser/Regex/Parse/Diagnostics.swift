@@ -94,6 +94,7 @@ enum ParseError: Error, Hashable {
   case invalidNamedReference(String)
   case duplicateNamedCapture(String)
   case invalidCharacterClassRangeOperand
+  case unsupportedDotNetSubtraction
   case invalidQuantifierRange(Int, Int)
   case invalidCharacterRange(from: Character, to: Character)
   case notQuantifiable
@@ -174,7 +175,9 @@ extension ParseError: CustomStringConvertible {
     case .expectedCustomCharacterClassMembers:
       return "expected custom character class members"
     case .invalidCharacterClassRangeOperand:
-      return "invalid character class range"
+      return "invalid bound for character class range"
+    case .unsupportedDotNetSubtraction:
+      return "subtraction with '-' is unsupported; use '--' instead"
     case .emptyProperty:
       return "empty property"
     case .unknownProperty(let key, let value):
