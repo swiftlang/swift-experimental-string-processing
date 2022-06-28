@@ -187,6 +187,14 @@ extension MEProgram.Builder {
       .init(capture: cap, transform: trans)))
   }
 
+  mutating func buildBeginTypeErase() {
+    instructions.append(.init(.beginTypeErase))
+  }
+
+  mutating func buildEndTypeErase() {
+    instructions.append(.init(.endTypeErase))
+  }
+
   mutating func buildMatcher(
     _ fun: MatcherRegister, into reg: ValueRegister
   ) {

@@ -193,6 +193,15 @@ extension Instruction {
     ///
     case backreference
 
+    /// Push a new type erasure scope into the capture stack.
+    case beginTypeErase
+
+    /// Pop the last type erasure scope, create a `AnyRegexOutput` from that
+    /// scope, and store it in a value register.
+    ///
+    ///     endTypeErase(_: ValReg)
+    case endTypeErase
+
     // MARK: Matching: State transitions
 
     // TODO: State transitions need more work. We want

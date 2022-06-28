@@ -93,6 +93,10 @@ extension DSLTree {
 
     case matcher(Any.Type, _MatcherInterface)
 
+    // MARK: - Type erasure
+
+    case typeErase(Node)
+
     // TODO: Would this just boil down to a consumer?
     case characterPredicate(_CharacterPredicateInterface)
   }
@@ -265,6 +269,7 @@ extension DSLTree.Node {
     case let .capture(_, _, n, _):        return [n]
     case let .nonCapturingGroup(_, n):    return [n]
     case let .quantification(_, _, n):    return [n]
+    case let .typeErase(n): return [n]
 
     case let .conditional(_, t, f): return [t,f]
 
@@ -486,6 +491,7 @@ public struct CaptureTransform: Hashable, CustomStringConvertible {
 // These wrapper types are required because even @_spi-marked public APIs can't
 // include symbols from implementation-only dependencies.
 
+@available(SwiftStdlib 5.7, *)
 extension DSLTree.Node {
   func _addCaptures(
     to list: inout CaptureList,
@@ -551,7 +557,7 @@ extension DSLTree.Node {
       break
 
     case .customCharacterClass, .atom, .trivia, .empty,
-        .quotedLiteral, .consumer, .characterPredicate:
+        .quotedLiteral, .consumer, .characterPredicate, .typeErase:
       break
     }
   }
@@ -566,7 +572,7 @@ extension DSLTree.Node {
          .conditional, .quantification, .customCharacterClass, .atom,
          .trivia, .empty, .quotedLiteral, .regexLiteral, .absentFunction,
          .convertedRegexLiteral, .consumer,
-         .characterPredicate, .matcher:
+         .characterPredicate, .matcher, .typeErase:
       return false
     }
   }
@@ -583,16 +589,28 @@ extension DSLTree.Node {
 
   /// Returns the type of the whole match, i.e. `.0` element type of the output.
   var wholeMatchType: Any.Type {
-    if case .matcher(let type, _) = outputDefiningNode {
+    switch outputDefiningNode {
+    case .matcher(let type, _):
       return type
+    case .typeErase:
+      return AnyRegexOutput.self
+    default:
+      return Substring.self
     }
-    return Substring.self
   }
 }
 
 extension DSLTree {
+  @available(SwiftStdlib 5.7, *)
   var captureList: CaptureList {
     var list = CaptureList()
+    // FIXME: This is peering through any top-level `.typeErase`. Once type
+    // erasure was handled in the engine, this can be simplified to using `root`
+    // directly.
+    var root = root
+    while case let .typeErase(child) = root {
+      root = child
+    }
     list.append(.init(type: root.wholeMatchType, optionalDepth: 0, .fake))
     root._addCaptures(to: &list, optionalNesting: 0)
     return list
@@ -620,6 +638,7 @@ extension DSLTree {
       case let .capture(_, _, n, _):        return [_Tree(n)]
       case let .nonCapturingGroup(_, n):    return [_Tree(n)]
       case let .quantification(_, _, n):    return [_Tree(n)]
+      case let .typeErase(n):               return [_Tree(n)]
 
       case let .conditional(_, t, f): return [_Tree(t), _Tree(f)]
 

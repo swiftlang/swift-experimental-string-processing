@@ -11,6 +11,7 @@
 
 @_implementationOnly import _RegexParser
 
+@available(SwiftStdlib 5.7, *)
 struct Executor {
   // TODO: consider let, for now lets us toggle tracing
   var engine: Engine
