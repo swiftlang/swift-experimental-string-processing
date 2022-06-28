@@ -18,10 +18,10 @@ extension Regex {
       return true
     }
     
-    var tupleElements: [Any.Type] = [Substring.self]
-    var labels = " "
+    var tupleElements: [Any.Type] = []
+    var labels = ""
     
-    for capture in program.tree.root._captureList.captures {
+    for capture in program.tree.captureList.captures {
       var captureType: Any.Type = capture.type ?? Substring.self
       var i = capture.optionalDepth
       
@@ -41,7 +41,7 @@ extension Regex {
     
     // If we have no captures, then our Regex must be Regex<Substring>.
     if tupleElements.count == 1 {
-      return Output.self == Substring.self
+      return Output.self == program.tree.root.wholeMatchType
     }
     
     let createdType = TypeConstruction.tupleType(

@@ -134,5 +134,8 @@ extension RegexTests {
     try expectInitialOptions(
       "(?i:.)(?m:.)",
       matchingOptions(adding: [.caseInsensitive]))
+    try expectInitialOptions(
+      "((?i:.))",
+      matchingOptions(adding: [.caseInsensitive]))
   }
 }

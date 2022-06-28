@@ -32,80 +32,48 @@
 
 extension Processor {
   struct _StoredCapture {
-    // Set whenever we push the very first capture, allows us
-    // to theoretically re-compute anything we want to later.
-    fileprivate var startState: SavePoint? = nil
+    var range: Range<Position>? = nil
 
-    // Save the entire history as we go, so that backtracking
-    // can just lop-off aborted runs.
-    //
-    // Backtracking entries can specify a per-capture stack
-    // index so that we can abort anything that came after.
-    //
-    // By remembering the entire history, we waste space, but
-    // we get flexibility for now.
-    //
-    fileprivate var stack: Array<Range<Position>> = []
-
-    // Also save entire history of captured values -_-
-    //
-    // We will need to really zoom in on performance here...
-    fileprivate var valueStack: Array<Any> = []
+    var value: Any? = nil
 
     // An in-progress capture start
     fileprivate var currentCaptureBegin: Position? = nil
 
     fileprivate func _invariantCheck() {
-      if startState == nil {
-        assert(stack.isEmpty)
-        assert(valueStack.isEmpty)
-        assert(currentCaptureBegin == nil)
-      } else if currentCaptureBegin == nil {
-        assert(!stack.isEmpty || !valueStack.isEmpty)
-      }
-      if hasValues {
-        // FIXME: how?
-        // assert(valueStack.count == stack.count)
+      if range == nil {
+        assert(value == nil)
       }
     }
 
     // MARK: - IPI
 
-    var isEmpty: Bool { stack.isEmpty }
-
-    var hasValues: Bool { !valueStack.isEmpty }
-
-    var history: Array<Range<Position>> {
-      stack
+    var deconstructed: (range: Range<Position>, value: Any?)? {
+      guard let r = range else { return nil }
+      return (r, value)
     }
-    var valueHistory: Array<Any> {
-      valueStack
-    }
-
-    var latest: Range<Position>? { stack.last }
-
-    var latestValue: Any? { valueStack.last }
 
     /// Start a new capture. If the previously started one was un-ended,
-    /// will clear it and restart. If this is the first start, will save `initial`.
+    /// will clear it and restart.
     mutating func startCapture(
-      _ idx: Position, initial: SavePoint
+      _ idx: Position
     ) {
       _invariantCheck()
       defer { _invariantCheck() }
 
-      if self.startState == nil {
-        self.startState = initial
-      }
       currentCaptureBegin = idx
     }
 
     mutating func endCapture(_ idx: Position) {
       _invariantCheck()
-      assert(currentCaptureBegin != nil)
       defer { _invariantCheck() }
 
-      stack.append(currentCaptureBegin! ..< idx)
+      guard let low = currentCaptureBegin else {
+        fatalError("Invariant violated: ending unstarted capture")
+      }
+
+      range = low..<idx
+      value = nil // TODO: cleaner IPI around this...
+      currentCaptureBegin = nil
     }
 
     mutating func registerValue(
@@ -114,31 +82,15 @@ extension Processor {
     ) {
       _invariantCheck()
       defer { _invariantCheck() }
-      if let sp = overwriteInitial {
-        self.startState = sp
-      }
-      valueStack.append(value)
-    }
 
-    mutating func fail(truncatingAt stackIdx: Int) {
-      _invariantCheck()
-      assert(stackIdx <= stack.endIndex)
-      defer { _invariantCheck() }
-
-      stack.removeSubrange(stackIdx...)
-      if stack.isEmpty {
-        startState = nil
-      }
+      self.value = value
     }
   }
 }
 
 extension Processor._StoredCapture: CustomStringConvertible {
   var description: String {
-    if hasValues {
-      return String(describing: valueStack)
-    }
-    return String(describing: history)
+    return String(describing: self)
   }
 }
 
@@ -146,16 +98,12 @@ struct MECaptureList {
   var values: Array<Processor<String>._StoredCapture>
   var referencedCaptureOffsets: [ReferenceID: Int]
 
-//  func extract(from s: String) -> Array<Array<Substring>> {
-//    caps.map { $0.map { s[$0] }  }
-//  }
-//
-  func latestUntyped(from s: String) -> Array<Substring?> {
+  func latestUntyped(from input: String) -> Array<Substring?> {
     values.map {
-      guard let last = $0.latest else {
+      guard let range = $0.range else {
         return nil
       }
-      return s[last]
+      return input[range]
     }
   }
 }

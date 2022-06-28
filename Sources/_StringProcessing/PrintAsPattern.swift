@@ -114,7 +114,7 @@ extension PrettyPrinter {
         printAsPattern(convertedFromAST: child)
       }
 
-    case let .capture(name, _, child):
+    case let .capture(name, _, child, _):
       var cap = "Capture"
       if let n = name {
         cap += "(as: \(n))"
@@ -180,8 +180,6 @@ extension PrettyPrinter {
     case let .customCharacterClass(ccc):
       printAsPattern(ccc)
 
-    case .transform:
-      print("/* TODO: transforms */")
     case .consumer:
       print("/* TODO: consumers */")
     case .matcher:
@@ -971,11 +969,9 @@ extension DSLTree.Node {
     var result: [String] = []
     
     switch self {
-    case .capture(let name, _, _):
-      if let name = name {
-        result.append(name)
-      }
-      
+    case .capture(let name?, _, _, _):
+      result.append(name)
+
     case .concatenation(let nodes):
       for node in nodes {
         result += node.getNamedCaptures()

@@ -20,6 +20,33 @@ struct Executor {
   }
 
   @available(SwiftStdlib 5.7, *)
+  func firstMatch<Output>(
+    _ input: String,
+    in inputRange: Range<String.Index>,
+    graphemeSemantic: Bool
+  ) throws -> Regex<Output>.Match? {
+    var cpu = engine.makeProcessor(
+      input: input, bounds: inputRange, matchMode: .partialFromFront)
+
+    var low = inputRange.lowerBound
+    let high = inputRange.upperBound
+    while true {
+      if let m: Regex<Output>.Match = try _match(
+        input, in: low..<high, using: &cpu
+      ) {
+        return m
+      }
+      if low >= high { return nil }
+      if graphemeSemantic {
+        input.formIndex(after: &low)
+      } else {
+        input.unicodeScalars.formIndex(after: &low)
+      }
+      cpu.reset(searchBounds: low..<high)
+    }
+  }
+
+  @available(SwiftStdlib 5.7, *)
   func match<Output>(
     _ input: String,
     in inputRange: Range<String.Index>,
@@ -27,7 +54,15 @@ struct Executor {
   ) throws -> Regex<Output>.Match? {
     var cpu = engine.makeProcessor(
       input: input, bounds: inputRange, matchMode: mode)
+    return try _match(input, in: inputRange, using: &cpu)
+  }
 
+  @available(SwiftStdlib 5.7, *)
+  func _match<Output>(
+    _ input: String,
+    in inputRange: Range<String.Index>,
+    using cpu: inout Processor<String>
+  ) throws -> Regex<Output>.Match? {
     guard let endIdx = cpu.consume() else {
       if let e = cpu.failureReason {
         throw e
@@ -40,31 +75,10 @@ struct Executor {
       referencedCaptureOffsets: engine.program.referencedCaptureOffsets)
 
     let range = inputRange.lowerBound..<endIdx
-    let caps = engine.program.captureList.createElements(capList, input)
+    let caps = engine.program.captureList.createElements(capList)
 
-    // FIXME: This is a workaround for not tracking (or
-    // specially compiling) whole-match values.
-    let value: Any?
-    if Output.self != Substring.self,
-       Output.self != AnyRegexOutput.self,
-       caps.isEmpty
-    {
-      value = cpu.registers.values.first
-      assert(value != nil, "hmm, what would this mean?")
-    } else {
-      value = nil
-    }
-    
-    let anyRegexOutput = AnyRegexOutput(
-      input: input,
-      elements: caps
-    )
-    
-    return .init(
-      anyRegexOutput: anyRegexOutput,
-      range: range,
-      value: value
-    )
+    let anyRegexOutput = AnyRegexOutput(input: input, elements: caps)
+    return .init(anyRegexOutput: anyRegexOutput, range: range)
   }
 
   @available(SwiftStdlib 5.7, *)

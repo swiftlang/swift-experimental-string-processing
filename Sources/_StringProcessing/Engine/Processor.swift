@@ -32,30 +32,38 @@ struct Processor<
   typealias Element = Input.Element
 
   let input: Input
-  let bounds: Range<Position>
   let matchMode: MatchMode
+  let instructions: InstructionList<Instruction>
+
+  // MARK: Resettable state
+
+  // The subject bounds.
+  //
+  // FIXME: This also conflates search bounds too!
+  var bounds: Range<Position>
+
+  // The current position in the subject
   var currentPosition: Position
 
-  let instructions: InstructionList<Instruction>
   var controller: Controller
 
-  var cycleCount = 0
-
-  /// Our register file
   var registers: Registers
 
-  // Used for back tracking
   var savePoints: [SavePoint] = []
 
   var callStack: [InstructionAddress] = []
+
+  var storedCaptures: Array<_StoredCapture>
 
   var state: State = .inProgress
 
   var failureReason: Error? = nil
 
+
+  // MARK: Metrics, debugging, etc.
+  var cycleCount = 0
   var isTracingEnabled: Bool
 
-  var storedCaptures: Array<_StoredCapture>
 }
 
 extension Processor {
@@ -88,6 +96,30 @@ extension Processor {
     _checkInvariants()
   }
 
+
+  mutating func reset(searchBounds: Range<Position>) {
+    // FIXME: We currently conflate both subject bounds and search bounds
+    // This should just reset search bounds
+    self.bounds = searchBounds
+    self.currentPosition = self.bounds.lowerBound
+
+    self.controller = Controller(pc: 0)
+
+    self.registers.reset(sentinel: bounds.upperBound)
+
+    self.savePoints.removeAll(keepingCapacity: true)
+    self.callStack.removeAll(keepingCapacity: true)
+
+    for idx in storedCaptures.indices {
+      storedCaptures[idx] = .init()
+    }
+
+    self.state = .inProgress
+    self.failureReason = nil
+
+    _checkInvariants()
+  }
+
   func _checkInvariants() {
     assert(end <= input.endIndex)
     assert(start >= input.startIndex)
@@ -103,17 +135,24 @@ extension Processor {
     input[bounds]
   }
 
+  // Advance in our input, without any checks or failure signalling
+  mutating func _uncheckedForcedConsumeOne() {
+    assert(currentPosition != end)
+    input.formIndex(after: &currentPosition)
+  }
+
   // Advance in our input
   //
   // Returns whether the advance succeeded. On failure, our
   // save point was restored
   mutating func consume(_ n: Distance) -> Bool {
-    // Want Collection to provide this behavior...
-    if input.distance(from: currentPosition, to: end) < n.rawValue {
+    guard let idx = input.index(
+      currentPosition, offsetBy: n.rawValue, limitedBy: end
+    ) else {
       signalFailure()
       return false
     }
-    currentPosition = input.index(currentPosition, offsetBy: n.rawValue)
+    currentPosition = idx
     return true
   }
 
@@ -140,30 +179,26 @@ extension Processor {
     return slice
   }
 
-  mutating func match(_ e: Element) {
+  // Match against the current input element. Returns whether
+  // it succeeded vs signaling an error.
+  mutating func match(_ e: Element) -> Bool {
     guard let cur = load(), cur == e else {
       signalFailure()
-      return
+      return false
     }
-    if consume(1) {
-      controller.step()
-    }
+    _uncheckedForcedConsumeOne()
+    return true
   }
+
+  // Match against the current input prefix. Returns whether
+  // it succeeded vs signaling an error.
   mutating func matchSeq<C: Collection>(
     _ seq: C
-  ) where C.Element == Input.Element {
-    let count = seq.count
-
-    guard let inputSlice = load(count: count),
-          seq.elementsEqual(inputSlice)
-    else {
-      signalFailure()
-      return
+  ) -> Bool where C.Element == Input.Element {
+    for e in seq {
+      guard match(e) else { return false }
     }
-    guard consume(.init(count)) else {
-      fatalError("unreachable")
-    }
-    controller.step()
+    return true
   }
 
   mutating func signalFailure() {
@@ -336,18 +371,24 @@ extension Processor {
 
     case .match:
       let reg = payload.element
-      match(registers[reg])
+      if match(registers[reg]) {
+        controller.step()
+      }
 
     case .matchSequence:
       let reg = payload.sequence
       let seq = registers[reg]
-      matchSeq(seq)
+      if matchSeq(seq) {
+        controller.step()
+      }
 
     case .matchSlice:
       let (lower, upper) = payload.pairedPosPos
       let range = registers[lower]..<registers[upper]
       let slice = input[range]
-      matchSeq(slice)
+      if matchSeq(slice) {
+        controller.step()
+      }
 
     case .consumeBy:
       let reg = payload.consumer
@@ -419,19 +460,19 @@ extension Processor {
       //   Should we assert it's not finished yet?
       //   What's the behavior there?
       let cap = storedCaptures[capNum]
-      guard let range = cap.latest else {
+      guard let range = cap.range else {
         signalFailure()
         return
       }
-      matchSeq(input[range])
+      if matchSeq(input[range]) {
+        controller.step()
+      }
 
     case .beginCapture:
       let capNum = Int(
         asserting: payload.capture.rawValue)
 
-       let sp = makeSavePoint(self.currentPC)
-       storedCaptures[capNum].startCapture(
-         currentPosition, initial: sp)
+       storedCaptures[capNum].startCapture(currentPosition)
        controller.step()
 
      case .endCapture:
@@ -446,13 +487,9 @@ extension Processor {
       let transform = registers[trans]
       let capNum = Int(asserting: cap.rawValue)
 
-      guard let range = storedCaptures[capNum].latest else {
-        fatalError(
-          "Unreachable: transforming without a capture")
-      }
       do {
         // FIXME: Pass input or the slice?
-        guard let value = try transform(input, range) else {
+        guard let value = try transform(input, storedCaptures[capNum]) else {
           signalFailure()
           return
         }
