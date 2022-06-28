@@ -89,7 +89,7 @@ extension Regex {
     }
 
     /// Do not use directly - all accesses must go through `loweredProgram`.
-    private var _loweredProgramStorage: AnyObject? = nil
+    fileprivate var _loweredProgramStorage: AnyObject? = nil
     
     /// The program for execution with the matching engine.
     var loweredProgram: MEProgram {
@@ -140,5 +140,6 @@ extension Regex {
 extension Regex {
   internal mutating func _setCompilerOptionsForTesting(_ opts: Compiler.CompileOptions) {
     program.compileOptions = opts
+    program._loweredProgramStorage = nil
   }
 }

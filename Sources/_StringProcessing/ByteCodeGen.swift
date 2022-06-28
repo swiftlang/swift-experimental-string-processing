@@ -3,11 +3,13 @@
 extension Compiler {
   struct ByteCodeGen {
     var options: MatchingOptions
-    private let compileOptions: CompileOptions
     var builder = MEProgram.Builder()
     /// A Boolean indicating whether the first matchable atom has been emitted.
     /// This is used to determine whether to apply initial options.
     var hasEmittedFirstMatchableAtom = false
+
+    private let compileOptions: CompileOptions
+    fileprivate var optimizationsEnabled: Bool { !compileOptions.contains(.disableOptimizations) }
 
     init(
       options: MatchingOptions,
@@ -651,7 +653,7 @@ fileprivate extension Compiler.ByteCodeGen {
   ) throws {
     if let asciiBitset = ccc.asAsciiBitset(options),
         options.semanticLevel == .graphemeCluster,
-        !compileOptions.contains(.unoptimized) {
+        optimizationsEnabled {
       // future work: add a bit to .matchBitset to consume either a character
       // or a scalar so we can have this optimization in scalar mode
       builder.buildMatchAsciiBitset(asciiBitset)

@@ -82,7 +82,7 @@ func _compileRegex(
 extension Compiler {
   struct CompileOptions: OptionSet {
     let rawValue: Int
-    static let unoptimized = CompileOptions(rawValue: 1)
+    static let disableOptimizations = CompileOptions(rawValue: 1)
     static let `default`: CompileOptions = []
   }
 }
