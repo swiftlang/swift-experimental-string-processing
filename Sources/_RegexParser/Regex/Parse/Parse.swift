@@ -552,47 +552,53 @@ extension Parser {
     return nil
   }
 
+  /// Attempt to parse a custom character class range into `members`, or regular
+  /// members if a range cannot be formed.
+  mutating func parsePotentialCCRange(
+    into members: inout [CustomCC.Member]
+  ) throws {
+    guard case .atom(let lhs)? = members.last else { return }
+
+    // Try and see if we can parse a character class range. Each time we parse
+    // a component of the range, we append to `members` in case it ends up not
+    // being a range, and we bail. If we succeed in parsing, we remove the
+    // intermediate members.
+    let membersBeforeRange = members.count - 1
+    while let t = try source.lexTrivia(context: context) {
+      members.append(.trivia(t))
+    }
+    guard let dash = source.lexCustomCharacterClassRangeOperator() else {
+      return
+    }
+
+    // If we can't parse a range, '-' becomes literal, e.g `[6-]`.
+    members.append(.atom(.init(.char("-"), dash)))
+
+    while let t = try source.lexTrivia(context: context) {
+      members.append(.trivia(t))
+    }
+    guard let rhs = try parseCCCMember() else { return }
+    members.append(rhs)
+
+    guard case let .atom(rhs) = rhs else { return }
+
+    // We've successfully parsed an atom LHS and RHS, so form a range,
+    // collecting the trivia we've parsed, and replacing the members that
+    // would have otherwise been added to the custom character class.
+    let rangeMemberCount = members.count - membersBeforeRange
+    let trivia = members.suffix(rangeMemberCount).compactMap(\.asTrivia)
+    members.removeLast(rangeMemberCount)
+    members.append(.range(.init(lhs, dash, rhs, trivia: trivia)))
+  }
+
   mutating func parseCCCMembers(
     into members: inout Array<CustomCC.Member>
   ) throws {
-    // Parse members until we see the end of the custom char class or an
-    // operator.
+    // Parse members and ranges until we see the end of the custom char class
+    // or an operator.
     while let member = try parseCCCMember() {
       members.append(member)
-
-      // If we have an atom, we can try to parse a character class range. Each
-      // time we parse a component of the range, we append to `members` in case
-      // it ends up not being a range, and we bail. If we succeed in parsing, we
-      // remove the intermediate members.
-      if case .atom(let lhs) = member {
-        let membersBeforeRange = members.count - 1
-
-        while let t = try source.lexTrivia(context: context) {
-          members.append(.trivia(t))
-        }
-
-        guard let dash = source.lexCustomCharacterClassRangeOperator() else {
-          continue
-        }
-        // If we can't parse a range, '-' becomes literal, e.g `[6-]`.
-        members.append(.atom(.init(.char("-"), dash)))
-
-        while let t = try source.lexTrivia(context: context) {
-          members.append(.trivia(t))
-        }
-        guard let rhs = try parseCCCMember() else { continue }
-        members.append(rhs)
-
-        guard case let .atom(rhs) = rhs else { continue }
-
-        // We've successfully parsed an atom LHS and RHS, so form a range,
-        // collecting the trivia we've parsed, and replacing the members that
-        // would have otherwise been added to the custom character class.
-        let rangeMemberCount = members.count - membersBeforeRange
-        let trivia = members.suffix(rangeMemberCount).compactMap(\.asTrivia)
-        members.removeLast(rangeMemberCount)
-        members.append(.range(.init(lhs, dash, rhs, trivia: trivia)))
-      }
+      try parsePotentialCCRange(into: &members)
     }
   }
 }
