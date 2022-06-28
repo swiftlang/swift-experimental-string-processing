@@ -557,7 +557,7 @@ extension Parser {
   mutating func parsePotentialCCRange(
     into members: inout [CustomCC.Member]
   ) throws {
-    guard case .atom(let lhs)? = members.last else { return }
+    guard let lhs = members.last, lhs.isSemantic else { return }
 
     // Try and see if we can parse a character class range. Each time we parse
     // a component of the range, we append to `members` in case it ends up not
@@ -580,7 +580,33 @@ extension Parser {
     guard let rhs = try parseCCCMember() else { return }
     members.append(rhs)
 
-    guard case let .atom(rhs) = rhs else { return }
+    func makeOperand(_ m: CustomCC.Member, isLHS: Bool) throws -> AST.Atom {
+      switch m {
+      case .atom(let a):
+        return a
+      case .custom:
+        // Not supported. While .NET allows `x-[...]` to spell subtraction, we
+        // require `x--[...]`. We also ban `[...]-x` for consistency.
+        if isLHS {
+          throw Source.LocatedError(
+            ParseError.invalidCharacterClassRangeOperand, m.location)
+        } else {
+          throw Source.LocatedError(
+            ParseError.unsupportedDotNetSubtraction, m.location)
+        }
+      case .quote:
+        // Currently unsupported, we need to figure out what the semantics
+        // would be for grapheme/scalar modes.
+        throw Source.LocatedError(
+          ParseError.unsupported("range with quoted sequence"), m.location)
+      case .trivia:
+        throw Unreachable("Should have been lexed separately")
+      case .range, .setOperation:
+        throw Unreachable("Parsed later")
+      }
+    }
+    let lhsOp = try makeOperand(lhs, isLHS: true)
+    let rhsOp = try makeOperand(rhs, isLHS: false)
 
     // We've successfully parsed an atom LHS and RHS, so form a range,
     // collecting the trivia we've parsed, and replacing the members that
@@ -588,7 +614,15 @@ extension Parser {
     let rangeMemberCount = members.count - membersBeforeRange
     let trivia = members.suffix(rangeMemberCount).compactMap(\.asTrivia)
     members.removeLast(rangeMemberCount)
-    members.append(.range(.init(lhs, dash, rhs, trivia: trivia)))
+    members.append(.range(.init(lhsOp, dash, rhsOp, trivia: trivia)))
+
+    // We need to specially check if we can lex a .NET character class
+    // subtraction here as e.g `[a-c-[...]]` is allowed in .NET. Otherwise we'd
+    // treat the second `-` as literal.
+    if let dashLoc = source.canLexDotNetCharClassSubtraction(context: context) {
+      throw Source.LocatedError(
+        ParseError.unsupportedDotNetSubtraction, dashLoc)
+    }
   }
 
   mutating func parseCCCMembers(
