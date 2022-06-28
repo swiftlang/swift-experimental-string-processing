@@ -15,16 +15,31 @@
 public struct AST: Hashable {
   public var root: AST.Node
   public var globalOptions: GlobalMatchingOptionSequence?
+  public var diags: Diagnostics
 
-  public init(_ root: AST.Node, globalOptions: GlobalMatchingOptionSequence?) {
+  public init(
+    _ root: AST.Node, globalOptions: GlobalMatchingOptionSequence?,
+    diags: Diagnostics
+  ) {
     self.root = root
     self.globalOptions = globalOptions
+    self.diags = diags
   }
 }
 
 extension AST {
   /// Whether this AST tree contains at least one capture nested inside of it.
   public var hasCapture: Bool { root.hasCapture }
+
+  /// Whether this AST tree is either syntactically or semantically invalid.
+  public var isInvalid: Bool { diags.hasAnyError }
+
+  /// If the AST is invalid, throws an error. Otherwise, returns self.
+  @discardableResult
+  public func ensureValid() throws -> AST {
+    try diags.throwAnyError()
+    return self
+  }
 }
 
 extension AST {

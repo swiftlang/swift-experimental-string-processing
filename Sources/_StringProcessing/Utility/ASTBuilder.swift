@@ -48,7 +48,7 @@ func empty() -> AST.Node {
 }
 
 func ast(_ root: AST.Node, opts: [AST.GlobalMatchingOption.Kind]) -> AST {
-  .init(root, globalOptions: .init(opts.map { .init($0, .fake) }))
+  .init(root, globalOptions: .init(opts.map { .init($0, .fake) }), diags: Diagnostics())
 }
 
 func ast(_ root: AST.Node, opts: AST.GlobalMatchingOption.Kind...) -> AST {
