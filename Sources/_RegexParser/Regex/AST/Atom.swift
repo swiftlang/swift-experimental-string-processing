@@ -80,6 +80,9 @@ extension AST {
 
       // (?i), (?i-m), ...
       case changeMatchingOptions(MatchingOptionSequence)
+
+      // An invalid atom created by a parse error.
+      case invalid
     }
   }
 }
@@ -104,6 +107,7 @@ extension AST.Atom {
     case .any:                          return nil
     case .startOfLine:                  return nil
     case .endOfLine:                    return nil
+    case .invalid:                      return nil
     }
   }
 
@@ -465,6 +469,9 @@ extension AST.Atom.CharacterProperty {
     /// Some special properties implemented by Java.
     case javaSpecial(JavaSpecial)
 
+    /// An invalid property that has been diagnosed by the parser.
+    case invalid(key: String?, value: String)
+
     public enum MapKind: Hashable {
       case lowercase
       case uppercase
@@ -801,7 +808,7 @@ extension AST.Atom {
 
     case .scalarSequence, .property, .any, .startOfLine, .endOfLine,
         .backreference, .subpattern, .callout, .backtrackingDirective,
-        .changeMatchingOptions:
+        .changeMatchingOptions, .invalid:
       return nil
     }
   }
@@ -814,6 +821,10 @@ extension AST.Atom {
     switch kind {
     // \cx, \C-x, \M-x, \M-\C-x, \N{...}
     case .keyboardControl, .keyboardMeta, .keyboardMetaControl, .namedCharacter:
+      return true
+    case .scalarSequence:
+      // Unsupported for now (and we will diagnose as such), but treat it as a
+      // valid range operand for better recovery.
       return true
     default:
       return false
@@ -849,7 +860,7 @@ extension AST.Atom {
 
     case .property, .escaped, .any, .startOfLine, .endOfLine,
         .backreference, .subpattern, .namedCharacter, .callout,
-        .backtrackingDirective, .changeMatchingOptions:
+        .backtrackingDirective, .changeMatchingOptions, .invalid:
       return nil
     }
   }

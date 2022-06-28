@@ -107,12 +107,13 @@ struct ParsingContext {
   }
 }
 
-private struct Parser {
-  var source: Source
+struct Parser {
+  var src: Source
   var context: ParsingContext
+  var diags = Diagnostics()
 
-  init(_ source: Source, syntax: SyntaxOptions) {
-    self.source = source
+  init(_ src: Source, syntax: SyntaxOptions) {
+    self.src = src
     self.context = ParsingContext(syntax: syntax)
   }
 }
@@ -128,10 +129,20 @@ extension ParsingContext {
 
 // Diagnostics
 extension Parser {
-  fileprivate func loc(
+  func loc(
     _ start: Source.Position
   ) -> SourceLocation {
-    SourceLocation(start ..< source.currentPosition)
+    SourceLocation(start ..< src.currentPosition)
+  }
+
+  mutating func error(_ err: ParseError, at loc: SourceLocation) {
+    diags.error(err, at: loc)
+  }
+  mutating func errorAtCurrentPosition(_ err: ParseError) {
+    diags.error(err, at: loc(src.currentPosition))
+  }
+  mutating func unreachable(_ err: String) {
+    diags.fatal(.unreachable(err), at: loc(src.currentPosition))
   }
 }
 
@@ -141,9 +152,9 @@ extension Parser {
   ///
   ///     Regex -> GlobalMatchingOptionSequence? RegexNode
   ///
-  mutating func parse() throws -> AST {
+  mutating func parse() -> AST {
     // First parse any global matching options if present.
-    let opts = try source.lexGlobalMatchingOptionSequence()
+    let opts = lexGlobalMatchingOptionSequence()
 
     // If we have a newline mode global option, update the context accordingly.
     if let opts = opts {
@@ -155,18 +166,19 @@ extension Parser {
     }
 
     // Then parse the root AST node.
-    let ast = try parseNode()
-    guard source.isEmpty else {
+    let ast = parseNode()
+    if !src.isEmpty {
       // parseConcatenation() terminates on encountering a ')' to enable
       // recursive parses of a group body. However for a top-level parse, this
       // means we have an unmatched closing paren, so let's diagnose.
-      if let loc = source.tryEatWithLoc(")") {
-        throw Source.LocatedError(ParseError.unbalancedEndOfGroup, loc)
+      // TODO: We should continue to parse for better recovery.
+      if let loc = tryEatWithLoc(")") {
+        error(.unbalancedEndOfGroup, at: loc)
+      } else {
+        unreachable("Unhandled termination condition")
       }
-      fatalError("Unhandled termination condition")
     }
-    // TODO: Record and store diagnostics on the AST.
-    return .init(ast, globalOptions: opts, diags: Diagnostics())
+    return .init(ast, globalOptions: opts, diags: diags)
   }
 
   /// Parse a regular expression node. This should be used instead of `parse()`
@@ -175,18 +187,18 @@ extension Parser {
   ///     RegexNode    -> '' | Alternation
   ///     Alternation  -> Concatenation ('|' Concatenation)*
   ///
-  mutating func parseNode() throws -> AST.Node {
-    let _start = source.currentPosition
+  mutating func parseNode() -> AST.Node {
+    let _start = src.currentPosition
 
-    if source.isEmpty { return .empty(.init(loc(_start))) }
+    if src.isEmpty { return .empty(.init(loc(_start))) }
 
-    var result = [try parseConcatenation()]
+    var result = [parseConcatenation()]
     var pipes: [SourceLocation] = []
     while true {
-      let pipeStart = source.currentPosition
-      guard source.tryEat("|") else { break }
+      let pipeStart = src.currentPosition
+      guard tryEat("|") else { break }
       pipes.append(loc(pipeStart))
-      result.append(try parseConcatenation())
+      result.append(parseConcatenation())
     }
 
     if result.count == 1 {
@@ -202,40 +214,39 @@ extension Parser {
   ///     ConcatComponent -> Trivia | Quote | Quantification
   ///     Quantification  -> QuantOperand Quantifier?
   ///
-  mutating func parseConcatenation() throws -> AST.Node {
+  mutating func parseConcatenation() -> AST.Node {
     var result = [AST.Node]()
-    let _start = source.currentPosition
+    let _start = src.currentPosition
 
     while true {
       // Check for termination, e.g. of recursion or bin ops
-      if source.isEmpty { break }
-      if source.peek() == "|" || source.peek() == ")" { break }
+      if src.isEmpty { break }
+      if peek() == "|" || peek() == ")" { break }
 
       // TODO: refactor loop body into function
-      let _start = source.currentPosition
+      let _start = src.currentPosition
 
       //     Trivia -> `lexTrivia`
-      if let triv = try source.lexTrivia(context: context) {
+      if let triv = lexTrivia() {
         result.append(.trivia(triv))
         continue
       }
 
       //     Quote      -> `lexQuote`
-      if let quote = try source.lexQuote(context: context) {
+      if let quote = lexQuote() {
         result.append(.quote(quote))
         continue
       }
 
       // Interpolation -> `lexInterpolation`
-      if let interpolation = try source.lexInterpolation() {
+      if let interpolation = lexInterpolation() {
         result.append(.interpolation(interpolation))
         continue
       }
 
       //     Quantification  -> QuantOperand Quantifier?
-      if let operand = try parseQuantifierOperand() {
-        if let (amt, kind, trivia) =
-            try source.lexQuantifier(context: context) {
+      if let operand = parseQuantifierOperand() {
+        if let (amt, kind, trivia) = lexQuantifier() {
           let location = loc(_start)
           result.append(.quantification(
             .init(amt, kind, operand, location, trivia: trivia)))
@@ -245,7 +256,8 @@ extension Parser {
         continue
       }
 
-      throw Unreachable("TODO: reason")
+      unreachable("Should have parsed at least an atom")
+      break
     }
     guard !result.isEmpty else {
       return .empty(.init(loc(_start)))
@@ -260,30 +272,30 @@ extension Parser {
   /// Perform a recursive parse for the branches of a conditional.
   mutating func parseConditionalBranches(
     start: Source.Position, _ cond: AST.Conditional.Condition
-  ) throws -> AST.Node {
-    let child = try parseNode()
+  ) -> AST.Node {
+    let child = parseNode()
     let trueBranch: AST.Node, falseBranch: AST.Node, pipe: SourceLocation?
     switch child {
     case .alternation(let a):
+      pipe = a.pipes[0]
+      trueBranch = a.children[0]
+      falseBranch = a.children[1]
+
       // If we have an alternation child, we only accept 2 branches.
       let numBranches = a.children.count
       guard numBranches == 2 else {
-        // TODO: Better API for the parser to throw located errors.
-        throw Source.LocatedError(
-          ParseError.tooManyBranchesInConditional(numBranches), child.location
-        )
+        diags.error(.tooManyBranchesInConditional(numBranches),
+                    at: child.location)
+        break
       }
-      trueBranch = a.children[0]
-      falseBranch = a.children[1]
-      pipe = a.pipes[0]
     default:
       // If there's no alternation, the child is assumed to be the true
       // branch, with the false branch matching anything.
       trueBranch = child
-      falseBranch = .empty(.init(loc(source.currentPosition)))
+      falseBranch = .empty(.init(loc(src.currentPosition)))
       pipe = nil
     }
-    try source.expect(")")
+    expect(")")
     return .conditional(.init(
       cond, trueBranch: trueBranch, pipe: pipe, falseBranch: falseBranch,
       loc(start)))
@@ -293,7 +305,7 @@ extension Parser {
   /// current set of options.
   private mutating func applySyntaxOptions(
     of opts: AST.MatchingOptionSequence, isScoped: Bool
-  ) throws {
+  ) {
     func mapOption(_ option: SyntaxOptions,
                    _ pred: (AST.MatchingOption) -> Bool) {
       if opts.resetsCurrentOptions {
@@ -326,12 +338,9 @@ extension Parser {
       // An unscoped removal of extended syntax is not allowed in a multi-line
       // literal.
       if let opt = opts.removing.first(where: \.isAnyExtended) {
-        throw Source.LocatedError(
-          ParseError.cannotRemoveExtendedSyntaxInMultilineMode, opt.location)
-      }
-      if opts.resetsCurrentOptions {
-        throw Source.LocatedError(
-          ParseError.cannotResetExtendedSyntaxInMultilineMode, opts.caretLoc!)
+        error(.cannotRemoveExtendedSyntaxInMultilineMode, at: opt.location)
+      } else if opts.resetsCurrentOptions {
+        error(.cannotResetExtendedSyntaxInMultilineMode, at: opts.caretLoc!)
       }
       // The only remaning case is an unscoped addition of extended syntax,
       // which is a no-op.
@@ -346,36 +355,35 @@ extension Parser {
   /// current set of options.
   private mutating func applySyntaxOptions(
     of group: AST.Group.Kind, isScoped: Bool
-  ) throws {
+  ) {
     if case .changeMatchingOptions(let seq) = group {
-      try applySyntaxOptions(of: seq, isScoped: isScoped)
+      applySyntaxOptions(of: seq, isScoped: isScoped)
     }
   }
 
   /// Perform a recursive parse for the body of a group.
   mutating func parseGroupBody(
     start: Source.Position, _ kind: AST.Located<AST.Group.Kind>
-  ) throws -> AST.Group {
+  ) -> AST.Group {
     context.recordGroup(kind.value)
 
     let currentSyntax = context.syntax
-    try applySyntaxOptions(of: kind.value, isScoped: true)
+    applySyntaxOptions(of: kind.value, isScoped: true)
     defer {
       context.syntax = currentSyntax
     }
     let unsetsExtendedSyntax = currentSyntax.contains(.extendedSyntax) &&
                               !context.syntax.contains(.extendedSyntax)
-    let child = try parseNode()
-    try source.expect(")")
+    let child = parseNode()
+    expect(")")
     let groupLoc = loc(start)
 
     // In multi-line literals, the body of a group that unsets extended syntax
     // may not span multiple lines.
     if unsetsExtendedSyntax &&
         context.syntax.contains(.multilineCompilerLiteral) &&
-        source[child.location.range].spansMultipleLinesInRegexLiteral {
-      throw Source.LocatedError(
-        ParseError.unsetExtendedSyntaxMayNotSpanMultipleLines, groupLoc)
+        src[child.location.range].spansMultipleLinesInRegexLiteral {
+      error(.unsetExtendedSyntaxMayNotSpanMultipleLines, at: groupLoc)
     }
     return .init(kind, child, groupLoc)
   }
@@ -389,7 +397,7 @@ extension Parser {
   ///
   mutating func parseAbsentFunctionBody(
     _ start: AST.Located<AST.AbsentFunction.Start>
-  ) throws -> AST.AbsentFunction {
+  ) -> AST.AbsentFunction {
     let startLoc = start.location
 
     // TODO: Diagnose on nested absent functions, which Oniguruma states is
@@ -398,31 +406,31 @@ extension Parser {
     switch start.value {
     case .withoutPipe:
       // Must be a repeater.
-      kind = .repeater(try parseNode())
-    case .withPipe where source.peek() == ")":
+      kind = .repeater(parseNode())
+    case .withPipe where peek() == ")":
       kind = .clearer
     case .withPipe:
       // Can either be an expression or stopper depending on whether we have a
       // any additional '|'s.
-      let child = try parseNode()
+      let child = parseNode()
       switch child {
       case .alternation(let alt):
         // A pipe, so an expression.
-        let numChildren = alt.children.count
-        guard numChildren == 2 else {
-          throw Source.LocatedError(
-            ParseError.tooManyAbsentExpressionChildren(numChildren),
-            child.location
-          )
-        }
         kind = .expression(
           absentee: alt.children[0], pipe: alt.pipes[0], expr: alt.children[1])
+
+        let numChildren = alt.children.count
+        guard numChildren == 2 else {
+          error(.tooManyAbsentExpressionChildren(numChildren),
+                at: child.location)
+          break
+        }
       default:
         // No pipes, so a stopper.
         kind = .stopper(child)
       }
     }
-    try source.expect(")")
+    expect(")")
     return .init(kind, start: startLoc, location: loc(startLoc.start))
   }
 
@@ -434,44 +442,43 @@ extension Parser {
   ///     Conditional      -> CondStart Concatenation ('|' Concatenation)? ')'
   ///     CondStart        -> KnownCondStart | GroupCondStart
   ///
-  mutating func parseQuantifierOperand() throws -> AST.Node? {
-    assert(!source.isEmpty)
+  mutating func parseQuantifierOperand() -> AST.Node? {
+    assert(!src.isEmpty)
 
-    let _start = source.currentPosition
+    let _start = src.currentPosition
 
     // Check if we have the start of a conditional '(?(cond)', which can either
     // be a known condition, or an arbitrary group condition.
-    if let cond = try source.lexKnownConditionalStart(context: context) {
-      return try parseConditionalBranches(start: _start, cond)
+    if let cond = lexKnownConditionalStart() {
+      return parseConditionalBranches(start: _start, cond)
     }
-    if let kind = try source.lexGroupConditionalStart(context: context) {
+    if let kind = lexGroupConditionalStart() {
       let groupStart = kind.location.start
-      let group = try parseGroupBody(start: groupStart, kind)
-      return try parseConditionalBranches(
+      let group = parseGroupBody(start: groupStart, kind)
+      return parseConditionalBranches(
         start: _start, .init(.group(group), group.location))
     }
 
     // Check if we have an Oniguruma absent function.
-    if let start = source.lexAbsentFunctionStart() {
-      return .absentFunction(try parseAbsentFunctionBody(start))
+    if let start = lexAbsentFunctionStart() {
+      return .absentFunction(parseAbsentFunctionBody(start))
     }
 
     // Check if we have the start of a group '('.
-    if let kind = try source.lexGroupStart(context: context) {
-      return .group(try parseGroupBody(start: _start, kind))
+    if let kind = lexGroupStart() {
+      return .group(parseGroupBody(start: _start, kind))
     }
 
     // Check if we have the start of a custom character class '['.
-    if let cccStart = source.lexCustomCCStart() {
-      return .customCharacterClass(
-        try parseCustomCharacterClass(cccStart))
+    if let cccStart = lexCustomCCStart() {
+      return .customCharacterClass(parseCustomCharacterClass(cccStart))
     }
 
-    if let atom = try source.lexAtom(context: context) {
+    if let atom = lexAtom() {
       // If we have a change matching options atom, apply the syntax options. We
       // already take care of scoping syntax options within a group.
       if case .changeMatchingOptions(let opts) = atom.kind {
-        try applySyntaxOptions(of: opts, isScoped: false)
+        applySyntaxOptions(of: opts, isScoped: false)
       }
       // TODO: track source locations
       return .atom(atom)
@@ -496,69 +503,65 @@ extension Parser {
   ///
   mutating func parseCustomCharacterClass(
     _ start: Source.Located<CustomCC.Start>
-  ) throws -> CustomCC {
+  ) -> CustomCC {
     let alreadyInCCC = context.isInCustomCharacterClass
     context.isInCustomCharacterClass = true
     defer { context.isInCustomCharacterClass = alreadyInCCC }
 
     typealias Member = CustomCC.Member
     var members: Array<Member> = []
-    try parseCCCMembers(into: &members)
+    parseCCCMembers(into: &members)
 
     // If we have a binary set operator, parse it and the next members. Note
     // that this means we left associate for a chain of operators.
     // TODO: We may want to diagnose and require users to disambiguate, at least
     // for chains of separate operators.
     // TODO: What about precedence?
-    while let binOp = try source.lexCustomCCBinOp() {
+    while let binOp = lexCustomCCBinOp() {
       var rhs: Array<Member> = []
-      try parseCCCMembers(into: &rhs)
+      parseCCCMembers(into: &rhs)
 
       if members.none(\.isSemantic) || rhs.none(\.isSemantic) {
-        throw Source.LocatedError(
-          ParseError.expectedCustomCharacterClassMembers, start.location)
+        error(.expectedCustomCharacterClassMembers, at: start.location)
       }
       members = [.setOperation(members, binOp, rhs)]
     }
     if members.none(\.isSemantic) {
-      throw Source.LocatedError(
-        ParseError.expectedCustomCharacterClassMembers, start.location)
+      error(.expectedCustomCharacterClassMembers, at: start.location)
     }
-    try source.expect("]")
+    expect("]")
     return CustomCC(start, members, loc(start.location.start))
   }
 
-  mutating func parseCCCMember() throws -> CustomCC.Member? {
-    guard !source.isEmpty && source.peek() != "]" && source.peekCCBinOp() == nil
+  mutating func parseCCCMember() -> CustomCC.Member? {
+    guard !src.isEmpty && peek() != "]" && peekCCBinOp() == nil
     else { return nil }
 
     // Nested custom character class.
-    if let cccStart = source.lexCustomCCStart() {
-      return .custom(try parseCustomCharacterClass(cccStart))
+    if let cccStart = lexCustomCCStart() {
+      return .custom(parseCustomCharacterClass(cccStart))
     }
 
     // Quoted sequence.
-    if let quote = try source.lexQuote(context: context) {
+    if let quote = lexQuote() {
       return .quote(quote)
     }
 
     // Lex triva if we're allowed.
-    if let trivia = try source.lexTrivia(context: context) {
+    if let trivia = lexTrivia() {
       return .trivia(trivia)
     }
 
-    if let atom = try source.lexAtom(context: context) {
+    if let atom = lexAtom() {
       return .atom(atom)
     }
     return nil
   }
 
-  mutating func parseCCCMembers(
-    into members: inout Array<CustomCC.Member>
-  ) throws {
+  mutating func parseCCCMembers(into members: inout Array<CustomCC.Member>) {
     // Parse members until we see the end of the custom char class or an
     // operator.
-    while let member = try parseCCCMember() {
+    while let member = parseCCCMember() {
       members.append(member)
 
       // If we have an atom, we can try to parse a character class range. Each
@@ -568,20 +571,20 @@ extension Parser {
       if case .atom(let lhs) = member {
         let membersBeforeRange = members.count - 1
 
-        while let t = try source.lexTrivia(context: context) {
+        while let t = lexTrivia() {
           members.append(.trivia(t))
         }
 
-        guard let dash = source.lexCustomCharacterClassRangeOperator() else {
+        guard let dash = lexCustomCharacterClassRangeOperator() else {
           continue
         }
         // If we can't parse a range, '-' becomes literal, e.g `[6-]`.
         members.append(.atom(.init(.char("-"), dash)))
 
-        while let t = try source.lexTrivia(context: context) {
+        while let t = lexTrivia() {
           members.append(.trivia(t))
         }
-        guard let rhs = try parseCCCMember() else { continue }
+        guard let rhs = parseCCCMember() else { continue }
         members.append(rhs)
 
         guard case let .atom(rhs) = rhs else { continue }
@@ -609,20 +612,26 @@ public enum ASTStage {
   case semantic
 }
 
+public func parseWithRecovery<S: StringProtocol>(
+  _ regex: S, _ syntax: SyntaxOptions, stage: ASTStage = .semantic
+) -> AST where S.SubSequence == Substring
+{
+  let source = Source(String(regex))
+  var parser = Parser(source, syntax: syntax)
+  let ast = parser.parse()
+  switch stage {
+  case .syntactic:
+    return ast
+  case .semantic:
+    return validate(ast)
+  }
+}
+
 public func parse<S: StringProtocol>(
   _ regex: S, _ stage: ASTStage, _ syntax: SyntaxOptions
 ) throws -> AST where S.SubSequence == Substring
 {
-  let source = Source(String(regex))
-  var parser = Parser(source, syntax: syntax)
-  let ast = try parser.parse()
-  switch stage {
-  case .syntactic:
-    break
-  case .semantic:
-    try validate(ast)
-  }
-  return ast
+  try parseWithRecovery(regex, syntax, stage: stage).ensureValid()
 }
 
 extension StringProtocol {
@@ -654,13 +663,23 @@ fileprivate func defaultSyntaxOptions(
 
 /// Parses a given regex string with delimiters, inferring the syntax options
 /// from the delimiters used.
+public func parseWithDelimitersWithRecovery<S: StringProtocol>(
+  _ regex: S
+) -> AST where S.SubSequence == Substring {
+  let (contents, delim) = droppingRegexDelimiters(String(regex))
+  let syntax = defaultSyntaxOptions(delim, contents: contents)
+  return parseWithRecovery(contents, syntax)
+}
+
+/// Parses a given regex string with delimiters, inferring the syntax options
+/// from the delimiters used.
 public func parseWithDelimiters<S: StringProtocol>(
   _ regex: S, _ stage: ASTStage
 ) throws -> AST where S.SubSequence == Substring {
   let (contents, delim) = droppingRegexDelimiters(String(regex))
+  let syntax = defaultSyntaxOptions(delim, contents: contents)
   do {
-    let syntax = defaultSyntaxOptions(delim, contents: contents)
-    return try parse(contents, stage, syntax)
+    return try parseWithRecovery(contents, syntax, stage: stage).ensureValid()
   } catch let error as LocatedErrorProtocol {
     // Convert the range in 'contents' to the range in 'regex'.
     let delimCount = delim.opening.count

@@ -227,7 +227,7 @@ extension AST.Atom {
 
     case .scalarSequence, .escaped, .keyboardControl, .keyboardMeta,
         .keyboardMetaControl, .backreference, .subpattern, .callout,
-        .backtrackingDirective, .changeMatchingOptions:
+        .backtrackingDirective, .changeMatchingOptions, .invalid:
       // FIXME: implement
       return nil
     }
@@ -521,6 +521,9 @@ extension AST.Atom.CharacterProperty {
 
       case .javaSpecial(let s):
         throw Unsupported("TODO: map Java special: \(s)")
+
+      case .invalid:
+        throw Unreachable("Expected valid property")
       }
     }()
 
