@@ -80,20 +80,23 @@ extension Regex {
     /// likely, compilation/caching.
     let tree: DSLTree
 
+    /// OptionSet of compiler options for testing purposes
+    fileprivate var compileOptions: Compiler.CompileOptions = .default
+
     private final class ProgramBox {
       let value: MEProgram
       init(_ value: MEProgram) { self.value = value }
     }
 
     /// Do not use directly - all accesses must go through `loweredProgram`.
-    private var _loweredProgramStorage: AnyObject? = nil
+    fileprivate var _loweredProgramStorage: AnyObject? = nil
     
     /// The program for execution with the matching engine.
     var loweredProgram: MEProgram {
       if let loweredObject = _loweredProgramStorage as? ProgramBox {
         return loweredObject.value
       }
-      let lowered = try! Compiler(tree: tree).emit()
+      let lowered = try! Compiler(tree: tree, compileOptions: compileOptions).emit()
       _stdlib_atomicInitializeARCRef(object: &_loweredProgramStorage, desired: ProgramBox(lowered))
       return lowered
     }
@@ -130,5 +133,13 @@ extension Regex {
   @_spi(RegexBuilder)
   public init(node: DSLTree.Node) {
     self.program = Program(tree: .init(node))
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Regex {
+  internal mutating func _setCompilerOptionsForTesting(_ opts: Compiler.CompileOptions) {
+    program.compileOptions = opts
+    program._loweredProgramStorage = nil
   }
 }

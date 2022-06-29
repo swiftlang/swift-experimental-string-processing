@@ -142,4 +142,70 @@ extension RegexTests {
       "((?i:.))",
       matchingOptions(adding: [.caseInsensitive]))
   }
+
+  private func expectProgram(
+    for regex: String,
+    syntax: SyntaxOptions = .traditional,
+    semanticLevel: RegexSemanticLevel? = nil,
+    contains targets: Set<Instruction.OpCode>,
+    file: StaticString = #file,
+    line: UInt = #line
+  ) {
+    do {
+      let prog = try _compileRegex(regex, syntax, semanticLevel)
+      var found: Set<Instruction.OpCode> = []
+      for inst in prog.engine.instructions {
+        if targets.contains(inst.opcode) {
+          found.insert(inst.opcode)
+        }
+      }
+
+      if !found.isSuperset(of: targets) {
+        XCTFail(
+          "Compiled regex '\(regex)' did not contain desired opcodes. Wanted: \(targets), found: \(found)",
+          file: file,
+          line: line)
+      }
+    } catch {
+      XCTFail(
+        "Failed to compile regex '\(regex)': \(error)",
+        file: file,
+        line: line)
+    }
+  }
+
+  private func expectProgram(
+    for regex: String,
+    syntax: SyntaxOptions = .traditional,
+    semanticLevel: RegexSemanticLevel? = nil,
+    doesNotContain targets: Set<Instruction.OpCode>,
+    file: StaticString = #file,
+    line: UInt = #line
+  ) {
+    do {
+      let prog = try _compileRegex(regex, syntax, semanticLevel)
+      for inst in prog.engine.instructions {
+        if targets.contains(inst.opcode) {
+          XCTFail(
+            "Compiled regex '\(regex)' contains incorrect opcode \(inst.opcode)",
+            file: file,
+            line: line)
+          return
+        }
+      }
+    } catch {
+      XCTFail(
+        "Failed to compile regex '\(regex)': \(error)",
+        file: file,
+        line: line)
+    }
+  }
+
+  func testBitsetCompile() {
+    expectProgram(for: "[abc]", contains: [.matchBitset])
+    expectProgram(for: "[abc]", doesNotContain: [.consumeBy])
+
+    expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, doesNotContain: [.matchBitset])
+    expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, contains: [.consumeBy])
+  }
 }

@@ -50,6 +50,7 @@ extension Instruction.Payload {
     case bool(BoolRegister)
     case element(ElementRegister)
     case consumer(ConsumeFunctionRegister)
+    case bitset(AsciiBitsetRegister)
     case assertion(AssertionFunctionRegister)
     case addr(InstructionAddress)
     case capture(CaptureRegister)
@@ -196,6 +197,13 @@ extension Instruction.Payload {
     interpret()
   }
 
+  init(bitset: AsciiBitsetRegister) {
+    self.init(bitset)
+  }
+  var bitset: AsciiBitsetRegister {
+    interpret()
+  }
+  
   init(consumer: ConsumeFunctionRegister) {
     self.init(consumer)
   }
