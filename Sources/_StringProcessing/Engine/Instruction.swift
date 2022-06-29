@@ -90,7 +90,7 @@ extension Instruction {
     /// Match against a set of valid ascii values stored in a bitset
     /// Operand: Ascii bitset register containing the bitset
     case matchBitset
-    /// Match a single scalar instead of a character
+    /// matchBitset but emitted in unicode scalar semantic mode, matches and advances a single scalar
     case matchBitsetScalar
 
     /// TODO: builtin assertions and anchors

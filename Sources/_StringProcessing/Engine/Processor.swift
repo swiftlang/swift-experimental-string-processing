@@ -255,25 +255,27 @@ extension Processor {
   // ascii characters, so check if the current input element is ascii then
   // check if it is set in the bitset
   mutating func matchBitset(
-    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
-    scalar: Bool
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
   ) -> Bool {
-    if scalar {
-      guard let curScalar = loadScalar(),
-              bitset.matches(scalar: curScalar),
-            let idx = nextScalarIndex(offsetBy: 1, boundaryCheck: false) else {
-        signalFailure()
-        return false
-      }
-      currentPosition = idx
-      return true
-    }
-    
     guard let cur = load(), bitset.matches(char: cur) else {
       signalFailure()
       return false
     }
     _uncheckedForcedConsumeOne()
+    return true
+  }
+
+  // Equivalent of matchBitset but emitted when in unicode scalar semantic mode
+  mutating func matchBitsetScalar(
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
+  ) -> Bool {
+    guard let curScalar = loadScalar(),
+            bitset.matches(scalar: curScalar),
+          let idx = nextScalarIndex(offsetBy: 1, boundaryCheck: false) else {
+      signalFailure()
+      return false
+    }
+    currentPosition = idx
     return true
   }
 
@@ -428,13 +430,13 @@ extension Processor {
     case .matchBitset:
       let reg = payload.bitset
       let bitset = registers[reg]
-      if matchBitset(bitset, scalar: false) {
+      if matchBitset(bitset) {
         controller.step()
       }
     case .matchBitsetScalar:
       let reg = payload.bitset
       let bitset = registers[reg]
-      if matchBitset(bitset, scalar: true) {
+      if matchBitsetScalar(bitset) {
         controller.step()
       }
 

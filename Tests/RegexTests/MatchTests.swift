@@ -636,6 +636,26 @@ extension RegexTests {
       ("\r", true),
       ("\r\n", false))
 
+    do {
+      let r = #"[a]\u0301"#
+      var regex = try Regex(r).matchingSemantics(.unicodeScalar)
+      let input: String = "a\u{301}"
+      // Should match in unicode semantic mode because the character class
+      // should consume the a and then matchScalar should match the \u{301}
+      regex._debug()
+      XCTAssertEqual("a\u{301}", try regex.wholeMatch(in: input)?.0)
+      // validate this is the same in unoptimized mode
+      regex._setCompilerOptionsForTesting(.disableOptimizations)
+      XCTAssertEqual("a\u{301}", try regex.wholeMatch(in: input)?.0)
+
+      // Should not match in grapheme semantic mode because a\u{301} is
+      // a single character
+      matchTest(r,
+        (input, false))
+    } catch {
+      XCTFail("\(error)", file: #filePath, line: #line)
+    }
+
     firstMatchTest("[-]", input: "123-abcxyz", match: "-")
 
     // These are metacharacters in certain contexts, but normal characters
