@@ -31,7 +31,7 @@ public struct CharacterClass {
 @available(SwiftStdlib 5.7, *)
 extension CharacterClass: RegexComponent {
   public var regex: Regex<Substring> {
-    _RegexFactory.customCharacterClass(ccc)
+    _RegexFactory().customCharacterClass(ccc)
   }
 }
 

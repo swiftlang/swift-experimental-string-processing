@@ -261,7 +261,8 @@ struct VariadicsGenerator: ParsableCommand {
         public static func buildPartialBlock<\(genericParams)>(
           accumulated: R0, next: R1
         ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
-          _RegexFactory.accumulate(accumulated, next)
+          let factory = makeFactory()
+          return factory.accumulate(accumulated, next)
         }
       }
 
@@ -306,7 +307,8 @@ struct VariadicsGenerator: ParsableCommand {
     }
     output("""
         {
-          _RegexFactory.accumulate(accumulated, next)
+          let factory = makeFactory()
+          return factory.accumulate(accumulated, next)
         }
       }
 
@@ -393,7 +395,8 @@ struct VariadicsGenerator: ParsableCommand {
           _ component: Component,
           _ behavior: RegexRepetitionBehavior? = nil
         ) \(params.whereClauseForInit) {
-          self.init(_RegexFactory.\(kind.astQuantifierAmount)(component, behavior))
+          let factory = makeFactory()
+          self.init(factory.\(kind.astQuantifierAmount)(component, behavior))
         }
       }
 
@@ -405,7 +408,8 @@ struct VariadicsGenerator: ParsableCommand {
           _ behavior: RegexRepetitionBehavior? = nil,
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.whereClauseForInit) {
-          self.init(_RegexFactory.\(kind.astQuantifierAmount)(component(), behavior))
+          let factory = makeFactory()
+          self.init(factory.\(kind.astQuantifierAmount)(component(), behavior))
         }
       }
 
@@ -417,7 +421,8 @@ struct VariadicsGenerator: ParsableCommand {
           public static func buildLimitedAvailability<\(params.genericParams)>(
             _ component: Component
           ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
-            _RegexFactory.\(kind.astQuantifierAmount)(component, nil)
+            let factory = makeFactory()
+            return factory.\(kind.astQuantifierAmount)(component, nil)
           }
         }
         """ : "")
@@ -462,7 +467,8 @@ struct VariadicsGenerator: ParsableCommand {
         public init<\(genericParams)>(
           _ component: Component
         ) \(whereClauseForInit) {
-          self.init(_RegexFactory.atomicNonCapturing(\(node(builder: false))))
+          let factory = makeFactory()
+          self.init(factory.atomicNonCapturing(\(node(builder: false))))
         }
       }
 
@@ -474,7 +480,8 @@ struct VariadicsGenerator: ParsableCommand {
         public init<\(genericParams)>(
           @\(concatBuilderName) _ component: () -> Component
         ) \(whereClauseForInit) {
-          self.init(_RegexFactory.atomicNonCapturing(\(node(builder: true))))
+          let factory = makeFactory()
+          self.init(factory.atomicNonCapturing(\(node(builder: true))))
         }
       }
 
@@ -499,7 +506,8 @@ struct VariadicsGenerator: ParsableCommand {
           count: Int
         ) \(params.whereClauseForInit) {
           assert(count > 0, "Must specify a positive count")
-          self.init(_RegexFactory.exactly(count, component))
+          let factory = makeFactory()
+          self.init(factory.exactly(count, component))
         }
 
       \(params.disfavored)\
@@ -509,7 +517,8 @@ struct VariadicsGenerator: ParsableCommand {
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.whereClauseForInit) {
           assert(count > 0, "Must specify a positive count")
-          self.init(_RegexFactory.exactly(count, component()))
+          let factory = makeFactory()
+          self.init(factory.exactly(count, component()))
         }
 
       \(params.disfavored)\
@@ -519,7 +528,8 @@ struct VariadicsGenerator: ParsableCommand {
           _ expression: R,
           _ behavior: RegexRepetitionBehavior? = nil
         ) \(params.repeatingWhereClause) {
-          self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
+          let factory = makeFactory()
+          self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
         }
 
       \(params.disfavored)\
@@ -529,7 +539,8 @@ struct VariadicsGenerator: ParsableCommand {
           _ behavior: RegexRepetitionBehavior? = nil,
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.repeatingWhereClause) {
-          self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
+          let factory = makeFactory()
+          self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
         }
       }
       
@@ -581,7 +592,8 @@ struct VariadicsGenerator: ParsableCommand {
         public static func buildPartialBlock<\(genericParams)>(
           accumulated: R0, next: R1
         ) -> ChoiceOf<\(matchType)> \(whereClause) {
-          .init(_RegexFactory.accumulateAlternation(accumulated, next))
+          let factory = makeFactory()
+          return .init(factory.accumulateAlternation(accumulated, next))
         }
       }
 
@@ -607,7 +619,8 @@ struct VariadicsGenerator: ParsableCommand {
       extension \(altBuilderName) {
         @_alwaysEmitIntoClient
         public static func buildPartialBlock<\(genericParams)>(first regex: R) -> ChoiceOf<(W, \(resultCaptures))> \(whereClause) {
-          .init(_RegexFactory.orderedChoice(regex))
+          let factory = makeFactory()
+          return .init(factory.orderedChoice(regex))
         }
       }
       
@@ -641,7 +654,8 @@ struct VariadicsGenerator: ParsableCommand {
         public init<\(genericParams)>(
           _ component: R
         ) \(whereClauseRaw) {
-          self.init(_RegexFactory.capture(component))
+          let factory = makeFactory()
+          self.init(factory.capture(component))
         }
 
       \(disfavored)\
@@ -649,7 +663,8 @@ struct VariadicsGenerator: ParsableCommand {
         public init<\(genericParams)>(
           _ component: R, as reference: Reference<W>
         ) \(whereClauseRaw) {
-          self.init(_RegexFactory.capture(component, reference._raw))
+          let factory = makeFactory()
+          self.init(factory.capture(component, reference._raw))
         }
 
       \(disfavored)\
@@ -658,7 +673,8 @@ struct VariadicsGenerator: ParsableCommand {
           _ component: R,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(_RegexFactory.capture(component, nil, transform))
+          let factory = makeFactory()
+          self.init(factory.capture(component, nil, transform))
         }
 
       \(disfavored)\
@@ -668,7 +684,8 @@ struct VariadicsGenerator: ParsableCommand {
           as reference: Reference<NewCapture>,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(_RegexFactory.capture(component, reference._raw, transform))
+          let factory = makeFactory()
+          self.init(factory.capture(component, reference._raw, transform))
         }
       }
 
@@ -680,7 +697,8 @@ struct VariadicsGenerator: ParsableCommand {
           _ component: R,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(_RegexFactory.captureOptional(component, nil, transform))
+          let factory = makeFactory()
+          self.init(factory.captureOptional(component, nil, transform))
         }
 
       \(disfavored)\
@@ -690,7 +708,8 @@ struct VariadicsGenerator: ParsableCommand {
           as reference: Reference<NewCapture>,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(_RegexFactory.captureOptional(component, reference._raw, transform))
+          let factory = makeFactory()
+          self.init(factory.captureOptional(component, reference._raw, transform))
         }
       }
 
@@ -703,7 +722,8 @@ struct VariadicsGenerator: ParsableCommand {
         public init<\(genericParams)>(
           @\(concatBuilderName) _ component: () -> R
         ) \(whereClauseRaw) {
-          self.init(_RegexFactory.capture(component()))
+          let factory = makeFactory()
+          self.init(factory.capture(component()))
         }
 
       \(disfavored)\
@@ -712,7 +732,8 @@ struct VariadicsGenerator: ParsableCommand {
           as reference: Reference<W>,
           @\(concatBuilderName) _ component: () -> R
         ) \(whereClauseRaw) {
-          self.init(_RegexFactory.capture(component(), reference._raw))
+          let factory = makeFactory()
+          self.init(factory.capture(component(), reference._raw))
         }
 
       \(disfavored)\
@@ -721,7 +742,8 @@ struct VariadicsGenerator: ParsableCommand {
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(_RegexFactory.capture(component(), nil, transform))
+          let factory = makeFactory()
+          self.init(factory.capture(component(), nil, transform))
         }
 
       \(disfavored)\
@@ -731,7 +753,8 @@ struct VariadicsGenerator: ParsableCommand {
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(_RegexFactory.capture(component(), reference._raw, transform))
+          let factory = makeFactory()
+          self.init(factory.capture(component(), reference._raw, transform))
         }
       }
 
@@ -743,7 +766,8 @@ struct VariadicsGenerator: ParsableCommand {
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(_RegexFactory.captureOptional(component(), nil, transform))
+          let factory = makeFactory()
+          self.init(factory.captureOptional(component(), nil, transform))
         }
 
       \(disfavored)\
@@ -753,7 +777,8 @@ struct VariadicsGenerator: ParsableCommand {
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(_RegexFactory.captureOptional(component(), reference._raw, transform))
+          let factory = makeFactory()
+          self.init(factory.captureOptional(component(), reference._raw, transform))
         }
       }
 

@@ -15,7 +15,7 @@
 @resultBuilder
 public enum RegexComponentBuilder {
   public static func buildBlock() -> Regex<Substring> {
-    _RegexFactory.empty()
+    _RegexFactory().empty()
   }
 
   public static func buildPartialBlock<R: RegexComponent>(

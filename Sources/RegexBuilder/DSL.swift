@@ -49,7 +49,7 @@ extension Character: RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> {
-    _RegexFactory.char(self)
+    _RegexFactory().char(self)
   }
 }
 
@@ -58,7 +58,7 @@ extension UnicodeScalar: RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> {
-    _RegexFactory.scalar(self)
+    _RegexFactory().scalar(self)
   }
 }
 
@@ -248,7 +248,7 @@ public struct Reference<Capture>: RegexComponent {
   }
   
   public var regex: Regex<Capture> {
-    _RegexFactory.symbolicReference(id)
+    _RegexFactory().symbolicReference(id)
   }
 }
 
@@ -257,4 +257,13 @@ extension Regex.Match {
   public subscript<Capture>(_ reference: Reference<Capture>) -> Capture {
     self[reference.id]
   }
+}
+
+// RegexFactory's init is SPI, so we can't make an instance of one in AEIC, but
+// if we hide it behind a resilience barrier we can call this function instead
+// to get our instance of it.
+@available(SwiftStdlib 5.7, *)
+@usableFromInline
+internal func makeFactory() -> _RegexFactory {
+  _RegexFactory()
 }

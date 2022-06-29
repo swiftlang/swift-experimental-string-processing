@@ -9,10 +9,20 @@
 //
 //===----------------------------------------------------------------------===//
 
+// This type is used to manipulate DSLTree.Nodes in RegexBuilder for AEIC
+// marked functions. We explicitly don't want to expose DSLTree.Node as public
+// in any form (SPI or not), so this lets us create the needed Regex's in the
+// builder module.
 @available(SwiftStdlib 5.7, *)
-public enum _RegexFactory {
+public struct _RegexFactory {
+  
+  // Don't allow people to create this type if they somehow manage to find this.
+  // Hide is behind an SPI that only RegexBuilder can use.
+  @_spi(RegexBuilder)
+  public init() {}
+  
   @available(SwiftStdlib 5.7, *)
-  public static func accumulate<Output>(
+  public func accumulate<Output>(
     _ left: some RegexComponent,
     _ right: some RegexComponent
   ) -> Regex<Output> {
@@ -20,7 +30,7 @@ public enum _RegexFactory {
   }
   
   @available(SwiftStdlib 5.7, *)
-  public static func accumulateAlternation<Output>(
+  public func accumulateAlternation<Output>(
     _ left: some RegexComponent,
     _ right: some RegexComponent
   ) -> Regex<Output> {
@@ -29,7 +39,7 @@ public enum _RegexFactory {
   
   @_spi(RegexBuilder)
   @available(SwiftStdlib 5.7, *)
-  public static func assertion<Output>(
+  public func assertion<Output>(
     _ kind: DSLTree._AST.AssertionKind
   ) -> Regex<Output> {
     .init(node: .atom(.assertion(kind)))
@@ -37,13 +47,13 @@ public enum _RegexFactory {
   
   @_spi(RegexBuilder)
   @available(SwiftStdlib 5.7, *)
-  public static func empty<Output>() -> Regex<Output> {
+  public func empty<Output>() -> Regex<Output> {
     .init(node: .empty)
   }
   
   @_spi(RegexBuilder)
   @available(SwiftStdlib 5.7, *)
-  public static func scalar<Output>(
+  public func scalar<Output>(
     _ scalar: Unicode.Scalar
   ) -> Regex<Output> {
     .init(node: .atom(.scalar(scalar)))
@@ -51,7 +61,7 @@ public enum _RegexFactory {
   
   @_spi(RegexBuilder)
   @available(SwiftStdlib 5.7, *)
-  public static func char<Output>(
+  public func char<Output>(
     _ char: Character
   ) -> Regex<Output> {
     .init(node: .atom(.char(char)))
@@ -59,7 +69,7 @@ public enum _RegexFactory {
   
   @_spi(RegexBuilder)
   @available(SwiftStdlib 5.7, *)
-  public static func symbolicReference<Output>(
+  public func symbolicReference<Output>(
     _ reference: ReferenceID
   ) -> Regex<Output> {
     .init(node: .atom(.symbolicReference(reference)))
@@ -67,14 +77,14 @@ public enum _RegexFactory {
   
   @_spi(RegexBuilder)
   @available(SwiftStdlib 5.7, *)
-  public static func customCharacterClass<Output>(
+  public func customCharacterClass<Output>(
     _ ccc: DSLTree.CustomCharacterClass
   ) -> Regex<Output> {
     .init(node: .customCharacterClass(ccc))
   }
   
   @available(SwiftStdlib 5.7, *)
-  public static func zeroOrOne<Output>(
+  public func zeroOrOne<Output>(
     _ component: some RegexComponent,
     _ behavior: RegexRepetitionBehavior? = nil
   ) -> Regex<Output> {
@@ -83,7 +93,7 @@ public enum _RegexFactory {
   }
   
   @available(SwiftStdlib 5.7, *)
-  public static func zeroOrMore<Output>(
+  public func zeroOrMore<Output>(
     _ component: some RegexComponent,
     _ behavior: RegexRepetitionBehavior? = nil
   ) -> Regex<Output> {
@@ -92,7 +102,7 @@ public enum _RegexFactory {
   }
   
   @available(SwiftStdlib 5.7, *)
-  public static func oneOrMore<Output>(
+  public func oneOrMore<Output>(
     _ component: some RegexComponent,
     _ behavior: RegexRepetitionBehavior? = nil
   ) -> Regex<Output> {
@@ -101,7 +111,7 @@ public enum _RegexFactory {
   }
   
   @available(SwiftStdlib 5.7, *)
-  public static func exactly<Output>(
+  public func exactly<Output>(
     _ count: Int,
     _ component: some RegexComponent
   ) -> Regex<Output> {
@@ -109,7 +119,7 @@ public enum _RegexFactory {
   }
   
   @available(SwiftStdlib 5.7, *)
-  public static func repeating<Output>(
+  public func repeating<Output>(
     _ range: Range<Int>,
     _ behavior: RegexRepetitionBehavior?,
     _ component: some RegexComponent
@@ -118,7 +128,7 @@ public enum _RegexFactory {
   }
   
   @available(SwiftStdlib 5.7, *)
-  public static func atomicNonCapturing<Output>(
+  public func atomicNonCapturing<Output>(
     _ component: some RegexComponent
   ) -> Regex<Output> {
     .init(node: .nonCapturingGroup(.atomicNonCapturing, component.regex.root))
@@ -126,7 +136,7 @@ public enum _RegexFactory {
   
   @_spi(RegexBuilder)
   @available(SwiftStdlib 5.7, *)
-  public static func lookaheadNonCapturing<Output>(
+  public func lookaheadNonCapturing<Output>(
     _ component: some RegexComponent
   ) -> Regex<Output> {
     .init(node: .nonCapturingGroup(.lookahead, component.regex.root))
@@ -134,28 +144,28 @@ public enum _RegexFactory {
   
   @_spi(RegexBuilder)
   @available(SwiftStdlib 5.7, *)
-  public static func negativeLookaheadNonCapturing<Output>(
+  public func negativeLookaheadNonCapturing<Output>(
     _ component: some RegexComponent
   ) -> Regex<Output> {
     .init(node: .nonCapturingGroup(.negativeLookahead, component.regex.root))
   }
   
   @available(SwiftStdlib 5.7, *)
-  public static func orderedChoice<Output>(
+  public func orderedChoice<Output>(
     _ component: some RegexComponent
   ) -> Regex<Output> {
     .init(node: .orderedChoice([component.regex.root]))
   }
   
   @available(SwiftStdlib 5.7, *)
-  public static func capture<Output>(
+  public func capture<Output>(
     _ r: some RegexComponent
   ) -> Regex<Output> {
     .init(node: .capture(r.regex.root))
   }
   
   @available(SwiftStdlib 5.7, *)
-  public static func capture<Output>(
+  public func capture<Output>(
     _ component: some RegexComponent,
     _ reference: Int
   ) -> Regex<Output> {
@@ -166,7 +176,7 @@ public enum _RegexFactory {
   }
   
   @available(SwiftStdlib 5.7, *)
-  public static func capture<Output, W, NewCapture>(
+  public func capture<Output, W, NewCapture>(
     _ component: some RegexComponent,
     _ reference: Int? = nil,
     _ transform: @escaping (W) throws -> NewCapture
@@ -179,7 +189,7 @@ public enum _RegexFactory {
   }
   
   @available(SwiftStdlib 5.7, *)
-  public static func captureOptional<Output, W, NewCapture>(
+  public func captureOptional<Output, W, NewCapture>(
     _ component: some RegexComponent,
     _ reference: Int? = nil,
     _ transform: @escaping (W) throws -> NewCapture?

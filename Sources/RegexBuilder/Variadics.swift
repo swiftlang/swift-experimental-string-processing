@@ -19,7 +19,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -28,7 +29,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -37,7 +39,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -46,7 +49,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -55,7 +59,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4, C5) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -64,7 +69,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -73,7 +79,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -82,7 +89,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7, C8) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -91,7 +99,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -100,7 +109,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -109,7 +119,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -118,7 +129,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -127,7 +139,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -136,7 +149,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -145,7 +159,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -154,7 +169,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -163,7 +179,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7, C8) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -172,7 +189,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -181,7 +199,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -190,7 +209,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -199,7 +219,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -208,7 +229,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -217,7 +239,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -226,7 +249,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -235,7 +259,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7, C8) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -244,7 +269,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7, C8, C9) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -253,7 +279,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7, C8, C9, C10) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -262,7 +289,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -271,7 +299,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -280,7 +309,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -289,7 +319,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -298,7 +329,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7, C8) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -307,7 +339,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7, C8, C9) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -316,7 +349,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7, C8, C9, C10) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -325,7 +359,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5)>  where R0.RegexOutput == (W0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -334,7 +369,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -343,7 +379,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -352,7 +389,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7, C8) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -361,7 +399,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7, C8, C9) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -370,7 +409,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7, C8, C9, C10) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -379,7 +419,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -388,7 +429,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -397,7 +439,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7, C8) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -406,7 +449,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7, C8, C9) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -415,7 +459,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7, C8, C9, C10) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -424,7 +469,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -433,7 +479,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7, C8) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -442,7 +489,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7, C8, C9) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -451,7 +499,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7, C8, C9, C10) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -460,7 +509,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6, C7), R1.RegexOutput == (W1, C8) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -469,7 +519,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6, C7), R1.RegexOutput == (W1, C8, C9) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -478,7 +529,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6, C7), R1.RegexOutput == (W1, C8, C9, C10) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -487,7 +539,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6, C7, C8), R1.RegexOutput == (W1, C9) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -496,7 +549,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6, C7, C8), R1.RegexOutput == (W1, C9, C10) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -505,7 +559,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>  where R0.RegexOutput == (W0, C1, C2, C3, C4, C5, C6, C7, C8, C9), R1.RegexOutput == (W1, C10) {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -515,7 +570,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<Substring> where R0.RegexOutput == W0  {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -525,7 +581,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, C0, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0)> where R0.RegexOutput == (W0, C0)  {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -535,7 +592,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, C0, C1, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1)> where R0.RegexOutput == (W0, C0, C1)  {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -545,7 +603,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, C0, C1, C2, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2)> where R0.RegexOutput == (W0, C0, C1, C2)  {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -555,7 +614,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, C0, C1, C2, C3, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3)> where R0.RegexOutput == (W0, C0, C1, C2, C3)  {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -565,7 +625,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, C0, C1, C2, C3, C4, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)> where R0.RegexOutput == (W0, C0, C1, C2, C3, C4)  {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -575,7 +636,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, C0, C1, C2, C3, C4, C5, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)> where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5)  {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -585,7 +647,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, C0, C1, C2, C3, C4, C5, C6, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)> where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6)  {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -595,7 +658,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, C0, C1, C2, C3, C4, C5, C6, C7, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)> where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7)  {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -605,7 +669,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8)  {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -615,7 +680,8 @@ extension RegexComponentBuilder {
   public static func buildPartialBlock<W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, R0: RegexComponent, R1: RegexComponent>(
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)> where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)  {
-    _RegexFactory.accumulate(accumulated, next)
+    let factory = makeFactory()
+    return factory.accumulate(accumulated, next)
   }
 }
 
@@ -628,7 +694,8 @@ extension Optionally {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == Substring {
-    self.init(_RegexFactory.zeroOrOne(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component, behavior))
   }
 }
 
@@ -640,7 +707,8 @@ extension Optionally {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == Substring {
-    self.init(_RegexFactory.zeroOrOne(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component(), behavior))
   }
 }
 
@@ -650,7 +718,8 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<Component: RegexComponent>(
     _ component: Component
   ) -> Regex<Substring>  {
-    _RegexFactory.zeroOrOne(component, nil)
+    let factory = makeFactory()
+    return factory.zeroOrOne(component, nil)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -661,7 +730,8 @@ extension ZeroOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == Substring {
-    self.init(_RegexFactory.zeroOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component, behavior))
   }
 }
 
@@ -673,7 +743,8 @@ extension ZeroOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == Substring {
-    self.init(_RegexFactory.zeroOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component(), behavior))
   }
 }
 
@@ -686,7 +757,8 @@ extension OneOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == Substring {
-    self.init(_RegexFactory.oneOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component, behavior))
   }
 }
 
@@ -698,7 +770,8 @@ extension OneOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == Substring {
-    self.init(_RegexFactory.oneOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component(), behavior))
   }
 }
 
@@ -712,7 +785,8 @@ extension Repeat {
     count: Int
   ) where RegexOutput == Substring {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component))
   }
 
   @_disfavoredOverload
@@ -722,7 +796,8 @@ extension Repeat {
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == Substring {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component()))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component()))
   }
 
   @_disfavoredOverload
@@ -732,7 +807,8 @@ extension Repeat {
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == Substring, R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
   @_disfavoredOverload
@@ -742,7 +818,8 @@ extension Repeat {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == Substring, R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -752,7 +829,8 @@ extension Optionally {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.zeroOrOne(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component, behavior))
   }
 }
 
@@ -763,7 +841,8 @@ extension Optionally {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.zeroOrOne(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component(), behavior))
   }
 }
 
@@ -773,7 +852,8 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C1, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C1?)> where Component.RegexOutput == (W, C1) {
-    _RegexFactory.zeroOrOne(component, nil)
+    let factory = makeFactory()
+    return factory.zeroOrOne(component, nil)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -783,7 +863,8 @@ extension ZeroOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.zeroOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component, behavior))
   }
 }
 
@@ -794,7 +875,8 @@ extension ZeroOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.zeroOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component(), behavior))
   }
 }
 
@@ -806,7 +888,8 @@ extension OneOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1), Component.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.oneOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component, behavior))
   }
 }
 
@@ -817,7 +900,8 @@ extension OneOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1), Component.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.oneOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component(), behavior))
   }
 }
 
@@ -830,7 +914,8 @@ extension Repeat {
     count: Int
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component))
   }
 
   @_alwaysEmitIntoClient
@@ -839,7 +924,8 @@ extension Repeat {
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component()))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component()))
   }
 
   @_alwaysEmitIntoClient
@@ -848,7 +934,8 @@ extension Repeat {
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
   @_alwaysEmitIntoClient
@@ -857,7 +944,8 @@ extension Repeat {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -867,7 +955,8 @@ extension Optionally {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.zeroOrOne(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component, behavior))
   }
 }
 
@@ -878,7 +967,8 @@ extension Optionally {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.zeroOrOne(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component(), behavior))
   }
 }
 
@@ -888,7 +978,8 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C1, C2, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C1?, C2?)> where Component.RegexOutput == (W, C1, C2) {
-    _RegexFactory.zeroOrOne(component, nil)
+    let factory = makeFactory()
+    return factory.zeroOrOne(component, nil)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -898,7 +989,8 @@ extension ZeroOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.zeroOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component, behavior))
   }
 }
 
@@ -909,7 +1001,8 @@ extension ZeroOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.zeroOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component(), behavior))
   }
 }
 
@@ -921,7 +1014,8 @@ extension OneOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2), Component.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.oneOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component, behavior))
   }
 }
 
@@ -932,7 +1026,8 @@ extension OneOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2), Component.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.oneOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component(), behavior))
   }
 }
 
@@ -945,7 +1040,8 @@ extension Repeat {
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component))
   }
 
   @_alwaysEmitIntoClient
@@ -954,7 +1050,8 @@ extension Repeat {
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component()))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component()))
   }
 
   @_alwaysEmitIntoClient
@@ -963,7 +1060,8 @@ extension Repeat {
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
   @_alwaysEmitIntoClient
@@ -972,7 +1070,8 @@ extension Repeat {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -982,7 +1081,8 @@ extension Optionally {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.zeroOrOne(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component, behavior))
   }
 }
 
@@ -993,7 +1093,8 @@ extension Optionally {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.zeroOrOne(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component(), behavior))
   }
 }
 
@@ -1003,7 +1104,8 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C1, C2, C3, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C1?, C2?, C3?)> where Component.RegexOutput == (W, C1, C2, C3) {
-    _RegexFactory.zeroOrOne(component, nil)
+    let factory = makeFactory()
+    return factory.zeroOrOne(component, nil)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1013,7 +1115,8 @@ extension ZeroOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.zeroOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component, behavior))
   }
 }
 
@@ -1024,7 +1127,8 @@ extension ZeroOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.zeroOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component(), behavior))
   }
 }
 
@@ -1036,7 +1140,8 @@ extension OneOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3), Component.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.oneOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component, behavior))
   }
 }
 
@@ -1047,7 +1152,8 @@ extension OneOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3), Component.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.oneOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component(), behavior))
   }
 }
 
@@ -1060,7 +1166,8 @@ extension Repeat {
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1069,7 +1176,8 @@ extension Repeat {
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component()))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component()))
   }
 
   @_alwaysEmitIntoClient
@@ -1078,7 +1186,8 @@ extension Repeat {
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1087,7 +1196,8 @@ extension Repeat {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1097,7 +1207,8 @@ extension Optionally {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.zeroOrOne(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component, behavior))
   }
 }
 
@@ -1108,7 +1219,8 @@ extension Optionally {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.zeroOrOne(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component(), behavior))
   }
 }
 
@@ -1118,7 +1230,8 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C1?, C2?, C3?, C4?)> where Component.RegexOutput == (W, C1, C2, C3, C4) {
-    _RegexFactory.zeroOrOne(component, nil)
+    let factory = makeFactory()
+    return factory.zeroOrOne(component, nil)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1128,7 +1241,8 @@ extension ZeroOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.zeroOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component, behavior))
   }
 }
 
@@ -1139,7 +1253,8 @@ extension ZeroOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.zeroOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component(), behavior))
   }
 }
 
@@ -1151,7 +1266,8 @@ extension OneOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4), Component.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.oneOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component, behavior))
   }
 }
 
@@ -1162,7 +1278,8 @@ extension OneOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4), Component.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.oneOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component(), behavior))
   }
 }
 
@@ -1175,7 +1292,8 @@ extension Repeat {
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1184,7 +1302,8 @@ extension Repeat {
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component()))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component()))
   }
 
   @_alwaysEmitIntoClient
@@ -1193,7 +1312,8 @@ extension Repeat {
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1202,7 +1322,8 @@ extension Repeat {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1212,7 +1333,8 @@ extension Optionally {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.zeroOrOne(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component, behavior))
   }
 }
 
@@ -1223,7 +1345,8 @@ extension Optionally {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.zeroOrOne(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component(), behavior))
   }
 }
 
@@ -1233,7 +1356,8 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C1?, C2?, C3?, C4?, C5?)> where Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    _RegexFactory.zeroOrOne(component, nil)
+    let factory = makeFactory()
+    return factory.zeroOrOne(component, nil)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1243,7 +1367,8 @@ extension ZeroOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.zeroOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component, behavior))
   }
 }
 
@@ -1254,7 +1379,8 @@ extension ZeroOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.zeroOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component(), behavior))
   }
 }
 
@@ -1266,7 +1392,8 @@ extension OneOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.oneOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component, behavior))
   }
 }
 
@@ -1277,7 +1404,8 @@ extension OneOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.oneOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component(), behavior))
   }
 }
 
@@ -1290,7 +1418,8 @@ extension Repeat {
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1299,7 +1428,8 @@ extension Repeat {
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component()))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component()))
   }
 
   @_alwaysEmitIntoClient
@@ -1308,7 +1438,8 @@ extension Repeat {
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1317,7 +1448,8 @@ extension Repeat {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1327,7 +1459,8 @@ extension Optionally {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.zeroOrOne(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component, behavior))
   }
 }
 
@@ -1338,7 +1471,8 @@ extension Optionally {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.zeroOrOne(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component(), behavior))
   }
 }
 
@@ -1348,7 +1482,8 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C1?, C2?, C3?, C4?, C5?, C6?)> where Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    _RegexFactory.zeroOrOne(component, nil)
+    let factory = makeFactory()
+    return factory.zeroOrOne(component, nil)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1358,7 +1493,8 @@ extension ZeroOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.zeroOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component, behavior))
   }
 }
 
@@ -1369,7 +1505,8 @@ extension ZeroOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.zeroOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component(), behavior))
   }
 }
 
@@ -1381,7 +1518,8 @@ extension OneOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.oneOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component, behavior))
   }
 }
 
@@ -1392,7 +1530,8 @@ extension OneOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.oneOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component(), behavior))
   }
 }
 
@@ -1405,7 +1544,8 @@ extension Repeat {
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1414,7 +1554,8 @@ extension Repeat {
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component()))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component()))
   }
 
   @_alwaysEmitIntoClient
@@ -1423,7 +1564,8 @@ extension Repeat {
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1432,7 +1574,8 @@ extension Repeat {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1442,7 +1585,8 @@ extension Optionally {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.zeroOrOne(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component, behavior))
   }
 }
 
@@ -1453,7 +1597,8 @@ extension Optionally {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.zeroOrOne(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component(), behavior))
   }
 }
 
@@ -1463,7 +1608,8 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?)> where Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    _RegexFactory.zeroOrOne(component, nil)
+    let factory = makeFactory()
+    return factory.zeroOrOne(component, nil)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1473,7 +1619,8 @@ extension ZeroOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.zeroOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component, behavior))
   }
 }
 
@@ -1484,7 +1631,8 @@ extension ZeroOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.zeroOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component(), behavior))
   }
 }
 
@@ -1496,7 +1644,8 @@ extension OneOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.oneOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component, behavior))
   }
 }
 
@@ -1507,7 +1656,8 @@ extension OneOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.oneOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component(), behavior))
   }
 }
 
@@ -1520,7 +1670,8 @@ extension Repeat {
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1529,7 +1680,8 @@ extension Repeat {
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component()))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component()))
   }
 
   @_alwaysEmitIntoClient
@@ -1538,7 +1690,8 @@ extension Repeat {
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1547,7 +1700,8 @@ extension Repeat {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1557,7 +1711,8 @@ extension Optionally {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.zeroOrOne(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component, behavior))
   }
 }
 
@@ -1568,7 +1723,8 @@ extension Optionally {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.zeroOrOne(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component(), behavior))
   }
 }
 
@@ -1578,7 +1734,8 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    _RegexFactory.zeroOrOne(component, nil)
+    let factory = makeFactory()
+    return factory.zeroOrOne(component, nil)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1588,7 +1745,8 @@ extension ZeroOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.zeroOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component, behavior))
   }
 }
 
@@ -1599,7 +1757,8 @@ extension ZeroOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.zeroOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component(), behavior))
   }
 }
 
@@ -1611,7 +1770,8 @@ extension OneOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.oneOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component, behavior))
   }
 }
 
@@ -1622,7 +1782,8 @@ extension OneOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.oneOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component(), behavior))
   }
 }
 
@@ -1635,7 +1796,8 @@ extension Repeat {
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1644,7 +1806,8 @@ extension Repeat {
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component()))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component()))
   }
 
   @_alwaysEmitIntoClient
@@ -1653,7 +1816,8 @@ extension Repeat {
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1662,7 +1826,8 @@ extension Repeat {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1672,7 +1837,8 @@ extension Optionally {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.zeroOrOne(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component, behavior))
   }
 }
 
@@ -1683,7 +1849,8 @@ extension Optionally {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.zeroOrOne(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component(), behavior))
   }
 }
 
@@ -1693,7 +1860,8 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    _RegexFactory.zeroOrOne(component, nil)
+    let factory = makeFactory()
+    return factory.zeroOrOne(component, nil)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1703,7 +1871,8 @@ extension ZeroOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.zeroOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component, behavior))
   }
 }
 
@@ -1714,7 +1883,8 @@ extension ZeroOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.zeroOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component(), behavior))
   }
 }
 
@@ -1726,7 +1896,8 @@ extension OneOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.oneOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component, behavior))
   }
 }
 
@@ -1737,7 +1908,8 @@ extension OneOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.oneOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component(), behavior))
   }
 }
 
@@ -1750,7 +1922,8 @@ extension Repeat {
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1759,7 +1932,8 @@ extension Repeat {
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component()))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component()))
   }
 
   @_alwaysEmitIntoClient
@@ -1768,7 +1942,8 @@ extension Repeat {
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1777,7 +1952,8 @@ extension Repeat {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1787,7 +1963,8 @@ extension Optionally {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.zeroOrOne(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component, behavior))
   }
 }
 
@@ -1798,7 +1975,8 @@ extension Optionally {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.zeroOrOne(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component(), behavior))
   }
 }
 
@@ -1808,7 +1986,8 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ component: Component
   ) -> Regex<(Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?)> where Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    _RegexFactory.zeroOrOne(component, nil)
+    let factory = makeFactory()
+    return factory.zeroOrOne(component, nil)
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1818,7 +1997,8 @@ extension ZeroOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.zeroOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component, behavior))
   }
 }
 
@@ -1829,7 +2009,8 @@ extension ZeroOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.zeroOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component(), behavior))
   }
 }
 
@@ -1841,7 +2022,8 @@ extension OneOrMore {
     _ component: Component,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.oneOrMore(component, behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component, behavior))
   }
 }
 
@@ -1852,7 +2034,8 @@ extension OneOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.oneOrMore(component(), behavior))
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component(), behavior))
   }
 }
 
@@ -1865,7 +2048,8 @@ extension Repeat {
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1874,7 +2058,8 @@ extension Repeat {
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
     assert(count > 0, "Must specify a positive count")
-    self.init(_RegexFactory.exactly(count, component()))
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component()))
   }
 
   @_alwaysEmitIntoClient
@@ -1883,7 +2068,8 @@ extension Repeat {
     _ expression: R,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
   @_alwaysEmitIntoClient
@@ -1892,7 +2078,8 @@ extension Repeat {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.Bound == Int {
-    self.init(_RegexFactory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1903,7 +2090,8 @@ extension Local {
   public init<Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == Substring {
-    self.init(_RegexFactory.atomicNonCapturing(component))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component))
   }
 }
 
@@ -1915,7 +2103,8 @@ extension Local {
   public init<Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == Substring {
-    self.init(_RegexFactory.atomicNonCapturing(component()))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1925,7 +2114,8 @@ extension Local {
   public init<W, C1, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1), Component.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.atomicNonCapturing(component))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component))
   }
 }
 
@@ -1936,7 +2126,8 @@ extension Local {
   public init<W, C1, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1), Component.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.atomicNonCapturing(component()))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1946,7 +2137,8 @@ extension Local {
   public init<W, C1, C2, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2), Component.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.atomicNonCapturing(component))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component))
   }
 }
 
@@ -1957,7 +2149,8 @@ extension Local {
   public init<W, C1, C2, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2), Component.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.atomicNonCapturing(component()))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1967,7 +2160,8 @@ extension Local {
   public init<W, C1, C2, C3, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3), Component.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.atomicNonCapturing(component))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component))
   }
 }
 
@@ -1978,7 +2172,8 @@ extension Local {
   public init<W, C1, C2, C3, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3), Component.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.atomicNonCapturing(component()))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -1988,7 +2183,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4), Component.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.atomicNonCapturing(component))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component))
   }
 }
 
@@ -1999,7 +2195,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4), Component.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.atomicNonCapturing(component()))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2009,7 +2206,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.atomicNonCapturing(component))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component))
   }
 }
 
@@ -2020,7 +2218,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.atomicNonCapturing(component()))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2030,7 +2229,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.atomicNonCapturing(component))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component))
   }
 }
 
@@ -2041,7 +2241,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.atomicNonCapturing(component()))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2051,7 +2252,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.atomicNonCapturing(component))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component))
   }
 }
 
@@ -2062,7 +2264,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.atomicNonCapturing(component()))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2072,7 +2275,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.atomicNonCapturing(component))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component))
   }
 }
 
@@ -2083,7 +2287,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.atomicNonCapturing(component()))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2093,7 +2298,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.atomicNonCapturing(component))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component))
   }
 }
 
@@ -2104,7 +2310,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.atomicNonCapturing(component()))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2114,7 +2321,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ component: Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.atomicNonCapturing(component))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component))
   }
 }
 
@@ -2125,7 +2333,8 @@ extension Local {
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.atomicNonCapturing(component()))
+    let factory = makeFactory()
+    self.init(factory.atomicNonCapturing(component()))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2134,7 +2343,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<Substring> where R0: RegexComponent, R1: RegexComponent {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2143,7 +2353,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?)> where R0: RegexComponent, R1: RegexComponent, R1.RegexOutput == (W1, C0) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2152,7 +2363,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?)> where R0: RegexComponent, R1: RegexComponent, R1.RegexOutput == (W1, C0, C1) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2161,7 +2373,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?)> where R0: RegexComponent, R1: RegexComponent, R1.RegexOutput == (W1, C0, C1, C2) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2170,7 +2383,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?)> where R0: RegexComponent, R1: RegexComponent, R1.RegexOutput == (W1, C0, C1, C2, C3) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2179,7 +2393,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R1.RegexOutput == (W1, C0, C1, C2, C3, C4) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2188,7 +2403,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R1.RegexOutput == (W1, C0, C1, C2, C3, C4, C5) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2197,7 +2413,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R1.RegexOutput == (W1, C0, C1, C2, C3, C4, C5, C6) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2206,7 +2423,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R1.RegexOutput == (W1, C0, C1, C2, C3, C4, C5, C6, C7) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2215,7 +2433,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R1.RegexOutput == (W1, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2224,7 +2443,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, R1, W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0?, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R1.RegexOutput == (W1, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2233,7 +2453,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2242,7 +2463,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2251,7 +2473,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2260,7 +2483,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2269,7 +2493,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3, C4) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2278,7 +2503,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3, C4, C5) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2287,7 +2513,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2296,7 +2523,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2305,7 +2533,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7, C8) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2314,7 +2543,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, R1, W1, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0), R1.RegexOutput == (W1, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2323,7 +2553,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2332,7 +2563,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2341,7 +2573,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2350,7 +2583,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3, C4) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2359,7 +2593,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2368,7 +2603,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2377,7 +2613,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2386,7 +2623,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7, C8) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2395,7 +2633,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, R1, W1, C2, C3, C4, C5, C6, C7, C8, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1), R1.RegexOutput == (W1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2404,7 +2643,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2413,7 +2653,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2422,7 +2663,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3, C4) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2431,7 +2673,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2440,7 +2683,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2449,7 +2693,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2458,7 +2703,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7, C8) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2467,7 +2713,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, R1, W1, C3, C4, C5, C6, C7, C8, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2), R1.RegexOutput == (W1, C3, C4, C5, C6, C7, C8, C9) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2476,7 +2723,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2485,7 +2733,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3), R1.RegexOutput == (W1, C4) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2494,7 +2743,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2503,7 +2753,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2512,7 +2763,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2521,7 +2773,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7, C8) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2530,7 +2783,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, R1, W1, C4, C5, C6, C7, C8, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4?, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3), R1.RegexOutput == (W1, C4, C5, C6, C7, C8, C9) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2539,7 +2793,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2548,7 +2803,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2557,7 +2813,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2566,7 +2823,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2575,7 +2833,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7, C8) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2584,7 +2843,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, R1, W1, C5, C6, C7, C8, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5?, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4), R1.RegexOutput == (W1, C5, C6, C7, C8, C9) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2593,7 +2853,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2602,7 +2863,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2611,7 +2873,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2620,7 +2883,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7, C8) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2629,7 +2893,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, R1, W1, C6, C7, C8, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6?, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5), R1.RegexOutput == (W1, C6, C7, C8, C9) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2638,7 +2903,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2647,7 +2913,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2656,7 +2923,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7?, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7, C8) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2665,7 +2933,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, R1, W1, C7, C8, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7?, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6), R1.RegexOutput == (W1, C7, C8, C9) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2674,7 +2943,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2683,7 +2953,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1, W1, C8>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7), R1.RegexOutput == (W1, C8) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2692,7 +2963,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, R1, W1, C8, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8?, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7), R1.RegexOutput == (W1, C8, C9) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2701,7 +2973,8 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R1>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -2710,77 +2983,88 @@ extension AlternationBuilder {
   public static func buildPartialBlock<R0, W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, R1, W1, C9>(
     accumulated: R0, next: R1
   ) -> ChoiceOf<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9?)> where R0: RegexComponent, R1: RegexComponent, R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8), R1.RegexOutput == (W1, C9) {
-    .init(_RegexFactory.accumulateAlternation(accumulated, next))
+    let factory = makeFactory()
+    return .init(factory.accumulateAlternation(accumulated, next))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension AlternationBuilder {
   @_alwaysEmitIntoClient
   public static func buildPartialBlock<R, W, C1>(first regex: R) -> ChoiceOf<(W, C1?)> where R: RegexComponent, R.RegexOutput == (W, C1) {
-    .init(_RegexFactory.orderedChoice(regex))
+    let factory = makeFactory()
+    return .init(factory.orderedChoice(regex))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension AlternationBuilder {
   @_alwaysEmitIntoClient
   public static func buildPartialBlock<R, W, C1, C2>(first regex: R) -> ChoiceOf<(W, C1?, C2?)> where R: RegexComponent, R.RegexOutput == (W, C1, C2) {
-    .init(_RegexFactory.orderedChoice(regex))
+    let factory = makeFactory()
+    return .init(factory.orderedChoice(regex))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension AlternationBuilder {
   @_alwaysEmitIntoClient
   public static func buildPartialBlock<R, W, C1, C2, C3>(first regex: R) -> ChoiceOf<(W, C1?, C2?, C3?)> where R: RegexComponent, R.RegexOutput == (W, C1, C2, C3) {
-    .init(_RegexFactory.orderedChoice(regex))
+    let factory = makeFactory()
+    return .init(factory.orderedChoice(regex))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension AlternationBuilder {
   @_alwaysEmitIntoClient
   public static func buildPartialBlock<R, W, C1, C2, C3, C4>(first regex: R) -> ChoiceOf<(W, C1?, C2?, C3?, C4?)> where R: RegexComponent, R.RegexOutput == (W, C1, C2, C3, C4) {
-    .init(_RegexFactory.orderedChoice(regex))
+    let factory = makeFactory()
+    return .init(factory.orderedChoice(regex))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension AlternationBuilder {
   @_alwaysEmitIntoClient
   public static func buildPartialBlock<R, W, C1, C2, C3, C4, C5>(first regex: R) -> ChoiceOf<(W, C1?, C2?, C3?, C4?, C5?)> where R: RegexComponent, R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    .init(_RegexFactory.orderedChoice(regex))
+    let factory = makeFactory()
+    return .init(factory.orderedChoice(regex))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension AlternationBuilder {
   @_alwaysEmitIntoClient
   public static func buildPartialBlock<R, W, C1, C2, C3, C4, C5, C6>(first regex: R) -> ChoiceOf<(W, C1?, C2?, C3?, C4?, C5?, C6?)> where R: RegexComponent, R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    .init(_RegexFactory.orderedChoice(regex))
+    let factory = makeFactory()
+    return .init(factory.orderedChoice(regex))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension AlternationBuilder {
   @_alwaysEmitIntoClient
   public static func buildPartialBlock<R, W, C1, C2, C3, C4, C5, C6, C7>(first regex: R) -> ChoiceOf<(W, C1?, C2?, C3?, C4?, C5?, C6?, C7?)> where R: RegexComponent, R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    .init(_RegexFactory.orderedChoice(regex))
+    let factory = makeFactory()
+    return .init(factory.orderedChoice(regex))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension AlternationBuilder {
   @_alwaysEmitIntoClient
   public static func buildPartialBlock<R, W, C1, C2, C3, C4, C5, C6, C7, C8>(first regex: R) -> ChoiceOf<(W, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?)> where R: RegexComponent, R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    .init(_RegexFactory.orderedChoice(regex))
+    let factory = makeFactory()
+    return .init(factory.orderedChoice(regex))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension AlternationBuilder {
   @_alwaysEmitIntoClient
   public static func buildPartialBlock<R, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(first regex: R) -> ChoiceOf<(W, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?)> where R: RegexComponent, R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    .init(_RegexFactory.orderedChoice(regex))
+    let factory = makeFactory()
+    return .init(factory.orderedChoice(regex))
   }
 }
 @available(SwiftStdlib 5.7, *)
 extension AlternationBuilder {
   @_alwaysEmitIntoClient
   public static func buildPartialBlock<R, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(first regex: R) -> ChoiceOf<(W, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?)> where R: RegexComponent, R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    .init(_RegexFactory.orderedChoice(regex))
+    let factory = makeFactory()
+    return .init(factory.orderedChoice(regex))
   }
 }
 // MARK: - Non-builder capture arity 0
@@ -2792,7 +3076,8 @@ extension Capture {
   public init<R: RegexComponent, W>(
     _ component: R
   ) where RegexOutput == (Substring, W), R.RegexOutput == W {
-    self.init(_RegexFactory.capture(component))
+    let factory = makeFactory()
+    self.init(factory.capture(component))
   }
 
   @_disfavoredOverload
@@ -2800,7 +3085,8 @@ extension Capture {
   public init<R: RegexComponent, W>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W), R.RegexOutput == W {
-    self.init(_RegexFactory.capture(component, reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw))
   }
 
   @_disfavoredOverload
@@ -2809,7 +3095,8 @@ extension Capture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture), R.RegexOutput == W {
-    self.init(_RegexFactory.capture(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, nil, transform))
   }
 
   @_disfavoredOverload
@@ -2819,7 +3106,8 @@ extension Capture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture), R.RegexOutput == W {
-    self.init(_RegexFactory.capture(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw, transform))
   }
 }
 
@@ -2831,7 +3119,8 @@ extension TryCapture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture), R.RegexOutput == W {
-    self.init(_RegexFactory.captureOptional(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, nil, transform))
   }
 
   @_disfavoredOverload
@@ -2841,7 +3130,8 @@ extension TryCapture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture), R.RegexOutput == W {
-    self.init(_RegexFactory.captureOptional(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, reference._raw, transform))
   }
 }
 
@@ -2854,7 +3144,8 @@ extension Capture {
   public init<R: RegexComponent, W>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W), R.RegexOutput == W {
-    self.init(_RegexFactory.capture(component()))
+    let factory = makeFactory()
+    self.init(factory.capture(component()))
   }
 
   @_disfavoredOverload
@@ -2863,7 +3154,8 @@ extension Capture {
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W), R.RegexOutput == W {
-    self.init(_RegexFactory.capture(component(), reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw))
   }
 
   @_disfavoredOverload
@@ -2872,7 +3164,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture), R.RegexOutput == W {
-    self.init(_RegexFactory.capture(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), nil, transform))
   }
 
   @_disfavoredOverload
@@ -2882,7 +3175,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture), R.RegexOutput == W {
-    self.init(_RegexFactory.capture(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw, transform))
   }
 }
 
@@ -2894,7 +3188,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture), R.RegexOutput == W {
-    self.init(_RegexFactory.captureOptional(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), nil, transform))
   }
 
   @_disfavoredOverload
@@ -2904,7 +3199,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture), R.RegexOutput == W {
-    self.init(_RegexFactory.captureOptional(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), reference._raw, transform))
   }
 }
 
@@ -2916,14 +3212,16 @@ extension Capture {
   public init<R: RegexComponent, W, C1>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1), R.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.capture(component))
+    let factory = makeFactory()
+    self.init(factory.capture(component))
   }
 
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1), R.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.capture(component, reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -2931,7 +3229,8 @@ extension Capture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1), R.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.capture(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -2940,7 +3239,8 @@ extension Capture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1), R.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.capture(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw, transform))
   }
 }
 
@@ -2951,7 +3251,8 @@ extension TryCapture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1), R.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.captureOptional(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -2960,7 +3261,8 @@ extension TryCapture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1), R.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.captureOptional(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, reference._raw, transform))
   }
 }
 
@@ -2972,7 +3274,8 @@ extension Capture {
   public init<R: RegexComponent, W, C1>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1), R.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.capture(component()))
+    let factory = makeFactory()
+    self.init(factory.capture(component()))
   }
 
   @_alwaysEmitIntoClient
@@ -2980,7 +3283,8 @@ extension Capture {
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1), R.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.capture(component(), reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -2988,7 +3292,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1), R.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.capture(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -2997,7 +3302,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1), R.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.capture(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw, transform))
   }
 }
 
@@ -3008,7 +3314,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1), R.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.captureOptional(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3017,7 +3324,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1), R.RegexOutput == (W, C1) {
-    self.init(_RegexFactory.captureOptional(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), reference._raw, transform))
   }
 }
 
@@ -3029,14 +3337,16 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2), R.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.capture(component))
+    let factory = makeFactory()
+    self.init(factory.capture(component))
   }
 
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2), R.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.capture(component, reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3044,7 +3354,8 @@ extension Capture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2), R.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.capture(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3053,7 +3364,8 @@ extension Capture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2), R.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.capture(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw, transform))
   }
 }
 
@@ -3064,7 +3376,8 @@ extension TryCapture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2), R.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.captureOptional(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3073,7 +3386,8 @@ extension TryCapture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2), R.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.captureOptional(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, reference._raw, transform))
   }
 }
 
@@ -3085,7 +3399,8 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2), R.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.capture(component()))
+    let factory = makeFactory()
+    self.init(factory.capture(component()))
   }
 
   @_alwaysEmitIntoClient
@@ -3093,7 +3408,8 @@ extension Capture {
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2), R.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.capture(component(), reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3101,7 +3417,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2), R.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.capture(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3110,7 +3427,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2), R.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.capture(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw, transform))
   }
 }
 
@@ -3121,7 +3439,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2), R.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.captureOptional(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3130,7 +3449,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2), R.RegexOutput == (W, C1, C2) {
-    self.init(_RegexFactory.captureOptional(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), reference._raw, transform))
   }
 }
 
@@ -3142,14 +3462,16 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.capture(component))
+    let factory = makeFactory()
+    self.init(factory.capture(component))
   }
 
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.capture(component, reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3157,7 +3479,8 @@ extension Capture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.capture(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3166,7 +3489,8 @@ extension Capture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.capture(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw, transform))
   }
 }
 
@@ -3177,7 +3501,8 @@ extension TryCapture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.captureOptional(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3186,7 +3511,8 @@ extension TryCapture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.captureOptional(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, reference._raw, transform))
   }
 }
 
@@ -3198,7 +3524,8 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.capture(component()))
+    let factory = makeFactory()
+    self.init(factory.capture(component()))
   }
 
   @_alwaysEmitIntoClient
@@ -3206,7 +3533,8 @@ extension Capture {
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.capture(component(), reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3214,7 +3542,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.capture(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3223,7 +3552,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.capture(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw, transform))
   }
 }
 
@@ -3234,7 +3564,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.captureOptional(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3243,7 +3574,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3), R.RegexOutput == (W, C1, C2, C3) {
-    self.init(_RegexFactory.captureOptional(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), reference._raw, transform))
   }
 }
 
@@ -3255,14 +3587,16 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.capture(component))
+    let factory = makeFactory()
+    self.init(factory.capture(component))
   }
 
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.capture(component, reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3270,7 +3604,8 @@ extension Capture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.capture(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3279,7 +3614,8 @@ extension Capture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.capture(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw, transform))
   }
 }
 
@@ -3290,7 +3626,8 @@ extension TryCapture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.captureOptional(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3299,7 +3636,8 @@ extension TryCapture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.captureOptional(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, reference._raw, transform))
   }
 }
 
@@ -3311,7 +3649,8 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.capture(component()))
+    let factory = makeFactory()
+    self.init(factory.capture(component()))
   }
 
   @_alwaysEmitIntoClient
@@ -3319,7 +3658,8 @@ extension Capture {
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.capture(component(), reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3327,7 +3667,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.capture(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3336,7 +3677,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.capture(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw, transform))
   }
 }
 
@@ -3347,7 +3689,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.captureOptional(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3356,7 +3699,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4), R.RegexOutput == (W, C1, C2, C3, C4) {
-    self.init(_RegexFactory.captureOptional(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), reference._raw, transform))
   }
 }
 
@@ -3368,14 +3712,16 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.capture(component))
+    let factory = makeFactory()
+    self.init(factory.capture(component))
   }
 
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.capture(component, reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3383,7 +3729,8 @@ extension Capture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.capture(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3392,7 +3739,8 @@ extension Capture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.capture(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw, transform))
   }
 }
 
@@ -3403,7 +3751,8 @@ extension TryCapture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.captureOptional(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3412,7 +3761,8 @@ extension TryCapture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.captureOptional(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, reference._raw, transform))
   }
 }
 
@@ -3424,7 +3774,8 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.capture(component()))
+    let factory = makeFactory()
+    self.init(factory.capture(component()))
   }
 
   @_alwaysEmitIntoClient
@@ -3432,7 +3783,8 @@ extension Capture {
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.capture(component(), reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3440,7 +3792,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.capture(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3449,7 +3802,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.capture(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw, transform))
   }
 }
 
@@ -3460,7 +3814,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.captureOptional(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3469,7 +3824,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5), R.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    self.init(_RegexFactory.captureOptional(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), reference._raw, transform))
   }
 }
 
@@ -3481,14 +3837,16 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.capture(component))
+    let factory = makeFactory()
+    self.init(factory.capture(component))
   }
 
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.capture(component, reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3496,7 +3854,8 @@ extension Capture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.capture(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3505,7 +3864,8 @@ extension Capture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.capture(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw, transform))
   }
 }
 
@@ -3516,7 +3876,8 @@ extension TryCapture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.captureOptional(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3525,7 +3886,8 @@ extension TryCapture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.captureOptional(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, reference._raw, transform))
   }
 }
 
@@ -3537,7 +3899,8 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.capture(component()))
+    let factory = makeFactory()
+    self.init(factory.capture(component()))
   }
 
   @_alwaysEmitIntoClient
@@ -3545,7 +3908,8 @@ extension Capture {
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.capture(component(), reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3553,7 +3917,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.capture(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3562,7 +3927,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.capture(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw, transform))
   }
 }
 
@@ -3573,7 +3939,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.captureOptional(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3582,7 +3949,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    self.init(_RegexFactory.captureOptional(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), reference._raw, transform))
   }
 }
 
@@ -3594,14 +3962,16 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.capture(component))
+    let factory = makeFactory()
+    self.init(factory.capture(component))
   }
 
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.capture(component, reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3609,7 +3979,8 @@ extension Capture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.capture(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3618,7 +3989,8 @@ extension Capture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.capture(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw, transform))
   }
 }
 
@@ -3629,7 +4001,8 @@ extension TryCapture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.captureOptional(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3638,7 +4011,8 @@ extension TryCapture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.captureOptional(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, reference._raw, transform))
   }
 }
 
@@ -3650,7 +4024,8 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.capture(component()))
+    let factory = makeFactory()
+    self.init(factory.capture(component()))
   }
 
   @_alwaysEmitIntoClient
@@ -3658,7 +4033,8 @@ extension Capture {
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.capture(component(), reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3666,7 +4042,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.capture(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3675,7 +4052,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.capture(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw, transform))
   }
 }
 
@@ -3686,7 +4064,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.captureOptional(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3695,7 +4074,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    self.init(_RegexFactory.captureOptional(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), reference._raw, transform))
   }
 }
 
@@ -3707,14 +4087,16 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.capture(component))
+    let factory = makeFactory()
+    self.init(factory.capture(component))
   }
 
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.capture(component, reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3722,7 +4104,8 @@ extension Capture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.capture(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3731,7 +4114,8 @@ extension Capture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.capture(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw, transform))
   }
 }
 
@@ -3742,7 +4126,8 @@ extension TryCapture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.captureOptional(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3751,7 +4136,8 @@ extension TryCapture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.captureOptional(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, reference._raw, transform))
   }
 }
 
@@ -3763,7 +4149,8 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.capture(component()))
+    let factory = makeFactory()
+    self.init(factory.capture(component()))
   }
 
   @_alwaysEmitIntoClient
@@ -3771,7 +4158,8 @@ extension Capture {
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.capture(component(), reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3779,7 +4167,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.capture(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3788,7 +4177,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.capture(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw, transform))
   }
 }
 
@@ -3799,7 +4189,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.captureOptional(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3808,7 +4199,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    self.init(_RegexFactory.captureOptional(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), reference._raw, transform))
   }
 }
 
@@ -3820,14 +4212,16 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.capture(component))
+    let factory = makeFactory()
+    self.init(factory.capture(component))
   }
 
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.capture(component, reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3835,7 +4229,8 @@ extension Capture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.capture(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3844,7 +4239,8 @@ extension Capture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.capture(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw, transform))
   }
 }
 
@@ -3855,7 +4251,8 @@ extension TryCapture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.captureOptional(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3864,7 +4261,8 @@ extension TryCapture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.captureOptional(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, reference._raw, transform))
   }
 }
 
@@ -3876,7 +4274,8 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.capture(component()))
+    let factory = makeFactory()
+    self.init(factory.capture(component()))
   }
 
   @_alwaysEmitIntoClient
@@ -3884,7 +4283,8 @@ extension Capture {
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.capture(component(), reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3892,7 +4292,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.capture(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3901,7 +4302,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.capture(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw, transform))
   }
 }
 
@@ -3912,7 +4314,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.captureOptional(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3921,7 +4324,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    self.init(_RegexFactory.captureOptional(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), reference._raw, transform))
   }
 }
 
@@ -3933,14 +4337,16 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
     _ component: R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.capture(component))
+    let factory = makeFactory()
+    self.init(factory.capture(component))
   }
 
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
     _ component: R, as reference: Reference<W>
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.capture(component, reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -3948,7 +4354,8 @@ extension Capture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.capture(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3957,7 +4364,8 @@ extension Capture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.capture(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component, reference._raw, transform))
   }
 }
 
@@ -3968,7 +4376,8 @@ extension TryCapture {
     _ component: R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.captureOptional(component, nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -3977,7 +4386,8 @@ extension TryCapture {
     as reference: Reference<NewCapture>,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.captureOptional(component, reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component, reference._raw, transform))
   }
 }
 
@@ -3989,7 +4399,8 @@ extension Capture {
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.capture(component()))
+    let factory = makeFactory()
+    self.init(factory.capture(component()))
   }
 
   @_alwaysEmitIntoClient
@@ -3997,7 +4408,8 @@ extension Capture {
     as reference: Reference<W>,
     @RegexComponentBuilder _ component: () -> R
   ) where RegexOutput == (Substring, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.capture(component(), reference._raw))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw))
   }
 
   @_alwaysEmitIntoClient
@@ -4005,7 +4417,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.capture(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -4014,7 +4427,8 @@ extension Capture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.capture(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.capture(component(), reference._raw, transform))
   }
 }
 
@@ -4025,7 +4439,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.captureOptional(component(), nil, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), nil, transform))
   }
 
   @_alwaysEmitIntoClient
@@ -4034,7 +4449,8 @@ extension TryCapture {
     @RegexComponentBuilder _ component: () -> R,
     transform: @escaping (W) throws -> NewCapture?
   ) where RegexOutput == (Substring, NewCapture, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10), R.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    self.init(_RegexFactory.captureOptional(component(), reference._raw, transform))
+    let factory = makeFactory()
+    self.init(factory.captureOptional(component(), reference._raw, transform))
   }
 }
 
