@@ -1022,10 +1022,12 @@ extension RegexTests {
       #"\u{65}\y"#,           // Grapheme boundary assertion
       ("Cafe\u{301}", nil),
       ("Sol Cafe", "e"))
+    
+    // FIXME: Figure out (?X) and (?u) semantics
     firstMatchTests(
       #"(?u)\u{65}\Y"#,       // Grapheme non-boundary assertion
       ("Cafe\u{301}", "e"),
-      ("Sol Cafe", nil))
+      ("Sol Cafe", nil), xfail: true)
   }
 
   func testMatchGroups() {
@@ -1588,7 +1590,8 @@ extension RegexTests {
     // a single Unicode scalar value, leaving any other grapheme scalar
     // components to be matched.
     
-    firstMatchTest(#"(?u:.)"#, input: eDecomposed, match: "e")
+    // FIXME: Figure out (?X) and (?u) semantics
+    firstMatchTest(#"(?u:.)"#, input: eDecomposed, match: "e", xfail: true)
 
     matchTest(
       #".\u{301}"#,
@@ -1599,18 +1602,30 @@ extension RegexTests {
       (eComposed, false),
       (eDecomposed, false))
     
+    // FIXME: Figure out (?X) and (?u) semantics
     // FIXME: \O is unsupported
-    firstMatchTest(#"(?u)\O\u{301}"#, input: eDecomposed, match: eDecomposed)
-    firstMatchTest(#"(?u)e\O"#, input: eDecomposed, match: eDecomposed)
+    firstMatchTest(
+      #"(?u)\O\u{301}"#,
+      input: eDecomposed,
+      match: eDecomposed,
+      xfail: true
+    )
+    firstMatchTest(
+      #"(?u)e\O"#,
+      input: eDecomposed,
+      match: eDecomposed,
+      xfail: true
+    )
     firstMatchTest(#"\O"#, input: eComposed, match: eComposed)
     firstMatchTest(#"\O"#, input: eDecomposed, match: nil,
               xfail: true)
 
+    // FIXME: Figure out (?X) and (?u) semantics
     matchTest(
       #"(?u).\u{301}"#,
       (eComposed, false),
-      (eDecomposed, true))
-    firstMatchTest(#"(?u).$"#, input: eComposed, match: eComposed)
+      (eDecomposed, true), xfail: true)
+    firstMatchTest(#"(?u).$"#, input: eComposed, match: eComposed, xfail: true)
     
     // Option permutations for 'u' and 's'
     matchTest(
@@ -1623,14 +1638,16 @@ extension RegexTests {
       ("e\u{301}ab", false),
       ("e\u{301}abc", true),
       ("e\u{301}\nab", true))
+    
+    // FIXME: Figure out (?X) and (?u) semantics
     matchTest(
       #"(?u)...."#,
       ("e\u{301}ab", true),
-      ("e\u{301}\na", false))
+      ("e\u{301}\na", false), xfail: true)
     matchTest(
       #"(?us)...."#,
       ("e\u{301}ab", true),
-      ("e\u{301}\na", true))
+      ("e\u{301}\na", true), xfail: true)
   }
   
   // TODO: Add test for implied grapheme cluster requirement at group boundaries
