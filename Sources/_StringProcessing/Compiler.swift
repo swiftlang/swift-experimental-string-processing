@@ -37,7 +37,7 @@ class Compiler {
 func _compileRegex(
   _ regex: String, _ syntax: SyntaxOptions = .traditional
 ) throws -> Executor {
-  let ast = try parse(regex, .semantic, syntax)
+  let ast = try parse(regex, syntax)
   let program = try Compiler(ast: ast).emit()
   return Executor(program: program)
 }
