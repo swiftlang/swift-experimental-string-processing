@@ -179,7 +179,7 @@ extension ParseError: CustomStringConvertible {
     case .unsupportedDotNetSubtraction:
       return "subtraction with '-' is unsupported; use '--' instead"
     case .emptyProperty:
-      return "empty property"
+      return "expected property name"
     case .unknownProperty(let key, let value):
       if let key = key {
         return "unknown character property '\(key)=\(value)'"
