@@ -219,17 +219,28 @@ fileprivate extension Compiler.ByteCodeGen {
       return
     }
     
-    if s.value < 0x300 {
-      // lily todo: make sure this is correct + add compiler option check after it's merged in
-      // we unconditionally match against the scalar using consumeScalar in the else case
-      // so maybe this check is uneccessary??
+//    if s.value < 0x300 {
+//      // lily todo: make sure this is correct + add compiler option check after it's merged in
+//
+//      // we unconditionally match against the scalar using consumeScalar in the else case
+//      // so maybe this check is uneccessary??
+//      // I thought having it be < 0x300 made sure we didn't have to worry about any combining stuff
+//      // but in the else case we just unconditionally consume and check the value
+//      // i think this is all redundant
+//      builder.buildMatchScalar(s, boundaryCheck: false)
+//      return
+//    }
+//
+//    builder.buildConsume(by: consumeScalar {
+//      $0 == s
+//    })
+    if optimizationsEnabled {
       builder.buildMatchScalar(s, boundaryCheck: false)
-      return
+    } else {
+      builder.buildConsume(by: consumeScalar {
+        $0 == s
+      })
     }
-    
-    builder.buildConsume(by: consumeScalar {
-      $0 == s
-    })
   }
   
   mutating func emitCharacter(_ c: Character) throws {
@@ -265,7 +276,7 @@ fileprivate extension Compiler.ByteCodeGen {
     // we can only match against characters that have a single cannonical equivalence
     // so I think that rules out any latin in here, so just use ascii for now
     // we also need to exclude our good non-single-scalar-ascii friend cr-lf
-    if c.isASCII && c != "\r\n" {
+    if optimizationsEnabled && c.isASCII && c != "\r\n" {
       builder.buildMatchScalar(c.unicodeScalars.first!, boundaryCheck: true)
       return
     }
@@ -782,12 +793,24 @@ fileprivate extension Compiler.ByteCodeGen {
           // lily todo: which strings are nfc invariant and matchable by direct scalar comparison?
           // alternatively: loop over characters in s and emit either matchScalar or matchCharacter depending on if it is NFC invariant
           // getting rid of matchSeq entirely does also get rid of the weird ARC
-          if s.allSatisfy({c in c.isASCII && c != "\r\n"}) {
-            for scalar in s.unicodeScalars.dropLast(1) {
-              builder.buildMatchScalar(scalar, boundaryCheck: false)
+          if optimizationsEnabled {
+            for c in s {
+              // Each character needs to be NFC invariant in order for us to match it directly by scalar value in grapheme cluster mode
+              // lily temp: use isASCII for now, ask alex what exactly this check should be
+              if c.isASCII && c != "\r\n" {
+                builder.buildMatchScalar(c.unicodeScalars.first!, boundaryCheck: false)
+              } else {
+                // let's think about this carefully
+                // what if our quoted literal is an ascii character + combining accent
+                // what are the characters in the loop?
+                
+                // I believe that if we ever have ascii + combining character in our input
+                // string will automatically combine them into a unified character, so itll fall into this case
+                
+                // so I don't think we ever need that boundaryCheck to be enabled, except at the end of this sequence
+                builder.buildMatch(c)
+              }
             }
-            // check that we are on a boundary at the end and there isn't a combining character after this scalar
-            builder.buildMatchScalar(s.unicodeScalars.last!, boundaryCheck: true)
           } else {
             builder.buildMatchSequence(s)
           }
