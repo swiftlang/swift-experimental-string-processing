@@ -147,7 +147,8 @@ extension RegexTests {
     for regex: String,
     syntax: SyntaxOptions = .traditional,
     semanticLevel: RegexSemanticLevel? = nil,
-    contains targets: Set<Instruction.OpCode>,
+    contains targets: Set<Instruction.OpCode> = [],
+    doesNotContain invalid: Set<Instruction.OpCode> = [],
     file: StaticString = #file,
     line: UInt = #line
   ) {
@@ -157,6 +158,14 @@ extension RegexTests {
       for inst in prog.engine.instructions {
         if targets.contains(inst.opcode) {
           found.insert(inst.opcode)
+        }
+
+        if invalid.contains(inst.opcode) {
+          XCTFail(
+            "Compiled regex '\(regex)' contains incorrect opcode \(inst.opcode)",
+            file: file,
+            line: line)
+          return
         }
       }
 
@@ -174,38 +183,46 @@ extension RegexTests {
     }
   }
 
-  private func expectProgram(
-    for regex: String,
-    syntax: SyntaxOptions = .traditional,
-    semanticLevel: RegexSemanticLevel? = nil,
-    doesNotContain targets: Set<Instruction.OpCode>,
-    file: StaticString = #file,
-    line: UInt = #line
-  ) {
-    do {
-      let prog = try _compileRegex(regex, syntax, semanticLevel)
-      for inst in prog.engine.instructions {
-        if targets.contains(inst.opcode) {
-          XCTFail(
-            "Compiled regex '\(regex)' contains incorrect opcode \(inst.opcode)",
-            file: file,
-            line: line)
-          return
-        }
-      }
-    } catch {
-      XCTFail(
-        "Failed to compile regex '\(regex)': \(error)",
-        file: file,
-        line: line)
-    }
+  func testBitsetCompile() {
+    expectProgram(
+      for: "[abc]",
+      contains: [.matchBitset],
+      doesNotContain: [.consumeBy, .matchBitsetScalar])
+    expectProgram(
+      for: "[abc]",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchBitsetScalar],
+      doesNotContain: [.matchBitset, .consumeBy])
   }
 
-  func testBitsetCompile() {
-    expectProgram(for: "[abc]", contains: [.matchBitset])
-    expectProgram(for: "[abc]", doesNotContain: [.consumeBy])
+  func testScalarOptimizeCompilation() {
+    expectProgram(
+      for: "abcd",
+      contains: [.matchScalar, .matchScalarUnchecked],
+      doesNotContain: [.matchSequence, .consumeBy])
+    expectProgram(
+      for: "a",
+      contains: [.matchScalar],
+      doesNotContain: [.matchSequence, .consumeBy, .matchScalarUnchecked])
+    expectProgram(
+      for: "aaa\u{301}",
+      contains: [.matchSequence],
+      doesNotContain: [.matchScalar, .consumeBy, .matchScalarUnchecked])
 
-    expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, doesNotContain: [.matchBitset])
-    expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, contains: [.matchBitsetScalar])
+    expectProgram(
+      for: "abcd",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchScalarUnchecked],
+      doesNotContain: [.matchSequence, .consumeBy, .matchScalar])
+    expectProgram(
+      for: "a",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchScalarUnchecked],
+      doesNotContain: [.matchSequence, .consumeBy, .matchScalar])
+    expectProgram(
+      for: "aaa\u{301}",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchScalarUnchecked],
+      doesNotContain: [.matchSequence, .consumeBy, .matchScalar])
   }
 }

@@ -24,9 +24,12 @@ func _firstMatch(
   _ regexStr: String,
   input: String,
   validateOptimizations: Bool,
-  syntax: SyntaxOptions = .traditional
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
+  syntax: SyntaxOptions = .traditional,
+  file: StaticString,
+  line: UInt
 ) throws -> (String, [String?]) {
-  var regex = try Regex(regexStr, syntax: syntax)
+  var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
   guard let result = try regex.firstMatch(in: input) else {
     throw MatchError("match not found for \(regexStr) in \(input)")
   }
@@ -35,13 +38,15 @@ func _firstMatch(
   if validateOptimizations {
     regex._setCompilerOptionsForTesting(.disableOptimizations)
     guard let unoptResult = try regex.firstMatch(in: input) else {
-      XCTFail("Optimized regex for \(regexStr) matched on \(input) when unoptimized regex did not")
+      XCTFail("Optimized regex for \(regexStr) matched on \(input) when unoptimized regex did not", file: file, line: line)
       throw MatchError("match not found for unoptimized \(regexStr) in \(input)")
     }
     XCTAssertEqual(
       String(input[result.range]),
       String(input[unoptResult.range]),
-      "Unoptimized regex returned a different result")
+      "Unoptimized regex returned a different result",
+      file: file,
+      line: line)
   }
   return (String(input[result.range]), caps.map { $0.map(String.init) })
 }
@@ -55,6 +60,7 @@ func flatCaptureTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -64,7 +70,10 @@ func flatCaptureTest(
         regex,
         input: test,
         validateOptimizations: validateOptimizations,
-        syntax: syntax
+        semanticLevel: semanticLevel,
+        syntax: syntax,
+        file: file,
+        line: line
       ) else {
         if expect == nil {
           continue
@@ -114,6 +123,7 @@ func matchTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -127,6 +137,7 @@ func matchTest(
       dumpAST: dumpAST,
       xfail: xfail,
       validateOptimizations: validateOptimizations,
+      semanticLevel: semanticLevel,
       file: file,
       line: line)
   }
@@ -144,6 +155,7 @@ func firstMatchTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #filePath,
   line: UInt = #line
 ) {
@@ -152,12 +164,15 @@ func firstMatchTest(
       regex,
       input: input,
       validateOptimizations: validateOptimizations,
-      syntax: syntax)
+      semanticLevel: semanticLevel,
+      syntax: syntax,
+      file: file,
+      line: line)
 
     if xfail {
       XCTAssertNotEqual(found, match, file: file, line: line)
     } else {
-      XCTAssertEqual(found, match, file: file, line: line)
+      XCTAssertEqual(found, match, "Incorrect match", file: file, line: line)
     }
   } catch {
     // FIXME: This allows non-matches to succeed even when xfail'd
@@ -618,14 +633,12 @@ extension RegexTests {
     // interpreted as matching the scalars "\r" or "\n".
     // It does not fully match the character "\r\n" because the character class
     // in scalar mode will only match one scalar
-    do {
-      let regex = try Regex("[\r\n]").matchingSemantics(.unicodeScalar)
-      XCTAssertEqual("\r", try regex.wholeMatch(in: "\r")?.0)
-      XCTAssertEqual("\n", try regex.wholeMatch(in: "\n")?.0)
-      XCTAssertEqual(nil, try regex.wholeMatch(in: "\r\n")?.0)
-    } catch {
-      XCTFail("\(error)", file: #filePath, line: #line)
-    }
+    matchTest(
+      "^[\r\n]$",
+      ("\r", true),
+      ("\n", true),
+      ("\r\n", false),
+      semanticLevel: .unicodeScalar)
 
     matchTest("[^\r\n]",
       ("\r\n", false),
@@ -635,26 +648,15 @@ extension RegexTests {
       ("\n", true),
       ("\r", true),
       ("\r\n", false))
-
-    do {
-      let r = #"[a]\u0301"#
-      var regex = try Regex(r).matchingSemantics(.unicodeScalar)
-      let input: String = "a\u{301}"
-      // Should match in unicode semantic mode because the character class
-      // should consume the a and then matchScalar should match the \u{301}
-      regex._debug()
-      XCTAssertEqual("a\u{301}", try regex.wholeMatch(in: input)?.0)
-      // validate this is the same in unoptimized mode
-      regex._setCompilerOptionsForTesting(.disableOptimizations)
-      XCTAssertEqual("a\u{301}", try regex.wholeMatch(in: input)?.0)
-
-      // Should not match in grapheme semantic mode because a\u{301} is
-      // a single character
-      matchTest(r,
-        (input, false))
-    } catch {
-      XCTFail("\(error)", file: #filePath, line: #line)
-    }
+    
+    matchTest(
+      #"[a]\u0301"#,
+      ("a\u{301}", false),
+      semanticLevel: .graphemeCluster)
+    matchTest(
+      #"[a]\u0301"#,
+      ("a\u{301}", true),
+      semanticLevel: .unicodeScalar)
 
     firstMatchTest("[-]", input: "123-abcxyz", match: "-")
 
@@ -1853,13 +1855,14 @@ extension RegexTests {
   
   // TODO: Add test for grapheme boundaries at start/end of match
 
+  // Testing the matchScalar optimization for ascii quoted literals and characters
   func testScalarOptimization() throws {
     // check that we are correctly doing the boundary check after matchScalar
     firstMatchTest("a", input: "a\u{301}", match: nil)
     firstMatchTest("aa", input: "aa\u{301}", match: nil)
-//    let regex = "aa"
-//    let input = "aa\u{301}"
-//    XCTAssertEqual(regex.firstMatch(of: input), nil)
+    
+    firstMatchTest("a", input: "a\u{301}", match: "a", semanticLevel: .unicodeScalar)
+    firstMatchTest("aa", input: "aa\u{301}", match: "aa", semanticLevel: .unicodeScalar)
   }
   
   func testCase() {
