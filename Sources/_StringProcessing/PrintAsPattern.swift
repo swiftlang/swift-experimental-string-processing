@@ -973,16 +973,22 @@ extension AST.Atom {
   }
 }
 
+extension AST.Atom.Number {
+  var _patternBase: String {
+    value.map { "\($0)" } ?? "<#number#>"
+  }
+}
+
 extension AST.Quantification.Amount {
   var _patternBase: String {
     switch self {
     case .zeroOrMore: return "ZeroOrMore"
     case .oneOrMore:  return "OneOrMore"
     case .zeroOrOne:  return "Optionally"
-    case let .exactly(n):  return "Repeat(count: \(n.value))"
-    case let .nOrMore(n):  return "Repeat(\(n.value)...)"
-    case let .upToN(n):    return "Repeat(...\(n.value))"
-    case let .range(n, m): return "Repeat(\(n.value)...\(m.value))"
+    case let .exactly(n):  return "Repeat(count: \(n._patternBase))"
+    case let .nOrMore(n):  return "Repeat(\(n._patternBase)...)"
+    case let .upToN(n):    return "Repeat(...\(n._patternBase))"
+    case let .range(n, m): return "Repeat(\(n._patternBase)...\(m._patternBase))"
     }
   }
   

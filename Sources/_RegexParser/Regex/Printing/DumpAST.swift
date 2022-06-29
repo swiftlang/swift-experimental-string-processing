@@ -173,6 +173,12 @@ extension AST.Atom {
   }
 }
 
+extension AST.Atom.Number: _ASTPrintable {
+  public var _dumpBase: String {
+    value.map { "\($0)" } ?? "<invalid>"
+  }
+}
+
 extension AST.Atom.Callout: _ASTPrintable {
   public var _dumpBase: String {
     switch self {
@@ -227,7 +233,7 @@ extension AST.Reference: _ASTPrintable {
   public var _dumpBase: String {
     var result = "\(kind)"
     if let recursionLevel = recursionLevel {
-      result += "\(recursionLevel.value)"
+      result += "\(recursionLevel)"
     }
     return result
   }
@@ -270,11 +276,11 @@ extension AST.Quantification.Amount: _ASTPrintable {
     case .zeroOrMore:      return "zeroOrMore"
     case .oneOrMore:       return "oneOrMore"
     case .zeroOrOne:       return "zeroOrOne"
-    case let .exactly(n):  return "exactly<\(n.value)>"
-    case let .nOrMore(n):  return "nOrMore<\(n.value)>"
-    case let .upToN(n):    return "uptoN<\(n.value)>"
+    case let .exactly(n):  return "exactly<\(n)>"
+    case let .nOrMore(n):  return "nOrMore<\(n)>"
+    case let .upToN(n):    return "uptoN<\(n)>"
     case let .range(lower, upper):
-      return ".range<\(lower.value)...\(upper.value)>"
+      return ".range<\(lower)...\(upper)>"
     }
   }
 }

@@ -253,18 +253,18 @@ extension Source {
   ///
   /// Throws on overflow
   ///
-  private mutating func lexNumber<Num: FixedWidthInteger>(
-    _ ty: Num.Type, _ kind: RadixKind
-  ) throws -> Located<Num>? {
+  private mutating func lexNumber(
+    _ kind: RadixKind
+  ) throws -> AST.Atom.Number? {
     try recordLoc { src in
-      guard let str = src.tryEatPrefix(kind.characterFilter)?.string else {
+      guard let str = src.tryEatLocatedPrefix(kind.characterFilter) else {
         return nil
       }
-      guard let i = Num(str, radix: kind.radix) else {
-        throw ParseError.numberOverflow(str)
+      guard let i = Int(str.value, radix: kind.radix) else {
+        throw ParseError.numberOverflow(str.value)
       }
-      return i
-    }
+      return .init(i, at: str.location)
+    }.value
   }
 
   /// Try to eat a number off the front.
@@ -273,11 +273,11 @@ extension Source {
   ///
   /// Throws on overflow
   ///
-  mutating func lexNumber() throws -> Located<Int>? {
-    try lexNumber(Int.self, .decimal)
+  mutating func lexNumber() throws -> AST.Atom.Number? {
+    try lexNumber(.decimal)
   }
 
-  mutating func expectNumber() throws -> Located<Int> {
+  mutating func expectNumber() throws -> AST.Atom.Number {
     guard let num = try lexNumber() else {
       throw ParseError.expectedNumber("", kind: .decimal)
     }
@@ -488,9 +488,10 @@ extension Source {
 
         if let t = src.lexWhitespace() { trivia.append(t) }
 
-        let upperOpt = try src.lexNumber()?.map { upper in
+        var upperOpt = try src.lexNumber()
+        if closedRange == false {
           // If we have an open range, the upper bound should be adjusted down.
-          closedRange == true ? upper : upper - 1
+          upperOpt?.value? -= 1
         }
 
         if let t = src.lexWhitespace() { trivia.append(t) }
@@ -1066,10 +1067,11 @@ extension Source {
   ///
   private mutating func expectPCREVersionNumber(
   ) throws -> AST.Conditional.Condition.PCREVersionNumber {
-    let nums = try recordLoc { src -> (major: Int, minor: Int) in
-      let major = try src.expectNumber().value
+    let nums = try recordLoc { src -> (major: AST.Atom.Number,
+                                       minor: AST.Atom.Number) in
+      let major = try src.expectNumber()
       try src.expect(".")
-      let minor = try src.expectNumber().value
+      let minor = try src.expectNumber()
       return (major, minor)
     }
     return .init(major: nums.value.major, minor: nums.value.minor,
@@ -1119,7 +1121,7 @@ extension Source {
           }
           if let num = try src.lexNumber() {
             return .groupRecursionCheck(
-              .init(.absolute(num.value), innerLoc: num.location))
+              .init(.absolute(num), innerLoc: num.location))
           }
           return .recursionCheck
         }
@@ -1406,20 +1408,21 @@ extension Source {
     let kind = try recordLoc { src -> AST.Reference.Kind? in
       try src.tryEating { src in
         // Note this logic should match canLexNumberedReference.
-        if src.tryEat("+"), let num = try src.lexNumber() {
-          return .relative(num.value)
+        if let plus = src.tryEatWithLoc("+"), let num = try src.lexNumber() {
+          return .relative(.init(num.value, at: num.location.union(with: plus)))
         }
-        if src.tryEat("-"), let num = try src.lexNumber() {
-          return .relative(-num.value)
+        if let minus = src.tryEatWithLoc("-"), let num = try src.lexNumber() {
+          let val = num.value.map { x in -x }
+          return .relative(.init(val, at: num.location.union(with: minus)))
         }
         if let num = try src.lexNumber() {
-          return .absolute(num.value)
+          return .absolute(num)
         }
         return nil
       }
     }
     guard let kind = kind else { return nil }
-    guard allowWholePatternRef || kind.value != .recurseWholePattern else {
+    guard allowWholePatternRef || !kind.value.recursesWholePattern else {
       throw ParseError.cannotReferToWholePattern
     }
     let recLevel = allowRecursionLevel ? try lexRecursionLevel() : nil
@@ -1432,12 +1435,14 @@ extension Source {
   ///     RecursionLevel -> '+' <Int> | '-' <Int>
   ///
   private mutating func lexRecursionLevel(
-  ) throws -> Located<Int>? {
-    try recordLoc { src in
+  ) throws -> AST.Atom.Number? {
+    let value = try recordLoc { src -> Int? in
       if src.tryEat("+") { return try src.expectNumber().value }
-      if src.tryEat("-") { return try -src.expectNumber().value }
+      if src.tryEat("-") { return try src.expectNumber().value.map { x in -x } }
       return nil
     }
+    guard let value = value else { return nil }
+    return .init(value.value, at: value.location)
   }
 
   /// Checks whether a numbered reference can be lexed.
@@ -1579,9 +1584,8 @@ extension Source {
         }
 
         // Backslash followed by a non-0 digit character is a backreference.
-        if firstChar != "0", let numAndLoc = try src.lexNumber() {
-          return .backreference(.init(
-            .absolute(numAndLoc.value), innerLoc: numAndLoc.location))
+        if firstChar != "0", let num = try src.lexNumber() {
+          return .backreference(.init(.absolute(num), innerLoc: num.location))
         }
         return nil
       }
@@ -1621,7 +1625,7 @@ extension Source {
         // Whole-pattern recursion, which is equivalent to (?0).
         if let loc = src.tryEatWithLoc("R") {
           try src.expect(")")
-          return .subpattern(.init(.recurseWholePattern, innerLoc: loc))
+          return .subpattern(.init(.recurseWholePattern(loc), innerLoc: loc))
         }
 
         // Numbered subpattern reference.
@@ -1772,11 +1776,12 @@ extension Source {
     let arg = try recordLoc { src -> AST.Atom.Callout.PCRE.Argument in
       // Parse '(?C' followed by a number.
       if let num = try src.lexNumber() {
-        return .number(num.value)
+        return .number(num)
       }
       // '(?C)' is implicitly '(?C0)'.
       if src.peek() == ")" {
-        return .number(0)
+        let pos = src.currentPosition
+        return .number(.init(0, at: SourceLocation(pos ..< pos)))
       }
       // Parse '(C?' followed by a set of balanced delimiters as defined by
       // http://pcre.org/current/doc/html/pcre2pattern.html#SEC28
