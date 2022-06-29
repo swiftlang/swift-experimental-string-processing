@@ -18,6 +18,7 @@ extension BenchmarkRunner {
     benchmark.addCustomCharacterClasses()
     benchmark.addDna()
     benchmark.addUnicode()
+    benchmark.addLiteralSearch()
     // -- end of registrations --
     return benchmark
   }

@@ -35,6 +35,7 @@ func _firstMatch(
   if validateOptimizations {
     regex._setCompilerOptionsForTesting(.disableOptimizations)
     guard let unoptResult = try regex.firstMatch(in: input) else {
+      XCTFail("Optimized regex for \(regexStr) matched on \(input) when unoptimized regex did not")
       throw MatchError("match not found for unoptimized \(regexStr) in \(input)")
     }
     XCTAssertEqual(
@@ -161,9 +162,10 @@ func firstMatchTest(
   } catch {
     // FIXME: This allows non-matches to succeed even when xfail'd
     // When xfail == true, this should report failure for match == nil
-    if !xfail && match != nil {
-      XCTFail("\(error)", file: file, line: line)
+    if xfail || (match == nil && error is MatchError) {
+      return
     }
+    XCTFail("\(error)", file: file, line: line)
     return
   }
 }
@@ -595,6 +597,12 @@ extension RegexTests {
               ("a\u{301}", true),
               ("A", true),
               ("a", false))
+
+    matchTest(#"(?i)[a]"#,
+              ("💿", false),
+              ("a\u{301}", false),
+              ("A", true),
+              ("a", true))
 
     matchTest("[a]",
       ("a\u{301}", false))
@@ -1824,6 +1832,15 @@ extension RegexTests {
   
   // TODO: Add test for grapheme boundaries at start/end of match
 
+  func testScalarOptimization() throws {
+    // check that we are correctly doing the boundary check after matchScalar
+    firstMatchTest("a", input: "a\u{301}", match: nil)
+    firstMatchTest("aa", input: "aa\u{301}", match: nil)
+//    let regex = "aa"
+//    let input = "aa\u{301}"
+//    XCTAssertEqual(regex.firstMatch(of: input), nil)
+  }
+  
   func testCase() {
     let regex = try! Regex(#".\N{SPARKLING HEART}."#)
     let input = "🧟‍♀️💖🧠 or 🧠💖☕️"

@@ -219,22 +219,7 @@ fileprivate extension Compiler.ByteCodeGen {
       return
     }
     
-//    if s.value < 0x300 {
-//      // lily todo: make sure this is correct + add compiler option check after it's merged in
-//
-//      // we unconditionally match against the scalar using consumeScalar in the else case
-//      // so maybe this check is uneccessary??
-//      // I thought having it be < 0x300 made sure we didn't have to worry about any combining stuff
-//      // but in the else case we just unconditionally consume and check the value
-//      // i think this is all redundant
-//      builder.buildMatchScalar(s, boundaryCheck: false)
-//      return
-//    }
-//
-//    builder.buildConsume(by: consumeScalar {
-//      $0 == s
-//    })
-    if optimizationsEnabled {
+    if optimizationsEnabled { // lily note: should we just do this unconditionally?
       builder.buildMatchScalar(s, boundaryCheck: false)
     } else {
       builder.buildConsume(by: consumeScalar {
@@ -263,21 +248,11 @@ fileprivate extension Compiler.ByteCodeGen {
       }
     }
     
-//    if c.unicodeScalars.count == 1,
-//        let first = c.unicodeScalars.first,
-//        first.value < 0x300 { // lily todo: check this more carefully
-      // if we have a single scalar then this must not be an extended grapheme cluster
-      // so it must be a character that can be exactly matched by its first scalar
-      // cr-lf has two scalars right? yes it has two
-      
-      // i think one these two checks are redundant, I think we only need the second?
-      // ask alex?
-    
-    // we can only match against characters that have a single cannonical equivalence
-    // so I think that rules out any latin in here, so just use ascii for now
-    // we also need to exclude our good non-single-scalar-ascii friend cr-lf
-    if optimizationsEnabled && c.isASCII && c != "\r\n" {
-      builder.buildMatchScalar(c.unicodeScalars.first!, boundaryCheck: true)
+    if optimizationsEnabled && c.isASCII {
+      for scalar in c.unicodeScalars {
+        let boundaryCheck = scalar == c.unicodeScalars.last!
+        builder.buildMatchScalar(scalar, boundaryCheck: boundaryCheck)
+      }
       return
     }
       
@@ -786,29 +761,14 @@ fileprivate extension Compiler.ByteCodeGen {
             return currentIndex
           }
         } else {
-          // if we have any extended latin in our characters then we have to
-          // respect cannoical equivalence, so we cannot match against scalars exactly
-          // so match against all single scalar ascii
-          
-          // lily todo: which strings are nfc invariant and matchable by direct scalar comparison?
-          // alternatively: loop over characters in s and emit either matchScalar or matchCharacter depending on if it is NFC invariant
-          // getting rid of matchSeq entirely does also get rid of the weird ARC
-          if optimizationsEnabled {
-            for c in s {
-              // Each character needs to be NFC invariant in order for us to match it directly by scalar value in grapheme cluster mode
-              // lily temp: use isASCII for now, ask alex what exactly this check should be
-              if c.isASCII && c != "\r\n" {
-                builder.buildMatchScalar(c.unicodeScalars.first!, boundaryCheck: false)
-              } else {
-                // let's think about this carefully
-                // what if our quoted literal is an ascii character + combining accent
-                // what are the characters in the loop?
-                
-                // I believe that if we ever have ascii + combining character in our input
-                // string will automatically combine them into a unified character, so itll fall into this case
-                
-                // so I don't think we ever need that boundaryCheck to be enabled, except at the end of this sequence
-                builder.buildMatch(c)
+          if optimizationsEnabled && s.allSatisfy({char in char.isASCII}) {
+            for char in s {
+              // Note: only cr-lf is multiple scalars
+              for scalar in char.unicodeScalars {
+                // Only boundary check if we are the last scalar in the last character
+                // to make sure that there isn't a combining scalar after the quoted literal
+                let boundaryCheck = char == s.last! && scalar == char.unicodeScalars.last!
+                builder.buildMatchScalar(scalar, boundaryCheck: boundaryCheck)
               }
             }
           } else {
