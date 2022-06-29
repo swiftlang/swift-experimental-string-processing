@@ -3,40 +3,28 @@ import RegexBuilder
 
 extension BenchmarkRunner {
   mutating func addReluctantQuant() {
-    let size = 500000
-    let s = String(repeating: "a", count: size)
-    
-    let reluctantQuant = Benchmark(
-      name: "ReluctantQuant",
-      regex: Regex {
-          OneOrMore(.any, .reluctant)
-      },
-      ty: .whole,
-      target: s
-    )
+    let size = 100_000
+    let input = String(repeating: "a", count: size)
 
-    let eagarQuantWithTerminal = Benchmark(
-      name: "EagarQuantWithTerminal",
-      regex: Regex {
-          OneOrMore(.any, .eager)
-          ";"
-      },
-      ty: .whole,
-      target: s + ";"
-    )
+    let reluctantQuant = CrossBenchmark(
+      baseName: "ReluctantQuant",
+      regex: #".*?"#,
+      input: input,
+      isWhole: true)
+    reluctantQuant.register(&self)
 
-    let reluctantQuantWithTerminal = Benchmark(
-      name: "ReluctantQuantWithTerminal",
-      regex: Regex {
-          OneOrMore(.any, .reluctant)
-          ";"
-      },
-      ty: .whole,
-      target: s + ";"
-    )
-    
-    register(reluctantQuant)
-    register(reluctantQuantWithTerminal)
-    register(eagarQuantWithTerminal)
+    let eagarQuantWithTerminal = CrossBenchmark(
+      baseName: "EagarQuantWithTerminal",
+      regex: #".*;"#,
+      input: input + ";",
+      isWhole: true)
+    eagarQuantWithTerminal.register(&self)
+
+    let reluctantQuantWithTerminal = CrossBenchmark(
+      baseName: "ReluctantQuantWithTerminal",
+      regex: #".*?;"#,
+      input: input + ";",
+      isWhole: true)
+    reluctantQuantWithTerminal.register(&self)
   }
 }

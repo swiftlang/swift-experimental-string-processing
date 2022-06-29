@@ -597,7 +597,7 @@ extension Source {
         }.value
 
         // In multi-line literals, the quote may not span multiple lines.
-        if context.syntax.contains(.multilineExtendedSyntax),
+        if context.syntax.contains(.multilineCompilerLiteral),
             contents.spansMultipleLinesInRegexLiteral {
           throw ParseError.quoteMayNotSpanMultipleLines
         }
@@ -839,11 +839,6 @@ extension Source {
         // Matching semantics options can only be added, not removed.
         if opt.isSemanticMatchingLevel {
           throw ParseError.cannotRemoveSemanticsOptions
-        }
-        // Extended syntax may not be removed if in multi-line mode.
-        if context.syntax.contains(.multilineExtendedSyntax) &&
-            opt.isAnyExtended {
-          throw ParseError.cannotRemoveExtendedSyntaxInMultilineMode
         }
         removing.append(opt)
       }
@@ -1248,6 +1243,25 @@ extension Source {
     if starts(with: "~~") { return .symmetricDifference }
     if starts(with: "&&") { return .intersection }
     return nil
+  }
+
+  /// Check to see if we can lex a .NET subtraction. Returns the
+  /// location of the `-`.
+  ///
+  ///     DotNetSubtraction -> Trivia* '-' Trivia* CustomCharClass
+  ///
+  func canLexDotNetCharClassSubtraction(
+    context: ParsingContext
+  ) -> SourceLocation? {
+    lookahead { src in
+      // We can lex '-' as a .NET subtraction if it precedes a custom character
+      // class.
+      while (try? src.lexTrivia(context: context)) != nil {}
+      guard let dashLoc = src.tryEatWithLoc("-") else { return nil }
+      while (try? src.lexTrivia(context: context)) != nil {}
+      guard src.lexCustomCCStart() != nil else { return nil }
+      return dashLoc
+    }
   }
 
   private mutating func lexPOSIXCharacterProperty(

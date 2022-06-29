@@ -126,33 +126,32 @@ extension Regex {
 
   func _match(
     _ input: String,
-    in inputRange: Range<String.Index>,
+    in subjectBounds: Range<String.Index>,
     mode: MatchMode = .wholeString
   ) throws -> Regex<Output>.Match? {
     let executor = Executor(program: regex.program.loweredProgram)
-    return try executor.match(input, in: inputRange, mode)
+    return try executor.match(input, in: subjectBounds, mode)
   }
 
   func _firstMatch(
     _ input: String,
-    in inputRange: Range<String.Index>
+    in subjectBounds: Range<String.Index>
   ) throws -> Regex<Output>.Match? {
-    // FIXME: Something more efficient, likely an engine interface, and we
-    // should scrap the RegexConsumer crap and call this
+    try _firstMatch(input, subjectBounds: subjectBounds, searchBounds: subjectBounds)
+  }
 
-    var low = inputRange.lowerBound
-    let high = inputRange.upperBound
-    while true {
-      if let m = try _match(input, in: low..<high, mode: .partialFromFront) {
-        return m
-      }
-      if low >= high { return nil }
-      if regex.initialOptions.semanticLevel == .graphemeCluster {
-        input.formIndex(after: &low)
-      } else {
-        input.unicodeScalars.formIndex(after: &low)
-      }
-    }
+  func _firstMatch(
+    _ input: String,
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>
+  ) throws -> Regex<Output>.Match? {
+    let executor = Executor(program: regex.program.loweredProgram)
+    let graphemeSemantic = regex.initialOptions.semanticLevel == .graphemeCluster
+    return try executor.firstMatch(
+      input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds,
+      graphemeSemantic: graphemeSemantic)
   }
 }
 

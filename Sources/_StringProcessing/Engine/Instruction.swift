@@ -27,25 +27,6 @@ extension Instruction {
 
     // MARK: - General Purpose
 
-    /// Do nothing
-    ///
-    ///     nop(comment: String?)
-    ///
-    /// Operand: Optional string register containing a comment or reason
-    ///
-    case nop
-
-    /// Decrement the value stored in a register.
-    /// Returns whether the value was set to zero
-    ///
-    ///     decrement(_ i: IntReg) -> Bool
-    ///
-    /// Operands:
-    ///   - Int register to decrease
-    ///   - Condition register set if now zero
-    ///
-    case decrement
-
     /// Move an immediate value into a register
     ///
     ///     moveImmediate(_ i: Int, into: IntReg)
@@ -65,15 +46,6 @@ extension Instruction {
     /// Operand: instruction address to branch to
     case branch
 
-    /// Conditionally branch
-    ///
-    ///     condBranch(to: InstAddr, if: BoolReg)
-    ///
-    /// Operands:
-    ///   - Address to branch to
-    ///   - Condition register to check
-    case condBranch
-
     /// Conditionally branch if zero, otherwise decrement
     ///
     ///     condBranch(
@@ -85,39 +57,7 @@ extension Instruction {
     ///
     case condBranchZeroElseDecrement
 
-    // MARK: General Purpose: Function calls
-
-    /// Push an instruction address to the stack
-    ///
-    /// Operand: the instruction address
-    ///
-    /// UNIMPLEMENTED
-    case push
-
-    /// Pop return address from call stack
-    ///
-    /// UNIMPLEMENTED
-    case pop
-
-    /// Composite push-next-branch instruction
-    ///
-    /// Operand: the function's start address
-    case call
-
-    /// Composite pop-branch instruction
-    ///
-    /// Operand: the instruction address
-    ///
-    /// NOTE: Currently, empty stack -> ACCEPT
-    case ret
-
-    // MARK: General Purpose: Debugging instructions
-
-    /// Print a string to the output
-    ///
-    /// Operand: String register
-    case print
-
+    // TODO: Function calls
 
     // MARK: - Matching
 
@@ -144,28 +84,11 @@ extension Instruction {
     /// Operand: Sequence register to compare against.
     case matchSequence
 
-    /// Match against a slice of the input
-    ///
-    ///     matchSlice(
-    ///       lowerBound: PositionReg, upperBound: PositionReg)
-    ///
-    /// Operands:
-    ///   - Lowerbound position in the input
-    ///   - Upperbound position in the input
-    case matchSlice
+    /// TODO: builtin assertions and anchors
+    case builtinAssertion
 
-    /// Save the current position in the input in a register
-    ///
-    ///     movePosition(into: PositionReg)
-    ///
-    /// Operand: The position register to move into
-    case movePosition
-
-    /// Match against a provided element.
-    ///
-    /// Operand: Packed condition register to write to and element register to
-    /// compare against.
-    case assertion
+    /// TODO: builtin character classes
+    case builtinCharacterClass
 
     // MARK: Extension points
 
@@ -228,13 +151,12 @@ extension Instruction {
     /// Precondition: There is a save point to remove
     case clear
 
-    /// View the most recently saved point
+    /// Remove save points up to and including the operand
     ///
-    /// UNIMPLEMENTED
-    case peek
-
-    /// Composite peek-branch-clear else FAIL
-    case restore
+    /// Operand: instruction address to look for
+    ///
+    /// Precondition: The operand is in the save point list
+    case clearThrough
 
     /// Fused save-and-branch. 
     ///
@@ -283,16 +205,8 @@ extension Instruction {
     /// Signal failure (currently same as `restore`)
     case fail
 
-    /// Halt, fail, and signal failure
-    ///
-    /// Operand: optional string register specifying the reason
-    ///
-    /// TODO: Could have an Error existential area instead
-    case abort
-
     // TODO: Fused assertions. It seems like we often want to
     // branch based on assertion fail or success.
-
 
   }
 }
@@ -378,23 +292,10 @@ extension Instruction {
 
 // TODO: replace with instruction formatters...
 extension Instruction {
-  var stringRegister: StringRegister? {
-    switch opcode {
-    case .nop, .abort:
-      return payload.optionalString
-    case .print:
-      return payload.string
-    default: return nil
-    }
-  }
   var instructionAddress: InstructionAddress? {
     switch opcode {
-    case .branch, .save, .saveAddress, .call:
+    case .branch, .save, .saveAddress:
       return payload.addr
-
-    case .condBranch:
-      return payload.pairedAddrBool.0
-
     default: return nil
     }
   }
@@ -402,8 +303,6 @@ extension Instruction {
     switch opcode {
     case .match:
       return payload.element
-    case .assertion:
-      return payload.pairedElementBool.0
     default: return nil
     }
   }

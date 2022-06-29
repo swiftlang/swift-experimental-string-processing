@@ -3,7 +3,7 @@
 extension Compiler {
   struct ByteCodeGen {
     var options: MatchingOptions
-    var builder = Program.Builder()
+    var builder = MEProgram.Builder()
     /// A Boolean indicating whether the first matchable atom has been emitted.
     /// This is used to determine whether to apply initial options.
     var hasEmittedFirstMatchableAtom = false
@@ -16,7 +16,7 @@ extension Compiler {
 }
 
 extension Compiler.ByteCodeGen {
-  mutating func emitRoot(_ root: DSLTree.Node) throws -> Program {
+  mutating func emitRoot(_ root: DSLTree.Node) throws -> MEProgram {
     // The whole match (`.0` element of output) is equivalent to an implicit
     // capture over the entire regex.
     try emitNode(.capture(name: nil, reference: nil, root))
@@ -96,26 +96,26 @@ fileprivate extension Compiler.ByteCodeGen {
     // need to supply both a slice bounds and a per-search bounds.
     switch kind {
     case .startOfSubject:
-      builder.buildAssert { (input, pos, bounds) in
-        pos == input.startIndex
+      builder.buildAssert { (input, pos, subjectBounds) in
+        pos == subjectBounds.lowerBound
       }
 
     case .endOfSubjectBeforeNewline:
-      builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
-        if pos == input.endIndex { return true }
+      builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, subjectBounds) in
+        if pos == subjectBounds.upperBound { return true }
         switch semanticLevel {
         case .graphemeCluster:
-          return input.index(after: pos) == input.endIndex
+          return input.index(after: pos) == subjectBounds.upperBound
            && input[pos].isNewline
         case .unicodeScalar:
-          return input.unicodeScalars.index(after: pos) == input.endIndex
+          return input.unicodeScalars.index(after: pos) == subjectBounds.upperBound
            && input.unicodeScalars[pos].isNewline
         }
       }
 
     case .endOfSubject:
-      builder.buildAssert { (input, pos, bounds) in
-        pos == input.endIndex
+      builder.buildAssert { (input, pos, subjectBounds) in
+        pos == subjectBounds.upperBound
       }
 
     case .resetStartOfMatch:
@@ -124,9 +124,10 @@ fileprivate extension Compiler.ByteCodeGen {
 
     case .firstMatchingPositionInSubject:
       // TODO: We can probably build a nice model with API here
-      builder.buildAssert { (input, pos, bounds) in
-        pos == bounds.lowerBound
-      }
+      
+      // FIXME: This needs to be based on `searchBounds`,
+      // not the `subjectBounds` given as an argument here
+      builder.buildAssert { (input, pos, subjectBounds) in false }
 
     case .textSegment:
       builder.buildAssert { (input, pos, _) in
@@ -141,9 +142,13 @@ fileprivate extension Compiler.ByteCodeGen {
       }
 
     case .startOfLine:
+      // FIXME: Anchor.startOfLine must always use this first branch
+      // The behavior of `^` should depend on `anchorsMatchNewlines`, but
+      // the DSL-based `.startOfLine` anchor should always match the start
+      // of a line. Right now we don't distinguish between those anchors.
       if options.anchorsMatchNewlines {
-        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
-          if pos == input.startIndex { return true }
+        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, subjectBounds) in
+          if pos == subjectBounds.lowerBound { return true }
           switch semanticLevel {
           case .graphemeCluster:
             return input[input.index(before: pos)].isNewline
@@ -152,15 +157,19 @@ fileprivate extension Compiler.ByteCodeGen {
           }
         }
       } else {
-        builder.buildAssert { (input, pos, bounds) in
-          pos == input.startIndex
+        builder.buildAssert { (input, pos, subjectBounds) in
+          pos == subjectBounds.lowerBound
         }
       }
       
     case .endOfLine:
+      // FIXME: Anchor.endOfLine must always use this first branch
+      // The behavior of `$` should depend on `anchorsMatchNewlines`, but
+      // the DSL-based `.endOfLine` anchor should always match the end
+      // of a line. Right now we don't distinguish between those anchors.
       if options.anchorsMatchNewlines {
-        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
-          if pos == input.endIndex { return true }
+        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, subjectBounds) in
+          if pos == subjectBounds.upperBound { return true }
           switch semanticLevel {
           case .graphemeCluster:
             return input[pos].isNewline
@@ -169,25 +178,25 @@ fileprivate extension Compiler.ByteCodeGen {
           }
         }
       } else {
-        builder.buildAssert { (input, pos, bounds) in
-          pos == input.endIndex
+        builder.buildAssert { (input, pos, subjectBounds) in
+          pos == subjectBounds.upperBound
         }
       }
 
     case .wordBoundary:
       // TODO: May want to consider Unicode level
-      builder.buildAssert { [options] (input, pos, bounds) in
+      builder.buildAssert { [options] (input, pos, subjectBounds) in
         // TODO: How should we handle bounds?
         _CharacterClassModel.word.isBoundary(
-          input, at: pos, bounds: bounds, with: options)
+          input, at: pos, bounds: subjectBounds, with: options)
       }
 
     case .notWordBoundary:
       // TODO: May want to consider Unicode level
-      builder.buildAssert { [options] (input, pos, bounds) in
+      builder.buildAssert { [options] (input, pos, subjectBounds) in
         // TODO: How should we handle bounds?
         !_CharacterClassModel.word.isBoundary(
-          input, at: pos, bounds: bounds, with: options)
+          input, at: pos, bounds: subjectBounds, with: options)
       }
     }
   }
@@ -306,7 +315,7 @@ fileprivate extension Compiler.ByteCodeGen {
       save(restoringAt: success)
       save(restoringAt: intercept)
       <sub-pattern>    // failure restores at intercept
-      clearSavePoint   // remove intercept
+      clearThrough(intercept) // remove intercept and any leftovers from <sub-pattern>
       <if negative>:
         clearSavePoint // remove success
       fail             // positive->success, negative propagates
@@ -324,7 +333,7 @@ fileprivate extension Compiler.ByteCodeGen {
     builder.buildSave(success)
     builder.buildSave(intercept)
     try emitNode(child)
-    builder.buildClear()
+    builder.buildClearThrough(intercept)
     if !positive {
       builder.buildClear()
     }
@@ -334,6 +343,38 @@ fileprivate extension Compiler.ByteCodeGen {
     if positive {
       builder.buildClear()
     }
+    builder.buildFail()
+
+    builder.label(success)
+  }
+
+  mutating func emitAtomicNoncapturingGroup(
+    _ child: DSLTree.Node
+  ) throws {
+    /*
+      save(continuingAt: success)
+      save(restoringAt: intercept)
+      <sub-pattern>    // failure restores at intercept
+      clearThrough(intercept) // remove intercept and any leftovers from <sub-pattern>
+      fail             // ->success
+    intercept:
+      clearSavePoint   // remove success
+      fail             // propagate failure
+    success:
+      ...
+    */
+
+    let intercept = builder.makeAddress()
+    let success = builder.makeAddress()
+
+    builder.buildSaveAddress(success)
+    builder.buildSave(intercept)
+    try emitNode(child)
+    builder.buildClearThrough(intercept)
+    builder.buildFail()
+
+    builder.label(intercept)
+    builder.buildClear()
     builder.buildFail()
 
     builder.label(success)
@@ -384,6 +425,9 @@ fileprivate extension Compiler.ByteCodeGen {
       }
       options.apply(optionSequence)
       try emitNode(child)
+      
+    case .atomicNonCapturing:
+      try emitAtomicNoncapturingGroup(child)
 
     default:
       // FIXME: Other kinds...
@@ -630,15 +674,19 @@ fileprivate extension Compiler.ByteCodeGen {
       }
       // If there's a capture transform, apply it now.
       if let transform = transform {
-        let fn = builder.makeTransformFunction { input, storedCapture in
+        let fn = builder.makeTransformFunction { input, cap in
           // If it's a substring capture with no custom value, apply the
           // transform directly to the substring to avoid existential traffic.
-          if let cap = storedCapture.latest, cap.value == nil {
-            return try transform(input[cap.range])
+          //
+          // FIXME: separate out this code path. This is fragile,
+          // slow, and these are clearly different constructs
+          if let range = cap.range, cap.value == nil {
+            return try transform(input[range])
           }
+
           let value = constructExistentialOutputComponent(
              from: input,
-             component: storedCapture.latest,
+             component: cap.deconstructed,
              optionalCount: 0)
           return try transform(value)
         }

@@ -20,44 +20,17 @@ struct MatchError: Error {
     }
 }
 
-extension Executor {
-  func _firstMatch(
-    _ regex: String, input: String,
-    syntax: SyntaxOptions = .traditional,
-    enableTracing: Bool = false
-  ) throws -> (match: Substring, captures: [Substring?]) {
-    // TODO: This should be a CollectionMatcher API to call...
-    // Consumer -> searcher algorithm
-    var start = input.startIndex
-    while true {
-      if let result = try! self.dynamicMatch(
-        input,
-        in: start..<input.endIndex,
-        .partialFromFront
-      ) {
-        let caps = result.anyRegexOutput.slices(from: input)
-        return (input[result.range], caps)
-      } else if start == input.endIndex {
-        throw MatchError("match not found for \(regex) in \(input)")
-      } else {
-        input.formIndex(after: &start)
-      }
-    }
-  }
-}
-
 func _firstMatch(
-  _ regex: String,
+  _ regexStr: String,
   input: String,
-  syntax: SyntaxOptions = .traditional,
-  enableTracing: Bool = false
+  syntax: SyntaxOptions = .traditional
 ) throws -> (String, [String?]) {
-  var executor = try _compileRegex(regex, syntax)
-  executor.engine.enableTracing = enableTracing
-  let (str, caps) = try executor._firstMatch(
-    regex, input: input, enableTracing: enableTracing)
-  let capStrs = caps.map { $0 == nil ? nil : String($0!) }
-  return (String(str), capStrs)
+  let regex = try Regex(regexStr, syntax: syntax)
+  guard let result = try regex.firstMatch(in: input) else {
+    throw MatchError("match not found for \(regexStr) in \(input)")
+  }
+  let caps = result.output.slices(from: input)
+  return (String(input[result.range]), caps.map { $0.map(String.init) })
 }
 
 // TODO: multiple-capture variant
@@ -66,7 +39,6 @@ func flatCaptureTest(
   _ regex: String,
   _ tests: (input: String, expect: [String?]?)...,
   syntax: SyntaxOptions = .traditional,
-  enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
   file: StaticString = #file,
@@ -77,8 +49,7 @@ func flatCaptureTest(
       guard var (_, caps) = try? _firstMatch(
         regex,
         input: test,
-        syntax: syntax,
-        enableTracing: enableTracing
+        syntax: syntax
       ) else {
         if expect == nil {
           continue
@@ -162,8 +133,7 @@ func firstMatchTest(
     let (found, _) = try _firstMatch(
       regex,
       input: input,
-      syntax: syntax,
-      enableTracing: enableTracing)
+      syntax: syntax)
 
     if xfail {
       XCTAssertNotEqual(found, match, file: file, line: line)
@@ -891,8 +861,7 @@ extension RegexTests {
       input: "Price: 100 dollars", match: nil)
     firstMatchTest(
       #"(?=\d+ dollars)\d+"#,
-      input: "Price: 100 dollars", match: "100",
-      xfail: true) // TODO
+      input: "Price: 100 dollars", match: "100")
 
     firstMatchTest(
       #"\d+(*pla: dollars)"#,
@@ -917,6 +886,14 @@ extension RegexTests {
       #"\d+(*negative_lookahead: dollars)"#,
       input: "Price: 100 pesos", match: "100")
 
+    // More complex lookaheads
+    firstMatchTests(
+      #"(?=.*e)(?=.*o)(?!.*z)."#,
+      (input: "hello", match: "h"),
+      (input: "hzello", match: "e"),
+      (input: "hezllo", match: nil),
+      (input: "helloz", match: nil))
+
     firstMatchTest(
       #"(?<=USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
     firstMatchTest(
@@ -940,7 +917,7 @@ extension RegexTests {
       #"\d{3}(?<!USD\d{3})"#, input: "Price: JYP100", match: "100", xfail: true)
   }
 
-  func testMatchAnchors() {
+  func testMatchAnchors() throws {
     // MARK: Anchors
     firstMatchTests(
       #"^\d+"#,
@@ -1008,7 +985,13 @@ extension RegexTests {
       ("123 456", "23"))
 
     // TODO: \G and \K
-
+    do {
+      let regex = try Regex(#"\Gab"#, as: Substring.self)
+      XCTExpectFailure {
+        XCTAssertEqual("abab".matches(of: regex).map(\.output), ["ab", "ab"])
+      }
+    }
+    
     // TODO: Oniguruma \y and \Y
     firstMatchTests(
       #"\u{65}"#,             // Scalar 'e' is present in both
@@ -1050,14 +1033,93 @@ extension RegexTests {
     firstMatchTest(
       #"(?:a|.b)c"#, input: "123abcacxyz", match: "abc")
     firstMatchTest(
-      #"(?>a|.b)c"#, input: "123abcacxyz", match: "ac", xfail: true)
+      #"(?>a|.b)c"#, input: "123abcacxyz", match: "ac")
     firstMatchTest(
-      "(*atomic:a|.b)c", input: "123abcacxyz", match: "ac", xfail: true)
+      "(*atomic:a|.b)c", input: "123abcacxyz", match: "ac")
     firstMatchTest(
       #"(?:a+)[a-z]c"#, input: "123aacacxyz", match: "aac")
     firstMatchTest(
-      #"(?>a+)[a-z]c"#, input: "123aacacxyz", match: "ac", xfail: true)
+      #"(?>a+)[a-z]c"#, input: "123aacacxyz", match: nil)
+    
+    // Atomicity should stay in the atomic group
+    firstMatchTest(
+      #"(?:(?>a)|.b)c"#, input: "123abcacxyz", match: "abc")
 
+    // Quantifier behavior inside atomic groups
+    
+    // (?:a+?) matches as few 'a's as possible, after matching the first
+    // (?>a+?) always matches exactly one 'a'
+    firstMatchTests(
+      #"^(?:a+?)a$"#,
+      (input: "a", match: nil),
+      (input: "aa", match: "aa"),
+      (input: "aaa", match:  "aaa"))
+    firstMatchTests(
+      #"^(?>a+?)a$"#,
+      (input: "a", match: nil),
+      (input: "aa", match: "aa"),
+      (input: "aaa", match:  nil))
+    
+    // (?:a?+) and (?>a?+) are equivalent: they match one 'a' if available
+    firstMatchTests(
+      #"^(?:a?+)a$"#,
+      (input: "a", match: nil),
+      xfail: true)
+    firstMatchTests(
+      #"^(?:a?+)a$"#,
+      (input: "aa", match: "aa"),
+      (input: "aaa", match: nil))
+    firstMatchTests(
+      #"^(?>a?+)a$"#,
+      (input: "a", match: nil),
+      (input: "aa", match: "aa"),
+      (input: "aaa", match: nil))
+
+    // Capture behavior in non-atomic vs atomic groups
+    firstMatchTests(
+      #"(\d+)\w+\1"#,
+      (input: "123x12", match: "123x12"), // `\w+` matches "3x" in this case
+      (input: "23x23", match: "23x23"),
+      (input: "123x23", match: "23x23"))
+    firstMatchTests(
+      #"(?>(\d+))\w+\1"#,
+      (input: "123x12", match: nil))
+    firstMatchTests(
+      #"(?>(\d+))\w+\1"#,
+      (input: "23x23", match: "23x23"),
+      (input: "123x23", match: "23x23"),
+      xfail: true)
+    
+    // Backreferences in lookaheads
+    firstMatchTests(
+      #"^(?=.*(.)(.)\2\1).+$"#,
+      (input: "abbba", match: nil),
+      (input: "ABBA", match: "ABBA"),
+      (input: "defABBAdef", match: "defABBAdef"))
+    firstMatchTests(
+      #"^(?=.*(.)(.)\2\1).+\2$"#,
+      (input: "abbba", match: nil),
+      (input: "ABBA", match: nil),
+      (input: "defABBAdef", match: nil))
+    // FIXME: Backreferences don't escape positive lookaheads
+    firstMatchTests(
+      #"^(?=.*(.)(.)\2\1).+\2$"#,
+      (input: "ABBAB", match: "ABBAB"),
+      (input: "defABBAdefB", match: "defABBAdefB"),
+      xfail: true)
+    
+    firstMatchTests(
+      #"^(?!.*(.)(.)\2\1).+$"#,
+      (input: "abbba", match: "abbba"),
+      (input: "ABBA", match: nil),
+      (input: "defABBAdef", match: nil))
+    // Backreferences don't escape negative lookaheads;
+    // matching only proceeds when the lookahead fails
+    firstMatchTests(
+      #"^(?!.*(.)(.)\2\1).+\2$"#,
+      (input: "abbba", match: nil),
+      (input: "abbbab", match: nil),
+      (input: "ABBAB", match: nil))
 
     // TODO: Test example where non-atomic is significant
     firstMatchTest(
@@ -1404,35 +1466,41 @@ extension RegexTests {
     let postfixLetters = try Regex(#"[a-z]+$"#, as: Substring.self)
 
     // start anchor (^) should match beginning of substring
-    XCTExpectFailure {
-      XCTAssertEqual(trimmed.firstMatch(of: prefixLetters)?.output, "abc")
-    }
-    XCTExpectFailure {
-      XCTAssertEqual(trimmed.replacing(prefixLetters, with: ""), "456def")
-    }
+    XCTAssertEqual(trimmed.firstMatch(of: prefixLetters)?.output, "abc")
+    XCTAssertEqual(trimmed.replacing(prefixLetters, with: ""), "456def")
     
     // end anchor ($) should match end of substring
-    XCTExpectFailure {
-      XCTAssertEqual(trimmed.firstMatch(of: postfixLetters)?.output, "def")
-    }
-    XCTExpectFailure {
-      XCTAssertEqual(trimmed.replacing(postfixLetters, with: ""), "abc456")
-    }
+    XCTAssertEqual(trimmed.firstMatch(of: postfixLetters)?.output, "def")
+    XCTAssertEqual(trimmed.replacing(postfixLetters, with: ""), "abc456")
 
-    // start anchor (^) should _not_ match beginning of subrange
+    // start anchor (^) should _not_ match beginning of replaced subrange
     XCTAssertEqual(
       string.replacing(
         prefixLetters,
         with: "",
         subrange: trimmed.startIndex..<trimmed.endIndex),
       string)
-    // end anchor ($) should _not_ match beginning of subrange
+    // end anchor ($) should _not_ match end of replaced subrange
     XCTAssertEqual(
       string.replacing(
         postfixLetters,
         with: "",
         subrange: trimmed.startIndex..<trimmed.endIndex),
       string)
+    
+    // if subrange == actual subject bounds, anchors _do_ match
+    XCTAssertEqual(
+      trimmed.replacing(
+        prefixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      "456def")
+    XCTAssertEqual(
+      trimmed.replacing(
+        postfixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      "abc456")
   }
   
   func testMatchingOptionsScope() {
