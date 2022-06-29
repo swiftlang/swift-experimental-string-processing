@@ -125,13 +125,11 @@ extension Regex {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  @_spi(RegexBuilder)
-  public var root: DSLTree.Node {
+  var root: DSLTree.Node {
     program.tree.root
   }
 
-  @_spi(RegexBuilder)
-  public init(node: DSLTree.Node) {
+  init(node: DSLTree.Node) {
     self.program = Program(tree: .init(node))
   }
 }
