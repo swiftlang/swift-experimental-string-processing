@@ -62,6 +62,10 @@ extension AST {
         self.rhs = rhs
         self.trivia = trivia
       }
+
+      public var location: SourceLocation {
+        lhs.location.union(with: rhs.location)
+      }
     }
     public enum SetOp: String, Hashable {
       case subtraction = "--"
@@ -107,6 +111,25 @@ extension CustomCC.Member {
 
   public var isSemantic: Bool {
     !isTrivia
+  }
+
+  public var location: SourceLocation {
+    switch self {
+    case let .custom(c): return c.location
+    case let .range(r):  return r.location
+    case let .atom(a):   return a.location
+    case let .quote(q):  return q.location
+    case let .trivia(t): return t.location
+    case let .setOperation(lhs, dash, rhs):
+      var loc = dash.location
+      if let lhs = lhs.first {
+        loc = loc.union(with: lhs.location)
+      }
+      if let rhs = rhs.last {
+        loc = loc.union(with: rhs.location)
+      }
+      return loc
+    }
   }
 }
 

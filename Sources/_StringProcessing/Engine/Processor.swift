@@ -233,14 +233,28 @@ extension Processor {
   
   mutating func matchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) -> Bool {
     guard let curScalar = loadScalar(),
-      curScalar == s,
-      let idx = input.unicodeScalars.index(currentPosition, offsetBy: 1, limitedBy: end),
-      (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx))
+          curScalar == s,
+          let idx = input.unicodeScalars.index(currentPosition, offsetBy: 1, limitedBy: end),
+          (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx))
     else {
       signalFailure()
       return false
     }
     currentPosition = idx
+    return true
+  }
+
+  // If we have a bitset we know that the CharacterClass only matches against
+  // ascii characters, so check if the current input element is ascii then
+  // check if it is set in the bitset
+  mutating func matchBitset(
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
+  ) -> Bool {
+    guard let cur = load(), bitset.matches(char: cur) else {
+      signalFailure()
+      return false
+    }
+    _uncheckedForcedConsumeOne()
     return true
   }
 
@@ -380,7 +394,7 @@ extension Processor {
       if matchSeq(seq) {
         controller.step()
       }
-    
+
     case .matchScalar:
       let scalar = payload.scalar
       if matchScalar(scalar, boundaryCheck: true) {
@@ -391,6 +405,14 @@ extension Processor {
       if matchScalar(scalar, boundaryCheck: false) {
         controller.step()
       }
+
+    case .matchBitset:
+      let reg = payload.bitset
+      let bitset = registers[reg]
+      if matchBitset(bitset) {
+        controller.step()
+      }
+
     case .consumeBy:
       let reg = payload.consumer
       guard currentPosition < searchBounds.upperBound,

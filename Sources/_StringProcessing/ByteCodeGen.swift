@@ -8,8 +8,16 @@ extension Compiler {
     /// This is used to determine whether to apply initial options.
     var hasEmittedFirstMatchableAtom = false
 
-    init(options: MatchingOptions, captureList: CaptureList) {
+    private let compileOptions: CompileOptions
+    fileprivate var optimizationsEnabled: Bool { !compileOptions.contains(.disableOptimizations) }
+
+    init(
+      options: MatchingOptions,
+      compileOptions: CompileOptions,
+      captureList: CaptureList
+    ) {
       self.options = options
+      self.compileOptions = compileOptions
       self.builder.captureList = captureList
     }
   }
@@ -670,8 +678,16 @@ fileprivate extension Compiler.ByteCodeGen {
   mutating func emitCustomCharacterClass(
     _ ccc: DSLTree.CustomCharacterClass
   ) throws {
-    let consumer = try ccc.generateConsumer(options)
-    builder.buildConsume(by: consumer)
+    if let asciiBitset = ccc.asAsciiBitset(options),
+        options.semanticLevel == .graphemeCluster,
+        optimizationsEnabled {
+      // future work: add a bit to .matchBitset to consume either a character
+      // or a scalar so we can have this optimization in scalar mode
+      builder.buildMatchAsciiBitset(asciiBitset)
+    } else {
+      let consumer = try ccc.generateConsumer(options)
+      builder.buildConsume(by: consumer)
+    }
   }
 
   @discardableResult

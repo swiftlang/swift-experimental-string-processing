@@ -87,6 +87,10 @@ extension Instruction {
     case matchScalar
     case matchScalarUnchecked
 
+    /// Match against a set of valid ascii values stored in a bitset
+    /// Operand: Ascii bitset register containing the bitset
+    case matchBitset
+
     /// TODO: builtin assertions and anchors
     case builtinAssertion
 

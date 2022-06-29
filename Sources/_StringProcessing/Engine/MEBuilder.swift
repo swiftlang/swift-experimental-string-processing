@@ -18,6 +18,7 @@ extension MEProgram {
     var elements = TypedSetVector<Input.Element, _ElementRegister>()
     var sequences = TypedSetVector<[Input.Element], _SequenceRegister>()
 
+    var asciiBitsets: [DSLTree.CustomCharacterClass.AsciiBitset] = []
     var consumeFunctions: [ConsumeFunction] = []
     var assertionFunctions: [AssertionFunction] = []
     var transformFunctions: [TransformFunction] = []
@@ -155,6 +156,13 @@ extension MEProgram.Builder {
     }
   }
 
+  mutating func buildMatchAsciiBitset(
+    _ b: DSLTree.CustomCharacterClass.AsciiBitset
+  ) {
+    instructions.append(.init(
+      .matchBitset, .init(bitset: makeAsciiBitset(b))))
+  }
+
   mutating func buildConsume(
     by p: @escaping MEProgram.ConsumeFunction
   ) {
@@ -281,6 +289,7 @@ extension MEProgram.Builder {
     regInfo.sequences = sequences.count
     regInfo.ints = nextIntRegister.rawValue
     regInfo.values = nextValueRegister.rawValue
+    regInfo.bitsets = asciiBitsets.count
     regInfo.consumeFunctions = consumeFunctions.count
     regInfo.assertionFunctions = assertionFunctions.count
     regInfo.transformFunctions = transformFunctions.count
@@ -291,6 +300,7 @@ extension MEProgram.Builder {
       instructions: InstructionList(instructions),
       staticElements: elements.stored,
       staticSequences: sequences.stored,
+      staticBitsets: asciiBitsets,
       staticConsumeFunctions: consumeFunctions,
       staticAssertionFunctions: assertionFunctions,
       staticTransformFunctions: transformFunctions,
@@ -422,6 +432,13 @@ extension MEProgram.Builder {
   // TODO: A register-mapping helper struct, which could release
   // registers without monotonicity required
 
+  mutating func makeAsciiBitset(
+    _ b: DSLTree.CustomCharacterClass.AsciiBitset
+  ) -> AsciiBitsetRegister {
+    defer { asciiBitsets.append(b) }
+    return AsciiBitsetRegister(asciiBitsets.count)
+  }
+  
   mutating func makeConsumeFunction(
     _ f: @escaping MEProgram.ConsumeFunction
   ) -> ConsumeFunctionRegister {
