@@ -14,22 +14,34 @@ import XCTest
 @testable import _StringProcessing
 
 struct MatchError: Error {
-    var message: String
-    init(_ message: String) {
-        self.message = message
-    }
+  var message: String
+  init(_ message: String) {
+    self.message = message
+  }
 }
 
 func _firstMatch(
   _ regexStr: String,
   input: String,
+  validateOptimizations: Bool,
   syntax: SyntaxOptions = .traditional
 ) throws -> (String, [String?]) {
-  let regex = try Regex(regexStr, syntax: syntax)
+  var regex = try Regex(regexStr, syntax: syntax)
   guard let result = try regex.firstMatch(in: input) else {
     throw MatchError("match not found for \(regexStr) in \(input)")
   }
   let caps = result.output.slices(from: input)
+  
+  if validateOptimizations {
+    regex._setCompilerOptionsForTesting(.disableOptimizations)
+    guard let unoptResult = try regex.firstMatch(in: input) else {
+      throw MatchError("match not found for unoptimized \(regexStr) in \(input)")
+    }
+    XCTAssertEqual(
+      String(input[result.range]),
+      String(input[unoptResult.range]),
+      "Unoptimized regex returned a different result")
+  }
   return (String(input[result.range]), caps.map { $0.map(String.init) })
 }
 
@@ -41,6 +53,7 @@ func flatCaptureTest(
   syntax: SyntaxOptions = .traditional,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  validateOptimizations: Bool = true,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -49,6 +62,7 @@ func flatCaptureTest(
       guard var (_, caps) = try? _firstMatch(
         regex,
         input: test,
+        validateOptimizations: validateOptimizations,
         syntax: syntax
       ) else {
         if expect == nil {
@@ -98,6 +112,7 @@ func matchTest(
   enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  validateOptimizations: Bool = true,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -110,6 +125,7 @@ func matchTest(
       enableTracing: enableTracing,
       dumpAST: dumpAST,
       xfail: xfail,
+      validateOptimizations: validateOptimizations,
       file: file,
       line: line)
   }
@@ -126,6 +142,7 @@ func firstMatchTest(
   enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  validateOptimizations: Bool = true,
   file: StaticString = #filePath,
   line: UInt = #line
 ) {
@@ -133,6 +150,7 @@ func firstMatchTest(
     let (found, _) = try _firstMatch(
       regex,
       input: input,
+      validateOptimizations: validateOptimizations,
       syntax: syntax)
 
     if xfail {
@@ -570,6 +588,44 @@ extension RegexTests {
 
     // Character class subtraction
     firstMatchTest("[a-d--a-c]", input: "123abcdxyz", match: "d")
+
+    // Inverted character class
+    matchTest(#"[^a]"#,
+              ("💿", true),
+              ("a\u{301}", true),
+              ("A", true),
+              ("a", false))
+
+    matchTest("[a]",
+      ("a\u{301}", false))
+
+    // CR-LF special case: \r\n is a single character with ascii value equal
+    // to \n, so make sure the ascii bitset optimization handles this correctly
+    matchTest("[\r\n]",
+      ("\r\n", true),
+      ("\n", false),
+      ("\r", false))
+    // check that in scalar mode this case is handled correctly
+    // in scalar semantics the character "\r\n" in the character class is
+    // interpreted as matching the scalars "\r" or "\n".
+    // It does not fully match the character "\r\n" because the character class
+    // in scalar mode will only match one scalar
+    do {
+      let regex = try Regex("[\r\n]").matchingSemantics(.unicodeScalar)
+      XCTAssertEqual("\r", try regex.wholeMatch(in: "\r")?.0)
+      XCTAssertEqual("\n", try regex.wholeMatch(in: "\n")?.0)
+      XCTAssertEqual(nil, try regex.wholeMatch(in: "\r\n")?.0)
+    } catch {
+      XCTFail("\(error)", file: #filePath, line: #line)
+    }
+
+    matchTest("[^\r\n]",
+      ("\r\n", false),
+      ("\n", true),
+      ("\r", true))
+    matchTest("[\n\r]",
+      ("\n", true),
+      ("\r", true))
 
     firstMatchTest("[-]", input: "123-abcxyz", match: "-")
 

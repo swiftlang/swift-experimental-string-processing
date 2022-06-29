@@ -389,10 +389,12 @@ extension UTS18Tests {
   
   func testCharacterClassesWithStrings() {
     let regex = regex(#"[a-z🧐🇧🇪🇧🇫🇧🇬]"#)
-    XCTAssertTrue("🧐".contains(regex))
-    XCTAssertTrue("🇧🇫".contains(regex))
-    XCTAssertTrue("🧐".contains(regex.matchingSemantics(.unicodeScalar)))
-    XCTAssertTrue("🇧🇫".contains(regex.matchingSemantics(.unicodeScalar)))
+    XCTAssertEqual("🧐", "🧐".wholeMatch(of: regex)?.0)
+    XCTAssertEqual("🇧🇫", "🇧🇫".wholeMatch(of: regex)?.0)
+    XCTAssertEqual("🧐", "🧐".wholeMatch(of: regex.matchingSemantics(.unicodeScalar))?.0)
+    XCTAssertEqual(nil, "🇧🇫".wholeMatch(of: regex.matchingSemantics(.unicodeScalar))?.0)
+    XCTAssertEqual("🧐", "🧐".firstMatch(of: regex.matchingSemantics(.unicodeScalar))?.0)
+    XCTAssertEqual("\u{1f1e7}", "🇧🇫".firstMatch(of: regex.matchingSemantics(.unicodeScalar))?.0)
   }
   
   // RL2.3 Default Word Boundaries
