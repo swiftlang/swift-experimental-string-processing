@@ -76,7 +76,8 @@ extension RegexValidator {
       throw error(.unsupported("recursion level"), at: recLevel.location)
     }
     switch ref.kind {
-    case .absolute(let i):
+    case .absolute(let num):
+      guard let i = num.value else { break }
       guard i < captures.captures.count else {
         throw error(.invalidReference(i), at: ref.innerLoc)
       }
@@ -359,9 +360,9 @@ extension RegexValidator {
     }
     switch quant.amount.value {
     case .range(let lhs, let rhs):
-      guard lhs.value <= rhs.value else {
-        throw error(
-          .invalidQuantifierRange(lhs.value, rhs.value), at: quant.location)
+      guard let lhs = lhs.value, let rhs = rhs.value else { break }
+      guard lhs <= rhs else {
+        throw error(.invalidQuantifierRange(lhs, rhs), at: quant.location)
       }
     case .zeroOrMore, .oneOrMore, .zeroOrOne, .exactly, .nOrMore, .upToN:
       break

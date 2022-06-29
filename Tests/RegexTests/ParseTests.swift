@@ -1178,34 +1178,34 @@ extension RegexTests {
 
     // \1 ... \9 are always backreferences.
     for i in 1 ... 9 {
-      parseTest("\\\(i)", backreference(.absolute(i)), throwsError: .invalid)
+      parseTest("\\\(i)", backreference(ref(i)), throwsError: .invalid)
       parseTest(
         "()()()()()()()()()\\\(i)",
         concat(Array(repeating: capture(empty()), count: 9)
-               + [backreference(.absolute(i))]),
+               + [backreference(ref(i))]),
         captures: .caps(count: 9)
       )
     }
 
-    parseTest(#"\10"#, backreference(.absolute(10)), throwsError: .invalid)
-    parseTest(#"\18"#, backreference(.absolute(18)), throwsError: .invalid)
-    parseTest(#"\7777"#, backreference(.absolute(7777)), throwsError: .invalid)
-    parseTest(#"\91"#, backreference(.absolute(91)), throwsError: .invalid)
+    parseTest(#"\10"#, backreference(ref(10)), throwsError: .invalid)
+    parseTest(#"\18"#, backreference(ref(18)), throwsError: .invalid)
+    parseTest(#"\7777"#, backreference(ref(7777)), throwsError: .invalid)
+    parseTest(#"\91"#, backreference(ref(91)), throwsError: .invalid)
 
     parseTest(
       #"()()()()()()()()()()\10"#,
       concat(Array(repeating: capture(empty()), count: 10)
-             + [backreference(.absolute(10))]),
+             + [backreference(ref(10))]),
       captures: .caps(count: 10)
     )
     parseTest(
       #"()()()()()()()()()\10()"#,
       concat(Array(repeating: capture(empty()), count: 9)
-             + [backreference(.absolute(10)), capture(empty())]),
+             + [backreference(ref(10)), capture(empty())]),
       captures: .caps(count: 10)
     )
     parseTest(#"()()\10"#, concat(
-      capture(empty()), capture(empty()), backreference(.absolute(10))),
+      capture(empty()), capture(empty()), backreference(ref(10))),
               throwsError: .invalid, captures: [.cap, .cap]
     )
 
@@ -1216,21 +1216,21 @@ extension RegexTests {
     parseTest(
       // There are 9 capture groups in total here.
       #"((()()())(()()()))\10"#, concat(capture(concat(
-        fourCaptures, fourCaptures)), backreference(.absolute(10))),
+        fourCaptures, fourCaptures)), backreference(ref(10))),
       throwsError: .invalid, captures: .caps(count: 9)
     )
     parseTest(
       // There are 10 capture groups in total here.
       #"((()()())()(()()()))\10"#,
       concat(capture(concat(fourCaptures, capture(empty()), fourCaptures)),
-             backreference(.absolute(10))),
+             backreference(ref(10))),
       captures: .caps(count: 10)
     )
     parseTest(
       // There are 10 capture groups in total here.
       #"((((((((((\10))))))))))"#,
       capture(capture(capture(capture(capture(capture(capture(capture(capture(
-        capture(backreference(.absolute(10)))))))))))),
+        capture(backreference(ref(10)))))))))))),
       captures: .caps(count: 10)
     )
 
@@ -1241,21 +1241,21 @@ extension RegexTests {
       concat(Array(repeating: capture(empty()), count: 40) + [scalar(" ")]),
       captures: .caps(count: 40)
     )
-    parseTest(#"\40"#, backreference(.absolute(40)), throwsError: .invalid)
+    parseTest(#"\40"#, backreference(ref(40)), throwsError: .invalid)
     parseTest(
       String(repeating: "()", count: 40) + #"\40"#,
       concat(Array(repeating: capture(empty()), count: 40)
-             + [backreference(.absolute(40))]),
+             + [backreference(ref(40))]),
       captures: .caps(count: 40)
     )
 
-    parseTest(#"\7"#, backreference(.absolute(7)), throwsError: .invalid)
+    parseTest(#"\7"#, backreference(ref(7)), throwsError: .invalid)
 
-    parseTest(#"\11"#, backreference(.absolute(11)), throwsError: .invalid)
+    parseTest(#"\11"#, backreference(ref(11)), throwsError: .invalid)
     parseTest(
       String(repeating: "()", count: 12) + #"\11"#,
       concat(Array(repeating: capture(empty()), count: 12)
-             + [backreference(.absolute(11))]),
+             + [backreference(ref(11))]),
       captures: .caps(count: 12)
     )
     parseTest(#"\011"#, scalar("\u{9}"))
@@ -1266,25 +1266,25 @@ extension RegexTests {
     )
 
     parseTest(#"\0113"#, scalar("\u{4B}"))
-    parseTest(#"\113"#, backreference(.absolute(113)), throwsError: .invalid)
-    parseTest(#"\377"#, backreference(.absolute(377)), throwsError: .invalid)
-    parseTest(#"\81"#, backreference(.absolute(81)), throwsError: .invalid)
+    parseTest(#"\113"#, backreference(ref(113)), throwsError: .invalid)
+    parseTest(#"\377"#, backreference(ref(377)), throwsError: .invalid)
+    parseTest(#"\81"#, backreference(ref(81)), throwsError: .invalid)
 
-    parseTest(#"\g1"#, backreference(.absolute(1)), throwsError: .invalid)
-    parseTest(#"\g001"#, backreference(.absolute(1)), throwsError: .invalid)
-    parseTest(#"\g52"#, backreference(.absolute(52)), throwsError: .invalid)
-    parseTest(#"\g-01"#, backreference(.relative(-1)), throwsError: .unsupported)
-    parseTest(#"\g+30"#, backreference(.relative(30)), throwsError: .unsupported)
+    parseTest(#"\g1"#, backreference(ref(1)), throwsError: .invalid)
+    parseTest(#"\g001"#, backreference(ref(1)), throwsError: .invalid)
+    parseTest(#"\g52"#, backreference(ref(52)), throwsError: .invalid)
+    parseTest(#"\g-01"#, backreference(ref(minus: 1)), throwsError: .unsupported)
+    parseTest(#"\g+30"#, backreference(ref(plus: 30)), throwsError: .unsupported)
 
-    parseTest(#"\g{1}"#, backreference(.absolute(1)), throwsError: .invalid)
-    parseTest(#"\g{001}"#, backreference(.absolute(1)), throwsError: .invalid)
-    parseTest(#"\g{52}"#, backreference(.absolute(52)), throwsError: .invalid)
-    parseTest(#"\g{-01}"#, backreference(.relative(-1)), throwsError: .unsupported)
-    parseTest(#"\g{+30}"#, backreference(.relative(30)), throwsError: .unsupported)
-    parseTest(#"\k<+4>"#, backreference(.relative(4)), throwsError: .unsupported)
-    parseTest(#"\k<2>"#, backreference(.absolute(2)), throwsError: .invalid)
-    parseTest(#"\k'-3'"#, backreference(.relative(-3)), throwsError: .unsupported)
-    parseTest(#"\k'1'"#, backreference(.absolute(1)), throwsError: .invalid)
+    parseTest(#"\g{1}"#, backreference(ref(1)), throwsError: .invalid)
+    parseTest(#"\g{001}"#, backreference(ref(1)), throwsError: .invalid)
+    parseTest(#"\g{52}"#, backreference(ref(52)), throwsError: .invalid)
+    parseTest(#"\g{-01}"#, backreference(ref(minus: 1)), throwsError: .unsupported)
+    parseTest(#"\g{+30}"#, backreference(ref(plus: 30)), throwsError: .unsupported)
+    parseTest(#"\k<+4>"#, backreference(ref(plus: 4)), throwsError: .unsupported)
+    parseTest(#"\k<2>"#, backreference(ref(2)), throwsError: .invalid)
+    parseTest(#"\k'-3'"#, backreference(ref(minus: 3)), throwsError: .unsupported)
+    parseTest(#"\k'1'"#, backreference(ref(1)), throwsError: .invalid)
 
     parseTest(
       #"(?<a>)\k<a>"#, concat(
@@ -1315,18 +1315,18 @@ extension RegexTests {
     // Oniguruma recursion levels.
     parseTest(#"\k<bc-0>"#, backreference(.named("bc"), recursionLevel: 0), throwsError: .unsupported)
     parseTest(#"\k<a+0>"#, backreference(.named("a"), recursionLevel: 0), throwsError: .unsupported)
-    parseTest(#"\k<1+1>"#, backreference(.absolute(1), recursionLevel: 1), throwsError: .unsupported)
-    parseTest(#"\k<3-8>"#, backreference(.absolute(3), recursionLevel: -8), throwsError: .unsupported)
-    parseTest(#"\k'-3-8'"#, backreference(.relative(-3), recursionLevel: -8), throwsError: .unsupported)
+    parseTest(#"\k<1+1>"#, backreference(ref(1), recursionLevel: 1), throwsError: .unsupported)
+    parseTest(#"\k<3-8>"#, backreference(ref(3), recursionLevel: -8), throwsError: .unsupported)
+    parseTest(#"\k'-3-8'"#, backreference(ref(minus: 3), recursionLevel: -8), throwsError: .unsupported)
     parseTest(#"\k'bc-8'"#, backreference(.named("bc"), recursionLevel: -8), throwsError: .unsupported)
-    parseTest(#"\k'+3-8'"#, backreference(.relative(3), recursionLevel: -8), throwsError: .unsupported)
-    parseTest(#"\k'+3+8'"#, backreference(.relative(3), recursionLevel: 8), throwsError: .unsupported)
+    parseTest(#"\k'+3-8'"#, backreference(ref(plus: 3), recursionLevel: -8), throwsError: .unsupported)
+    parseTest(#"\k'+3+8'"#, backreference(ref(plus: 3), recursionLevel: 8), throwsError: .unsupported)
 
-    parseTest(#"(?R)"#, subpattern(.recurseWholePattern), throwsError: .unsupported)
-    parseTest(#"(?0)"#, subpattern(.recurseWholePattern), throwsError: .unsupported)
-    parseTest(#"(?1)"#, subpattern(.absolute(1)), throwsError: .unsupported)
-    parseTest(#"(?+12)"#, subpattern(.relative(12)), throwsError: .unsupported)
-    parseTest(#"(?-2)"#, subpattern(.relative(-2)), throwsError: .unsupported)
+    parseTest(#"(?R)"#, subpattern(ref(0)), throwsError: .unsupported)
+    parseTest(#"(?0)"#, subpattern(ref(0)), throwsError: .unsupported)
+    parseTest(#"(?1)"#, subpattern(ref(1)), throwsError: .unsupported)
+    parseTest(#"(?+12)"#, subpattern(ref(plus: 12)), throwsError: .unsupported)
+    parseTest(#"(?-2)"#, subpattern(ref(minus: 2)), throwsError: .unsupported)
     parseTest(#"(?&hello)"#, subpattern(.named("hello")), throwsError: .unsupported)
     parseTest(#"(?P>P)"#, subpattern(.named("P")), throwsError: .unsupported)
 
@@ -1334,25 +1334,25 @@ extension RegexTests {
     parseTest(#"[(?&a)]"#, charClass("(", "?", "&", "a", ")"))
     parseTest(#"[(?1)]"#, charClass("(", "?", "1", ")"))
 
-    parseTest(#"\g<1>"#, subpattern(.absolute(1)), throwsError: .unsupported)
-    parseTest(#"\g<001>"#, subpattern(.absolute(1)), throwsError: .unsupported)
-    parseTest(#"\g'52'"#, subpattern(.absolute(52)), throwsError: .unsupported)
-    parseTest(#"\g'-01'"#, subpattern(.relative(-1)), throwsError: .unsupported)
-    parseTest(#"\g'+30'"#, subpattern(.relative(30)), throwsError: .unsupported)
+    parseTest(#"\g<1>"#, subpattern(ref(1)), throwsError: .unsupported)
+    parseTest(#"\g<001>"#, subpattern(ref(1)), throwsError: .unsupported)
+    parseTest(#"\g'52'"#, subpattern(ref(52)), throwsError: .unsupported)
+    parseTest(#"\g'-01'"#, subpattern(ref(minus: 1)), throwsError: .unsupported)
+    parseTest(#"\g'+30'"#, subpattern(ref(plus: 30)), throwsError: .unsupported)
     parseTest(#"\g'abc'"#, subpattern(.named("abc")), throwsError: .unsupported)
 
     // These are valid references.
     parseTest(#"()\1"#, concat(
-      capture(empty()), backreference(.absolute(1))
+      capture(empty()), backreference(ref(1))
     ), captures: [.cap])
     parseTest(#"\1()"#, concat(
-      backreference(.absolute(1)), capture(empty())
+      backreference(ref(1)), capture(empty())
     ), captures: [.cap])
     parseTest(#"()()\2"#, concat(
-      capture(empty()), capture(empty()), backreference(.absolute(2))
+      capture(empty()), capture(empty()), backreference(ref(2))
     ), captures: [.cap, .cap])
     parseTest(#"()\2()"#, concat(
-      capture(empty()), backreference(.absolute(2)), capture(empty())
+      capture(empty()), backreference(ref(2)), capture(empty())
     ), captures: [.cap, .cap])
 
     // MARK: Character names.
@@ -1652,13 +1652,13 @@ extension RegexTests {
 
     // PCRE callouts
 
-    parseTest(#"(?C)"#, pcreCallout(.number(0)), throwsError: .unsupported)
-    parseTest(#"(?C0)"#, pcreCallout(.number(0)), throwsError: .unsupported)
-    parseTest(#"(?C20)"#, pcreCallout(.number(20)), throwsError: .unsupported)
-    parseTest("(?C{abc})", pcreCallout(.string("abc")), throwsError: .unsupported)
+    parseTest(#"(?C)"#, pcreCallout(number: 0), throwsError: .unsupported)
+    parseTest(#"(?C0)"#, pcreCallout(number: 0), throwsError: .unsupported)
+    parseTest(#"(?C20)"#, pcreCallout(number: 20), throwsError: .unsupported)
+    parseTest("(?C{abc})", pcreCallout(string: "abc"), throwsError: .unsupported)
 
     for delim in ["`", "'", "\"", "^", "%", "#", "$"] {
-      parseTest("(?C\(delim)hello\(delim))", pcreCallout(.string("hello")),
+      parseTest("(?C\(delim)hello\(delim))", pcreCallout(string: "hello"),
                 throwsError: .unsupported)
     }
 
@@ -1737,7 +1737,7 @@ extension RegexTests {
 
     parseTest("(*CR)(*UTF)(*LIMIT_DEPTH=3)", ast(
       empty(), opts: .newlineMatching(.carriageReturnOnly), .utfMode,
-      .limitDepth(.init(faking: 3))
+      .limitDepth(.init(3, at: .fake))
     ), throwsError: .unsupported)
 
     parseTest(
@@ -1763,8 +1763,8 @@ extension RegexTests {
       (*NO_START_OPT)(*UTF)(*UCP)a
       """,
       ast("a", opts:
-        .limitDepth(.init(faking: 3)), .limitHeap(.init(faking: 1)),
-        .limitMatch(.init(faking: 2)), .notEmpty, .notEmptyAtStart,
+        .limitDepth(.init(3, at: .fake)), .limitHeap(.init(1, at: .fake)),
+        .limitMatch(.init(2, at: .fake)), .notEmpty, .notEmptyAtStart,
         .noAutoPossess, .noDotStarAnchor, .noJIT, .noStartOpt, .utfMode,
         .unicodeProperties
       ), throwsError: .unsupported
@@ -2323,17 +2323,17 @@ extension RegexTests {
     parseWithDelimitersTest(
       #"re'a\k'b0A''"#, concat("a", backreference(.named("b0A"))), throwsError: .invalid)
     parseWithDelimitersTest(
-      #"re'\k'+2-1''"#, backreference(.relative(2), recursionLevel: -1),
+      #"re'\k'+2-1''"#, backreference(ref(plus: 2), recursionLevel: -1),
       throwsError: .unsupported
     )
 
     parseWithDelimitersTest(
       #"re'a\g'b0A''"#, concat("a", subpattern(.named("b0A"))), throwsError: .unsupported)
     parseWithDelimitersTest(
-      #"re'\g'-1'\''"#, concat(subpattern(.relative(-1)), "'"), throwsError: .unsupported)
+      #"re'\g'-1'\''"#, concat(subpattern(ref(minus: 1)), "'"), throwsError: .unsupported)
 
     parseWithDelimitersTest(
-      #"re'(?C'a*b\c 🔥_ ;')'"#, pcreCallout(.string(#"a*b\c 🔥_ ;"#)),
+      #"re'(?C'a*b\c 🔥_ ;')'"#, pcreCallout(string: #"a*b\c 🔥_ ;"#),
       throwsError: .unsupported)
 
     // Fine, because we don't end up skipping.
@@ -2368,6 +2368,8 @@ extension RegexTests {
     // Make sure dumping output correctly reflects differences in AST.
     parseNotEqualTest(#"abc"#, #"abd"#)
     parseNotEqualTest(#" "#, #""#)
+
+    parseNotEqualTest(#"a{2}"#, #"a{3}"#)
 
     parseNotEqualTest(#"[\p{Any}]"#, #"[[:Any:]]"#)
 
