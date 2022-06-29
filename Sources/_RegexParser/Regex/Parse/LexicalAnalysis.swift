@@ -812,18 +812,28 @@ extension Parser {
         case "S": return .asciiOnlySpace
         case "W": return .asciiOnlyWord
         case "y":
-          p.expect("{")
+          // Default to grapheme cluster if unknown.
+          let recoveryMode = OptKind.textSegmentGraphemeMode
+          guard p.expect("{") else { return recoveryMode }
+
+          guard let optChar = p.tryEatWithLoc(), optChar.value != "}" else {
+            p.errorAtCurrentPosition(.expected("text segment mode"))
+            return recoveryMode
+          }
           let opt: OptKind
-          if p.tryEat("w") {
+          switch optChar.value {
+          case "w":
             opt = .textSegmentWordMode
-          } else {
-            p.expect("g")
+          case "g":
             opt = .textSegmentGraphemeMode
+          case let x:
+            p.error(.unknownTextSegmentMatchingOption(x), at: optChar.location)
+            opt = recoveryMode
           }
           p.expect("}")
           return opt
 
-          // Swift semantic level options
+        // Swift semantic level options
         case "X": return .graphemeClusterSemantics
         case "u": return .unicodeScalarSemantics
         case "b": return .byteSemantics
@@ -958,6 +968,8 @@ extension Parser {
       }
       guard let str = p.tryEatPrefix(\.isWordCharacter) else {
         p.error(.identifierMustBeAlphaNumeric(kind), at: firstChar.location)
+        // Try skip ahead to the closing delimiter for better recovery.
+        _ = p.lexUntil { $0.src.isEmpty || $0.src.starts(with: ending) }
         return ""
       }
       return str.value

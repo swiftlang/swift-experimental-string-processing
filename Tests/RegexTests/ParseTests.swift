@@ -2802,11 +2802,10 @@ extension RegexTests {
     diagnosticTest(#"(?^"#, .expected(")"))
     diagnosticTest(#"(?^i"#, .expected(")"))
 
-    // TODO: These errors could be better.
-    diagnosticTest(#"(?y)"#, .expected("{"), .expected("g"), .expected("}"), unsupported: true)
-    diagnosticTest(#"(?y{)"#, .expected("g"), .expected("}"), unsupported: true)
+    diagnosticTest(#"(?y)"#, .expected("{"), unsupported: true)
+    diagnosticTest(#"(?y{)"#, .unknownTextSegmentMatchingOption(")"), .expected("}"), .expected(")"), unsupported: true)
     diagnosticTest(#"(?y{g)"#, .expected("}"), unsupported: true)
-    diagnosticTest(#"(?y{x})"#, .expected("g"), .expected("}"), .invalidMatchingOption("}"), unsupported: true)
+    diagnosticTest(#"(?y{x})"#, .unknownTextSegmentMatchingOption("x"), unsupported: true)
 
     diagnosticTest(#"(?P"#, .expected(")"))
     diagnosticTest(#"(?R"#, .expected(")"), unsupported: true)
@@ -3086,18 +3085,17 @@ extension RegexTests {
     diagnosticTest(#"(?k)"#, .unknownGroupKind("?k"))
     diagnosticTest(#"(?P#)"#, .invalidMatchingOption("#"))
 
-    // TODO: We shouldn't emit the expected closing delimiter here and elsewhere.
-    diagnosticTest(#"(?<#>)"#, .expected(">"), .identifierMustBeAlphaNumeric(.groupName))
+    diagnosticTest(#"(?<#>)"#, .identifierMustBeAlphaNumeric(.groupName))
     diagnosticTest(#"(?'1A')"#, .identifierCannotStartWithNumber(.groupName))
 
     // TODO: It might be better if tried to consume up to the closing `'` and
     // diagnosed an invalid group name based on that.
     diagnosticTest(#"(?'abc ')"#, .expected("'"))
 
-    diagnosticTest("(?'🔥')", .identifierMustBeAlphaNumeric(.groupName), .expected("'"))
+    diagnosticTest("(?'🔥')", .identifierMustBeAlphaNumeric(.groupName))
 
     diagnosticTest(#"(?'-')"#, .expectedIdentifier(.groupName), unsupported: true)
-    diagnosticTest(#"(?'--')"#, .identifierMustBeAlphaNumeric(.groupName), .expected("'"), unsupported: true)
+    diagnosticTest(#"(?'--')"#, .identifierMustBeAlphaNumeric(.groupName), unsupported: true)
     diagnosticTest(#"(?'a-b-c')"#, .expected("'"), unsupported: true)
 
     diagnosticTest("(?x)(? : )", .unknownGroupKind("? "))
@@ -3178,12 +3176,12 @@ extension RegexTests {
     diagnosticTest(#"\g{0}"#, .cannotReferToWholePattern)
     diagnosticTest(#"(?(0))"#, .cannotReferToWholePattern, unsupported: true)
 
-    diagnosticTest(#"(?&&)"#, .identifierMustBeAlphaNumeric(.groupName), .unbalancedEndOfGroup, .expected(")"), unsupported: true)
-    diagnosticTest(#"(?&-1)"#, .identifierMustBeAlphaNumeric(.groupName), .unbalancedEndOfGroup, .expected(")"), unsupported: true)
-    diagnosticTest(#"(?P>+1)"#, .identifierMustBeAlphaNumeric(.groupName), .unbalancedEndOfGroup, .expected(")"), unsupported: true)
-    diagnosticTest(#"(?P=+1)"#, .identifierMustBeAlphaNumeric(.groupName), .unbalancedEndOfGroup, .expected(")"), unsupported: true)
-    diagnosticTest(#"\k'#'"#, .identifierMustBeAlphaNumeric(.groupName), .expected("'"), unsupported: true)
-    diagnosticTest(#"(?&#)"#, .identifierMustBeAlphaNumeric(.groupName), .unbalancedEndOfGroup, .expected(")"), unsupported: true)
+    diagnosticTest(#"(?&&)"#, .identifierMustBeAlphaNumeric(.groupName), unsupported: true)
+    diagnosticTest(#"(?&-1)"#, .identifierMustBeAlphaNumeric(.groupName), unsupported: true)
+    diagnosticTest(#"(?P>+1)"#, .identifierMustBeAlphaNumeric(.groupName), unsupported: true)
+    diagnosticTest(#"(?P=+1)"#, .identifierMustBeAlphaNumeric(.groupName), unsupported: true)
+    diagnosticTest(#"\k'#'"#, .identifierMustBeAlphaNumeric(.groupName), unsupported: true)
+    diagnosticTest(#"(?&#)"#, .identifierMustBeAlphaNumeric(.groupName), unsupported: true)
 
     diagnosticTest(#"(?P>1)"#, .identifierCannotStartWithNumber(.groupName), unsupported: true)
     diagnosticTest(#"\k{1}"#, .identifierCannotStartWithNumber(.groupName), .invalidNamedReference("1"))
