@@ -931,6 +931,10 @@ extension AST.Atom {
     case .char, .scalar, .scalarSequence:
       return literalStringValue!
 
+    case .invalid:
+      // TODO: Can we recover the original regex text from the source range?
+      return "<#value#>"
+
     case let .property(p):
       return p._regexBase
       

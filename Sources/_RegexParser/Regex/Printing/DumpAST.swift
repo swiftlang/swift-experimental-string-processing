@@ -167,6 +167,9 @@ extension AST.Atom {
     case .changeMatchingOptions(let opts):
       return "changeMatchingOptions<\(opts)>"
 
+    case .invalid:
+      return "<invalid>"
+
     case .char, .scalar:
       fatalError("Unreachable")
     }

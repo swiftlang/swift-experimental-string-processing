@@ -341,7 +341,7 @@ public struct Diagnostics: Hashable {
         var diag: Diagnostic
         var description: String { diag.message }
       }
-      throw ErrorDiagnostic(diag: diag)
+      throw Source.LocatedError(ErrorDiagnostic(diag: diag), diag.location)
     }
   }
 }
