@@ -206,6 +206,6 @@ extension RegexTests {
     expectProgram(for: "[abc]", doesNotContain: [.consumeBy])
 
     expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, doesNotContain: [.matchBitset])
-    expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, contains: [.consumeBy])
+    expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, contains: [.matchBitsetScalar])
   }
 }

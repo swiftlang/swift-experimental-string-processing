@@ -633,7 +633,8 @@ extension RegexTests {
       ("\r", true))
     matchTest("[\n\r]",
       ("\n", true),
-      ("\r", true))
+      ("\r", true),
+      ("\r\n", false))
 
     firstMatchTest("[-]", input: "123-abcxyz", match: "-")
 

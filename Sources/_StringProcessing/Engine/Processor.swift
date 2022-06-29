@@ -255,8 +255,20 @@ extension Processor {
   // ascii characters, so check if the current input element is ascii then
   // check if it is set in the bitset
   mutating func matchBitset(
-    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
+    scalar: Bool
   ) -> Bool {
+    if scalar {
+      guard let curScalar = loadScalar(),
+              bitset.matches(scalar: curScalar),
+            let idx = nextScalarIndex(offsetBy: 1, boundaryCheck: false) else {
+        signalFailure()
+        return false
+      }
+      currentPosition = idx
+      return true
+    }
+    
     guard let cur = load(), bitset.matches(char: cur) else {
       signalFailure()
       return false
@@ -416,7 +428,13 @@ extension Processor {
     case .matchBitset:
       let reg = payload.bitset
       let bitset = registers[reg]
-      if matchBitset(bitset) {
+      if matchBitset(bitset, scalar: false) {
+        controller.step()
+      }
+    case .matchBitsetScalar:
+      let reg = payload.bitset
+      let bitset = registers[reg]
+      if matchBitset(bitset, scalar: true) {
         controller.step()
       }
 

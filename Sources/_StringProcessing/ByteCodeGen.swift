@@ -665,11 +665,12 @@ fileprivate extension Compiler.ByteCodeGen {
     _ ccc: DSLTree.CustomCharacterClass
   ) throws {
     if let asciiBitset = ccc.asAsciiBitset(options),
-        options.semanticLevel == .graphemeCluster,
         optimizationsEnabled {
-      // future work: add a bit to .matchBitset to consume either a character
-      // or a scalar so we can have this optimization in scalar mode
-      builder.buildMatchAsciiBitset(asciiBitset)
+      if options.semanticLevel == .unicodeScalar {
+        builder.buildScalarMatchAsciiBitset(asciiBitset)
+      } else {
+        builder.buildMatchAsciiBitset(asciiBitset)
+      }
     } else {
       let consumer = try ccc.generateConsumer(options)
       builder.buildConsume(by: consumer)

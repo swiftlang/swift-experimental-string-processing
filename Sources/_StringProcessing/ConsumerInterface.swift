@@ -11,6 +11,16 @@
 
 @_implementationOnly import _RegexParser
 
+extension Character {
+  var singleScalarAsciiValue: UInt8? {
+    if let val = asciiValue, self != "\r\n" {
+      return val
+    }
+    return nil
+  }
+}
+
+
 extension DSLTree.Node {
   /// Attempt to generate a consumer from this AST node
   ///
@@ -60,8 +70,8 @@ extension DSLTree._AST.Atom {
 extension DSLTree.Atom {
   var singleScalarASCIIValue: UInt8? {
     switch self {
-    case let .char(c) where c != "\r\n":
-      return c.asciiValue
+    case let .char(c):
+      return c.singleScalarAsciiValue
     case let .scalar(s) where s.isASCII:
       return UInt8(ascii: s)
     case let .unconverted(atom):
@@ -214,8 +224,8 @@ extension AST.Atom {
   
   var singleScalarASCIIValue: UInt8? {
     switch kind {
-    case let .char(c) where c != "\r\n":
-      return c.asciiValue
+    case let .char(c):
+      return c.singleScalarAsciiValue
     case let .scalar(s) where s.value.isASCII:
       return UInt8(ascii: s.value)
     default:

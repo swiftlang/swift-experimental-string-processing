@@ -215,23 +215,41 @@ extension DSLTree {
         }
       }
 
-      internal func matches(char: Character) -> Bool {
-        let ret: Bool
-        if let val = char.asciiValue {
-          if val < 64 {
-            ret = (a >> val) & 1 == 1
-          } else {
-            ret =  (b >> (val - 64)) & 1 == 1
-          }
+      private func matches(_ val: UInt8) -> Bool {
+        if val < 64 {
+          return (a >> val) & 1 == 1
         } else {
-          ret = false
+          return (b >> (val - 64)) & 1 == 1
+        }
+      }
+
+      internal func matches(char: Character) -> Bool {
+        let matched: Bool
+        if let val = char.singleScalarAsciiValue {
+          matched = matches(val)
+        } else {
+          matched = false
         }
 
         if isInverted {
-          return !ret
+          return !matched
+        }
+        return matched
+      }
+
+      internal func matches(scalar: Unicode.Scalar) -> Bool {
+        let matched: Bool
+        if scalar.isASCII {
+          let val = UInt8(ascii: scalar)
+          matched = matches(val)
+        } else {
+          matched = false
         }
 
-        return ret
+        if isInverted {
+          return !matched
+        }
+        return matched
       }
 
       /// Joins another bitset from a Member of the same CustomCharacterClass

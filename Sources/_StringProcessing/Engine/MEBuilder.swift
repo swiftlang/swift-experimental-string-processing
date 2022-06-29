@@ -163,6 +163,13 @@ extension MEProgram.Builder {
       .matchBitset, .init(bitset: makeAsciiBitset(b))))
   }
 
+  mutating func buildScalarMatchAsciiBitset(
+    _ b: DSLTree.CustomCharacterClass.AsciiBitset
+  ) {
+    instructions.append(.init(
+      .matchBitsetScalar, .init(bitset: makeAsciiBitset(b))))
+  }
+
   mutating func buildConsume(
     by p: @escaping MEProgram.ConsumeFunction
   ) {
