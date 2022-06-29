@@ -56,7 +56,7 @@ extension PrettyPrinter {
   mutating func printBackoff(_ node: DSLTree.Node) {
     precondition(node.astNode != nil, "unconverted node")
     printAsCanonical(
-      .init(node.astNode!, globalOptions: nil),
+      .init(node.astNode!, globalOptions: nil, diags: Diagnostics()),
       delimiters: true)
   }
 

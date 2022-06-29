@@ -37,7 +37,8 @@ public struct Regex<Output>: RegexComponent {
     self.program = Program(ast: ast)
   }
   init(ast: AST.Node) {
-    self.program = Program(ast: .init(ast, globalOptions: nil))
+    self.program = Program(ast:
+        .init(ast, globalOptions: nil, diags: Diagnostics()))
   }
 
   // Compiler interface. Do not change independently.

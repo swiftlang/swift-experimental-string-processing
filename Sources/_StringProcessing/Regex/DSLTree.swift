@@ -382,16 +382,6 @@ extension DSLTree {
 }
 
 extension DSLTree {
-  var ast: AST? {
-    guard let root = root.astNode else {
-      return nil
-    }
-    // TODO: Options mapping
-    return AST(root, globalOptions: nil)
-  }
-}
-
-extension DSLTree {
   var hasCapture: Bool {
     root.hasCapture
   }
