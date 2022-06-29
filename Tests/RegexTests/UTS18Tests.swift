@@ -62,7 +62,7 @@ fileprivate func expectFirstMatch<Output: Equatable>(
 }
 
 #if os(Linux)
-func XCTExpectFailure(_ message: String? = nil, body: () -> Void) {}
+func XCTExpectFailure(_ message: String? = nil, body: () throws -> Void) rethrows {}
 #endif
 
 // MARK: - Basic Unicode Support: Level 1
