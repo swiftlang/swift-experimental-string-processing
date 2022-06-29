@@ -165,7 +165,8 @@ extension Parser {
       }
       fatalError("Unhandled termination condition")
     }
-    return .init(ast, globalOptions: opts)
+    // TODO: Record and store diagnostics on the AST.
+    return .init(ast, globalOptions: opts, diags: Diagnostics())
   }
 
   /// Parse a regular expression node. This should be used instead of `parse()`

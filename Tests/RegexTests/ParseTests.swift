@@ -48,8 +48,9 @@ func parseTest(
   line: UInt = #line
 ) {
   parseTest(
-    input, .init(expectedAST, globalOptions: nil), throwsError: errorKind,
-    syntax: syntax, captures: expectedCaptures, file: file, line: line
+    input, .init(expectedAST, globalOptions: nil, diags: Diagnostics()),
+    throwsError: errorKind, syntax: syntax, captures: expectedCaptures,
+    file: file, line: line
   )
 }
 

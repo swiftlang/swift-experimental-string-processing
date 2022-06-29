@@ -32,7 +32,7 @@ extension AST.Node {
     showDelimiters delimiters: Bool = false,
     terminateLine: Bool = false
   ) -> String {
-    AST(self, globalOptions: nil).renderAsCanonical(
+    AST(self, globalOptions: nil, diags: Diagnostics()).renderAsCanonical(
       showDelimiters: delimiters, terminateLine: terminateLine)
   }
 }
