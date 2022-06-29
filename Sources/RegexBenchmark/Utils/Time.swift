@@ -55,15 +55,25 @@ extension Time: Comparable {
   }
 }
 
+extension Time {
+  public static func - (left: Self, right: Self) -> Self {
+    return Time(left.seconds - right.seconds)
+  }
+  
+  public func abs() -> Time {
+    Time(Swift.abs(self.seconds))
+  }
+}
+
 extension Time: CustomStringConvertible {
   public var description: String {
     if self.seconds == 0 { return "0" }
-    if self < .attosecond { return String(format: "%.3gas", seconds * 1e18) }
-    if self < .picosecond { return String(format: "%.3gfs", seconds * 1e15) }
-    if self < .nanosecond  { return String(format: "%.3gps", seconds * 1e12) }
-    if self < .microsecond { return String(format: "%.3gns", seconds * 1e9) }
-    if self < .millisecond { return String(format: "%.3gµs", seconds * 1e6) }
-    if self < .second      { return String(format: "%.3gms", seconds * 1e3) }
+    if self.abs() < .attosecond { return String(format: "%.3gas", seconds * 1e18) }
+    if self.abs() < .picosecond { return String(format: "%.3gfs", seconds * 1e15) }
+    if self.abs() < .nanosecond  { return String(format: "%.3gps", seconds * 1e12) }
+    if self.abs() < .microsecond { return String(format: "%.3gns", seconds * 1e9) }
+    if self.abs() < .millisecond { return String(format: "%.3gµs", seconds * 1e6) }
+    if self.abs() < .second      { return String(format: "%.3gms", seconds * 1e3) }
     if self.seconds < 1000 { return String(format: "%.3gs", seconds) }
     return String(format: "%gs", seconds.rounded())
   }
@@ -71,12 +81,12 @@ extension Time: CustomStringConvertible {
   public var typesetDescription: String {
     let spc = "\u{200A}"
     if self.seconds == 0 { return "0\(spc)s" }
-    if self < .femtosecond { return String(format: "%.3g\(spc)as", seconds * 1e18) }
-    if self < .picosecond { return String(format: "%.3g\(spc)fs", seconds * 1e15) }
-    if self < .nanosecond  { return String(format: "%.3g\(spc)ps", seconds * 1e12) }
-    if self < .microsecond { return String(format: "%.3g\(spc)ns", seconds * 1e9) }
-    if self < .millisecond { return String(format: "%.3g\(spc)µs", seconds * 1e6) }
-    if self < .second      { return String(format: "%.3g\(spc)ms", seconds * 1e3) }
+    if self.abs() < .femtosecond { return String(format: "%.3g\(spc)as", seconds * 1e18) }
+    if self.abs() < .picosecond { return String(format: "%.3g\(spc)fs", seconds * 1e15) }
+    if self.abs() < .nanosecond  { return String(format: "%.3g\(spc)ps", seconds * 1e12) }
+    if self.abs() < .microsecond { return String(format: "%.3g\(spc)ns", seconds * 1e9) }
+    if self.abs() < .millisecond { return String(format: "%.3g\(spc)µs", seconds * 1e6) }
+    if self.abs() < .second      { return String(format: "%.3g\(spc)ms", seconds * 1e3) }
     if self.seconds < 1000 { return String(format: "%.3g\(spc)s", seconds) }
     return String(format: "%g\(spc)s", seconds.rounded())
   }

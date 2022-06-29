@@ -74,6 +74,6 @@ extension BidirectionalCollection where SubSequence == Substring {
   @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func contains(_ regex: some RegexComponent) -> Bool {
-    _contains(RegexConsumer(regex))
+    (try? regex.regex.firstMatch(in: self[...])) != nil
   }
 }

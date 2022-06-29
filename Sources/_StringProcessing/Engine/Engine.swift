@@ -11,9 +11,9 @@
 
 // Currently, engine binds the type and consume binds an instance.
 // But, we can play around with this.
-struct Engine<Input: BidirectionalCollection> where Input.Element: Hashable {
+struct Engine {
 
-  var program: MEProgram<Input>
+  var program: MEProgram
 
   // TODO: Pre-allocated register banks
 
@@ -25,7 +25,7 @@ struct Engine<Input: BidirectionalCollection> where Input.Element: Hashable {
   }
 
   init(
-    _ program: MEProgram<Input>,
+    _ program: MEProgram,
     enableTracing: Bool? = nil
   ) {
     var program = program
