@@ -239,6 +239,17 @@ extension Processor {
     }
   }
 
+  mutating func clearThrough(_ address: InstructionAddress) {
+    while let sp = savePoints.popLast() {
+      if sp.pc == address {
+        controller.step()
+        return
+      }
+    }
+    // TODO: What should we do here?
+    fatalError("Invalid code: Tried to clear save points when empty")
+  }
+  
   mutating func cycle() {
     _checkInvariants()
     assert(state == .inProgress)
@@ -323,9 +334,13 @@ extension Processor {
       if let _ = savePoints.popLast() {
         controller.step()
       } else {
-        fatalError("TODO: What should we do here?")
+        // TODO: What should we do here?
+        fatalError("Invalid code: Tried to clear save points when empty")
       }
 
+    case .clearThrough:
+      clearThrough(payload.addr)
+      
     case .peek:
       fatalError()
 

@@ -891,8 +891,7 @@ extension RegexTests {
       input: "Price: 100 dollars", match: nil)
     firstMatchTest(
       #"(?=\d+ dollars)\d+"#,
-      input: "Price: 100 dollars", match: "100",
-      xfail: true) // TODO
+      input: "Price: 100 dollars", match: "100")
 
     firstMatchTest(
       #"\d+(*pla: dollars)"#,
@@ -916,6 +915,14 @@ extension RegexTests {
     firstMatchTest(
       #"\d+(*negative_lookahead: dollars)"#,
       input: "Price: 100 pesos", match: "100")
+
+    // More complex lookaheads
+    firstMatchTests(
+      #"(?=.*e)(?=.*o)(?!.*z)."#,
+      (input: "hello", match: "h"),
+      (input: "hzello", match: "e"),
+      (input: "hezllo", match: nil),
+      (input: "helloz", match: nil))
 
     firstMatchTest(
       #"(?<=USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
@@ -1050,14 +1057,93 @@ extension RegexTests {
     firstMatchTest(
       #"(?:a|.b)c"#, input: "123abcacxyz", match: "abc")
     firstMatchTest(
-      #"(?>a|.b)c"#, input: "123abcacxyz", match: "ac", xfail: true)
+      #"(?>a|.b)c"#, input: "123abcacxyz", match: "ac")
     firstMatchTest(
-      "(*atomic:a|.b)c", input: "123abcacxyz", match: "ac", xfail: true)
+      "(*atomic:a|.b)c", input: "123abcacxyz", match: "ac")
     firstMatchTest(
       #"(?:a+)[a-z]c"#, input: "123aacacxyz", match: "aac")
     firstMatchTest(
-      #"(?>a+)[a-z]c"#, input: "123aacacxyz", match: "ac", xfail: true)
+      #"(?>a+)[a-z]c"#, input: "123aacacxyz", match: nil)
+    
+    // Atomicity should stay in the atomic group
+    firstMatchTest(
+      #"(?:(?>a)|.b)c"#, input: "123abcacxyz", match: "abc")
 
+    // Quantifier behavior inside atomic groups
+    
+    // (?:a+?) matches as few 'a's as possible, after matching the first
+    // (?>a+?) always matches exactly one 'a'
+    firstMatchTests(
+      #"^(?:a+?)a$"#,
+      (input: "a", match: nil),
+      (input: "aa", match: "aa"),
+      (input: "aaa", match:  "aaa"))
+    firstMatchTests(
+      #"^(?>a+?)a$"#,
+      (input: "a", match: nil),
+      (input: "aa", match: "aa"),
+      (input: "aaa", match:  nil))
+    
+    // (?:a?+) and (?>a?+) are equivalent: they match one 'a' if available
+    firstMatchTests(
+      #"^(?:a?+)a$"#,
+      (input: "a", match: nil),
+      xfail: true)
+    firstMatchTests(
+      #"^(?:a?+)a$"#,
+      (input: "aa", match: "aa"),
+      (input: "aaa", match: nil))
+    firstMatchTests(
+      #"^(?>a?+)a$"#,
+      (input: "a", match: nil),
+      (input: "aa", match: "aa"),
+      (input: "aaa", match: nil))
+
+    // Capture behavior in non-atomic vs atomic groups
+    firstMatchTests(
+      #"(\d+)\w+\1"#,
+      (input: "123x12", match: "123x12"), // `\w+` matches "3x" in this case
+      (input: "23x23", match: "23x23"),
+      (input: "123x23", match: "23x23"))
+    firstMatchTests(
+      #"(?>(\d+))\w+\1"#,
+      (input: "123x12", match: nil))
+    firstMatchTests(
+      #"(?>(\d+))\w+\1"#,
+      (input: "23x23", match: "23x23"),
+      (input: "123x23", match: "23x23"),
+      xfail: true)
+    
+    // Backreferences in lookaheads
+    firstMatchTests(
+      #"^(?=.*(.)(.)\2\1).+$"#,
+      (input: "abbba", match: nil),
+      (input: "ABBA", match: "ABBA"),
+      (input: "defABBAdef", match: "defABBAdef"))
+    firstMatchTests(
+      #"^(?=.*(.)(.)\2\1).+\2$"#,
+      (input: "abbba", match: nil),
+      (input: "ABBA", match: nil),
+      (input: "defABBAdef", match: nil))
+    // FIXME: Backreferences don't escape positive lookaheads
+    firstMatchTests(
+      #"^(?=.*(.)(.)\2\1).+\2$"#,
+      (input: "ABBAB", match: "ABBAB"),
+      (input: "defABBAdefB", match: "defABBAdefB"),
+      xfail: true)
+    
+    firstMatchTests(
+      #"^(?!.*(.)(.)\2\1).+$"#,
+      (input: "abbba", match: "abbba"),
+      (input: "ABBA", match: nil),
+      (input: "defABBAdef", match: nil))
+    // Backreferences don't escape negative lookaheads;
+    // matching only proceeds when the lookahead fails
+    firstMatchTests(
+      #"^(?!.*(.)(.)\2\1).+\2$"#,
+      (input: "abbba", match: nil),
+      (input: "abbbab", match: nil),
+      (input: "ABBAB", match: nil))
 
     // TODO: Test example where non-atomic is significant
     firstMatchTest(

@@ -979,10 +979,10 @@ extension RegexTests {
       concat("a", nonCaptureReset("b"), "c"), throwsError: .unsupported)
     parseTest(
       #"a(?>b)c"#,
-      concat("a", atomicNonCapturing("b"), "c"), throwsError: .unsupported)
+      concat("a", atomicNonCapturing("b"), "c"))
     parseTest(
       "a(*atomic:b)c",
-      concat("a", atomicNonCapturing("b"), "c"), throwsError: .unsupported)
+      concat("a", atomicNonCapturing("b"), "c"))
 
     parseTest("a(?=b)c", concat("a", lookahead("b"), "c"))
     parseTest("a(*pla:b)c", concat("a", lookahead("b"), "c"))
