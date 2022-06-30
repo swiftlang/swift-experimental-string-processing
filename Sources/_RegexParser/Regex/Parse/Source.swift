@@ -52,80 +52,20 @@ extension Source {
 
   func peek() -> Char? { _slice.first }
 
-  mutating func advance() {
-    assert(!isEmpty)
-    let newLower = _slice.index(after: bounds.lowerBound)
+  @discardableResult
+  mutating func tryAdvance(_ n: Int = 1) -> Bool {
+    guard n > 0, let newLower = _slice.index(
+      bounds.lowerBound, offsetBy: n, limitedBy: bounds.upperBound)
+    else {
+      return false
+    }
     self.bounds = newLower ..< bounds.upperBound
-  }
-
-  mutating func advance(_ i: Int) {
-    for _ in 0..<i {
-      advance()
-    }
-  }
-
-  mutating func tryEat(_ c: Char) -> Bool {
-    guard peek() == c else { return false }
-    advance()
     return true
   }
 
-  mutating func tryEat(where pred: (Char) throws -> Bool) rethrows -> Bool {
-    guard let next = peek(), try pred(next) else { return false }
-    advance()
-    return true
-  }
-
-  mutating func tryEat<C: Collection>(sequence c: C) -> Bool
-  where C.Element == Char {
-    guard _slice.starts(with: c) else { return false }
-    advance(c.count)
-    return true
-  }
-
-  mutating func tryEat<C: Collection>(anyOf set: C) -> Char?
-    where C.Element == Char
-  {
-    guard let c = peek(), set.contains(c) else { return nil }
-    advance()
-    return c
-  }
-  mutating func tryEat(anyOf set: Char...) -> Char? {
-    tryEat(anyOf: set)
-  }
-
-  /// Try to eat any character, returning `nil` if the input has been exhausted.
-  mutating func tryEat() -> Char? {
-    guard !isEmpty else { return nil }
-    return eat()
-  }
-
-  mutating func eat(asserting c: Char) {
-    assert(peek() == c)
-    advance()
-  }
-
-  mutating func eat() -> Char {
-    assert(!isEmpty)
-    defer { advance() }
-    return peek().unsafelyUnwrapped
-  }
-
-  func starts<S: Sequence>(
-    with s: S
-  ) -> Bool where S.Element == Char {
-    _slice.starts(with: s)
-  }
-
-  mutating func eat(upTo: Position) -> Input.SubSequence {
-    defer {
-      while _slice.startIndex != upTo { advance() }
-    }
-    return _slice[..<upTo]
-  }
   mutating func eat(upToCount count: Int) -> Input.SubSequence {
     let pre = _slice.prefix(count)
-    defer { advance(pre.count) }
+    tryAdvance(pre.count)
     return pre
   }
 
@@ -134,8 +74,18 @@ extension Source {
     _ f: (Char) -> Bool
   ) -> Input.SubSequence? {
     guard let pre = peekPrefix(maxLength: maxLength, f) else { return nil }
-    defer { self.advance(pre.count) }
+    tryAdvance(pre.count)
     return pre
+  }
+
+  mutating func tryEat(count: Int) -> Input.SubSequence? {
+    let pre = _slice.prefix(count)
+    guard tryAdvance(count) else { return nil }
+    return pre
+  }
+
+  func starts<S: Sequence>(with s: S) -> Bool where S.Element == Char {
+    _slice.starts(with: s)
   }
 
   func peekPrefix(
@@ -151,13 +101,6 @@ extension Source {
     let pre = chunk.prefix(while: f)
     guard !pre.isEmpty else { return nil }
 
-    return pre
-  }
-
-  mutating func tryEat(count: Int) -> Input.SubSequence? {
-    let pre = _slice.prefix(count)
-    guard pre.count == count else { return nil }
-    defer { advance(count) }
     return pre
   }
 }

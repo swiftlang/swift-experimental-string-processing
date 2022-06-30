@@ -302,16 +302,6 @@ extension DSLTree {
 }
 
 extension DSLTree {
-  var ast: AST? {
-    guard let root = root.astNode else {
-      return nil
-    }
-    // TODO: Options mapping
-    return AST(root, globalOptions: nil)
-  }
-}
-
-extension DSLTree {
   var hasCapture: Bool {
     root.hasCapture
   }
@@ -685,16 +675,16 @@ extension DSLTree {
         .init(ast: .zeroOrOne)
       }
       public static func exactly(_ n: Int) -> Self {
-        .init(ast: .exactly(.init(faking: n)))
+        .init(ast: .exactly(.init(n, at: .fake)))
       }
       public static func nOrMore(_ n: Int) -> Self {
-        .init(ast: .nOrMore(.init(faking: n)))
+        .init(ast: .nOrMore(.init(n, at: .fake)))
       }
       public static func upToN(_ n: Int) -> Self {
-        .init(ast: .upToN(.init(faking: n)))
+        .init(ast: .upToN(.init(n, at: .fake)))
       }
       public static func range(_ lower: Int, _ upper: Int) -> Self {
-        .init(ast: .range(.init(faking: lower), .init(faking: upper)))
+        .init(ast: .range(.init(lower, at: .fake), .init(upper, at: .fake)))
       }
     }
     
