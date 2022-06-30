@@ -71,8 +71,15 @@ extension PrettyPrinter {
       print("let \(namedCapture) = Reference(Substring.self)")
     }
     
-    printBlock("Regex") { printer in
-      printer.printAsPattern(convertedFromAST: node)
+    switch node {
+    case .concatenation(_):
+      printAsPattern(convertedFromAST: node)
+    case .convertedRegexLiteral(.concatenation(_), _):
+      printAsPattern(convertedFromAST: node)
+    default:
+      printBlock("Regex") { printer in
+        printer.printAsPattern(convertedFromAST: node)
+      }
     }
   }
 
@@ -99,8 +106,10 @@ extension PrettyPrinter {
       }
 
     case let .concatenation(c):
-      c.forEach {
-        printAsPattern(convertedFromAST: $0)
+      printBlock("Regex") { printer in
+        c.forEach {
+          printer.printAsPattern(convertedFromAST: $0)
+        }
       }
 
     case let .nonCapturingGroup(kind, child):
@@ -127,7 +136,7 @@ extension PrettyPrinter {
       print("/* TODO: conditional */")
 
     case let .quantification(amount, kind, child):
-      let amount = amount.ast._patternBase
+      let amountStr = amount.ast._patternBase
       var kind = kind.ast?._patternBase ?? ""
       
       // If we've updated our quantification behavior, then use that. This
@@ -137,10 +146,88 @@ extension PrettyPrinter {
         kind = quantificationBehavior._patternBase
       }
       
-      var blockName = "\(amount)(\(kind))"
+      var blockName = "\(amountStr)(\(kind))"
       
       if kind == ".eager" {
-        blockName = "\(amount)"
+        blockName = "\(amountStr)"
+      }
+      
+      // Special case single child character classes for repetition nodes.
+      // This lets us do something like the following:
+      //
+      //     OneOrMore(.digit)
+      //     vs
+      //     OneOrMore {
+      //       One(.digit)
+      //     }
+      //
+      func printAtom(_ pattern: String) {
+        indent()
+        
+        if kind != ".eager" {
+          blockName.removeLast()
+          output("\(blockName), ")
+        } else {
+          output("\(blockName)(")
+        }
+        
+        output("\(pattern))")
+        terminateLine()
+      }
+      
+      func printSimpleCCC(
+        _ ccc: DSLTree.CustomCharacterClass
+      ) {
+        indent()
+        
+        if kind != ".eager" {
+          blockName.removeLast()
+          output("\(blockName), ")
+        } else {
+          output("\(blockName)(")
+        }
+        
+        printAsPattern(ccc, wrap: false, terminateLine: false)
+        output(")")
+        terminateLine()
+      }
+      
+      // We can only do this for Optionally, ZeroOrMore, and OneOrMore. Cannot
+      // do it right now for Repeat.
+      if amount.ast.supportsInlineComponent {
+        switch child {
+        case let .atom(a):
+          if let pattern = a._patternBase(&self), pattern.canBeWrapped {
+            printAtom(pattern.0)
+            return
+          }
+          
+          break
+        case let .customCharacterClass(ccc):
+          if ccc.isSimplePrint {
+            printSimpleCCC(ccc)
+            return
+          }
+          
+          break
+          
+        case let .convertedRegexLiteral(.atom(a), _):
+          if let pattern = a._patternBase(&self), pattern.canBeWrapped {
+            printAtom(pattern.0)
+            return
+          }
+          
+          break
+        case let .convertedRegexLiteral(.customCharacterClass(ccc), _):
+          if ccc.isSimplePrint {
+            printSimpleCCC(ccc)
+            return
+          }
+          
+          break
+        default:
+          break
+        }
       }
       
       printBlock(blockName) { printer in
@@ -154,7 +241,11 @@ extension PrettyPrinter {
       }
       
       if let pattern = a._patternBase(&self) {
-        print(pattern)
+        if pattern.canBeWrapped {
+          print("One(\(pattern.0))")
+        } else {
+          print(pattern.0)
+        }
       }
 
     case .trivia:
@@ -191,10 +282,10 @@ extension PrettyPrinter {
       print("/* TODO: absent function */")
     }
   }
-
-  // TODO: Some way to integrate this with conversion...
+  
   mutating func printAsPattern(
     _ ccc: DSLTree.CustomCharacterClass,
+    wrap: Bool = true,
     terminateLine: Bool = true
   ) {
     if ccc.hasUnprintableProperty {
@@ -206,11 +297,10 @@ extension PrettyPrinter {
       if ccc.isInverted {
         printIndented { printer in
           printer.indent()
+          printer.output(".inverted")
           
           if terminateLine {
-            printer.print(".inverted")
-          } else {
-            printer.output(".inverted")
+            printer.terminateLine()
           }
         }
       }
@@ -219,7 +309,7 @@ extension PrettyPrinter {
     // If we only have 1 member, then we can emit it without the extra
     // CharacterClass initialization
     if ccc.members.count == 1 {
-      printAsPattern(ccc.members[0])
+      printAsPattern(ccc.members[0], wrap: wrap)
       
       if terminateLine {
         self.terminateLine()
@@ -283,12 +373,20 @@ extension PrettyPrinter {
     // Also in the same vein, if we have a few atom members but no
     // nonAtomMembers, then we can emit a single .anyOf(...) for them.
     if !charMembers.isEmpty, nonCharMembers.isEmpty {
-      if terminateLine {
-        print(".anyOf(\(charMembers._quoted))")
+      let anyOf = ".anyOf(\(charMembers._quoted))"
+      
+      indent()
+      
+      if wrap {
+        output("One(\(anyOf))")
       } else {
-        indent()
-        output(".anyOf(\(charMembers._quoted))")
+        output(anyOf)
       }
+      
+      if terminateLine {
+        self.terminateLine()
+      }
+      
       return
     }
     
@@ -308,7 +406,7 @@ extension PrettyPrinter {
       }
       
       for (i, member) in nonCharMembers.enumerated() {
-        printer.printAsPattern(member)
+        printer.printAsPattern(member, wrap: false)
         
         if i != nonCharMembers.count - 1 {
           printer.output(",")
@@ -318,17 +416,18 @@ extension PrettyPrinter {
       }
     }
     
+    indent()
+    output(")")
+    
     if terminateLine {
-      print(")")
-    } else {
-      indent()
-      output(")")
+      self.terminateLine()
     }
   }
 
   // TODO: Some way to integrate this with conversion...
   mutating func printAsPattern(
-    _ member: DSLTree.CustomCharacterClass.Member
+    _ member: DSLTree.CustomCharacterClass.Member,
+    wrap: Bool = true
   ) {
     switch member {
     case let .custom(ccc):
@@ -338,9 +437,9 @@ extension PrettyPrinter {
       if let lhs = lhs._patternBase(&self), let rhs = rhs._patternBase(&self) {
         indent()
         output("(")
-        output(lhs)
+        output(lhs.0)
         output("...")
-        output(rhs)
+        output(rhs.0)
         output(")")
       }
       
@@ -348,47 +447,97 @@ extension PrettyPrinter {
       indent()
       switch a {
       case let .char(c):
-        output(".anyOf(\(String(c)._quoted))")
+        
+        if wrap {
+          output("One(.anyOf(\(String(c)._quoted)))")
+        } else {
+          output(".anyOf(\(String(c)._quoted))")
+        }
+        
       case let .scalar(s):
-        output(".anyOf(\"\\u{\(String(s.value, radix: 16))}\")")
+        
+        if wrap {
+          output("One(.anyOf(\"\\u{\(String(s.value, radix: 16, uppercase: true))}\"))")
+        } else {
+          output(".anyOf(\"\\u{\(String(s.value, radix: 16, uppercase: true))}\")")
+        }
+        
       case let .unconverted(a):
-        output(a.ast._patternBase)
+        let base = a.ast._patternBase
+        
+        if base.canBeWrapped, wrap {
+          output("One(\(base.0))")
+        } else {
+          output(base.0)
+        }
       default:
         print(" // TODO: Atom \(a)")
       }
       
     case .quotedLiteral(let s):
-      output(".anyOf(\(s._quoted))")
+      
+      if wrap {
+        output("One(.anyOf(\(s._quoted)))")
+      } else {
+        output(".anyOf(\(s._quoted))")
+      }
       
     case .trivia(_):
       // We never print trivia
       break
       
     case .intersection(let first, let second):
-      printAsPattern(first)
+      if wrap, first.isSimplePrint {
+        indent()
+        output("One(")
+      }
+      
+      printAsPattern(first, wrap: false)
       printIndented { printer in
         printer.indent()
         printer.output(".intersection(")
-        printer.printAsPattern(second, terminateLine: false)
+        printer.printAsPattern(second, wrap: false, terminateLine: false)
         printer.output(")")
+      }
+      
+      if wrap, first.isSimplePrint {
+        output(")")
       }
       
     case .subtraction(let first, let second):
-      printAsPattern(first)
+      if wrap, first.isSimplePrint {
+        indent()
+        output("One(")
+      }
+      
+      printAsPattern(first, wrap: false)
       printIndented { printer in
         printer.indent()
         printer.output(".subtracting(")
-        printer.printAsPattern(second, terminateLine: false)
+        printer.printAsPattern(second, wrap: false, terminateLine: false)
         printer.output(")")
       }
       
+      if wrap, first.isSimplePrint {
+        output(")")
+      }
+      
     case .symmetricDifference(let first, let second):
-      printAsPattern(first)
+      if wrap, first.isSimplePrint {
+        indent()
+        output("One(")
+      }
+      
+      printAsPattern(first, wrap: false)
       printIndented { printer in
         printer.indent()
         printer.output(".symmetricDifference(")
-        printer.printAsPattern(second, terminateLine: false)
+        printer.printAsPattern(second, wrap: false, terminateLine: false)
         printer.output(")")
+      }
+      
+      if wrap, first.isSimplePrint {
+        output(")")
       }
     }
   }
@@ -473,7 +622,7 @@ extension PrettyPrinter {
 extension String {
   // TODO: Escaping?
   fileprivate var _quoted: String {
-    "\"\(self._replacing("\"", with: "\\\""))\""
+    "\"\(self._replacing(#"\"#, with: #"\\"#)._replacing(#"""#, with: #"\""#))\""
   }
 }
 
@@ -662,118 +811,118 @@ extension AST.Atom {
   /// caller, but we might want to be parameterized at that point.
   ///
   /// TODO: Some way to integrate this with conversion...
-  var _patternBase: String {
+  var _patternBase: (String, canBeWrapped: Bool) {
     if let anchor = self.assertionKind {
-      return anchor._patternBase
+      return (anchor._patternBase, false)
     }
 
     if isUnprintableAtom {
-      return _regexBase
+      return (_regexBase, false)
     }
     
     return _dslBase
   }
   
-  var _dslBase: String {
+  var _dslBase: (String, canBeWrapped: Bool) {
     func scalarLiteral(_ s: UnicodeScalar) -> String {
       let hex = String(s.value, radix: 16, uppercase: true)
       return "\\u{\(hex)}"
     }
     switch kind {
     case let .char(c):
-      return String(c)
+      return (String(c), false)
 
     case let .scalar(s):
-      return scalarLiteral(s.value)
+      return (scalarLiteral(s.value), false)
 
     case let .scalarSequence(seq):
-      return seq.scalarValues.map(scalarLiteral).joined()
+      return (seq.scalarValues.map(scalarLiteral).joined(), false)
 
     case let .property(p):
-      return p._dslBase
+      return (p._dslBase, true)
       
     case let .escaped(e):
       switch e {
       // Anchors
       case .wordBoundary:
-        return "Anchor.wordBoundary"
+        return ("Anchor.wordBoundary", false)
       case .notWordBoundary:
-        return "Anchor.wordBoundary.inverted"
+        return ("Anchor.wordBoundary.inverted", false)
       case .startOfSubject:
-        return "Anchor.startOfSubject"
+        return ("Anchor.startOfSubject", false)
       case .endOfSubject:
-        return "Anchor.endOfSubject"
+        return ("Anchor.endOfSubject", false)
       case .endOfSubjectBeforeNewline:
-        return "Anchor.endOfSubjectBeforeNewline"
+        return ("Anchor.endOfSubjectBeforeNewline", false)
       case .firstMatchingPositionInSubject:
-        return "Anchor.firstMatchingPositionInSubject"
+        return ("Anchor.firstMatchingPositionInSubject", false)
       case .textSegment:
-        return "Anchor.textSegmentBoundary"
+        return ("Anchor.textSegmentBoundary", false)
       case .notTextSegment:
-        return "Anchor.textSegmentBoundary.inverted"
+        return ("Anchor.textSegmentBoundary.inverted", false)
         
       // Character Classes
       case .decimalDigit:
-        return ".digit"
+        return (".digit", true)
       case .notDecimalDigit:
-        return ".digit.inverted"
+        return (".digit.inverted", true)
       case .horizontalWhitespace:
-        return ".horizontalWhitespace"
+        return (".horizontalWhitespace", true)
       case .notHorizontalWhitespace:
-        return ".horizontalWhitespace.inverted"
+        return (".horizontalWhitespace.inverted", true)
       case .whitespace:
-        return ".whitespace"
+        return (".whitespace", true)
       case .notWhitespace:
-        return ".whitespace.inverted"
+        return (".whitespace.inverted", true)
       case .wordCharacter:
-        return ".word"
+        return (".word", true)
       case .notWordCharacter:
-        return ".word.inverted"
+        return (".word.inverted", true)
       case .graphemeCluster:
-        return ".anyGraphemeCluster"
+        return (".anyGraphemeCluster", true)
       case .newlineSequence:
-        return ".newlineSequence"
+        return (".newlineSequence", true)
       case .notNewline:
-        return ".newlineSequence.inverted"
+        return (".newlineSequence.inverted", true)
       case .verticalTab:
-        return ".verticalWhitespace"
+        return (".verticalWhitespace", true)
       case .notVerticalTab:
-        return ".verticalWhitespace.inverted"
+        return (".verticalWhitespace.inverted", true)
         
       // Literal single characters all get converted into DSLTree.Atom.scalar
         
       default:
-        return "TODO: escaped \(e)"
+        return ("TODO: escaped \(e)", false)
       }
       
     case .namedCharacter:
-      return " /* TODO: named character */"
+      return (" /* TODO: named character */", false)
 
     case .any:
-      return ".any"
+      return (".any", true)
 
     case .startOfLine, .endOfLine:
       fatalError("unreachable")
 
     case .backreference:
-      return " /* TODO: back reference */"
+      return (" /* TODO: back reference */", false)
 
     case .subpattern:
-      return " /* TODO: subpattern */"
+      return (" /* TODO: subpattern */", false)
 
     case .callout:
-      return " /* TODO: callout */"
+      return (" /* TODO: callout */", false)
 
     case .backtrackingDirective:
-      return " /* TODO: backtracking directive */"
+      return (" /* TODO: backtracking directive */", false)
 
     case .changeMatchingOptions:
-      return "/* TODO: change matching options */"
+      return ("/* TODO: change matching options */", false)
       
     // Every other case we've already decided cannot be represented inside the
     // DSL.
     default:
-      return ""
+      return ("", false)
     }
   }
   
@@ -836,6 +985,15 @@ extension AST.Quantification.Amount {
     case let .range(n, m): return "Repeat(\(n.value)...\(m.value))"
     }
   }
+  
+  var supportsInlineComponent: Bool {
+    switch self {
+    case .zeroOrMore: return true
+    case .oneOrMore: return true
+    case .zeroOrOne: return true
+    default: return false
+    }
+  }
 }
 
 extension AST.Quantification.Kind {
@@ -881,36 +1039,84 @@ extension DSLTree.CustomCharacterClass {
       $0.isUnprintableMember
     }
   }
+  
+  var isSimplePrint: Bool {
+    if members.count == 1 {
+      switch members[0] {
+      case .intersection(_, _):
+        return false
+      case .subtraction(_, _):
+        return false
+      case .symmetricDifference(_, _):
+        return false
+      default:
+        return true
+      }
+    }
+    
+    let nonCharMembers = members.filter {
+      switch $0 {
+      case let .atom(a):
+        switch a {
+        case .char(_):
+          return false
+        case .scalar(_):
+          return false
+        case .unconverted(_):
+          return true
+        default:
+          return true
+        }
+        
+      case .quotedLiteral(_):
+        return false
+        
+      case .trivia(_):
+        return false
+        
+      default:
+        return true
+      }
+    }
+    
+    if nonCharMembers.isEmpty {
+      return true
+    }
+    
+    return false
+  }
 }
 
 extension DSLTree.Atom {
-  func _patternBase(_ printer: inout PrettyPrinter) -> String? {
+  func _patternBase(
+    _ printer: inout PrettyPrinter
+  ) -> (String, canBeWrapped: Bool)? {
     switch self {
     case .any:
-      return ".any"
+      return (".any", true)
       
     case let .char(c):
-      return String(c)._quoted
+      return (String(c)._quoted, false)
       
     case let .scalar(s):
       let hex = String(s.value, radix: 16, uppercase: true)
-      return "\\u{\(hex)}"._quoted
+      return ("\\u{\(hex)}"._quoted, false)
       
     case let .unconverted(a):
       if a.ast.isUnprintableAtom {
-        return "#/\(a.ast._regexBase)/#"
+        return ("#/\(a.ast._regexBase)/#", false)
       } else {
         return a.ast._dslBase
       }
       
     case .assertion(let a):
-      return a.ast._patternBase
+      return (a.ast._patternBase, false)
       
     case .backreference(_):
-      return "/* TOOD: backreferences */"
+      return ("/* TOOD: backreferences */", false)
       
     case .symbolicReference:
-      return "/* TOOD: symbolic references */"
+      return ("/* TOOD: symbolic references */", false)
       
     case .changeMatchingOptions(let matchingOptions):
       for add in matchingOptions.ast.adding {
