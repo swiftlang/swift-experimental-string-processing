@@ -143,11 +143,11 @@ extension Regex where Output == AnyRegexOutput {
   ///
   /// - Parameter pattern: The regular expression.
   public init(_ pattern: String) throws {
-    self.init(ast: try parse(pattern, .semantic, .traditional))
+    self.init(ast: try parse(pattern, .traditional))
   }
   
   internal init(_ pattern: String, syntax: SyntaxOptions) throws {
-    self.init(ast: try parse(pattern, .semantic, syntax))
+    self.init(ast: try parse(pattern, syntax))
   }
 }
 
@@ -161,7 +161,7 @@ extension Regex {
     _ pattern: String,
     as: Output.Type = Output.self
   ) throws {
-    self.init(ast: try parse(pattern, .semantic, .traditional))
+    self.init(ast: try parse(pattern, .traditional))
   }
 
   /// Produces a regex that matches `verbatim` exactly, as though every

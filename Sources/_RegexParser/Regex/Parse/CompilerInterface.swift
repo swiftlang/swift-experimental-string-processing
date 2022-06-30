@@ -96,7 +96,7 @@ public func swiftCompilerParseRegexLiteral(
   _ input: String, captureBufferOut: UnsafeMutableRawBufferPointer
 ) throws -> (regexToEmit: String, version: Int) {
   do {
-    let ast = try parseWithDelimiters(input, .semantic)
+    let ast = try parseWithDelimiters(input)
     // Serialize the capture structure for later type inference.
     assert(captureBufferOut.count >= input.utf8.count)
     ast.captureStructure.encode(to: captureBufferOut)

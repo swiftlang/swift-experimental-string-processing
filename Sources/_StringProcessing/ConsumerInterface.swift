@@ -51,7 +51,26 @@ extension DSLTree.Node {
   }
 }
 
+extension DSLTree._AST.Atom {
+  var singleScalarASCIIValue: UInt8? {
+    return ast.singleScalarASCIIValue
+  }
+}
+
 extension DSLTree.Atom {
+  var singleScalarASCIIValue: UInt8? {
+    switch self {
+    case let .char(c) where c != "\r\n":
+      return c.asciiValue
+    case let .scalar(s) where s.isASCII:
+      return UInt8(ascii: s)
+    case let .unconverted(atom):
+      return atom.singleScalarASCIIValue
+    default:
+      return nil
+    }
+  }
+  
   // TODO: If ByteCodeGen switches first, then this is unnecessary for
   // top-level nodes, but it's also invoked for `.atom` members of a custom CC
   func generateConsumer(
@@ -61,17 +80,32 @@ extension DSLTree.Atom {
     
     switch self {
     case let .char(c):
-      // TODO: Match level?
-      return { input, bounds in
-        let low = bounds.lowerBound
-        if isCaseInsensitive && c.isCased {
-          return input[low].lowercased() == c.lowercased()
-            ? input.index(after: low)
-            : nil
-        } else {
-          return input[low] == c
-            ? input.index(after: low)
-            : nil
+      if opts.semanticLevel == .graphemeCluster {
+        return { input, bounds in
+          let low = bounds.lowerBound
+          if isCaseInsensitive && c.isCased {
+            return input[low].lowercased() == c.lowercased()
+              ? input.index(after: low)
+              : nil
+          } else {
+            return input[low] == c
+              ? input.index(after: low)
+              : nil
+          }
+        }
+      } else {
+        let consumers = c.unicodeScalars.map { s in consumeScalar {
+          isCaseInsensitive
+            ? $0.properties.lowercaseMapping == s.properties.lowercaseMapping
+            : $0 == s
+        }}
+        return { input, bounds in
+          for fn in consumers {
+            if let idx = fn(input, bounds) {
+              return idx
+            }
+          }
+          return nil
         }
       }
     case let .scalar(s):
@@ -177,7 +211,18 @@ extension AST.Atom {
     default: return nil
     }
   }
-
+  
+  var singleScalarASCIIValue: UInt8? {
+    switch kind {
+    case let .char(c) where c != "\r\n":
+      return c.asciiValue
+    case let .scalar(s) where s.value.isASCII:
+      return UInt8(ascii: s.value)
+    default:
+      return nil
+    }
+  }
+  
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram.ConsumeFunction? {
@@ -227,7 +272,7 @@ extension AST.Atom {
 
     case .scalarSequence, .escaped, .keyboardControl, .keyboardMeta,
         .keyboardMetaControl, .backreference, .subpattern, .callout,
-        .backtrackingDirective, .changeMatchingOptions:
+        .backtrackingDirective, .changeMatchingOptions, .invalid:
       // FIXME: implement
       return nil
     }
@@ -235,6 +280,34 @@ extension AST.Atom {
 }
 
 extension DSLTree.CustomCharacterClass.Member {
+  func asAsciiBitset(
+    _ opts: MatchingOptions,
+    _ isInverted: Bool
+  ) -> DSLTree.CustomCharacterClass.AsciiBitset? {
+    switch self {
+    case let .atom(a):
+      if let val = a.singleScalarASCIIValue {
+        return DSLTree.CustomCharacterClass.AsciiBitset(
+          val,
+          isInverted,
+          opts.isCaseInsensitive
+        )
+      }
+    case let .range(low, high):
+      if let lowVal = low.singleScalarASCIIValue, let highVal = high.singleScalarASCIIValue {
+        return DSLTree.CustomCharacterClass.AsciiBitset(
+          low: lowVal,
+          high: highVal,
+          isInverted: isInverted,
+          isCaseInsensitive: opts.isCaseInsensitive
+        )
+      }
+    default:
+      return nil
+    }
+    return nil
+  }
+  
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram.ConsumeFunction {
@@ -342,6 +415,19 @@ extension DSLTree.CustomCharacterClass.Member {
 }
 
 extension DSLTree.CustomCharacterClass {
+  func asAsciiBitset(_ opts: MatchingOptions) -> AsciiBitset? {
+    return members.reduce(
+      .init(isInverted: isInverted),
+      {result, member in
+        if let next = member.asAsciiBitset(opts, isInverted) {
+          return result?.union(next)
+        } else {
+          return nil
+        }
+      }
+    )
+  }
+  
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram.ConsumeFunction {
@@ -521,6 +607,9 @@ extension AST.Atom.CharacterProperty {
 
       case .javaSpecial(let s):
         throw Unsupported("TODO: map Java special: \(s)")
+
+      case .invalid:
+        throw Unreachable("Expected valid property")
       }
     }()
 

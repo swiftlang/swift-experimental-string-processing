@@ -28,6 +28,8 @@ extension Processor {
     //
     // TODO: Degenericize Processor and store Strings
     var sequences: [[Element]] = []
+    
+    var bitsets: [DSLTree.CustomCharacterClass.AsciiBitset]
 
     var consumeFunctions: [MEProgram.ConsumeFunction]
 
@@ -67,6 +69,11 @@ extension Processor.Registers {
   subscript(_ i: ElementRegister) -> Input.Element {
     elements[i.rawValue]
   }
+  subscript(
+    _ i: AsciiBitsetRegister
+  ) -> DSLTree.CustomCharacterClass.AsciiBitset {
+    bitsets[i.rawValue]
+  }
   subscript(_ i: ConsumeFunctionRegister) -> MEProgram.ConsumeFunction {
     consumeFunctions[i.rawValue]
   }
@@ -93,6 +100,9 @@ extension Processor.Registers {
 
     self.sequences = program.staticSequences
     assert(sequences.count == info.sequences)
+
+    self.bitsets = program.staticBitsets
+    assert(bitsets.count == info.bitsets)
 
     self.consumeFunctions = program.staticConsumeFunctions
     assert(consumeFunctions.count == info.consumeFunctions)
@@ -133,6 +143,7 @@ extension MEProgram {
     var sequences = 0
     var bools = 0
     var strings = 0
+    var bitsets = 0
     var consumeFunctions = 0
     var assertionFunctions = 0
     var transformFunctions = 0

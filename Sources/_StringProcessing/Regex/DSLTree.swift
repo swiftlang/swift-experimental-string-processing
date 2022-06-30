@@ -21,8 +21,7 @@ public struct DSLTree {
 }
 
 extension DSLTree {
-  @_spi(RegexBuilder)
-  public indirect enum Node {
+  indirect enum Node {
     /// Matches each node in order.
     ///
     ///     ... | ... | ...
@@ -99,8 +98,7 @@ extension DSLTree {
 }
 
 extension DSLTree {
-  @_spi(RegexBuilder)
-  public enum QuantificationKind {
+  enum QuantificationKind {
     /// The default quantification kind, as set by options.
     case `default`
     /// An explicitly chosen kind, overriding any options.
@@ -164,6 +162,86 @@ extension DSLTree {
       indirect case subtraction(CustomCharacterClass, CustomCharacterClass)
       indirect case symmetricDifference(CustomCharacterClass, CustomCharacterClass)
     }
+    
+    internal struct AsciiBitset {
+      let isInverted: Bool
+      var a: UInt64 = 0
+      var b: UInt64 = 0
+
+      init(isInverted: Bool) {
+        self.isInverted = isInverted
+      }
+
+      init(_ val: UInt8, _ isInverted: Bool, _ isCaseInsensitive: Bool) {
+        self.isInverted = isInverted
+        add(val, isCaseInsensitive)
+      }
+
+      init(low: UInt8, high: UInt8, isInverted: Bool, isCaseInsensitive: Bool) {
+        self.isInverted = isInverted
+        for val in low...high {
+          add(val, isCaseInsensitive)
+        }
+      }
+
+      internal init(
+        a: UInt64,
+        b: UInt64,
+        isInverted: Bool
+      ) {
+        self.isInverted = isInverted
+        self.a = a
+        self.b = b
+      }
+
+      internal mutating func add(_ val: UInt8, _ isCaseInsensitive: Bool) {
+        setBit(val)
+        if isCaseInsensitive {
+          switch val {
+            case 64...90: setBit(val + 32)
+            case 97...122: setBit(val - 32)
+            default: break
+          }
+        }
+      }
+
+      internal mutating func setBit(_ val: UInt8) {
+        if val < 64 {
+          a = a | 1 << val
+        } else {
+          b = b | 1 << (val - 64)
+        }
+      }
+
+      internal func matches(char: Character) -> Bool {
+        let ret: Bool
+        if let val = char.asciiValue {
+          if val < 64 {
+            ret = (a >> val) & 1 == 1
+          } else {
+            ret =  (b >> (val - 64)) & 1 == 1
+          }
+        } else {
+          ret = false
+        }
+
+        if isInverted {
+          return !ret
+        }
+
+        return ret
+      }
+
+      /// Joins another bitset from a Member of the same CustomCharacterClass
+      internal func union(_ other: AsciiBitset) -> AsciiBitset {
+        precondition(self.isInverted == other.isInverted)
+        return AsciiBitset(
+          a: self.a | other.a,
+          b: self.b | other.b,
+          isInverted: self.isInverted
+        )
+      }
+    }
   }
 
   @_spi(RegexBuilder)
@@ -221,21 +299,18 @@ extension Unicode.GeneralCategory {
 }
 
 // CollectionConsumer
-@_spi(RegexBuilder)
-public typealias _ConsumerInterface = (
+typealias _ConsumerInterface = (
   String, Range<String.Index>
 ) throws -> String.Index?
 
 // Type producing consume
 // TODO: better name
-@_spi(RegexBuilder)
-public typealias _MatcherInterface = (
+typealias _MatcherInterface = (
   String, String.Index, Range<String.Index>
 ) throws -> (String.Index, Any)?
 
 // Character-set (post grapheme segmentation)
-@_spi(RegexBuilder)
-public typealias _CharacterPredicateInterface = (
+typealias _CharacterPredicateInterface = (
   (Character) -> Bool
 )
 
@@ -307,16 +382,6 @@ extension DSLTree {
 }
 
 extension DSLTree {
-  var ast: AST? {
-    guard let root = root.astNode else {
-      return nil
-    }
-    // TODO: Options mapping
-    return AST(root, globalOptions: nil)
-  }
-}
-
-extension DSLTree {
   var hasCapture: Bool {
     root.hasCapture
   }
@@ -339,16 +404,14 @@ extension DSLTree.Node {
 }
 
 extension DSLTree.Node {
-  @_spi(RegexBuilder)
-  public func appending(_ newNode: DSLTree.Node) -> DSLTree.Node {
+  func appending(_ newNode: DSLTree.Node) -> DSLTree.Node {
     if case .concatenation(let components) = self {
       return .concatenation(components + [newNode])
     }
     return .concatenation([self, newNode])
   }
 
-  @_spi(RegexBuilder)
-  public func appendingAlternationCase(
+  func appendingAlternationCase(
     _ newNode: DSLTree.Node
   ) -> DSLTree.Node {
     if case .orderedChoice(let components) = self {
@@ -363,14 +426,21 @@ public struct ReferenceID: Hashable {
   private static var counter: Int = 0
   var base: Int
 
+  public var _raw: Int {
+    base
+  }
+  
   public init() {
     base = Self.counter
     Self.counter += 1
   }
+  
+  init(_ base: Int) {
+    self.base = base
+  }
 }
 
-@_spi(RegexBuilder)
-public struct CaptureTransform: Hashable, CustomStringConvertible {
+struct CaptureTransform: Hashable, CustomStringConvertible {
   enum Closure {
     /// A failable transform.
     case failable((Any) throws -> Any?)
@@ -391,7 +461,7 @@ public struct CaptureTransform: Hashable, CustomStringConvertible {
     self.closure = closure
   }
 
-  public init<Argument, Result>(
+  init<Argument, Result>(
     _ userSpecifiedTransform: @escaping (Argument) throws -> Result
   ) {
     let closure: Closure
@@ -409,7 +479,7 @@ public struct CaptureTransform: Hashable, CustomStringConvertible {
       closure: closure)
   }
 
-  public init<Argument, Result>(
+  init<Argument, Result>(
     _ userSpecifiedTransform: @escaping (Argument) throws -> Result?
   ) {
     let closure: Closure
@@ -465,18 +535,18 @@ public struct CaptureTransform: Hashable, CustomStringConvertible {
     }
   }
 
-  public static func == (lhs: CaptureTransform, rhs: CaptureTransform) -> Bool {
+  static func == (lhs: CaptureTransform, rhs: CaptureTransform) -> Bool {
     unsafeBitCast(lhs.closure, to: (Int, Int).self) ==
       unsafeBitCast(rhs.closure, to: (Int, Int).self)
   }
 
-  public func hash(into hasher: inout Hasher) {
+  func hash(into hasher: inout Hasher) {
     let (fn, ctx) = unsafeBitCast(closure, to: (Int, Int).self)
     hasher.combine(fn)
     hasher.combine(ctx)
   }
 
-  public var description: String {
+  var description: String {
     "<transform argument_type=\(argumentType) result_type=\(resultType)>"
   }
 }
@@ -685,16 +755,16 @@ extension DSLTree {
         .init(ast: .zeroOrOne)
       }
       public static func exactly(_ n: Int) -> Self {
-        .init(ast: .exactly(.init(faking: n)))
+        .init(ast: .exactly(.init(n, at: .fake)))
       }
       public static func nOrMore(_ n: Int) -> Self {
-        .init(ast: .nOrMore(.init(faking: n)))
+        .init(ast: .nOrMore(.init(n, at: .fake)))
       }
       public static func upToN(_ n: Int) -> Self {
-        .init(ast: .upToN(.init(faking: n)))
+        .init(ast: .upToN(.init(n, at: .fake)))
       }
       public static func range(_ lower: Int, _ upper: Int) -> Self {
-        .init(ast: .range(.init(faking: lower), .init(faking: upper)))
+        .init(ast: .range(.init(lower, at: .fake), .init(upper, at: .fake)))
       }
     }
     
@@ -769,6 +839,39 @@ extension DSLTree.Atom {
       return false
     case .char, .scalar, .any, .backreference, .symbolicReference, .unconverted:
       return true
+    }
+  }
+}
+
+extension DSLTree.Node {
+  // Individual public API functions are in the generated Variadics.swift file.
+  /// Generates a DSL tree node for a repeated range of the given node.
+  @available(SwiftStdlib 5.7, *)
+  static func repeating(
+    _ range: Range<Int>,
+    _ behavior: RegexRepetitionBehavior?,
+    _ node: DSLTree.Node
+  ) -> DSLTree.Node {
+    // TODO: Throw these as errors
+    assert(range.lowerBound >= 0, "Cannot specify a negative lower bound")
+    assert(!range.isEmpty, "Cannot specify an empty range")
+    
+    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
+    
+    switch (range.lowerBound, range.upperBound) {
+    case (0, Int.max): // 0...
+      return .quantification(.zeroOrMore, kind, node)
+    case (1, Int.max): // 1...
+      return .quantification(.oneOrMore, kind, node)
+    case _ where range.count == 1: // ..<1 or ...0 or any range with count == 1
+      // Note: `behavior` is ignored in this case
+      return .quantification(.exactly(range.lowerBound), .default, node)
+    case (0, _): // 0..<n or 0...n or ..<n or ...n
+      return .quantification(.upToN(range.upperBound), kind, node)
+    case (_, Int.max): // n...
+      return .quantification(.nOrMore(range.lowerBound), kind, node)
+    default: // any other range
+      return .quantification(.range(range.lowerBound, range.upperBound), kind, node)
     }
   }
 }

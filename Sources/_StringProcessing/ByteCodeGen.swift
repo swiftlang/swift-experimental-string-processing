@@ -8,8 +8,16 @@ extension Compiler {
     /// This is used to determine whether to apply initial options.
     var hasEmittedFirstMatchableAtom = false
 
-    init(options: MatchingOptions, captureList: CaptureList) {
+    private let compileOptions: CompileOptions
+    fileprivate var optimizationsEnabled: Bool { !compileOptions.contains(.disableOptimizations) }
+
+    init(
+      options: MatchingOptions,
+      compileOptions: CompileOptions,
+      captureList: CaptureList
+    ) {
       self.options = options
+      self.compileOptions = compileOptions
       self.builder.captureList = captureList
     }
   }
@@ -76,7 +84,10 @@ fileprivate extension Compiler.ByteCodeGen {
     }
 
     switch ref.kind {
-    case .absolute(let i):
+    case .absolute(let n):
+      guard let i = n.value else {
+        throw Unreachable("Expected a value")
+      }
       builder.buildBackreference(.init(i))
     case .named(let name):
       try builder.buildNamedReference(name)
@@ -451,6 +462,9 @@ fileprivate extension Compiler.ByteCodeGen {
     }
 
     let (low, high) = amount.bounds
+    guard let low = low else {
+      throw Unreachable("Must have a lower bound")
+    }
     switch (low, high) {
     case (_, 0):
       // TODO: Should error out earlier, maybe DSL and parser
@@ -643,8 +657,16 @@ fileprivate extension Compiler.ByteCodeGen {
   mutating func emitCustomCharacterClass(
     _ ccc: DSLTree.CustomCharacterClass
   ) throws {
-    let consumer = try ccc.generateConsumer(options)
-    builder.buildConsume(by: consumer)
+    if let asciiBitset = ccc.asAsciiBitset(options),
+        options.semanticLevel == .graphemeCluster,
+        optimizationsEnabled {
+      // future work: add a bit to .matchBitset to consume either a character
+      // or a scalar so we can have this optimization in scalar mode
+      builder.buildMatchAsciiBitset(asciiBitset)
+    } else {
+      let consumer = try ccc.generateConsumer(options)
+      builder.buildConsume(by: consumer)
+    }
   }
 
   @discardableResult

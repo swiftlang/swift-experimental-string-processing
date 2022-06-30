@@ -50,8 +50,7 @@ struct PatternConverter: ParsableCommand {
     print("Converting '\(delim)\(regex)\(delim)'")
 
     let ast = try _RegexParser.parse(
-      regex, .semantic,
-      experimentalSyntax ? .experimental : .traditional)
+      regex, experimentalSyntax ? .experimental : .traditional)
 
     // Show rendered source ranges
     if renderSourceRanges {

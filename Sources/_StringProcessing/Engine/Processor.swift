@@ -226,6 +226,20 @@ extension Processor {
     }
     return true
   }
+  
+  // If we have a bitset we know that the CharacterClass only matches against
+  // ascii characters, so check if the current input element is ascii then
+  // check if it is set in the bitset
+  mutating func matchBitset(
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
+  ) -> Bool {
+    guard let cur = load(), bitset.matches(char: cur) else {
+      signalFailure()
+      return false
+    }
+    _uncheckedForcedConsumeOne()
+    return true
+  }
 
   mutating func signalFailure() {
     guard let (pc, pos, stackEnd, capEnds, intRegisters) =
@@ -361,6 +375,13 @@ extension Processor {
       let reg = payload.sequence
       let seq = registers[reg]
       if matchSeq(seq) {
+        controller.step()
+      }
+
+    case .matchBitset:
+      let reg = payload.bitset
+      let bitset = registers[reg]
+      if matchBitset(bitset) {
         controller.step()
       }
 
