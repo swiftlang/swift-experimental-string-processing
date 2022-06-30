@@ -21,7 +21,7 @@ func testConversion(
   _ expectedDSL: String,
   file: StaticString = #file, line: UInt = #line
 ) throws {
-  let ast = try _RegexParser.parse(regex, .semantic, .traditional)
+  let ast = try _RegexParser.parse(regex, .traditional)
   let actualDSL = renderAsBuilderDSL(ast: ast)._trimmingSuffix(while: \.isWhitespace)
   XCTAssertEqual(actualDSL, expectedDSL[...], file: file, line: line)
 }

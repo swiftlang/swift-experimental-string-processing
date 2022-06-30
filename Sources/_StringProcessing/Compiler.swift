@@ -62,7 +62,7 @@ func _compileRegex(
   _ syntax: SyntaxOptions = .traditional,
   _ semanticLevel: RegexSemanticLevel? = nil
 ) throws -> Executor {
-  let ast = try parse(regex, .semantic, syntax)
+  let ast = try parse(regex, syntax)
   let dsl: DSLTree
 
   switch semanticLevel?.base {
