@@ -104,66 +104,6 @@ class RegexConsumerTests: XCTestCase {
        result: "9+16, 3, 10, 99+1")
     )
   }
-
-  func testSwitches() {
-    // Failure cases
-    do {
-      switch "abcde" {
-      case Regex {
-        "a"
-        ZeroOrMore(.any)
-        "f"
-      }:
-        XCTFail()
-
-      case OneOrMore { CharacterClass.whitespace }:
-        XCTFail()
-
-      case "abc":
-        XCTFail()
-
-      case Regex {
-        "a"
-        "b"
-        "c"
-      }:
-        XCTFail()
-
-      default:
-        break
-      }
-    }
-    // Success cases
-    do {
-      let input = "abcde"
-
-      switch input {
-      case Regex {
-        "a"
-        ZeroOrMore(.any)
-        "e"
-      }:
-        break
-
-      default:
-        XCTFail()
-      }
-
-      guard case Regex({
-        "a"
-        ZeroOrMore(.any)
-        "e"
-      }) = input else {
-        XCTFail()
-        return
-      }
-
-      guard case OneOrMore(.word) = input else {
-        XCTFail()
-        return
-      }
-    }
-  }
 }
 
 class AlgorithmsResultBuilderTests: XCTestCase {

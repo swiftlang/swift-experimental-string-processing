@@ -497,19 +497,4 @@ class AlgorithmTests: XCTestCase {
     XCTAssertEqual(
       s2.ranges(of: try Regex("a*?")).map(s2.offsets(of:)), [0..<0, 1..<1, 2..<2])
   }
-
-  func testSwitches() {
-    switch "abcde" {
-    case try! Regex("a.*f"):
-      XCTFail()
-    case try! Regex("abc"):
-      XCTFail()
-
-    case try! Regex("a.*e"):
-      break // success
-
-    default:
-      XCTFail()
-    }
-  }
 }
