@@ -271,29 +271,44 @@ class RegexDSLTests: XCTestCase {
         .ignoresCase(false)
       }
     
-#if os(macOS)
-    try XCTExpectFailure("Implement level 2 word boundaries") {
-      try _testDSLCaptures(
-        ("can't stop won't stop", ("can't stop won't stop", "can't", "won")),
-        matchType: (Substring, Substring, Substring).self, ==) {
-          Capture {
-            OneOrMore(.word)
-            Anchor.wordBoundary
-          }
-          OneOrMore(.any, .reluctant)
-          "stop"
-          " "
-          
-          Capture {
-            OneOrMore(.word)
-            Anchor.wordBoundary
-          }
-          .wordBoundaryKind(.unicodeLevel1)
-          OneOrMore(.any, .reluctant)
-          "stop"
+    try _testDSLCaptures(
+      ("can't stop won't stop", ("can't stop won't stop", "can't", "won't")),
+      matchType: (Substring, Substring, Substring).self, ==) {
+        Capture {
+          OneOrMore(.word)
+          Anchor.wordBoundary
         }
-    }
-#endif
+        OneOrMore(.any, .reluctant)
+        "stop"
+        " "
+        
+        Capture {
+          OneOrMore(.word)
+          Anchor.wordBoundary
+        }
+        OneOrMore(.any, .reluctant)
+        "stop"
+      }
+    
+    try _testDSLCaptures(
+      ("can't stop won't stop", ("can't stop won't stop", "can", "won")),
+      matchType: (Substring, Substring, Substring).self, ==) {
+        Capture {
+          OneOrMore(.word)
+          Anchor.wordBoundary
+        }
+        OneOrMore(.any, .reluctant)
+        "stop"
+        " "
+        
+        Capture {
+          OneOrMore(.word)
+          Anchor.wordBoundary
+        }
+        .wordBoundaryKind(.unicodeLevel1)
+        OneOrMore(.any, .reluctant)
+        "stop"
+      }
     
     try _testDSLCaptures(
       ("abcdef123", ("abcdef123", "a", "123")),

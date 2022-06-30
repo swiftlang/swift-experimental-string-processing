@@ -1069,6 +1069,23 @@ extension RegexTests {
       ("Sol Cafe", nil), xfail: true)
   }
 
+  func testLevel2WordBoundaries() {
+    // MARK: Level 2 Word Boundaries
+    firstMatchTest(#"\b😊\b"#, input: "🔥😊👍", match: "😊")
+    firstMatchTest(#"\b👨🏽\b"#, input: "👩🏻👶🏿👨🏽🧑🏾👩🏼", match: "👨🏽")
+    firstMatchTest(#"\b🇺🇸\b"#, input: "🇨🇦🇺🇸🇲🇽", match: "🇺🇸")
+    firstMatchTest(#"\b.+\b"#, input: "€1 234,56", match: "€1 234,56")
+    firstMatchTest(#"〱\B㋞\Bツ"#, input: "〱㋞ツ", match: "〱㋞ツ")
+    firstMatchTest(#"\bhello\b"#, input: "hello〱㋞ツ", match: "hello")
+    firstMatchTest(#"\bChicago\b"#, input: "나는 Chicago에 산다", match: "Chicago")
+    firstMatchTest(#"\blove\b"#, input: "眼睛love食物", match: "love")
+    firstMatchTest(#"\b\u{d}\u{a}\b"#, input: "\u{d}\u{a}", match: "\u{d}\u{a}")
+    firstMatchTest(#"\bㅋㅋㅋ\b"#, input: "아니ㅋㅋㅋ네", match: "ㅋㅋㅋ")
+    firstMatchTest(#"Re\B\:\BZero"#, input: "Re:Zero Starting Life in Another World", match: "Re:Zero")
+    firstMatchTest(#"can\B\'\Bt"#, input: "I can't do that.", match: "can't")
+    firstMatchTest(#"\b÷\b"#, input: "3 ÷ 3 = 1", match: "÷")
+  }
+  
   func testMatchGroups() {
     // MARK: Groups
 
@@ -1475,12 +1492,12 @@ extension RegexTests {
       #"(?W)abcd\b.+"#,
       ("abcd ef", true),
       ("abcdef", false),
-      ("abcdéf", true)) // "dé" matches /d\b./ because "é" isn't ASCII
+      ("abcdéf", false))
     matchTest(
       #"(?P)abcd\b.+"#,
       ("abcd ef", true),
       ("abcdef", false),
-      ("abcdéf", true)) // "dé" matches /d\b./ because "é" isn't ASCII
+      ("abcdéf", false))
 
     // 'S' ASCII-only spaces
     matchTest(

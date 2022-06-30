@@ -1,3 +1,17 @@
+//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
+@_spi(_Unicode)
+import Swift
+
 @_implementationOnly import _RegexParser
 
 extension Compiler {
@@ -192,19 +206,33 @@ fileprivate extension Compiler.ByteCodeGen {
       }
 
     case .wordBoundary:
-      // TODO: May want to consider Unicode level
       builder.buildAssert { [options] (input, pos, subjectBounds) in
-        // TODO: How should we handle bounds?
-        _CharacterClassModel.word.isBoundary(
-          input, at: pos, bounds: subjectBounds, with: options)
+        if options.usesSimpleUnicodeBoundaries {
+          // TODO: How should we handle bounds?
+          return _CharacterClassModel.word.isBoundary(
+            input,
+            at: pos,
+            bounds: subjectBounds,
+            with: options
+          )
+        } else {
+          return input.isOnWordBoundary(at: pos)
+        }
       }
 
     case .notWordBoundary:
-      // TODO: May want to consider Unicode level
       builder.buildAssert { [options] (input, pos, subjectBounds) in
-        // TODO: How should we handle bounds?
-        !_CharacterClassModel.word.isBoundary(
-          input, at: pos, bounds: subjectBounds, with: options)
+        if options.usesSimpleUnicodeBoundaries {
+          // TODO: How should we handle bounds?
+          return !_CharacterClassModel.word.isBoundary(
+            input,
+            at: pos,
+            bounds: subjectBounds,
+            with: options
+          )
+        } else {
+          return !input.isOnWordBoundary(at: pos)
+        }
       }
     }
   }
