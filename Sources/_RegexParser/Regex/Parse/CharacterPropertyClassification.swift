@@ -9,12 +9,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-extension Source {
+extension Parser {
   typealias PropertyKind = AST.Atom.CharacterProperty.Kind
 
   static private func withNormalizedForms<T>(
-    _ str: String, requireInPrefix: Bool = false, match: (String) throws -> T?
-  ) rethrows -> T? {
+    _ str: String, requireInPrefix: Bool = false, match: (String) -> T?
+  ) -> T? {
     // This follows the rules provided by UAX44-LM3, including trying to drop an
     // "is" prefix, which isn't required by UTS#18 RL1.2, but is nice for
     // consistency with other engines and the Unicode.Scalar.Properties names.
@@ -22,12 +22,12 @@ extension Source {
                  .lowercased()
     if requireInPrefix {
       guard str.hasPrefix("in") else { return nil }
-      return try match(String(str.dropFirst(2)))
+      return match(String(str.dropFirst(2)))
     }
-    if let m = try match(str) {
+    if let m = match(str) {
       return m
     }
-    if str.hasPrefix("is"), let m = try match(String(str.dropFirst(2))) {
+    if str.hasPrefix("is"), let m = match(String(str.dropFirst(2))) {
       return m
     }
     return nil
@@ -736,31 +736,40 @@ extension Source {
     return (major, minor)
   }
 
-  static func classifyCharacterPropertyValueOnly(
-    _ value: String
-  ) throws -> PropertyKind {
-    guard !value.isEmpty else { throw ParseError.emptyProperty }
+  mutating func classifyCharacterPropertyValueOnly(
+    _ valueLoc: Located<String>
+  ) -> PropertyKind {
+    let value = valueLoc.value
+
+    func error(_ err: ParseError) -> PropertyKind {
+      self.error(err, at: valueLoc.location)
+      return .invalid(key: nil, value: value)
+    }
+
+    guard !value.isEmpty else {
+      return error(.emptyProperty)
+    }
 
     // Some special cases defined by UTS#18 (and Oniguruma for 'ANY' and
     // 'Assigned').
-    if let specialProp = classifySpecialPropValue(value) {
+    if let specialProp = Self.classifySpecialPropValue(value) {
       return specialProp
     }
 
     // The following properties we can infer keys/values for.
-    if let prop = classifyBoolProperty(value) {
+    if let prop = Self.classifyBoolProperty(value) {
       return .binary(prop, value: true)
     }
-    if let cat = classifyGeneralCategory(value) {
+    if let cat = Self.classifyGeneralCategory(value) {
       return .generalCategory(cat)
     }
-    if let script = classifyScriptProperty(value) {
+    if let script = Self.classifyScriptProperty(value) {
       return .scriptExtension(script)
     }
-    if let posix = classifyPOSIX(value) {
+    if let posix = Self.classifyPOSIX(value) {
       return .posix(posix)
     }
-    if let block = classifyBlockProperty(value, valueOnly: true) {
+    if let block = Self.classifyBlockProperty(value, valueOnly: true) {
       return .block(block)
     }
 
@@ -776,53 +785,67 @@ extension Source {
 
     // TODO: This should be versioned, and do we want a more lax behavior for
     // the runtime?
-    throw ParseError.unknownProperty(key: nil, value: value)
+    return error(.unknownProperty(key: nil, value: value))
   }
 
-  static func classifyCharacterProperty(
-    key: String, value: String
-  ) throws -> PropertyKind {
-    guard !key.isEmpty && !value.isEmpty else { throw ParseError.emptyProperty }
+  mutating func classifyCharacterProperty(
+    key keyLoc: Located<String>, value valueLoc: Located<String>
+  ) -> PropertyKind {
+    let key = keyLoc.value
+    let value = valueLoc.value
 
-    if let prop = classifyBoolProperty(key),
-       let isTrue = classifyCharacterPropertyBoolValue(value) {
+    func valueError(_ err: ParseError) -> PropertyKind {
+      error(err, at: valueLoc.location)
+      return .invalid(key: key, value: value)
+    }
+
+    guard !key.isEmpty else {
+      error(.emptyProperty, at: keyLoc.location)
+      return .invalid(key: key, value: value)
+    }
+    guard !value.isEmpty else {
+      return valueError(.emptyProperty)
+    }
+
+    if let prop = Self.classifyBoolProperty(key),
+       let isTrue = Self.classifyCharacterPropertyBoolValue(value) {
       return .binary(prop, value: isTrue)
     }
 
     // This uses the aliases defined in
     // https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt.
-    let match = try withNormalizedForms(key) { normalizedKey -> PropertyKind? in
+    let match = Self.withNormalizedForms(key) { normalizedKey -> PropertyKind? in
       switch normalizedKey {
       case "script", "sc":
-        guard let script = classifyScriptProperty(value) else {
-          throw ParseError.unrecognizedScript(value)
+        guard let script = Self.classifyScriptProperty(value) else {
+          return valueError(.unrecognizedScript(value))
         }
         return .script(script)
       case "scriptextensions", "scx":
-        guard let script = classifyScriptProperty(value) else {
-          throw ParseError.unrecognizedScript(value)
+        guard let script = Self.classifyScriptProperty(value) else {
+          return valueError(.unrecognizedScript(value))
         }
         return .scriptExtension(script)
       case "gc", "generalcategory":
-        guard let cat = classifyGeneralCategory(value) else {
-          throw ParseError.unrecognizedCategory(value)
+        guard let cat = Self.classifyGeneralCategory(value) else {
+          return valueError(.unrecognizedCategory(value))
         }
         return .generalCategory(cat)
       case "age":
-        guard let (major, minor) = parseAge(value) else {
-          throw ParseError.invalidAge(value)
+        guard let (major, minor) = Self.parseAge(value) else {
+          return valueError(.invalidAge(value))
         }
         return .age(major: major, minor: minor)
       case "name", "na":
         return .named(value)
       case "numericvalue", "nv":
         guard let numericValue = Double(value) else {
-          throw ParseError.invalidNumericValue(value)
+          return valueError(.invalidNumericValue(value))
         }
         return .numericValue(numericValue)
       case "numerictype", "nt":
-        guard let type = classifyNumericType(value) else {
-          throw ParseError.unrecognizedNumericType(value)
+        guard let type = Self.classifyNumericType(value) else {
+          return valueError(.unrecognizedNumericType(value))
         }
         return .numericType(type)
       case "slc", "simplelowercasemapping":
@@ -833,13 +856,13 @@ extension Source {
         return .mapping(.titlecase, value)
       case "ccc", "canonicalcombiningclass":
         guard let cccValue = UInt8(value), cccValue <= 254 else {
-          throw ParseError.invalidCCC(value)
+          return valueError(.invalidCCC(value))
         }
         return .ccc(.init(rawValue: cccValue))
 
       case "blk", "block":
-        guard let block = classifyBlockProperty(value, valueOnly: false) else {
-          throw ParseError.unrecognizedBlock(value)
+        guard let block = Self.classifyBlockProperty(value, valueOnly: false) else {
+          return valueError(.unrecognizedBlock(value))
         }
         return .block(block)
       default:
@@ -852,6 +875,8 @@ extension Source {
     }
     // TODO: This should be versioned, and do we want a more lax behavior for
     // the runtime?
-    throw ParseError.unknownProperty(key: key, value: value)
+    error(.unknownProperty(key: key, value: value),
+          at: keyLoc.location.union(with: valueLoc.location))
+    return .invalid(key: key, value: value)
   }
 }

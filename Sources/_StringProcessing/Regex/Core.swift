@@ -37,13 +37,14 @@ public struct Regex<Output>: RegexComponent {
     self.program = Program(ast: ast)
   }
   init(ast: AST.Node) {
-    self.program = Program(ast: .init(ast, globalOptions: nil))
+    self.program = Program(ast:
+        .init(ast, globalOptions: nil, diags: Diagnostics()))
   }
 
   // Compiler interface. Do not change independently.
   @usableFromInline
   init(_regexString pattern: String) {
-    self.init(ast: try! parse(pattern, .semantic, .traditional))
+    self.init(ast: try! parse(pattern, .traditional))
   }
 
   // Compiler interface. Do not change independently.
@@ -52,7 +53,7 @@ public struct Regex<Output>: RegexComponent {
     assert(version == currentRegexLiteralFormatVersion)
     // The version argument is passed by the compiler using the value defined
     // in libswiftParseRegexLiteral.
-    self.init(ast: try! parseWithDelimiters(pattern, .semantic))
+    self.init(ast: try! parseWithDelimiters(pattern))
   }
 
   public var regex: Regex<Output> {

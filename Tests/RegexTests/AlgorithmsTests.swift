@@ -516,19 +516,4 @@ class AlgorithmTests: XCTestCase {
     XCTAssertEqual("Café".replacing(emptyRegex, with: "-"), "-C-a-f-é-")
     XCTAssertEqual("Cafe\u{301}".replacing(emptyRegex, with: "-"), "-C-a-f-e-\u{301}-")
   }
-  
-  func testSwitches() {
-    switch "abcde" {
-    case try! Regex("a.*f"):
-      XCTFail()
-    case try! Regex("abc"):
-      XCTFail()
-
-    case try! Regex("a.*e"):
-      break // success
-
-    default:
-      XCTFail()
-    }
-  }
 }

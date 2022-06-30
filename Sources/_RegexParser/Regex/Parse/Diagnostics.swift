@@ -55,6 +55,7 @@ enum ParseError: Error, Hashable {
 
   case unknownGroupKind(String)
   case unknownCalloutKind(String)
+  case unknownTextSegmentMatchingOption(Character)
 
   case invalidMatchingOption(Character)
   case cannotRemoveMatchingOptionsAfterCaret
@@ -166,6 +167,8 @@ extension ParseError: CustomStringConvertible {
       return "unknown group kind '(\(str)'"
     case let .unknownCalloutKind(str):
       return "unknown callout kind '\(str)'"
+    case let .unknownTextSegmentMatchingOption(m):
+      return "unknown text segment mode '\(m)'; expected 'w' or 'g'"
     case let .invalidMatchingOption(c):
       return "invalid matching option '\(c)'"
     case .cannotRemoveMatchingOptionsAfterCaret:
@@ -179,7 +182,7 @@ extension ParseError: CustomStringConvertible {
     case .unsupportedDotNetSubtraction:
       return "subtraction with '-' is unsupported; use '--' instead"
     case .emptyProperty:
-      return "empty property"
+      return "expected property name"
     case .unknownProperty(let key, let value):
       if let key = key {
         return "unknown character property '\(key)=\(value)'"
@@ -242,9 +245,128 @@ extension ParseError: CustomStringConvertible {
   }
 }
 
-// TODO: Fixits, notes, etc.
+/// A fatal error that indicates broken logic in the parser.
+enum FatalParseError: Hashable, Error {
+  case unreachable(String)
+}
 
-// TODO: Diagnostics engine, recorder, logger, or similar.
+extension FatalParseError: CustomStringConvertible {
+  var description: String {
+    switch self {
+    case .unreachable(let str):
+      return "UNREACHABLE: \(str)"
+    }
+  }
+}
 
+// MARK: Diagnostic handling
 
+/// A diagnostic to emit.
+public struct Diagnostic: Hashable {
+  public let behavior: Behavior
+  public let message: String
+  public let location: SourceLocation
 
+  // TODO: Fixits, notes, etc.
+
+  // The underlying ParseError if applicable. This is used for testing.
+  internal let underlyingParseError: ParseError?
+
+  init(_ behavior: Behavior, _ message: String, at loc: SourceLocation,
+       underlyingParseError: ParseError? = nil) {
+    self.behavior = behavior
+    self.message = message
+    self.location = loc
+    self.underlyingParseError = underlyingParseError
+  }
+
+  public var isAnyError: Bool { behavior.isAnyError }
+}
+
+extension Diagnostic {
+  public enum Behavior: Hashable {
+    case fatalError, error, warning
+
+    public var isAnyError: Bool {
+      switch self {
+      case .fatalError, .error:
+        return true
+      case .warning:
+        return false
+      }
+    }
+  }
+}
+
+/// A collection of diagnostics to emit.
+public struct Diagnostics: Hashable {
+  public private(set) var diags = [Diagnostic]()
+
+  public init() {}
+  public init(_ diags: [Diagnostic]) {
+    self.diags = diags
+  }
+
+  /// Add a new diagnostic to emit.
+  public mutating func append(_ diag: Diagnostic) {
+    diags.append(diag)
+  }
+
+  /// Add all the diagnostics of another diagnostic collection.
+  public mutating func append(contentsOf other: Diagnostics) {
+    diags.append(contentsOf: other.diags)
+  }
+
+  /// Add all the new fatal error diagnostics of another diagnostic collection.
+  /// This assumes that `other` was the same as `self`, but may have additional
+  /// diagnostics added to it.
+  public mutating func appendNewFatalErrors(from other: Diagnostics) {
+    let newDiags = other.diags.dropFirst(diags.count)
+    for diag in newDiags where diag.behavior == .fatalError {
+      append(diag)
+    }
+  }
+
+  /// Whether any error is present. This includes fatal errors.
+  public var hasAnyError: Bool {
+    diags.contains(where: { $0.isAnyError })
+  }
+
+  /// Whether any fatal error is present.
+  public var hasFatalError: Bool {
+    diags.contains(where: { $0.behavior == .fatalError })
+  }
+
+  /// If any error diagnostic has been added, throw it as an Error.
+  func throwAnyError() throws {
+    for diag in diags where diag.isAnyError {
+      struct ErrorDiagnostic: Error, CustomStringConvertible {
+        var diag: Diagnostic
+        var description: String { diag.message }
+      }
+      throw Source.LocatedError(ErrorDiagnostic(diag: diag), diag.location)
+    }
+  }
+}
+
+// MARK: Diagnostic construction
+
+extension Diagnostic {
+  init(_ err: ParseError, at loc: SourceLocation) {
+    self.init(.error, "\(err)", at: loc, underlyingParseError: err)
+  }
+
+  init(_ err: FatalParseError, at loc: SourceLocation) {
+    self.init(.fatalError, "\(err)", at: loc)
+  }
+}
+
+extension Diagnostics {
+  mutating func error(_ err: ParseError, at loc: SourceLocation) {
+    append(Diagnostic(err, at: loc))
+  }
+
+  mutating func fatal(_ err: FatalParseError, at loc: SourceLocation) {
+    append(Diagnostic(err, at: loc))
+  }
+}

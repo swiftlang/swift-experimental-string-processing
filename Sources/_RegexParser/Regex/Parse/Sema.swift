@@ -14,14 +14,18 @@
 fileprivate struct RegexValidator {
   let ast: AST
   let captures: CaptureList
+  var diags = Diagnostics()
 
   init(_ ast: AST) {
     self.ast = ast
     self.captures = ast.captureList
   }
 
-  func error(_ kind: ParseError, at loc: SourceLocation) -> Error {
-    Source.LocatedError(kind, loc)
+  mutating func error(_ kind: ParseError, at loc: SourceLocation) {
+    diags.error(kind, at: loc)
+  }
+  mutating func unreachable(_ str: String, at loc: SourceLocation) {
+    diags.fatal(.unreachable(str), at: loc)
   }
 }
 
@@ -30,88 +34,112 @@ extension String {
 }
 
 extension RegexValidator {
-  func validate() throws {
+  mutating func validate() -> AST {
     for opt in ast.globalOptions?.options ?? [] {
-      try validateGlobalMatchingOption(opt)
+      validateGlobalMatchingOption(opt)
     }
-    try validateCaptures()
-    try validateNode(ast.root)
+    validateCaptures()
+    validateNode(ast.root)
+
+    var result = ast
+    result.diags.append(contentsOf: diags)
+    return result
   }
 
-  func validateGlobalMatchingOption(_ opt: AST.GlobalMatchingOption) throws {
+  /// Called when some piece of invalid AST is encountered. We want to ensure
+  /// an error was emitted.
+  mutating func expectInvalid(at loc: SourceLocation) {
+    guard ast.diags.hasAnyError else {
+      unreachable("Invalid, but no error emitted?", at: loc)
+      return
+    }
+  }
+
+  mutating func validateGlobalMatchingOption(_ opt: AST.GlobalMatchingOption) {
     switch opt.kind {
     case .limitDepth, .limitHeap, .limitMatch, .notEmpty, .notEmptyAtStart,
         .noAutoPossess, .noDotStarAnchor, .noJIT, .noStartOpt, .utfMode,
         .unicodeProperties:
       // These are PCRE specific, and not something we're likely to ever
       // support.
-      throw error(.unsupported("global matching option"), at: opt.location)
+      error(.unsupported("global matching option"), at: opt.location)
 
     case .newlineMatching:
       // We have implemented the correct behavior for multi-line literals, but
       // these should also affect '.' and '\N' matching, which we haven't
       // implemented.
-      throw error(.unsupported("newline matching mode"), at: opt.location)
+      error(.unsupported("newline matching mode"), at: opt.location)
 
     case .newlineSequenceMatching:
       // We haven't yet implemented the '\R' matching specifics of these.
-      throw error(
-        .unsupported("newline sequence matching mode"), at: opt.location)
+      error(.unsupported("newline sequence matching mode"), at: opt.location)
     }
   }
 
-  func validateCaptures() throws {
+  mutating func validateCaptures() {
     // TODO: Should this be validated when creating the capture list?
     var usedNames = Set<String>()
     for capture in captures.captures {
       guard let name = capture.name else { continue }
-      guard usedNames.insert(name).inserted else {
-        throw error(.duplicateNamedCapture(name), at: capture.location)
+      if !usedNames.insert(name).inserted {
+        error(.duplicateNamedCapture(name), at: capture.location)
       }
     }
   }
 
-  func validateReference(_ ref: AST.Reference) throws {
+  mutating func validateReference(_ ref: AST.Reference) {
     if let recLevel = ref.recursionLevel {
-      throw error(.unsupported("recursion level"), at: recLevel.location)
+      error(.unsupported("recursion level"), at: recLevel.location)
     }
     switch ref.kind {
-    case .absolute(let i):
-      guard i < captures.captures.count else {
-        throw error(.invalidReference(i), at: ref.innerLoc)
+    case .absolute(let num):
+      guard let i = num.value else {
+        // Should have already been diagnosed.
+        expectInvalid(at: ref.innerLoc)
+        break
+      }
+      if i >= captures.captures.count {
+        error(.invalidReference(i), at: ref.innerLoc)
       }
     case .named(let name):
-      guard captures.hasCapture(named: name) else {
-        throw error(.invalidNamedReference(name), at: ref.innerLoc)
+      // An empty name is already invalid, so don't bother validating.
+      guard !name.isEmpty else { break }
+      if !captures.hasCapture(named: name) {
+        error(.invalidNamedReference(name), at: ref.innerLoc)
       }
-    case .relative:
-      throw error(.unsupported("relative capture reference"), at: ref.innerLoc)
+    case .relative(let num):
+      guard let _ = num.value else {
+        // Should have already been diagnosed.
+        expectInvalid(at: ref.innerLoc)
+        break
+      }
+      error(.unsupported("relative capture reference"), at: ref.innerLoc)
     }
   }
 
-  func validateMatchingOption(_ opt: AST.MatchingOption) throws {
+  mutating func validateMatchingOption(_ opt: AST.MatchingOption) {
     let loc = opt.location
     switch opt.kind {
     case .allowDuplicateGroupNames:
       // Not currently supported as we need to figure out what to do with
       // the capture type.
-      throw error(.unsupported("duplicate group naming"), at: loc)
+      error(.unsupported("duplicate group naming"), at: loc)
 
     case .unicodeWordBoundaries:
-      throw error(.unsupported("unicode word boundary mode"), at: loc)
+      error(.unsupported("unicode word boundary mode"), at: loc)
 
     case .textSegmentWordMode, .textSegmentGraphemeMode:
-      throw error(.unsupported("text segment mode"), at: loc)
+      error(.unsupported("text segment mode"), at: loc)
 
     case .byteSemantics:
-      throw error(.unsupported("byte semantic mode"), at: loc)
+      error(.unsupported("byte semantic mode"), at: loc)
 
     case .unicodeScalarSemantics:
-      throw error(.unsupported("unicode scalar semantic mode"), at: loc)
-      
+      error(.unsupported("unicode scalar semantic mode"), at: loc)
+
     case .graphemeClusterSemantics:
-      throw error(.unsupported("grapheme semantic mode"), at: loc)
-      
+      error(.unsupported("grapheme semantic mode"), at: loc)
+
     case .caseInsensitive, .possessiveByDefault, .reluctantByDefault,
         .singleLine, .multiline, .namedCapturesOnly, .extended, .extraExtended,
         .asciiOnlyDigit, .asciiOnlyWord, .asciiOnlySpace, .asciiOnlyPOSIXProps:
@@ -119,18 +147,18 @@ extension RegexValidator {
     }
   }
 
-  func validateMatchingOptions(_ opts: AST.MatchingOptionSequence) throws {
+  mutating func validateMatchingOptions(_ opts: AST.MatchingOptionSequence) {
     for opt in opts.adding {
-      try validateMatchingOption(opt)
+      validateMatchingOption(opt)
     }
     for opt in opts.removing {
-      try validateMatchingOption(opt)
+      validateMatchingOption(opt)
     }
   }
 
-  func validateBinaryProperty(
+  mutating func validateBinaryProperty(
     _ prop: Unicode.BinaryProperty, at loc: SourceLocation
-  ) throws {
+  ) {
     switch prop {
     case .asciiHexDigit, .alphabetic, .bidiControl, .bidiMirrored, .cased,
         .caseIgnorable, .changesWhenCasefolded, .changesWhenCasemapped,
@@ -153,46 +181,49 @@ extension RegexValidator {
       break
 
     case .expandsOnNFC, .expandsOnNFD, .expandsOnNFKD, .expandsOnNFKC:
-      throw error(.deprecatedUnicode(prop.rawValue.quoted), at: loc)
+      error(.deprecatedUnicode(prop.rawValue.quoted), at: loc)
 
     case .compositionExclusion, .emojiComponent,
         .extendedPictographic, .graphemeLink, .hyphen, .otherAlphabetic,
         .otherDefaultIgnorableCodePoint, .otherGraphemeExtended,
         .otherIDContinue, .otherIDStart, .otherLowercase, .otherMath,
         .otherUppercase, .prependedConcatenationMark:
-      throw error(.unsupported(prop.rawValue.quoted), at: loc)
+      error(.unsupported(prop.rawValue.quoted), at: loc)
     }
   }
 
-  func validateCharacterProperty(
+  mutating func validateCharacterProperty(
     _ prop: AST.Atom.CharacterProperty, at loc: SourceLocation
-  ) throws {
+  ) {
     // TODO: We could re-add the .other case to diagnose unknown properties
     // here instead of in the parser.
     // TODO: Should we store an 'inner location' for the contents of `\p{...}`?
     switch prop.kind {
     case .binary(let b, _):
-      try validateBinaryProperty(b, at: loc)
+      validateBinaryProperty(b, at: loc)
     case .any, .assigned, .ascii, .generalCategory, .posix, .named, .script,
         .scriptExtension, .age, .numericType, .numericValue, .mapping, .ccc:
       break
+    case .invalid:
+      // Should have already been diagnosed.
+      expectInvalid(at: loc)
     case .pcreSpecial:
-      throw error(.unsupported("PCRE property"), at: loc)
+      error(.unsupported("PCRE property"), at: loc)
     case .block:
-      throw error(.unsupported("Unicode block property"), at: loc)
+      error(.unsupported("Unicode block property"), at: loc)
     case .javaSpecial:
-      throw error(.unsupported("Java property"), at: loc)
+      error(.unsupported("Java property"), at: loc)
     }
   }
 
-  func validateEscaped(
+  mutating func validateEscaped(
     _ esc: AST.Atom.EscapedBuiltin, at loc: SourceLocation
-  ) throws {
+  ) {
     switch esc {
     case .resetStartOfMatch, .singleDataUnit,
         // '\N' needs to be emitted using 'emitAny'.
         .notNewline:
-      throw error(.unsupported("'\\\(esc.character)'"), at: loc)
+      error(.unsupported("'\\\(esc.character)'"), at: loc)
 
     // Character classes.
     case .decimalDigit, .notDecimalDigit, .whitespace, .notWhitespace,
@@ -217,34 +248,34 @@ extension RegexValidator {
     }
   }
 
-  func validateAtom(_ atom: AST.Atom, inCustomCharacterClass: Bool) throws {
+  mutating func validateAtom(_ atom: AST.Atom, inCustomCharacterClass: Bool) {
     switch atom.kind {
     case .escaped(let esc):
-      try validateEscaped(esc, at: atom.location)
+      validateEscaped(esc, at: atom.location)
 
     case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
       // We need to implement the scalar computations for these.
-      throw error(.unsupported("control sequence"), at: atom.location)
+      error(.unsupported("control sequence"), at: atom.location)
 
     case .property(let p):
-      try validateCharacterProperty(p, at: atom.location)
+      validateCharacterProperty(p, at: atom.location)
 
     case .backreference(let r):
-      try validateReference(r)
+      validateReference(r)
 
     case .subpattern:
-      throw error(.unsupported("subpattern"), at: atom.location)
+      error(.unsupported("subpattern"), at: atom.location)
 
     case .callout:
       // These are PCRE and Oniguruma specific, supporting them is future work.
-      throw error(.unsupported("callout"), at: atom.location)
+      error(.unsupported("callout"), at: atom.location)
 
     case .backtrackingDirective:
       // These are PCRE-specific, and are unlikely to be fully supported.
-      throw error(.unsupported("backtracking directive"), at: atom.location)
+      error(.unsupported("backtracking directive"), at: atom.location)
 
     case .changeMatchingOptions(let opts):
-      try validateMatchingOptions(opts)
+      validateMatchingOptions(opts)
 
     case .namedCharacter:
       // TODO: We should error on unknown Unicode scalar names.
@@ -253,77 +284,89 @@ extension RegexValidator {
     case .scalarSequence:
       // Not currently supported in a custom character class.
       if inCustomCharacterClass {
-        throw error(.unsupported("scalar sequence in custom character class"),
-                    at: atom.location)
+        error(.unsupported("scalar sequence in custom character class"),
+              at: atom.location)
       }
 
     case .char, .scalar, .startOfLine, .endOfLine, .any:
       break
+
+    case .invalid:
+      // Should have already been diagnosed.
+      expectInvalid(at: atom.location)
+      break
     }
   }
 
-  func validateCustomCharacterClass(_ c: AST.CustomCharacterClass) throws {
+  mutating func validateCustomCharacterClass(_ c: AST.CustomCharacterClass) {
     for member in c.members {
-      try validateCharacterClassMember(member)
+      validateCharacterClassMember(member)
     }
   }
 
-  func validateCharacterClassRange(
+  mutating func validateCharacterClassRange(
     _ range: AST.CustomCharacterClass.Range
-  ) throws {
+  ) {
     let lhs = range.lhs
     let rhs = range.rhs
 
-    try validateAtom(lhs, inCustomCharacterClass: true)
-    try validateAtom(rhs, inCustomCharacterClass: true)
+    validateAtom(lhs, inCustomCharacterClass: true)
+    validateAtom(rhs, inCustomCharacterClass: true)
 
     guard lhs.isValidCharacterClassRangeBound else {
-      throw error(.invalidCharacterClassRangeOperand, at: lhs.location)
+      error(.invalidCharacterClassRangeOperand, at: lhs.location)
+      return
     }
     guard rhs.isValidCharacterClassRangeBound else {
-      throw error(.invalidCharacterClassRangeOperand, at: rhs.location)
+      error(.invalidCharacterClassRangeOperand, at: rhs.location)
+      return
     }
 
     guard let lhsChar = lhs.literalCharacterValue else {
-      throw error(
+      error(
         .unsupported("character class range operand"), at: lhs.location)
+      return
     }
 
     guard let rhsChar = rhs.literalCharacterValue else {
-      throw error(
+      error(
         .unsupported("character class range operand"), at: rhs.location)
+      return
     }
 
-    guard lhsChar <= rhsChar else {
-      throw error(
+    if lhsChar > rhsChar {
+      error(
         .invalidCharacterRange(from: lhsChar, to: rhsChar), at: range.dashLoc)
     }
   }
 
-  func validateCharacterClassMember(
+  mutating func validateCharacterClassMember(
     _ member: AST.CustomCharacterClass.Member
-  ) throws {
+  ) {
     switch member {
     case .custom(let c):
-      try validateCustomCharacterClass(c)
+      validateCustomCharacterClass(c)
 
     case .range(let r):
-      try validateCharacterClassRange(r)
+      validateCharacterClassRange(r)
 
     case .atom(let a):
-      try validateAtom(a, inCustomCharacterClass: true)
+      validateAtom(a, inCustomCharacterClass: true)
 
     case .setOperation(let lhs, _, let rhs):
-      for lh in lhs { try validateCharacterClassMember(lh) }
-      for rh in rhs { try validateCharacterClassMember(rh) }
+      for lh in lhs { validateCharacterClassMember(lh) }
+      for rh in rhs { validateCharacterClassMember(rh) }
 
     case .quote, .trivia:
       break
     }
   }
 
-  func validateGroup(_ group: AST.Group) throws {
+  mutating func validateGroup(_ group: AST.Group) {
     let kind = group.kind
+    if let name = kind.value.name, name.isEmpty {
+      expectInvalid(at: kind.location)
+    }
     switch kind.value {
     case .capture, .namedCapture, .nonCapture, .lookahead, .negativeLookahead,
         .atomicNonCapturing:
@@ -331,79 +374,83 @@ extension RegexValidator {
 
     case .balancedCapture:
       // These are .NET specific, and kinda niche.
-      throw error(.unsupported("balanced capture"), at: kind.location)
+      error(.unsupported("balanced capture"), at: kind.location)
 
     case .nonCaptureReset:
       // We need to figure out how these interact with typed captures.
-      throw error(.unsupported("branch reset group"), at: kind.location)
+      error(.unsupported("branch reset group"), at: kind.location)
 
     case .nonAtomicLookahead:
-      throw error(.unsupported("non-atomic lookahead"), at: kind.location)
+      error(.unsupported("non-atomic lookahead"), at: kind.location)
 
     case .lookbehind, .negativeLookbehind, .nonAtomicLookbehind:
-      throw error(.unsupported("lookbehind"), at: kind.location)
+      error(.unsupported("lookbehind"), at: kind.location)
 
     case .scriptRun, .atomicScriptRun:
-      throw error(.unsupported("script run"), at: kind.location)
+      error(.unsupported("script run"), at: kind.location)
 
     case .changeMatchingOptions(let opts):
-      try validateMatchingOptions(opts)
+      validateMatchingOptions(opts)
     }
-    try validateNode(group.child)
+    validateNode(group.child)
   }
 
-  func validateQuantification(_ quant: AST.Quantification) throws {
-    try validateNode(quant.child)
-    guard quant.child.isQuantifiable else {
-      throw error(.notQuantifiable, at: quant.child.location)
+  mutating func validateQuantification(_ quant: AST.Quantification) {
+    validateNode(quant.child)
+    if !quant.child.isQuantifiable {
+      error(.notQuantifiable, at: quant.child.location)
     }
     switch quant.amount.value {
     case .range(let lhs, let rhs):
-      guard lhs.value <= rhs.value else {
-        throw error(
-          .invalidQuantifierRange(lhs.value, rhs.value), at: quant.location)
+      guard let lhs = lhs.value, let rhs = rhs.value else {
+        // Should have already been diagnosed.
+        expectInvalid(at: quant.location)
+        break
+      }
+      if lhs > rhs {
+        error(.invalidQuantifierRange(lhs, rhs), at: quant.location)
       }
     case .zeroOrMore, .oneOrMore, .zeroOrOne, .exactly, .nOrMore, .upToN:
       break
     }
   }
 
-  func validateNode(_ node: AST.Node) throws {
+  mutating func validateNode(_ node: AST.Node) {
     switch node {
     case .alternation(let a):
       for branch in a.children {
-        try validateNode(branch)
+        validateNode(branch)
       }
     case .concatenation(let c):
       for child in c.children {
-        try validateNode(child)
+        validateNode(child)
       }
 
     case .group(let g):
-      try validateGroup(g)
+      validateGroup(g)
 
     case .conditional(let c):
       // Note even once we get runtime support for this, we need to change the
       // parsing to incorporate what is specified in the syntax proposal.
-      throw error(.unsupported("conditional"), at: c.location)
+      error(.unsupported("conditional"), at: c.location)
 
     case .quantification(let q):
-      try validateQuantification(q)
+      validateQuantification(q)
 
     case .atom(let a):
-      try validateAtom(a, inCustomCharacterClass: false)
+      validateAtom(a, inCustomCharacterClass: false)
 
     case .customCharacterClass(let c):
-      try validateCustomCharacterClass(c)
+      validateCustomCharacterClass(c)
 
     case .absentFunction(let a):
       // These are Oniguruma specific.
-      throw error(.unsupported("absent function"), at: a.location)
+      error(.unsupported("absent function"), at: a.location)
 
     case .interpolation(let i):
       // This is currently rejected in the parser for better diagnostics, but
       // reject here too until we get runtime support.
-      throw error(.unsupported("interpolation"), at: i.location)
+      error(.unsupported("interpolation"), at: i.location)
 
     case .quote, .trivia, .empty:
       break
@@ -412,6 +459,7 @@ extension RegexValidator {
 }
 
 /// Check a regex AST for semantic validity.
-public func validate(_ ast: AST) throws {
-  try RegexValidator(ast).validate()
+public func validate(_ ast: AST) -> AST {
+  var validator = RegexValidator(ast)
+  return validator.validate()
 }
