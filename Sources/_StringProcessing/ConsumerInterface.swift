@@ -13,13 +13,10 @@
 
 extension Character {
   var singleScalarAsciiValue: UInt8? {
-    if let val = asciiValue, self != "\r\n" {
-      return val
-    }
-    return nil
+    guard self != "\r\n" else { return nil }
+    return asciiValue
   }
 }
-
 
 extension DSLTree.Node {
   /// Attempt to generate a consumer from this AST node

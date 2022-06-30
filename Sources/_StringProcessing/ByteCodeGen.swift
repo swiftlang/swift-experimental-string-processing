@@ -94,14 +94,18 @@ fileprivate extension Compiler.ByteCodeGen {
         }
       } else {
         if optimizationsEnabled && s.allSatisfy({char in char.isASCII}) {
-          for char in s {
+          for char in s.dropLast(1) {
             // Note: only cr-lf is multiple scalars
             for scalar in char.unicodeScalars {
-              // Only boundary check if we are the last scalar in the last character
-              // to make sure that there isn't a combining scalar after the quoted literal
-              let boundaryCheck = char == s.last! && scalar == char.unicodeScalars.last!
-              builder.buildMatchScalar(scalar, boundaryCheck: boundaryCheck)
+              builder.buildMatchScalar(scalar, boundaryCheck: false)
             }
+          }
+          let lastChar = s.last!
+          for scalar in lastChar.unicodeScalars {
+            // Only boundary check if we are the last scalar in the last character
+            // to make sure that there isn't a combining scalar after the quoted literal
+            let boundaryCheck = scalar == lastChar.unicodeScalars.last!
+            builder.buildMatchScalar(scalar, boundaryCheck: boundaryCheck)
           }
         } else {
           builder.buildMatchSequence(s)
@@ -286,7 +290,7 @@ fileprivate extension Compiler.ByteCodeGen {
       return
     }
     
-    if optimizationsEnabled { // lily note: should we just do this unconditionally?
+    if optimizationsEnabled { // should we just do this unconditionally?
       builder.buildMatchScalar(s, boundaryCheck: false)
     } else {
       builder.buildConsume(by: consumeScalar {
