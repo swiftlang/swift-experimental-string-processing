@@ -853,25 +853,38 @@ extension DSLTree.Node {
     _ node: DSLTree.Node
   ) -> DSLTree.Node {
     // TODO: Throw these as errors
-    assert(range.lowerBound >= 0, "Cannot specify a negative lower bound")
-    assert(!range.isEmpty, "Cannot specify an empty range")
-    
-    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
-    
-    switch (range.lowerBound, range.upperBound) {
-    case (0, Int.max): // 0...
-      return .quantification(.zeroOrMore, kind, node)
-    case (1, Int.max): // 1...
-      return .quantification(.oneOrMore, kind, node)
-    case _ where range.count == 1: // ..<1 or ...0 or any range with count == 1
+    precondition(range.lowerBound >= 0, "Cannot specify a negative lower bound")
+    precondition(!range.isEmpty, "Cannot specify an empty range")
+
+    let kind: DSLTree.QuantificationKind = behavior
+      .map { .explicit($0.dslTreeKind) } ?? .default
+
+    // The upper bound needs adjusting down as
+    // `.quantification` expects a closed range.
+    let lower = range.lowerBound
+    let upperInclusive = range.upperBound - 1
+
+    // Unbounded cases
+    if range.upperBound == Int.max {
+      switch lower {
+      case 0: // 0...
+        return .quantification(.zeroOrMore, kind, node)
+      case 1: // 1...
+        return .quantification(.oneOrMore, kind, node)
+      default: // n...
+        return .quantification(.nOrMore(lower), kind, node)
+      }
+    }
+    if range.count == 1 {
+      // ..<1 or ...0 or any range with count == 1
       // Note: `behavior` is ignored in this case
-      return .quantification(.exactly(range.lowerBound), .default, node)
-    case (0, _): // 0..<n or 0...n or ..<n or ...n
-      return .quantification(.upToN(range.upperBound), kind, node)
-    case (_, Int.max): // n...
-      return .quantification(.nOrMore(range.lowerBound), kind, node)
-    default: // any other range
-      return .quantification(.range(range.lowerBound, range.upperBound), kind, node)
+      return .quantification(.exactly(lower), .default, node)
+    }
+    switch lower {
+    case 0: // 0..<n or 0...n or ..<n or ...n
+      return .quantification(.upToN(upperInclusive), kind, node)
+    default:
+      return .quantification(.range(lower, upperInclusive), kind, node)
     }
   }
 }
