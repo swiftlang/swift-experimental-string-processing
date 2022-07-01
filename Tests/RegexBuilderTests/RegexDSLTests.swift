@@ -1052,7 +1052,7 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(str.wholeMatch(of: parser)?.1, version)
     }
   }
-  
+
   func testZeroWidthConsumer() throws {
     struct Trace: CustomConsumingRegexComponent {
       typealias RegexOutput = Void
@@ -1087,6 +1087,26 @@ class RegexDSLTests: XCTestCase {
             ^
       
       """)
+  }
+
+  func testRegexComponentBuilderResultType() {
+    // Test that the user can declare a closure or computed property marked with
+    // `@RegexComponentBuilder` with `Regex` as the result type.
+    @RegexComponentBuilder
+    var unaryWithSingleNonRegex: Regex<Substring> {
+      OneOrMore("a")
+    }
+    @RegexComponentBuilder
+    var multiComponent: Regex<Substring> {
+      OneOrMore("a")
+      "b"
+    }
+    struct MyCustomRegex: RegexComponent {
+      @RegexComponentBuilder
+      var regex: Regex<Substring> {
+        OneOrMore("a")
+      }
+    }
   }
 }
 

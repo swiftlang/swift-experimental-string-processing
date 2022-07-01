@@ -11,11 +11,6 @@
 
 @_spi(RegexBuilder) import _StringProcessing
 
-// FIXME(rdar://92459215): We should be using 'some RegexComponent' instead of
-// <R: RegexComponent> for the methods below that don't impose any additional
-// requirements on the type. Currently the generic parameter is needed to work
-// around a compiler issue.
-
 extension BidirectionalCollection where SubSequence == Substring {
   /// Matches a regex in its entirety, where the regex is created by
   /// the given closure.
