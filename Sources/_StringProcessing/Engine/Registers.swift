@@ -28,53 +28,37 @@ extension Processor {
     //
     // TODO: Degenericize Processor and store Strings
     var sequences: [[Element]] = []
+    
+    var bitsets: [DSLTree.CustomCharacterClass.AsciiBitset]
 
-    var consumeFunctions: [MEProgram<Input>.ConsumeFunction]
+    var consumeFunctions: [MEProgram.ConsumeFunction]
 
-    var assertionFunctions: [MEProgram<Input>.AssertionFunction]
+    var assertionFunctions: [MEProgram.AssertionFunction]
 
     // Captured-value constructors
-    var transformFunctions: [MEProgram<Input>.TransformFunction]
+    var transformFunctions: [MEProgram.TransformFunction]
 
     // Value-constructing matchers
-    var matcherFunctions: [MEProgram<Input>.MatcherFunction]
-
-    // currently, these are for comments and abort messages
-    var strings: [String]
+    var matcherFunctions: [MEProgram.MatcherFunction]
 
     // MARK: writeable, resettable
 
-    // currently, hold output of assertions
-    var bools: [Bool] // TODO: bitset
-
     // currently, useful for range-based quantification
     var ints: [Int]
-
-    // Currently, used for `movePosition` and `matchSlice`
-    var positions: [Position] = []
 
     var values: [Any]
   }
 }
 
 extension Processor.Registers {
-  subscript(_ i: StringRegister) -> String {
-    strings[i.rawValue]
-  }
+  typealias Input = String
+
   subscript(_ i: SequenceRegister) -> [Input.Element] {
     sequences[i.rawValue]
   }
   subscript(_ i: IntRegister) -> Int {
     get { ints[i.rawValue] }
     set { ints[i.rawValue] = newValue }
-  }
-  subscript(_ i: BoolRegister) -> Bool {
-    get { bools[i.rawValue] }
-    set { bools[i.rawValue] = newValue }
-  }
-  subscript(_ i: PositionRegister) -> Input.Index {
-    get { positions[i.rawValue] }
-    set { positions[i.rawValue] = newValue }
   }
   subscript(_ i: ValueRegister) -> Any {
     get { values[i.rawValue] }
@@ -85,24 +69,29 @@ extension Processor.Registers {
   subscript(_ i: ElementRegister) -> Input.Element {
     elements[i.rawValue]
   }
-  subscript(_ i: ConsumeFunctionRegister) -> MEProgram<Input>.ConsumeFunction {
+  subscript(
+    _ i: AsciiBitsetRegister
+  ) -> DSLTree.CustomCharacterClass.AsciiBitset {
+    bitsets[i.rawValue]
+  }
+  subscript(_ i: ConsumeFunctionRegister) -> MEProgram.ConsumeFunction {
     consumeFunctions[i.rawValue]
   }
-  subscript(_ i: AssertionFunctionRegister) -> MEProgram<Input>.AssertionFunction {
+  subscript(_ i: AssertionFunctionRegister) -> MEProgram.AssertionFunction {
     assertionFunctions[i.rawValue]
   }
-  subscript(_ i: TransformRegister) -> MEProgram<Input>.TransformFunction {
+  subscript(_ i: TransformRegister) -> MEProgram.TransformFunction {
     transformFunctions[i.rawValue]
   }
-  subscript(_ i: MatcherRegister) -> MEProgram<Input>.MatcherFunction {
+  subscript(_ i: MatcherRegister) -> MEProgram.MatcherFunction {
     matcherFunctions[i.rawValue]
   }
 }
 
 extension Processor.Registers {
   init(
-    _ program: MEProgram<Input>,
-    _ sentinel: Input.Index
+    _ program: MEProgram,
+    _ sentinel: String.Index
   ) {
     let info = program.registerInfo
 
@@ -111,6 +100,9 @@ extension Processor.Registers {
 
     self.sequences = program.staticSequences
     assert(sequences.count == info.sequences)
+
+    self.bitsets = program.staticBitsets
+    assert(bitsets.count == info.bitsets)
 
     self.consumeFunctions = program.staticConsumeFunctions
     assert(consumeFunctions.count == info.consumeFunctions)
@@ -124,23 +116,14 @@ extension Processor.Registers {
     self.matcherFunctions = program.staticMatcherFunctions
     assert(matcherFunctions.count == info.matcherFunctions)
 
-    self.strings = program.staticStrings
-    assert(strings.count == info.strings)
-
-    self.bools = Array(repeating: false, count: info.bools)
-
     self.ints = Array(repeating: 0, count: info.ints)
-
-    self.positions = Array(repeating: sentinel, count: info.positions)
 
     self.values = Array(
       repeating: SentinelValue(), count: info.values)
   }
 
   mutating func reset(sentinel: Input.Index) {
-    self.bools._setAll(to: false)
     self.ints._setAll(to: 0)
-    self.positions._setAll(to: sentinel)
     self.values._setAll(to: SentinelValue())
   }
 }
@@ -160,6 +143,7 @@ extension MEProgram {
     var sequences = 0
     var bools = 0
     var strings = 0
+    var bitsets = 0
     var consumeFunctions = 0
     var assertionFunctions = 0
     var transformFunctions = 0
@@ -189,10 +173,7 @@ extension Processor.Registers: CustomStringConvertible {
 
     return """
       \(formatRegisters("elements", elements))\
-      \(formatRegisters("bools", bools))\
-      \(formatRegisters("strings", strings))\
       \(formatRegisters("ints", ints))\
-      \(formatRegisters("positions", positions))\
 
       """    
   }

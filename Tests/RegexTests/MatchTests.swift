@@ -14,50 +14,35 @@ import XCTest
 @testable import _StringProcessing
 
 struct MatchError: Error {
-    var message: String
-    init(_ message: String) {
-        self.message = message
-    }
-}
-
-extension Executor {
-  func _firstMatch(
-    _ regex: String, input: String,
-    syntax: SyntaxOptions = .traditional,
-    enableTracing: Bool = false
-  ) throws -> (match: Substring, captures: [Substring?]) {
-    // TODO: This should be a CollectionMatcher API to call...
-    // Consumer -> searcher algorithm
-    var start = input.startIndex
-    while true {
-      if let result = try! self.dynamicMatch(
-        input,
-        in: start..<input.endIndex,
-        .partialFromFront
-      ) {
-        let caps = result.anyRegexOutput.slices(from: input)
-        return (input[result.range], caps)
-      } else if start == input.endIndex {
-        throw MatchError("match not found for \(regex) in \(input)")
-      } else {
-        input.formIndex(after: &start)
-      }
-    }
+  var message: String
+  init(_ message: String) {
+    self.message = message
   }
 }
 
 func _firstMatch(
-  _ regex: String,
+  _ regexStr: String,
   input: String,
-  syntax: SyntaxOptions = .traditional,
-  enableTracing: Bool = false
+  validateOptimizations: Bool,
+  syntax: SyntaxOptions = .traditional
 ) throws -> (String, [String?]) {
-  var executor = try _compileRegex(regex, syntax)
-  executor.engine.enableTracing = enableTracing
-  let (str, caps) = try executor._firstMatch(
-    regex, input: input, enableTracing: enableTracing)
-  let capStrs = caps.map { $0 == nil ? nil : String($0!) }
-  return (String(str), capStrs)
+  var regex = try Regex(regexStr, syntax: syntax)
+  guard let result = try regex.firstMatch(in: input) else {
+    throw MatchError("match not found for \(regexStr) in \(input)")
+  }
+  let caps = result.output.slices(from: input)
+  
+  if validateOptimizations {
+    regex._setCompilerOptionsForTesting(.disableOptimizations)
+    guard let unoptResult = try regex.firstMatch(in: input) else {
+      throw MatchError("match not found for unoptimized \(regexStr) in \(input)")
+    }
+    XCTAssertEqual(
+      String(input[result.range]),
+      String(input[unoptResult.range]),
+      "Unoptimized regex returned a different result")
+  }
+  return (String(input[result.range]), caps.map { $0.map(String.init) })
 }
 
 // TODO: multiple-capture variant
@@ -66,9 +51,9 @@ func flatCaptureTest(
   _ regex: String,
   _ tests: (input: String, expect: [String?]?)...,
   syntax: SyntaxOptions = .traditional,
-  enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  validateOptimizations: Bool = true,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -77,8 +62,8 @@ func flatCaptureTest(
       guard var (_, caps) = try? _firstMatch(
         regex,
         input: test,
-        syntax: syntax,
-        enableTracing: enableTracing
+        validateOptimizations: validateOptimizations,
+        syntax: syntax
       ) else {
         if expect == nil {
           continue
@@ -127,6 +112,7 @@ func matchTest(
   enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  validateOptimizations: Bool = true,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -139,6 +125,7 @@ func matchTest(
       enableTracing: enableTracing,
       dumpAST: dumpAST,
       xfail: xfail,
+      validateOptimizations: validateOptimizations,
       file: file,
       line: line)
   }
@@ -155,6 +142,7 @@ func firstMatchTest(
   enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  validateOptimizations: Bool = true,
   file: StaticString = #filePath,
   line: UInt = #line
 ) {
@@ -162,8 +150,8 @@ func firstMatchTest(
     let (found, _) = try _firstMatch(
       regex,
       input: input,
-      syntax: syntax,
-      enableTracing: enableTracing)
+      validateOptimizations: validateOptimizations,
+      syntax: syntax)
 
     if xfail {
       XCTAssertNotEqual(found, match, file: file, line: line)
@@ -601,6 +589,44 @@ extension RegexTests {
     // Character class subtraction
     firstMatchTest("[a-d--a-c]", input: "123abcdxyz", match: "d")
 
+    // Inverted character class
+    matchTest(#"[^a]"#,
+              ("💿", true),
+              ("a\u{301}", true),
+              ("A", true),
+              ("a", false))
+
+    matchTest("[a]",
+      ("a\u{301}", false))
+
+    // CR-LF special case: \r\n is a single character with ascii value equal
+    // to \n, so make sure the ascii bitset optimization handles this correctly
+    matchTest("[\r\n]",
+      ("\r\n", true),
+      ("\n", false),
+      ("\r", false))
+    // check that in scalar mode this case is handled correctly
+    // in scalar semantics the character "\r\n" in the character class is
+    // interpreted as matching the scalars "\r" or "\n".
+    // It does not fully match the character "\r\n" because the character class
+    // in scalar mode will only match one scalar
+    do {
+      let regex = try Regex("[\r\n]").matchingSemantics(.unicodeScalar)
+      XCTAssertEqual("\r", try regex.wholeMatch(in: "\r")?.0)
+      XCTAssertEqual("\n", try regex.wholeMatch(in: "\n")?.0)
+      XCTAssertEqual(nil, try regex.wholeMatch(in: "\r\n")?.0)
+    } catch {
+      XCTFail("\(error)", file: #filePath, line: #line)
+    }
+
+    matchTest("[^\r\n]",
+      ("\r\n", false),
+      ("\n", true),
+      ("\r", true))
+    matchTest("[\n\r]",
+      ("\n", true),
+      ("\r", true))
+
     firstMatchTest("[-]", input: "123-abcxyz", match: "-")
 
     // These are metacharacters in certain contexts, but normal characters
@@ -947,7 +973,7 @@ extension RegexTests {
       #"\d{3}(?<!USD\d{3})"#, input: "Price: JYP100", match: "100", xfail: true)
   }
 
-  func testMatchAnchors() {
+  func testMatchAnchors() throws {
     // MARK: Anchors
     firstMatchTests(
       #"^\d+"#,
@@ -1015,7 +1041,13 @@ extension RegexTests {
       ("123 456", "23"))
 
     // TODO: \G and \K
-
+    do {
+      let regex = try Regex(#"\Gab"#, as: Substring.self)
+      XCTExpectFailure {
+        XCTAssertEqual("abab".matches(of: regex).map(\.output), ["ab", "ab"])
+      }
+    }
+    
     // TODO: Oniguruma \y and \Y
     firstMatchTests(
       #"\u{65}"#,             // Scalar 'e' is present in both
@@ -1395,6 +1427,14 @@ extension RegexTests {
     firstMatchTest(#"(?xx)[ \t]+"#, input: " \t \t", match: "\t")
 
     firstMatchTest("(?xx)[ a && ab ]+", input: " aaba ", match: "aa")
+    
+    // Preserve whitespace in quoted section inside extended syntax region
+    firstMatchTest(
+      #"(?x) a b \Q c d \E e f"#, input: "ab c d ef", match: "ab c d ef")
+    firstMatchTest(
+      #"(?x)[a b]+ _ [a\Q b\E]+"#, input: "aba_ a b a", match: "aba_ a b a")
+    firstMatchTest(
+      #"(?x)[a b]+ _ [a\Q b\E]+"#, input: "aba _ a b a", match: nil)
   }
   
   func testASCIIClasses() {
@@ -1473,6 +1513,50 @@ extension RegexTests {
     XCTAssertFalse(string.contains(regex))
     let allRanges = string.ranges(of: regex.anchorsMatchLineEndings())
     XCTAssertEqual(allRanges.count, 5)
+  }
+  
+  func testSubstringAnchors() throws {
+    let string = "123abc456def789"
+    let trimmed = string.dropFirst(3).dropLast(3) // "abc456def"
+    let prefixLetters = try Regex(#"^[a-z]+"#, as: Substring.self)
+    let postfixLetters = try Regex(#"[a-z]+$"#, as: Substring.self)
+
+    // start anchor (^) should match beginning of substring
+    XCTAssertEqual(trimmed.firstMatch(of: prefixLetters)?.output, "abc")
+    XCTAssertEqual(trimmed.replacing(prefixLetters, with: ""), "456def")
+    
+    // end anchor ($) should match end of substring
+    XCTAssertEqual(trimmed.firstMatch(of: postfixLetters)?.output, "def")
+    XCTAssertEqual(trimmed.replacing(postfixLetters, with: ""), "abc456")
+
+    // start anchor (^) should _not_ match beginning of replaced subrange
+    XCTAssertEqual(
+      string.replacing(
+        prefixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      string)
+    // end anchor ($) should _not_ match end of replaced subrange
+    XCTAssertEqual(
+      string.replacing(
+        postfixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      string)
+    
+    // if subrange == actual subject bounds, anchors _do_ match
+    XCTAssertEqual(
+      trimmed.replacing(
+        prefixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      "456def")
+    XCTAssertEqual(
+      trimmed.replacing(
+        postfixLetters,
+        with: "",
+        subrange: trimmed.startIndex..<trimmed.endIndex),
+      "abc456")
   }
   
   func testMatchingOptionsScope() {

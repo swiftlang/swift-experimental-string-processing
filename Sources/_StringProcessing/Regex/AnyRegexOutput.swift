@@ -145,6 +145,10 @@ extension Regex where Output == AnyRegexOutput {
   public init(_ pattern: String) throws {
     self.init(ast: try parse(pattern, .traditional))
   }
+  
+  internal init(_ pattern: String, syntax: SyntaxOptions) throws {
+    self.init(ast: try parse(pattern, syntax))
+  }
 }
 
 @available(SwiftStdlib 5.7, *)

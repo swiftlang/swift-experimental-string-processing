@@ -16,6 +16,7 @@ class Compiler {
 
   // TODO: Or are these stored on the tree?
   var options = MatchingOptions()
+  private var compileOptions: CompileOptions = .default
 
   init(ast: AST) {
     self.tree = ast.dslTree
@@ -25,21 +26,20 @@ class Compiler {
     self.tree = tree
   }
 
-  __consuming func emit() throws -> Program {
+  init(tree: DSLTree, compileOptions: CompileOptions) {
+    self.tree = tree
+    self.compileOptions = compileOptions
+  }
+
+  __consuming func emit() throws -> MEProgram {
     // TODO: Handle global options
     var codegen = ByteCodeGen(
-      options: options, captureList: tree.captureList
-    )
+      options: options,
+      compileOptions:
+        compileOptions,
+      captureList: tree.captureList)
     return try codegen.emitRoot(tree.root)
   }
-}
-
-func _compileRegex(
-  _ regex: String, _ syntax: SyntaxOptions = .traditional
-) throws -> Executor {
-  let ast = try parse(regex, syntax)
-  let program = try Compiler(ast: ast).emit()
-  return Executor(program: program)
 }
 
 // An error produced when compiling a regular expression.
@@ -52,5 +52,37 @@ enum RegexCompilationError: Error, CustomStringConvertible {
     case .uncapturedReference:
       return "Found a reference used before it captured any match."
     }
+  }
+}
+
+// Testing support
+@available(SwiftStdlib 5.7, *)
+func _compileRegex(
+  _ regex: String,
+  _ syntax: SyntaxOptions = .traditional,
+  _ semanticLevel: RegexSemanticLevel? = nil
+) throws -> Executor {
+  let ast = try parse(regex, syntax)
+  let dsl: DSLTree
+
+  switch semanticLevel?.base {
+  case .graphemeCluster:
+    let sequence = AST.MatchingOptionSequence(adding: [.init(.graphemeClusterSemantics, location: .fake)])
+    dsl = DSLTree(.nonCapturingGroup(.init(ast: .changeMatchingOptions(sequence)), ast.dslTree.root))
+  case .unicodeScalar:
+    let sequence = AST.MatchingOptionSequence(adding: [.init(.unicodeScalarSemantics, location: .fake)])
+    dsl = DSLTree(.nonCapturingGroup(.init(ast: .changeMatchingOptions(sequence)), ast.dslTree.root))
+  case .none:
+    dsl = ast.dslTree
+  }
+  let program = try Compiler(tree: dsl).emit()
+  return Executor(program: program)
+}
+
+extension Compiler {
+  struct CompileOptions: OptionSet {
+    let rawValue: Int
+    static let disableOptimizations = CompileOptions(rawValue: 1)
+    static let `default`: CompileOptions = []
   }
 }

@@ -3,20 +3,28 @@
 extension Compiler {
   struct ByteCodeGen {
     var options: MatchingOptions
-    var builder = Program.Builder()
+    var builder = MEProgram.Builder()
     /// A Boolean indicating whether the first matchable atom has been emitted.
     /// This is used to determine whether to apply initial options.
     var hasEmittedFirstMatchableAtom = false
 
-    init(options: MatchingOptions, captureList: CaptureList) {
+    private let compileOptions: CompileOptions
+    fileprivate var optimizationsEnabled: Bool { !compileOptions.contains(.disableOptimizations) }
+
+    init(
+      options: MatchingOptions,
+      compileOptions: CompileOptions,
+      captureList: CaptureList
+    ) {
       self.options = options
+      self.compileOptions = compileOptions
       self.builder.captureList = captureList
     }
   }
 }
 
 extension Compiler.ByteCodeGen {
-  mutating func emitRoot(_ root: DSLTree.Node) throws -> Program {
+  mutating func emitRoot(_ root: DSLTree.Node) throws -> MEProgram {
     // The whole match (`.0` element of output) is equivalent to an implicit
     // capture over the entire regex.
     try emitNode(.capture(name: nil, reference: nil, root))
@@ -99,26 +107,26 @@ fileprivate extension Compiler.ByteCodeGen {
     // need to supply both a slice bounds and a per-search bounds.
     switch kind {
     case .startOfSubject:
-      builder.buildAssert { (input, pos, bounds) in
-        pos == input.startIndex
+      builder.buildAssert { (input, pos, subjectBounds) in
+        pos == subjectBounds.lowerBound
       }
 
     case .endOfSubjectBeforeNewline:
-      builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
-        if pos == input.endIndex { return true }
+      builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, subjectBounds) in
+        if pos == subjectBounds.upperBound { return true }
         switch semanticLevel {
         case .graphemeCluster:
-          return input.index(after: pos) == input.endIndex
+          return input.index(after: pos) == subjectBounds.upperBound
            && input[pos].isNewline
         case .unicodeScalar:
-          return input.unicodeScalars.index(after: pos) == input.endIndex
+          return input.unicodeScalars.index(after: pos) == subjectBounds.upperBound
            && input.unicodeScalars[pos].isNewline
         }
       }
 
     case .endOfSubject:
-      builder.buildAssert { (input, pos, bounds) in
-        pos == input.endIndex
+      builder.buildAssert { (input, pos, subjectBounds) in
+        pos == subjectBounds.upperBound
       }
 
     case .resetStartOfMatch:
@@ -127,9 +135,10 @@ fileprivate extension Compiler.ByteCodeGen {
 
     case .firstMatchingPositionInSubject:
       // TODO: We can probably build a nice model with API here
-      builder.buildAssert { (input, pos, bounds) in
-        pos == bounds.lowerBound
-      }
+      
+      // FIXME: This needs to be based on `searchBounds`,
+      // not the `subjectBounds` given as an argument here
+      builder.buildAssert { (input, pos, subjectBounds) in false }
 
     case .textSegment:
       builder.buildAssert { (input, pos, _) in
@@ -144,9 +153,13 @@ fileprivate extension Compiler.ByteCodeGen {
       }
 
     case .startOfLine:
+      // FIXME: Anchor.startOfLine must always use this first branch
+      // The behavior of `^` should depend on `anchorsMatchNewlines`, but
+      // the DSL-based `.startOfLine` anchor should always match the start
+      // of a line. Right now we don't distinguish between those anchors.
       if options.anchorsMatchNewlines {
-        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
-          if pos == input.startIndex { return true }
+        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, subjectBounds) in
+          if pos == subjectBounds.lowerBound { return true }
           switch semanticLevel {
           case .graphemeCluster:
             return input[input.index(before: pos)].isNewline
@@ -155,15 +168,19 @@ fileprivate extension Compiler.ByteCodeGen {
           }
         }
       } else {
-        builder.buildAssert { (input, pos, bounds) in
-          pos == input.startIndex
+        builder.buildAssert { (input, pos, subjectBounds) in
+          pos == subjectBounds.lowerBound
         }
       }
       
     case .endOfLine:
+      // FIXME: Anchor.endOfLine must always use this first branch
+      // The behavior of `$` should depend on `anchorsMatchNewlines`, but
+      // the DSL-based `.endOfLine` anchor should always match the end
+      // of a line. Right now we don't distinguish between those anchors.
       if options.anchorsMatchNewlines {
-        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, bounds) in
-          if pos == input.endIndex { return true }
+        builder.buildAssert { [semanticLevel = options.semanticLevel] (input, pos, subjectBounds) in
+          if pos == subjectBounds.upperBound { return true }
           switch semanticLevel {
           case .graphemeCluster:
             return input[pos].isNewline
@@ -172,25 +189,25 @@ fileprivate extension Compiler.ByteCodeGen {
           }
         }
       } else {
-        builder.buildAssert { (input, pos, bounds) in
-          pos == input.endIndex
+        builder.buildAssert { (input, pos, subjectBounds) in
+          pos == subjectBounds.upperBound
         }
       }
 
     case .wordBoundary:
       // TODO: May want to consider Unicode level
-      builder.buildAssert { [options] (input, pos, bounds) in
+      builder.buildAssert { [options] (input, pos, subjectBounds) in
         // TODO: How should we handle bounds?
         _CharacterClassModel.word.isBoundary(
-          input, at: pos, bounds: bounds, with: options)
+          input, at: pos, bounds: subjectBounds, with: options)
       }
 
     case .notWordBoundary:
       // TODO: May want to consider Unicode level
-      builder.buildAssert { [options] (input, pos, bounds) in
+      builder.buildAssert { [options] (input, pos, subjectBounds) in
         // TODO: How should we handle bounds?
         !_CharacterClassModel.word.isBoundary(
-          input, at: pos, bounds: bounds, with: options)
+          input, at: pos, bounds: subjectBounds, with: options)
       }
     }
   }
@@ -640,8 +657,16 @@ fileprivate extension Compiler.ByteCodeGen {
   mutating func emitCustomCharacterClass(
     _ ccc: DSLTree.CustomCharacterClass
   ) throws {
-    let consumer = try ccc.generateConsumer(options)
-    builder.buildConsume(by: consumer)
+    if let asciiBitset = ccc.asAsciiBitset(options),
+        options.semanticLevel == .graphemeCluster,
+        optimizationsEnabled {
+      // future work: add a bit to .matchBitset to consume either a character
+      // or a scalar so we can have this optimization in scalar mode
+      builder.buildMatchAsciiBitset(asciiBitset)
+    } else {
+      let consumer = try ccc.generateConsumer(options)
+      builder.buildConsume(by: consumer)
+    }
   }
 
   @discardableResult

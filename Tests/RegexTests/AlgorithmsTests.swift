@@ -497,4 +497,23 @@ class AlgorithmTests: XCTestCase {
     XCTAssertEqual(
       s2.ranges(of: try Regex("a*?")).map(s2.offsets(of:)), [0..<0, 1..<1, 2..<2])
   }
+
+  func testUnicodeScalarSemantics() throws {
+    let regex = try Regex(#"."#, as: Substring.self).matchingSemantics(.unicodeScalar)
+    let emptyRegex = try Regex(#"z?"#, as: Substring.self).matchingSemantics(.unicodeScalar)
+    
+    XCTAssertEqual("".matches(of: regex).map(\.output), [])
+    XCTAssertEqual("Café".matches(of: regex).map(\.output), ["C", "a", "f", "é"])
+    XCTAssertEqual("Cafe\u{301}".matches(of: regex).map(\.output), ["C", "a", "f", "e", "\u{301}"])
+    XCTAssertEqual("Cafe\u{301}".matches(of: emptyRegex).count, 6)
+
+    XCTAssertEqual("Café".ranges(of: regex).count, 4)
+    XCTAssertEqual("Cafe\u{301}".ranges(of: regex).count, 5)
+    XCTAssertEqual("Cafe\u{301}".ranges(of: emptyRegex).count, 6)
+    
+    XCTAssertEqual("Café".replacing(regex, with: "-"), "----")
+    XCTAssertEqual("Cafe\u{301}".replacing(regex, with: "-"), "-----")
+    XCTAssertEqual("Café".replacing(emptyRegex, with: "-"), "-C-a-f-é-")
+    XCTAssertEqual("Cafe\u{301}".replacing(emptyRegex, with: "-"), "-C-a-f-e-\u{301}-")
+  }
 }

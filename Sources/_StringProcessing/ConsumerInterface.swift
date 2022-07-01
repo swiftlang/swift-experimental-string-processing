@@ -18,7 +18,7 @@ extension DSLTree.Node {
   /// the front of an input range
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction? {
+  ) throws -> MEProgram.ConsumeFunction? {
     switch self {
     case .atom(let a):
       return try a.generateConsumer(opts)
@@ -51,27 +51,61 @@ extension DSLTree.Node {
   }
 }
 
+extension DSLTree._AST.Atom {
+  var singleScalarASCIIValue: UInt8? {
+    return ast.singleScalarASCIIValue
+  }
+}
+
 extension DSLTree.Atom {
+  var singleScalarASCIIValue: UInt8? {
+    switch self {
+    case let .char(c) where c != "\r\n":
+      return c.asciiValue
+    case let .scalar(s) where s.isASCII:
+      return UInt8(ascii: s)
+    case let .unconverted(atom):
+      return atom.singleScalarASCIIValue
+    default:
+      return nil
+    }
+  }
+  
   // TODO: If ByteCodeGen switches first, then this is unnecessary for
   // top-level nodes, but it's also invoked for `.atom` members of a custom CC
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction? {
+  ) throws -> MEProgram.ConsumeFunction? {
     let isCaseInsensitive = opts.isCaseInsensitive
     
     switch self {
     case let .char(c):
-      // TODO: Match level?
-      return { input, bounds in
-        let low = bounds.lowerBound
-        if isCaseInsensitive && c.isCased {
-          return input[low].lowercased() == c.lowercased()
-            ? input.index(after: low)
-            : nil
-        } else {
-          return input[low] == c
-            ? input.index(after: low)
-            : nil
+      if opts.semanticLevel == .graphemeCluster {
+        return { input, bounds in
+          let low = bounds.lowerBound
+          if isCaseInsensitive && c.isCased {
+            return input[low].lowercased() == c.lowercased()
+              ? input.index(after: low)
+              : nil
+          } else {
+            return input[low] == c
+              ? input.index(after: low)
+              : nil
+          }
+        }
+      } else {
+        let consumers = c.unicodeScalars.map { s in consumeScalar {
+          isCaseInsensitive
+            ? $0.properties.lowercaseMapping == s.properties.lowercaseMapping
+            : $0 == s
+        }}
+        return { input, bounds in
+          for fn in consumers {
+            if let idx = fn(input, bounds) {
+              return idx
+            }
+          }
+          return nil
         }
       }
     case let .scalar(s):
@@ -142,7 +176,7 @@ extension String {
   }
 }
 
-func consumeName(_ name: String, opts: MatchingOptions) -> MEProgram<String>.ConsumeFunction {
+func consumeName(_ name: String, opts: MatchingOptions) -> MEProgram.ConsumeFunction {
   let consume = consumeFunction(for: opts)
   return consume(propertyScalarPredicate {
     // FIXME: name aliases not covered by $0.nameAlias are missed
@@ -177,10 +211,21 @@ extension AST.Atom {
     default: return nil
     }
   }
-
+  
+  var singleScalarASCIIValue: UInt8? {
+    switch kind {
+    case let .char(c) where c != "\r\n":
+      return c.asciiValue
+    case let .scalar(s) where s.value.isASCII:
+      return UInt8(ascii: s.value)
+    default:
+      return nil
+    }
+  }
+  
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction? {
+  ) throws -> MEProgram.ConsumeFunction? {
     // TODO: Wean ourselves off of this type...
     if let cc = self.characterClass?.withMatchLevel(
       opts.matchLevel
@@ -235,9 +280,37 @@ extension AST.Atom {
 }
 
 extension DSLTree.CustomCharacterClass.Member {
+  func asAsciiBitset(
+    _ opts: MatchingOptions,
+    _ isInverted: Bool
+  ) -> DSLTree.CustomCharacterClass.AsciiBitset? {
+    switch self {
+    case let .atom(a):
+      if let val = a.singleScalarASCIIValue {
+        return DSLTree.CustomCharacterClass.AsciiBitset(
+          val,
+          isInverted,
+          opts.isCaseInsensitive
+        )
+      }
+    case let .range(low, high):
+      if let lowVal = low.singleScalarASCIIValue, let highVal = high.singleScalarASCIIValue {
+        return DSLTree.CustomCharacterClass.AsciiBitset(
+          low: lowVal,
+          high: highVal,
+          isInverted: isInverted,
+          isCaseInsensitive: opts.isCaseInsensitive
+        )
+      }
+    default:
+      return nil
+    }
+    return nil
+  }
+  
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction {
+  ) throws -> MEProgram.ConsumeFunction {
     switch self {
     case let .atom(a):
       guard let c = try a.generateConsumer(opts) else {
@@ -342,9 +415,22 @@ extension DSLTree.CustomCharacterClass.Member {
 }
 
 extension DSLTree.CustomCharacterClass {
+  func asAsciiBitset(_ opts: MatchingOptions) -> AsciiBitset? {
+    return members.reduce(
+      .init(isInverted: isInverted),
+      {result, member in
+        if let next = member.asAsciiBitset(opts, isInverted) {
+          return result?.union(next)
+        } else {
+          return nil
+        }
+      }
+    )
+  }
+  
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction {
+  ) throws -> MEProgram.ConsumeFunction {
     // NOTE: Easy way to implement, obviously not performant
     let consumers = try members.map {
       try $0.generateConsumer(opts)
@@ -386,7 +472,7 @@ private func propertyScalarPredicate(_ p: @escaping (Unicode.Scalar.Properties) 
 
 func consumeScalar(
   _ p: @escaping ScalarPredicate
-) -> MEProgram<String>.ConsumeFunction {
+) -> MEProgram.ConsumeFunction {
   { input, bounds in
     // TODO: bounds check?
     let curIdx = bounds.lowerBound
@@ -399,7 +485,7 @@ func consumeScalar(
 }
 func consumeCharacterWithLeadingScalar(
   _ p: @escaping ScalarPredicate
-) -> MEProgram<String>.ConsumeFunction {
+) -> MEProgram.ConsumeFunction {
   { input, bounds in
     let curIdx = bounds.lowerBound
     if p(input[curIdx].unicodeScalars.first!) {
@@ -410,7 +496,7 @@ func consumeCharacterWithLeadingScalar(
 }
 func consumeCharacterWithSingleScalar(
   _ p: @escaping ScalarPredicate
-) -> MEProgram<String>.ConsumeFunction {
+) -> MEProgram.ConsumeFunction {
   { input, bounds in
     let curIdx = bounds.lowerBound
     
@@ -423,7 +509,7 @@ func consumeCharacterWithSingleScalar(
 
 func consumeFunction(
   for opts: MatchingOptions
-) -> (@escaping ScalarPredicate) -> MEProgram<String>.ConsumeFunction {
+) -> (@escaping ScalarPredicate) -> MEProgram.ConsumeFunction {
   opts.semanticLevel == .graphemeCluster
     ? consumeCharacterWithLeadingScalar
     : consumeScalar
@@ -432,11 +518,11 @@ func consumeFunction(
 extension AST.Atom.CharacterProperty {
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction {
+  ) throws -> MEProgram.ConsumeFunction {
     // Handle inversion for us, albeit not efficiently
     func invert(
-      _ p: @escaping MEProgram<String>.ConsumeFunction
-    ) -> MEProgram<String>.ConsumeFunction {
+      _ p: @escaping MEProgram.ConsumeFunction
+    ) -> MEProgram.ConsumeFunction {
       return { input, bounds in
         if p(input, bounds) != nil { return nil }
 
@@ -448,7 +534,7 @@ extension AST.Atom.CharacterProperty {
     }
 
     let consume = consumeFunction(for: opts)
-    let preInversion: MEProgram<String>.ConsumeFunction =
+    let preInversion: MEProgram.ConsumeFunction =
     try {
       switch kind {
         // TODO: is this modeled differently?
@@ -536,7 +622,7 @@ extension Unicode.BinaryProperty {
   // FIXME: Semantic level, vet for precise defs
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction {
+  ) throws -> MEProgram.ConsumeFunction {
     let consume = consumeFunction(for: opts)
 
     // Note if you implement support for any of the below, you need to adjust
@@ -704,7 +790,7 @@ extension Unicode.POSIXProperty {
   // FIXME: Semantic level, vet for precise defs
   func generateConsumer(
     _ opts: MatchingOptions
-  ) -> MEProgram<String>.ConsumeFunction {
+  ) -> MEProgram.ConsumeFunction {
     let consume = consumeFunction(for: opts)
 
     // FIXME: modes, etc
@@ -752,7 +838,7 @@ extension Unicode.ExtendedGeneralCategory {
   // FIXME: Semantic level
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram<String>.ConsumeFunction {
+  ) throws -> MEProgram.ConsumeFunction {
     let consume = consumeFunction(for: opts)
 
     switch self {
