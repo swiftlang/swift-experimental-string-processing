@@ -520,6 +520,15 @@ class RegexDSLTests: XCTestCase {
 
     try _testDSLCaptures(
       ("", ""),
+      ("a", nil),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(count: 0) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
       ("a", "a"),
       ("aa", nil),
       matchType: Substring.self, ==)

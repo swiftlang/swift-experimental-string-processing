@@ -853,9 +853,9 @@ extension DSLTree.Node {
     _ node: DSLTree.Node
   ) -> DSLTree.Node {
     // TODO: Throw these as errors
-    assert(range.lowerBound >= 0, "Cannot specify a negative lower bound")
-    assert(!range.isEmpty, "Cannot specify an empty range")
-    
+    precondition(range.lowerBound >= 0, "Cannot specify a negative lower bound")
+    precondition(!range.isEmpty, "Cannot specify an empty range")
+
     let kind: DSLTree.QuantificationKind = behavior
       .map { .explicit($0.dslTreeKind) } ?? .default
 
