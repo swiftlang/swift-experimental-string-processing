@@ -158,7 +158,7 @@ func captureTest(
   file: StaticString = #file,
   line: UInt = #line
 ) {
-  let ast = try! parse(regex, .semantic, .traditional)
+  let ast = try! parse(regex, .traditional)
   var capList = ast.captureList.withoutLocs
   // Peel off the whole match element.
   capList.captures.removeFirst()

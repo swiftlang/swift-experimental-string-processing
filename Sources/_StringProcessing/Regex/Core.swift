@@ -37,13 +37,14 @@ public struct Regex<Output>: RegexComponent {
     self.program = Program(ast: ast)
   }
   init(ast: AST.Node) {
-    self.program = Program(ast: .init(ast, globalOptions: nil))
+    self.program = Program(ast:
+        .init(ast, globalOptions: nil, diags: Diagnostics()))
   }
 
   // Compiler interface. Do not change independently.
   @usableFromInline
   init(_regexString pattern: String) {
-    self.init(ast: try! parse(pattern, .semantic, .traditional))
+    self.init(ast: try! parse(pattern, .traditional))
   }
 
   // Compiler interface. Do not change independently.
@@ -52,7 +53,7 @@ public struct Regex<Output>: RegexComponent {
     assert(version == currentRegexLiteralFormatVersion)
     // The version argument is passed by the compiler using the value defined
     // in libswiftParseRegexLiteral.
-    self.init(ast: try! parseWithDelimiters(pattern, .semantic))
+    self.init(ast: try! parseWithDelimiters(pattern))
   }
 
   public var regex: Regex<Output> {
@@ -80,20 +81,23 @@ extension Regex {
     /// likely, compilation/caching.
     let tree: DSLTree
 
+    /// OptionSet of compiler options for testing purposes
+    fileprivate var compileOptions: Compiler.CompileOptions = .default
+
     private final class ProgramBox {
       let value: MEProgram
       init(_ value: MEProgram) { self.value = value }
     }
 
     /// Do not use directly - all accesses must go through `loweredProgram`.
-    private var _loweredProgramStorage: AnyObject? = nil
+    fileprivate var _loweredProgramStorage: AnyObject? = nil
     
     /// The program for execution with the matching engine.
     var loweredProgram: MEProgram {
       if let loweredObject = _loweredProgramStorage as? ProgramBox {
         return loweredObject.value
       }
-      let lowered = try! Compiler(tree: tree).emit()
+      let lowered = try! Compiler(tree: tree, compileOptions: compileOptions).emit()
       _stdlib_atomicInitializeARCRef(object: &_loweredProgramStorage, desired: ProgramBox(lowered))
       return lowered
     }
@@ -122,13 +126,19 @@ extension Regex {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  @_spi(RegexBuilder)
-  public var root: DSLTree.Node {
+  var root: DSLTree.Node {
     program.tree.root
   }
 
-  @_spi(RegexBuilder)
-  public init(node: DSLTree.Node) {
+  init(node: DSLTree.Node) {
     self.program = Program(tree: .init(node))
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Regex {
+  internal mutating func _setCompilerOptionsForTesting(_ opts: Compiler.CompileOptions) {
+    program.compileOptions = opts
+    program._loweredProgramStorage = nil
   }
 }
