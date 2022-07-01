@@ -450,9 +450,13 @@ class RegexDSLTests: XCTestCase {
 
     try _testDSLCaptures(
       ("aaabbbcccdddeeefff", "aaabbbcccdddeeefff"),
+      ("aaabbbcccccdddeeefff", "aaabbbcccccdddeeefff"),
+      ("aaabbbcccddddeeefff", "aaabbbcccddddeeefff"),
+      ("aaabbbccccccdddeeefff", nil),
       ("aaaabbbcccdddeeefff", nil),
       ("aaacccdddeeefff", nil),
       ("aaabbbcccccccdddeeefff", nil),
+      ("aaabbbcccdddddeeefff", nil),
       ("aaabbbcccddddddeeefff", nil),
       ("aaabbbcccdddefff", nil),
       ("aaabbbcccdddeee", "aaabbbcccdddeee"),
@@ -465,7 +469,102 @@ class RegexDSLTests: XCTestCase {
       Repeat(2...) { "e" }
       Repeat(0...) { "f" }
     }
-    
+
+    try _testDSLCaptures(
+      ("", nil),
+      ("a", nil),
+      ("aa", "aa"),
+      ("aaa", "aaa"),
+      matchType: Substring.self, ==)
+    {
+      Repeat(2...) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", "a"),
+      ("aa", "aa"),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(...2) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", "a"),
+      ("aa", nil),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(..<2) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", nil),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(...0) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", nil),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(0 ... 0) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", "a"),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(0 ... 1) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", nil),
+      ("a", "a"),
+      ("aa", "aa"),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(1 ... 2) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", nil),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(0 ..< 1) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", "a"),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(0 ..< 2) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", nil),
+      ("a", "a"),
+      ("aa", "aa"),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(1 ..< 3) { "a" }
+    }
+
     let octoDecimalRegex: Regex<(Substring, Int?)> = Regex {
       let charClass = CharacterClass(.digit, "a"..."h")//.ignoringCase()
       Capture {
