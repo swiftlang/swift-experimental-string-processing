@@ -1860,9 +1860,12 @@ extension RegexTests {
     // check that we are correctly doing the boundary check after matchScalar
     firstMatchTest("a", input: "a\u{301}", match: nil)
     firstMatchTest("aa", input: "aa\u{301}", match: nil)
-    
+
     firstMatchTest("a", input: "a\u{301}", match: "a", semanticLevel: .unicodeScalar)
     firstMatchTest("aa", input: "aa\u{301}", match: "aa", semanticLevel: .unicodeScalar)
+
+    // case insensitive tests
+    firstMatchTest(#"(?i)abc\u{301}d"#, input: "AbC\u{301}d", match: "AbC\u{301}d", semanticLevel: .unicodeScalar)
   }
   
   func testCase() {

@@ -12,7 +12,7 @@
 @_implementationOnly import _RegexParser
 
 extension Character {
-  var singleScalarAsciiValue: UInt8? {
+  var _singleScalarAsciiValue: UInt8? {
     guard self != "\r\n" else { return nil }
     return asciiValue
   }
@@ -68,7 +68,7 @@ extension DSLTree.Atom {
   var singleScalarASCIIValue: UInt8? {
     switch self {
     case let .char(c):
-      return c.singleScalarAsciiValue
+      return c._singleScalarAsciiValue
     case let .scalar(s) where s.isASCII:
       return UInt8(ascii: s)
     case let .unconverted(atom):
@@ -222,7 +222,7 @@ extension AST.Atom {
   var singleScalarASCIIValue: UInt8? {
     switch kind {
     case let .char(c):
-      return c.singleScalarAsciiValue
+      return c._singleScalarAsciiValue
     case let .scalar(s) where s.value.isASCII:
       return UInt8(ascii: s.value)
     default:

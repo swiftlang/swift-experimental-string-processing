@@ -231,18 +231,10 @@ extension Processor {
     currentPosition < end ? input.unicodeScalars[currentPosition] : nil
   }
   
-  func nextScalarIndex(offsetBy n: Int, boundaryCheck: Bool) -> Input.Index? {
-    if let idx = input.unicodeScalars.index(currentPosition, offsetBy: 1, limitedBy: end),
-       (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx)) {
-      return idx
-    }
-    return nil
-  }
-  
   mutating func matchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) -> Bool {
-    guard let curScalar = loadScalar(),
-          curScalar == s,
-          let idx = nextScalarIndex(offsetBy: 1, boundaryCheck: boundaryCheck)
+    guard s == loadScalar(),
+          let idx = input.unicodeScalars.index(currentPosition, offsetBy: 1, limitedBy: end),
+          (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx))
     else {
       signalFailure()
       return false
@@ -271,7 +263,7 @@ extension Processor {
   ) -> Bool {
     guard let curScalar = loadScalar(),
             bitset.matches(scalar: curScalar),
-          let idx = nextScalarIndex(offsetBy: 1, boundaryCheck: false) else {
+          let idx = input.unicodeScalars.index(currentPosition, offsetBy: 1, limitedBy: end) else {
       signalFailure()
       return false
     }
