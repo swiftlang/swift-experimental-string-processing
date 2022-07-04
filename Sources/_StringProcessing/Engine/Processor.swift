@@ -437,12 +437,6 @@ extension Processor {
           controller.step()
         }
       }
-//    case .matchSequence:
-//      let reg = payload.sequence
-//      let seq = registers[reg]
-//      if matchSeq(seq) {
-//        controller.step()
-//      }
 
     case .matchScalar:
       let (scalar, caseInsensitive, boundaryCheck) = payload.scalarPayload
