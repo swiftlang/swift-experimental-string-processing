@@ -45,10 +45,10 @@ fileprivate extension Compiler.ByteCodeGen {
       emitAny()
 
     case let .char(c):
-      try emitCharacter(c)
+      emitCharacter(c)
 
     case let .scalar(s):
-      try emitScalar(s)
+      emitScalar(s)
 
     case let .assertion(kind):
       try emitAssertion(kind.ast)
@@ -74,81 +74,32 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
-  mutating func emitScalarQuotedLiteral(_ s: String) {
-    precondition(options.semanticLevel == .unicodeScalar)
-    if optimizationsEnabled && !options.isCaseInsensitive {
-      // Match all scalars exactly, never boundary check because we're in
-      // unicode scalars mode
-      for char in s {
-        for scalar in char.unicodeScalars {
-          builder.buildMatchScalar(scalar, boundaryCheck: false)
-        }
-      }
-      return
-    }
-
-    builder.buildConsume {
-      [caseInsensitive = options.isCaseInsensitive] input, bounds in
-      // TODO: Case folding
-      var iterator = s.unicodeScalars.makeIterator()
-      var currentIndex = bounds.lowerBound
-      while let scalar = iterator.next() {
-        guard currentIndex < bounds.upperBound else { return nil }
-        if caseInsensitive {
-          if scalar.properties.lowercaseMapping != input.unicodeScalars[currentIndex].properties.lowercaseMapping {
-            return nil
-          }
-        } else {
-          if scalar != input.unicodeScalars[currentIndex] {
-            return nil
-          }
-        }
-        input.unicodeScalars.formIndex(after: &currentIndex)
-      }
-      return currentIndex
-    }
-  }
-
   mutating func emitQuotedLiteral(_ s: String) {
     guard options.semanticLevel == .graphemeCluster else {
-      emitScalarQuotedLiteral(s)
-      return
-    }
-
-    if options.isCaseInsensitive {
-      // future work: if all ascii, emit matchBitset instructions with
-      // case insensitive bitsets
-      // TODO: buildCaseInsensitiveMatchSequence(c) or alternative
-      builder.buildConsume { input, bounds in
-        var iterator = s.makeIterator()
-        var currentIndex = bounds.lowerBound
-        while let ch = iterator.next() {
-          guard currentIndex < bounds.upperBound,
-                ch.lowercased() == input[currentIndex].lowercased()
-          else { return nil }
-          input.formIndex(after: &currentIndex)
+      for char in s {
+        for scalar in char.unicodeScalars {
+          emitScalar(scalar)
         }
-        return currentIndex
       }
       return
     }
 
+    // Fast path for eliding boundary checks for an all ascii quoted literal
     if optimizationsEnabled && s.allSatisfy({char in char.isASCII}) {
       let lastIdx = s.unicodeScalars.indices.last!
       for idx in s.unicodeScalars.indices {
-        if idx == lastIdx {
-          // Only boundary check if we are the last scalar in the last character
-          // to make sure that there isn't a combining scalar after the quoted literal
-          builder.buildMatchScalar(s.unicodeScalars[idx], boundaryCheck: true)
+        let boundaryCheck = idx == lastIdx
+        let scalar = s.unicodeScalars[idx]
+        if options.isCaseInsensitive && scalar.properties.isCased {
+          builder.buildMatchScalarCaseInsensitive(scalar, boundaryCheck: boundaryCheck)
         } else {
-          builder.buildMatchScalar(s.unicodeScalars[idx], boundaryCheck: false)
+          builder.buildMatchScalar(scalar, boundaryCheck: boundaryCheck)
         }
       }
       return
     }
 
-    builder.buildMatchSequence(s)
-    return
+    for c in s { emitCharacter(c) }
   }
 
   mutating func emitBackreference(
@@ -286,35 +237,29 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
   
-  mutating func emitScalar(_ s: UnicodeScalar) throws {
-    if options.isCaseInsensitive {
-      // TODO: e.g. buildCaseInsensitiveMatchScalar(s)
-      builder.buildConsume(by: consumeScalar {
-        $0.properties.lowercaseMapping == s.properties.lowercaseMapping
-      })
-      return
+  mutating func emitScalar(_ s: UnicodeScalar) {
+    if options.isCaseInsensitive && s.properties.isCased {
+      builder.buildMatchScalarCaseInsensitive(s, boundaryCheck: false)
+    } else {
+      builder.buildMatchScalar(s, boundaryCheck: false)
     }
-    
-    builder.buildMatchScalar(s, boundaryCheck: false)
   }
   
-  mutating func emitCharacter(_ c: Character) throws {
+  mutating func emitCharacter(_ c: Character) {
     // Unicode scalar mode matches the specific scalars that comprise a character
     if options.semanticLevel == .unicodeScalar {
       for scalar in c.unicodeScalars {
-        try emitScalar(scalar)
+        emitScalar(scalar)
       }
       return
     }
     
     if options.isCaseInsensitive && c.isCased {
-      // TODO: buildCaseInsensitiveMatch(c) or buildMatch(c, caseInsensitive: true)
-      builder.buildConsume { input, bounds in
-        let inputChar = input[bounds.lowerBound].lowercased()
-        let matchChar = c.lowercased()
-        return inputChar == matchChar
-          ? input.index(after: bounds.lowerBound)
-          : nil
+      if optimizationsEnabled && c.isASCII {
+        // c.isCased ensures that c is not CR-LF, so we know that c is a single scalar
+        builder.buildMatchScalarCaseInsensitive(c.unicodeScalars.last!, boundaryCheck: true)
+      } else {
+        builder.buildMatchCaseInsensitive(c)
       }
       return
     }

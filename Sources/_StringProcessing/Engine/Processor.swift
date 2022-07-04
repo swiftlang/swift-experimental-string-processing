@@ -216,6 +216,15 @@ extension Processor {
     return true
   }
 
+  mutating func matchCaseInsensitive(_ e: Element) -> Bool {
+    guard let cur = load(), cur.lowercased() == e.lowercased() else {
+      signalFailure()
+      return false
+    }
+    _uncheckedForcedConsumeOne()
+    return true
+  }
+
   // Match against the current input prefix. Returns whether
   // it succeeded vs signaling an error.
   mutating func matchSeq<C: Collection>(
@@ -233,7 +242,29 @@ extension Processor {
   
   mutating func matchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) -> Bool {
     guard s == loadScalar(),
-          let idx = input.unicodeScalars.index(currentPosition, offsetBy: 1, limitedBy: end),
+          let idx = input.unicodeScalars.index(
+            currentPosition,
+            offsetBy: 1,
+            limitedBy: end),
+          (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx))
+    else {
+      signalFailure()
+      return false
+    }
+    currentPosition = idx
+    return true
+  }
+
+  mutating func matchScalarCaseInsensitive(
+    _ s: Unicode.Scalar,
+    boundaryCheck: Bool
+  ) -> Bool {
+    guard let curScalar = loadScalar(),
+          s.properties.lowercaseMapping == curScalar.properties.lowercaseMapping,
+          let idx = input.unicodeScalars.index(
+            currentPosition,
+            offsetBy: 1,
+            limitedBy: end),
           (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx))
     else {
       signalFailure()
@@ -400,6 +431,11 @@ extension Processor {
       if match(registers[reg]) {
         controller.step()
       }
+    case .matchCaseInsensitive:
+      let reg = payload.element
+      if matchCaseInsensitive(registers[reg]) {
+        controller.step()
+      }
 
     case .matchSequence:
       let reg = payload.sequence
@@ -416,6 +452,16 @@ extension Processor {
     case .matchScalarUnchecked:
       let scalar = payload.scalar
       if matchScalar(scalar, boundaryCheck: false) {
+        controller.step()
+      }
+    case .matchScalarCaseInsensitive:
+      let scalar = payload.scalar
+      if matchScalarCaseInsensitive(scalar, boundaryCheck: true) {
+        controller.step()
+      }
+    case .matchScalarCaseInsensitiveUnchecked:
+      let scalar = payload.scalar
+      if matchScalarCaseInsensitive(scalar, boundaryCheck: false) {
         controller.step()
       }
 

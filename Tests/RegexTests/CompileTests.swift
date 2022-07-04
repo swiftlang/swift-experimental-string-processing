@@ -156,9 +156,7 @@ extension RegexTests {
       let prog = try _compileRegex(regex, syntax, semanticLevel)
       var found: Set<Instruction.OpCode> = []
       for inst in prog.engine.instructions {
-        if targets.contains(inst.opcode) {
-          found.insert(inst.opcode)
-        }
+        found.insert(inst.opcode)
 
         if invalid.contains(inst.opcode) {
           XCTFail(
@@ -196,33 +194,81 @@ extension RegexTests {
   }
 
   func testScalarOptimizeCompilation() {
+    // all ascii quoted literal -> elide boundary checks
     expectProgram(
       for: "abcd",
       contains: [.matchScalar, .matchScalarUnchecked],
-      doesNotContain: [.matchSequence, .consumeBy])
+      doesNotContain: [.match, .matchSequence, .consumeBy])
+    // ascii character -> matchScalar with boundary check
     expectProgram(
       for: "a",
       contains: [.matchScalar],
-      doesNotContain: [.matchSequence, .consumeBy, .matchScalarUnchecked])
+      doesNotContain: [.match, .matchSequence, .consumeBy, .matchScalarUnchecked])
+    // quoted literal is not all ascii -> match scalar when possible, always do boundary checks
     expectProgram(
       for: "aaa\u{301}",
-      contains: [.matchSequence],
-      doesNotContain: [.matchScalar, .consumeBy, .matchScalarUnchecked])
-
+      contains: [.match, .matchScalar],
+      doesNotContain: [.consumeBy, .matchScalarUnchecked])
+    // scalar mode -> always emit match scalar without boundary checks
     expectProgram(
       for: "abcd",
       semanticLevel: .unicodeScalar,
       contains: [.matchScalarUnchecked],
-      doesNotContain: [.matchSequence, .consumeBy, .matchScalar])
+      doesNotContain: [.match, .matchSequence, .consumeBy, .matchScalar])
     expectProgram(
       for: "a",
       semanticLevel: .unicodeScalar,
       contains: [.matchScalarUnchecked],
-      doesNotContain: [.matchSequence, .consumeBy, .matchScalar])
+      doesNotContain: [.match, .matchSequence, .consumeBy, .matchScalar])
     expectProgram(
       for: "aaa\u{301}",
       semanticLevel: .unicodeScalar,
       contains: [.matchScalarUnchecked],
-      doesNotContain: [.matchSequence, .consumeBy, .matchScalar])
+      doesNotContain: [.match, .matchSequence, .consumeBy, .matchScalar])
+  }
+  
+  func testCaseInsensitivityCompilation() {
+    // quoted literal is all ascii -> match scalar case insensitive and skip
+    // boundary checks
+    expectProgram(
+      for: "(?i)abcd",
+      contains: [.matchScalarCaseInsensitiveUnchecked, .matchScalarCaseInsensitive],
+      doesNotContain: [.match, .matchCaseInsensitive, .matchScalar, .matchScalarUnchecked])
+    // quoted literal is all non-cased ascii -> emit match scalar instructions
+    expectProgram(
+      for: "(?i)&&&&",
+      contains: [.matchScalar, .matchScalarUnchecked],
+      doesNotContain: [.match, .matchCaseInsensitive,
+        .matchScalarCaseInsensitive, .matchScalarCaseInsensitiveUnchecked])
+    // quoted literal is not all ascii -> match scalar case insensitive when
+    // possible, match character case insensitive when needed, always perform
+    // boundary check
+    expectProgram(
+      for: "(?i)abcd\u{301}",
+      contains: [.matchCaseInsensitive, .matchScalarCaseInsensitive],
+      doesNotContain: [.matchScalarCaseInsensitiveUnchecked, .match, .matchScalar])
+    // same as before but contains ascii non cased characters -> emit matchScalar for them
+    expectProgram(
+      for: "(?i)abcd\u{301};.'!",
+      contains: [.matchCaseInsensitive, .matchScalarCaseInsensitive, .matchScalar],
+      doesNotContain: [.matchScalarCaseInsensitiveUnchecked, .match])
+    // contains non-ascii non-cased characters -> emit match
+    expectProgram(
+      for: "(?i)abcd\u{301};.'!💖",
+      contains: [.matchCaseInsensitive, .matchScalarCaseInsensitive, .matchScalar, .match],
+      doesNotContain: [.matchScalarCaseInsensitiveUnchecked])
+    
+    // scalar mode -> emit unchecked scalar match only, emit case insensitive
+    // only if the scalar is cased
+    expectProgram(
+      for: "(?i);.'!💖",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchScalarUnchecked],
+      doesNotContain: [.matchScalarCaseInsensitiveUnchecked])
+    expectProgram(
+      for: "(?i)abcdé",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchScalarCaseInsensitiveUnchecked],
+      doesNotContain: [.matchScalarUnchecked])
   }
 }

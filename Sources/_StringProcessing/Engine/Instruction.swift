@@ -77,6 +77,13 @@ extension Instruction {
     /// Operand: Element register to compare against.
     case match
 
+    /// Matches the given character case insensitively
+    ///
+    ///     match(_: EltReg)
+    ///
+    /// Operand: Element register to compare against.
+    case matchCaseInsensitive
+
     /// Match against a sequence of elements
     ///
     ///     matchSequence(_: SeqReg)
@@ -84,8 +91,27 @@ extension Instruction {
     /// Operand: Sequence register to compare against.
     case matchSequence
     
+    /// Match against a scalar and perform a grapheme boundary check
+    ///
+    ///     matchScalar(_: Unicode.Scalar)
+    /// Operand: Scalar value to match against
     case matchScalar
+    /// Match against a scalar and do NOT perform a grapheme boundary check
+    ///
+    ///     matchScalarUnchecked(_: Unicode.Scalar)
+    /// Operand: Scalar value to match against
     case matchScalarUnchecked
+
+    /// Match against a scalar case insensitively and perform a grapheme boundary check
+    ///
+    ///     matchScalarCaseInsensitive(_: Unicode.Scalar)
+    /// Operand: Scalar value to match against
+    case matchScalarCaseInsensitive
+    /// Match against a scalar case insensitively and do NOT perform a grapheme boundary check
+    ///
+    ///     matchScalarCaseInsensitiveUnchecked(_: Unicode.Scalar)
+    /// Operand: Scalar value to match against
+    case matchScalarCaseInsensitiveUnchecked
 
     /// Match against a set of valid ascii values stored in a bitset
     /// Operand: Ascii bitset register containing the bitset

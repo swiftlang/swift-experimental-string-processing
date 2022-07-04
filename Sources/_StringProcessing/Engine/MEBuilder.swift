@@ -140,6 +140,11 @@ extension MEProgram.Builder {
       .match, .init(element: elements.store(e))))
   }
 
+  mutating func buildMatchCaseInsensitive(_ e: Character) {
+    instructions.append(.init(
+      .matchCaseInsensitive, .init(element: elements.store(e))))
+  }
+
   mutating func buildMatchSequence<S: Sequence>(
     _ s: S
   ) where S.Element == Character {
@@ -155,6 +160,15 @@ extension MEProgram.Builder {
       instructions.append(.init(.matchScalarUnchecked, .init(scalar: s)))
     }
   }
+  
+  mutating func buildMatchScalarCaseInsensitive(_ s: Unicode.Scalar, boundaryCheck: Bool) {
+    if boundaryCheck {
+      instructions.append(.init(.matchScalarCaseInsensitive, .init(scalar: s)))
+    } else {
+      instructions.append(.init(.matchScalarCaseInsensitiveUnchecked, .init(scalar: s)))
+    }
+  }
+
 
   mutating func buildMatchAsciiBitset(
     _ b: DSLTree.CustomCharacterClass.AsciiBitset
