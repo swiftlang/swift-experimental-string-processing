@@ -135,38 +135,17 @@ extension MEProgram.Builder {
     instructions.append(.init(.advance, .init(distance: n)))
   }
 
-  mutating func buildMatch(_ e: Character) {
+  mutating func buildMatch(_ e: Character, isCaseInsensitive: Bool) {
     instructions.append(.init(
-      .match, .init(element: elements.store(e))))
+      .match, .init(element: elements.store(e), isCaseInsensitive: isCaseInsensitive)))
   }
 
-  mutating func buildMatchCaseInsensitive(_ e: Character) {
-    instructions.append(.init(
-      .matchCaseInsensitive, .init(element: elements.store(e))))
-  }
-
-  mutating func buildMatchSequence<S: Sequence>(
-    _ s: S
-  ) where S.Element == Character {
-    instructions.append(.init(
-      .matchSequence,
-      .init(sequence: sequences.store(.init(s)))))
-  }
-  
   mutating func buildMatchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) {
-    if boundaryCheck {
-      instructions.append(.init(.matchScalar, .init(scalar: s)))
-    } else {
-      instructions.append(.init(.matchScalarUnchecked, .init(scalar: s)))
-    }
+    instructions.append(.init(.matchScalar, .init(scalar: s, caseInsensitive: false, boundaryCheck: boundaryCheck)))
   }
   
   mutating func buildMatchScalarCaseInsensitive(_ s: Unicode.Scalar, boundaryCheck: Bool) {
-    if boundaryCheck {
-      instructions.append(.init(.matchScalarCaseInsensitive, .init(scalar: s)))
-    } else {
-      instructions.append(.init(.matchScalarCaseInsensitiveUnchecked, .init(scalar: s)))
-    }
+    instructions.append(.init(.matchScalar, .init(scalar: s, caseInsensitive: true, boundaryCheck: boundaryCheck)))
   }
 
 
@@ -174,14 +153,14 @@ extension MEProgram.Builder {
     _ b: DSLTree.CustomCharacterClass.AsciiBitset
   ) {
     instructions.append(.init(
-      .matchBitset, .init(bitset: makeAsciiBitset(b))))
+      .matchBitset, .init(bitset: makeAsciiBitset(b), isScalar: false)))
   }
 
   mutating func buildScalarMatchAsciiBitset(
     _ b: DSLTree.CustomCharacterClass.AsciiBitset
   ) {
     instructions.append(.init(
-      .matchBitsetScalar, .init(bitset: makeAsciiBitset(b))))
+      .matchBitset, .init(bitset: makeAsciiBitset(b), isScalar: true)))
   }
 
   mutating func buildConsume(

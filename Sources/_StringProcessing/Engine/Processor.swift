@@ -427,55 +427,46 @@ extension Processor {
       }
 
     case .match:
-      let reg = payload.element
-      if match(registers[reg]) {
-        controller.step()
+      let (isCaseInsensitive, reg) = payload.elementPayload
+      if isCaseInsensitive {
+        if matchCaseInsensitive(registers[reg]) {
+          controller.step()
+        }
+      } else {
+        if match(registers[reg]) {
+          controller.step()
+        }
       }
-    case .matchCaseInsensitive:
-      let reg = payload.element
-      if matchCaseInsensitive(registers[reg]) {
-        controller.step()
-      }
-
-    case .matchSequence:
-      let reg = payload.sequence
-      let seq = registers[reg]
-      if matchSeq(seq) {
-        controller.step()
-      }
+//    case .matchSequence:
+//      let reg = payload.sequence
+//      let seq = registers[reg]
+//      if matchSeq(seq) {
+//        controller.step()
+//      }
 
     case .matchScalar:
-      let scalar = payload.scalar
-      if matchScalar(scalar, boundaryCheck: true) {
-        controller.step()
-      }
-    case .matchScalarUnchecked:
-      let scalar = payload.scalar
-      if matchScalar(scalar, boundaryCheck: false) {
-        controller.step()
-      }
-    case .matchScalarCaseInsensitive:
-      let scalar = payload.scalar
-      if matchScalarCaseInsensitive(scalar, boundaryCheck: true) {
-        controller.step()
-      }
-    case .matchScalarCaseInsensitiveUnchecked:
-      let scalar = payload.scalar
-      if matchScalarCaseInsensitive(scalar, boundaryCheck: false) {
-        controller.step()
+      let (scalar, caseInsensitive, boundaryCheck) = payload.scalarPayload
+      if caseInsensitive {
+        if matchScalarCaseInsensitive(scalar, boundaryCheck: boundaryCheck) {
+          controller.step()
+        }
+      } else {
+        if matchScalar(scalar, boundaryCheck: boundaryCheck) {
+          controller.step()
+        }
       }
 
     case .matchBitset:
-      let reg = payload.bitset
+      let (isScalar, reg) = payload.bitsetPayload
       let bitset = registers[reg]
-      if matchBitset(bitset) {
-        controller.step()
-      }
-    case .matchBitsetScalar:
-      let reg = payload.bitset
-      let bitset = registers[reg]
-      if matchBitsetScalar(bitset) {
-        controller.step()
+      if isScalar {
+        if matchBitsetScalar(bitset) {
+          controller.step()
+        }
+      } else {
+        if matchBitset(bitset) {
+          controller.step()
+        }
       }
 
     case .consumeBy:

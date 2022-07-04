@@ -259,7 +259,7 @@ fileprivate extension Compiler.ByteCodeGen {
         // c.isCased ensures that c is not CR-LF, so we know that c is a single scalar
         builder.buildMatchScalarCaseInsensitive(c.unicodeScalars.last!, boundaryCheck: true)
       } else {
-        builder.buildMatchCaseInsensitive(c)
+        builder.buildMatch(c, isCaseInsensitive: true)
       }
       return
     }
@@ -272,7 +272,7 @@ fileprivate extension Compiler.ByteCodeGen {
       return
     }
       
-    builder.buildMatch(c)
+    builder.buildMatch(c, isCaseInsensitive: false)
   }
 
   mutating func emitAny() {
