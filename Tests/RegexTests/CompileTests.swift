@@ -14,6 +14,125 @@
 
 import XCTest
 
+enum DecodedInstr {
+  case invalid
+  case moveImmediate
+  case branch
+  case condBranchZeroElseDecrement
+  case save
+  case saveAddress
+  case splitSaving
+  case clear
+  case clearThrough
+  case accept
+  case fail
+  case advance
+  case match
+  case matchCaseInsensitive
+  case matchScalar
+  case matchScalarCaseInsensitiveUnchecked
+  case matchScalarCaseInsensitive
+  case matchScalarUnchecked
+  case matchBitsetScalar
+  case matchBitset
+  case consumeBy
+  case assertBy
+  case matchBy
+  case backreference
+  case beginCapture
+  case endCapture
+  case transformCapture
+  case captureValue
+  case builtinAssertion
+  case builtinCharacterClass
+}
+
+extension DecodedInstr {
+  /// Decode the given instruction by looking at the opcode and payload, expanding out certain instructions
+  /// like matchScalar and match into their variants
+  ///
+  /// Must stay in sync with Processor.cycle
+  static func decode(_ instruction: Instruction) -> DecodedInstr {
+      let (opcode, payload) = instruction.destructure
+
+      switch opcode {
+      case .invalid:
+        fatalError("Invalid program")
+      case .moveImmediate:
+        return .moveImmediate
+      case .branch:
+        return .branch
+      case .condBranchZeroElseDecrement:
+        return .condBranchZeroElseDecrement
+      case .save:
+        return .save
+      case .saveAddress:
+        return .saveAddress
+      case .splitSaving:
+        return .splitSaving
+      case .clear:
+        return .clear
+      case .clearThrough:
+        return .clearThrough
+      case .accept:
+        return .accept
+      case .fail:
+        return .fail
+      case .advance:
+        return .advance
+      case .match:
+        let (isCaseInsensitive, _) = payload.elementPayload
+        if isCaseInsensitive {
+          return .matchCaseInsensitive
+        } else {
+          return .match
+        }
+      case .matchScalar:
+        let (_, caseInsensitive, boundaryCheck) = payload.scalarPayload
+        if caseInsensitive {
+          if boundaryCheck {
+            return .matchScalarCaseInsensitive
+          } else {
+            return .matchScalarCaseInsensitiveUnchecked
+          }
+        } else {
+          if boundaryCheck {
+            return .matchScalar
+          } else {
+            return .matchScalarUnchecked
+          }
+        }
+      case .matchBitset:
+        let (isScalar, _) = payload.bitsetPayload
+        if isScalar {
+          return .matchBitsetScalar
+        } else {
+          return .matchBitset
+        }
+      case .consumeBy:
+        return consumeBy
+      case .assertBy:
+        return .assertBy
+      case .matchBy:
+        return .matchBy
+      case .backreference:
+        return .backreference
+      case .beginCapture:
+        return .beginCapture
+      case .endCapture:
+        return .endCapture
+      case .transformCapture:
+        return .transformCapture
+      case .captureValue:
+        return .captureValue
+      case .builtinAssertion:
+        return .builtinAssertion
+      case .builtinCharacterClass:
+        return .builtinCharacterClass
+}
+  }
+}
+
 extension RegexTests {
 
   private func testCompilationEquivalence(
@@ -147,20 +266,21 @@ extension RegexTests {
     for regex: String,
     syntax: SyntaxOptions = .traditional,
     semanticLevel: RegexSemanticLevel? = nil,
-    contains targets: Set<Instruction.OpCode> = [],
-    doesNotContain invalid: Set<Instruction.OpCode> = [],
+    contains targets: Set<DecodedInstr> = [],
+    doesNotContain invalid: Set<DecodedInstr> = [],
     file: StaticString = #file,
     line: UInt = #line
   ) {
     do {
       let prog = try _compileRegex(regex, syntax, semanticLevel)
-      var found: Set<Instruction.OpCode> = []
+      var found: Set<DecodedInstr> = []
       for inst in prog.engine.instructions {
-        found.insert(inst.opcode)
+        let decoded = DecodedInstr.decode(inst)
+        found.insert(decoded)
 
-        if invalid.contains(inst.opcode) {
+        if invalid.contains(decoded) {
           XCTFail(
-            "Compiled regex '\(regex)' contains incorrect opcode \(inst.opcode)",
+            "Compiled regex '\(regex)' contains incorrect opcode \(decoded)",
             file: file,
             line: line)
           return
@@ -181,94 +301,94 @@ extension RegexTests {
     }
   }
 
-//  func testBitsetCompile() {
-//    expectProgram(
-//      for: "[abc]",
-//      contains: [.matchBitset],
-//      doesNotContain: [.consumeBy, .matchBitsetScalar])
-//    expectProgram(
-//      for: "[abc]",
-//      semanticLevel: .unicodeScalar,
-//      contains: [.matchBitsetScalar],
-//      doesNotContain: [.matchBitset, .consumeBy])
-//  }
-//
-//  func testScalarOptimizeCompilation() {
-//    // all ascii quoted literal -> elide boundary checks
-//    expectProgram(
-//      for: "abcd",
-//      contains: [.matchScalar, .matchScalarUnchecked],
-//      doesNotContain: [.match, .matchSequence, .consumeBy])
-//    // ascii character -> matchScalar with boundary check
-//    expectProgram(
-//      for: "a",
-//      contains: [.matchScalar],
-//      doesNotContain: [.match, .matchSequence, .consumeBy, .matchScalarUnchecked])
-//    // quoted literal is not all ascii -> match scalar when possible, always do boundary checks
-//    expectProgram(
-//      for: "aaa\u{301}",
-//      contains: [.match, .matchScalar],
-//      doesNotContain: [.consumeBy, .matchScalarUnchecked])
-//    // scalar mode -> always emit match scalar without boundary checks
-//    expectProgram(
-//      for: "abcd",
-//      semanticLevel: .unicodeScalar,
-//      contains: [.matchScalarUnchecked],
-//      doesNotContain: [.match, .matchSequence, .consumeBy, .matchScalar])
-//    expectProgram(
-//      for: "a",
-//      semanticLevel: .unicodeScalar,
-//      contains: [.matchScalarUnchecked],
-//      doesNotContain: [.match, .matchSequence, .consumeBy, .matchScalar])
-//    expectProgram(
-//      for: "aaa\u{301}",
-//      semanticLevel: .unicodeScalar,
-//      contains: [.matchScalarUnchecked],
-//      doesNotContain: [.match, .matchSequence, .consumeBy, .matchScalar])
-//  }
-//  
-//  func testCaseInsensitivityCompilation() {
-//    // quoted literal is all ascii -> match scalar case insensitive and skip
-//    // boundary checks
-//    expectProgram(
-//      for: "(?i)abcd",
-//      contains: [.matchScalarCaseInsensitiveUnchecked, .matchScalarCaseInsensitive],
-//      doesNotContain: [.match, .matchCaseInsensitive, .matchScalar, .matchScalarUnchecked])
-//    // quoted literal is all non-cased ascii -> emit match scalar instructions
-//    expectProgram(
-//      for: "(?i)&&&&",
-//      contains: [.matchScalar, .matchScalarUnchecked],
-//      doesNotContain: [.match, .matchCaseInsensitive,
-//        .matchScalarCaseInsensitive, .matchScalarCaseInsensitiveUnchecked])
-//    // quoted literal is not all ascii -> match scalar case insensitive when
-//    // possible, match character case insensitive when needed, always perform
-//    // boundary check
-//    expectProgram(
-//      for: "(?i)abcd\u{301}",
-//      contains: [.matchCaseInsensitive, .matchScalarCaseInsensitive],
-//      doesNotContain: [.matchScalarCaseInsensitiveUnchecked, .match, .matchScalar])
-//    // same as before but contains ascii non cased characters -> emit matchScalar for them
-//    expectProgram(
-//      for: "(?i)abcd\u{301};.'!",
-//      contains: [.matchCaseInsensitive, .matchScalarCaseInsensitive, .matchScalar],
-//      doesNotContain: [.matchScalarCaseInsensitiveUnchecked, .match])
-//    // contains non-ascii non-cased characters -> emit match
-//    expectProgram(
-//      for: "(?i)abcd\u{301};.'!💖",
-//      contains: [.matchCaseInsensitive, .matchScalarCaseInsensitive, .matchScalar, .match],
-//      doesNotContain: [.matchScalarCaseInsensitiveUnchecked])
-//    
-//    // scalar mode -> emit unchecked scalar match only, emit case insensitive
-//    // only if the scalar is cased
-//    expectProgram(
-//      for: "(?i);.'!💖",
-//      semanticLevel: .unicodeScalar,
-//      contains: [.matchScalarUnchecked],
-//      doesNotContain: [.matchScalarCaseInsensitiveUnchecked])
-//    expectProgram(
-//      for: "(?i)abcdé",
-//      semanticLevel: .unicodeScalar,
-//      contains: [.matchScalarCaseInsensitiveUnchecked],
-//      doesNotContain: [.matchScalarUnchecked])
-//  }
+  func testBitsetCompile() {
+    expectProgram(
+      for: "[abc]",
+      contains: [.matchBitset],
+      doesNotContain: [.consumeBy, .matchBitsetScalar])
+    expectProgram(
+      for: "[abc]",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchBitsetScalar],
+      doesNotContain: [.matchBitset, .consumeBy])
+  }
+
+  func testScalarOptimizeCompilation() {
+    // all ascii quoted literal -> elide boundary checks
+    expectProgram(
+      for: "abcd",
+      contains: [.matchScalar, .matchScalarUnchecked],
+      doesNotContain: [.match, .consumeBy])
+    // ascii character -> matchScalar with boundary check
+    expectProgram(
+      for: "a",
+      contains: [.matchScalar],
+      doesNotContain: [.match, .consumeBy, .matchScalarUnchecked])
+    // quoted literal is not all ascii -> match scalar when possible, always do boundary checks
+    expectProgram(
+      for: "aaa\u{301}",
+      contains: [.match, .matchScalar],
+      doesNotContain: [.consumeBy, .matchScalarUnchecked])
+    // scalar mode -> always emit match scalar without boundary checks
+    expectProgram(
+      for: "abcd",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchScalarUnchecked],
+      doesNotContain: [.match, .consumeBy, .matchScalar])
+    expectProgram(
+      for: "a",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchScalarUnchecked],
+      doesNotContain: [.match, .consumeBy, .matchScalar])
+    expectProgram(
+      for: "aaa\u{301}",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchScalarUnchecked],
+      doesNotContain: [.match, .consumeBy, .matchScalar])
+  }
+  
+  func testCaseInsensitivityCompilation() {
+    // quoted literal is all ascii -> match scalar case insensitive and skip
+    // boundary checks
+    expectProgram(
+      for: "(?i)abcd",
+      contains: [.matchScalarCaseInsensitiveUnchecked, .matchScalarCaseInsensitive],
+      doesNotContain: [.match, .matchCaseInsensitive, .matchScalar, .matchScalarUnchecked])
+    // quoted literal is all non-cased ascii -> emit match scalar instructions
+    expectProgram(
+      for: "(?i)&&&&",
+      contains: [.matchScalar, .matchScalarUnchecked],
+      doesNotContain: [.match, .matchCaseInsensitive,
+        .matchScalarCaseInsensitive, .matchScalarCaseInsensitiveUnchecked])
+    // quoted literal is not all ascii -> match scalar case insensitive when
+    // possible, match character case insensitive when needed, always perform
+    // boundary check
+    expectProgram(
+      for: "(?i)abcd\u{301}",
+      contains: [.matchCaseInsensitive, .matchScalarCaseInsensitive],
+      doesNotContain: [.matchScalarCaseInsensitiveUnchecked, .match, .matchScalar])
+    // same as before but contains ascii non cased characters -> emit matchScalar for them
+    expectProgram(
+      for: "(?i)abcd\u{301};.'!",
+      contains: [.matchCaseInsensitive, .matchScalarCaseInsensitive, .matchScalar],
+      doesNotContain: [.matchScalarCaseInsensitiveUnchecked, .match])
+    // contains non-ascii non-cased characters -> emit match
+    expectProgram(
+      for: "(?i)abcd\u{301};.'!💖",
+      contains: [.matchCaseInsensitive, .matchScalarCaseInsensitive, .matchScalar, .match],
+      doesNotContain: [.matchScalarCaseInsensitiveUnchecked])
+    
+    // scalar mode -> emit unchecked scalar match only, emit case insensitive
+    // only if the scalar is cased
+    expectProgram(
+      for: "(?i);.'!💖",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchScalarUnchecked],
+      doesNotContain: [.matchScalarCaseInsensitiveUnchecked])
+    expectProgram(
+      for: "(?i)abcdé",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchScalarCaseInsensitiveUnchecked],
+      doesNotContain: [.matchScalarUnchecked])
+  }
 }
