@@ -11,6 +11,13 @@
 
 @_implementationOnly import _RegexParser
 
+extension Character {
+  var _singleScalarAsciiValue: UInt8? {
+    guard self != "\r\n" else { return nil }
+    return asciiValue
+  }
+}
+
 extension DSLTree.Node {
   /// Attempt to generate a consumer from this AST node
   ///
