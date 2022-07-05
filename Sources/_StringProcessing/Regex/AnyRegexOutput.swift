@@ -161,7 +161,18 @@ extension Regex {
     _ pattern: String,
     as: Output.Type = Output.self
   ) throws {
-    self.init(ast: try parse(pattern, .traditional))
+    let regex = Regex(ast: try parse(pattern, .traditional))
+    
+    let (isSuccess, correctType) = regex._verifyType()
+    
+    guard isSuccess else {
+      throw RegexCompilationError.incorrectOutputType(
+        incorrect: Output.self,
+        correct: correctType
+      )
+    }
+    
+    self = regex
   }
 
   /// Produces a regex that matches `verbatim` exactly, as though every
@@ -217,7 +228,8 @@ extension Regex {
     as: Output.Type = Output.self
   ) {
     self.init(node: erased.root)
-    guard self._verifyType() else {
+    
+    guard _verifyType().0 else {
       return nil
     }
   }
