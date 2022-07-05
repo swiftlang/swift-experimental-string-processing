@@ -218,6 +218,17 @@ extension RegexDSLTests {
       noteOutput
     )
 
+    // Run-time strings (errors)
+    XCTAssertThrowsError(try Regex("abc", as: (Substring, Substring).self))
+    XCTAssertThrowsError(try Regex("(abc)", as: Substring.self))
+    XCTAssertThrowsError(try Regex("(?<test>abc)", as: (Substring, Substring).self))
+    XCTAssertThrowsError(try Regex("(?<test>abc)?", as: (Substring, test: Substring).self))
+    
+    XCTAssertNoThrow(try Regex("abc", as: Substring.self))
+    XCTAssertNoThrow(try Regex("(abc)", as: (Substring, Substring).self))
+    XCTAssertNoThrow(try Regex("(?<test>abc)", as: (Substring, test: Substring).self))
+    XCTAssertNoThrow(try Regex("(?<test>abc)?", as: (Substring, test: Substring?).self))
+    
     // Builders
     check(
       Regex {
