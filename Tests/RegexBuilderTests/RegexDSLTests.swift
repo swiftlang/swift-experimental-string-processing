@@ -1260,6 +1260,88 @@ class RegexDSLTests: XCTestCase {
   }
 
   func testOptionalNesting() throws {
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring?).self, ==)
+    {
+      try! Regex("(?:a|(b)*)?", as: (Substring, Substring?).self)
+    }
+
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      Optionally {
+        try! Regex("a|(b)*", as: (Substring, Substring?).self)
+      }
+    }
+
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring???).self, ==)
+    {
+      Optionally {
+        ChoiceOf {
+          try! Regex("a", as: Substring.self)
+          try! Regex("(b)*", as: (Substring, Substring?).self)
+        }
+      }
+    }
+
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      ChoiceOf {
+        try! Regex("a", as: Substring.self)
+        try! Regex("(b)*", as: (Substring, Substring?).self)
+      }
+    }
+
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      ChoiceOf {
+        try! Regex("a", as: Substring.self)
+        ZeroOrMore {
+          try! Regex("(b)", as: (Substring, Substring).self)
+        }
+      }
+    }
+
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      ChoiceOf {
+        try! Regex("a", as: Substring.self)
+        ZeroOrMore {
+          Capture {
+            try! Regex("b", as: Substring.self)
+          }
+        }
+      }
+    }
+
     let r = Regex {
       Optionally {
         Optionally {
