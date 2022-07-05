@@ -162,7 +162,7 @@ extension MEProgram.Builder {
     isScalar: Bool
   ) {
     instructions.append(.init(
-      .matchBuiltin, .init(cc, isStrict, isScalar, bitset: makeAsciiBitset(bitset))))
+      .matchBuiltin, .init(cc, isStrict, isScalar)))
   }
 
   mutating func buildConsume(

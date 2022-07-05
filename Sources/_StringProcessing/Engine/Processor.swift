@@ -247,20 +247,11 @@ extension Processor {
   
   mutating func matchBuiltin(
     _ cc: BuiltinCC,
-    _ isStrictAscii: Bool,
-    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
+    _ isStrictAscii: Bool
   ) -> Bool {
     guard let c = load() else {
       signalFailure()
       return false
-    }
-
-    // Fast path: See if c is a single scalar ascii character
-    // If so, and it matches, consume a character
-    // Note: CR-LF will fall through because it is not a single scalar
-    if bitset.matches(char: c) && cc != .anyScalar {
-      _uncheckedForcedConsumeOne()
-      return true
     }
 
     // Slow path: Do full match
@@ -300,23 +291,12 @@ extension Processor {
   
   mutating func matchBuiltinScalar(
     _ cc: BuiltinCC,
-    _ isStrictAscii: Bool,
-    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
+    _ isStrictAscii: Bool
   ) -> Bool {
     guard let c = loadScalar() else {
       signalFailure()
       return false
     }
-
-    // Fast path: See if c is a single scalar ascii character
-    // If so, and it matches, consume a character
-    // Note: CR-LF must be matched fully if we are matching a .newlineSequence
-    // so exclude "\r" from the fast path
-    if bitset.matches(scalar: c) && cc != .anyGrapheme && c != "\r" {
-      input.unicodeScalars.formIndex(after: &currentPosition)
-      return true
-    }
-
     // Slow path: Do full match
     var matched: Bool
     var next = input.unicodeScalars.index(after: currentPosition)
@@ -501,14 +481,13 @@ extension Processor {
       }
 
     case .matchBuiltin:
-      let (cc, isStrict, isScalar, reg) = payload.builtinCCPayload
-      let bitset = registers[reg]
+      let (cc, isStrict, isScalar) = payload.builtinCCPayload
       if isScalar {
-        if matchBuiltinScalar(cc, isStrict, bitset) {
+        if matchBuiltinScalar(cc, isStrict) {
           controller.step()
         }
       } else {
-        if matchBuiltin(cc, isStrict, bitset) {
+        if matchBuiltin(cc, isStrict) {
           controller.step()
         }
       }

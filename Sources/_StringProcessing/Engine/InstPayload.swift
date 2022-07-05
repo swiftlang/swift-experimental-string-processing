@@ -204,20 +204,20 @@ extension Instruction.Payload {
     interpret()
   }
 
-  init(_ cc: BuiltinCC, _ isStrict: Bool, _ isScalar: Bool, bitset: AsciiBitsetRegister) {
+  init(_ cc: BuiltinCC, _ isStrict: Bool, _ isScalar: Bool) {
     let strictBit = isStrict ? 1 << 15 : 0
     let scalarBit = isScalar ? 1 << 14 : 0
     // val must be 16 bits, reserve the top 2 bits for if it is strict ascii or scalar
     assert(cc.rawValue <= 0x3F_FF)
     let val = cc.rawValue + UInt64(strictBit) + UInt64(scalarBit)
-    self.init(val, bitset)
+    self.init(val)
   }
-  var builtinCCPayload: (cc: BuiltinCC, isStrict: Bool, isScalar: Bool, bitset: AsciiBitsetRegister) {
-    let (val, bitset): (UInt64, AsciiBitsetRegister) = self.interpretPair()
+  var builtinCCPayload: (cc: BuiltinCC, isStrict: Bool, isScalar: Bool) {
+    let val = self.rawValue
     let cc = BuiltinCC(rawValue: val & 0x3F_FF)!
     let isStrict = (val >> 15) & 1 == 1
     let isScalar = (val >> 14) & 1 == 1
-    return (cc, isStrict, isScalar, bitset)
+    return (cc, isStrict, isScalar)
   }
   
   init(consumer: ConsumeFunctionRegister) {
