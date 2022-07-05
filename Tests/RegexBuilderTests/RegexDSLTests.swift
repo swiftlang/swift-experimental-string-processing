@@ -22,7 +22,7 @@ class RegexDSLTests: XCTestCase {
     file: StaticString = #file,
     line: UInt = #line,
     @RegexComponentBuilder _ content: () -> Content
-  ) throws {
+  ) throws where Content.RegexOutput == MatchType {
     let regex = content()
     for (input, maybeExpectedCaptures) in tests {
       let maybeMatch = input.wholeMatch(of: regex)
@@ -44,13 +44,7 @@ class RegexDSLTests: XCTestCase {
         XCTFail("Unexpectedly matched", file: file, line: line)
         continue
       }
-      XCTAssertTrue(
-        type(of: regex).RegexOutput.self == MatchType.self,
-        """
-        Expected match type: \(MatchType.self)
-        Actual match type: \(type(of: regex).RegexOutput.self)
-        """)
-      let captures = try XCTUnwrap(match.output as? MatchType, file: file, line: line)
+      let captures = match.output
       XCTAssertTrue(
         equivalence(captures, expectedCaptures),
         "'\(captures)' is not equal to the expected '\(expectedCaptures)'.",
