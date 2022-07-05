@@ -154,6 +154,16 @@ extension MEProgram.Builder {
     instructions.append(.init(
       .matchBitset, .init(bitset: makeAsciiBitset(b))))
   }
+  
+  mutating func buildMatchBuiltin(
+    _ cc: BuiltinCC,
+    _ isStrict: Bool,
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
+    isScalar: Bool
+  ) {
+    instructions.append(.init(
+      .matchBuiltin, .init(cc, isStrict, isScalar, bitset: makeAsciiBitset(bitset))))
+  }
 
   mutating func buildConsume(
     by p: @escaping MEProgram.ConsumeFunction

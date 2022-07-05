@@ -92,7 +92,7 @@ extension Instruction {
     case builtinAssertion
 
     /// TODO: builtin character classes
-    case builtinCharacterClass
+    case matchBuiltin
 
     // MARK: Extension points
 

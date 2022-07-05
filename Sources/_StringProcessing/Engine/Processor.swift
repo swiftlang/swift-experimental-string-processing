@@ -226,7 +226,11 @@ extension Processor {
     }
     return true
   }
-  
+
+  func loadScalar() -> Unicode.Scalar? {
+     currentPosition < end ? input.unicodeScalars[currentPosition] : nil
+   }
+
   // If we have a bitset we know that the CharacterClass only matches against
   // ascii characters, so check if the current input element is ascii then
   // check if it is set in the bitset
@@ -239,6 +243,117 @@ extension Processor {
     }
     _uncheckedForcedConsumeOne()
     return true
+  }
+  
+  mutating func matchBuiltin(
+    _ cc: BuiltinCC,
+    _ isStrictAscii: Bool,
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
+  ) -> Bool {
+    guard let c = load() else {
+      signalFailure()
+      return false
+    }
+
+    // Fast path: See if c is a single scalar ascii character
+    // If so, and it matches, consume a character
+    // Note: CR-LF will fall through because it is not a single scalar
+    if bitset.matches(char: c) && cc != .anyScalar {
+      _uncheckedForcedConsumeOne()
+      return true
+    }
+
+    // Slow path: Do full match
+    var matched: Bool
+    var next = input.index(after: currentPosition)
+    switch cc {
+      // lily note: when do these `any` cases appear? can they be compiled
+      // into consume instructions at compile time?
+    case .any, .anyGrapheme: matched = true
+    case .anyScalar:
+      matched = true
+      next = input.unicodeScalars.index(after: currentPosition)
+    case .digit:
+      matched = c.isNumber && (c.isASCII || !isStrictAscii)
+    case .hexDigit:
+      matched = c.isHexDigit && (c.isASCII || !isStrictAscii)
+    case .horizontalWhitespace:
+      matched = c.unicodeScalars.first?.isHorizontalWhitespace == true
+      && (c.isASCII || !isStrictAscii)
+    case .newlineSequence, .verticalWhitespace:
+      matched = c.unicodeScalars.first?.isNewline == true
+      && (c.isASCII || !isStrictAscii)
+    case .whitespace:
+      matched = c.isWhitespace && (c.isASCII || !isStrictAscii)
+    case .word:
+      matched = c.isWordCharacter && (c.isASCII || !isStrictAscii)
+    }
+    
+    if matched {
+      currentPosition = next
+      return true
+    } else {
+      signalFailure()
+      return false
+    }
+  }
+  
+  mutating func matchBuiltinScalar(
+    _ cc: BuiltinCC,
+    _ isStrictAscii: Bool,
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
+  ) -> Bool {
+    guard let c = loadScalar() else {
+      signalFailure()
+      return false
+    }
+
+    // Fast path: See if c is a single scalar ascii character
+    // If so, and it matches, consume a character
+    // Note: CR-LF must be matched fully if we are matching a .newlineSequence
+    // so exclude "\r" from the fast path
+    if bitset.matches(scalar: c) && cc != .anyGrapheme && c != "\r" {
+      input.unicodeScalars.formIndex(after: &currentPosition)
+      return true
+    }
+
+    // Slow path: Do full match
+    var matched: Bool
+    var next = input.unicodeScalars.index(after: currentPosition)
+    switch cc {
+    case .any: matched = true
+    case .anyScalar: matched = true
+    case .anyGrapheme:
+      matched = true
+      next = input.index(after: currentPosition)
+    case .digit:
+      matched = c.properties.numericType != nil && (c.isASCII || !isStrictAscii)
+    case .hexDigit:
+      matched = Character(c).isHexDigit && (c.isASCII || !isStrictAscii)
+    case .horizontalWhitespace:
+      matched = c.isHorizontalWhitespace && (c.isASCII || !isStrictAscii)
+    case .verticalWhitespace:
+      matched = c.isNewline && (c.isASCII || !isStrictAscii)
+    case .newlineSequence:
+      matched = c.isNewline && (c.isASCII || !isStrictAscii)
+      // lily note: what exactly is this doing? matching a full cr-lf character
+      // even though its in scalar mode? why?
+      if c == "\r" && next != input.endIndex && input.unicodeScalars[next] == "\n" {
+        input.unicodeScalars.formIndex(after: &next)
+      }
+    case .whitespace:
+      matched = c.properties.isWhitespace && (c.isASCII || !isStrictAscii)
+    case .word:
+      matched = (c.properties.isAlphabetic || c == "_") && (c.isASCII || !isStrictAscii)
+    }
+    
+    if matched {
+      currentPosition = next
+      return true
+    } else {
+      signalFailure()
+      return false
+    }
   }
 
   mutating func signalFailure() {
@@ -385,6 +500,19 @@ extension Processor {
         controller.step()
       }
 
+    case .matchBuiltin:
+      let (cc, isStrict, isScalar, reg) = payload.builtinCCPayload
+      let bitset = registers[reg]
+      if isScalar {
+        if matchBuiltinScalar(cc, isStrict, bitset) {
+          controller.step()
+        }
+      } else {
+        if matchBuiltin(cc, isStrict, bitset) {
+          controller.step()
+        }
+      }
+
     case .consumeBy:
       let reg = payload.consumer
       guard currentPosition < searchBounds.upperBound,
@@ -450,16 +578,14 @@ extension Processor {
     case .beginCapture:
       let capNum = Int(
         asserting: payload.capture.rawValue)
+      storedCaptures[capNum].startCapture(currentPosition)
+      controller.step()
 
-       storedCaptures[capNum].startCapture(currentPosition)
-       controller.step()
-
-     case .endCapture:
+    case .endCapture:
       let capNum = Int(
         asserting: payload.capture.rawValue)
-
-       storedCaptures[capNum].endCapture(currentPosition)
-       controller.step()
+      storedCaptures[capNum].endCapture(currentPosition)
+      controller.step()
 
     case .transformCapture:
       let (cap, trans) = payload.pairedCaptureTransform
@@ -490,9 +616,6 @@ extension Processor {
 
     case .builtinAssertion:
       builtinAssertion()
-
-    case .builtinCharacterClass:
-      builtinCharacterClass()
     }
   }
 }

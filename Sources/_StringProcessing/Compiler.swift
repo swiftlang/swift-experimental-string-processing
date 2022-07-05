@@ -64,7 +64,7 @@ func _compileRegex(
 ) throws -> Executor {
   let ast = try parse(regex, syntax)
   let dsl: DSLTree
-
+  print(ast)
   switch semanticLevel?.base {
   case .graphemeCluster:
     let sequence = AST.MatchingOptionSequence(adding: [.init(.graphemeClusterSemantics, location: .fake)])
@@ -75,6 +75,7 @@ func _compileRegex(
   case .none:
     dsl = ast.dslTree
   }
+  print(dsl)
   let program = try Compiler(tree: dsl).emit()
   return Executor(program: program)
 }

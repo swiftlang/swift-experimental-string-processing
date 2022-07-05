@@ -592,3 +592,95 @@ extension _CharacterClassModel {
   }
 
 }
+
+internal enum BuiltinCC: UInt64 {
+  case any = 1
+  case anyGrapheme
+  case anyScalar
+  case digit
+  case hexDigit
+  case horizontalWhitespace
+  case newlineSequence
+  case verticalWhitespace
+  case whitespace
+  case word
+}
+
+extension BuiltinCC {
+  func isStrict(options: MatchingOptions) -> Bool {
+    switch self {
+    case .digit: return options.usesASCIIDigits
+    case .hexDigit: return options.usesASCIIDigits
+    case .horizontalWhitespace: return options.usesASCIISpaces
+    case .newlineSequence: return options.usesASCIISpaces
+    case .whitespace: return options.usesASCIISpaces
+    case .word: return options.usesASCIIWord
+    default: return false
+    }
+  }
+  
+  /// A bitset representing the ascii values that this character class can match
+  var asciiBitset: DSLTree.CustomCharacterClass.AsciiBitset {
+    let allAscii = Array(0...127).map { Character(Unicode.Scalar($0)) }
+    let filtered: [Character]
+    switch self {
+    case .any:
+      filtered = allAscii
+    case .anyGrapheme:
+      filtered = allAscii
+    case .anyScalar:
+      filtered = allAscii
+    case .digit:
+      filtered = allAscii.filter { $0.isNumber }
+    case .hexDigit:
+      filtered = allAscii.filter { $0.isHexDigit }
+    case .horizontalWhitespace:
+      filtered = allAscii.filter { $0.unicodeScalars.first?.isHorizontalWhitespace == true }
+    case .newlineSequence:
+      filtered = allAscii.filter { $0.unicodeScalars.first?.isNewline == true }
+    case .verticalWhitespace:
+      filtered = allAscii.filter { $0.unicodeScalars.first?.isNewline == true }
+    case .whitespace:
+      filtered = allAscii.filter { $0.isWhitespace == true }
+    case .word:
+      filtered = allAscii.filter { $0.isWordCharacter }
+    }
+    var bitset = DSLTree.CustomCharacterClass.AsciiBitset(isInverted: false)
+    for c in filtered { bitset.add(c.asciiValue!, false) }
+    return bitset
+  }
+}
+
+extension _CharacterClassModel {
+  internal var builtinCC: BuiltinCC? {
+    if isInverted { return nil } // lily todo: add another flag to the payload? when is this set? why are there so many weird edge cases in ccm? it feels like it's trying to model both builtins and custom models
+    
+    // in that case, should we just convert a ccm to a ccc
+    // if it has these weird flags set?
+    // completely remove ccm from compilation and just emit either a builtincc or a ccc or an advance
+    switch self.cc {
+    case .any:
+        return .any
+    case .anyGrapheme:
+        return .anyGrapheme
+    case .anyScalar:
+      return .anyScalar
+    case .digit:
+      return .digit
+    case .hexDigit:
+      return .hexDigit
+    case .horizontalWhitespace:
+      return .horizontalWhitespace
+    case .newlineSequence:
+      return .newlineSequence
+    case .verticalWhitespace:
+      return .verticalWhitespace
+    case .whitespace:
+      return .whitespace
+    case .word:
+      return .word
+    case .custom(_):
+      return nil
+    }
+  }
+}
