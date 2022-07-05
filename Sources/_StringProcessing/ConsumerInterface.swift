@@ -29,10 +29,6 @@ extension DSLTree.Node {
       // TODO: Should we handle this here?
       return nil
 
-    case .regexLiteral:
-      fatalError(
-        "unreachable: We should only ask atoms")
-
     case let .convertedRegexLiteral(n, _):
       return try n.generateConsumer(opts)
 

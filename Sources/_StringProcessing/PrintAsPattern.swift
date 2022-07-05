@@ -258,9 +258,6 @@ extension PrettyPrinter {
     case let .quotedLiteral(v):
       print(v._quoted)
 
-    case .regexLiteral:
-      printBackoff(node)
-
     case let .convertedRegexLiteral(n, _):
       // FIXME: This recursion coordinates with back-off
       // check above, so it should work out. Need a
