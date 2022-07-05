@@ -71,9 +71,6 @@ extension DSLTree {
 
     case quotedLiteral(String)
 
-    /// An embedded literal.
-    case regexLiteral(_AST.ASTNode)
-
     // TODO: What should we do here?
     ///
     /// TODO: Consider splitting off expression functions, or have our own kind
@@ -343,7 +340,7 @@ extension DSLTree.Node {
 
     case let .conditional(_, t, f): return [t,f]
 
-    case .trivia, .empty, .quotedLiteral, .regexLiteral,
+    case .trivia, .empty, .quotedLiteral,
         .consumer, .matcher, .characterPredicate,
         .customCharacterClass, .atom:
       return []
@@ -357,7 +354,6 @@ extension DSLTree.Node {
 extension DSLTree.Node {
   var astNode: AST.Node? {
     switch self {
-    case let .regexLiteral(literal):             return literal.ast
     case let .convertedRegexLiteral(_, literal): return literal.ast
     default: return nil
     }
@@ -391,8 +387,6 @@ extension DSLTree.Node {
     switch self {
     case .capture:
       return true
-    case let .regexLiteral(re):
-      return re.ast.hasCapture
     case let .convertedRegexLiteral(n, re):
       assert(n.hasCapture == re.ast.hasCapture)
       return n.hasCapture
@@ -603,9 +597,6 @@ extension DSLTree.Node {
       }
       child._addCaptures(to: &list, optionalNesting: optNesting)
 
-    case let .regexLiteral(re):
-      return re.ast._addCaptures(to: &list, optionalNesting: nesting)
-
     case let .absentFunction(abs):
       switch abs.ast.kind {
       case .expression(_, _, let child):
@@ -634,7 +625,7 @@ extension DSLTree.Node {
       return true
     case .orderedChoice, .concatenation, .capture,
          .conditional, .quantification, .customCharacterClass, .atom,
-         .trivia, .empty, .quotedLiteral, .regexLiteral, .absentFunction,
+         .trivia, .empty, .quotedLiteral, .absentFunction,
          .convertedRegexLiteral, .consumer,
          .characterPredicate, .matcher:
       return false
@@ -693,7 +684,7 @@ extension DSLTree {
 
       case let .conditional(_, t, f): return [_Tree(t), _Tree(f)]
 
-      case .trivia, .empty, .quotedLiteral, .regexLiteral,
+      case .trivia, .empty, .quotedLiteral,
           .consumer, .matcher, .characterPredicate,
           .customCharacterClass, .atom:
         return []
