@@ -459,6 +459,8 @@ class RegexDSLTests: XCTestCase {
 
     try _testDSLCaptures(
       ("abcdef2", ("abcdef2", "f")),
+      ("2", ("2", nil)),
+      ("", ("", nil)),
       matchType: (Substring, Substring??).self, ==)
     {
       Optionally {
@@ -1259,6 +1261,25 @@ class RegexDSLTests: XCTestCase {
     }
     
     XCTAssertEqual(try replace("{bar}"), "foo")
+  }
+
+  func testOptionalNesting() throws {
+    let r = Regex {
+      Optionally {
+        Optionally {
+          Capture {
+            "a"
+          }
+        }
+      }
+    }
+    if let _ = try r.wholeMatch(in: "")!.output.1 {
+      XCTFail("Unexpected capture match")
+    }
+    if let _ = try r.wholeMatch(in: "a")!.output.1 {}
+    else {
+      XCTFail("Expected to match capture")
+    }
   }
 }
 
