@@ -90,7 +90,7 @@ func parseTest(
   }
 
   // Test capture structure round trip serialization.
-  let capStruct = captures._captureStructure(nestOptionals: true)
+  let capStruct = captures._captureStructure
   let serializedCapturesSize = CaptureStructure.serializationBufferSize(
     forInputUTF8CodeUnitCount: input.utf8.count)
   let serializedCaptures = UnsafeMutableRawBufferPointer.allocate(

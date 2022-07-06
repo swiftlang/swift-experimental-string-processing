@@ -71,9 +71,6 @@ extension DSLTree {
 
     case quotedLiteral(String)
 
-    /// An embedded literal.
-    case regexLiteral(_AST.ASTNode)
-
     // TODO: What should we do here?
     ///
     /// TODO: Consider splitting off expression functions, or have our own kind
@@ -343,7 +340,7 @@ extension DSLTree.Node {
 
     case let .conditional(_, t, f): return [t,f]
 
-    case .trivia, .empty, .quotedLiteral, .regexLiteral,
+    case .trivia, .empty, .quotedLiteral,
         .consumer, .matcher, .characterPredicate,
         .customCharacterClass, .atom:
       return []
@@ -357,7 +354,6 @@ extension DSLTree.Node {
 extension DSLTree.Node {
   var astNode: AST.Node? {
     switch self {
-    case let .regexLiteral(literal):             return literal.ast
     case let .convertedRegexLiteral(_, literal): return literal.ast
     default: return nil
     }
@@ -391,8 +387,6 @@ extension DSLTree.Node {
     switch self {
     case .capture:
       return true
-    case let .regexLiteral(re):
-      return re.ast.hasCapture
     case let .convertedRegexLiteral(n, re):
       assert(n.hasCapture == re.ast.hasCapture)
       return n.hasCapture
@@ -551,71 +545,62 @@ struct CaptureTransform: Hashable, CustomStringConvertible {
   }
 }
 
-// MARK: AST wrapper types
-//
-// These wrapper types are required because even @_spi-marked public APIs can't
-// include symbols from implementation-only dependencies.
-
-extension DSLTree.Node {
-  func _addCaptures(
-    to list: inout CaptureList,
-    optionalNesting nesting: Int
+extension CaptureList.Builder {
+  mutating func addCaptures(
+    of node: DSLTree.Node, optionalNesting nesting: OptionalNesting
   ) {
-    let addOptional = nesting+1
-    switch self {
+    switch node {
     case let .orderedChoice(children):
       for child in children {
-        child._addCaptures(to: &list, optionalNesting: addOptional)
+        addCaptures(of: child, optionalNesting: nesting.addingOptional)
       }
 
     case let .concatenation(children):
       for child in children {
-        child._addCaptures(to: &list, optionalNesting: nesting)
+        addCaptures(of: child, optionalNesting: nesting)
       }
 
     case let .capture(name, _, child, transform):
-      list.append(.init(
+      captures.append(.init(
         name: name,
         type: transform?.resultType ?? child.wholeMatchType,
-        optionalDepth: nesting, .fake))
-      child._addCaptures(to: &list, optionalNesting: nesting)
+        optionalDepth: nesting.depth, .fake))
+      addCaptures(of: child, optionalNesting: nesting)
 
     case let .nonCapturingGroup(kind, child):
       assert(!kind.ast.isCapturing)
-      child._addCaptures(to: &list, optionalNesting: nesting)
+      addCaptures(of: child, optionalNesting: nesting)
 
     case let .conditional(cond, trueBranch, falseBranch):
       switch cond.ast {
       case .group(let g):
-        AST.Node.group(g)._addCaptures(to: &list, optionalNesting: nesting)
+        addCaptures(of: .group(g), optionalNesting: nesting)
       default:
         break
       }
 
-      trueBranch._addCaptures(to: &list, optionalNesting: addOptional)
-      falseBranch._addCaptures(to: &list, optionalNesting: addOptional)
-
+      addCaptures(of: trueBranch, optionalNesting: nesting.addingOptional)
+      addCaptures(of: falseBranch, optionalNesting: nesting.addingOptional)
 
     case let .quantification(amount, _, child):
       var optNesting = nesting
       if amount.ast.bounds.atLeast == 0 {
-        optNesting += 1
+        optNesting = optNesting.addingOptional
       }
-      child._addCaptures(to: &list, optionalNesting: optNesting)
-
-    case let .regexLiteral(re):
-      return re.ast._addCaptures(to: &list, optionalNesting: nesting)
+      addCaptures(of: child, optionalNesting: optNesting)
 
     case let .absentFunction(abs):
       switch abs.ast.kind {
       case .expression(_, _, let child):
-        child._addCaptures(to: &list, optionalNesting: nesting)
+        addCaptures(of: child, optionalNesting: nesting)
       case .clearer, .repeater, .stopper:
         break
       }
 
     case let .convertedRegexLiteral(n, _):
-      return n._addCaptures(to: &list, optionalNesting: nesting)
+      // We disable nesting for converted AST trees, as literals do not nest
+      // captures. This includes literals nested in a DSL.
+      return addCaptures(of: n, optionalNesting: nesting.disablingNesting)
 
     case .matcher:
       break
@@ -626,6 +611,16 @@ extension DSLTree.Node {
     }
   }
 
+  static func build(_ dsl: DSLTree) -> CaptureList {
+    var builder = Self()
+    builder.captures.append(
+      .init(type: dsl.root.wholeMatchType, optionalDepth: 0, .fake))
+    builder.addCaptures(of: dsl.root, optionalNesting: .init(canNest: true))
+    return builder.captures
+  }
+}
+
+extension DSLTree.Node {
   /// Returns true if the node is output-forwarding, i.e. not defining its own
   /// output but forwarding its only child's output.
   var isOutputForwarding: Bool {
@@ -634,7 +629,7 @@ extension DSLTree.Node {
       return true
     case .orderedChoice, .concatenation, .capture,
          .conditional, .quantification, .customCharacterClass, .atom,
-         .trivia, .empty, .quotedLiteral, .regexLiteral, .absentFunction,
+         .trivia, .empty, .quotedLiteral, .absentFunction,
          .convertedRegexLiteral, .consumer,
          .characterPredicate, .matcher:
       return false
@@ -660,13 +655,13 @@ extension DSLTree.Node {
   }
 }
 
+// MARK: AST wrapper types
+//
+// These wrapper types are required because even @_spi-marked public APIs can't
+// include symbols from implementation-only dependencies.
+
 extension DSLTree {
-  var captureList: CaptureList {
-    var list = CaptureList()
-    list.append(.init(type: root.wholeMatchType, optionalDepth: 0, .fake))
-    root._addCaptures(to: &list, optionalNesting: 0)
-    return list
-  }
+  var captureList: CaptureList { .Builder.build(self) }
 
   /// Presents a wrapped version of `DSLTree.Node` that can provide an internal
   /// `_TreeNode` conformance.
@@ -693,7 +688,7 @@ extension DSLTree {
 
       case let .conditional(_, t, f): return [_Tree(t), _Tree(f)]
 
-      case .trivia, .empty, .quotedLiteral, .regexLiteral,
+      case .trivia, .empty, .quotedLiteral,
           .consumer, .matcher, .characterPredicate,
           .customCharacterClass, .atom:
         return []
