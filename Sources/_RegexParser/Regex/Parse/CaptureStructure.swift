@@ -225,33 +225,27 @@ extension CaptureStructure: CustomStringConvertible {
 extension AST {
   /// The capture structure of this AST for compiler communication.
   var captureStructure: CaptureStructure {
-    captureList._captureStructure(nestOptionals: true)
+    captureList._captureStructure
   }
 }
 
 // MARK: Convert CaptureList into CaptureStructure
 
 extension CaptureList {
-  func _captureStructure(nestOptionals: Bool) -> CaptureStructure {
+  var _captureStructure: CaptureStructure {
     if captures.isEmpty { return .empty }
     if captures.count == 1 {
-      return captures.first!._captureStructure(nestOptionals: nestOptionals)
+      return captures.first!._captureStructure
     }
-    return .tuple(captures.map {
-      $0._captureStructure(nestOptionals: nestOptionals)
-    })
+    return .tuple(captures.map(\._captureStructure))
   }
 }
 
 extension CaptureList.Capture {
-  func _captureStructure(nestOptionals: Bool) -> CaptureStructure {
-    if optionalDepth == 0 {
-      return .atom(name: name, type: type == Substring.self ? nil : .init(type))
-    }
-    var copy = self
-    copy.optionalDepth = 0
-    var base = copy._captureStructure(nestOptionals: false)
-    for _ in 0..<(nestOptionals ? optionalDepth : 1) {
+  var _captureStructure: CaptureStructure {
+    var base = CaptureStructure.atom(
+      name: name, type: type == Substring.self ? nil : .init(type))
+    for _ in 0 ..< optionalDepth {
       base = .optional(base)
     }
     return base

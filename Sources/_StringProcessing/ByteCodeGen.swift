@@ -812,9 +812,6 @@ fileprivate extension Compiler.ByteCodeGen {
         }
       }
 
-    case let .regexLiteral(l):
-      return try emitNode(l.ast.dslTreeNode)
-
     case let .convertedRegexLiteral(n, _):
       return try emitNode(n)
 
