@@ -1815,7 +1815,7 @@ extension RegexTests {
       match: eDecomposed,
       xfail: true
     )
-    firstMatchTest(#"\O"#, input: eComposed, match: eComposed)
+    firstMatchTest(#"\O"#, input: eComposed, match: eComposed, xfail: true)
     firstMatchTest(#"\O"#, input: eDecomposed, match: nil,
               xfail: true)
 

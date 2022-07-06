@@ -220,14 +220,14 @@ extension RegexValidator {
     _ esc: AST.Atom.EscapedBuiltin, at loc: SourceLocation
   ) {
     switch esc {
-    case .resetStartOfMatch, .singleDataUnit,
+    case .resetStartOfMatch, .singleDataUnit, .trueAnychar,
         // '\N' needs to be emitted using 'emitAny'.
         .notNewline:
       error(.unsupported("'\\\(esc.character)'"), at: loc)
 
     // Character classes.
     case .decimalDigit, .notDecimalDigit, .whitespace, .notWhitespace,
-        .wordCharacter, .notWordCharacter, .graphemeCluster, .trueAnychar,
+        .wordCharacter, .notWordCharacter, .graphemeCluster,
         .horizontalWhitespace, .notHorizontalWhitespace,
         .verticalTab, .notVerticalTab:
       break
