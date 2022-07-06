@@ -1231,6 +1231,29 @@ class RegexDSLTests: XCTestCase {
       }
     }
   }
+  
+  // rdar://96280236
+  func testCharacterClassAnyCrash() {
+    let regex = Regex {
+      "{"
+      Capture {
+        OneOrMore {
+          CharacterClass.any.subtracting(.anyOf("}"))
+        }
+      }
+      "}"
+    }
+    
+    func replace(_ template: String) throws -> String {
+      var b = template
+      while let result = try regex.firstMatch(in: b) {
+        b.replaceSubrange(result.range, with: "foo")
+      }
+      return b
+    }
+    
+    XCTAssertEqual(try replace("{bar}"), "foo")
+  }
 }
 
 extension Unicode.Scalar {
