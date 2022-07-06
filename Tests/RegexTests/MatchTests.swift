@@ -1022,6 +1022,8 @@ extension RegexTests {
       (" 123\n456\n", nil),
       ("123 456", "456"))
 
+    // FIXME: Keep this until _wordIndex and friends are
+#if os(Linux)
     firstMatchTests(
       #"\d+\b"#,
       ("123", "123"),
@@ -1039,6 +1041,7 @@ extension RegexTests {
       ("123", "23"),
       (" 123", "23"),
       ("123 456", "23"))
+#endif
 
     // TODO: \G and \K
     do {
@@ -1069,6 +1072,8 @@ extension RegexTests {
       ("Sol Cafe", nil), xfail: true)
   }
 
+  // FIXME: Keep this until _wordIndex and friends are
+#if os(Linux)
   func testLevel2WordBoundaries() {
     // MARK: Level 2 Word Boundaries
     firstMatchTest(#"\b😊\b"#, input: "🔥😊👍", match: "😊")
@@ -1085,6 +1090,7 @@ extension RegexTests {
     firstMatchTest(#"can\B\'\Bt"#, input: "I can't do that.", match: "can't")
     firstMatchTest(#"\b÷\b"#, input: "3 ÷ 3 = 1", match: "÷")
   }
+#endif
   
   func testMatchGroups() {
     // MARK: Groups
@@ -1359,6 +1365,8 @@ extension RegexTests {
       xfail: true
     )
 
+    // FIXME: Keep this until _wordIndex and friends are
+#if os(Linux)
     // HTML tags
     matchTest(
       #"<([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>.*?</\1>"#,
@@ -1376,6 +1384,7 @@ extension RegexTests {
       ("pass me the the kettle", ["the"]),
       ("this doesn't have any", nil)
     )
+#endif
 
     // Floats
     flatCaptureTest(
@@ -1483,6 +1492,8 @@ extension RegexTests {
       ("aeiou", true),
       ("åe\u{301}ïôú", false))
 
+    // FIXME: Keep this until _wordIndex and friends are
+#if os(Linux)
     matchTest(
       #"abcd\b.+"#,
       ("abcd ef", true),
@@ -1498,6 +1509,7 @@ extension RegexTests {
       ("abcd ef", true),
       ("abcdef", false),
       ("abcdéf", false))
+#endif
 
     // 'S' ASCII-only spaces
     matchTest(
