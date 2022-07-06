@@ -107,7 +107,6 @@ fileprivate extension Compiler.ByteCodeGen {
     builder.buildMatchBuiltin(
       cc,
       cc.isStrict(options: options),
-      cc.asciiBitset,
       isScalar: options.semanticLevel == .unicodeScalar)
   }
 

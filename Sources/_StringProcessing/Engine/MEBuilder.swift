@@ -158,7 +158,6 @@ extension MEProgram.Builder {
   mutating func buildMatchBuiltin(
     _ cc: BuiltinCC,
     _ isStrict: Bool,
-    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
     isScalar: Bool
   ) {
     instructions.append(.init(

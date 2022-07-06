@@ -618,37 +618,6 @@ extension BuiltinCC {
     default: return false
     }
   }
-  
-  /// A bitset representing the ascii values that this character class can match
-  var asciiBitset: DSLTree.CustomCharacterClass.AsciiBitset {
-    let allAscii = Array(0...127).map { Character(Unicode.Scalar($0)) }
-    let filtered: [Character]
-    switch self {
-    case .any:
-      filtered = allAscii
-    case .anyGrapheme:
-      filtered = allAscii
-    case .anyScalar:
-      filtered = allAscii
-    case .digit:
-      filtered = allAscii.filter { $0.isNumber }
-    case .hexDigit:
-      filtered = allAscii.filter { $0.isHexDigit }
-    case .horizontalWhitespace:
-      filtered = allAscii.filter { $0.unicodeScalars.first?.isHorizontalWhitespace == true }
-    case .newlineSequence:
-      filtered = allAscii.filter { $0.unicodeScalars.first?.isNewline == true }
-    case .verticalWhitespace:
-      filtered = allAscii.filter { $0.unicodeScalars.first?.isNewline == true }
-    case .whitespace:
-      filtered = allAscii.filter { $0.isWhitespace == true }
-    case .word:
-      filtered = allAscii.filter { $0.isWordCharacter }
-    }
-    var bitset = DSLTree.CustomCharacterClass.AsciiBitset(isInverted: false)
-    for c in filtered { bitset.add(c.asciiValue!, false) }
-    return bitset
-  }
 }
 
 extension _CharacterClassModel {
