@@ -26,29 +26,35 @@ class RegexDSLTests: XCTestCase {
     let regex = content()
     for (input, maybeExpectedCaptures) in tests {
       let maybeMatch = input.wholeMatch(of: regex)
-      if let expectedCaptures = maybeExpectedCaptures,
-        let match = maybeMatch
-      {
-        if xfail {
-          XCTFail("Unexpectedly matched", file: file, line: line)
-          continue
+      guard let match = maybeMatch else {
+        if !xfail, maybeExpectedCaptures != nil {
+          XCTFail("Failed to match '\(input)'", file: file, line: line)
         }
-        XCTAssertTrue(
-          type(of: regex).RegexOutput.self == MatchType.self,
-          """
-          Expected match type: \(MatchType.self)
-          Actual match type: \(type(of: regex).RegexOutput.self)
-          """)
-        let captures = try XCTUnwrap(match.output as? MatchType, file: file, line: line)
-        XCTAssertTrue(
-          equivalence(captures, expectedCaptures),
-          "'\(captures)' is not equal to the expected '\(expectedCaptures)'.",
-          file: file, line: line)
-      } else {
-        if !xfail {
-          XCTAssertNil(maybeMatch, file: file, line: line)
-        }
+        continue
       }
+      guard let expectedCaptures = maybeExpectedCaptures else {
+        if !xfail {
+          XCTFail(
+            "Unexpectedly matched '\(match)' for '\(input)'",
+            file: file, line: line)
+        }
+        continue
+      }
+      if xfail {
+        XCTFail("Unexpectedly matched", file: file, line: line)
+        continue
+      }
+      XCTAssertTrue(
+        type(of: regex).RegexOutput.self == MatchType.self,
+        """
+        Expected match type: \(MatchType.self)
+        Actual match type: \(type(of: regex).RegexOutput.self)
+        """)
+      let captures = try XCTUnwrap(match.output as? MatchType, file: file, line: line)
+      XCTAssertTrue(
+        equivalence(captures, expectedCaptures),
+        "'\(captures)' is not equal to the expected '\(expectedCaptures)'.",
+        file: file, line: line)
     }
   }
 
