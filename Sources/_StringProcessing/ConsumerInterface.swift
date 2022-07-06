@@ -29,10 +29,6 @@ extension DSLTree.Node {
       // TODO: Should we handle this here?
       return nil
 
-    case .regexLiteral:
-      fatalError(
-        "unreachable: We should only ask atoms")
-
     case let .convertedRegexLiteral(n, _):
       return try n.generateConsumer(opts)
 
@@ -117,8 +113,15 @@ extension DSLTree.Atom {
 
     case .any:
       // FIXME: Should this be a total ordering?
-      fatalError(
-        "unreachable: emitAny() should be called isntead")
+      if opts.semanticLevel == .graphemeCluster {
+        return { input, bounds in
+          input.index(after: bounds.lowerBound)
+        }
+      } else {
+        return consumeScalar { _ in
+          true
+        }
+      }
 
     case .assertion:
       // TODO: We could handle, should this be total?
