@@ -259,7 +259,7 @@ class AlgorithmsResultBuilderTests: XCTestCase {
   func testStartsAndContains() throws {
     let fam = "👨‍👩‍👧‍👦👨‍👨‍👧‍👧  we Ⓡ family"
     let startsWithGrapheme = fam.starts {
-      OneOrMore(.anyGrapheme)
+      OneOrMore(.anyGraphemeCluster)
       OneOrMore(.whitespace)
     }
     XCTAssertEqual(startsWithGrapheme, true)
@@ -271,7 +271,7 @@ class AlgorithmsResultBuilderTests: XCTestCase {
 
     let content = {
       Regex {
-        OneOrMore(.anyGrapheme)
+        OneOrMore(.anyGraphemeCluster)
         OneOrMore(.whitespace)
       }
     }
@@ -320,7 +320,7 @@ class AlgorithmsResultBuilderTests: XCTestCase {
 
     var mutable = "👨‍👩‍👧‍👦  we Ⓡ family"
     mutable.trimPrefix {
-      .anyGrapheme
+      .anyGraphemeCluster
       ZeroOrMore(.whitespace)
     }
     XCTAssertEqual(mutable, "we Ⓡ family")

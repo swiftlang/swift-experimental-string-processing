@@ -806,6 +806,8 @@ extension RegexTests {
     parseTest(#"\M-\C--"#, atom(.keyboardMetaControl("-")), unsupported: true)
     parseTest(#"\M-a"#, atom(.keyboardMeta("a")), unsupported: true)
 
+    parseTest(#"\O"#, escaped(.trueAnychar), unsupported: true)
+
     // MARK: Comments
 
     parseTest(
