@@ -48,7 +48,7 @@ extension RegexComponent where Self == CharacterClass {
     .init(DSLTree.CustomCharacterClass(members: [.atom(.any)]))
   }
 
-  public static var anyGrapheme: CharacterClass {
+  public static var anyGraphemeCluster: CharacterClass {
     .init(unconverted: .anyGrapheme)
   }
   
