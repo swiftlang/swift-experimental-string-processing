@@ -311,9 +311,12 @@ extension MatchingOptions.Representation {
     [.reluctantByDefault, .possessiveByDefault]
   }
   
+  // Uses level 2 Unicode word boundaries
+  static var unicodeWordBoundaries: Self { .init(.unicodeWordBoundaries) }
+  
   /// The default set of options.
   static var `default`: Self {
-    [.graphemeClusterSemantics, .textSegmentGraphemeMode]
+    [.graphemeClusterSemantics, .textSegmentGraphemeMode, .unicodeWordBoundaries]
   }
 }
 
