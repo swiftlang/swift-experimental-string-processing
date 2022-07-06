@@ -52,10 +52,6 @@ extension RegexComponent where Self == CharacterClass {
     .init(unconverted: .anyGrapheme)
   }
   
-  public static var anyUnicodeScalar: CharacterClass {
-    .init(unconverted: .anyUnicodeScalar)
-  }
-
   public static var whitespace: CharacterClass {
     .init(unconverted: .whitespace)
   }
