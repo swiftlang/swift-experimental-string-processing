@@ -56,7 +56,7 @@ extension PrettyPrinter {
   mutating func printBackoff(_ node: DSLTree.Node) {
     precondition(node.astNode != nil, "unconverted node")
     printAsCanonical(
-      .init(node.astNode!, globalOptions: nil),
+      .init(node.astNode!, globalOptions: nil, diags: Diagnostics()),
       delimiters: true)
   }
 
@@ -257,9 +257,6 @@ extension PrettyPrinter {
 
     case let .quotedLiteral(v):
       print(v._quoted)
-
-    case .regexLiteral:
-      printBackoff(node)
 
     case let .convertedRegexLiteral(n, _):
       // FIXME: This recursion coordinates with back-off
@@ -931,6 +928,10 @@ extension AST.Atom {
     case .char, .scalar, .scalarSequence:
       return literalStringValue!
 
+    case .invalid:
+      // TODO: Can we recover the original regex text from the source range?
+      return "<#value#>"
+
     case let .property(p):
       return p._regexBase
       
@@ -973,16 +974,22 @@ extension AST.Atom {
   }
 }
 
+extension AST.Atom.Number {
+  var _patternBase: String {
+    value.map { "\($0)" } ?? "<#number#>"
+  }
+}
+
 extension AST.Quantification.Amount {
   var _patternBase: String {
     switch self {
     case .zeroOrMore: return "ZeroOrMore"
     case .oneOrMore:  return "OneOrMore"
     case .zeroOrOne:  return "Optionally"
-    case let .exactly(n):  return "Repeat(count: \(n.value))"
-    case let .nOrMore(n):  return "Repeat(\(n.value)...)"
-    case let .upToN(n):    return "Repeat(...\(n.value))"
-    case let .range(n, m): return "Repeat(\(n.value)...\(m.value))"
+    case let .exactly(n):  return "Repeat(count: \(n._patternBase))"
+    case let .nOrMore(n):  return "Repeat(\(n._patternBase)...)"
+    case let .upToN(n):    return "Repeat(...\(n._patternBase))"
+    case let .range(n, m): return "Repeat(\(n._patternBase)...\(m._patternBase))"
     }
   }
   

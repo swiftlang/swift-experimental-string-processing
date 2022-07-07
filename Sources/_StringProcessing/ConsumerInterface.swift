@@ -36,10 +36,6 @@ extension DSLTree.Node {
       // TODO: Should we handle this here?
       return nil
 
-    case .regexLiteral:
-      fatalError(
-        "unreachable: We should only ask atoms")
-
     case let .convertedRegexLiteral(n, _):
       return try n.generateConsumer(opts)
 
@@ -124,8 +120,15 @@ extension DSLTree.Atom {
 
     case .any:
       // FIXME: Should this be a total ordering?
-      fatalError(
-        "unreachable: emitAny() should be called isntead")
+      if opts.semanticLevel == .graphemeCluster {
+        return { input, bounds in
+          input.index(after: bounds.lowerBound)
+        }
+      } else {
+        return consumeScalar { _ in
+          true
+        }
+      }
 
     case .assertion:
       // TODO: We could handle, should this be total?
@@ -279,7 +282,7 @@ extension AST.Atom {
 
     case .scalarSequence, .escaped, .keyboardControl, .keyboardMeta,
         .keyboardMetaControl, .backreference, .subpattern, .callout,
-        .backtrackingDirective, .changeMatchingOptions:
+        .backtrackingDirective, .changeMatchingOptions, .invalid:
       // FIXME: implement
       return nil
     }
@@ -614,6 +617,9 @@ extension AST.Atom.CharacterProperty {
 
       case .javaSpecial(let s):
         throw Unsupported("TODO: map Java special: \(s)")
+
+      case .invalid:
+        throw Unreachable("Expected valid property")
       }
     }()
 

@@ -22,33 +22,33 @@ class RegexDSLTests: XCTestCase {
     file: StaticString = #file,
     line: UInt = #line,
     @RegexComponentBuilder _ content: () -> Content
-  ) throws {
+  ) throws where Content.RegexOutput == MatchType {
     let regex = content()
     for (input, maybeExpectedCaptures) in tests {
       let maybeMatch = input.wholeMatch(of: regex)
-      if let expectedCaptures = maybeExpectedCaptures,
-        let match = maybeMatch
-      {
-        if xfail {
-          XCTFail("Unexpectedly matched", file: file, line: line)
-          continue
+      guard let match = maybeMatch else {
+        if !xfail, maybeExpectedCaptures != nil {
+          XCTFail("Failed to match '\(input)'", file: file, line: line)
         }
-        XCTAssertTrue(
-          type(of: regex).RegexOutput.self == MatchType.self,
-          """
-          Expected match type: \(MatchType.self)
-          Actual match type: \(type(of: regex).RegexOutput.self)
-          """)
-        let captures = try XCTUnwrap(match.output as? MatchType, file: file, line: line)
-        XCTAssertTrue(
-          equivalence(captures, expectedCaptures),
-          "'\(captures)' is not equal to the expected '\(expectedCaptures)'.",
-          file: file, line: line)
-      } else {
-        if !xfail {
-          XCTAssertNil(maybeMatch, file: file, line: line)
-        }
+        continue
       }
+      guard let expectedCaptures = maybeExpectedCaptures else {
+        if !xfail {
+          XCTFail(
+            "Unexpectedly matched '\(match)' for '\(input)'",
+            file: file, line: line)
+        }
+        continue
+      }
+      if xfail {
+        XCTFail("Unexpectedly matched", file: file, line: line)
+        continue
+      }
+      let captures = match.output
+      XCTAssertTrue(
+        equivalence(captures, expectedCaptures),
+        "'\(captures)' is not equal to the expected '\(expectedCaptures)'.",
+        file: file, line: line)
     }
   }
 
@@ -270,30 +270,47 @@ class RegexDSLTests: XCTestCase {
         }
         .ignoresCase(false)
       }
-    
-#if os(macOS)
-    try XCTExpectFailure("Implement level 2 word boundaries") {
-      try _testDSLCaptures(
-        ("can't stop won't stop", ("can't stop won't stop", "can't", "won")),
-        matchType: (Substring, Substring, Substring).self, ==) {
-          Capture {
-            OneOrMore(.word)
-            Anchor.wordBoundary
-          }
-          OneOrMore(.any, .reluctant)
-          "stop"
-          " "
-          
-          Capture {
-            OneOrMore(.word)
-            Anchor.wordBoundary
-          }
-          .wordBoundaryKind(.unicodeLevel1)
-          OneOrMore(.any, .reluctant)
-          "stop"
+
+    // FIXME: Re-enable this test
+    try _testDSLCaptures(
+      ("can't stop won't stop", ("can't stop won't stop", "can't", "won't")),
+      matchType: (Substring, Substring, Substring).self, ==, xfail: true) {
+        Capture {
+          OneOrMore(.word)
+          Anchor.wordBoundary
         }
-    }
-#endif
+        OneOrMore(.any, .reluctant)
+        "stop"
+        " "
+        
+        Capture {
+          OneOrMore(.word)
+          Anchor.wordBoundary
+        }
+        OneOrMore(.any, .reluctant)
+        "stop"
+      }
+
+    // FIXME: Re-enable this test
+    try _testDSLCaptures(
+      ("can't stop won't stop", ("can't stop won't stop", "can", "won")),
+      matchType: (Substring, Substring, Substring).self, ==, xfail: true) {
+        Capture {
+          OneOrMore(.word)
+          Anchor.wordBoundary
+        }
+        OneOrMore(.any, .reluctant)
+        "stop"
+        " "
+        
+        Capture {
+          OneOrMore(.word)
+          Anchor.wordBoundary
+        }
+        .wordBoundaryKind(.unicodeLevel1)
+        OneOrMore(.any, .reluctant)
+        "stop"
+      }
     
     try _testDSLCaptures(
       ("abcdef123", ("abcdef123", "a", "123")),
@@ -438,6 +455,8 @@ class RegexDSLTests: XCTestCase {
 
     try _testDSLCaptures(
       ("abcdef2", ("abcdef2", "f")),
+      ("2", ("2", nil)),
+      ("", ("", nil)),
       matchType: (Substring, Substring??).self, ==)
     {
       Optionally {
@@ -450,9 +469,13 @@ class RegexDSLTests: XCTestCase {
 
     try _testDSLCaptures(
       ("aaabbbcccdddeeefff", "aaabbbcccdddeeefff"),
+      ("aaabbbcccccdddeeefff", "aaabbbcccccdddeeefff"),
+      ("aaabbbcccddddeeefff", "aaabbbcccddddeeefff"),
+      ("aaabbbccccccdddeeefff", nil),
       ("aaaabbbcccdddeeefff", nil),
       ("aaacccdddeeefff", nil),
       ("aaabbbcccccccdddeeefff", nil),
+      ("aaabbbcccdddddeeefff", nil),
       ("aaabbbcccddddddeeefff", nil),
       ("aaabbbcccdddefff", nil),
       ("aaabbbcccdddeee", "aaabbbcccdddeee"),
@@ -465,7 +488,111 @@ class RegexDSLTests: XCTestCase {
       Repeat(2...) { "e" }
       Repeat(0...) { "f" }
     }
-    
+
+    try _testDSLCaptures(
+      ("", nil),
+      ("a", nil),
+      ("aa", "aa"),
+      ("aaa", "aaa"),
+      matchType: Substring.self, ==)
+    {
+      Repeat(2...) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", "a"),
+      ("aa", "aa"),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(...2) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", "a"),
+      ("aa", nil),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(..<2) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", nil),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(...0) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", nil),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(0 ... 0) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", nil),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(count: 0) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", "a"),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(0 ... 1) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", nil),
+      ("a", "a"),
+      ("aa", "aa"),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(1 ... 2) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", nil),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(0 ..< 1) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", "a"),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(0 ..< 2) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", nil),
+      ("a", "a"),
+      ("aa", "aa"),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(1 ..< 3) { "a" }
+    }
+
     let octoDecimalRegex: Regex<(Substring, Int?)> = Regex {
       let charClass = CharacterClass(.digit, "a"..."h")//.ignoringCase()
       Capture {
@@ -1106,6 +1233,130 @@ class RegexDSLTests: XCTestCase {
       var regex: Regex<Substring> {
         OneOrMore("a")
       }
+    }
+  }
+  
+  // rdar://96280236
+  func testCharacterClassAnyCrash() {
+    let regex = Regex {
+      "{"
+      Capture {
+        OneOrMore {
+          CharacterClass.any.subtracting(.anyOf("}"))
+        }
+      }
+      "}"
+    }
+    
+    func replace(_ template: String) throws -> String {
+      var b = template
+      while let result = try regex.firstMatch(in: b) {
+        b.replaceSubrange(result.range, with: "foo")
+      }
+      return b
+    }
+    
+    XCTAssertEqual(try replace("{bar}"), "foo")
+  }
+
+  func testOptionalNesting() throws {
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring?).self, ==)
+    {
+      try! Regex("(?:a|(b)*)?", as: (Substring, Substring?).self)
+    }
+
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      Optionally {
+        try! Regex("a|(b)*", as: (Substring, Substring?).self)
+      }
+    }
+
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring???).self, ==)
+    {
+      Optionally {
+        ChoiceOf {
+          try! Regex("a", as: Substring.self)
+          try! Regex("(b)*", as: (Substring, Substring?).self)
+        }
+      }
+    }
+
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      ChoiceOf {
+        try! Regex("a", as: Substring.self)
+        try! Regex("(b)*", as: (Substring, Substring?).self)
+      }
+    }
+
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      ChoiceOf {
+        try! Regex("a", as: Substring.self)
+        ZeroOrMore {
+          try! Regex("(b)", as: (Substring, Substring).self)
+        }
+      }
+    }
+
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      ChoiceOf {
+        try! Regex("a", as: Substring.self)
+        ZeroOrMore {
+          Capture {
+            try! Regex("b", as: Substring.self)
+          }
+        }
+      }
+    }
+
+    let r = Regex {
+      Optionally {
+        Optionally {
+          Capture {
+            "a"
+          }
+        }
+      }
+    }
+    if let _ = try r.wholeMatch(in: "")!.output.1 {
+      XCTFail("Unexpected capture match")
+    }
+    if let _ = try r.wholeMatch(in: "a")!.output.1 {}
+    else {
+      XCTFail("Expected to match capture")
     }
   }
 }

@@ -15,16 +15,31 @@
 public struct AST: Hashable {
   public var root: AST.Node
   public var globalOptions: GlobalMatchingOptionSequence?
+  public var diags: Diagnostics
 
-  public init(_ root: AST.Node, globalOptions: GlobalMatchingOptionSequence?) {
+  public init(
+    _ root: AST.Node, globalOptions: GlobalMatchingOptionSequence?,
+    diags: Diagnostics
+  ) {
     self.root = root
     self.globalOptions = globalOptions
+    self.diags = diags
   }
 }
 
 extension AST {
   /// Whether this AST tree contains at least one capture nested inside of it.
   public var hasCapture: Bool { root.hasCapture }
+
+  /// Whether this AST tree is either syntactically or semantically invalid.
+  public var isInvalid: Bool { diags.hasAnyError }
+
+  /// If the AST is invalid, throws an error. Otherwise, returns self.
+  @discardableResult
+  public func ensureValid() throws -> AST {
+    try diags.throwAnyError()
+    return self
+  }
 }
 
 extension AST {
@@ -265,12 +280,12 @@ extension AST {
     public enum Kind: Hashable {
       // \n \gn \g{n} \g<n> \g'n' (?n) (?(n)...
       // Oniguruma: \k<n>, \k'n'
-      case absolute(Int)
+      case absolute(AST.Atom.Number)
 
       // \g{-n} \g<+n> \g'+n' \g<-n> \g'-n' (?+n) (?-n)
       // (?(+n)... (?(-n)...
       // Oniguruma: \k<-n> \k<+n> \k'-n' \k'+n'
-      case relative(Int)
+      case relative(AST.Atom.Number)
 
       // \k<name> \k'name' \g{name} \k{name} (?P=name)
       // \g<name> \g'name' (?&name) (?P>name)
@@ -278,20 +293,33 @@ extension AST {
       case named(String)
 
       /// (?R), (?(R)..., which are equivalent to (?0), (?(0)...
-      static var recurseWholePattern: Kind { .absolute(0) }
+      static func recurseWholePattern(_ loc: SourceLocation) -> Kind {
+        .absolute(.init(0, at: loc))
+      }
+
+      /// Whether this is a reference that recurses the whole pattern, rather
+      /// than a group.
+      public var recursesWholePattern: Bool {
+        switch self {
+        case .absolute(let a):
+          return a.value == 0
+        default:
+          return false
+        }
+      }
     }
     public var kind: Kind
 
     /// An additional specifier supported by Oniguruma that specifies what
     /// recursion level the group being referenced belongs to.
-    public var recursionLevel: Located<Int>?
+    public var recursionLevel: AST.Atom.Number?
 
     /// The location of the inner numeric or textual reference, e.g the location
     /// of '-2' in '\g{-2}'. Note this includes the recursion level for e.g
     /// '\k<a+2>'.
     public var innerLoc: SourceLocation
 
-    public init(_ kind: Kind, recursionLevel: Located<Int>? = nil,
+    public init(_ kind: Kind, recursionLevel: AST.Atom.Number? = nil,
                 innerLoc: SourceLocation) {
       self.kind = kind
       self.recursionLevel = recursionLevel
@@ -300,7 +328,7 @@ extension AST {
 
     /// Whether this is a reference that recurses the whole pattern, rather than
     /// a group.
-    public var recursesWholePattern: Bool { kind == .recurseWholePattern }
+    public var recursesWholePattern: Bool { kind.recursesWholePattern }
   }
 
   /// A set of global matching options in a regular expression literal.

@@ -257,10 +257,12 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(concatBuilderName) {
+        @_alwaysEmitIntoClient
         public static func buildPartialBlock<\(genericParams)>(
           accumulated: R0, next: R1
         ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
-          .init(node: accumulated.regex.root.appending(next.regex.root))
+          let factory = makeFactory()
+          return factory.accumulate(accumulated, next)
         }
       }
 
@@ -273,6 +275,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(defaultAvailableAttr)
       extension \(concatBuilderName) {
         \(defaultAvailableAttr)
+        @_alwaysEmitIntoClient
         public static func buildPartialBlock<W0
       """)
     outputForEach(0..<leftArity) {
@@ -304,7 +307,8 @@ struct VariadicsGenerator: ParsableCommand {
     }
     output("""
         {
-          .init(node: accumulated.regex.root.appending(next.regex.root))
+          let factory = makeFactory()
+          return factory.accumulate(accumulated, next)
         }
       }
 
@@ -386,24 +390,26 @@ struct VariadicsGenerator: ParsableCommand {
       \(defaultAvailableAttr)
       extension \(kind.rawValue) {
       \(params.disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
           _ component: Component,
           _ behavior: RegexRepetitionBehavior? = nil
         ) \(params.whereClauseForInit) {
-          let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
-          self.init(node: .quantification(.\(kind.astQuantifierAmount), kind, component.regex.root))
+          let factory = makeFactory()
+          self.init(factory.\(kind.astQuantifierAmount)(component, behavior))
         }
       }
 
       \(defaultAvailableAttr)
       extension \(kind.rawValue) {
       \(params.disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
           _ behavior: RegexRepetitionBehavior? = nil,
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.whereClauseForInit) {
-          let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
-          self.init(node: .quantification(.\(kind.astQuantifierAmount), kind, component().regex.root))
+          let factory = makeFactory()
+          self.init(factory.\(kind.astQuantifierAmount)(component(), behavior))
         }
       }
 
@@ -411,10 +417,12 @@ struct VariadicsGenerator: ParsableCommand {
         """
         \(defaultAvailableAttr)
         extension \(concatBuilderName) {
+          @_alwaysEmitIntoClient
           public static func buildLimitedAvailability<\(params.genericParams)>(
             _ component: Component
           ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
-            .init(node: .quantification(.\(kind.astQuantifierAmount), .default, component.regex.root))
+            let factory = makeFactory()
+            return factory.\(kind.astQuantifierAmount)(component, nil)
           }
         }
         """ : "")
@@ -428,9 +436,7 @@ struct VariadicsGenerator: ParsableCommand {
     let groupName = "Local"
     func node(builder: Bool) -> String {
       """
-      .nonCapturingGroup(.atomicNonCapturing, component\(
-        builder ? "()" : ""
-      ).regex.root)
+      component\(builder ? "()" : "")
       """
     }
 
@@ -457,10 +463,12 @@ struct VariadicsGenerator: ParsableCommand {
       extension \(groupName) {
         \(defaultAvailableAttr)
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           _ component: Component
         ) \(whereClauseForInit) {
-          self.init(node: \(node(builder: false)))
+          let factory = makeFactory()
+          self.init(factory.atomicNonCapturing(\(node(builder: false))))
         }
       }
 
@@ -468,10 +476,12 @@ struct VariadicsGenerator: ParsableCommand {
       extension \(groupName) {
         \(defaultAvailableAttr)
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           @\(concatBuilderName) _ component: () -> Component
         ) \(whereClauseForInit) {
-          self.init(node: \(node(builder: true)))
+          let factory = makeFactory()
+          self.init(factory.atomicNonCapturing(\(node(builder: true))))
         }
       }
 
@@ -490,41 +500,47 @@ struct VariadicsGenerator: ParsableCommand {
       \(defaultAvailableAttr)
       extension Repeat {
       \(params.disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
           _ component: Component,
           count: Int
         ) \(params.whereClauseForInit) {
-          assert(count > 0, "Must specify a positive count")
-          // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-          self.init(node: .quantification(.exactly(count), .default, component.regex.root))
+          precondition(count >= 0, "Must specify a positive count")
+          let factory = makeFactory()
+          self.init(factory.exactly(count, component))
         }
 
       \(params.disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
           count: Int,
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.whereClauseForInit) {
-          assert(count > 0, "Must specify a positive count")
-          // TODO: Emit a warning about `repeatMatch(count: 0)` or `repeatMatch(count: 1)`
-          self.init(node: .quantification(.exactly(count), .default, component().regex.root))
+          precondition(count >= 0, "Must specify a positive count")
+          let factory = makeFactory()
+          self.init(factory.exactly(count, component()))
         }
 
       \(params.disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(params.genericParams), R: RangeExpression>(
           _ component: Component,
           _ expression: R,
           _ behavior: RegexRepetitionBehavior? = nil
         ) \(params.repeatingWhereClause) {
-          self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component.regex.root))
+          let factory = makeFactory()
+          self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
         }
 
       \(params.disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(params.genericParams), R: RangeExpression>(
           _ expression: R,
           _ behavior: RegexRepetitionBehavior? = nil,
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.repeatingWhereClause) {
-          self.init(node: .repeating(expression.relative(to: 0..<Int.max), behavior, component().regex.root))
+          let factory = makeFactory()
+          self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
         }
       }
       
@@ -572,10 +588,12 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(altBuilderName) {
+        @_alwaysEmitIntoClient
         public static func buildPartialBlock<\(genericParams)>(
           accumulated: R0, next: R1
         ) -> ChoiceOf<\(matchType)> \(whereClause) {
-          .init(node: accumulated.regex.root.appendingAlternationCase(next.regex.root))
+          let factory = makeFactory()
+          return .init(factory.accumulateAlternation(accumulated, next))
         }
       }
 
@@ -599,8 +617,10 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(altBuilderName) {
+        @_alwaysEmitIntoClient
         public static func buildPartialBlock<\(genericParams)>(first regex: R) -> ChoiceOf<(W, \(resultCaptures))> \(whereClause) {
-          .init(node: .orderedChoice([regex.regex.root]))
+          let factory = makeFactory()
+          return .init(factory.orderedChoice(regex))
         }
       }
       
@@ -630,64 +650,66 @@ struct VariadicsGenerator: ParsableCommand {
       \(defaultAvailableAttr)
       extension Capture {
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           _ component: R
         ) \(whereClauseRaw) {
-          self.init(node: .capture(component.regex.root))
+          let factory = makeFactory()
+          self.init(factory.capture(component))
         }
 
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           _ component: R, as reference: Reference<W>
         ) \(whereClauseRaw) {
-          self.init(node: .capture(reference: reference.id, component.regex.root))
+          let factory = makeFactory()
+          self.init(factory.capture(component, reference._raw))
         }
 
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           _ component: R,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            component.regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.capture(component, nil, transform))
         }
 
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           _ component: R,
           as reference: Reference<NewCapture>,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            reference: reference.id,
-            component.regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.capture(component, reference._raw, transform))
         }
       }
 
       \(defaultAvailableAttr)
       extension TryCapture {
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           _ component: R,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-          component.regex.root,
-          CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.captureOptional(component, nil, transform))
         }
 
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           _ component: R,
           as reference: Reference<NewCapture>,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            reference: reference.id,
-            component.regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.captureOptional(component, reference._raw, transform))
         }
       }
 
@@ -696,67 +718,67 @@ struct VariadicsGenerator: ParsableCommand {
       \(defaultAvailableAttr)
       extension Capture {
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           @\(concatBuilderName) _ component: () -> R
         ) \(whereClauseRaw) {
-          self.init(node: .capture(component().regex.root))
+          let factory = makeFactory()
+          self.init(factory.capture(component()))
         }
 
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           as reference: Reference<W>,
           @\(concatBuilderName) _ component: () -> R
         ) \(whereClauseRaw) {
-          self.init(node: .capture(
-            reference: reference.id,
-            component().regex.root))
+          let factory = makeFactory()
+          self.init(factory.capture(component(), reference._raw))
         }
 
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            component().regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.capture(component(), nil, transform))
         }
 
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            reference: reference.id,
-            component().regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.capture(component(), reference._raw, transform))
         }
       }
 
       \(defaultAvailableAttr)
       extension TryCapture {
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            component().regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.captureOptional(component(), nil, transform))
         }
 
       \(disfavored)\
+        @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
           @\(concatBuilderName) _ component: () -> R,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
-          self.init(node: .capture(
-            reference: reference.id,
-            component().regex.root,
-            CaptureTransform(transform)))
+          let factory = makeFactory()
+          self.init(factory.captureOptional(component(), reference._raw, transform))
         }
       }
 

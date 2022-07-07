@@ -66,11 +66,13 @@ extension AST.Conditional {
 
 extension AST.Conditional.Condition {
   public struct PCREVersionNumber: Hashable {
-    public var major: Int
-    public var minor: Int
+    public var major: AST.Atom.Number
+    public var minor: AST.Atom.Number
     public var location: SourceLocation
 
-    public init(major: Int, minor: Int, _ location: SourceLocation) {
+    public init(
+      major: AST.Atom.Number, minor: AST.Atom.Number, _ location: SourceLocation
+    ) {
       self.major = major
       self.minor = minor
       self.location = location
