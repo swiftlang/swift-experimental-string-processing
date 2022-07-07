@@ -208,4 +208,29 @@ extension RegexTests {
     expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, doesNotContain: [.matchBitset])
     expectProgram(for: "[abc]", semanticLevel: .unicodeScalar, contains: [.consumeBy])
   }
+
+  func testQuantificationForwardProgressCompile() {
+    // Unbounded quantification + non forward progressing inner nodes
+    // Expect to emit the position checking instructions
+    expectProgram(for: #"(?:(?=a)){1,}"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\b)*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:(?#comment))+"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:|)+"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|)+"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|(?i-i:))+"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|(?#comment))+"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|(?#comment)(?i-i:))+"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|(?i))+"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+
+    // Bounded quantification, don't emit position checking
+    expectProgram(for: #"(?:(?=a)){1,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\b)?"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:(?#comment)){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:|){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|(?i-i:)){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|(?#comment)){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|(?#comment)(?i-i:)){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(?:\w|(?i)){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+  }
 }
