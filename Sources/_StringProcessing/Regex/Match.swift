@@ -177,14 +177,3 @@ extension BidirectionalCollection where SubSequence == Substring {
     try? r.regex.prefixMatch(in: self[...])
   }
 }
-
-@available(SwiftStdlib 5.7, *)
-extension RegexComponent {
-  public static func ~=(regex: Self, input: String) -> Bool {
-    input.wholeMatch(of: regex) != nil
-  }
-
-  public static func ~=(regex: Self, input: Substring) -> Bool {
-    input.wholeMatch(of: regex) != nil
-  }
-}

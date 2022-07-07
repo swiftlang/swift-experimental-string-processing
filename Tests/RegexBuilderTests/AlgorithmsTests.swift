@@ -103,66 +103,6 @@ class RegexConsumerTests: XCTestCase {
        result: "9+16, 3, 10, 99+1")
     )
   }
-
-  func testSwitches() {
-    // Failure cases
-    do {
-      switch "abcde" {
-      case Regex {
-        "a"
-        ZeroOrMore(.any)
-        "f"
-      }:
-        XCTFail()
-
-      case OneOrMore { CharacterClass.whitespace }:
-        XCTFail()
-
-      case "abc":
-        XCTFail()
-
-      case Regex {
-        "a"
-        "b"
-        "c"
-      }:
-        XCTFail()
-
-      default:
-        break
-      }
-    }
-    // Success cases
-    do {
-      let input = "abcde"
-
-      switch input {
-      case Regex {
-        "a"
-        ZeroOrMore(.any)
-        "e"
-      }:
-        break
-
-      default:
-        XCTFail()
-      }
-
-      guard case Regex({
-        "a"
-        ZeroOrMore(.any)
-        "e"
-      }) = input else {
-        XCTFail()
-        return
-      }
-
-      guard case OneOrMore(.word) = input else {
-        XCTFail()
-        return
-      }
-    }
-  }
 }
 
 class AlgorithmsResultBuilderTests: XCTestCase {
@@ -319,7 +259,7 @@ class AlgorithmsResultBuilderTests: XCTestCase {
   func testStartsAndContains() throws {
     let fam = "👨‍👩‍👧‍👦👨‍👨‍👧‍👧  we Ⓡ family"
     let startsWithGrapheme = fam.starts {
-      OneOrMore(.anyGrapheme)
+      OneOrMore(.anyGraphemeCluster)
       OneOrMore(.whitespace)
     }
     XCTAssertEqual(startsWithGrapheme, true)
@@ -331,7 +271,7 @@ class AlgorithmsResultBuilderTests: XCTestCase {
 
     let content = {
       Regex {
-        OneOrMore(.anyGrapheme)
+        OneOrMore(.anyGraphemeCluster)
         OneOrMore(.whitespace)
       }
     }
@@ -380,7 +320,7 @@ class AlgorithmsResultBuilderTests: XCTestCase {
 
     var mutable = "👨‍👩‍👧‍👦  we Ⓡ family"
     mutable.trimPrefix {
-      .anyGrapheme
+      .anyGraphemeCluster
       ZeroOrMore(.whitespace)
     }
     XCTAssertEqual(mutable, "we Ⓡ family")

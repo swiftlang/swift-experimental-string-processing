@@ -16,7 +16,13 @@ struct MEProgram {
 
   typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?
   typealias AssertionFunction =
-    (Input, Input.Index, Range<Input.Index>) throws -> Bool
+    (
+      inout Set<String.Index>?,
+      inout String.Index?,
+      Input,
+      Input.Index,
+      Range<Input.Index>
+    ) throws -> Bool
   typealias TransformFunction =
     (Input, Processor._StoredCapture) throws -> Any?
   typealias MatcherFunction =

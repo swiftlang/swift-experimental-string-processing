@@ -78,6 +78,9 @@ struct Processor {
 
   var storedCaptures: Array<_StoredCapture>
 
+  var wordIndexCache: Set<String.Index>? = nil
+  var wordIndexMaxIndex: String.Index? = nil
+  
   var state: State = .inProgress
 
   var failureReason: Error? = nil
@@ -401,7 +404,13 @@ extension Processor {
       let reg = payload.assertion
       let assertion = registers[reg]
       do {
-        guard try assertion(input, currentPosition, subjectBounds) else {
+        guard try assertion(
+          &wordIndexCache,
+          &wordIndexMaxIndex,
+          input,
+          currentPosition,
+          subjectBounds
+        ) else {
           signalFailure()
           return
         }

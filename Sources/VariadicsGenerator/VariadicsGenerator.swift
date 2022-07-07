@@ -505,7 +505,7 @@ struct VariadicsGenerator: ParsableCommand {
           _ component: Component,
           count: Int
         ) \(params.whereClauseForInit) {
-          assert(count > 0, "Must specify a positive count")
+          precondition(count >= 0, "Must specify a positive count")
           let factory = makeFactory()
           self.init(factory.exactly(count, component))
         }
@@ -516,7 +516,7 @@ struct VariadicsGenerator: ParsableCommand {
           count: Int,
           @\(concatBuilderName) _ component: () -> Component
         ) \(params.whereClauseForInit) {
-          assert(count > 0, "Must specify a positive count")
+          precondition(count >= 0, "Must specify a positive count")
           let factory = makeFactory()
           self.init(factory.exactly(count, component()))
         }

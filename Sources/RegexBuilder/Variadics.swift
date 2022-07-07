@@ -784,7 +784,7 @@ extension Repeat {
     _ component: Component,
     count: Int
   ) where RegexOutput == Substring {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component))
   }
@@ -795,7 +795,7 @@ extension Repeat {
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == Substring {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component()))
   }
@@ -913,7 +913,7 @@ extension Repeat {
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component))
   }
@@ -923,7 +923,7 @@ extension Repeat {
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?), Component.RegexOutput == (W, C1) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component()))
   }
@@ -1039,7 +1039,7 @@ extension Repeat {
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component))
   }
@@ -1049,7 +1049,7 @@ extension Repeat {
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?), Component.RegexOutput == (W, C1, C2) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component()))
   }
@@ -1165,7 +1165,7 @@ extension Repeat {
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component))
   }
@@ -1175,7 +1175,7 @@ extension Repeat {
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?), Component.RegexOutput == (W, C1, C2, C3) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component()))
   }
@@ -1291,7 +1291,7 @@ extension Repeat {
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component))
   }
@@ -1301,7 +1301,7 @@ extension Repeat {
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?), Component.RegexOutput == (W, C1, C2, C3, C4) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component()))
   }
@@ -1417,7 +1417,7 @@ extension Repeat {
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component))
   }
@@ -1427,7 +1427,7 @@ extension Repeat {
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?), Component.RegexOutput == (W, C1, C2, C3, C4, C5) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component()))
   }
@@ -1543,7 +1543,7 @@ extension Repeat {
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component))
   }
@@ -1553,7 +1553,7 @@ extension Repeat {
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component()))
   }
@@ -1669,7 +1669,7 @@ extension Repeat {
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component))
   }
@@ -1679,7 +1679,7 @@ extension Repeat {
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component()))
   }
@@ -1795,7 +1795,7 @@ extension Repeat {
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component))
   }
@@ -1805,7 +1805,7 @@ extension Repeat {
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component()))
   }
@@ -1921,7 +1921,7 @@ extension Repeat {
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component))
   }
@@ -1931,7 +1931,7 @@ extension Repeat {
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component()))
   }
@@ -2047,7 +2047,7 @@ extension Repeat {
     _ component: Component,
     count: Int
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component))
   }
@@ -2057,7 +2057,7 @@ extension Repeat {
     count: Int,
     @RegexComponentBuilder _ component: () -> Component
   ) where RegexOutput == (Substring, C1?, C2?, C3?, C4?, C5?, C6?, C7?, C8?, C9?, C10?), Component.RegexOutput == (W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    assert(count > 0, "Must specify a positive count")
+    precondition(count >= 0, "Must specify a positive count")
     let factory = makeFactory()
     self.init(factory.exactly(count, component()))
   }
