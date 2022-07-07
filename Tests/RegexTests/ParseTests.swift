@@ -90,7 +90,7 @@ func parseTest(
   }
 
   // Test capture structure round trip serialization.
-  let capStruct = captures._captureStructure(nestOptionals: true)
+  let capStruct = captures._captureStructure
   let serializedCapturesSize = CaptureStructure.serializationBufferSize(
     forInputUTF8CodeUnitCount: input.utf8.count)
   let serializedCaptures = UnsafeMutableRawBufferPointer.allocate(
@@ -805,6 +805,8 @@ extension RegexTests {
     parseTest(#"\M-\C-a"#, atom(.keyboardMetaControl("a")), unsupported: true)
     parseTest(#"\M-\C--"#, atom(.keyboardMetaControl("-")), unsupported: true)
     parseTest(#"\M-a"#, atom(.keyboardMeta("a")), unsupported: true)
+
+    parseTest(#"\O"#, escaped(.trueAnychar), unsupported: true)
 
     // MARK: Comments
 

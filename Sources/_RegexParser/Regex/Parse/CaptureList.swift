@@ -57,63 +57,105 @@ extension CaptureList {
   }
 }
 
+extension CaptureList {
+  public struct Builder {
+    public var captures = CaptureList()
+
+    public init() {}
+
+    public struct OptionalNesting {
+      // We maintain two depths, inner and outer. These allow e.g the nesting
+      // of a regex literal in a DSL, where outside of the scope of the literal,
+      // nesting is allowed, but inside the literal at most one extra layer of
+      // optionality may be added.
+      public var outerDepth: Int
+      public var canNest: Bool
+      public var innerDepth: Int
+
+      internal init(outerDepth: Int, canNest: Bool) {
+        self.outerDepth = outerDepth
+        self.canNest = canNest
+        self.innerDepth = 0
+      }
+
+      public init(canNest: Bool) {
+        self.init(outerDepth: 0, canNest: canNest)
+      }
+
+      public var depth: Int { outerDepth + innerDepth }
+
+      public var disablingNesting: Self {
+        // If we are currently able to nest, store the current depth as the
+        // outer depth, and disable nesting for an inner scope.
+        guard canNest else { return self }
+        return .init(outerDepth: depth, canNest: false)
+      }
+
+      public var addingOptional: Self {
+        var result = self
+        result.innerDepth = canNest ? innerDepth + 1 : 1
+        return result
+      }
+    }
+  }
+}
+
 // MARK: Generating from AST
 
-extension AST.Node {
-  public func _addCaptures(
-    to list: inout CaptureList,
-    optionalNesting nesting: Int
+extension CaptureList.Builder {
+  public mutating func addCaptures(
+    of node: AST.Node, optionalNesting nesting: OptionalNesting
   ) {
-    let addOptional = nesting+1
-    switch self {
+    switch node {
     case let .alternation(a):
       for child in a.children {
-        child._addCaptures(to: &list, optionalNesting: addOptional)
+        addCaptures(of: child, optionalNesting: nesting.addingOptional)
       }
 
     case let .concatenation(c):
       for child in c.children {
-        child._addCaptures(to: &list, optionalNesting: nesting)
+        addCaptures(of: child, optionalNesting: nesting)
       }
 
     case let .group(g):
       switch g.kind.value {
       case .capture:
-        list.append(.init(optionalDepth: nesting, g.location))
+        captures.append(.init(optionalDepth: nesting.depth, g.location))
 
       case .namedCapture(let name):
-        list.append(.init(name: name.value, optionalDepth: nesting, g.location))
+        captures.append(.init(
+          name: name.value, optionalDepth: nesting.depth, g.location))
 
       case .balancedCapture(let b):
-        list.append(.init(name: b.name?.value, optionalDepth: nesting,
-                          g.location))
+        captures.append(.init(
+          name: b.name?.value, optionalDepth: nesting.depth, g.location))
 
       default: break
       }
-      g.child._addCaptures(to: &list, optionalNesting: nesting)
+      addCaptures(of: g.child, optionalNesting: nesting)
 
     case .conditional(let c):
       switch c.condition.kind {
       case .group(let g):
-        AST.Node.group(g)._addCaptures(to: &list, optionalNesting: nesting)
+        addCaptures(of: .group(g), optionalNesting: nesting)
       default:
         break
       }
 
-      c.trueBranch._addCaptures(to: &list, optionalNesting: addOptional)
-      c.falseBranch._addCaptures(to: &list, optionalNesting: addOptional)
+      addCaptures(of: c.trueBranch, optionalNesting: nesting.addingOptional)
+      addCaptures(of: c.falseBranch, optionalNesting: nesting.addingOptional)
 
     case .quantification(let q):
       var optNesting = nesting
       if q.amount.value.bounds.atLeast == 0 {
-        optNesting += 1
+        optNesting = optNesting.addingOptional
       }
-      q.child._addCaptures(to: &list, optionalNesting: optNesting)
+      addCaptures(of: q.child, optionalNesting: optNesting)
 
     case .absentFunction(let abs):
       switch abs.kind {
       case .expression(_, _, let child):
-        child._addCaptures(to: &list, optionalNesting: nesting)
+        addCaptures(of: child, optionalNesting: nesting)
       case .clearer, .repeater, .stopper:
         break
       }
@@ -122,16 +164,17 @@ extension AST.Node {
       break
     }
   }
+  public static func build(_ ast: AST) -> CaptureList {
+    var builder = Self()
+    builder.captures.append(.init(optionalDepth: 0, .fake))
+    builder.addCaptures(of: ast.root, optionalNesting: .init(canNest: false))
+    return builder.captures
+  }
 }
 
 extension AST {
   /// The capture list (including the whole match) of this AST.
-  public var captureList: CaptureList {
-    var caps = CaptureList()
-    caps.append(.init(optionalDepth: 0, .fake))
-    root._addCaptures(to: &caps, optionalNesting: 0)
-    return caps
-  }
+  public var captureList: CaptureList { .Builder.build(self) }
 }
 
 // MARK: Convenience for testing and inspection

@@ -17,23 +17,24 @@ func constructExistentialOutputComponent(
   component: (range: Range<String.Index>, value: Any?)?,
   optionalCount: Int
 ) -> Any {
-  let someCount: Int
-  var underlying: Any
   if let component = component {
-    underlying = component.value ?? input[component.range]
-    someCount = optionalCount
-  } else {
-    // Ok since we Any-box every step up the ladder
-    underlying = Optional<Any>(nil) as Any
-    someCount = optionalCount - 1
-  }
-  for _ in 0..<someCount {
-    func wrap<T>(_ x: T) {
-      underlying = Optional(x) as Any
+    var underlying = component.value ?? input[component.range]
+    for _ in 0 ..< optionalCount {
+      func wrap<T>(_ x: T) {
+        underlying = Optional(x) as Any
+      }
+      _openExistential(underlying, do: wrap)
     }
-    _openExistential(underlying, do: wrap)
+    return underlying
+  } else {
+    precondition(optionalCount > 0, "Must have optional type")
+    func makeNil<T>(_ x: T.Type) -> Any {
+      T?.none as Any
+    }
+    let underlyingTy = TypeConstruction.optionalType(
+      of: Substring.self, depth: optionalCount - 1)
+    return _openExistential(underlyingTy, do: makeNil)
   }
-  return underlying
 }
 
 @available(SwiftStdlib 5.7, *)

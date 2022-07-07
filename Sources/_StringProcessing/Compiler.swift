@@ -47,10 +47,14 @@ enum RegexCompilationError: Error, CustomStringConvertible {
   // TODO: Source location?
   case uncapturedReference
 
+  case incorrectOutputType(incorrect: Any.Type, correct: Any.Type)
+  
   var description: String {
     switch self {
     case .uncapturedReference:
       return "Found a reference used before it captured any match."
+    case .incorrectOutputType(let incorrect, let correct):
+      return "Cast to incorrect type 'Regex<\(incorrect)>', expected 'Regex<\(correct)>'"
     }
   }
 }

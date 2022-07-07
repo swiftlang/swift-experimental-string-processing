@@ -48,14 +48,10 @@ extension RegexComponent where Self == CharacterClass {
     .init(DSLTree.CustomCharacterClass(members: [.atom(.any)]))
   }
 
-  public static var anyGrapheme: CharacterClass {
+  public static var anyGraphemeCluster: CharacterClass {
     .init(unconverted: .anyGrapheme)
   }
   
-  public static var anyUnicodeScalar: CharacterClass {
-    .init(unconverted: .anyUnicodeScalar)
-  }
-
   public static var whitespace: CharacterClass {
     .init(unconverted: .whitespace)
   }

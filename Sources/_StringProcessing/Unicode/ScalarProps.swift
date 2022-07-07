@@ -9,18 +9,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_silgen_name("_swift_stdlib_getScript")
-func _swift_stdlib_getScript(_: UInt32) -> UInt8
+@_silgen_name("_swift_string_processing_getScript")
+func _swift_string_processing_getScript(_: UInt32) -> UInt8
 
-@_silgen_name("_swift_stdlib_getScriptExtensions")
-func _swift_stdlib_getScriptExtensions(
+@_silgen_name("_swift_string_processing_getScriptExtensions")
+func _swift_string_processing_getScriptExtensions(
   _: UInt32,
   _: UnsafeMutablePointer<UInt8>
 ) -> UnsafePointer<UInt8>?
 
 extension Unicode.Script {
   init(_ scalar: Unicode.Scalar) {
-    let rawValue = _swift_stdlib_getScript(scalar.value)
+    let rawValue = _swift_string_processing_getScript(scalar.value)
     
     _internalInvariant(rawValue != .max, "Unknown script rawValue: \(rawValue)")
     
@@ -29,7 +29,7 @@ extension Unicode.Script {
   
   static func extensions(for scalar: Unicode.Scalar) -> [Unicode.Script] {
     var count: UInt8 = 0
-    let pointer = _swift_stdlib_getScriptExtensions(scalar.value, &count)
+    let pointer = _swift_string_processing_getScriptExtensions(scalar.value, &count)
     
     guard let pointer = pointer else {
       return [Unicode.Script(scalar)]
