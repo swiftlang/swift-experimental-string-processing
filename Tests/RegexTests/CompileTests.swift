@@ -232,5 +232,16 @@ extension RegexTests {
     expectProgram(for: #"(?:\w|(?#comment)){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
     expectProgram(for: #"(?:\w|(?#comment)(?i-i:)){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
     expectProgram(for: #"(?:\w|(?i)){,4}"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+  
+    // Inner node is a quantification that does not guarantee forward progress
+    expectProgram(for: #"(a*)*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(a?)*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(a{,5})*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"((\b){,4})*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"((\b){1,4})*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"((|){1,4})*"#, contains: [.moveCurrentPosition, .condBranchSamePosition])
+    // Inner node is a quantification that guarantees forward progress
+    expectProgram(for: #"(a+)*"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
+    expectProgram(for: #"(a{1,})*"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
   }
 }

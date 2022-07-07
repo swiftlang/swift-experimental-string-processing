@@ -886,8 +886,11 @@ extension DSLTree.Node {
     case .consumer, .matcher:
       // Allow zero width consumers and matchers
      return false
-    case .quantification, .customCharacterClass:
+    case .customCharacterClass:
       return true
+    case .quantification(let amount, _, let child):
+      let (atLeast, _) = amount.ast.bounds
+      return atLeast ?? 0 > 0 && child.guaranteesForwardProgress
     default: return false
     }
   }

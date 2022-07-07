@@ -1917,5 +1917,9 @@ extension RegexTests {
     expectCompletion(regex: #"(?:\w|(?#comment))+"#, in: "aa")
     expectCompletion(regex: #"(?:\w|(?#comment)(?i-i:))+"#, in: "aa")
     expectCompletion(regex: #"(?:\w|(?i))+"#, in: "aa")
+    expectCompletion(regex: #"(a*)*"#, in: "aa")
+    expectCompletion(regex: #"(a?)*"#, in: "aa")
+    expectCompletion(regex: #"(a{,4})*"#, in: "aa")
+    expectCompletion(regex: #"((|)+)*"#, in: "aa")
   }
 }
