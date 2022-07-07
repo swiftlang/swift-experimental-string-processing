@@ -543,7 +543,12 @@ fileprivate extension Compiler.ByteCodeGen {
           decrement %minTrips and fallthrough
 
       loop-body:
+        <if can't guarantee forward progress>:
+          mov currentPosition %pos
         evaluate the subexpression
+        <if can't guarantee forward progress>:
+          if %pos is currentPosition:
+            goto exit
         goto min-trip-count control block
 
       exit-policy control block:
@@ -646,7 +651,21 @@ fileprivate extension Compiler.ByteCodeGen {
     //   <subexpression>
     //   branch min-trip-count
     builder.label(loopBody)
+
+    var positionReg: PositionRegister? = nil
+    // if we aren't sure if the child node will have forward progress,
+    if !optimizationsEnabled || !child.guaranteesForwardProgress {
+      positionReg = builder.makePositionRegister()
+      builder.buildMoveCurrentPosition(into: positionReg!)
+    }
     try emitNode(child)
+    if !optimizationsEnabled || !child.guaranteesForwardProgress {
+      // in all quantifier cases, no matter what minTrips or extraTrips is,
+      // if we have a successful non-advancing match, branch to exit because it
+      // can match an arbitrary number of times
+      builder.buildCondBranch(to: exit, ifSamePositionAs: positionReg!)
+    }
+
     if minTrips <= 1 {
       // fallthrough
     } else {
@@ -830,5 +849,41 @@ fileprivate extension Compiler.ByteCodeGen {
       return nil
     }
     return nil
+  }
+}
+
+extension DSLTree.Node {
+  var guaranteesForwardProgress: Bool {
+    switch self {
+    case .orderedChoice(let children):
+      return children.allSatisfy { $0.guaranteesForwardProgress }
+    case .concatenation(let children):
+      return children.contains(where: { $0.guaranteesForwardProgress })
+    case .capture(_, _, let node, _):
+      return node.guaranteesForwardProgress
+    case .nonCapturingGroup(let kind, let child):
+      switch kind.ast {
+      case .lookahead, .negativeLookahead, .lookbehind, .negativeLookbehind:
+        return false
+      default: return child.guaranteesForwardProgress
+      }
+    case .atom(let atom):
+      switch atom {
+      case .changeMatchingOptions, .assertion: return false
+      default: return true
+      }
+    case .trivia, .empty:
+      return false
+    case .quotedLiteral(let string):
+      return !string.isEmpty
+    case .convertedRegexLiteral(let node, _):
+      return node.guaranteesForwardProgress
+    case .consumer, .matcher:
+      // Allow zero width consumers and matchers
+     return false
+    case .quantification, .customCharacterClass:
+      return true
+    default: return false
+    }
   }
 }
