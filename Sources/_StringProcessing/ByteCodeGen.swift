@@ -62,7 +62,10 @@ fileprivate extension Compiler.ByteCodeGen {
       try emitCharacter(c)
 
     case let .scalar(s):
-      try emitScalar(s)
+      // A scalar always matches the same as a single scalar character. This
+      // means it must match a whole grapheme in grapheme semantic mode, but
+      // can match a single scalar in scalar semantic mode.
+      try emitCharacter(Character(s))
 
     case let .assertion(kind):
       try emitAssertion(kind.ast)
@@ -244,8 +247,12 @@ fileprivate extension Compiler.ByteCodeGen {
       }
     }
   }
-  
-  mutating func emitScalar(_ s: UnicodeScalar) throws {
+
+  /// Emit a consume of a single scalar value. This must only be used in scalar
+  /// semantic mode.
+  mutating func emitConsumeScalar(_ s: UnicodeScalar) throws {
+    assert(options.semanticLevel == .unicodeScalar, "Wrong semantic level")
+
     // TODO: Native instruction buildMatchScalar(s)
     if options.isCaseInsensitive {
       // TODO: e.g. buildCaseInsensitiveMatchScalar(s)
@@ -263,7 +270,7 @@ fileprivate extension Compiler.ByteCodeGen {
     // Unicode scalar matches the specific scalars that comprise a character
     if options.semanticLevel == .unicodeScalar {
       for scalar in c.unicodeScalars {
-        try emitScalar(scalar)
+        try emitConsumeScalar(scalar)
       }
       return
     }
