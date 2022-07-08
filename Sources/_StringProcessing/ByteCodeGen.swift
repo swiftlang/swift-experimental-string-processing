@@ -826,6 +826,12 @@ fileprivate extension Compiler.ByteCodeGen {
     case .characterPredicate:
       throw Unsupported("character predicates")
 
+    case let .located(n, loc):
+      builder.pushLocation(loc)
+      let result = try emitNode(n)
+      builder.popLocation()
+      return result
+
     case .trivia, .empty:
       return nil
     }

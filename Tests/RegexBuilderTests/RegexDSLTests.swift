@@ -1118,6 +1118,22 @@ class RegexDSLTests: XCTestCase {
         }
       }
     }
+
+    do {
+       let a = Reference(Substring.self)
+       let _ = Regex {
+         "abc"
+         a
+         OneOrMore(a)
+       }
+       // Run the following line to trigger the runtime compilation error:
+       // _ = "abc".firstMatch(of: regex)
+       //
+       // Fatal error: ... Found a reference used before
+       // it captured any match. Used at:
+       // - .../Tests/RegexBuilderTests/RegexDSLTests.swift@testBackreference():1126:10
+       // - .../Tests/RegexBuilderTests/RegexDSLTests.swift@testBackreference():1127:10
+     }
   }
 
   struct SemanticVersion: Equatable {

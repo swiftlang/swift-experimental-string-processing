@@ -165,15 +165,26 @@ public struct Repeat<Output>: _BuiltinRegexComponent {
 @available(SwiftStdlib 5.7, *)
 @resultBuilder
 public struct AlternationBuilder {
+  public typealias Component<R: RegexComponent> = RegexComponentBuilder.Component<R>
+
   @_disfavoredOverload
+  @_alwaysEmitIntoClient
   public static func buildPartialBlock<R: RegexComponent>(
     first component: R
   ) -> ChoiceOf<R.RegexOutput> {
     .init(component.regex)
   }
 
-  public static func buildExpression<R: RegexComponent>(_ regex: R) -> R {
-    regex
+  @_alwaysEmitIntoClient
+  public static func buildExpression<R: RegexComponent>(
+    _ regex: R,
+     file: String = #file,
+     function: String = #function,
+     line: Int = #line,
+     column: Int = #column
+  ) -> Component<R> {
+    .init(
+      value: regex, file: file, function: function, line: line, column: column)
   }
 }
 

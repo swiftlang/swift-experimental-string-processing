@@ -29,7 +29,7 @@ extension DSLTree.Node {
       // TODO: Should we handle this here?
       return nil
 
-    case let .convertedRegexLiteral(n, _):
+    case let .convertedRegexLiteral(n, _), let .located(n, _):
       return try n.generateConsumer(opts)
 
     case .orderedChoice, .conditional, .concatenation,
