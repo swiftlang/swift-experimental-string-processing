@@ -40,8 +40,11 @@ extension MEProgram {
     var initialOptions = MatchingOptions()
 
     // Symbolic reference resolution
-    var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
+    var unresolvedReferences: [ReferenceID: [DSLLocated<InstructionAddress>]] = [:]
     var referencedCaptureOffsets: [ReferenceID: Int] = [:]
+
+    // DSL source location support.
+    var locationStack: [DSLSourceLocation] = []
 
     var captureCount: Int {
       // We currently deduce the capture count from the capture register number.
@@ -220,14 +223,27 @@ extension MEProgram.Builder {
 
   mutating func buildUnresolvedReference(id: ReferenceID) {
     buildBackreference(.init(0))
-    unresolvedReferences[id, default: []].append(lastInstructionAddress)
+    unresolvedReferences[id, default: []].append(
+      .init(value: lastInstructionAddress, location: currentLocation))
   }
 
   mutating func buildNamedReference(_ name: String) throws {
     guard let index = captureList.indexOfCapture(named: name) else {
-      throw RegexCompilationError.uncapturedReference
+      throw RegexCompilationError.uncapturedReference()
     }
     buildBackreference(.init(index))
+  }
+
+  mutating func pushLocation(_ loc: DSLSourceLocation) {
+    locationStack.append(loc)
+  }
+
+  mutating func popLocation() {
+    locationStack.removeLast()
+  }
+
+  var currentLocation: DSLSourceLocation? {
+    locationStack.last
   }
 
   // TODO: Mutating because of fail address fixup, drop when
@@ -373,10 +389,10 @@ fileprivate extension MEProgram.Builder {
   mutating func resolveReferences() throws {
     for (id, uses) in unresolvedReferences {
       guard let offset = referencedCaptureOffsets[id] else {
-        throw RegexCompilationError.uncapturedReference
+        throw RegexCompilationError.uncapturedReference(uses.compactMap(\.location))
       }
       for use in uses {
-        instructions[use.rawValue] =
+        instructions[use.value.rawValue] =
           Instruction(.backreference, .init(capture: .init(offset)))
       }
     }

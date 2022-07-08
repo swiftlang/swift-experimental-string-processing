@@ -200,4 +200,22 @@ public struct _RegexFactory {
       CaptureTransform(transform)
     ))
   }
+
+  @_spi(RegexBuilder)
+  @available(SwiftStdlib 5.7, *)
+  public func located<Output>(
+    _ component: some RegexComponent<Output>,
+    _ file: String,
+    _ function: String,
+    _ line: Int,
+    _ column: Int
+  ) -> Regex<Output> {
+    .init(node: .located(
+      component.regex.root,
+      DSLSourceLocation(
+        file: file,
+        function: function,
+        line: line,
+        column: column)))
+  }
 }

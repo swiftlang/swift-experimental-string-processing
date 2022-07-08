@@ -44,15 +44,21 @@ class Compiler {
 
 // An error produced when compiling a regular expression.
 enum RegexCompilationError: Error, CustomStringConvertible {
-  // TODO: Source location?
-  case uncapturedReference
+  case uncapturedReference([DSLSourceLocation] = [])
 
   case incorrectOutputType(incorrect: Any.Type, correct: Any.Type)
   
   var description: String {
     switch self {
-    case .uncapturedReference:
-      return "Found a reference used before it captured any match."
+    case .uncapturedReference(let locs):
+      var message = "Found a reference used before it captured any match."
+      if !locs.isEmpty {
+        message += " Used at:\n"
+        for loc in locs {
+          message += "- \(loc)\n"
+        }
+      }
+      return message
     case .incorrectOutputType(let incorrect, let correct):
       return "Cast to incorrect type 'Regex<\(incorrect)>', expected 'Regex<\(correct)>'"
     }

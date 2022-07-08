@@ -91,6 +91,8 @@ extension DSLTree {
 
     // TODO: Would this just boil down to a consumer?
     case characterPredicate(_CharacterPredicateInterface)
+
+    case located(Node, DSLSourceLocation)
   }
 }
 
@@ -337,6 +339,7 @@ extension DSLTree.Node {
     case let .capture(_, _, n, _):        return [n]
     case let .nonCapturingGroup(_, n):    return [n]
     case let .quantification(_, _, n):    return [n]
+    case let .located(n, _):              return [n]
 
     case let .conditional(_, t, f): return [t,f]
 
@@ -605,6 +608,9 @@ extension CaptureList.Builder {
     case .matcher:
       break
 
+    case .located(let child, _):
+      addCaptures(of: child, optionalNesting: nesting)
+
     case .customCharacterClass, .atom, .trivia, .empty,
         .quotedLiteral, .consumer, .characterPredicate:
       break
@@ -625,7 +631,7 @@ extension DSLTree.Node {
   /// output but forwarding its only child's output.
   var isOutputForwarding: Bool {
     switch self {
-    case .nonCapturingGroup:
+    case .nonCapturingGroup, .located:
       return true
     case .orderedChoice, .concatenation, .capture,
          .conditional, .quantification, .customCharacterClass, .atom,
@@ -685,6 +691,7 @@ extension DSLTree {
       case let .capture(_, _, n, _):        return [_Tree(n)]
       case let .nonCapturingGroup(_, n):    return [_Tree(n)]
       case let .quantification(_, _, n):    return [_Tree(n)]
+      case let .located(n, _):              return [_Tree(n)]
 
       case let .conditional(_, t, f): return [_Tree(t), _Tree(f)]
 
