@@ -315,8 +315,7 @@ extension PrettyPrinter {
       return
     }
     
-    var charMembers = ""
-    
+    var charMembers = StringLiteralBuilder()
 
     // This iterates through all of the character class members collecting all
     // of the members who can be stuffed into a singular '.anyOf(...)' vs.
@@ -340,14 +339,10 @@ extension PrettyPrinter {
         switch a {
         case let .char(c):
           charMembers.append(c)
-          
-          if c == "\\" {
-            charMembers.append(c)
-          }
-          
           return false
         case let .scalar(s):
-          charMembers += "\\u{\(String(s.value, radix: 16, uppercase: true))}"
+          charMembers.append(
+            unescaped: "\\u{\(String(s.value, radix: 16, uppercase: true))}")
           return false
         case .unconverted(_):
           return true
@@ -356,7 +351,7 @@ extension PrettyPrinter {
         }
         
       case let .quotedLiteral(s):
-        charMembers += s
+        charMembers.append(s)
         return false
         
       case .trivia(_):
@@ -370,7 +365,7 @@ extension PrettyPrinter {
     // Also in the same vein, if we have a few atom members but no
     // nonAtomMembers, then we can emit a single .anyOf(...) for them.
     if !charMembers.isEmpty, nonCharMembers.isEmpty {
-      let anyOf = ".anyOf(\(charMembers._quoted))"
+      let anyOf = ".anyOf(\(charMembers))"
       
       indent()
       
@@ -393,7 +388,7 @@ extension PrettyPrinter {
       printer.indent()
       
       if !charMembers.isEmpty {
-        printer.output(".anyOf(\(charMembers._quoted))")
+        printer.output(".anyOf(\(charMembers))")
         
         if nonCharMembers.count > 0 {
           printer.output(",")
@@ -617,10 +612,39 @@ extension PrettyPrinter {
 }
 
 extension String {
-  // TODO: Escaping?
-  fileprivate var _quoted: String {
-    "\"\(self._replacing(#"\"#, with: #"\\"#)._replacing(#"""#, with: #"\""#))\""
+  fileprivate var _escaped: String {
+    _replacing(#"\"#, with: #"\\"#)._replacing(#"""#, with: #"\""#)
   }
+
+  fileprivate var _quoted: String {
+    _escaped._bareQuoted
+  }
+
+  fileprivate var _bareQuoted: String {
+    #""\#(self)""#
+  }
+}
+
+/// A helper for building string literals, which handles escaping the contents
+/// appended.
+fileprivate struct StringLiteralBuilder {
+  private var contents = ""
+
+  var result: String { contents._bareQuoted }
+  var isEmpty: Bool { contents.isEmpty }
+
+  mutating func append(_ str: String) {
+    contents += str._escaped
+  }
+  mutating func append(_ c: Character) {
+    contents += String(c)._escaped
+  }
+  mutating func append(unescaped str: String) {
+    contents += str
+  }
+}
+extension StringLiteralBuilder: CustomStringConvertible {
+  var description: String { result }
 }
 
 extension AST.Atom.AssertionKind {
@@ -1107,8 +1131,8 @@ extension DSLTree.Atom {
       
     case let .scalar(s):
       let hex = String(s.value, radix: 16, uppercase: true)
-      return ("\\u{\(hex)}"._quoted, false)
-      
+      return ("\\u{\(hex)}"._bareQuoted, false)
+
     case let .unconverted(a):
       if a.ast.isUnprintableAtom {
         return ("#/\(a.ast._regexBase)/#", false)
@@ -1149,7 +1173,7 @@ extension DSLTree.Atom {
       
     case let .scalar(s):
       let hex = String(s.value, radix: 16, uppercase: true)
-      return "\\u{\(hex)}"._quoted
+      return "\\u{\(hex)}"._bareQuoted
       
     case let .unconverted(a):
       return a.ast._regexBase
