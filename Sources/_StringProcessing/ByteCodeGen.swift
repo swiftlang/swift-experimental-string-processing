@@ -652,23 +652,25 @@ fileprivate extension Compiler.ByteCodeGen {
     //   branch min-trip-count
     builder.label(loopBody)
 
-    var positionReg: PositionRegister? = nil
     // if we aren't sure if the child node will have forward progress and
-    // we have an unbounded quantification,
-    if (!optimizationsEnabled || !child.guaranteesForwardProgress),
-       extraTrips == nil
-    {
-      positionReg = builder.makePositionRegister()
-      builder.buildMoveCurrentPosition(into: positionReg!)
+    // we have an unbounded quantification
+    let startPosition: PositionRegister?
+    let emitPositionChecking =
+      (!optimizationsEnabled || !child.guaranteesForwardProgress) &&
+      extraTrips == nil
+
+    if emitPositionChecking {
+      startPosition = builder.makePositionRegister()
+      builder.buildMoveCurrentPosition(into: startPosition!)
+    } else {
+      startPosition = nil
     }
     try emitNode(child)
-    if (!optimizationsEnabled || !child.guaranteesForwardProgress),
-       extraTrips == nil
-    {
+    if emitPositionChecking {
       // in all quantifier cases, no matter what minTrips or extraTrips is,
       // if we have a successful non-advancing match, branch to exit because it
       // can match an arbitrary number of times
-      builder.buildCondBranch(to: exit, ifSamePositionAs: positionReg!)
+      builder.buildCondBranch(to: exit, ifSamePositionAs: startPosition!)
     }
 
     if minTrips <= 1 {
