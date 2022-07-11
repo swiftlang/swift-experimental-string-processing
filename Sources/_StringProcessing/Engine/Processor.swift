@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+@_implementationOnly import _RegexParser // For AssertionKind
+
 enum MatchMode {
   case wholeString
   case partialFromFront
@@ -257,7 +259,6 @@ extension Processor {
       return false
     }
 
-    // Slow path: Do full match
     var matched: Bool
     var next = input.index(after: currentPosition)
     switch cc {
@@ -300,7 +301,7 @@ extension Processor {
       signalFailure()
       return false
     }
-    // Slow path: Do full match
+
     var matched: Bool
     var next = input.unicodeScalars.index(after: currentPosition)
     switch cc {
@@ -337,6 +338,107 @@ extension Processor {
       signalFailure()
       return false
     }
+  }
+
+  mutating func regexAssert(
+    by kind: AST.Atom.AssertionKind,
+    _ anchorsMatchNewlines: Bool,
+    _ usesSimpleUnicodeBoundaries: Bool,
+    _ usesASCIIWord: Bool,
+    _ semanticLevel: MatchingOptions.SemanticLevel
+  ) throws -> Bool {
+    // Future work: Optimize layout and dispatch
+    
+    // FIXME: Depends on API model we have... We may want to
+    // think through some of these with API interactions in mind
+    //
+    // This might break how we use `bounds` for both slicing
+    // and things like `firstIndex`, that is `firstIndex` may
+    // need to supply both a slice bounds and a per-search bounds.
+    switch kind {
+    case .startOfSubject: return currentPosition == subjectBounds.lowerBound
+
+    case .endOfSubjectBeforeNewline:
+      if currentPosition == subjectBounds.upperBound { return true }
+      switch semanticLevel {
+      case .graphemeCluster:
+        return input.index(after: currentPosition) == subjectBounds.upperBound
+         && input[currentPosition].isNewline
+      case .unicodeScalar:
+        return input.unicodeScalars.index(after: currentPosition) == subjectBounds.upperBound
+         && input.unicodeScalars[currentPosition].isNewline
+      }
+
+    case .endOfSubject: return currentPosition == subjectBounds.upperBound
+
+    case .resetStartOfMatch:
+      // FIXME: Figure out how to communicate this out
+      throw Unsupported(#"\K (reset/keep assertion)"#)
+
+    case .firstMatchingPositionInSubject:
+      // TODO: We can probably build a nice model with API here
+
+      // FIXME: This needs to be based on `searchBounds`,
+      // not the `subjectBounds` given as an argument here
+      // (Note: the above fixme was in reference to the old assert function API.
+      //   Now that we're in processor, we have access to searchBounds)
+      return false
+
+    case .textSegment: return input.isOnGraphemeClusterBoundary(currentPosition)
+
+    case .notTextSegment: return !input.isOnGraphemeClusterBoundary(currentPosition)
+
+    case .startOfLine:
+      // FIXME: Anchor.startOfLine must always use this first branch
+      // The behavior of `^` should depend on `anchorsMatchNewlines`, but
+      // the DSL-based `.startOfLine` anchor should always match the start
+      // of a line. Right now we don't distinguish between those anchors.
+      if anchorsMatchNewlines {
+        if currentPosition == subjectBounds.lowerBound { return true }
+        switch semanticLevel {
+        case .graphemeCluster:
+          return input[input.index(before: currentPosition)].isNewline
+        case .unicodeScalar:
+          return input.unicodeScalars[input.unicodeScalars.index(before: currentPosition)].isNewline
+        }
+      } else {
+        return currentPosition == subjectBounds.lowerBound
+      }
+  
+      case .endOfLine:
+        // FIXME: Anchor.endOfLine must always use this first branch
+        // The behavior of `$` should depend on `anchorsMatchNewlines`, but
+        // the DSL-based `.endOfLine` anchor should always match the end
+        // of a line. Right now we don't distinguish between those anchors.
+        if anchorsMatchNewlines {
+          if currentPosition == subjectBounds.upperBound { return true }
+          switch semanticLevel {
+          case .graphemeCluster:
+            return input[currentPosition].isNewline
+          case .unicodeScalar:
+            return input.unicodeScalars[currentPosition].isNewline
+          }
+        } else {
+          return currentPosition == subjectBounds.upperBound
+        }
+  
+      case .wordBoundary:
+        if usesSimpleUnicodeBoundaries {
+          // TODO: How should we handle bounds?
+          return atSimpleBoundary(usesASCIIWord, semanticLevel)
+          // lily note: there appear to be no test cases that use this option, ping alex to ask what they should look like
+        } else {
+          return input.isOnWordBoundary(at: currentPosition, using: &wordIndexCache, &wordIndexMaxIndex)
+        }
+  
+      case .notWordBoundary:
+        if usesSimpleUnicodeBoundaries {
+          // TODO: How should we handle bounds?
+          return !atSimpleBoundary(usesASCIIWord, semanticLevel)
+        } else {
+          return !input.isOnWordBoundary(at: currentPosition, using: &wordIndexCache, &wordIndexMaxIndex)
+        }
+      }
   }
 
   mutating func signalFailure() {
@@ -508,15 +610,18 @@ extension Processor {
       controller.step()
 
     case .assertBy:
-      let reg = payload.assertion
-      let assertion = registers[reg]
+      let (kind,
+           anchorsMatchNewlines,
+           usesSimpleUnicodeBoundaries,
+           usesASCIIWord,
+           semanticLevel) = payload.assertion
       do {
-        guard try assertion(
-          &wordIndexCache,
-          &wordIndexMaxIndex,
-          input,
-          currentPosition,
-          subjectBounds
+        guard try regexAssert(
+          by: kind,
+          anchorsMatchNewlines,
+          usesSimpleUnicodeBoundaries,
+          usesASCIIWord,
+          semanticLevel
         ) else {
           signalFailure()
           return

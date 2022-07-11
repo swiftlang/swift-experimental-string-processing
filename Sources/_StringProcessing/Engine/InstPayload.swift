@@ -8,7 +8,7 @@
 // See https://swift.org/LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
-
+@_implementationOnly import _RegexParser // For AssertionKind
 
 extension Instruction {
   /// An instruction's payload packs operands and destination
@@ -51,7 +51,6 @@ extension Instruction.Payload {
     case element(ElementRegister)
     case consumer(ConsumeFunctionRegister)
     case bitset(AsciiBitsetRegister)
-    case assertion(AssertionFunctionRegister)
     case addr(InstructionAddress)
     case capture(CaptureRegister)
 
@@ -227,11 +226,64 @@ extension Instruction.Payload {
     interpret()
   }
 
-  init(assertion: AssertionFunctionRegister) {
-    self.init(assertion)
+  var _assertionKindMask: UInt64 { ~0xFFF0_0000_0000_0000 }
+  init(assertion: AST.Atom.AssertionKind,
+       _ anchorsMatchNewlines: Bool,
+       _ usesSimpleUnicodeBoundaries: Bool,
+       _ usesASCIIWord: Bool,
+       _ semanticLevel: MatchingOptions.SemanticLevel
+  ) {
+    // 4 bits of options
+    let anchorBit: UInt64 = anchorsMatchNewlines ? (1 << 55) : 0
+    let boundaryBit: UInt64 = usesSimpleUnicodeBoundaries ? (1 << 54) : 0
+    let strictBit: UInt64 = usesASCIIWord ? (1 << 53) : 0
+    let semanticLevelBit: UInt64 = semanticLevel == .unicodeScalar ? (1 << 52) : 0
+    let optionsBits: UInt64 = anchorBit + boundaryBit + strictBit + semanticLevelBit
+
+    // 4 bits for the assertion kind
+    // Future work: Optimize this layout
+    let kind: UInt64
+    switch assertion {
+    case .endOfLine: kind = 0
+    case .endOfSubject: kind = 1
+    case .endOfSubjectBeforeNewline: kind = 2
+    case .firstMatchingPositionInSubject: kind = 3
+    case .notTextSegment: kind = 4
+    case .notWordBoundary: kind = 5
+    case .resetStartOfMatch: kind = 6
+    case .startOfLine: kind = 7
+    case .startOfSubject: kind = 8
+    case .textSegment: kind = 9
+    case .wordBoundary: kind = 10
+    }
+    self.init(rawValue: kind + optionsBits)
   }
-  var assertion: AssertionFunctionRegister {
-    interpret()
+  var assertion: (AST.Atom.AssertionKind, Bool, Bool, Bool, MatchingOptions.SemanticLevel) {
+    let anchorsMatchNewlines = (self.rawValue >> 55) & 1 == 1
+    let usesSimpleUnicodeBoundaries = (self.rawValue >> 54) & 1 == 1
+    let usesASCIIWord = (self.rawValue >> 53) & 1 == 1
+    let semanticLevel: MatchingOptions.SemanticLevel
+    if (self.rawValue >> 52) & 1 == 1 {
+      semanticLevel = .unicodeScalar
+    } else {
+      semanticLevel = .graphemeCluster
+    }
+    let kind: AST.Atom.AssertionKind
+    switch self.rawValue & _assertionKindMask {
+    case 0: kind = .endOfLine
+    case 1: kind = .endOfSubject
+    case 2: kind = .endOfSubjectBeforeNewline
+    case 3: kind = .firstMatchingPositionInSubject
+    case 4: kind = .notTextSegment
+    case 5: kind = .notWordBoundary
+    case 6: kind = .resetStartOfMatch
+    case 7: kind = .startOfLine
+    case 8: kind = .startOfSubject
+    case 9: kind = .textSegment
+    case 10: kind = .wordBoundary
+    default: fatalError("Unreachable")
+    }
+    return (kind, anchorsMatchNewlines, usesSimpleUnicodeBoundaries, usesASCIIWord, semanticLevel)
   }
 
   init(addr: InstructionAddress) {

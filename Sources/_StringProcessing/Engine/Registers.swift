@@ -33,8 +33,6 @@ extension Processor {
 
     var consumeFunctions: [MEProgram.ConsumeFunction]
 
-    var assertionFunctions: [MEProgram.AssertionFunction]
-
     // Captured-value constructors
     var transformFunctions: [MEProgram.TransformFunction]
 
@@ -77,9 +75,6 @@ extension Processor.Registers {
   subscript(_ i: ConsumeFunctionRegister) -> MEProgram.ConsumeFunction {
     consumeFunctions[i.rawValue]
   }
-  subscript(_ i: AssertionFunctionRegister) -> MEProgram.AssertionFunction {
-    assertionFunctions[i.rawValue]
-  }
   subscript(_ i: TransformRegister) -> MEProgram.TransformFunction {
     transformFunctions[i.rawValue]
   }
@@ -106,9 +101,6 @@ extension Processor.Registers {
 
     self.consumeFunctions = program.staticConsumeFunctions
     assert(consumeFunctions.count == info.consumeFunctions)
-
-    self.assertionFunctions = program.staticAssertionFunctions
-    assert(assertionFunctions.count == info.assertionFunctions)
 
     self.transformFunctions = program.staticTransformFunctions
     assert(transformFunctions.count == info.transformFunctions)
@@ -145,7 +137,6 @@ extension MEProgram {
     var strings = 0
     var bitsets = 0
     var consumeFunctions = 0
-    var assertionFunctions = 0
     var transformFunctions = 0
     var matcherFunctions = 0
     var ints = 0

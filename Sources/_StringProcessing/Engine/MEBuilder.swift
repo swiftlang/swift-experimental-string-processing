@@ -20,7 +20,6 @@ extension MEProgram {
 
     var asciiBitsets: [DSLTree.CustomCharacterClass.AsciiBitset] = []
     var consumeFunctions: [ConsumeFunction] = []
-    var assertionFunctions: [AssertionFunction] = []
     var transformFunctions: [TransformFunction] = []
     var matcherFunctions: [MatcherFunction] = []
 
@@ -171,11 +170,27 @@ extension MEProgram.Builder {
       .consumeBy, .init(consumer: makeConsumeFunction(p))))
   }
 
+//  mutating func buildAssert(
+//    by p: @escaping MEProgram.AssertionFunction
+//  ) {
+//    instructions.append(.init(
+//      .assertBy, .init(assertion: makeAssertionFunction(p))))
+//  }
   mutating func buildAssert(
-    by p: @escaping MEProgram.AssertionFunction
+    by kind: AST.Atom.AssertionKind,
+    _ anchorsMatchNewlines: Bool,
+    _ usesSimpleUnicodeBoundaries: Bool,
+    _ usesASCIIWord: Bool,
+    _ semanticLevel: MatchingOptions.SemanticLevel
   ) {
     instructions.append(.init(
-      .assertBy, .init(assertion: makeAssertionFunction(p))))
+      .assertBy,
+      .init(
+        assertion: kind,
+        anchorsMatchNewlines,
+        usesSimpleUnicodeBoundaries,
+        usesASCIIWord,
+        semanticLevel)))
   }
 
   mutating func buildAccept() {
@@ -292,7 +307,6 @@ extension MEProgram.Builder {
     regInfo.values = nextValueRegister.rawValue
     regInfo.bitsets = asciiBitsets.count
     regInfo.consumeFunctions = consumeFunctions.count
-    regInfo.assertionFunctions = assertionFunctions.count
     regInfo.transformFunctions = transformFunctions.count
     regInfo.matcherFunctions = matcherFunctions.count
     regInfo.captures = nextCaptureRegister.rawValue
@@ -303,7 +317,6 @@ extension MEProgram.Builder {
       staticSequences: sequences.stored,
       staticBitsets: asciiBitsets,
       staticConsumeFunctions: consumeFunctions,
-      staticAssertionFunctions: assertionFunctions,
       staticTransformFunctions: transformFunctions,
       staticMatcherFunctions: matcherFunctions,
       registerInfo: regInfo,
@@ -445,12 +458,6 @@ extension MEProgram.Builder {
   ) -> ConsumeFunctionRegister {
     defer { consumeFunctions.append(f) }
     return ConsumeFunctionRegister(consumeFunctions.count)
-  }
-  mutating func makeAssertionFunction(
-    _ f: @escaping MEProgram.AssertionFunction
-  ) -> AssertionFunctionRegister {
-    defer { assertionFunctions.append(f) }
-    return AssertionFunctionRegister(assertionFunctions.count)
   }
   mutating func makeTransformFunction(
     _ f: @escaping MEProgram.TransformFunction
