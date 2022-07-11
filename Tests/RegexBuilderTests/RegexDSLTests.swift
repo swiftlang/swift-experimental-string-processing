@@ -1159,7 +1159,7 @@ class RegexDSLTests: XCTestCase {
     XCTAssertNotNil(try r3.matchingSemantics(.unicodeScalar).wholeMatch(in: "👨‍👨‍👧‍👦"))
 
     let r4 = Regex { "é" as UnicodeScalar }
-    XCTAssertNil(
+    XCTAssertNotNil(
       try r4.firstMatch(in: "e\u{301}")
     )
     XCTAssertNotNil(

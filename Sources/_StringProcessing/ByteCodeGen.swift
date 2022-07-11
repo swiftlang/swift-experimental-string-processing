@@ -62,7 +62,11 @@ fileprivate extension Compiler.ByteCodeGen {
       emitCharacter(c)
 
     case let .scalar(s):
-      emitScalar(s)
+      if options.semanticLevel == .graphemeCluster {
+        emitCharacter(Character(s))
+      } else {
+        emitMatchScalar(s)
+      }
 
     case let .assertion(kind):
       try emitAssertion(kind.ast)
@@ -92,7 +96,7 @@ fileprivate extension Compiler.ByteCodeGen {
     guard options.semanticLevel == .graphemeCluster else {
       for char in s {
         for scalar in char.unicodeScalars {
-          emitScalar(scalar)
+          emitMatchScalar(scalar)
         }
       }
       return
@@ -273,14 +277,12 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
   
-  mutating func emitScalar(_ s: UnicodeScalar) {
-    // A scalar in grapheme semantic mode must match a full charcter, so
-    // perform a boundary check
-    let boundaryCheck = options.semanticLevel == .graphemeCluster
+  mutating func emitMatchScalar(_ s: UnicodeScalar) {
+    assert(options.semanticLevel == .unicodeScalar)
     if options.isCaseInsensitive && s.properties.isCased {
-      builder.buildMatchScalarCaseInsensitive(s, boundaryCheck: boundaryCheck)
+      builder.buildMatchScalarCaseInsensitive(s, boundaryCheck: false)
     } else {
-      builder.buildMatchScalar(s, boundaryCheck: boundaryCheck)
+      builder.buildMatchScalar(s, boundaryCheck: false)
     }
   }
   
@@ -288,7 +290,7 @@ fileprivate extension Compiler.ByteCodeGen {
     // Unicode scalar mode matches the specific scalars that comprise a character
     if options.semanticLevel == .unicodeScalar {
       for scalar in c.unicodeScalars {
-        emitScalar(scalar)
+        emitMatchScalar(scalar)
       }
       return
     }
