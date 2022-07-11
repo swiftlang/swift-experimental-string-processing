@@ -1157,6 +1157,14 @@ class RegexDSLTests: XCTestCase {
     XCTAssertNil(try r3.firstMatch(in: "👨‍👨‍👧‍👦"))
     XCTAssertNotNil(try r3.matchingSemantics(.unicodeScalar).firstMatch(in: "👨‍👨‍👧‍👦"))
     XCTAssertNotNil(try r3.matchingSemantics(.unicodeScalar).wholeMatch(in: "👨‍👨‍👧‍👦"))
+
+    let r4 = Regex { "é" as UnicodeScalar }
+    XCTAssertNil(
+      try r4.firstMatch(in: "e\u{301}")
+    )
+    XCTAssertNotNil(
+      try r4.firstMatch(in: "é")
+    )
   }
 
   struct SemanticVersion: Equatable {
