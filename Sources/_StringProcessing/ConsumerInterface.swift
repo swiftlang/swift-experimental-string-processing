@@ -60,6 +60,45 @@ extension DSLTree._AST.Atom {
   }
 }
 
+extension Character {
+  func generateConsumer(
+    _ opts: MatchingOptions
+  ) throws -> MEProgram.ConsumeFunction? {
+    let isCaseInsensitive = opts.isCaseInsensitive
+    switch opts.semanticLevel {
+    case .graphemeCluster:
+      return { input, bounds in
+        let low = bounds.lowerBound
+        if isCaseInsensitive && isCased {
+          return input[low].lowercased() == lowercased()
+            ? input.index(after: low)
+            : nil
+        } else {
+          return input[low] == self
+            ? input.index(after: low)
+            : nil
+        }
+      }
+    case .unicodeScalar:
+      // TODO: This should only be reachable from character class emission, can
+      // we guarantee that? Otherwise we'd want a different matching behavior.
+      let consumers = unicodeScalars.map { s in consumeScalar {
+        isCaseInsensitive
+          ? $0.properties.lowercaseMapping == s.properties.lowercaseMapping
+          : $0 == s
+      }}
+      return { input, bounds in
+        for fn in consumers {
+          if let idx = fn(input, bounds) {
+            return idx
+          }
+        }
+        return nil
+      }
+    }
+  }
+}
+
 extension DSLTree.Atom {
   var singleScalarASCIIValue: UInt8? {
     switch self {
@@ -79,44 +118,15 @@ extension DSLTree.Atom {
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram.ConsumeFunction? {
-    let isCaseInsensitive = opts.isCaseInsensitive
-    
     switch self {
     case let .char(c):
-      if opts.semanticLevel == .graphemeCluster {
-        return { input, bounds in
-          let low = bounds.lowerBound
-          if isCaseInsensitive && c.isCased {
-            return input[low].lowercased() == c.lowercased()
-              ? input.index(after: low)
-              : nil
-          } else {
-            return input[low] == c
-              ? input.index(after: low)
-              : nil
-          }
-        }
-      } else {
-        let consumers = c.unicodeScalars.map { s in consumeScalar {
-          isCaseInsensitive
-            ? $0.properties.lowercaseMapping == s.properties.lowercaseMapping
-            : $0 == s
-        }}
-        return { input, bounds in
-          for fn in consumers {
-            if let idx = fn(input, bounds) {
-              return idx
-            }
-          }
-          return nil
-        }
-      }
+      return try c.generateConsumer(opts)
+
     case let .scalar(s):
-      return consumeScalar {
-        isCaseInsensitive
-          ? $0.properties.lowercaseMapping == s.properties.lowercaseMapping
-          : $0 == s
-      }
+      // A scalar always matches the same as a single scalar character. This
+      // means it must match a whole grapheme in grapheme semantic mode, but
+      // can match a single scalar in scalar semantic mode.
+      return try Character(s).generateConsumer(opts)
 
     case .any:
       // FIXME: Should this be a total ordering?
