@@ -581,7 +581,12 @@ fileprivate extension Compiler.ByteCodeGen {
           decrement %minTrips and fallthrough
 
       loop-body:
+        <if can't guarantee forward progress && extraTrips = nil>:
+          mov currentPosition %pos
         evaluate the subexpression
+        <if can't guarantee forward progress && extraTrips = nil>:
+          if %pos is currentPosition:
+            goto exit
         goto min-trip-count control block
 
       exit-policy control block:
@@ -684,7 +689,28 @@ fileprivate extension Compiler.ByteCodeGen {
     //   <subexpression>
     //   branch min-trip-count
     builder.label(loopBody)
+
+    // if we aren't sure if the child node will have forward progress and
+    // we have an unbounded quantification
+    let startPosition: PositionRegister?
+    let emitPositionChecking =
+      (!optimizationsEnabled || !child.guaranteesForwardProgress) &&
+      extraTrips == nil
+
+    if emitPositionChecking {
+      startPosition = builder.makePositionRegister()
+      builder.buildMoveCurrentPosition(into: startPosition!)
+    } else {
+      startPosition = nil
+    }
     try emitNode(child)
+    if emitPositionChecking {
+      // in all quantifier cases, no matter what minTrips or extraTrips is,
+      // if we have a successful non-advancing match, branch to exit because it
+      // can match an arbitrary number of times
+      builder.buildCondBranch(to: exit, ifSamePositionAs: startPosition!)
+    }
+
     if minTrips <= 1 {
       // fallthrough
     } else {
@@ -831,5 +857,44 @@ fileprivate extension Compiler.ByteCodeGen {
       return nil
     }
     return nil
+  }
+}
+
+extension DSLTree.Node {
+  var guaranteesForwardProgress: Bool {
+    switch self {
+    case .orderedChoice(let children):
+      return children.allSatisfy { $0.guaranteesForwardProgress }
+    case .concatenation(let children):
+      return children.contains(where: { $0.guaranteesForwardProgress })
+    case .capture(_, _, let node, _):
+      return node.guaranteesForwardProgress
+    case .nonCapturingGroup(let kind, let child):
+      switch kind.ast {
+      case .lookahead, .negativeLookahead, .lookbehind, .negativeLookbehind:
+        return false
+      default: return child.guaranteesForwardProgress
+      }
+    case .atom(let atom):
+      switch atom {
+      case .changeMatchingOptions, .assertion: return false
+      default: return true
+      }
+    case .trivia, .empty:
+      return false
+    case .quotedLiteral(let string):
+      return !string.isEmpty
+    case .convertedRegexLiteral(let node, _):
+      return node.guaranteesForwardProgress
+    case .consumer, .matcher:
+      // Allow zero width consumers and matchers
+     return false
+    case .customCharacterClass:
+      return true
+    case .quantification(let amount, _, let child):
+      let (atLeast, _) = amount.ast.bounds
+      return atLeast ?? 0 > 0 && child.guaranteesForwardProgress
+    default: return false
+    }
   }
 }

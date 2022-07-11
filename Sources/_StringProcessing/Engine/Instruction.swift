@@ -37,6 +37,14 @@ extension Instruction {
     ///
     case moveImmediate
 
+    /// Move the current position into a register
+    ///
+    ///     moveCurrentPosition(into: PositionRegister)
+    ///
+    /// Operands:
+    ///   - Position register to move into
+    case moveCurrentPosition
+
     // MARK: General Purpose: Control flow
 
     /// Branch to a new instruction
@@ -57,6 +65,16 @@ extension Instruction {
     ///
     case condBranchZeroElseDecrement
 
+    /// Conditionally branch if the current position is the same as the register
+    ///
+    ///     condBranch(
+    ///       to: InstAddr, ifSamePositionAs: PositionRegister)
+    ///
+    /// Operands:
+    ///   - Instruction address to branch to, if the position in the register is the same as currentPosition
+    ///   - Position register to check against
+    case condBranchSamePosition
+  
     // TODO: Function calls
 
     // MARK: - Matching

@@ -32,6 +32,7 @@ extension MEProgram {
     var nextIntRegister = IntRegister(0)
     var nextCaptureRegister = CaptureRegister(0)
     var nextValueRegister = ValueRegister(0)
+    var nextPositionRegister = PositionRegister(0)
 
     // Special addresses or instructions
     var failAddressToken: AddressToken? = nil
@@ -102,6 +103,14 @@ extension MEProgram.Builder {
   ) {
     instructions.append(
       .init(.condBranchZeroElseDecrement, .init(int: i)))
+    fixup(to: t)
+  }
+
+  mutating func buildCondBranch(
+    to t: AddressToken,
+    ifSamePositionAs r: PositionRegister
+  ) {
+    instructions.append(.init(.condBranchSamePosition, .init(position: r)))
     fixup(to: t)
   }
 
@@ -219,6 +228,10 @@ extension MEProgram.Builder {
       .init(value: value, capture: capture)))
   }
 
+  mutating func buildMoveCurrentPosition(into r: PositionRegister) {
+    instructions.append(.init(.moveCurrentPosition, .init(position: r)))
+  }
+
   mutating func buildBackreference(
     _ cap: CaptureRegister
   ) {
@@ -265,7 +278,8 @@ extension MEProgram.Builder {
       switch inst.opcode {
       case .condBranchZeroElseDecrement:
         payload = .init(addr: addr, int: inst.payload.int)
-
+      case .condBranchSamePosition:
+        payload = .init(addr: addr, position: inst.payload.position)
       case .branch, .save, .saveAddress, .clearThrough:
         payload = .init(addr: addr)
 
@@ -289,6 +303,7 @@ extension MEProgram.Builder {
     regInfo.sequences = sequences.count
     regInfo.ints = nextIntRegister.rawValue
     regInfo.values = nextValueRegister.rawValue
+    regInfo.positions = nextPositionRegister.rawValue
     regInfo.bitsets = asciiBitsets.count
     regInfo.consumeFunctions = consumeFunctions.count
     regInfo.assertionFunctions = assertionFunctions.count
@@ -426,6 +441,12 @@ extension MEProgram.Builder {
   ) -> IntRegister {
     let r = makeIntRegister()
     self.buildMoveImmediate(initialValue, into: r)
+    return r
+  }
+
+  mutating func makePositionRegister() -> PositionRegister {
+    let r = nextPositionRegister
+    defer { nextPositionRegister.rawValue += 1 }
     return r
   }
 

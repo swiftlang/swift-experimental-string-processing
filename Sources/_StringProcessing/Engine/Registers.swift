@@ -47,6 +47,8 @@ extension Processor {
     var ints: [Int]
 
     var values: [Any]
+
+    var positions: [Input.Index]
   }
 }
 
@@ -64,6 +66,12 @@ extension Processor.Registers {
     get { values[i.rawValue] }
     set {
       values[i.rawValue] = newValue
+    }
+  }
+  subscript(_ i: PositionRegister) -> Input.Index {
+    get { positions[i.rawValue] }
+    set {
+      positions[i.rawValue] = newValue
     }
   }
   subscript(_ i: ElementRegister) -> Input.Element {
@@ -89,6 +97,8 @@ extension Processor.Registers {
 }
 
 extension Processor.Registers {
+  static let sentinelIndex = "".startIndex
+
   init(
     _ program: MEProgram,
     _ sentinel: String.Index
@@ -120,11 +130,15 @@ extension Processor.Registers {
 
     self.values = Array(
       repeating: SentinelValue(), count: info.values)
+    self.positions = Array(
+      repeating: Processor.Registers.sentinelIndex,
+      count: info.positions)
   }
 
   mutating func reset(sentinel: Input.Index) {
     self.ints._setAll(to: 0)
     self.values._setAll(to: SentinelValue())
+    self.positions._setAll(to: Processor.Registers.sentinelIndex)
   }
 }
 

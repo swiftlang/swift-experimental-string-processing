@@ -1929,5 +1929,31 @@ extension RegexTests {
       XCTAssertEqual(matches.count, 3)
     }
   }
-}
 
+  func expectCompletion(regex: String, in target: String) {
+    let expectation = XCTestExpectation(description: "Run the given regex to completion")
+    Task.init {
+      let r = try! Regex(regex)
+      let val = target.matches(of: r).isEmpty
+      expectation.fulfill()
+      return val
+    }
+    wait(for: [expectation], timeout: 3.0)
+  }
+
+  func testQuantificationForwardProgress() {
+    expectCompletion(regex: #"(?:(?=a)){1,}"#, in: "aa")
+    expectCompletion(regex: #"(?:\b)+"#, in: "aa")
+    expectCompletion(regex: #"(?:(?#comment))+"#, in: "aa")
+    expectCompletion(regex: #"(?:|)+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|)+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|(?i-i:))+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|(?#comment))+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|(?#comment)(?i-i:))+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|(?i))+"#, in: "aa")
+    expectCompletion(regex: #"(a*)*"#, in: "aa")
+    expectCompletion(regex: #"(a?)*"#, in: "aa")
+    expectCompletion(regex: #"(a{,4})*"#, in: "aa")
+    expectCompletion(regex: #"((|)+)*"#, in: "aa")
+  }
+}

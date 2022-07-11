@@ -306,10 +306,10 @@ extension Instruction.Payload {
     interpretPair()
   }
 
-  init(pos: PositionRegister, pos2: PositionRegister) {
-    self.init(pos, pos2)
+  init(addr: InstructionAddress, position: PositionRegister) {
+    self.init(addr, position)
   }
-  var pairedPosPos: (PositionRegister, PositionRegister) {
+  var pairedAddrPos: (InstructionAddress, PositionRegister) {
     interpretPair()
   }
 

@@ -306,7 +306,7 @@ extension Processor {
   }
 
   mutating func signalFailure() {
-    guard let (pc, pos, stackEnd, capEnds, intRegisters) =
+    guard let (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) =
             savePoints.popLast()?.destructure
     else {
       state = .fail
@@ -320,6 +320,7 @@ extension Processor {
     callStack.removeLast(callStack.count - stackEnd.rawValue)
     storedCaptures = capEnds
     registers.ints = intRegisters
+    registers.positions = posRegisters
   }
 
   mutating func abort(_ e: Error? = nil) {
@@ -376,7 +377,10 @@ extension Processor {
 
       registers[reg] = int
       controller.step()
-
+    case .moveCurrentPosition:
+      let reg = payload.position
+      registers[reg] = currentPosition
+      controller.step()
     case .branch:
       controller.pc = payload.addr
 
@@ -388,7 +392,13 @@ extension Processor {
         registers[int] -= 1
         controller.step()
       }
-
+    case .condBranchSamePosition:
+      let (addr, pos) = payload.pairedAddrPos
+      if registers[pos] == currentPosition {
+        controller.pc = addr
+      } else {
+        controller.step()
+      }
     case .save:
       let resumeAddr = payload.addr
       let sp = makeSavePoint(resumeAddr)
