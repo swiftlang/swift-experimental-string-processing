@@ -17,8 +17,10 @@ import XCTest
 enum DecodedInstr {
   case invalid
   case moveImmediate
+  case moveCurrentPosition
   case branch
   case condBranchZeroElseDecrement
+  case condBranchSamePosition
   case save
   case saveAddress
   case splitSaving
@@ -60,10 +62,14 @@ extension DecodedInstr {
         fatalError("Invalid program")
       case .moveImmediate:
         return .moveImmediate
+      case .moveCurrentPosition:
+        return .moveCurrentPosition
       case .branch:
         return .branch
       case .condBranchZeroElseDecrement:
         return .condBranchZeroElseDecrement
+      case .condBranchSamePosition:
+        return .condBranchSamePosition
       case .save:
         return .save
       case .saveAddress:
