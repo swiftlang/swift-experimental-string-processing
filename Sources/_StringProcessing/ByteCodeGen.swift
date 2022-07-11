@@ -99,7 +99,7 @@ fileprivate extension Compiler.ByteCodeGen {
     }
 
     // Fast path for eliding boundary checks for an all ascii quoted literal
-    if optimizationsEnabled && s.allSatisfy({char in char.isASCII}) {
+    if optimizationsEnabled && s.allSatisfy(\.isASCII) {
       let lastIdx = s.unicodeScalars.indices.last!
       for idx in s.unicodeScalars.indices {
         let boundaryCheck = idx == lastIdx
@@ -274,10 +274,13 @@ fileprivate extension Compiler.ByteCodeGen {
   }
   
   mutating func emitScalar(_ s: UnicodeScalar) {
+    // A scalar in grapheme semantic mode must match a full charcter, so
+    // perform a boundary check
+    let boundaryCheck = options.semanticLevel == .graphemeCluster
     if options.isCaseInsensitive && s.properties.isCased {
-      builder.buildMatchScalarCaseInsensitive(s, boundaryCheck: false)
+      builder.buildMatchScalarCaseInsensitive(s, boundaryCheck: boundaryCheck)
     } else {
-      builder.buildMatchScalar(s, boundaryCheck: false)
+      builder.buildMatchScalar(s, boundaryCheck: boundaryCheck)
     }
   }
   
@@ -292,8 +295,12 @@ fileprivate extension Compiler.ByteCodeGen {
     
     if options.isCaseInsensitive && c.isCased {
       if optimizationsEnabled && c.isASCII {
-        // c.isCased ensures that c is not CR-LF, so we know that c is a single scalar
-        builder.buildMatchScalarCaseInsensitive(c.unicodeScalars.last!, boundaryCheck: true)
+        // c.isCased ensures that c is not CR-LF,
+        // so we know that c is a single scalar
+        assert(c.unicodeScalars.count == 1)
+        builder.buildMatchScalarCaseInsensitive(
+          c.unicodeScalars.last!,
+          boundaryCheck: true)
       } else {
         builder.buildMatch(c, isCaseInsensitive: true)
       }

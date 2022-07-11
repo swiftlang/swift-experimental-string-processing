@@ -218,16 +218,20 @@ extension AST.Atom {
   var singleScalar: UnicodeScalar? {
     switch kind {
     case .scalar(let s): return s.value
+    case .escaped(let e):
+      guard let s = e.scalarValue else { return nil }
+      return s
     default: return nil
     }
   }
   
   var singleScalarASCIIValue: UInt8? {
+    if let s = singleScalar, s.isASCII {
+       return UInt8(ascii: s)
+     }
     switch kind {
     case let .char(c):
       return c._singleScalarAsciiValue
-    case let .scalar(s) where s.value.isASCII:
-      return UInt8(ascii: s.value)
     default:
       return nil
     }
