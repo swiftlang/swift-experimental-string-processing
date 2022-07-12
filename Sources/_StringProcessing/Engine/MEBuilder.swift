@@ -186,14 +186,15 @@ extension MEProgram.Builder {
     _ usesASCIIWord: Bool,
     _ semanticLevel: MatchingOptions.SemanticLevel
   ) {
+    let payload = AssertionPayload.init(
+      kind,
+      anchorsMatchNewlines,
+      usesSimpleUnicodeBoundaries,
+      usesASCIIWord,
+      semanticLevel)
     instructions.append(.init(
       .assertBy,
-      .init(
-        assertion: kind,
-        anchorsMatchNewlines,
-        usesSimpleUnicodeBoundaries,
-        usesASCIIWord,
-        semanticLevel)))
+      .init(assertion: payload)))
   }
 
   mutating func buildAccept() {
