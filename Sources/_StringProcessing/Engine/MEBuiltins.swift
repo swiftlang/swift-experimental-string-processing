@@ -87,15 +87,8 @@ extension Processor {
     }
   }
 
-  mutating func regexAssert(by payload: AssertionPayload) throws -> Bool {
+  mutating func builtinAssert(by payload: AssertionPayload) throws -> Bool {
     // Future work: Optimize layout and dispatch
-    
-    // FIXME: Depends on API model we have... We may want to
-    // think through some of these with API interactions in mind
-    //
-    // This might break how we use `bounds` for both slicing
-    // and things like `firstIndex`, that is `firstIndex` may
-    // need to supply both a slice bounds and a per-search bounds.
     switch payload.kind {
     case .startOfSubject: return currentPosition == subjectBounds.lowerBound
 
@@ -113,17 +106,10 @@ extension Processor {
     case .endOfSubject: return currentPosition == subjectBounds.upperBound
 
     case .resetStartOfMatch:
-      // FIXME: Figure out how to communicate this out
-      throw Unsupported(#"\K (reset/keep assertion)"#)
+      fatalError("Unreachable, we should have thrown an error during compilation")
 
     case .firstMatchingPositionInSubject:
-      // TODO: We can probably build a nice model with API here
-
-      // FIXME: This needs to be based on `searchBounds`,
-      // not the `subjectBounds` given as an argument here
-      // (Note: the above fixme was in reference to the old assert function API.
-      //   Now that we're in processor, we have access to searchBounds)
-      return false
+      return currentPosition == searchBounds.lowerBound
 
     case .textSegment: return input.isOnGraphemeClusterBoundary(currentPosition)
 

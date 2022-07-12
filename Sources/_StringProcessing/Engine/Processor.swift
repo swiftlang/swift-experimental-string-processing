@@ -430,7 +430,7 @@ extension Processor {
     case .assertBy:
       let payload = payload.assertion
       do {
-        guard try regexAssert(by: payload) else {
+        guard try builtinAssert(by: payload) else {
           signalFailure()
           return
         }

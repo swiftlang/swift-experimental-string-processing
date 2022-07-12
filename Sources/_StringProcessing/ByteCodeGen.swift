@@ -121,6 +121,9 @@ fileprivate extension Compiler.ByteCodeGen {
   mutating func emitAssertion(
     _ kind: AST.Atom.AssertionKind
   ) throws {
+    if kind == .resetStartOfMatch {
+      throw Unsupported(#"\K (reset/keep assertion)"#)
+    }
     builder.buildAssert(
       by: kind,
       options.anchorsMatchNewlines,
