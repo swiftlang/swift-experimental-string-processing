@@ -24,9 +24,10 @@ func _firstMatch(
   _ regexStr: String,
   input: String,
   validateOptimizations: Bool,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   syntax: SyntaxOptions = .traditional
 ) throws -> (String, [String?])? {
-  var regex = try Regex(regexStr, syntax: syntax)
+  var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
   let result = try regex.firstMatch(in: input)
 
   if validateOptimizations {
@@ -64,6 +65,7 @@ func flatCaptureTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -73,6 +75,7 @@ func flatCaptureTest(
         regex,
         input: test,
         validateOptimizations: validateOptimizations,
+        semanticLevel: semanticLevel,
         syntax: syntax
       ) else {
         if expect == nil {
@@ -123,6 +126,7 @@ func matchTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -136,6 +140,7 @@ func matchTest(
       dumpAST: dumpAST,
       xfail: xfail,
       validateOptimizations: validateOptimizations,
+      semanticLevel: semanticLevel,
       file: file,
       line: line)
   }
@@ -153,6 +158,7 @@ func firstMatchTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #filePath,
   line: UInt = #line
 ) {
@@ -161,12 +167,13 @@ func firstMatchTest(
       regex,
       input: input,
       validateOptimizations: validateOptimizations,
+      semanticLevel: semanticLevel,
       syntax: syntax)?.0
 
     if xfail {
       XCTAssertNotEqual(found, match, file: file, line: line)
     } else {
-      XCTAssertEqual(found, match, file: file, line: line)
+      XCTAssertEqual(found, match, "Incorrect match", file: file, line: line)
     }
   } catch {
     if !xfail {
@@ -599,6 +606,12 @@ extension RegexTests {
               ("A", true),
               ("a", false))
 
+    matchTest(#"(?i)[a]"#,
+              ("💿", false),
+              ("a\u{301}", false),
+              ("A", true),
+              ("a", true))
+
     matchTest("[a]",
       ("a\u{301}", false))
 
@@ -613,14 +626,12 @@ extension RegexTests {
     // interpreted as matching the scalars "\r" or "\n".
     // It does not fully match the character "\r\n" because the character class
     // in scalar mode will only match one scalar
-    do {
-      let regex = try Regex("[\r\n]").matchingSemantics(.unicodeScalar)
-      XCTAssertEqual("\r", try regex.wholeMatch(in: "\r")?.0)
-      XCTAssertEqual("\n", try regex.wholeMatch(in: "\n")?.0)
-      XCTAssertEqual(nil, try regex.wholeMatch(in: "\r\n")?.0)
-    } catch {
-      XCTFail("\(error)", file: #filePath, line: #line)
-    }
+    matchTest(
+      "^[\r\n]$",
+      ("\r", true),
+      ("\n", true),
+      ("\r\n", false),
+      semanticLevel: .unicodeScalar)
 
     matchTest("[^\r\n]",
       ("\r\n", false),
@@ -628,7 +639,17 @@ extension RegexTests {
       ("\r", true))
     matchTest("[\n\r]",
       ("\n", true),
-      ("\r", true))
+      ("\r", true),
+      ("\r\n", false))
+    
+    matchTest(
+      #"[a]\u0301"#,
+      ("a\u{301}", false),
+      semanticLevel: .graphemeCluster)
+    matchTest(
+      #"[a]\u0301"#,
+      ("a\u{301}", true),
+      semanticLevel: .unicodeScalar)
 
     firstMatchTest("[-]", input: "123-abcxyz", match: "-")
 
@@ -1855,6 +1876,19 @@ extension RegexTests {
   
   // TODO: Add test for grapheme boundaries at start/end of match
 
+  // Testing the matchScalar optimization for ascii quoted literals and characters
+  func testScalarOptimization() throws {
+    // check that we are correctly doing the boundary check after matchScalar
+    firstMatchTest("a", input: "a\u{301}", match: nil)
+    firstMatchTest("aa", input: "aa\u{301}", match: nil)
+
+    firstMatchTest("a", input: "a\u{301}", match: "a", semanticLevel: .unicodeScalar)
+    firstMatchTest("aa", input: "aa\u{301}", match: "aa", semanticLevel: .unicodeScalar)
+
+    // case insensitive tests
+    firstMatchTest(#"(?i)abc\u{301}d"#, input: "AbC\u{301}d", match: "AbC\u{301}d", semanticLevel: .unicodeScalar)
+  }
+  
   func testCase() {
     let regex = try! Regex(#".\N{SPARKLING HEART}."#)
     let input = "🧟‍♀️💖🧠 or 🧠💖☕️"

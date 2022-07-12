@@ -13,6 +13,10 @@ import XCTest
 import _StringProcessing
 import RegexBuilder
 
+#if os(Linux)
+func XCTExpectFailure(_ message: String? = nil, body: () throws -> Void) rethrows {}
+#endif
+
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
     _ tests: (input: String, expectedCaptures: MatchType?)...,
@@ -1117,6 +1121,66 @@ class RegexDSLTests: XCTestCase {
           }
         }
       }
+    }
+  }
+
+  func testScalarMatching() throws {
+    // RegexBuilder provides a RegexComponent conformance for UnicodeScalar. In
+    // grapheme cluster mode, it should only match entire graphemes. It may
+    // match a single scalar of a grapheme cluster in scalar semantic mode.
+    XCTAssertNotNil("a".firstMatch(of: "a" as UnicodeScalar))
+    XCTAssertNil("a\u{301}".firstMatch(of: "a" as UnicodeScalar))
+    XCTAssertNotNil("a\u{301}".firstMatch(
+      of: ("a" as UnicodeScalar).regex.matchingSemantics(.unicodeScalar)))
+
+    let r1 = Regex {
+      "a" as UnicodeScalar
+    }
+    XCTAssertNil(try r1.firstMatch(in: "a\u{301}"))
+    XCTAssertNotNil(
+      try r1.matchingSemantics(.unicodeScalar).firstMatch(in: "a\u{301}")
+    )
+
+    let r2 = Regex {
+      CharacterClass.anyOf(["a" as UnicodeScalar, "👍"])
+    }
+    XCTAssertNil(try r2.firstMatch(in: "a\u{301}"))
+    XCTAssertNotNil(
+      try r2.matchingSemantics(.unicodeScalar).firstMatch(in: "a\u{301}")
+    )
+
+    let r3 = Regex {
+      "👨" as UnicodeScalar
+      "\u{200D}" as UnicodeScalar
+      "👨" as UnicodeScalar
+      "\u{200D}" as UnicodeScalar
+      "👧" as UnicodeScalar
+      "\u{200D}" as UnicodeScalar
+      "👦" as UnicodeScalar
+    }
+    XCTAssertNil(try r3.firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r3.matchingSemantics(.unicodeScalar).firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r3.matchingSemantics(.unicodeScalar).wholeMatch(in: "👨‍👨‍👧‍👦"))
+
+    let r4 = Regex { "é" as UnicodeScalar }
+    XCTAssertNotNil(
+      try r4.firstMatch(in: "e\u{301}")
+    )
+    XCTAssertNotNil(
+      try r4.firstMatch(in: "é")
+    )
+
+    try XCTExpectFailure("Need stronger scalar coalescing logic") {
+      let r5 = Regex {
+        "e"
+        "\u{301}" as UnicodeScalar
+      }
+      XCTAssertNotNil(
+        try r5.firstMatch(in: "e\u{301}")
+      )
+      XCTAssertNotNil(
+        try r5.firstMatch(in: "é")
+      )
     }
   }
 
