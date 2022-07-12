@@ -59,10 +59,14 @@ fileprivate extension Compiler.ByteCodeGen {
       emitAny()
 
     case let .char(c):
-      try emitCharacter(c)
+      emitCharacter(c)
 
     case let .scalar(s):
-      try emitScalar(s)
+      if options.semanticLevel == .graphemeCluster {
+        emitCharacter(Character(s))
+      } else {
+        emitMatchScalar(s)
+      }
 
     case let .assertion(kind):
       try emitAssertion(kind.ast)
@@ -94,6 +98,34 @@ fileprivate extension Compiler.ByteCodeGen {
         throw Unsupported("\(astAtom.ast._patternBase)")
       }
     }
+  }
+
+  mutating func emitQuotedLiteral(_ s: String) {
+    guard options.semanticLevel == .graphemeCluster else {
+      for char in s {
+        for scalar in char.unicodeScalars {
+          emitMatchScalar(scalar)
+        }
+      }
+      return
+    }
+
+    // Fast path for eliding boundary checks for an all ascii quoted literal
+    if optimizationsEnabled && s.allSatisfy(\.isASCII) {
+      let lastIdx = s.unicodeScalars.indices.last!
+      for idx in s.unicodeScalars.indices {
+        let boundaryCheck = idx == lastIdx
+        let scalar = s.unicodeScalars[idx]
+        if options.isCaseInsensitive && scalar.properties.isCased {
+          builder.buildMatchScalarCaseInsensitive(scalar, boundaryCheck: boundaryCheck)
+        } else {
+          builder.buildMatchScalar(scalar, boundaryCheck: boundaryCheck)
+        }
+      }
+      return
+    }
+
+    for c in s { emitCharacter(c) }
   }
 
   mutating func emitBackreference(
@@ -132,41 +164,47 @@ fileprivate extension Compiler.ByteCodeGen {
       options.semanticLevel)
   }
   
-  mutating func emitScalar(_ s: UnicodeScalar) throws {
-    // TODO: Native instruction buildMatchScalar(s)
-    if options.isCaseInsensitive {
-      // TODO: e.g. buildCaseInsensitiveMatchScalar(s)
-      builder.buildConsume(by: consumeScalar {
-        $0.properties.lowercaseMapping == s.properties.lowercaseMapping
-      })
+  mutating func emitMatchScalar(_ s: UnicodeScalar) {
+    assert(options.semanticLevel == .unicodeScalar)
+    if options.isCaseInsensitive && s.properties.isCased {
+      builder.buildMatchScalarCaseInsensitive(s, boundaryCheck: false)
     } else {
-      builder.buildConsume(by: consumeScalar {
-        $0 == s
-      })
+      builder.buildMatchScalar(s, boundaryCheck: false)
     }
   }
   
-  mutating func emitCharacter(_ c: Character) throws {
-    // Unicode scalar matches the specific scalars that comprise a character
+  mutating func emitCharacter(_ c: Character) {
+    // Unicode scalar mode matches the specific scalars that comprise a character
     if options.semanticLevel == .unicodeScalar {
       for scalar in c.unicodeScalars {
-        try emitScalar(scalar)
+        emitMatchScalar(scalar)
       }
       return
     }
     
     if options.isCaseInsensitive && c.isCased {
-      // TODO: buildCaseInsensitiveMatch(c) or buildMatch(c, caseInsensitive: true)
-      builder.buildConsume { input, bounds in
-        let inputChar = input[bounds.lowerBound].lowercased()
-        let matchChar = c.lowercased()
-        return inputChar == matchChar
-          ? input.index(after: bounds.lowerBound)
-          : nil
+      if optimizationsEnabled && c.isASCII {
+        // c.isCased ensures that c is not CR-LF,
+        // so we know that c is a single scalar
+        assert(c.unicodeScalars.count == 1)
+        builder.buildMatchScalarCaseInsensitive(
+          c.unicodeScalars.last!,
+          boundaryCheck: true)
+      } else {
+        builder.buildMatch(c, isCaseInsensitive: true)
       }
-    } else {
-      builder.buildMatch(c)
+      return
     }
+    
+    if optimizationsEnabled && c.isASCII {
+      let lastIdx = c.unicodeScalars.indices.last!
+      for idx in c.unicodeScalars.indices {
+        builder.buildMatchScalar(c.unicodeScalars[idx], boundaryCheck: idx == lastIdx)
+      }
+      return
+    }
+      
+    builder.buildMatch(c, isCaseInsensitive: false)
   }
 
   mutating func emitAny() {
@@ -604,11 +642,12 @@ fileprivate extension Compiler.ByteCodeGen {
     _ ccc: DSLTree.CustomCharacterClass
   ) throws {
     if let asciiBitset = ccc.asAsciiBitset(options),
-        options.semanticLevel == .graphemeCluster,
         optimizationsEnabled {
-      // future work: add a bit to .matchBitset to consume either a character
-      // or a scalar so we can have this optimization in scalar mode
-      builder.buildMatchAsciiBitset(asciiBitset)
+      if options.semanticLevel == .unicodeScalar {
+        builder.buildScalarMatchAsciiBitset(asciiBitset)
+      } else {
+        builder.buildMatchAsciiBitset(asciiBitset)
+      }
     } else {
       let consumer = try ccc.generateConsumer(options)
       builder.buildConsume(by: consumer)
@@ -685,45 +724,7 @@ fileprivate extension Compiler.ByteCodeGen {
       try emitAtom(a)
 
     case let .quotedLiteral(s):
-      if options.semanticLevel == .graphemeCluster {
-        if options.isCaseInsensitive {
-          // TODO: buildCaseInsensitiveMatchSequence(c) or alternative
-          builder.buildConsume { input, bounds in
-            var iterator = s.makeIterator()
-            var currentIndex = bounds.lowerBound
-            while let ch = iterator.next() {
-              guard currentIndex < bounds.upperBound,
-                    ch.lowercased() == input[currentIndex].lowercased()
-              else { return nil }
-              input.formIndex(after: &currentIndex)
-            }
-            return currentIndex
-          }
-        } else {
-          builder.buildMatchSequence(s)
-        }
-      } else {
-        builder.buildConsume {
-          [caseInsensitive = options.isCaseInsensitive] input, bounds in
-          // TODO: Case folding
-          var iterator = s.unicodeScalars.makeIterator()
-          var currentIndex = bounds.lowerBound
-          while let scalar = iterator.next() {
-            guard currentIndex < bounds.upperBound else { return nil }
-            if caseInsensitive {
-              if scalar.properties.lowercaseMapping != input.unicodeScalars[currentIndex].properties.lowercaseMapping {
-                return nil
-              }
-            } else {
-              if scalar != input.unicodeScalars[currentIndex] {
-                return nil
-              }
-            }
-            input.unicodeScalars.formIndex(after: &currentIndex)
-          }
-          return currentIndex
-        }
-      }
+      emitQuotedLiteral(s)
 
     case let .convertedRegexLiteral(n, _):
       return try emitNode(n)

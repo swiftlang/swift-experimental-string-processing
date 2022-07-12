@@ -145,6 +145,26 @@ extension Instruction.Payload {
   var string: StringRegister {
     interpret()
   }
+  
+  init(scalar: Unicode.Scalar) {
+    self.init(UInt64(scalar.value))
+  }
+  var scalar: Unicode.Scalar {
+    return Unicode.Scalar(_value: UInt32(self.rawValue))
+  }
+
+  init(scalar: Unicode.Scalar, caseInsensitive: Bool, boundaryCheck: Bool) {
+    let raw = UInt64(scalar.value)
+      + (caseInsensitive ? 1 << 55: 0)
+      + (boundaryCheck ? 1 << 54 : 0)
+    self.init(raw)
+  }
+  var scalarPayload: (Unicode.Scalar, caseInsensitive: Bool, boundaryCheck: Bool) {
+    let caseInsensitive = (self.rawValue >> 55) & 1 == 1
+    let boundaryCheck = (self.rawValue >> 54) & 1 == 1
+    let scalar = Unicode.Scalar(_value: UInt32(self.rawValue & 0xFFFF_FFFF))
+    return (scalar, caseInsensitive: caseInsensitive, boundaryCheck: boundaryCheck)
+  }
 
   init(sequence: SequenceRegister) {
     self.init(sequence)
@@ -188,18 +208,20 @@ extension Instruction.Payload {
     interpret()
   }
 
-  init(element: ElementRegister) {
-    self.init(element)
+  init(element: ElementRegister, isCaseInsensitive: Bool) {
+    self.init(isCaseInsensitive ? 1 : 0, element)
   }
-  var element: ElementRegister {
-    interpret()
+  var elementPayload: (isCaseInsensitive: Bool, ElementRegister) {
+    let pair: (UInt64, ElementRegister) = interpretPair()
+    return (isCaseInsensitive: pair.0 == 1, pair.1)
   }
 
-  init(bitset: AsciiBitsetRegister) {
-    self.init(bitset)
+  init(bitset: AsciiBitsetRegister, isScalar: Bool) {
+    self.init(isScalar ? 1 : 0, bitset)
   }
-  var bitset: AsciiBitsetRegister {
-    interpret()
+  var bitsetPayload: (isScalar: Bool, AsciiBitsetRegister) {
+    let pair: (UInt64, AsciiBitsetRegister) = interpretPair()
+    return (isScalar: pair.0 == 1, pair.1)
   }
 
   init(_ cc: BuiltinCC, _ isStrict: Bool, _ isScalar: Bool) {

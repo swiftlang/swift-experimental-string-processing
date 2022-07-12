@@ -143,24 +143,32 @@ extension MEProgram.Builder {
     instructions.append(.init(.advance, .init(distance: n)))
   }
 
-  mutating func buildMatch(_ e: Character) {
+  mutating func buildMatch(_ e: Character, isCaseInsensitive: Bool) {
     instructions.append(.init(
-      .match, .init(element: elements.store(e))))
+      .match, .init(element: elements.store(e), isCaseInsensitive: isCaseInsensitive)))
   }
 
-  mutating func buildMatchSequence<S: Sequence>(
-    _ s: S
-  ) where S.Element == Character {
-    instructions.append(.init(
-      .matchSequence,
-      .init(sequence: sequences.store(.init(s)))))
+  mutating func buildMatchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) {
+    instructions.append(.init(.matchScalar, .init(scalar: s, caseInsensitive: false, boundaryCheck: boundaryCheck)))
   }
+  
+  mutating func buildMatchScalarCaseInsensitive(_ s: Unicode.Scalar, boundaryCheck: Bool) {
+    instructions.append(.init(.matchScalar, .init(scalar: s, caseInsensitive: true, boundaryCheck: boundaryCheck)))
+  }
+
 
   mutating func buildMatchAsciiBitset(
     _ b: DSLTree.CustomCharacterClass.AsciiBitset
   ) {
     instructions.append(.init(
-      .matchBitset, .init(bitset: makeAsciiBitset(b))))
+      .matchBitset, .init(bitset: makeAsciiBitset(b), isScalar: false)))
+  }
+
+  mutating func buildScalarMatchAsciiBitset(
+    _ b: DSLTree.CustomCharacterClass.AsciiBitset
+  ) {
+    instructions.append(.init(
+      .matchBitset, .init(bitset: makeAsciiBitset(b), isScalar: true)))
   }
   
   mutating func buildMatchBuiltin(
