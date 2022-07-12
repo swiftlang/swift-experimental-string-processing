@@ -148,4 +148,34 @@ extension RenderDSLTests {
       }
       """#)
   }
+
+  func testScalar() throws {
+    try testConversion(#"\u{B4}"#, #"""
+      Regex {
+        "\u{B4}"
+      }
+      """#)
+    try testConversion(#"\u{301}"#, #"""
+      Regex {
+        "\u{301}"
+      }
+      """#)
+    try testConversion(#"[\u{301}]"#, #"""
+      Regex {
+        One(.anyOf("\u{301}"))
+      }
+      """#)
+    try testConversion(#"[abc\u{301}]"#, #"""
+      Regex {
+        One(.anyOf("abc\u{301}"))
+      }
+      """#)
+
+    // TODO: We ought to try and preserve the scalar syntax here.
+    try testConversion(#"a\u{301}"#, #"""
+      Regex {
+        "á"
+      }
+      """#)
+  }
 }
