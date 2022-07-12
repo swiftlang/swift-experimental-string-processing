@@ -1165,6 +1165,19 @@ class RegexDSLTests: XCTestCase {
     XCTAssertNotNil(
       try r4.firstMatch(in: "é")
     )
+
+    try XCTExpectFailure("Need stronger scalar coalescing logic") {
+      let r5 = Regex {
+        "e"
+        "\u{301}" as UnicodeScalar
+      }
+      XCTAssertNotNil(
+        try r5.firstMatch(in: "e\u{301}")
+      )
+      XCTAssertNotNil(
+        try r5.firstMatch(in: "é")
+      )
+    }
   }
 
   struct SemanticVersion: Equatable {
