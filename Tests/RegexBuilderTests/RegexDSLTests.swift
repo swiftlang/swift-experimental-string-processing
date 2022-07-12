@@ -13,6 +13,10 @@ import XCTest
 import _StringProcessing
 import RegexBuilder
 
+#if os(Linux)
+func XCTExpectFailure(_ message: String? = nil, body: () throws -> Void) rethrows {}
+#endif
+
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
     _ tests: (input: String, expectedCaptures: MatchType?)...,
