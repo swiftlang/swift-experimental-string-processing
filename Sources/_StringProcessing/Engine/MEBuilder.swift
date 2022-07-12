@@ -179,12 +179,6 @@ extension MEProgram.Builder {
       .consumeBy, .init(consumer: makeConsumeFunction(p))))
   }
 
-//  mutating func buildAssert(
-//    by p: @escaping MEProgram.AssertionFunction
-//  ) {
-//    instructions.append(.init(
-//      .assertBy, .init(assertion: makeAssertionFunction(p))))
-//  }
   mutating func buildAssert(
     by kind: AST.Atom.AssertionKind,
     _ anchorsMatchNewlines: Bool,

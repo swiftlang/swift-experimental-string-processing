@@ -564,35 +564,6 @@ extension DSLTree.CustomCharacterClass {
   }
 }
 
-extension _CharacterClassModel {
-  // FIXME: Calling on inverted sets wont be the same as the
-  // inverse of a boundary if at the start or end of the
-  // string. (Think through what we want: do it ourselves or
-  // give the caller both options).
-  func isBoundary(
-    _ input: String,
-    at pos: String.Index,
-    bounds: Range<String.Index>,
-    with options: MatchingOptions
-  ) -> Bool {
-    // FIXME: How should we handle bounds?
-    // We probably need two concepts
-    if bounds.isEmpty { return false }
-    if pos == bounds.lowerBound {
-      return self.matches(in: input, at: pos, with: options) != nil
-    }
-    let priorIdx = input.index(before: pos)
-    if pos == bounds.upperBound {
-      return self.matches(in: input, at: priorIdx, with: options) != nil
-    }
-
-    let prior = self.matches(in: input, at: priorIdx, with: options) != nil
-    let current = self.matches(in: input, at: pos, with: options) != nil
-    return prior != current
-  }
-
-}
-
 internal enum BuiltinCC: UInt64 {
   case any = 1
   case anyGrapheme
@@ -622,11 +593,9 @@ extension BuiltinCC {
 
 extension _CharacterClassModel {
   internal var builtinCC: BuiltinCC? {
-    if isInverted { return nil } // lily todo: add another flag to the payload? when is this set? why are there so many weird edge cases in ccm? it feels like it's trying to model both builtins and custom models
-    
-    // in that case, should we just convert a ccm to a ccc
-    // if it has these weird flags set?
-    // completely remove ccm from compilation and just emit either a builtincc or a ccc or an advance
+    // Future work: Make CCM always either a BuiltinCC or convertable to a
+    // custom character class
+    if isInverted { return nil }
     switch self.cc {
     case .any:
         return .any

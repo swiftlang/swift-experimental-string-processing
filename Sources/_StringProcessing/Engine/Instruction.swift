@@ -106,10 +106,6 @@ extension Instruction {
     /// Operand: Ascii bitset register containing the bitset
     case matchBitset
 
-    /// TODO: builtin assertions and anchors
-    case builtinAssertion
-
-    /// TODO: builtin character classes
     case matchBuiltin
 
     // MARK: Extension points

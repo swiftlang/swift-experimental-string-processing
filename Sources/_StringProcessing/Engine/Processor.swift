@@ -262,8 +262,6 @@ extension Processor {
     var matched: Bool
     var next = input.index(after: currentPosition)
     switch cc {
-      // lily note: when do these `any` cases appear? can they be compiled
-      // into consume instructions at compile time?
     case .any, .anyGrapheme: matched = true
     case .anyScalar:
       matched = true
@@ -320,8 +318,6 @@ extension Processor {
       matched = c.isNewline && (c.isASCII || !isStrictAscii)
     case .newlineSequence:
       matched = c.isNewline && (c.isASCII || !isStrictAscii)
-      // lily note: what exactly is this doing? matching a full cr-lf character
-      // even though its in scalar mode? why?
       if c == "\r" && next != input.endIndex && input.unicodeScalars[next] == "\n" {
         input.unicodeScalars.formIndex(after: &next)
       }
@@ -426,7 +422,6 @@ extension Processor {
         if usesSimpleUnicodeBoundaries {
           // TODO: How should we handle bounds?
           return atSimpleBoundary(usesASCIIWord, semanticLevel)
-          // lily note: there appear to be no test cases that use this option, ping alex to ask what they should look like
         } else {
           return input.isOnWordBoundary(at: currentPosition, using: &wordIndexCache, &wordIndexMaxIndex)
         }
@@ -716,9 +711,6 @@ extension Processor {
       storedCaptures[capNum].registerValue(
         value, overwriteInitial: sp)
       controller.step()
-
-    case .builtinAssertion:
-      builtinAssertion()
     }
   }
 }

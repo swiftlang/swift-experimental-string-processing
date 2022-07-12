@@ -68,6 +68,7 @@ func _compileRegex(
 ) throws -> Executor {
   let ast = try parse(regex, syntax)
   let dsl: DSLTree
+
   switch semanticLevel?.base {
   case .graphemeCluster:
     let sequence = AST.MatchingOptionSequence(adding: [.init(.graphemeClusterSemantics, location: .fake)])

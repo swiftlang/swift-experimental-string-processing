@@ -82,7 +82,10 @@ fileprivate extension Compiler.ByteCodeGen {
     case let .unconverted(astAtom):
       if optimizationsEnabled,
          let cc = astAtom.ast.characterClass?.builtinCC {
-        emitBuiltinCharacterClass(cc)
+        builder.buildMatchBuiltin(
+          cc,
+          cc.isStrict(options: options),
+          isScalar: options.semanticLevel == .unicodeScalar)
         return
       }
       if let consumer = try astAtom.ast.generateConsumer(options) {
@@ -113,15 +116,6 @@ fileprivate extension Compiler.ByteCodeGen {
     case .relative:
       throw Unsupported("Backreference kind: \(ref)")
     }
-  }
-  
-  mutating func emitBuiltinCharacterClass(
-    _ cc: BuiltinCC
-  ) {
-    builder.buildMatchBuiltin(
-      cc,
-      cc.isStrict(options: options),
-      isScalar: options.semanticLevel == .unicodeScalar)
   }
 
   mutating func emitAssertion(
