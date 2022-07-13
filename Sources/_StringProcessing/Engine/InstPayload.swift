@@ -374,13 +374,15 @@ struct QuantifyPayload: RawRepresentable {
     case builtin
   }
   
+  // Future work: optimize this layout -> payload type should be a fast switch
   // The top 8 bits are reserved for the opcode so we have 56 bits to work with
   // b55-b54 - Payload type (one of 4 types)
   // b53-b37 - minTrips (16 bit int)
   // b37-b20 - extraTrips (16 bit value, one bit for nil)
-  // b20-b16  - Quantification type (one of three types), should only use 2 bits of these
+  // b20-b18 - Quantification type (one of three types)
+  // b18-b16 - Unused
   // b16-b0 - Payload value (depends on payload type)
-  static let quantKindShift: UInt64 = 16
+  static let quantKindShift: UInt64 = 18
   static let extraTripsShift: UInt64 = 20
   static let minTripsShift: UInt64 = 37
   static let typeShift: UInt64 = 54
@@ -445,11 +447,11 @@ struct QuantifyPayload: RawRepresentable {
     _ minTrips: Int,
     _ extraTrips: Int?
   ) {
+    assert(builtin.rawValue < 0xFF_FF)
     self.rawValue = builtin.rawValue + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .builtin)
   }
   
   var type: PayloadType {
-    // future work: layout
     switch (self.rawValue >> QuantifyPayload.typeShift) & 3 {
     case 0: return .bitset
     case 1: return .asciiChar

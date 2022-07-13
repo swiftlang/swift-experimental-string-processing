@@ -289,7 +289,6 @@ extension Processor {
     return true
   }
 
-
   func _doMatchBitset(_ bitset: DSLTree.CustomCharacterClass.AsciiBitset) -> Bool {
     if let cur = load(), bitset.matches(char: cur) {
       return true
@@ -355,21 +354,22 @@ extension Processor {
       builtin = nil
     }
 
+    // fixme: is there a way structure the loops so we don't duplicate the
+    // exit policy here?
     if payload.minTrips == 0 {
       // exit policy
       extraTrips = extraTrips.map({$0 - 1})
       if payload.quantKind == .eager {
         savePoint.additionalPositions.append(currentPosition)
       }
-      
     }
 
-    // print("running quantify")
+    // > loop
     while true {
-      // print("in quantify \(trips) \(extraTrips) \(load()) \(payload.type) \(scalar)")
       // fixme: maybe the _do methods should always return the next index, lets
       // us remove the res variable entirely.
-      // dunno how thatll affect the normal matching instructions tho
+      // dunno how thatll affect the normal matching instructions tho, I wanted
+      // to leave the normal matching as untouched as possible
       let res: Bool
       var next: Input.Index?
       switch payload.type {
@@ -382,7 +382,6 @@ extension Processor {
         // We only emit .quantify if it is non-strict ascii
         (res, next) = _doMatchBuiltin(builtin!, false)
       case .any:
-        // // print("\(input.distance(from: currentPosition, to: input.endIndex))")
         res = currentPosition != input.endIndex && !input[currentPosition].isNewline
         next = res ? input.index(after: currentPosition) : nil
       }
@@ -392,10 +391,10 @@ extension Processor {
       currentPosition = next!
       trips += 1
       
-      // min-trips control block
+      // > min-trips control block
       if trips < payload.minTrips { continue } // goto loop
   
-      // exit policy
+      // > exit-policy control block
       if extraTrips == 0 { break } // goto exit
       extraTrips = extraTrips.map({$0 - 1})
       if payload.quantKind == .eager {
@@ -403,16 +402,13 @@ extension Processor {
       }
     }
     
-    // --- exit policy
+    // > exit
     if trips < payload.minTrips {
-      // print("failed to quantify to minTrips, signalling failure")
       signalFailure()
       return false
     }
 
-    // print("Exiting quantify")
     if payload.quantKind == .eager && !savePoint.isEmpty {
-      // print("appending eager sp")
       savePoints.append(savePoint)
     }
     return true
@@ -493,7 +489,6 @@ extension Processor {
       _checkInvariants()
     }
     let (opcode, payload) = fetch().destructure
-    // print("cycle \(currentPC) \(opcode) | pos \(input.distance(from: input.startIndex, to: currentPosition))")
     switch opcode {
     case .invalid:
       fatalError("Invalid program")

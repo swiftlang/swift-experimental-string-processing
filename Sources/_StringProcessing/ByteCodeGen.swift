@@ -670,24 +670,45 @@ fileprivate extension Compiler.ByteCodeGen {
     _ extraTrips: Int?
   ) {
     // These cases must stay in sync with DSLTree.Node.shouldDoFastQuant
-    // as well as the compilation paths for these nodes outside of quantification
+    // as well as the compilation paths for these nodes outside of quantification\
+
+    // All assumptions made by the processor in runQuantify() must be checked here
+    // If an error is thrown here, there must be a mistake in shouldDoFastQuant
+    // letting in an invalid case
     
     // Coupling is bad but we do it for _speed_
     switch child {
     case .customCharacterClass(let ccc):
-      builder.buildQuantify(bitset: ccc.asAsciiBitset(options)!, kind, minTrips, extraTrips)
+      if let bitset = ccc.asAsciiBitset(options) {
+        builder.buildQuantify(bitset: bitset, kind, minTrips, extraTrips)
+      } else {
+        fatalError("Entered emitFastQuant with an invalid case: Unable to generate bitset")
+      }
     case .atom(let atom):
       switch atom {
       case .char(let c):
-        builder.buildQuantify(asciiChar: c._singleScalarAsciiValue!, kind, minTrips, extraTrips)
+        if let val = c._singleScalarAsciiValue {
+          builder.buildQuantify(asciiChar: val, kind, minTrips, extraTrips)
+        } else {
+          fatalError("Entered emitFastQuant with an invalid case: Character is not single scalar ascii")
+        }
       case .any:
+        assert(!options.dotMatchesNewline, "Entered emitFastQuant with an invalid case: Any matches newlines")
         builder.buildQuantifyAny(kind, minTrips, extraTrips)
       case .unconverted(let astAtom):
-        builder.buildQuantify(builtin: astAtom.ast.characterClass!.builtinCC!, kind, minTrips, extraTrips)
+        if let builtin = astAtom.ast.characterClass?.builtinCC {
+          assert(!builtin.isStrict(options: options), "Entered emitFastQuant with an invalid case: Strict builtin character class")
+          builder.buildQuantify(builtin: builtin, kind, minTrips, extraTrips)
+        } else {
+          fatalError("Entered emitFastQuant with an invalid case: Not a builtin character class")
+        }
       default:
         fatalError("Entered emitFastQuant with an invalid case: DSLTree.Node.shouldDoFastQuant is out of sync")
       }
     case .convertedRegexLiteral(let node, _):
+      emitFastQuant(node, kind, minTrips, extraTrips)
+    case .nonCapturingGroup(let groupKind, let node):
+      assert(groupKind.ast == .nonCapture, "Entered emitFastQuant with an invalid case: Invalid nonCapturingGroup type")
       emitFastQuant(node, kind, minTrips, extraTrips)
     default:
       fatalError("Entered emitFastQuant with an invalid case: DSLTree.Node.shouldDoFastQuant is out of sync")
@@ -871,6 +892,13 @@ extension DSLTree.Node {
       }
     case .convertedRegexLiteral(let node, _):
       return node.shouldDoFastQuant(opts)
+    case .nonCapturingGroup(let kind, let child):
+      switch kind.ast {
+      case .nonCapture:
+        return child.shouldDoFastQuant(opts)
+      default:
+        return false
+      }
     default:
       return false
     }
