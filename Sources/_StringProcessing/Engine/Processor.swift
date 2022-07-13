@@ -364,9 +364,9 @@ extension Processor {
       
     }
 
-    print("running quantify")
+    // print("running quantify")
     while true {
-      print("in quantify \(trips) \(extraTrips) \(load()) \(payload.type) \(scalar)")
+      // print("in quantify \(trips) \(extraTrips) \(load()) \(payload.type) \(scalar)")
       // fixme: maybe the _do methods should always return the next index, lets
       // us remove the res variable entirely.
       // dunno how thatll affect the normal matching instructions tho
@@ -383,7 +383,7 @@ extension Processor {
         (res, next) = _doMatchBuiltin(builtin!, false)
       case .any:
         // // print("\(input.distance(from: currentPosition, to: input.endIndex))")
-        res = currentPosition != input.endIndex
+        res = currentPosition != input.endIndex && !input[currentPosition].isNewline
         next = res ? input.index(after: currentPosition) : nil
       }
       
@@ -405,12 +405,12 @@ extension Processor {
     
     // --- exit policy
     if trips < payload.minTrips {
-      print("failed to quantify to minTrips, signalling failure")
+      // print("failed to quantify to minTrips, signalling failure")
       signalFailure()
       return false
     }
 
-    print("Exiting quantify")
+    // print("Exiting quantify")
     if payload.quantKind == .eager && !savePoint.isEmpty {
       // print("appending eager sp")
       savePoints.append(.quant(savePoint))

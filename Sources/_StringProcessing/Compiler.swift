@@ -39,7 +39,7 @@ class Compiler {
         compileOptions,
       captureList: tree.captureList)
     let p = try codegen.emitRoot(tree.root)
-    print(p)
+    // print(p)
     return p
   }
 }
