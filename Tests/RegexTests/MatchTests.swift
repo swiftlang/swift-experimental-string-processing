@@ -1072,13 +1072,10 @@ extension RegexTests {
       ("123 456", "23"))
 #endif
 
-    // TODO: \G and \K
-    do {
-      let regex = try Regex(#"\Gab"#, as: Substring.self)
-      XCTExpectFailure {
-        XCTAssertEqual("abab".matches(of: regex).map(\.output), ["ab", "ab"])
-      }
-    }
+    // \G and \K
+    let regex = try Regex(#"\Gab"#, as: Substring.self)
+    XCTAssertEqual("abab".matches(of: regex).map(\.output), ["ab", "ab"])
+
     
     // TODO: Oniguruma \y and \Y
     firstMatchTests(
