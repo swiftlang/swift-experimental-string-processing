@@ -354,52 +354,41 @@ extension Processor {
       builtin = nil
     }
 
-    // fixme: is there a way structure the loops so we don't duplicate the
-    // exit policy here?
-    if payload.minTrips == 0 {
-      // exit policy
-      extraTrips = extraTrips.map({$0 - 1})
-      if payload.quantKind == .eager {
-        savePoint.additionalPositions.append(currentPosition)
-      }
-    }
-
-    // > loop
     while true {
+      if trips >= payload.minTrips {
+        // exit policy
+        // fixme: is there a way to optimize the next two lines out if we know
+        // extraTrips is nil?
+        if extraTrips == 0 { break } // goto exit
+        extraTrips = extraTrips.map({$0 - 1})
+        if payload.quantKind == .eager {
+          savePoint.additionalPositions.append(currentPosition)
+        }
+      }
+
       // fixme: maybe the _do methods should always return the next index, lets
-      // us remove the res variable entirely.
+      // us remove the matched variable entirely.
       // dunno how thatll affect the normal matching instructions tho, I wanted
       // to leave the normal matching as untouched as possible
-      let res: Bool
+      let matched: Bool
       var next: Input.Index?
       switch payload.type {
       case .bitset:
-        res = _doMatchBitset(bitset!)
-        next = res ? input.index(after: currentPosition) : nil
+        matched = _doMatchBitset(bitset!)
+        next = matched ? input.index(after: currentPosition) : nil
       case .asciiChar:
-        (res, next) = _doMatchScalar(scalar!, true)
+        (matched, next) = _doMatchScalar(scalar!, true)
       case .builtin:
         // We only emit .quantify if it is non-strict ascii
-        (res, next) = _doMatchBuiltin(builtin!, false)
+        (matched, next) = _doMatchBuiltin(builtin!, false)
       case .any:
-        res = currentPosition != input.endIndex && !input[currentPosition].isNewline
-        next = res ? input.index(after: currentPosition) : nil
+        matched = currentPosition != input.endIndex && !input[currentPosition].isNewline
+        next = matched ? input.index(after: currentPosition) : nil
       }
       
-      guard res else { break } // goto exit
-      
+      guard matched else { break } // goto exit
       currentPosition = next!
       trips += 1
-      
-      // > min-trips control block
-      if trips < payload.minTrips { continue } // goto loop
-  
-      // > exit-policy control block
-      if extraTrips == 0 { break } // goto exit
-      extraTrips = extraTrips.map({$0 - 1})
-      if payload.quantKind == .eager {
-        savePoint.additionalPositions.append(currentPosition)
-      }
     }
     
     // > exit

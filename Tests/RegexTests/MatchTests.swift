@@ -1953,17 +1953,4 @@ extension RegexTests {
     expectCompletion(regex: #"(a{,4})*"#, in: "aa")
     expectCompletion(regex: #"((|)+)*"#, in: "aa")
   }
-  
-  func testFastQuant() throws {
-    firstMatchTest(
-      #"a{,2}x"#, input: "123aaaxyz", match: "aax")
-//    firstMatchTest(
-//      #"a{1,2}"#, input: "123aaaxyz", match: "aa")
-//    var r = try! Regex("a|b+|c*", as: Substring.self)
-//    let matches = "aaabbbccc".matches(of: r)
-//    print(matches.map(\.output))
-//    r._setCompilerOptionsForTesting(.disableOptimizations)
-//    let unoptMatches = "aaabbbccc".matches(of: r)
-//    print(unoptMatches.map(\.output))
-  }
 }
