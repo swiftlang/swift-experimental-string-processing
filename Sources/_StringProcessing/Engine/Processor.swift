@@ -245,14 +245,17 @@ extension Processor {
   }
   
   func _doMatchScalar(_ s: Unicode.Scalar, _ boundaryCheck: Bool) -> (Bool, Input.Index?) {
+    // print("doing match scalar \(s)")
     if s == loadScalar(),
        let idx = input.unicodeScalars.index(
         currentPosition,
         offsetBy: 1,
         limitedBy: end),
        (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx)) {
+      // print("matched")
       return (true, idx)
     } else {
+      // print("did not match")
       return (false, nil)
     }
   }
@@ -323,14 +326,14 @@ extension Processor {
     return true
   }
 
-  mutating func runQuantify(_ payload: QuantifyPayload) {
+  mutating func runQuantify(_ payload: QuantifyPayload) -> Bool {
     var trips = 0
     var extraTrips = payload.extraTrips
     var savePoint = startQuantifierSavePoint()
     
     // Initialize values
     // lily note: I hope swift/llvm is smart enough to recognize the code paths
-    // and elide the unwrapping checks, but I'm not sure
+    // and elide the unwrapping checks in the hot loop, but I'm not sure
     let bitset: DSLTree.CustomCharacterClass.AsciiBitset?
     switch payload.type {
     case .bitset:
@@ -351,65 +354,74 @@ extension Processor {
     default:
       builtin = nil
     }
-    
+
+    if payload.minTrips == 0 {
+      // exit policy
+      extraTrips = extraTrips.map({$0 - 1})
+      if payload.quantKind == .eager {
+        savePoint.quantifiedPositions.append(currentPosition)
+      }
+      
+    }
+
     print("running quantify")
-    while extraTrips ?? 1 > 0 {
-      print("in quantify \(trips) \(extraTrips) \(load())")
+    while true {
+      print("in quantify \(trips) \(extraTrips) \(load()) \(payload.type) \(scalar)")
+      // fixme: maybe the _do methods should always return the next index, lets
+      // us remove the res variable entirely.
+      // dunno how thatll affect the normal matching instructions tho
       let res: Bool
-      var next: Input.Index? = input.index(after: currentPosition)
+      var next: Input.Index?
       switch payload.type {
       case .bitset:
         res = _doMatchBitset(bitset!)
+        next = res ? input.index(after: currentPosition) : nil
       case .asciiChar:
-        // lily note: should this just be match character since we already
-        // have next index? we always do the boundary check after all, why recompute
         (res, next) = _doMatchScalar(scalar!, true)
       case .builtin:
         // We only emit .quantify if it is non-strict ascii
         (res, next) = _doMatchBuiltin(builtin!, false)
       case .any:
-        res = true
+        // // print("\(input.distance(from: currentPosition, to: input.endIndex))")
+        res = currentPosition != input.endIndex
+        next = res ? input.index(after: currentPosition) : nil
       }
       
-      guard res else { break } // goto exit-policy
+      guard res else { break } // goto exit
       
       currentPosition = next!
-      extraTrips = extraTrips.map({$0 - 1})
       trips += 1
       
-      switch payload.quantKind {
-      case .eager:
+      // min-trips control block
+      if trips < payload.minTrips { continue } // goto loop
+  
+      // exit policy
+      if extraTrips == 0 { break } // goto exit
+      extraTrips = extraTrips.map({$0 - 1})
+      if payload.quantKind == .eager {
         savePoint.quantifiedPositions.append(currentPosition)
-      case .reluctant:
-        // lily note: maybe I should do this check earlier, but itll
-        // mean lots and lots of fatal errors... hmmm
-        // maybe a new quantkind type that only has those two so i can drop
-        // that extra bit entirely
-        fatalError("Unreachable")
-      case .possessive:
-        continue
       }
     }
     
-    print("exit policy")
     // --- exit policy
     if trips < payload.minTrips {
+      print("failed to quantify to minTrips, signalling failure")
       signalFailure()
-      return
+      return false
     }
-    // emit save point
-    if trips > 0 {
-      if payload.quantKind == .eager {
-        savePoints.append(.quant(savePoint))
-      } else {
-        // Possessive, just emit one save point
-        savePoints.append(makeSavePoint(controller.pc + 1))
-      }
+
+    print("Exiting quantify")
+    if payload.quantKind == .eager && !savePoint.isEmpty {
+      // print("appending eager sp")
+      savePoints.append(.quant(savePoint))
     }
+    return true
   }
 
   mutating func signalFailure() {
+    // print("signal failure")
     guard let savePoint = savePoints.popLast() else {
+      // print("no save points? faililng")
       state = .fail
       return
     }
@@ -424,10 +436,13 @@ extension Processor {
     switch savePoint {
     case .basic(let sp):
       (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = sp.destructure
+      // print("basic sp, restoring to \(pc) \(input.distance(from: input.startIndex, to: pos!))")
     case .quant(var sp):
       (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = sp.pop()
+      // print("restoring quant sp to pc \(pc) \(input.distance(from: input.startIndex, to: pos!))")
       // Add back the quantifier save point if it still has more elements
       if !sp.isEmpty {
+        // print("adding it back")
         savePoints.append(.quant(sp))
       }
     }
@@ -485,7 +500,7 @@ extension Processor {
       _checkInvariants()
     }
     let (opcode, payload) = fetch().destructure
-
+    // print("cycle \(currentPC) \(opcode)")
     switch opcode {
     case .invalid:
       fatalError("Invalid program")
@@ -609,8 +624,9 @@ extension Processor {
       }
     case .quantify:
       let quant = payload.quantify
-      runQuantify(quant)
-      controller.step()
+      if runQuantify(quant) {
+        controller.step()
+      }
 
     case .consumeBy:
       let reg = payload.consumer

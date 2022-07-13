@@ -409,7 +409,6 @@ struct QuantifyPayload: RawRepresentable {
 
   init(rawValue: UInt64) {
     self.rawValue = rawValue
-    print("rawValue \(rawValue)")
     assert(rawValue & _opcodeMask == 0)
   }
   

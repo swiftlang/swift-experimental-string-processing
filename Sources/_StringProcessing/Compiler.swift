@@ -38,7 +38,9 @@ class Compiler {
       compileOptions:
         compileOptions,
       captureList: tree.captureList)
-    return try codegen.emitRoot(tree.root)
+    let p = try codegen.emitRoot(tree.root)
+    print(p)
+    return p
   }
 }
 

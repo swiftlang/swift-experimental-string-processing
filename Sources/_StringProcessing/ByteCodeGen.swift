@@ -476,6 +476,7 @@ fileprivate extension Compiler.ByteCodeGen {
         options.matchLevel == .graphemeCluster &&
         updatedKind != .reluctant {
       emitFastQuant(child, updatedKind, minTrips, extraTrips)
+      return
     }
 
     // The below is a general algorithm for bounded and unbounded
