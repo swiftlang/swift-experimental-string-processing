@@ -205,6 +205,49 @@ extension MEProgram.Builder {
       .init(assertion: payload)))
   }
 
+  mutating func buildQuantify(
+    bitset: DSLTree.CustomCharacterClass.AsciiBitset,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    instructions.append(.init(
+      .quantify,
+      .init(quantify: .init(bitset: makeAsciiBitset(bitset), kind, minTrips, extraTrips))))
+  }
+
+  mutating func buildQuantify(
+    asciiChar: UInt8,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    instructions.append(.init(
+      .quantify,
+      .init(quantify: .init(asciiChar: asciiChar, kind, minTrips, extraTrips))))
+  }
+
+  mutating func buildQuantifyAny(
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    instructions.append(.init(
+      .quantify,
+      .init(quantify: .init(kind, minTrips, extraTrips))))
+  }
+
+  mutating func buildQuantify(
+    builtin: BuiltinCC,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    instructions.append(.init(
+      .quantify,
+      .init(quantify: .init(builtin: builtin, kind, minTrips, extraTrips))))
+  }
+
   mutating func buildAccept() {
     instructions.append(.init(.accept))
   }

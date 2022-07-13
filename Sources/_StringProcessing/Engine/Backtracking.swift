@@ -10,11 +10,19 @@
 //===----------------------------------------------------------------------===//
 
 extension Processor {
-
-  // TODO: What all do we want to save? Configurable?
-  // TODO: Do we need to save any registers?
-  // TODO: Is this the right place to do function stack unwinding?
-  struct SavePoint {
+  enum SavePoint {
+    case basic(BasicSavePoint)
+    case quant(QuantifierSavePoint)
+    
+    var pc: InstructionAddress {
+      switch self {
+      case .basic(let sp): return sp.pc
+      case .quant(let sp): return sp.pc
+      }
+    }
+  }
+  
+  struct BasicSavePoint {
     var pc: InstructionAddress
     var pos: Position?
 
@@ -46,14 +54,48 @@ extension Processor {
       (pc, pos, stackEnd, captureEnds, intRegisters, posRegisters)
     }
   }
+  
+  struct QuantifierSavePoint {
+    var pc: InstructionAddress
+    var quantifiedPositions: [Position]
+    var stackEnd: CallStackAddress
+    var captureEnds: [_StoredCapture]
+    var intRegisters: [Int]
+    var posRegisters: [Input.Index]
+
+
+    mutating func pop() -> (
+      pc: InstructionAddress,
+      pos: Position,
+      stackEnd: CallStackAddress,
+      captureEnds: [_StoredCapture],
+      intRegisters: [Int],
+      PositionRegister: [Input.Index]
+    ) {
+      (pc, quantifiedPositions.popLast()!, stackEnd, captureEnds, intRegisters, posRegisters)
+    }
+    
+    var isEmpty: Bool { quantifiedPositions.isEmpty }
+  }
 
   func makeSavePoint(
     _ pc: InstructionAddress,
     addressOnly: Bool = false
   ) -> SavePoint {
-    SavePoint(
+    .basic(BasicSavePoint(
       pc: pc,
       pos: addressOnly ? nil : currentPosition,
+      stackEnd: .init(callStack.count),
+      captureEnds: storedCaptures,
+      intRegisters: registers.ints,
+      posRegisters: registers.positions))
+  }
+  
+  func startQuantifierSavePoint() -> QuantifierSavePoint {
+    // Restores to the instruction AFTER the current quantifier instruction
+    QuantifierSavePoint(
+      pc: controller.pc + 1,
+      quantifiedPositions: [],
       stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,
       intRegisters: registers.ints,

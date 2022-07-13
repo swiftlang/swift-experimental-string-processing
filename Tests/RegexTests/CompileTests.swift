@@ -37,6 +37,7 @@ enum DecodedInstr {
   case matchScalarUnchecked
   case matchBitsetScalar
   case matchBitset
+  case matchBuiltin
   case consumeBy
   case assertBy
   case matchBy
@@ -45,8 +46,7 @@ enum DecodedInstr {
   case endCapture
   case transformCapture
   case captureValue
-  case builtinAssertion
-  case builtinCharacterClass
+  case quantify
 }
 
 extension DecodedInstr {
@@ -116,7 +116,7 @@ extension DecodedInstr {
           return .matchBitset
         }
       case .consumeBy:
-        return consumeBy
+        return .consumeBy
       case .assertBy:
         return .assertBy
       case .matchBy:
@@ -131,11 +131,11 @@ extension DecodedInstr {
         return .transformCapture
       case .captureValue:
         return .captureValue
-      case .builtinAssertion:
-        return .builtinAssertion
-      case .builtinCharacterClass:
-        return .builtinCharacterClass
-}
+      case .quantify:
+        return .quantify
+      case .matchBuiltin:
+        return .matchBuiltin
+      }
   }
 }
 

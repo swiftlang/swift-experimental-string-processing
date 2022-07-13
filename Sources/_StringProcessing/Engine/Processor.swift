@@ -244,18 +244,26 @@ extension Processor {
     currentPosition < end ? input.unicodeScalars[currentPosition] : nil
   }
   
+  func _doMatchScalar(_ s: Unicode.Scalar, _ boundaryCheck: Bool) -> (Bool, Input.Index?) {
+    if s == loadScalar(),
+       let idx = input.unicodeScalars.index(
+        currentPosition,
+        offsetBy: 1,
+        limitedBy: end),
+       (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx)) {
+      return (true, idx)
+    } else {
+      return (false, nil)
+    }
+  }
+  
   mutating func matchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) -> Bool {
-    guard s == loadScalar(),
-          let idx = input.unicodeScalars.index(
-            currentPosition,
-            offsetBy: 1,
-            limitedBy: end),
-          (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx))
-    else {
+    let (matched, next) = _doMatchScalar(s, boundaryCheck)
+    guard matched else {
       signalFailure()
       return false
     }
-    currentPosition = idx
+    currentPosition = next!
     return true
   }
 
@@ -278,13 +286,22 @@ extension Processor {
     return true
   }
 
+  @inline(__always)
+  func _doMatchBitset(_ bitset: DSLTree.CustomCharacterClass.AsciiBitset) -> Bool {
+    if let cur = load(), bitset.matches(char: cur) {
+      return true
+    } else {
+      return false
+    }
+  }
+
   // If we have a bitset we know that the CharacterClass only matches against
   // ascii characters, so check if the current input element is ascii then
   // check if it is set in the bitset
   mutating func matchBitset(
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
   ) -> Bool {
-    guard let cur = load(), bitset.matches(char: cur) else {
+    guard _doMatchBitset(bitset) else {
       signalFailure()
       return false
     }
@@ -306,13 +323,115 @@ extension Processor {
     return true
   }
 
+  mutating func runQuantify(_ payload: QuantifyPayload) {
+    var trips = 0
+    var extraTrips = payload.extraTrips
+    var savePoint = startQuantifierSavePoint()
+    
+    // Initialize values
+    // lily note: I hope swift/llvm is smart enough to recognize the code paths
+    // and elide the unwrapping checks, but I'm not sure
+    let bitset: DSLTree.CustomCharacterClass.AsciiBitset?
+    switch payload.type {
+    case .bitset:
+      bitset = registers[payload.bitset]
+    default:
+      bitset = nil
+    }
+    let scalar: UnicodeScalar?
+    switch payload.type {
+    case .asciiChar:
+      scalar = UnicodeScalar.init(_value: UInt32(payload.asciiChar))
+    default: scalar = nil
+    }
+    let builtin: BuiltinCC?
+    switch payload.type {
+    case .builtin:
+      builtin = payload.builtin
+    default:
+      builtin = nil
+    }
+    
+    print("running quantify")
+    while extraTrips ?? 1 > 0 {
+      print("in quantify \(trips) \(extraTrips) \(load())")
+      let res: Bool
+      var next: Input.Index? = input.index(after: currentPosition)
+      switch payload.type {
+      case .bitset:
+        res = _doMatchBitset(bitset!)
+      case .asciiChar:
+        // lily note: should this just be match character since we already
+        // have next index? we always do the boundary check after all, why recompute
+        (res, next) = _doMatchScalar(scalar!, true)
+      case .builtin:
+        // We only emit .quantify if it is non-strict ascii
+        (res, next) = _doMatchBuiltin(builtin!, false)
+      case .any:
+        res = true
+      }
+      
+      guard res else { break } // goto exit-policy
+      
+      currentPosition = next!
+      extraTrips = extraTrips.map({$0 - 1})
+      trips += 1
+      
+      switch payload.quantKind {
+      case .eager:
+        savePoint.quantifiedPositions.append(currentPosition)
+      case .reluctant:
+        // lily note: maybe I should do this check earlier, but itll
+        // mean lots and lots of fatal errors... hmmm
+        // maybe a new quantkind type that only has those two so i can drop
+        // that extra bit entirely
+        fatalError("Unreachable")
+      case .possessive:
+        continue
+      }
+    }
+    
+    print("exit policy")
+    // --- exit policy
+    if trips < payload.minTrips {
+      signalFailure()
+      return
+    }
+    // emit save point
+    if trips > 0 {
+      if payload.quantKind == .eager {
+        savePoints.append(.quant(savePoint))
+      } else {
+        // Possessive, just emit one save point
+        savePoints.append(makeSavePoint(controller.pc + 1))
+      }
+    }
+  }
+
   mutating func signalFailure() {
-    guard let (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) =
-            savePoints.popLast()?.destructure
-    else {
+    guard let savePoint = savePoints.popLast() else {
       state = .fail
       return
     }
+    let (pc, pos, stackEnd, capEnds, intRegisters, posRegisters): (
+      pc: InstructionAddress,
+      pos: Position?,
+      stackEnd: CallStackAddress,
+      captureEnds: [_StoredCapture],
+      intRegisters: [Int],
+      PositionRegister: [Input.Index]
+    )
+    switch savePoint {
+    case .basic(let sp):
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = sp.destructure
+    case .quant(var sp):
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = sp.pop()
+      // Add back the quantifier save point if it still has more elements
+      if !sp.isEmpty {
+        savePoints.append(.quant(sp))
+      }
+    }
+
     assert(stackEnd.rawValue <= callStack.count)
     assert(capEnds.count == storedCaptures.count)
 
@@ -488,6 +607,10 @@ extension Processor {
           controller.step()
         }
       }
+    case .quantify:
+      let quant = payload.quantify
+      runQuantify(quant)
+      controller.step()
 
     case .consumeBy:
       let reg = payload.consumer

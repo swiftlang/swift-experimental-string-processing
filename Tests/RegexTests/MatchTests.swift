@@ -1956,4 +1956,9 @@ extension RegexTests {
     expectCompletion(regex: #"(a{,4})*"#, in: "aa")
     expectCompletion(regex: #"((|)+)*"#, in: "aa")
   }
+  
+  func testFastQuant() throws {
+    let r = try Regex("a*")
+    try r.firstMatch(in: "aab")
+  }
 }

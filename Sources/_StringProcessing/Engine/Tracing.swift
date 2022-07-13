@@ -55,6 +55,17 @@ extension Instruction.Payload: CustomStringConvertible {
 
 extension Processor.SavePoint {
   func describe(in input: String) -> String {
+    switch self {
+    case .basic(let basicSavePoint):
+      return "BasicSP(\(basicSavePoint.describe(in: input)))"
+    case .quant(let quantifierSavePoint):
+      return "QuantSP(\(quantifierSavePoint.describe(in: input)))"
+    }
+  }
+}
+
+extension Processor.BasicSavePoint {
+  func describe(in input: String) -> String {
     let posStr: String
     if let p = self.pos {
       posStr = "\(input.distance(from: input.startIndex, to: p))"
@@ -63,6 +74,15 @@ extension Processor.SavePoint {
     }
     return """
       pc: \(self.pc), pos: \(posStr), stackEnd: \(stackEnd)
+      """
+  }
+}
+
+extension Processor.QuantifierSavePoint {
+  func describe(in input: String) -> String {
+    let posStr = "\(input.distance(from: input.startIndex, to: quantifiedPositions.first!)) to \(input.distance(from: input.startIndex, to: quantifiedPositions.last!))"
+    return """
+      pc: \(self.pc), posRange: \(posStr), stackEnd: \(stackEnd)
       """
   }
 }

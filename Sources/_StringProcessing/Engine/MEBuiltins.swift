@@ -1,13 +1,13 @@
 @_implementationOnly import _RegexParser // For AssertionKind
 
 extension Processor {
-  mutating func matchBuiltin(
+  @inline(__always)
+  mutating func _doMatchBuiltin(
     _ cc: BuiltinCC,
     _ isStrictAscii: Bool
-  ) -> Bool {
+  ) -> (Bool, Input.Index?) {
     guard let c = load() else {
-      signalFailure()
-      return false
+      return (false, nil)
     }
 
     var matched: Bool
@@ -32,9 +32,16 @@ extension Processor {
     case .word:
       matched = c.isWordCharacter && (c.isASCII || !isStrictAscii)
     }
-    
+    return (matched, next)
+  }
+
+  mutating func matchBuiltin(
+    _ cc: BuiltinCC,
+    _ isStrictAscii: Bool
+  ) -> Bool {
+    let (matched, next) = _doMatchBuiltin(cc, isStrictAscii)
     if matched {
-      currentPosition = next
+      currentPosition = next!
       return true
     } else {
       signalFailure()

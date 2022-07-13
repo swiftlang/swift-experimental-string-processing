@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+@_implementationOnly import _RegexParser
+
 extension Instruction {
   /// An instruction's payload packs operands and destination
   /// registers.
@@ -239,6 +241,13 @@ extension Instruction.Payload {
     let isScalar = (val >> 14) & 1 == 1
     return (cc, isStrict, isScalar)
   }
+
+  init(quantify payload: QuantifyPayload) {
+    self.init(rawValue: payload.rawValue)
+  }
+  var quantify: QuantifyPayload {
+    QuantifyPayload.init(rawValue: self.rawValue & _payloadMask)
+  }
   
   init(consumer: ConsumeFunctionRegister) {
     self.init(consumer)
@@ -355,3 +364,135 @@ extension Instruction.Payload {
   }
 }
 
+struct QuantifyPayload: RawRepresentable {
+  let rawValue: UInt64
+  
+  enum PayloadType: UInt64 {
+    case bitset = 0
+    case asciiChar
+    case any
+    case builtin
+  }
+  
+  // The top 8 bits are reserved for the opcode so we have 56 bits to work with
+  // b55-b54 - Payload type (one of 4 types)
+  // b53-b37 - minTrips (16 bit int)
+  // b37-b20 - extraTrips (16 bit value, one bit for nil)
+  // b20-b16  - Quantification type (one of three types), should only use 2 bits of these
+  // b16-b0 - Payload value (depends on payload type)
+  static let quantKindShift: UInt64 = 16
+  static let extraTripsShift: UInt64 = 20
+  static let minTripsShift: UInt64 = 37
+  static let typeShift: UInt64 = 54
+  
+  static func packInfoValues(
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?,
+    _ type: PayloadType
+  ) -> UInt64 {
+    let kindVal: UInt64
+    switch kind {
+    case .eager:
+      kindVal = 0
+    case .reluctant:
+      kindVal = 1
+    case .possessive:
+      kindVal = 2
+    }
+    let extraTripsVal: UInt64 = extraTrips == nil ? 1 : UInt64(extraTrips!) << 1
+    return (kindVal << QuantifyPayload.quantKindShift) +
+      (extraTripsVal << QuantifyPayload.extraTripsShift) +
+      (UInt64(minTrips) << QuantifyPayload.minTripsShift) +
+    (type.rawValue << QuantifyPayload.typeShift)
+  }
+
+  init(rawValue: UInt64) {
+    self.rawValue = rawValue
+    print("rawValue \(rawValue)")
+    assert(rawValue & _opcodeMask == 0)
+  }
+  
+  init(
+    bitset: AsciiBitsetRegister,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    assert(bitset.bits < 0xFF_FF)
+    self.rawValue = bitset.bits + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .bitset)
+  }
+  
+  init(
+    asciiChar: UInt8,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    self.rawValue = UInt64(asciiChar) + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .asciiChar)
+  }
+  
+  init(
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    self.rawValue = QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .any)
+  }
+  
+  init(
+    builtin: BuiltinCC,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    self.rawValue = builtin.rawValue + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .builtin)
+  }
+  
+  var type: PayloadType {
+    // future work: layout
+    switch (self.rawValue >> QuantifyPayload.typeShift) & 3 {
+    case 0: return .bitset
+    case 1: return .asciiChar
+    case 2: return .any
+    case 3: return .builtin
+    default:
+      fatalError("Unreachable")
+    }
+  }
+
+  var quantKind: AST.Quantification.Kind {
+    switch (self.rawValue >> QuantifyPayload.quantKindShift) & 3 {
+    case 0: return .eager
+    case 1: return .reluctant
+    case 2: return .possessive
+    default:
+      fatalError("Unreachable")
+    }
+  }
+
+  var minTrips: UInt64 {
+    (self.rawValue >> QuantifyPayload.minTripsShift) & 0xFF_FF
+  }
+  
+  var extraTrips: UInt64? {
+    let val = (self.rawValue >> QuantifyPayload.extraTripsShift) & 0x1FF_FF
+    if val == 1 {
+      return nil
+    } else {
+      return val >> 1
+    }
+  }
+
+  var bitset: AsciiBitsetRegister {
+    TypedInt(self.rawValue & 0xFF_FF)
+  }
+  
+  var asciiChar: UInt8 {
+    UInt8(asserting: self.rawValue & 0xFF)
+  }
+
+  var builtin: BuiltinCC {
+    BuiltinCC(rawValue: self.rawValue & 0xFF_FF)!
+  }
+}
