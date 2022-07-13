@@ -55,87 +55,86 @@ extension DecodedInstr {
   ///
   /// Must stay in sync with Processor.cycle
   static func decode(_ instruction: Instruction) -> DecodedInstr {
-      let (opcode, payload) = instruction.destructure
-
-      switch opcode {
-      case .invalid:
-        fatalError("Invalid program")
-      case .moveImmediate:
-        return .moveImmediate
-      case .moveCurrentPosition:
-        return .moveCurrentPosition
-      case .branch:
-        return .branch
-      case .condBranchZeroElseDecrement:
-        return .condBranchZeroElseDecrement
-      case .condBranchSamePosition:
-        return .condBranchSamePosition
-      case .save:
-        return .save
-      case .saveAddress:
-        return .saveAddress
-      case .splitSaving:
-        return .splitSaving
-      case .clear:
-        return .clear
-      case .clearThrough:
-        return .clearThrough
-      case .accept:
-        return .accept
-      case .fail:
-        return .fail
-      case .advance:
-        return .advance
-      case .match:
-        let (isCaseInsensitive, _) = payload.elementPayload
-        if isCaseInsensitive {
-          return .matchCaseInsensitive
-        } else {
-          return .match
-        }
-      case .matchScalar:
-        let (_, caseInsensitive, boundaryCheck) = payload.scalarPayload
-        if caseInsensitive {
-          if boundaryCheck {
-            return .matchScalarCaseInsensitive
-          } else {
-            return .matchScalarCaseInsensitiveUnchecked
-          }
-        } else {
-          if boundaryCheck {
-            return .matchScalar
-          } else {
-            return .matchScalarUnchecked
-          }
-        }
-      case .matchBitset:
-        let (isScalar, _) = payload.bitsetPayload
-        if isScalar {
-          return .matchBitsetScalar
-        } else {
-          return .matchBitset
-        }
-      case .consumeBy:
-        return .consumeBy
-      case .assertBy:
-        return .assertBy
-      case .matchBy:
-        return .matchBy
-      case .backreference:
-        return .backreference
-      case .beginCapture:
-        return .beginCapture
-      case .endCapture:
-        return .endCapture
-      case .transformCapture:
-        return .transformCapture
-      case .captureValue:
-        return .captureValue
-      case .quantify:
-        return .quantify
-      case .matchBuiltin:
-        return .matchBuiltin
+    let (opcode, payload) = instruction.destructure
+    switch opcode {
+    case .invalid:
+      fatalError("Invalid program")
+    case .moveImmediate:
+      return .moveImmediate
+    case .moveCurrentPosition:
+      return .moveCurrentPosition
+    case .branch:
+      return .branch
+    case .condBranchZeroElseDecrement:
+      return .condBranchZeroElseDecrement
+    case .condBranchSamePosition:
+      return .condBranchSamePosition
+    case .save:
+      return .save
+    case .saveAddress:
+      return .saveAddress
+    case .splitSaving:
+      return .splitSaving
+    case .clear:
+      return .clear
+    case .clearThrough:
+      return .clearThrough
+    case .accept:
+      return .accept
+    case .fail:
+      return .fail
+    case .advance:
+      return .advance
+    case .match:
+      let (isCaseInsensitive, _) = payload.elementPayload
+      if isCaseInsensitive {
+        return .matchCaseInsensitive
+      } else {
+        return .match
       }
+    case .matchScalar:
+      let (_, caseInsensitive, boundaryCheck) = payload.scalarPayload
+      if caseInsensitive {
+        if boundaryCheck {
+          return .matchScalarCaseInsensitive
+        } else {
+          return .matchScalarCaseInsensitiveUnchecked
+        }
+      } else {
+        if boundaryCheck {
+          return .matchScalar
+        } else {
+          return .matchScalarUnchecked
+        }
+      }
+    case .matchBitset:
+      let (isScalar, _) = payload.bitsetPayload
+      if isScalar {
+        return .matchBitsetScalar
+      } else {
+        return .matchBitset
+      }
+    case .consumeBy:
+      return consumeBy
+    case .assertBy:
+      return .assertBy
+    case .matchBy:
+      return .matchBy
+    case .quantify:
+      return .quantify
+    case .backreference:
+      return .backreference
+    case .beginCapture:
+      return .beginCapture
+    case .endCapture:
+      return .endCapture
+    case .transformCapture:
+      return .transformCapture
+    case .captureValue:
+      return .captureValue
+    case .matchBuiltin:
+      return .matchBuiltin
+    }
   }
 }
 
