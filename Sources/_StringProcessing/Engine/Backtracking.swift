@@ -10,22 +10,11 @@
 //===----------------------------------------------------------------------===//
 
 extension Processor {
-  enum SavePoint {
-    case basic(BasicSavePoint)
-    case quant(QuantifierSavePoint)
-    
-    var pc: InstructionAddress {
-      switch self {
-      case .basic(let sp): return sp.pc
-      case .quant(let sp): return sp.pc
-      }
-    }
-  }
-  
-  struct BasicSavePoint {
+  struct SavePoint {
     var pc: InstructionAddress
     var pos: Position?
-
+    // Quantifiers may store many positions to restore to
+    var additionalPositions: [Position]
     // The end of the call stack, so we can slice it off
     // when failing inside a call.
     //
@@ -51,51 +40,44 @@ extension Processor {
       intRegisters: [Int],
       PositionRegister: [Input.Index]
     ) {
-      (pc, pos, stackEnd, captureEnds, intRegisters, posRegisters)
+      assert(additionalPositions.isEmpty)
+      return (pc, pos, stackEnd, captureEnds, intRegisters, posRegisters)
     }
-  }
-  
-  struct QuantifierSavePoint {
-    var pc: InstructionAddress
-    var quantifiedPositions: [Position]
-    var stackEnd: CallStackAddress
-    var captureEnds: [_StoredCapture]
-    var intRegisters: [Int]
-    var posRegisters: [Input.Index]
-
-
-    mutating func pop() -> (
+    
+    var isEmpty: Bool { additionalPositions.isEmpty }
+    
+    mutating func removeLast() -> (
       pc: InstructionAddress,
-      pos: Position,
+      pos: Position?,
       stackEnd: CallStackAddress,
       captureEnds: [_StoredCapture],
       intRegisters: [Int],
       PositionRegister: [Input.Index]
     ) {
-      (pc, quantifiedPositions.popLast()!, stackEnd, captureEnds, intRegisters, posRegisters)
+      (pc, additionalPositions.removeLast(), stackEnd, captureEnds, intRegisters, posRegisters)
     }
-    
-    var isEmpty: Bool { quantifiedPositions.isEmpty }
   }
 
   func makeSavePoint(
     _ pc: InstructionAddress,
     addressOnly: Bool = false
   ) -> SavePoint {
-    .basic(BasicSavePoint(
+    SavePoint(
       pc: pc,
       pos: addressOnly ? nil : currentPosition,
+      additionalPositions: [],
       stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,
       intRegisters: registers.ints,
-      posRegisters: registers.positions))
+      posRegisters: registers.positions)
   }
   
-  func startQuantifierSavePoint() -> QuantifierSavePoint {
+  func startQuantifierSavePoint() -> SavePoint {
     // Restores to the instruction AFTER the current quantifier instruction
-    QuantifierSavePoint(
+    SavePoint(
       pc: controller.pc + 1,
-      quantifiedPositions: [],
+      pos: nil,
+      additionalPositions: [],
       stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,
       intRegisters: registers.ints,

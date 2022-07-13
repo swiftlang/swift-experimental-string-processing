@@ -1,7 +1,6 @@
 @_implementationOnly import _RegexParser // For AssertionKind
 
 extension Processor {
-  @inline(__always)
   mutating func _doMatchBuiltin(
     _ cc: BuiltinCC,
     _ isStrictAscii: Bool

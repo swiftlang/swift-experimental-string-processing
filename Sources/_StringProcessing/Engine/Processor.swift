@@ -289,7 +289,7 @@ extension Processor {
     return true
   }
 
-  @inline(__always)
+
   func _doMatchBitset(_ bitset: DSLTree.CustomCharacterClass.AsciiBitset) -> Bool {
     if let cur = load(), bitset.matches(char: cur) {
       return true
@@ -359,7 +359,7 @@ extension Processor {
       // exit policy
       extraTrips = extraTrips.map({$0 - 1})
       if payload.quantKind == .eager {
-        savePoint.quantifiedPositions.append(currentPosition)
+        savePoint.additionalPositions.append(currentPosition)
       }
       
     }
@@ -399,7 +399,7 @@ extension Processor {
       if extraTrips == 0 { break } // goto exit
       extraTrips = extraTrips.map({$0 - 1})
       if payload.quantKind == .eager {
-        savePoint.quantifiedPositions.append(currentPosition)
+        savePoint.additionalPositions.append(currentPosition)
       }
     }
     
@@ -413,15 +413,13 @@ extension Processor {
     // print("Exiting quantify")
     if payload.quantKind == .eager && !savePoint.isEmpty {
       // print("appending eager sp")
-      savePoints.append(.quant(savePoint))
+      savePoints.append(savePoint)
     }
     return true
   }
 
   mutating func signalFailure() {
-    // print("signal failure")
-    guard let savePoint = savePoints.popLast() else {
-      // print("no save points? faililng")
+    guard var savePoint = savePoints.popLast() else {
       state = .fail
       return
     }
@@ -433,18 +431,13 @@ extension Processor {
       intRegisters: [Int],
       PositionRegister: [Input.Index]
     )
-    switch savePoint {
-    case .basic(let sp):
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = sp.destructure
-      // print("basic sp, restoring to \(pc) \(input.distance(from: input.startIndex, to: pos!))")
-    case .quant(var sp):
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = sp.pop()
-      // print("restoring quant sp to pc \(pc) \(input.distance(from: input.startIndex, to: pos!))")
-      // Add back the quantifier save point if it still has more elements
-      if !sp.isEmpty {
-        // print("adding it back")
-        savePoints.append(.quant(sp))
+    if !savePoint.isEmpty {
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoint.removeLast()
+      if !savePoint.isEmpty {
+        savePoints.append(savePoint)
       }
+    } else {
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoint.destructure
     }
 
     assert(stackEnd.rawValue <= callStack.count)
@@ -500,7 +493,7 @@ extension Processor {
       _checkInvariants()
     }
     let (opcode, payload) = fetch().destructure
-    // print("cycle \(currentPC) \(opcode)")
+    // print("cycle \(currentPC) \(opcode) | pos \(input.distance(from: input.startIndex, to: currentPosition))")
     switch opcode {
     case .invalid:
       fatalError("Invalid program")
