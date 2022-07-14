@@ -18,7 +18,7 @@ extension BenchmarkRunner {
       regex: emoji,
       input: Inputs.taggedEmojis)
 
-    taggedEmojis.register(&self)
+    // taggedEmojis.register(&self) // disabled due to \b being unusably slow
     emojiRegex.register(&self)
   }
 }

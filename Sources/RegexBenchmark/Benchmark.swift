@@ -1,25 +1,25 @@
 import _StringProcessing
 import Foundation
 
-public protocol RegexBenchmark {
+protocol RegexBenchmark {
   var name: String { get }
   func run()
   func debug()
 }
 
-public struct Benchmark: RegexBenchmark {
-  public let name: String
+struct Benchmark: RegexBenchmark {
+  let name: String
   let regex: Regex<AnyRegexOutput>
   let type: MatchType
   let target: String
 
-  public enum MatchType {
+  enum MatchType {
     case whole
     case first
     case allMatches
   }
   
-  public func run() {
+  func run() {
     switch type {
     case .whole: blackHole(target.wholeMatch(of: regex))
     case .allMatches: blackHole(target.matches(of: regex))
@@ -28,8 +28,8 @@ public struct Benchmark: RegexBenchmark {
   }
 }
 
-public struct NSBenchmark: RegexBenchmark {
-  public let name: String
+struct NSBenchmark: RegexBenchmark {
+  let name: String
   let regex: NSRegularExpression
   let type: NSMatchType
   let target: String
@@ -38,15 +38,51 @@ public struct NSBenchmark: RegexBenchmark {
     NSRange(target.startIndex..<target.endIndex, in: target)
   }
 
-  public enum NSMatchType {
+  enum NSMatchType {
     case allMatches
     case first
   }
   
-  public func run() {
+  func run() {
     switch type {
     case .allMatches: blackHole(regex.matches(in: target, range: range))
     case .first: blackHole(regex.firstMatch(in: target, range: range))
+    }
+  }
+}
+
+/// A benchmark running a regex on strings in input set
+struct InputListBenchmark: RegexBenchmark {
+  let name: String
+  let regex: Regex<AnyRegexOutput>
+  let targets: [String]
+  
+  func run() {
+    for target in targets {
+      blackHole(target.wholeMatch(of: regex))
+    }
+  }
+}
+
+struct InputListNSBenchmark: RegexBenchmark {
+  let name: String
+  let regex: NSRegularExpression
+  let targets: [String]
+  
+  init(name: String, regex: String, targets: [String]) {
+    self.name = name
+    self.regex = try! NSRegularExpression(pattern: "^" + regex + "$")
+    self.targets = targets
+  }
+  
+  func range(in target: String) -> NSRange {
+    NSRange(target.startIndex..<target.endIndex, in: target)
+  }
+  
+  func run() {
+    for target in targets {
+      let range = range(in: target)
+      blackHole(regex.firstMatch(in: target, range: range))
     }
   }
 }
@@ -126,9 +162,35 @@ struct CrossBenchmark {
   }
 }
 
+/// A benchmark running a regex on strings in input list, run across multiple engines
+struct CrossInputListBenchmark {
+  /// The base name of the benchmark
+  var baseName: String
+
+  /// The string to compile in differnet engines
+  var regex: String
+
+  /// The list of strings to search
+  var inputs: [String]
+  
+  func register(_ runner: inout BenchmarkRunner) {
+    let swiftRegex = try! Regex(regex)
+    runner.register(InputListBenchmark(
+      name: baseName,
+      regex: swiftRegex,
+      targets: inputs
+    ))
+    runner.register(InputListBenchmark(
+      name: baseName + "NS",
+      regex: swiftRegex,
+      targets: inputs
+    ))
+  }
+}
+
 // TODO: Capture-containing benchmarks
 
 // nom nom nom, consume the argument
 @inline(never)
-public func blackHole<T>(_ x: T) {
+func blackHole<T>(_ x: T) {
 }

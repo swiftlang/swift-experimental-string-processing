@@ -20,7 +20,7 @@ struct Runner: ParsableCommand {
   @Flag(help: "Quiet mode")
   var quiet = false
 
-  @Flag(help: "Exclude the comparisons to NSRegex")
+  @Flag(help: "Exclude running NSRegex benchmarks")
   var excludeNs = false
 
   mutating func run() throws {

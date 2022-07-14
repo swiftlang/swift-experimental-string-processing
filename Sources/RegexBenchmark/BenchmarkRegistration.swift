@@ -2,7 +2,7 @@
 // Do not remove the start of registration or end of registration markers
 
 extension BenchmarkRunner {
-  public static func makeRunner(
+  static func makeRunner(
     _ samples: Int,
     _ quiet: Bool
   ) -> BenchmarkRunner {
@@ -21,6 +21,7 @@ extension BenchmarkRunner {
     benchmark.addLiteralSearch()
     benchmark.addDiceNotation()
     benchmark.addErrorMessages()
+    benchmark.addIpAddress()
     // -- end of registrations --
     return benchmark
   }

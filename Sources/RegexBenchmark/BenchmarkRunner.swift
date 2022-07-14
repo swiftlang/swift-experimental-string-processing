@@ -1,6 +1,6 @@
 import Foundation
 
-public struct BenchmarkRunner {
+struct BenchmarkRunner {
   let suiteName: String
   var suite: [any RegexBenchmark] = []
   
@@ -8,13 +8,13 @@ public struct BenchmarkRunner {
   var results: SuiteResult = SuiteResult()
   let quiet: Bool
 
-  public init(_ suiteName: String, _ n: Int, _ quiet: Bool) {
+  init(_ suiteName: String, _ n: Int, _ quiet: Bool) {
     self.suiteName = suiteName
     self.samples = n
     self.quiet = quiet
   }
   
-  public mutating func register(_ new: some RegexBenchmark) {
+  mutating func register(_ new: some RegexBenchmark) {
     suite.append(new)
   }
   
@@ -42,7 +42,7 @@ public struct BenchmarkRunner {
     return BenchmarkResult(median, stdev, samples)
   }
   
-  public mutating func run() {
+  mutating func run() {
     print("Running")
     for b in suite {
       var result = measure(benchmark: b, samples: samples)
@@ -65,7 +65,7 @@ public struct BenchmarkRunner {
     }
   }
     
-  public mutating func debug() {
+  mutating func debug() {
     print("Debugging")
     print("========================")
     for b in suite {
@@ -79,7 +79,7 @@ public struct BenchmarkRunner {
 
 extension BenchmarkRunner {
   
-  public func save(to savePath: String) throws {
+  func save(to savePath: String) throws {
     let url = URL(fileURLWithPath: savePath, isDirectory: false)
     let parent = url.deletingLastPathComponent()
     if !FileManager.default.fileExists(atPath: parent.path) {
@@ -89,7 +89,7 @@ extension BenchmarkRunner {
     try results.save(to: url)
   }
   
-  public func compare(against compareFilePath: String) throws {
+  func compare(against compareFilePath: String) throws {
     let compareFileURL = URL(fileURLWithPath: compareFilePath)
     let compareResult = try SuiteResult.load(from: compareFileURL)
     let compareFile = compareFileURL.lastPathComponent
@@ -139,11 +139,11 @@ struct BenchmarkResult: Codable {
 struct SuiteResult {
   var results: [String: BenchmarkResult] = [:]
   
-  public mutating func add(name: String, result: BenchmarkResult) {
+  mutating func add(name: String, result: BenchmarkResult) {
     results.updateValue(result, forKey: name)
   }
   
-  public func compare(with other: SuiteResult) -> [String: Time] {
+  func compare(with other: SuiteResult) -> [String: Time] {
     var output: [String: Time] = [:]
     for item in results {
       if let otherVal = other.results[item.key] {
@@ -158,13 +158,13 @@ struct SuiteResult {
 }
 
 extension SuiteResult: Codable {
-  public func save(to url: URL) throws {
+  func save(to url: URL) throws {
     let encoder = JSONEncoder()
     let data = try encoder.encode(self)
     try data.write(to: url, options: .atomic)
   }
   
-  public static func load(from url: URL) throws -> SuiteResult {
+  static func load(from url: URL) throws -> SuiteResult {
     let decoder = JSONDecoder()
     let data = try Data(contentsOf: url)
     return try decoder.decode(SuiteResult.self, from: data)
