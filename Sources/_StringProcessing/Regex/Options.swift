@@ -12,7 +12,7 @@
 @_implementationOnly import _RegexParser
 
 @available(SwiftStdlib 5.7, *)
-extension RegexComponent {
+extension Regex {
   /// Returns a regular expression that ignores case when matching.
   ///
   /// - Parameter ignoresCase: A Boolean value indicating whether to ignore case.
