@@ -13,8 +13,9 @@ extension Processor {
   struct SavePoint {
     var pc: InstructionAddress
     var pos: Position?
-    // Quantifiers may store many positions to restore to
-    var additionalPositions: [Position]
+    // Quantifiers may store a range of positions to restore to
+    var rangeStart: Position?
+    var rangeEnd: Position?
     // The end of the call stack, so we can slice it off
     // when failing inside a call.
     //
@@ -40,13 +41,20 @@ extension Processor {
       intRegisters: [Int],
       PositionRegister: [Input.Index]
     ) {
-      assert(additionalPositions.isEmpty)
+      assert(rangeIsEmpty)
       return (pc, pos, stackEnd, captureEnds, intRegisters, posRegisters)
     }
     
-    var isEmpty: Bool { additionalPositions.isEmpty }
+    var rangeIsEmpty: Bool { rangeEnd == nil }
     
-    mutating func removeLast() -> (
+    mutating func updateRange(newEnd: Input.Index) {
+      if rangeStart == nil {
+        rangeStart = newEnd
+      }
+      rangeEnd = newEnd
+    }
+
+    mutating func removeLast(_ input: Input) -> (
       pc: InstructionAddress,
       pos: Position?,
       stackEnd: CallStackAddress,
@@ -54,7 +62,16 @@ extension Processor {
       intRegisters: [Int],
       PositionRegister: [Input.Index]
     ) {
-      (pc, additionalPositions.removeLast(), stackEnd, captureEnds, intRegisters, posRegisters)
+      assert(!rangeIsEmpty)
+      let pos = rangeEnd!
+      if pos == rangeStart {
+        // The range is now empty
+        rangeStart = nil
+        rangeEnd = nil
+      } else {
+        rangeEnd = input.index(before: pos)
+      }
+      return (pc, pos, stackEnd, captureEnds, intRegisters, posRegisters)
     }
   }
 
@@ -65,7 +82,8 @@ extension Processor {
     SavePoint(
       pc: pc,
       pos: addressOnly ? nil : currentPosition,
-      additionalPositions: [],
+      rangeStart: nil,
+      rangeEnd: nil,
       stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,
       intRegisters: registers.ints,
@@ -77,7 +95,8 @@ extension Processor {
     SavePoint(
       pc: controller.pc + 1,
       pos: nil,
-      additionalPositions: [],
+      rangeStart: nil,
+      rangeEnd: nil,
       stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,
       intRegisters: registers.ints,

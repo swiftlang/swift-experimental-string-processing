@@ -369,23 +369,23 @@ struct QuantifyPayload: RawRepresentable {
   
   enum PayloadType: UInt64 {
     case bitset = 0
-    case asciiChar
-    case any
-    case builtin
+    case asciiChar = 1
+    case any = 2
+    case builtin = 4
   }
   
   // Future work: optimize this layout -> payload type should be a fast switch
   // The top 8 bits are reserved for the opcode so we have 56 bits to work with
-  // b55-b54 - Payload type (one of 4 types)
-  // b53-b37 - minTrips (16 bit int)
-  // b37-b20 - extraTrips (16 bit value, one bit for nil)
-  // b20-b18 - Quantification type (one of three types)
-  // b18-b16 - Unused
-  // b16-b0 - Payload value (depends on payload type)
-  static let quantKindShift: UInt64 = 18
-  static let extraTripsShift: UInt64 = 20
-  static let minTripsShift: UInt64 = 37
-  static let typeShift: UInt64 = 54
+  // b55     - Unused
+  // b54-b51 - Payload type (one of 4 types)
+  // b51-b35 - minTrips (16 bit int)
+  // b35-b18 - extraTrips (16 bit value, one bit for nil)
+  // b18-b16 - Quantification type (one of three types)
+  // b16-b0  - Payload value (depends on payload type)
+  static let quantKindShift: UInt64 = 16
+  static let extraTripsShift: UInt64 = 18
+  static let minTripsShift: UInt64 = 35
+  static let typeShift: UInt64 = 51
   
   static func packInfoValues(
     _ kind: AST.Quantification.Kind,
@@ -452,14 +452,7 @@ struct QuantifyPayload: RawRepresentable {
   }
   
   var type: PayloadType {
-    switch (self.rawValue >> QuantifyPayload.typeShift) & 3 {
-    case 0: return .bitset
-    case 1: return .asciiChar
-    case 2: return .any
-    case 3: return .builtin
-    default:
-      fatalError("Unreachable")
-    }
+    PayloadType(rawValue: (self.rawValue >> QuantifyPayload.typeShift) & 7)!
   }
 
   var quantKind: AST.Quantification.Kind {

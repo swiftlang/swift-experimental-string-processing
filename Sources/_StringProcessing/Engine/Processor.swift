@@ -166,6 +166,11 @@ extension Processor {
     assert(currentPosition != end)
     input.formIndex(after: &currentPosition)
   }
+  
+  mutating func _uncheckedForcedConsumeOneScalar() {
+    assert(currentPosition != end)
+    input.unicodeScalars.formIndex(after: &currentPosition)
+  }
 
   // Advance in our input
   //
@@ -244,29 +249,26 @@ extension Processor {
     currentPosition < end ? input.unicodeScalars[currentPosition] : nil
   }
   
-  func _doMatchScalar(_ s: Unicode.Scalar, _ boundaryCheck: Bool) -> (Bool, Input.Index?) {
-    // print("doing match scalar \(s)")
+  func _doMatchScalar(_ s: Unicode.Scalar, _ boundaryCheck: Bool) -> Bool {
     if s == loadScalar(),
        let idx = input.unicodeScalars.index(
         currentPosition,
         offsetBy: 1,
         limitedBy: end),
        (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx)) {
-      // print("matched")
-      return (true, idx)
+      return true
     } else {
-      // print("did not match")
-      return (false, nil)
+      return false
     }
   }
   
   mutating func matchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) -> Bool {
-    let (matched, next) = _doMatchScalar(s, boundaryCheck)
+    let matched = _doMatchScalar(s, boundaryCheck)
     guard matched else {
       signalFailure()
       return false
     }
-    currentPosition = next!
+    _uncheckedForcedConsumeOneScalar()
     return true
   }
 
@@ -362,7 +364,7 @@ extension Processor {
         if extraTrips == 0 { break } // goto exit
         extraTrips = extraTrips.map({$0 - 1})
         if payload.quantKind == .eager {
-          savePoint.additionalPositions.append(currentPosition)
+          savePoint.updateRange(newEnd: currentPosition)
         }
       }
 
@@ -375,17 +377,16 @@ extension Processor {
       switch payload.type {
       case .bitset:
         matched = _doMatchBitset(bitset!)
-        next = matched ? input.index(after: currentPosition) : nil
       case .asciiChar:
-        (matched, next) = _doMatchScalar(scalar!, true)
+        matched = _doMatchScalar(scalar!, true)
       case .builtin:
-        // We only emit .quantify if it is non-strict ascii
-        (matched, next) = _doMatchBuiltin(builtin!, false)
+        // We only emit .quantify if it is non-strict ascii and if it consumes a
+        // single character
+        (matched, _) = _doMatchBuiltin(builtin!, false)
       case .any:
         matched = currentPosition != input.endIndex && !input[currentPosition].isNewline
-        next = matched ? input.index(after: currentPosition) : nil
       }
-      
+      next = matched ? input.index(after: currentPosition) : nil
       guard matched else { break } // goto exit
       currentPosition = next!
       trips += 1
@@ -397,7 +398,7 @@ extension Processor {
       return false
     }
 
-    if payload.quantKind == .eager && !savePoint.isEmpty {
+    if payload.quantKind == .eager && !savePoint.rangeIsEmpty {
       savePoints.append(savePoint)
     }
     return true
@@ -416,9 +417,9 @@ extension Processor {
       intRegisters: [Int],
       PositionRegister: [Input.Index]
     )
-    if !savePoint.isEmpty {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoint.removeLast()
-      if !savePoint.isEmpty {
+    if !savePoint.rangeIsEmpty {
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoint.removeLast(input)
+      if !savePoint.rangeIsEmpty {
         savePoints.append(savePoint)
       }
     } else {

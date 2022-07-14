@@ -589,6 +589,13 @@ extension BuiltinCC {
     default: return false
     }
   }
+  
+  var consumesSingleGrapheme: Bool {
+    switch self {
+    case .anyScalar: return false
+    default: return true
+    }
+  }
 }
 
 extension _CharacterClassModel {

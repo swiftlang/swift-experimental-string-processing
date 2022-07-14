@@ -59,10 +59,10 @@ extension Processor.SavePoint {
     if let p = self.pos {
       posStr = "\(input.distance(from: input.startIndex, to: p))"
     } else {
-      if additionalPositions.isEmpty {
+      if rangeIsEmpty {
         posStr = "<none>"
       } else {
-        posStr = "\(additionalPositions.map { p in input.distance(from: input.startIndex, to: p) })"
+        posStr = "\(rangeStart!...rangeEnd!)"
       }
     }
     return """

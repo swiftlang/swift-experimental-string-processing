@@ -697,7 +697,10 @@ fileprivate extension Compiler.ByteCodeGen {
         builder.buildQuantifyAny(kind, minTrips, extraTrips)
       case .unconverted(let astAtom):
         if let builtin = astAtom.ast.characterClass?.builtinCC {
-          assert(!builtin.isStrict(options: options), "Entered emitFastQuant with an invalid case: Strict builtin character class")
+          assert(!builtin.isStrict(options: options),
+                 "Entered emitFastQuant with an invalid case: Strict builtin character class")
+          assert(builtin.consumesSingleGrapheme,
+                 "Entered emitFastQuant with an invalid case: Builtin class that does not consume a single grapheme")
           builder.buildQuantify(builtin: builtin, kind, minTrips, extraTrips)
         } else {
           fatalError("Entered emitFastQuant with an invalid case: Not a builtin character class")
@@ -882,7 +885,7 @@ extension DSLTree.Node {
         return !opts.dotMatchesNewline
       case .unconverted(let astAtom):
         // Only quantify non-strict built in character classes
-        if let builtin = astAtom.ast.characterClass?.builtinCC {
+        if let builtin = astAtom.ast.characterClass?.builtinCC, builtin.consumesSingleGrapheme {
           return !builtin.isStrict(options: opts)
         } else {
           return false
