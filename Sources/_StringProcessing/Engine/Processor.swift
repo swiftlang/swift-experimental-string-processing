@@ -166,11 +166,6 @@ extension Processor {
     assert(currentPosition != end)
     input.formIndex(after: &currentPosition)
   }
-  
-  mutating func _uncheckedForcedConsumeOneScalar() {
-    assert(currentPosition != end)
-    input.unicodeScalars.formIndex(after: &currentPosition)
-  }
 
   // Advance in our input
   //
@@ -249,26 +244,26 @@ extension Processor {
     currentPosition < end ? input.unicodeScalars[currentPosition] : nil
   }
   
-  func _doMatchScalar(_ s: Unicode.Scalar, _ boundaryCheck: Bool) -> Bool {
+  func _doMatchScalar(_ s: Unicode.Scalar, _ boundaryCheck: Bool) -> (Bool, Input.Index?) {
     if s == loadScalar(),
        let idx = input.unicodeScalars.index(
         currentPosition,
         offsetBy: 1,
         limitedBy: end),
        (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx)) {
-      return true
+      return (true, idx)
     } else {
-      return false
+      return (false, nil)
     }
   }
   
   mutating func matchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) -> Bool {
-    let matched = _doMatchScalar(s, boundaryCheck)
+    let (matched, next) = _doMatchScalar(s, boundaryCheck)
     guard matched else {
       signalFailure()
       return false
     }
-    _uncheckedForcedConsumeOneScalar()
+    currentPosition = next!
     return true
   }
 
@@ -377,16 +372,17 @@ extension Processor {
       switch payload.type {
       case .bitset:
         matched = _doMatchBitset(bitset!)
+        next = matched ? input.index(after: currentPosition) : nil
       case .asciiChar:
-        matched = _doMatchScalar(scalar!, true)
+        (matched, next) = _doMatchScalar(scalar!, true)
       case .builtin:
         // We only emit .quantify if it is non-strict ascii and if it consumes a
         // single character
-        (matched, _) = _doMatchBuiltin(builtin!, false)
+        (matched, next) = _doMatchBuiltin(builtin!, false)
       case .any:
         matched = currentPosition != input.endIndex && !input[currentPosition].isNewline
+        next = matched ? input.index(after: currentPosition) : nil
       }
-      next = matched ? input.index(after: currentPosition) : nil
       guard matched else { break } // goto exit
       currentPosition = next!
       trips += 1
