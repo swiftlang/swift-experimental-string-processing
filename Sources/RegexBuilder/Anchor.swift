@@ -104,6 +104,12 @@ extension Anchor {
   ///
   /// This anchor is equivalent to `^` in regex syntax when the `m` option
   /// has been enabled or `anchorsMatchLineEndings(true)` has been called.
+  ///
+  /// For example, the following regexes are all equivalent:
+  ///
+  /// - `Regex { Anchor.startOfLine }`
+  /// - `/(?m)^/` or `/(?m:^)/`
+  /// - `/^/.anchorsMatchLineEndings(true)`
   public static var startOfLine: Anchor {
     Anchor(kind: .startOfLine)
   }
@@ -113,6 +119,12 @@ extension Anchor {
   ///
   /// This anchor is equivalent to `$` in regex syntax when the `m` option
   /// has been enabled or `anchorsMatchLineEndings(true)` has been called.
+  ///
+  /// For example, the following regexes are all equivalent:
+  ///
+  /// - `Regex { Anchor.endOfLine }`
+  /// - `/(?m)$/` or `/(?m:$)/`
+  /// - `/$/.anchorsMatchLineEndings(true)`
   public static var endOfLine: Anchor {
     Anchor(kind: .endOfLine)
   }
