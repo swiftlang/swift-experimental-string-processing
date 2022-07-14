@@ -311,7 +311,7 @@ class RegexDSLTests: XCTestCase {
           OneOrMore(.word)
           Anchor.wordBoundary
         }
-        .wordBoundaryKind(.unicodeLevel1)
+        .wordBoundaryKind(.simple)
         OneOrMore(.any, .reluctant)
         "stop"
       }
