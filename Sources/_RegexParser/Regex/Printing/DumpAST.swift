@@ -153,7 +153,7 @@ extension AST.Atom {
     case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
       fatalError("TODO")
 
-    case .any:         return "."
+    case .dot:         return "."
     case .startOfLine: return "^"
     case .endOfLine:   return "$"
 

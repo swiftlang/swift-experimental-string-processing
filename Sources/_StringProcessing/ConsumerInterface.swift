@@ -128,7 +128,7 @@ extension DSLTree.Atom {
       // can match a single scalar in scalar semantic mode.
       return try Character(s).generateConsumer(opts)
 
-    case .any:
+    case .dot:
       // FIXME: Should this be a total ordering?
       if opts.semanticLevel == .graphemeCluster {
         return { input, bounds in
@@ -285,10 +285,10 @@ extension AST.Atom {
     case let .namedCharacter(name):
       return consumeName(name, opts: opts)
       
-    case .any:
+    case .dot:
       assertionFailure(
         "Should have been handled by tree conversion")
-      fatalError(".atom(.any) is handled in emitAny")
+      fatalError(".atom(.dot) is handled in emitDot")
 
     case .startOfLine, .endOfLine:
       // handled in emitAssertion
