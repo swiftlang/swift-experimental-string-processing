@@ -63,10 +63,10 @@ extension AST {
       case dot
 
       /// ^
-      case startOfLine
+      case caretAnchor
 
       /// $
-      case endOfLine
+      case dollarAnchor
 
       // References
       case backreference(Reference)
@@ -105,8 +105,8 @@ extension AST.Atom {
     case .backtrackingDirective(let v): return v
     case .changeMatchingOptions(let v): return v
     case .dot:                          return nil
-    case .startOfLine:                  return nil
-    case .endOfLine:                    return nil
+    case .caretAnchor:                  return nil
+    case .dollarAnchor:                 return nil
     case .invalid:                      return nil
     }
   }
@@ -536,10 +536,10 @@ extension AST.Atom {
     case notTextSegment = #"\Y"#
 
     /// ^
-    case startOfLine = #"^"#
+    case caretAnchor = #"^"#
 
     /// $
-    case endOfLine = #"$"#
+    case dollarAnchor = #"$"#
 
     /// \b (from outside a custom character class)
     case wordBoundary = #"\b"#
@@ -551,8 +551,8 @@ extension AST.Atom {
 
   public var assertionKind: AssertionKind? {
     switch kind {
-    case .startOfLine:     return .startOfLine
-    case .endOfLine:       return .endOfLine
+    case .caretAnchor:  return .caretAnchor
+    case .dollarAnchor: return .dollarAnchor
 
     case .escaped(.wordBoundary):    return .wordBoundary
     case .escaped(.notWordBoundary): return .notWordBoundary
@@ -806,9 +806,9 @@ extension AST.Atom {
       // the AST? Or defer for the matching engine?
       return nil
 
-    case .scalarSequence, .property, .dot, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .callout, .backtrackingDirective,
-        .changeMatchingOptions, .invalid:
+    case .scalarSequence, .property, .dot, .caretAnchor,
+        .dollarAnchor, .backreference, .subpattern, .callout,
+        .backtrackingDirective, .changeMatchingOptions, .invalid:
       return nil
     }
   }
@@ -858,7 +858,7 @@ extension AST.Atom {
     case .keyboardMetaControl(let x):
       return "\\M-\\C-\(x)"
 
-    case .property, .escaped, .dot, .startOfLine, .endOfLine,
+    case .property, .escaped, .dot, .caretAnchor, .dollarAnchor,
         .backreference, .subpattern, .namedCharacter, .callout,
         .backtrackingDirective, .changeMatchingOptions, .invalid:
       return nil
@@ -874,7 +874,7 @@ extension AST.Atom {
     // TODO: Are callouts quantifiable?
     case .escaped(let esc):
       return esc.isQuantifiable
-    case .startOfLine, .endOfLine:
+    case .caretAnchor, .dollarAnchor:
       return false
     default:
       return true

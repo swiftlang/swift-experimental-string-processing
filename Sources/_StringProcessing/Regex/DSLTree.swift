@@ -721,10 +721,10 @@ extension DSLTree {
           : .init(ast: .textSegment)
       }
       public static func startOfLine(_ inverted: Bool = false) -> Self {
-        .init(ast: .startOfLine)
+        .init(ast: .caretAnchor)
       }
       public static func endOfLine(_ inverted: Bool = false) -> Self {
-        .init(ast: .endOfLine)
+        .init(ast: .dollarAnchor)
       }
       public static func wordBoundary(_ inverted: Bool = false) -> Self {
         inverted

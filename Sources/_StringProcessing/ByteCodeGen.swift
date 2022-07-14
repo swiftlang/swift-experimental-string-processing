@@ -202,7 +202,7 @@ fileprivate extension Compiler.ByteCodeGen {
         !input.isOnGraphemeClusterBoundary(pos)
       }
 
-    case .startOfLine:
+    case .caretAnchor:
       // FIXME: Anchor.startOfLine must always use this first branch
       // The behavior of `^` should depend on `anchorsMatchNewlines`, but
       // the DSL-based `.startOfLine` anchor should always match the start
@@ -224,7 +224,7 @@ fileprivate extension Compiler.ByteCodeGen {
         }
       }
       
-    case .endOfLine:
+    case .dollarAnchor:
       // FIXME: Anchor.endOfLine must always use this first branch
       // The behavior of `$` should depend on `anchorsMatchNewlines`, but
       // the DSL-based `.endOfLine` anchor should always match the end
