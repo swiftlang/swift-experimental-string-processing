@@ -72,7 +72,7 @@ fileprivate extension Compiler.ByteCodeGen {
       }
 
     case let .assertion(kind):
-      try emitAssertion(kind.ast)
+      try emitAssertion(kind)
 
     case let .backreference(ref):
       try emitBackreference(ref.ast)
@@ -146,7 +146,7 @@ fileprivate extension Compiler.ByteCodeGen {
   }
 
   mutating func emitAssertion(
-    _ kind: AST.Atom.AssertionKind
+    _ kind: DSLTree.Atom.Assertion
   ) throws {
     // FIXME: Depends on API model we have... We may want to
     // think through some of these with API interactions in mind

@@ -647,7 +647,7 @@ extension StringLiteralBuilder: CustomStringConvertible {
   var description: String { result }
 }
 
-extension AST.Atom.AssertionKind {
+extension DSLTree.Atom.Assertion {
   // TODO: Some way to integrate this with conversion...
   var _patternBase: String {
     switch self {
@@ -835,7 +835,7 @@ extension AST.Atom {
   ///
   /// TODO: Some way to integrate this with conversion...
   var _patternBase: (String, canBeWrapped: Bool) {
-    if let anchor = self.assertionKind {
+    if let anchor = self.dslAssertionKind {
       return (anchor._patternBase, false)
     }
 
@@ -1148,7 +1148,7 @@ extension DSLTree.Atom {
       }
       
     case .assertion(let a):
-      return (a.ast._patternBase, false)
+      return (a._patternBase, false)
       
     case .backreference(_):
       return ("/* TOOD: backreferences */", false)

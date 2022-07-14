@@ -173,13 +173,51 @@ extension DSLTree {
     /// newlines unless single line mode is enabled.
     case dot
 
-    case assertion(_AST.AssertionKind)
+    case assertion(Assertion)
     case backreference(_AST.Reference)
     case symbolicReference(ReferenceID)
 
     case changeMatchingOptions(_AST.MatchingOptionSequence)
 
     case unconverted(_AST.Atom)
+  }
+}
+
+extension DSLTree.Atom {
+  @_spi(RegexBuilder)
+  public enum Assertion: Hashable {
+    /// \A
+    case startOfSubject
+
+    /// \Z
+    case endOfSubjectBeforeNewline
+
+    /// \z
+    case endOfSubject
+
+    /// \K
+    case resetStartOfMatch
+
+    /// \G
+    case firstMatchingPositionInSubject
+
+    /// \y
+    case textSegment
+
+    /// \Y
+    case notTextSegment
+
+    /// ^
+    case caretAnchor
+
+    /// $
+    case dollarAnchor
+
+    /// \b (from outside a custom character class)
+    case wordBoundary
+
+    /// \B
+    case notWordBoundary
   }
 }
 
@@ -697,40 +735,6 @@ extension DSLTree {
     @_spi(RegexBuilder)
     public struct AbsentFunction {
       internal var ast: AST.AbsentFunction
-    }
-    
-    @_spi(RegexBuilder)
-    public struct AssertionKind {
-      internal var ast: AST.Atom.AssertionKind
-      
-      public static func startOfSubject(_ inverted: Bool = false) -> Self {
-        .init(ast: .startOfSubject)
-      }
-      public static func endOfSubjectBeforeNewline(_ inverted: Bool = false) -> Self {
-        .init(ast: .endOfSubjectBeforeNewline)
-      }
-      public static func endOfSubject(_ inverted: Bool = false) -> Self {
-        .init(ast: .endOfSubject)
-      }
-      public static func firstMatchingPositionInSubject(_ inverted: Bool = false) -> Self {
-        .init(ast: .firstMatchingPositionInSubject)
-      }
-      public static func textSegmentBoundary(_ inverted: Bool = false) -> Self {
-        inverted
-          ? .init(ast: .notTextSegment)
-          : .init(ast: .textSegment)
-      }
-      public static func startOfLine(_ inverted: Bool = false) -> Self {
-        .init(ast: .caretAnchor)
-      }
-      public static func endOfLine(_ inverted: Bool = false) -> Self {
-        .init(ast: .dollarAnchor)
-      }
-      public static func wordBoundary(_ inverted: Bool = false) -> Self {
-        inverted
-          ? .init(ast: .notWordBoundary)
-          : .init(ast: .wordBoundary)
-      }
     }
     
     @_spi(RegexBuilder)
