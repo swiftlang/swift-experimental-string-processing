@@ -740,6 +740,32 @@ extension DSLTree {
     @_spi(RegexBuilder)
     public struct Atom {
       internal var ast: AST.Atom
+
+      // FIXME: The below APIs should be removed once the DSL tree has been
+      // migrated to use proper DSL atoms for them.
+
+      public static var _anyGrapheme: Self {
+        .init(ast: .init(.escaped(.graphemeCluster), .fake))
+      }
+      public static var _whitespace: Self {
+        .init(ast: .init(.escaped(.whitespace), .fake))
+      }
+      public static var _digit: Self {
+        .init(ast: .init(.escaped(.decimalDigit), .fake))
+      }
+      public static var _horizontalWhitespace: Self {
+        .init(ast: .init(.escaped(.horizontalWhitespace), .fake))
+      }
+      public static var _newlineSequence: Self {
+        // FIXME: newline sequence is not same as \n
+        .init(ast: .init(.escaped(.newline), .fake))
+      }
+      public static var _verticalWhitespace: Self {
+        .init(ast: .init(.escaped(.verticalTab), .fake))
+      }
+      public static var _word: Self {
+        .init(ast: .init(.escaped(.wordCharacter), .fake))
+      }
     }
   }
 }

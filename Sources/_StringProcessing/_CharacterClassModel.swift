@@ -15,8 +15,7 @@
 // an AST, but this isn't a natural thing to produce in the context
 // of parsing or to store in an AST
 
-@_spi(RegexBuilder)
-public struct _CharacterClassModel: Hashable {
+struct _CharacterClassModel: Hashable {
   /// The actual character class to match.
   var cc: Representation
   
@@ -28,7 +27,7 @@ public struct _CharacterClassModel: Hashable {
   var isInverted: Bool = false
 
   // TODO: Split out builtin character classes into their own type?
-  public enum Representation: Hashable {
+  enum Representation: Hashable {
     /// Any character
     case any
     /// Any grapheme cluster
@@ -85,7 +84,7 @@ public struct _CharacterClassModel: Hashable {
   }
 
   /// Inverts a character class.
-  public var inverted: Self {
+  var inverted: Self {
     return withInversion(true)
   }
   
@@ -161,51 +160,50 @@ public struct _CharacterClassModel: Hashable {
   }
 }
 
-@_spi(RegexBuilder)
 extension _CharacterClassModel {
-  public static var any: _CharacterClassModel {
+  static var any: _CharacterClassModel {
     .init(cc: .any, matchLevel: .graphemeCluster)
   }
 
-  public static var anyGrapheme: _CharacterClassModel {
+  static var anyGrapheme: _CharacterClassModel {
     .init(cc: .anyGrapheme, matchLevel: .graphemeCluster)
   }
 
-  public static var anyUnicodeScalar: _CharacterClassModel {
+  static var anyUnicodeScalar: _CharacterClassModel {
     .init(cc: .any, matchLevel: .unicodeScalar)
   }
 
-  public static var whitespace: _CharacterClassModel {
+  static var whitespace: _CharacterClassModel {
     .init(cc: .whitespace, matchLevel: .graphemeCluster)
   }
   
-  public static var digit: _CharacterClassModel {
+  static var digit: _CharacterClassModel {
     .init(cc: .digit, matchLevel: .graphemeCluster)
   }
   
-  public static var hexDigit: _CharacterClassModel {
+  static var hexDigit: _CharacterClassModel {
     .init(cc: .hexDigit, matchLevel: .graphemeCluster)
   }
 
-  public static var horizontalWhitespace: _CharacterClassModel {
+  static var horizontalWhitespace: _CharacterClassModel {
     .init(cc: .horizontalWhitespace, matchLevel: .graphemeCluster)
   }
 
-  public static var newlineSequence: _CharacterClassModel {
+  static var newlineSequence: _CharacterClassModel {
     .init(cc: .newlineSequence, matchLevel: .graphemeCluster)
   }
 
-  public static var verticalWhitespace: _CharacterClassModel {
+  static var verticalWhitespace: _CharacterClassModel {
     .init(cc: .verticalWhitespace, matchLevel: .graphemeCluster)
   }
 
-  public static var word: _CharacterClassModel {
+  static var word: _CharacterClassModel {
     .init(cc: .word, matchLevel: .graphemeCluster)
   }
 }
 
 extension _CharacterClassModel.Representation: CustomStringConvertible {
-  public var description: String {
+  var description: String {
     switch self {
     case .any: return "<any>"
     case .anyGrapheme: return "<any grapheme>"
@@ -222,70 +220,8 @@ extension _CharacterClassModel.Representation: CustomStringConvertible {
 }
 
 extension _CharacterClassModel: CustomStringConvertible {
-  public var description: String {
+  var description: String {
     return "\(isInverted ? "not " : "")\(cc)"
-  }
-}
-
-extension _CharacterClassModel {
-  public func makeDSLTreeCharacterClass() -> DSLTree.CustomCharacterClass? {
-    // FIXME: Implement in DSLTree instead of wrapping an AST atom
-    switch makeAST() {
-    case .atom(let atom):
-      return .init(members: [.atom(.unconverted(.init(ast: atom)))])
-    default:
-      return nil
-    }
-  }
-  
-  internal func makeAST() -> AST.Node? {
-    let inv = isInverted
-
-    func esc(_ b: AST.Atom.EscapedBuiltin) -> AST.Node {
-      escaped(b)
-    }
-
-    switch cc {
-    case .any: return atom(.any)
-
-    case .digit:
-      return esc(inv ? .notDecimalDigit : .decimalDigit)
-
-    case .horizontalWhitespace:
-      return esc(
-        inv ? .notHorizontalWhitespace : .horizontalWhitespace)
-
-    // FIXME: newline sequence is not same as \n
-    case .newlineSequence:
-      return esc(inv ? .notNewline : .newline)
-
-    case .whitespace:
-      return esc(inv ? .notWhitespace : .whitespace)
-
-    case .verticalWhitespace:
-      return esc(inv ? .notVerticalTab : .verticalTab)
-
-    case .word:
-      return esc(inv ? .notWordCharacter : .wordCharacter)
-
-    case .anyGrapheme:
-      return esc(.graphemeCluster)
-
-    case .hexDigit:
-      let members: [AST.CustomCharacterClass.Member] = [
-        range_m(.char("a"), .char("f")),
-        range_m(.char("A"), .char("F")),
-        range_m(.char("0"), .char("9")),
-      ]
-      let ccc = AST.CustomCharacterClass(
-        .init(faking: inv ? .inverted : .normal),
-        members,
-        .fake)
-
-      return .customCharacterClass(ccc)
-
-    default: return nil
-    }
   }
 }
 
