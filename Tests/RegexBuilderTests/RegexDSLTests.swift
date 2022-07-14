@@ -224,6 +224,30 @@ class RegexDSLTests: XCTestCase {
         }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
       }
     }
+
+    // Make sure horizontal whitespace does not match newlines or other
+    // vertical whitespace.
+    try _testDSLCaptures(
+      ("  \u{A0} \u{9}  \t ", "  \u{A0} \u{9}  \t "),
+      (" \n", nil),
+      (" \r", nil),
+      (" \r\n", nil),
+      (" \u{2028}", nil),
+      matchType: Substring.self, ==)
+    {
+      OneOrMore(.horizontalWhitespace)
+    }
+
+    // Horizontal whitespace in ASCII mode.
+    try _testDSLCaptures(
+      ("   \u{9}  \t ", "   \u{9}  \t "),
+      ("\u{A0}", nil),
+      matchType: Substring.self, ==)
+    {
+      Regex {
+        OneOrMore(.horizontalWhitespace)
+      }.asciiOnlyWhitespace()
+    }
   }
 
   func testCharacterClassOperations() throws {
