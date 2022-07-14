@@ -651,12 +651,16 @@ extension DSLTree.Atom.Assertion {
   // TODO: Some way to integrate this with conversion...
   var _patternBase: String {
     switch self {
-    case .caretAnchor:
-      // FIXME: The DSL doesn't have a way of representing this.
+    case .startOfLine:
       return "Anchor.startOfLine"
-    case .dollarAnchor:
-      // FIXME: The DSL doesn't have a way of representing this.
+    case .endOfLine:
       return "Anchor.endOfLine"
+    case .caretAnchor:
+      // The DSL doesn't have an equivalent to this, so print as regex.
+      return "/^/"
+    case .dollarAnchor:
+      // The DSL doesn't have an equivalent to this, so print as regex.
+      return "/$/"
     case .wordBoundary:
       return "Anchor.wordBoundary"
     case .notWordBoundary:

@@ -55,10 +55,10 @@ extension Anchor: RegexComponent {
       return isInverted ? .notTextSegment : .textSegment
     case .startOfLine:
       // FIXME: Inverted?
-      return .caretAnchor
+      return .startOfLine
     case .endOfLine:
       // FIXME: Inverted?
-      return .dollarAnchor
+      return .endOfLine
     case .wordBoundary:
       return isInverted ? .notWordBoundary : .wordBoundary
     }
