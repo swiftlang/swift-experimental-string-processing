@@ -17,6 +17,9 @@ extension BenchmarkRunner {
     benchmark.addEmail()
     benchmark.addCustomCharacterClasses()
     benchmark.addBuiltinCC()
+    benchmark.addDna()
+    benchmark.addUnicode()
+    benchmark.addLiteralSearch()
     // -- end of registrations --
     return benchmark
   }

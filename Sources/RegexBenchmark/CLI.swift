@@ -2,7 +2,7 @@ import ArgumentParser
 
 @main
 struct Runner: ParsableCommand {
-  @Argument(help: "Names of benchmarks to run")
+  @Argument(help: "Patterns for benchmarks to run")
   var specificBenchmarks: [String] = []
 
   @Option(help: "How many samples to collect for each benchmark")
@@ -20,16 +20,25 @@ struct Runner: ParsableCommand {
   @Flag(help: "Quiet mode")
   var quiet = false
 
+  @Flag(help: "Exclude the comparisons to NSRegex")
+  var excludeNs = false
+
   mutating func run() throws {
     var runner = BenchmarkRunner.makeRunner(samples, quiet)
 
-    // todo: regex based filter 
     if !self.specificBenchmarks.isEmpty {
-      runner.suite = runner.suite.filter { b in specificBenchmarks.contains(b.name) }
+      runner.suite = runner.suite.filter { b in
+        specificBenchmarks.contains { pattern in
+          try! Regex(pattern).wholeMatch(in: b.name) != nil
+        }
+      }
     }
     if debug {
       runner.debug()
     } else {
+      if excludeNs {
+        runner.suite = runner.suite.filter { b in !b.name.contains("NS") }
+      }
       runner.run()
       if let compareFile = compare {
         try runner.compare(against: compareFile)
