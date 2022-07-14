@@ -128,7 +128,7 @@ extension DSLTree.Atom {
       // can match a single scalar in scalar semantic mode.
       return try Character(s).generateConsumer(opts)
 
-    case .any, .dot:
+    case .any:
       // FIXME: Should this be a total ordering?
       if opts.semanticLevel == .graphemeCluster {
         return { input, bounds in
@@ -139,6 +139,9 @@ extension DSLTree.Atom {
           true
         }
       }
+
+    case .dot:
+      throw Unreachable(".atom(.dot) should be handled by emitDot")
 
     case .assertion:
       // TODO: We could handle, should this be total?
