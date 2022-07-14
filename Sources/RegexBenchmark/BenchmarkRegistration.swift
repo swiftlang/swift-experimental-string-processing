@@ -20,6 +20,7 @@ extension BenchmarkRunner {
     benchmark.addUnicode()
     benchmark.addLiteralSearch()
     benchmark.addDiceNotation()
+    benchmark.addErrorMessages()
     // -- end of registrations --
     return benchmark
   }

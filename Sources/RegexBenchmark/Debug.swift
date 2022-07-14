@@ -25,6 +25,7 @@ extension Benchmark {
         let avgLen = results.map({result in String(target[result.range]).count})
           .reduce(0.0, {$0 + Double($1)}) / Double(results.count)
         print("Average match length = \(avgLen)")
+        print("First match = \(String(target[results[0].range]))")
         return
       }
       
