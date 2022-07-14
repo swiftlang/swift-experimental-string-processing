@@ -19,6 +19,7 @@ extension BenchmarkRunner {
     benchmark.addBuiltinCC()
     benchmark.addUnicode()
     benchmark.addLiteralSearch()
+    benchmark.addDiceNotation()
     // -- end of registrations --
     return benchmark
   }
