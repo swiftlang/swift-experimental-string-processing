@@ -641,7 +641,41 @@ extension RegexTests {
       ("\n", true),
       ("\r", true),
       ("\r\n", false))
-    
+
+    let allNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n\u{85}\u{2028}\u{2029}"
+    let asciiNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n"
+
+    for level in [RegexSemanticLevel.graphemeCluster, .unicodeScalar] {
+      firstMatchTest(
+        #"\R+"#,
+        input: "abc\(allNewlines)def", match: allNewlines,
+        semanticLevel: level
+      )
+      firstMatchTest(
+        #"\v+"#,
+        input: "abc\(allNewlines)def", match: allNewlines,
+        semanticLevel: level
+      )
+    }
+
+    // In scalar mode, \R can match \r\n, \v cannot.
+    firstMatchTest(
+      #"\R"#, input: "\r\n", match: "\r\n", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"\v"#, input: "\r\n", match: "\r", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"\v\v"#, input: "\r\n", match: "\r\n", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"[^\v]"#, input: "\r\n", match: nil, semanticLevel: .unicodeScalar)
+
+    // ASCII-only spaces.
+    firstMatchTest(#"(?S)\R+"#, input: allNewlines, match: asciiNewlines)
+    firstMatchTest(#"(?S)\v+"#, input: allNewlines, match: asciiNewlines)
+    firstMatchTest(
+      #"(?S)\R"#, input: "\r\n", match: "\r\n", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"(?S)\v"#, input: "\r\n", match: "\r", semanticLevel: .unicodeScalar)
+
     matchTest(
       #"[a]\u0301"#,
       ("a\u{301}", false),
