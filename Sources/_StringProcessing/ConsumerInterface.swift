@@ -128,7 +128,7 @@ extension DSLTree.Atom {
       // can match a single scalar in scalar semantic mode.
       return try Character(s).generateConsumer(opts)
 
-    case .dot:
+    case .any, .dot:
       // FIXME: Should this be a total ordering?
       if opts.semanticLevel == .graphemeCluster {
         return { input, bounds in
