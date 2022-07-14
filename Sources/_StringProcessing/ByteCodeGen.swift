@@ -58,6 +58,9 @@ fileprivate extension Compiler.ByteCodeGen {
     case .any:
       emitAny()
 
+    case .anyNonNewline:
+      emitAnyNonNewline()
+
     case .dot:
       emitDot()
 
@@ -341,11 +344,7 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
-  mutating func emitDot() {
-    if options.dotMatchesNewline {
-      emitAny()
-      return
-    }
+  mutating func emitAnyNonNewline() {
     switch options.semanticLevel {
     case .graphemeCluster:
       builder.buildConsume { input, bounds in
@@ -359,6 +358,14 @@ fileprivate extension Compiler.ByteCodeGen {
         ? nil
         : input.unicodeScalars.index(after: bounds.lowerBound)
       }
+    }
+  }
+
+  mutating func emitDot() {
+    if options.dotMatchesNewline {
+      emitAny()
+    } else {
+      emitAnyNonNewline()
     }
   }
 

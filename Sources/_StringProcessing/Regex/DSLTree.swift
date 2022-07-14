@@ -169,6 +169,10 @@ extension DSLTree {
     /// Any character, including newlines.
     case any
 
+    /// Any character, excluding newlines. This differs from '.', as it is not
+    /// affected by single line mode.
+    case anyNonNewline
+
     /// The DSL representation of '.' in a regex literal. This does not match
     /// newlines unless single line mode is enabled.
     case dot
@@ -795,8 +799,8 @@ extension DSLTree.Atom {
     switch self {
     case .changeMatchingOptions, .assertion:
       return false
-    case .char, .scalar, .any, .dot, .backreference, .symbolicReference,
-        .unconverted:
+    case .char, .scalar, .any, .anyNonNewline, .dot, .backreference,
+        .symbolicReference, .unconverted:
       return true
     }
   }

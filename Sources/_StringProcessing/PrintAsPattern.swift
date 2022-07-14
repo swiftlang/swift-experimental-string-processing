@@ -1133,6 +1133,9 @@ extension DSLTree.Atom {
     case .any:
       return (".any", true)
 
+    case .anyNonNewline:
+      return (".anyNonNewline", true)
+
     case .dot:
       // The DSL does not have an equivalent to '.', print as a regex.
       return ("/./", false)
@@ -1178,6 +1181,9 @@ extension DSLTree.Atom {
     switch self {
     case .any:
       return "(?s:.)"
+
+    case .anyNonNewline:
+      return "(?-s:.)"
 
     case .dot:
       return "."
