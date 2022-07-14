@@ -267,7 +267,7 @@ extension RegexTests {
       matchingOptions(adding: [.caseInsensitive]))
   }
 
-  private func expectProgram(
+  func expectProgram(
     for regex: String,
     syntax: SyntaxOptions = .traditional,
     semanticLevel: RegexSemanticLevel? = nil,

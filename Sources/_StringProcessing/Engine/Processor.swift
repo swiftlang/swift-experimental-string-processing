@@ -244,26 +244,25 @@ extension Processor {
     currentPosition < end ? input.unicodeScalars[currentPosition] : nil
   }
   
-  func _doMatchScalar(_ s: Unicode.Scalar, _ boundaryCheck: Bool) -> (Bool, Input.Index?) {
+  func _doMatchScalar(_ s: Unicode.Scalar, _ boundaryCheck: Bool) -> Input.Index? {
     if s == loadScalar(),
        let idx = input.unicodeScalars.index(
         currentPosition,
         offsetBy: 1,
         limitedBy: end),
        (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx)) {
-      return (true, idx)
+      return idx
     } else {
-      return (false, nil)
+      return nil
     }
   }
   
   mutating func matchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) -> Bool {
-    let (matched, next) = _doMatchScalar(s, boundaryCheck)
-    guard matched else {
+    guard let next = _doMatchScalar(s, boundaryCheck) else {
       signalFailure()
       return false
     }
-    currentPosition = next!
+    currentPosition = next
     return true
   }
 
@@ -286,11 +285,11 @@ extension Processor {
     return true
   }
 
-  func _doMatchBitset(_ bitset: DSLTree.CustomCharacterClass.AsciiBitset) -> Bool {
+  func _doMatchBitset(_ bitset: DSLTree.CustomCharacterClass.AsciiBitset) -> Input.Index? {
     if let cur = load(), bitset.matches(char: cur) {
-      return true
+      return input.index(after: currentPosition)
     } else {
-      return false
+      return nil
     }
   }
 
@@ -300,11 +299,11 @@ extension Processor {
   mutating func matchBitset(
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
   ) -> Bool {
-    guard _doMatchBitset(bitset) else {
+    guard let next = _doMatchBitset(bitset) else {
       signalFailure()
       return false
     }
-    _uncheckedForcedConsumeOne()
+    currentPosition = next
     return true
   }
 
@@ -326,69 +325,49 @@ extension Processor {
     var trips = 0
     var extraTrips = payload.extraTrips
     var savePoint = startQuantifierSavePoint()
-    
-    // Initialize values
-    // lily note: I hope swift/llvm is smart enough to recognize the code paths
-    // and elide the unwrapping checks in the hot loop, but I'm not sure
-    let bitset: DSLTree.CustomCharacterClass.AsciiBitset?
-    switch payload.type {
-    case .bitset:
-      bitset = registers[payload.bitset]
-    default:
-      bitset = nil
-    }
-    let scalar: UnicodeScalar?
-    switch payload.type {
-    case .asciiChar:
-      scalar = UnicodeScalar.init(_value: UInt32(payload.asciiChar))
-    default: scalar = nil
-    }
-    let builtin: BuiltinCC?
-    switch payload.type {
-    case .builtin:
-      builtin = payload.builtin
-    default:
-      builtin = nil
-    }
 
     while true {
       if trips >= payload.minTrips {
         // exit policy
         // fixme: is there a way to optimize the next two lines out if we know
         // extraTrips is nil?
-        if extraTrips == 0 { break } // goto exit
+        if extraTrips == 0 { break }
         extraTrips = extraTrips.map({$0 - 1})
         if payload.quantKind == .eager {
           savePoint.updateRange(newEnd: currentPosition)
         }
       }
 
-      // fixme: maybe the _do methods should always return the next index, lets
-      // us remove the matched variable entirely.
-      // dunno how thatll affect the normal matching instructions tho, I wanted
-      // to leave the normal matching as untouched as possible
-      let matched: Bool
+      // Future work: Do we want to rework our Processor.Cycle() switch loop
+      // to do something like this for all of the matching instructions?
+      // ie: A bunch of _doMatchThing instructions that return Input.Index?
+      // which we then signalFailure if nil or currentPosition = next otherwise
+      // This would have the benefit of potentially allowing us to not duplicate
+      // code between the normal matching instructions and this loop here
       var next: Input.Index?
       switch payload.type {
       case .bitset:
-        matched = _doMatchBitset(bitset!)
-        next = matched ? input.index(after: currentPosition) : nil
+        next = _doMatchBitset(registers[payload.bitset])
       case .asciiChar:
-        (matched, next) = _doMatchScalar(scalar!, true)
+        next = _doMatchScalar(
+          UnicodeScalar.init(_value: UInt32(payload.asciiChar)), true)
       case .builtin:
         // We only emit .quantify if it is non-strict ascii and if it consumes a
         // single character
-        (matched, next) = _doMatchBuiltin(builtin!, false)
+        next = _doMatchBuiltin(payload.builtin, false)
       case .any:
-        matched = currentPosition != input.endIndex && !input[currentPosition].isNewline
+        // We only emit if any does not match newline
+        // Fixme: we could emit if it matches newline by just having a bit in
+        // the payload, the any payload is empty anyway
+        let matched = currentPosition != input.endIndex &&
+          !input[currentPosition].isNewline
         next = matched ? input.index(after: currentPosition) : nil
       }
-      guard matched else { break } // goto exit
-      currentPosition = next!
+      guard let idx = next else { break }
+      currentPosition = idx
       trips += 1
     }
-    
-    // > exit
+
     if trips < payload.minTrips {
       signalFailure()
       return false

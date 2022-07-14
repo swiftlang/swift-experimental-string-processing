@@ -376,16 +376,17 @@ struct QuantifyPayload: RawRepresentable {
   
   // Future work: optimize this layout -> payload type should be a fast switch
   // The top 8 bits are reserved for the opcode so we have 56 bits to work with
-  // b55     - Unused
-  // b54-b51 - Payload type (one of 4 types)
-  // b51-b35 - minTrips (16 bit int)
-  // b35-b18 - extraTrips (16 bit value, one bit for nil)
+  // b55-b38 - Unused
+  // b38-b35 - Payload type (one of 4 types, stored on 3 bits)
+  // b35-b27 - minTrips (8 bit int)
+  // b27-b18 - extraTrips (8 bit value, one bit for nil)
   // b18-b16 - Quantification type (one of three types)
   // b16-b0  - Payload value (depends on payload type)
   static let quantKindShift: UInt64 = 16
   static let extraTripsShift: UInt64 = 18
-  static let minTripsShift: UInt64 = 35
-  static let typeShift: UInt64 = 51
+  static let minTripsShift: UInt64 = 27
+  static let typeShift: UInt64 = 35
+  static let maxStorableTrips: UInt64 = (1 << 8) - 1
   
   static func packInfoValues(
     _ kind: AST.Quantification.Kind,
@@ -466,11 +467,11 @@ struct QuantifyPayload: RawRepresentable {
   }
 
   var minTrips: UInt64 {
-    (self.rawValue >> QuantifyPayload.minTripsShift) & 0xFF_FF
+    (self.rawValue >> QuantifyPayload.minTripsShift) & 0xFF
   }
   
   var extraTrips: UInt64? {
-    let val = (self.rawValue >> QuantifyPayload.extraTripsShift) & 0x1FF_FF
+    let val = (self.rawValue >> QuantifyPayload.extraTripsShift) & 0x1FF
     if val == 1 {
       return nil
     } else {

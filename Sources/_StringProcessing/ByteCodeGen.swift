@@ -454,27 +454,20 @@ fileprivate extension Compiler.ByteCodeGen {
     let minTrips = low
     assert((extraTrips ?? 1) >= 0)
 
-    // We want to specialize quantification on certain inner nodes
-    // Those nodes are:
+    // We want to specialize common quantification cases
+    // Allowed nodes are:
     // - .char
     // - .customCharacterClass
     // - built in character classes
     // - .any
-    // and only in grapheme semantic mode (fixme: for sure?)
+
     // We do this by wrapping a single instruction in a .quantify instruction
-    
-    // Lily note: I dont think we can support reluctant quant with this implementation
-    // style, or at least it wouldn't be any more efficient than the
-    // existing way we emit reluctant quantifiers
-    
-    // The main issue runQuantify solves is the fact that greedy quantifiers
-    // will loop through processor inefficiently and generate a ton of save points
-    let x = 65536 // lily todo: fix this once i determine the bit layout
-    if optimizationsEnabled && child.shouldDoFastQuant(options) &&
-        minTrips < x &&
-        extraTrips ?? 0 < x  &&
-        options.matchLevel == .graphemeCluster &&
-        updatedKind != .reluctant {
+    if optimizationsEnabled
+        && child.shouldDoFastQuant(options)
+        && minTrips <= QuantifyPayload.maxStorableTrips
+        && extraTrips ?? 0 <= QuantifyPayload.maxStorableTrips
+        && options.matchLevel == .graphemeCluster
+        && updatedKind != .reluctant {
       emitFastQuant(child, updatedKind, minTrips, extraTrips)
       return
     }
@@ -874,6 +867,11 @@ extension DSLTree.Node {
     switch self {
     case .customCharacterClass(let ccc):
       // Only quantify ascii only character classes
+
+      // Future work: Should we allow ConsumeFunctions into .quantify?
+      // this would open up non-ascii custom character classes as well as the
+      // possibility of wrapping weirder cases into consume functions
+      // (non-ascii characters for example)
       return ccc.asAsciiBitset(opts) != nil
     case .atom(let atom):
       switch atom {
@@ -885,7 +883,8 @@ extension DSLTree.Node {
         return !opts.dotMatchesNewline
       case .unconverted(let astAtom):
         // Only quantify non-strict built in character classes
-        if let builtin = astAtom.ast.characterClass?.builtinCC, builtin.consumesSingleGrapheme {
+        if let builtin = astAtom.ast.characterClass?.builtinCC,
+            builtin.consumesSingleGrapheme {
           return !builtin.isStrict(options: opts)
         } else {
           return false
@@ -902,6 +901,10 @@ extension DSLTree.Node {
       default:
         return false
       }
+    case .orderedChoice:
+      // Future work: Could we support ordered choice by compacting our payload
+      // representation and supporting an alternation of up to N supported nodes?
+      return false
     default:
       return false
     }

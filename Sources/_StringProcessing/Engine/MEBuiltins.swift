@@ -4,9 +4,9 @@ extension Processor {
   mutating func _doMatchBuiltin(
     _ cc: BuiltinCC,
     _ isStrictAscii: Bool
-  ) -> (Bool, Input.Index?) {
+  ) -> Input.Index? {
     guard let c = load() else {
-      return (false, nil)
+      return nil
     }
 
     var matched: Bool
@@ -31,21 +31,19 @@ extension Processor {
     case .word:
       matched = c.isWordCharacter && (c.isASCII || !isStrictAscii)
     }
-    return (matched, next)
+    return matched ? next : nil
   }
 
   mutating func matchBuiltin(
     _ cc: BuiltinCC,
     _ isStrictAscii: Bool
   ) -> Bool {
-    let (matched, next) = _doMatchBuiltin(cc, isStrictAscii)
-    if matched {
-      currentPosition = next!
-      return true
-    } else {
+    guard let next = _doMatchBuiltin(cc, isStrictAscii) else {
       signalFailure()
       return false
     }
+    currentPosition = next
+    return true
   }
   
   mutating func matchBuiltinScalar(
