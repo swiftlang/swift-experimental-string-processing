@@ -22,6 +22,9 @@ extension Benchmark {
       print("- Total matches: \(results.count)")
       if results.count > 10 {
         print("# Too many matches, not printing")
+        let avgLen = results.map({result in String(target[result.range]).count})
+          .reduce(0.0, {$0 + Double($1)}) / Double(results.count)
+        print("Average match length = \(avgLen)")
         return
       }
       

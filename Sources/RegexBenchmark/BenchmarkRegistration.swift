@@ -4,18 +4,19 @@
 extension BenchmarkRunner {
   public static func makeRunner(
     _ samples: Int,
-    _ outputPath: String
+    _ quiet: Bool
   ) -> BenchmarkRunner {
-    var benchmark = BenchmarkRunner("RegexBench", samples, outputPath)
+    var benchmark = BenchmarkRunner("RegexBench", samples, quiet)
     // -- start of registrations --
     benchmark.addReluctantQuant()
     benchmark.addCSS()
     benchmark.addNotFound()
     benchmark.addGraphemeBreak()
     benchmark.addHangulSyllable()
-    benchmark.addHTML()
+    // benchmark.addHTML() // Disabled due to \b being unusably slow
     benchmark.addEmail()
     benchmark.addCustomCharacterClasses()
+    benchmark.addBuiltinCC()
     // -- end of registrations --
     return benchmark
   }
