@@ -24,9 +24,10 @@ func _firstMatch(
   _ regexStr: String,
   input: String,
   validateOptimizations: Bool,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   syntax: SyntaxOptions = .traditional
 ) throws -> (String, [String?]) {
-  var regex = try Regex(regexStr, syntax: syntax)
+  var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
   guard let result = try regex.firstMatch(in: input) else {
     throw MatchError("match not found for \(regexStr) in \(input)")
   }
@@ -54,6 +55,7 @@ func flatCaptureTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -63,6 +65,7 @@ func flatCaptureTest(
         regex,
         input: test,
         validateOptimizations: validateOptimizations,
+        semanticLevel: semanticLevel,
         syntax: syntax
       ) else {
         if expect == nil {
@@ -113,6 +116,7 @@ func matchTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -126,6 +130,7 @@ func matchTest(
       dumpAST: dumpAST,
       xfail: xfail,
       validateOptimizations: validateOptimizations,
+      semanticLevel: semanticLevel,
       file: file,
       line: line)
   }
@@ -143,6 +148,7 @@ func firstMatchTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #filePath,
   line: UInt = #line
 ) {
@@ -151,6 +157,7 @@ func firstMatchTest(
       regex,
       input: input,
       validateOptimizations: validateOptimizations,
+      semanticLevel: semanticLevel,
       syntax: syntax)
 
     if xfail {
