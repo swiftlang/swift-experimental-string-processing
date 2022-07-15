@@ -60,7 +60,7 @@ extension AST {
       case namedCharacter(String)
 
       /// .
-      case any
+      case dot
 
       /// ^
       case startOfLine
@@ -104,7 +104,7 @@ extension AST.Atom {
     case .callout(let v):               return v
     case .backtrackingDirective(let v): return v
     case .changeMatchingOptions(let v): return v
-    case .any:                          return nil
+    case .dot:                          return nil
     case .startOfLine:                  return nil
     case .endOfLine:                    return nil
     case .invalid:                      return nil
@@ -806,7 +806,7 @@ extension AST.Atom {
       // the AST? Or defer for the matching engine?
       return nil
 
-    case .scalarSequence, .property, .any, .startOfLine, .endOfLine,
+    case .scalarSequence, .property, .dot, .startOfLine, .endOfLine,
         .backreference, .subpattern, .callout, .backtrackingDirective,
         .changeMatchingOptions, .invalid:
       return nil
@@ -858,7 +858,7 @@ extension AST.Atom {
     case .keyboardMetaControl(let x):
       return "\\M-\\C-\(x)"
 
-    case .property, .escaped, .any, .startOfLine, .endOfLine,
+    case .property, .escaped, .dot, .startOfLine, .endOfLine,
         .backreference, .subpattern, .namedCharacter, .callout,
         .backtrackingDirective, .changeMatchingOptions, .invalid:
       return nil

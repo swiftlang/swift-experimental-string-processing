@@ -111,7 +111,7 @@ extension DSLTree.Atom {
           : $0 == s
       }
 
-    case .any:
+    case .dot:
       // FIXME: Should this be a total ordering?
       if opts.semanticLevel == .graphemeCluster {
         return { input, bounds in
@@ -264,10 +264,10 @@ extension AST.Atom {
     case let .namedCharacter(name):
       return consumeName(name, opts: opts)
       
-    case .any:
+    case .dot:
       assertionFailure(
         "Should have been handled by tree conversion")
-      fatalError(".atom(.any) is handled in emitAny")
+      fatalError(".atom(.dot) is handled in emitDot")
 
     case .startOfLine, .endOfLine:
       // handled in emitAssertion

@@ -117,11 +117,11 @@ extension DSLTree {
     var members: [Member]
     var isInverted: Bool
     
-    var containsAny: Bool {
+    var containsDot: Bool {
       members.contains { member in
         switch member {
-        case .atom(.any): return true
-        case .custom(let ccc): return ccc.containsAny
+        case .atom(.dot): return true
+        case .custom(let ccc): return ccc.containsDot
         default:
           return false
         }
@@ -245,7 +245,10 @@ extension DSLTree {
   public enum Atom {
     case char(Character)
     case scalar(Unicode.Scalar)
-    case any
+
+    /// The DSL representation of '.' in a regex literal. This does not match
+    /// newlines unless single line mode is enabled.
+    case dot
 
     case assertion(_AST.AssertionKind)
     case backreference(_AST.Reference)
@@ -857,7 +860,7 @@ extension DSLTree.Atom {
     switch self {
     case .changeMatchingOptions, .assertion:
       return false
-    case .char, .scalar, .any, .backreference, .symbolicReference, .unconverted:
+    case .char, .scalar, .dot, .backreference, .symbolicReference, .unconverted:
       return true
     }
   }
