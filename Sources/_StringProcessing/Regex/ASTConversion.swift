@@ -208,10 +208,38 @@ extension AST.CustomCharacterClass {
   }
 }
 
+extension AST.Atom.EscapedBuiltin {
+  var dslAssertionKind: DSLTree.Atom.Assertion? {
+    switch self {
+    case .wordBoundary:                   return .wordBoundary
+    case .notWordBoundary:                return .notWordBoundary
+    case .startOfSubject:                 return .startOfSubject
+    case .endOfSubject:                   return .endOfSubject
+    case .textSegment:                    return .textSegment
+    case .notTextSegment:                 return .notTextSegment
+    case .endOfSubjectBeforeNewline:      return .endOfSubjectBeforeNewline
+    case .firstMatchingPositionInSubject: return .firstMatchingPositionInSubject
+    case .resetStartOfMatch:              return .resetStartOfMatch
+    default: return nil
+    }
+  }
+}
+
+extension AST.Atom {
+  var dslAssertionKind: DSLTree.Atom.Assertion? {
+    switch kind {
+    case .caretAnchor:    return .caretAnchor
+    case .dollarAnchor:   return .dollarAnchor
+    case .escaped(let b): return b.dslAssertionKind
+    default: return nil
+    }
+  }
+}
+
 extension AST.Atom {
   var dslTreeAtom: DSLTree.Atom {
-    if let kind = assertionKind {
-      return .assertion(.init(ast: kind))
+    if let kind = dslAssertionKind {
+      return .assertion(kind)
     }
 
     switch self.kind {
