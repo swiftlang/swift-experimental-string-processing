@@ -37,16 +37,30 @@ public struct Anchor {
 
 @available(SwiftStdlib 5.7, *)
 extension Anchor: RegexComponent {
-  var baseAssertion: DSLTree._AST.AssertionKind {
+  var baseAssertion: DSLTree.Atom.Assertion {
     switch kind {
-    case .startOfSubject: return .startOfSubject(isInverted)
-    case .endOfSubjectBeforeNewline: return .endOfSubjectBeforeNewline(isInverted)
-    case .endOfSubject: return .endOfSubject(isInverted)
-    case .firstMatchingPositionInSubject: return .firstMatchingPositionInSubject(isInverted)
-    case .textSegmentBoundary: return .textSegmentBoundary(isInverted)
-    case .startOfLine: return .startOfLine(isInverted)
-    case .endOfLine: return .endOfLine(isInverted)
-    case .wordBoundary: return .wordBoundary(isInverted)
+    case .startOfSubject:
+      // FIXME: Inverted?
+      return .startOfSubject
+    case .endOfSubjectBeforeNewline:
+      // FIXME: Inverted?
+      return .endOfSubjectBeforeNewline
+    case .endOfSubject:
+      // FIXME: Inverted?
+      return .endOfSubject
+    case .firstMatchingPositionInSubject:
+      // FIXME: Inverted?
+      return .firstMatchingPositionInSubject
+    case .textSegmentBoundary:
+      return isInverted ? .notTextSegment : .textSegment
+    case .startOfLine:
+      // FIXME: Inverted?
+      return .startOfLine
+    case .endOfLine:
+      // FIXME: Inverted?
+      return .endOfLine
+    case .wordBoundary:
+      return isInverted ? .notWordBoundary : .wordBoundary
     }
   }
   

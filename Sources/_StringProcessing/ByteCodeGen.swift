@@ -58,6 +58,12 @@ fileprivate extension Compiler.ByteCodeGen {
     case .any:
       emitAny()
 
+    case .anyNonNewline:
+      emitAnyNonNewline()
+
+    case .dot:
+      emitDot()
+
     case let .char(c):
       emitCharacter(c)
 
@@ -69,7 +75,7 @@ fileprivate extension Compiler.ByteCodeGen {
       }
 
     case let .assertion(kind):
-      try emitAssertion(kind.ast)
+      try emitAssertion(kind)
 
     case let .backreference(ref):
       try emitBackreference(ref.ast)
@@ -142,8 +148,34 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
+  mutating func emitStartOfLine() {
+    builder.buildAssert { [semanticLevel = options.semanticLevel]
+        (_, _, input, pos, subjectBounds) in
+      if pos == subjectBounds.lowerBound { return true }
+      switch semanticLevel {
+      case .graphemeCluster:
+        return input[input.index(before: pos)].isNewline
+      case .unicodeScalar:
+        return input.unicodeScalars[input.unicodeScalars.index(before: pos)].isNewline
+      }
+    }
+  }
+
+  mutating func emitEndOfLine() {
+    builder.buildAssert { [semanticLevel = options.semanticLevel]
+      (_, _, input, pos, subjectBounds) in
+      if pos == subjectBounds.upperBound { return true }
+      switch semanticLevel {
+      case .graphemeCluster:
+        return input[pos].isNewline
+      case .unicodeScalar:
+        return input.unicodeScalars[pos].isNewline
+      }
+    }
+  }
+
   mutating func emitAssertion(
-    _ kind: AST.Atom.AssertionKind
+    _ kind: DSLTree.Atom.Assertion
   ) throws {
     // FIXME: Depends on API model we have... We may want to
     // think through some of these with API interactions in mind
@@ -200,43 +232,23 @@ fileprivate extension Compiler.ByteCodeGen {
       }
 
     case .startOfLine:
-      // FIXME: Anchor.startOfLine must always use this first branch
-      // The behavior of `^` should depend on `anchorsMatchNewlines`, but
-      // the DSL-based `.startOfLine` anchor should always match the start
-      // of a line. Right now we don't distinguish between those anchors.
+      emitStartOfLine()
+
+    case .endOfLine:
+      emitEndOfLine()
+
+    case .caretAnchor:
       if options.anchorsMatchNewlines {
-        builder.buildAssert { [semanticLevel = options.semanticLevel]
-            (_, _, input, pos, subjectBounds) in
-          if pos == subjectBounds.lowerBound { return true }
-          switch semanticLevel {
-          case .graphemeCluster:
-            return input[input.index(before: pos)].isNewline
-          case .unicodeScalar:
-            return input.unicodeScalars[input.unicodeScalars.index(before: pos)].isNewline
-          }
-        }
+        emitStartOfLine()
       } else {
         builder.buildAssert { (_, _, input, pos, subjectBounds) in
           pos == subjectBounds.lowerBound
         }
       }
-      
-    case .endOfLine:
-      // FIXME: Anchor.endOfLine must always use this first branch
-      // The behavior of `$` should depend on `anchorsMatchNewlines`, but
-      // the DSL-based `.endOfLine` anchor should always match the end
-      // of a line. Right now we don't distinguish between those anchors.
+
+    case .dollarAnchor:
       if options.anchorsMatchNewlines {
-        builder.buildAssert { [semanticLevel = options.semanticLevel]
-            (_, _, input, pos, subjectBounds) in
-          if pos == subjectBounds.upperBound { return true }
-          switch semanticLevel {
-          case .graphemeCluster:
-            return input[pos].isNewline
-          case .unicodeScalar:
-            return input.unicodeScalars[pos].isNewline
-          }
-        }
+        emitEndOfLine()
       } else {
         builder.buildAssert { (_, _, input, pos, subjectBounds) in
           pos == subjectBounds.upperBound
@@ -321,27 +333,39 @@ fileprivate extension Compiler.ByteCodeGen {
   }
 
   mutating func emitAny() {
-    switch (options.semanticLevel, options.dotMatchesNewline) {
-    case (.graphemeCluster, true):
+    switch options.semanticLevel {
+    case .graphemeCluster:
       builder.buildAdvance(1)
-    case (.graphemeCluster, false):
+    case .unicodeScalar:
+      // TODO: builder.buildAdvanceUnicodeScalar(1)
+      builder.buildConsume { input, bounds in
+        input.unicodeScalars.index(after: bounds.lowerBound)
+      }
+    }
+  }
+
+  mutating func emitAnyNonNewline() {
+    switch options.semanticLevel {
+    case .graphemeCluster:
       builder.buildConsume { input, bounds in
         input[bounds.lowerBound].isNewline
         ? nil
         : input.index(after: bounds.lowerBound)
       }
-
-    case (.unicodeScalar, true):
-      // TODO: builder.buildAdvanceUnicodeScalar(1)
-      builder.buildConsume { input, bounds in
-        input.unicodeScalars.index(after: bounds.lowerBound)
-      }
-    case (.unicodeScalar, false):
+    case .unicodeScalar:
       builder.buildConsume { input, bounds in
         input[bounds.lowerBound].isNewline
         ? nil
         : input.unicodeScalars.index(after: bounds.lowerBound)
       }
+    }
+  }
+
+  mutating func emitDot() {
+    if options.dotMatchesNewline {
+      emitAny()
+    } else {
+      emitAnyNonNewline()
     }
   }
 
@@ -823,9 +847,9 @@ fileprivate extension Compiler.ByteCodeGen {
       try emitQuantification(amt.ast, kind, child)
 
     case let .customCharacterClass(ccc):
-      if ccc.containsAny {
+      if ccc.containsDot {
         if !ccc.isInverted {
-          emitAny()
+          emitDot()
         } else {
           throw Unsupported("Inverted any")
         }
