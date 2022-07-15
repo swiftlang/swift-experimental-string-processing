@@ -69,6 +69,9 @@ class RegexDSLTests: XCTestCase {
     XCTAssertTrue(match.output == substringMatch.output)
   }
 
+  let allNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n\u{85}\u{2028}\u{2029}"
+  let asciiNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n"
+
   func testCharacterClasses() throws {
     try _testDSLCaptures(
       ("a c", ("a c", " ", "c")),
@@ -110,9 +113,6 @@ class RegexDSLTests: XCTestCase {
         CharacterClass.whitespace.inverted
       }
     }
-
-    let allNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n\u{85}\u{2028}\u{2029}"
-    let asciiNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n"
 
     // `.newlineSequence` and `.verticalWhitespace` match the same set of
     // newlines in grapheme semantic mode, and scalar mode when applied with
@@ -240,6 +240,20 @@ class RegexDSLTests: XCTestCase {
       CharacterClass.digit.subtracting("3"..."9")     // 1, 2, non-ascii digits
 
       CharacterClass.hexDigit.intersection("a"..."z") // a-f
+    }
+  }
+
+  func testAny() throws {
+    // .any matches newlines regardless of matching options.
+    for dotMatchesNewline in [true, false] {
+      try _testDSLCaptures(
+        ("abc\(allNewlines)def", "abc\(allNewlines)def"),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          OneOrMore(.any)
+        }.dotMatchesNewlines(dotMatchesNewline)
+      }
     }
   }
 

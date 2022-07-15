@@ -111,7 +111,7 @@ extension DSLTree.Atom {
           : $0 == s
       }
 
-    case .any, .dot:
+    case .any:
       // FIXME: Should this be a total ordering?
       if opts.semanticLevel == .graphemeCluster {
         return { input, bounds in
@@ -122,6 +122,9 @@ extension DSLTree.Atom {
           true
         }
       }
+
+    case .dot:
+      throw Unreachable(".atom(.dot) should be handled by emitDot")
 
     case .assertion:
       // TODO: We could handle, should this be total?
