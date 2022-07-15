@@ -42,7 +42,7 @@ extension CharacterClass {
 @available(SwiftStdlib 5.7, *)
 extension RegexComponent where Self == CharacterClass {
   public static var any: CharacterClass {
-    .init(DSLTree.CustomCharacterClass(members: [.atom(.dot)]))
+    .init(DSLTree.CustomCharacterClass(members: [.atom(.any)]))
   }
 
   public static var anyGraphemeCluster: CharacterClass {

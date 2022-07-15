@@ -896,8 +896,8 @@ extension AST.Atom {
       return (" /* TODO: named character */", false)
 
     case .dot:
-      // FIXME: This is wrong, the DSL doesn't have an equivalent to .dot.
-      return (".any", true)
+      // The DSL does not have an equivalent to '.', print as a regex.
+      return ("/./", false)
 
     case .startOfLine, .endOfLine:
       fatalError("unreachable")
@@ -1104,8 +1104,8 @@ extension DSLTree.Atom {
       return (".any", true)
 
     case .dot:
-      // FIXME: This is wrong, the DSL doesn't have an equivalent to .dot.
-      return (".any", true)
+      // The DSL does not have an equivalent to '.', print as a regex.
+      return ("/./", false)
       
     case let .char(c):
       return (String(c)._quoted, false)
