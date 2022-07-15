@@ -34,9 +34,16 @@ extension BenchmarkRunner {
       input: Inputs.graphemeBreakData
     )
     
+    let emailDirect = CrossInputListBenchmark(
+      baseName: "EmailLookaheadList",
+      regex: emailWithLookaheads,
+      inputs: Inputs.validEmailsList
+    )
+    
     emailRFCValid.register(&self)
     emailRFCInvalid.register(&self)
     emailValid.register(&self)
     emailInvalid.register(&self)
+    emailDirect.register(&self)
   }
 }

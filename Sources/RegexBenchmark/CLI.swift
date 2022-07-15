@@ -29,7 +29,7 @@ struct Runner: ParsableCommand {
     if !self.specificBenchmarks.isEmpty {
       runner.suite = runner.suite.filter { b in
         specificBenchmarks.contains { pattern in
-          try! Regex(pattern).wholeMatch(in: b.name) != nil
+          try! Regex(pattern).firstMatch(in: b.name) != nil
         }
       }
     }
