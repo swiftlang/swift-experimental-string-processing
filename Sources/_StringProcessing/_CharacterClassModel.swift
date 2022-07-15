@@ -161,18 +161,6 @@ public struct _CharacterClassModel: Hashable {
   }
 }
 
-@available(SwiftStdlib 5.7, *)
-extension _CharacterClassModel: RegexComponent {
-  public typealias RegexOutput = Substring
-
-  public var regex: Regex<RegexOutput> {
-    guard let ast = self.makeAST() else {
-      fatalError("FIXME: extended AST?")
-    }
-    return Regex(ast: ast)
-  }
-}
-
 @_spi(RegexBuilder)
 extension _CharacterClassModel {
   public static var any: _CharacterClassModel {
