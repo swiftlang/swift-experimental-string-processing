@@ -2073,9 +2073,9 @@ extension Parser {
         p.unreachable("Should have lexed a group or group-like atom")
 
       // (sometimes) special metacharacters
-      case ".": return customCC ? .char(".") : .any
-      case "^": return customCC ? .char("^") : .startOfLine
-      case "$": return customCC ? .char("$") : .endOfLine
+      case ".": return customCC ? .char(".") : .dot
+      case "^": return customCC ? .char("^") : .caretAnchor
+      case "$": return customCC ? .char("$") : .dollarAnchor
 
       // Escaped
       case "\\": return p.expectEscaped().value
