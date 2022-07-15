@@ -180,9 +180,9 @@ struct CrossInputListBenchmark {
       regex: swiftRegex,
       targets: inputs
     ))
-    runner.register(InputListBenchmark(
+    runner.register(InputListNSBenchmark(
       name: baseName + "NS",
-      regex: swiftRegex,
+      regex: regex,
       targets: inputs
     ))
   }
