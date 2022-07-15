@@ -189,9 +189,9 @@ extension DSLTree {
 
 extension DSLTree.Atom {
   @_spi(RegexBuilder)
-  public enum Assertion: Hashable {
+  public enum Assertion: UInt64, Hashable {
     /// \A
-    case startOfSubject
+    case startOfSubject = 0
 
     /// \Z
     case endOfSubjectBeforeNewline

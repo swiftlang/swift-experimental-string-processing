@@ -188,7 +188,7 @@ extension MEProgram.Builder {
   }
 
   mutating func buildAssert(
-    by kind: AST.Atom.AssertionKind,
+    by kind: DSLTree.Atom.Assertion,
     _ anchorsMatchNewlines: Bool,
     _ usesSimpleUnicodeBoundaries: Bool,
     _ usesASCIIWord: Bool,

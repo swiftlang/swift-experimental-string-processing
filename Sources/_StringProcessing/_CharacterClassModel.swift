@@ -316,6 +316,7 @@ extension BuiltinCC {
     case .hexDigit: return options.usesASCIIDigits
     case .horizontalWhitespace: return options.usesASCIISpaces
     case .newlineSequence: return options.usesASCIISpaces
+    case .verticalWhitespace: return options.usesASCIISpaces
     case .whitespace: return options.usesASCIISpaces
     case .word: return options.usesASCIIWord
     default: return false
