@@ -512,67 +512,6 @@ extension AST.Atom.CharacterProperty {
 }
 
 extension AST.Atom {
-  /// Anchors and other built-in zero-width assertions.
-  public enum AssertionKind: String, Hashable {
-    /// \A
-    case startOfSubject = #"\A"#
-
-    /// \Z
-    case endOfSubjectBeforeNewline = #"\Z"#
-
-    /// \z
-    case endOfSubject = #"\z"#
-
-    /// \K
-    case resetStartOfMatch = #"\K"#
-
-    /// \G
-    case firstMatchingPositionInSubject = #"\G"#
-
-    /// \y
-    case textSegment = #"\y"#
-
-    /// \Y
-    case notTextSegment = #"\Y"#
-
-    /// ^
-    case caretAnchor = #"^"#
-
-    /// $
-    case dollarAnchor = #"$"#
-
-    /// \b (from outside a custom character class)
-    case wordBoundary = #"\b"#
-
-    /// \B
-    case notWordBoundary = #"\B"#
-
-  }
-
-  public var assertionKind: AssertionKind? {
-    switch kind {
-    case .caretAnchor:  return .caretAnchor
-    case .dollarAnchor: return .dollarAnchor
-
-    case .escaped(.wordBoundary):    return .wordBoundary
-    case .escaped(.notWordBoundary): return .notWordBoundary
-    case .escaped(.startOfSubject):  return .startOfSubject
-    case .escaped(.endOfSubject):    return .endOfSubject
-    case .escaped(.textSegment):     return .textSegment
-    case .escaped(.notTextSegment):  return .notTextSegment
-    case .escaped(.endOfSubjectBeforeNewline):
-      return .endOfSubjectBeforeNewline
-    case .escaped(.firstMatchingPositionInSubject):
-      return .firstMatchingPositionInSubject
-
-    case .escaped(.resetStartOfMatch): return .resetStartOfMatch
-
-    default: return nil
-    }
-  }
-}
-
-extension AST.Atom {
   public enum Callout: Hashable {
     /// A PCRE callout written `(?C...)`
     public struct PCRE: Hashable {

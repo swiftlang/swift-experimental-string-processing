@@ -237,9 +237,6 @@ extension AST.Atom.Number {
 
 extension AST.Atom {
   var _canonicalBase: String {
-    if let anchor = self.assertionKind {
-      return anchor.rawValue
-    }
     if let lit = self.literalStringValue {
       // FIXME: We may have to re-introduce escapes
       // For example, `\.` will come back as "." instead
@@ -248,6 +245,10 @@ extension AST.Atom {
       return lit
     }
     switch self.kind {
+    case .caretAnchor:
+      return "^"
+    case .dollarAnchor:
+      return "$"
     case .escaped(let e):
       return "\\\(e.character)"
     case .backreference(let br):

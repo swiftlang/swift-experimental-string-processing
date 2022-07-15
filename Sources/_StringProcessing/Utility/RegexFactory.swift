@@ -40,7 +40,7 @@ public struct _RegexFactory {
   @_spi(RegexBuilder)
   @available(SwiftStdlib 5.7, *)
   public func assertion<Output>(
-    _ kind: DSLTree._AST.AssertionKind
+    _ kind: DSLTree.Atom.Assertion
   ) -> Regex<Output> {
     .init(node: .atom(.assertion(kind)))
   }
