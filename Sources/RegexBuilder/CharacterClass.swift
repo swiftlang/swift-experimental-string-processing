@@ -45,6 +45,10 @@ extension RegexComponent where Self == CharacterClass {
     .init(DSLTree.CustomCharacterClass(members: [.atom(.any)]))
   }
 
+  public static var anyNonNewline: CharacterClass {
+    .init(DSLTree.CustomCharacterClass(members: [.atom(.anyNonNewline)]))
+  }
+
   public static var anyGraphemeCluster: CharacterClass {
     .init(unconverted: ._anyGrapheme)
   }

@@ -309,6 +309,63 @@ class RegexDSLTests: XCTestCase {
     }
   }
 
+  func testAnyNonNewline() throws {
+    // `.anyNonNewline` is `.` without single-line mode.
+    for mode in [RegexSemanticLevel.graphemeCluster, .unicodeScalar] {
+      for dotMatchesNewline in [true, false] {
+        try _testDSLCaptures(
+          ("abcdef", "abcdef"),
+          ("abcdef\n", nil),
+          ("\r\n", nil),
+          ("\r", nil),
+          ("\n", nil),
+          matchType: Substring.self, ==)
+        {
+          Regex {
+            OneOrMore(.anyNonNewline)
+          }.matchingSemantics(mode).dotMatchesNewlines(dotMatchesNewline)
+        }
+
+        try _testDSLCaptures(
+          ("abcdef", nil),
+          ("abcdef\n", nil),
+          ("\r\n", "\r\n"),
+          ("\r", "\r"),
+          ("\n", "\n"),
+          matchType: Substring.self, ==)
+        {
+          Regex {
+            OneOrMore(.anyNonNewline.inverted)
+          }.matchingSemantics(mode).dotMatchesNewlines(dotMatchesNewline)
+        }
+
+        try _testDSLCaptures(
+          ("abc", "abc"),
+          ("abcd", nil),
+          ("\r\n", nil),
+          ("\r", nil),
+          ("\n", nil),
+          matchType: Substring.self, ==)
+        {
+          Regex {
+            OneOrMore(CharacterClass.anyNonNewline.intersection(.anyOf("\n\rabc")))
+          }.matchingSemantics(mode).dotMatchesNewlines(dotMatchesNewline)
+        }
+      }
+    }
+
+    try _testDSLCaptures(
+      ("\r\n", "\r\n"), matchType: Substring.self, ==) {
+        CharacterClass.anyNonNewline.inverted
+      }
+    try _testDSLCaptures(
+      ("\r\n", nil), matchType: Substring.self, ==) {
+        Regex {
+          CharacterClass.anyNonNewline.inverted
+        }.matchingSemantics(.unicodeScalar)
+      }
+  }
+
   func testMatchResultDotZeroWithoutCapture() throws {
     let match = try XCTUnwrap("aaa".wholeMatch { OneOrMore { "a" } })
     XCTAssertEqual(match.0, "aaa")
