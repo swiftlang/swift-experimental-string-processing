@@ -111,7 +111,7 @@ extension DSLTree.Atom {
           : $0 == s
       }
 
-    case .dot:
+    case .any, .dot:
       // FIXME: Should this be a total ordering?
       if opts.semanticLevel == .graphemeCluster {
         return { input, bounds in

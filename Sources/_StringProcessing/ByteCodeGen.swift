@@ -55,6 +55,9 @@ fileprivate extension Compiler.ByteCodeGen {
       }
     }
     switch a {
+    case .any:
+      emitAny()
+
     case .dot:
       emitDot()
 
@@ -282,23 +285,31 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
-  mutating func emitDot() {
-    switch (options.semanticLevel, options.dotMatchesNewline) {
-    case (.graphemeCluster, true):
+  mutating func emitAny() {
+    switch options.semanticLevel {
+    case .graphemeCluster:
       builder.buildAdvance(1)
-    case (.graphemeCluster, false):
+    case .unicodeScalar:
+      // TODO: builder.buildAdvanceUnicodeScalar(1)
+      builder.buildConsume { input, bounds in
+        input.unicodeScalars.index(after: bounds.lowerBound)
+      }
+    }
+  }
+
+  mutating func emitDot() {
+    if options.dotMatchesNewline {
+      emitAny()
+      return
+    }
+    switch options.semanticLevel {
+    case .graphemeCluster:
       builder.buildConsume { input, bounds in
         input[bounds.lowerBound].isNewline
         ? nil
         : input.index(after: bounds.lowerBound)
       }
-
-    case (.unicodeScalar, true):
-      // TODO: builder.buildAdvanceUnicodeScalar(1)
-      builder.buildConsume { input, bounds in
-        input.unicodeScalars.index(after: bounds.lowerBound)
-      }
-    case (.unicodeScalar, false):
+    case .unicodeScalar:
       builder.buildConsume { input, bounds in
         input[bounds.lowerBound].isNewline
         ? nil

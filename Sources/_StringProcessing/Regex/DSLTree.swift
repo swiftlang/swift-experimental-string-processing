@@ -246,6 +246,9 @@ extension DSLTree {
     case char(Character)
     case scalar(Unicode.Scalar)
 
+    /// Any character, including newlines.
+    case any
+
     /// The DSL representation of '.' in a regex literal. This does not match
     /// newlines unless single line mode is enabled.
     case dot
@@ -860,7 +863,8 @@ extension DSLTree.Atom {
     switch self {
     case .changeMatchingOptions, .assertion:
       return false
-    case .char, .scalar, .dot, .backreference, .symbolicReference, .unconverted:
+    case .char, .scalar, .any, .dot, .backreference, .symbolicReference,
+        .unconverted:
       return true
     }
   }
