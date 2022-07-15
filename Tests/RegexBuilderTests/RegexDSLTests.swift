@@ -110,6 +110,116 @@ class RegexDSLTests: XCTestCase {
         CharacterClass.whitespace.inverted
       }
     }
+
+    let allNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n\u{85}\u{2028}\u{2029}"
+    let asciiNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n"
+
+    // `.newlineSequence` and `.verticalWhitespace` match the same set of
+    // newlines in grapheme semantic mode, and scalar mode when applied with
+    // OneOrMore.
+    for cc in [CharacterClass.newlineSequence, .verticalWhitespace] {
+      for mode in [RegexSemanticLevel.unicodeScalar, .graphemeCluster] {
+        try _testDSLCaptures(
+          ("\n", ("\n", "\n")),
+          ("\r", ("\r", "\r")),
+          ("\r\n", ("\r\n", "\r\n")),
+          (allNewlines, (allNewlines[...], allNewlines[...])),
+          ("abc\ndef", ("abc\ndef", "\n")),
+          ("abc\n\r\ndef", ("abc\n\r\ndef", "\n\r\n")),
+          ("abc\(allNewlines)def", ("abc\(allNewlines)def", allNewlines[...])),
+          ("abc", nil),
+          matchType: (Substring, Substring).self, ==)
+        {
+          Regex {
+            ZeroOrMore {
+              cc.inverted
+            }
+            Capture {
+              OneOrMore(cc)
+            }
+            ZeroOrMore {
+              cc.inverted
+            }
+          }.matchingSemantics(mode)
+        }
+
+        // Try with ASCII-only whitespace.
+        try _testDSLCaptures(
+          ("\n", ("\n", "\n")),
+          ("\r", ("\r", "\r")),
+          ("\r\n", ("\r\n", "\r\n")),
+          (allNewlines, (allNewlines[...], asciiNewlines[...])),
+          ("abc\ndef", ("abc\ndef", "\n")),
+          ("abc\n\r\ndef", ("abc\n\r\ndef", "\n\r\n")),
+          ("abc\(allNewlines)def", ("abc\(allNewlines)def", asciiNewlines[...])),
+          ("abc", nil),
+          matchType: (Substring, Substring).self, ==)
+        {
+          Regex {
+            ZeroOrMore {
+              cc.inverted
+            }
+            Capture {
+              OneOrMore(cc)
+            }
+            ZeroOrMore {
+              cc.inverted
+            }
+          }.matchingSemantics(mode).asciiOnlyWhitespace()
+        }
+      }
+    }
+
+    // `.newlineSequence` in scalar mode may match a single `\r\n`.
+    // `.verticalWhitespace` may not.
+    for asciiOnly in [true, false] {
+      try _testDSLCaptures(
+        ("\r", "\r"),
+        ("\r\n", "\r\n"),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.newlineSequence
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+      try _testDSLCaptures(
+        ("\r", nil),
+        ("\r\n", nil),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.newlineSequence.inverted
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+      try _testDSLCaptures(
+        ("\r", "\r"),
+        ("\r\n", nil),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.verticalWhitespace
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+      try _testDSLCaptures(
+        ("\r", nil),
+        ("\r\n", nil),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.verticalWhitespace.inverted
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+      try _testDSLCaptures(
+        ("\r", nil),
+        ("\r\n", nil),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.verticalWhitespace.inverted
+          "\n"
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+    }
   }
 
   func testCharacterClassOperations() throws {

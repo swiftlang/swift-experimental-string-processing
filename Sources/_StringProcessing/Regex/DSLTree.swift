@@ -837,8 +837,7 @@ extension DSLTree {
         .init(ast: .init(.escaped(.horizontalWhitespace), .fake))
       }
       public static var _newlineSequence: Self {
-        // FIXME: newline sequence is not same as \n
-        .init(ast: .init(.escaped(.newline), .fake))
+        .init(ast: .init(.escaped(.newlineSequence), .fake))
       }
       public static var _verticalWhitespace: Self {
         .init(ast: .init(.escaped(.verticalTab), .fake))
