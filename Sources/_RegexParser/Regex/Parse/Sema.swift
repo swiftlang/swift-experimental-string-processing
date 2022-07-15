@@ -288,7 +288,7 @@ extension RegexValidator {
               at: atom.location)
       }
 
-    case .char, .scalar, .startOfLine, .endOfLine, .dot:
+    case .char, .scalar, .caretAnchor, .dollarAnchor, .dot:
       break
 
     case .invalid:

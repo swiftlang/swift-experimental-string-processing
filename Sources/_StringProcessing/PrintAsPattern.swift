@@ -627,9 +627,11 @@ extension AST.Atom.AssertionKind {
   // TODO: Some way to integrate this with conversion...
   var _patternBase: String {
     switch self {
-    case .startOfLine:
+    case .caretAnchor:
+      // FIXME: The DSL doesn't have a way of representing this.
       return "Anchor.startOfLine"
-    case .endOfLine:
+    case .dollarAnchor:
+      // FIXME: The DSL doesn't have a way of representing this.
       return "Anchor.endOfLine"
     case .wordBoundary:
       return "Anchor.wordBoundary"
@@ -899,7 +901,7 @@ extension AST.Atom {
       // The DSL does not have an equivalent to '.', print as a regex.
       return ("/./", false)
 
-    case .startOfLine, .endOfLine:
+    case .caretAnchor, .dollarAnchor:
       fatalError("unreachable")
 
     case .backreference:
@@ -954,7 +956,7 @@ extension AST.Atom {
     case .dot:
       return "."
       
-    case .startOfLine, .endOfLine:
+    case .caretAnchor, .dollarAnchor:
       fatalError("unreachable")
       
     case .backreference:

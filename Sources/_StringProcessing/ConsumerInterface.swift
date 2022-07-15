@@ -272,7 +272,7 @@ extension AST.Atom {
         "Should have been handled by tree conversion")
       fatalError(".atom(.dot) is handled in emitDot")
 
-    case .startOfLine, .endOfLine:
+    case .caretAnchor, .dollarAnchor:
       // handled in emitAssertion
       return nil
 
