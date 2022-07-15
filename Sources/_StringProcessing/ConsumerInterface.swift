@@ -123,6 +123,22 @@ extension DSLTree.Atom {
         }
       }
 
+    case .anyNonNewline:
+      switch opts.semanticLevel {
+      case .graphemeCluster:
+        return { input, bounds in
+          input[bounds.lowerBound].isNewline
+            ? nil
+            : input.index(after: bounds.lowerBound)
+        }
+      case .unicodeScalar:
+        return { input, bounds in
+          input[bounds.lowerBound].isNewline
+            ? nil
+            : input.unicodeScalars.index(after: bounds.lowerBound)
+        }
+      }
+
     case .dot:
       throw Unreachable(".atom(.dot) should be handled by emitDot")
 
