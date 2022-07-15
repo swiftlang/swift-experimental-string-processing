@@ -113,6 +113,32 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
+  mutating func emitStartOfLine() {
+    builder.buildAssert { [semanticLevel = options.semanticLevel]
+        (_, _, input, pos, subjectBounds) in
+      if pos == subjectBounds.lowerBound { return true }
+      switch semanticLevel {
+      case .graphemeCluster:
+        return input[input.index(before: pos)].isNewline
+      case .unicodeScalar:
+        return input.unicodeScalars[input.unicodeScalars.index(before: pos)].isNewline
+      }
+    }
+  }
+
+  mutating func emitEndOfLine() {
+    builder.buildAssert { [semanticLevel = options.semanticLevel]
+      (_, _, input, pos, subjectBounds) in
+      if pos == subjectBounds.upperBound { return true }
+      switch semanticLevel {
+      case .graphemeCluster:
+        return input[pos].isNewline
+      case .unicodeScalar:
+        return input.unicodeScalars[pos].isNewline
+      }
+    }
+  }
+
   mutating func emitAssertion(
     _ kind: DSLTree.Atom.Assertion
   ) throws {
@@ -170,44 +196,24 @@ fileprivate extension Compiler.ByteCodeGen {
         !input.isOnGraphemeClusterBoundary(pos)
       }
 
+    case .startOfLine:
+      emitStartOfLine()
+
+    case .endOfLine:
+      emitEndOfLine()
+
     case .caretAnchor:
-      // FIXME: Anchor.startOfLine must always use this first branch
-      // The behavior of `^` should depend on `anchorsMatchNewlines`, but
-      // the DSL-based `.startOfLine` anchor should always match the start
-      // of a line. Right now we don't distinguish between those anchors.
       if options.anchorsMatchNewlines {
-        builder.buildAssert { [semanticLevel = options.semanticLevel]
-            (_, _, input, pos, subjectBounds) in
-          if pos == subjectBounds.lowerBound { return true }
-          switch semanticLevel {
-          case .graphemeCluster:
-            return input[input.index(before: pos)].isNewline
-          case .unicodeScalar:
-            return input.unicodeScalars[input.unicodeScalars.index(before: pos)].isNewline
-          }
-        }
+        emitStartOfLine()
       } else {
         builder.buildAssert { (_, _, input, pos, subjectBounds) in
           pos == subjectBounds.lowerBound
         }
       }
-      
+
     case .dollarAnchor:
-      // FIXME: Anchor.endOfLine must always use this first branch
-      // The behavior of `$` should depend on `anchorsMatchNewlines`, but
-      // the DSL-based `.endOfLine` anchor should always match the end
-      // of a line. Right now we don't distinguish between those anchors.
       if options.anchorsMatchNewlines {
-        builder.buildAssert { [semanticLevel = options.semanticLevel]
-            (_, _, input, pos, subjectBounds) in
-          if pos == subjectBounds.upperBound { return true }
-          switch semanticLevel {
-          case .graphemeCluster:
-            return input[pos].isNewline
-          case .unicodeScalar:
-            return input.unicodeScalars[pos].isNewline
-          }
-        }
+        emitEndOfLine()
       } else {
         builder.buildAssert { (_, _, input, pos, subjectBounds) in
           pos == subjectBounds.upperBound
