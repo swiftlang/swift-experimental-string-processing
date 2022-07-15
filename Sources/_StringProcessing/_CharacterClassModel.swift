@@ -50,74 +50,6 @@ public struct _CharacterClassModel: Hashable {
     case whitespace
     /// Character.isLetter or Character.isDigit or Character == "_"
     case word
-    /// One of the custom character set.
-    case custom([CharacterSetComponent])
-  }
-
-  public enum SetOperator: Hashable {
-    case subtraction
-    case intersection
-    case symmetricDifference
-  }
-
-  /// A binary set operation that forms a character class component.
-  public struct SetOperation: Hashable {
-    var lhs: CharacterSetComponent
-    var op: SetOperator
-    var rhs: CharacterSetComponent
-
-    func matches(_ c: Character, with options: MatchingOptions) -> Bool {
-      switch op {
-      case .intersection:
-        return lhs.matches(c, with: options) && rhs.matches(c, with: options)
-      case .subtraction:
-        return lhs.matches(c, with: options) && !rhs.matches(c, with: options)
-      case .symmetricDifference:
-        return lhs.matches(c, with: options) != rhs.matches(c, with: options)
-      }
-    }
-  }
-
-  public enum CharacterSetComponent: Hashable {
-    case character(Character)
-    case range(ClosedRange<Character>)
-
-    /// A nested character class.
-    case characterClass(_CharacterClassModel)
-
-    /// A binary set operation of character class components.
-    indirect case setOperation(SetOperation)
-
-    public static func setOperation(
-      lhs: CharacterSetComponent, op: SetOperator, rhs: CharacterSetComponent
-    ) -> CharacterSetComponent {
-      .setOperation(.init(lhs: lhs, op: op, rhs: rhs))
-    }
-
-    func matches(_ character: Character, with options: MatchingOptions) -> Bool {
-      switch self {
-      case .character(let c):
-        if options.isCaseInsensitive {
-          return c.lowercased() == character.lowercased()
-        } else {
-          return c == character
-        }
-      case .range(let range):
-        if options.isCaseInsensitive {
-          let newLower = range.lowerBound.lowercased()
-          let newUpper = range.upperBound.lowercased()
-          // FIXME: Is failing this possible? Is this the right behavior if so?
-          guard newLower <= newUpper else { return false }
-          return (newLower...newUpper).contains(character.lowercased())
-        } else {
-          return range.contains(character)
-        }
-      case .characterClass(let custom):
-        let str = String(character)
-        return custom.matches(in: str, at: str.startIndex, with: options) != nil
-      case .setOperation(let op): return op.matches(character, with: options)
-      }
-    }
   }
 
   enum MatchLevel: Hashable {
@@ -188,8 +120,6 @@ public struct _CharacterClassModel: Hashable {
         matched = c.isWhitespace && (c.isASCII || !options.usesASCIISpaces)
       case .word:
         matched = c.isWordCharacter && (c.isASCII || !options.usesASCIIWord)
-      case .custom(let set):
-        matched = set.any { $0.matches(c, with: options) }
       }
       if isInverted {
         matched.toggle()
@@ -222,8 +152,6 @@ public struct _CharacterClassModel: Hashable {
         matched = c.properties.isWhitespace && (c.isASCII || !options.usesASCIISpaces)
       case .word:
         matched = (c.properties.isAlphabetic || c == "_") && (c.isASCII || !options.usesASCIIWord)
-      case .custom(let set):
-        matched = set.any { $0.matches(Character(c), with: options) }
       }
       if isInverted {
         matched.toggle()
@@ -286,23 +214,6 @@ extension _CharacterClassModel {
   public static var word: _CharacterClassModel {
     .init(cc: .word, matchLevel: .graphemeCluster)
   }
-
-  public static func custom(
-    _ components: [_CharacterClassModel.CharacterSetComponent]
-  ) -> _CharacterClassModel {
-    .init(cc: .custom(components), matchLevel: .graphemeCluster)
-  }
-}
-
-extension _CharacterClassModel.CharacterSetComponent: CustomStringConvertible {
-  public var description: String {
-    switch self {
-    case .range(let range): return "<range \(range)>"
-    case .character(let character): return "<character \(character)>"
-    case .characterClass(let custom): return "\(custom)"
-    case .setOperation(let op): return "<\(op.lhs) \(op.op) \(op.rhs)>"
-    }
-  }
 }
 
 extension _CharacterClassModel.Representation: CustomStringConvertible {
@@ -318,7 +229,6 @@ extension _CharacterClassModel.Representation: CustomStringConvertible {
     case .verticalWhitespace: return "vertical whitespace"
     case .whitespace: return "<whitespace>"
     case .word: return "<word>"
-    case .custom(let set): return "<custom \(set)>"
     }
   }
 }
@@ -391,22 +301,6 @@ extension _CharacterClassModel {
   }
 }
 
-extension DSLTree.Node {
-  var characterClass: _CharacterClassModel? {
-    switch self {
-    case let .customCharacterClass(ccc):
-      return ccc.modelCharacterClass
-    case let .atom(a):
-      return a.characterClass
-    case .characterPredicate:
-      // FIXME: Do we make one from this?
-      return nil
-    default:
-      return nil
-    }
-  }
-}
-
 extension _CharacterClassModel {
   func withMatchLevel(
     _ level: _CharacterClassModel.MatchLevel
@@ -414,17 +308,6 @@ extension _CharacterClassModel {
     var cc = self
     cc.matchLevel = level
     return cc
-  }
-}
-
-extension DSLTree.Atom {
-    var characterClass: _CharacterClassModel? {
-    switch self {
-    case let .unconverted(a):
-      return a.ast.characterClass
-
-    default: return nil
-    }
   }
 }
 
@@ -486,81 +369,6 @@ extension AST.Atom.EscapedBuiltin {
     default:
       return nil
     }
-  }
-}
-
-extension DSLTree.CustomCharacterClass {
-  // TODO: Refactor a bit, and... can we drop this type?
-  var modelCharacterClass: _CharacterClassModel? {
-    var result =
-      Array<_CharacterClassModel.CharacterSetComponent>()
-    for m in members {
-      switch m {
-      case let .atom(a):
-        if let cc = a.characterClass {
-          result.append(.characterClass(cc))
-        } else if let c = a.literalCharacterValue {
-          result.append(.character(c))
-        } else {
-          return nil
-        }
-      case let .range(low, high):
-        guard let lhs = low.literalCharacterValue,
-              let rhs = high.literalCharacterValue
-        else {
-          return nil
-        }
-        result.append(.range(lhs...rhs))
-
-      case let .custom(ccc):
-        guard let cc = ccc.modelCharacterClass else {
-          return nil
-        }
-        result.append(.characterClass(cc))
-
-      case let .intersection(lhs, rhs):
-        guard let lhs = lhs.modelCharacterClass,
-              let rhs = rhs.modelCharacterClass
-        else {
-          return nil
-        }
-        result.append(.setOperation(
-          lhs: .characterClass(lhs),
-          op: .intersection,
-          rhs: .characterClass(rhs)))
-
-      case let .subtraction(lhs, rhs):
-        guard let lhs = lhs.modelCharacterClass,
-              let rhs = rhs.modelCharacterClass
-        else {
-          return nil
-        }
-        result.append(.setOperation(
-          lhs: .characterClass(lhs),
-          op: .subtraction,
-          rhs: .characterClass(rhs)))
-
-      case let .symmetricDifference(lhs, rhs):
-        guard let lhs = lhs.modelCharacterClass,
-              let rhs = rhs.modelCharacterClass
-        else {
-          return nil
-        }
-        result.append(.setOperation(
-          lhs: .characterClass(lhs),
-          op: .symmetricDifference,
-          rhs: .characterClass(rhs)))
-
-      case let .quotedLiteral(s):
-        // Decompose quoted literal into literal characters.
-        result += s.map { .character($0) }
-
-      case .trivia:
-        break
-      }
-    }
-    let cc = _CharacterClassModel.custom(result)
-    return isInverted ? cc.inverted : cc
   }
 }
 
