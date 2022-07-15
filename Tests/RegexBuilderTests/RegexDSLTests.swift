@@ -815,19 +815,40 @@ class RegexDSLTests: XCTestCase {
         Anchor.endOfSubject
       }.anchorsMatchLineEndings()
     }
-    
-    // FIXME: Anchor.start/endOfLine needs to always match line endings,
-    // even when the `anchorsMatchLineEndings()` option is turned off.
+
     try _testDSLCaptures(
-      ("\naaa", "aaa"),
-      ("aaa\n", "aaa"),
-      ("\naaa\n", "aaa"),
-      matchType: Substring.self, ==, xfail: true)
+      ("\naaa", "\naaa"),
+      ("aaa\n", "aaa\n"),
+      ("\naaa\n", "\naaa\n"),
+      matchType: Substring.self, ==)
     {
       Regex {
+        Optionally { "\n" }
         Anchor.startOfLine
         Repeat("a", count: 3)
         Anchor.endOfLine
+        Optionally { "\n" }
+      }
+    }
+
+    // startOfLine/endOfLine apply regardless of mode.
+    for matchLineEndings in [true, false] {
+      for mode in [RegexSemanticLevel.graphemeCluster, .unicodeScalar] {
+        let r = Regex {
+          Anchor.startOfLine
+          Repeat("a", count: 3)
+          Anchor.endOfLine
+        }.anchorsMatchLineEndings(matchLineEndings).matchingSemantics(mode)
+
+        XCTAssertNotNil(try r.firstMatch(in: "\naaa"))
+        XCTAssertNotNil(try r.firstMatch(in: "aaa\n"))
+        XCTAssertNotNil(try r.firstMatch(in: "\naaa\n"))
+        XCTAssertNotNil(try r.firstMatch(in: "\naaa\r\n"))
+        XCTAssertNotNil(try r.firstMatch(in: "\r\naaa\n"))
+        XCTAssertNotNil(try r.firstMatch(in: "\r\naaa\r\n"))
+
+        XCTAssertNil(try r.firstMatch(in: "\nbaaa\n"))
+        XCTAssertNil(try r.firstMatch(in: "\naaab\n"))
       }
     }
   }

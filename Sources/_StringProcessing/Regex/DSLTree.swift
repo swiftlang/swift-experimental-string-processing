@@ -287,6 +287,14 @@ extension DSLTree.Atom {
     /// \Y
     case notTextSegment
 
+    /// The DSL's Anchor.startOfLine, which matches the start of a line
+    /// even if `anchorsMatchNewlines` is false.
+    case startOfLine
+
+    /// The DSL's Anchor.endOfLine, which matches the end of a line
+    /// even if `anchorsMatchNewlines` is false.
+    case endOfLine
+
     /// ^
     case caretAnchor
 
