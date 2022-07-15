@@ -1100,6 +1100,9 @@ extension DSLTree.Atom {
     _ printer: inout PrettyPrinter
   ) -> (String, canBeWrapped: Bool)? {
     switch self {
+    case .any:
+      return (".any", true)
+
     case .dot:
       // FIXME: This is wrong, the DSL doesn't have an equivalent to .dot.
       return (".any", true)
@@ -1143,6 +1146,9 @@ extension DSLTree.Atom {
   
   var _regexBase: String {
     switch self {
+    case .any:
+      return "(?s:.)"
+
     case .dot:
       return "."
       
