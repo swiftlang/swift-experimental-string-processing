@@ -2,48 +2,49 @@ import ArgumentParser
 
 @main
 struct Runner: ParsableCommand {
-  @Argument(help: "Names of benchmarks to run")
+  @Argument(help: "Patterns for benchmarks to run")
   var specificBenchmarks: [String] = []
-  
-  @Flag(help: "Run only once for profiling purposes")
-  var profile = false
-  
+
   @Option(help: "How many samples to collect for each benchmark")
-  var samples = 20
-  
+  var samples = 30
+
   @Flag(help: "Debug benchmark regexes")
   var debug = false
-  
-  @Option(help: "Output folder")
-  var outputPath = "./results/"
-  
-  @Flag(help: "Should the results be saved")
-  var save = false
-  
-  @Flag(help: "Compare this result with the latest saved result")
-  var compare = false
-  
-  @Option(help: "The result file to compare against, if this flag is not set it will compare against the most recent result file")
-  var compareFile: String?
-  
+
+  @Option(help: "The file results should be saved to")
+  var save: String?
+
+  @Option(help: "The result file to compare against")
+  var compare: String?
+
+  @Flag(help: "Quiet mode")
+  var quiet = false
+
+  @Flag(help: "Exclude running NSRegex benchmarks")
+  var excludeNs = false
+
   mutating func run() throws {
-    var runner = BenchmarkRunner.makeRunner(samples, outputPath)
-    
-    // todo: regex based filter 
+    var runner = BenchmarkRunner.makeRunner(samples, quiet)
+
     if !self.specificBenchmarks.isEmpty {
-      runner.suite = runner.suite.filter { b in specificBenchmarks.contains(b.name) }
+      runner.suite = runner.suite.filter { b in
+        specificBenchmarks.contains { pattern in
+          try! Regex(pattern).firstMatch(in: b.name) != nil
+        }
+      }
     }
-    switch (profile, debug) {
-    case (true, true): print("Cannot run both profile and debug")
-    case (true, false): runner.profile()
-    case (false, true): runner.debug()
-    case (false, false):
+    if debug {
+      runner.debug()
+    } else {
+      if excludeNs {
+        runner.suite = runner.suite.filter { b in !b.name.contains("NS") }
+      }
       runner.run()
-      if compare {
+      if let compareFile = compare {
         try runner.compare(against: compareFile)
       }
-      if save {
-        try runner.save()
+      if let saveFile = save {
+        try runner.save(to: saveFile)
       }
     }
   }
