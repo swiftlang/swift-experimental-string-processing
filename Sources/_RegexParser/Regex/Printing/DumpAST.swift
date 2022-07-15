@@ -153,9 +153,9 @@ extension AST.Atom {
     case .keyboardControl, .keyboardMeta, .keyboardMetaControl:
       fatalError("TODO")
 
-    case .dot:         return "."
-    case .startOfLine: return "^"
-    case .endOfLine:   return "$"
+    case .dot:          return "."
+    case .caretAnchor:  return "^"
+    case .dollarAnchor: return "$"
 
     case .backreference(let r), .subpattern(let r):
       return "\(r._dumpBase)"
