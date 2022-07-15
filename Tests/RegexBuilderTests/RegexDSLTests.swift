@@ -255,6 +255,34 @@ class RegexDSLTests: XCTestCase {
         }.dotMatchesNewlines(dotMatchesNewline)
       }
     }
+
+    // `.anyGraphemeCluster` is the same as `.any` in grapheme mode.
+    for mode in [RegexSemanticLevel.graphemeCluster, .unicodeScalar] {
+      try _testDSLCaptures(
+        ("a", "a"),
+        ("\r\n", "\r\n"),
+        ("e\u{301}", "e\u{301}"),
+        ("e\u{301}f", nil),
+        ("e\u{303}\u{301}\u{302}", "e\u{303}\u{301}\u{302}"),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          One(.anyGraphemeCluster)
+        }.matchingSemantics(mode)
+      }
+
+      // Like `.any` it also always matches newlines.
+      for dotMatchesNewline in [true, false] {
+        try _testDSLCaptures(
+          ("abc\(allNewlines)def", "abc\(allNewlines)def"),
+          matchType: Substring.self, ==)
+        {
+          Regex {
+            OneOrMore(.anyGraphemeCluster)
+          }.matchingSemantics(mode).dotMatchesNewlines(dotMatchesNewline)
+        }
+      }
+    }
   }
 
   func testMatchResultDotZeroWithoutCapture() throws {
