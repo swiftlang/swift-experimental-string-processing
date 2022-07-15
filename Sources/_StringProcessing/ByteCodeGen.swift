@@ -55,8 +55,8 @@ fileprivate extension Compiler.ByteCodeGen {
       }
     }
     switch a {
-    case .any:
-      emitAny()
+    case .dot:
+      emitDot()
 
     case let .char(c):
       try emitCharacter(c)
@@ -282,7 +282,7 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
-  mutating func emitAny() {
+  mutating func emitDot() {
     switch (options.semanticLevel, options.dotMatchesNewline) {
     case (.graphemeCluster, true):
       builder.buildAdvance(1)
@@ -758,9 +758,9 @@ fileprivate extension Compiler.ByteCodeGen {
       try emitQuantification(amt.ast, kind, child)
 
     case let .customCharacterClass(ccc):
-      if ccc.containsAny {
+      if ccc.containsDot {
         if !ccc.isInverted {
-          emitAny()
+          emitDot()
         } else {
           throw Unsupported("Inverted any")
         }

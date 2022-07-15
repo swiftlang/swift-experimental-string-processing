@@ -895,7 +895,8 @@ extension AST.Atom {
     case .namedCharacter:
       return (" /* TODO: named character */", false)
 
-    case .any:
+    case .dot:
+      // FIXME: This is wrong, the DSL doesn't have an equivalent to .dot.
       return (".any", true)
 
     case .startOfLine, .endOfLine:
@@ -950,7 +951,7 @@ extension AST.Atom {
     case .namedCharacter(let n):
       return "\\N{\(n)}"
       
-    case .any:
+    case .dot:
       return "."
       
     case .startOfLine, .endOfLine:
@@ -1099,7 +1100,8 @@ extension DSLTree.Atom {
     _ printer: inout PrettyPrinter
   ) -> (String, canBeWrapped: Bool)? {
     switch self {
-    case .any:
+    case .dot:
+      // FIXME: This is wrong, the DSL doesn't have an equivalent to .dot.
       return (".any", true)
       
     case let .char(c):
@@ -1141,7 +1143,7 @@ extension DSLTree.Atom {
   
   var _regexBase: String {
     switch self {
-    case .any:
+    case .dot:
       return "."
       
     case let .char(c):

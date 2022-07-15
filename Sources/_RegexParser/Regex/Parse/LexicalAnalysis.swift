@@ -2073,7 +2073,7 @@ extension Parser {
         p.unreachable("Should have lexed a group or group-like atom")
 
       // (sometimes) special metacharacters
-      case ".": return customCC ? .char(".") : .any
+      case ".": return customCC ? .char(".") : .dot
       case "^": return customCC ? .char("^") : .startOfLine
       case "$": return customCC ? .char("$") : .endOfLine
 
