@@ -269,7 +269,6 @@ extension AST.Atom {
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram.ConsumeFunction? {
-    // TODO: Wean ourselves off of this type...
     if let cc = self.characterClass?.withMatchLevel(
       opts.matchLevel
     ) {

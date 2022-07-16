@@ -27,9 +27,9 @@ struct _CharacterClassModel: Hashable {
   var isInverted: Bool = false
 
   // TODO: Split out builtin character classes into their own type?
-  enum Representation: Hashable {
+  enum Representation: UInt64, Hashable {
     /// Any character
-    case any
+    case any = 0
     /// Any grapheme cluster
     case anyGrapheme
     /// Any Unicode scalar
@@ -70,6 +70,20 @@ struct _CharacterClassModel: Hashable {
     return result
   }
 
+  /// Returns true if this CharacterClass should be matched by strict ascii under the given options
+  func isStrictAscii(options: MatchingOptions) -> Bool {
+    switch self {
+    case .digit: return options.usesASCIIDigits
+    case .hexDigit: return options.usesASCIIDigits
+    case .horizontalWhitespace: return options.usesASCIISpaces
+    case .newlineSequence: return options.usesASCIISpaces
+    case .verticalWhitespace: return options.usesASCIISpaces
+    case .whitespace: return options.usesASCIISpaces
+    case .word: return options.usesASCIIWord
+    default: return false
+    }
+  }
+
   /// Conditionally inverts a character class.
   ///
   /// - Parameter inversion: Indicates whether to invert the character class.
@@ -95,6 +109,9 @@ struct _CharacterClassModel: Hashable {
   /// - Parameter options: Options for the match operation.
   /// - Returns: The index of the end of the match, or `nil` if there is no match.
   func matches(in str: String, at i: String.Index, with options: MatchingOptions) -> String.Index? {
+    // FIXME: This is only called in custom character classes that contain builtin
+    // character classes as members (ie: [a\w] or set operations), is there
+    // any way to avoid that? Can we remove this somehow?
     switch matchLevel {
     case .graphemeCluster:
       let c = str[i]
@@ -292,64 +309,6 @@ extension AST.Atom.EscapedBuiltin {
 
     default:
       return nil
-    }
-  }
-}
-
-internal enum BuiltinCC: UInt64 {
-  case any = 1
-  case anyGrapheme
-  case anyScalar
-  case digit
-  case hexDigit
-  case horizontalWhitespace
-  case newlineSequence
-  case verticalWhitespace
-  case whitespace
-  case word
-}
-
-extension BuiltinCC {
-  func isStrict(options: MatchingOptions) -> Bool {
-    switch self {
-    case .digit: return options.usesASCIIDigits
-    case .hexDigit: return options.usesASCIIDigits
-    case .horizontalWhitespace: return options.usesASCIISpaces
-    case .newlineSequence: return options.usesASCIISpaces
-    case .verticalWhitespace: return options.usesASCIISpaces
-    case .whitespace: return options.usesASCIISpaces
-    case .word: return options.usesASCIIWord
-    default: return false
-    }
-  }
-}
-
-extension _CharacterClassModel {
-  internal var builtinCC: BuiltinCC? {
-    // Future work: Make CCM always either a BuiltinCC or convertable to a
-    // custom character class
-    if isInverted { return nil }
-    switch self.cc {
-    case .any:
-        return .any
-    case .anyGrapheme:
-        return .anyGrapheme
-    case .anyScalar:
-      return .anyScalar
-    case .digit:
-      return .digit
-    case .hexDigit:
-      return .hexDigit
-    case .horizontalWhitespace:
-      return .horizontalWhitespace
-    case .newlineSequence:
-      return .newlineSequence
-    case .verticalWhitespace:
-      return .verticalWhitespace
-    case .whitespace:
-      return .whitespace
-    case .word:
-      return .word
     }
   }
 }

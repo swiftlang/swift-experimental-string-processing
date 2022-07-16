@@ -2,12 +2,13 @@
 
 extension Processor {
   mutating func matchBuiltin(
-    _ cc: BuiltinCC,
+    _ cc: _CharacterClassModel.Representation,
+    _ isInverted: Bool,
     _ isStrictAscii: Bool
   ) -> Bool {
     guard let c = load() else {
       signalFailure()
-      return false
+      return isInverted
     }
 
     var matched: Bool
@@ -32,7 +33,9 @@ extension Processor {
     case .word:
       matched = c.isWordCharacter && (c.isASCII || !isStrictAscii)
     }
-    
+    if isInverted {
+      matched.toggle()
+    }
     if matched {
       currentPosition = next
       return true
@@ -43,12 +46,13 @@ extension Processor {
   }
   
   mutating func matchBuiltinScalar(
-    _ cc: BuiltinCC,
+    _ cc: _CharacterClassModel.Representation,
+    _ isInverted: Bool,
     _ isStrictAscii: Bool
   ) -> Bool {
     guard let c = loadScalar() else {
       signalFailure()
-      return false
+      return isInverted
     }
 
     var matched: Bool
@@ -77,7 +81,9 @@ extension Processor {
     case .word:
       matched = (c.properties.isAlphabetic || c == "_") && (c.isASCII || !isStrictAscii)
     }
-    
+    if isInverted {
+      matched.toggle()
+    }
     if matched {
       currentPosition = next
       return true

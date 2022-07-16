@@ -90,11 +90,10 @@ fileprivate extension Compiler.ByteCodeGen {
       options.apply(optionSequence.ast)
 
     case let .unconverted(astAtom):
-      if optimizationsEnabled,
-         let cc = astAtom.ast.characterClass?.builtinCC {
+      if let cc = astAtom.ast.characterClass {
         builder.buildMatchBuiltin(
           cc,
-          cc.isStrict(options: options),
+          cc.isStrictAscii(options: options),
           isScalar: options.semanticLevel == .unicodeScalar)
         return
       }
@@ -666,10 +665,10 @@ fileprivate extension Compiler.ByteCodeGen {
       } else {
         builder.buildMatchAsciiBitset(asciiBitset)
       }
-    } else {
-      let consumer = try ccc.generateConsumer(options)
-      builder.buildConsume(by: consumer)
+      return
     }
+    let consumer = try ccc.generateConsumer(options)
+    builder.buildConsume(by: consumer)
   }
 
   @discardableResult

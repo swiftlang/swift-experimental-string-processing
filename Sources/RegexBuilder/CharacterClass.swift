@@ -15,20 +15,27 @@
 @available(SwiftStdlib 5.7, *)
 public struct CharacterClass {
   internal var ccc: DSLTree.CustomCharacterClass
+  internal var builtin: DSLTree._AST.Atom? // lily note: This seems illegal
   
   init(_ ccc: DSLTree.CustomCharacterClass) {
     self.ccc = ccc
+    self.builtin = nil
   }
   
-  init(unconverted atom: DSLTree._AST.Atom) {
+  init(builtin atom: DSLTree._AST.Atom) {
     self.ccc = .init(members: [.atom(.unconverted(atom))])
+    self.builtin = atom
   }
 }
 
 @available(SwiftStdlib 5.7, *)
 extension CharacterClass: RegexComponent {
   public var regex: Regex<Substring> {
-    _RegexFactory().customCharacterClass(ccc)
+    if let unconverted = builtin {
+      return _RegexFactory().unconverted(unconverted)
+    } else {
+      return _RegexFactory().customCharacterClass(ccc)
+    }
   }
 }
 
@@ -50,15 +57,15 @@ extension RegexComponent where Self == CharacterClass {
   }
 
   public static var anyGraphemeCluster: CharacterClass {
-    .init(unconverted: ._anyGrapheme)
+    .init(builtin: ._anyGrapheme)
   }
   
   public static var whitespace: CharacterClass {
-    .init(unconverted: ._whitespace)
+    .init(builtin: ._whitespace)
   }
   
   public static var digit: CharacterClass {
-    .init(unconverted: ._digit)
+    .init(builtin: ._digit)
   }
   
   public static var hexDigit: CharacterClass {
@@ -70,19 +77,19 @@ extension RegexComponent where Self == CharacterClass {
   }
 
   public static var horizontalWhitespace: CharacterClass {
-    .init(unconverted: ._horizontalWhitespace)
+    .init(builtin: ._horizontalWhitespace)
   }
 
   public static var newlineSequence: CharacterClass {
-    .init(unconverted: ._newlineSequence)
+    .init(builtin: ._newlineSequence)
   }
 
   public static var verticalWhitespace: CharacterClass {
-    .init(unconverted: ._verticalWhitespace)
+    .init(builtin: ._verticalWhitespace)
   }
 
   public static var word: CharacterClass {
-    .init(unconverted: ._word)
+    .init(builtin: ._word)
   }
 }
 

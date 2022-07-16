@@ -478,13 +478,13 @@ extension Processor {
       }
 
     case .matchBuiltin:
-      let (cc, isStrict, isScalar) = payload.builtinCCPayload
-      if isScalar {
-        if matchBuiltinScalar(cc, isStrict) {
+      let payload = payload.characterClassPayload
+      if payload.isScalar {
+        if matchBuiltinScalar(payload.cc, payload.isInverted, payload.isStrict) {
           controller.step()
         }
       } else {
-        if matchBuiltin(cc, isStrict) {
+        if matchBuiltin(payload.cc, payload.isInverted, payload.isStrict) {
           controller.step()
         }
       }

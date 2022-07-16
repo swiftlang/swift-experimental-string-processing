@@ -172,12 +172,12 @@ extension MEProgram.Builder {
   }
   
   mutating func buildMatchBuiltin(
-    _ cc: BuiltinCC,
+    _ cc: _CharacterClassModel,
     _ isStrict: Bool,
     isScalar: Bool
   ) {
     instructions.append(.init(
-      .matchBuiltin, .init(cc, isStrict, isScalar)))
+      .matchBuiltin, .init(cc.cc, cc.isInverted, isStrict, isScalar)))
   }
 
   mutating func buildConsume(
