@@ -20,8 +20,6 @@ extension Processor {
       next = input.unicodeScalars.index(after: currentPosition)
     case .digit:
       matched = c.isNumber && (c.isASCII || !isStrictAscii)
-    case .hexDigit:
-      matched = c.isHexDigit && (c.isASCII || !isStrictAscii)
     case .horizontalWhitespace:
       matched = c.unicodeScalars.first?.isHorizontalWhitespace == true
       && (c.isASCII || !isStrictAscii)
@@ -65,8 +63,6 @@ extension Processor {
       next = input.index(after: currentPosition)
     case .digit:
       matched = c.properties.numericType != nil && (c.isASCII || !isStrictAscii)
-    case .hexDigit:
-      matched = Character(c).isHexDigit && (c.isASCII || !isStrictAscii)
     case .horizontalWhitespace:
       matched = c.isHorizontalWhitespace && (c.isASCII || !isStrictAscii)
     case .verticalWhitespace:

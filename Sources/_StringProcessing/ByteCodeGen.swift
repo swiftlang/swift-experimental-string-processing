@@ -74,6 +74,9 @@ fileprivate extension Compiler.ByteCodeGen {
         emitMatchScalar(s)
       }
 
+    case let .characterClass(cc):
+      emitCharacterClass(cc)
+
     case let .assertion(kind):
       try emitAssertion(kind)
 
@@ -90,13 +93,6 @@ fileprivate extension Compiler.ByteCodeGen {
       options.apply(optionSequence.ast)
 
     case let .unconverted(astAtom):
-      if let cc = astAtom.ast.characterClass {
-        builder.buildMatchBuiltin(
-          cc,
-          cc.isStrictAscii(options: options),
-          isScalar: options.semanticLevel == .unicodeScalar)
-        return
-      }
       if let consumer = try astAtom.ast.generateConsumer(options) {
         builder.buildConsume(by: consumer)
       } else {
@@ -168,7 +164,14 @@ fileprivate extension Compiler.ByteCodeGen {
       options.usesASCIIWord,
       options.semanticLevel)
   }
-  
+
+  mutating func emitCharacterClass(_ cc: DSLTree.Atom.CharacterClass) {
+    builder.buildMatchBuiltin(
+      cc.model,
+      cc.model.isStrictAscii(options: options),
+      isScalar: options.semanticLevel == .unicodeScalar)
+  }
+
   mutating func emitMatchScalar(_ s: UnicodeScalar) {
     assert(options.semanticLevel == .unicodeScalar)
     if options.isCaseInsensitive && s.properties.isCased {

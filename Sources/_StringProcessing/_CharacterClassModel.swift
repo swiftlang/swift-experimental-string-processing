@@ -36,8 +36,6 @@ struct _CharacterClassModel: Hashable {
     case anyScalar
     /// Character.isDigit
     case digit
-    /// Character.isHexDigit
-    case hexDigit
     /// Horizontal whitespace: `[:blank:]`, i.e
     /// `[\p{gc=Space_Separator}\N{CHARACTER TABULATION}]
     case horizontalWhitespace
@@ -74,7 +72,6 @@ struct _CharacterClassModel: Hashable {
   func isStrictAscii(options: MatchingOptions) -> Bool {
     switch self {
     case .digit: return options.usesASCIIDigits
-    case .hexDigit: return options.usesASCIIDigits
     case .horizontalWhitespace: return options.usesASCIISpaces
     case .newlineSequence: return options.usesASCIISpaces
     case .verticalWhitespace: return options.usesASCIISpaces
@@ -84,22 +81,11 @@ struct _CharacterClassModel: Hashable {
     }
   }
 
-  /// Conditionally inverts a character class.
-  ///
-  /// - Parameter inversion: Indicates whether to invert the character class.
-  /// - Returns: The inverted character class if `inversion` is `true`;
-  ///   otherwise, the same character class.
-  func withInversion(_ inversion: Bool) -> Self {
-    var copy = self
-    if inversion {
-      copy.isInverted.toggle()
-    }
-    return copy
-  }
-
   /// Inverts a character class.
   var inverted: Self {
-    return withInversion(true)
+    var copy = self
+    copy.isInverted.toggle()
+    return copy
   }
   
   /// Returns the end of the match of this character class in the string.
@@ -124,8 +110,6 @@ struct _CharacterClassModel: Hashable {
         next = str.unicodeScalars.index(after: i)
       case .digit:
         matched = c.isNumber && (c.isASCII || !options.usesASCIIDigits)
-      case .hexDigit:
-        matched = c.isHexDigit && (c.isASCII || !options.usesASCIIDigits)
       case .horizontalWhitespace:
         matched = c.unicodeScalars.first?.isHorizontalWhitespace == true
           && (c.isASCII || !options.usesASCIISpaces)
@@ -153,8 +137,6 @@ struct _CharacterClassModel: Hashable {
         nextIndex = str.index(after: i)
       case .digit:
         matched = c.properties.numericType != nil && (c.isASCII || !options.usesASCIIDigits)
-      case .hexDigit:
-        matched = Character(c).isHexDigit && (c.isASCII || !options.usesASCIIDigits)
       case .horizontalWhitespace:
         matched = c.isHorizontalWhitespace && (c.isASCII || !options.usesASCIISpaces)
       case .verticalWhitespace:
@@ -197,10 +179,6 @@ extension _CharacterClassModel {
   static var digit: _CharacterClassModel {
     .init(cc: .digit, matchLevel: .graphemeCluster)
   }
-  
-  static var hexDigit: _CharacterClassModel {
-    .init(cc: .hexDigit, matchLevel: .graphemeCluster)
-  }
 
   static var horizontalWhitespace: _CharacterClassModel {
     .init(cc: .horizontalWhitespace, matchLevel: .graphemeCluster)
@@ -226,7 +204,6 @@ extension _CharacterClassModel.Representation: CustomStringConvertible {
     case .anyGrapheme: return "<any grapheme>"
     case .anyScalar: return "<any scalar>"
     case .digit: return "<digit>"
-    case .hexDigit: return "<hex digit>"
     case .horizontalWhitespace: return "<horizontal whitespace>"
     case .newlineSequence: return "<newline sequence>"
     case .verticalWhitespace: return "vertical whitespace"
@@ -252,37 +229,11 @@ extension _CharacterClassModel {
   }
 }
 
-extension AST.Atom {
-    var characterClass: _CharacterClassModel? {
-    switch kind {
-    case let .escaped(b): return b.characterClass
-
-    case .property:
-      // TODO: Would our model type for character classes include
-      // this? Or does grapheme-semantic mode complicate that?
-      return nil
-      
-    case .dot:
-      // `.dot` is handled in the matching engine by Compiler.emitDot() and in
-      // the legacy compiler by the `.any` instruction, which can provide lower
-      // level instructions than the CharacterClass-generated consumer closure
-      //
-      // FIXME: We shouldn't be returning `nil` here, but instead fixing the call
-      // site to check for any before trying to construct a character class.
-      return nil
-
-    default: return nil
-
-    }
-  }
-
-}
-
-extension AST.Atom.EscapedBuiltin {
-    var characterClass: _CharacterClassModel? {
+extension DSLTree.Atom.CharacterClass {
+    var model: _CharacterClassModel {
     switch self {
-    case .decimalDigit:    return .digit
-    case .notDecimalDigit: return .digit.inverted
+    case .digit:    return .digit
+    case .notDigit: return .digit.inverted
 
     case .horizontalWhitespace: return .horizontalWhitespace
     case .notHorizontalWhitespace:
@@ -298,17 +249,14 @@ extension AST.Atom.EscapedBuiltin {
     case .whitespace:    return .whitespace
     case .notWhitespace: return .whitespace.inverted
 
-    case .verticalTab:    return .verticalWhitespace
-    case .notVerticalTab: return .verticalWhitespace.inverted
+    case .verticalWhitespace:    return .verticalWhitespace
+    case .notVerticalWhitespace: return .verticalWhitespace.inverted
 
-    case .wordCharacter:    return .word
-    case .notWordCharacter: return .word.inverted
+    case .word:    return .word
+    case .notWord: return .word.inverted
 
-    case .graphemeCluster: return .anyGrapheme
-    case .trueAnychar: return .anyUnicodeScalar
-
-    default:
-      return nil
+    case .anyGrapheme: return .anyGrapheme
+    case .anyUnicodeScalar: return .anyUnicodeScalar
     }
   }
 }

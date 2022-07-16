@@ -15,24 +15,25 @@
 @available(SwiftStdlib 5.7, *)
 public struct CharacterClass {
   internal var ccc: DSLTree.CustomCharacterClass
-  internal var builtin: DSLTree._AST.Atom? // lily note: This seems illegal
+  /// The builtin character class, if this CharacterClass is representable by one
+  internal var builtin: DSLTree.Atom.CharacterClass?
   
   init(_ ccc: DSLTree.CustomCharacterClass) {
     self.ccc = ccc
     self.builtin = nil
   }
   
-  init(builtin atom: DSLTree._AST.Atom) {
-    self.ccc = .init(members: [.atom(.unconverted(atom))])
-    self.builtin = atom
+  init(builtin: DSLTree.Atom.CharacterClass) {
+    self.ccc = .init(members: [.atom(.characterClass(builtin))])
+    self.builtin = builtin
   }
 }
 
 @available(SwiftStdlib 5.7, *)
 extension CharacterClass: RegexComponent {
   public var regex: Regex<Substring> {
-    if let unconverted = builtin {
-      return _RegexFactory().unconverted(unconverted)
+    if let cc = builtin {
+      return _RegexFactory().characterClass(cc)
     } else {
       return _RegexFactory().customCharacterClass(ccc)
     }
@@ -42,7 +43,15 @@ extension CharacterClass: RegexComponent {
 @available(SwiftStdlib 5.7, *)
 extension CharacterClass {
   public var inverted: CharacterClass {
-    CharacterClass(ccc.inverted)
+    return CharacterClass(ccc.inverted)
+    // lily fixme: this causes a precondition to fail in Capture.swift... why?
+    // why are the inverted builtins causing issues?
+    // Match tests are all passing
+//    if let inv = builtin?.inverted {
+//      return CharacterClass(builtin: inv)
+//    } else {
+//      return CharacterClass(ccc.inverted)
+//    }
   }
 }
 
@@ -57,15 +66,15 @@ extension RegexComponent where Self == CharacterClass {
   }
 
   public static var anyGraphemeCluster: CharacterClass {
-    .init(builtin: ._anyGrapheme)
+    .init(builtin: .anyGrapheme)
   }
   
   public static var whitespace: CharacterClass {
-    .init(builtin: ._whitespace)
+    .init(builtin: .whitespace)
   }
   
   public static var digit: CharacterClass {
-    .init(builtin: ._digit)
+    .init(builtin: .digit)
   }
   
   public static var hexDigit: CharacterClass {
@@ -77,19 +86,19 @@ extension RegexComponent where Self == CharacterClass {
   }
 
   public static var horizontalWhitespace: CharacterClass {
-    .init(builtin: ._horizontalWhitespace)
+    .init(builtin: .horizontalWhitespace)
   }
 
   public static var newlineSequence: CharacterClass {
-    .init(builtin: ._newlineSequence)
+    .init(builtin: .newlineSequence)
   }
 
   public static var verticalWhitespace: CharacterClass {
-    .init(builtin: ._verticalWhitespace)
+    .init(builtin: .verticalWhitespace)
   }
 
   public static var word: CharacterClass {
-    .init(builtin: ._word)
+    .init(builtin: .word)
   }
 }
 

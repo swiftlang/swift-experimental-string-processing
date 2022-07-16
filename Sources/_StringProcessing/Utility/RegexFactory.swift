@@ -61,10 +61,10 @@ public struct _RegexFactory {
 
   @_spi(RegexBuilder)
   @available(SwiftStdlib 5.7, *)
-  public func unconverted<Output>(
-    _ atom: DSLTree._AST.Atom
+  public func characterClass<Output>(
+    _ cc: DSLTree.Atom.CharacterClass
   ) -> Regex<Output> {
-    .init(node: .atom(.unconverted(atom)))
+    .init(node: .atom(.characterClass(cc)))
   }
   
   @_spi(RegexBuilder)
