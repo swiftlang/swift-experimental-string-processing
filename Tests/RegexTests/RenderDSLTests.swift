@@ -98,6 +98,32 @@ extension RenderDSLTests {
         /$/
       }
       """#)
+    
+    try testConversion(#"foo(?=bar)"#, #"""
+      Regex {
+        "foo"
+        Lookahead {
+          "bar"
+        }
+      }
+      """#)
+    
+    try testConversion(#"abc(?=def(?!ghi)|xyz)"#, #"""
+      Regex {
+        "abc"
+        Lookahead {
+          ChoiceOf {
+            Regex {
+              "def"
+              NegativeLookahead {
+                "ghi"
+              }
+            }
+            "xyz"
+          }
+        }
+      }
+      """#)
   }
 
   func testOptions() throws {
