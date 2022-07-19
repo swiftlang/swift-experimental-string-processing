@@ -755,8 +755,10 @@ extension AST.Atom {
   /// Whether this atom is valid as the operand of a custom character class
   /// range.
   public var isValidCharacterClassRangeBound: Bool {
-    // If we have a literal character value for this, it can be used as a bound.
-    if literalCharacterValue != nil { return true }
+    if let c = literalCharacterValue {
+      // We only match character range bounds that are single scalar NFC.
+      return c.hasExactlyOneScalar && c.isNFC
+    }
     switch kind {
     // \cx, \C-x, \M-x, \M-\C-x, \N{...}
     case .keyboardControl, .keyboardMeta, .keyboardMetaControl, .namedCharacter:
