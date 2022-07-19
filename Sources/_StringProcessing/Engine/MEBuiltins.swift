@@ -8,7 +8,7 @@ extension Processor {
   ) -> Bool {
     guard let c = load() else {
       signalFailure()
-      return isInverted
+      return false
     }
 
     var matched: Bool
@@ -50,7 +50,7 @@ extension Processor {
   ) -> Bool {
     guard let c = loadScalar() else {
       signalFailure()
-      return isInverted
+      return false
     }
 
     var matched: Bool

@@ -70,7 +70,7 @@ struct _CharacterClassModel: Hashable {
 
   /// Returns true if this CharacterClass should be matched by strict ascii under the given options
   func isStrictAscii(options: MatchingOptions) -> Bool {
-    switch self {
+    switch self.cc {
     case .digit: return options.usesASCIIDigits
     case .horizontalWhitespace: return options.usesASCIISpaces
     case .newlineSequence: return options.usesASCIISpaces

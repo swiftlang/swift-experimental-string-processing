@@ -43,15 +43,11 @@ extension CharacterClass: RegexComponent {
 @available(SwiftStdlib 5.7, *)
 extension CharacterClass {
   public var inverted: CharacterClass {
-    return CharacterClass(ccc.inverted)
-    // lily fixme: this causes a precondition to fail in Capture.swift... why?
-    // why are the inverted builtins causing issues?
-    // Match tests are all passing
-//    if let inv = builtin?.inverted {
-//      return CharacterClass(builtin: inv)
-//    } else {
-//      return CharacterClass(ccc.inverted)
-//    }
+    if let inv = builtin?.inverted {
+      return CharacterClass(builtin: inv)
+    } else {
+      return CharacterClass(ccc.inverted)
+    }
   }
 }
 
