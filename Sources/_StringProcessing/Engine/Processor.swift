@@ -312,70 +312,12 @@ extension Processor {
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
   ) -> Bool {
     guard let curScalar = loadScalar(),
-            bitset.matches(scalar: curScalar),
+          bitset.matches(scalar: curScalar),
           let idx = input.unicodeScalars.index(currentPosition, offsetBy: 1, limitedBy: end) else {
       signalFailure()
       return false
     }
     currentPosition = idx
-    return true
-  }
-
-  mutating func runQuantify(_ payload: QuantifyPayload) -> Bool {
-    var trips = 0
-    var extraTrips = payload.extraTrips
-    var savePoint = startQuantifierSavePoint()
-
-    while true {
-      if trips >= payload.minTrips {
-        // exit policy
-        // fixme: is there a way to optimize the next two lines out if we know
-        // extraTrips is nil?
-        if extraTrips == 0 { break }
-        extraTrips = extraTrips.map({$0 - 1})
-        if payload.quantKind == .eager {
-          savePoint.updateRange(newEnd: currentPosition)
-        }
-      }
-
-      // Future work: Do we want to rework our Processor.Cycle() switch loop
-      // to do something like this for all of the matching instructions?
-      // ie: A bunch of _doMatchThing instructions that return Input.Index?
-      // which we then signalFailure if nil or currentPosition = next otherwise
-      // This would have the benefit of potentially allowing us to not duplicate
-      // code between the normal matching instructions and this loop here
-      var next: Input.Index?
-      switch payload.type {
-      case .bitset:
-        next = _doMatchBitset(registers[payload.bitset])
-      case .asciiChar:
-        next = _doMatchScalar(
-          UnicodeScalar.init(_value: UInt32(payload.asciiChar)), true)
-      case .builtin:
-        // We only emit .quantify if it consumes a single character
-        next = _doMatchBuiltin(payload.builtin,
-                               payload.builtinIsInverted, payload.builtinIsStrict)
-      case .any:
-        // We only emit if any does not match newline
-        // Fixme: we could emit if it matches newline by just having a bit in
-        // the payload, the any payload is empty anyway
-        let matched = currentPosition != input.endIndex &&
-          !input[currentPosition].isNewline
-        next = matched ? input.index(after: currentPosition) : nil
-      }
-      guard let idx = next else { break }
-      currentPosition = idx
-      trips += 1
-    }
-
-    if trips < payload.minTrips {
-      signalFailure()
-      return false
-    }
-
-    if payload.quantKind == .eager && !savePoint.rangeIsEmpty {
-      savePoints.append(savePoint)
-    }
     return true
   }
 
@@ -576,8 +518,19 @@ extension Processor {
         }
       }
     case .quantify:
-      let quant = payload.quantify
-      if runQuantify(quant) {
+      let quantPayload = payload.quantify
+      let matched: Bool
+      switch (quantPayload.quantKind, quantPayload.minTrips, quantPayload.extraTrips) {
+      case (.eager, 0, nil):
+        matched = runEagerZeroOrMoreQuantify(quantPayload)
+      case (.eager, 1, nil):
+        matched = runEagerOneOrMoreQuantify(quantPayload)
+      case (_, 0, 1):
+        matched = runZeroOrOneQuantify(quantPayload)
+      default:
+        matched = runQuantify(quantPayload)
+      }
+      if matched {
         controller.step()
       }
 
