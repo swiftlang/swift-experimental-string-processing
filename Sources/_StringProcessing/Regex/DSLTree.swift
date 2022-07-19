@@ -117,11 +117,11 @@ extension DSLTree {
     var members: [Member]
     var isInverted: Bool
     
-    var containsAny: Bool {
+    var containsDot: Bool {
       members.contains { member in
         switch member {
-        case .atom(.any): return true
-        case .custom(let ccc): return ccc.containsAny
+        case .atom(.dot): return true
+        case .custom(let ccc): return ccc.containsDot
         default:
           return false
         }
@@ -165,15 +165,71 @@ extension DSLTree {
   public enum Atom {
     case char(Character)
     case scalar(Unicode.Scalar)
+
+    /// Any character, including newlines.
     case any
 
-    case assertion(_AST.AssertionKind)
+    /// Any character, excluding newlines. This differs from '.', as it is not
+    /// affected by single line mode.
+    case anyNonNewline
+
+    /// The DSL representation of '.' in a regex literal. This does not match
+    /// newlines unless single line mode is enabled.
+    case dot
+
+    case assertion(Assertion)
     case backreference(_AST.Reference)
     case symbolicReference(ReferenceID)
 
     case changeMatchingOptions(_AST.MatchingOptionSequence)
 
     case unconverted(_AST.Atom)
+  }
+}
+
+extension DSLTree.Atom {
+  @_spi(RegexBuilder)
+  public enum Assertion: Hashable {
+    /// \A
+    case startOfSubject
+
+    /// \Z
+    case endOfSubjectBeforeNewline
+
+    /// \z
+    case endOfSubject
+
+    /// \K
+    case resetStartOfMatch
+
+    /// \G
+    case firstMatchingPositionInSubject
+
+    /// \y
+    case textSegment
+
+    /// \Y
+    case notTextSegment
+
+    /// The DSL's Anchor.startOfLine, which matches the start of a line
+    /// even if `anchorsMatchNewlines` is false.
+    case startOfLine
+
+    /// The DSL's Anchor.endOfLine, which matches the end of a line
+    /// even if `anchorsMatchNewlines` is false.
+    case endOfLine
+
+    /// ^
+    case caretAnchor
+
+    /// $
+    case dollarAnchor
+
+    /// \b (from outside a custom character class)
+    case wordBoundary
+
+    /// \B
+    case notWordBoundary
   }
 }
 
@@ -694,40 +750,6 @@ extension DSLTree {
     }
     
     @_spi(RegexBuilder)
-    public struct AssertionKind {
-      internal var ast: AST.Atom.AssertionKind
-      
-      public static func startOfSubject(_ inverted: Bool = false) -> Self {
-        .init(ast: .startOfSubject)
-      }
-      public static func endOfSubjectBeforeNewline(_ inverted: Bool = false) -> Self {
-        .init(ast: .endOfSubjectBeforeNewline)
-      }
-      public static func endOfSubject(_ inverted: Bool = false) -> Self {
-        .init(ast: .endOfSubject)
-      }
-      public static func firstMatchingPositionInSubject(_ inverted: Bool = false) -> Self {
-        .init(ast: .firstMatchingPositionInSubject)
-      }
-      public static func textSegmentBoundary(_ inverted: Bool = false) -> Self {
-        inverted
-          ? .init(ast: .notTextSegment)
-          : .init(ast: .textSegment)
-      }
-      public static func startOfLine(_ inverted: Bool = false) -> Self {
-        .init(ast: .startOfLine)
-      }
-      public static func endOfLine(_ inverted: Bool = false) -> Self {
-        .init(ast: .endOfLine)
-      }
-      public static func wordBoundary(_ inverted: Bool = false) -> Self {
-        inverted
-          ? .init(ast: .notWordBoundary)
-          : .init(ast: .wordBoundary)
-      }
-    }
-    
-    @_spi(RegexBuilder)
     public struct Reference {
       internal var ast: AST.Reference
     }
@@ -757,8 +779,7 @@ extension DSLTree {
         .init(ast: .init(.escaped(.horizontalWhitespace), .fake))
       }
       public static var _newlineSequence: Self {
-        // FIXME: newline sequence is not same as \n
-        .init(ast: .init(.escaped(.newline), .fake))
+        .init(ast: .init(.escaped(.newlineSequence), .fake))
       }
       public static var _verticalWhitespace: Self {
         .init(ast: .init(.escaped(.verticalTab), .fake))
@@ -778,7 +799,8 @@ extension DSLTree.Atom {
     switch self {
     case .changeMatchingOptions, .assertion:
       return false
-    case .char, .scalar, .any, .backreference, .symbolicReference, .unconverted:
+    case .char, .scalar, .any, .anyNonNewline, .dot, .backreference,
+        .symbolicReference, .unconverted:
       return true
     }
   }

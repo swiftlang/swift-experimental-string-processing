@@ -221,7 +221,7 @@ extension RegexValidator {
   ) {
     switch esc {
     case .resetStartOfMatch, .singleDataUnit, .trueAnychar,
-        // '\N' needs to be emitted using 'emitAny'.
+        // '\N' needs to be emitted using 'emitDot'.
         .notNewline:
       error(.unsupported("'\\\(esc.character)'"), at: loc)
 
@@ -288,7 +288,7 @@ extension RegexValidator {
               at: atom.location)
       }
 
-    case .char, .scalar, .startOfLine, .endOfLine, .any:
+    case .char, .scalar, .caretAnchor, .dollarAnchor, .dot:
       break
 
     case .invalid:

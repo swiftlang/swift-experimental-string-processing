@@ -1,5 +1,7 @@
+import Foundation
+
 extension Benchmark {
-  public func debug() {
+  func debug() {
     switch type {
     case .whole:
       let result = target.wholeMatch(of: regex)
@@ -22,6 +24,10 @@ extension Benchmark {
       print("- Total matches: \(results.count)")
       if results.count > 10 {
         print("# Too many matches, not printing")
+        let avgLen = results.map({result in String(target[result.range]).count})
+          .reduce(0.0, {$0 + Double($1)}) / Double(results.count)
+        print("Average match length = \(avgLen)")
+        print("First match = \(String(target[results[0].range]))")
         return
       }
       
@@ -50,7 +56,7 @@ extension Benchmark {
 }
 
 extension NSBenchmark {
-  public func debug() {
+  func debug() {
     switch type {
     case .allMatches:
       let results = regex.matches(in: target, range: range)
@@ -85,5 +91,38 @@ extension NSBenchmark {
         return
       }
     }
+  }
+}
+
+extension InputListBenchmark {
+  func debug() {
+    var matched = 0
+    var failed = 0
+    for target in targets {
+      if target.wholeMatch(of: regex) != nil {
+        matched += 1
+      } else {
+        failed += 1
+      }
+    }
+    print("- Matched \(matched) elements of the input set")
+    print("- Failed to match \(failed) elements of the input set")
+  }
+}
+
+extension InputListNSBenchmark {
+  func debug() {
+    var matched = 0
+    var failed = 0
+    for target in targets {
+      let range = range(in: target)
+      if regex.firstMatch(in: target, range: range) != nil {
+        matched += 1
+      } else {
+        failed += 1
+      }
+    }
+    print("- Matched \(matched) elements of the input set")
+    print("- Failed to match \(failed) elements of the input set")
   }
 }

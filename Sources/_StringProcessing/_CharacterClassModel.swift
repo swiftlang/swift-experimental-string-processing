@@ -245,8 +245,8 @@ extension AST.Atom {
       // this? Or does grapheme-semantic mode complicate that?
       return nil
       
-    case .any:
-      // `.any` is handled in the matching engine by Compiler.emitAny() and in
+    case .dot:
+      // `.dot` is handled in the matching engine by Compiler.emitDot() and in
       // the legacy compiler by the `.any` instruction, which can provide lower
       // level instructions than the CharacterClass-generated consumer closure
       //
@@ -275,7 +275,7 @@ extension AST.Atom.EscapedBuiltin {
 
     // FIXME: This is more like '.' than inverted '\R', as it is affected
     // by e.g (*CR). We should therefore really be emitting it through
-    // emitAny(). For now we treat it as semantically invalid.
+    // emitDot(). For now we treat it as semantically invalid.
     case .notNewline: return .newlineSequence.inverted
 
     case .whitespace:    return .whitespace
