@@ -434,11 +434,13 @@ struct QuantifyPayload: RawRepresentable {
   }
   
   init(
+    matchesNewlines: Bool,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
     _ extraTrips: Int?
   ) {
-    self.rawValue = QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .any)
+    self.rawValue = (matchesNewlines ? 1 : 0)
+      + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .any)
   }
   
   init(
@@ -492,6 +494,10 @@ struct QuantifyPayload: RawRepresentable {
     UInt8(asserting: self.rawValue & payloadMask)
   }
   
+  var anyMatchesNewline: Bool {
+    (self.rawValue & 1) == 1
+  }
+
   var builtin: _CharacterClassModel.Representation {
     _CharacterClassModel.Representation(rawValue: self.rawValue & 0xFF)!
   }

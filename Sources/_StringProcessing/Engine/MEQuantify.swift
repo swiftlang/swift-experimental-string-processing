@@ -18,11 +18,8 @@ extension Processor {
       next = _doMatchBuiltin(payload.builtin,
                              payload.builtinIsInverted, payload.builtinIsStrict)
     case .any:
-      // We only emit if any does not match newline
-      // Fixme: we could emit if it matches newline by just having a bit in
-      // the payload, the any payload is empty anyway
-      let matched = currentPosition != input.endIndex &&
-      !input[currentPosition].isNewline
+      let matched = currentPosition != input.endIndex
+        && (!input[currentPosition].isNewline || payload.anyMatchesNewline)
       next = matched ? input.index(after: currentPosition) : nil
     }
     return next

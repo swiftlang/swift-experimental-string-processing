@@ -228,13 +228,14 @@ extension MEProgram.Builder {
   }
 
   mutating func buildQuantifyAny(
+    matchesNewlines: Bool,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
     _ extraTrips: Int?
   ) {
     instructions.append(.init(
       .quantify,
-      .init(quantify: .init(kind, minTrips, extraTrips))))
+      .init(quantify: .init(matchesNewlines: matchesNewlines, kind, minTrips, extraTrips))))
   }
 
   mutating func buildQuantify(

@@ -479,8 +479,7 @@ fileprivate extension Compiler.ByteCodeGen {
     // - .char
     // - .customCharacterClass
     // - built in character classes
-    // - .any
-
+    // - .any, .anyNonNewline, .dot
     // We do this by wrapping a single instruction in a .quantify instruction
     if optimizationsEnabled
         && child.shouldDoFastQuant(options)
@@ -706,8 +705,11 @@ fileprivate extension Compiler.ByteCodeGen {
           fatalError("Entered emitFastQuant with an invalid case: Character is not single scalar ascii")
         }
       case .any:
-        assert(!options.dotMatchesNewline, "Entered emitFastQuant with an invalid case: Any matches newlines")
-        builder.buildQuantifyAny(kind, minTrips, extraTrips)
+        builder.buildQuantifyAny(matchesNewlines: true, kind, minTrips, extraTrips)
+      case .anyNonNewline:
+        builder.buildQuantifyAny(matchesNewlines: false, kind, minTrips, extraTrips)
+      case .dot:
+        builder.buildQuantifyAny(matchesNewlines: options.dotMatchesNewline, kind, minTrips, extraTrips)
       case .characterClass(let cc):
         let model = cc.model
         assert(model.consumesSingleGrapheme,
@@ -899,9 +901,9 @@ extension DSLTree.Node {
       case .char(let c):
         // Only quantify the most common path -> Single scalar ascii values
         return c._singleScalarAsciiValue != nil
-      case .any:
-        // Only quantify if we have a default behavior .any
-        return !opts.dotMatchesNewline
+      case .dot, .any, .anyNonNewline:
+        // Always quantify any/dot
+        return true
       case .characterClass(let cc):
         // Only quantify if it consumes a single grapheme
         return cc.model.consumesSingleGrapheme
