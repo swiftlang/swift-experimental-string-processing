@@ -322,7 +322,7 @@ extension Processor {
   }
 
   mutating func signalFailure() {
-    guard var savePoint = savePoints.popLast() else {
+    guard let savePoint = savePoints.last else {
       state = .fail
       return
     }
@@ -335,12 +335,13 @@ extension Processor {
       PositionRegister: [Input.Index]
     )
     if !savePoint.rangeIsEmpty {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoint.removeLast(input)
-      if !savePoint.rangeIsEmpty {
-        savePoints.append(savePoint)
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints._updateOrRemoveLast {
+        let sp = $0.removeLast(input)
+        let shouldKeep = !$0.rangeIsEmpty
+        return (sp, shouldKeep)
       }
     } else {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoint.destructure
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
     }
 
     assert(stackEnd.rawValue <= callStack.count)
@@ -637,4 +638,11 @@ extension Processor {
   }
 }
 
-
+extension Array {
+  mutating func _updateOrRemoveLast<T>(_ update: (inout Element) -> (T, shouldKeep: Bool)) -> T {
+    let idx = index(before: endIndex)
+    let (val, shouldKeep) = update(&self[idx])
+    if !shouldKeep { removeLast() }
+    return val
+  }
+}
