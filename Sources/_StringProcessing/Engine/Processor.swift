@@ -354,7 +354,8 @@ extension Processor {
       case .builtin:
         // We only emit .quantify if it is non-strict ascii and if it consumes a
         // single character
-        next = _doMatchBuiltin(payload.builtin, false)
+        // fixme: also if it is not inverted (this we can fix)
+        next = _doMatchBuiltin(payload.builtin, false, false)
       case .any:
         // We only emit if any does not match newline
         // Fixme: we could emit if it matches newline by just having a bit in
@@ -565,13 +566,13 @@ extension Processor {
       }
 
     case .matchBuiltin:
-      let (cc, isStrict, isScalar) = payload.builtinCCPayload
-      if isScalar {
-        if matchBuiltinScalar(cc, isStrict) {
+      let payload = payload.characterClassPayload
+      if payload.isScalar {
+        if matchBuiltinScalar(payload.cc, payload.isInverted, payload.isStrict) {
           controller.step()
         }
       } else {
-        if matchBuiltin(cc, isStrict) {
+        if matchBuiltin(payload.cc, payload.isInverted, payload.isStrict) {
           controller.step()
         }
       }

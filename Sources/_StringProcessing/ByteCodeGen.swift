@@ -74,6 +74,9 @@ fileprivate extension Compiler.ByteCodeGen {
         emitMatchScalar(s)
       }
 
+    case let .characterClass(cc):
+      emitCharacterClass(cc)
+
     case let .assertion(kind):
       try emitAssertion(kind)
 
@@ -90,14 +93,6 @@ fileprivate extension Compiler.ByteCodeGen {
       options.apply(optionSequence.ast)
 
     case let .unconverted(astAtom):
-      if optimizationsEnabled,
-         let cc = astAtom.ast.characterClass?.builtinCC {
-        builder.buildMatchBuiltin(
-          cc,
-          cc.isStrict(options: options),
-          isScalar: options.semanticLevel == .unicodeScalar)
-        return
-      }
       if let consumer = try astAtom.ast.generateConsumer(options) {
         builder.buildConsume(by: consumer)
       } else {
@@ -156,32 +151,6 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
-  mutating func emitStartOfLine() {
-    builder.buildAssert { [semanticLevel = options.semanticLevel]
-        (_, _, input, pos, subjectBounds) in
-      if pos == subjectBounds.lowerBound { return true }
-      switch semanticLevel {
-      case .graphemeCluster:
-        return input[input.index(before: pos)].isNewline
-      case .unicodeScalar:
-        return input.unicodeScalars[input.unicodeScalars.index(before: pos)].isNewline
-      }
-    }
-  }
-
-  mutating func emitEndOfLine() {
-    builder.buildAssert { [semanticLevel = options.semanticLevel]
-      (_, _, input, pos, subjectBounds) in
-      if pos == subjectBounds.upperBound { return true }
-      switch semanticLevel {
-      case .graphemeCluster:
-        return input[pos].isNewline
-      case .unicodeScalar:
-        return input.unicodeScalars[pos].isNewline
-      }
-    }
-  }
-
   mutating func emitAssertion(
     _ kind: DSLTree.Atom.Assertion
   ) throws {
@@ -195,7 +164,14 @@ fileprivate extension Compiler.ByteCodeGen {
       options.usesASCIIWord,
       options.semanticLevel)
   }
-  
+
+  mutating func emitCharacterClass(_ cc: DSLTree.Atom.CharacterClass) {
+    builder.buildMatchBuiltin(
+      cc.model,
+      cc.model.isStrictAscii(options: options),
+      isScalar: options.semanticLevel == .unicodeScalar)
+  }
+
   mutating func emitMatchScalar(_ s: UnicodeScalar) {
     assert(options.semanticLevel == .unicodeScalar)
     if options.isCaseInsensitive && s.properties.isCased {
@@ -732,16 +708,13 @@ fileprivate extension Compiler.ByteCodeGen {
       case .any:
         assert(!options.dotMatchesNewline, "Entered emitFastQuant with an invalid case: Any matches newlines")
         builder.buildQuantifyAny(kind, minTrips, extraTrips)
-      case .unconverted(let astAtom):
-        if let builtin = astAtom.ast.characterClass?.builtinCC {
-          assert(!builtin.isStrict(options: options),
-                 "Entered emitFastQuant with an invalid case: Strict builtin character class")
-          assert(builtin.consumesSingleGrapheme,
-                 "Entered emitFastQuant with an invalid case: Builtin class that does not consume a single grapheme")
-          builder.buildQuantify(builtin: builtin, kind, minTrips, extraTrips)
-        } else {
-          fatalError("Entered emitFastQuant with an invalid case: Not a builtin character class")
-        }
+      case .characterClass(let cc):
+        let model = cc.model
+        assert(!model.isStrictAscii(options: options),
+               "Entered emitFastQuant with an invalid case: Strict builtin character class")
+        assert(model.consumesSingleGrapheme,
+               "Entered emitFastQuant with an invalid case: Builtin class that does not consume a single grapheme")
+        builder.buildQuantify(builtin: model.cc, kind, minTrips, extraTrips)
       default:
         fatalError("Entered emitFastQuant with an invalid case: DSLTree.Node.shouldDoFastQuant is out of sync")
       }
@@ -765,10 +738,10 @@ fileprivate extension Compiler.ByteCodeGen {
       } else {
         builder.buildMatchAsciiBitset(asciiBitset)
       }
-    } else {
-      let consumer = try ccc.generateConsumer(options)
-      builder.buildConsume(by: consumer)
+      return
     }
+    let consumer = try ccc.generateConsumer(options)
+    builder.buildConsume(by: consumer)
   }
 
   @discardableResult
@@ -925,14 +898,10 @@ extension DSLTree.Node {
       case .any:
         // Only quantify if we have a default behavior .any
         return !opts.dotMatchesNewline
-      case .unconverted(let astAtom):
-        // Only quantify non-strict built in character classes
-        if let builtin = astAtom.ast.characterClass?.builtinCC,
-            builtin.consumesSingleGrapheme {
-          return !builtin.isStrict(options: opts)
-        } else {
-          return false
-        }
+      case .characterClass(let cc):
+        // Only quantify if we have a non-strict non-inverted character class
+        // Fixme: we can do both of these
+        return !cc.model.isInverted && !cc.model.isStrictAscii(options: opts)
       default:
         return false
       }

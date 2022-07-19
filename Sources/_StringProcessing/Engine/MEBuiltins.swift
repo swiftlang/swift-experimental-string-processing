@@ -2,7 +2,8 @@
 
 extension Processor {
   mutating func _doMatchBuiltin(
-    _ cc: BuiltinCC,
+    _ cc: _CharacterClassModel.Representation,
+    _ isInverted: Bool,
     _ isStrictAscii: Bool
   ) -> Input.Index? {
     guard let c = load() else {
@@ -18,8 +19,6 @@ extension Processor {
       next = input.unicodeScalars.index(after: currentPosition)
     case .digit:
       matched = c.isNumber && (c.isASCII || !isStrictAscii)
-    case .hexDigit:
-      matched = c.isHexDigit && (c.isASCII || !isStrictAscii)
     case .horizontalWhitespace:
       matched = c.unicodeScalars.first?.isHorizontalWhitespace == true
       && (c.isASCII || !isStrictAscii)
@@ -31,14 +30,18 @@ extension Processor {
     case .word:
       matched = c.isWordCharacter && (c.isASCII || !isStrictAscii)
     }
+    if isInverted {
+      matched.toggle()
+    }
     return matched ? next : nil
   }
 
   mutating func matchBuiltin(
-    _ cc: BuiltinCC,
+    _ cc: _CharacterClassModel.Representation,
+    _ isInverted: Bool,
     _ isStrictAscii: Bool
   ) -> Bool {
-    guard let next = _doMatchBuiltin(cc, isStrictAscii) else {
+    guard let next = _doMatchBuiltin(cc, isInverted, isStrictAscii) else {
       signalFailure()
       return false
     }
@@ -47,7 +50,8 @@ extension Processor {
   }
   
   mutating func matchBuiltinScalar(
-    _ cc: BuiltinCC,
+    _ cc: _CharacterClassModel.Representation,
+    _ isInverted: Bool,
     _ isStrictAscii: Bool
   ) -> Bool {
     guard let c = loadScalar() else {
@@ -65,8 +69,6 @@ extension Processor {
       next = input.index(after: currentPosition)
     case .digit:
       matched = c.properties.numericType != nil && (c.isASCII || !isStrictAscii)
-    case .hexDigit:
-      matched = Character(c).isHexDigit && (c.isASCII || !isStrictAscii)
     case .horizontalWhitespace:
       matched = c.isHorizontalWhitespace && (c.isASCII || !isStrictAscii)
     case .verticalWhitespace:
@@ -81,13 +83,35 @@ extension Processor {
     case .word:
       matched = (c.properties.isAlphabetic || c == "_") && (c.isASCII || !isStrictAscii)
     }
-    
+    if isInverted {
+      matched.toggle()
+    }
     if matched {
       currentPosition = next
       return true
     } else {
       signalFailure()
       return false
+    }
+  }
+  
+  func isAtStartOfLine(_ payload: AssertionPayload) -> Bool {
+    if currentPosition == subjectBounds.lowerBound { return true }
+    switch payload.semanticLevel {
+    case .graphemeCluster:
+      return input[input.index(before: currentPosition)].isNewline
+    case .unicodeScalar:
+      return input.unicodeScalars[input.unicodeScalars.index(before: currentPosition)].isNewline
+    }
+  }
+  
+  func isAtEndOfLine(_ payload: AssertionPayload) -> Bool {
+    if currentPosition == subjectBounds.upperBound { return true }
+    switch payload.semanticLevel {
+    case .graphemeCluster:
+      return input[currentPosition].isNewline
+    case .unicodeScalar:
+      return input.unicodeScalars[currentPosition].isNewline
     }
   }
 
@@ -120,54 +144,39 @@ extension Processor {
     case .notTextSegment: return !input.isOnGraphemeClusterBoundary(currentPosition)
 
     case .startOfLine:
-      // FIXME: Anchor.startOfLine must always use this first branch
-      // The behavior of `^` should depend on `anchorsMatchNewlines`, but
-      // the DSL-based `.startOfLine` anchor should always match the start
-      // of a line. Right now we don't distinguish between those anchors.
+      return isAtStartOfLine(payload)
+    case .endOfLine:
+      return isAtEndOfLine(payload)
+      
+    case .caretAnchor:
       if payload.anchorsMatchNewlines {
-        if currentPosition == subjectBounds.lowerBound { return true }
-        switch payload.semanticLevel {
-        case .graphemeCluster:
-          return input[input.index(before: currentPosition)].isNewline
-        case .unicodeScalar:
-          return input.unicodeScalars[input.unicodeScalars.index(before: currentPosition)].isNewline
-        }
+        return isAtStartOfLine(payload)
       } else {
         return currentPosition == subjectBounds.lowerBound
       }
-  
-      case .endOfLine:
-        // FIXME: Anchor.endOfLine must always use this first branch
-        // The behavior of `$` should depend on `anchorsMatchNewlines`, but
-        // the DSL-based `.endOfLine` anchor should always match the end
-        // of a line. Right now we don't distinguish between those anchors.
-        if payload.anchorsMatchNewlines {
-          if currentPosition == subjectBounds.upperBound { return true }
-          switch payload.semanticLevel {
-          case .graphemeCluster:
-            return input[currentPosition].isNewline
-          case .unicodeScalar:
-            return input.unicodeScalars[currentPosition].isNewline
-          }
-        } else {
-          return currentPosition == subjectBounds.upperBound
-        }
-  
-      case .wordBoundary:
-        if payload.usesSimpleUnicodeBoundaries {
-          // TODO: How should we handle bounds?
-          return atSimpleBoundary(payload.usesASCIIWord, payload.semanticLevel)
-        } else {
-          return input.isOnWordBoundary(at: currentPosition, using: &wordIndexCache, &wordIndexMaxIndex)
-        }
-  
-      case .notWordBoundary:
-        if payload.usesSimpleUnicodeBoundaries {
-          // TODO: How should we handle bounds?
-          return !atSimpleBoundary(payload.usesASCIIWord, payload.semanticLevel)
-        } else {
-          return !input.isOnWordBoundary(at: currentPosition, using: &wordIndexCache, &wordIndexMaxIndex)
-        }
+
+    case .dollarAnchor:
+      if payload.anchorsMatchNewlines {
+        return isAtEndOfLine(payload)
+      } else {
+        return currentPosition == subjectBounds.upperBound
+      }
+
+    case .wordBoundary:
+      if payload.usesSimpleUnicodeBoundaries {
+        // TODO: How should we handle bounds?
+        return atSimpleBoundary(payload.usesASCIIWord, payload.semanticLevel)
+      } else {
+        return input.isOnWordBoundary(at: currentPosition, using: &wordIndexCache, &wordIndexMaxIndex)
+      }
+
+    case .notWordBoundary:
+      if payload.usesSimpleUnicodeBoundaries {
+        // TODO: How should we handle bounds?
+        return !atSimpleBoundary(payload.usesASCIIWord, payload.semanticLevel)
+      } else {
+        return !input.isOnWordBoundary(at: currentPosition, using: &wordIndexCache, &wordIndexMaxIndex)
+      }
       }
   }
 }
@@ -183,7 +192,7 @@ struct AssertionPayload: RawRepresentable {
     assert(rawValue & _opcodeMask == 0)
   }
   
-  init(_ assertion: AST.Atom.AssertionKind,
+  init(_ assertion: DSLTree.Atom.Assertion,
        _ anchorsMatchNewlines: Bool,
        _ usesSimpleUnicodeBoundaries: Bool,
        _ usesASCIIWord: Bool,
@@ -198,40 +207,12 @@ struct AssertionPayload: RawRepresentable {
 
     // 4 bits for the assertion kind
     // Future work: Optimize this layout
-    let kind: UInt64
-    switch assertion {
-    case .endOfLine: kind = 0
-    case .endOfSubject: kind = 1
-    case .endOfSubjectBeforeNewline: kind = 2
-    case .firstMatchingPositionInSubject: kind = 3
-    case .notTextSegment: kind = 4
-    case .notWordBoundary: kind = 5
-    case .resetStartOfMatch: kind = 6
-    case .startOfLine: kind = 7
-    case .startOfSubject: kind = 8
-    case .textSegment: kind = 9
-    case .wordBoundary: kind = 10
-    }
+    let kind = assertion.rawValue
     self.init(rawValue: kind + optionsBits)
   }
   
-  var kind: AST.Atom.AssertionKind {
-    let kind: AST.Atom.AssertionKind
-    switch self.rawValue & _assertionKindMask {
-    case 0: kind = .endOfLine
-    case 1: kind = .endOfSubject
-    case 2: kind = .endOfSubjectBeforeNewline
-    case 3: kind = .firstMatchingPositionInSubject
-    case 4: kind = .notTextSegment
-    case 5: kind = .notWordBoundary
-    case 6: kind = .resetStartOfMatch
-    case 7: kind = .startOfLine
-    case 8: kind = .startOfSubject
-    case 9: kind = .textSegment
-    case 10: kind = .wordBoundary
-    default: fatalError("Unreachable")
-    }
-    return kind
+  var kind: DSLTree.Atom.Assertion {
+    return .init(rawValue: self.rawValue & _assertionKindMask)!
   }
   var anchorsMatchNewlines: Bool { (self.rawValue >> 55) & 1 == 1 }
   var usesSimpleUnicodeBoundaries: Bool  { (self.rawValue >> 54) & 1 == 1 }

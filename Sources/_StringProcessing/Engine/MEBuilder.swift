@@ -172,12 +172,12 @@ extension MEProgram.Builder {
   }
   
   mutating func buildMatchBuiltin(
-    _ cc: BuiltinCC,
+    _ cc: _CharacterClassModel,
     _ isStrict: Bool,
     isScalar: Bool
   ) {
     instructions.append(.init(
-      .matchBuiltin, .init(cc, isStrict, isScalar)))
+      .matchBuiltin, .init(cc.cc, cc.isInverted, isStrict, isScalar)))
   }
 
   mutating func buildConsume(
@@ -188,7 +188,7 @@ extension MEProgram.Builder {
   }
 
   mutating func buildAssert(
-    by kind: AST.Atom.AssertionKind,
+    by kind: DSLTree.Atom.Assertion,
     _ anchorsMatchNewlines: Bool,
     _ usesSimpleUnicodeBoundaries: Bool,
     _ usesASCIIWord: Bool,
@@ -238,7 +238,7 @@ extension MEProgram.Builder {
   }
 
   mutating func buildQuantify(
-    builtin: BuiltinCC,
+    builtin: _CharacterClassModel.Representation,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
     _ extraTrips: Int?

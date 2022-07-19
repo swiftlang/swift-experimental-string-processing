@@ -226,20 +226,11 @@ extension Instruction.Payload {
     return (isScalar: pair.0 == 1, pair.1)
   }
 
-  init(_ cc: BuiltinCC, _ isStrict: Bool, _ isScalar: Bool) {
-    let strictBit = isStrict ? 1 << 15 : 0
-    let scalarBit = isScalar ? 1 << 14 : 0
-    // val must be 16 bits, reserve the top 2 bits for if it is strict ascii or scalar
-    assert(cc.rawValue <= 0x3F_FF)
-    let val = cc.rawValue + UInt64(strictBit) + UInt64(scalarBit)
-    self.init(val)
+  init(_ cc: _CharacterClassModel.Representation, _ isInverted: Bool, _ isStrict: Bool, _ isScalar: Bool) {
+    self.init(CharacterClassPayload(cc, isInverted, isStrict, isScalar).rawValue)
   }
-  var builtinCCPayload: (cc: BuiltinCC, isStrict: Bool, isScalar: Bool) {
-    let val = self.rawValue
-    let cc = BuiltinCC(rawValue: val & 0x3F_FF)!
-    let isStrict = (val >> 15) & 1 == 1
-    let isScalar = (val >> 14) & 1 == 1
-    return (cc, isStrict, isScalar)
+  var characterClassPayload: CharacterClassPayload{
+    return CharacterClassPayload(rawValue: rawValue & _payloadMask)
   }
 
   init(quantify payload: QuantifyPayload) {
@@ -405,11 +396,11 @@ struct QuantifyPayload: RawRepresentable {
     }
     let extraTripsVal: UInt64 = extraTrips == nil ? 1 : UInt64(extraTrips!) << 1
     return (kindVal << QuantifyPayload.quantKindShift) +
-      (extraTripsVal << QuantifyPayload.extraTripsShift) +
-      (UInt64(minTrips) << QuantifyPayload.minTripsShift) +
+    (extraTripsVal << QuantifyPayload.extraTripsShift) +
+    (UInt64(minTrips) << QuantifyPayload.minTripsShift) +
     (type.rawValue << QuantifyPayload.typeShift)
   }
-
+  
   init(rawValue: UInt64) {
     self.rawValue = rawValue
     assert(rawValue & _opcodeMask == 0)
@@ -443,7 +434,7 @@ struct QuantifyPayload: RawRepresentable {
   }
   
   init(
-    builtin: BuiltinCC,
+    builtin: _CharacterClassModel.Representation,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
     _ extraTrips: Int?
@@ -455,7 +446,7 @@ struct QuantifyPayload: RawRepresentable {
   var type: PayloadType {
     PayloadType(rawValue: (self.rawValue >> QuantifyPayload.typeShift) & 7)!
   }
-
+  
   var quantKind: AST.Quantification.Kind {
     switch (self.rawValue >> QuantifyPayload.quantKindShift) & 3 {
     case 0: return .eager
@@ -465,7 +456,7 @@ struct QuantifyPayload: RawRepresentable {
       fatalError("Unreachable")
     }
   }
-
+  
   var minTrips: UInt64 {
     (self.rawValue >> QuantifyPayload.minTripsShift) & 0xFF
   }
@@ -478,7 +469,7 @@ struct QuantifyPayload: RawRepresentable {
       return val >> 1
     }
   }
-
+  
   var bitset: AsciiBitsetRegister {
     TypedInt(self.rawValue & 0xFF_FF)
   }
@@ -486,8 +477,43 @@ struct QuantifyPayload: RawRepresentable {
   var asciiChar: UInt8 {
     UInt8(asserting: self.rawValue & 0xFF)
   }
+  
+  var builtin: _CharacterClassModel.Representation {
+    _CharacterClassModel.Representation(rawValue: self.rawValue & 0xFF_FF)!
+  }
+}
 
-  var builtin: BuiltinCC {
-    BuiltinCC(rawValue: self.rawValue & 0xFF_FF)!
+struct CharacterClassPayload: RawRepresentable {
+  let rawValue: UInt64
+  // Layout:
+  // Top three bits are isInverted, isStrict, isScalar
+  // Lower 16 bits are _CCM.Representation
+  static let invertedShift: UInt64 = 55
+  static let strictShift: UInt64 = 54
+  static let scalarShift: UInt64 = 53
+  static let ccMask: UInt64 = 0xFF
+  init(rawValue: UInt64) {
+    assert(rawValue & _opcodeMask == 0)
+    self.rawValue = rawValue
+  }
+  init(_ cc: _CharacterClassModel.Representation, _ isInverted: Bool, _ isStrict: Bool, _ isScalar: Bool) {
+    let invertedBit = isInverted ? 1 << CharacterClassPayload.invertedShift : 0
+    let strictBit = isStrict ? 1 << CharacterClassPayload.strictShift : 0
+    let scalarBit = isScalar ? 1 << CharacterClassPayload.scalarShift : 0
+    assert(cc.rawValue <= CharacterClassPayload.ccMask) //
+    self.init(rawValue: cc.rawValue + UInt64(invertedBit) + UInt64(strictBit) + UInt64(scalarBit))
+  }
+  
+  var isInverted: Bool {
+    (self.rawValue >> CharacterClassPayload.invertedShift) & 1 == 1
+  }
+  var isStrict: Bool {
+    (self.rawValue >> CharacterClassPayload.strictShift) & 1 == 1
+  }
+  var isScalar: Bool {
+    (self.rawValue >> CharacterClassPayload.scalarShift) & 1 == 1
+  }
+  var cc: _CharacterClassModel.Representation {
+    _CharacterClassModel.Representation.init(rawValue: self.rawValue & CharacterClassPayload.ccMask)!
   }
 }
