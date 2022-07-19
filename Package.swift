@@ -75,15 +75,17 @@ let package = Package(
             name: "RegexBuilder",
             dependencies: ["_StringProcessing", "_RegexParser"],
             swiftSettings: publicStdlibSettings),
+        .target(name: "TestSupport",
+                swiftSettings: [availabilityDefinition]),
         .testTarget(
             name: "RegexTests",
-            dependencies: ["_StringProcessing"],
+            dependencies: ["_StringProcessing", "TestSupport"],
             swiftSettings: [
                 .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
             ]),
         .testTarget(
             name: "RegexBuilderTests",
-            dependencies: ["_StringProcessing", "RegexBuilder"],
+            dependencies: ["_StringProcessing", "RegexBuilder", "TestSupport"],
             swiftSettings: [
                 .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
             ]),
