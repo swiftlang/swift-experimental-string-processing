@@ -322,10 +322,11 @@ extension Processor {
   }
 
   mutating func signalFailure() {
-    guard let savePoint = savePoints.last else {
+    guard !savePoints.isEmpty else {
       state = .fail
       return
     }
+    // FIXME: removing this type annotation causes xcode to crash (5.7 beta 2)
     let (pc, pos, stackEnd, capEnds, intRegisters, posRegisters): (
       pc: InstructionAddress,
       pos: Position?,
@@ -333,15 +334,11 @@ extension Processor {
       captureEnds: [_StoredCapture],
       intRegisters: [Int],
       PositionRegister: [Input.Index]
-    )
-    if !savePoint.rangeIsEmpty {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints._updateOrRemoveLast {
-        let sp = $0.removeLast(input)
-        let shouldKeep = !$0.rangeIsEmpty
-        return (sp, shouldKeep)
+    ) = savePoints._updateOrRemoveLast { sp in
+      if !sp.rangeIsEmpty {
+        sp.takePositionFromRange(input)
       }
-    } else {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
+      return (sp.destructure, shouldDrop: sp.rangeIsEmpty)
     }
 
     assert(stackEnd.rawValue <= callStack.count)
@@ -639,10 +636,10 @@ extension Processor {
 }
 
 extension Array {
-  mutating func _updateOrRemoveLast<T>(_ update: (inout Element) -> (T, shouldKeep: Bool)) -> T {
+  mutating func _updateOrRemoveLast<T>(_ update: (inout Element) -> (T, shouldDrop: Bool)) -> T {
     let idx = index(before: endIndex)
-    let (val, shouldKeep) = update(&self[idx])
-    if !shouldKeep { removeLast() }
+    let (val, shouldDrop) = update(&self[idx])
+    if shouldDrop { removeLast() }
     return val
   }
 }

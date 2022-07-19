@@ -54,7 +54,7 @@ extension Processor {
     
     if payload.quantKind == .eager && !savePoint.rangeIsEmpty {
       // The last save point has saved the current position, so it's unneeded
-      savePoint.dropLast(input)
+      savePoint.shrinkRange(input)
       if !savePoint.rangeIsEmpty {
         savePoints.append(savePoint)
       }
@@ -77,7 +77,7 @@ extension Processor {
     }
     
     // The last save point has saved the current position, so it's unneeded
-    savePoint.dropLast(input)
+    savePoint.shrinkRange(input)
     if !savePoint.rangeIsEmpty {
       savePoints.append(savePoint)
     }
@@ -102,7 +102,7 @@ extension Processor {
       return false
     }
     // The last save point has saved the current position, so it's unneeded
-    savePoint.dropLast(input)
+    savePoint.shrinkRange(input)
     if !savePoint.rangeIsEmpty {
       savePoints.append(savePoint)
     }

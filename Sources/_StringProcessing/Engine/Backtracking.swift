@@ -41,7 +41,6 @@ extension Processor {
       intRegisters: [Int],
       PositionRegister: [Input.Index]
     ) {
-      assert(rangeIsEmpty)
       return (pc, pos, stackEnd, captureEnds, intRegisters, posRegisters)
     }
     
@@ -54,36 +53,23 @@ extension Processor {
       rangeEnd = newEnd
     }
 
-    mutating func dropLast(_ input: Input) {
+    /// Move the next range position into pos, and removing it from the range
+    mutating func takePositionFromRange(_ input: Input) {
       assert(!rangeIsEmpty)
-      let pos = rangeEnd!
-      if pos == rangeStart {
-        // The range is now empty
-        rangeStart = nil
-        rangeEnd = nil
-      } else {
-        rangeEnd = input.index(before: pos)
-      }
+      pos = rangeEnd!
+      shrinkRange(input)
     }
-
-    mutating func removeLast(_ input: Input) -> (
-      pc: InstructionAddress,
-      pos: Position?,
-      stackEnd: CallStackAddress,
-      captureEnds: [_StoredCapture],
-      intRegisters: [Int],
-      PositionRegister: [Input.Index]
-    ) {
+    
+    /// Shrink the range of the save point by one index, essentially dropping the last index
+    mutating func shrinkRange(_ input: Input) {
       assert(!rangeIsEmpty)
-      let pos = rangeEnd!
-      if pos == rangeStart {
+      if rangeEnd == rangeStart {
         // The range is now empty
         rangeStart = nil
         rangeEnd = nil
       } else {
-        rangeEnd = input.index(before: pos)
+        input.formIndex(before: &rangeEnd!)
       }
-      return (pc, pos, stackEnd, captureEnds, intRegisters, posRegisters)
     }
   }
 
