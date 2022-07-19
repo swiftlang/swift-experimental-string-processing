@@ -37,16 +37,30 @@ public struct Anchor {
 
 @available(SwiftStdlib 5.7, *)
 extension Anchor: RegexComponent {
-  var baseAssertion: DSLTree._AST.AssertionKind {
+  var baseAssertion: DSLTree.Atom.Assertion {
     switch kind {
-    case .startOfSubject: return .startOfSubject(isInverted)
-    case .endOfSubjectBeforeNewline: return .endOfSubjectBeforeNewline(isInverted)
-    case .endOfSubject: return .endOfSubject(isInverted)
-    case .firstMatchingPositionInSubject: return .firstMatchingPositionInSubject(isInverted)
-    case .textSegmentBoundary: return .textSegmentBoundary(isInverted)
-    case .startOfLine: return .startOfLine(isInverted)
-    case .endOfLine: return .endOfLine(isInverted)
-    case .wordBoundary: return .wordBoundary(isInverted)
+    case .startOfSubject:
+      // FIXME: Inverted?
+      return .startOfSubject
+    case .endOfSubjectBeforeNewline:
+      // FIXME: Inverted?
+      return .endOfSubjectBeforeNewline
+    case .endOfSubject:
+      // FIXME: Inverted?
+      return .endOfSubject
+    case .firstMatchingPositionInSubject:
+      // FIXME: Inverted?
+      return .firstMatchingPositionInSubject
+    case .textSegmentBoundary:
+      return isInverted ? .notTextSegment : .textSegment
+    case .startOfLine:
+      // FIXME: Inverted?
+      return .startOfLine
+    case .endOfLine:
+      // FIXME: Inverted?
+      return .endOfLine
+    case .wordBoundary:
+      return isInverted ? .notWordBoundary : .wordBoundary
     }
   }
   
@@ -104,6 +118,12 @@ extension Anchor {
   ///
   /// This anchor is equivalent to `^` in regex syntax when the `m` option
   /// has been enabled or `anchorsMatchLineEndings(true)` has been called.
+  ///
+  /// For example, the following regexes are all equivalent:
+  ///
+  /// - `Regex { Anchor.startOfLine }`
+  /// - `/(?m)^/` or `/(?m:^)/`
+  /// - `/^/.anchorsMatchLineEndings(true)`
   public static var startOfLine: Anchor {
     Anchor(kind: .startOfLine)
   }
@@ -113,6 +133,12 @@ extension Anchor {
   ///
   /// This anchor is equivalent to `$` in regex syntax when the `m` option
   /// has been enabled or `anchorsMatchLineEndings(true)` has been called.
+  ///
+  /// For example, the following regexes are all equivalent:
+  ///
+  /// - `Regex { Anchor.endOfLine }`
+  /// - `/(?m)$/` or `/(?m:$)/`
+  /// - `/$/.anchorsMatchLineEndings(true)`
   public static var endOfLine: Anchor {
     Anchor(kind: .endOfLine)
   }

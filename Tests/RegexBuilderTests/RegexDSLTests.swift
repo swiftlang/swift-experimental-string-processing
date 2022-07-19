@@ -13,6 +13,10 @@ import XCTest
 import _StringProcessing
 import RegexBuilder
 
+#if os(Linux)
+func XCTExpectFailure(_ message: String? = nil, body: () throws -> Void) rethrows {}
+#endif
+
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
     _ tests: (input: String, expectedCaptures: MatchType?)...,
@@ -69,6 +73,9 @@ class RegexDSLTests: XCTestCase {
     XCTAssertTrue(match.output == substringMatch.output)
   }
 
+  let allNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n\u{85}\u{2028}\u{2029}"
+  let asciiNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n"
+
   func testCharacterClasses() throws {
     try _testDSLCaptures(
       ("a c", ("a c", " ", "c")),
@@ -110,6 +117,137 @@ class RegexDSLTests: XCTestCase {
         CharacterClass.whitespace.inverted
       }
     }
+
+    // `.newlineSequence` and `.verticalWhitespace` match the same set of
+    // newlines in grapheme semantic mode, and scalar mode when applied with
+    // OneOrMore.
+    for cc in [CharacterClass.newlineSequence, .verticalWhitespace] {
+      for mode in [RegexSemanticLevel.unicodeScalar, .graphemeCluster] {
+        try _testDSLCaptures(
+          ("\n", ("\n", "\n")),
+          ("\r", ("\r", "\r")),
+          ("\r\n", ("\r\n", "\r\n")),
+          (allNewlines, (allNewlines[...], allNewlines[...])),
+          ("abc\ndef", ("abc\ndef", "\n")),
+          ("abc\n\r\ndef", ("abc\n\r\ndef", "\n\r\n")),
+          ("abc\(allNewlines)def", ("abc\(allNewlines)def", allNewlines[...])),
+          ("abc", nil),
+          matchType: (Substring, Substring).self, ==)
+        {
+          Regex {
+            ZeroOrMore {
+              cc.inverted
+            }
+            Capture {
+              OneOrMore(cc)
+            }
+            ZeroOrMore {
+              cc.inverted
+            }
+          }.matchingSemantics(mode)
+        }
+
+        // Try with ASCII-only whitespace.
+        try _testDSLCaptures(
+          ("\n", ("\n", "\n")),
+          ("\r", ("\r", "\r")),
+          ("\r\n", ("\r\n", "\r\n")),
+          (allNewlines, (allNewlines[...], asciiNewlines[...])),
+          ("abc\ndef", ("abc\ndef", "\n")),
+          ("abc\n\r\ndef", ("abc\n\r\ndef", "\n\r\n")),
+          ("abc\(allNewlines)def", ("abc\(allNewlines)def", asciiNewlines[...])),
+          ("abc", nil),
+          matchType: (Substring, Substring).self, ==)
+        {
+          Regex {
+            ZeroOrMore {
+              cc.inverted
+            }
+            Capture {
+              OneOrMore(cc)
+            }
+            ZeroOrMore {
+              cc.inverted
+            }
+          }.matchingSemantics(mode).asciiOnlyWhitespace()
+        }
+      }
+    }
+
+    // `.newlineSequence` in scalar mode may match a single `\r\n`.
+    // `.verticalWhitespace` may not.
+    for asciiOnly in [true, false] {
+      try _testDSLCaptures(
+        ("\r", "\r"),
+        ("\r\n", "\r\n"),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.newlineSequence
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+      try _testDSLCaptures(
+        ("\r", nil),
+        ("\r\n", nil),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.newlineSequence.inverted
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+      try _testDSLCaptures(
+        ("\r", "\r"),
+        ("\r\n", nil),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.verticalWhitespace
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+      try _testDSLCaptures(
+        ("\r", nil),
+        ("\r\n", nil),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.verticalWhitespace.inverted
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+      try _testDSLCaptures(
+        ("\r", nil),
+        ("\r\n", nil),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.verticalWhitespace.inverted
+          "\n"
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+    }
+
+    // Make sure horizontal whitespace does not match newlines or other
+    // vertical whitespace.
+    try _testDSLCaptures(
+      ("  \u{A0} \u{9}  \t ", "  \u{A0} \u{9}  \t "),
+      (" \n", nil),
+      (" \r", nil),
+      (" \r\n", nil),
+      (" \u{2028}", nil),
+      matchType: Substring.self, ==)
+    {
+      OneOrMore(.horizontalWhitespace)
+    }
+
+    // Horizontal whitespace in ASCII mode.
+    try _testDSLCaptures(
+      ("   \u{9}  \t ", "   \u{9}  \t "),
+      ("\u{A0}", nil),
+      matchType: Substring.self, ==)
+    {
+      Regex {
+        OneOrMore(.horizontalWhitespace)
+      }.asciiOnlyWhitespace()
+    }
   }
 
   func testCharacterClassOperations() throws {
@@ -131,6 +269,105 @@ class RegexDSLTests: XCTestCase {
 
       CharacterClass.hexDigit.intersection("a"..."z") // a-f
     }
+  }
+
+  func testAny() throws {
+    // .any matches newlines regardless of matching options.
+    for dotMatchesNewline in [true, false] {
+      try _testDSLCaptures(
+        ("abc\(allNewlines)def", "abc\(allNewlines)def"),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          OneOrMore(.any)
+        }.dotMatchesNewlines(dotMatchesNewline)
+      }
+    }
+
+    // `.anyGraphemeCluster` is the same as `.any` in grapheme mode.
+    for mode in [RegexSemanticLevel.graphemeCluster, .unicodeScalar] {
+      try _testDSLCaptures(
+        ("a", "a"),
+        ("\r\n", "\r\n"),
+        ("e\u{301}", "e\u{301}"),
+        ("e\u{301}f", nil),
+        ("e\u{303}\u{301}\u{302}", "e\u{303}\u{301}\u{302}"),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          One(.anyGraphemeCluster)
+        }.matchingSemantics(mode)
+      }
+
+      // Like `.any` it also always matches newlines.
+      for dotMatchesNewline in [true, false] {
+        try _testDSLCaptures(
+          ("abc\(allNewlines)def", "abc\(allNewlines)def"),
+          matchType: Substring.self, ==)
+        {
+          Regex {
+            OneOrMore(.anyGraphemeCluster)
+          }.matchingSemantics(mode).dotMatchesNewlines(dotMatchesNewline)
+        }
+      }
+    }
+  }
+
+  func testAnyNonNewline() throws {
+    // `.anyNonNewline` is `.` without single-line mode.
+    for mode in [RegexSemanticLevel.graphemeCluster, .unicodeScalar] {
+      for dotMatchesNewline in [true, false] {
+        try _testDSLCaptures(
+          ("abcdef", "abcdef"),
+          ("abcdef\n", nil),
+          ("\r\n", nil),
+          ("\r", nil),
+          ("\n", nil),
+          matchType: Substring.self, ==)
+        {
+          Regex {
+            OneOrMore(.anyNonNewline)
+          }.matchingSemantics(mode).dotMatchesNewlines(dotMatchesNewline)
+        }
+
+        try _testDSLCaptures(
+          ("abcdef", nil),
+          ("abcdef\n", nil),
+          ("\r\n", "\r\n"),
+          ("\r", "\r"),
+          ("\n", "\n"),
+          matchType: Substring.self, ==)
+        {
+          Regex {
+            OneOrMore(.anyNonNewline.inverted)
+          }.matchingSemantics(mode).dotMatchesNewlines(dotMatchesNewline)
+        }
+
+        try _testDSLCaptures(
+          ("abc", "abc"),
+          ("abcd", nil),
+          ("\r\n", nil),
+          ("\r", nil),
+          ("\n", nil),
+          matchType: Substring.self, ==)
+        {
+          Regex {
+            OneOrMore(CharacterClass.anyNonNewline.intersection(.anyOf("\n\rabc")))
+          }.matchingSemantics(mode).dotMatchesNewlines(dotMatchesNewline)
+        }
+      }
+    }
+
+    try _testDSLCaptures(
+      ("\r\n", "\r\n"), matchType: Substring.self, ==) {
+        CharacterClass.anyNonNewline.inverted
+      }
+    try _testDSLCaptures(
+      ("\r\n", nil), matchType: Substring.self, ==) {
+        Regex {
+          CharacterClass.anyNonNewline.inverted
+        }.matchingSemantics(.unicodeScalar)
+      }
   }
 
   func testMatchResultDotZeroWithoutCapture() throws {
@@ -234,8 +471,10 @@ class RegexDSLTests: XCTestCase {
       ("abcabc", "abcabc"),
       ("abcABCaBc", "abcABCaBc"),
       matchType: Substring.self, ==) {
-        OneOrMore {
-          "abc"
+        Regex {
+          OneOrMore {
+            "abc"
+          }
         }.ignoresCase(true)
       }
     
@@ -247,8 +486,10 @@ class RegexDSLTests: XCTestCase {
       ("abcabc", "abcabc"),
       ("abcABCaBc", "abcABCaBc"),
       matchType: Substring.self, ==) {
-        OneOrMore {
-          "abc"
+        Regex {
+          OneOrMore {
+            "abc"
+          }
         }
         .ignoresCase(true)
         .ignoresCase(false)
@@ -264,9 +505,13 @@ class RegexDSLTests: XCTestCase {
       ("abcabc", "abcabc"),
       ("abcdeABCdeaBcde", "abcdeABCdeaBcde"),
       matchType: Substring.self, ==) {
-        OneOrMore {
-          "abc".ignoresCase(true)
-          Optionally("de")
+        Regex {
+          OneOrMore {
+            Regex {
+              "abc"
+            }.ignoresCase(true)
+            Optionally("de")
+          }
         }
         .ignoresCase(false)
       }
@@ -303,11 +548,13 @@ class RegexDSLTests: XCTestCase {
         "stop"
         " "
         
-        Capture {
-          OneOrMore(.word)
-          Anchor.wordBoundary
-        }
-        .wordBoundaryKind(.unicodeLevel1)
+        Regex {
+          Capture {
+            OneOrMore(.word)
+            Anchor.wordBoundary
+          }
+        }.wordBoundaryKind(.simple)
+        
         OneOrMore(.any, .reluctant)
         "stop"
       }
@@ -317,15 +564,17 @@ class RegexDSLTests: XCTestCase {
       matchType: (Substring, Substring, Substring).self, ==) {
         Capture {
           // Reluctant behavior due to option
-          OneOrMore(.anyOf("abcd"))
-            .repetitionBehavior(.reluctant)
+          Regex {
+            OneOrMore(.anyOf("abcd"))
+          }.repetitionBehavior(.reluctant)
         }
         ZeroOrMore("a"..."z")
         
         Capture {
           // Eager behavior due to explicit parameter, despite option
-          OneOrMore(.digit, .eager)
-            .repetitionBehavior(.reluctant)
+          Regex {
+            OneOrMore(.digit, .eager)
+          }.repetitionBehavior(.reluctant)
         }
         ZeroOrMore(.digit)
       }
@@ -334,10 +583,11 @@ class RegexDSLTests: XCTestCase {
       ("abcdefg", ("abcdefg", "abcdefg")),
       ("abcdéfg", ("abcdéfg", "abcd")),
       matchType: (Substring, Substring).self, ==) {
-        Capture {
-          OneOrMore(.word)
-        }
-        .asciiOnlyWordCharacters()
+        Regex {
+          Capture {
+            OneOrMore(.word)
+          }
+        }.asciiOnlyWordCharacters()
         
         ZeroOrMore(.any)
       }
@@ -368,8 +618,10 @@ class RegexDSLTests: XCTestCase {
       ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
     {
-      OneOrMore(.reluctant) {
-        One(.word)
+      Regex {
+        OneOrMore(.reluctant) {
+          One(.word)
+        }
       }.repetitionBehavior(.possessive)
       Capture(.digit)
       ZeroOrMore(.any)
@@ -421,8 +673,9 @@ class RegexDSLTests: XCTestCase {
     {
       Regex {
         Capture {
-          OneOrMore("a")
-            .repetitionBehavior(.eager)
+          Regex {
+            OneOrMore("a")
+          }.repetitionBehavior(.eager)
         }
         OneOrMore("a")
       }.repetitionBehavior(.possessive)
@@ -434,8 +687,9 @@ class RegexDSLTests: XCTestCase {
     {
       Regex {
         Capture {
-          OneOrMore("a")
-            .repetitionBehavior(.reluctant)
+          Regex {
+            OneOrMore("a")
+          }.repetitionBehavior(.reluctant)
         }
         OneOrMore("a")
       }.repetitionBehavior(.possessive)
@@ -674,19 +928,40 @@ class RegexDSLTests: XCTestCase {
         Anchor.endOfSubject
       }.anchorsMatchLineEndings()
     }
-    
-    // FIXME: Anchor.start/endOfLine needs to always match line endings,
-    // even when the `anchorsMatchLineEndings()` option is turned off.
+
     try _testDSLCaptures(
-      ("\naaa", "aaa"),
-      ("aaa\n", "aaa"),
-      ("\naaa\n", "aaa"),
-      matchType: Substring.self, ==, xfail: true)
+      ("\naaa", "\naaa"),
+      ("aaa\n", "aaa\n"),
+      ("\naaa\n", "\naaa\n"),
+      matchType: Substring.self, ==)
     {
       Regex {
+        Optionally { "\n" }
         Anchor.startOfLine
         Repeat("a", count: 3)
         Anchor.endOfLine
+        Optionally { "\n" }
+      }
+    }
+
+    // startOfLine/endOfLine apply regardless of mode.
+    for matchLineEndings in [true, false] {
+      for mode in [RegexSemanticLevel.graphemeCluster, .unicodeScalar] {
+        let r = Regex {
+          Anchor.startOfLine
+          Repeat("a", count: 3)
+          Anchor.endOfLine
+        }.anchorsMatchLineEndings(matchLineEndings).matchingSemantics(mode)
+
+        XCTAssertNotNil(try r.firstMatch(in: "\naaa"))
+        XCTAssertNotNil(try r.firstMatch(in: "aaa\n"))
+        XCTAssertNotNil(try r.firstMatch(in: "\naaa\n"))
+        XCTAssertNotNil(try r.firstMatch(in: "\naaa\r\n"))
+        XCTAssertNotNil(try r.firstMatch(in: "\r\naaa\n"))
+        XCTAssertNotNil(try r.firstMatch(in: "\r\naaa\r\n"))
+
+        XCTAssertNil(try r.firstMatch(in: "\nbaaa\n"))
+        XCTAssertNil(try r.firstMatch(in: "\naaab\n"))
       }
     }
   }
@@ -1117,6 +1392,66 @@ class RegexDSLTests: XCTestCase {
           }
         }
       }
+    }
+  }
+
+  func testScalarMatching() throws {
+    // RegexBuilder provides a RegexComponent conformance for UnicodeScalar. In
+    // grapheme cluster mode, it should only match entire graphemes. It may
+    // match a single scalar of a grapheme cluster in scalar semantic mode.
+    XCTAssertNotNil("a".firstMatch(of: "a" as UnicodeScalar))
+    XCTAssertNil("a\u{301}".firstMatch(of: "a" as UnicodeScalar))
+    XCTAssertNotNil("a\u{301}".firstMatch(
+      of: ("a" as UnicodeScalar).regex.matchingSemantics(.unicodeScalar)))
+
+    let r1 = Regex {
+      "a" as UnicodeScalar
+    }
+    XCTAssertNil(try r1.firstMatch(in: "a\u{301}"))
+    XCTAssertNotNil(
+      try r1.matchingSemantics(.unicodeScalar).firstMatch(in: "a\u{301}")
+    )
+
+    let r2 = Regex {
+      CharacterClass.anyOf(["a" as UnicodeScalar, "👍"])
+    }
+    XCTAssertNil(try r2.firstMatch(in: "a\u{301}"))
+    XCTAssertNotNil(
+      try r2.matchingSemantics(.unicodeScalar).firstMatch(in: "a\u{301}")
+    )
+
+    let r3 = Regex {
+      "👨" as UnicodeScalar
+      "\u{200D}" as UnicodeScalar
+      "👨" as UnicodeScalar
+      "\u{200D}" as UnicodeScalar
+      "👧" as UnicodeScalar
+      "\u{200D}" as UnicodeScalar
+      "👦" as UnicodeScalar
+    }
+    XCTAssertNil(try r3.firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r3.matchingSemantics(.unicodeScalar).firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r3.matchingSemantics(.unicodeScalar).wholeMatch(in: "👨‍👨‍👧‍👦"))
+
+    let r4 = Regex { "é" as UnicodeScalar }
+    XCTAssertNotNil(
+      try r4.firstMatch(in: "e\u{301}")
+    )
+    XCTAssertNotNil(
+      try r4.firstMatch(in: "é")
+    )
+
+    try XCTExpectFailure("Need stronger scalar coalescing logic") {
+      let r5 = Regex {
+        "e"
+        "\u{301}" as UnicodeScalar
+      }
+      XCTAssertNotNil(
+        try r5.firstMatch(in: "e\u{301}")
+      )
+      XCTAssertNotNil(
+        try r5.firstMatch(in: "é")
+      )
     }
   }
 

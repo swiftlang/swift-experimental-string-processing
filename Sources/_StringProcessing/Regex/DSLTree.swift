@@ -117,11 +117,11 @@ extension DSLTree {
     var members: [Member]
     var isInverted: Bool
     
-    var containsAny: Bool {
+    var containsDot: Bool {
       members.contains { member in
         switch member {
-        case .atom(.any): return true
-        case .custom(let ccc): return ccc.containsAny
+        case .atom(.dot): return true
+        case .custom(let ccc): return ccc.containsDot
         default:
           return false
         }
@@ -159,101 +159,77 @@ extension DSLTree {
       indirect case subtraction(CustomCharacterClass, CustomCharacterClass)
       indirect case symmetricDifference(CustomCharacterClass, CustomCharacterClass)
     }
-    
-    internal struct AsciiBitset {
-      let isInverted: Bool
-      var a: UInt64 = 0
-      var b: UInt64 = 0
-
-      init(isInverted: Bool) {
-        self.isInverted = isInverted
-      }
-
-      init(_ val: UInt8, _ isInverted: Bool, _ isCaseInsensitive: Bool) {
-        self.isInverted = isInverted
-        add(val, isCaseInsensitive)
-      }
-
-      init(low: UInt8, high: UInt8, isInverted: Bool, isCaseInsensitive: Bool) {
-        self.isInverted = isInverted
-        for val in low...high {
-          add(val, isCaseInsensitive)
-        }
-      }
-
-      internal init(
-        a: UInt64,
-        b: UInt64,
-        isInverted: Bool
-      ) {
-        self.isInverted = isInverted
-        self.a = a
-        self.b = b
-      }
-
-      internal mutating func add(_ val: UInt8, _ isCaseInsensitive: Bool) {
-        setBit(val)
-        if isCaseInsensitive {
-          switch val {
-            case 64...90: setBit(val + 32)
-            case 97...122: setBit(val - 32)
-            default: break
-          }
-        }
-      }
-
-      internal mutating func setBit(_ val: UInt8) {
-        if val < 64 {
-          a = a | 1 << val
-        } else {
-          b = b | 1 << (val - 64)
-        }
-      }
-
-      internal func matches(char: Character) -> Bool {
-        let ret: Bool
-        if let val = char.asciiValue {
-          if val < 64 {
-            ret = (a >> val) & 1 == 1
-          } else {
-            ret =  (b >> (val - 64)) & 1 == 1
-          }
-        } else {
-          ret = false
-        }
-
-        if isInverted {
-          return !ret
-        }
-
-        return ret
-      }
-
-      /// Joins another bitset from a Member of the same CustomCharacterClass
-      internal func union(_ other: AsciiBitset) -> AsciiBitset {
-        precondition(self.isInverted == other.isInverted)
-        return AsciiBitset(
-          a: self.a | other.a,
-          b: self.b | other.b,
-          isInverted: self.isInverted
-        )
-      }
-    }
   }
 
   @_spi(RegexBuilder)
   public enum Atom {
     case char(Character)
     case scalar(Unicode.Scalar)
+
+    /// Any character, including newlines.
     case any
 
-    case assertion(_AST.AssertionKind)
+    /// Any character, excluding newlines. This differs from '.', as it is not
+    /// affected by single line mode.
+    case anyNonNewline
+
+    /// The DSL representation of '.' in a regex literal. This does not match
+    /// newlines unless single line mode is enabled.
+    case dot
+
+    case assertion(Assertion)
     case backreference(_AST.Reference)
     case symbolicReference(ReferenceID)
 
     case changeMatchingOptions(_AST.MatchingOptionSequence)
 
     case unconverted(_AST.Atom)
+  }
+}
+
+extension DSLTree.Atom {
+  @_spi(RegexBuilder)
+  public enum Assertion: Hashable {
+    /// \A
+    case startOfSubject
+
+    /// \Z
+    case endOfSubjectBeforeNewline
+
+    /// \z
+    case endOfSubject
+
+    /// \K
+    case resetStartOfMatch
+
+    /// \G
+    case firstMatchingPositionInSubject
+
+    /// \y
+    case textSegment
+
+    /// \Y
+    case notTextSegment
+
+    /// The DSL's Anchor.startOfLine, which matches the start of a line
+    /// even if `anchorsMatchNewlines` is false.
+    case startOfLine
+
+    /// The DSL's Anchor.endOfLine, which matches the end of a line
+    /// even if `anchorsMatchNewlines` is false.
+    case endOfLine
+
+    /// ^
+    case caretAnchor
+
+    /// $
+    case dollarAnchor
+
+    /// \b (from outside a custom character class)
+    case wordBoundary
+
+    /// \B
+    case notWordBoundary
   }
 }
 
@@ -774,40 +750,6 @@ extension DSLTree {
     }
     
     @_spi(RegexBuilder)
-    public struct AssertionKind {
-      internal var ast: AST.Atom.AssertionKind
-      
-      public static func startOfSubject(_ inverted: Bool = false) -> Self {
-        .init(ast: .startOfSubject)
-      }
-      public static func endOfSubjectBeforeNewline(_ inverted: Bool = false) -> Self {
-        .init(ast: .endOfSubjectBeforeNewline)
-      }
-      public static func endOfSubject(_ inverted: Bool = false) -> Self {
-        .init(ast: .endOfSubject)
-      }
-      public static func firstMatchingPositionInSubject(_ inverted: Bool = false) -> Self {
-        .init(ast: .firstMatchingPositionInSubject)
-      }
-      public static func textSegmentBoundary(_ inverted: Bool = false) -> Self {
-        inverted
-          ? .init(ast: .notTextSegment)
-          : .init(ast: .textSegment)
-      }
-      public static func startOfLine(_ inverted: Bool = false) -> Self {
-        .init(ast: .startOfLine)
-      }
-      public static func endOfLine(_ inverted: Bool = false) -> Self {
-        .init(ast: .endOfLine)
-      }
-      public static func wordBoundary(_ inverted: Bool = false) -> Self {
-        inverted
-          ? .init(ast: .notWordBoundary)
-          : .init(ast: .wordBoundary)
-      }
-    }
-    
-    @_spi(RegexBuilder)
     public struct Reference {
       internal var ast: AST.Reference
     }
@@ -820,6 +762,31 @@ extension DSLTree {
     @_spi(RegexBuilder)
     public struct Atom {
       internal var ast: AST.Atom
+
+      // FIXME: The below APIs should be removed once the DSL tree has been
+      // migrated to use proper DSL atoms for them.
+
+      public static var _anyGrapheme: Self {
+        .init(ast: .init(.escaped(.graphemeCluster), .fake))
+      }
+      public static var _whitespace: Self {
+        .init(ast: .init(.escaped(.whitespace), .fake))
+      }
+      public static var _digit: Self {
+        .init(ast: .init(.escaped(.decimalDigit), .fake))
+      }
+      public static var _horizontalWhitespace: Self {
+        .init(ast: .init(.escaped(.horizontalWhitespace), .fake))
+      }
+      public static var _newlineSequence: Self {
+        .init(ast: .init(.escaped(.newlineSequence), .fake))
+      }
+      public static var _verticalWhitespace: Self {
+        .init(ast: .init(.escaped(.verticalTab), .fake))
+      }
+      public static var _word: Self {
+        .init(ast: .init(.escaped(.wordCharacter), .fake))
+      }
     }
   }
 }
@@ -832,7 +799,8 @@ extension DSLTree.Atom {
     switch self {
     case .changeMatchingOptions, .assertion:
       return false
-    case .char, .scalar, .any, .backreference, .symbolicReference, .unconverted:
+    case .char, .scalar, .any, .anyNonNewline, .dot, .backreference,
+        .symbolicReference, .unconverted:
       return true
     }
   }
