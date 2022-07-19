@@ -19,6 +19,21 @@ extension Substring {
   var string: String { String(self) }
 }
 
+extension Character {
+  /// Whether this character is made up of exactly one Unicode scalar value.
+  public var hasExactlyOneScalar: Bool {
+    let scalars = unicodeScalars
+    return scalars.index(after: scalars.startIndex) == scalars.endIndex
+  }
+
+  /// Whether the given character is in NFC form.
+  internal var isNFC: Bool {
+    if isASCII { return true }
+    let str = String(self)
+    return str._nfcCodeUnits.elementsEqual(str.utf8)
+  }
+}
+
 extension CustomStringConvertible {
   @_alwaysEmitIntoClient
   public var halfWidthCornerQuoted: String {

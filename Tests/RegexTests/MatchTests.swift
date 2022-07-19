@@ -570,6 +570,9 @@ extension RegexTests {
   }
 
   func testMatchCharacterClasses() {
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
     // MARK: Character classes
 
     firstMatchTest(#"abc\d"#, input: "xyzabc123", match: "abc1")
@@ -775,10 +778,14 @@ extension RegexTests {
     }
     firstMatchTest(#"[\t-\t]"#, input: "\u{8}\u{A}\u{9}", match: "\u{9}")
 
-    // FIXME: This produces a different result with and without optimizations.
-    firstMatchTest(#"[1-2]"#, input: "1️⃣", match: nil, xfail: true)
-    firstMatchTest(#"[1-2]"#, input: "1️⃣", match: nil,
-                   validateOptimizations: false)
+    firstMatchTest(#"[12]"#, input: "1️⃣", match: nil)
+    firstMatchTest(#"[1-2]"#, input: "1️⃣", match: nil)
+    firstMatchTest(#"[\d]"#, input: "1️⃣", match: "1️⃣")
+    firstMatchTest(#"(?P)[\d]"#, input: "1️⃣", match: nil)
+    firstMatchTest("[0-2&&1-3]", input: "1️⃣", match: nil)
+    firstMatchTest("[1-2e\u{301}]", input: "1️⃣", match: nil)
+
+    firstMatchTest(#"[\u{3A9}-\u{3A9}]"#, input: "\u{3A9}", match: "\u{3A9}")
 
     // Currently not supported in the matching engine.
     for c: UnicodeScalar in ["a", "b", "c"] {
@@ -833,6 +840,35 @@ extension RegexTests {
     firstMatchTest(#"["abc"]+"#, input: #""abc""#, match: "abc",
                    syntax: .experimental)
     firstMatchTest(#"["abc"]+"#, input: #""abc""#, match: #""abc""#)
+
+    for semantics in [RegexSemanticLevel.unicodeScalar, .graphemeCluster] {
+      // Case sensitivity and ranges.
+      for ch in "abcD" {
+        firstMatchTest("[a-cD]", input: String(ch), match: String(ch))
+      }
+      for ch in "ABCd" {
+        firstMatchTest("[a-cD]", input: String(ch), match: nil)
+      }
+      for ch in "abcABCdD" {
+        let input = String(ch)
+        firstMatchTest(
+          "(?i)[a-cd]", input: input, match: input, semanticLevel: semantics)
+        firstMatchTest(
+          "(?i)[A-CD]", input: input, match: input, semanticLevel: semantics)
+      }
+      for ch in "XYZ[\\]^_`abcd" {
+        let input = String(ch)
+        firstMatchTest(
+          "[X-cd]", input: input, match: input, semanticLevel: semantics)
+      }
+      for ch in "XYZ[\\]^_`abcxyzABCdD" {
+        let input = String(ch)
+        firstMatchTest(
+          "(?i)[X-cd]", input: input, match: input, semanticLevel: semantics)
+        firstMatchTest(
+          "(?i)[X-cD]", input: input, match: input, semanticLevel: semantics)
+      }
+    }
   }
 
   func testCharacterProperties() {
@@ -1164,6 +1200,9 @@ extension RegexTests {
   }
 
   func testMatchGroups() {
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
     // MARK: Groups
 
     // Named captures
@@ -1541,6 +1580,9 @@ extension RegexTests {
   }
   
   func testCaseSensitivity() {
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
     matchTest(
       #"c..e"#,
       ("cafe", true),
@@ -1774,6 +1816,9 @@ extension RegexTests {
   var eComposed: String { "é" }
   var eDecomposed: String { "e\u{301}" }
   
+  var eComposedUpper: String { "É" }
+  var eDecomposedUpper: String { "E\u{301}" }
+
   func testIndividualScalars() {
     // Expectation: A standalone Unicode scalar value in a regex literal
     // can match either that specific scalar value or participate in matching
@@ -1860,31 +1905,62 @@ extension RegexTests {
   }
   
   func testCanonicalEquivalenceCustomCharacterClass() throws {
-    // Expectation: Concatenations with custom character classes should be able
-    // to match within a grapheme cluster. That is, a regex should be able to
-    // match the scalar values that comprise a grapheme cluster in separate,
-    // or repeated, custom character classes.
-    
+    // Expectation: Custom character class matches do not cross grapheme
+    // character boundaries by default. When matching with Unicode scalar
+    // semantics, grapheme cluster boundaries are ignored, so matching
+    // sequences of custom character classes can succeed.
+
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
     matchTest(
       #"[áéíóú]$"#,
       (eComposed, true),
       (eDecomposed, true))
 
-    // FIXME: Custom char classes don't use canonical equivalence with composed characters
-    firstMatchTest(#"e[\u{301}]$"#, input: eComposed, match: eComposed,
-              xfail: true)
-    firstMatchTest(#"e[\u{300}-\u{320}]$"#, input: eComposed, match: eComposed,
-              xfail: true)
-    firstMatchTest(#"[a-z][\u{300}-\u{320}]$"#, input: eComposed, match: eComposed,
-              xfail: true)
+    for input in [eDecomposed, eComposed] {
+      // Unicode scalar semantics means that only the decomposed version can
+      // match here.
+      let match = input.unicodeScalars.count == 2 ? input : nil
+      firstMatchTest(
+        #"e[\u{301}]$"#, input: input, match: match,
+        semanticLevel: .unicodeScalar)
+      firstMatchTest(
+        #"e[\u{300}-\u{320}]$"#, input: input, match: match,
+        semanticLevel: .unicodeScalar)
+      firstMatchTest(
+        #"[e][\u{300}-\u{320}]$"#, input: input, match: match,
+        semanticLevel: .unicodeScalar)
+      firstMatchTest(
+        #"[e-e][\u{300}-\u{320}]$"#, input: input, match: match,
+        semanticLevel: .unicodeScalar)
+      firstMatchTest(
+        #"[a-z][\u{300}-\u{320}]$"#, input: input, match: match,
+        semanticLevel: .unicodeScalar)
+    }
+    for input in [eComposed, eDecomposed] {
+      // Grapheme cluster semantics means that we can't match the 'e' separately
+      // from the accent.
+      firstMatchTest(#"e[\u{301}]$"#, input: input, match: nil)
+      firstMatchTest(#"e[\u{300}-\u{320}]$"#, input: input, match: nil)
+      firstMatchTest(#"[e][\u{300}-\u{320}]$"#, input: input, match: nil)
+      firstMatchTest(#"[e-e][\u{300}-\u{320}]$"#, input: input, match: nil)
+      firstMatchTest(#"[a-z][\u{300}-\u{320}]$"#, input: input, match: nil)
 
-    // FIXME: Custom char classes don't match decomposed characters
-    firstMatchTest(#"e[\u{301}]$"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
-    firstMatchTest(#"e[\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
-    firstMatchTest(#"[a-z][\u{300}-\u{320}]$"#, input: eDecomposed, match: eDecomposed,
-              xfail: true)
+      // A range that covers é (U+E9). Inputs are mapped to NFC, so match.
+      firstMatchTest(#"[\u{E8}-\u{EA}]"#, input: input, match: input)
+    }
+
+    // A range that covers É (U+C9). Inputs are mapped to NFC, so match.
+    for input in [eComposedUpper, eDecomposedUpper] {
+      firstMatchTest(#"[\u{C8}-\u{CA}]"#, input: input, match: input)
+      firstMatchTest(#"[\u{C9}-\u{C9}]"#, input: input, match: input)
+    }
+    // Case insensitive matching of É (U+C9).
+    for input in [eComposed, eDecomposed, eComposedUpper, eDecomposedUpper] {
+      firstMatchTest(#"(?i)[\u{C8}-\u{CA}]"#, input: input, match: input)
+      firstMatchTest(#"(?i)[\u{C9}-\u{C9}]"#, input: input, match: input)
+    }
 
     let flag = "🇰🇷"
     firstMatchTest(#"🇰🇷"#, input: flag, match: flag)
@@ -1893,27 +1969,33 @@ extension RegexTests {
     firstMatchTest(#"\u{1F1F0 1F1F7}"#, input: flag, match: flag)
 
     // First Unicode scalar followed by CCC of regional indicators
-    firstMatchTest(#"\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: flag,
-              xfail: true)
-
-    // FIXME: CCC of Regional Indicator doesn't match with both parts of a flag character
-    // A CCC of regional indicators x 2
-    firstMatchTest(#"[\u{1F1E6}-\u{1F1FF}]{2}"#, input: flag, match: flag,
-              xfail: true)
-
-    // FIXME: A single CCC of regional indicators matches the whole flag character
+    firstMatchTest(
+      #"^\u{1F1F0}[\u{1F1E6}-\u{1F1FF}]$"#, input: flag, match: flag,
+      semanticLevel: .unicodeScalar
+    )
     // A CCC of regional indicators followed by the second Unicode scalar
-    firstMatchTest(#"[\u{1F1E6}-\u{1F1FF}]\u{1F1F7}"#, input: flag, match: flag,
-              xfail: true)
+    firstMatchTest(
+      #"^[\u{1F1E6}-\u{1F1FF}]\u{1F1F7}$"#, input: flag, match: flag,
+      semanticLevel: .unicodeScalar
+    )
+    // A CCC of regional indicators x 2
+    firstMatchTest(
+      #"^[\u{1F1E6}-\u{1F1FF}]{2}$"#, input: flag, match: flag,
+      semanticLevel: .unicodeScalar
+    )
+    // A CCC of N regional indicators
+    firstMatchTest(
+      #"^[\u{1F1E6}-\u{1F1FF}]+$"#, input: flag, match: flag,
+      semanticLevel: .unicodeScalar
+    )
+
     // A single CCC of regional indicators
-    firstMatchTest(#"[\u{1F1E6}-\u{1F1FF}]"#, input: flag, match: nil,
-              xfail: true)
-    
-    // A single CCC of actual flag emojis / combined regional indicators
-    firstMatchTest(#"[🇦🇫-🇿🇼]"#, input: flag, match: flag)
-    // This succeeds (correctly) because \u{1F1F0} is lexicographically
-    // within the CCC range
-    firstMatchTest(#"[🇦🇫-🇿🇼]"#, input: "\u{1F1F0}abc", match: "\u{1F1F0}")
+    firstMatchTest(
+      #"^[\u{1F1E6}-\u{1F1FF}]$"#, input: flag, match: nil)
+    firstMatchTest(
+      #"^[\u{1F1E6}-\u{1F1FF}]$"#, input: flag, match: nil,
+      semanticLevel: .unicodeScalar
+    )
   }
   
   func testAnyChar() throws {
