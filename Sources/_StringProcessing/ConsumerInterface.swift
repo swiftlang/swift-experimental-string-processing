@@ -361,38 +361,60 @@ extension DSLTree.CustomCharacterClass.Member {
       }
       return c
     case let .range(low, high):
-      // TODO:
-      guard let lhs = low.literalCharacterValue else {
+      guard let lhs = low.literalCharacterValue?.singleScalar, lhs.isNFC else {
         throw Unsupported("\(low) in range")
       }
-      guard let rhs = high.literalCharacterValue else {
+      guard let rhs = high.literalCharacterValue?.singleScalar, rhs.isNFC else {
         throw Unsupported("\(high) in range")
       }
+      guard lhs <= rhs else {
+        throw Unsupported("Invalid range \(low)-\(high)")
+      }
 
-      if opts.isCaseInsensitive {
-        let lhsLower = lhs.lowercased()
-        let rhsLower = rhs.lowercased()
-        guard lhsLower <= rhsLower else { throw Unsupported("Invalid range \(lhs)-\(rhs)") }
-        return { input, bounds in
-          // TODO: check for out of bounds?
-          let curIdx = bounds.lowerBound
-          if (lhsLower...rhsLower).contains(input[curIdx].lowercased()) {
-            // TODO: semantic level
-            return input.index(after: curIdx)
-          }
-          return nil
+      let isCaseInsensitive = opts.isCaseInsensitive
+      let isCharacterSemantic = opts.semanticLevel == .graphemeCluster
+      
+      return { input, bounds in
+        let curIdx = bounds.lowerBound
+        let nextIndex = isCharacterSemantic
+          ? input.index(after: curIdx)
+          : input.unicodeScalars.index(after: curIdx)
+
+        // Under grapheme semantics, we compare based on single NFC scalars. If
+        // such a character is not single scalar under NFC, the match fails. In
+        // scalar semantics, we compare the exact scalar value to the NFC
+        // bounds.
+        let scalar = isCharacterSemantic ? input[curIdx].singleNFCScalar
+                                         : input.unicodeScalars[curIdx]
+        guard let scalar = scalar else { return nil }
+        let scalarRange = lhs ... rhs
+        if scalarRange.contains(scalar) {
+          return nextIndex
         }
-      } else {
-        guard lhs <= rhs else { throw Unsupported("Invalid range \(lhs)-\(rhs)") }
-        return { input, bounds in
-          // TODO: check for out of bounds?
-          let curIdx = bounds.lowerBound
-          if (lhs...rhs).contains(input[curIdx]) {
-            // TODO: semantic level
-            return input.index(after: curIdx)
-          }
-          return nil
+
+        // Check for case insensitive matches.
+        func matchesCased(
+          _ cased: (UnicodeScalar.Properties) -> String
+        ) -> Bool {
+          let casedStr = cased(scalar.properties)
+          // In character semantic mode, we need to map to NFC. In scalar
+          // semantics, we should have an exact scalar.
+          let mapped = isCharacterSemantic ? casedStr.singleNFCScalar
+                                           : casedStr.singleScalar
+          guard let mapped = mapped else { return false }
+          return scalarRange.contains(mapped)
         }
+        if isCaseInsensitive {
+          if scalar.properties.changesWhenLowercased,
+              matchesCased(\.lowercaseMapping) {
+            return nextIndex
+          }
+          if scalar.properties.changesWhenUppercased,
+             matchesCased(\.uppercaseMapping) {
+            return nextIndex
+          }
+        }
+        return nil
       }
 
     case let .custom(ccc):
