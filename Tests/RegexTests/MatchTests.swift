@@ -320,8 +320,6 @@ extension RegexTests {
                    input: "\u{7}\u{8}\u{1B}\u{C}\n\r\t",
                    match: "\u{7}\u{8}\u{1B}\u{C}\n\r\t")
 
-    firstMatchTest(#"\r\n"#, input: "\r\n", match: "\r\n")
-
     // MARK: Quotes
 
     firstMatchTest(
@@ -1472,6 +1470,74 @@ extension RegexTests {
   func testSingleLineMode() {
     firstMatchTest(#".+"#, input: "a\nb", match: "a")
     firstMatchTest(#"(?s:.+)"#, input: "a\nb", match: "a\nb")
+  }
+
+  func testMatchNewlines() {
+    // Must have new stdlib for character class ranges and word boundaries.
+    guard ensureNewStdlib() else { return }
+
+    for semantics in [RegexSemanticLevel.unicodeScalar, .graphemeCluster] {
+      firstMatchTest(
+        #"\r\n"#, input: "\r\n", match: "\r\n",
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"\r\n"#, input: "\n", match: nil, semanticLevel: semantics)
+      firstMatchTest(
+        #"\r\n"#, input: "\r", match: nil, semanticLevel: semantics)
+
+      // \r\n is not treated as ASCII.
+      firstMatchTest(
+        #"^\p{ASCII}$"#, input: "\r\n", match: nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"^\r$"#, input: "\r\n", match: nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"^[\r]$"#, input: "\r\n", match: nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"^\n$"#, input: "\r\n", match: nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"^[\n]$"#, input: "\r\n", match: nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"^[\u{0}-\u{7F}]$"#, input: "\r\n", match: nil,
+        semanticLevel: semantics
+      )
+
+      let scalarSemantics = semantics == .unicodeScalar
+      firstMatchTest(
+        #"\p{ASCII}"#, input: "\r\n", match:  scalarSemantics ? "\r" : nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"\r"#, input: "\r\n", match:  scalarSemantics ? "\r" : nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"[\r]"#, input: "\r\n", match:  scalarSemantics ? "\r" : nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"\n"#, input: "\r\n", match:  scalarSemantics ? "\n" : nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"[\n]"#, input: "\r\n", match:  scalarSemantics ? "\n" : nil,
+        semanticLevel: semantics
+      )
+      firstMatchTest(
+        #"[\u{0}-\u{7F}]"#, input: "\r\n", match:  scalarSemantics ? "\r" : nil,
+        semanticLevel: semantics
+      )
+    }
   }
   
   func testCaseSensitivity() {
