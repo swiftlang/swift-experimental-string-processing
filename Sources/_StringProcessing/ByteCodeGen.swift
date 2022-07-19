@@ -710,11 +710,15 @@ fileprivate extension Compiler.ByteCodeGen {
         builder.buildQuantifyAny(kind, minTrips, extraTrips)
       case .characterClass(let cc):
         let model = cc.model
-        assert(!model.isStrictAscii(options: options),
-               "Entered emitFastQuant with an invalid case: Strict builtin character class")
         assert(model.consumesSingleGrapheme,
                "Entered emitFastQuant with an invalid case: Builtin class that does not consume a single grapheme")
-        builder.buildQuantify(builtin: model.cc, kind, minTrips, extraTrips)
+        builder.buildQuantify(
+          builtin: model.cc,
+          isStrict: model.isStrictAscii(options: options),
+          isInverted: model.isInverted,
+          kind,
+          minTrips,
+          extraTrips)
       default:
         fatalError("Entered emitFastQuant with an invalid case: DSLTree.Node.shouldDoFastQuant is out of sync")
       }
@@ -899,9 +903,8 @@ extension DSLTree.Node {
         // Only quantify if we have a default behavior .any
         return !opts.dotMatchesNewline
       case .characterClass(let cc):
-        // Only quantify if we have a non-strict non-inverted character class
-        // Fixme: we can do both of these
-        return !cc.model.isInverted && !cc.model.isStrictAscii(options: opts)
+        // Only quantify if it consumes a single grapheme
+        return cc.model.consumesSingleGrapheme
       default:
         return false
       }

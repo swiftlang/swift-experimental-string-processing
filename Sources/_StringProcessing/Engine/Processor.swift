@@ -352,10 +352,9 @@ extension Processor {
         next = _doMatchScalar(
           UnicodeScalar.init(_value: UInt32(payload.asciiChar)), true)
       case .builtin:
-        // We only emit .quantify if it is non-strict ascii and if it consumes a
-        // single character
-        // fixme: also if it is not inverted (this we can fix)
-        next = _doMatchBuiltin(payload.builtin, false, false)
+        // We only emit .quantify if it consumes a single character
+        next = _doMatchBuiltin(payload.builtin,
+                               payload.builtinIsInverted, payload.builtinIsStrict)
       case .any:
         // We only emit if any does not match newline
         // Fixme: we could emit if it matches newline by just having a bit in

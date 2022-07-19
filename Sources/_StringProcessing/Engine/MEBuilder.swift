@@ -239,13 +239,16 @@ extension MEProgram.Builder {
 
   mutating func buildQuantify(
     builtin: _CharacterClassModel.Representation,
+    isStrict: Bool,
+    isInverted: Bool,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
     _ extraTrips: Int?
   ) {
     instructions.append(.init(
       .quantify,
-      .init(quantify: .init(builtin: builtin, kind, minTrips, extraTrips))))
+      .init(quantify: .init(builtin: builtin,
+                            isStrict, isInverted, kind, minTrips, extraTrips))))
   }
 
   mutating func buildAccept() {

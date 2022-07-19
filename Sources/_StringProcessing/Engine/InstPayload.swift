@@ -435,12 +435,15 @@ struct QuantifyPayload: RawRepresentable {
   
   init(
     builtin: _CharacterClassModel.Representation,
+    _ isStrict: Bool,
+    _ isInverted: Bool,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
     _ extraTrips: Int?
   ) {
-    assert(builtin.rawValue < 0xFF_FF)
-    self.rawValue = builtin.rawValue + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .builtin)
+    assert(builtin.rawValue < 0xFF)
+    let packedModel = builtin.rawValue + (isInverted ? 1 << 9 : 0) + (isStrict ? 1 << 10 : 0)
+    self.rawValue = packedModel + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .builtin)
   }
   
   var type: PayloadType {
@@ -479,7 +482,13 @@ struct QuantifyPayload: RawRepresentable {
   }
   
   var builtin: _CharacterClassModel.Representation {
-    _CharacterClassModel.Representation(rawValue: self.rawValue & 0xFF_FF)!
+    _CharacterClassModel.Representation(rawValue: self.rawValue & 0xFF)!
+  }
+  var builtinIsInverted: Bool {
+    (self.rawValue >> 9) & 1 == 1
+  }
+  var builtinIsStrict: Bool {
+    (self.rawValue >> 10) & 1 == 1
   }
 }
 
