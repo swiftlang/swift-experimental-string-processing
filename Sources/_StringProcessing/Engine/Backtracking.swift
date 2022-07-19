@@ -54,6 +54,18 @@ extension Processor {
       rangeEnd = newEnd
     }
 
+    mutating func dropLast(_ input: Input) {
+      assert(!rangeIsEmpty)
+      let pos = rangeEnd!
+      if pos == rangeStart {
+        // The range is now empty
+        rangeStart = nil
+        rangeEnd = nil
+      } else {
+        rangeEnd = input.index(before: pos)
+      }
+    }
+
     mutating func removeLast(_ input: Input) -> (
       pc: InstructionAddress,
       pos: Position?,

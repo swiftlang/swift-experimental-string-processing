@@ -53,7 +53,11 @@ extension Processor {
     }
     
     if payload.quantKind == .eager && !savePoint.rangeIsEmpty {
-      savePoints.append(savePoint)
+      // The last save point has saved the current position, so it's unneeded
+      savePoint.dropLast(input)
+      if !savePoint.rangeIsEmpty {
+        savePoints.append(savePoint)
+      }
     }
     return true
   }
@@ -72,6 +76,8 @@ extension Processor {
       currentPosition = idx
     }
     
+    // The last save point has saved the current position, so it's unneeded
+    savePoint.dropLast(input)
     if !savePoint.rangeIsEmpty {
       savePoints.append(savePoint)
     }
@@ -95,7 +101,11 @@ extension Processor {
       signalFailure()
       return false
     }
-    savePoints.append(savePoint)
+    // The last save point has saved the current position, so it's unneeded
+    savePoint.dropLast(input)
+    if !savePoint.rangeIsEmpty {
+      savePoints.append(savePoint)
+    }
     return true
   }
   
