@@ -191,6 +191,7 @@ func firstMatchTests(
   enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #filePath,
   line: UInt = #line
 ) {
@@ -203,6 +204,7 @@ func firstMatchTests(
       enableTracing: enableTracing,
       dumpAST: dumpAST,
       xfail: xfail,
+      semanticLevel: semanticLevel,
       file: file,
       line: line)
   }
@@ -718,6 +720,50 @@ extension RegexTests {
       #"[a]\u0301"#,
       ("a\u{301}", true),
       semanticLevel: .unicodeScalar)
+
+    // Scalar matching in quoted sequences.
+    firstMatchTests(
+      "[\\Qe\u{301}\\E]",
+      ("e", nil),
+      ("E", nil),
+      ("\u{301}", nil),
+      (eDecomposed, eDecomposed),
+      (eComposed, eComposed),
+      ("E\u{301}", nil),
+      ("\u{C9}", nil)
+    )
+    firstMatchTests(
+      "[\\Qe\u{301}\\E]",
+      ("e", "e"),
+      ("E", nil),
+      ("\u{301}", "\u{301}"),
+      (eDecomposed, "e"),
+      (eComposed, nil),
+      ("E\u{301}", "\u{301}"),
+      ("\u{C9}", nil),
+      semanticLevel: .unicodeScalar
+    )
+    firstMatchTests(
+      "(?i)[\\Qe\u{301}\\E]",
+      ("e", nil),
+      ("E", nil),
+      ("\u{301}", nil),
+      (eDecomposed, eDecomposed),
+      (eComposed, eComposed),
+      ("E\u{301}", "E\u{301}"),
+      ("\u{C9}", "\u{C9}")
+    )
+    firstMatchTests(
+      "(?i)[\\Qe\u{301}\\E]",
+      ("e", "e"),
+      ("E", "E"),
+      ("\u{301}", "\u{301}"),
+      (eDecomposed, "e"),
+      (eComposed, nil),
+      ("E\u{301}", "E"),
+      ("\u{C9}", nil),
+      semanticLevel: .unicodeScalar
+    )
 
     firstMatchTest("[-]", input: "123-abcxyz", match: "-")
 
