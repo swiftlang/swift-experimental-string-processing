@@ -312,6 +312,38 @@ extension RegexTests {
       match: "\u{006f}\u{031b}\u{0323}"
     )
 
+    // e + combining accents
+    firstMatchTest(
+      #"e\u{301 302 303}"#,
+      input: "e\u{301}\u{302}\u{303}",
+      match: "e\u{301}\u{302}\u{303}"
+    )
+    firstMatchTest(
+      #"e\u{315 35C 301}"#,
+      input: "e\u{301}\u{315}\u{35C}",
+      match: "e\u{301}\u{315}\u{35C}"
+    )
+    firstMatchTest(
+      #"e\u{301}\u{302 303}"#,
+      input: "e\u{301}\u{302}\u{303}",
+      match: "e\u{301}\u{302}\u{303}"
+    )
+    firstMatchTest(
+      #"e\u{35C}\u{315 301}"#,
+      input: "e\u{301}\u{315}\u{35C}",
+      match: "e\u{301}\u{315}\u{35C}"
+    )
+    firstMatchTest(
+      #"e\u{35C}\u{315 301}"#,
+      input: "e\u{315}\u{301}\u{35C}",
+      match: "e\u{315}\u{301}\u{35C}"
+    )
+    firstMatchTest(
+      #"e\u{301}\de\u{302}"#,
+      input: "e\u{301}0e\u{302}",
+      match: "e\u{301}0e\u{302}"
+    )
+
     // Escape sequences that represent scalar values.
     firstMatchTest(#"\a[\b]\e\f\n\r\t"#,
                    input: "\u{7}\u{8}\u{1B}\u{C}\n\r\t",
@@ -1861,6 +1893,11 @@ extension RegexTests {
       #"e$"#,
       (eComposed, false),
       (eDecomposed, false))
+
+    matchTest(
+      #"\u{65 301}"#,
+      (eComposed, true),
+      (eDecomposed, true))
   }
 
   func testCanonicalEquivalenceCharacterClass() throws {
