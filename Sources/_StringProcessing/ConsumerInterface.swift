@@ -63,7 +63,7 @@ extension DSLTree._AST.Atom {
 extension Character {
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram.ConsumeFunction? {
+  ) throws -> MEProgram.ConsumeFunction {
     let isCaseInsensitive = opts.isCaseInsensitive
     switch opts.semanticLevel {
     case .graphemeCluster:
@@ -456,21 +456,17 @@ extension DSLTree.CustomCharacterClass.Member {
         }
         return rhs(input, bounds)
       }
-    case .quotedLiteral(let s):
-      if opts.isCaseInsensitive {
-        return { input, bounds in
-          guard s.lowercased()._contains(input[bounds.lowerBound].lowercased()) else {
-            return nil
+    case .quotedLiteral(let str):
+      let consumers = try str.map {
+        try $0.generateConsumer(opts)
+      }
+      return { input, bounds in
+        for fn in consumers {
+          if let idx = fn(input, bounds) {
+            return idx
           }
-          return input.index(after: bounds.lowerBound)
         }
-      } else {
-        return { input, bounds in
-          guard s.contains(input[bounds.lowerBound]) else {
-            return nil
-          }
-          return input.index(after: bounds.lowerBound)
-        }
+        return nil
       }
     case .trivia:
       // TODO: Should probably strip this earlier...
