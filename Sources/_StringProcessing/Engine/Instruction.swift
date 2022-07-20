@@ -37,6 +37,14 @@ extension Instruction {
     ///
     case moveImmediate
 
+    /// Move the current position into a register
+    ///
+    ///     moveCurrentPosition(into: PositionRegister)
+    ///
+    /// Operands:
+    ///   - Position register to move into
+    case moveCurrentPosition
+
     // MARK: General Purpose: Control flow
 
     /// Branch to a new instruction
@@ -57,6 +65,16 @@ extension Instruction {
     ///
     case condBranchZeroElseDecrement
 
+    /// Conditionally branch if the current position is the same as the register
+    ///
+    ///     condBranch(
+    ///       to: InstAddr, ifSamePositionAs: PositionRegister)
+    ///
+    /// Operands:
+    ///   - Instruction address to branch to, if the position in the register is the same as currentPosition
+    ///   - Position register to check against
+    case condBranchSamePosition
+  
     // TODO: Function calls
 
     // MARK: - Matching
@@ -72,20 +90,27 @@ extension Instruction {
 
     /// Composite assert-advance else restore.
     ///
-    ///     match(_: EltReg)
+    ///     match(_: EltReg, isCaseInsensitive: Bool)
     ///
-    /// Operand: Element register to compare against.
+    /// Operands:
+    ///  - Element register to compare against.
+    ///  - Boolean for if we should match in a case insensitive way
     case match
 
-    /// Match against a sequence of elements
+    /// Match against a scalar and possibly perform a boundary check or match in a case insensitive way
     ///
-    ///     matchSequence(_: SeqReg)
+    ///     matchScalar(_: Unicode.Scalar, isCaseInsensitive: Bool, boundaryCheck: Bool)
     ///
-    /// Operand: Sequence register to compare against.
-    case matchSequence
+    /// Operands: Scalar value to match against and booleans
+    case matchScalar
 
-    /// Match against a set of valid ascii values stored in a bitset
-    /// Operand: Ascii bitset register containing the bitset
+    /// Match a character or a scalar against a set of valid ascii values stored in a bitset
+    ///
+    ///     matchBitset(_: AsciiBitsetRegister, isScalar: Bool)
+    ///
+    /// Operand:
+    ///  - Ascii bitset register containing the bitset
+    ///  - Boolean for if we should match by scalar value
     case matchBitset
 
     /// TODO: builtin assertions and anchors
@@ -306,7 +331,7 @@ extension Instruction {
   var elementRegister: ElementRegister? {
     switch opcode {
     case .match:
-      return payload.element
+      return payload.elementPayload.1
     default: return nil
     }
   }

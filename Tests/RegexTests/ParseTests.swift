@@ -359,14 +359,14 @@ extension RegexTests {
     parseTest(
       "(.)*(.*)",
       concat(
-        zeroOrMore(of: capture(atom(.any))),
-        capture(zeroOrMore(of: atom(.any)))),
+        zeroOrMore(of: capture(atom(.dot))),
+        capture(zeroOrMore(of: atom(.dot)))),
       captures: [.opt, .cap])
     parseTest(
       "((.))*((.)?)",
       concat(
-        zeroOrMore(of: capture(capture(atom(.any)))),
-        capture(zeroOrOne(of: capture(atom(.any))))),
+        zeroOrMore(of: capture(capture(atom(.dot)))),
+        capture(zeroOrOne(of: capture(atom(.dot))))),
       captures: [.opt, .opt, .cap, .opt])
     parseTest(
       #"abc\d"#,
@@ -479,7 +479,7 @@ extension RegexTests {
 
     parseTest(#"abc\d"#, concat("a", "b", "c", escaped(.decimalDigit)))
 
-    // FIXME: '\N' should be emitted through 'emitAny', not through the
+    // FIXME: '\N' should be emitted through 'emitDot', not through the
     // _CharacterClassModel model.
     parseTest(#"\N"#, escaped(.notNewline), unsupported: true)
 

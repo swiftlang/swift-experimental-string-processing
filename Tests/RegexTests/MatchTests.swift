@@ -24,24 +24,35 @@ func _firstMatch(
   _ regexStr: String,
   input: String,
   validateOptimizations: Bool,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   syntax: SyntaxOptions = .traditional
-) throws -> (String, [String?]) {
-  var regex = try Regex(regexStr, syntax: syntax)
-  guard let result = try regex.firstMatch(in: input) else {
-    throw MatchError("match not found for \(regexStr) in \(input)")
-  }
-  let caps = result.output.slices(from: input)
-  
+) throws -> (String, [String?])? {
+  var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
+  let result = try regex.firstMatch(in: input)
+
   if validateOptimizations {
     regex._setCompilerOptionsForTesting(.disableOptimizations)
-    guard let unoptResult = try regex.firstMatch(in: input) else {
+    let unoptResult = try regex.firstMatch(in: input)
+    if result != nil && unoptResult == nil {
       throw MatchError("match not found for unoptimized \(regexStr) in \(input)")
     }
-    XCTAssertEqual(
-      String(input[result.range]),
-      String(input[unoptResult.range]),
-      "Unoptimized regex returned a different result")
+    if result == nil && unoptResult != nil {
+      throw MatchError("match not found in optimized \(regexStr) in \(input)")
+    }
+    if let result = result, let unoptResult = unoptResult {
+      let optMatch = String(input[result.range])
+      let unoptMatch = String(input[unoptResult.range])
+      if optMatch != unoptMatch {
+        throw MatchError("""
+
+        Unoptimized regex returned: '\(unoptMatch)'
+        Optimized regex returned: '\(optMatch)'
+        """)
+      }
+    }
   }
+  guard let result = result else { return nil }
+  let caps = result.output.slices(from: input)
   return (String(input[result.range]), caps.map { $0.map(String.init) })
 }
 
@@ -54,6 +65,7 @@ func flatCaptureTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -63,6 +75,7 @@ func flatCaptureTest(
         regex,
         input: test,
         validateOptimizations: validateOptimizations,
+        semanticLevel: semanticLevel,
         syntax: syntax
       ) else {
         if expect == nil {
@@ -113,6 +126,7 @@ func matchTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -126,6 +140,7 @@ func matchTest(
       dumpAST: dumpAST,
       xfail: xfail,
       validateOptimizations: validateOptimizations,
+      semanticLevel: semanticLevel,
       file: file,
       line: line)
   }
@@ -143,25 +158,25 @@ func firstMatchTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #filePath,
   line: UInt = #line
 ) {
   do {
-    let (found, _) = try _firstMatch(
+    let found = try _firstMatch(
       regex,
       input: input,
       validateOptimizations: validateOptimizations,
-      syntax: syntax)
+      semanticLevel: semanticLevel,
+      syntax: syntax)?.0
 
     if xfail {
       XCTAssertNotEqual(found, match, file: file, line: line)
     } else {
-      XCTAssertEqual(found, match, file: file, line: line)
+      XCTAssertEqual(found, match, "Incorrect match", file: file, line: line)
     }
   } catch {
-    // FIXME: This allows non-matches to succeed even when xfail'd
-    // When xfail == true, this should report failure for match == nil
-    if !xfail && match != nil {
+    if !xfail {
       XCTFail("\(error)", file: file, line: line)
     }
     return
@@ -421,8 +436,7 @@ extension RegexTests {
       "a++a",
       ("babc", nil),
       ("baaabc", nil),
-      ("bb", nil),
-      xfail: true)
+      ("bb", nil))
     firstMatchTests(
       "a+?a",
       ("babc", nil),
@@ -498,23 +512,19 @@ extension RegexTests {
       ("baabc", nil),
       ("bb", nil))
     
-    // XFAIL'd versions of the above
     firstMatchTests(
       "a{2,4}+a",
-      ("baaabc", nil),
-      xfail: true)
+      ("baaabc", nil))
     firstMatchTests(
       "a{,4}+a",
       ("babc", nil),
       ("baabc", nil),
-      ("baaabc", nil),
-      xfail: true)
+      ("baaabc", nil))
     firstMatchTests(
       "a{2,}+a",
       ("baaabc", nil),
       ("baaaaabc", nil),
-      ("baaaaaaaabc", nil),
-      xfail: true)
+      ("baaaaaaaabc", nil))
 
     // XFAIL'd possessive tests
     firstMatchTests(
@@ -596,6 +606,12 @@ extension RegexTests {
               ("A", true),
               ("a", false))
 
+    matchTest(#"(?i)[a]"#,
+              ("💿", false),
+              ("a\u{301}", false),
+              ("A", true),
+              ("a", true))
+
     matchTest("[a]",
       ("a\u{301}", false))
 
@@ -610,14 +626,12 @@ extension RegexTests {
     // interpreted as matching the scalars "\r" or "\n".
     // It does not fully match the character "\r\n" because the character class
     // in scalar mode will only match one scalar
-    do {
-      let regex = try Regex("[\r\n]").matchingSemantics(.unicodeScalar)
-      XCTAssertEqual("\r", try regex.wholeMatch(in: "\r")?.0)
-      XCTAssertEqual("\n", try regex.wholeMatch(in: "\n")?.0)
-      XCTAssertEqual(nil, try regex.wholeMatch(in: "\r\n")?.0)
-    } catch {
-      XCTFail("\(error)", file: #filePath, line: #line)
-    }
+    matchTest(
+      "^[\r\n]$",
+      ("\r", true),
+      ("\n", true),
+      ("\r\n", false),
+      semanticLevel: .unicodeScalar)
 
     matchTest("[^\r\n]",
       ("\r\n", false),
@@ -625,7 +639,51 @@ extension RegexTests {
       ("\r", true))
     matchTest("[\n\r]",
       ("\n", true),
-      ("\r", true))
+      ("\r", true),
+      ("\r\n", false))
+
+    let allNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n\u{85}\u{2028}\u{2029}"
+    let asciiNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n"
+
+    for level in [RegexSemanticLevel.graphemeCluster, .unicodeScalar] {
+      firstMatchTest(
+        #"\R+"#,
+        input: "abc\(allNewlines)def", match: allNewlines,
+        semanticLevel: level
+      )
+      firstMatchTest(
+        #"\v+"#,
+        input: "abc\(allNewlines)def", match: allNewlines,
+        semanticLevel: level
+      )
+    }
+
+    // In scalar mode, \R can match \r\n, \v cannot.
+    firstMatchTest(
+      #"\R"#, input: "\r\n", match: "\r\n", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"\v"#, input: "\r\n", match: "\r", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"\v\v"#, input: "\r\n", match: "\r\n", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"[^\v]"#, input: "\r\n", match: nil, semanticLevel: .unicodeScalar)
+
+    // ASCII-only spaces.
+    firstMatchTest(#"(?S)\R+"#, input: allNewlines, match: asciiNewlines)
+    firstMatchTest(#"(?S)\v+"#, input: allNewlines, match: asciiNewlines)
+    firstMatchTest(
+      #"(?S)\R"#, input: "\r\n", match: "\r\n", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"(?S)\v"#, input: "\r\n", match: "\r", semanticLevel: .unicodeScalar)
+
+    matchTest(
+      #"[a]\u0301"#,
+      ("a\u{301}", false),
+      semanticLevel: .graphemeCluster)
+    matchTest(
+      #"[a]\u0301"#,
+      ("a\u{301}", true),
+      semanticLevel: .unicodeScalar)
 
     firstMatchTest("[-]", input: "123-abcxyz", match: "-")
 
@@ -708,6 +766,11 @@ extension RegexTests {
       firstMatchTest(#"[\n-\r]"#, input: "\u{9}\u{E}\(u)", match: "\(u)")
     }
     firstMatchTest(#"[\t-\t]"#, input: "\u{8}\u{A}\u{9}", match: "\u{9}")
+
+    // FIXME: This produces a different result with and without optimizations.
+    firstMatchTest(#"[1-2]"#, input: "1️⃣", match: nil, xfail: true)
+    firstMatchTest(#"[1-2]"#, input: "1️⃣", match: nil,
+                   validateOptimizations: false)
 
     // Currently not supported in the matching engine.
     for c: UnicodeScalar in ["a", "b", "c"] {
@@ -1054,8 +1117,8 @@ extension RegexTests {
     // TODO: Oniguruma \y and \Y
     firstMatchTests(
       #"\u{65}"#,             // Scalar 'e' is present in both
-      ("Cafe\u{301}", nil),   // but scalar mode requires boundary at end of match
-      xfail: true)
+      ("Cafe\u{301}", nil))   // but scalar mode requires boundary at end of match
+
     firstMatchTests(
       #"\u{65}"#,             // Scalar 'e' is present in both
       ("Sol Cafe", "e"))      // standalone is okay
@@ -1647,19 +1710,15 @@ extension RegexTests {
     firstMatchTest(#"\u{65 301}$"#, input: eComposed, match: eComposed)
 
     // FIXME: Implicit \y at end of match
-    firstMatchTest(#"\u{65}"#, input: eDecomposed, match: nil,
-      xfail: true)
+    firstMatchTest(#"\u{65}"#, input: eDecomposed, match: nil)
     firstMatchTest(#"\u{65}$"#, input: eDecomposed, match: nil)
-    // FIXME: \y is unsupported
-    firstMatchTest(#"\u{65}\y"#, input: eDecomposed, match: nil,
-      xfail: true)
+    firstMatchTest(#"\u{65}\y"#, input: eDecomposed, match: nil)
 
     // FIXME: Unicode scalars are only matched at the start of a grapheme cluster
     firstMatchTest(#"\u{301}"#, input: eDecomposed, match: "\u{301}",
       xfail: true)
-    // FIXME: \y is unsupported
-    firstMatchTest(#"\y\u{301}"#, input: eDecomposed, match: nil,
-      xfail: true)
+
+    firstMatchTest(#"\y\u{301}"#, input: eDecomposed, match: nil)
   }
 
   func testCanonicalEquivalence() throws {
@@ -1717,13 +1776,11 @@ extension RegexTests {
     // \s
     firstMatchTest(#"\s"#, input: " ", match: " ")
     // FIXME: \s shouldn't match a number composed with a non-number character
-    firstMatchTest(#"\s\u{305}"#, input: " ", match: nil,
-              xfail: true)
+    firstMatchTest(#"\s\u{305}"#, input: " ", match: nil)
     // \p{Whitespace}
     firstMatchTest(#"\s"#, input: " ", match: " ")
-    // FIXME: \p{Whitespace} shouldn't match whitespace composed with a non-whitespace character
-    firstMatchTest(#"\s\u{305}"#, input: " ", match: nil,
-              xfail: true)
+    // \p{Whitespace} shouldn't match whitespace composed with a non-whitespace character
+    firstMatchTest(#"\s\u{305}"#, input: " ", match: nil)
   }
   
   func testCanonicalEquivalenceCustomCharacterClass() throws {
@@ -1853,6 +1910,19 @@ extension RegexTests {
   
   // TODO: Add test for grapheme boundaries at start/end of match
 
+  // Testing the matchScalar optimization for ascii quoted literals and characters
+  func testScalarOptimization() throws {
+    // check that we are correctly doing the boundary check after matchScalar
+    firstMatchTest("a", input: "a\u{301}", match: nil)
+    firstMatchTest("aa", input: "aa\u{301}", match: nil)
+
+    firstMatchTest("a", input: "a\u{301}", match: "a", semanticLevel: .unicodeScalar)
+    firstMatchTest("aa", input: "aa\u{301}", match: "aa", semanticLevel: .unicodeScalar)
+
+    // case insensitive tests
+    firstMatchTest(#"(?i)abc\u{301}d"#, input: "AbC\u{301}d", match: "AbC\u{301}d", semanticLevel: .unicodeScalar)
+  }
+  
   func testCase() {
     let regex = try! Regex(#".\N{SPARKLING HEART}."#)
     let input = "🧟‍♀️💖🧠 or 🧠💖☕️"
@@ -1893,5 +1963,31 @@ extension RegexTests {
       XCTAssertEqual(matches.count, 3)
     }
   }
-}
 
+  func expectCompletion(regex: String, in target: String) {
+    let expectation = XCTestExpectation(description: "Run the given regex to completion")
+    Task.init {
+      let r = try! Regex(regex)
+      let val = target.matches(of: r).isEmpty
+      expectation.fulfill()
+      return val
+    }
+    wait(for: [expectation], timeout: 3.0)
+  }
+
+  func testQuantificationForwardProgress() {
+    expectCompletion(regex: #"(?:(?=a)){1,}"#, in: "aa")
+    expectCompletion(regex: #"(?:\b)+"#, in: "aa")
+    expectCompletion(regex: #"(?:(?#comment))+"#, in: "aa")
+    expectCompletion(regex: #"(?:|)+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|)+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|(?i-i:))+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|(?#comment))+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|(?#comment)(?i-i:))+"#, in: "aa")
+    expectCompletion(regex: #"(?:\w|(?i))+"#, in: "aa")
+    expectCompletion(regex: #"(a*)*"#, in: "aa")
+    expectCompletion(regex: #"(a?)*"#, in: "aa")
+    expectCompletion(regex: #"(a{,4})*"#, in: "aa")
+    expectCompletion(regex: #"((|)+)*"#, in: "aa")
+  }
+}

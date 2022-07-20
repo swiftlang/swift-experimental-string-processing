@@ -60,13 +60,13 @@ extension AST {
       case namedCharacter(String)
 
       /// .
-      case any
+      case dot
 
       /// ^
-      case startOfLine
+      case caretAnchor
 
       /// $
-      case endOfLine
+      case dollarAnchor
 
       // References
       case backreference(Reference)
@@ -104,9 +104,9 @@ extension AST.Atom {
     case .callout(let v):               return v
     case .backtrackingDirective(let v): return v
     case .changeMatchingOptions(let v): return v
-    case .any:                          return nil
-    case .startOfLine:                  return nil
-    case .endOfLine:                    return nil
+    case .dot:                          return nil
+    case .caretAnchor:                  return nil
+    case .dollarAnchor:                 return nil
     case .invalid:                      return nil
     }
   }
@@ -512,67 +512,6 @@ extension AST.Atom.CharacterProperty {
 }
 
 extension AST.Atom {
-  /// Anchors and other built-in zero-width assertions.
-  public enum AssertionKind: String, Hashable {
-    /// \A
-    case startOfSubject = #"\A"#
-
-    /// \Z
-    case endOfSubjectBeforeNewline = #"\Z"#
-
-    /// \z
-    case endOfSubject = #"\z"#
-
-    /// \K
-    case resetStartOfMatch = #"\K"#
-
-    /// \G
-    case firstMatchingPositionInSubject = #"\G"#
-
-    /// \y
-    case textSegment = #"\y"#
-
-    /// \Y
-    case notTextSegment = #"\Y"#
-
-    /// ^
-    case startOfLine = #"^"#
-
-    /// $
-    case endOfLine = #"$"#
-
-    /// \b (from outside a custom character class)
-    case wordBoundary = #"\b"#
-
-    /// \B
-    case notWordBoundary = #"\B"#
-
-  }
-
-  public var assertionKind: AssertionKind? {
-    switch kind {
-    case .startOfLine:     return .startOfLine
-    case .endOfLine:       return .endOfLine
-
-    case .escaped(.wordBoundary):    return .wordBoundary
-    case .escaped(.notWordBoundary): return .notWordBoundary
-    case .escaped(.startOfSubject):  return .startOfSubject
-    case .escaped(.endOfSubject):    return .endOfSubject
-    case .escaped(.textSegment):     return .textSegment
-    case .escaped(.notTextSegment):  return .notTextSegment
-    case .escaped(.endOfSubjectBeforeNewline):
-      return .endOfSubjectBeforeNewline
-    case .escaped(.firstMatchingPositionInSubject):
-      return .firstMatchingPositionInSubject
-
-    case .escaped(.resetStartOfMatch): return .resetStartOfMatch
-
-    default: return nil
-    }
-  }
-}
-
-extension AST.Atom {
   public enum Callout: Hashable {
     /// A PCRE callout written `(?C...)`
     public struct PCRE: Hashable {
@@ -806,9 +745,9 @@ extension AST.Atom {
       // the AST? Or defer for the matching engine?
       return nil
 
-    case .scalarSequence, .property, .any, .startOfLine, .endOfLine,
-        .backreference, .subpattern, .callout, .backtrackingDirective,
-        .changeMatchingOptions, .invalid:
+    case .scalarSequence, .property, .dot, .caretAnchor,
+        .dollarAnchor, .backreference, .subpattern, .callout,
+        .backtrackingDirective, .changeMatchingOptions, .invalid:
       return nil
     }
   }
@@ -858,7 +797,7 @@ extension AST.Atom {
     case .keyboardMetaControl(let x):
       return "\\M-\\C-\(x)"
 
-    case .property, .escaped, .any, .startOfLine, .endOfLine,
+    case .property, .escaped, .dot, .caretAnchor, .dollarAnchor,
         .backreference, .subpattern, .namedCharacter, .callout,
         .backtrackingDirective, .changeMatchingOptions, .invalid:
       return nil
@@ -874,7 +813,7 @@ extension AST.Atom {
     // TODO: Are callouts quantifiable?
     case .escaped(let esc):
       return esc.isQuantifiable
-    case .startOfLine, .endOfLine:
+    case .caretAnchor, .dollarAnchor:
       return false
     default:
       return true

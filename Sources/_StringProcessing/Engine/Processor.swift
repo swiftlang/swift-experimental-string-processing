@@ -219,6 +219,15 @@ extension Processor {
     return true
   }
 
+  mutating func matchCaseInsensitive(_ e: Element) -> Bool {
+    guard let cur = load(), cur.lowercased() == e.lowercased() else {
+      signalFailure()
+      return false
+    }
+    _uncheckedForcedConsumeOne()
+    return true
+  }
+
   // Match against the current input prefix. Returns whether
   // it succeeded vs signaling an error.
   mutating func matchSeq<C: Collection>(
@@ -230,6 +239,44 @@ extension Processor {
     return true
   }
   
+  func loadScalar() -> Unicode.Scalar? {
+    currentPosition < end ? input.unicodeScalars[currentPosition] : nil
+  }
+  
+  mutating func matchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) -> Bool {
+    guard s == loadScalar(),
+          let idx = input.unicodeScalars.index(
+            currentPosition,
+            offsetBy: 1,
+            limitedBy: end),
+          (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx))
+    else {
+      signalFailure()
+      return false
+    }
+    currentPosition = idx
+    return true
+  }
+
+  mutating func matchScalarCaseInsensitive(
+    _ s: Unicode.Scalar,
+    boundaryCheck: Bool
+  ) -> Bool {
+    guard let curScalar = loadScalar(),
+          s.properties.lowercaseMapping == curScalar.properties.lowercaseMapping,
+          let idx = input.unicodeScalars.index(
+            currentPosition,
+            offsetBy: 1,
+            limitedBy: end),
+          (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx))
+    else {
+      signalFailure()
+      return false
+    }
+    currentPosition = idx
+    return true
+  }
+
   // If we have a bitset we know that the CharacterClass only matches against
   // ascii characters, so check if the current input element is ascii then
   // check if it is set in the bitset
@@ -244,8 +291,22 @@ extension Processor {
     return true
   }
 
+  // Equivalent of matchBitset but emitted when in unicode scalar semantic mode
+  mutating func matchBitsetScalar(
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
+  ) -> Bool {
+    guard let curScalar = loadScalar(),
+            bitset.matches(scalar: curScalar),
+          let idx = input.unicodeScalars.index(currentPosition, offsetBy: 1, limitedBy: end) else {
+      signalFailure()
+      return false
+    }
+    currentPosition = idx
+    return true
+  }
+
   mutating func signalFailure() {
-    guard let (pc, pos, stackEnd, capEnds, intRegisters) =
+    guard let (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) =
             savePoints.popLast()?.destructure
     else {
       state = .fail
@@ -259,6 +320,7 @@ extension Processor {
     callStack.removeLast(callStack.count - stackEnd.rawValue)
     storedCaptures = capEnds
     registers.ints = intRegisters
+    registers.positions = posRegisters
   }
 
   mutating func abort(_ e: Error? = nil) {
@@ -315,7 +377,10 @@ extension Processor {
 
       registers[reg] = int
       controller.step()
-
+    case .moveCurrentPosition:
+      let reg = payload.position
+      registers[reg] = currentPosition
+      controller.step()
     case .branch:
       controller.pc = payload.addr
 
@@ -327,7 +392,13 @@ extension Processor {
         registers[int] -= 1
         controller.step()
       }
-
+    case .condBranchSamePosition:
+      let (addr, pos) = payload.pairedAddrPos
+      if registers[pos] == currentPosition {
+        controller.pc = addr
+      } else {
+        controller.step()
+      }
     case .save:
       let resumeAddr = payload.addr
       let sp = makeSavePoint(resumeAddr)
@@ -369,23 +440,40 @@ extension Processor {
       }
 
     case .match:
-      let reg = payload.element
-      if match(registers[reg]) {
-        controller.step()
+      let (isCaseInsensitive, reg) = payload.elementPayload
+      if isCaseInsensitive {
+        if matchCaseInsensitive(registers[reg]) {
+          controller.step()
+        }
+      } else {
+        if match(registers[reg]) {
+          controller.step()
+        }
       }
 
-    case .matchSequence:
-      let reg = payload.sequence
-      let seq = registers[reg]
-      if matchSeq(seq) {
-        controller.step()
+    case .matchScalar:
+      let (scalar, caseInsensitive, boundaryCheck) = payload.scalarPayload
+      if caseInsensitive {
+        if matchScalarCaseInsensitive(scalar, boundaryCheck: boundaryCheck) {
+          controller.step()
+        }
+      } else {
+        if matchScalar(scalar, boundaryCheck: boundaryCheck) {
+          controller.step()
+        }
       }
 
     case .matchBitset:
-      let reg = payload.bitset
+      let (isScalar, reg) = payload.bitsetPayload
       let bitset = registers[reg]
-      if matchBitset(bitset) {
-        controller.step()
+      if isScalar {
+        if matchBitsetScalar(bitset) {
+          controller.step()
+        }
+      } else {
+        if matchBitset(bitset) {
+          controller.step()
+        }
       }
 
     case .consumeBy:

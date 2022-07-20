@@ -68,7 +68,38 @@ extension RenderDSLTests {
       }
       """)
   }
-  
+
+  func testDot() throws {
+    try testConversion(#".+"#, #"""
+      Regex {
+        OneOrMore {
+          /./
+        }
+      }
+      """#)
+    try testConversion(#"a.c"#, #"""
+      Regex {
+        "a"
+        /./
+        "c"
+      }
+      """#)
+  }
+
+  func testAnchor() throws {
+    try testConversion(#"^(?:a|b|c)$"#, #"""
+      Regex {
+        /^/
+        ChoiceOf {
+          "a"
+          "b"
+          "c"
+        }
+        /$/
+      }
+      """#)
+  }
+
   func testOptions() throws {
     try XCTExpectFailure("Options like '(?i)' aren't converted") {
       try testConversion(#"(?i)abc"#, """
@@ -114,6 +145,36 @@ extension RenderDSLTests {
     try testConversion(#"\\"a""#, #"""
       Regex {
         "\\\"a\""
+      }
+      """#)
+  }
+
+  func testScalar() throws {
+    try testConversion(#"\u{B4}"#, #"""
+      Regex {
+        "\u{B4}"
+      }
+      """#)
+    try testConversion(#"\u{301}"#, #"""
+      Regex {
+        "\u{301}"
+      }
+      """#)
+    try testConversion(#"[\u{301}]"#, #"""
+      Regex {
+        One(.anyOf("\u{301}"))
+      }
+      """#)
+    try testConversion(#"[abc\u{301}]"#, #"""
+      Regex {
+        One(.anyOf("abc\u{301}"))
+      }
+      """#)
+
+    // TODO: We ought to try and preserve the scalar syntax here.
+    try testConversion(#"a\u{301}"#, #"""
+      Regex {
+        "á"
       }
       """#)
   }
