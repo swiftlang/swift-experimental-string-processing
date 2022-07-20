@@ -22,7 +22,7 @@ struct Instruction: RawRepresentable, Hashable {
 }
 
 extension Instruction {
-  enum OpCode: UInt64 {
+  enum OpCode: UInt64, CaseIterable {
     case invalid = 0
 
     // MARK: - General Purpose

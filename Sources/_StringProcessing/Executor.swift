@@ -30,7 +30,7 @@ struct Executor {
       input: input,
       subjectBounds: subjectBounds,
       searchBounds: searchBounds)
-
+    defer { if cpu.shouldMeasureMetrics { cpu.printMetrics() } }
     var low = searchBounds.lowerBound
     let high = searchBounds.upperBound
     while true {
@@ -57,6 +57,7 @@ struct Executor {
   ) throws -> Regex<Output>.Match? {
     var cpu = engine.makeProcessor(
       input: input, bounds: subjectBounds, matchMode: mode)
+    defer { if cpu.shouldMeasureMetrics { cpu.printMetrics() } }
     return try _match(input, from: subjectBounds.lowerBound, using: &cpu)
   }
 

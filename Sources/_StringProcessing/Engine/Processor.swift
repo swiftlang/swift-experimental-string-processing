@@ -89,6 +89,8 @@ struct Processor {
   // MARK: Metrics, debugging, etc.
   var cycleCount = 0
   var isTracingEnabled: Bool
+  let shouldMeasureMetrics: Bool = true
+  var metrics: ProcessorMetrics = ProcessorMetrics()
 }
 
 extension Processor {
@@ -397,6 +399,7 @@ extension Processor {
     defer {
       cycleCount += 1
       trace()
+      measureMetrics()
       _checkInvariants()
     }
     let (opcode, payload) = fetch().destructure

@@ -144,7 +144,7 @@ extension TracedProcessor {
     result += formatCallStack()
     result += formatSavePoints()
     result += formatRegisters()
-    result += formatInput()
+    // result += formatInput()
     result += "\n"
     result += formatInstructionWindow()
     return result
