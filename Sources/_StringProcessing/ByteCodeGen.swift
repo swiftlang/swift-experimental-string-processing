@@ -791,6 +791,41 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
+  mutating func emitConcatenation(_ children: [DSLTree.Node]) throws {
+    // Before emitting a concatenation, we need to flatten out any nested
+    // concatenations, and coalesce any adjacent characters and scalars, forming
+    // quoted literals of their contents, over which we can perform grapheme
+    // breaking.
+    func flatten(_ node: DSLTree.Node) -> [DSLTree.Node] {
+      switch node {
+      case .concatenation(let ch):
+        return ch.flatMap(flatten)
+      case .convertedRegexLiteral(let n, _):
+        return flatten(n)
+      default:
+        return [node]
+      }
+    }
+    let children = children
+      .flatMap(flatten)
+      .coalescing(with: "", into: DSLTree.Node.quotedLiteral) { str, node in
+        switch node {
+        case .atom(let a):
+          guard let c = a.literalCharacterValue else { return false }
+          str.append(c)
+          return true
+        case .quotedLiteral(let q):
+          str += q
+          return true
+        default:
+          return false
+        }
+      }
+    for child in children {
+      try emitConcatenationComponent(child)
+    }
+  }
+
   @discardableResult
   mutating func emitNode(_ node: DSLTree.Node) throws -> ValueRegister? {
     switch node {
@@ -799,9 +834,7 @@ fileprivate extension Compiler.ByteCodeGen {
       try emitAlternation(children)
 
     case let .concatenation(children):
-      for child in children {
-        try emitConcatenationComponent(child)
-      }
+      try emitConcatenation(children)
 
     case let .capture(name, refId, child, transform):
       options.beginScope()
