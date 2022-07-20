@@ -203,6 +203,18 @@ extension RenderDSLTests {
       }
       """#)
 
+    try testConversion(#"(?x) a \u{301}"#, #"""
+      Regex {
+        "a\u{301}"
+      }
+      """#)
+
+    try testConversion(#"(?x) [ a b c \u{301} ] "#, #"""
+      Regex {
+        One(.anyOf("abc\u{301}"))
+      }
+      """#)
+
     try testConversion(#"👨\u{200D}👨\u{200D}👧\u{200D}👦"#, #"""
       Regex {
         "👨\u{200D}👨\u{200D}👧\u{200D}👦"

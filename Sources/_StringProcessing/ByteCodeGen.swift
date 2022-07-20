@@ -812,6 +812,10 @@ fileprivate extension Compiler.ByteCodeGen {
           current.append(lhs)
           rangeOperands.append(String(rhs))
           return true
+        case .trivia:
+          // Trivia can be completely ignored if we've already coalesced
+          // something.
+          return !current.isEmpty
         default:
           return false
         }
@@ -935,6 +939,10 @@ fileprivate extension Compiler.ByteCodeGen {
         case .quotedLiteral(let q):
           str += q
           return true
+        case .trivia:
+          // Trivia can be completely ignored if we've already coalesced
+          // something.
+          return !str.isEmpty
         default:
           return false
         }
