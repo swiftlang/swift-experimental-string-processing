@@ -326,7 +326,6 @@ extension Processor {
       state = .fail
       return
     }
-    // FIXME: removing this type annotation causes xcode to crash (5.7 beta 2)
     let (pc, pos, stackEnd, capEnds, intRegisters, posRegisters): (
       pc: InstructionAddress,
       pos: Position?,
@@ -334,11 +333,18 @@ extension Processor {
       captureEnds: [_StoredCapture],
       intRegisters: [Int],
       PositionRegister: [Input.Index]
-    ) = savePoints._updateOrRemoveLast { sp in
-      if !sp.rangeIsEmpty {
-        sp.takePositionFromRange(input)
-      }
-      return (sp.destructure, shouldDrop: sp.rangeIsEmpty)
+    )
+
+    let idx = savePoints.index(before: savePoints.endIndex)
+    // If we have a quantifier save point, move the next range position into pos
+    if !savePoints[idx].rangeIsEmpty {
+      savePoints[idx].takePositionFromRange(input)
+    }
+    // If we have a normal save point or an empty quantifier save point, remove it
+    if savePoints[idx].rangeIsEmpty {
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
+    } else {
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
     }
 
     assert(stackEnd.rawValue <= callStack.count)
@@ -632,14 +638,5 @@ extension Processor {
         value, overwriteInitial: sp)
       controller.step()
     }
-  }
-}
-
-extension Array {
-  mutating func _updateOrRemoveLast<T>(_ update: (inout Element) -> (T, shouldDrop: Bool)) -> T {
-    let idx = index(before: endIndex)
-    let (val, shouldDrop) = update(&self[idx])
-    if shouldDrop { removeLast() }
-    return val
   }
 }
