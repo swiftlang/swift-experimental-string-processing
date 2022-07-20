@@ -317,6 +317,15 @@ extension RegexTests {
       semanticLevel: .unicodeScalar,
       contains: [.matchBitsetScalar],
       doesNotContain: [.matchBitset, .consumeBy])
+    expectProgram(
+      for: #"[\Qab\Ec]"#,
+      contains: [.matchBitset],
+      doesNotContain: [.consumeBy, .matchBitsetScalar])
+    expectProgram(
+      for: #"[\Qab\Ec]"#,
+      semanticLevel: .unicodeScalar,
+      contains: [.matchBitsetScalar],
+      doesNotContain: [.matchBitset, .consumeBy])
   }
 
   func testScalarOptimizeCompilation() {
