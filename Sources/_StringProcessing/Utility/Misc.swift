@@ -11,11 +11,11 @@
 
 extension Array {
   /// Coalesce adjacent elements using a given accumulator. The accumulator is
-  /// transformed into an element of the array by `finish`. The `accumulate`
+  /// transformed into elements of the array by `finish`. The `accumulate`
   /// function should return `true` if the accumulator has coalesced the
   /// element, `false` otherwise.
   func coalescing<T>(
-    with initialAccumulator: T, into finish: (T) -> Element,
+    with initialAccumulator: T, into finish: (T) -> Self,
     accumulate: (inout T, Element) -> Bool
   ) -> Self {
     var didAccumulate = false
@@ -32,7 +32,7 @@ extension Array {
       if didAccumulate {
         // We have a leftover accumulator, which needs to be finished before we
         // can append the next element.
-        result.append(finish(accumulator))
+        result += finish(accumulator)
         accumulator = initialAccumulator
         didAccumulate = false
       }
@@ -40,8 +40,20 @@ extension Array {
     }
     // Handle a leftover accumulation.
     if didAccumulate {
-      result.append(finish(accumulator))
+      result += finish(accumulator)
     }
     return result
+  }
+
+  /// Coalesce adjacent elements using a given accumulator. The accumulator is
+  /// transformed into an element of the array by `finish`. The `accumulate`
+  /// function should return `true` if the accumulator has coalesced the
+  /// element, `false` otherwise.
+  func coalescing<T>(
+    with initialAccumulator: T, into finish: (T) -> Element,
+    accumulate: (inout T, Element) -> Bool
+  ) -> Self {
+    coalescing(
+      with: initialAccumulator, into: { [finish($0) ]}, accumulate: accumulate)
   }
 }
