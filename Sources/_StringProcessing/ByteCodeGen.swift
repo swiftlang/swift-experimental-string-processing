@@ -682,7 +682,7 @@ fileprivate extension Compiler.ByteCodeGen {
     _ extraTrips: Int?
   ) {
     // These cases must stay in sync with DSLTree.Node.shouldDoFastQuant
-    // as well as the compilation paths for these nodes outside of quantification\
+    // as well as the compilation paths for these nodes outside of quantification
 
     // All assumptions made by the processor in runQuantify() must be checked here
     // If an error is thrown here, there must be a mistake in shouldDoFastQuant
@@ -882,19 +882,11 @@ extension DSLTree.Node {
   }
 
   /// If the given node can be wrapped in a .quantify instruction
-  /// Currently this is conservative to reduce the coupling in ByteCodeGen between the normal case and
-  /// the quantified cases
-  ///
-  /// Essentially we trade off implementation complexity for runtime speed by adding more true cases to this
+  /// Currently only allows nodes that match a single grapheme
   func shouldDoFastQuant(_ opts: MatchingOptions) -> Bool {
     switch self {
     case .customCharacterClass(let ccc):
       // Only quantify ascii only character classes
-
-      // Future work: Should we allow ConsumeFunctions into .quantify?
-      // this would open up non-ascii custom character classes as well as the
-      // possibility of wrapping weirder cases into consume functions
-      // (non-ascii characters for example)
       return ccc.asAsciiBitset(opts) != nil
     case .atom(let atom):
       switch atom {

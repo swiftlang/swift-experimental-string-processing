@@ -1,11 +1,5 @@
 extension Processor {
   func _doQuantifyMatch(_ payload: QuantifyPayload) -> Input.Index? {
-    // Future work: Do we want to rework our Processor.Cycle() switch loop
-    // to do something like this for all of the matching instructions?
-    // ie: A bunch of _doMatchThing functions that return Input.Index?
-    // which we then signalFailure if nil or currentPosition = next otherwise
-    // This would have the benefit of potentially allowing us to not duplicate
-    // code between the normal matching instructions and this loop here
     var next: Input.Index?
     switch payload.type {
     case .bitset:
