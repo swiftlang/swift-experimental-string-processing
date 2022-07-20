@@ -345,6 +345,23 @@ extension RegexTests {
       input: "e\u{301}0e\u{302}",
       match: "e\u{301}0e\u{302}"
     )
+    firstMatchTest(
+      #"(?x) e \u{35C} \u{315}(?#hello)\u{301}"#,
+      input: "e\u{301}\u{315}\u{35C}",
+      match: "e\u{301}\u{315}\u{35C}"
+    )
+    firstMatchTest(
+      #"(?x) e \u{35C} \u{315 301}"#,
+      input: "e\u{301}\u{315}\u{35C}",
+      match: "e\u{301}\u{315}\u{35C}"
+    )
+
+    // We don't coalesce across groups.
+    firstMatchTests(
+      #"e\u{301}(?:\u{315}\u{35C})?"#,
+      ("e\u{301}", "e\u{301}"),
+      ("e\u{301}\u{315}\u{35C}", nil)
+    )
 
     // Escape sequences that represent scalar values.
     firstMatchTest(#"\a[\b]\e\f\n\r\t"#,
@@ -833,6 +850,30 @@ extension RegexTests {
       ("e\u{301}\u{315}\u{35C}", "e\u{301}\u{315}\u{35C}"),
       ("e\u{35C}\u{301}\u{315}", "e\u{35C}\u{301}\u{315}")
     )
+    firstMatchTests(
+      #"(?x) [ e \u{315} \u{301} \u{35C} ]"#,
+      ("e", nil),
+      ("e\u{315}", nil),
+      ("e\u{301}", nil),
+      ("e\u{315}\u{301}\u{35C}", "e\u{315}\u{301}\u{35C}"),
+      ("e\u{301}\u{315}\u{35C}", "e\u{301}\u{315}\u{35C}"),
+      ("e\u{35C}\u{301}\u{315}", "e\u{35C}\u{301}\u{315}")
+    )
+
+    // We don't coalesce across character classes.
+    firstMatchTests(
+      #"e[\u{315}\u{301}\u{35C}]"#,
+      ("e", nil),
+      ("e\u{315}", nil),
+      ("e\u{315}\u{301}", nil),
+      ("e\u{301}\u{315}\u{35C}", nil)
+    )
+    firstMatchTests(
+      #"[e[\u{301}]]"#,
+      ("e", "e"),
+      ("\u{301}", "\u{301}"),
+      ("e\u{301}", nil)
+    )
 
     firstMatchTests(
       #"[a-z1\u{E9}-\u{302}\u{E1}3-59]"#,
@@ -1013,6 +1054,16 @@ extension RegexTests {
       ("e\u{302}", "e\u{302}"))
     firstMatchTests(
       #"[e\u{301}[e\u{303}]--[[e\u{301}]e\u{302}]]"#,
+      ("e", nil),
+      ("\u{301}", nil),
+      ("\u{302}", nil),
+      ("\u{303}", nil),
+      ("e\u{301}", nil),
+      ("e\u{302}", nil),
+      ("e\u{303}", "e\u{303}"))
+
+    firstMatchTests(
+      #"(?x) [ e \u{301} [ e \u{303} ] -- [ [ e \u{301} ] e \u{302} ] ]"#,
       ("e", nil),
       ("\u{301}", nil),
       ("\u{302}", nil),
@@ -2189,6 +2240,11 @@ extension RegexTests {
 
     matchTest(
       #"\u{65 301}"#,
+      (eComposed, true),
+      (eDecomposed, true))
+
+    matchTest(
+      #"(?x) \u{65} \u{301}"#,
       (eComposed, true),
       (eDecomposed, true))
   }

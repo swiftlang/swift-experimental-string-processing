@@ -304,6 +304,10 @@ extension PrettyPrinter {
         case .quotedLiteral(let q):
           literal.append(q)
           return true
+        case .trivia:
+          // Trivia can be completely ignored if we've already coalesced
+          // something.
+          return !literal.isEmpty
         default:
           return false
         }
