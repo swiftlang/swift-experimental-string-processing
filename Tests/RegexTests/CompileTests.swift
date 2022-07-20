@@ -11,6 +11,7 @@
 
 @testable import _RegexParser
 @testable import _StringProcessing
+import TestSupport
 
 import XCTest
 
@@ -166,6 +167,45 @@ extension RegexTests {
           continue
         }
     }
+  }
+
+  private func testCompileError(
+    _ regex: String, _ error: RegexCompilationError,
+    file: StaticString = #file, line: UInt = #line
+  ) {
+    do {
+      _ = try _compileRegex(regex)
+      XCTFail("Expected compile error", file: file, line: line)
+    } catch let err as RegexCompilationError {
+      XCTAssertEqual(err, error, file: file, line: line)
+    } catch {
+      XCTFail("Unknown compile error", file: file, line: line)
+    }
+  }
+
+  func testInvalidScalarCoalescing() throws {
+    guard ensureNewStdlib() else { return }
+
+    // Non-single-scalar bounds.
+    testCompileError(
+      #"[a\u{302}-✅]"#, .invalidCharacterClassRangeOperand("a\u{302}"))
+    testCompileError(
+      #"[e\u{301}-\u{302}]"#, .invalidCharacterClassRangeOperand("e\u{301}"))
+    testCompileError(
+      #"[\u{73}\u{323}\u{307}-\u{1E00}]"#,
+      .invalidCharacterClassRangeOperand("\u{73}\u{323}\u{307}"))
+    testCompileError(
+      #"[a\u{315}\u{301}-\u{302}]"#,
+      .invalidCharacterClassRangeOperand("a\u{315}\u{301}")
+    )
+    testCompileError(
+      #"[a-z1e\u{301}-\u{302}\u{E1}3-59]"#,
+      .invalidCharacterClassRangeOperand("e\u{301}")
+    )
+    testCompileError(
+      #"[[e\u{301}-\u{302}]&&e\u{303}]"#,
+      .invalidCharacterClassRangeOperand("e\u{301}")
+    )
   }
 
   func testCompileQuantification() throws {

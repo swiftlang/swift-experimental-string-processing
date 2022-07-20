@@ -362,11 +362,19 @@ extension DSLTree.CustomCharacterClass.Member {
       }
       return c
     case let .range(low, high):
-      guard let lhs = low.literalCharacterValue?.singleScalar, lhs.isNFC else {
+      guard let lhsChar = low.literalCharacterValue else {
         throw Unsupported("\(low) in range")
       }
-      guard let rhs = high.literalCharacterValue?.singleScalar, rhs.isNFC else {
+      guard let rhsChar = high.literalCharacterValue else {
         throw Unsupported("\(high) in range")
+      }
+
+      // We must have NFC single scalar bounds.
+      guard let lhs = lhsChar.singleScalar, lhs.isNFC else {
+        throw RegexCompilationError.invalidCharacterClassRangeOperand(lhsChar)
+      }
+      guard let rhs = rhsChar.singleScalar, rhs.isNFC else {
+        throw RegexCompilationError.invalidCharacterClassRangeOperand(rhsChar)
       }
       guard lhs <= rhs else {
         throw Unsupported("Invalid range \(low)-\(high)")
