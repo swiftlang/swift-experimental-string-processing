@@ -123,6 +123,25 @@ extension DSLTree.Atom {
         }
       }
 
+    case .anyNonNewline:
+      switch opts.semanticLevel {
+      case .graphemeCluster:
+        return { input, bounds in
+          input[bounds.lowerBound].isNewline
+            ? nil
+            : input.index(after: bounds.lowerBound)
+        }
+      case .unicodeScalar:
+        return { input, bounds in
+          input[bounds.lowerBound].isNewline
+            ? nil
+            : input.unicodeScalars.index(after: bounds.lowerBound)
+        }
+      }
+
+    case .dot:
+      throw Unreachable(".atom(.dot) should be handled by emitDot")
+
     case .assertion:
       // TODO: We could handle, should this be total?
       return nil
@@ -264,12 +283,12 @@ extension AST.Atom {
     case let .namedCharacter(name):
       return consumeName(name, opts: opts)
       
-    case .any:
+    case .dot:
       assertionFailure(
         "Should have been handled by tree conversion")
-      fatalError(".atom(.any) is handled in emitAny")
+      fatalError(".atom(.dot) is handled in emitDot")
 
-    case .startOfLine, .endOfLine:
+    case .caretAnchor, .dollarAnchor:
       // handled in emitAssertion
       return nil
 

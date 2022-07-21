@@ -20,11 +20,8 @@ public struct CharacterClass {
     self.ccc = ccc
   }
   
-  init(unconverted model: _CharacterClassModel) {
-    guard let ccc = model.makeDSLTreeCharacterClass() else {
-      fatalError("Unsupported character class")
-    }
-    self.ccc = ccc
+  init(unconverted atom: DSLTree._AST.Atom) {
+    self.ccc = .init(members: [.atom(.unconverted(atom))])
   }
 }
 
@@ -48,16 +45,20 @@ extension RegexComponent where Self == CharacterClass {
     .init(DSLTree.CustomCharacterClass(members: [.atom(.any)]))
   }
 
+  public static var anyNonNewline: CharacterClass {
+    .init(DSLTree.CustomCharacterClass(members: [.atom(.anyNonNewline)]))
+  }
+
   public static var anyGraphemeCluster: CharacterClass {
-    .init(unconverted: .anyGrapheme)
+    .init(unconverted: ._anyGrapheme)
   }
   
   public static var whitespace: CharacterClass {
-    .init(unconverted: .whitespace)
+    .init(unconverted: ._whitespace)
   }
   
   public static var digit: CharacterClass {
-    .init(unconverted: .digit)
+    .init(unconverted: ._digit)
   }
   
   public static var hexDigit: CharacterClass {
@@ -69,19 +70,19 @@ extension RegexComponent where Self == CharacterClass {
   }
 
   public static var horizontalWhitespace: CharacterClass {
-    .init(unconverted: .horizontalWhitespace)
+    .init(unconverted: ._horizontalWhitespace)
   }
 
   public static var newlineSequence: CharacterClass {
-    .init(unconverted: .newlineSequence)
+    .init(unconverted: ._newlineSequence)
   }
 
   public static var verticalWhitespace: CharacterClass {
-    .init(unconverted: .verticalWhitespace)
+    .init(unconverted: ._verticalWhitespace)
   }
 
   public static var word: CharacterClass {
-    .init(unconverted: .word)
+    .init(unconverted: ._word)
   }
 }
 

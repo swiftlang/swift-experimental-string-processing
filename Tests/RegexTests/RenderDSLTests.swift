@@ -68,7 +68,38 @@ extension RenderDSLTests {
       }
       """)
   }
-  
+
+  func testDot() throws {
+    try testConversion(#".+"#, #"""
+      Regex {
+        OneOrMore {
+          /./
+        }
+      }
+      """#)
+    try testConversion(#"a.c"#, #"""
+      Regex {
+        "a"
+        /./
+        "c"
+      }
+      """#)
+  }
+
+  func testAnchor() throws {
+    try testConversion(#"^(?:a|b|c)$"#, #"""
+      Regex {
+        /^/
+        ChoiceOf {
+          "a"
+          "b"
+          "c"
+        }
+        /$/
+      }
+      """#)
+  }
+
   func testOptions() throws {
     try XCTExpectFailure("Options like '(?i)' aren't converted") {
       try testConversion(#"(?i)abc"#, """

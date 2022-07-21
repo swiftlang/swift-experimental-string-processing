@@ -24,9 +24,10 @@ func _firstMatch(
   _ regexStr: String,
   input: String,
   validateOptimizations: Bool,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   syntax: SyntaxOptions = .traditional
 ) throws -> (String, [String?]) {
-  var regex = try Regex(regexStr, syntax: syntax)
+  var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
   guard let result = try regex.firstMatch(in: input) else {
     throw MatchError("match not found for \(regexStr) in \(input)")
   }
@@ -54,6 +55,7 @@ func flatCaptureTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -63,6 +65,7 @@ func flatCaptureTest(
         regex,
         input: test,
         validateOptimizations: validateOptimizations,
+        semanticLevel: semanticLevel,
         syntax: syntax
       ) else {
         if expect == nil {
@@ -113,6 +116,7 @@ func matchTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #file,
   line: UInt = #line
 ) {
@@ -126,6 +130,7 @@ func matchTest(
       dumpAST: dumpAST,
       xfail: xfail,
       validateOptimizations: validateOptimizations,
+      semanticLevel: semanticLevel,
       file: file,
       line: line)
   }
@@ -143,6 +148,7 @@ func firstMatchTest(
   dumpAST: Bool = false,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #filePath,
   line: UInt = #line
 ) {
@@ -151,6 +157,7 @@ func firstMatchTest(
       regex,
       input: input,
       validateOptimizations: validateOptimizations,
+      semanticLevel: semanticLevel,
       syntax: syntax)
 
     if xfail {
@@ -626,6 +633,49 @@ extension RegexTests {
     matchTest("[\n\r]",
       ("\n", true),
       ("\r", true))
+
+    let allNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n\u{85}\u{2028}\u{2029}"
+    let asciiNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n"
+
+    for level in [RegexSemanticLevel.graphemeCluster, .unicodeScalar] {
+      firstMatchTest(
+        #"\R+"#,
+        input: "abc\(allNewlines)def", match: allNewlines,
+        semanticLevel: level
+      )
+      firstMatchTest(
+        #"\v+"#,
+        input: "abc\(allNewlines)def", match: allNewlines,
+        semanticLevel: level
+      )
+    }
+
+    // In scalar mode, \R can match \r\n, \v cannot.
+    firstMatchTest(
+      #"\R"#, input: "\r\n", match: "\r\n", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"\v"#, input: "\r\n", match: "\r", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"\v\v"#, input: "\r\n", match: "\r\n", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"[^\v]"#, input: "\r\n", match: nil, semanticLevel: .unicodeScalar)
+
+    // ASCII-only spaces.
+    firstMatchTest(#"(?S)\R+"#, input: allNewlines, match: asciiNewlines)
+    firstMatchTest(#"(?S)\v+"#, input: allNewlines, match: asciiNewlines)
+    firstMatchTest(
+      #"(?S)\R"#, input: "\r\n", match: "\r\n", semanticLevel: .unicodeScalar)
+    firstMatchTest(
+      #"(?S)\v"#, input: "\r\n", match: "\r", semanticLevel: .unicodeScalar)
+
+    matchTest(
+      #"[a]\u0301"#,
+      ("a\u{301}", false),
+      semanticLevel: .graphemeCluster)
+    matchTest(
+      #"[a]\u0301"#,
+      ("a\u{301}", true),
+      semanticLevel: .unicodeScalar)
 
     firstMatchTest("[-]", input: "123-abcxyz", match: "-")
 

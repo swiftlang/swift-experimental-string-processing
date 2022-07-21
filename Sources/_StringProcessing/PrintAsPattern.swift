@@ -623,7 +623,7 @@ extension String {
   }
 }
 
-extension AST.Atom.AssertionKind {
+extension DSLTree.Atom.Assertion {
   // TODO: Some way to integrate this with conversion...
   var _patternBase: String {
     switch self {
@@ -631,6 +631,12 @@ extension AST.Atom.AssertionKind {
       return "Anchor.startOfLine"
     case .endOfLine:
       return "Anchor.endOfLine"
+    case .caretAnchor:
+      // The DSL doesn't have an equivalent to this, so print as regex.
+      return "/^/"
+    case .dollarAnchor:
+      // The DSL doesn't have an equivalent to this, so print as regex.
+      return "/$/"
     case .wordBoundary:
       return "Anchor.wordBoundary"
     case .notWordBoundary:
@@ -809,7 +815,7 @@ extension AST.Atom {
   ///
   /// TODO: Some way to integrate this with conversion...
   var _patternBase: (String, canBeWrapped: Bool) {
-    if let anchor = self.assertionKind {
+    if let anchor = self.dslAssertionKind {
       return (anchor._patternBase, false)
     }
 
@@ -895,10 +901,11 @@ extension AST.Atom {
     case .namedCharacter:
       return (" /* TODO: named character */", false)
 
-    case .any:
-      return (".any", true)
+    case .dot:
+      // The DSL does not have an equivalent to '.', print as a regex.
+      return ("/./", false)
 
-    case .startOfLine, .endOfLine:
+    case .caretAnchor, .dollarAnchor:
       fatalError("unreachable")
 
     case .backreference:
@@ -950,10 +957,10 @@ extension AST.Atom {
     case .namedCharacter(let n):
       return "\\N{\(n)}"
       
-    case .any:
+    case .dot:
       return "."
       
-    case .startOfLine, .endOfLine:
+    case .caretAnchor, .dollarAnchor:
       fatalError("unreachable")
       
     case .backreference:
@@ -1101,6 +1108,13 @@ extension DSLTree.Atom {
     switch self {
     case .any:
       return (".any", true)
+
+    case .anyNonNewline:
+      return (".anyNonNewline", true)
+
+    case .dot:
+      // The DSL does not have an equivalent to '.', print as a regex.
+      return ("/./", false)
       
     case let .char(c):
       return (String(c)._quoted, false)
@@ -1117,7 +1131,7 @@ extension DSLTree.Atom {
       }
       
     case .assertion(let a):
-      return (a.ast._patternBase, false)
+      return (a._patternBase, false)
       
     case .backreference(_):
       return ("/* TOOD: backreferences */", false)
@@ -1142,6 +1156,12 @@ extension DSLTree.Atom {
   var _regexBase: String {
     switch self {
     case .any:
+      return "(?s:.)"
+
+    case .anyNonNewline:
+      return "(?-s:.)"
+
+    case .dot:
       return "."
       
     case let .char(c):
