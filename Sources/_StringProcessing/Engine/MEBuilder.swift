@@ -32,6 +32,7 @@ extension MEProgram {
     var nextIntRegister = IntRegister(0)
     var nextCaptureRegister = CaptureRegister(0)
     var nextValueRegister = ValueRegister(0)
+    var nextPositionRegister = PositionRegister(0)
 
     // Special addresses or instructions
     var failAddressToken: AddressToken? = nil
@@ -105,6 +106,14 @@ extension MEProgram.Builder {
     fixup(to: t)
   }
 
+  mutating func buildCondBranch(
+    to t: AddressToken,
+    ifSamePositionAs r: PositionRegister
+  ) {
+    instructions.append(.init(.condBranchSamePosition, .init(position: r)))
+    fixup(to: t)
+  }
+
   mutating func buildSave(_ t: AddressToken) {
     instructions.append(.init(.save))
     fixup(to: t)
@@ -135,24 +144,32 @@ extension MEProgram.Builder {
     instructions.append(.init(.advance, .init(distance: n)))
   }
 
-  mutating func buildMatch(_ e: Character) {
+  mutating func buildMatch(_ e: Character, isCaseInsensitive: Bool) {
     instructions.append(.init(
-      .match, .init(element: elements.store(e))))
+      .match, .init(element: elements.store(e), isCaseInsensitive: isCaseInsensitive)))
   }
 
-  mutating func buildMatchSequence<S: Sequence>(
-    _ s: S
-  ) where S.Element == Character {
-    instructions.append(.init(
-      .matchSequence,
-      .init(sequence: sequences.store(.init(s)))))
+  mutating func buildMatchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) {
+    instructions.append(.init(.matchScalar, .init(scalar: s, caseInsensitive: false, boundaryCheck: boundaryCheck)))
   }
+  
+  mutating func buildMatchScalarCaseInsensitive(_ s: Unicode.Scalar, boundaryCheck: Bool) {
+    instructions.append(.init(.matchScalar, .init(scalar: s, caseInsensitive: true, boundaryCheck: boundaryCheck)))
+  }
+
 
   mutating func buildMatchAsciiBitset(
     _ b: DSLTree.CustomCharacterClass.AsciiBitset
   ) {
     instructions.append(.init(
-      .matchBitset, .init(bitset: makeAsciiBitset(b))))
+      .matchBitset, .init(bitset: makeAsciiBitset(b), isScalar: false)))
+  }
+
+  mutating func buildScalarMatchAsciiBitset(
+    _ b: DSLTree.CustomCharacterClass.AsciiBitset
+  ) {
+    instructions.append(.init(
+      .matchBitset, .init(bitset: makeAsciiBitset(b), isScalar: true)))
   }
 
   mutating func buildConsume(
@@ -211,6 +228,10 @@ extension MEProgram.Builder {
       .init(value: value, capture: capture)))
   }
 
+  mutating func buildMoveCurrentPosition(into r: PositionRegister) {
+    instructions.append(.init(.moveCurrentPosition, .init(position: r)))
+  }
+
   mutating func buildBackreference(
     _ cap: CaptureRegister
   ) {
@@ -257,7 +278,8 @@ extension MEProgram.Builder {
       switch inst.opcode {
       case .condBranchZeroElseDecrement:
         payload = .init(addr: addr, int: inst.payload.int)
-
+      case .condBranchSamePosition:
+        payload = .init(addr: addr, position: inst.payload.position)
       case .branch, .save, .saveAddress, .clearThrough:
         payload = .init(addr: addr)
 
@@ -281,6 +303,7 @@ extension MEProgram.Builder {
     regInfo.sequences = sequences.count
     regInfo.ints = nextIntRegister.rawValue
     regInfo.values = nextValueRegister.rawValue
+    regInfo.positions = nextPositionRegister.rawValue
     regInfo.bitsets = asciiBitsets.count
     regInfo.consumeFunctions = consumeFunctions.count
     regInfo.assertionFunctions = assertionFunctions.count
@@ -418,6 +441,12 @@ extension MEProgram.Builder {
   ) -> IntRegister {
     let r = makeIntRegister()
     self.buildMoveImmediate(initialValue, into: r)
+    return r
+  }
+
+  mutating func makePositionRegister() -> PositionRegister {
+    let r = nextPositionRegister
+    defer { nextPositionRegister.rawValue += 1 }
     return r
   }
 
