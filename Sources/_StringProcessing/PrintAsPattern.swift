@@ -119,6 +119,16 @@ extension PrettyPrinter {
           printer.printAsPattern(convertedFromAST: child)
         }
         
+      case .lookahead:
+        printBlock("Lookahead") { printer in
+          printer.printAsPattern(convertedFromAST: child)
+        }
+        
+      case .negativeLookahead:
+        printBlock("NegativeLookahead") { printer in
+          printer.printAsPattern(convertedFromAST: child)
+        }
+        
       default:
         printAsPattern(convertedFromAST: child)
       }
