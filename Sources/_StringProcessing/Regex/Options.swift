@@ -12,7 +12,7 @@
 @_implementationOnly import _RegexParser
 
 @available(SwiftStdlib 5.7, *)
-extension RegexComponent {
+extension Regex {
   /// Returns a regular expression that ignores case when matching.
   ///
   /// - Parameter ignoresCase: A Boolean value indicating whether to ignore case.
@@ -65,7 +65,7 @@ extension RegexComponent {
   /// - Parameter wordBoundaryKind: The algorithm to use for determining word boundaries.
   /// - Returns: The modified regular expression.
   public func wordBoundaryKind(_ wordBoundaryKind: RegexWordBoundaryKind) -> Regex<RegexOutput> {
-    wrapInOption(.unicodeWordBoundaries, addingIf: wordBoundaryKind == .unicodeLevel2)
+    wrapInOption(.unicodeWordBoundaries, addingIf: wordBoundaryKind == .default)
   }
   
   /// Returns a regular expression where the start and end of input
@@ -83,8 +83,8 @@ extension RegexComponent {
   ///
   /// This method corresponds to applying the `m` option in regex syntax. For
   /// this behavior in the `RegexBuilder` syntax, see
-  /// ``Anchor.startOfLine``, ``Anchor.endOfLine``, ``Anchor.startOfInput``,
-  /// and ``Anchor.endOfInput``.
+  /// ``Anchor.startOfLine``, ``Anchor.endOfLine``, ``Anchor.startOfSubject``,
+  /// and ``Anchor.endOfSubject``.
   ///
   /// - Parameter matchLineEndings: A Boolean value indicating whether `^` and
   ///   `$` should match the start and end of lines, respectively.
@@ -205,7 +205,7 @@ public struct RegexWordBoundaryKind: Hashable {
   /// that match `/\w\W/` or `/\W\w/`, or between the start or end of the input
   /// and a `\w` character. Word boundaries therefore depend on the option-
   /// defined behavior of `\w`.
-  public static var unicodeLevel1: Self {
+  public static var simple: Self {
     .init(base: .unicodeLevel1)
   }
 
@@ -215,7 +215,7 @@ public struct RegexWordBoundaryKind: Hashable {
   /// Default word boundaries use a Unicode algorithm that handles some cases
   /// better than simple word boundaries, such as words with internal
   /// punctuation, changes in script, and Emoji.
-  public static var unicodeLevel2: Self {
+  public static var `default`: Self {
     .init(base: .unicodeLevel2)
   }
 }

@@ -467,8 +467,10 @@ class RegexDSLTests: XCTestCase {
       ("abcabc", "abcabc"),
       ("abcABCaBc", "abcABCaBc"),
       matchType: Substring.self, ==) {
-        OneOrMore {
-          "abc"
+        Regex {
+          OneOrMore {
+            "abc"
+          }
         }.ignoresCase(true)
       }
     
@@ -480,8 +482,10 @@ class RegexDSLTests: XCTestCase {
       ("abcabc", "abcabc"),
       ("abcABCaBc", "abcABCaBc"),
       matchType: Substring.self, ==) {
-        OneOrMore {
-          "abc"
+        Regex {
+          OneOrMore {
+            "abc"
+          }
         }
         .ignoresCase(true)
         .ignoresCase(false)
@@ -497,9 +501,13 @@ class RegexDSLTests: XCTestCase {
       ("abcabc", "abcabc"),
       ("abcdeABCdeaBcde", "abcdeABCdeaBcde"),
       matchType: Substring.self, ==) {
-        OneOrMore {
-          "abc".ignoresCase(true)
-          Optionally("de")
+        Regex {
+          OneOrMore {
+            Regex {
+              "abc"
+            }.ignoresCase(true)
+            Optionally("de")
+          }
         }
         .ignoresCase(false)
       }
@@ -536,11 +544,13 @@ class RegexDSLTests: XCTestCase {
         "stop"
         " "
         
-        Capture {
-          OneOrMore(.word)
-          Anchor.wordBoundary
-        }
-        .wordBoundaryKind(.unicodeLevel1)
+        Regex {
+          Capture {
+            OneOrMore(.word)
+            Anchor.wordBoundary
+          }
+        }.wordBoundaryKind(.simple)
+        
         OneOrMore(.any, .reluctant)
         "stop"
       }
@@ -550,15 +560,17 @@ class RegexDSLTests: XCTestCase {
       matchType: (Substring, Substring, Substring).self, ==) {
         Capture {
           // Reluctant behavior due to option
-          OneOrMore(.anyOf("abcd"))
-            .repetitionBehavior(.reluctant)
+          Regex {
+            OneOrMore(.anyOf("abcd"))
+          }.repetitionBehavior(.reluctant)
         }
         ZeroOrMore("a"..."z")
         
         Capture {
           // Eager behavior due to explicit parameter, despite option
-          OneOrMore(.digit, .eager)
-            .repetitionBehavior(.reluctant)
+          Regex {
+            OneOrMore(.digit, .eager)
+          }.repetitionBehavior(.reluctant)
         }
         ZeroOrMore(.digit)
       }
@@ -567,10 +579,11 @@ class RegexDSLTests: XCTestCase {
       ("abcdefg", ("abcdefg", "abcdefg")),
       ("abcdéfg", ("abcdéfg", "abcd")),
       matchType: (Substring, Substring).self, ==) {
-        Capture {
-          OneOrMore(.word)
-        }
-        .asciiOnlyWordCharacters()
+        Regex {
+          Capture {
+            OneOrMore(.word)
+          }
+        }.asciiOnlyWordCharacters()
         
         ZeroOrMore(.any)
       }
@@ -601,8 +614,10 @@ class RegexDSLTests: XCTestCase {
       ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
     {
-      OneOrMore(.reluctant) {
-        One(.word)
+      Regex {
+        OneOrMore(.reluctant) {
+          One(.word)
+        }
       }.repetitionBehavior(.possessive)
       Capture(.digit)
       ZeroOrMore(.any)
@@ -654,8 +669,9 @@ class RegexDSLTests: XCTestCase {
     {
       Regex {
         Capture {
-          OneOrMore("a")
-            .repetitionBehavior(.eager)
+          Regex {
+            OneOrMore("a")
+          }.repetitionBehavior(.eager)
         }
         OneOrMore("a")
       }.repetitionBehavior(.possessive)
@@ -667,8 +683,9 @@ class RegexDSLTests: XCTestCase {
     {
       Regex {
         Capture {
-          OneOrMore("a")
-            .repetitionBehavior(.reluctant)
+          Regex {
+            OneOrMore("a")
+          }.repetitionBehavior(.reluctant)
         }
         OneOrMore("a")
       }.repetitionBehavior(.possessive)
