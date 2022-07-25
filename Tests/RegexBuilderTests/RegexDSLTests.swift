@@ -12,10 +12,7 @@
 import XCTest
 import _StringProcessing
 import RegexBuilder
-
-#if os(Linux)
-func XCTExpectFailure(_ message: String? = nil, body: () throws -> Void) rethrows {}
-#endif
+import TestSupport
 
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
@@ -77,6 +74,9 @@ class RegexDSLTests: XCTestCase {
   let asciiNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n"
 
   func testCharacterClasses() throws {
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+
     try _testDSLCaptures(
       ("a c", ("a c", " ", "c")),
       matchType: (Substring, Substring, Substring).self, ==)
@@ -251,6 +251,9 @@ class RegexDSLTests: XCTestCase {
   }
 
   func testCharacterClassOperations() throws {
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+
     try _testDSLCaptures(
       ("bcdefn1a", "bcdefn1a"),
       ("nbcdef1a", nil),        // fails symmetric difference lookahead
@@ -594,6 +597,9 @@ class RegexDSLTests: XCTestCase {
   }
   
   func testQuantificationBehavior() throws {
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+
     // Eager by default
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "2")),
