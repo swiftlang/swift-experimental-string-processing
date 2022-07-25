@@ -31,8 +31,6 @@ extension Processor {
     case (_, .anyGrapheme):
       next = input.index(after: currentPosition)
     case (_, .anyScalar):
-      // FIXME: This allows us to be not-scalar aligned when in grapheme mode
-      // Should this even be allowed?
       next = input.unicodeScalars.index(after: currentPosition)
     case (true, _):
       next = input.unicodeScalars.index(after: currentPosition)
@@ -41,8 +39,14 @@ extension Processor {
     }
 
     switch cc {
-    case .any, .anyGrapheme, .anyScalar:
+    case .any, .anyGrapheme:
       matched = true
+    case .anyScalar:
+      if isScalarSemantics {
+        matched = true
+      } else {
+        matched = input.isOnGraphemeClusterBoundary(next)
+      }
     case .digit:
       if isScalarSemantics {
         matched = scalar.properties.numericType != nil && asciiCheck
