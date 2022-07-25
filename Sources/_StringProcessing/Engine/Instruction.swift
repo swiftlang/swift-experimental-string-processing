@@ -45,6 +45,12 @@ extension Instruction {
     ///   - Position register to move into
     case moveCurrentPosition
 
+    /// Set the current position to the value stored in the register
+    ///
+    ///     restorePosition(from: PositionRegister)
+    /// Operands:
+    ///  - Position register to read from
+    case restorePosition
     // MARK: General Purpose: Control flow
 
     /// Branch to a new instruction
@@ -254,7 +260,7 @@ extension Instruction {
       ).unsafelyUnwrapped
     }
     set {
-      assert(newValue != .invalid, "consider hoisting this")
+      // assert(newValue != .invalid, "consider hoisting this")
       assert(newValue.rawValue < 256)
       self.rawValue &= ~_opcodeMask
       self.rawValue |= newValue.rawValue &<< 56

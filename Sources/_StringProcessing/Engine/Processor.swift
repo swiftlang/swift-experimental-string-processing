@@ -382,6 +382,10 @@ extension Processor {
       let reg = payload.position
       registers[reg] = currentPosition
       controller.step()
+    case .restorePosition:
+      let reg = payload.position
+      currentPosition = registers[reg]
+      controller.step()
     case .branch:
       controller.pc = payload.addr
 

@@ -18,84 +18,9 @@ extension Character {
   }
 }
 
-extension DSLTree.Node {
-  /// Attempt to generate a consumer from this AST node
-  ///
-  /// A consumer is a Swift closure that matches against
-  /// the front of an input range
-  func generateConsumer(
-    _ opts: MatchingOptions
-  ) throws -> MEProgram.ConsumeFunction? {
-    switch self {
-    case .atom(let a):
-      return try a.generateConsumer(opts)
-    case .customCharacterClass(let ccc):
-      return try ccc.generateConsumer(opts)
-
-    case .quotedLiteral:
-      // TODO: Should we handle this here?
-      return nil
-
-    case let .convertedRegexLiteral(n, _):
-      return try n.generateConsumer(opts)
-
-    case .orderedChoice, .conditional, .concatenation,
-        .capture, .nonCapturingGroup,
-        .quantification, .trivia, .empty,
-        .absentFunction: return nil
-
-    case .consumer:
-      fatalError("FIXME: Is this where we handle them?")
-    case .matcher:
-      fatalError("FIXME: Is this where we handle them?")
-    case .characterPredicate:
-      fatalError("FIXME: Is this where we handle them?")
-    }
-  }
-}
-
 extension DSLTree._AST.Atom {
   var singleScalarASCIIValue: UInt8? {
     return ast.singleScalarASCIIValue
-  }
-}
-
-extension Character {
-  func generateConsumer(
-    _ opts: MatchingOptions
-  ) throws -> MEProgram.ConsumeFunction? {
-    let isCaseInsensitive = opts.isCaseInsensitive
-    switch opts.semanticLevel {
-    case .graphemeCluster:
-      return { input, bounds in
-        let low = bounds.lowerBound
-        if isCaseInsensitive && isCased {
-          return input[low].lowercased() == lowercased()
-            ? input.index(after: low)
-            : nil
-        } else {
-          return input[low] == self
-            ? input.index(after: low)
-            : nil
-        }
-      }
-    case .unicodeScalar:
-      // TODO: This should only be reachable from character class emission, can
-      // we guarantee that? Otherwise we'd want a different matching behavior.
-      let consumers = unicodeScalars.map { s in consumeScalar {
-        isCaseInsensitive
-          ? $0.properties.lowercaseMapping == s.properties.lowercaseMapping
-          : $0 == s
-      }}
-      return { input, bounds in
-        for fn in consumers {
-          if let idx = fn(input, bounds) {
-            return idx
-          }
-        }
-        return nil
-      }
-    }
   }
 }
 
@@ -113,82 +38,14 @@ extension DSLTree.Atom {
     }
   }
   
-  // TODO: If ByteCodeGen switches first, then this is unnecessary for
-  // top-level nodes, but it's also invoked for `.atom` members of a custom CC
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram.ConsumeFunction? {
     switch self {
-    case let .char(c):
-      return try c.generateConsumer(opts)
-
-    case let .scalar(s):
-      // A scalar always matches the same as a single scalar character. This
-      // means it must match a whole grapheme in grapheme semantic mode, but
-      // can match a single scalar in scalar semantic mode.
-      return try Character(s).generateConsumer(opts)
-
-    case .any:
-      // FIXME: Should this be a total ordering?
-      if opts.semanticLevel == .graphemeCluster {
-        return { input, bounds in
-          input.index(after: bounds.lowerBound)
-        }
-      } else {
-        return consumeScalar { _ in
-          true
-        }
-      }
-
-    case .anyNonNewline:
-      switch opts.semanticLevel {
-      case .graphemeCluster:
-        return { input, bounds in
-          input[bounds.lowerBound].isNewline
-            ? nil
-            : input.index(after: bounds.lowerBound)
-        }
-      case .unicodeScalar:
-        return { input, bounds in
-          input[bounds.lowerBound].isNewline
-            ? nil
-            : input.unicodeScalars.index(after: bounds.lowerBound)
-        }
-      }
-
-    case .dot:
-      throw Unreachable(".atom(.dot) should be handled by emitDot")
-
-    case .assertion:
-      // TODO: We could handle, should this be total?
-      return nil
-    case .characterClass(let cc):
-      return cc.generateConsumer(opts)
-
-    case .backreference:
-      // TODO: Should we handle?
-      return nil
-
-    case .symbolicReference:
-      // TODO: Should we handle?
-      return nil
-
-    case .changeMatchingOptions:
-      // TODO: Should we handle?
-      return nil
-
     case let .unconverted(a):
       return try a.ast.generateConsumer(opts)
-    }
-
-  }
-}
-
-extension DSLTree.Atom.CharacterClass {
-  func generateConsumer(_ opts: MatchingOptions) -> MEProgram.ConsumeFunction {
-    let model = asRuntimeModel(opts)
-    return { input, bounds in
-      model.matches(in: input, at: bounds.lowerBound)
+    default:
+      throw Unreachable("Should have been handled in bytecode gen")
     }
   }
 }
@@ -281,47 +138,19 @@ extension AST.Atom {
     _ opts: MatchingOptions
   ) throws -> MEProgram.ConsumeFunction? {
     switch kind {
-    case let .scalar(s):
-      assertionFailure(
-        "Should have been handled by tree conversion")
-      return consumeScalar { $0 == s.value }
-
-    case let .char(c):
-      assertionFailure(
-        "Should have been handled by tree conversion")
-
-      // TODO: Match level?
-      return { input, bounds in
-        let low = bounds.lowerBound
-        guard input[low] == c else {
-          return nil
-        }
-        return input.index(after: low)
-      }
-
     case let .property(p):
       return try p.generateConsumer(opts)
-
+  
     case let .namedCharacter(name):
       return consumeName(name, opts: opts)
-      
-    case .dot:
-      assertionFailure(
-        "Should have been handled by tree conversion")
-      fatalError(".atom(.dot) is handled in emitDot")
-
-    case .caretAnchor, .dollarAnchor:
-      // handled in emitAssertion
-      return nil
-    case .escaped:
-      // handled in emitAssertion and emitCharacterClass
-      return nil
-
+  
     case .scalarSequence, .keyboardControl, .keyboardMeta,
         .keyboardMetaControl, .backreference, .subpattern, .callout,
         .backtrackingDirective, .changeMatchingOptions, .invalid:
       // FIXME: implement
       return nil
+    default:
+      fatalError("All other cases should have been handled by ByteCodeGen or converted to a DSLNode")
     }
   }
 }
@@ -354,18 +183,28 @@ extension DSLTree.CustomCharacterClass.Member {
     }
     return nil
   }
-  
+
   func generateConsumer(
     _ opts: MatchingOptions
   ) throws -> MEProgram.ConsumeFunction {
     switch self {
-    case let .atom(a):
-      guard let c = try a.generateConsumer(opts) else {
-        throw Unsupported("Consumer for \(a)")
+    case .quotedLiteral(let s):
+      if opts.isCaseInsensitive {
+        return { input, bounds in
+          guard s.lowercased()._contains(input[bounds.lowerBound].lowercased()) else {
+            return nil
+          }
+          return input.index(after: bounds.lowerBound)
+        }
+      } else {
+        return { input, bounds in
+          guard s.contains(input[bounds.lowerBound]) else {
+            return nil
+          }
+          return input.index(after: bounds.lowerBound)
+        }
       }
-      return c
-    case let .range(low, high):
-      // TODO:
+    case .range(let low, let high):
       guard let lhs = low.literalCharacterValue else {
         throw Unsupported("\(low) in range")
       }
@@ -398,65 +237,8 @@ extension DSLTree.CustomCharacterClass.Member {
           return nil
         }
       }
-
-    case let .custom(ccc):
-      return try ccc.generateConsumer(opts)
-
-    case let .intersection(lhs, rhs):
-      let lhs = try lhs.generateConsumer(opts)
-      let rhs = try rhs.generateConsumer(opts)
-      return { input, bounds in
-        if let lhsIdx = lhs(input, bounds),
-           let rhsIdx = rhs(input, bounds)
-        {
-          guard lhsIdx == rhsIdx else {
-            fatalError("TODO: What should we do here?")
-          }
-          return lhsIdx
-        }
-        return nil
-      }
-
-    case let .subtraction(lhs, rhs):
-      let lhs = try lhs.generateConsumer(opts)
-      let rhs = try rhs.generateConsumer(opts)
-      return { input, bounds in
-        if let lhsIdx = lhs(input, bounds),
-           rhs(input, bounds) == nil
-        {
-          return lhsIdx
-        }
-        return nil
-      }
-
-    case let .symmetricDifference(lhs, rhs):
-      let lhs = try lhs.generateConsumer(opts)
-      let rhs = try rhs.generateConsumer(opts)
-      return { input, bounds in
-        if let lhsIdx = lhs(input, bounds) {
-          return rhs(input, bounds) == nil ? lhsIdx : nil
-        }
-        return rhs(input, bounds)
-      }
-    case .quotedLiteral(let s):
-      if opts.isCaseInsensitive {
-        return { input, bounds in
-          guard s.lowercased()._contains(input[bounds.lowerBound].lowercased()) else {
-            return nil
-          }
-          return input.index(after: bounds.lowerBound)
-        }
-      } else {
-        return { input, bounds in
-          guard s.contains(input[bounds.lowerBound]) else {
-            return nil
-          }
-          return input.index(after: bounds.lowerBound)
-        }
-      }
-    case .trivia:
-      // TODO: Should probably strip this earlier...
-      return { _, _ in nil }
+    default:
+      fatalError("Unreachable: should have been handled by bytecodegen")
     }
   }
 }
@@ -473,28 +255,6 @@ extension DSLTree.CustomCharacterClass {
         }
       }
     )
-  }
-  
-  func generateConsumer(
-    _ opts: MatchingOptions
-  ) throws -> MEProgram.ConsumeFunction {
-    // NOTE: Easy way to implement, obviously not performant
-    let consumers = try members.map {
-      try $0.generateConsumer(opts)
-    }
-    return { input, bounds in
-      for consumer in consumers {
-        if let idx = consumer(input, bounds) {
-          return isInverted ? nil : idx
-        }
-      }
-      if isInverted {
-        return opts.semanticLevel == .graphemeCluster
-          ? input.index(after: bounds.lowerBound)
-          : input.unicodeScalars.index(after: bounds.lowerBound)
-      }
-      return nil
-    }
   }
 }
 

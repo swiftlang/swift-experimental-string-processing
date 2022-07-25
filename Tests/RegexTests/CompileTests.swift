@@ -18,6 +18,7 @@ enum DecodedInstr {
   case invalid
   case moveImmediate
   case moveCurrentPosition
+  case restorePosition
   case branch
   case condBranchZeroElseDecrement
   case condBranchSamePosition
@@ -62,6 +63,8 @@ extension DecodedInstr {
       return .moveImmediate
     case .moveCurrentPosition:
       return .moveCurrentPosition
+    case .restorePosition:
+      return .restorePosition
     case .branch:
       return .branch
     case .condBranchZeroElseDecrement:

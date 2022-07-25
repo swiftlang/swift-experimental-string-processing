@@ -654,6 +654,141 @@ fileprivate extension Compiler.ByteCodeGen {
 
     builder.label(exit)
   }
+  
+  mutating func emitCharacterInCCC(_ c: Character)  {
+    let isCaseInsensitive = options.isCaseInsensitive
+    switch options.semanticLevel {
+    case .graphemeCluster:
+      emitCharacter(c)
+    case .unicodeScalar:
+      let consumers = c.unicodeScalars.map { s in consumeScalar {
+        isCaseInsensitive
+          ? $0.properties.lowercaseMapping == s.properties.lowercaseMapping
+          : $0 == s
+      }}
+      let consumer: MEProgram.ConsumeFunction = { input, bounds in
+        for fn in consumers {
+          if let idx = fn(input, bounds) {
+            return idx
+          }
+        }
+        return nil
+      }
+      builder.buildConsume(by: consumer)
+    }
+  }
+  
+  mutating func emitCCCMember(
+    _ member: DSLTree.CustomCharacterClass.Member
+  ) throws {
+    switch member {
+    case .atom(let atom):
+      switch atom {
+      case .char(let c):
+        emitCharacterInCCC(c)
+      case .scalar(let s):
+        emitCharacterInCCC(Character(s))
+      default:
+        try emitAtom(atom)
+      }
+    case .custom(let ccc):
+      try emitCustomCharacterClass(ccc)
+    case .range, .quotedLiteral:
+      let consumer = try member.generateConsumer(options)
+      builder.buildConsume(by: consumer)
+    case .trivia:
+      return
+    // store current position r0
+    // lhs
+    // store current position r1
+    // restore to r0 position
+    // rhs
+    // cond branch if same position as r1 to end
+    // .invalid
+    // end: ...
+    case let .intersection(lhs, rhs):
+      let r0 = builder.makePositionRegister()
+      let r1 = builder.makePositionRegister()
+      let end = builder.makeAddress()
+      
+      builder.buildMoveCurrentPosition(into: r0)
+      try emitCustomCharacterClass(lhs)
+      builder.buildMoveCurrentPosition(into: r1)
+      
+      builder.buildRestorePosition(from: r0)
+      try emitCustomCharacterClass(rhs)
+      
+      builder.buildCondBranch(to: end, ifSamePositionAs: r1)
+      builder.buildFatalError()
+      builder.label(end)
+      
+    // store current position
+    // lhs
+    // save to end
+    // restore current position
+    // rhs
+    // clear, fail (since both succeeded)
+    // end: ...
+    case let .subtraction(lhs, rhs):
+      let r = builder.makePositionRegister()
+      let end = builder.makeAddress()
+      builder.buildMoveCurrentPosition(into: r)
+      try emitCustomCharacterClass(lhs)
+      builder.buildSave(end)
+      builder.buildRestorePosition(from: r)
+      try emitCustomCharacterClass(rhs)
+      builder.buildClear()
+      builder.buildFail()
+      builder.label(end)
+      
+    // lily fixme: this duplicates the code emission from rhs
+    // do we care? we could track the success/fail in registers
+    // and then emit a bunch of conditional branches to fail/success?
+      
+    // store current position
+    // save to lhsFail
+    // lhs
+    // save to rhsFail
+    // restore current position
+    // rhs
+    // both succeeded, clear both and fail
+    // rhsFail: clear, goto end
+    // lhsFail:
+    // restore current position
+    // rhs
+    // end: ...
+    case let .symmetricDifference(lhs, rhs):
+      let r = builder.makePositionRegister()
+      let lhsFail = builder.makeAddress()
+      let rhsFail = builder.makeAddress()
+      let end = builder.makeAddress()
+      
+      builder.buildMoveCurrentPosition(into: r)
+      builder.buildSave(lhsFail) // saves lhsFail
+      try emitCustomCharacterClass(lhs)
+      builder.buildSave(rhsFail) // saves rhsFail
+      
+      builder.buildRestorePosition(from: r)
+      try emitCustomCharacterClass(rhs)
+      // Both succeeded, fail
+      builder.buildClear() // clears save(to: rhsFail)
+      builder.buildClear() // clears save(to: lhsFail)
+      builder.buildFail()
+    
+      // rhsFail
+      builder.label(rhsFail)
+      builder.buildClear() // clears save(to: lhsFail)
+      builder.buildBranch(to: end)
+
+      // lhsFail
+      builder.label(lhsFail)
+      builder.buildRestorePosition(from: r)
+      try emitCustomCharacterClass(rhs)
+      
+      // end
+      builder.label(end)
+    }
+  }
 
   mutating func emitCustomCharacterClass(
     _ ccc: DSLTree.CustomCharacterClass
@@ -667,8 +802,95 @@ fileprivate extension Compiler.ByteCodeGen {
       }
       return
     }
-    let consumer = try ccc.generateConsumer(options)
-    builder.buildConsume(by: consumer)
+    let updatedCCC: DSLTree.CustomCharacterClass
+    if optimizationsEnabled {
+      updatedCCC = ccc.coalesedASCIIMembers(options)
+    } else {
+      updatedCCC = ccc
+    }
+    let filteredMembers = updatedCCC.members.filter({!$0.isOnlyTrivia})
+    
+    if updatedCCC.isInverted {
+      // inverted
+      // custom character class: p0 | p1 | ... | pn
+      // Try each member to make sure they all fail
+      //     save next_p1
+      //     <code for p0>
+      //     clear, fail
+      //   next_p1:
+      //     save next_p2
+      //     <code for p1>
+      //     clear fail
+      //   next_p2:
+      //     save next_p...
+      //     <code for p2>
+      //     clear fail
+      //   ...
+      //   next_pn:
+      //     save done
+      //     <code for pn>
+      //     clear fail
+      //   done:
+      //     step forward by 1
+      let done = builder.makeAddress()
+      for member in filteredMembers.dropLast() {
+        let next = builder.makeAddress()
+        builder.buildSave(next)
+        try emitCCCMember(member)
+        builder.buildClear()
+        builder.buildFail()
+        builder.label(next)
+      }
+      builder.buildSave(done)
+      try emitCCCMember(filteredMembers.last!)
+      builder.buildClear()
+      builder.buildFail()
+      builder.label(done)
+      
+      // Consume a single unit for the inverted ccc
+      switch options.semanticLevel {
+      case .graphemeCluster:
+        builder.buildAdvance(1)
+      case .unicodeScalar:
+        // TODO: builder.buildAdvanceUnicodeScalar(1)
+        builder.buildConsume { input, bounds in
+          input.unicodeScalars.index(after: bounds.lowerBound)
+        }
+      }
+      return
+    }
+    // non inverted CCC
+    // Custom character class: p0 | p1 | ... | pn
+    // Very similar to alternation, but we don't keep backtracking save points
+    //     save next_p1
+    //     <code for p0>
+    //     clear
+    //     branch done
+    //   next_p1:
+    //     save next_p2
+    //     <code for p1>
+    //     clear
+    //     branch done
+    //   next_p2:
+    //     save next_p...
+    //     <code for p2>
+    //     clear
+    //     branch done
+    //   ...
+    //   next_pn:
+    //     <code for pn>
+    //   done:
+    let done = builder.makeAddress()
+    for member in filteredMembers.dropLast() {
+      let next = builder.makeAddress()
+      builder.buildSave(next)
+      try emitCCCMember(member)
+      builder.buildClear()
+      builder.buildBranch(to: done)
+      builder.label(next)
+    }
+    try emitCCCMember(filteredMembers.last!)
+    builder.label(done)
   }
 
   @discardableResult
@@ -793,12 +1015,34 @@ extension DSLTree.Node {
     case .consumer, .matcher:
       // Allow zero width consumers and matchers
      return false
-    case .customCharacterClass:
-      return true
+    case .customCharacterClass(let ccc):
+      return ccc.guaranteesForwardProgress
     case .quantification(let amount, _, let child):
       let (atLeast, _) = amount.ast.bounds
       return atLeast ?? 0 > 0 && child.guaranteesForwardProgress
     default: return false
     }
+  }
+}
+
+extension DSLTree.CustomCharacterClass {
+  /// We allow trivia into CustomCharacterClass, which could result in a CCC that matches nothing
+  /// ie (?x)[ ]
+  var guaranteesForwardProgress: Bool {
+    for m in members {
+      switch m {
+      case .trivia:
+        continue
+      case let .intersection(lhs, rhs):
+        return lhs.guaranteesForwardProgress && rhs.guaranteesForwardProgress
+      case let .subtraction(lhs, _):
+        return lhs.guaranteesForwardProgress
+      case let .symmetricDifference(lhs, rhs):
+        return lhs.guaranteesForwardProgress && rhs.guaranteesForwardProgress
+      default:
+        return true
+      }
+    }
+    return false
   }
 }
