@@ -1,5 +1,14 @@
 @_implementationOnly import _RegexParser // For AssertionKind
 
+extension Character {
+  var _isHorizontalWhitespace: Bool {
+    self.unicodeScalars.first?.isHorizontalWhitespace == true
+  }
+  var _isNewline: Bool {
+    self.unicodeScalars.first?.isNewline == true
+  }
+}
+
 extension Processor {
   mutating func matchBuiltin(
     _ cc: _CharacterClassModel.Representation,
@@ -12,45 +21,56 @@ extension Processor {
       return false
     }
 
-    var asciiCheck: Bool {
-      (char.isASCII && !isScalarSemantics)
+    let asciiCheck = (char.isASCII && !isScalarSemantics)
       || (scalar.isASCII && isScalarSemantics)
       || !isStrictASCII
-    }
+
     var matched: Bool
     var next: Input.Index
-    if isScalarSemantics {
-      next = input.unicodeScalars.index(after: currentPosition)
-    } else {
+    switch (isScalarSemantics, cc) {
+    case (_, .anyGrapheme):
       next = input.index(after: currentPosition)
-    }
-    switch cc {
-    case .any:
-      matched = true
-    case .anyGrapheme:
-      matched = true
-      next = input.index(after: currentPosition)
-    case .anyScalar:
+    case (_, .anyScalar):
       // FIXME: This allows us to be not-scalar aligned when in grapheme mode
       // Should this even be allowed?
-      matched = true
       next = input.unicodeScalars.index(after: currentPosition)
+    case (true, _):
+      next = input.unicodeScalars.index(after: currentPosition)
+    case (false, _):
+      next = input.index(after: currentPosition)
+    }
+
+    switch cc {
+    case .any, .anyGrapheme, .anyScalar:
+      matched = true
     case .digit:
       if isScalarSemantics {
-        matched = scalar.properties.numericType != nil
+        matched = scalar.properties.numericType != nil && asciiCheck
       } else {
         matched = char.isNumber && asciiCheck
       }
     case .horizontalWhitespace:
-      matched = scalar.isHorizontalWhitespace && asciiCheck
+      if isScalarSemantics {
+        matched = scalar.isHorizontalWhitespace && asciiCheck
+      } else {
+        matched = char._isHorizontalWhitespace && asciiCheck
+      }
     case .verticalWhitespace:
-      matched = scalar.isNewline && asciiCheck
+      if isScalarSemantics {
+        matched = scalar.isNewline && asciiCheck
+      } else {
+        matched = char._isNewline && asciiCheck
+      }
     case .newlineSequence:
-      matched = scalar.isNewline && asciiCheck
-      if isScalarSemantics && matched && scalar == "\r"
-          && next != input.endIndex && input.unicodeScalars[next] == "\n" {
-        // Match a full CR-LF sequence even in scalar sematnics
-        input.unicodeScalars.formIndex(after: &next)
+      if isScalarSemantics {
+        matched = scalar.isNewline && asciiCheck
+        if matched && scalar == "\r"
+            && next != input.endIndex && input.unicodeScalars[next] == "\n" {
+          // Match a full CR-LF sequence even in scalar semantics
+          input.unicodeScalars.formIndex(after: &next)
+        }
+      } else {
+        matched = char._isNewline && asciiCheck
       }
     case .whitespace:
       if isScalarSemantics {
@@ -65,16 +85,18 @@ extension Processor {
         matched = char.isWordCharacter && asciiCheck
       }
     }
+
     if isInverted {
       matched.toggle()
     }
-    if matched {
-      currentPosition = next
-      return true
-    } else {
+
+    guard matched else {
       signalFailure()
       return false
     }
+
+    currentPosition = next
+    return true
   }
   
   func isAtStartOfLine(_ payload: AssertionPayload) -> Bool {

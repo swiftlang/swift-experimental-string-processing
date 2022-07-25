@@ -362,7 +362,7 @@ struct CharacterClassPayload: RawRepresentable {
   }
   init(_ model: _CharacterClassModel) {
     let invertedBit = model.isInverted ? CharacterClassPayload.invertedBit : 0
-    let strictASCIIBit = model.isStrictAscii ? CharacterClassPayload.strictASCIIBit : 0
+    let strictASCIIBit = model.isStrictASCII ? CharacterClassPayload.strictASCIIBit : 0
     let scalarBit = model.matchLevel == .unicodeScalar ? CharacterClassPayload.scalarBit : 0
     assert(model.cc.rawValue <= CharacterClassPayload.ccMask)
     assert(model.cc.rawValue & invertedBit & strictASCIIBit & scalarBit == 0) // Sanity check

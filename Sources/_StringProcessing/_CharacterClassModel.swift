@@ -23,7 +23,7 @@ struct _CharacterClassModel: Hashable {
   let matchLevel: MatchingOptions.SemanticLevel
   
   /// If this character character class only matches ascii characters
-  let isStrictAscii: Bool
+  let isStrictASCII: Bool
 
   /// Whether this character class matches against an inverse,
   /// e.g \D, \S, [^abc].
@@ -36,9 +36,10 @@ struct _CharacterClassModel: Hashable {
   ) {
     self.cc = cc
     self.matchLevel = options.semanticLevel
-    self.isStrictAscii = cc.isStrictAscii(options: options)
+    self.isStrictASCII = cc.isStrictAscii(options: options)
     self.isInverted = isInverted
   }
+
   enum Representation: UInt64, Hashable {
     /// Any character
     case any = 0
@@ -80,45 +81,56 @@ struct _CharacterClassModel: Hashable {
     let char = input[currentPosition]
     let scalar = input.unicodeScalars[currentPosition]
     let isScalarSemantics = matchLevel == .unicodeScalar
-    var asciiCheck: Bool {
-      (char.isASCII && !isScalarSemantics)
+    let asciiCheck = (char.isASCII && !isScalarSemantics)
       || (scalar.isASCII && isScalarSemantics)
-      || !isStrictAscii
-    }
+      || !isStrictASCII
+    
     var matched: Bool
     var next: String.Index
-    if isScalarSemantics {
-      next = input.unicodeScalars.index(after: currentPosition)
-    } else {
+    switch (isScalarSemantics, cc) {
+    case (_, .anyGrapheme):
       next = input.index(after: currentPosition)
-    }
-    switch cc {
-    case .any:
-      matched = true
-    case .anyGrapheme:
-      matched = true
-      next = input.index(after: currentPosition)
-    case .anyScalar:
+    case (_, .anyScalar):
       // FIXME: This allows us to be not-scalar aligned when in grapheme mode
       // Should this even be allowed?
-      matched = true
       next = input.unicodeScalars.index(after: currentPosition)
+    case (true, _):
+      next = input.unicodeScalars.index(after: currentPosition)
+    case (false, _):
+      next = input.index(after: currentPosition)
+    }
+
+    switch cc {
+    case .any, .anyGrapheme, .anyScalar:
+      matched = true
     case .digit:
       if isScalarSemantics {
-        matched = scalar.properties.numericType != nil
+        matched = scalar.properties.numericType != nil && asciiCheck
       } else {
         matched = char.isNumber && asciiCheck
       }
     case .horizontalWhitespace:
-      matched = scalar.isHorizontalWhitespace && asciiCheck
+      if isScalarSemantics {
+        matched = scalar.isHorizontalWhitespace && asciiCheck
+      } else {
+        matched = char._isHorizontalWhitespace && asciiCheck
+      }
     case .verticalWhitespace:
-      matched = scalar.isNewline && asciiCheck
+      if isScalarSemantics {
+        matched = scalar.isNewline && asciiCheck
+      } else {
+        matched = char._isNewline && asciiCheck
+      }
     case .newlineSequence:
-      matched = scalar.isNewline && asciiCheck
-      if isScalarSemantics && matched && scalar == "\r"
-          && next != input.endIndex && input.unicodeScalars[next] == "\n" {
-        // Match a full CR-LF sequence even in scalar sematnics
-        input.unicodeScalars.formIndex(after: &next)
+      if isScalarSemantics {
+        matched = scalar.isNewline && asciiCheck
+        if matched && scalar == "\r"
+            && next != input.endIndex && input.unicodeScalars[next] == "\n" {
+          // Match a full CR-LF sequence even in scalar sematnics
+          input.unicodeScalars.formIndex(after: &next)
+        }
+      } else {
+        matched = char._isNewline && asciiCheck
       }
     case .whitespace:
       if isScalarSemantics {
