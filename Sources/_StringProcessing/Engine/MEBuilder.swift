@@ -171,13 +171,9 @@ extension MEProgram.Builder {
       .matchBitset, .init(bitset: makeAsciiBitset(b), isScalar: true)))
   }
   
-  mutating func buildMatchBuiltin(
-    _ cc: _CharacterClassModel,
-    _ isStrict: Bool,
-    isScalar: Bool
-  ) {
+  mutating func buildMatchBuiltin(model: _CharacterClassModel) {
     instructions.append(.init(
-      .matchBuiltin, .init(cc.cc, cc.isInverted, isStrict, isScalar)))
+      .matchBuiltin, .init(model)))
   }
 
   mutating func buildConsume(

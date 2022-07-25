@@ -186,10 +186,9 @@ extension DSLTree.Atom {
 
 extension DSLTree.Atom.CharacterClass {
   func generateConsumer(_ opts: MatchingOptions) -> MEProgram.ConsumeFunction {
+    let model = asRuntimeModel(opts)
     return { input, bounds in
-      // FIXME: should we worry about out of bounds?
-      model.withMatchLevel(opts.matchLevel)
-        .matches(in: input, at: bounds.lowerBound, with: opts)
+      model.matches(in: input, at: bounds.lowerBound)
     }
   }
 }

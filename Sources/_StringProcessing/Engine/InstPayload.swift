@@ -224,8 +224,8 @@ extension Instruction.Payload {
     return (isScalar: pair.0 == 1, pair.1)
   }
 
-  init(_ cc: _CharacterClassModel.Representation, _ isInverted: Bool, _ isStrict: Bool, _ isScalar: Bool) {
-    self.init(CharacterClassPayload(cc, isInverted, isStrict, isScalar).rawValue)
+  init(_ model: _CharacterClassModel) {
+    self.init(CharacterClassPayload(model).rawValue)
   }
   var characterClassPayload: CharacterClassPayload{
     return CharacterClassPayload(rawValue: rawValue & _payloadMask)
@@ -350,33 +350,37 @@ struct CharacterClassPayload: RawRepresentable {
   let rawValue: UInt64
   // Layout:
   // Top three bits are isInverted, isStrict, isScalar
-  // Lower 16 bits are _CCM.Representation
-  static let invertedShift: UInt64 = 55
-  static let strictShift: UInt64 = 54
-  static let scalarShift: UInt64 = 53
-  static let ccMask: UInt64 = 0xFF
+  // Lower 8 bits are _CCM.Representation
+  static var invertedBit: UInt64 { 1 << 55 }
+  static var strictASCIIBit: UInt64 { 1 << 54 }
+  static var scalarBit: UInt64 { 1 << 53 }
+  static var ccMask: UInt64 { 0xFF }
   init(rawValue: UInt64) {
     assert(rawValue & _opcodeMask == 0)
     self.rawValue = rawValue
   }
-  init(_ cc: _CharacterClassModel.Representation, _ isInverted: Bool, _ isStrict: Bool, _ isScalar: Bool) {
-    let invertedBit = isInverted ? 1 << CharacterClassPayload.invertedShift : 0
-    let strictBit = isStrict ? 1 << CharacterClassPayload.strictShift : 0
-    let scalarBit = isScalar ? 1 << CharacterClassPayload.scalarShift : 0
-    assert(cc.rawValue <= CharacterClassPayload.ccMask) //
-    self.init(rawValue: cc.rawValue + UInt64(invertedBit) + UInt64(strictBit) + UInt64(scalarBit))
+  init(_ model: _CharacterClassModel) {
+    let invertedBit = model.isInverted ? CharacterClassPayload.invertedBit : 0
+    let strictASCIIBit = model.isStrictAscii ? CharacterClassPayload.strictASCIIBit : 0
+    let scalarBit = model.matchLevel == .unicodeScalar ? CharacterClassPayload.scalarBit : 0
+    assert(model.cc.rawValue <= CharacterClassPayload.ccMask)
+    assert(model.cc.rawValue & invertedBit & strictASCIIBit & scalarBit == 0) // Sanity check
+    self.init(rawValue: model.cc.rawValue | invertedBit | strictASCIIBit | scalarBit)
   }
   
   var isInverted: Bool {
-    (self.rawValue >> CharacterClassPayload.invertedShift) & 1 == 1
+    self.rawValue & CharacterClassPayload.invertedBit != 0
   }
-  var isStrict: Bool {
-    (self.rawValue >> CharacterClassPayload.strictShift) & 1 == 1
+  /// Represents if the given character class should strictly only match ascii values based on the options given
+  /// See Oniguruma options: (?D) (?\P) (?S) (?W)
+  var isStrictASCII: Bool {
+    self.rawValue & CharacterClassPayload.strictASCIIBit != 0
   }
-  var isScalar: Bool {
-    (self.rawValue >> CharacterClassPayload.scalarShift) & 1 == 1
+  var isScalarSemantics: Bool {
+    self.rawValue & CharacterClassPayload.scalarBit != 0
   }
   var cc: _CharacterClassModel.Representation {
-    _CharacterClassModel.Representation.init(rawValue: self.rawValue & CharacterClassPayload.ccMask)!
+    _CharacterClassModel.Representation.init(
+      rawValue: self.rawValue & CharacterClassPayload.ccMask).unsafelyUnwrapped
   }
 }

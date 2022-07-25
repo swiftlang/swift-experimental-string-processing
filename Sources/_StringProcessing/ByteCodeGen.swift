@@ -166,10 +166,7 @@ fileprivate extension Compiler.ByteCodeGen {
   }
 
   mutating func emitCharacterClass(_ cc: DSLTree.Atom.CharacterClass) {
-    builder.buildMatchBuiltin(
-      cc.model,
-      cc.model.isStrictAscii(options: options),
-      isScalar: options.semanticLevel == .unicodeScalar)
+    builder.buildMatchBuiltin(model: cc.asRuntimeModel(options))
   }
 
   mutating func emitMatchScalar(_ s: UnicodeScalar) {
