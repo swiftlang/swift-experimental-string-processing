@@ -374,9 +374,20 @@ extension RegexTests {
 
     // MARK: Allowed combining characters
 
-    parseTest("e\u{301}", "e\u{301}")
     parseTest("1\u{358}", "1\u{358}")
     parseTest(#"\ \#u{361}"#, " \u{361}")
+
+    parseTest("e\u{301}", "e\u{301}")
+    parseTest("[e\u{301}]", charClass("e\u{301}"))
+    parseTest("\u{E9}", "e\u{301}")
+    parseTest("[\u{E9}]", charClass("e\u{301}"))
+
+    parseTest(
+      "\\e\u{301}", "e\u{301}", throwsError: .invalidEscape("e\u{301}"))
+    parseTest(
+      "[\\e\u{301}]", charClass("e\u{301}"),
+      throwsError: .invalidEscape("e\u{301}")
+    )
 
     // MARK: Alternations
 
@@ -2885,10 +2896,40 @@ extension RegexTests {
     diagnosticTest(#"[a-\Qbc\E]"#, .unsupported("range with quoted sequence"))
     diagnosticTest(#"[\Qbc\E-de]"#, .unsupported("range with quoted sequence"))
 
+    diagnosticTest(#"|([🇦🇫-🇿🇼])?"#, .invalidCharacterClassRangeOperand)
+    diagnosticTest(#"|([👨‍👩‍👦-👩‍👩‍👧‍👧])?"#, .invalidCharacterClassRangeOperand)
+
+    // Not single-scalar NFC.
+    diagnosticTest("[e\u{301}-e\u{302}]", .invalidCharacterClassRangeOperand)
+
+    // These scalar values expand under NFC.
+    let nfcExpandingScalars: [UInt32] = [
+      0x344, 0x958, 0x959, 0x95A, 0x95B, 0x95C, 0x95D, 0x95E, 0x95F, 0x9DC,
+      0x9DD, 0x9DF, 0xA33, 0xA36, 0xA59, 0xA5A, 0xA5B, 0xA5E, 0xB5C, 0xB5D,
+      0xF43, 0xF4D, 0xF52, 0xF57, 0xF5C, 0xF69, 0xF73, 0xF75, 0xF76, 0xF78,
+      0xF81, 0xF93, 0xF9D, 0xFA2, 0xFA7, 0xFAC, 0xFB9, 0x2ADC, 0xFB1D, 0xFB1F,
+      0xFB2A, 0xFB2B, 0xFB2C, 0xFB2D, 0xFB2E, 0xFB2F, 0xFB30, 0xFB31, 0xFB32,
+      0xFB33, 0xFB34, 0xFB35, 0xFB36, 0xFB38, 0xFB39, 0xFB3A, 0xFB3B, 0xFB3C,
+      0xFB3E, 0xFB40, 0xFB41, 0xFB43, 0xFB44, 0xFB46, 0xFB47, 0xFB48, 0xFB49,
+      0xFB4A, 0xFB4B, 0xFB4C, 0xFB4D, 0xFB4E, 0x1D15E, 0x1D15F, 0x1D160,
+      0x1D161, 0x1D162, 0x1D163, 0x1D164, 0x1D1BB, 0x1D1BC, 0x1D1BD, 0x1D1BE,
+      0x1D1BF, 0x1D1C0
+    ]
+    for scalar in nfcExpandingScalars {
+      let hex = String(scalar, radix: 16)
+      diagnosticTest(
+        #"[\u{\#(hex)}-\u{\#(hex)}]"#, .invalidCharacterClassRangeOperand)
+    }
+
+    // The NFC form of U+2126 is U+3A9.
+    diagnosticTest(#"[\u{2126}-\u{2126}]"#, .invalidCharacterClassRangeOperand)
+
     diagnosticTest(#"[_-A]"#, .invalidCharacterRange(from: "_", to: "A"))
     diagnosticTest(#"(?i)[_-A]"#, .invalidCharacterRange(from: "_", to: "A"))
     diagnosticTest(#"[c-b]"#, .invalidCharacterRange(from: "c", to: "b"))
     diagnosticTest(#"[\u{66}-\u{65}]"#, .invalidCharacterRange(from: "\u{66}", to: "\u{65}"))
+
+    diagnosticTest(#"[e\u{301}-e\u{302}]"#, .invalidCharacterRange(from: "\u{301}", to: "e"))
 
     diagnosticTest("(?x)[(?#)]", .expected("]"))
     diagnosticTest("(?x)[(?#abc)]", .expected("]"))
