@@ -655,7 +655,9 @@ fileprivate extension Compiler.ByteCodeGen {
     builder.label(exit)
   }
   
-  mutating func emitCharacterInCCC(_ c: Character)  {
+  /// A character in a custom character class should match all of it's component scalars
+  /// when in scalar semantic mode
+  mutating func emitCharacterInCustomCharacterClass(_ c: Character)  {
     let isCaseInsensitive = options.isCaseInsensitive
     switch options.semanticLevel {
     case .graphemeCluster:
@@ -678,16 +680,16 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
   
-  mutating func emitCCCMember(
+  mutating func emitCustomCharacterClassMember(
     _ member: DSLTree.CustomCharacterClass.Member
   ) throws {
     switch member {
     case .atom(let atom):
       switch atom {
       case .char(let c):
-        emitCharacterInCCC(c)
+        emitCharacterInCustomCharacterClass(c)
       case .scalar(let s):
-        emitCharacterInCCC(Character(s))
+        emitCharacterInCustomCharacterClass(Character(s))
       default:
         try emitAtom(atom)
       }
@@ -836,13 +838,13 @@ fileprivate extension Compiler.ByteCodeGen {
       for member in filteredMembers.dropLast() {
         let next = builder.makeAddress()
         builder.buildSave(next)
-        try emitCCCMember(member)
+        try emitCustomCharacterClassMember(member)
         builder.buildClear()
         builder.buildFail()
         builder.label(next)
       }
       builder.buildSave(done)
-      try emitCCCMember(filteredMembers.last!)
+      try emitCustomCharacterClassMember(filteredMembers.last!)
       builder.buildClear()
       builder.buildFail()
       builder.label(done)
@@ -884,12 +886,12 @@ fileprivate extension Compiler.ByteCodeGen {
     for member in filteredMembers.dropLast() {
       let next = builder.makeAddress()
       builder.buildSave(next)
-      try emitCCCMember(member)
+      try emitCustomCharacterClassMember(member)
       builder.buildClear()
       builder.buildBranch(to: done)
       builder.label(next)
     }
-    try emitCCCMember(filteredMembers.last!)
+    try emitCustomCharacterClassMember(filteredMembers.last!)
     builder.label(done)
   }
 
