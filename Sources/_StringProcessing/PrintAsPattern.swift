@@ -1168,10 +1168,10 @@ extension DSLTree.Atom {
       return (a._patternBase, false)
       
     case .backreference(_):
-      return ("/* TOOD: backreferences */", false)
+      return ("/* TODO: backreferences */", false)
       
     case .symbolicReference:
-      return ("/* TOOD: symbolic references */", false)
+      return ("/* TODO: symbolic references */", false)
       
     case .changeMatchingOptions(let matchingOptions):
       for add in matchingOptions.ast.adding {
@@ -1211,9 +1211,9 @@ extension DSLTree.Atom {
     case .assertion:
       return "/* TODO: assertions */"
     case .backreference:
-      return "/* TOOD: backreferences */"
+      return "/* TODO: backreferences */"
     case .symbolicReference:
-      return "/* TOOD: symbolic references */"
+      return "/* TODO: symbolic references */"
     case .changeMatchingOptions(let matchingOptions):
       var result = ""
       
