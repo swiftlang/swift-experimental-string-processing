@@ -1,6 +1,7 @@
 import Foundation
 
 extension BenchmarkRunner {
+  /// Attempts to save the results to the given path
   func save(to savePath: String) throws {
     let url = URL(fileURLWithPath: savePath, isDirectory: false)
     let parent = url.deletingLastPathComponent()
@@ -10,7 +11,16 @@ extension BenchmarkRunner {
     print("Saving result to \(url.path)")
     try results.save(to: url)
   }
-    
+  
+  /// Attempts to load the results from the given save file
+  mutating func load(from savePath: String) throws {
+    let url = URL(fileURLWithPath: savePath)
+    let result = try SuiteResult.load(from: url)
+    self.results = result
+    print("Loaded results from \(url.path)")
+  }
+  
+  /// Compare this runner's results against the results stored in the given file path
   func compare(against compareFilePath: String, showChart: Bool, saveTo: String?) throws {
     let compareFileURL = URL(fileURLWithPath: compareFilePath)
     let compareResult = try SuiteResult.load(from: compareFileURL)
@@ -33,6 +43,7 @@ extension BenchmarkRunner {
     displayComparisons(compileTimeComparisons, false, against: "saved benchmark result " + compareFile)
   }
   
+  /// Compares Swift Regex benchmark results against NSRegularExpression
   func compareWithNS(showChart: Bool, saveTo: String?) throws {
     let comparisons = results.compareWithNS().filter({$0.diff != nil})
     displayComparisons(comparisons, showChart, against: "NSRegularExpression (via CrossBenchmark)")
