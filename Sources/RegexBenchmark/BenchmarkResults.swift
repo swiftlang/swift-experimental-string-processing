@@ -188,7 +188,7 @@ struct SuiteResult {
     for item in results {
       if let otherVal = other.results[item.key] {
         comparisons.append(
-          .init(name: item.key, baseline: item.value, latest: otherVal))
+          .init(name: item.key, baseline: otherVal, latest: item.value))
       }
     }
     return comparisons
@@ -213,7 +213,7 @@ struct SuiteResult {
     for item in results {
       if let otherVal = other.results[item.key] {
         comparisons.append(
-          .init(name: item.key, baseline: item.value, latest: otherVal, diffCompileTimes: true))
+          .init(name: item.key, baseline: otherVal, latest: item.value, diffCompileTimes: true))
       }
     }
     return comparisons
