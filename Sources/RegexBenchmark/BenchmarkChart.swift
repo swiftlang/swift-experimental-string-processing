@@ -15,14 +15,7 @@ import Charts
 import SwiftUI
 
 struct BenchmarkChart: View {
-  struct Comparison: Identifiable {
-    var id = UUID()
-    var name: String
-    var baseline: BenchmarkResult
-    var latest: BenchmarkResult
-  }
-
-  var comparisons: [Comparison]
+  var comparisons: [BenchmarkResult.Comparison]
 
   var body: some View {
     VStack(alignment: .leading) {
@@ -94,7 +87,7 @@ struct BenchmarkChart: View {
 }
 
 struct BenchmarkResultApp: App {
-  static var comparisons: [BenchmarkChart.Comparison]?
+  static var comparisons: [BenchmarkResult.Comparison]?
 
   var body: some Scene {
     WindowGroup {

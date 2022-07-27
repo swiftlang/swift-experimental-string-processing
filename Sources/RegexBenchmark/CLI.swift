@@ -19,6 +19,12 @@ struct Runner: ParsableCommand {
 
   @Flag(help: "Show comparison chart")
   var showChart: Bool = false
+  
+  @Flag(help: "Compare with NSRegularExpression")
+  var compareWithNS: Bool = false
+  
+  @Option(help: "Save comparison results as csv")
+  var saveComparison: String?
 
   @Flag(help: "Quiet mode")
   var quiet = false
@@ -46,8 +52,15 @@ struct Runner: ParsableCommand {
       if let saveFile = save {
         try runner.save(to: saveFile)
       }
+      if saveComparison != nil && compareWithNS && compare != nil {
+        print("Unable to save both comparison results, specify only one compare operation")
+        return
+      }
+      if compareWithNS {
+        try runner.compareWithNS(showChart: showChart, saveTo: saveComparison)
+      }
       if let compareFile = compare {
-        try runner.compare(against: compareFile, showChart: showChart)
+        try runner.compare(against: compareFile, showChart: showChart, saveTo: saveComparison)
       }
     }
   }
