@@ -20,6 +20,9 @@ struct Runner: ParsableCommand {
   @Option(help: "The result file to compare against")
   var compare: String?
 
+  @Option(help: "Experimental compile time comparison")
+  var experimentalCompareCompileTimes: String?
+  
   @Flag(help: "Show comparison chart")
   var showChart: Bool = false
   
@@ -70,6 +73,9 @@ struct Runner: ParsableCommand {
     }
     if let compareFile = compare {
       try runner.compare(against: compareFile, showChart: showChart, saveTo: saveComparison)
+    }
+    if let compareFile = experimentalCompareCompileTimes {
+      try runner.compareCompileTimes(against: compareFile, showChart: showChart)
     }
   }
 }

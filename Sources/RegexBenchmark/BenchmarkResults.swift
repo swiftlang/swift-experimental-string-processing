@@ -34,12 +34,18 @@ extension BenchmarkRunner {
     if let saveFile = saveTo {
       try saveComparisons(comparisons, path: saveFile)
     }
-    
+  }
+  
+  func compareCompileTimes(against compareFilePath: String, showChart: Bool) throws {
+    let compareFileURL = URL(fileURLWithPath: compareFilePath)
+    let compareResult = try SuiteResult.load(from: compareFileURL)
+    let compareFile = compareFileURL.lastPathComponent
+
     let compileTimeComparisons = results
       .compareCompileTimes(with: compareResult)
       .filter({!$0.name.contains("_NS")})
       .filter({$0.diff != nil})
-    print("Comparing estimated compile times")
+    print("[Experimental] Comparing estimated compile times")
     displayComparisons(compileTimeComparisons, false, against: "saved benchmark result " + compareFile)
   }
   
@@ -96,7 +102,7 @@ extension BenchmarkRunner {
       try! FileManager.default.createDirectory(atPath: parent.path, withIntermediateDirectories: true)
     }
     
-    var contents = "name,baseline,latest,diff,percentage\n"
+    var contents = "name,latest,baseline,diff,percentage\n"
     for comparison in comparisons {
       contents += comparison.asCsv + "\n"
     }
