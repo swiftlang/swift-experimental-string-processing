@@ -12,10 +12,7 @@
 import XCTest
 import _StringProcessing
 import RegexBuilder
-
-#if os(Linux)
-func XCTExpectFailure(_ message: String? = nil, body: () throws -> Void) rethrows {}
-#endif
+import TestSupport
 
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
@@ -77,6 +74,9 @@ class RegexDSLTests: XCTestCase {
   let asciiNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n"
 
   func testCharacterClasses() throws {
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+
     try _testDSLCaptures(
       ("a c", ("a c", " ", "c")),
       matchType: (Substring, Substring, Substring).self, ==)
@@ -251,6 +251,9 @@ class RegexDSLTests: XCTestCase {
   }
 
   func testCharacterClassOperations() throws {
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+
     try _testDSLCaptures(
       ("bcdefn1a", "bcdefn1a"),
       ("nbcdef1a", nil),        // fails symmetric difference lookahead
@@ -594,6 +597,9 @@ class RegexDSLTests: XCTestCase {
   }
   
   func testQuantificationBehavior() throws {
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+
     // Eager by default
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "2")),
@@ -1429,7 +1435,8 @@ class RegexDSLTests: XCTestCase {
       "\u{200D}" as UnicodeScalar
       "👦" as UnicodeScalar
     }
-    XCTAssertNil(try r3.firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r3.firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r3.wholeMatch(in: "👨‍👨‍👧‍👦"))
     XCTAssertNotNil(try r3.matchingSemantics(.unicodeScalar).firstMatch(in: "👨‍👨‍👧‍👦"))
     XCTAssertNotNil(try r3.matchingSemantics(.unicodeScalar).wholeMatch(in: "👨‍👨‍👧‍👦"))
 
@@ -1441,18 +1448,72 @@ class RegexDSLTests: XCTestCase {
       try r4.firstMatch(in: "é")
     )
 
-    try XCTExpectFailure("Need stronger scalar coalescing logic") {
-      let r5 = Regex {
-        "e"
-        "\u{301}" as UnicodeScalar
-      }
-      XCTAssertNotNil(
-        try r5.firstMatch(in: "e\u{301}")
-      )
-      XCTAssertNotNil(
-        try r5.firstMatch(in: "é")
-      )
+    let r5 = Regex {
+      "e"
+      "\u{301}" as UnicodeScalar
     }
+    XCTAssertNotNil(try r5.firstMatch(in: "e\u{301}"))
+    XCTAssertNotNil(try r5.firstMatch(in: "é"))
+
+    let r6 = Regex {
+      "abcde"
+      "\u{301}"
+    }
+    XCTAssertNotNil(try r6.firstMatch(in: "abcde\u{301}"))
+    XCTAssertNotNil(try r6.firstMatch(in: "abcdé"))
+
+    let r7 = Regex {
+      "e" as Character
+      "\u{301}" as Character
+    }
+    XCTAssertNotNil(try r7.firstMatch(in: "e\u{301}"))
+    XCTAssertNotNil(try r7.firstMatch(in: "é"))
+
+    // You can't match a partial grapheme in grapheme semantic mode.
+    let r8 = Regex {
+      "👨" as UnicodeScalar
+      "\u{200D}" as UnicodeScalar
+      "👨" as UnicodeScalar
+      "\u{200D}" as UnicodeScalar
+      "👧" as UnicodeScalar
+    }
+    XCTAssertNil(try r8.firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNil(try r8.wholeMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r8.matchingSemantics(.unicodeScalar).firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNil(try r8.matchingSemantics(.unicodeScalar).wholeMatch(in: "👨‍👨‍👧‍👦"))
+
+    // Scalar coalescing occurs across nested concatenations and literals.
+    let r9 = Regex {
+      Regex {
+        try! Regex(#"👨"#)
+        "\u{200D}" as UnicodeScalar
+        Regex {
+          "👨" as UnicodeScalar
+        }
+      }
+      Regex {
+        Regex {
+          "\u{200D}" as UnicodeScalar
+          "👧"
+        }
+        try! Regex(#"\u{200D}👦"#)
+      }
+    }
+    XCTAssertNotNil(try r9.firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r9.wholeMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r9.matchingSemantics(.unicodeScalar).firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r9.matchingSemantics(.unicodeScalar).wholeMatch(in: "👨‍👨‍👧‍👦"))
+
+    let r10 = Regex {
+      "👨" as UnicodeScalar
+      try! Regex(#"\u{200D 1F468 200D 1F467}"#)
+      "\u{200D}" as UnicodeScalar
+      "👦" as UnicodeScalar
+    }
+    XCTAssertNotNil(try r10.firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r10.wholeMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r10.matchingSemantics(.unicodeScalar).firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r10.matchingSemantics(.unicodeScalar).wholeMatch(in: "👨‍👨‍👧‍👦"))
   }
 
   struct SemanticVersion: Equatable {
