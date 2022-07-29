@@ -373,11 +373,11 @@ struct QuantifyPayload: RawRepresentable {
   // b27-b18 - extraTrips (8 bit value, one bit for nil)
   // b18-b16 - Quantification type (one of three types)
   // b16-b0  - Payload value (depends on payload type)
-  static let quantKindShift: UInt64   = 16
-  static let extraTripsShift: UInt64  = 18
-  static let minTripsShift: UInt64    = 27
-  static let typeShift: UInt64        = 35
-  static let maxStorableTrips: UInt64 = (1 << 8) - 1
+  static var quantKindShift: UInt64   { 16 }
+  static var extraTripsShift: UInt64  { 18 }
+  static var minTripsShift: UInt64    { 27 }
+  static var typeShift: UInt64        { 35 }
+  static var maxStorableTrips: UInt64 { (1 << 8) - 1 }
   
   var quantKindMask: UInt64  { 3 }
   var extraTripsMask: UInt64 { 0x1FF }

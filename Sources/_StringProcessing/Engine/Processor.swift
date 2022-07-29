@@ -525,6 +525,9 @@ extension Processor {
       let quantPayload = payload.quantify
       let matched: Bool
       switch (quantPayload.quantKind, quantPayload.minTrips, quantPayload.extraTrips) {
+      case (.reluctant, _, _):
+        assertionFailure(".reluctant is not supported by .quantify")
+        return
       case (.eager, 0, nil):
         matched = runEagerZeroOrMoreQuantify(quantPayload)
       case (.eager, 1, nil):

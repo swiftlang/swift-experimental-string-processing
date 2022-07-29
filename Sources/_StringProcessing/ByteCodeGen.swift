@@ -474,20 +474,7 @@ fileprivate extension Compiler.ByteCodeGen {
     let minTrips = low
     assert((extraTrips ?? 1) >= 0)
 
-    // We want to specialize common quantification cases
-    // Allowed nodes are:
-    // - .char
-    // - .customCharacterClass
-    // - built in character classes
-    // - .any, .anyNonNewline, .dot
-    // We do this by wrapping a single instruction in a .quantify instruction
-    if optimizationsEnabled
-        && child.shouldDoFastQuant(options)
-        && minTrips <= QuantifyPayload.maxStorableTrips
-        && extraTrips ?? 0 <= QuantifyPayload.maxStorableTrips
-        && options.matchLevel == .graphemeCluster
-        && updatedKind != .reluctant {
-      emitFastQuant(child, updatedKind, minTrips, extraTrips)
+    if tryEmitFastQuant(child, updatedKind, minTrips, extraTrips) {
       return
     }
 
@@ -675,45 +662,59 @@ fileprivate extension Compiler.ByteCodeGen {
     builder.label(exit)
   }
 
-  mutating func emitFastQuant(
+  /// Specialized quantification instruction for repetition of certain nodes in grapheme semantic mode
+  /// Allowed nodes are:
+  /// - single ascii scalar .char
+  /// - ascii .customCharacterClass
+  /// - single grapheme consumgin built in character classes
+  /// - .any, .anyNonNewline, .dot
+  mutating func tryEmitFastQuant(
     _ child: DSLTree.Node,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
     _ extraTrips: Int?
-  ) {
-    // These cases must stay in sync with DSLTree.Node.shouldDoFastQuant
-    // as well as the compilation paths for these nodes outside of quantification
-
-    // All assumptions made by the processor in runQuantify() must be checked here
-    // If an error is thrown here, there must be a mistake in shouldDoFastQuant
-    // letting in an invalid case
+  ) -> Bool {
+    guard optimizationsEnabled
+            && minTrips <= QuantifyPayload.maxStorableTrips
+            && extraTrips ?? 0 <= QuantifyPayload.maxStorableTrips
+            && options.matchLevel == .graphemeCluster
+            && kind != .reluctant else {
+      return false
+    }
     
-    // Coupling is bad but we do it for _speed_
     switch child {
     case .customCharacterClass(let ccc):
-      if let bitset = ccc.asAsciiBitset(options) {
-        builder.buildQuantify(bitset: bitset, kind, minTrips, extraTrips)
-      } else {
-        fatalError("Entered emitFastQuant with an invalid case: Unable to generate bitset")
+      // ascii only custom character class
+      guard let bitset = ccc.asAsciiBitset(options) else {
+        return false
       }
+      builder.buildQuantify(bitset: bitset, kind, minTrips, extraTrips)
+
     case .atom(let atom):
       switch atom {
       case .char(let c):
-        if let val = c._singleScalarAsciiValue {
-          builder.buildQuantify(asciiChar: val, kind, minTrips, extraTrips)
-        } else {
-          fatalError("Entered emitFastQuant with an invalid case: Character is not single scalar ascii")
+        // Single scalar ascii value character
+        guard let val = c._singleScalarAsciiValue else {
+          return false
         }
+        builder.buildQuantify(asciiChar: val, kind, minTrips, extraTrips)
+
       case .any:
-        builder.buildQuantifyAny(matchesNewlines: true, kind, minTrips, extraTrips)
+        builder.buildQuantifyAny(
+          matchesNewlines: true, kind, minTrips, extraTrips)
       case .anyNonNewline:
-        builder.buildQuantifyAny(matchesNewlines: false, kind, minTrips, extraTrips)
+        builder.buildQuantifyAny(
+          matchesNewlines: false, kind, minTrips, extraTrips)
       case .dot:
-        builder.buildQuantifyAny(matchesNewlines: options.dotMatchesNewline, kind, minTrips, extraTrips)
+        builder.buildQuantifyAny(
+          matchesNewlines: options.dotMatchesNewline, kind, minTrips, extraTrips)
+  
       case .characterClass(let cc):
+        // Custom character class that consumes a single grapheme
         let model = cc.model
-        assert(model.consumesSingleGrapheme,
-               "Entered emitFastQuant with an invalid case: Builtin class that does not consume a single grapheme")
+        guard model.consumesSingleGrapheme else {
+          return false
+        }
         builder.buildQuantify(
           builtin: model.cc,
           isStrict: model.isStrictAscii(options: options),
@@ -722,16 +723,20 @@ fileprivate extension Compiler.ByteCodeGen {
           minTrips,
           extraTrips)
       default:
-        fatalError("Entered emitFastQuant with an invalid case: DSLTree.Node.shouldDoFastQuant is out of sync")
+        return false
       }
     case .convertedRegexLiteral(let node, _):
-      emitFastQuant(node, kind, minTrips, extraTrips)
+      return tryEmitFastQuant(node, kind, minTrips, extraTrips)
     case .nonCapturingGroup(let groupKind, let node):
-      assert(groupKind.ast == .nonCapture, "Entered emitFastQuant with an invalid case: Invalid nonCapturingGroup type")
-      emitFastQuant(node, kind, minTrips, extraTrips)
+      // .nonCapture nonCapturingGroups are ignored during compilation
+      guard groupKind.ast == .nonCapture else {
+        return false
+      }
+      return tryEmitFastQuant(node, kind, minTrips, extraTrips)
     default:
-      fatalError("Entered emitFastQuant with an invalid case: DSLTree.Node.shouldDoFastQuant is out of sync")
+      return false
     }
+    return true
   }
 
   mutating func emitCustomCharacterClass(
@@ -878,45 +883,6 @@ extension DSLTree.Node {
       let (atLeast, _) = amount.ast.bounds
       return atLeast ?? 0 > 0 && child.guaranteesForwardProgress
     default: return false
-    }
-  }
-
-  /// If the given node can be wrapped in a .quantify instruction
-  /// Currently only allows nodes that match a single grapheme
-  func shouldDoFastQuant(_ opts: MatchingOptions) -> Bool {
-    switch self {
-    case .customCharacterClass(let ccc):
-      // Only quantify ascii only character classes
-      return ccc.asAsciiBitset(opts) != nil
-    case .atom(let atom):
-      switch atom {
-      case .char(let c):
-        // Only quantify the most common path -> Single scalar ascii values
-        return c._singleScalarAsciiValue != nil
-      case .dot, .any, .anyNonNewline:
-        // Always quantify any/dot
-        return true
-      case .characterClass(let cc):
-        // Only quantify if it consumes a single grapheme
-        return cc.model.consumesSingleGrapheme
-      default:
-        return false
-      }
-    case .convertedRegexLiteral(let node, _):
-      return node.shouldDoFastQuant(opts)
-    case .nonCapturingGroup(let kind, let child):
-      switch kind.ast {
-      case .nonCapture:
-        return child.shouldDoFastQuant(opts)
-      default:
-        return false
-      }
-    case .orderedChoice:
-      // Future work: Could we support ordered choice by compacting our payload
-      // representation and supporting an alternation of up to N supported nodes?
-      return false
-    default:
-      return false
     }
   }
 }
