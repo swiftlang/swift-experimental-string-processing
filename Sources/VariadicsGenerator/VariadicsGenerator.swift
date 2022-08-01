@@ -406,10 +406,10 @@ struct VariadicsGenerator: ParsableCommand {
         @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
           _ behavior: RegexRepetitionBehavior? = nil,
-          @\(concatBuilderName) _ component: () -> Component
+          @\(concatBuilderName) _ componentBuilder: () -> Component
         ) \(params.whereClauseForInit) {
           let factory = makeFactory()
-          self.init(factory.\(kind.astQuantifierAmount)(component(), behavior))
+          self.init(factory.\(kind.astQuantifierAmount)(componentBuilder(), behavior))
         }
       }
 
@@ -436,7 +436,7 @@ struct VariadicsGenerator: ParsableCommand {
     let groupName = "Local"
     func node(builder: Bool) -> String {
       """
-      component\(builder ? "()" : "")
+      component\(builder ? "Builder()" : "")
       """
     }
 
@@ -478,7 +478,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams)>(
-          @\(concatBuilderName) _ component: () -> Component
+          @\(concatBuilderName) _ componentBuilder: () -> Component
         ) \(whereClauseForInit) {
           let factory = makeFactory()
           self.init(factory.atomicNonCapturing(\(node(builder: true))))
@@ -514,11 +514,11 @@ struct VariadicsGenerator: ParsableCommand {
         @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
           count: Int,
-          @\(concatBuilderName) _ component: () -> Component
+          @\(concatBuilderName) _ componentBuilder: () -> Component
         ) \(params.whereClauseForInit) {
           precondition(count >= 0, "Must specify a positive count")
           let factory = makeFactory()
-          self.init(factory.exactly(count, component()))
+          self.init(factory.exactly(count, componentBuilder()))
         }
 
       \(params.disfavored)\
@@ -537,10 +537,10 @@ struct VariadicsGenerator: ParsableCommand {
         public init<\(params.genericParams), R: RangeExpression>(
           _ expression: R,
           _ behavior: RegexRepetitionBehavior? = nil,
-          @\(concatBuilderName) _ component: () -> Component
+          @\(concatBuilderName) _ componentBuilder: () -> Component
         ) \(params.repeatingWhereClause) {
           let factory = makeFactory()
-          self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component()))
+          self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, componentBuilder()))
         }
       }
       
@@ -720,41 +720,41 @@ struct VariadicsGenerator: ParsableCommand {
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams)>(
-          @\(concatBuilderName) _ component: () -> R
+          @\(concatBuilderName) _ componentBuilder: () -> R
         ) \(whereClauseRaw) {
           let factory = makeFactory()
-          self.init(factory.capture(component()))
+          self.init(factory.capture(componentBuilder()))
         }
 
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           as reference: Reference<W>,
-          @\(concatBuilderName) _ component: () -> R
+          @\(concatBuilderName) _ componentBuilder: () -> R
         ) \(whereClauseRaw) {
           let factory = makeFactory()
-          self.init(factory.capture(component(), reference._raw))
+          self.init(factory.capture(componentBuilder(), reference._raw))
         }
 
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          @\(concatBuilderName) _ component: () -> R,
+          @\(concatBuilderName) _ componentBuilder: () -> R,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
           let factory = makeFactory()
-          self.init(factory.capture(component(), nil, transform))
+          self.init(factory.capture(componentBuilder(), nil, transform))
         }
 
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
-          @\(concatBuilderName) _ component: () -> R,
+          @\(concatBuilderName) _ componentBuilder: () -> R,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
           let factory = makeFactory()
-          self.init(factory.capture(component(), reference._raw, transform))
+          self.init(factory.capture(componentBuilder(), reference._raw, transform))
         }
       }
 
@@ -763,22 +763,22 @@ struct VariadicsGenerator: ParsableCommand {
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          @\(concatBuilderName) _ component: () -> R,
+          @\(concatBuilderName) _ componentBuilder: () -> R,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
           let factory = makeFactory()
-          self.init(factory.captureOptional(component(), nil, transform))
+          self.init(factory.captureOptional(componentBuilder(), nil, transform))
         }
 
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
-          @\(concatBuilderName) _ component: () -> R,
+          @\(concatBuilderName) _ componentBuilder: () -> R,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
           let factory = makeFactory()
-          self.init(factory.captureOptional(component(), reference._raw, transform))
+          self.init(factory.captureOptional(componentBuilder(), reference._raw, transform))
         }
       }
 
