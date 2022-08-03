@@ -21,7 +21,7 @@ extension Processor {
     }
     return next
   }
-  
+
   /// Generic quantify instruction interpreter
   /// - Handles .eager and .posessive
   /// - Handles arbitrary minTrips and extraTrips
@@ -43,12 +43,12 @@ extension Processor {
       currentPosition = idx
       trips += 1
     }
-    
+
     if trips < payload.minTrips {
       signalFailure()
       return false
     }
-    
+
     if payload.quantKind == .eager && !savePoint.rangeIsEmpty {
       // The last save point has saved the current position, so it's unneeded
       savePoint.shrinkRange(input)
@@ -58,21 +58,21 @@ extension Processor {
     }
     return true
   }
-  
+
   /// Specialized quantify instruction interpreter for *
   mutating func runEagerZeroOrMoreQuantify(_ payload: QuantifyPayload) -> Bool {
     assert(payload.quantKind == .eager
            && payload.minTrips == 0
            && payload.extraTrips == nil)
     var savePoint = startQuantifierSavePoint()
-    
+
     while true {
       savePoint.updateRange(newEnd: currentPosition)
       let next = _doQuantifyMatch(payload)
       guard let idx = next else { break }
       currentPosition = idx
     }
-    
+
     // The last save point has saved the current position, so it's unneeded
     savePoint.shrinkRange(input)
     if !savePoint.rangeIsEmpty {
@@ -80,7 +80,7 @@ extension Processor {
     }
     return true
   }
-  
+
   /// Specialized quantify instruction interpreter for +
   mutating func runEagerOneOrMoreQuantify(_ payload: QuantifyPayload) -> Bool {
     assert(payload.quantKind == .eager
@@ -93,7 +93,7 @@ extension Processor {
       currentPosition = idx
       savePoint.updateRange(newEnd: currentPosition)
     }
-    
+
     if savePoint.rangeIsEmpty {
       signalFailure()
       return false
@@ -105,7 +105,7 @@ extension Processor {
     }
     return true
   }
-  
+
   /// Specialized quantify instruction interpreter for ?
   mutating func runZeroOrOneQuantify(_ payload: QuantifyPayload) -> Bool {
     assert(payload.minTrips == 0

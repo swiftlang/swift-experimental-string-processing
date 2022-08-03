@@ -43,9 +43,9 @@ extension Processor {
     ) {
       return (pc, pos, stackEnd, captureEnds, intRegisters, posRegisters)
     }
-    
+
     var rangeIsEmpty: Bool { rangeEnd == nil }
-    
+
     mutating func updateRange(newEnd: Input.Index) {
       if rangeStart == nil {
         rangeStart = newEnd
@@ -59,7 +59,7 @@ extension Processor {
       pos = rangeEnd!
       shrinkRange(input)
     }
-    
+
     /// Shrink the range of the save point by one index, essentially dropping the last index
     mutating func shrinkRange(_ input: Input) {
       assert(!rangeIsEmpty)

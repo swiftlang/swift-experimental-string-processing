@@ -678,7 +678,6 @@ fileprivate extension Compiler.ByteCodeGen {
             && kind != .reluctant else {
       return false
     }
-    
     switch child {
     case .customCharacterClass(let ccc):
       // ascii only custom character class
@@ -686,7 +685,7 @@ fileprivate extension Compiler.ByteCodeGen {
         return false
       }
       builder.buildQuantify(bitset: bitset, kind, minTrips, extraTrips)
-      
+
     case .atom(let atom):
       switch atom {
       case .char(let c):
@@ -695,7 +694,7 @@ fileprivate extension Compiler.ByteCodeGen {
           return false
         }
         builder.buildQuantify(asciiChar: val, kind, minTrips, extraTrips)
-        
+
       case .any:
         builder.buildQuantifyAny(
           matchesNewlines: true, kind, minTrips, extraTrips)
@@ -705,7 +704,7 @@ fileprivate extension Compiler.ByteCodeGen {
       case .dot:
         builder.buildQuantifyAny(
           matchesNewlines: options.dotMatchesNewline, kind, minTrips, extraTrips)
-        
+
       case .characterClass(let cc):
         // Custom character class that consumes a single grapheme
         let model = cc.asRuntimeModel(options)
@@ -733,7 +732,7 @@ fileprivate extension Compiler.ByteCodeGen {
     }
     return true
   }
-  
+
   /// Coalesce any adjacent scalar members in a custom character class together.
   /// This is required in order to produce correct grapheme matching behavior.
   func coalescingCustomCharacterClassMembers(
