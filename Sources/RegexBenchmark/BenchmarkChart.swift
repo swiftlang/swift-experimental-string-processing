@@ -17,41 +17,30 @@ import SwiftUI
 struct BenchmarkChart: View {
   var comparisons: [BenchmarkResult.Comparison]
 
+  var sortedComparisons: [BenchmarkResult.Comparison] {
+    comparisons.sorted { a, b in
+      a.latest.median.seconds/a.baseline.median.seconds <
+        b.latest.median.seconds/b.baseline.median.seconds
+    }
+  }
   var body: some View {
     VStack(alignment: .leading) {
-      ForEach(comparisons) { comparison in
-        let new = comparison.latest.median.seconds
-        let old = comparison.baseline.median.seconds
-        Chart {
+      Chart {
+        ForEach(sortedComparisons) { comparison in
+          let new = comparison.latest.median.seconds
+          let old = comparison.baseline.median.seconds
           chartBody(
             name: comparison.name,
             new: new,
             old: old,
             sampleCount: comparison.latest.samples)
         }
-        .chartXAxis {
-          AxisMarks { value in
-            AxisTick()
-            AxisValueLabel {
-              Text(String(format: "%.5fs", value.as(Double.self)!))
-            }
-          }
-        }
-        .chartYAxis {
-          AxisMarks { value in
-            AxisGridLine()
-            AxisValueLabel {
-              HStack {
-                Text(value.as(String.self)!)
-                let delta = (new - old) / old * 100
-                Text(String(format: "%+.2f%%", delta))
-                  .foregroundColor(delta <= 0 ? .green : .yellow)
-              }
-            }
-          }
-        }
-        .frame(idealHeight: 60)
-      }
+        // Baseline
+        RuleMark(y: .value("Time", 1.0))
+        .foregroundStyle(.red)
+        .lineStyle(.init(lineWidth: 1, dash: [2]))
+        
+      }.frame(idealHeight: 400)
     }
   }
 
@@ -62,27 +51,15 @@ struct BenchmarkChart: View {
     old: TimeInterval,
     sampleCount: Int
   ) -> some ChartContent {
-    // Baseline bar
+    // Normalized runtime
     BarMark(
-      x: .value("Time", old),
-      y: .value("Name", "\(name) (\(sampleCount) samples)"))
-    .position(by: .value("Kind", "Baseline"))
-    .foregroundStyle(.gray)
-
-    // Latest result bar
-    BarMark(
-      x: .value("Time", new),
-      y: .value("Name", "\(name) (\(sampleCount) samples)"))
-    .position(by: .value("Kind", "Latest"))
+      x: .value("Name", name),
+      y: .value("Normalized runtime", new / old))
+    
     .foregroundStyle(LinearGradient(
       colors: [.accentColor, new - old <= 0 ? .green : .yellow],
-      startPoint: .leading,
-      endPoint: .trailing))
-
-    // Comparison
-    RuleMark(x: .value("Time", new))
-    .foregroundStyle(.gray)
-    .lineStyle(.init(lineWidth: 0.5, dash: [2]))
+      startPoint: .bottom,
+      endPoint: .top))
   }
 }
 
