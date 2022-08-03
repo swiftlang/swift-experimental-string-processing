@@ -74,6 +74,9 @@ fileprivate extension Compiler.ByteCodeGen {
         emitMatchScalar(s)
       }
 
+    case let .characterClass(cc):
+      emitCharacterClass(cc)
+
     case let .assertion(kind):
       try emitAssertion(kind)
 
@@ -148,147 +151,24 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
-  mutating func emitStartOfLine() {
-    builder.buildAssert { [semanticLevel = options.semanticLevel]
-        (_, _, input, pos, subjectBounds) in
-      if pos == subjectBounds.lowerBound { return true }
-      switch semanticLevel {
-      case .graphemeCluster:
-        return input[input.index(before: pos)].isNewline
-      case .unicodeScalar:
-        return input.unicodeScalars[input.unicodeScalars.index(before: pos)].isNewline
-      }
-    }
-  }
-
-  mutating func emitEndOfLine() {
-    builder.buildAssert { [semanticLevel = options.semanticLevel]
-      (_, _, input, pos, subjectBounds) in
-      if pos == subjectBounds.upperBound { return true }
-      switch semanticLevel {
-      case .graphemeCluster:
-        return input[pos].isNewline
-      case .unicodeScalar:
-        return input.unicodeScalars[pos].isNewline
-      }
-    }
-  }
-
   mutating func emitAssertion(
     _ kind: DSLTree.Atom.Assertion
   ) throws {
-    // FIXME: Depends on API model we have... We may want to
-    // think through some of these with API interactions in mind
-    //
-    // This might break how we use `bounds` for both slicing
-    // and things like `firstIndex`, that is `firstIndex` may
-    // need to supply both a slice bounds and a per-search bounds.
-    switch kind {
-    case .startOfSubject:
-      builder.buildAssert { (_, _, input, pos, subjectBounds) in
-        pos == subjectBounds.lowerBound
-      }
-
-    case .endOfSubjectBeforeNewline:
-      builder.buildAssert { [semanticLevel = options.semanticLevel]
-          (_, _, input, pos, subjectBounds) in
-        if pos == subjectBounds.upperBound { return true }
-        switch semanticLevel {
-        case .graphemeCluster:
-          return input.index(after: pos) == subjectBounds.upperBound
-           && input[pos].isNewline
-        case .unicodeScalar:
-          return input.unicodeScalars.index(after: pos) == subjectBounds.upperBound
-           && input.unicodeScalars[pos].isNewline
-        }
-      }
-
-    case .endOfSubject:
-      builder.buildAssert { (_, _, input, pos, subjectBounds) in
-        pos == subjectBounds.upperBound
-      }
-
-    case .resetStartOfMatch:
-      // FIXME: Figure out how to communicate this out
+    if kind == .resetStartOfMatch {
       throw Unsupported(#"\K (reset/keep assertion)"#)
-
-    case .firstMatchingPositionInSubject:
-      // TODO: We can probably build a nice model with API here
-      
-      // FIXME: This needs to be based on `searchBounds`,
-      // not the `subjectBounds` given as an argument here
-      builder.buildAssert { (_, _, input, pos, subjectBounds) in false }
-
-    case .textSegment:
-      builder.buildAssert { (_, _, input, pos, _) in
-        // FIXME: Grapheme or word based on options
-        input.isOnGraphemeClusterBoundary(pos)
-      }
-
-    case .notTextSegment:
-      builder.buildAssert { (_, _, input, pos, _) in
-        // FIXME: Grapheme or word based on options
-        !input.isOnGraphemeClusterBoundary(pos)
-      }
-
-    case .startOfLine:
-      emitStartOfLine()
-
-    case .endOfLine:
-      emitEndOfLine()
-
-    case .caretAnchor:
-      if options.anchorsMatchNewlines {
-        emitStartOfLine()
-      } else {
-        builder.buildAssert { (_, _, input, pos, subjectBounds) in
-          pos == subjectBounds.lowerBound
-        }
-      }
-
-    case .dollarAnchor:
-      if options.anchorsMatchNewlines {
-        emitEndOfLine()
-      } else {
-        builder.buildAssert { (_, _, input, pos, subjectBounds) in
-          pos == subjectBounds.upperBound
-        }
-      }
-
-    case .wordBoundary:
-      builder.buildAssert { [options]
-          (cache, maxIndex, input, pos, subjectBounds) in
-        if options.usesSimpleUnicodeBoundaries {
-          // TODO: How should we handle bounds?
-          return _CharacterClassModel.word.isBoundary(
-            input,
-            at: pos,
-            bounds: subjectBounds,
-            with: options
-          )
-        } else {
-          return input.isOnWordBoundary(at: pos, using: &cache, &maxIndex)
-        }
-      }
-
-    case .notWordBoundary:
-      builder.buildAssert { [options]
-          (cache, maxIndex, input, pos, subjectBounds) in
-        if options.usesSimpleUnicodeBoundaries {
-          // TODO: How should we handle bounds?
-          return !_CharacterClassModel.word.isBoundary(
-            input,
-            at: pos,
-            bounds: subjectBounds,
-            with: options
-          )
-        } else {
-          return !input.isOnWordBoundary(at: pos, using: &cache, &maxIndex)
-        }
-      }
     }
+    builder.buildAssert(
+      by: kind,
+      options.anchorsMatchNewlines,
+      options.usesSimpleUnicodeBoundaries,
+      options.usesASCIIWord,
+      options.semanticLevel)
   }
-  
+
+  mutating func emitCharacterClass(_ cc: DSLTree.Atom.CharacterClass) {
+    builder.buildMatchBuiltin(model: cc.asRuntimeModel(options))
+  }
+
   mutating func emitMatchScalar(_ s: UnicodeScalar) {
     assert(options.semanticLevel == .unicodeScalar)
     if options.isCaseInsensitive && s.properties.isCased {
@@ -591,6 +471,10 @@ fileprivate extension Compiler.ByteCodeGen {
     let minTrips = low
     assert((extraTrips ?? 1) >= 0)
 
+    if tryEmitFastQuant(child, updatedKind, minTrips, extraTrips) {
+      return
+    }
+
     // The below is a general algorithm for bounded and unbounded
     // quantification. It can be specialized when the min
     // is 0 or 1, or when extra trips is 1 or unbounded.
@@ -775,9 +659,205 @@ fileprivate extension Compiler.ByteCodeGen {
     builder.label(exit)
   }
 
+  /// Specialized quantification instruction for repetition of certain nodes in grapheme semantic mode
+  /// Allowed nodes are:
+  /// - single ascii scalar .char
+  /// - ascii .customCharacterClass
+  /// - single grapheme consumgin built in character classes
+  /// - .any, .anyNonNewline, .dot
+  mutating func tryEmitFastQuant(
+    _ child: DSLTree.Node,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) -> Bool {
+    guard optimizationsEnabled
+            && minTrips <= QuantifyPayload.maxStorableTrips
+            && extraTrips ?? 0 <= QuantifyPayload.maxStorableTrips
+            && options.semanticLevel == .graphemeCluster
+            && kind != .reluctant else {
+      return false
+    }
+    switch child {
+    case .customCharacterClass(let ccc):
+      // ascii only custom character class
+      guard let bitset = ccc.asAsciiBitset(options) else {
+        return false
+      }
+      builder.buildQuantify(bitset: bitset, kind, minTrips, extraTrips)
+
+    case .atom(let atom):
+      switch atom {
+      case .char(let c):
+        // Single scalar ascii value character
+        guard let val = c._singleScalarAsciiValue else {
+          return false
+        }
+        builder.buildQuantify(asciiChar: val, kind, minTrips, extraTrips)
+
+      case .any:
+        builder.buildQuantifyAny(
+          matchesNewlines: true, kind, minTrips, extraTrips)
+      case .anyNonNewline:
+        builder.buildQuantifyAny(
+          matchesNewlines: false, kind, minTrips, extraTrips)
+      case .dot:
+        builder.buildQuantifyAny(
+          matchesNewlines: options.dotMatchesNewline, kind, minTrips, extraTrips)
+
+      case .characterClass(let cc):
+        // Custom character class that consumes a single grapheme
+        let model = cc.asRuntimeModel(options)
+        guard model.consumesSingleGrapheme else {
+          return false
+        }
+        builder.buildQuantify(
+          model: model,
+          kind,
+          minTrips,
+          extraTrips)
+      default:
+        return false
+      }
+    case .convertedRegexLiteral(let node, _):
+      return tryEmitFastQuant(node, kind, minTrips, extraTrips)
+    case .nonCapturingGroup(let groupKind, let node):
+      // .nonCapture nonCapturingGroups are ignored during compilation
+      guard groupKind.ast == .nonCapture else {
+        return false
+      }
+      return tryEmitFastQuant(node, kind, minTrips, extraTrips)
+    default:
+      return false
+    }
+    return true
+  }
+
+  /// Coalesce any adjacent scalar members in a custom character class together.
+  /// This is required in order to produce correct grapheme matching behavior.
+  func coalescingCustomCharacterClassMembers(
+    _ members: [DSLTree.CustomCharacterClass.Member]
+  ) -> [DSLTree.CustomCharacterClass.Member] {
+    struct Accumulator {
+      /// A series of range operands. For example, in `[ab-cde-fg]`, this will
+      /// contain the strings `["ab", "cde", "fg"]`. From there, the resulting
+      /// ranges will be created.
+      private var rangeOperands: [String] = [""]
+
+      /// The current range operand.
+      private var current: String {
+        _read { yield rangeOperands[rangeOperands.count - 1] }
+        _modify { yield &rangeOperands[rangeOperands.count - 1] }
+      }
+
+      /// Try to accumulate a character class member, returning `true` if
+      /// successful, `false` otherwise.
+      mutating func tryAccumulate(
+        _ member: DSLTree.CustomCharacterClass.Member
+      ) -> Bool {
+        switch member {
+        case .atom(let a):
+          guard let c = a.literalCharacterValue else { return false }
+          current.append(c)
+          return true
+        case .quotedLiteral(let str):
+          current += str
+          return true
+        case let .range(lhs, rhs):
+          guard let lhs = lhs.literalCharacterValue,
+                let rhs = rhs.literalCharacterValue
+          else { return false }
+          current.append(lhs)
+          rangeOperands.append(String(rhs))
+          return true
+        case .trivia:
+          // Trivia can be completely ignored if we've already coalesced
+          // something.
+          return !current.isEmpty
+        default:
+          return false
+        }
+      }
+
+      func finish() -> [DSLTree.CustomCharacterClass.Member] {
+        if rangeOperands.count == 1 {
+          // If we didn't have any additional range operands, this isn't a
+          // range, we can just form a standard quoted literal.
+          return [.quotedLiteral(current)]
+        }
+        var members = [DSLTree.CustomCharacterClass.Member]()
+
+        // We have other range operands, splice them together. For N operands
+        // we have N - 1 ranges.
+        for (i, lhs) in rangeOperands.dropLast().enumerated() {
+          let rhs = rangeOperands[i + 1]
+
+          // If this is the first operand we only need to drop the last
+          // character for its quoted members, otherwise this is both an LHS
+          // and RHS of a range, and as such needs both sides trimmed.
+          let leading = i == 0 ? lhs.dropLast() : lhs.dropFirst().dropLast()
+          if !leading.isEmpty {
+            members.append(.quotedLiteral(String(leading)))
+          }
+          members.append(.range(.char(lhs.last!), .char(rhs.first!)))
+        }
+        // We've handled everything except the quoted portion of the last
+        // operand, add it now.
+        let trailing = rangeOperands.last!.dropFirst()
+        if !trailing.isEmpty {
+          members.append(.quotedLiteral(String(trailing)))
+        }
+        return members
+      }
+    }
+    return members
+      .map { m -> DSLTree.CustomCharacterClass.Member in
+        // First we need to recursively coalsce any child character classes.
+        switch m {
+        case .custom(let ccc):
+          return .custom(coalescingCustomCharacterClass(ccc))
+        case .intersection(let lhs, let rhs):
+          return .intersection(
+            coalescingCustomCharacterClass(lhs),
+            coalescingCustomCharacterClass(rhs))
+        case .subtraction(let lhs, let rhs):
+          return .subtraction(
+            coalescingCustomCharacterClass(lhs),
+            coalescingCustomCharacterClass(rhs))
+        case .symmetricDifference(let lhs, let rhs):
+          return .symmetricDifference(
+            coalescingCustomCharacterClass(lhs),
+            coalescingCustomCharacterClass(rhs))
+        case .atom, .range, .quotedLiteral, .trivia:
+          return m
+        }
+      }
+      .coalescing(with: Accumulator(), into: { $0.finish() }) { accum, member in
+        accum.tryAccumulate(member)
+      }
+  }
+
+  func coalescingCustomCharacterClass(
+    _ ccc: DSLTree.CustomCharacterClass
+  ) -> DSLTree.CustomCharacterClass {
+    // This only needs to be done in grapheme semantic mode. In scalar semantic
+    // mode, we don't want to coalesce any scalars into a grapheme. This
+    // means that e.g `[e\u{301}-\u{302}]` remains a range between U+301 and
+    // U+302.
+    guard options.semanticLevel == .graphemeCluster else { return ccc }
+
+    let members = coalescingCustomCharacterClassMembers(ccc.members)
+    return .init(members: members, isInverted: ccc.isInverted)
+  }
+
   mutating func emitCustomCharacterClass(
     _ ccc: DSLTree.CustomCharacterClass
   ) throws {
+    // Before emitting a custom character class in grapheme semantic mode, we
+    // need to coalesce together any adjacent characters and scalars, over which
+    // we can perform grapheme breaking. This includes e.g range bounds for
+    // `[e\u{301}-\u{302}]`.
+    let ccc = coalescingCustomCharacterClass(ccc)
     if let asciiBitset = ccc.asAsciiBitset(options),
         optimizationsEnabled {
       if options.semanticLevel == .unicodeScalar {
@@ -785,9 +865,48 @@ fileprivate extension Compiler.ByteCodeGen {
       } else {
         builder.buildMatchAsciiBitset(asciiBitset)
       }
-    } else {
-      let consumer = try ccc.generateConsumer(options)
-      builder.buildConsume(by: consumer)
+      return
+    }
+    let consumer = try ccc.generateConsumer(options)
+    builder.buildConsume(by: consumer)
+  }
+
+  mutating func emitConcatenation(_ children: [DSLTree.Node]) throws {
+    // Before emitting a concatenation, we need to flatten out any nested
+    // concatenations, and coalesce any adjacent characters and scalars, forming
+    // quoted literals of their contents, over which we can perform grapheme
+    // breaking.
+    func flatten(_ node: DSLTree.Node) -> [DSLTree.Node] {
+      switch node {
+      case .concatenation(let ch):
+        return ch.flatMap(flatten)
+      case .convertedRegexLiteral(let n, _):
+        return flatten(n)
+      default:
+        return [node]
+      }
+    }
+    let children = children
+      .flatMap(flatten)
+      .coalescing(with: "", into: DSLTree.Node.quotedLiteral) { str, node in
+        switch node {
+        case .atom(let a):
+          guard let c = a.literalCharacterValue else { return false }
+          str.append(c)
+          return true
+        case .quotedLiteral(let q):
+          str += q
+          return true
+        case .trivia:
+          // Trivia can be completely ignored if we've already coalesced
+          // something.
+          return !str.isEmpty
+        default:
+          return false
+        }
+      }
+    for child in children {
+      try emitConcatenationComponent(child)
     }
   }
 
@@ -799,9 +918,7 @@ fileprivate extension Compiler.ByteCodeGen {
       try emitAlternation(children)
 
     case let .concatenation(children):
-      for child in children {
-        try emitConcatenationComponent(child)
-      }
+      try emitConcatenation(children)
 
     case let .capture(name, refId, child, transform):
       options.beginScope()

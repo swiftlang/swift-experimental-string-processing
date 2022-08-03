@@ -21,6 +21,7 @@
 import XCTest
 @testable // for internal `matches(of:)`
 import _StringProcessing
+import TestSupport
 
 extension UnicodeScalar {
   var value4Digits: String {
@@ -316,6 +317,9 @@ extension UTS18Tests {
   // surrogate followed by a trailing surrogate shall be handled as a single
   // code point in matching.
   func testSupplementaryCodePoints() {
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+
     XCTAssertTrue("👍".contains(regex(#"\u{1F44D}"#)))
     XCTAssertTrue("👍".contains(regex(#"[\u{1F440}-\u{1F44F}]"#)))
     XCTAssertTrue("👍👎".contains(regex(#"^[\u{1F440}-\u{1F44F}]+$"#)))
@@ -388,6 +392,9 @@ extension UTS18Tests {
   }
   
   func testCharacterClassesWithStrings() {
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+
     let regex = regex(#"[a-z🧐🇧🇪🇧🇫🇧🇬]"#)
     XCTAssertEqual("🧐", "🧐".wholeMatch(of: regex)?.0)
     XCTAssertEqual("🇧🇫", "🇧🇫".wholeMatch(of: regex)?.0)

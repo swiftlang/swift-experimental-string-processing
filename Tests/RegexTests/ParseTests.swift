@@ -374,9 +374,20 @@ extension RegexTests {
 
     // MARK: Allowed combining characters
 
-    parseTest("e\u{301}", "e\u{301}")
     parseTest("1\u{358}", "1\u{358}")
     parseTest(#"\ \#u{361}"#, " \u{361}")
+
+    parseTest("e\u{301}", "e\u{301}")
+    parseTest("[e\u{301}]", charClass("e\u{301}"))
+    parseTest("\u{E9}", "e\u{301}")
+    parseTest("[\u{E9}]", charClass("e\u{301}"))
+
+    parseTest(
+      "\\e\u{301}", "e\u{301}", throwsError: .invalidEscape("e\u{301}"))
+    parseTest(
+      "[\\e\u{301}]", charClass("e\u{301}"),
+      throwsError: .invalidEscape("e\u{301}")
+    )
 
     // MARK: Alternations
 
@@ -2140,9 +2151,6 @@ extension RegexTests {
     parseWithDelimitersTest("##/a b/##", concat("a", " ", "b"))
     parseWithDelimitersTest("#|a b|#", concat("a", "b"))
 
-    parseWithDelimitersTest("re'a b'", concat("a", " ", "b"))
-    parseWithDelimitersTest("rx'a b'", concat("a", "b"))
-
     parseWithDelimitersTest("#|[a b]|#", charClass("a", "b"))
     parseWithDelimitersTest(
       "#|(?-x)[a b]|#", concat(
@@ -2165,13 +2173,13 @@ extension RegexTests {
     parseWithDelimitersTest("#||||#", alt(empty(), empty(), empty()))
     parseWithDelimitersTest("#|a||#", alt("a", empty()))
 
-    parseWithDelimitersTest("re'x*'", zeroOrMore(of: "x"))
+    parseWithDelimitersTest("/x*/", zeroOrMore(of: "x"))
 
-    parseWithDelimitersTest(#"re'🔥🇩🇰'"#, concat("🔥", "🇩🇰"))
-    parseWithDelimitersTest(#"re'🔥✅'"#, concat("🔥", "✅"))
+    parseWithDelimitersTest(#"/🔥🇩🇰/"#, concat("🔥", "🇩🇰"))
+    parseWithDelimitersTest(#"/🔥✅/"#, concat("🔥", "✅"))
 
     // Printable ASCII characters.
-    delimiterLexingTest(##"re' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~'"##)
+    delimiterLexingTest(##"#/ !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~/#"##)
 
     // Make sure we can handle a combining accent as first character.
     parseWithDelimitersTest("/\u{301}/", "\u{301}")
@@ -2283,72 +2291,61 @@ extension RegexTests {
       /#
       """#, charClass(range_m("a", "b")))
 
-
-    // MARK: Delimiter skipping: Make sure we can skip over the ending delimiter
-    // if it's clear that it's part of the regex syntax.
-
     parseWithDelimitersTest(
-      #"re'(?'a_bcA0'\')'"#, namedCapture("a_bcA0", "'"))
+      #"/(?'a_bcA0'\')/"#, namedCapture("a_bcA0", "'"))
     parseWithDelimitersTest(
-      #"re'(?'a_bcA0-c1A'x*)'"#,
+      #"/(?'a_bcA0-c1A'x*)/"#,
       balancedCapture(name: "a_bcA0", priorName: "c1A", zeroOrMore(of: "x")),
       unsupported: true)
 
     parseWithDelimitersTest(
-      #"rx' (?'a_bcA0' a b)'"#, concat(namedCapture("a_bcA0", concat("a", "b"))))
+      #"/ (?'a_bcA0' a b)/"#, concat(" ", namedCapture("a_bcA0", concat(" ", "a", " ", "b"))))
 
     parseWithDelimitersTest(
-      #"re'(?('a_bcA0')x|y)'"#, conditional(
+      #"/(?('a_bcA0')x|y)/"#, conditional(
         .groupMatched(ref("a_bcA0")), trueBranch: "x", falseBranch: "y"),
       unsupported: true
     )
     parseWithDelimitersTest(
-      #"re'(?('+20')\')'"#, conditional(
+      #"/(?('+20')\')/"#, conditional(
         .groupMatched(ref(plus: 20)), trueBranch: "'", falseBranch: empty()),
       unsupported: true
     )
     parseWithDelimitersTest(
-      #"re'a\k'b0A''"#, concat("a", backreference(.named("b0A"))), throwsError: .invalidNamedReference("b0A"))
+      #"/a\k'b0A'/"#, concat("a", backreference(.named("b0A"))), throwsError: .invalidNamedReference("b0A"))
     parseWithDelimitersTest(
-      #"re'\k'+2-1''"#, backreference(ref(plus: 2), recursionLevel: -1),
+      #"/\k'+2-1'/"#, backreference(ref(plus: 2), recursionLevel: -1),
       unsupported: true
     )
 
     parseWithDelimitersTest(
-      #"re'a\g'b0A''"#, concat("a", subpattern(.named("b0A"))), unsupported: true)
+      #"/a\g'b0A'/"#, concat("a", subpattern(.named("b0A"))), unsupported: true)
     parseWithDelimitersTest(
-      #"re'\g'-1'\''"#, concat(subpattern(ref(minus: 1)), "'"), unsupported: true)
+      #"/\g'-1'\'/"#, concat(subpattern(ref(minus: 1)), "'"), unsupported: true)
 
     parseWithDelimitersTest(
-      #"re'(?C'a*b\c 🔥_ ;')'"#, pcreCallout(string: #"a*b\c 🔥_ ;"#),
+      #"/(?C'a*b\c 🔥_ ;')/"#, pcreCallout(string: #"a*b\c 🔥_ ;"#),
       unsupported: true)
 
-    // Fine, because we don't end up skipping.
-    delimiterLexingTest(#"re'(?'"#)
-    delimiterLexingTest(#"re'(?('"#)
-    delimiterLexingTest(#"re'\k'"#)
-    delimiterLexingTest(#"re'\g'"#)
-    delimiterLexingTest(#"re'(?C'"#)
+    delimiterLexingTest(#"/(?/"#)
+    delimiterLexingTest(#"/(?(/"#)
+    delimiterLexingTest(#"/\k/"#)
+    delimiterLexingTest(#"/\g/"#)
+    delimiterLexingTest(#"/(?C/"#)
 
-    // Not a valid group name, but we can still skip over it.
-    delimiterLexingTest(#"re'(?'🔥')'"#)
+    delimiterLexingTest(#"/(?'🔥')/"#)
 
-    // Escaped, so don't skip. These will ignore the ending `'` as we've already
-    // closed the literal.
     parseWithDelimitersTest(
-      #"re'\(?''"#, zeroOrOne(of: "("), ignoreTrailing: true
-    )
+      #"/\(?/"#, zeroOrOne(of: "("))
     parseWithDelimitersTest(
-      #"re'\\k''"#, concat("\\", "k"), ignoreTrailing: true
-    )
+      #"/\\k/"#, concat("\\", "k"))
     parseWithDelimitersTest(
-      #"re'\\g''"#, concat("\\", "g"), ignoreTrailing: true
-    )
+      #"/\\g/"#, concat("\\", "g"))
     parseWithDelimitersTest(
-      #"re'\(?C''"#, concat(zeroOrOne(of: "("), "C"), ignoreTrailing: true
-    )
-    delimiterLexingTest(#"re'(\?''"#, ignoreTrailing: true)
-    delimiterLexingTest(#"re'\(?(''"#, ignoreTrailing: true)
+      #"/\(?C/"#, concat(zeroOrOne(of: "("), "C"))
+
+    delimiterLexingTest(#"/(\?/"#)
+    delimiterLexingTest(#"/\(?(/"#)
 
     // MARK: Parse not-equal
 
@@ -2885,10 +2882,40 @@ extension RegexTests {
     diagnosticTest(#"[a-\Qbc\E]"#, .unsupported("range with quoted sequence"))
     diagnosticTest(#"[\Qbc\E-de]"#, .unsupported("range with quoted sequence"))
 
+    diagnosticTest(#"|([🇦🇫-🇿🇼])?"#, .invalidCharacterClassRangeOperand)
+    diagnosticTest(#"|([👨‍👩‍👦-👩‍👩‍👧‍👧])?"#, .invalidCharacterClassRangeOperand)
+
+    // Not single-scalar NFC.
+    diagnosticTest("[e\u{301}-e\u{302}]", .invalidCharacterClassRangeOperand)
+
+    // These scalar values expand under NFC.
+    let nfcExpandingScalars: [UInt32] = [
+      0x344, 0x958, 0x959, 0x95A, 0x95B, 0x95C, 0x95D, 0x95E, 0x95F, 0x9DC,
+      0x9DD, 0x9DF, 0xA33, 0xA36, 0xA59, 0xA5A, 0xA5B, 0xA5E, 0xB5C, 0xB5D,
+      0xF43, 0xF4D, 0xF52, 0xF57, 0xF5C, 0xF69, 0xF73, 0xF75, 0xF76, 0xF78,
+      0xF81, 0xF93, 0xF9D, 0xFA2, 0xFA7, 0xFAC, 0xFB9, 0x2ADC, 0xFB1D, 0xFB1F,
+      0xFB2A, 0xFB2B, 0xFB2C, 0xFB2D, 0xFB2E, 0xFB2F, 0xFB30, 0xFB31, 0xFB32,
+      0xFB33, 0xFB34, 0xFB35, 0xFB36, 0xFB38, 0xFB39, 0xFB3A, 0xFB3B, 0xFB3C,
+      0xFB3E, 0xFB40, 0xFB41, 0xFB43, 0xFB44, 0xFB46, 0xFB47, 0xFB48, 0xFB49,
+      0xFB4A, 0xFB4B, 0xFB4C, 0xFB4D, 0xFB4E, 0x1D15E, 0x1D15F, 0x1D160,
+      0x1D161, 0x1D162, 0x1D163, 0x1D164, 0x1D1BB, 0x1D1BC, 0x1D1BD, 0x1D1BE,
+      0x1D1BF, 0x1D1C0
+    ]
+    for scalar in nfcExpandingScalars {
+      let hex = String(scalar, radix: 16)
+      diagnosticTest(
+        #"[\u{\#(hex)}-\u{\#(hex)}]"#, .invalidCharacterClassRangeOperand)
+    }
+
+    // The NFC form of U+2126 is U+3A9.
+    diagnosticTest(#"[\u{2126}-\u{2126}]"#, .invalidCharacterClassRangeOperand)
+
     diagnosticTest(#"[_-A]"#, .invalidCharacterRange(from: "_", to: "A"))
     diagnosticTest(#"(?i)[_-A]"#, .invalidCharacterRange(from: "_", to: "A"))
     diagnosticTest(#"[c-b]"#, .invalidCharacterRange(from: "c", to: "b"))
     diagnosticTest(#"[\u{66}-\u{65}]"#, .invalidCharacterRange(from: "\u{66}", to: "\u{65}"))
+
+    diagnosticTest(#"[e\u{301}-e\u{302}]"#, .invalidCharacterRange(from: "\u{301}", to: "e"))
 
     diagnosticTest("(?x)[(?#)]", .expected("]"))
     diagnosticTest("(?x)[(?#abc)]", .expected("]"))
@@ -3281,30 +3308,23 @@ extension RegexTests {
 
     // MARK: Printable ASCII
 
-    delimiterLexingDiagnosticTest(#"re'\\#n'"#, .unterminated)
     for i: UInt8 in 0x1 ..< 0x20 where i != 0xA && i != 0xD { // U+A & U+D are \n and \r.
-      delimiterLexingDiagnosticTest("re'\(UnicodeScalar(i))'", .unprintableASCII)
+      delimiterLexingDiagnosticTest("/\(UnicodeScalar(i))/", .unprintableASCII)
     }
-    delimiterLexingDiagnosticTest("re'\n'", .unterminated)
-    delimiterLexingDiagnosticTest("re'\r'", .unterminated)
-    delimiterLexingDiagnosticTest("re'\u{7F}'", .unprintableASCII)
 
-    // MARK: Delimiter skipping
+    // Can only be done if pound signs are used.
+    delimiterLexingDiagnosticTest("/\n/", .unterminated)
+    delimiterLexingDiagnosticTest("/\r/", .unterminated)
+    delimiterLexingDiagnosticTest("/\u{7F}/", .unprintableASCII)
 
-    delimiterLexingDiagnosticTest("re'(?''", .unterminated)
-    delimiterLexingDiagnosticTest("re'(?'abc'", .unterminated)
-    delimiterLexingDiagnosticTest("re'(?('abc'", .unterminated)
-    delimiterLexingDiagnosticTest(#"re'\k'ab_c0+-'"#, .unterminated)
-    delimiterLexingDiagnosticTest(#"re'\g'ab_c0+-'"#, .unterminated)
+    delimiterLexingDiagnosticTest("/", .unterminated)
+    delimiterLexingDiagnosticTest("/x", .unterminated)
 
     // MARK: Unbalanced extended syntax
     delimiterLexingDiagnosticTest("#/a/", .unterminated)
     delimiterLexingDiagnosticTest("##/a/#", .unterminated)
 
     // MARK: Multiline
-
-    // Can only be done if pound signs are used.
-    delimiterLexingDiagnosticTest("/\n/", .unterminated)
 
     // Opening and closing delimiters must be on a newline.
     delimiterLexingDiagnosticTest("#/a\n/#", .unterminated)

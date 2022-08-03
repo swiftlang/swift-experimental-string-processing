@@ -11,6 +11,7 @@
 
 @testable import _RegexParser
 @testable import _StringProcessing
+import TestSupport
 
 import XCTest
 
@@ -37,6 +38,7 @@ enum DecodedInstr {
   case matchScalarUnchecked
   case matchBitsetScalar
   case matchBitset
+  case matchBuiltin
   case consumeBy
   case assertBy
   case matchBy
@@ -45,8 +47,7 @@ enum DecodedInstr {
   case endCapture
   case transformCapture
   case captureValue
-  case builtinAssertion
-  case builtinCharacterClass
+  case quantify
 }
 
 extension DecodedInstr {
@@ -55,87 +56,86 @@ extension DecodedInstr {
   ///
   /// Must stay in sync with Processor.cycle
   static func decode(_ instruction: Instruction) -> DecodedInstr {
-      let (opcode, payload) = instruction.destructure
-
-      switch opcode {
-      case .invalid:
-        fatalError("Invalid program")
-      case .moveImmediate:
-        return .moveImmediate
-      case .moveCurrentPosition:
-        return .moveCurrentPosition
-      case .branch:
-        return .branch
-      case .condBranchZeroElseDecrement:
-        return .condBranchZeroElseDecrement
-      case .condBranchSamePosition:
-        return .condBranchSamePosition
-      case .save:
-        return .save
-      case .saveAddress:
-        return .saveAddress
-      case .splitSaving:
-        return .splitSaving
-      case .clear:
-        return .clear
-      case .clearThrough:
-        return .clearThrough
-      case .accept:
-        return .accept
-      case .fail:
-        return .fail
-      case .advance:
-        return .advance
-      case .match:
-        let (isCaseInsensitive, _) = payload.elementPayload
-        if isCaseInsensitive {
-          return .matchCaseInsensitive
+    let (opcode, payload) = instruction.destructure
+    switch opcode {
+    case .invalid:
+      fatalError("Invalid program")
+    case .moveImmediate:
+      return .moveImmediate
+    case .moveCurrentPosition:
+      return .moveCurrentPosition
+    case .branch:
+      return .branch
+    case .condBranchZeroElseDecrement:
+      return .condBranchZeroElseDecrement
+    case .condBranchSamePosition:
+      return .condBranchSamePosition
+    case .save:
+      return .save
+    case .saveAddress:
+      return .saveAddress
+    case .splitSaving:
+      return .splitSaving
+    case .clear:
+      return .clear
+    case .clearThrough:
+      return .clearThrough
+    case .accept:
+      return .accept
+    case .fail:
+      return .fail
+    case .advance:
+      return .advance
+    case .match:
+      let (isCaseInsensitive, _) = payload.elementPayload
+      if isCaseInsensitive {
+        return .matchCaseInsensitive
+      } else {
+        return .match
+      }
+    case .matchScalar:
+      let (_, caseInsensitive, boundaryCheck) = payload.scalarPayload
+      if caseInsensitive {
+        if boundaryCheck {
+          return .matchScalarCaseInsensitive
         } else {
-          return .match
+          return .matchScalarCaseInsensitiveUnchecked
         }
-      case .matchScalar:
-        let (_, caseInsensitive, boundaryCheck) = payload.scalarPayload
-        if caseInsensitive {
-          if boundaryCheck {
-            return .matchScalarCaseInsensitive
-          } else {
-            return .matchScalarCaseInsensitiveUnchecked
-          }
+      } else {
+        if boundaryCheck {
+          return .matchScalar
         } else {
-          if boundaryCheck {
-            return .matchScalar
-          } else {
-            return .matchScalarUnchecked
-          }
+          return .matchScalarUnchecked
         }
-      case .matchBitset:
-        let (isScalar, _) = payload.bitsetPayload
-        if isScalar {
-          return .matchBitsetScalar
-        } else {
-          return .matchBitset
-        }
-      case .consumeBy:
-        return consumeBy
-      case .assertBy:
-        return .assertBy
-      case .matchBy:
-        return .matchBy
-      case .backreference:
-        return .backreference
-      case .beginCapture:
-        return .beginCapture
-      case .endCapture:
-        return .endCapture
-      case .transformCapture:
-        return .transformCapture
-      case .captureValue:
-        return .captureValue
-      case .builtinAssertion:
-        return .builtinAssertion
-      case .builtinCharacterClass:
-        return .builtinCharacterClass
-}
+      }
+    case .matchBitset:
+      let (isScalar, _) = payload.bitsetPayload
+      if isScalar {
+        return .matchBitsetScalar
+      } else {
+        return .matchBitset
+      }
+    case .consumeBy:
+      return consumeBy
+    case .assertBy:
+      return .assertBy
+    case .matchBy:
+      return .matchBy
+    case .quantify:
+      return .quantify
+    case .backreference:
+      return .backreference
+    case .beginCapture:
+      return .beginCapture
+    case .endCapture:
+      return .endCapture
+    case .transformCapture:
+      return .transformCapture
+    case .captureValue:
+      return .captureValue
+    case .matchBuiltin:
+      return .matchBuiltin
+    }
   }
 }
 
@@ -166,6 +166,45 @@ extension RegexTests {
           continue
         }
     }
+  }
+
+  private func testCompileError(
+    _ regex: String, _ error: RegexCompilationError,
+    file: StaticString = #file, line: UInt = #line
+  ) {
+    do {
+      _ = try _compileRegex(regex)
+      XCTFail("Expected compile error", file: file, line: line)
+    } catch let err as RegexCompilationError {
+      XCTAssertEqual(err, error, file: file, line: line)
+    } catch {
+      XCTFail("Unknown compile error", file: file, line: line)
+    }
+  }
+
+  func testInvalidScalarCoalescing() throws {
+    guard ensureNewStdlib() else { return }
+
+    // Non-single-scalar bounds.
+    testCompileError(
+      #"[a\u{302}-✅]"#, .invalidCharacterClassRangeOperand("a\u{302}"))
+    testCompileError(
+      #"[e\u{301}-\u{302}]"#, .invalidCharacterClassRangeOperand("e\u{301}"))
+    testCompileError(
+      #"[\u{73}\u{323}\u{307}-\u{1E00}]"#,
+      .invalidCharacterClassRangeOperand("\u{73}\u{323}\u{307}"))
+    testCompileError(
+      #"[a\u{315}\u{301}-\u{302}]"#,
+      .invalidCharacterClassRangeOperand("a\u{315}\u{301}")
+    )
+    testCompileError(
+      #"[a-z1e\u{301}-\u{302}\u{E1}3-59]"#,
+      .invalidCharacterClassRangeOperand("e\u{301}")
+    )
+    testCompileError(
+      #"[[e\u{301}-\u{302}]&&e\u{303}]"#,
+      .invalidCharacterClassRangeOperand("e\u{301}")
+    )
   }
 
   func testCompileQuantification() throws {
@@ -268,7 +307,7 @@ extension RegexTests {
       matchingOptions(adding: [.caseInsensitive]))
   }
 
-  private func expectProgram(
+  func expectProgram(
     for regex: String,
     syntax: SyntaxOptions = .traditional,
     semanticLevel: RegexSemanticLevel? = nil,
@@ -314,6 +353,15 @@ extension RegexTests {
       doesNotContain: [.consumeBy, .matchBitsetScalar])
     expectProgram(
       for: "[abc]",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchBitsetScalar],
+      doesNotContain: [.matchBitset, .consumeBy])
+    expectProgram(
+      for: #"[\Qab\Ec]"#,
+      contains: [.matchBitset],
+      doesNotContain: [.consumeBy, .matchBitsetScalar])
+    expectProgram(
+      for: #"[\Qab\Ec]"#,
       semanticLevel: .unicodeScalar,
       contains: [.matchBitsetScalar],
       doesNotContain: [.matchBitset, .consumeBy])
