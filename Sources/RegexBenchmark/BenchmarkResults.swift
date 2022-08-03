@@ -154,16 +154,24 @@ extension BenchmarkResult {
     var name: String
     var baseline: BenchmarkResult
     var latest: BenchmarkResult
-    var diffCompileTimes: Bool = false
+    var type: ComparisonType = .runtime
     
+    enum ComparisonType {
+      case runtime
+      case compileTime
+    }
+
     var diff: Time? {
-      if diffCompileTimes {
+      switch type {
+      case .compileTime:
         return latest.compileTime - baseline.compileTime
+      case .runtime:
+        if Stats.tTest(baseline, latest) {
+          return latest.median - baseline.median
+        }
+        return nil
       }
-      if Stats.tTest(baseline, latest) {
-        return latest.median - baseline.median
-      }
-      return nil
+
     }
     
     var description: String {
@@ -172,10 +180,11 @@ extension BenchmarkResult {
       }
       let oldVal: Time
       let newVal: Time
-      if diffCompileTimes {
+      switch type {
+      case .compileTime:
         oldVal = baseline.compileTime
         newVal = latest.compileTime
-      } else {
+      case .runtime:
         oldVal = baseline.median
         newVal = latest.median
       }
@@ -191,10 +200,11 @@ extension BenchmarkResult {
       }
       let oldVal: Time
       let newVal: Time
-      if diffCompileTimes {
+      switch type {
+      case .compileTime:
         oldVal = baseline.compileTime
         newVal = latest.compileTime
-      } else {
+      case .runtime:
         oldVal = baseline.median
         newVal = latest.median
       }
@@ -211,7 +221,6 @@ struct SuiteResult {
     results.updateValue(result, forKey: name)
   }
   
-  /// Compares with the given SuiteResult
   func compare(with other: SuiteResult) -> [BenchmarkResult.Comparison] {
     var comparisons: [BenchmarkResult.Comparison] = []
     for item in results {
@@ -236,7 +245,6 @@ struct SuiteResult {
     return comparisons
   }
   
-  /// Compares the compile times
   func compareCompileTimes(
     with other: SuiteResult
   ) -> [BenchmarkResult.Comparison] {
@@ -247,7 +255,7 @@ struct SuiteResult {
           .init(name: item.key,
                 baseline: otherVal,
                 latest: item.value,
-                diffCompileTimes: true))
+                type: .compileTime))
       }
     }
     return comparisons
