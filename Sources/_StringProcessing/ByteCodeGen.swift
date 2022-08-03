@@ -471,6 +471,10 @@ fileprivate extension Compiler.ByteCodeGen {
     let minTrips = low
     assert((extraTrips ?? 1) >= 0)
 
+    if tryEmitFastQuant(child, updatedKind, minTrips, extraTrips) {
+      return
+    }
+
     // The below is a general algorithm for bounded and unbounded
     // quantification. It can be specialized when the min
     // is 0 or 1, or when extra trips is 1 or unbounded.
@@ -653,6 +657,80 @@ fileprivate extension Compiler.ByteCodeGen {
     }
 
     builder.label(exit)
+  }
+
+  /// Specialized quantification instruction for repetition of certain nodes in grapheme semantic mode
+  /// Allowed nodes are:
+  /// - single ascii scalar .char
+  /// - ascii .customCharacterClass
+  /// - single grapheme consumgin built in character classes
+  /// - .any, .anyNonNewline, .dot
+  mutating func tryEmitFastQuant(
+    _ child: DSLTree.Node,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) -> Bool {
+    guard optimizationsEnabled
+            && minTrips <= QuantifyPayload.maxStorableTrips
+            && extraTrips ?? 0 <= QuantifyPayload.maxStorableTrips
+            && options.semanticLevel == .graphemeCluster
+            && kind != .reluctant else {
+      return false
+    }
+    switch child {
+    case .customCharacterClass(let ccc):
+      // ascii only custom character class
+      guard let bitset = ccc.asAsciiBitset(options) else {
+        return false
+      }
+      builder.buildQuantify(bitset: bitset, kind, minTrips, extraTrips)
+
+    case .atom(let atom):
+      switch atom {
+      case .char(let c):
+        // Single scalar ascii value character
+        guard let val = c._singleScalarAsciiValue else {
+          return false
+        }
+        builder.buildQuantify(asciiChar: val, kind, minTrips, extraTrips)
+
+      case .any:
+        builder.buildQuantifyAny(
+          matchesNewlines: true, kind, minTrips, extraTrips)
+      case .anyNonNewline:
+        builder.buildQuantifyAny(
+          matchesNewlines: false, kind, minTrips, extraTrips)
+      case .dot:
+        builder.buildQuantifyAny(
+          matchesNewlines: options.dotMatchesNewline, kind, minTrips, extraTrips)
+
+      case .characterClass(let cc):
+        // Custom character class that consumes a single grapheme
+        let model = cc.asRuntimeModel(options)
+        guard model.consumesSingleGrapheme else {
+          return false
+        }
+        builder.buildQuantify(
+          model: model,
+          kind,
+          minTrips,
+          extraTrips)
+      default:
+        return false
+      }
+    case .convertedRegexLiteral(let node, _):
+      return tryEmitFastQuant(node, kind, minTrips, extraTrips)
+    case .nonCapturingGroup(let groupKind, let node):
+      // .nonCapture nonCapturingGroups are ignored during compilation
+      guard groupKind.ast == .nonCapture else {
+        return false
+      }
+      return tryEmitFastQuant(node, kind, minTrips, extraTrips)
+    default:
+      return false
+    }
+    return true
   }
 
   /// Coalesce any adjacent scalar members in a custom character class together.

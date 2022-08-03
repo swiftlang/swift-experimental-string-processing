@@ -1,5 +1,4 @@
 @_implementationOnly import _RegexParser // For AssertionKind
-
 extension Character {
   var _isHorizontalWhitespace: Bool {
     self.unicodeScalars.first?.isHorizontalWhitespace == true
@@ -16,9 +15,27 @@ extension Processor {
     _ isStrictASCII: Bool,
     _ isScalarSemantics: Bool
   ) -> Bool {
-    guard let char = load(), let scalar = loadScalar() else {
+    guard let next = _doMatchBuiltin(
+      cc,
+      isInverted,
+      isStrictASCII,
+      isScalarSemantics
+    ) else {
       signalFailure()
       return false
+    }
+    currentPosition = next
+    return true
+  }
+  
+  func _doMatchBuiltin(
+    _ cc: _CharacterClassModel.Representation,
+    _ isInverted: Bool,
+    _ isStrictASCII: Bool,
+    _ isScalarSemantics: Bool
+  ) -> Input.Index? {
+    guard let char = load(), let scalar = loadScalar() else {
+      return nil
     }
 
     let asciiCheck = (char.isASCII && !isScalarSemantics)
@@ -95,12 +112,9 @@ extension Processor {
     }
 
     guard matched else {
-      signalFailure()
-      return false
+      return nil
     }
-
-    currentPosition = next
-    return true
+    return next
   }
   
   func isAtStartOfLine(_ payload: AssertionPayload) -> Bool {
@@ -185,6 +199,6 @@ extension Processor {
       } else {
         return !input.isOnWordBoundary(at: currentPosition, using: &wordIndexCache, &wordIndexMaxIndex)
       }
-      }
+    }
   }
 }

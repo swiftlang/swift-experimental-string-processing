@@ -156,6 +156,15 @@ struct _CharacterClassModel: Hashable {
   }
 }
 
+extension _CharacterClassModel {
+  var consumesSingleGrapheme: Bool {
+   switch self.cc {
+    case .anyScalar: return false
+    default: return true
+    }
+  }
+}
+
 extension _CharacterClassModel.Representation {
   /// Returns true if this CharacterClass should be matched by strict ascii under the given options
   func isStrictAscii(options: MatchingOptions) -> Bool {

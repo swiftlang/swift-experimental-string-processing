@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+@_implementationOnly import _RegexParser
+
 extension Instruction {
   /// An instruction's payload packs operands and destination
   /// registers.
@@ -330,7 +332,9 @@ extension Instruction.Payload {
   ) {
     interpretPair()
   }
+
   // MARK: Struct payloads
+
   init(_ model: _CharacterClassModel) {
     self.init(CharacterClassPayload(model).rawValue)
   }
@@ -342,11 +346,169 @@ extension Instruction.Payload {
     self.init(rawValue: payload.rawValue)
   }
   var assertion: AssertionPayload {
-    AssertionPayload.init(rawValue: self.rawValue & _payloadMask)
+    AssertionPayload.init(rawValue: rawValue & _payloadMask)
+  }
+  init(quantify: QuantifyPayload) {
+    self.init(quantify.rawValue)
+  }
+  var quantify: QuantifyPayload {
+    return QuantifyPayload(rawValue: rawValue & _payloadMask)
   }
 }
 
 // MARK: Struct definitions
+struct QuantifyPayload: RawRepresentable {
+  let rawValue: UInt64
+  enum PayloadType: UInt64 {
+    case bitset = 0
+    case asciiChar = 1
+    case any = 2
+    case builtin = 4
+  }
+
+  // Future work: optimize this layout -> payload type should be a fast switch
+  // The top 8 bits are reserved for the opcode so we have 56 bits to work with
+  // b55-b38 - Unused
+  // b38-b35 - Payload type (one of 4 types, stored on 3 bits)
+  // b35-b27 - minTrips (8 bit int)
+  // b27-b18 - extraTrips (8 bit value, one bit for nil)
+  // b18-b16 - Quantification type (one of three types)
+  // b16-b0  - Payload value (depends on payload type)
+  static var quantKindShift: UInt64   { 16 }
+  static var extraTripsShift: UInt64  { 18 }
+  static var minTripsShift: UInt64    { 27 }
+  static var typeShift: UInt64        { 35 }
+  static var maxStorableTrips: UInt64 { (1 << 8) - 1 }
+
+  var quantKindMask: UInt64  { 3 }
+  var extraTripsMask: UInt64 { 0x1FF }
+  var minTripsMask: UInt64   { 0xFF }
+  var typeMask: UInt64       { 7 }
+  var payloadMask: UInt64    { 0xFF_FF }
+
+  static func packInfoValues(
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?,
+    _ type: PayloadType
+  ) -> UInt64 {
+    let kindVal: UInt64
+    switch kind {
+    case .eager:
+      kindVal = 0
+    case .reluctant:
+      kindVal = 1
+    case .possessive:
+      kindVal = 2
+    }
+    let extraTripsVal: UInt64 = extraTrips == nil ? 1 : UInt64(extraTrips!) << 1
+    return (kindVal << QuantifyPayload.quantKindShift) +
+    (extraTripsVal << QuantifyPayload.extraTripsShift) +
+    (UInt64(minTrips) << QuantifyPayload.minTripsShift) +
+    (type.rawValue << QuantifyPayload.typeShift)
+  }
+
+  init(rawValue: UInt64) {
+    self.rawValue = rawValue
+    assert(rawValue & _opcodeMask == 0)
+  }
+
+  init(
+    bitset: AsciiBitsetRegister,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    assert(bitset.bits <= _payloadMask)
+    self.rawValue = bitset.bits
+      + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .bitset)
+  }
+
+  init(
+    asciiChar: UInt8,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    self.rawValue = UInt64(asciiChar)
+      + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .asciiChar)
+  }
+
+  init(
+    matchesNewlines: Bool,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    self.rawValue = (matchesNewlines ? 1 : 0)
+      + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .any)
+  }
+
+  init(
+    model: _CharacterClassModel,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    assert(model.cc.rawValue < 0xFF)
+    assert(model.matchLevel != .unicodeScalar)
+    let packedModel = model.cc.rawValue
+      + (model.isInverted ? 1 << 9 : 0)
+      + (model.isStrictASCII ? 1 << 10 : 0)
+    self.rawValue = packedModel
+      + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .builtin)
+  }
+
+  var type: PayloadType {
+    PayloadType(rawValue: (self.rawValue >> QuantifyPayload.typeShift) & 7)!
+  }
+
+  var quantKind: AST.Quantification.Kind {
+    switch (self.rawValue >> QuantifyPayload.quantKindShift) & quantKindMask {
+    case 0: return .eager
+    case 1: return .reluctant
+    case 2: return .possessive
+    default:
+      fatalError("Unreachable")
+    }
+  }
+
+  var minTrips: UInt64 {
+    (self.rawValue >> QuantifyPayload.minTripsShift) & minTripsMask
+  }
+
+  var extraTrips: UInt64? {
+    let val = (self.rawValue >> QuantifyPayload.extraTripsShift) & extraTripsMask
+    if val == 1 {
+      return nil
+    } else {
+      return val >> 1
+    }
+  }
+
+  var bitset: AsciiBitsetRegister {
+    TypedInt(self.rawValue & payloadMask)
+  }
+
+  var asciiChar: UInt8 {
+    UInt8(asserting: self.rawValue & payloadMask)
+  }
+
+  var anyMatchesNewline: Bool {
+    (self.rawValue & 1) == 1
+  }
+
+  var builtin: _CharacterClassModel.Representation {
+    _CharacterClassModel.Representation(rawValue: self.rawValue & 0xFF)!
+  }
+  var builtinIsInverted: Bool {
+    (self.rawValue >> 9) & 1 == 1
+  }
+  var builtinIsStrict: Bool {
+    (self.rawValue >> 10) & 1 == 1
+  }
+}
+
 struct CharacterClassPayload: RawRepresentable {
   let rawValue: UInt64
   // Layout:

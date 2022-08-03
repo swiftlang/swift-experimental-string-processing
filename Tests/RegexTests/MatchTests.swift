@@ -2522,4 +2522,31 @@ extension RegexTests {
     expectCompletion(regex: #"(a{,4})*"#, in: "aa")
     expectCompletion(regex: #"((|)+)*"#, in: "aa")
   }
+
+  func testQuantifyOptimization() throws {
+    // test that the maximum values for minTrips and extraTrips are handled correctly
+    let maxStorable = Int(QuantifyPayload.maxStorableTrips)
+    let maxExtraTrips = "a{,\(maxStorable)}"
+    expectProgram(for: maxExtraTrips, contains: [.quantify])
+    firstMatchTest(maxExtraTrips, input: String(repeating: "a", count: maxStorable), match: String(repeating: "a", count: maxStorable))
+    firstMatchTest(maxExtraTrips, input: String(repeating: "a", count: maxStorable + 1), match: String(repeating: "a", count: maxStorable))
+    XCTAssertNil(try Regex(maxExtraTrips).wholeMatch(in: String(repeating: "a", count: maxStorable + 1)))
+
+    let maxMinTrips = "a{\(maxStorable),}"
+    expectProgram(for: maxMinTrips, contains: [.quantify])
+    firstMatchTest(maxMinTrips, input: String(repeating: "a", count: maxStorable), match: String(repeating: "a", count: maxStorable))
+    firstMatchTest(maxMinTrips, input: String(repeating: "a", count: maxStorable - 1), match: nil)
+
+    let maxBothTrips = "a{\(maxStorable),\(maxStorable*2)}"
+    expectProgram(for: maxBothTrips, contains: [.quantify])
+    XCTAssertNil(try Regex(maxBothTrips).wholeMatch(in: String(repeating: "a", count: maxStorable*2 + 1)))
+    firstMatchTest(maxBothTrips, input: String(repeating: "a", count: maxStorable*2), match: String(repeating: "a", count: maxStorable*2))
+    firstMatchTest(maxBothTrips, input: String(repeating: "a", count: maxStorable), match: String(repeating: "a", count: maxStorable))
+    firstMatchTest(maxBothTrips, input: String(repeating: "a", count: maxStorable - 1), match: nil)
+    
+    expectProgram(for: "a{,\(maxStorable+1)}", doesNotContain: [.quantify])
+    expectProgram(for: "a{\(maxStorable+1),}", doesNotContain: [.quantify])
+    expectProgram(for: "a{\(maxStorable-1),\(maxStorable*2)}", doesNotContain: [.quantify])
+    expectProgram(for: "a{\(maxStorable),\(maxStorable*2+1)}", doesNotContain: [.quantify])
+  }
 }

@@ -244,18 +244,25 @@ extension Processor {
     currentPosition < end ? input.unicodeScalars[currentPosition] : nil
   }
   
+  func _doMatchScalar(_ s: Unicode.Scalar, _ boundaryCheck: Bool) -> Input.Index? {
+    if s == loadScalar(),
+       let idx = input.unicodeScalars.index(
+        currentPosition,
+        offsetBy: 1,
+        limitedBy: end),
+       (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx)) {
+      return idx
+    } else {
+      return nil
+    }
+  }
+  
   mutating func matchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) -> Bool {
-    guard s == loadScalar(),
-          let idx = input.unicodeScalars.index(
-            currentPosition,
-            offsetBy: 1,
-            limitedBy: end),
-          (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx))
-    else {
+    guard let next = _doMatchScalar(s, boundaryCheck) else {
       signalFailure()
       return false
     }
-    currentPosition = idx
+    currentPosition = next
     return true
   }
 
@@ -278,17 +285,25 @@ extension Processor {
     return true
   }
 
+  func _doMatchBitset(_ bitset: DSLTree.CustomCharacterClass.AsciiBitset) -> Input.Index? {
+    if let cur = load(), bitset.matches(char: cur) {
+      return input.index(after: currentPosition)
+    } else {
+      return nil
+    }
+  }
+
   // If we have a bitset we know that the CharacterClass only matches against
   // ascii characters, so check if the current input element is ascii then
   // check if it is set in the bitset
   mutating func matchBitset(
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
   ) -> Bool {
-    guard let cur = load(), bitset.matches(char: cur) else {
+    guard let next = _doMatchBitset(bitset) else {
       signalFailure()
       return false
     }
-    _uncheckedForcedConsumeOne()
+    currentPosition = next
     return true
   }
 
@@ -297,7 +312,7 @@ extension Processor {
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
   ) -> Bool {
     guard let curScalar = loadScalar(),
-            bitset.matches(scalar: curScalar),
+          bitset.matches(scalar: curScalar),
           let idx = input.unicodeScalars.index(currentPosition, offsetBy: 1, limitedBy: end) else {
       signalFailure()
       return false
@@ -307,12 +322,31 @@ extension Processor {
   }
 
   mutating func signalFailure() {
-    guard let (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) =
-            savePoints.popLast()?.destructure
-    else {
+    guard !savePoints.isEmpty else {
       state = .fail
       return
     }
+    let (pc, pos, stackEnd, capEnds, intRegisters, posRegisters): (
+      pc: InstructionAddress,
+      pos: Position?,
+      stackEnd: CallStackAddress,
+      captureEnds: [_StoredCapture],
+      intRegisters: [Int],
+      PositionRegister: [Input.Index]
+    )
+
+    let idx = savePoints.index(before: savePoints.endIndex)
+    // If we have a quantifier save point, move the next range position into pos
+    if !savePoints[idx].rangeIsEmpty {
+      savePoints[idx].takePositionFromRange(input)
+    }
+    // If we have a normal save point or an empty quantifier save point, remove it
+    if savePoints[idx].rangeIsEmpty {
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
+    } else {
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
+    }
+
     assert(stackEnd.rawValue <= callStack.count)
     assert(capEnds.count == storedCaptures.count)
 
@@ -366,7 +400,6 @@ extension Processor {
       _checkInvariants()
     }
     let (opcode, payload) = fetch().destructure
-
     switch opcode {
     case .invalid:
       fatalError("Invalid program")
@@ -487,6 +520,25 @@ extension Processor {
       ) {
         controller.step()
       }
+    case .quantify:
+      let quantPayload = payload.quantify
+      let matched: Bool
+      switch (quantPayload.quantKind, quantPayload.minTrips, quantPayload.extraTrips) {
+      case (.reluctant, _, _):
+        assertionFailure(".reluctant is not supported by .quantify")
+        return
+      case (.eager, 0, nil):
+        matched = runEagerZeroOrMoreQuantify(quantPayload)
+      case (.eager, 1, nil):
+        matched = runEagerOneOrMoreQuantify(quantPayload)
+      case (_, 0, 1):
+        matched = runZeroOrOneQuantify(quantPayload)
+      default:
+        matched = runQuantify(quantPayload)
+      }
+      if matched {
+        controller.step()
+      }
 
     case .consumeBy:
       let reg = payload.consumer
@@ -590,5 +642,3 @@ extension Processor {
     }
   }
 }
-
-

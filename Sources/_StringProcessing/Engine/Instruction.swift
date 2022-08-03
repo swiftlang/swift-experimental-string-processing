@@ -193,6 +193,13 @@ extension Instruction {
     ///
     case splitSaving
 
+    /// Fused quantify, execute, save instruction
+    /// Quantifies the stored instruction in an inner loop instead of looping through instructions in processor
+    /// Only quantifies specific nodes
+    ///
+    ///     quantify(_:QuantifyPayload)
+    ///
+    case quantify
     /// Begin the given capture
     ///
     ///     beginCapture(_:CapReg)

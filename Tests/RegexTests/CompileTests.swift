@@ -47,6 +47,7 @@ enum DecodedInstr {
   case endCapture
   case transformCapture
   case captureValue
+  case quantify
 }
 
 extension DecodedInstr {
@@ -120,6 +121,8 @@ extension DecodedInstr {
       return .assertBy
     case .matchBy:
       return .matchBy
+    case .quantify:
+      return .quantify
     case .backreference:
       return .backreference
     case .beginCapture:
@@ -304,7 +307,7 @@ extension RegexTests {
       matchingOptions(adding: [.caseInsensitive]))
   }
 
-  private func expectProgram(
+  func expectProgram(
     for regex: String,
     syntax: SyntaxOptions = .traditional,
     semanticLevel: RegexSemanticLevel? = nil,
