@@ -196,11 +196,19 @@ extension Instruction.Payload {
     interpret()
   }
 
-  init(distance: Distance) {
-    self.init(distance)
+  init(distance: Distance, isScalarDistance: Bool = false) {
+    self.init(isScalarDistance ? 1 : 0, distance)
   }
-  var distance: Distance {
-    interpret()
+  var distance: (isScalarDistance: Bool, Distance) {
+    let pair: (UInt64, Distance) = interpretPair()
+    return (isScalarDistance: pair.0 == 1, pair.1)
+  }
+  
+  init(isScalar: Bool) {
+    self.init(isScalar ? 1 : 0)
+  }
+  var isScalar: Bool {
+    self.rawValue == 1
   }
 
   init(bool: BoolRegister) {

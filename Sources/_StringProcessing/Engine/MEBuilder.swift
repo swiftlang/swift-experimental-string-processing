@@ -142,6 +142,19 @@ extension MEProgram.Builder {
   mutating func buildAdvance(_ n: Distance) {
     instructions.append(.init(.advance, .init(distance: n)))
   }
+  
+  mutating func buildAdvanceUnicodeScalar(_ n: Distance) {
+    instructions.append(
+      .init(.advance, .init(distance: n, isScalarDistance: true)))
+  }
+  
+  mutating func buildConsumeNonNewline() {
+    instructions.append(.init(.matchAnyNonNewline, .init(isScalar: false)))
+  }
+                        
+  mutating func buildConsumeScalarNonNewline() {
+    instructions.append(.init(.matchAnyNonNewline, .init(isScalar: true)))
+  }
 
   mutating func buildMatch(_ e: Character, isCaseInsensitive: Bool) {
     instructions.append(.init(
