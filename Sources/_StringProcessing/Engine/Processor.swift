@@ -9,6 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+
 enum MatchMode {
   case wholeString
   case partialFromFront
@@ -238,7 +239,7 @@ extension Processor {
     }
     return true
   }
-  
+
   func loadScalar() -> Unicode.Scalar? {
     currentPosition < end ? input.unicodeScalars[currentPosition] : nil
   }
@@ -476,6 +477,17 @@ extension Processor {
         }
       }
 
+    case .matchBuiltin:
+      let payload = payload.characterClassPayload
+      if matchBuiltin(
+        payload.cc,
+        payload.isInverted,
+        payload.isStrictASCII,
+        payload.isScalarSemantics
+      ) {
+        controller.step()
+      }
+
     case .consumeBy:
       let reg = payload.consumer
       guard currentPosition < searchBounds.upperBound,
@@ -489,16 +501,9 @@ extension Processor {
       controller.step()
 
     case .assertBy:
-      let reg = payload.assertion
-      let assertion = registers[reg]
+      let payload = payload.assertion
       do {
-        guard try assertion(
-          &wordIndexCache,
-          &wordIndexMaxIndex,
-          input,
-          currentPosition,
-          subjectBounds
-        ) else {
+        guard try builtinAssert(by: payload) else {
           signalFailure()
           return
         }
@@ -547,16 +552,14 @@ extension Processor {
     case .beginCapture:
       let capNum = Int(
         asserting: payload.capture.rawValue)
+      storedCaptures[capNum].startCapture(currentPosition)
+      controller.step()
 
-       storedCaptures[capNum].startCapture(currentPosition)
-       controller.step()
-
-     case .endCapture:
+    case .endCapture:
       let capNum = Int(
         asserting: payload.capture.rawValue)
-
-       storedCaptures[capNum].endCapture(currentPosition)
-       controller.step()
+      storedCaptures[capNum].endCapture(currentPosition)
+      controller.step()
 
     case .transformCapture:
       let (cap, trans) = payload.pairedCaptureTransform
@@ -584,12 +587,6 @@ extension Processor {
       storedCaptures[capNum].registerValue(
         value, overwriteInitial: sp)
       controller.step()
-
-    case .builtinAssertion:
-      builtinAssertion()
-
-    case .builtinCharacterClass:
-      builtinCharacterClass()
     }
   }
 }
