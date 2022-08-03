@@ -55,7 +55,6 @@ struct BenchmarkChart: View {
     BarMark(
       x: .value("Name", name),
       y: .value("Normalized runtime", new / old))
-    
     .foregroundStyle(LinearGradient(
       colors: [.accentColor, new - old <= 0 ? .green : .yellow],
       startPoint: .bottom,
