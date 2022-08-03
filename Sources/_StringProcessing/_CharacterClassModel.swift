@@ -17,14 +17,28 @@
 
 struct _CharacterClassModel: Hashable {
   /// The actual character class to match.
-  var cc: Representation
+  let cc: Representation
   
   /// The level (character or Unicode scalar) at which to match.
-  var matchLevel: MatchLevel
+  let matchLevel: MatchingOptions.SemanticLevel
+  
+  /// If this character character class only matches ascii characters
+  let isStrictASCII: Bool
 
   /// Whether this character class matches against an inverse,
   /// e.g \D, \S, [^abc].
-  var isInverted: Bool = false
+  let isInverted: Bool
+
+  init(
+    cc: Representation,
+    options: MatchingOptions,
+    isInverted: Bool
+  ) {
+    self.cc = cc
+    self.matchLevel = options.semanticLevel
+    self.isStrictASCII = cc.isStrictAscii(options: options)
+    self.isInverted = isInverted
+  }
 
   enum Representation: UInt64, Hashable {
     /// Any character
@@ -47,29 +61,114 @@ struct _CharacterClassModel: Hashable {
     /// Character.isLetter or Character.isDigit or Character == "_"
     case word
   }
-
-  enum MatchLevel: Hashable {
-    /// Match at the extended grapheme cluster level.
-    case graphemeCluster
-    /// Match at the Unicode scalar level.
-    case unicodeScalar
-  }
-
-  var scalarSemantic: Self {
-    var result = self
-    result.matchLevel = .unicodeScalar
-    return result
-  }
   
-  var graphemeClusterSemantic: Self {
-    var result = self
-    result.matchLevel = .graphemeCluster
-    return result
-  }
+  /// Returns the end of the match of this character class in the string.
+  ///
+  /// - Parameter str: The string to match against.
+  /// - Parameter at: The index to start matching.
+  /// - Parameter options: Options for the match operation.
+  /// - Returns: The index of the end of the match, or `nil` if there is no match.
+  func matches(
+    in input: String,
+    at currentPosition: String.Index
+  ) -> String.Index? {
+    // FIXME: This is only called in custom character classes that contain builtin
+    // character classes as members (ie: [a\w] or set operations), is there
+    // any way to avoid that? Can we remove this somehow?
+    guard currentPosition != input.endIndex else {
+      return nil
+    }
+    let char = input[currentPosition]
+    let scalar = input.unicodeScalars[currentPosition]
+    let isScalarSemantics = matchLevel == .unicodeScalar
+    let asciiCheck = (char.isASCII && !isScalarSemantics)
+      || (scalar.isASCII && isScalarSemantics)
+      || !isStrictASCII
+    
+    var matched: Bool
+    var next: String.Index
+    switch (isScalarSemantics, cc) {
+    case (_, .anyGrapheme):
+      next = input.index(after: currentPosition)
+    case (_, .anyScalar):
+      // FIXME: This allows us to be not-scalar aligned when in grapheme mode
+      // Should this even be allowed?
+      next = input.unicodeScalars.index(after: currentPosition)
+    case (true, _):
+      next = input.unicodeScalars.index(after: currentPosition)
+    case (false, _):
+      next = input.index(after: currentPosition)
+    }
 
+    switch cc {
+    case .any, .anyGrapheme, .anyScalar:
+      matched = true
+    case .digit:
+      if isScalarSemantics {
+        matched = scalar.properties.numericType != nil && asciiCheck
+      } else {
+        matched = char.isNumber && asciiCheck
+      }
+    case .horizontalWhitespace:
+      if isScalarSemantics {
+        matched = scalar.isHorizontalWhitespace && asciiCheck
+      } else {
+        matched = char._isHorizontalWhitespace && asciiCheck
+      }
+    case .verticalWhitespace:
+      if isScalarSemantics {
+        matched = scalar.isNewline && asciiCheck
+      } else {
+        matched = char._isNewline && asciiCheck
+      }
+    case .newlineSequence:
+      if isScalarSemantics {
+        matched = scalar.isNewline && asciiCheck
+        if matched && scalar == "\r"
+            && next != input.endIndex && input.unicodeScalars[next] == "\n" {
+          // Match a full CR-LF sequence even in scalar sematnics
+          input.unicodeScalars.formIndex(after: &next)
+        }
+      } else {
+        matched = char._isNewline && asciiCheck
+      }
+    case .whitespace:
+      if isScalarSemantics {
+        matched = scalar.properties.isWhitespace && asciiCheck
+      } else {
+        matched = char.isWhitespace && asciiCheck
+      }
+    case .word:
+      if isScalarSemantics {
+        matched = scalar.properties.isAlphabetic && asciiCheck
+      } else {
+        matched = char.isWordCharacter && asciiCheck
+      }
+    }
+    if isInverted {
+      matched.toggle()
+    }
+    if matched {
+      return next
+    } else {
+      return nil
+    }
+  }
+}
+
+extension _CharacterClassModel {
+  var consumesSingleGrapheme: Bool {
+   switch self.cc {
+    case .anyScalar: return false
+    default: return true
+    }
+  }
+}
+
+extension _CharacterClassModel.Representation {
   /// Returns true if this CharacterClass should be matched by strict ascii under the given options
   func isStrictAscii(options: MatchingOptions) -> Bool {
-    switch self.cc {
+    switch self {
     case .digit: return options.usesASCIIDigits
     case .horizontalWhitespace: return options.usesASCIISpaces
     case .newlineSequence: return options.usesASCIISpaces
@@ -78,129 +177,6 @@ struct _CharacterClassModel: Hashable {
     case .word: return options.usesASCIIWord
     default: return false
     }
-  }
-
-  /// Returns true if this character class always only consumes a single grapheme
-  var consumesSingleGrapheme: Bool {
-    switch self.cc {
-     case .anyScalar: return false
-     default: return true
-     }
-   }
-
-  /// Inverts a character class.
-  var inverted: Self {
-    var copy = self
-    copy.isInverted.toggle()
-    return copy
-  }
-  
-  /// Returns the end of the match of this character class in the string.
-  ///
-  /// - Parameter str: The string to match against.
-  /// - Parameter at: The index to start matching.
-  /// - Parameter options: Options for the match operation.
-  /// - Returns: The index of the end of the match, or `nil` if there is no match.
-  func matches(in str: String, at i: String.Index, with options: MatchingOptions) -> String.Index? {
-    // FIXME: This is only called in custom character classes that contain builtin
-    // character classes as members (ie: [a\w] or set operations), is there
-    // any way to avoid that? Can we remove this somehow?
-    switch matchLevel {
-    case .graphemeCluster:
-      let c = str[i]
-      var matched: Bool
-      var next = str.index(after: i)
-      switch cc {
-      case .any, .anyGrapheme: matched = true
-      case .anyScalar:
-        matched = true
-        next = str.unicodeScalars.index(after: i)
-      case .digit:
-        matched = c.isNumber && (c.isASCII || !options.usesASCIIDigits)
-      case .horizontalWhitespace:
-        matched = c.unicodeScalars.first?.isHorizontalWhitespace == true
-          && (c.isASCII || !options.usesASCIISpaces)
-      case .newlineSequence, .verticalWhitespace:
-        matched = c.unicodeScalars.first?.isNewline == true
-          && (c.isASCII || !options.usesASCIISpaces)
-      case .whitespace:
-        matched = c.isWhitespace && (c.isASCII || !options.usesASCIISpaces)
-      case .word:
-        matched = c.isWordCharacter && (c.isASCII || !options.usesASCIIWord)
-      }
-      if isInverted {
-        matched.toggle()
-      }
-      return matched ? next : nil
-    case .unicodeScalar:
-      let c = str.unicodeScalars[i]
-      var nextIndex = str.unicodeScalars.index(after: i)
-      var matched: Bool
-      switch cc {
-      case .any: matched = true
-      case .anyScalar: matched = true
-      case .anyGrapheme:
-        matched = true
-        nextIndex = str.index(after: i)
-      case .digit:
-        matched = c.properties.numericType != nil && (c.isASCII || !options.usesASCIIDigits)
-      case .horizontalWhitespace:
-        matched = c.isHorizontalWhitespace && (c.isASCII || !options.usesASCIISpaces)
-      case .verticalWhitespace:
-        matched = c.isNewline && (c.isASCII || !options.usesASCIISpaces)
-      case .newlineSequence:
-        matched = c.isNewline && (c.isASCII || !options.usesASCIISpaces)
-        if c == "\r" && nextIndex != str.endIndex && str.unicodeScalars[nextIndex] == "\n" {
-          str.unicodeScalars.formIndex(after: &nextIndex)
-        }
-      case .whitespace:
-        matched = c.properties.isWhitespace && (c.isASCII || !options.usesASCIISpaces)
-      case .word:
-        matched = (c.properties.isAlphabetic || c == "_") && (c.isASCII || !options.usesASCIIWord)
-      }
-      if isInverted {
-        matched.toggle()
-      }
-      return matched ? nextIndex : nil
-    }
-  }
-}
-
-extension _CharacterClassModel {
-  static var any: _CharacterClassModel {
-    .init(cc: .any, matchLevel: .graphemeCluster)
-  }
-
-  static var anyGrapheme: _CharacterClassModel {
-    .init(cc: .anyGrapheme, matchLevel: .graphemeCluster)
-  }
-
-  static var anyUnicodeScalar: _CharacterClassModel {
-    .init(cc: .any, matchLevel: .unicodeScalar)
-  }
-
-  static var whitespace: _CharacterClassModel {
-    .init(cc: .whitespace, matchLevel: .graphemeCluster)
-  }
-  
-  static var digit: _CharacterClassModel {
-    .init(cc: .digit, matchLevel: .graphemeCluster)
-  }
-
-  static var horizontalWhitespace: _CharacterClassModel {
-    .init(cc: .horizontalWhitespace, matchLevel: .graphemeCluster)
-  }
-
-  static var newlineSequence: _CharacterClassModel {
-    .init(cc: .newlineSequence, matchLevel: .graphemeCluster)
-  }
-
-  static var verticalWhitespace: _CharacterClassModel {
-    .init(cc: .verticalWhitespace, matchLevel: .graphemeCluster)
-  }
-
-  static var word: _CharacterClassModel {
-    .init(cc: .word, matchLevel: .graphemeCluster)
   }
 }
 
@@ -226,44 +202,57 @@ extension _CharacterClassModel: CustomStringConvertible {
   }
 }
 
-extension _CharacterClassModel {
-  func withMatchLevel(
-    _ level: _CharacterClassModel.MatchLevel
-  ) -> _CharacterClassModel {
-    var cc = self
-    cc.matchLevel = level
-    return cc
-  }
-}
-
 extension DSLTree.Atom.CharacterClass {
-    var model: _CharacterClassModel {
+  /// Converts this DSLTree CharacterClass into our runtime representation
+  func asRuntimeModel(_ options: MatchingOptions) -> _CharacterClassModel {
+    let cc: _CharacterClassModel.Representation
+    var inverted = false
     switch self {
-    case .digit:    return .digit
-    case .notDigit: return .digit.inverted
+    case .digit:
+      cc = .digit
+    case .notDigit:
+      cc = .digit
+      inverted = true
 
-    case .horizontalWhitespace: return .horizontalWhitespace
+    case .horizontalWhitespace:
+      cc = .horizontalWhitespace
     case .notHorizontalWhitespace:
-      return .horizontalWhitespace.inverted
+      cc = .horizontalWhitespace
+      inverted = true
 
-    case .newlineSequence: return .newlineSequence
+    case .newlineSequence:
+      cc = .newlineSequence
 
     // FIXME: This is more like '.' than inverted '\R', as it is affected
     // by e.g (*CR). We should therefore really be emitting it through
     // emitDot(). For now we treat it as semantically invalid.
-    case .notNewline: return .newlineSequence.inverted
+    case .notNewline:
+      cc = .newlineSequence
+      inverted = true
 
-    case .whitespace:    return .whitespace
-    case .notWhitespace: return .whitespace.inverted
+    case .whitespace:
+      cc = .whitespace
+    case .notWhitespace:
+      cc = .whitespace
+      inverted = true
 
-    case .verticalWhitespace:    return .verticalWhitespace
-    case .notVerticalWhitespace: return .verticalWhitespace.inverted
+    case .verticalWhitespace:
+      cc = .verticalWhitespace
+    case .notVerticalWhitespace:
+      cc = .verticalWhitespace
+      inverted = true
 
-    case .word:    return .word
-    case .notWord: return .word.inverted
+    case .word:
+      cc = .word
+    case .notWord:
+      cc = .word
+      inverted = true
 
-    case .anyGrapheme: return .anyGrapheme
-    case .anyUnicodeScalar: return .anyUnicodeScalar
+    case .anyGrapheme:
+      cc = .anyGrapheme
+    case .anyUnicodeScalar:
+      cc = .anyScalar
     }
+    return _CharacterClassModel(cc: cc, options: options, isInverted: inverted)
   }
 }

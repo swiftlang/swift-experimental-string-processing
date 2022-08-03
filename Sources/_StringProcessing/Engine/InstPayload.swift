@@ -226,32 +226,11 @@ extension Instruction.Payload {
     return (isScalar: pair.0 == 1, pair.1)
   }
 
-  init(_ cc: _CharacterClassModel.Representation, _ isInverted: Bool, _ isStrict: Bool, _ isScalar: Bool) {
-    self.init(CharacterClassPayload(cc, isInverted, isStrict, isScalar).rawValue)
-  }
-  var characterClassPayload: CharacterClassPayload{
-    return CharacterClassPayload(rawValue: rawValue & _payloadMask)
-  }
-
-  init(quantify payload: QuantifyPayload) {
-    self.init(rawValue: payload.rawValue)
-  }
-  var quantify: QuantifyPayload {
-    QuantifyPayload.init(rawValue: self.rawValue & _payloadMask)
-  }
-  
   init(consumer: ConsumeFunctionRegister) {
     self.init(consumer)
   }
   var consumer: ConsumeFunctionRegister {
     interpret()
-  }
-
-  init(assertion payload: AssertionPayload) {
-    self.init(rawValue: payload.rawValue)
-  }
-  var assertion: AssertionPayload {
-    AssertionPayload.init(rawValue: self.rawValue & _payloadMask)
   }
 
   init(addr: InstructionAddress) {
@@ -353,8 +332,29 @@ extension Instruction.Payload {
   ) {
     interpretPair()
   }
+  // MARK: Struct payloads
+  init(_ model: _CharacterClassModel) {
+    self.init(CharacterClassPayload(model).rawValue)
+  }
+  var characterClassPayload: CharacterClassPayload{
+    return CharacterClassPayload(rawValue: rawValue & _payloadMask)
+  }
+
+  init(assertion payload: AssertionPayload) {
+    self.init(rawValue: payload.rawValue)
+  }
+  var assertion: AssertionPayload {
+    AssertionPayload.init(rawValue: rawValue & _payloadMask)
+  }
+  init(quantify: QuantifyPayload) {
+    self.init(quantify.rawValue)
+  }
+  var quantify: QuantifyPayload {
+    return QuantifyPayload(rawValue: rawValue & _payloadMask)
+  }
 }
 
+// MARK: Struct definitions
 struct QuantifyPayload: RawRepresentable {
   let rawValue: UInt64
   
@@ -444,17 +444,16 @@ struct QuantifyPayload: RawRepresentable {
   }
   
   init(
-    builtin: _CharacterClassModel.Representation,
-    _ isStrict: Bool,
-    _ isInverted: Bool,
+    model: _CharacterClassModel,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
     _ extraTrips: Int?
   ) {
-    assert(builtin.rawValue < 0xFF)
-    let packedModel = builtin.rawValue
-      + (isInverted ? 1 << 9 : 0)
-      + (isStrict ? 1 << 10 : 0)
+    assert(model.cc.rawValue < 0xFF)
+    assert(model.matchLevel != .unicodeScalar)
+    let packedModel = model.cc.rawValue
+      + (model.isInverted ? 1 << 9 : 0)
+      + (model.isStrictASCII ? 1 << 10 : 0)
     self.rawValue = packedModel
       + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .builtin)
   }
@@ -513,33 +512,89 @@ struct CharacterClassPayload: RawRepresentable {
   let rawValue: UInt64
   // Layout:
   // Top three bits are isInverted, isStrict, isScalar
-  // Lower 16 bits are _CCM.Representation
-  static let invertedShift: UInt64 = 55
-  static let strictShift: UInt64 = 54
-  static let scalarShift: UInt64 = 53
-  static let ccMask: UInt64 = 0xFF
+  // Lower 8 bits are _CCM.Representation
+  static var invertedBit: UInt64 { 1 << 55 }
+  static var strictASCIIBit: UInt64 { 1 << 54 }
+  static var scalarBit: UInt64 { 1 << 53 }
+  static var ccMask: UInt64 { 0xFF }
   init(rawValue: UInt64) {
     assert(rawValue & _opcodeMask == 0)
     self.rawValue = rawValue
   }
-  init(_ cc: _CharacterClassModel.Representation, _ isInverted: Bool, _ isStrict: Bool, _ isScalar: Bool) {
-    let invertedBit = isInverted ? 1 << CharacterClassPayload.invertedShift : 0
-    let strictBit = isStrict ? 1 << CharacterClassPayload.strictShift : 0
-    let scalarBit = isScalar ? 1 << CharacterClassPayload.scalarShift : 0
-    assert(cc.rawValue <= CharacterClassPayload.ccMask) //
-    self.init(rawValue: cc.rawValue + UInt64(invertedBit) + UInt64(strictBit) + UInt64(scalarBit))
+  init(_ model: _CharacterClassModel) {
+    let invertedBit = model.isInverted ? CharacterClassPayload.invertedBit : 0
+    let strictASCIIBit = model.isStrictASCII ? CharacterClassPayload.strictASCIIBit : 0
+    let scalarBit = model.matchLevel == .unicodeScalar ? CharacterClassPayload.scalarBit : 0
+    assert(model.cc.rawValue <= CharacterClassPayload.ccMask)
+    assert(model.cc.rawValue & invertedBit & strictASCIIBit & scalarBit == 0) // Sanity check
+    self.init(rawValue: model.cc.rawValue | invertedBit | strictASCIIBit | scalarBit)
   }
   
   var isInverted: Bool {
-    (self.rawValue >> CharacterClassPayload.invertedShift) & 1 == 1
+    self.rawValue & CharacterClassPayload.invertedBit != 0
   }
-  var isStrict: Bool {
-    (self.rawValue >> CharacterClassPayload.strictShift) & 1 == 1
+  /// Represents if the given character class should strictly only match ascii values based on the options given
+  /// See Oniguruma options: (?D) (?\P) (?S) (?W)
+  var isStrictASCII: Bool {
+    self.rawValue & CharacterClassPayload.strictASCIIBit != 0
   }
-  var isScalar: Bool {
-    (self.rawValue >> CharacterClassPayload.scalarShift) & 1 == 1
+  var isScalarSemantics: Bool {
+    self.rawValue & CharacterClassPayload.scalarBit != 0
   }
   var cc: _CharacterClassModel.Representation {
-    _CharacterClassModel.Representation.init(rawValue: self.rawValue & CharacterClassPayload.ccMask)!
+    _CharacterClassModel.Representation.init(
+      rawValue: self.rawValue & CharacterClassPayload.ccMask).unsafelyUnwrapped
+  }
+}
+
+struct AssertionPayload: RawRepresentable {
+  let rawValue: UInt64
+
+  init(rawValue: UInt64) {
+    self.rawValue = rawValue
+    assert(rawValue & _opcodeMask == 0)
+  }
+
+  static var anchorBit: UInt64           { 1 << 55 }
+  static var boundaryBit: UInt64         { 1 << 54 }
+  static var strictASCIIWordBit: UInt64  { 1 << 53 }
+  static var isScalarBit: UInt64         { 1 << 52 }
+  static var assertionKindMask: UInt64   { 0xFF }
+
+  init(_ assertion: DSLTree.Atom.Assertion,
+       _ anchorsMatchNewlines: Bool,
+       _ usesSimpleUnicodeBoundaries: Bool,
+       _ usesASCIIWord: Bool,
+       _ semanticLevel: MatchingOptions.SemanticLevel
+  ) {
+    // 4 bits of options
+    let anchorBit: UInt64 = anchorsMatchNewlines ? AssertionPayload.anchorBit : 0
+    let boundaryBit: UInt64 = usesSimpleUnicodeBoundaries ? AssertionPayload.boundaryBit : 0
+    let strictASCIIWordBit: UInt64 = usesASCIIWord ? AssertionPayload.strictASCIIWordBit : 0
+    let isScalarBit: UInt64 = semanticLevel == .unicodeScalar ? AssertionPayload.isScalarBit : 0
+
+    // 8 bits for the assertion kind
+    // Future work: Optimize this layout
+    let kind = assertion.rawValue
+    assert(kind <= AssertionPayload.assertionKindMask)
+    assert(kind & anchorBit & boundaryBit & strictASCIIWordBit & isScalarBit == 0)
+    self.init(rawValue: kind | anchorBit | boundaryBit | strictASCIIWordBit | isScalarBit)
+  }
+
+  var kind: DSLTree.Atom.Assertion {
+    return .init(
+      rawValue: self.rawValue & AssertionPayload.assertionKindMask).unsafelyUnwrapped
+  }
+  var anchorsMatchNewlines: Bool { self.rawValue & AssertionPayload.anchorBit != 0 }
+  var usesSimpleUnicodeBoundaries: Bool {
+    self.rawValue & AssertionPayload.boundaryBit != 0
+  }
+  var usesASCIIWord: Bool { self.rawValue & AssertionPayload.strictASCIIWordBit != 0 }
+  var semanticLevel: MatchingOptions.SemanticLevel {
+    if self.rawValue & AssertionPayload.isScalarBit != 0 {
+      return .unicodeScalar
+    } else {
+      return .graphemeCluster
+    }
   }
 }

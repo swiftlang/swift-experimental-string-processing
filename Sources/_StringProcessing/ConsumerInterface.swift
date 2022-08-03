@@ -63,7 +63,7 @@ extension DSLTree._AST.Atom {
 extension Character {
   func generateConsumer(
     _ opts: MatchingOptions
-  ) throws -> MEProgram.ConsumeFunction? {
+  ) throws -> MEProgram.ConsumeFunction {
     let isCaseInsensitive = opts.isCaseInsensitive
     switch opts.semanticLevel {
     case .graphemeCluster:
@@ -186,10 +186,9 @@ extension DSLTree.Atom {
 
 extension DSLTree.Atom.CharacterClass {
   func generateConsumer(_ opts: MatchingOptions) -> MEProgram.ConsumeFunction {
+    let model = asRuntimeModel(opts)
     return { input, bounds in
-      // FIXME: should we worry about out of bounds?
-      model.withMatchLevel(opts.matchLevel)
-        .matches(in: input, at: bounds.lowerBound, with: opts)
+      model.matches(in: input, at: bounds.lowerBound)
     }
   }
 }
@@ -332,24 +331,25 @@ extension DSLTree.CustomCharacterClass.Member {
     _ opts: MatchingOptions,
     _ isInverted: Bool
   ) -> DSLTree.CustomCharacterClass.AsciiBitset? {
+    typealias Bitset = DSLTree.CustomCharacterClass.AsciiBitset
     switch self {
     case let .atom(a):
       if let val = a.singleScalarASCIIValue {
-        return DSLTree.CustomCharacterClass.AsciiBitset(
-          val,
-          isInverted,
-          opts.isCaseInsensitive
-        )
+        return Bitset(val, isInverted, opts.isCaseInsensitive)
       }
     case let .range(low, high):
-      if let lowVal = low.singleScalarASCIIValue, let highVal = high.singleScalarASCIIValue {
-        return DSLTree.CustomCharacterClass.AsciiBitset(
-          low: lowVal,
-          high: highVal,
-          isInverted: isInverted,
-          isCaseInsensitive: opts.isCaseInsensitive
-        )
+      if let lowVal = low.singleScalarASCIIValue,
+         let highVal = high.singleScalarASCIIValue {
+        return Bitset(low: lowVal, high: highVal, isInverted: isInverted,
+                      isCaseInsensitive: opts.isCaseInsensitive)
       }
+    case .quotedLiteral(let str):
+      var bitset = Bitset(isInverted: isInverted)
+      for c in str {
+        guard let ascii = c._singleScalarAsciiValue else { return nil }
+        bitset = bitset.union(Bitset(ascii, isInverted, opts.isCaseInsensitive))
+      }
+      return bitset
     default:
       return nil
     }
@@ -366,38 +366,68 @@ extension DSLTree.CustomCharacterClass.Member {
       }
       return c
     case let .range(low, high):
-      // TODO:
-      guard let lhs = low.literalCharacterValue else {
+      guard let lhsChar = low.literalCharacterValue else {
         throw Unsupported("\(low) in range")
       }
-      guard let rhs = high.literalCharacterValue else {
+      guard let rhsChar = high.literalCharacterValue else {
         throw Unsupported("\(high) in range")
       }
 
-      if opts.isCaseInsensitive {
-        let lhsLower = lhs.lowercased()
-        let rhsLower = rhs.lowercased()
-        guard lhsLower <= rhsLower else { throw Unsupported("Invalid range \(lhs)-\(rhs)") }
-        return { input, bounds in
-          // TODO: check for out of bounds?
-          let curIdx = bounds.lowerBound
-          if (lhsLower...rhsLower).contains(input[curIdx].lowercased()) {
-            // TODO: semantic level
-            return input.index(after: curIdx)
-          }
-          return nil
+      // We must have NFC single scalar bounds.
+      guard let lhs = lhsChar.singleScalar, lhs.isNFC else {
+        throw RegexCompilationError.invalidCharacterClassRangeOperand(lhsChar)
+      }
+      guard let rhs = rhsChar.singleScalar, rhs.isNFC else {
+        throw RegexCompilationError.invalidCharacterClassRangeOperand(rhsChar)
+      }
+      guard lhs <= rhs else {
+        throw Unsupported("Invalid range \(low)-\(high)")
+      }
+
+      let isCaseInsensitive = opts.isCaseInsensitive
+      let isCharacterSemantic = opts.semanticLevel == .graphemeCluster
+      
+      return { input, bounds in
+        let curIdx = bounds.lowerBound
+        let nextIndex = isCharacterSemantic
+          ? input.index(after: curIdx)
+          : input.unicodeScalars.index(after: curIdx)
+
+        // Under grapheme semantics, we compare based on single NFC scalars. If
+        // such a character is not single scalar under NFC, the match fails. In
+        // scalar semantics, we compare the exact scalar value to the NFC
+        // bounds.
+        let scalar = isCharacterSemantic ? input[curIdx].singleNFCScalar
+                                         : input.unicodeScalars[curIdx]
+        guard let scalar = scalar else { return nil }
+        let scalarRange = lhs ... rhs
+        if scalarRange.contains(scalar) {
+          return nextIndex
         }
-      } else {
-        guard lhs <= rhs else { throw Unsupported("Invalid range \(lhs)-\(rhs)") }
-        return { input, bounds in
-          // TODO: check for out of bounds?
-          let curIdx = bounds.lowerBound
-          if (lhs...rhs).contains(input[curIdx]) {
-            // TODO: semantic level
-            return input.index(after: curIdx)
-          }
-          return nil
+
+        // Check for case insensitive matches.
+        func matchesCased(
+          _ cased: (UnicodeScalar.Properties) -> String
+        ) -> Bool {
+          let casedStr = cased(scalar.properties)
+          // In character semantic mode, we need to map to NFC. In scalar
+          // semantics, we should have an exact scalar.
+          let mapped = isCharacterSemantic ? casedStr.singleNFCScalar
+                                           : casedStr.singleScalar
+          guard let mapped = mapped else { return false }
+          return scalarRange.contains(mapped)
         }
+        if isCaseInsensitive {
+          if scalar.properties.changesWhenLowercased,
+              matchesCased(\.lowercaseMapping) {
+            return nextIndex
+          }
+          if scalar.properties.changesWhenUppercased,
+             matchesCased(\.uppercaseMapping) {
+            return nextIndex
+          }
+        }
+        return nil
       }
 
     case let .custom(ccc):
@@ -439,21 +469,17 @@ extension DSLTree.CustomCharacterClass.Member {
         }
         return rhs(input, bounds)
       }
-    case .quotedLiteral(let s):
-      if opts.isCaseInsensitive {
-        return { input, bounds in
-          guard s.lowercased()._contains(input[bounds.lowerBound].lowercased()) else {
-            return nil
+    case .quotedLiteral(let str):
+      let consumers = try str.map {
+        try $0.generateConsumer(opts)
+      }
+      return { input, bounds in
+        for fn in consumers {
+          if let idx = fn(input, bounds) {
+            return idx
           }
-          return input.index(after: bounds.lowerBound)
         }
-      } else {
-        return { input, bounds in
-          guard s.contains(input[bounds.lowerBound]) else {
-            return nil
-          }
-          return input.index(after: bounds.lowerBound)
-        }
+        return nil
       }
     case .trivia:
       // TODO: Should probably strip this earlier...

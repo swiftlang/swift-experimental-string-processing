@@ -672,9 +672,7 @@ fileprivate func defaultSyntaxOptions(
       return [.multilineCompilerLiteral, .extendedSyntax]
     }
     return .traditional
-  case .reSingleQuote:
-    return .traditional
-  case .experimental, .rxSingleQuote:
+  case .experimental:
     return .experimental
   }
 }

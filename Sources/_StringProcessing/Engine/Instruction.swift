@@ -113,6 +113,14 @@ extension Instruction {
     ///  - Boolean for if we should match by scalar value
     case matchBitset
 
+    /// Match against a built-in character class
+    ///
+    ///     matchBuiltin(_: CharacterClassPayload)
+    ///
+    /// Operand: the payload contains
+    /// - The character class
+    /// - If it is inverted
+    /// - If it strictly matches only ascii values
     case matchBuiltin
 
     // MARK: Extension points

@@ -512,14 +512,13 @@ extension Processor {
 
     case .matchBuiltin:
       let payload = payload.characterClassPayload
-      if payload.isScalar {
-        if matchBuiltinScalar(payload.cc, payload.isInverted, payload.isStrict) {
-          controller.step()
-        }
-      } else {
-        if matchBuiltin(payload.cc, payload.isInverted, payload.isStrict) {
-          controller.step()
-        }
+      if matchBuiltin(
+        payload.cc,
+        payload.isInverted,
+        payload.isStrictASCII,
+        payload.isScalarSemantics
+      ) {
+        controller.step()
       }
     case .quantify:
       let quantPayload = payload.quantify

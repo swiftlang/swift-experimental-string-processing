@@ -1,47 +1,26 @@
 @_implementationOnly import _RegexParser // For AssertionKind
+extension Character {
+  var _isHorizontalWhitespace: Bool {
+    self.unicodeScalars.first?.isHorizontalWhitespace == true
+  }
+  var _isNewline: Bool {
+    self.unicodeScalars.first?.isNewline == true
+  }
+}
 
 extension Processor {
-  func _doMatchBuiltin(
-    _ cc: _CharacterClassModel.Representation,
-    _ isInverted: Bool,
-    _ isStrictAscii: Bool
-  ) -> Input.Index? {
-    guard let c = load() else {
-      return nil
-    }
-
-    var matched: Bool
-    var next = input.index(after: currentPosition)
-    switch cc {
-    case .any, .anyGrapheme: matched = true
-    case .anyScalar:
-      matched = true
-      next = input.unicodeScalars.index(after: currentPosition)
-    case .digit:
-      matched = c.isNumber && (c.isASCII || !isStrictAscii)
-    case .horizontalWhitespace:
-      matched = c.unicodeScalars.first?.isHorizontalWhitespace == true
-      && (c.isASCII || !isStrictAscii)
-    case .newlineSequence, .verticalWhitespace:
-      matched = c.unicodeScalars.first?.isNewline == true
-      && (c.isASCII || !isStrictAscii)
-    case .whitespace:
-      matched = c.isWhitespace && (c.isASCII || !isStrictAscii)
-    case .word:
-      matched = c.isWordCharacter && (c.isASCII || !isStrictAscii)
-    }
-    if isInverted {
-      matched.toggle()
-    }
-    return matched ? next : nil
-  }
-
   mutating func matchBuiltin(
     _ cc: _CharacterClassModel.Representation,
     _ isInverted: Bool,
-    _ isStrictAscii: Bool
+    _ isStrictASCII: Bool,
+    _ isScalarSemantics: Bool
   ) -> Bool {
-    guard let next = _doMatchBuiltin(cc, isInverted, isStrictAscii) else {
+    guard let next = _doMatchBuiltin(
+      cc,
+      isInverted,
+      isStrictASCII,
+      isScalarSemantics
+    ) else {
       signalFailure()
       return false
     }
@@ -49,50 +28,93 @@ extension Processor {
     return true
   }
   
-  mutating func matchBuiltinScalar(
+  func _doMatchBuiltin(
     _ cc: _CharacterClassModel.Representation,
     _ isInverted: Bool,
-    _ isStrictAscii: Bool
-  ) -> Bool {
-    guard let c = loadScalar() else {
-      signalFailure()
-      return false
+    _ isStrictASCII: Bool,
+    _ isScalarSemantics: Bool
+  ) -> Input.Index? {
+    guard let char = load(), let scalar = loadScalar() else {
+      return nil
     }
 
+    let asciiCheck = (char.isASCII && !isScalarSemantics)
+      || (scalar.isASCII && isScalarSemantics)
+      || !isStrictASCII
+
     var matched: Bool
-    var next = input.unicodeScalars.index(after: currentPosition)
-    switch cc {
-    case .any: matched = true
-    case .anyScalar: matched = true
-    case .anyGrapheme:
-      matched = true
+    var next: Input.Index
+    switch (isScalarSemantics, cc) {
+    case (_, .anyGrapheme):
       next = input.index(after: currentPosition)
+    case (_, .anyScalar):
+      next = input.unicodeScalars.index(after: currentPosition)
+    case (true, _):
+      next = input.unicodeScalars.index(after: currentPosition)
+    case (false, _):
+      next = input.index(after: currentPosition)
+    }
+
+    switch cc {
+    case .any, .anyGrapheme:
+      matched = true
+    case .anyScalar:
+      if isScalarSemantics {
+        matched = true
+      } else {
+        matched = input.isOnGraphemeClusterBoundary(next)
+      }
     case .digit:
-      matched = c.properties.numericType != nil && (c.isASCII || !isStrictAscii)
+      if isScalarSemantics {
+        matched = scalar.properties.numericType != nil && asciiCheck
+      } else {
+        matched = char.isNumber && asciiCheck
+      }
     case .horizontalWhitespace:
-      matched = c.isHorizontalWhitespace && (c.isASCII || !isStrictAscii)
+      if isScalarSemantics {
+        matched = scalar.isHorizontalWhitespace && asciiCheck
+      } else {
+        matched = char._isHorizontalWhitespace && asciiCheck
+      }
     case .verticalWhitespace:
-      matched = c.isNewline && (c.isASCII || !isStrictAscii)
+      if isScalarSemantics {
+        matched = scalar.isNewline && asciiCheck
+      } else {
+        matched = char._isNewline && asciiCheck
+      }
     case .newlineSequence:
-      matched = c.isNewline && (c.isASCII || !isStrictAscii)
-      if c == "\r" && next != input.endIndex && input.unicodeScalars[next] == "\n" {
-        input.unicodeScalars.formIndex(after: &next)
+      if isScalarSemantics {
+        matched = scalar.isNewline && asciiCheck
+        if matched && scalar == "\r"
+            && next != input.endIndex && input.unicodeScalars[next] == "\n" {
+          // Match a full CR-LF sequence even in scalar semantics
+          input.unicodeScalars.formIndex(after: &next)
+        }
+      } else {
+        matched = char._isNewline && asciiCheck
       }
     case .whitespace:
-      matched = c.properties.isWhitespace && (c.isASCII || !isStrictAscii)
+      if isScalarSemantics {
+        matched = scalar.properties.isWhitespace && asciiCheck
+      } else {
+        matched = char.isWhitespace && asciiCheck
+      }
     case .word:
-      matched = (c.properties.isAlphabetic || c == "_") && (c.isASCII || !isStrictAscii)
+      if isScalarSemantics {
+        matched = scalar.properties.isAlphabetic && asciiCheck
+      } else {
+        matched = char.isWordCharacter && asciiCheck
+      }
     }
+
     if isInverted {
       matched.toggle()
     }
-    if matched {
-      currentPosition = next
-      return true
-    } else {
-      signalFailure()
-      return false
+
+    guard matched else {
+      return nil
     }
+    return next
   }
   
   func isAtStartOfLine(_ payload: AssertionPayload) -> Bool {
@@ -177,51 +199,6 @@ extension Processor {
       } else {
         return !input.isOnWordBoundary(at: currentPosition, using: &wordIndexCache, &wordIndexMaxIndex)
       }
-      }
-  }
-}
-
-struct AssertionPayload: RawRepresentable {
-  var _assertionKindMask: UInt64 { ~0xFFF0_0000_0000_0000 }
-  var _opcodeMask: UInt64 { 0xFF00_0000_0000_0000 }
-  
-  let rawValue: UInt64
-
-  init(rawValue: UInt64) {
-    self.rawValue = rawValue
-    assert(rawValue & _opcodeMask == 0)
-  }
-  
-  init(_ assertion: DSLTree.Atom.Assertion,
-       _ anchorsMatchNewlines: Bool,
-       _ usesSimpleUnicodeBoundaries: Bool,
-       _ usesASCIIWord: Bool,
-       _ semanticLevel: MatchingOptions.SemanticLevel
-  ) {
-    // 4 bits of options
-    let anchorBit: UInt64 = anchorsMatchNewlines ? (1 << 55) : 0
-    let boundaryBit: UInt64 = usesSimpleUnicodeBoundaries ? (1 << 54) : 0
-    let strictBit: UInt64 = usesASCIIWord ? (1 << 53) : 0
-    let semanticLevelBit: UInt64 = semanticLevel == .unicodeScalar ? (1 << 52) : 0
-    let optionsBits: UInt64 = anchorBit + boundaryBit + strictBit + semanticLevelBit
-
-    // 4 bits for the assertion kind
-    // Future work: Optimize this layout
-    let kind = assertion.rawValue
-    self.init(rawValue: kind + optionsBits)
-  }
-  
-  var kind: DSLTree.Atom.Assertion {
-    return .init(rawValue: self.rawValue & _assertionKindMask)!
-  }
-  var anchorsMatchNewlines: Bool { (self.rawValue >> 55) & 1 == 1 }
-  var usesSimpleUnicodeBoundaries: Bool  { (self.rawValue >> 54) & 1 == 1 }
-  var usesASCIIWord: Bool  { (self.rawValue >> 53) & 1 == 1 }
-  var semanticLevel: MatchingOptions.SemanticLevel {
-    if (self.rawValue >> 52) & 1 == 1 {
-      return .unicodeScalar
-    } else {
-      return .graphemeCluster
     }
   }
 }

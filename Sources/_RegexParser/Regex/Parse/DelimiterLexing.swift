@@ -31,7 +31,7 @@ public struct Delimiter: Hashable {
     switch kind {
     case .forwardSlash:
       return poundCount > 0
-    case .experimental, .reSingleQuote, .rxSingleQuote:
+    case .experimental:
       return false
     }
   }
@@ -47,15 +47,11 @@ extension Delimiter {
   enum Kind: Hashable, CaseIterable {
     case forwardSlash
     case experimental
-    case reSingleQuote
-    case rxSingleQuote
 
     var openingAndClosing: (opening: String, closing: String) {
       switch self {
       case .forwardSlash: return ("/", "/")
       case .experimental: return ("#|", "|#")
-      case .reSingleQuote: return ("re'", "'")
-      case .rxSingleQuote: return ("rx'", "'")
       }
     }
     var opening: String { openingAndClosing.opening }
@@ -67,7 +63,7 @@ extension Delimiter {
       switch self {
       case .forwardSlash:
         return true
-      case .experimental, .reSingleQuote, .rxSingleQuote:
+      case .experimental:
         return false
       }
     }
@@ -150,14 +146,6 @@ fileprivate struct DelimiterLexer {
     slice(at: cursor, count)
   }
 
-  /// Return the slice of `count` bytes preceding the current cursor, or `nil`
-  /// if there are fewer than `count` bytes before the cursor.
-  func sliceBehind(_ count: Int) -> UnsafeRawBufferPointer? {
-    let priorCursor = cursor - count
-    guard priorCursor >= start else { return nil }
-    return slice(at: priorCursor, count)
-  }
-
   /// Advance the cursor `n` bytes.
   mutating func advanceCursor(_ n: Int = 1) {
     cursor += n
@@ -184,86 +172,6 @@ fileprivate struct DelimiterLexer {
     guard load() == ascii(s) else { return false }
     advanceCursor()
     return true
-  }
-
-  /// Attempt to skip over a closing delimiter character that is unlikely to be
-  /// the actual closing delimiter.
-  mutating func trySkipDelimiter(_ delimiter: Delimiter) {
-    // Only the closing `'` for re'...'/rx'...' can potentially be skipped over.
-    switch delimiter.kind {
-    case .forwardSlash, .experimental:
-      return
-    case .reSingleQuote, .rxSingleQuote:
-      break
-    }
-    guard load() == ascii("'") else { return }
-
-    /// Need to look for a prefix of `(?`, `(?(`, `\k`, `\g`, `(?C`, as those
-    /// are the cases that could use single quotes. Note that none of these
-    /// would be valid regex endings anyway.
-    let calloutPrefix = "(?C"
-    let prefix = ["(?", "(?(", #"\k"#, #"\g"#, calloutPrefix].first { prior in
-      guard let priorSlice = sliceBehind(prior.utf8.count),
-            priorSlice.elementsEqual(prior.utf8)
-      else { return false }
-
-      // Make sure the slice isn't preceded by a '\', as that invalidates this
-      // analysis.
-      if let prior = sliceBehind(priorSlice.count + 1) {
-        return prior[0] != ascii("\\")
-      }
-      return true
-    }
-    guard let prefix = prefix else { return }
-    let isCallout = prefix == calloutPrefix
-
-    func isPossiblyGroupReference(_ c: UInt8) -> Bool {
-      // If this is an ASCII character, make sure it's for a group name. Leave
-      // other UTF-8 encoded scalars alone, this should at least catch cases
-      // where we run into a symbol such as `{`, `.`, `;` that would indicate
-      // we've likely advanced out of the bounds of the regex.
-      let scalar = UnicodeScalar(c)
-      guard scalar.isASCII else { return true }
-      switch scalar {
-      // Include '-' and '+' which may be used in recursion levels and relative
-      // references.
-      case "A"..."Z", "a"..."z", "0"..."9", "_", "-", "+":
-        return true
-      default:
-        return false
-      }
-    }
-
-    // Make a note of the current lexing position, as we may need to revert
-    // back to it.
-    let originalCursor = cursor
-    advanceCursor()
-
-    // Try skip over what would be the contents of a group identifier/reference.
-    while let next = load() {
-      // Found the ending, we're done. Return so we can continue to lex to the
-      // real delimiter.
-      if next == ascii("'") {
-        advanceCursor()
-        return
-      }
-
-      // If this isn't a callout, make sure we have something that could be a
-      // group reference. We limit the character set here to improve diagnostic
-      // behavior in the case where the literal is actually unterminated. We
-      // ideally don't want to go wandering off into Swift source code. We can't
-      // do the same for callouts, as they take arbitrary strings.
-      guard isCallout || isPossiblyGroupReference(next) else { break }
-      do {
-        try advance()
-      } catch {
-        break
-      }
-    }
-    // We bailed out, either because we ran into something that didn't look like
-    // an identifier, or we reached the end of the line. Revert back to the
-    // original guess of delimiter.
-    cursor = originalCursor
   }
 
   /// Attempt to eat a particular closing delimiter, returning the contents of
@@ -401,10 +309,6 @@ fileprivate struct DelimiterLexer {
       }
     }
     while true {
-      // Check to see if we're at a character that looks like a delimiter, but
-      // likely isn't. In such a case, we can attempt to skip over it.
-      trySkipDelimiter(delimiter)
-
       // Try to lex the closing delimiter.
       if let (contents, end) = try tryEatEnding(delimiter,
                                                 contentsStart: contentsStart) {

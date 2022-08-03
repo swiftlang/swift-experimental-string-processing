@@ -375,6 +375,14 @@ extension DSLTree.Node {
     default: return nil
     }
   }
+
+  /// If this node is for a converted literal, look through it.
+  var lookingThroughConvertedLiteral: Self {
+    switch self {
+    case let .convertedRegexLiteral(n, _): return n
+    default: return self
+    }
+  }
 }
 
 extension DSLTree.Atom {
