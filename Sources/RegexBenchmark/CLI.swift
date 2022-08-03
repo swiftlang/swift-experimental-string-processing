@@ -20,8 +20,8 @@ struct Runner: ParsableCommand {
   @Option(help: "The result file to compare against")
   var compare: String?
 
-  @Option(help: "Experimental compile time comparison")
-  var experimentalCompareCompileTimes: String?
+  @Option(help: "Compare compile times with the given results file")
+  var compareCompileTime: String?
   
   @Flag(help: "Show comparison chart")
   var showChart: Bool = false
@@ -72,9 +72,12 @@ struct Runner: ParsableCommand {
       try runner.compareWithNS(showChart: showChart, saveTo: saveComparison)
     }
     if let compareFile = compare {
-      try runner.compare(against: compareFile, showChart: showChart, saveTo: saveComparison)
+      try runner.compare(
+        against: compareFile,
+        showChart: showChart,
+        saveTo: saveComparison)
     }
-    if let compareFile = experimentalCompareCompileTimes {
+    if let compareFile = compareCompileTime {
       try runner.compareCompileTimes(against: compareFile, showChart: showChart)
     }
   }

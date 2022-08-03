@@ -136,6 +136,25 @@ extension Regex {
 }
 
 @available(SwiftStdlib 5.7, *)
+@_spi(RegexBenchmark)
+extension Regex {
+  /// Compiles the stored DSLTree into bytecode and return if it was successful
+  /// For measuring compilation times
+  ///
+  /// Note: This bypasses the cached program that is normally used
+  public func _compileRegex() -> Bool {
+    do {
+      let _ = try Compiler(
+        tree: program.tree,
+        compileOptions: program.compileOptions).emit()
+      return true
+    } catch {
+      return false
+    }
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   internal mutating func _setCompilerOptionsForTesting(_ opts: Compiler.CompileOptions) {
     program.compileOptions = opts

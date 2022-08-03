@@ -4,11 +4,11 @@ extension BenchmarkRunner {
   mutating func addUnicode() {
     // tagged unicode: unicode characters surrounded by html tags
     // use the same html regex, uses backreference + reluctant quantification
-    let tags = #"<(\w*)\b[^>]*>(.*?)<\/\1>"#
-    let taggedEmojis = CrossBenchmark(
-      baseName: "TaggedEmojis",
-      regex: tags,
-      input: Inputs.taggedEmojis)
+//    let tags = #"<(\w*)\b[^>]*>(.*?)<\/\1>"# // disabled due to \b being unusably slow
+//    let taggedEmojis = CrossBenchmark(
+//      baseName: "TaggedEmojis",
+//      regex: tags,
+//      input: Inputs.taggedEmojis)
 
     // Now actually matching emojis
     let emoji = #"(😃|😀|😳|😲|😦|😊|🙊|😘|😏|😳|😒){2,5}"#
@@ -18,7 +18,7 @@ extension BenchmarkRunner {
       regex: emoji,
       input: Inputs.taggedEmojis)
 
-    // taggedEmojis.register(&self) // disabled due to \b being unusably slow
+    // taggedEmojis.register(&self)
     emojiRegex.register(&self)
   }
 }

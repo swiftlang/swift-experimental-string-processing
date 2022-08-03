@@ -18,17 +18,26 @@ struct BenchmarkRunner {
     suite.append(new)
   }
   
-  mutating func measure(benchmark: some RegexBenchmark, samples: Int) -> BenchmarkResult {
-    var times: [Time] = []
-    
-    // initial run to make sure the regex has been compiled
-    // FIXME: this is a very poor way of estimating compile time
-    // we should have some sort of interface directly with the engine to measure this
-    // This also completely breaks when we rerun measure() for variant results
-    let initialStart = Tick.now
+  mutating func measure(
+    benchmark: some RegexBenchmark,
+    samples: Int
+  ) -> BenchmarkResult {
+    var runtimes: [Time] = []
+    var compileTimes: [Time] = []
+    // Initial run to make sure the regex has been compiled
     benchmark.run()
-    let initialEnd = Tick.now
-    let initialRunTime = initialEnd.elapsedTime(since: initialStart)
+
+    // Measure compilataion time
+    for _ in 0..<samples {
+      let start = Tick.now
+      benchmark.compile()
+      let end = Tick.now
+      let time = end.elapsedTime(since: start)
+      compileTimes.append(time)
+    }
+    
+    compileTimes.sort()
+    let compileTime = compileTimes[samples/2]
     
     // FIXME: use suspendingclock?
     for _ in 0..<samples {
@@ -36,14 +45,22 @@ struct BenchmarkRunner {
       benchmark.run()
       let end = Tick.now
       let time = end.elapsedTime(since: start)
-      times.append(time)
+      runtimes.append(time)
     }
 
-    times.sort()
-    let median = times[samples/2]
-    let mean = times.reduce(0.0, {acc, next in acc + next.seconds}) / Double(times.count)
-    let stdev = (times.reduce(0.0, {acc, next in acc + pow(next.seconds - mean, 2)}) / Double(times.count)).squareRoot()
-    return BenchmarkResult(initialRunTime, median, stdev, samples)
+    runtimes.sort()
+    let median = runtimes[samples/2]
+    let sum = runtimes.reduce(0.0) {acc, next in acc + next.seconds}
+    let mean = sum / Double(runtimes.count)
+    let squareDiffs = runtimes.reduce(0.0) { acc, next in
+      acc + pow(next.seconds - mean, 2)
+    }
+    let stdev = (squareDiffs / Double(runtimes.count)).squareRoot()
+    return BenchmarkResult(
+      compileTime: compileTime,
+      median: median,
+      stdev: stdev,
+      samples: samples)
   }
   
   mutating func run() {
@@ -60,8 +77,11 @@ struct BenchmarkRunner {
           fatalError("Benchmark \(b.name) is too variant")
         }
       }
+      if result.compileTime > Time.millisecond {
+        print("Warning: Abnormally high compilation time, what happened?")
+      }
       if !quiet {
-        print("- \(b.name) \(result.median) (stdev: \(Time(result.stdev))) (estimated compile time: \(result.estimatedCompileTime))")
+        print("- \(b.name) \(result.median) (stdev: \(Time(result.stdev))) (compile time: \(result.compileTime))")
       }
       self.results.add(name: b.name, result: result)
     }

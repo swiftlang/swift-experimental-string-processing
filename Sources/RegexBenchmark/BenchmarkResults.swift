@@ -6,7 +6,9 @@ extension BenchmarkRunner {
     let url = URL(fileURLWithPath: savePath, isDirectory: false)
     let parent = url.deletingLastPathComponent()
     if !FileManager.default.fileExists(atPath: parent.path) {
-      try! FileManager.default.createDirectory(atPath: parent.path, withIntermediateDirectories: true)
+      try! FileManager.default.createDirectory(
+        atPath: parent.path,
+        withIntermediateDirectories: true)
     }
     print("Saving result to \(url.path)")
     try results.save(to: url)
@@ -21,7 +23,11 @@ extension BenchmarkRunner {
   }
   
   /// Compare this runner's results against the results stored in the given file path
-  func compare(against compareFilePath: String, showChart: Bool, saveTo: String?) throws {
+  func compare(
+    against compareFilePath: String,
+    showChart: Bool,
+    saveTo: String?
+  ) throws {
     let compareFileURL = URL(fileURLWithPath: compareFilePath)
     let compareResult = try SuiteResult.load(from: compareFileURL)
     let compareFile = compareFileURL.lastPathComponent
@@ -30,13 +36,22 @@ extension BenchmarkRunner {
       .compare(with: compareResult)
       .filter({!$0.name.contains("_NS")})
       .filter({$0.diff != nil})
-    displayComparisons(comparisons, showChart, against: "saved benchmark result " + compareFile)
+    displayComparisons(
+      comparisons,
+      showChart,
+      against: "saved benchmark result " + compareFile)
     if let saveFile = saveTo {
       try saveComparisons(comparisons, path: saveFile)
     }
   }
   
-  func compareCompileTimes(against compareFilePath: String, showChart: Bool) throws {
+  // Compile times are often very short (5-20µs) so results are likely to be
+  // very affected by background tasks. This is primarily for making sure
+  // there aren't any catastrophic changes in compile times
+  func compareCompileTimes(
+    against compareFilePath: String,
+    showChart: Bool
+  ) throws {
     let compareFileURL = URL(fileURLWithPath: compareFilePath)
     let compareResult = try SuiteResult.load(from: compareFileURL)
     let compareFile = compareFileURL.lastPathComponent
@@ -45,20 +60,30 @@ extension BenchmarkRunner {
       .compareCompileTimes(with: compareResult)
       .filter({!$0.name.contains("_NS")})
       .filter({$0.diff != nil})
-    print("[Experimental] Comparing estimated compile times")
-    displayComparisons(compileTimeComparisons, false, against: "saved benchmark result " + compareFile)
+    print("Comparing estimated compile times")
+    displayComparisons(
+      compileTimeComparisons,
+      false,
+      against: "saved benchmark result " + compareFile)
   }
   
   /// Compares Swift Regex benchmark results against NSRegularExpression
   func compareWithNS(showChart: Bool, saveTo: String?) throws {
     let comparisons = results.compareWithNS().filter({$0.diff != nil})
-    displayComparisons(comparisons, showChart, against: "NSRegularExpression (via CrossBenchmark)")
+    displayComparisons(
+      comparisons,
+      showChart,
+      against: "NSRegularExpression (via CrossBenchmark)")
     if let saveFile = saveTo {
       try saveComparisons(comparisons, path: saveFile)
     }
   }
   
-  func displayComparisons(_ comparisons: [BenchmarkResult.Comparison], _ showChart: Bool, against: String) {
+  func displayComparisons(
+    _ comparisons: [BenchmarkResult.Comparison],
+    _ showChart: Bool,
+    against: String
+  ) {
     let regressions = comparisons.filter({$0.diff!.seconds > 0})
       .sorted(by: {(a,b) in a.diff!.seconds > b.diff!.seconds})
     let improvements = comparisons.filter({$0.diff!.seconds < 0})
@@ -95,11 +120,16 @@ extension BenchmarkRunner {
     #endif
   }
   
-  func saveComparisons(_ comparisons: [BenchmarkResult.Comparison], path: String) throws {
+  func saveComparisons(
+    _ comparisons: [BenchmarkResult.Comparison],
+    path: String
+  ) throws {
     let url = URL(fileURLWithPath: path, isDirectory: false)
     let parent = url.deletingLastPathComponent()
     if !FileManager.default.fileExists(atPath: parent.path) {
-      try! FileManager.default.createDirectory(atPath: parent.path, withIntermediateDirectories: true)
+      try! FileManager.default.createDirectory(
+        atPath: parent.path,
+        withIntermediateDirectories: true)
     }
     
     var contents = "name,latest,baseline,diff,percentage\n"
@@ -112,17 +142,10 @@ extension BenchmarkRunner {
 }
 
 struct BenchmarkResult: Codable {
+  let compileTime: Time
   let median: Time
-  let estimatedCompileTime: Time
   let stdev: Double
   let samples: Int
-
-  init(_ initialRunTime: Time, _ median: Time, _ stdev: Double, _ samples: Int) {
-    self.estimatedCompileTime = initialRunTime - median
-    self.median = median
-    self.stdev = stdev
-    self.samples = samples
-  }
 }
 
 extension BenchmarkResult {
@@ -135,7 +158,7 @@ extension BenchmarkResult {
     
     var diff: Time? {
       if diffCompileTimes {
-        return latest.estimatedCompileTime - baseline.estimatedCompileTime
+        return latest.compileTime - baseline.compileTime
       }
       if Stats.tTest(baseline, latest) {
         return latest.median - baseline.median
@@ -150,8 +173,8 @@ extension BenchmarkResult {
       let oldVal: Time
       let newVal: Time
       if diffCompileTimes {
-        oldVal = baseline.estimatedCompileTime
-        newVal = latest.estimatedCompileTime
+        oldVal = baseline.compileTime
+        newVal = latest.compileTime
       } else {
         oldVal = baseline.median
         newVal = latest.median
@@ -169,8 +192,8 @@ extension BenchmarkResult {
       let oldVal: Time
       let newVal: Time
       if diffCompileTimes {
-        oldVal = baseline.estimatedCompileTime
-        newVal = latest.estimatedCompileTime
+        oldVal = baseline.compileTime
+        newVal = latest.compileTime
       } else {
         oldVal = baseline.median
         newVal = latest.median
@@ -213,13 +236,18 @@ struct SuiteResult {
     return comparisons
   }
   
-  /// Compares the estimated compile times
-  func compareCompileTimes(with other: SuiteResult) -> [BenchmarkResult.Comparison] {
+  /// Compares the compile times
+  func compareCompileTimes(
+    with other: SuiteResult
+  ) -> [BenchmarkResult.Comparison] {
     var comparisons: [BenchmarkResult.Comparison] = []
     for item in results {
       if let otherVal = other.results[item.key] {
         comparisons.append(
-          .init(name: item.key, baseline: otherVal, latest: item.value, diffCompileTimes: true))
+          .init(name: item.key,
+                baseline: otherVal,
+                latest: item.value,
+                diffCompileTimes: true))
       }
     }
     return comparisons

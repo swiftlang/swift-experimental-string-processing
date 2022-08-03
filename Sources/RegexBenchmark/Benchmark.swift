@@ -1,8 +1,9 @@
-import _StringProcessing
+@_spi(RegexBenchmark) import _StringProcessing
 import Foundation
 
 protocol RegexBenchmark {
   var name: String { get }
+  func compile()
   func run()
   func debug()
 }
@@ -17,6 +18,10 @@ struct Benchmark: RegexBenchmark {
     case whole
     case first
     case allMatches
+  }
+  
+  func compile() {
+    blackHole(regex._compileRegex())
   }
   
   func run() {
@@ -43,6 +48,8 @@ struct NSBenchmark: RegexBenchmark {
     case first
   }
   
+  func compile() {}
+  
   func run() {
     switch type {
     case .allMatches: blackHole(regex.matches(in: target, range: range))
@@ -57,6 +64,10 @@ struct InputListBenchmark: RegexBenchmark {
   let regex: Regex<AnyRegexOutput>
   let targets: [String]
   
+  func compile() {
+    blackHole(regex._compileRegex())
+  }
+
   func run() {
     for target in targets {
       blackHole(target.wholeMatch(of: regex))
@@ -79,6 +90,8 @@ struct InputListNSBenchmark: RegexBenchmark {
     NSRange(target.startIndex..<target.endIndex, in: target)
   }
   
+  func compile() {}
+
   func run() {
     for target in targets {
       let range = range(in: target)
