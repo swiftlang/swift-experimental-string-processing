@@ -1643,6 +1643,11 @@ extension RegexTests {
       (input: "123x23", match: "23x23"),
       xfail: true)
     
+    // Backreferences in scalar mode
+    // In scalar mode the backreference should not match
+    firstMatchTest(#"(.+)\1"#, input: "ée\u{301}", match: "ée\u{301}")
+    firstMatchTest(#"(.+)\1"#, input: "ée\u{301}", match: nil, semanticLevel: .unicodeScalar)
+
     // Backreferences in lookaheads
     firstMatchTests(
       #"^(?=.*(.)(.)\2\1).+$"#,

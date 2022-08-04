@@ -231,9 +231,17 @@ extension Processor {
 
   // Match against the current input prefix. Returns whether
   // it succeeded vs signaling an error.
-  mutating func matchSeq<C: Collection>(
-    _ seq: C
-  ) -> Bool where C.Element == Input.Element {
+  mutating func matchSeq(
+    _ seq: Substring,
+    isScalarMode: Bool
+  ) -> Bool  {
+    if isScalarMode {
+      for s in seq.unicodeScalars {
+        guard matchScalar(s, boundaryCheck: false) else { return false }
+      }
+      return true
+    }
+
     for e in seq {
       guard match(e) else { return false }
     }
@@ -584,8 +592,9 @@ extension Processor {
       }
 
     case .backreference:
+      let (isScalarMode, capture) = payload.captureAndMode
       let capNum = Int(
-        asserting: payload.capture.rawValue)
+        asserting: capture.rawValue)
       guard capNum < storedCaptures.count else {
         fatalError("Should this be an assert?")
       }
@@ -597,7 +606,7 @@ extension Processor {
         signalFailure()
         return
       }
-      if matchSeq(input[range]) {
+      if matchSeq(input[range], isScalarMode: isScalarMode) {
         controller.step()
       }
 

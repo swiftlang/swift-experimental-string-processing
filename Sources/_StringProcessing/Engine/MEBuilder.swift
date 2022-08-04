@@ -292,22 +292,23 @@ extension MEProgram.Builder {
   }
 
   mutating func buildBackreference(
-    _ cap: CaptureRegister
+    _ cap: CaptureRegister,
+    isScalarMode: Bool
   ) {
     instructions.append(
-      .init(.backreference, .init(capture: cap)))
+      .init(.backreference, .init(capture: cap, isScalarMode: isScalarMode)))
   }
 
-  mutating func buildUnresolvedReference(id: ReferenceID) {
-    buildBackreference(.init(0))
+  mutating func buildUnresolvedReference(id: ReferenceID, isScalarMode: Bool) {
+    buildBackreference(.init(0), isScalarMode: isScalarMode)
     unresolvedReferences[id, default: []].append(lastInstructionAddress)
   }
 
-  mutating func buildNamedReference(_ name: String) throws {
+  mutating func buildNamedReference(_ name: String, isScalarMode: Bool) throws {
     guard let index = captureList.indexOfCapture(named: name) else {
       throw RegexCompilationError.uncapturedReference
     }
-    buildBackreference(.init(index))
+    buildBackreference(.init(index), isScalarMode: isScalarMode)
   }
 
   // TODO: Mutating because of fail address fixup, drop when
@@ -456,8 +457,10 @@ fileprivate extension MEProgram.Builder {
         throw RegexCompilationError.uncapturedReference
       }
       for use in uses {
+        let (isScalarMode, _) = instructions[use.rawValue].payload.captureAndMode
         instructions[use.rawValue] =
-          Instruction(.backreference, .init(capture: .init(offset)))
+          Instruction(.backreference,
+            .init(capture: .init(offset), isScalarMode: isScalarMode))
       }
     }
   }
