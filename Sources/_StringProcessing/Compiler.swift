@@ -107,10 +107,15 @@ func _compileRegex(
   return Executor(program: program)
 }
 
-extension Compiler {
-  struct CompileOptions: OptionSet {
-    let rawValue: Int
-    static let disableOptimizations = CompileOptions(rawValue: 1)
-    static let `default`: CompileOptions = []
+@_spi(RegexBenchmark)
+public struct CompileOptions: OptionSet {
+  public let rawValue: Int
+  public init(rawValue: Int) {
+    self.rawValue = rawValue
   }
+
+  public static let disableOptimizations = CompileOptions(rawValue: 1 << 0)
+  public static let enableTracing = CompileOptions(rawValue: 1 << 1)
+  public static let enableMetrics = CompileOptions(rawValue: 1 << 2)
+  public static let `default`: CompileOptions = []
 }

@@ -82,7 +82,7 @@ extension Regex {
     let tree: DSLTree
 
     /// OptionSet of compiler options for testing purposes
-    fileprivate var compileOptions: Compiler.CompileOptions = .default
+    fileprivate var compileOptions: CompileOptions = .default
 
     private final class ProgramBox {
       let value: MEProgram
@@ -138,16 +138,37 @@ extension Regex {
 @available(SwiftStdlib 5.7, *)
 @_spi(RegexBenchmark)
 extension Regex {
-  /// Compiles the stored DSLTree into bytecode and return if it was successful
-  /// For measuring compilation times
-  ///
-  /// Note: This bypasses the cached program that is normally used
-  public func _compileRegex() -> Bool {
+  public struct QueryResult {
+    
+  }
+  
+  public func _queryRegex() -> QueryResult {
+    QueryResult()
+  }
+  
+  public enum _RegexInternalAction {
+    case parse(String)
+    case recompile
+    case setOptions(CompileOptions)
+  }
+  
+  /// Internal API for RegexBenchmark
+  /// Forces the regex to perform the given action, returning if it was successful
+  public mutating func _forceAction(_ action: _RegexInternalAction) -> Bool {
     do {
-      let _ = try Compiler(
-        tree: program.tree,
-        compileOptions: program.compileOptions).emit()
-      return true
+      switch action {
+      case .setOptions(let opts):
+        _setCompilerOptionsForTesting(opts)
+        return true
+      case .parse(let pattern):
+        let _ = try parse(pattern, .traditional)
+        return true
+      case .recompile:
+        let _ = try Compiler(
+          tree: program.tree,
+          compileOptions: program.compileOptions).emit()
+        return true
+      }
     } catch {
       return false
     }
@@ -156,7 +177,9 @@ extension Regex {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  internal mutating func _setCompilerOptionsForTesting(_ opts: Compiler.CompileOptions) {
+  internal mutating func _setCompilerOptionsForTesting(
+    _ opts: CompileOptions
+  ) {
     program.compileOptions = opts
     program._loweredProgramStorage = nil
   }

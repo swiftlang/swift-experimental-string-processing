@@ -23,6 +23,10 @@ struct Engine {
     get { program.enableTracing }
     set { program.enableTracing = newValue }
   }
+  var enableMetrics: Bool {
+    get { program.enableTracing }
+    set { program.enableMetrics = newValue }
+  }
 
   init(
     _ program: MEProgram,

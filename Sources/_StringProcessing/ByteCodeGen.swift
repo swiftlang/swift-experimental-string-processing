@@ -33,6 +33,8 @@ extension Compiler {
       self.options = options
       self.compileOptions = compileOptions
       self.builder.captureList = captureList
+      self.builder.enableTracing = compileOptions.contains(.enableTracing)
+      self.builder.enableMetrics = compileOptions.contains(.enableMetrics)
     }
   }
 }
