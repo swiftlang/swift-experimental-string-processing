@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if os(macOS)
+#if os(macOS) && canImport(Charts)
 
 import Charts
 import SwiftUI

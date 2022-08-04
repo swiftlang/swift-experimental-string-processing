@@ -100,7 +100,7 @@ extension BenchmarkRunner {
       print(item)
     }
 
-    #if os(macOS)
+    #if os(macOS) && canImport(Charts)
     if showChart {
       print("""
         === Comparison chart =================================================================
