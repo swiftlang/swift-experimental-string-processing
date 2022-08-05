@@ -110,7 +110,6 @@ extension Processor {
     isTracingEnabled: Bool,
     shouldMeasureMetrics: Bool
   ) {
-    // print("metrics? \(shouldMeasureMetrics) tracing? \(isTracingEnabled)")
     self.controller = Controller(pc: 0)
     self.instructions = program.instructions
     self.input = input

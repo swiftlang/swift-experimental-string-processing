@@ -149,7 +149,7 @@ extension Regex {
   public enum _RegexInternalAction {
     case parse(String)
     case recompile
-    case setOptions(CompileOptions)
+    case addOptions(CompileOptions)
   }
   
   /// Internal API for RegexBenchmark
@@ -157,8 +157,9 @@ extension Regex {
   public mutating func _forceAction(_ action: _RegexInternalAction) -> Bool {
     do {
       switch action {
-      case .setOptions(let opts):
-        _setCompilerOptionsForTesting(opts)
+      case .addOptions(let opts):
+        program.compileOptions.insert(opts)
+        program._loweredProgramStorage = nil
         return true
       case .parse(let pattern):
         let _ = try parse(pattern, .traditional)
@@ -172,15 +173,5 @@ extension Regex {
     } catch {
       return false
     }
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Regex {
-  internal mutating func _setCompilerOptionsForTesting(
-    _ opts: CompileOptions
-  ) {
-    program.compileOptions = opts
-    program._loweredProgramStorage = nil
   }
 }

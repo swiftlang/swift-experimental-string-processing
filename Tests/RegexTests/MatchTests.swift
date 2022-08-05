@@ -32,7 +32,7 @@ func _firstMatch(
   let result = try regex.firstMatch(in: input)
 
   if validateOptimizations {
-    regex._setCompilerOptionsForTesting(.disableOptimizations)
+    assert(regex._forceAction(.addOptions(.disableOptimizations)))
     let unoptResult = try regex.firstMatch(in: input)
     if result != nil && unoptResult == nil {
       throw MatchError("match not found for unoptimized \(regexStr) in \(input)")

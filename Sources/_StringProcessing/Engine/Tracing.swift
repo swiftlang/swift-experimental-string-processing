@@ -76,9 +76,9 @@ extension Instruction: CustomStringConvertible {
     case .matchScalar:
       let (scalar, caseInsensitive, boundaryCheck) = payload.scalarPayload
       if caseInsensitive {
-        return "matchScalarCaseInsensitive \(scalar) boundaryCheck: \(boundaryCheck)"
+        return "matchScalarCaseInsensitive '\(scalar)' boundaryCheck: \(boundaryCheck)"
       } else {
-        return "matchScalar \(scalar) boundaryCheck: \(boundaryCheck)"
+        return "matchScalar '\(scalar)' boundaryCheck: \(boundaryCheck)"
       }
     case .moveCurrentPosition:
       let reg = payload.position

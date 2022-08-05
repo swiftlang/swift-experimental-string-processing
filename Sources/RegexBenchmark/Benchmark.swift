@@ -25,10 +25,10 @@ struct Benchmark: RegexBenchmark {
   }
   
   mutating func enableTracing() {
-    let _ = regex._forceAction(.setOptions(.enableTracing))
+    let _ = regex._forceAction(.addOptions(.enableTracing))
   }
   mutating func enableMetrics() {
-    let _ = regex._forceAction(.setOptions(.enableMetrics))
+    let _ = regex._forceAction(.addOptions([.enableMetrics, .disableOptimizations]))
   }
   
   func run() {
@@ -76,10 +76,10 @@ struct InputListBenchmark: RegexBenchmark {
     blackHole(regex._forceAction(.recompile))
   }
   mutating func enableTracing() {
-    let _ = regex._forceAction(.setOptions(.enableTracing))
+    let _ = regex._forceAction(.addOptions(.enableTracing))
   }
   mutating func enableMetrics() {
-    let _ = regex._forceAction(.setOptions(.enableMetrics))
+    let _ = regex._forceAction(.addOptions(.enableMetrics))
   }
 
   func run() {
