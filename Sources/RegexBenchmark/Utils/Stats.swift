@@ -3,8 +3,8 @@ import Foundation
 enum Stats {}
 
 extension Stats {
-  // 500µs, maybe this should be a % of the runtime for each benchmark?
-  static let maxAllowedStdev = 500e-6
+  // Maximum allowed standard deviation is 5% of the median runtime
+  static let maxAllowedStdev = 0.05
 
   static func tTest(_ a: Measurement, _ b: Measurement) -> Bool {
     // Student's t-test

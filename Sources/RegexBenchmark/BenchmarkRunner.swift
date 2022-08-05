@@ -81,8 +81,8 @@ struct BenchmarkRunner {
     print("Running")
     for b in suite {
       var result = measure(benchmark: b, samples: samples)
-      if result.runtime.stdev > Stats.maxAllowedStdev {
-        print("Warning: Standard deviation > \(Time(Stats.maxAllowedStdev)) for \(b.name)")
+      if result.runtime.stdev > Stats.maxAllowedStdev * result.runtime.median.seconds {
+        print("Warning: Standard deviation > \(Stats.maxAllowedStdev*100)% for \(b.name)")
         print(result.runtime)
         print("Rerunning \(b.name)")
         result = measure(benchmark: b, samples: result.runtime.samples*2)

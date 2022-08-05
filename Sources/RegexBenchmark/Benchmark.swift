@@ -11,10 +11,6 @@ protocol RegexBenchmark {
 protocol SwiftRegexBenchmark: RegexBenchmark {
   var regex: Regex<AnyRegexOutput> { get set }
   var pattern: String? { get }
-  mutating func compile()
-  mutating func parse() -> Bool
-  mutating func enableTracing()
-  mutating func enableMetrics()
 }
 
 extension SwiftRegexBenchmark {
