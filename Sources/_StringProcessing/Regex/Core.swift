@@ -139,7 +139,6 @@ extension Regex {
 @_spi(RegexBenchmark)
 extension Regex {
   public enum _RegexInternalAction {
-    case parse(String)
     case recompile
     case addOptions(CompileOptions)
   }
@@ -152,9 +151,6 @@ extension Regex {
       case .addOptions(let opts):
         program.compileOptions.insert(opts)
         program._loweredProgramStorage = nil
-        return true
-      case .parse(let pattern):
-        let _ = try parse(pattern, .traditional)
         return true
       case .recompile:
         let _ = try Compiler(

@@ -1,4 +1,5 @@
 @_spi(RegexBenchmark) import _StringProcessing
+@_implementationOnly import _RegexParser
 import Foundation
 
 protocol RegexBenchmark {
@@ -21,10 +22,14 @@ extension SwiftRegexBenchmark {
     let _ = regex._forceAction(.recompile)
   }
   mutating func parse() -> Bool {
-    if let s = pattern {
-      let _ = regex._forceAction(.parse(s))
+    guard let s = pattern else {
+      return false
+    }
+    
+    do {
+      let _ = try _RegexParser.parse(s, .traditional)
       return true
-    } else {
+    } catch {
       return false
     }
   }
