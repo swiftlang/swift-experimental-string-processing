@@ -18,18 +18,7 @@ struct BenchmarkRunner {
     suite.append(benchmark)
   }
   
-  mutating func register(_ benchmark: Benchmark) {
-    var benchmark = benchmark
-    if enableTracing {
-      benchmark.enableTracing()
-    }
-    if enableMetrics {
-      benchmark.enableMetrics()
-    }
-    suite.append(benchmark)
-  }
-  
-  mutating func register(_ benchmark: InputListBenchmark) {
+  mutating func register(_ benchmark: some SwiftRegexBenchmark) {
     var benchmark = benchmark
     if enableTracing {
       benchmark.enableTracing()
@@ -44,23 +33,27 @@ struct BenchmarkRunner {
     benchmark: some RegexBenchmark,
     samples: Int
   ) -> BenchmarkResult {
-    var benchmark = benchmark
     var runtimes: [Time] = []
-    var compileTimes: [Time] = []
     // Initial run to make sure the regex has been compiled
     benchmark.run()
 
-    // Measure compilataion time
-    for _ in 0..<samples {
-      let start = Tick.now
-      benchmark.compile()
-      let end = Tick.now
-      let time = end.elapsedTime(since: start)
-      compileTimes.append(time)
+    // Measure compilataion time for Swift regex
+    let compileTime: Time
+    if benchmark is SwiftRegexBenchmark {
+      var benchmark = benchmark as! SwiftRegexBenchmark
+      var compileTimes: [Time] = []
+      for _ in 0..<samples {
+        let start = Tick.now
+        benchmark.compile()
+        let end = Tick.now
+        let time = end.elapsedTime(since: start)
+        compileTimes.append(time)
+      }
+      compileTimes.sort()
+      compileTime = compileTimes[samples/2]
+    } else {
+      compileTime = .zero
     }
-    
-    compileTimes.sort()
-    let compileTime = compileTimes[samples/2]
     
     // FIXME: use suspendingclock?
     for _ in 0..<samples {

@@ -3,12 +3,30 @@ import Foundation
 
 protocol RegexBenchmark {
   var name: String { get }
-  mutating func compile()
   func run()
   func debug()
 }
 
-struct Benchmark: RegexBenchmark {
+protocol SwiftRegexBenchmark: RegexBenchmark {
+  var regex: Regex<AnyRegexOutput> { get set }
+  mutating func compile()
+  mutating func enableTracing()
+  mutating func enableMetrics()
+}
+
+extension SwiftRegexBenchmark {
+  mutating func compile() {
+    let _ = regex._forceAction(.recompile)
+  }
+  mutating func enableTracing() {
+    let _ = regex._forceAction(.addOptions(.enableTracing))
+  }
+  mutating func enableMetrics() {
+    let _ = regex._forceAction(.addOptions([.enableMetrics, .disableOptimizations]))
+  }
+}
+
+struct Benchmark: SwiftRegexBenchmark {
   let name: String
   var regex: Regex<AnyRegexOutput>
   let type: MatchType
@@ -18,17 +36,6 @@ struct Benchmark: RegexBenchmark {
     case whole
     case first
     case allMatches
-  }
-  
-  mutating func compile() {
-    let _ = regex._forceAction(.recompile)
-  }
-  
-  mutating func enableTracing() {
-    let _ = regex._forceAction(.addOptions(.enableTracing))
-  }
-  mutating func enableMetrics() {
-    let _ = regex._forceAction(.addOptions([.enableMetrics, .disableOptimizations]))
   }
   
   func run() {
@@ -55,9 +62,6 @@ struct NSBenchmark: RegexBenchmark {
     case first
   }
   
-  // Not measured for NSRegularExpression
-  mutating func compile() {}
-  
   func run() {
     switch type {
     case .allMatches: blackHole(regex.matches(in: target, range: range))
@@ -67,20 +71,10 @@ struct NSBenchmark: RegexBenchmark {
 }
 
 /// A benchmark running a regex on strings in input set
-struct InputListBenchmark: RegexBenchmark {
+struct InputListBenchmark: SwiftRegexBenchmark {
   let name: String
   var regex: Regex<AnyRegexOutput>
   let targets: [String]
-  
-  mutating func compile() {
-    blackHole(regex._forceAction(.recompile))
-  }
-  mutating func enableTracing() {
-    let _ = regex._forceAction(.addOptions(.enableTracing))
-  }
-  mutating func enableMetrics() {
-    let _ = regex._forceAction(.addOptions(.enableMetrics))
-  }
 
   func run() {
     for target in targets {
@@ -103,8 +97,6 @@ struct InputListNSBenchmark: RegexBenchmark {
   func range(in target: String) -> NSRange {
     NSRange(target.startIndex..<target.endIndex, in: target)
   }
-  
-  mutating func compile() {}
 
   func run() {
     for target in targets {
