@@ -3,14 +3,14 @@ import Foundation
 
 protocol RegexBenchmark {
   var name: String { get }
-  func compile()
+  mutating func compile()
   func run()
   func debug()
 }
 
 struct Benchmark: RegexBenchmark {
   let name: String
-  let regex: Regex<AnyRegexOutput>
+  var regex: Regex<AnyRegexOutput>
   let type: MatchType
   let target: String
 
@@ -20,8 +20,15 @@ struct Benchmark: RegexBenchmark {
     case allMatches
   }
   
-  func compile() {
-    blackHole(regex._compileRegex())
+  mutating func compile() {
+    let _ = regex._forceAction(.recompile)
+  }
+  
+  mutating func enableTracing() {
+    let _ = regex._forceAction(.setOptions(.enableTracing))
+  }
+  mutating func enableMetrics() {
+    let _ = regex._forceAction(.setOptions(.enableMetrics))
   }
   
   func run() {
@@ -48,7 +55,8 @@ struct NSBenchmark: RegexBenchmark {
     case first
   }
   
-  func compile() {}
+  // Not measured for NSRegularExpression
+  mutating func compile() {}
   
   func run() {
     switch type {
@@ -61,11 +69,17 @@ struct NSBenchmark: RegexBenchmark {
 /// A benchmark running a regex on strings in input set
 struct InputListBenchmark: RegexBenchmark {
   let name: String
-  let regex: Regex<AnyRegexOutput>
+  var regex: Regex<AnyRegexOutput>
   let targets: [String]
   
-  func compile() {
-    blackHole(regex._compileRegex())
+  mutating func compile() {
+    blackHole(regex._forceAction(.recompile))
+  }
+  mutating func enableTracing() {
+    let _ = regex._forceAction(.setOptions(.enableTracing))
+  }
+  mutating func enableMetrics() {
+    let _ = regex._forceAction(.setOptions(.enableMetrics))
   }
 
   func run() {
@@ -90,7 +104,7 @@ struct InputListNSBenchmark: RegexBenchmark {
     NSRange(target.startIndex..<target.endIndex, in: target)
   }
   
-  func compile() {}
+  mutating func compile() {}
 
   func run() {
     for target in targets {
@@ -160,7 +174,7 @@ struct CrossBenchmark {
           regex: nsRegex,
           type: .allMatches,
           target: input))
-      if includeFirst {
+      if includeFirst || runner.includeFirstOverride {
         runner.register(
           Benchmark(
             name: baseName + "First",

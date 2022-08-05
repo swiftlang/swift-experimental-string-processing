@@ -46,7 +46,7 @@ def register_benchmark(name):
             new_file_contents.append(line)
         else:
             # add the newest benchmark
-            new_file_contents.append(f"    benchmark.add{name}()\n")
+            new_file_contents.append(f"    self.add{name}()\n")
             new_file_contents.append(line)
     
     # write the new contents

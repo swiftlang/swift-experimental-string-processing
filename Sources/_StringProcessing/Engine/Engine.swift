@@ -24,7 +24,7 @@ struct Engine {
     set { program.enableTracing = newValue }
   }
   var enableMetrics: Bool {
-    get { program.enableTracing }
+    get { program.enableMetrics }
     set { program.enableMetrics = newValue }
   }
 

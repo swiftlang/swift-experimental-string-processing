@@ -37,9 +37,26 @@ struct Runner: ParsableCommand {
 
   @Flag(help: "Exclude running NSRegex benchmarks")
   var excludeNs = false
+  
+  @Flag(help: "Enable tracing of the engine (warning: lots of output)")
+  var enableTracing: Bool = false
+
+  @Flag(help: "Enable engine metrics (warning: lots of output)")
+  var enableMetrics: Bool = false
+  
+  @Flag(help: "Include firstMatch benchmarks in CrossBenchmark (off by default")
+  var includeFirst: Bool = false
 
   mutating func run() throws {
-    var runner = BenchmarkRunner.makeRunner(samples, quiet)
+    var runner = BenchmarkRunner(
+      suiteName: "DefaultRegexSuite",
+      samples: samples,
+      quiet: quiet,
+      enableTracing: enableTracing,
+      enableMetrics: enableMetrics,
+      includeFirstOverride: includeFirst)
+    
+    runner.registerDefault()
     
     if !self.specificBenchmarks.isEmpty {
       runner.suite = runner.suite.filter { b in

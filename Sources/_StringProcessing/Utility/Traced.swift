@@ -80,6 +80,17 @@ extension TracedProcessor {
   }
 
   func formatInput() -> String {
+    // Cut a reasonably sized substring from the input to print
+    let start = input.index(
+      currentPosition,
+      offsetBy: -10,
+      limitedBy: input.startIndex) ?? input.startIndex
+    let end = input.index(
+      currentPosition,
+      offsetBy: 10,
+      limitedBy: input.endIndex) ?? input.endIndex
+    let input = input[start...end]
+  
     // String override for printing sub-character information.
     if !input.indices.contains(currentPosition) {
       // Format unicode scalars as:
@@ -144,7 +155,7 @@ extension TracedProcessor {
     result += formatCallStack()
     result += formatSavePoints()
     result += formatRegisters()
-    // result += formatInput()
+    result += formatInput()
     result += "\n"
     result += formatInstructionWindow()
     return result

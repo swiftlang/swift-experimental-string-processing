@@ -11,7 +11,7 @@
 
 import XCTest
 @testable import _RegexParser
-@testable import _StringProcessing
+@testable @_spi(RegexBenchmark) import _StringProcessing
 import TestSupport
 
 struct MatchError: Error {

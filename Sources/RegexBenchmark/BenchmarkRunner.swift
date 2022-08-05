@@ -1,4 +1,5 @@
 import Foundation
+@_spi(RegexBenchmark) import _StringProcessing
 
 struct BenchmarkRunner {
   let suiteName: String
@@ -7,21 +8,43 @@ struct BenchmarkRunner {
   let samples: Int
   var results: SuiteResult = SuiteResult()
   let quiet: Bool
-
-  init(_ suiteName: String, _ n: Int, _ quiet: Bool) {
-    self.suiteName = suiteName
-    self.samples = n
-    self.quiet = quiet
+  let enableTracing: Bool
+  let enableMetrics: Bool
+  
+  // Forcibly include firstMatch benchmarks for all CrossBenchmarks
+  let includeFirstOverride: Bool
+  
+  mutating func register(_ benchmark: some RegexBenchmark) {
+    suite.append(benchmark)
   }
   
-  mutating func register(_ new: some RegexBenchmark) {
-    suite.append(new)
+  mutating func register(_ benchmark: Benchmark) {
+    var benchmark = benchmark
+    if enableTracing {
+      benchmark.enableTracing()
+    }
+    if enableMetrics {
+      benchmark.enableMetrics()
+    }
+    suite.append(benchmark)
+  }
+  
+  mutating func register(_ benchmark: InputListBenchmark) {
+    var benchmark = benchmark
+    if enableTracing {
+      benchmark.enableTracing()
+    }
+    if enableMetrics {
+      benchmark.enableMetrics()
+    }
+    suite.append(benchmark)
   }
   
   mutating func measure(
     benchmark: some RegexBenchmark,
     samples: Int
   ) -> BenchmarkResult {
+    var benchmark = benchmark
     var runtimes: [Time] = []
     var compileTimes: [Time] = []
     // Initial run to make sure the regex has been compiled
