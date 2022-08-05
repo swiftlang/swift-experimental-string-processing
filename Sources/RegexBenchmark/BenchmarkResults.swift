@@ -106,15 +106,7 @@ extension BenchmarkRunner {
         === Comparison chart =================================================================
         Press Control-C to close...
         """)
-      BenchmarkResultApp.comparisons = {
-        return comparisons.sorted {
-          let delta0 = Float($0.latest.median.seconds - $0.baseline.median.seconds)
-            / Float($0.baseline.median.seconds)
-          let delta1 = Float($1.latest.median.seconds - $1.baseline.median.seconds)
-            / Float($1.baseline.median.seconds)
-          return delta0 > delta1
-        }
-      }()
+      BenchmarkResultApp.comparisons = comparisons
       BenchmarkResultApp.main()
     }
     #endif
@@ -141,11 +133,43 @@ extension BenchmarkRunner {
   }
 }
 
-struct BenchmarkResult: Codable {
-  let compileTime: Time
+struct Measurement: Codable, CustomStringConvertible {
   let median: Time
   let stdev: Double
   let samples: Int
+  
+  init(results: [Time]) {
+    let sorted = results.sorted()
+    self.samples = sorted.count
+    self.median = sorted[samples/2]
+    let sum = results.reduce(0.0) {acc, next in acc + next.seconds}
+    let mean = sum / Double(samples)
+    let squareDiffs = results.reduce(0.0) { acc, next in
+      acc + pow(next.seconds - mean, 2)
+    }
+    self.stdev = (squareDiffs / Double(samples)).squareRoot()
+  }
+  
+  var description: String {
+    return "\(median) (stdev: \(Time(stdev)), N = \(samples))"
+  }
+}
+
+struct BenchmarkResult: Codable, CustomStringConvertible {
+  let runtime: Measurement
+  let compileTime: Measurement?
+  let parseTime: Measurement?
+  
+  var description: String {
+    var base = "> run time: \(runtime.description)"
+    if let compileTime = compileTime {
+      base += "\n> compile time: \(compileTime)"
+    }
+    if let parseTime = parseTime {
+      base += "\n> parse time: \(parseTime)"
+    }
+    return base
+  }
 }
 
 extension BenchmarkResult {
@@ -160,56 +184,57 @@ extension BenchmarkResult {
       case runtime
       case compileTime
     }
+    
+    var latestTime: Time {
+      switch type {
+      case .compileTime:
+        return latest.compileTime?.median ?? .zero
+      case .runtime:
+        return latest.runtime.median
+      }
+    }
+    
+    var baselineTime: Time {
+      switch type {
+      case .compileTime:
+        return baseline.compileTime?.median ?? .zero
+      case .runtime:
+        return baseline.runtime.median
+      }
+    }
 
     var diff: Time? {
       switch type {
       case .compileTime:
-        return latest.compileTime - baseline.compileTime
+        return latestTime - baselineTime
       case .runtime:
-        if Stats.tTest(baseline, latest) {
-          return latest.median - baseline.median
+        if Stats.tTest(baseline.runtime, latest.runtime) {
+          return latestTime - baselineTime
         }
         return nil
       }
-
+    }
+    
+    var normalizedDiff: Double {
+      latestTime.seconds/baselineTime.seconds
     }
     
     var description: String {
       guard let diff = diff else {
         return "- \(name) N/A"
       }
-      let oldVal: Time
-      let newVal: Time
-      switch type {
-      case .compileTime:
-        oldVal = baseline.compileTime
-        newVal = latest.compileTime
-      case .runtime:
-        oldVal = baseline.median
-        newVal = latest.median
-      }
-      let percentage = (1000 * diff.seconds / oldVal.seconds).rounded()/10
+      let percentage = (1000 * diff.seconds / baselineTime.seconds).rounded()/10
       let len = max(40 - name.count, 1)
       let nameSpacing = String(repeating: " ", count: len)
-      return "- \(name)\(nameSpacing)\(newVal)\t\(oldVal)\t\(diff)\t\t\(percentage)%"
+      return "- \(name)\(nameSpacing)\(latestTime)\t\(baselineTime)\t\(diff)\t\t\(percentage)%"
     }
     
     var asCsv: String {
       guard let diff = diff else {
         return "\(name),N/A"
       }
-      let oldVal: Time
-      let newVal: Time
-      switch type {
-      case .compileTime:
-        oldVal = baseline.compileTime
-        newVal = latest.compileTime
-      case .runtime:
-        oldVal = baseline.median
-        newVal = latest.median
-      }
-      let percentage = (1000 * diff.seconds / oldVal.seconds).rounded()/10
-      return "\"\(name)\",\(newVal.seconds),\(oldVal.seconds),\(diff.seconds),\(percentage)%"
+      let percentage = (1000 * diff.seconds / baselineTime.seconds).rounded()/10
+      return "\"\(name)\",\(latestTime.seconds),\(baselineTime.seconds),\(diff.seconds),\(percentage)%"
     }
   }
 }

@@ -29,75 +29,77 @@ struct BenchmarkRunner {
     suite.append(benchmark)
   }
   
-  mutating func measure(
+  func medianMeasure(
+    samples: Int,
+    closure: () -> Void
+  ) -> Measurement {
+    // FIXME: use suspendingclock?
+    var times: [Time] = []
+    for _ in 0..<samples {
+      let start = Tick.now
+      closure()
+      let end = Tick.now
+      let time = end.elapsedTime(since: start)
+      times.append(time)
+    }
+    return Measurement(results: times)
+  }
+  
+  func measure(
     benchmark: some RegexBenchmark,
     samples: Int
   ) -> BenchmarkResult {
-    var runtimes: [Time] = []
     // Initial run to make sure the regex has been compiled
     benchmark.run()
 
     // Measure compilataion time for Swift regex
-    let compileTime: Time
+    let compileTime: Measurement?
+    let parseTime: Measurement?
     if benchmark is SwiftRegexBenchmark {
       var benchmark = benchmark as! SwiftRegexBenchmark
-      var compileTimes: [Time] = []
-      for _ in 0..<samples {
-        let start = Tick.now
-        benchmark.compile()
-        let end = Tick.now
-        let time = end.elapsedTime(since: start)
-        compileTimes.append(time)
+      compileTime = medianMeasure(samples: samples) { benchmark.compile() }
+      // Can't parse if we don't have an input string (ie a builder regex)
+      if benchmark.parse() {
+        parseTime = medianMeasure(samples: samples) { let _ = benchmark.parse() }
+      } else {
+        parseTime = nil
       }
-      compileTimes.sort()
-      compileTime = compileTimes[samples/2]
+      
     } else {
-      compileTime = .zero
+      compileTime = nil
+      parseTime = nil
     }
     
-    // FIXME: use suspendingclock?
-    for _ in 0..<samples {
-      let start = Tick.now
-      benchmark.run()
-      let end = Tick.now
-      let time = end.elapsedTime(since: start)
-      runtimes.append(time)
-    }
-
-    runtimes.sort()
-    let median = runtimes[samples/2]
-    let sum = runtimes.reduce(0.0) {acc, next in acc + next.seconds}
-    let mean = sum / Double(runtimes.count)
-    let squareDiffs = runtimes.reduce(0.0) { acc, next in
-      acc + pow(next.seconds - mean, 2)
-    }
-    let stdev = (squareDiffs / Double(runtimes.count)).squareRoot()
+    let runtime = medianMeasure(samples: samples) { benchmark.run() }
     return BenchmarkResult(
+      runtime: runtime,
       compileTime: compileTime,
-      median: median,
-      stdev: stdev,
-      samples: samples)
+      parseTime: parseTime)
   }
   
   mutating func run() {
     print("Running")
     for b in suite {
       var result = measure(benchmark: b, samples: samples)
-      if result.stdev > Stats.maxAllowedStdev {
+      if result.runtime.stdev > Stats.maxAllowedStdev {
         print("Warning: Standard deviation > \(Time(Stats.maxAllowedStdev)) for \(b.name)")
-        print("N = \(samples), median: \(result.median), stdev: \(Time(result.stdev))")
+        print(result.runtime)
         print("Rerunning \(b.name)")
-        result = measure(benchmark: b, samples: result.samples*2)
-        print("N = \(result.samples), median: \(result.median), stdev: \(Time(result.stdev))")
-        if result.stdev > Stats.maxAllowedStdev {
+        result = measure(benchmark: b, samples: result.runtime.samples*2)
+        print(result.runtime)
+        if result.runtime.stdev > Stats.maxAllowedStdev {
           fatalError("Benchmark \(b.name) is too variant")
         }
       }
-      if result.compileTime > Time.millisecond {
+      if result.compileTime?.median ?? .zero > Time.millisecond {
         print("Warning: Abnormally high compilation time, what happened?")
       }
+      
+      if result.parseTime?.median ?? .zero > Time.millisecond {
+        print("Warning: Abnormally high parse time, what happened?")
+      }
       if !quiet {
-        print("- \(b.name) \(result.median) (stdev: \(Time(result.stdev))) (compile time: \(result.compileTime))")
+        print("- \(b.name)\n\(result)")
       }
       self.results.add(name: b.name, result: result)
     }
@@ -107,8 +109,6 @@ struct BenchmarkRunner {
     print("Debugging")
     print("========================")
     for b in suite {
-      let result = measure(benchmark: b, samples: samples)
-      print("- \(b.name) \(result.median) (stdev: \(Time(result.stdev)))")
       b.debug()
       print("========================")
     }

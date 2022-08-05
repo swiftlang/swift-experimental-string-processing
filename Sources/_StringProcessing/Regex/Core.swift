@@ -138,14 +138,6 @@ extension Regex {
 @available(SwiftStdlib 5.7, *)
 @_spi(RegexBenchmark)
 extension Regex {
-  public struct QueryResult {
-    
-  }
-  
-  public func _queryRegex() -> QueryResult {
-    QueryResult()
-  }
-  
   public enum _RegexInternalAction {
     case parse(String)
     case recompile

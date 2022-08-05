@@ -30,7 +30,7 @@ extension Engine {
     subjectBounds: Range<String.Index>,
     searchBounds: Range<String.Index>
   ) -> Processor {
-    return Processor(
+    Processor(
       program: program,
       input: input,
       subjectBounds: subjectBounds,

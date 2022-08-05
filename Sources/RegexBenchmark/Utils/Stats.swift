@@ -6,7 +6,7 @@ extension Stats {
   // 500µs, maybe this should be a % of the runtime for each benchmark?
   static let maxAllowedStdev = 500e-6
 
-  static func tTest(_ a: BenchmarkResult, _ b: BenchmarkResult) -> Bool {
+  static func tTest(_ a: Measurement, _ b: Measurement) -> Bool {
     // Student's t-test
     // Since we should generally have similar variances across runs
     let n1 = Double(a.samples)

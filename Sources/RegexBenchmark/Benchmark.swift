@@ -9,7 +9,9 @@ protocol RegexBenchmark {
 
 protocol SwiftRegexBenchmark: RegexBenchmark {
   var regex: Regex<AnyRegexOutput> { get set }
+  var pattern: String? { get }
   mutating func compile()
+  mutating func parse() -> Bool
   mutating func enableTracing()
   mutating func enableMetrics()
 }
@@ -17,6 +19,14 @@ protocol SwiftRegexBenchmark: RegexBenchmark {
 extension SwiftRegexBenchmark {
   mutating func compile() {
     let _ = regex._forceAction(.recompile)
+  }
+  mutating func parse() -> Bool {
+    if let s = pattern {
+      let _ = regex._forceAction(.parse(s))
+      return true
+    } else {
+      return false
+    }
   }
   mutating func enableTracing() {
     let _ = regex._forceAction(.addOptions(.enableTracing))
@@ -29,6 +39,7 @@ extension SwiftRegexBenchmark {
 struct Benchmark: SwiftRegexBenchmark {
   let name: String
   var regex: Regex<AnyRegexOutput>
+  let pattern: String?
   let type: MatchType
   let target: String
 
@@ -74,6 +85,7 @@ struct NSBenchmark: RegexBenchmark {
 struct InputListBenchmark: SwiftRegexBenchmark {
   let name: String
   var regex: Regex<AnyRegexOutput>
+  let pattern: String?
   let targets: [String]
 
   func run() {
@@ -145,6 +157,7 @@ struct CrossBenchmark {
         Benchmark(
           name: baseName + "Whole",
           regex: swiftRegex,
+          pattern: regex,
           type: .whole,
           target: input))
       runner.register(
@@ -158,6 +171,7 @@ struct CrossBenchmark {
         Benchmark(
           name: baseName + "All",
           regex: swiftRegex,
+          pattern: regex,
           type: .allMatches,
           target: input))
       runner.register(
@@ -171,6 +185,7 @@ struct CrossBenchmark {
           Benchmark(
             name: baseName + "First",
             regex: swiftRegex,
+            pattern: regex,
             type: .first,
             target: input))
         runner.register(
@@ -200,6 +215,7 @@ struct CrossInputListBenchmark {
     runner.register(InputListBenchmark(
       name: baseName,
       regex: swiftRegex,
+      pattern: regex,
       targets: inputs
     ))
     runner.register(InputListNSBenchmark(
