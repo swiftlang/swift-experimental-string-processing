@@ -220,27 +220,16 @@ fileprivate extension Compiler.ByteCodeGen {
     case .graphemeCluster:
       builder.buildAdvance(1)
     case .unicodeScalar:
-      // TODO: builder.buildAdvanceUnicodeScalar(1)
-      builder.buildConsume { input, bounds in
-        input.unicodeScalars.index(after: bounds.lowerBound)
-      }
+      builder.buildAdvanceUnicodeScalar(1)
     }
   }
 
   mutating func emitAnyNonNewline() {
     switch options.semanticLevel {
     case .graphemeCluster:
-      builder.buildConsume { input, bounds in
-        input[bounds.lowerBound].isNewline
-        ? nil
-        : input.index(after: bounds.lowerBound)
-      }
+      builder.buildConsumeNonNewline()
     case .unicodeScalar:
-      builder.buildConsume { input, bounds in
-        input[bounds.lowerBound].isNewline
-        ? nil
-        : input.unicodeScalars.index(after: bounds.lowerBound)
-      }
+      builder.buildConsumeScalarNonNewline()
     }
   }
 

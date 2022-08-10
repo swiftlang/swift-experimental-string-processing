@@ -122,6 +122,10 @@ extension Instruction {
     /// - If it is inverted
     /// - If it strictly matches only ascii values
     case matchBuiltin
+    
+    /// Matches any non newline character
+    /// Operand: If we are in scalar mode or not
+    case matchAnyNonNewline
 
     // MARK: Extension points
 

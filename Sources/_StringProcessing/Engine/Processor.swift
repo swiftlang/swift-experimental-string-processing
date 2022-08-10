@@ -181,6 +181,18 @@ extension Processor {
     currentPosition = idx
     return true
   }
+  
+  // Advances in unicode scalar view
+  mutating func consumeScalar(_ n: Distance) -> Bool {
+    guard let idx = input.unicodeScalars.index(
+      currentPosition, offsetBy: n.rawValue, limitedBy: end
+    ) else {
+      signalFailure()
+      return false
+    }
+    currentPosition = idx
+    return true
+  }
 
   /// Continue matching at the specified index.
   ///
@@ -326,6 +338,26 @@ extension Processor {
       return false
     }
     currentPosition = idx
+    return true
+  }
+
+  // Matches the next character if it is not a newline
+  mutating func matchAnyNonNewline() -> Bool {
+    guard let c = load(), !c.isNewline else {
+      signalFailure()
+      return false
+    }
+    _uncheckedForcedConsumeOne()
+    return true
+  }
+  
+  // Matches the next scalar if it is not a newline
+  mutating func matchAnyNonNewlineScalar() -> Bool {
+    guard let s = loadScalar(), !s.isNewline else {
+      signalFailure()
+      return false
+    }
+    input.unicodeScalars.formIndex(after: &currentPosition)
     return true
   }
 
@@ -477,10 +509,26 @@ extension Processor {
       signalFailure()
 
     case .advance:
-      if consume(payload.distance) {
-        controller.step()
+      let (isScalar, distance) = payload.distance
+      if isScalar {
+        if consumeScalar(distance) {
+          controller.step()
+        }
+      } else {
+        if consume(distance) {
+          controller.step()
+        }
       }
-
+    case .matchAnyNonNewline:
+      if payload.isScalar {
+        if matchAnyNonNewlineScalar() {
+          controller.step()
+        }
+      } else {
+        if matchAnyNonNewline() {
+          controller.step()
+        }
+      }
     case .match:
       let (isCaseInsensitive, reg) = payload.elementPayload
       if isCaseInsensitive {

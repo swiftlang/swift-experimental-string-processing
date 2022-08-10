@@ -37,6 +37,7 @@ enum DecodedInstr {
   case matchScalarCaseInsensitive
   case matchScalarUnchecked
   case matchBitsetScalar
+  case matchAnyNonNewline
   case matchBitset
   case matchBuiltin
   case consumeBy
@@ -116,7 +117,9 @@ extension DecodedInstr {
         return .matchBitset
       }
     case .consumeBy:
-      return consumeBy
+      return .consumeBy
+    case .matchAnyNonNewline:
+      return .matchAnyNonNewline
     case .assertBy:
       return .assertBy
     case .matchBy:
