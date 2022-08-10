@@ -240,13 +240,19 @@ extension Instruction.Payload {
     interpret()
   }
 
+  init(capture: CaptureRegister, isScalarMode: Bool) {
+    self.init(isScalarMode ? 1 : 0, capture)
+  }
+  var captureAndMode: (isScalarMode: Bool, CaptureRegister) {
+    let pair: (UInt64, CaptureRegister) = interpretPair()
+    return (pair.0 == 1, pair.1)
+  }
   init(capture: CaptureRegister) {
     self.init(capture)
   }
   var capture: CaptureRegister {
     interpret()
   }
-
 
   // MARK: Packed operand payloads
 

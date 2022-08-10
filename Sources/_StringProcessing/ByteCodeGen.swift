@@ -84,7 +84,8 @@ fileprivate extension Compiler.ByteCodeGen {
       try emitBackreference(ref.ast)
 
     case let .symbolicReference(id):
-      builder.buildUnresolvedReference(id: id)
+      builder.buildUnresolvedReference(
+        id: id, isScalarMode: options.semanticLevel == .unicodeScalar)
 
     case let .changeMatchingOptions(optionSequence):
       if !hasEmittedFirstMatchableAtom {
@@ -143,9 +144,11 @@ fileprivate extension Compiler.ByteCodeGen {
       guard let i = n.value else {
         throw Unreachable("Expected a value")
       }
-      builder.buildBackreference(.init(i))
+      builder.buildBackreference(
+        .init(i), isScalarMode: options.semanticLevel == .unicodeScalar)
     case .named(let name):
-      try builder.buildNamedReference(name)
+      try builder.buildNamedReference(
+        name, isScalarMode: options.semanticLevel == .unicodeScalar)
     case .relative:
       throw Unsupported("Backreference kind: \(ref)")
     }
