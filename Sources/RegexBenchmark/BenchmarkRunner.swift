@@ -59,7 +59,7 @@ struct BenchmarkRunner {
       var benchmark = benchmark as! SwiftRegexBenchmark
       compileTime = medianMeasure(samples: samples) { benchmark.compile() }
       // Can't parse if we don't have an input string (ie a builder regex)
-      if benchmark.parse() {
+      if benchmark.pattern != nil {
         parseTime = medianMeasure(samples: samples) { let _ = benchmark.parse() }
       } else {
         parseTime = nil
@@ -81,13 +81,13 @@ struct BenchmarkRunner {
     print("Running")
     for b in suite {
       var result = measure(benchmark: b, samples: samples)
-      if result.runtime.stdev > Stats.maxAllowedStdev * result.runtime.median.seconds {
+      if result.runtimeIsTooVariant {
         print("Warning: Standard deviation > \(Stats.maxAllowedStdev*100)% for \(b.name)")
         print(result.runtime)
         print("Rerunning \(b.name)")
         result = measure(benchmark: b, samples: result.runtime.samples*2)
         print(result.runtime)
-        if result.runtime.stdev > Stats.maxAllowedStdev {
+        if result.runtimeIsTooVariant {
           fatalError("Benchmark \(b.name) is too variant")
         }
       }

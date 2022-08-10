@@ -33,7 +33,7 @@ extension SwiftRegexBenchmark {
     let _ = regex._forceAction(.addOptions(.enableTracing))
   }
   mutating func enableMetrics() {
-    let _ = regex._forceAction(.addOptions([.enableMetrics, .disableOptimizations]))
+    let _ = regex._forceAction(.addOptions([.enableMetrics]))
   }
 }
 

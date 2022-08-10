@@ -18,3 +18,9 @@ extension Stats {
     return abs(tVal) > 2
   }
 }
+
+extension BenchmarkResult {
+  var runtimeIsTooVariant: Bool {
+    runtime.stdev > Stats.maxAllowedStdev * runtime.median.seconds
+  }
+}
