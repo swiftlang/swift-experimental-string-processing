@@ -2549,4 +2549,8 @@ extension RegexTests {
     expectProgram(for: "a{\(maxStorable-1),\(maxStorable*2)}", doesNotContain: [.quantify])
     expectProgram(for: "a{\(maxStorable),\(maxStorable*2+1)}", doesNotContain: [.quantify])
   }
+  
+  func testFuzzerArtifacts() throws {
+    expectCompletion(regex: #"(b?)\1*"#, in: "a")
+  }
 }

@@ -1019,6 +1019,8 @@ extension DSLTree.Node {
     case .atom(let atom):
       switch atom {
       case .changeMatchingOptions, .assertion: return false
+      // Captures may be nil so backreferences may be zero length matches
+      case .backreference: return false
       default: return true
       }
     case .trivia, .empty:
