@@ -42,8 +42,8 @@ struct Runner: ParsableCommand {
 Enable tracing of the engine (warning: lots of output). Prints out processor state each cycle
 
 Note: swift-experimental-string-processing must be built with processor measurements enabled
-
 swift build -c release -Xswiftc -DPROCESSOR_MEASUREMENTS_ENABLED
+
 """)
   var enableTracing: Bool = false
 
@@ -51,12 +51,12 @@ swift build -c release -Xswiftc -DPROCESSOR_MEASUREMENTS_ENABLED
 Enable engine metrics (warning: lots of output). Prints out cycle count, instruction counts, number of backtracks
 
 Note: swift-experimental-string-processing must be built with processor measurements enabled
-
 swift build -c release -Xswiftc -DPROCESSOR_MEASUREMENTS_ENABLED
+
 """)
   var enableMetrics: Bool = false
   
-  @Flag(help: "Include firstMatch benchmarks in CrossBenchmark (off by default")
+  @Flag(help: "Include firstMatch benchmarks in CrossBenchmark (off by default)")
   var includeFirst: Bool = false
 
   mutating func run() throws {
