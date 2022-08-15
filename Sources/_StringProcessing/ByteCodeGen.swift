@@ -109,7 +109,7 @@ fileprivate extension Compiler.ByteCodeGen {
     }
 
     // Fast path for eliding boundary checks for an all ascii quoted literal
-    if optimizationsEnabled && s.allSatisfy(\.isASCII) {
+    if optimizationsEnabled && s.allSatisfy(\.isASCII) && !s.isEmpty {
       let lastIdx = s.unicodeScalars.indices.last!
       for idx in s.unicodeScalars.indices {
         let boundaryCheck = idx == lastIdx
