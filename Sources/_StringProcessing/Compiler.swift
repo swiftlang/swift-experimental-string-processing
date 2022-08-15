@@ -16,7 +16,7 @@ class Compiler {
 
   // TODO: Or are these stored on the tree?
   var options = MatchingOptions()
-  private var compileOptions: CompileOptions = .default
+  private var compileOptions: _CompileOptions = .default
 
   init(ast: AST) {
     self.tree = ast.dslTree
@@ -26,7 +26,7 @@ class Compiler {
     self.tree = tree
   }
 
-  init(tree: DSLTree, compileOptions: CompileOptions) {
+  init(tree: DSLTree, compileOptions: _CompileOptions) {
     self.tree = tree
     self.compileOptions = compileOptions
   }
@@ -108,14 +108,14 @@ func _compileRegex(
 }
 
 @_spi(RegexBenchmark)
-public struct CompileOptions: OptionSet {
+public struct _CompileOptions: OptionSet {
   public let rawValue: Int
   public init(rawValue: Int) {
     self.rawValue = rawValue
   }
 
-  public static let disableOptimizations = CompileOptions(rawValue: 1 << 0)
-  public static let enableTracing = CompileOptions(rawValue: 1 << 1)
-  public static let enableMetrics = CompileOptions(rawValue: 1 << 2)
-  public static let `default`: CompileOptions = []
+  public static let disableOptimizations = _CompileOptions(rawValue: 1 << 0)
+  public static let enableTracing = _CompileOptions(rawValue: 1 << 1)
+  public static let enableMetrics = _CompileOptions(rawValue: 1 << 2)
+  public static let `default`: _CompileOptions = []
 }

@@ -40,8 +40,23 @@ struct BenchmarkChart: View {
         RuleMark(y: .value("Time", 1.0))
         .foregroundStyle(.red)
         .lineStyle(.init(lineWidth: 1, dash: [2]))
+        .annotation(position: .top, alignment: .leading) {
+          Text("Baseline").foregroundStyle(.red)
+        }
         
-      }.frame(idealHeight: 400)
+      }
+      .frame(idealWidth: 800, idealHeight: 800)
+      .chartYScale(domain: 0...2.0)
+      .chartYAxis {
+        AxisMarks(values: .stride(by: 0.1))
+      }
+      .chartXAxis {
+        AxisMarks { value in
+          AxisGridLine()
+          AxisTick()
+          AxisValueLabel(value.as(String.self)!, orientation: .vertical)
+        }
+      }
     }
   }
 }

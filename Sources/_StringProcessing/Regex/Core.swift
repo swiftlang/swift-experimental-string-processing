@@ -82,7 +82,7 @@ extension Regex {
     let tree: DSLTree
 
     /// OptionSet of compiler options for testing purposes
-    fileprivate var compileOptions: CompileOptions = .default
+    fileprivate var compileOptions: _CompileOptions = .default
 
     private final class ProgramBox {
       let value: MEProgram
@@ -140,7 +140,7 @@ extension Regex {
 extension Regex {
   public enum _RegexInternalAction {
     case recompile
-    case addOptions(CompileOptions)
+    case addOptions(_CompileOptions)
   }
   
   /// Internal API for RegexBenchmark

@@ -2,10 +2,9 @@
 @_implementationOnly import _RegexParser
 import Foundation
 
-protocol RegexBenchmark {
+protocol RegexBenchmark: Debug {
   var name: String { get }
   func run()
-  func debug()
 }
 
 protocol SwiftRegexBenchmark: RegexBenchmark {

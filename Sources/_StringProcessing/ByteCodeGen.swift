@@ -22,12 +22,12 @@ extension Compiler {
     /// This is used to determine whether to apply initial options.
     var hasEmittedFirstMatchableAtom = false
 
-    private let compileOptions: CompileOptions
+    private let compileOptions: _CompileOptions
     fileprivate var optimizationsEnabled: Bool { !compileOptions.contains(.disableOptimizations) }
 
     init(
       options: MatchingOptions,
-      compileOptions: CompileOptions,
+      compileOptions: _CompileOptions,
       captureList: CaptureList
     ) {
       self.options = options
