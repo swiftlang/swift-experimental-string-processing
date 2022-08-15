@@ -400,6 +400,8 @@ extension Processor {
   mutating func cycle() {
     _checkInvariants()
     assert(state == .inProgress)
+
+#if PROCESSOR_MEASUREMENTS_ENABLED
     if cycleCount == 0 {
       trace()
       measureMetrics()
@@ -410,6 +412,8 @@ extension Processor {
       measureMetrics()
       _checkInvariants()
     }
+#endif
+
     let (opcode, payload) = fetch().destructure
     switch opcode {
     case .invalid:
