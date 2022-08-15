@@ -121,7 +121,7 @@ struct InputListNSBenchmark: RegexBenchmark {
 /// A benchmark meant to be ran across multiple engines
 struct CrossBenchmark {
   /// Suffix added onto NSRegularExpression benchmarks
-  static let nsSuffix = "_NS"
+  static var nsSuffix: String { "_NS" }
   
   /// The base name of the benchmark
   var baseName: String
@@ -219,7 +219,7 @@ struct CrossInputListBenchmark {
       targets: inputs
     ))
     runner.register(InputListNSBenchmark(
-      name: baseName + "NS",
+      name: baseName + CrossBenchmark.nsSuffix,
       regex: regex,
       targets: inputs
     ))
