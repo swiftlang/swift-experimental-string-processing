@@ -2458,6 +2458,9 @@ extension RegexTests {
 
     // case insensitive tests
     firstMatchTest(#"(?i)abc\u{301}d"#, input: "AbC\u{301}d", match: "AbC\u{301}d", semanticLevel: .unicodeScalar)
+
+    // check that we don't crash on empty strings
+    firstMatchTest(#"\Q\E"#, input: "", match: "")
   }
   
   func testCase() {
