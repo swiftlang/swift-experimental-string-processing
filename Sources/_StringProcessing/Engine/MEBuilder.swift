@@ -14,6 +14,10 @@
 extension MEProgram {
   struct Builder {
     var instructions: [Instruction] = []
+    
+    // Tracing
+    var enableTracing = false
+    var enableMetrics = false
 
     var elements = TypedSetVector<Input.Element, _ElementRegister>()
     var sequences = TypedSetVector<[Input.Element], _SequenceRegister>()
@@ -392,6 +396,8 @@ extension MEProgram.Builder {
       staticTransformFunctions: transformFunctions,
       staticMatcherFunctions: matcherFunctions,
       registerInfo: regInfo,
+      enableTracing: enableTracing,
+      enableMetrics: enableMetrics,
       captureList: captureList,
       referencedCaptureOffsets: referencedCaptureOffsets,
       initialOptions: initialOptions)

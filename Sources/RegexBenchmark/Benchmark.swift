@@ -1,15 +1,45 @@
-import _StringProcessing
+@_spi(RegexBenchmark) import _StringProcessing
+@_implementationOnly import _RegexParser
 import Foundation
 
-protocol RegexBenchmark {
+protocol RegexBenchmark: Debug {
   var name: String { get }
   func run()
-  func debug()
 }
 
-struct Benchmark: RegexBenchmark {
+protocol SwiftRegexBenchmark: RegexBenchmark {
+  var regex: Regex<AnyRegexOutput> { get set }
+  var pattern: String? { get }
+}
+
+extension SwiftRegexBenchmark {
+  mutating func compile() {
+    let _ = regex._forceAction(.recompile)
+  }
+  mutating func parse() -> Bool {
+    guard let s = pattern else {
+      return false
+    }
+    
+    do {
+      let _ = try _RegexParser.parse(s, .traditional)
+      return true
+    } catch {
+      return false
+    }
+  }
+  mutating func enableTracing() {
+    let _ = regex._forceAction(.addOptions(.enableTracing))
+  }
+  mutating func enableMetrics() {
+    let _ = regex._forceAction(.addOptions([.enableMetrics]))
+  }
+}
+
+struct Benchmark: SwiftRegexBenchmark {
   let name: String
-  let regex: Regex<AnyRegexOutput>
+  var regex: Regex<AnyRegexOutput>
+  let pattern: String?
   let type: MatchType
   let target: String
 
@@ -52,11 +82,12 @@ struct NSBenchmark: RegexBenchmark {
 }
 
 /// A benchmark running a regex on strings in input set
-struct InputListBenchmark: RegexBenchmark {
+struct InputListBenchmark: SwiftRegexBenchmark {
   let name: String
-  let regex: Regex<AnyRegexOutput>
+  var regex: Regex<AnyRegexOutput>
+  let pattern: String?
   let targets: [String]
-  
+
   func run() {
     for target in targets {
       blackHole(target.wholeMatch(of: regex))
@@ -78,7 +109,7 @@ struct InputListNSBenchmark: RegexBenchmark {
   func range(in target: String) -> NSRange {
     NSRange(target.startIndex..<target.endIndex, in: target)
   }
-  
+
   func run() {
     for target in targets {
       let range = range(in: target)
@@ -89,6 +120,9 @@ struct InputListNSBenchmark: RegexBenchmark {
 
 /// A benchmark meant to be ran across multiple engines
 struct CrossBenchmark {
+  /// Suffix added onto NSRegularExpression benchmarks
+  static var nsSuffix: String { "_NS" }
+  
   /// The base name of the benchmark
   var baseName: String
 
@@ -123,11 +157,12 @@ struct CrossBenchmark {
         Benchmark(
           name: baseName + "Whole",
           regex: swiftRegex,
+          pattern: regex,
           type: .whole,
           target: input))
       runner.register(
         NSBenchmark(
-          name: baseName + "Whole_NS",
+          name: baseName + "Whole" + CrossBenchmark.nsSuffix,
           regex: nsRegex,
           type: .first,
           target: input))
@@ -136,24 +171,26 @@ struct CrossBenchmark {
         Benchmark(
           name: baseName + "All",
           regex: swiftRegex,
+          pattern: regex,
           type: .allMatches,
           target: input))
       runner.register(
         NSBenchmark(
-          name: baseName + "All_NS",
+          name: baseName + "All" + CrossBenchmark.nsSuffix,
           regex: nsRegex,
           type: .allMatches,
           target: input))
-      if includeFirst {
+      if includeFirst || runner.includeFirstOverride {
         runner.register(
           Benchmark(
             name: baseName + "First",
             regex: swiftRegex,
+            pattern: regex,
             type: .first,
             target: input))
         runner.register(
           NSBenchmark(
-            name: baseName + "First_NS",
+            name: baseName + "First" + CrossBenchmark.nsSuffix,
             regex: nsRegex,
             type: .first,
             target: input))
@@ -178,10 +215,11 @@ struct CrossInputListBenchmark {
     runner.register(InputListBenchmark(
       name: baseName,
       regex: swiftRegex,
+      pattern: regex,
       targets: inputs
     ))
     runner.register(InputListNSBenchmark(
-      name: baseName + "NS",
+      name: baseName + CrossBenchmark.nsSuffix,
       regex: regex,
       targets: inputs
     ))

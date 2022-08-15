@@ -29,27 +29,81 @@ extension Processor: TracedProcessor {
 
 extension Instruction: CustomStringConvertible {
   var description: String {
-    // TODO: opcode specific rendering
-    "\(opcode) \(payload)"
-  }
-}
-
-extension Instruction.Payload: CustomStringConvertible {
-  var description: String {
-//    var result = ""
-//    if hasCondition {
-//      result += "\(condition) "
-//    }
-//    if hasPayload {
-//      let payload: TypedInt<_Boo> = payload()
-//      result += payload.description
-//    }
-//    return result
-
-    // TODO: Without bit packing our representation, what
-    // should we do? I'd say a payload cannot be printed
-    // in isolation of the instruction...
-    return "\(rawValue)"
+    switch opcode {
+    case .advance:
+      return "\(opcode) \(payload.distance)"
+    case .assertBy:
+      return "\(opcode) \(payload.assertion)"
+    case .backreference:
+      return "\(opcode) \(payload.capture.rawValue)"
+    case .beginCapture:
+      return "\(opcode) \(payload.capture.rawValue)"
+    case .branch:
+      return "\(opcode) \(payload.addr)"
+    case .captureValue:
+      let (val, cap) = payload.pairedValueCapture
+      return "\(opcode) vals[\(val)] -> captures[\(cap)]"
+    case .condBranchSamePosition:
+      let (addr, pos) = payload.pairedAddrPos
+      return "\(opcode) \(addr) pos[\(pos)]"
+    case .condBranchZeroElseDecrement:
+      let (addr, int) = payload.pairedAddrInt
+      return "\(opcode) \(addr) int[\(int)]"
+    case .consumeBy:
+      return "\(opcode) consumer[\(payload.consumer)]"
+    case .endCapture:
+      return "\(opcode) \(payload.capture.rawValue)"
+    case .match:
+      let (isCaseInsensitive, reg) = payload.elementPayload
+      if isCaseInsensitive {
+        return "matchCaseInsensitive char[\(reg)]"
+      } else {
+        return "match char[\(reg)]"
+      }
+    case .matchBitset:
+      let (isScalar, reg) = payload.bitsetPayload
+      if isScalar {
+        return "matchBitsetScalar bitset[\(reg)]"
+      } else {
+        return "matchBitset bitset[\(reg)]"
+      }
+    case .matchBuiltin:
+      let payload = payload.characterClassPayload
+      return "matchBuiltin \(payload.cc) (\(payload.isInverted))"
+    case .matchBy:
+      let (matcherReg, valReg) = payload.pairedMatcherValue
+      return "\(opcode) match[\(matcherReg)] -> val[\(valReg)]"
+    case .matchScalar:
+      let (scalar, caseInsensitive, boundaryCheck) = payload.scalarPayload
+      if caseInsensitive {
+        return "matchScalarCaseInsensitive '\(scalar)' boundaryCheck: \(boundaryCheck)"
+      } else {
+        return "matchScalar '\(scalar)' boundaryCheck: \(boundaryCheck)"
+      }
+    case .moveCurrentPosition:
+      let reg = payload.position
+      return "\(opcode) -> pos[\(reg)]"
+    case .moveImmediate:
+      let (imm, reg) = payload.pairedImmediateInt
+      return "\(opcode) \(imm) -> int[\(reg)]"
+    case .quantify:
+      let payload = payload.quantify
+      return "\(opcode) \(payload.type) \(payload.minTrips) \(payload.extraTrips?.description ?? "unbounded" )"
+    case .save:
+      let resumeAddr = payload.addr
+      return "\(opcode) \(resumeAddr)"
+    case .saveAddress:
+      let resumeAddr = payload.addr
+      return "\(opcode) \(resumeAddr)"
+    case .splitSaving:
+      let (nextPC, resumeAddr) = payload.pairedAddrAddr
+      return "\(opcode) saving: \(resumeAddr) jumpingTo: \(nextPC)"
+    case .transformCapture:
+      let (cap, trans) = payload.pairedCaptureTransform
+      return "\(opcode) trans[\(trans)](\(cap))"
+    default:
+      return "\(opcode)"
+    }
   }
 }
 
@@ -62,7 +116,9 @@ extension Processor.SavePoint {
       if rangeIsEmpty {
         posStr = "<none>"
       } else {
-        posStr = "\(rangeStart!...rangeEnd!)"
+        let startStr = "\(input.distance(from: input.startIndex, to: rangeStart!))"
+        let endStr = "\(input.distance(from: input.startIndex, to: rangeEnd!))"
+        posStr = "\(startStr)...\(endStr)"
       }
     }
     return """
