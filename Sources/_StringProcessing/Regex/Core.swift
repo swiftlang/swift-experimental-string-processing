@@ -63,6 +63,7 @@ public struct Regex<Output>: RegexComponent {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
+  @available(*, deprecated, renamed: "init(verbatim:)")
   public init(quoting string: String) {
     self.init(node: .quotedLiteral(string))
   }
