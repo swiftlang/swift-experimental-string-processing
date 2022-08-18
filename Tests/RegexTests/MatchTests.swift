@@ -2559,6 +2559,12 @@ extension RegexTests {
   }
   
   func testFuzzerArtifacts() throws {
+    // rdar://98517792
     expectCompletion(regex: #"(b?)\1*"#, in: "a")
+
+    // rdar://98852151
+    firstMatchTest(#"\p{L}?+\p{L}"#, input: "a", match: nil)
+    firstMatchTest(#"🧟‍♀️?+🧟‍♀️"#, input: "🧟‍♀️", match: nil)
+    firstMatchTest(#"🧟‍♀️{,3}+🧟‍♀️"#, input: "🧟‍♀️🧟‍♀️🧟‍♀️", match: nil)
   }
 }

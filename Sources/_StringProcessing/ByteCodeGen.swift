@@ -627,6 +627,9 @@ fileprivate extension Compiler.ByteCodeGen {
     //     split(to: loop, saving: exit)>
     //   <reluctant: save(restoringAt: loop)
     builder.label(exitPolicy)
+    if updatedKind == .possessive {
+      builder.buildClear()
+    }
     switch extraTrips {
     case nil: break
     case 0:   builder.buildBranch(to: exit)
@@ -640,7 +643,6 @@ fileprivate extension Compiler.ByteCodeGen {
     case .eager:
       builder.buildSplit(to: loopBody, saving: exit)
     case .possessive:
-      builder.buildClear()
       builder.buildSplit(to: loopBody, saving: exit)
     case .reluctant:
       builder.buildSave(loopBody)
