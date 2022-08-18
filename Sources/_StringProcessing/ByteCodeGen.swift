@@ -620,10 +620,10 @@ fileprivate extension Compiler.ByteCodeGen {
     }
 
     // exit-policy:
+    //   <possessive: clearSavePoint>
     //   condBranch(to: exit, ifZeroElseDecrement: %extraTrips)
     //   <eager: split(to: loop, saving: exit)>
     //   <possesive:
-    //     clearSavePoint
     //     split(to: loop, saving: exit)>
     //   <reluctant: save(restoringAt: loop)
     builder.label(exitPolicy)

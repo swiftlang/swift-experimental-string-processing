@@ -391,7 +391,7 @@ extension RegexTests {
       #"a(?#. comment)b"#, input: "123abcxyz", match: "ab")
   }
 
-  func testMatchQuantification() {
+  func testMatchQuantification() throws {
     // MARK: Quantification
 
     firstMatchTest(
@@ -460,6 +460,11 @@ extension RegexTests {
     firstMatchTests(
       ".*+x",
       ("abc", nil), ("abcx", nil), ("", nil))
+    
+    // Make sure that possessive quant doesn't clear out existing save points
+    let r = try Regex("a?(ab)?+")
+    let match = try r.wholeMatch(in: "ab")
+    XCTAssertEqual(match?.0, "ab")
 
     firstMatchTests(
       "a+b",
@@ -580,7 +585,7 @@ extension RegexTests {
     firstMatchTests(
       "a?+a",
       ("a", nil),
-      xfail: true)
+      xfail: false)
     firstMatchTests(
       "(a|a)?+a",
       ("a", nil),
@@ -1617,7 +1622,7 @@ extension RegexTests {
     firstMatchTests(
       #"^(?:a?+)a$"#,
       (input: "a", match: nil),
-      xfail: true)
+      xfail: false)
     firstMatchTests(
       #"^(?:a?+)a$"#,
       (input: "aa", match: "aa"),
