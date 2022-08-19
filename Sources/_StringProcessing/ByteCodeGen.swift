@@ -310,8 +310,11 @@ fileprivate extension Compiler.ByteCodeGen {
     let intercept = builder.makeAddress()
     let success = builder.makeAddress()
 
-    builder.buildSave(success)
-    let id = builder.buildSaveWithID(intercept)
+    // Positive lookaheads propagate captures through the success SP
+    builder.buildSave(success, keepsCaptures: true)
+    // Negative lookaheads should not propagate captures, so the intercept SP
+    // does not keep captures
+    let id = builder.buildSaveWithID(intercept, keepsCaptures: false)
     try emitNode(child)
     builder.buildClearThrough(id)
     if !positive {
@@ -347,7 +350,7 @@ fileprivate extension Compiler.ByteCodeGen {
     let intercept = builder.makeAddress()
     let success = builder.makeAddress()
 
-    builder.buildSaveAddress(success)
+    builder.buildSaveAddress(success, keepsCaptures: true)
     let id = builder.buildSaveWithID(intercept)
     try emitNode(child)
     builder.buildClearThrough(id)

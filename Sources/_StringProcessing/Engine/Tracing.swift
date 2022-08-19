@@ -93,9 +93,9 @@ extension Instruction: CustomStringConvertible {
       let payload = payload.savePayload
       let resumeAddr = payload.addr
       if payload.hasID {
-        return "\(opcode) \(resumeAddr) id: \(payload.id)"
+        return "\(opcode) \(resumeAddr) keepsCaptures? \(payload.keepsCaptures) id: \(payload.id)"
       }
-      return "\(opcode) \(resumeAddr)"
+      return "\(opcode) \(resumeAddr) keepsCaptures? \(payload.keepsCaptures)"
     case .splitSaving:
       let payload = payload.savePayload
       if payload.hasID {
@@ -134,7 +134,7 @@ extension Processor.SavePoint {
       idStr = ""
     }
     return """
-      pc: \(self.pc), pos: \(posStr), stackEnd: \(stackEnd)\(idStr)
+      pc: \(self.pc), pos: \(posStr), stackEnd: \(stackEnd), keepsCaptures? \(self.captureEnds == nil)\(idStr)
       """
   }
 }

@@ -376,7 +376,7 @@ extension Processor {
       pc: InstructionAddress,
       pos: Position?,
       stackEnd: CallStackAddress,
-      captureEnds: [_StoredCapture],
+      captureEnds: [_StoredCapture]?,
       intRegisters: [Int],
       PositionRegister: [Input.Index]
     )
@@ -394,14 +394,16 @@ extension Processor {
     }
 
     assert(stackEnd.rawValue <= callStack.count)
-    assert(capEnds.count == storedCaptures.count)
 
     controller.pc = pc
     currentPosition = pos ?? currentPosition
     callStack.removeLast(callStack.count - stackEnd.rawValue)
-    storedCaptures = capEnds
     registers.ints = intRegisters
     registers.positions = posRegisters
+    if let capEnds = capEnds {
+      assert(capEnds.count == storedCaptures.count)
+      storedCaptures = capEnds
+    }
     
     if shouldMeasureMetrics { metrics.backtracks += 1 }
   }
@@ -495,9 +497,9 @@ extension Processor {
       let resumeAddr = payload.addr
       let sp: SavePoint
       if payload.hasID {
-        sp = makeSavePoint(resumeAddr, withID: payload.id)
+        sp = makeSavePoint(resumeAddr, withID: payload.id, keepCaptures: payload.keepsCaptures)
       } else {
-        sp = makeSavePoint(resumeAddr)
+        sp = makeSavePoint(resumeAddr, keepCaptures: payload.keepsCaptures)
       }
       savePoints.append(sp)
       controller.step()
@@ -507,9 +509,9 @@ extension Processor {
       let resumeAddr = payload.addr
       let sp: SavePoint
       if payload.hasID {
-        sp = makeSavePoint(resumeAddr, addressOnly: true, withID: payload.id)
+        sp = makeSavePoint(resumeAddr, addressOnly: true, withID: payload.id, keepCaptures: payload.keepsCaptures)
       } else {
-        sp = makeSavePoint(resumeAddr, addressOnly: true)
+        sp = makeSavePoint(resumeAddr, addressOnly: true, keepCaptures: payload.keepsCaptures)
       }
       savePoints.append(sp)
       controller.step()
@@ -518,9 +520,9 @@ extension Processor {
       let payload = payload.savePayload
       let sp: SavePoint
       if payload.hasID {
-        sp = makeSavePoint(payload.addr, withID: payload.id)
+        sp = makeSavePoint(payload.addr, withID: payload.id, keepCaptures: payload.keepsCaptures)
       } else {
-        sp = makeSavePoint(payload.addr)
+        sp = makeSavePoint(payload.addr, keepCaptures: payload.keepsCaptures)
       }
       savePoints.append(sp)
       controller.pc = payload.split

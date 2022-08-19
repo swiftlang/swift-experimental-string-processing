@@ -63,15 +63,27 @@ extension MEProgram.Builder {
     var first: AddressToken
     var second: AddressToken? = nil
     var id: SavePointID?
+    var keepsCaptures: Bool
 
-    init(_ a: AddressToken, id: SavePointID? = nil) {
+    init(
+      _ a: AddressToken,
+      id: SavePointID?,
+      keepsCaptures: Bool
+    ) {
       self.first = a
       self.id = id
+      self.keepsCaptures = keepsCaptures
     }
-    init(_ a: AddressToken, _ b: AddressToken, id: SavePointID? = nil) {
+    init(
+      _ a: AddressToken,
+      _ b: AddressToken,
+      id: SavePointID?,
+      keepsCaptures: Bool
+    ) {
       self.first = a
       self.second = b
       self.id = id
+      self.keepsCaptures = keepsCaptures
     }
   }
 }
@@ -124,19 +136,19 @@ extension MEProgram.Builder {
     fixup(to: t)
   }
 
-  mutating func buildSave(_ t: AddressToken) {
+  mutating func buildSave(_ t: AddressToken, keepsCaptures: Bool = false) {
     instructions.append(.init(.save))
-    fixup(to: t)
+    fixup(to: t, keepsCaptures: keepsCaptures)
   }
-  mutating func buildSaveAddress(_ t: AddressToken) {
+  mutating func buildSaveAddress(_ t: AddressToken, keepsCaptures: Bool = false) {
     instructions.append(.init(.saveAddress))
-    fixup(to: t)
+    fixup(to: t, keepsCaptures: keepsCaptures)
   }
   
-  mutating func buildSaveWithID(_ t: AddressToken) -> SavePointID {
+  mutating func buildSaveWithID(_ t: AddressToken, keepsCaptures: Bool = false) -> SavePointID {
     let id = makeSavePointID()
     instructions.append(.init(.save))
-    fixup(to: t, id: id)
+    fixup(to: t, id: id, keepsCaptures: keepsCaptures)
     return id
   }
   mutating func buildSaveAddressWithID(_ t: AddressToken) -> SavePointID {
@@ -382,13 +394,13 @@ extension MEProgram.Builder {
       case .branch:
         payload = .init(addr: addr)
       case .save, .saveAddress:
-        payload = .init(save: addr, id: tok.id)
+        payload = .init(save: addr, id: tok.id, keepsCaptures: tok.keepsCaptures)
       case .splitSaving:
         guard let fix2 = tok.second else {
           throw Unreachable("TODO: reason")
         }
         let saving = addressTokens[fix2.rawValue]!
-        payload = .init(save: saving, id: tok.id, splitTo: addr)
+        payload = .init(save: saving, id: tok.id, splitTo: addr, keepsCaptures: tok.keepsCaptures)
 
       default: throw Unreachable("TODO: reason")
 
@@ -458,10 +470,14 @@ extension MEProgram.Builder {
   // Associate the most recently added instruction with
   // the provided token, ensuring it is fixed up during
   // assembly
-  mutating func fixup(to t: AddressToken, id: SavePointID? = nil) {
+  mutating func fixup(
+    to t: AddressToken,
+    id: SavePointID? = nil,
+    keepsCaptures: Bool = false
+  ) {
     assert(!instructions.isEmpty)
     addressFixups.append(
-      (InstructionAddress(instructions.endIndex-1), .init(t, id: id)))
+      (InstructionAddress(instructions.endIndex-1), .init(t, id: id, keepsCaptures: keepsCaptures)))
   }
 
   // Associate the most recently added instruction with
@@ -469,12 +485,13 @@ extension MEProgram.Builder {
   // assembly
   mutating func fixup(
     to ts: (AddressToken, AddressToken),
-    id: SavePointID? = nil
+    id: SavePointID? = nil,
+    keepsCaptures: Bool = false
   ) {
     assert(!instructions.isEmpty)
     addressFixups.append((
       InstructionAddress(instructions.endIndex-1),
-      .init(ts.0, ts.1, id: id)))
+      .init(ts.0, ts.1, id: id, keepsCaptures: keepsCaptures)))
   }
 
   // Push an "empty" save point which will, upon restore, just restore from

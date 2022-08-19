@@ -357,9 +357,10 @@ extension Instruction.Payload {
   init(
     save: InstructionAddress,
     id: SavePointID?,
-    splitTo: InstructionAddress? = nil
+    splitTo: InstructionAddress? = nil,
+    keepsCaptures: Bool
   ) {
-    self.init(SavePayload(address: save, id: id, splitTo: splitTo).rawValue)
+    self.init(SavePayload(address: save, id: id, splitTo: splitTo, keepsCaptures: keepsCaptures).rawValue)
   }
   var savePayload: SavePayload {
     SavePayload.init(rawValue: rawValue & _payloadMask)
@@ -641,7 +642,8 @@ struct SavePayload: RawRepresentable {
   init(
     address: InstructionAddress,
     id: SavePointID?,
-    splitTo: InstructionAddress?
+    splitTo: InstructionAddress?,
+    keepsCaptures: Bool
   ) {
     let idVal: UInt64
     if let id = id {
@@ -655,8 +657,9 @@ struct SavePayload: RawRepresentable {
     } else {
       splitVal = 1 << 18
     }
-    assert(UInt64(address.rawValue) & idVal & splitVal == 0)
-    self.rawValue = UInt64(address.rawValue) + idVal + splitVal
+    let keepsCapturesVal: UInt64 = keepsCaptures ? 1 << 30 : 0
+    assert(UInt64(address.rawValue) & idVal & splitVal & keepsCapturesVal == 0)
+    self.rawValue = UInt64(address.rawValue) + idVal + splitVal + keepsCapturesVal
     }
 
   var addr: InstructionAddress {
@@ -675,5 +678,9 @@ struct SavePayload: RawRepresentable {
   }
   var split: InstructionAddress {
     TypedInt((self.rawValue >> 19) & 0xFF)
+  }
+  
+  var keepsCaptures: Bool {
+    self.rawValue & (1 << 30) != 0
   }
 }
