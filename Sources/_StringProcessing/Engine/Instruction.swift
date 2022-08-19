@@ -185,7 +185,7 @@ extension Instruction {
     case clear
     
     /// Remove the save point with the given id
-    case clearReluctantQuantDummy
+    case clearPossessiveQuantDummy
 
     /// Remove save points up to and including the operand
     ///

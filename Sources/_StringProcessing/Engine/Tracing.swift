@@ -102,8 +102,8 @@ extension Instruction: CustomStringConvertible {
         return "\(opcode) saving: \(payload.addr) (id: \(payload.id)) jumpingTo: \(payload.split)"
       }
       return "\(opcode) saving: \(payload.addr) jumpingTo: \(payload.split)"
-    case .clearReluctantQuantDummy:
-      return "\(opcode) clearingIfLatestSPID == \(payload.saveID)"
+    case .clearPossessiveQuantDummy:
+      return "\(opcode) clearingIfLatestSavePointID == \(payload.saveID)"
     case .transformCapture:
       let (cap, trans) = payload.pairedCaptureTransform
       return "\(opcode) trans[\(trans)](\(cap))"

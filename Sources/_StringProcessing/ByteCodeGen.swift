@@ -632,7 +632,7 @@ fileprivate extension Compiler.ByteCodeGen {
     //   <reluctant: save(restoringAt: loop)
     builder.label(exitPolicy)
     if updatedKind == .possessive {
-      builder.buildClear(reluctantQuantDummy: dummyID!)
+      builder.buildClear(possessiveQuantDummy: dummyID!)
     }
     switch extraTrips {
     case nil: break

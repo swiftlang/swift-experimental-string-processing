@@ -538,7 +538,7 @@ extension Processor {
     case .clearThrough:
       clearThrough(payload.saveID)
       
-    case .clearReluctantQuantDummy:
+    case .clearPossessiveQuantDummy:
       let idToClear = payload.saveID
       if let latest = savePoints.last, let id = latest.id, id == idToClear {
         // If we have save points within the posessive quantifier, we can't clear

@@ -167,8 +167,8 @@ extension MEProgram.Builder {
   mutating func buildClear() {
     instructions.append(.init(.clear))
   }
-  mutating func buildClear(reluctantQuantDummy id: SavePointID) {
-    instructions.append(.init(.clearReluctantQuantDummy, .init(saveID: id)))
+  mutating func buildClear(possessiveQuantDummy id: SavePointID) {
+    instructions.append(.init(.clearPossessiveQuantDummy, .init(saveID: id)))
   }
   mutating func buildClearThrough(_ id: SavePointID) {
     instructions.append(.init(.clearThrough, .init(saveID: id)))
