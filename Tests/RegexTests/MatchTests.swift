@@ -589,7 +589,7 @@ extension RegexTests {
     firstMatchTests(
       "(a|a)?+a",
       ("a", nil),
-      xfail: true)
+      xfail: false)
     firstMatchTests(
       "(a|a){2,4}+a",
       ("a", nil),
@@ -598,7 +598,7 @@ extension RegexTests {
       "(a|a){2,4}+a",
       ("aaa", nil),
       ("aaaa", nil),
-      xfail: true)
+      xfail: false)
 
     firstMatchTests(
       "(?:a{2,4}?b)+",

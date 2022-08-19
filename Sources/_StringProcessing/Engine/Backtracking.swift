@@ -11,6 +11,7 @@
 
 extension Processor {
   struct SavePoint {
+    var id: SavePointID?
     var pc: InstructionAddress
     var pos: Position?
     // Quantifiers may store a range of positions to restore to
@@ -75,9 +76,11 @@ extension Processor {
 
   func makeSavePoint(
     _ pc: InstructionAddress,
-    addressOnly: Bool = false
+    addressOnly: Bool = false,
+    withID id: SavePointID? = nil
   ) -> SavePoint {
     SavePoint(
+      id: id,
       pc: pc,
       pos: addressOnly ? nil : currentPosition,
       rangeStart: nil,
@@ -91,6 +94,7 @@ extension Processor {
   func startQuantifierSavePoint() -> SavePoint {
     // Restores to the instruction AFTER the current quantifier instruction
     SavePoint(
+      id: nil,
       pc: controller.pc + 1,
       pos: nil,
       rangeStart: nil,

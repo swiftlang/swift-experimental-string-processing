@@ -311,9 +311,9 @@ fileprivate extension Compiler.ByteCodeGen {
     let success = builder.makeAddress()
 
     builder.buildSave(success)
-    builder.buildSave(intercept)
+    let id = builder.buildSaveWithID(intercept)
     try emitNode(child)
-    builder.buildClearThrough(intercept)
+    builder.buildClearThrough(id)
     if !positive {
       builder.buildClear()
     }
@@ -348,9 +348,9 @@ fileprivate extension Compiler.ByteCodeGen {
     let success = builder.makeAddress()
 
     builder.buildSaveAddress(success)
-    builder.buildSave(intercept)
+    let id = builder.buildSaveWithID(intercept)
     try emitNode(child)
-    builder.buildClearThrough(intercept)
+    builder.buildClearThrough(id)
     builder.buildFail()
 
     builder.label(intercept)
@@ -569,8 +569,9 @@ fileprivate extension Compiler.ByteCodeGen {
     }
 
     // Set up a dummy save point for possessive to update
+    var dummyID: SavePointID? = nil
     if updatedKind == .possessive {
-      builder.pushEmptySavePoint()
+      dummyID = builder.pushEmptySavePoint()
     }
 
     // min-trip-count:
@@ -628,7 +629,7 @@ fileprivate extension Compiler.ByteCodeGen {
     //   <reluctant: save(restoringAt: loop)
     builder.label(exitPolicy)
     if updatedKind == .possessive {
-      builder.buildClear()
+      builder.buildClear(reluctantQuantDummy: dummyID!)
     }
     switch extraTrips {
     case nil: break
@@ -643,7 +644,7 @@ fileprivate extension Compiler.ByteCodeGen {
     case .eager:
       builder.buildSplit(to: loopBody, saving: exit)
     case .possessive:
-      builder.buildSplit(to: loopBody, saving: exit)
+      builder.buildSplit(to: loopBody, saving: exit, id: dummyID!)
     case .reluctant:
       builder.buildSave(loopBody)
       // FIXME: Is this re-entrant? That is would nested
