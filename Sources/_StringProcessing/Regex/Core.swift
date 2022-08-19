@@ -11,10 +11,9 @@
 
 @_implementationOnly import _RegexParser
 
-
 /// A type that represents a regular expression.
 @available(SwiftStdlib 5.7, *)
-public protocol RegexComponent {
+public protocol RegexComponent<RegexOutput> {
   associatedtype RegexOutput
   var regex: Regex<RegexOutput> { get }
 }
@@ -38,7 +37,8 @@ public struct Regex<Output>: RegexComponent {
     self.program = Program(ast: ast)
   }
   init(ast: AST.Node) {
-    self.program = Program(ast: .init(ast, globalOptions: nil))
+    self.program = Program(ast:
+        .init(ast, globalOptions: nil, diags: Diagnostics()))
   }
 
   // Compiler interface. Do not change independently.
@@ -63,9 +63,17 @@ public struct Regex<Output>: RegexComponent {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
+  public init(quoting string: String) {
+    self.init(node: .quotedLiteral(string))
+  }
+}
+
+
+@available(SwiftStdlib 5.7, *)
+extension Regex {
   /// A program representation that caches any lowered representation for
   /// execution.
-  internal class Program {
+  internal final class Program {
     /// The underlying IR.
     ///
     /// FIXME: If Regex is the unit of composition, then it should be a Node instead,
@@ -73,8 +81,26 @@ extension Regex {
     /// likely, compilation/caching.
     let tree: DSLTree
 
+    /// OptionSet of compiler options for testing purposes
+    fileprivate var compileOptions: Compiler.CompileOptions = .default
+
+    private final class ProgramBox {
+      let value: MEProgram
+      init(_ value: MEProgram) { self.value = value }
+    }
+
+    /// Do not use directly - all accesses must go through `loweredProgram`.
+    fileprivate var _loweredProgramStorage: AnyObject? = nil
+    
     /// The program for execution with the matching engine.
-    lazy private(set) var loweredProgram = try! Compiler(tree: tree).emit()
+    var loweredProgram: MEProgram {
+      if let loweredObject = _loweredProgramStorage as? ProgramBox {
+        return loweredObject.value
+      }
+      let lowered = try! Compiler(tree: tree, compileOptions: compileOptions).emit()
+      _stdlib_atomicInitializeARCRef(object: &_loweredProgramStorage, desired: ProgramBox(lowered))
+      return lowered
+    }
 
     init(ast: AST) {
       self.tree = ast.dslTree
@@ -84,17 +110,35 @@ extension Regex {
       self.tree = tree
     }
   }
+  
+  /// The set of matching options that applies to the start of this regex.
+  ///
+  /// Note that the initial options may not apply to the entire regex. For
+  /// example, in this regex, only case insensitivity (`i`) and Unicode scalar
+  /// semantics (set by API) apply to the entire regex, while ASCII character
+  /// classes (`P`) is part of `initialOptions` but not global:
+  ///
+  ///     let regex = /(?i)(?P:\d+\s*)abc/.semanticLevel(.unicodeScalar)
+  var initialOptions: MatchingOptions {
+    program.loweredProgram.initialOptions
+  }
 }
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  @_spi(RegexBuilder)
-  public var root: DSLTree.Node {
+  var root: DSLTree.Node {
     program.tree.root
   }
 
-  @_spi(RegexBuilder)
-  public init(node: DSLTree.Node) {
-    self.program = Program(tree: .init(node, options: nil))
+  init(node: DSLTree.Node) {
+    self.program = Program(tree: .init(node))
+  }
+}
+
+@available(SwiftStdlib 5.7, *)
+extension Regex {
+  internal mutating func _setCompilerOptionsForTesting(_ opts: Compiler.CompileOptions) {
+    program.compileOptions = opts
+    program._loweredProgramStorage = nil
   }
 }

@@ -1,78 +1,26 @@
 @_implementationOnly import _RegexParser
 
-extension CaptureStructure {
-  var optionalCount: Int {
-    switch self {
-    case .atom: return 0
-    case .optional(let o):
-      return 1 + o.optionalCount
-    case .tuple:
-      // FIXME: Separate CaptureStructure and a component
-      fatalError("Recursive nesting")
-    @unknown default:
-      fatalError("Unknown default")
+extension CaptureList {
+  @available(SwiftStdlib 5.7, *)
+  func createElements(
+    _ list: MECaptureList
+  ) -> [AnyRegexOutput.ElementRepresentation] {
+    assert(list.values.count == captures.count)
+    
+    var result = [AnyRegexOutput.ElementRepresentation]()
+    
+    for (i, (cap, meStored)) in zip(captures, list.values).enumerated() {
+      let element = AnyRegexOutput.ElementRepresentation(
+        optionalDepth: cap.optionalDepth,
+        content: meStored.deconstructed,
+        name: cap.name,
+        referenceID: list.referencedCaptureOffsets.first { $1 == i }?.key
+      )
+      
+      result.append(element)
     }
-  }
-
-  // FIXME: Do it all in one pass, no need for all these
-  // intermediary arrays
-  func structuralize(
-    _ list: CaptureList,
-    _ input: String
-  ) throws -> [StructuredCapture] {
-
-    func mapCap(
-      _ cap: CaptureStructure,
-      _ storedCap: Processor<String>._StoredCapture
-    ) -> StructuredCapture {
-      // TODO: CaptureList perhaps should store a
-      // metatype or relevant info...
-      let optCount = cap.optionalCount
-
-      if cap.atomType.base == Substring.self {
-        // FIXME: What if a typed capture is Substring?
-        assert(!storedCap.hasValues)
-
-        if let r = storedCap.latest {
-          return StructuredCapture(
-            optionalCount: optCount,
-            storedCapture: StoredCapture(range: r))
-        }
-
-        return StructuredCapture(
-          optionalCount: optCount,
-          storedCapture: nil)
-      }
-
-      guard (storedCap.isEmpty || storedCap.hasValues) else {
-        print(storedCap)
-        fatalError()
-      }
-      // TODO: assert types are the same, under all the
-      // optionals
-
-      if let v = storedCap.latestValue {
-        return StructuredCapture(
-          optionalCount: optCount,
-          storedCapture: StoredCapture(range: storedCap.latest, value: v))
-      }
-      return StructuredCapture(
-        optionalCount: optCount,
-        storedCapture: nil)
-    }
-
-    switch self {
-    case let .tuple(values):
-      assert(list.values.count == values.count)
-      var result = Array<StructuredCapture>()
-      for (cap, storedCap) in zip(values, list.values) {
-        result.append(mapCap(cap, storedCap))
-      }
-      return result
-
-    default:
-      assert(list.values.count == 1)
-      return [mapCap(self, list.values.first!)]
-    }
+    
+    return result
   }
 }
+

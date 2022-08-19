@@ -54,6 +54,13 @@ extension MatchingOptions {
     stack[stack.count - 1].apply(sequence)
     _invariantCheck()
   }
+  
+  // @testable
+  /// Returns true if the options at the top of `stack` are equal to those
+  /// for `other`.
+  func _equal(to other: MatchingOptions) -> Bool {
+    stack.last == other.stack.last
+  }
 }
 
 // MARK: Matching behavior API
@@ -117,7 +124,6 @@ extension MatchingOptions {
 
 // Deprecated CharacterClass.MatchLevel API
 extension MatchingOptions {
-  @available(*, deprecated)
   var matchLevel: _CharacterClassModel.MatchLevel {
     switch semanticLevel {
     case .graphemeCluster:
@@ -128,6 +134,7 @@ extension MatchingOptions {
   }
 }
 
+// MARK: - Implementation
 extension MatchingOptions {
   /// An option that changes the behavior of a regular expression.
   fileprivate enum Option: Int {
@@ -135,7 +142,7 @@ extension MatchingOptions {
     case caseInsensitive
     case allowDuplicateGroupNames
     case multiline
-    case noAutoCapture
+    case namedCapturesOnly
     case singleLine
     case reluctantByDefault
 
@@ -174,8 +181,8 @@ extension MatchingOptions {
         self = .allowDuplicateGroupNames
       case .multiline:
         self = .multiline
-      case .noAutoCapture:
-        self = .noAutoCapture
+      case .namedCapturesOnly:
+        self = .namedCapturesOnly
       case .singleLine:
         self = .singleLine
       case .reluctantByDefault:
@@ -205,9 +212,6 @@ extension MatchingOptions {
         
       // Whitespace options are only relevant during parsing, not compilation.
       case .extended, .extraExtended:
-        return nil
-      @unknown default:
-        // Ignore unknown 
         return nil
       }
     }
@@ -307,9 +311,12 @@ extension MatchingOptions.Representation {
     [.reluctantByDefault, .possessiveByDefault]
   }
   
+  // Uses level 2 Unicode word boundaries
+  static var unicodeWordBoundaries: Self { .init(.unicodeWordBoundaries) }
+  
   /// The default set of options.
   static var `default`: Self {
-    [.graphemeClusterSemantics, .textSegmentGraphemeMode]
+    [.graphemeClusterSemantics, .textSegmentGraphemeMode, .unicodeWordBoundaries]
   }
 }
 

@@ -24,7 +24,7 @@ struct TwoWaySearcher<Searched: BidirectionalCollection>
     let (criticalIndex, periodOfSecondPart) = pattern._criticalFactorization(<)
     let periodIsExact = pattern[criticalIndex...]
       .prefix(periodOfSecondPart)
-      .ends(with: pattern[..<criticalIndex])
+      ._ends(with: pattern[..<criticalIndex])
     
     self.pattern = pattern
     self.criticalIndex = criticalIndex
@@ -47,8 +47,10 @@ extension TwoWaySearcher: CollectionSearcher {
     for searched: Searched,
     in range: Range<Searched.Index>
   ) -> State {
+    // FIXME: Is this 'limitedBy' requirement a sign of error?
     let criticalIndex = searched.index(
-      range.lowerBound, offsetBy: criticalIndex)
+      range.lowerBound, offsetBy: criticalIndex, limitedBy: range.upperBound)
+      ?? range.upperBound
     return State(
       end: range.upperBound,
       index: range.lowerBound,
@@ -66,7 +68,10 @@ extension TwoWaySearcher: CollectionSearcher {
          let start = _searchLeft(searched, &state, end)
       {
         state.index = end
-        state.criticalIndex = searched.index(end, offsetBy: criticalIndex)
+        // FIXME: Is this 'limitedBy' requirement a sign of error?
+        state.criticalIndex = searched.index(
+          end, offsetBy: criticalIndex, limitedBy: searched.endIndex)
+          ?? searched.endIndex
         state.memory = nil
         return start..<end
       }

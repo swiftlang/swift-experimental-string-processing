@@ -134,6 +134,10 @@ enum _BoolRegister {}
 typealias StringRegister = TypedInt<_StringRegister>
 enum _StringRegister {}
 
+/// Used for matching sets of ascii values via bitsets
+typealias AsciiBitsetRegister = TypedInt<_AsciiBitsetRegister>
+enum _AsciiBitsetRegister {}
+
 /// Used for consume functions, e.g. character classes
 typealias ConsumeFunctionRegister = TypedInt<_ConsumeFunctionRegister>
 enum _ConsumeFunctionRegister {}

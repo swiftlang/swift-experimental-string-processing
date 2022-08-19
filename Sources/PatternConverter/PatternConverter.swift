@@ -30,9 +30,6 @@ struct PatternConverter: ParsableCommand {
   @Flag(help: "Whether to show canonical regex literal")
   var showCanonical: Bool = false
 
-  @Flag(help: "Whether to show capture structure")
-  var showCaptureStructure: Bool = false
-
   @Flag(help: "Whether to skip result builder DSL")
   var skipDSL: Bool = false
 
@@ -53,8 +50,7 @@ struct PatternConverter: ParsableCommand {
     print("Converting '\(delim)\(regex)\(delim)'")
 
     let ast = try _RegexParser.parse(
-      regex,
-      experimentalSyntax ? .experimental : .traditional)
+      regex, experimentalSyntax ? .experimental : .traditional)
 
     // Show rendered source ranges
     if renderSourceRanges {
@@ -71,16 +67,10 @@ struct PatternConverter: ParsableCommand {
       print()
     }
 
-    if showCaptureStructure {
-      print("Capture structure:")
-      print()
-      print(ast.captureStructure)
-      print()
-    }
-
     print()
     if !skipDSL {
-      let render = ast.renderAsBuilderDSL(
+      let render = renderAsBuilderDSL(
+        ast: ast,
         maxTopDownLevels: topDownConversionLimit,
         minBottomUpLevels: bottomUpConversionLimit
       )

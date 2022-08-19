@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
 @available(SwiftStdlib 5.7, *)
@@ -20,27 +20,15 @@ public struct CharacterClass {
     self.ccc = ccc
   }
   
-  init(unconverted model: _CharacterClassModel) {
-    // FIXME: Implement in DSLTree instead of wrapping an AST atom
-    switch model.makeAST() {
-    case .atom(let atom):
-      self.ccc = .init(members: [.atom(.unconverted(atom))])
-    default:
-      fatalError("Unsupported _CharacterClassModel")
-    }
-  }
-  
-  init(property: AST.Atom.CharacterProperty) {
-    // FIXME: Implement in DSLTree instead of wrapping an AST atom
-    let astAtom = AST.Atom(.property(property), .fake)
-    self.ccc = .init(members: [.atom(.unconverted(astAtom))])
+  init(unconverted atom: DSLTree._AST.Atom) {
+    self.ccc = .init(members: [.atom(.unconverted(atom))])
   }
 }
 
 @available(SwiftStdlib 5.7, *)
 extension CharacterClass: RegexComponent {
   public var regex: Regex<Substring> {
-    return Regex(node: DSLTree.Node.customCharacterClass(ccc))
+    _RegexFactory().customCharacterClass(ccc)
   }
 }
 
@@ -57,20 +45,20 @@ extension RegexComponent where Self == CharacterClass {
     .init(DSLTree.CustomCharacterClass(members: [.atom(.any)]))
   }
 
-  public static var anyGrapheme: CharacterClass {
-    .init(unconverted: .anyGrapheme)
-  }
-  
-  public static var anyUnicodeScalar: CharacterClass {
-    .init(unconverted: .anyUnicodeScalar)
+  public static var anyNonNewline: CharacterClass {
+    .init(DSLTree.CustomCharacterClass(members: [.atom(.anyNonNewline)]))
   }
 
+  public static var anyGraphemeCluster: CharacterClass {
+    .init(unconverted: ._anyGrapheme)
+  }
+  
   public static var whitespace: CharacterClass {
-    .init(unconverted: .whitespace)
+    .init(unconverted: ._whitespace)
   }
   
   public static var digit: CharacterClass {
-    .init(unconverted: .digit)
+    .init(unconverted: ._digit)
   }
   
   public static var hexDigit: CharacterClass {
@@ -82,19 +70,19 @@ extension RegexComponent where Self == CharacterClass {
   }
 
   public static var horizontalWhitespace: CharacterClass {
-    .init(unconverted: .horizontalWhitespace)
+    .init(unconverted: ._horizontalWhitespace)
   }
 
   public static var newlineSequence: CharacterClass {
-    .init(unconverted: .newlineSequence)
+    .init(unconverted: ._newlineSequence)
   }
 
   public static var verticalWhitespace: CharacterClass {
-    .init(unconverted: .verticalWhitespace)
+    .init(unconverted: ._verticalWhitespace)
   }
 
   public static var word: CharacterClass {
-    .init(unconverted: .word)
+    .init(unconverted: ._word)
   }
 }
 
@@ -123,11 +111,7 @@ extension RegexComponent where Self == CharacterClass {
 @available(SwiftStdlib 5.7, *)
 extension CharacterClass {
   public static func generalCategory(_ category: Unicode.GeneralCategory) -> CharacterClass {
-    guard let extendedCategory = category.extendedGeneralCategory else {
-      fatalError("Unexpected general category")
-    }
-    return CharacterClass(property:
-        .init(.generalCategory(extendedCategory), isInverted: false, isPOSIX: false))
+    return CharacterClass(.generalCategory(category))
   }
 }
 
@@ -146,44 +130,6 @@ public func ...(lhs: UnicodeScalar, rhs: UnicodeScalar) -> CharacterClass {
   let range: DSLTree.CustomCharacterClass.Member = .range(.scalar(lhs), .scalar(rhs))
   let ccc = DSLTree.CustomCharacterClass(members: [range], isInverted: false)
   return CharacterClass(ccc)
-}
-
-extension Unicode.GeneralCategory {
-  var extendedGeneralCategory: Unicode.ExtendedGeneralCategory? {
-    switch self {
-    case .uppercaseLetter: return .uppercaseLetter
-    case .lowercaseLetter: return .lowercaseLetter
-    case .titlecaseLetter: return .titlecaseLetter
-    case .modifierLetter: return .modifierLetter
-    case .otherLetter: return .otherLetter
-    case .nonspacingMark: return .nonspacingMark
-    case .spacingMark: return .spacingMark
-    case .enclosingMark: return .enclosingMark
-    case .decimalNumber: return .decimalNumber
-    case .letterNumber: return .letterNumber
-    case .otherNumber: return .otherNumber
-    case .connectorPunctuation: return .connectorPunctuation
-    case .dashPunctuation: return .dashPunctuation
-    case .openPunctuation: return .openPunctuation
-    case .closePunctuation: return .closePunctuation
-    case .initialPunctuation: return .initialPunctuation
-    case .finalPunctuation: return .finalPunctuation
-    case .otherPunctuation: return .otherPunctuation
-    case .mathSymbol: return .mathSymbol
-    case .currencySymbol: return .currencySymbol
-    case .modifierSymbol: return .modifierSymbol
-    case .otherSymbol: return .otherSymbol
-    case .spaceSeparator: return .spaceSeparator
-    case .lineSeparator: return .lineSeparator
-    case .paragraphSeparator: return .paragraphSeparator
-    case .control: return .control
-    case .format: return .format
-    case .surrogate: return .surrogate
-    case .privateUse: return .privateUse
-    case .unassigned: return .unassigned
-    @unknown default: return nil
-    }
-  }
 }
 
 // MARK: - Set algebra methods

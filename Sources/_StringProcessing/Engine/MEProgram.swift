@@ -11,12 +11,20 @@
 
 @_implementationOnly import _RegexParser
 
-struct MEProgram<Input: Collection> where Input.Element: Equatable {
+struct MEProgram {
+  typealias Input = String
+
   typealias ConsumeFunction = (Input, Range<Input.Index>) -> Input.Index?
   typealias AssertionFunction =
-    (Input, Input.Index, Range<Input.Index>) throws -> Bool
+    (
+      inout Set<String.Index>?,
+      inout String.Index?,
+      Input,
+      Input.Index,
+      Range<Input.Index>
+    ) throws -> Bool
   typealias TransformFunction =
-    (Input, Range<Input.Index>) throws -> Any?
+    (Input, Processor._StoredCapture) throws -> Any?
   typealias MatcherFunction =
     (Input, Input.Index, Range<Input.Index>) throws -> (Input.Index, Any)?
 
@@ -24,7 +32,7 @@ struct MEProgram<Input: Collection> where Input.Element: Equatable {
 
   var staticElements: [Input.Element]
   var staticSequences: [[Input.Element]]
-  var staticStrings: [String]
+  var staticBitsets: [DSLTree.CustomCharacterClass.AsciiBitset]
   var staticConsumeFunctions: [ConsumeFunction]
   var staticAssertionFunctions: [AssertionFunction]
   var staticTransformFunctions: [TransformFunction]
@@ -34,15 +42,16 @@ struct MEProgram<Input: Collection> where Input.Element: Equatable {
 
   var enableTracing: Bool = false
 
-  let captureStructure: CaptureStructure
+  let captureList: CaptureList
   let referencedCaptureOffsets: [ReferenceID: Int]
+  
+  var initialOptions: MatchingOptions
 }
 
 extension MEProgram: CustomStringConvertible {
   var description: String {
     var result = """
     Elements: \(staticElements)
-    Strings: \(staticStrings)
 
     """
     if !staticConsumeFunctions.isEmpty {
@@ -54,9 +63,6 @@ extension MEProgram: CustomStringConvertible {
     for idx in instructions.indices {
       let inst = instructions[idx]
       result += "[\(idx.rawValue)] \(inst)"
-      if let sp = inst.stringRegister {
-        result += " // \(staticStrings[sp.rawValue])"
-      }
       if let ia = inst.instructionAddress {
         result += " // \(instructions[ia])"
       }

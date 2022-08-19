@@ -11,36 +11,45 @@
 
 import XCTest
 import _StringProcessing
-@testable import RegexBuilder
+import RegexBuilder
+import TestSupport
 
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
     _ tests: (input: String, expectedCaptures: MatchType?)...,
     matchType: MatchType.Type,
     _ equivalence: (MatchType, MatchType) -> Bool,
+    xfail: Bool = false,
     file: StaticString = #file,
     line: UInt = #line,
     @RegexComponentBuilder _ content: () -> Content
-  ) throws {
+  ) throws where Content.RegexOutput == MatchType {
     let regex = content()
     for (input, maybeExpectedCaptures) in tests {
       let maybeMatch = input.wholeMatch(of: regex)
-      if let expectedCaptures = maybeExpectedCaptures {
-        let match = try XCTUnwrap(maybeMatch, file: file, line: line)
-        XCTAssertTrue(
-          type(of: regex).RegexOutput.self == MatchType.self,
-          """
-          Expected match type: \(MatchType.self)
-          Actual match type: \(type(of: regex).RegexOutput.self)
-          """)
-        let captures = try XCTUnwrap(match.output as? MatchType, file: file, line: line)
-        XCTAssertTrue(
-          equivalence(captures, expectedCaptures),
-          "'\(captures)' is not equal to the expected '\(expectedCaptures)'.",
-          file: file, line: line)
-      } else {
-        XCTAssertNil(maybeMatch, file: file, line: line)
+      guard let match = maybeMatch else {
+        if !xfail, maybeExpectedCaptures != nil {
+          XCTFail("Failed to match '\(input)'", file: file, line: line)
+        }
+        continue
       }
+      guard let expectedCaptures = maybeExpectedCaptures else {
+        if !xfail {
+          XCTFail(
+            "Unexpectedly matched '\(match)' for '\(input)'",
+            file: file, line: line)
+        }
+        continue
+      }
+      if xfail {
+        XCTFail("Unexpectedly matched", file: file, line: line)
+        continue
+      }
+      let captures = match.output
+      XCTAssertTrue(
+        equivalence(captures, expectedCaptures),
+        "'\(captures)' is not equal to the expected '\(expectedCaptures)'.",
+        file: file, line: line)
     }
   }
 
@@ -61,12 +70,18 @@ class RegexDSLTests: XCTestCase {
     XCTAssertTrue(match.output == substringMatch.output)
   }
 
+  let allNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n\u{85}\u{2028}\u{2029}"
+  let asciiNewlines = "\u{A}\u{B}\u{C}\u{D}\r\n"
+
   func testCharacterClasses() throws {
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+
     try _testDSLCaptures(
       ("a c", ("a c", " ", "c")),
       matchType: (Substring, Substring, Substring).self, ==)
     {
-      .any
+      One(.any)
       Capture(.whitespace) // Substring
       Capture("c") // Substring
     }
@@ -102,9 +117,143 @@ class RegexDSLTests: XCTestCase {
         CharacterClass.whitespace.inverted
       }
     }
+
+    // `.newlineSequence` and `.verticalWhitespace` match the same set of
+    // newlines in grapheme semantic mode, and scalar mode when applied with
+    // OneOrMore.
+    for cc in [CharacterClass.newlineSequence, .verticalWhitespace] {
+      for mode in [RegexSemanticLevel.unicodeScalar, .graphemeCluster] {
+        try _testDSLCaptures(
+          ("\n", ("\n", "\n")),
+          ("\r", ("\r", "\r")),
+          ("\r\n", ("\r\n", "\r\n")),
+          (allNewlines, (allNewlines[...], allNewlines[...])),
+          ("abc\ndef", ("abc\ndef", "\n")),
+          ("abc\n\r\ndef", ("abc\n\r\ndef", "\n\r\n")),
+          ("abc\(allNewlines)def", ("abc\(allNewlines)def", allNewlines[...])),
+          ("abc", nil),
+          matchType: (Substring, Substring).self, ==)
+        {
+          Regex {
+            ZeroOrMore {
+              cc.inverted
+            }
+            Capture {
+              OneOrMore(cc)
+            }
+            ZeroOrMore {
+              cc.inverted
+            }
+          }.matchingSemantics(mode)
+        }
+
+        // Try with ASCII-only whitespace.
+        try _testDSLCaptures(
+          ("\n", ("\n", "\n")),
+          ("\r", ("\r", "\r")),
+          ("\r\n", ("\r\n", "\r\n")),
+          (allNewlines, (allNewlines[...], asciiNewlines[...])),
+          ("abc\ndef", ("abc\ndef", "\n")),
+          ("abc\n\r\ndef", ("abc\n\r\ndef", "\n\r\n")),
+          ("abc\(allNewlines)def", ("abc\(allNewlines)def", asciiNewlines[...])),
+          ("abc", nil),
+          matchType: (Substring, Substring).self, ==)
+        {
+          Regex {
+            ZeroOrMore {
+              cc.inverted
+            }
+            Capture {
+              OneOrMore(cc)
+            }
+            ZeroOrMore {
+              cc.inverted
+            }
+          }.matchingSemantics(mode).asciiOnlyWhitespace()
+        }
+      }
+    }
+
+    // `.newlineSequence` in scalar mode may match a single `\r\n`.
+    // `.verticalWhitespace` may not.
+    for asciiOnly in [true, false] {
+      try _testDSLCaptures(
+        ("\r", "\r"),
+        ("\r\n", "\r\n"),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.newlineSequence
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+      try _testDSLCaptures(
+        ("\r", nil),
+        ("\r\n", nil),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.newlineSequence.inverted
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+      try _testDSLCaptures(
+        ("\r", "\r"),
+        ("\r\n", nil),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.verticalWhitespace
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+      try _testDSLCaptures(
+        ("\r", nil),
+        ("\r\n", nil),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.verticalWhitespace.inverted
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+      try _testDSLCaptures(
+        ("\r", nil),
+        ("\r\n", nil),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          CharacterClass.verticalWhitespace.inverted
+          "\n"
+        }.matchingSemantics(.unicodeScalar).asciiOnlyWhitespace(asciiOnly)
+      }
+    }
+
+    // Make sure horizontal whitespace does not match newlines or other
+    // vertical whitespace.
+    try _testDSLCaptures(
+      ("  \u{A0} \u{9}  \t ", "  \u{A0} \u{9}  \t "),
+      (" \n", nil),
+      (" \r", nil),
+      (" \r\n", nil),
+      (" \u{2028}", nil),
+      matchType: Substring.self, ==)
+    {
+      OneOrMore(.horizontalWhitespace)
+    }
+
+    // Horizontal whitespace in ASCII mode.
+    try _testDSLCaptures(
+      ("   \u{9}  \t ", "   \u{9}  \t "),
+      ("\u{A0}", nil),
+      matchType: Substring.self, ==)
+    {
+      Regex {
+        OneOrMore(.horizontalWhitespace)
+      }.asciiOnlyWhitespace()
+    }
   }
 
   func testCharacterClassOperations() throws {
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+
     try _testDSLCaptures(
       ("bcdefn1a", "bcdefn1a"),
       ("nbcdef1a", nil),        // fails symmetric difference lookahead
@@ -115,7 +264,7 @@ class RegexDSLTests: XCTestCase {
     {
       let disallowedChars = CharacterClass.hexDigit
         .symmetricDifference("a"..."z")
-      Lookahead(disallowedChars, negative: true)      // No: 0-9 + g-z
+      NegativeLookahead(disallowedChars)      // No: 0-9 + g-z
 
       OneOrMore(("b"..."g").union("d"..."n"))         // b-n
       
@@ -123,6 +272,105 @@ class RegexDSLTests: XCTestCase {
 
       CharacterClass.hexDigit.intersection("a"..."z") // a-f
     }
+  }
+
+  func testAny() throws {
+    // .any matches newlines regardless of matching options.
+    for dotMatchesNewline in [true, false] {
+      try _testDSLCaptures(
+        ("abc\(allNewlines)def", "abc\(allNewlines)def"),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          OneOrMore(.any)
+        }.dotMatchesNewlines(dotMatchesNewline)
+      }
+    }
+
+    // `.anyGraphemeCluster` is the same as `.any` in grapheme mode.
+    for mode in [RegexSemanticLevel.graphemeCluster, .unicodeScalar] {
+      try _testDSLCaptures(
+        ("a", "a"),
+        ("\r\n", "\r\n"),
+        ("e\u{301}", "e\u{301}"),
+        ("e\u{301}f", nil),
+        ("e\u{303}\u{301}\u{302}", "e\u{303}\u{301}\u{302}"),
+        matchType: Substring.self, ==)
+      {
+        Regex {
+          One(.anyGraphemeCluster)
+        }.matchingSemantics(mode)
+      }
+
+      // Like `.any` it also always matches newlines.
+      for dotMatchesNewline in [true, false] {
+        try _testDSLCaptures(
+          ("abc\(allNewlines)def", "abc\(allNewlines)def"),
+          matchType: Substring.self, ==)
+        {
+          Regex {
+            OneOrMore(.anyGraphemeCluster)
+          }.matchingSemantics(mode).dotMatchesNewlines(dotMatchesNewline)
+        }
+      }
+    }
+  }
+
+  func testAnyNonNewline() throws {
+    // `.anyNonNewline` is `.` without single-line mode.
+    for mode in [RegexSemanticLevel.graphemeCluster, .unicodeScalar] {
+      for dotMatchesNewline in [true, false] {
+        try _testDSLCaptures(
+          ("abcdef", "abcdef"),
+          ("abcdef\n", nil),
+          ("\r\n", nil),
+          ("\r", nil),
+          ("\n", nil),
+          matchType: Substring.self, ==)
+        {
+          Regex {
+            OneOrMore(.anyNonNewline)
+          }.matchingSemantics(mode).dotMatchesNewlines(dotMatchesNewline)
+        }
+
+        try _testDSLCaptures(
+          ("abcdef", nil),
+          ("abcdef\n", nil),
+          ("\r\n", "\r\n"),
+          ("\r", "\r"),
+          ("\n", "\n"),
+          matchType: Substring.self, ==)
+        {
+          Regex {
+            OneOrMore(.anyNonNewline.inverted)
+          }.matchingSemantics(mode).dotMatchesNewlines(dotMatchesNewline)
+        }
+
+        try _testDSLCaptures(
+          ("abc", "abc"),
+          ("abcd", nil),
+          ("\r\n", nil),
+          ("\r", nil),
+          ("\n", nil),
+          matchType: Substring.self, ==)
+        {
+          Regex {
+            OneOrMore(CharacterClass.anyNonNewline.intersection(.anyOf("\n\rabc")))
+          }.matchingSemantics(mode).dotMatchesNewlines(dotMatchesNewline)
+        }
+      }
+    }
+
+    try _testDSLCaptures(
+      ("\r\n", "\r\n"), matchType: Substring.self, ==) {
+        CharacterClass.anyNonNewline.inverted
+      }
+    try _testDSLCaptures(
+      ("\r\n", nil), matchType: Substring.self, ==) {
+        Regex {
+          CharacterClass.anyNonNewline.inverted
+        }.matchingSemantics(.unicodeScalar)
+      }
   }
 
   func testMatchResultDotZeroWithoutCapture() throws {
@@ -226,8 +474,10 @@ class RegexDSLTests: XCTestCase {
       ("abcabc", "abcabc"),
       ("abcABCaBc", "abcABCaBc"),
       matchType: Substring.self, ==) {
-        OneOrMore {
-          "abc"
+        Regex {
+          OneOrMore {
+            "abc"
+          }
         }.ignoresCase(true)
       }
     
@@ -239,8 +489,10 @@ class RegexDSLTests: XCTestCase {
       ("abcabc", "abcabc"),
       ("abcABCaBc", "abcABCaBc"),
       matchType: Substring.self, ==) {
-        OneOrMore {
-          "abc"
+        Regex {
+          OneOrMore {
+            "abc"
+          }
         }
         .ignoresCase(true)
         .ignoresCase(false)
@@ -256,51 +508,76 @@ class RegexDSLTests: XCTestCase {
       ("abcabc", "abcabc"),
       ("abcdeABCdeaBcde", "abcdeABCdeaBcde"),
       matchType: Substring.self, ==) {
-        OneOrMore {
-          "abc".ignoresCase(true)
-          Optionally("de")
+        Regex {
+          OneOrMore {
+            Regex {
+              "abc"
+            }.ignoresCase(true)
+            Optionally("de")
+          }
         }
         .ignoresCase(false)
       }
-    
-#if os(macOS)
-    try XCTExpectFailure("Implement level 2 word boundaries") {
-      try _testDSLCaptures(
-        ("can't stop won't stop", ("can't stop won't stop", "can't", "won")),
-        matchType: (Substring, Substring, Substring).self, ==) {
-          Capture {
-            OneOrMore(.word)
-            Anchor.wordBoundary
-          }
-          OneOrMore(.any, .reluctant)
-          "stop"
-          " "
-          
-          Capture {
-            OneOrMore(.word)
-            Anchor.wordBoundary
-          }
-          .wordBoundaryKind(.unicodeLevel1)
-          OneOrMore(.any, .reluctant)
-          "stop"
+
+    // FIXME: Re-enable this test
+    try _testDSLCaptures(
+      ("can't stop won't stop", ("can't stop won't stop", "can't", "won't")),
+      matchType: (Substring, Substring, Substring).self, ==, xfail: true) {
+        Capture {
+          OneOrMore(.word)
+          Anchor.wordBoundary
         }
-    }
-#endif
+        OneOrMore(.any, .reluctant)
+        "stop"
+        " "
+        
+        Capture {
+          OneOrMore(.word)
+          Anchor.wordBoundary
+        }
+        OneOrMore(.any, .reluctant)
+        "stop"
+      }
+
+    // FIXME: Re-enable this test
+    try _testDSLCaptures(
+      ("can't stop won't stop", ("can't stop won't stop", "can", "won")),
+      matchType: (Substring, Substring, Substring).self, ==, xfail: true) {
+        Capture {
+          OneOrMore(.word)
+          Anchor.wordBoundary
+        }
+        OneOrMore(.any, .reluctant)
+        "stop"
+        " "
+        
+        Regex {
+          Capture {
+            OneOrMore(.word)
+            Anchor.wordBoundary
+          }
+        }.wordBoundaryKind(.simple)
+        
+        OneOrMore(.any, .reluctant)
+        "stop"
+      }
     
     try _testDSLCaptures(
       ("abcdef123", ("abcdef123", "a", "123")),
       matchType: (Substring, Substring, Substring).self, ==) {
         Capture {
           // Reluctant behavior due to option
-          OneOrMore(.anyOf("abcd"))
-            .repetitionBehavior(.reluctant)
+          Regex {
+            OneOrMore(.anyOf("abcd"))
+          }.repetitionBehavior(.reluctant)
         }
         ZeroOrMore("a"..."z")
         
         Capture {
           // Eager behavior due to explicit parameter, despite option
-          OneOrMore(.digit, .eager)
-            .repetitionBehavior(.reluctant)
+          Regex {
+            OneOrMore(.digit, .eager)
+          }.repetitionBehavior(.reluctant)
         }
         ZeroOrMore(.digit)
       }
@@ -309,16 +586,20 @@ class RegexDSLTests: XCTestCase {
       ("abcdefg", ("abcdefg", "abcdefg")),
       ("abcdéfg", ("abcdéfg", "abcd")),
       matchType: (Substring, Substring).self, ==) {
-        Capture {
-          OneOrMore(.word)
-        }
-        .asciiOnlyWordCharacters()
+        Regex {
+          Capture {
+            OneOrMore(.word)
+          }
+        }.asciiOnlyWordCharacters()
         
         ZeroOrMore(.any)
       }
   }
   
   func testQuantificationBehavior() throws {
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+
     // Eager by default
     try _testDSLCaptures(
       ("abc1def2", ("abc1def2", "2")),
@@ -343,8 +624,10 @@ class RegexDSLTests: XCTestCase {
       ("abc1def2", ("abc1def2", "1")),
       matchType: (Substring, Substring).self, ==)
     {
-      OneOrMore(.reluctant) {
-        .word
+      Regex {
+        OneOrMore(.reluctant) {
+          One(.word)
+        }
       }.repetitionBehavior(.possessive)
       Capture(.digit)
       ZeroOrMore(.any)
@@ -396,8 +679,9 @@ class RegexDSLTests: XCTestCase {
     {
       Regex {
         Capture {
-          OneOrMore("a")
-            .repetitionBehavior(.eager)
+          Regex {
+            OneOrMore("a")
+          }.repetitionBehavior(.eager)
         }
         OneOrMore("a")
       }.repetitionBehavior(.possessive)
@@ -409,8 +693,9 @@ class RegexDSLTests: XCTestCase {
     {
       Regex {
         Capture {
-          OneOrMore("a")
-            .repetitionBehavior(.reluctant)
+          Regex {
+            OneOrMore("a")
+          }.repetitionBehavior(.reluctant)
         }
         OneOrMore("a")
       }.repetitionBehavior(.possessive)
@@ -427,12 +712,30 @@ class RegexDSLTests: XCTestCase {
         CharacterClass.digit
       }
     }
-    
+
+    try _testDSLCaptures(
+      ("abcdef2", ("abcdef2", "f")),
+      ("2", ("2", nil)),
+      ("", ("", nil)),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      Optionally {
+        ZeroOrMore {
+          Capture(CharacterClass.word)
+        }
+        CharacterClass.digit
+      }
+    }
+
     try _testDSLCaptures(
       ("aaabbbcccdddeeefff", "aaabbbcccdddeeefff"),
+      ("aaabbbcccccdddeeefff", "aaabbbcccccdddeeefff"),
+      ("aaabbbcccddddeeefff", "aaabbbcccddddeeefff"),
+      ("aaabbbccccccdddeeefff", nil),
       ("aaaabbbcccdddeeefff", nil),
       ("aaacccdddeeefff", nil),
       ("aaabbbcccccccdddeeefff", nil),
+      ("aaabbbcccdddddeeefff", nil),
       ("aaabbbcccddddddeeefff", nil),
       ("aaabbbcccdddefff", nil),
       ("aaabbbcccdddeee", "aaabbbcccdddeee"),
@@ -444,6 +747,141 @@ class RegexDSLTests: XCTestCase {
       Repeat(..<5) { "d" }
       Repeat(2...) { "e" }
       Repeat(0...) { "f" }
+    }
+
+    try _testDSLCaptures(
+      ("", nil),
+      ("a", nil),
+      ("aa", "aa"),
+      ("aaa", "aaa"),
+      matchType: Substring.self, ==)
+    {
+      Repeat(2...) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", "a"),
+      ("aa", "aa"),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(...2) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", "a"),
+      ("aa", nil),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(..<2) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", nil),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(...0) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", nil),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(0 ... 0) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", nil),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(count: 0) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", "a"),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(0 ... 1) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", nil),
+      ("a", "a"),
+      ("aa", "aa"),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(1 ... 2) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", nil),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(0 ..< 1) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", ""),
+      ("a", "a"),
+      ("aa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(0 ..< 2) { "a" }
+    }
+
+    try _testDSLCaptures(
+      ("", nil),
+      ("a", "a"),
+      ("aa", "aa"),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Repeat(1 ..< 3) { "a" }
+    }
+
+    let octoDecimalRegex: Regex<(Substring, Int?)> = Regex {
+      let charClass = CharacterClass(.digit, "a"..."h")//.ignoringCase()
+      Capture {
+        OneOrMore(charClass)
+      } transform: { Int($0, radix: 18) }
+    }
+    XCTAssertEqual("ab12".firstMatch(of: octoDecimalRegex)!.output.1, 61904)
+  }
+  
+  func testLocal() throws {
+    try _testDSLCaptures(
+      ("aaaaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Local {
+        OneOrMore("a")
+      }
+      "a"
+    }
+    
+    try _testDSLCaptures(
+      ("aa", "aa"),
+      ("aaa", nil),
+      matchType: Substring.self, ==)
+    {
+      Local {
+        OneOrMore("a", .reluctant)
+      }
+      "a"
     }
   }
   
@@ -479,8 +917,58 @@ class RegexDSLTests: XCTestCase {
     {
       OneOrMore("a")
       Lookahead(CharacterClass.digit)
-      Lookahead("2", negative: true)
+      NegativeLookahead { "2" }
       CharacterClass.word
+    }
+    
+    try _testDSLCaptures(
+      ("aaa", "aaa"),
+      ("\naaa", nil),
+      ("aaa\n", nil),
+      ("\naaa\n", nil),
+      matchType: Substring.self, ==)
+    {
+      Regex {
+        Anchor.startOfSubject
+        Repeat("a", count: 3)
+        Anchor.endOfSubject
+      }.anchorsMatchLineEndings()
+    }
+
+    try _testDSLCaptures(
+      ("\naaa", "\naaa"),
+      ("aaa\n", "aaa\n"),
+      ("\naaa\n", "\naaa\n"),
+      matchType: Substring.self, ==)
+    {
+      Regex {
+        Optionally { "\n" }
+        Anchor.startOfLine
+        Repeat("a", count: 3)
+        Anchor.endOfLine
+        Optionally { "\n" }
+      }
+    }
+
+    // startOfLine/endOfLine apply regardless of mode.
+    for matchLineEndings in [true, false] {
+      for mode in [RegexSemanticLevel.graphemeCluster, .unicodeScalar] {
+        let r = Regex {
+          Anchor.startOfLine
+          Repeat("a", count: 3)
+          Anchor.endOfLine
+        }.anchorsMatchLineEndings(matchLineEndings).matchingSemantics(mode)
+
+        XCTAssertNotNil(try r.firstMatch(in: "\naaa"))
+        XCTAssertNotNil(try r.firstMatch(in: "aaa\n"))
+        XCTAssertNotNil(try r.firstMatch(in: "\naaa\n"))
+        XCTAssertNotNil(try r.firstMatch(in: "\naaa\r\n"))
+        XCTAssertNotNil(try r.firstMatch(in: "\r\naaa\n"))
+        XCTAssertNotNil(try r.firstMatch(in: "\r\naaa\r\n"))
+
+        XCTAssertNil(try r.firstMatch(in: "\nbaaa\n"))
+        XCTAssertNil(try r.firstMatch(in: "\naaab\n"))
+      }
     }
   }
 
@@ -503,6 +991,29 @@ class RegexDSLTests: XCTestCase {
       }
     }
      */
+  }
+
+  func testCaptureTransform() throws {
+    try _testDSLCaptures(
+      ("aaaa1", ("aaaa1", "aaa")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      Capture {
+        OneOrMore("a")
+      } transform: {
+        $0.dropFirst()
+      }
+      One(.digit)
+    }
+    try _testDSLCaptures(
+      ("aaaa1", ("aaaa1", "a")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      ZeroOrMore {
+        Capture("a", transform: { Optional.some($0) })
+      }
+      One(.digit)
+    }
   }
 
   func testCapturelessQuantification() throws {
@@ -562,6 +1073,7 @@ class RegexDSLTests: XCTestCase {
     }
     let _: (Substring, Substring, Substring).Type
       = type(of: regex1).RegexOutput.self
+
     let regex2 = Regex {
       OneOrMore("a")
       Capture {
@@ -573,18 +1085,20 @@ class RegexDSLTests: XCTestCase {
     }
     let _: (Substring, Substring, Int?).Type
       = type(of: regex2).RegexOutput.self
+
     let regex3 = Regex {
       OneOrMore("a")
       Capture {
-        TryCapture("b") { Int($0) }
-        ZeroOrMore {
-          TryCapture("c") { Double($0) }
-        }
+        TryCapture("b", transform: { Int($0) })
+        ZeroOrMore(
+          TryCapture("c", transform: { Double($0) })
+        )
         Optionally("e")
       }
     }
     let _: (Substring, Substring, Int, Double?).Type
       = type(of: regex3).RegexOutput.self
+
     let regex4 = Regex {
       OneOrMore("a")
       Capture {
@@ -604,13 +1118,13 @@ class RegexDSLTests: XCTestCase {
   func testUnicodeScalarPostProcessing() throws {
     let spaces = Regex {
       ZeroOrMore {
-        .whitespace
+        One(.whitespace)
       }
     }
 
     let unicodeScalar = Regex {
       OneOrMore {
-        .hexDigit
+        One(.hexDigit)
       }
       spaces
     }
@@ -626,14 +1140,10 @@ class RegexDSLTests: XCTestCase {
       spaces
 
       Capture {
-        OneOrMore {
-          .word
-        }
+        OneOrMore(.word)
       }
 
-      ZeroOrMore {
-        .any
-      }
+      ZeroOrMore(.any)
     }
 
     // Assert the inferred capture type.
@@ -731,38 +1241,6 @@ class RegexDSLTests: XCTestCase {
     }
   }
 
-  func testDynamicCaptures() throws {
-    do {
-      let regex = try Regex("aabcc.")
-      let line = "aabccd"
-      let match = try XCTUnwrap(line.wholeMatch(of: regex))
-      XCTAssertEqual(match.0, line[...])
-      let output = match.output
-      XCTAssertEqual(output[0].substring, line[...])
-    }
-    do {
-      let regex = try Regex(
-        #"([0-9A-F]+)(?:\.\.([0-9A-F]+))?\s+;\s+(\w+).*"#)
-      let line = """
-        A6F0..A6F1    ; Extend # Mn   [2] BAMUM COMBINING MARK KOQNDON..BAMUM \
-        COMBINING MARK TUKWENTIS
-        """
-      let match = try XCTUnwrap(line.wholeMatch(of: regex))
-      XCTAssertEqual(match.0, line[...])
-      let output = match.output
-      XCTAssertEqual(output[0].substring, line[...])
-      XCTAssertTrue(output[1].substring == "A6F0")
-      XCTAssertTrue(output[2].substring == "A6F1")
-      XCTAssertTrue(output[3].substring == "Extend")
-      let typedOutput = try XCTUnwrap(output.as(
-        (Substring, Substring, Substring?, Substring).self))
-      XCTAssertEqual(typedOutput.0, line[...])
-      XCTAssertTrue(typedOutput.1 == "A6F0")
-      XCTAssertTrue(typedOutput.2 == "A6F1")
-      XCTAssertTrue(typedOutput.3 == "Extend")
-    }
-  }
-
   func testBackreference() throws {
     try _testDSLCaptures(
       ("abc#41#42abcabcabc", ("abc#41#42abcabcabc", "abc", 42, "abc", nil)),
@@ -817,6 +1295,38 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(result[b], 42)
     }
 
+    do {
+      let key = Reference(Substring.self)
+      let value = Reference(Int.self)
+      let input = "      "
+      let regex = Regex {
+        Capture(as: key) {
+          Optionally {
+            OneOrMore(.word)
+          }
+        }
+        ":"
+        Optionally {
+          Capture(as: value) {
+            OneOrMore(.digit)
+          } transform: { Int($0)! }
+        }
+      }
+
+      let result1 = try XCTUnwrap("age:123".wholeMatch(of: regex))
+      XCTAssertEqual(result1[key], "age")
+      XCTAssertEqual(result1[value], 123)
+
+      let result2 = try XCTUnwrap(":567".wholeMatch(of: regex))
+      XCTAssertEqual(result2[key], "")
+      XCTAssertEqual(result2[value], 567)
+
+      let result3 = try XCTUnwrap("status:".wholeMatch(of: regex))
+      XCTAssertEqual(result3[key], "status")
+      // Traps:
+      // XCTAssertEqual(result3[value], nil)
+    }
+    
     // Post-hoc captured references
     // #"(?:\w\1|:(\w):)+"#
     try _testDSLCaptures(
@@ -830,7 +1340,7 @@ class RegexDSLTests: XCTestCase {
         let a = Reference(Substring.self)
         ChoiceOf<(Substring, Substring?)> {
           Regex {
-            .word
+            One(.word)
             a
           }
           Regex {
@@ -841,58 +1351,408 @@ class RegexDSLTests: XCTestCase {
         }
       }
     }
-  }
-  
-  func testSemanticVersionExample() {
-    struct SemanticVersion: Equatable {
-      var major: Int
-      var minor: Int
-      var patch: Int
-      var dev: String?
-    }
-    struct SemanticVersionParser: CustomConsumingRegexComponent {
-      typealias RegexOutput = SemanticVersion
-      func consuming(
-        _ input: String,
-        startingAt index: String.Index,
-        in bounds: Range<String.Index>
-      ) throws -> (upperBound: String.Index, output: SemanticVersion)? {
-        let regex = Regex {
-          TryCapture(OneOrMore(.digit)) { Int($0) }
-          "."
-          TryCapture(OneOrMore(.digit)) { Int($0) }
-          Optionally {
-            "."
-            TryCapture(OneOrMore(.digit)) { Int($0) }
+
+    // Post-hoc captured reference w/ attempted match before capture
+    // #"(?:\w\1|(\w):)+"#
+    //
+    // This tests that the reference `a` simply fails to match instead of
+    // erroring when encountered before a match is captured into `a`. The
+    // matching process here goes like this:
+    //  - the first time through, the first alternation is taken
+    //    - `.word` matches on "a"
+    //    - the `a` backreference fails on ":", because `a` hasn't matched yet
+    //    - backtrack to the beginning of the input
+    //  - now the second alternation is taken
+    //    - `.word` matches on "a" and is captured as `a`
+    //    - the literal ":" matches
+    //  - proceeding from the position of the first "b" in the first alternation
+    //    - `.word` matches on "b"
+    //    - the `a` backreference now contains "a", and matches on "a"
+    //  - proceeding from the position of the first "c" in the first alternation
+    //    - `.word` matches on "c"
+    //    - the `a` backreference still contains "a", and matches on "a"
+    //  - proceeding from the position of the first "o" in the first alternation
+    //    - `.word` matches on "o"
+    //    - the `a` backreference still contains "a", so it fails on ":"
+    //  - now the second alternation is taken
+    //    - `.word` matches on "o" and is captured as `a`
+    //    - the literal ":" matches
+    //  - continuing as above from the second "b"...
+    try _testDSLCaptures(
+      ("a:bacao:boco", ("a:bacao:boco", "o")),
+      matchType: (Substring, Substring?).self,
+      ==
+    ) {
+      // NOTE: "expression too complex to type check" when inferring the generic
+      // parameter.
+      OneOrMore {
+        let a = Reference(Substring.self)
+        ChoiceOf<(Substring, Substring?)> {
+          Regex {
+            One(.word)
+            a
           }
-          Optionally {
-            "-"
-            Capture(OneOrMore(.word))
+          Regex {
+            Capture(.word, as: a)
+            ":"
           }
         }
+      }
+    }
+  }
 
-        guard let match = input[index..<bounds.upperBound].firstMatch(of: regex),
-              match.range.lowerBound == index
-        else { return nil }
+  func testScalarMatching() throws {
+    // RegexBuilder provides a RegexComponent conformance for UnicodeScalar. In
+    // grapheme cluster mode, it should only match entire graphemes. It may
+    // match a single scalar of a grapheme cluster in scalar semantic mode.
+    XCTAssertNotNil("a".firstMatch(of: "a" as UnicodeScalar))
+    XCTAssertNil("a\u{301}".firstMatch(of: "a" as UnicodeScalar))
+    XCTAssertNotNil("a\u{301}".firstMatch(
+      of: ("a" as UnicodeScalar).regex.matchingSemantics(.unicodeScalar)))
 
-        let result = SemanticVersion(
-          major: match.output.1,
-          minor: match.output.2,
-          patch: match.output.3 ?? 0,
-          dev: match.output.4.map(String.init))
-        return (match.range.upperBound, result)
+    let r1 = Regex {
+      "a" as UnicodeScalar
+    }
+    XCTAssertNil(try r1.firstMatch(in: "a\u{301}"))
+    XCTAssertNotNil(
+      try r1.matchingSemantics(.unicodeScalar).firstMatch(in: "a\u{301}")
+    )
+
+    let r2 = Regex {
+      CharacterClass.anyOf(["a" as UnicodeScalar, "👍"])
+    }
+    XCTAssertNil(try r2.firstMatch(in: "a\u{301}"))
+    XCTAssertNotNil(
+      try r2.matchingSemantics(.unicodeScalar).firstMatch(in: "a\u{301}")
+    )
+
+    let r3 = Regex {
+      "👨" as UnicodeScalar
+      "\u{200D}" as UnicodeScalar
+      "👨" as UnicodeScalar
+      "\u{200D}" as UnicodeScalar
+      "👧" as UnicodeScalar
+      "\u{200D}" as UnicodeScalar
+      "👦" as UnicodeScalar
+    }
+    XCTAssertNotNil(try r3.firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r3.wholeMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r3.matchingSemantics(.unicodeScalar).firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r3.matchingSemantics(.unicodeScalar).wholeMatch(in: "👨‍👨‍👧‍👦"))
+
+    let r4 = Regex { "é" as UnicodeScalar }
+    XCTAssertNotNil(
+      try r4.firstMatch(in: "e\u{301}")
+    )
+    XCTAssertNotNil(
+      try r4.firstMatch(in: "é")
+    )
+
+    let r5 = Regex {
+      "e"
+      "\u{301}" as UnicodeScalar
+    }
+    XCTAssertNotNil(try r5.firstMatch(in: "e\u{301}"))
+    XCTAssertNotNil(try r5.firstMatch(in: "é"))
+
+    let r6 = Regex {
+      "abcde"
+      "\u{301}"
+    }
+    XCTAssertNotNil(try r6.firstMatch(in: "abcde\u{301}"))
+    XCTAssertNotNil(try r6.firstMatch(in: "abcdé"))
+
+    let r7 = Regex {
+      "e" as Character
+      "\u{301}" as Character
+    }
+    XCTAssertNotNil(try r7.firstMatch(in: "e\u{301}"))
+    XCTAssertNotNil(try r7.firstMatch(in: "é"))
+
+    // You can't match a partial grapheme in grapheme semantic mode.
+    let r8 = Regex {
+      "👨" as UnicodeScalar
+      "\u{200D}" as UnicodeScalar
+      "👨" as UnicodeScalar
+      "\u{200D}" as UnicodeScalar
+      "👧" as UnicodeScalar
+    }
+    XCTAssertNil(try r8.firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNil(try r8.wholeMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r8.matchingSemantics(.unicodeScalar).firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNil(try r8.matchingSemantics(.unicodeScalar).wholeMatch(in: "👨‍👨‍👧‍👦"))
+
+    // Scalar coalescing occurs across nested concatenations and literals.
+    let r9 = Regex {
+      Regex {
+        try! Regex(#"👨"#)
+        "\u{200D}" as UnicodeScalar
+        Regex {
+          "👨" as UnicodeScalar
+        }
+      }
+      Regex {
+        Regex {
+          "\u{200D}" as UnicodeScalar
+          "👧"
+        }
+        try! Regex(#"\u{200D}👦"#)
+      }
+    }
+    XCTAssertNotNil(try r9.firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r9.wholeMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r9.matchingSemantics(.unicodeScalar).firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r9.matchingSemantics(.unicodeScalar).wholeMatch(in: "👨‍👨‍👧‍👦"))
+
+    let r10 = Regex {
+      "👨" as UnicodeScalar
+      try! Regex(#"\u{200D 1F468 200D 1F467}"#)
+      "\u{200D}" as UnicodeScalar
+      "👦" as UnicodeScalar
+    }
+    XCTAssertNotNil(try r10.firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r10.wholeMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r10.matchingSemantics(.unicodeScalar).firstMatch(in: "👨‍👨‍👧‍👦"))
+    XCTAssertNotNil(try r10.matchingSemantics(.unicodeScalar).wholeMatch(in: "👨‍👨‍👧‍👦"))
+  }
+
+  struct SemanticVersion: Equatable {
+    var major: Int
+    var minor: Int
+    var patch: Int
+    var dev: String?
+  }
+  struct SemanticVersionParser: CustomConsumingRegexComponent {
+    typealias RegexOutput = SemanticVersion
+    func consuming(
+      _ input: String,
+      startingAt index: String.Index,
+      in bounds: Range<String.Index>
+    ) throws -> (upperBound: String.Index, output: SemanticVersion)? {
+      let regex = Regex {
+        TryCapture(OneOrMore(.digit)) { Int($0) }
+        "."
+        TryCapture(OneOrMore(.digit)) { Int($0) }
+        Optionally {
+          "."
+          TryCapture(OneOrMore(.digit)) { Int($0) }
+        }
+        Optionally {
+          "-"
+          Capture(OneOrMore(.word))
+        }
+      }
+
+      guard let match = input[index..<bounds.upperBound].firstMatch(of: regex),
+            match.range.lowerBound == index
+      else { return nil }
+
+      let result = SemanticVersion(
+        major: match.output.1,
+        minor: match.output.2,
+        patch: match.output.3 ?? 0,
+        dev: match.output.4.map(String.init))
+      return (match.range.upperBound, result)
+    }
+  }
+
+  func testTransformCapturedMatcherOutput() {
+    let versions = [
+      ("version: 1.0", "1.0.0"),
+      ("version: 1.0.1", "1.0.1"),
+      ("version: 12.100.5-dev", "12.100.5-dev"),
+    ]
+    let parser = Regex {
+      "version:"
+      OneOrMore(.whitespace)
+      Capture {
+        SemanticVersionParser()
+      } transform: {
+        "\($0.major).\($0.minor).\($0.patch)\($0.dev.map { "-\($0)" } ?? "")"
+      }
+    }
+    for (str, version) in versions {
+      XCTAssertEqual(str.wholeMatch(of: parser)?.1, version)
+    }
+  }
+
+  func testZeroWidthConsumer() throws {
+    struct Trace: CustomConsumingRegexComponent {
+      typealias RegexOutput = Void
+      var label: String
+      init(_ label: String) { self.label = label }
+
+      static var traceOutput = ""
+
+      func consuming(_ input: String, startingAt index: String.Index, in bounds: Range<String.Index>) throws -> (upperBound: String.Index, output: Void)? {
+        print("Matching '\(label)'", to: &Self.traceOutput)
+        print(input, to: &Self.traceOutput)
+        let dist = input.distance(from: input.startIndex, to: index)
+        print(String(repeating: " ", count: dist) + "^", to: &Self.traceOutput)
+        return (index, ())
+      }
+    }
+    
+    let regex = Regex {
+      OneOrMore(.word)
+      Trace("end of key")
+      ":"
+      Trace("start of value")
+      OneOrMore(.word)
+    }
+    XCTAssertNotNil("hello:goodbye".firstMatch(of: regex))
+    XCTAssertEqual(Trace.traceOutput, """
+      Matching 'end of key'
+      hello:goodbye
+           ^
+      Matching 'start of value'
+      hello:goodbye
+            ^
+      
+      """)
+  }
+
+  func testRegexComponentBuilderResultType() {
+    // Test that the user can declare a closure or computed property marked with
+    // `@RegexComponentBuilder` with `Regex` as the result type.
+    @RegexComponentBuilder
+    var unaryWithSingleNonRegex: Regex<Substring> {
+      OneOrMore("a")
+    }
+    @RegexComponentBuilder
+    var multiComponent: Regex<Substring> {
+      OneOrMore("a")
+      "b"
+    }
+    struct MyCustomRegex: RegexComponent {
+      @RegexComponentBuilder
+      var regex: Regex<Substring> {
+        OneOrMore("a")
+      }
+    }
+  }
+  
+  // rdar://96280236
+  func testCharacterClassAnyCrash() {
+    let regex = Regex {
+      "{"
+      Capture {
+        OneOrMore {
+          CharacterClass.any.subtracting(.anyOf("}"))
+        }
+      }
+      "}"
+    }
+    
+    func replace(_ template: String) throws -> String {
+      var b = template
+      while let result = try regex.firstMatch(in: b) {
+        b.replaceSubrange(result.range, with: "foo")
+      }
+      return b
+    }
+    
+    XCTAssertEqual(try replace("{bar}"), "foo")
+  }
+
+  func testOptionalNesting() throws {
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring?).self, ==)
+    {
+      try! Regex("(?:a|(b)*)?", as: (Substring, Substring?).self)
+    }
+
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      Optionally {
+        try! Regex("a|(b)*", as: (Substring, Substring?).self)
       }
     }
 
-    let versions = [
-      ("1.0", SemanticVersion(major: 1, minor: 0, patch: 0)),
-      ("1.0.1", SemanticVersion(major: 1, minor: 0, patch: 1)),
-      ("12.100.5-dev", SemanticVersion(major: 12, minor: 100, patch: 5, dev: "dev")),
-    ]
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring???).self, ==)
+    {
+      Optionally {
+        ChoiceOf {
+          try! Regex("a", as: Substring.self)
+          try! Regex("(b)*", as: (Substring, Substring?).self)
+        }
+      }
+    }
 
-    let parser = SemanticVersionParser()
-    for (str, version) in versions {
-      XCTAssertEqual(str.wholeMatch(of: parser)?.output, version)
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      ChoiceOf {
+        try! Regex("a", as: Substring.self)
+        try! Regex("(b)*", as: (Substring, Substring?).self)
+      }
+    }
+
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      ChoiceOf {
+        try! Regex("a", as: Substring.self)
+        ZeroOrMore {
+          try! Regex("(b)", as: (Substring, Substring).self)
+        }
+      }
+    }
+
+    try _testDSLCaptures(
+      ("a", ("a", nil)),
+      ("", ("", nil)),
+      ("b", ("b", "b")),
+      ("bb", ("bb", "b")),
+      matchType: (Substring, Substring??).self, ==)
+    {
+      ChoiceOf {
+        try! Regex("a", as: Substring.self)
+        ZeroOrMore {
+          Capture {
+            try! Regex("b", as: Substring.self)
+          }
+        }
+      }
+    }
+
+    let r = Regex {
+      Optionally {
+        Optionally {
+          Capture {
+            "a"
+          }
+        }
+      }
+    }
+    if let _ = try r.wholeMatch(in: "")!.output.1 {
+      XCTFail("Unexpected capture match")
+    }
+    if let _ = try r.wholeMatch(in: "a")!.output.1 {}
+    else {
+      XCTFail("Expected to match capture")
     }
   }
 }

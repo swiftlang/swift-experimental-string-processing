@@ -17,51 +17,40 @@ extension Regex {
   /// providing direct access to captures.
   @dynamicMemberLookup
   public struct Match {
-    let input: String
+    let anyRegexOutput: AnyRegexOutput
 
     /// The range of the overall match.
     public let range: Range<String.Index>
-
-    let rawCaptures: [StructuredCapture]
-
-    let referencedCaptureOffsets: [ReferenceID: Int]
-
-    let value: Any?
   }
 }
 
 @available(SwiftStdlib 5.7, *)
 extension Regex.Match {
+  var input: String {
+    anyRegexOutput.input
+  }
+
   /// The output produced from the match operation.
   public var output: Output {
     if Output.self == AnyRegexOutput.self {
-      let wholeMatchAsCapture = StructuredCapture(
-        optionalCount: 0,
-        storedCapture: StoredCapture(range: range, value: nil))
-      let output = AnyRegexOutput(
-        input: input,
-        elements: [wholeMatchAsCapture] + rawCaptures)
-      return output as! Output
-    } else if Output.self == Substring.self {
-      // FIXME: Plumb whole match (`.0`) through the matching engine.
-      return input[range] as! Output
-    } else if rawCaptures.isEmpty, value != nil {
-      // FIXME: This is a workaround for whole-match values not
-      // being modeled as part of captures. We might want to
-      // switch to a model where results are alongside captures
-      return value! as! Output
-    } else {
-      guard value == nil else {
-        fatalError("FIXME: what would this mean?")
-      }
-      let typeErasedMatch = rawCaptures.existentialOutput(from: input[range])
-      return typeErasedMatch as! Output
+      return anyRegexOutput as! Output
     }
+    let typeErasedMatch = anyRegexOutput.existentialOutput(
+      from: anyRegexOutput.input
+    )
+    return typeErasedMatch as! Output
   }
 
   /// Accesses a capture by its name or number.
   public subscript<T>(dynamicMember keyPath: KeyPath<Output, T>) -> T {
-    output[keyPath: keyPath]
+    // Note: We should be able to get the element offset from the key path
+    // itself even at compile time. We need a better way of doing this.
+    guard let outputTupleOffset = MemoryLayout.tupleElementIndex(
+      of: keyPath, elementTypes: anyRegexOutput.map(\.type)
+    ) else {
+      return output[keyPath: keyPath]
+    }
+    return anyRegexOutput[outputTupleOffset].value as! T
   }
 
   /// Accesses a capture using the `.0` syntax, even when the match isn't a tuple.
@@ -74,12 +63,14 @@ extension Regex.Match {
 
   @_spi(RegexBuilder)
   public subscript<Capture>(_ id: ReferenceID) -> Capture {
-    guard let offset = referencedCaptureOffsets[id] else {
-      preconditionFailure(
-        "Reference did not capture any match in the regex")
+    guard let element = anyRegexOutput.first(
+      where: { $0.representation.referenceID == id }
+    ) else {
+      preconditionFailure("Reference did not capture any match in the regex")
     }
-    return rawCaptures[offset].existentialOutputComponent(from: input[...])
-      as! Capture
+    return element.existentialOutputComponent(
+      from: input
+    ) as! Capture
   }
 }
 
@@ -135,34 +126,37 @@ extension Regex {
 
   func _match(
     _ input: String,
-    in inputRange: Range<String.Index>,
+    in subjectBounds: Range<String.Index>,
     mode: MatchMode = .wholeString
   ) throws -> Regex<Output>.Match? {
     let executor = Executor(program: regex.program.loweredProgram)
-    return try executor.match(input, in: inputRange, mode)
+    return try executor.match(input, in: subjectBounds, mode)
   }
 
   func _firstMatch(
     _ input: String,
-    in inputRange: Range<String.Index>
+    in subjectBounds: Range<String.Index>
   ) throws -> Regex<Output>.Match? {
-    // FIXME: Something more efficient, likely an engine interface, and we
-    // should scrap the RegexConsumer crap and call this
+    try _firstMatch(input, subjectBounds: subjectBounds, searchBounds: subjectBounds)
+  }
 
-    var low = inputRange.lowerBound
-    let high = inputRange.upperBound
-    while low < high {
-      if let m = try _match(input, in: low..<high, mode: .partialFromFront) {
-        return m
-      }
-      input.formIndex(after: &low)
-    }
-    return nil
+  func _firstMatch(
+    _ input: String,
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>
+  ) throws -> Regex<Output>.Match? {
+    let executor = Executor(program: regex.program.loweredProgram)
+    let graphemeSemantic = regex.initialOptions.semanticLevel == .graphemeCluster
+    return try executor.firstMatch(
+      input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds,
+      graphemeSemantic: graphemeSemantic)
   }
 }
 
 @available(SwiftStdlib 5.7, *)
-extension String {
+extension BidirectionalCollection where SubSequence == Substring {
   /// Checks for a match against the string in its entirety.
   ///
   /// - Parameter r: The regular expression being matched.
@@ -170,7 +164,7 @@ extension String {
   public func wholeMatch<R: RegexComponent>(
     of r: R
   ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.wholeMatch(in: self)
+    try? r.regex.wholeMatch(in: self[...])
   }
 
   /// Checks for a match against the string, starting at its beginning.
@@ -180,21 +174,6 @@ extension String {
   public func prefixMatch<R: RegexComponent>(
     of r: R
   ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.prefixMatch(in: self)
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Substring {
-  public func wholeMatch<R: RegexComponent>(
-    of r: R
-  ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.wholeMatch(in: self)
-  }
-
-  public func prefixMatch<R: RegexComponent>(
-    of r: R
-  ) -> Regex<R.RegexOutput>.Match? {
-    try? r.regex.prefixMatch(in: self)
+    try? r.regex.prefixMatch(in: self[...])
   }
 }

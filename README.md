@@ -8,7 +8,22 @@ See [Declarative String Processing Overview][decl-string]
 
 ## Requirements
 
-- [Swift Trunk Development Snapshot](https://www.swift.org/download/#snapshots) DEVELOPMENT-SNAPSHOT-2022-03-09 or later.
+- [Swift Trunk Development Snapshot](https://www.swift.org/download/#snapshots) DEVELOPMENT-SNAPSHOT-2022-04-20 or later.
+
+## Trying it out
+
+To try out the functionality provided here, download the latest open source development toolchain. Import `_StringProcessing` in your source file to get access to the API and specify `-Xfrontend -enable-experimental-string-processing` to get access to the literals.
+
+For example, in a `Package.swift` file's target declaration:
+
+```swift
+.target(
+    name: "foo",
+    dependencies: ["depA"],
+    swiftSettings: [.unsafeFlags(["-Xfrontend", "-enable-experimental-string-processing"])]
+ ),
+```
+
 
 ## Integration with Swift
 

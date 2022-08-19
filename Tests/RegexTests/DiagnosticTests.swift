@@ -53,9 +53,7 @@ extension RegexTests {
     flatTest("a|(b)|", ["a", "(b)", ""])
 
     func renderTest(_ str: String, _ expected: [String]) {
-      let lines = try! parse(
-        str, .traditional
-      )._render(in: str)
+      let lines = try! parse(str, .traditional)._render(in: str)
       func fail() {
         XCTFail("""
           expected:

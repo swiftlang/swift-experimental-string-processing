@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
-@testable import _StringProcessing
+import _StringProcessing
 
 let allScalars = Unicode.Scalar.allScalars
 

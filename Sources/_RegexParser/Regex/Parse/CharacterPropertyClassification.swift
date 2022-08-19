@@ -9,17 +9,21 @@
 //
 //===----------------------------------------------------------------------===//
 
-extension Source {
+extension Parser {
   typealias PropertyKind = AST.Atom.CharacterProperty.Kind
 
   static private func withNormalizedForms<T>(
-    _ str: String, match: (String) -> T?
+    _ str: String, requireInPrefix: Bool = false, match: (String) -> T?
   ) -> T? {
     // This follows the rules provided by UAX44-LM3, including trying to drop an
     // "is" prefix, which isn't required by UTS#18 RL1.2, but is nice for
     // consistency with other engines and the Unicode.Scalar.Properties names.
-    let str = str.filter { !$0.isWhitespace && $0 != "_" && $0 != "-" }
+    let str = str.filter { !$0.isPatternWhitespace && $0 != "_" && $0 != "-" }
                  .lowercased()
+    if requireInPrefix {
+      guard str.hasPrefix("in") else { return nil }
+      return match(String(str.dropFirst(2)))
+    }
     if let m = match(str) {
       return m
     }
@@ -32,8 +36,8 @@ extension Source {
   static private func classifyGeneralCategory(
     _ str: String
   ) -> Unicode.ExtendedGeneralCategory? {
-    // This uses the aliases defined in
-    // https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt.
+    // This uses the aliases defined in https://www.unicode.org/Public/UCD/latest/ucd/PropertyValueAliases.txt.
+    // Additionally, uses the `L& = Lc` alias defined by PCRE.
     withNormalizedForms(str) { str in
       switch str {
       case "c", "other":                   return .other
@@ -43,7 +47,7 @@ extension Source {
       case "co", "privateuse":             return .privateUse
       case "cs", "surrogate":              return .surrogate
       case "l", "letter":                  return .letter
-      case "lc", "casedletter":            return .casedLetter
+      case "lc", "l&", "casedletter":      return .casedLetter
       case "ll", "lowercaseletter":        return .lowercaseLetter
       case "lm", "modifierletter":         return .modifierLetter
       case "lo", "otherletter":            return .otherLetter
@@ -75,6 +79,19 @@ extension Source {
       case "zp", "paragraphseparator":     return .paragraphSeparator
       case "zs", "spaceseparator":         return .spaceSeparator
       default:                             return nil
+      }
+    }
+  }
+
+  static private func classifyNumericType(
+    _ str: String
+  ) -> Unicode.NumericType? {
+    withNormalizedForms(str) { str in
+      switch str {
+      case "decimal":   return .decimal
+      case "digit":     return .digit
+      case "numeric":   return .numeric
+      default:          return nil
       }
     }
   }
@@ -351,6 +368,342 @@ extension Source {
     }
   }
 
+  static private func classifyBlockProperty(
+    _ value: String, valueOnly: Bool
+  ) -> Unicode.Block? {
+    // Require an 'in' prefix for the shorthand variant. This is supported by
+    // Oniguruma and Perl.
+    // TODO: Perl discourages the shorthand 'in' prefix, should we diagnose and
+    // suggest an explicit key/value?
+    withNormalizedForms(value, requireInPrefix: valueOnly) { str in
+      switch str {
+      case "adlam":                                                           return .adlam
+      case "aegeannumbers":                                                   return .aegeanNumbers
+      case "ahom":                                                            return .ahom
+      case "alchemical", "alchemicalsymbols":                                 return .alchemicalSymbols
+      case "alphabeticpf", "alphabeticpresentationforms":                     return .alphabeticPresentationForms
+      case "anatolianhieroglyphs":                                            return .anatolianHieroglyphs
+      case "ancientgreekmusic", "ancientgreekmusicalnotation":                return .ancientGreekMusicalNotation
+      case "ancientgreeknumbers":                                             return .ancientGreekNumbers
+      case "ancientsymbols":                                                  return .ancientSymbols
+      case "arabic":                                                          return .arabic
+      case "arabicexta", "arabicextendeda":                                   return .arabicExtendedA
+      case "arabicextb", "arabicextendedb":                                   return .arabicExtendedB
+      case "arabicmath", "arabicmathematicalalphabeticsymbols":               return .arabicMathematicalAlphabeticSymbols
+      case "arabicpfa", "arabicpresentationformsa":                           return .arabicPresentationFormsA
+      case "arabicpfb", "arabicpresentationformsb":                           return .arabicPresentationFormsB
+      case "arabicsup", "arabicsupplement":                                   return .arabicSupplement
+      case "armenian":                                                        return .armenian
+      case "arrows":                                                          return .arrows
+      case "ascii", "basiclatin":                                             return .basicLatin
+      case "avestan":                                                         return .avestan
+      case "balinese":                                                        return .balinese
+      case "bamum":                                                           return .bamum
+      case "bamumsup", "bamumsupplement":                                     return .bamumSupplement
+      case "bassavah":                                                        return .bassaVah
+      case "batak":                                                           return .batak
+      case "bengali":                                                         return .bengali
+      case "bhaiksuki":                                                       return .bhaiksuki
+      case "blockelements":                                                   return .blockElements
+      case "bopomofo":                                                        return .bopomofo
+      case "bopomofoext", "bopomofoextended":                                 return .bopomofoExtended
+      case "boxdrawing":                                                      return .boxDrawing
+      case "brahmi":                                                          return .brahmi
+      case "braille", "braillepatterns":                                      return .braillePatterns
+      case "buginese":                                                        return .buginese
+      case "buhid":                                                           return .buhid
+      case "byzantinemusic", "byzantinemusicalsymbols":                       return .byzantineMusicalSymbols
+      case "carian":                                                          return .carian
+      case "caucasianalbanian":                                               return .caucasianAlbanian
+      case "chakma":                                                          return .chakma
+      case "cham":                                                            return .cham
+      case "cherokee":                                                        return .cherokee
+      case "cherokeesup", "cherokeesupplement":                               return .cherokeeSupplement
+      case "chesssymbols":                                                    return .chessSymbols
+      case "chorasmian":                                                      return .chorasmian
+      case "cjk", "cjkunifiedideographs":                                     return .cjkUnifiedIdeographs
+      case "cjkcompat", "cjkcompatibility":                                   return .cjkCompatibility
+      case "cjkcompatforms", "cjkcompatibilityforms":                         return .cjkcompatibilityForms
+      case "cjkcompatideographs", "cjkcompatibilityideographs":               return .cjkCompatibilityIdeographs
+      case "cjkcompatideographssup", "cjkcompatibilityideographssupplement":  return .cjkCompatibilityIdeographsSupplement
+      case "cjkexta", "cjkunifiedideographsextensiona":                       return .cjkUnifiedIdeographsExtensionA
+      case "cjkextb", "cjkunifiedideographsextensionb":                       return .cjkUnifiedIdeographsExtensionB
+      case "cjkextc", "cjkunifiedideographsextensionc":                       return .cjkUnifiedIdeographsExtensionC
+      case "cjkextd", "cjkunifiedideographsextensiond":                       return .cjkUnifiedIdeographsExtensionD
+      case "cjkexte", "cjkunifiedideographsextensione":                       return .cjkUnifiedIdeographsExtensionE
+      case "cjkextf", "cjkunifiedideographsextensionf":                       return .cjkUnifiedIdeographsExtensionF
+      case "cjkextg", "cjkunifiedideographsextensiong":                       return .cjkUnifiedIdeographsExtensionG
+      case "cjkradicalssup", "cjkradicalssupplement":                         return .cjkRadicalsSupplement
+      case "cjkstrokes":                                                      return .cjkStrokes
+      case "cjksymbols", "cjksymbolsandpunctuation":                          return .cjkSymbolsAndPunctuation
+      case "compatjamo", "hangulcompatibilityjamo":                           return .hangulCompatibilityJamo
+      case "controlpictures":                                                 return .controlPictures
+      case "coptic":                                                          return .coptic
+      case "copticepactnumbers":                                              return .copticEpactNumbers
+      case "countingrod", "countingrodnumerals":                              return .countingRodNumerals
+      case "cuneiform":                                                       return .cuneiform
+      case "cuneiformnumbers", "cuneiformnumbersandpunctuation":              return .cuneiformNumbersAndPunctuation
+      case "currencysymbols":                                                 return .currencySymbols
+      case "cypriotsyllabary":                                                return .cypriotSyllabary
+      case "cyprominoan":                                                     return .cyproMinoan
+      case "cyrillic":                                                        return .cyrillic
+      case "cyrillicexta", "cyrillicextendeda":                               return .cyrillicExtendedA
+      case "cyrillicextb", "cyrillicextendedb":                               return .cyrillicExtendedB
+      case "cyrillicextc", "cyrillicextendedc":                               return .cyrillicExtendedC
+      case "cyrillicsup", "cyrillicsupplement", "cyrillicsupplementary":      return .cyrillicSupplement
+      case "deseret":                                                         return .deseret
+      case "devanagari":                                                      return .devanagari
+      case "devanagariext", "devanagariextended":                             return .devanagariExtended
+      case "diacriticals", "combiningdiacriticalmarks":                       return .combiningDiacriticalMarks
+      case "diacriticalsext", "combiningdiacriticalmarksextended":            return .combiningDiacriticalMarksExtended
+      case "diacriticalsforsymbols", "combiningdiacriticalmarksforsymbols",
+        "combiningmarksforsymbols":                                           return .combiningDiacriticalMarksForSymbols
+      case "diacriticalssup", "combiningdiacriticalmarkssupplement":          return .combiningDiacriticalMarksSupplement
+      case "dingbats":                                                        return .dingbats
+      case "divesakuru":                                                      return .divesAkuru
+      case "dogra":                                                           return .dogra
+      case "domino", "dominotiles":                                           return .dominoTiles
+      case "duployan":                                                        return .duployan
+      case "earlydynasticcuneiform":                                          return .earlyDynasticCuneiform
+      case "egyptianhieroglyphformatcontrols":                                return .egyptianHieroglyphFormatControls
+      case "egyptianhieroglyphs":                                             return .egyptianHieroglyphs
+      case "elbasan":                                                         return .elbasan
+      case "elymaic":                                                         return .elymaic
+      case "emoticons":                                                       return .emoticons
+      case "enclosedalphanum", "enclosedalphanumerics":                       return .enclosedAlphanumerics
+      case "enclosedalphanumsup", "enclosedalphanumericsupplement":           return .enclosedAlphanumericSupplement
+      case "enclosedcjk", "enclosedcjklettersandmonths":                      return .enclosedCJKLettersAndMonths
+      case "enclosedideographicsup", "enclosedideographicsupplement":         return .enclosedIdeographicSupplement
+      case "ethiopic":                                                        return .ethiopic
+      case "ethiopicext", "ethiopicextended":                                 return .ethiopicExtended
+      case "ethiopicexta", "ethiopicextendeda":                               return .ethiopicExtendedA
+      case "ethiopicextb", "ethiopicextendedb":                               return .ethiopicExtendedB
+      case "ethiopicsup", "ethiopicsupplement":                               return .ethiopicSupplement
+      case "geometricshapes":                                                 return .geometricShapes
+      case "geometricshapesext", "geometricshapesextended":                   return .geometricShapesExtended
+      case "georgian":                                                        return .georgian
+      case "georgianext", "georgianextended":                                 return .georgianExtended
+      case "georgiansup", "georgiansupplement":                               return .georgianSupplement
+      case "glagolitic":                                                      return .glagolitic
+      case "glagoliticsup", "glagoliticsupplement":                           return .glagoliticSupplement
+      case "gothic":                                                          return .gothic
+      case "grantha":                                                         return .grantha
+      case "greek", "greekandcoptic":                                         return .greekAndCoptic
+      case "greekext", "greekextended":                                       return .greekExtended
+      case "gujarati":                                                        return .gujarati
+      case "gunjalagondi":                                                    return .gunjalaGondi
+      case "gurmukhi":                                                        return .gurmukhi
+      case "halfandfullforms", "halfwidthandfullwidthforms":                  return .halfwidthAndFullwidthForms
+      case "halfmarks", "combininghalfmarks":                                 return .combiningHalfMarks
+      case "hangul", "hangulsyllables":                                       return .hangulSyllables
+      case "hanifirohingya":                                                  return .hanifiRohingya
+      case "hanunoo":                                                         return .hanunoo
+      case "hatran":                                                          return .hatran
+      case "hebrew":                                                          return .hebrew
+      case "highpusurrogates", "highprivateusesurrogates":                    return .highPrivateUseSurrogates
+      case "highsurrogates":                                                  return .highSurrogates
+      case "hiragana":                                                        return .hiragana
+      case "idc", "ideographicdescriptioncharacters":                         return .ideographicDescriptionCharacters
+      case "ideographicsymbols", "ideographicsymbolsandpunctuation":          return .ideographicSymbolsAndPunctuation
+      case "imperialaramaic":                                                 return .imperialAramaic
+      case "indicnumberforms", "commonindicnumberforms":                      return .commonIndicNumberForms
+      case "indicsiyaqnumbers":                                               return .indicSiyaqNumbers
+      case "inscriptionalpahlavi":                                            return .inscriptionalPahlavi
+      case "inscriptionalparthian":                                           return .inscriptionalParthian
+      case "ipaext", "ipaextensions":                                         return .ipaExtensions
+      case "jamo", "hanguljamo":                                              return .hangulJamo
+      case "jamoexta", "hanguljamoextendeda":                                 return .hangulJamoExtendedA
+      case "jamoextb", "hanguljamoextendedb":                                 return .hangulJamoExtendedB
+      case "javanese":                                                        return .javanese
+      case "kaithi":                                                          return .kaithi
+      case "kanaexta", "kanaextendeda":                                       return .kanaExtendedA
+      case "kanaextb", "kanaextendedb":                                       return .kanaExtendedB
+      case "kanasup", "kanasupplement":                                       return .kanaSupplement
+      case "kanbun":                                                          return .kanbun
+      case "kangxi", "kangxiradicals":                                        return .kangxiRadicals
+      case "kannada":                                                         return .kannada
+      case "katakana":                                                        return .katakana
+      case "katakanaext", "katakanaphoneticextensions":                       return .katakanaPhoneticExtensions
+      case "kayahli":                                                         return .kayahLi
+      case "kharoshthi":                                                      return .kharoshthi
+      case "khitansmallscript":                                               return .khitanSmallScript
+      case "khmer":                                                           return .khmer
+      case "khmersymbols":                                                    return .khmerSymbols
+      case "khojki":                                                          return .khojki
+      case "khudawadi":                                                       return .khudawadi
+      case "lao":                                                             return .lao
+      case "latin1sup", "latin1supplement", "latin1":                         return .latin1Supplement
+      case "latinexta", "latinextendeda":                                     return .latinExtendedA
+      case "latinextadditional", "latinextendedadditional":                   return .latinExtendedAdditional
+      case "latinextb", "latinextendedb":                                     return .latinExtendedB
+      case "latinextc", "latinextendedc":                                     return .latinExtendedC
+      case "latinextd", "latinextendedd":                                     return .latinExtendedD
+      case "latinexte", "latinextendede":                                     return .latinExtendedE
+      case "latinextf", "latinextendedf":                                     return .latinExtendedF
+      case "latinextg", "latinextendedg":                                     return .latinExtendedG
+      case "lepcha":                                                          return .lepcha
+      case "letterlikesymbols":                                               return .letterLikeSymbols
+      case "limbu":                                                           return .limbu
+      case "lineara":                                                         return .linearA
+      case "linearbideograms":                                                return .linearBIdeograms
+      case "linearbsyllabary":                                                return .linearBSyllabary
+      case "lisu":                                                            return .lisu
+      case "lisusup", "lisusupplement":                                       return .lisuSupplement
+      case "lowsurrogates":                                                   return .lowSurrogates
+      case "lycian":                                                          return .lycian
+      case "lydian":                                                          return .lydian
+      case "mahajani":                                                        return .mahajani
+      case "mahjong", "mahjongtiles":                                         return .mahjongTiles
+      case "makasar":                                                         return .makasar
+      case "malayalam":                                                       return .malayalam
+      case "mandaic":                                                         return .mandaic
+      case "manichaean":                                                      return .manichaean
+      case "marchen":                                                         return .marchen
+      case "masaramgondi":                                                    return .masaramGondi
+      case "mathalphanum", "mathematicalalphanumericsymbols":                 return .mathematicalAlphanumericSymbols
+      case "mathoperators", "mathematicaloperators":                          return .mathematicalOperators
+      case "mayannumerals":                                                   return .mayanNumerals
+      case "medefaidrin":                                                     return .medefaidrin
+      case "meeteimayek":                                                     return .meeteiMayek
+      case "meeteimayekext", "meeteimayekextensions":                         return .meeteiMayekExtensions
+      case "mendekikakui":                                                    return .mendeKikakui
+      case "meroiticcursive":                                                 return .meroiticCursive
+      case "meroitichieroglyphs":                                             return .meroiticHieroglyphs
+      case "miao":                                                            return .miao
+      case "miscarrows", "miscellaneoussymbolsandarrows":                     return .miscellaneousSymbolsAndArrows
+      case "miscmathsymbolsa", "miscellaneousmathematicalsymbolsa":           return .miscellaneousMathematicalSymbolsA
+      case "miscmathsymbolsb", "miscellaneousmathematicalsymbolsb":           return .miscellaneousMathematicalSymbolsB
+      case "miscpictographs", "miscellaneoussymbolsandpictographs":           return .miscellaneousSymbolsandPictographs
+      case "miscsymbols", "miscellaneoussymbols":                             return .miscellaneousSymbols
+      case "misctechnical", "miscellaneoustechnical":                         return .miscellaneousTechnical
+      case "modi":                                                            return .modi
+      case "modifierletters", "spacingmodifierletters":                       return .spacingModifierLetters
+      case "modifiertoneletters":                                             return .modifierToneLetters
+      case "mongolian":                                                       return .mongolian
+      case "mongoliansup", "mongoliansupplement":                             return .mongolianSupplement
+      case "mro":                                                             return .mro
+      case "multani":                                                         return .multani
+      case "music", "musicalsymbols":                                         return .musicalSymbols
+      case "myanmar":                                                         return .myanmar
+      case "myanmarexta", "myanmarextendeda":                                 return .myanmarExtendedA
+      case "myanmarextb", "myanmarextendedb":                                 return .myanmarExtendedB
+      case "nabataean":                                                       return .nabataean
+      case "nandinagari":                                                     return .nandinagari
+      case "nb", "noblock":                                                   return .noBlock
+      case "newtailue":                                                       return .newTailue
+      case "newa":                                                            return .newa
+      case "nko":                                                             return .nko
+      case "numberforms":                                                     return .numberForms
+      case "nushu":                                                           return .nushu
+      case "nyiakengpuachuehmong":                                            return .nyiakengPuachueHmong
+      case "ocr", "opticalcharacterrecognition":                              return .opticalCharacterRecognition
+      case "ogham":                                                           return .ogham
+      case "olchiki":                                                         return .olChiki
+      case "oldhungarian":                                                    return .oldHungarian
+      case "olditalic":                                                       return .oldItalic
+      case "oldnortharabian":                                                 return .oldNorthArabian
+      case "oldpermic":                                                       return .oldPermic
+      case "oldpersian":                                                      return .oldPersian
+      case "oldsogdian":                                                      return .oldSogdian
+      case "oldsoutharabian":                                                 return .oldSouthArabian
+      case "oldturkic":                                                       return .oldTurkic
+      case "olduyghur":                                                       return .oldUyghur
+      case "oriya":                                                           return .oriya
+      case "ornamentaldingbats":                                              return .ornamentalDingbats
+      case "osage":                                                           return .osage
+      case "osmanya":                                                         return .osmanya
+      case "ottomansiyaqnumbers":                                             return .ottomanSiyaqNumbers
+      case "pahawhhmong":                                                     return .pahawhHmong
+      case "palmyrene":                                                       return .palmyrene
+      case "paucinhau":                                                       return .pauCinHau
+      case "phagspa":                                                         return .phagsPA
+      case "phaistos", "phaistosdisc":                                        return .phaistosDisc
+      case "phoenician":                                                      return .phoenician
+      case "phoneticext", "phoneticextensions":                               return .phoneticExtensions
+      case "phoneticextsup", "phoneticextensionssupplement":                  return .phoneticExtensionsSupplement
+      case "playingcards":                                                    return .playingCards
+      case "psalterpahlavi":                                                  return .psalterPahlavi
+      case "pua", "privateusearea", "privateuse":                             return .privateUseArea
+      case "punctuation", "generalpunctuation":                               return .generalPunctuation
+      case "rejang":                                                          return .rejang
+      case "rumi", "ruminumeralsymbols":                                      return .rumiNumeralSymbols
+      case "runic":                                                           return .runic
+      case "samaritan":                                                       return .samaritan
+      case "saurashtra":                                                      return .saurashtra
+      case "sharada":                                                         return .sharada
+      case "shavian":                                                         return .shavian
+      case "shorthandformatcontrols":                                         return .shorthandFormatControls
+      case "siddham":                                                         return .siddham
+      case "sinhala":                                                         return .sinhala
+      case "sinhalaarchaicnumbers":                                           return .sinhalaArchaicNumbers
+      case "smallforms", "smallformvariants":                                 return .smallFormVariants
+      case "smallkanaext", "smallkanaextension":                              return .smallKanaExtension
+      case "sogdian":                                                         return .sogdian
+      case "sorasompeng":                                                     return .soraSompeng
+      case "soyombo":                                                         return .soyombo
+      case "specials":                                                        return .specials
+      case "sundanese":                                                       return .sundanese
+      case "sundanesesup", "sundanesesupplement":                             return .sundaneseSupplement
+      case "suparrowsa", "supplementalarrowsa":                               return .supplementalArrowsA
+      case "suparrowsb", "supplementalarrowsb":                               return .supplementalArrowsB
+      case "suparrowsc", "supplementalarrowsc":                               return .supplementalArrowsC
+      case "supmathoperators", "supplementalmathematicaloperators":           return .supplementalMathematicalOperators
+      case "suppuaa", "supplementaryprivateuseareaa":                         return .supplementaryPrivateUseAreaA
+      case "suppuab", "supplementaryprivateuseareab":                         return .supplementaryPrivateUseAreaB
+      case "suppunctuation", "supplementalpunctuation":                       return .supplementalPunctuation
+      case "supsymbolsandpictographs", "supplementalsymbolsandpictographs":   return .supplementalSymbolsAndPictographs
+      case "superandsub", "superscriptsandsubscripts":                        return .superscriptsAndSubscripts
+      case "suttonsignwriting":                                               return .suttonSignwriting
+      case "sylotinagri":                                                     return .sylotiNagri
+      case "symbolsandpictographsexta", "symbolsandpictographsextendeda":     return .symbolsAndPictographsExtendedA
+      case "symbolsforlegacycomputing":                                       return .symbolsForLegacyComputing
+      case "syriac":                                                          return .syriac
+      case "syriacsup", "syriacsupplement":                                   return .syriacSupplement
+      case "tagalog":                                                         return .tagalog
+      case "tagbanwa":                                                        return .tagbanwa
+      case "tags":                                                            return .tags
+      case "taile":                                                           return .taiLe
+      case "taitham":                                                         return .taiTham
+      case "taiviet":                                                         return .taiViet
+      case "taixuanjing", "taixuanjingsymbols":                               return .taiXuanJingSymbols
+      case "takri":                                                           return .takri
+      case "tamil":                                                           return .tamil
+      case "tamilsup", "tamilsupplement":                                     return .tamilSupplement
+      case "tangsa":                                                          return .tangsa
+      case "tangut":                                                          return .tangut
+      case "tangutcomponents":                                                return .tangutComponents
+      case "tangutsup", "tangutsupplement":                                   return .tangutSupplement
+      case "telugu":                                                          return .telugu
+      case "thaana":                                                          return .thaana
+      case "thai":                                                            return .thai
+      case "tibetan":                                                         return .tibetan
+      case "tifinagh":                                                        return .tifinagh
+      case "tirhuta":                                                         return .tirhuta
+      case "toto":                                                            return .toto
+      case "transportandmap", "transportandmapsymbols":                       return .transportAndMapSymbols
+      case "ucas", "unifiedcanadianaboriginalsyllabics", "canadiansyllabics": return .unifiedCanadianAboriginalSyllabics
+      case "ucasext", "unifiedcanadianaboriginalsyllabicsextended":           return .unifiedCanadianAboriginalSyllabicsExtended
+      case "ucasexta", "unifiedcanadianaboriginalsyllabicsextendeda":         return .unifiedCanadianAboriginalSyllabicsExtendedA
+      case "ugaritic":                                                        return .ugaritic
+      case "vai":                                                             return .vai
+      case "vedicext", "vedicextensions":                                     return .vedicExtensions
+      case "verticalforms":                                                   return .verticalForms
+      case "vithkuqi":                                                        return .vithkuqi
+      case "vs", "variationselectors":                                        return .variationSelectors
+      case "vssup", "variationselectorssupplement":                           return .variationSelectorsSupplement
+      case "wancho":                                                          return .wancho
+      case "warangciti":                                                      return .warangCiti
+      case "yezidi":                                                          return .yezidi
+      case "yiradicals":                                                      return .yiRadicals
+      case "yisyllables":                                                     return .yiSyllables
+      case "yijing", "yijinghexagramsymbols":                                 return .yijingHexagramSymbols
+      case "zanabazarsquare":                                                 return .zanabazarSquare
+      case "znamennymusic", "znamennymusicalnotation":                        return .znamennyMusicalNotation
+      default:                                                                return nil
+      }
+    }
+  }
+
   static func classifySpecialPropValue(_ value: String) -> PropertyKind? {
     withNormalizedForms(value) { str in
       switch str {
@@ -361,73 +714,157 @@ extension Source {
       }
     }
   }
+  
+  static func parseAge(_ value: String) -> Unicode.Version? {
+    // Age can be specified in the form '3.0' or 'V3_0'.
+    // Other formats are not supported.
+    var str = value[...]
+    
+    let separator: Character
+    if str.first == "V" {
+      str.removeFirst()
+      separator = "_"
+    } else {
+      separator = "."
+    }
+    
+    guard let sepIndex = str.firstIndex(of: separator),
+          let major = Int(str[..<sepIndex]),
+          let minor = Int(str[sepIndex...].dropFirst())
+    else { return nil }
+    
+    return (major, minor)
+  }
 
-  static func classifyCharacterPropertyValueOnly(
-    _ value: String
-  ) throws -> PropertyKind {
-    guard !value.isEmpty else { throw ParseError.emptyProperty }
+  mutating func classifyCharacterPropertyValueOnly(
+    _ valueLoc: Located<String>
+  ) -> PropertyKind {
+    let value = valueLoc.value
+
+    func error(_ err: ParseError) -> PropertyKind {
+      self.error(err, at: valueLoc.location)
+      return .invalid(key: nil, value: value)
+    }
+
+    guard !value.isEmpty else {
+      return error(.emptyProperty)
+    }
 
     // Some special cases defined by UTS#18 (and Oniguruma for 'ANY' and
     // 'Assigned').
-    if let specialProp = classifySpecialPropValue(value) {
+    if let specialProp = Self.classifySpecialPropValue(value) {
       return specialProp
     }
 
     // The following properties we can infer keys/values for.
-    if let prop = classifyBoolProperty(value) {
+    if let prop = Self.classifyBoolProperty(value) {
       return .binary(prop, value: true)
     }
-    if let cat = classifyGeneralCategory(value) {
+    if let cat = Self.classifyGeneralCategory(value) {
       return .generalCategory(cat)
     }
-    if let script = classifyScriptProperty(value) {
+    if let script = Self.classifyScriptProperty(value) {
       return .scriptExtension(script)
     }
-    if let posix = classifyPOSIX(value) {
+    if let posix = Self.classifyPOSIX(value) {
       return .posix(posix)
     }
-
-    // Some additional special cases we recognise.
-    // TODO: Normalize these?
-    if let oniguruma = OnigurumaSpecialProperty(rawValue: value) {
-      return .onigurumaSpecial(oniguruma)
+    if let block = Self.classifyBlockProperty(value, valueOnly: true) {
+      return .block(block)
     }
+
+    // Special properties from other engines.
     typealias PCRESpecial = AST.Atom.CharacterProperty.PCRESpecialCategory
     if let pcreSpecial = PCRESpecial(rawValue: value) {
       return .pcreSpecial(pcreSpecial)
     }
+    typealias JavaSpecial = AST.Atom.CharacterProperty.JavaSpecial
+    if let javaSpecial = JavaSpecial(rawValue: value) {
+      return .javaSpecial(javaSpecial)
+    }
 
     // TODO: This should be versioned, and do we want a more lax behavior for
     // the runtime?
-    throw ParseError.unknownProperty(key: nil, value: value)
+    return error(.unknownProperty(key: nil, value: value))
   }
 
-  static func classifyCharacterProperty(
-    key: String, value: String
-  ) throws -> PropertyKind {
-    guard !key.isEmpty && !value.isEmpty else { throw ParseError.emptyProperty }
+  mutating func classifyCharacterProperty(
+    key keyLoc: Located<String>, value valueLoc: Located<String>
+  ) -> PropertyKind {
+    let key = keyLoc.value
+    let value = valueLoc.value
 
-    if let prop = classifyBoolProperty(key),
-       let isTrue = classifyCharacterPropertyBoolValue(value) {
+    func valueError(_ err: ParseError) -> PropertyKind {
+      error(err, at: valueLoc.location)
+      return .invalid(key: key, value: value)
+    }
+
+    guard !key.isEmpty else {
+      error(.emptyProperty, at: keyLoc.location)
+      return .invalid(key: key, value: value)
+    }
+    guard !value.isEmpty else {
+      return valueError(.emptyProperty)
+    }
+
+    if let prop = Self.classifyBoolProperty(key),
+       let isTrue = Self.classifyCharacterPropertyBoolValue(value) {
       return .binary(prop, value: isTrue)
     }
 
     // This uses the aliases defined in
     // https://www.unicode.org/Public/UCD/latest/ucd/PropertyAliases.txt.
-    let match = withNormalizedForms(key) { key -> PropertyKind? in
-      switch key {
+    let match = Self.withNormalizedForms(key) { normalizedKey -> PropertyKind? in
+      switch normalizedKey {
       case "script", "sc":
-        if let script = classifyScriptProperty(value) {
-          return .script(script)
+        guard let script = Self.classifyScriptProperty(value) else {
+          return valueError(.unrecognizedScript(value))
         }
+        return .script(script)
       case "scriptextensions", "scx":
-        if let script = classifyScriptProperty(value) {
-          return .scriptExtension(script)
+        guard let script = Self.classifyScriptProperty(value) else {
+          return valueError(.unrecognizedScript(value))
         }
+        return .scriptExtension(script)
       case "gc", "generalcategory":
-        if let cat = classifyGeneralCategory(value) {
-          return .generalCategory(cat)
+        guard let cat = Self.classifyGeneralCategory(value) else {
+          return valueError(.unrecognizedCategory(value))
         }
+        return .generalCategory(cat)
+      case "age":
+        guard let (major, minor) = Self.parseAge(value) else {
+          return valueError(.invalidAge(value))
+        }
+        return .age(major: major, minor: minor)
+      case "name", "na":
+        return .named(value)
+      case "numericvalue", "nv":
+        guard let numericValue = Double(value) else {
+          return valueError(.invalidNumericValue(value))
+        }
+        return .numericValue(numericValue)
+      case "numerictype", "nt":
+        guard let type = Self.classifyNumericType(value) else {
+          return valueError(.unrecognizedNumericType(value))
+        }
+        return .numericType(type)
+      case "slc", "simplelowercasemapping":
+        return .mapping(.lowercase, value)
+      case "suc", "simpleuppercasemapping":
+        return .mapping(.uppercase, value)
+      case "stc", "simpletitlecasemapping":
+        return .mapping(.titlecase, value)
+      case "ccc", "canonicalcombiningclass":
+        guard let cccValue = UInt8(value), cccValue <= 254 else {
+          return valueError(.invalidCCC(value))
+        }
+        return .ccc(.init(rawValue: cccValue))
+
+      case "blk", "block":
+        guard let block = Self.classifyBlockProperty(value, valueOnly: false) else {
+          return valueError(.unrecognizedBlock(value))
+        }
+        return .block(block)
       default:
         break
       }
@@ -438,6 +875,8 @@ extension Source {
     }
     // TODO: This should be versioned, and do we want a more lax behavior for
     // the runtime?
-    throw ParseError.unknownProperty(key: key, value: value)
+    error(.unknownProperty(key: key, value: value),
+          at: keyLoc.location.union(with: valueLoc.location))
+    return .invalid(key: key, value: value)
   }
 }

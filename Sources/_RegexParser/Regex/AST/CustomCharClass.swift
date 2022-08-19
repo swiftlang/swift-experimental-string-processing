@@ -27,7 +27,6 @@ extension AST {
       self.location = sr
     }
 
-    @frozen
     public enum Member: Hashable {
       /// A nested custom character class `[[ab][cd]]`
       case custom(CustomCharacterClass)
@@ -52,21 +51,28 @@ extension AST {
       public var lhs: Atom
       public var dashLoc: SourceLocation
       public var rhs: Atom
+      public var trivia: [AST.Trivia]
 
-      public init(_ lhs: Atom, _ dashLoc: SourceLocation, _ rhs: Atom) {
+      public init(
+        _ lhs: Atom, _ dashLoc: SourceLocation, _ rhs: Atom,
+        trivia: [AST.Trivia]
+      ) {
         self.lhs = lhs
         self.dashLoc = dashLoc
         self.rhs = rhs
+        self.trivia = trivia
+      }
+
+      public var location: SourceLocation {
+        lhs.location.union(with: rhs.location)
       }
     }
-    @frozen
     public enum SetOp: String, Hashable {
       case subtraction = "--"
       case intersection = "&&"
       case symmetricDifference = "~~"
     }
-    @frozen
-    public enum Start: String {
+    public enum Start: String, Hashable {
       case normal = "["
       case inverted = "[^"
     }
@@ -98,8 +104,32 @@ extension CustomCC.Member {
     return false
   }
 
+  public var asTrivia: AST.Trivia? {
+    guard case .trivia(let t) = self else { return nil }
+    return t
+  }
+
   public var isSemantic: Bool {
     !isTrivia
+  }
+
+  public var location: SourceLocation {
+    switch self {
+    case let .custom(c): return c.location
+    case let .range(r):  return r.location
+    case let .atom(a):   return a.location
+    case let .quote(q):  return q.location
+    case let .trivia(t): return t.location
+    case let .setOperation(lhs, dash, rhs):
+      var loc = dash.location
+      if let lhs = lhs.first {
+        loc = loc.union(with: lhs.location)
+      }
+      if let rhs = rhs.last {
+        loc = loc.union(with: rhs.location)
+      }
+      return loc
+    }
   }
 }
 

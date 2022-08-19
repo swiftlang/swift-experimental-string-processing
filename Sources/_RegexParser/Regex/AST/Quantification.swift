@@ -36,18 +36,16 @@ extension AST {
       self.trivia = trivia
     }
 
-    @frozen
     public enum Amount: Hashable {
-      case zeroOrMore              // *
-      case oneOrMore               // +
-      case zeroOrOne               // ?
-      case exactly(Located<Int>)         // {n}
-      case nOrMore(Located<Int>)         // {n,}
-      case upToN(Located<Int>)           // {,n}
-      case range(Located<Int>, Located<Int>) // {n,m}
+      case zeroOrMore                              // *
+      case oneOrMore                               // +
+      case zeroOrOne                               // ?
+      case exactly(AST.Atom.Number)                // {n}
+      case nOrMore(AST.Atom.Number)                // {n,}
+      case upToN(AST.Atom.Number)                  // {,n}
+      case range(AST.Atom.Number, AST.Atom.Number) // {n,m}
     }
 
-    @frozen
     public enum Kind: String, Hashable {
       case eager      = ""
       case reluctant  = "?"
@@ -60,7 +58,7 @@ extension AST {
 
 extension AST.Quantification.Amount {
   /// The bounds.
-  public var bounds: (atLeast: Int, atMost: Int?) {
+  public var bounds: (atLeast: Int?, atMost: Int?) {
     switch self {
     case .zeroOrMore: return (0, nil)
     case .oneOrMore:  return (1, nil)

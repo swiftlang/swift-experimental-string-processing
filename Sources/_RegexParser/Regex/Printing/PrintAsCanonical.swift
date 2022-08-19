@@ -32,7 +32,7 @@ extension AST.Node {
     showDelimiters delimiters: Bool = false,
     terminateLine: Bool = false
   ) -> String {
-    AST(self, globalOptions: nil).renderAsCanonical(
+    AST(self, globalOptions: nil, diags: Diagnostics()).renderAsCanonical(
       showDelimiters: delimiters, terminateLine: terminateLine)
   }
 }
@@ -96,6 +96,9 @@ extension PrettyPrinter {
 
     case let .trivia(t):
       output(t._canonicalBase)
+
+    case let .interpolation(i):
+      output(i._canonicalBase)
 
     case let .atom(a):
       output(a._canonicalBase)
@@ -178,6 +181,12 @@ extension AST.Quote {
   }
 }
 
+extension AST.Interpolation {
+  var _canonicalBase: String {
+    "<{\(contents)}>"
+  }
+}
+
 extension AST.Group.Kind {
   var _canonicalBase: String {
     switch self {
@@ -208,9 +217,9 @@ extension AST.Quantification.Amount {
     case .zeroOrMore:      return "*"
     case .oneOrMore:       return "+"
     case .zeroOrOne:       return "?"
-    case let .exactly(n):  return "{\(n.value)}"
-    case let .nOrMore(n):  return "{\(n.value),}"
-    case let .upToN(n):    return "{,\(n.value)}"
+    case let .exactly(n):  return "{\(n._canonicalBase)}"
+    case let .nOrMore(n):  return "{\(n._canonicalBase),}"
+    case let .upToN(n):    return "{,\(n._canonicalBase)}"
     case let .range(lower, upper):
       return "{\(lower),\(upper)}"
     }
@@ -220,11 +229,14 @@ extension AST.Quantification.Kind {
   var _canonicalBase: String { self.rawValue }
 }
 
+extension AST.Atom.Number {
+  var _canonicalBase: String {
+    value.map { "\($0)" } ?? "<#number#>"
+  }
+}
+
 extension AST.Atom {
   var _canonicalBase: String {
-    if let anchor = self.assertionKind {
-      return anchor.rawValue
-    }
     if let lit = self.literalStringValue {
       // FIXME: We may have to re-introduce escapes
       // For example, `\.` will come back as "." instead
@@ -233,6 +245,10 @@ extension AST.Atom {
       return lit
     }
     switch self.kind {
+    case .caretAnchor:
+      return "^"
+    case .dollarAnchor:
+      return "$"
     case .escaped(let e):
       return "\\\(e.character)"
     case .backreference(let br):
@@ -296,9 +312,9 @@ extension AST.GlobalMatchingOption.NewlineSequenceMatching {
 extension AST.GlobalMatchingOption.Kind {
   var _canonicalBase: String {
     switch self {
-    case .limitDepth(let i):              return "LIMIT_DEPTH=\(i.value)"
-    case .limitHeap(let i):               return "LIMIT_HEAP=\(i.value)"
-    case .limitMatch(let i):              return "LIMIT_MATCH=\(i.value)"
+    case .limitDepth(let i):              return "LIMIT_DEPTH=\(i._canonicalBase)"
+    case .limitHeap(let i):               return "LIMIT_HEAP=\(i._canonicalBase)"
+    case .limitMatch(let i):              return "LIMIT_MATCH=\(i._canonicalBase)"
     case .notEmpty:                       return "NOTEMPTY"
     case .notEmptyAtStart:                return "NOTEMPTY_ATSTART"
     case .noAutoPossess:                  return "NO_AUTO_POSSESS"

@@ -11,85 +11,62 @@
 
 @_implementationOnly import _RegexParser
 
-/// A structured capture
-struct StructuredCapture {
-  /// The `.optional` height of the result
-  var optionalCount = 0
-
-  var storedCapture: StoredCapture?
-
-  var someCount: Int {
-    storedCapture == nil ? optionalCount - 1 : optionalCount
-  }
-}
-
-/// A storage form for a successful capture
-struct StoredCapture {
-  // TODO: drop optional when engine tracks all ranges
-  var range: Range<String.Index>?
-
-  // If strongly typed, value is set
-  var value: Any? = nil
-}
-
 // TODO: Where should this live? Inside TypeConstruction?
 func constructExistentialOutputComponent(
-  from input: Substring,
-  in range: Range<String.Index>?,
-  value: Any?,
+  from input: String,
+  component: (range: Range<String.Index>, value: Any?)?,
   optionalCount: Int
 ) -> Any {
-  let someCount: Int
-  var underlying: Any
-  if let v = value {
-    underlying = v
-    someCount = optionalCount
-  } else if let r = range {
-    underlying = input[r]
-    someCount = optionalCount
-  } else {
-    // Ok since we Any-box every step up the ladder
-    underlying = Optional<Any>(nil) as Any
-    someCount = optionalCount - 1
-  }
-  for _ in 0..<someCount {
-    func wrap<T>(_ x: T) {
-      underlying = Optional(x) as Any
+  if let component = component {
+    var underlying = component.value ?? input[component.range]
+    for _ in 0 ..< optionalCount {
+      func wrap<T>(_ x: T) {
+        underlying = Optional(x) as Any
+      }
+      _openExistential(underlying, do: wrap)
     }
-    _openExistential(underlying, do: wrap)
+    return underlying
+  } else {
+    precondition(optionalCount > 0, "Must have optional type")
+    func makeNil<T>(_ x: T.Type) -> Any {
+      T?.none as Any
+    }
+    let underlyingTy = TypeConstruction.optionalType(
+      of: Substring.self, depth: optionalCount - 1)
+    return _openExistential(underlyingTy, do: makeNil)
   }
-  return underlying
 }
 
-extension StructuredCapture {
+@available(SwiftStdlib 5.7, *)
+extension AnyRegexOutput.Element {
   func existentialOutputComponent(
-    from input: Substring
+    from input: String
   ) -> Any {
     constructExistentialOutputComponent(
       from: input,
-      in: storedCapture?.range,
-      value: storedCapture?.value,
-      optionalCount: optionalCount)
+      component: representation.content,
+      optionalCount: representation.optionalDepth
+    )
   }
 
   func slice(from input: String) -> Substring? {
-    guard let r = storedCapture?.range else { return nil }
+    guard let r = range else { return nil }
     return input[r]
   }
 }
 
-extension Sequence where Element == StructuredCapture {
+@available(SwiftStdlib 5.7, *)
+extension Sequence where Element == AnyRegexOutput.Element {
   // FIXME: This is a stop gap where we still slice the input
   // and traffic through existentials
-  func existentialOutput(
-    from input: Substring
-  ) -> Any {
-    var caps = Array<Any>()
-    caps.append(input)
-    caps.append(contentsOf: self.map {
+  @available(SwiftStdlib 5.7, *)
+  func existentialOutput(from input: String) -> Any {
+    let elements = map {
       $0.existentialOutputComponent(from: input)
-    })
-    return TypeConstruction.tuple(of: caps)
+    }
+    return elements.count == 1
+      ? elements[0]
+      : TypeConstruction.tuple(of: elements)
   }
 
   func slices(from input: String) -> [Substring?] {

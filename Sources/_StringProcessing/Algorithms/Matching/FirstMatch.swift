@@ -12,7 +12,7 @@
 // MARK: `CollectionSearcher` algorithms
 
 extension Collection {
-  func firstMatch<S: MatchingCollectionSearcher>(
+  func _firstMatch<S: MatchingCollectionSearcher>(
     of searcher: S
   ) -> _MatchResult<S>? where S.Searched == Self {
     var state = searcher.state(for: self, in: startIndex..<endIndex)
@@ -39,10 +39,11 @@ extension BidirectionalCollection {
 
 extension BidirectionalCollection where SubSequence == Substring {
   @available(SwiftStdlib 5.7, *)
+  @_disfavoredOverload
   func firstMatch<R: RegexComponent>(
     of regex: R
   ) -> _MatchResult<RegexConsumer<R, Self>>? {
-    firstMatch(of: RegexConsumer(regex))
+    _firstMatch(of: RegexConsumer(regex))
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -57,9 +58,9 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: The first match of `regex` in the collection, or `nil` if
   /// there isn't a match.
   @available(SwiftStdlib 5.7, *)
-  public func firstMatch<R: RegexComponent>(
-    of r: R
-  ) -> Regex<R.RegexOutput>.Match? {
+  public func firstMatch<Output>(
+    of r: some RegexComponent<Output>
+  ) -> Regex<Output>.Match? {
     let slice = self[...]
     return try? r.regex.firstMatch(in: slice)
   }

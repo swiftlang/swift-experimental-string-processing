@@ -19,7 +19,6 @@ extension AST {
       self.location = loc
     }
 
-    @frozen
     public enum Kind: Hashable {
       /// Just a character
       ///
@@ -29,7 +28,13 @@ extension AST {
       /// A Unicode scalar value written as a literal
       ///
       /// \u{...}, \0dd, \x{...}, ...
-      case scalar(Unicode.Scalar)
+      case scalar(Scalar)
+
+      /// A whitespace-separated sequence of Unicode scalar values which are
+      /// implicitly splatted out.
+      ///
+      /// `\u{A B C}` -> `\u{A}\u{B}\u{C}`
+      case scalarSequence(ScalarSequence)
 
       /// A Unicode property, category, or script, including those written using
       /// POSIX syntax.
@@ -55,13 +60,13 @@ extension AST {
       case namedCharacter(String)
 
       /// .
-      case any
+      case dot
 
       /// ^
-      case startOfLine
+      case caretAnchor
 
       /// $
-      case endOfLine
+      case dollarAnchor
 
       // References
       case backreference(Reference)
@@ -75,6 +80,9 @@ extension AST {
 
       // (?i), (?i-m), ...
       case changeMatchingOptions(MatchingOptionSequence)
+
+      // An invalid atom created by a parse error.
+      case invalid
     }
   }
 }
@@ -84,6 +92,7 @@ extension AST.Atom {
     switch kind {
     case .char(let v):                  return v
     case .scalar(let v):                return v
+    case .scalarSequence(let v):        return v
     case .property(let v):              return v
     case .escaped(let v):               return v
     case .keyboardControl(let v):       return v
@@ -95,14 +104,51 @@ extension AST.Atom {
     case .callout(let v):               return v
     case .backtrackingDirective(let v): return v
     case .changeMatchingOptions(let v): return v
-    case .any:                          return nil
-    case .startOfLine:                  return nil
-    case .endOfLine:                    return nil
+    case .dot:                          return nil
+    case .caretAnchor:                  return nil
+    case .dollarAnchor:                 return nil
+    case .invalid:                      return nil
     }
   }
 
   func `as`<T>(_ t: T.Type = T.self) -> T? {
     _associatedValue as? T
+  }
+}
+
+extension AST.Atom {
+  public struct Number: Hashable {
+    /// The value, which may be `nil` in an invalid AST, e.g the parser expected
+    /// a number at a given location, or the parsed number overflowed.
+    public var value: Int?
+    public var location: SourceLocation
+
+    public init(_ value: Int?, at location: SourceLocation) {
+      self.value = value
+      self.location = location
+    }
+  }
+
+  public struct Scalar: Hashable {
+    public var value: UnicodeScalar
+    public var location: SourceLocation
+
+    public init(_ value: UnicodeScalar, _ location: SourceLocation) {
+      self.value = value
+      self.location = location
+    }
+  }
+
+  public struct ScalarSequence: Hashable {
+    public var scalars: [Scalar]
+    public var trivia: [AST.Trivia]
+
+    public init(_ scalars: [Scalar], trivia: [AST.Trivia]) {
+      precondition(scalars.count > 1, "Expected multiple scalars")
+      self.scalars = scalars
+      self.trivia = trivia
+    }
+    public var scalarValues: [Unicode.Scalar] { scalars.map(\.value) }
   }
 }
 
@@ -115,7 +161,6 @@ extension AST.Atom {
 
   // Characters, character types, literals, etc., derived from
   // an escape sequence.
-  @frozen
   public enum EscapedBuiltin: Hashable {
     // TODO: better doc comments
 
@@ -368,7 +413,6 @@ extension AST.Atom {
 }
 
 extension AST.Atom.CharacterProperty {
-  @frozen
   public enum Kind: Hashable {
     /// Matches any character, equivalent to Oniguruma's '\O'.
     case any
@@ -396,15 +440,45 @@ extension AST.Atom.CharacterProperty {
     case script(Unicode.Script)
     case scriptExtension(Unicode.Script)
 
+    /// Character name in the form `\p{name=...}`
+    case named(String)
+    
+    /// Numeric type.
+    case numericType(Unicode.NumericType)
+    
+    /// Numeric value.
+    case numericValue(Double)
+    
+    /// Case mapping.
+    case mapping(MapKind, String)
+    
+    /// Canonical Combining Class.
+    case ccc(Unicode.CanonicalCombiningClass)
+    
+    /// Character age, as per UnicodeScalar.Properties.age.
+    case age(major: Int, minor: Int)
+
+    /// A block property.
+    case block(Unicode.Block)
+
     case posix(Unicode.POSIXProperty)
 
     /// Some special properties implemented by PCRE and Oniguruma.
     case pcreSpecial(PCRESpecialCategory)
-    case onigurumaSpecial(OnigurumaSpecialProperty)
+
+    /// Some special properties implemented by Java.
+    case javaSpecial(JavaSpecial)
+
+    /// An invalid property that has been diagnosed by the parser.
+    case invalid(key: String?, value: String)
+
+    public enum MapKind: Hashable {
+      case lowercase
+      case uppercase
+      case titlecase
+    }
   }
 
-  // TODO: erm, separate out or fold into something? splat it in?
-  @frozen
   public enum PCRESpecialCategory: String, Hashable {
     case alphanumeric     = "Xan"
     case posixSpace       = "Xps"
@@ -412,67 +486,28 @@ extension AST.Atom.CharacterProperty {
     case universallyNamed = "Xuc"
     case perlWord         = "Xwd"
   }
-}
 
-extension AST.Atom {
-  /// Anchors and other built-in zero-width assertions.
-  @frozen
-  public enum AssertionKind: String {
-    /// \A
-    case startOfSubject = #"\A"#
-
-    /// \Z
-    case endOfSubjectBeforeNewline = #"\Z"#
-
-    /// \z
-    case endOfSubject = #"\z"#
-
-    /// \K
-    case resetStartOfMatch = #"\K"#
-
-    /// \G
-    case firstMatchingPositionInSubject = #"\G"#
-
-    /// \y
-    case textSegment = #"\y"#
-
-    /// \Y
-    case notTextSegment = #"\Y"#
-
-    /// ^
-    case startOfLine = #"^"#
-
-    /// $
-    case endOfLine = #"$"#
-
-    /// \b (from outside a custom character class)
-    case wordBoundary = #"\b"#
-
-    /// \B
-    case notWordBoundary = #"\B"#
-
-  }
-
-  public var assertionKind: AssertionKind? {
-    switch kind {
-    case .startOfLine:     return .startOfLine
-    case .endOfLine:       return .endOfLine
-
-    case .escaped(.wordBoundary):    return .wordBoundary
-    case .escaped(.notWordBoundary): return .notWordBoundary
-    case .escaped(.startOfSubject):  return .startOfSubject
-    case .escaped(.endOfSubject):    return .endOfSubject
-    case .escaped(.textSegment):     return .textSegment
-    case .escaped(.notTextSegment):  return .notTextSegment
-    case .escaped(.endOfSubjectBeforeNewline):
-      return .endOfSubjectBeforeNewline
-    case .escaped(.firstMatchingPositionInSubject):
-      return .firstMatchingPositionInSubject
-
-    case .escaped(.resetStartOfMatch): return .resetStartOfMatch
-
-    default: return nil
-    }
+  /// Special Java properties that correspond to methods on
+  /// `java.lang.Character`, with the `java` prefix replaced by `is`.
+  public enum JavaSpecial: String, Hashable, CaseIterable {
+    case alphabetic             = "javaAlphabetic"
+    case defined                = "javaDefined"
+    case digit                  = "javaDigit"
+    case identifierIgnorable    = "javaIdentifierIgnorable"
+    case ideographic            = "javaIdeographic"
+    case isoControl             = "javaISOControl"
+    case javaIdentifierPart     = "javaJavaIdentifierPart" // not a typo, that's actually the name
+    case javaIdentifierStart    = "javaJavaIdentifierStart" // not a typo, that's actually the name
+    case javaLetter             = "javaLetter"
+    case javaLetterOrDigit      = "javaLetterOrDigit"
+    case lowerCase              = "javaLowerCase"
+    case mirrored               = "javaMirrored"
+    case spaceChar              = "javaSpaceChar"
+    case titleCase              = "javaTitleCase"
+    case unicodeIdentifierPart  = "javaUnicodeIdentifierPart"
+    case unicodeIdentifierStart = "javaUnicodeIdentifierStart"
+    case upperCase              = "javaUpperCase"
+    case whitespace             = "javaWhitespace"
   }
 }
 
@@ -481,7 +516,7 @@ extension AST.Atom {
     /// A PCRE callout written `(?C...)`
     public struct PCRE: Hashable {
       public enum Argument: Hashable {
-        case number(Int)
+        case number(AST.Atom.Number)
         case string(String)
       }
       public var arg: AST.Located<Argument>
@@ -665,6 +700,23 @@ extension AST.Atom.EscapedBuiltin {
       return nil
     }
   }
+
+  public var isQuantifiable: Bool {
+    switch self {
+    case .alarm, .escape, .formfeed, .newline, .carriageReturn, .tab,
+        .singleDataUnit, .decimalDigit, .notDecimalDigit, .horizontalWhitespace,
+        .notHorizontalWhitespace, .notNewline, .newlineSequence, .whitespace,
+        .notWhitespace, .verticalTab, .notVerticalTab, .wordCharacter,
+        .notWordCharacter, .backspace, .graphemeCluster, .trueAnychar:
+      return true
+
+    case .wordBoundary, .notWordBoundary, .startOfSubject,
+        .endOfSubjectBeforeNewline, .endOfSubject,
+        .firstMatchingPositionInSubject, .resetStartOfMatch, .textSegment,
+        .notTextSegment:
+      return false
+    }
+  }
 }
 
 extension AST.Atom {
@@ -677,7 +729,7 @@ extension AST.Atom {
     case .char(let c):
       return c
     case .scalar(let s):
-      return Character(s)
+      return Character(s.value)
 
     case .escaped(let c):
       return c.scalarValue.map(Character.init)
@@ -693,8 +745,9 @@ extension AST.Atom {
       // the AST? Or defer for the matching engine?
       return nil
 
-    case .property, .any, .startOfLine, .endOfLine, .backreference, .subpattern,
-        .callout, .backtrackingDirective, .changeMatchingOptions:
+    case .scalarSequence, .property, .dot, .caretAnchor,
+        .dollarAnchor, .backreference, .subpattern, .callout,
+        .backtrackingDirective, .changeMatchingOptions, .invalid:
       return nil
     }
   }
@@ -702,11 +755,17 @@ extension AST.Atom {
   /// Whether this atom is valid as the operand of a custom character class
   /// range.
   public var isValidCharacterClassRangeBound: Bool {
-    // If we have a literal character value for this, it can be used as a bound.
-    if literalCharacterValue != nil { return true }
+    if let c = literalCharacterValue {
+      // We only match character range bounds that are single scalar NFC.
+      return c.hasExactlyOneScalar && c.isNFC
+    }
     switch kind {
     // \cx, \C-x, \M-x, \M-\C-x, \N{...}
     case .keyboardControl, .keyboardMeta, .keyboardMetaControl, .namedCharacter:
+      return true
+    case .scalarSequence:
+      // Unsupported for now (and we will diagnose as such), but treat it as a
+      // valid range operand for better recovery.
       return true
     default:
       return false
@@ -716,13 +775,21 @@ extension AST.Atom {
   /// A string literal representation of the atom, if possible.
   ///
   /// Individual characters are returned as-is, and Unicode scalars are
-  /// presented using "\u{nnnn}" syntax.
+  /// presented using "\u{nn nn ...}" syntax.
   public var literalStringValue: String? {
+    func scalarLiteral(_ u: [UnicodeScalar]) -> String {
+      let digits = u.map { String($0.value, radix: 16, uppercase: true) }
+        .joined(separator: " ")
+      return "\\u{\(digits)}"
+    }
     switch kind {
     case .char(let c):
       return String(c)
     case .scalar(let s):
-      return "\\u{\(String(s.value, radix: 16, uppercase: true))}"
+      return scalarLiteral([s.value])
+
+    case .scalarSequence(let s):
+      return scalarLiteral(s.scalarValues)
 
     case .keyboardControl(let x):
       return "\\C-\(x)"
@@ -732,9 +799,9 @@ extension AST.Atom {
     case .keyboardMetaControl(let x):
       return "\\M-\\C-\(x)"
 
-    case .property, .escaped, .any, .startOfLine, .endOfLine,
+    case .property, .escaped, .dot, .caretAnchor, .dollarAnchor,
         .backreference, .subpattern, .namedCharacter, .callout,
-        .backtrackingDirective, .changeMatchingOptions:
+        .backtrackingDirective, .changeMatchingOptions, .invalid:
       return nil
     }
   }
@@ -746,6 +813,10 @@ extension AST.Atom {
     case .changeMatchingOptions:
       return false
     // TODO: Are callouts quantifiable?
+    case .escaped(let esc):
+      return esc.isQuantifiable
+    case .caretAnchor, .dollarAnchor:
+      return false
     default:
       return true
     }
@@ -760,7 +831,7 @@ extension AST.Node {
     case .alternation, .concatenation, .group,
         .conditional, .quantification, .quote,
         .trivia, .customCharacterClass, .empty,
-        .absentFunction:
+        .absentFunction, .interpolation:
       return nil
     }
   }

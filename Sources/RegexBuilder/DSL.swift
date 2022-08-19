@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-import _RegexParser
+@_implementationOnly import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
 @available(SwiftStdlib 5.7, *)
@@ -28,31 +28,20 @@ internal protocol _BuiltinRegexComponent: RegexComponent {
   init(_ regex: Regex<RegexOutput>)
 }
 
-@available(SwiftStdlib 5.7, *)
-extension _BuiltinRegexComponent {
-  init(node: DSLTree.Node) {
-    self.init(Regex(node: node))
-  }
-}
-
 // MARK: - Primitive regex components
 
 @available(SwiftStdlib 5.7, *)
 extension String: RegexComponent {
   public typealias Output = Substring
 
-  public var regex: Regex<Output> {
-    .init(node: .quotedLiteral(self))
-  }
+  public var regex: Regex<Output> { .init(verbatim: self) }
 }
 
 @available(SwiftStdlib 5.7, *)
 extension Substring: RegexComponent {
   public typealias Output = Substring
 
-  public var regex: Regex<Output> {
-    .init(node: .quotedLiteral(String(self)))
-  }
+  public var regex: Regex<Output> { String(self).regex }
 }
 
 @available(SwiftStdlib 5.7, *)
@@ -60,7 +49,7 @@ extension Character: RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> {
-    .init(node: .atom(.char(self)))
+    _RegexFactory().char(self)
   }
 }
 
@@ -69,7 +58,7 @@ extension UnicodeScalar: RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> {
-    .init(node: .atom(.scalar(self)))
+    _RegexFactory().scalar(self)
   }
 }
 
@@ -92,38 +81,16 @@ extension UnicodeScalar: RegexComponent {
 
 // MARK: Quantification
 
-// Note: Quantifiers are currently gyb'd.
+/// A regex component that matches exactly one occurrence of its underlying
+/// component.
+@available(SwiftStdlib 5.7, *)
+public struct One<Output>: RegexComponent {
+  public var regex: Regex<Output>
 
-extension DSLTree.Node {
-  // Individual public API functions are in the generated Variadics.swift file.
-  /// Generates a DSL tree node for a repeated range of the given node.
-  @available(SwiftStdlib 5.7, *)
-  static func repeating(
-    _ range: Range<Int>,
-    _ behavior: RegexRepetitionBehavior?,
-    _ node: DSLTree.Node
-  ) -> DSLTree.Node {
-    // TODO: Throw these as errors
-    assert(range.lowerBound >= 0, "Cannot specify a negative lower bound")
-    assert(!range.isEmpty, "Cannot specify an empty range")
-    
-    let kind: DSLTree.QuantificationKind = behavior.map { .explicit($0.dslTreeKind) } ?? .default
-
-    switch (range.lowerBound, range.upperBound) {
-    case (0, Int.max): // 0...
-      return .quantification(.zeroOrMore, kind, node)
-    case (1, Int.max): // 1...
-      return .quantification(.oneOrMore, kind, node)
-    case _ where range.count == 1: // ..<1 or ...0 or any range with count == 1
-      // Note: `behavior` is ignored in this case
-      return .quantification(.exactly(.init(faking: range.lowerBound)), .default, node)
-    case (0, _): // 0..<n or 0...n or ..<n or ...n
-      return .quantification(.upToN(.init(faking: range.upperBound)), kind, node)
-    case (_, Int.max): // n...
-      return .quantification(.nOrMore(.init(faking: range.lowerBound)), kind, node)
-    default: // any other range
-      return .quantification(.range(.init(faking: range.lowerBound), .init(faking: range.upperBound)), kind, node)
-    }
+  public init<Component: RegexComponent>(
+    _ component: Component
+  ) where Component.RegexOutput == Output {
+    self.regex = component.regex
   }
 }
 
@@ -131,6 +98,7 @@ extension DSLTree.Node {
 public struct OneOrMore<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -143,6 +111,7 @@ public struct OneOrMore<Output>: _BuiltinRegexComponent {
 public struct ZeroOrMore<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -155,6 +124,7 @@ public struct ZeroOrMore<Output>: _BuiltinRegexComponent {
 public struct Optionally<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -167,6 +137,7 @@ public struct Optionally<Output>: _BuiltinRegexComponent {
 public struct Repeat<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -202,20 +173,13 @@ public struct AlternationBuilder {
   public static func buildExpression<R: RegexComponent>(_ regex: R) -> R {
     regex
   }
-
-  public static func buildEither<R: RegexComponent>(first component: R) -> R {
-    component
-  }
-
-  public static func buildEither<R: RegexComponent>(second component: R) -> R {
-    component
-  }
 }
 
 @available(SwiftStdlib 5.7, *)
 public struct ChoiceOf<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -231,6 +195,7 @@ public struct ChoiceOf<Output>: _BuiltinRegexComponent {
 public struct Capture<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -242,6 +207,7 @@ public struct Capture<Output>: _BuiltinRegexComponent {
 public struct TryCapture<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -259,6 +225,7 @@ public struct TryCapture<Output>: _BuiltinRegexComponent {
 public struct Local<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
 
+  @usableFromInline
   internal init(_ regex: Regex<Output>) {
     self.regex = regex
   }
@@ -273,8 +240,13 @@ public struct Reference<Capture>: RegexComponent {
 
   public init(_ captureType: Capture.Type = Capture.self) {}
 
+  @usableFromInline
+  var _raw: Int {
+    id._raw
+  }
+  
   public var regex: Regex<Capture> {
-    .init(node: .atom(.symbolicReference(id)))
+    _RegexFactory().symbolicReference(id)
   }
 }
 
@@ -283,4 +255,13 @@ extension Regex.Match {
   public subscript<Capture>(_ reference: Reference<Capture>) -> Capture {
     self[reference.id]
   }
+}
+
+// RegexFactory's init is SPI, so we can't make an instance of one in AEIC, but
+// if we hide it behind a resilience barrier we can call this function instead
+// to get our instance of it.
+@available(SwiftStdlib 5.7, *)
+@usableFromInline
+internal func makeFactory() -> _RegexFactory {
+  _RegexFactory()
 }

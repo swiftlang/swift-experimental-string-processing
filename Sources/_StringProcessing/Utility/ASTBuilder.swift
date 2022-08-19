@@ -48,7 +48,7 @@ func empty() -> AST.Node {
 }
 
 func ast(_ root: AST.Node, opts: [AST.GlobalMatchingOption.Kind]) -> AST {
-  .init(root, globalOptions: .init(opts.map { .init($0, .fake) }))
+  .init(root, globalOptions: .init(opts.map { .init($0, .fake) }), diags: Diagnostics())
 }
 
 func ast(_ root: AST.Node, opts: AST.GlobalMatchingOption.Kind...) -> AST {
@@ -154,20 +154,39 @@ func unsetMatchingOptions(
   unsetMatchingOptions(adding: adding)
 }
 
-func ref(_ i: Int, recursionLevel: Int? = nil) -> AST.Reference {
-  .init(.absolute(i), recursionLevel: recursionLevel.map { .init(faking: $0) },
-        innerLoc: .fake)
+func ref(_ n: Int?) -> AST.Reference.Kind {
+  .absolute(.init(n, at: .fake))
 }
-func ref(plus n: Int, recursionLevel: Int? = nil) -> AST.Reference {
-  .init(.relative(n), recursionLevel: recursionLevel.map { .init(faking: $0) },
-        innerLoc: .fake)
+func ref(plus n: Int?) -> AST.Reference.Kind {
+  .relative(.init(n, at: .fake))
 }
-func ref(minus n: Int, recursionLevel: Int? = nil) -> AST.Reference {
-  .init(.relative(-n), recursionLevel: recursionLevel.map { .init(faking: $0) },
-        innerLoc: .fake)
+func ref(minus n: Int?) -> AST.Reference.Kind {
+  .relative(.init(n.map { x in -x }, at: .fake))
+}
+func ref(named n: String) -> AST.Reference.Kind {
+  .named(n)
+}
+
+func ref(_ n: Int?, recursionLevel: Int? = nil) -> AST.Reference {
+  .init(
+    ref(n), recursionLevel: recursionLevel.map { .init($0, at: .fake) },
+    innerLoc: .fake
+  )
+}
+func ref(plus n: Int?, recursionLevel: Int? = nil) -> AST.Reference {
+  .init(
+    ref(plus: n), recursionLevel: recursionLevel.map { .init($0, at: .fake) },
+    innerLoc: .fake
+  )
+}
+func ref(minus n: Int?, recursionLevel: Int? = nil) -> AST.Reference {
+  .init(
+    ref(minus: n), recursionLevel: recursionLevel.map { .init($0, at: .fake) },
+    innerLoc: .fake
+  )
 }
 func ref(_ s: String, recursionLevel: Int? = nil) -> AST.Reference {
-  .init(.named(s), recursionLevel: recursionLevel.map { .init(faking: $0) },
+  .init(.named(s), recursionLevel: recursionLevel.map { .init($0, at: .fake) },
         innerLoc: .fake)
 }
 func conditional(
@@ -179,10 +198,11 @@ func conditional(
 }
 func pcreVersionCheck(
   _ kind: AST.Conditional.Condition.PCREVersionCheck.Kind,
-  _ major: Int, _ minor: Int
+  _ major: Int?, _ minor: Int?
 ) -> AST.Conditional.Condition.Kind {
   .pcreVersionCheck(.init(
-    .init(faking: kind), .init(major: major, minor: minor, .fake)
+    .init(faking: kind), .init(major: .init(major, at: .fake),
+                               minor: .init(minor, at: .fake), .fake)
   ))
 }
 func groupCondition(
@@ -191,8 +211,11 @@ func groupCondition(
   .group(.init(.init(faking: kind), child, .fake))
 }
 
-func pcreCallout(_ arg: AST.Atom.Callout.PCRE.Argument) -> AST.Node {
-  atom(.callout(.pcre(.init(.init(faking: arg)))))
+func pcreCallout(number: Int?) -> AST.Node {
+  atom(.callout(.pcre(.init(.init(faking: .number(.init(number, at: .fake)))))))
+}
+func pcreCallout(string: String) -> AST.Node {
+  atom(.callout(.pcre(.init(.init(faking: .string(string))))))
 }
 
 func absentRepeater(_ child: AST.Node) -> AST.Node {
@@ -268,34 +291,34 @@ func oneOrMore(
   quant(.oneOrMore, kind, child)
 }
 func exactly(
-  _ i: Int,
+  _ i: Int?,
   _ kind: AST.Quantification.Kind = .eager,
   of child: AST.Node
 ) -> AST.Node {
-  quant(.exactly(.init(faking: i)), kind, child)
+  quant(.exactly(.init(i, at: .fake)), kind, child)
 }
 func nOrMore(
-  _ i: Int,
+  _ i: Int?,
   _ kind: AST.Quantification.Kind = .eager,
   of child: AST.Node
 ) -> AST.Node {
-  quant(.nOrMore(.init(faking: i)), kind, child)
+  quant(.nOrMore(.init(i, at: .fake)), kind, child)
 }
 func upToN(
-  _ i: Int,
+  _ i: Int?,
   _ kind: AST.Quantification.Kind = .eager,
   of child: AST.Node
 ) -> AST.Node {
-  quant(.upToN(.init(faking: i)), kind, child)
+  quant(.upToN(.init(i, at: .fake)), kind, child)
 }
 func quantRange(
   _ r: ClosedRange<Int>,
   _ kind: AST.Quantification.Kind = .eager,
   of child: AST.Node
 ) -> AST.Node {
-  let lower = AST.Located(faking: r.lowerBound)
-  let upper = AST.Located(faking: r.upperBound)
-  return quant(.range(lower, upper), kind, child)
+  quant(.range(
+    .init(r.lowerBound, at: .fake), .init(r.upperBound, at: .fake)
+  ), kind, child)
 }
 
 func charClass(
@@ -319,6 +342,14 @@ func charClass(
   return .custom(cc)
 }
 
+func setOp(
+  _ lhs: AST.CustomCharacterClass.Member...,
+  op: AST.CustomCharacterClass.SetOp,
+  _ rhs: AST.CustomCharacterClass.Member...
+) -> AST.CustomCharacterClass.Member {
+  .setOperation(lhs, .init(faking: op), rhs)
+}
+
 func quote(_ s: String) -> AST.Node {
   .quote(.init(s, .fake))
 }
@@ -338,15 +369,31 @@ func escaped(
   atom(.escaped(e))
 }
 func scalar(_ s: Unicode.Scalar) -> AST.Node {
-  atom(.scalar(s))
+  .atom(scalar_a(s))
+}
+func scalar_a(_ s: Unicode.Scalar) -> AST.Atom {
+  atom_a(.scalar(.init(s, .fake)))
 }
 func scalar_m(_ s: Unicode.Scalar) -> AST.CustomCharacterClass.Member {
-  atom_m(.scalar(s))
+  .atom(scalar_a(s))
+}
+
+func scalarSeq(_ s: Unicode.Scalar...) -> AST.Node {
+  .atom(scalarSeq_a(s))
+}
+func scalarSeq_a(_ s: Unicode.Scalar...) -> AST.Atom {
+  scalarSeq_a(s)
+}
+func scalarSeq_a(_ s: [Unicode.Scalar]) -> AST.Atom {
+  atom_a(.scalarSequence(.init(s.map { .init($0, .fake) }, trivia: [])))
+}
+func scalarSeq_m(_ s: Unicode.Scalar...) -> AST.CustomCharacterClass.Member {
+  .atom(scalarSeq_a(s))
 }
 
 func backreference(_ r: AST.Reference.Kind, recursionLevel: Int? = nil) -> AST.Node {
   atom(.backreference(.init(
-    r, recursionLevel: recursionLevel.map { .init(faking: $0) }, innerLoc: .fake
+    r, recursionLevel: recursionLevel.map { .init($0, at: .fake) }, innerLoc: .fake
   )))
 }
 func subpattern(_ r: AST.Reference.Kind) -> AST.Node {
@@ -392,7 +439,7 @@ func prop_m(
 func range_m(
   _ lower: AST.Atom, _ upper: AST.Atom
 ) -> AST.CustomCharacterClass.Member {
-  .range(.init(lower, .fake, upper))
+  .range(.init(lower, .fake, upper, trivia: []))
 }
 func range_m(
   _ lower: AST.Atom.Kind, _ upper: AST.Atom.Kind
