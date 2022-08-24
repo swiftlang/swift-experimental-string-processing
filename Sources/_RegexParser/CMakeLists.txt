@@ -9,13 +9,15 @@ add_library(_RegexParser
   AST/Group.swift
   AST/MatchingOptions.swift
   AST/Quantification.swift
+  Parse/CaptureList.swift
   Parse/CaptureStructure.swift
   Parse/CharacterPropertyClassification.swift
+  Parse/CompilerInterface.swift
   Parse/DelimiterLexing.swift
   Parse/Diagnostics.swift
   Parse/LexicalAnalysis.swift
-  Parse/Mocking.swift
   Parse/Parse.swift
+  Parse/Sema.swift
   Parse/Source.swift
   Parse/SourceLocation.swift
   Parse/SyntaxOptions.swift
