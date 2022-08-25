@@ -2537,4 +2537,8 @@ extension RegexTests {
     expectCompletion(regex: #"(a{,4})*"#, in: "aa")
     expectCompletion(regex: #"((|)+)*"#, in: "aa")
   }
+  
+  func testFuzzerArtifacts() throws {
+    expectCompletion(regex: #"(b?)\1*"#, in: "a")
+  }
 }
