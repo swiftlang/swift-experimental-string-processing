@@ -21,7 +21,8 @@ extension Engine {
       subjectBounds: bounds,
       searchBounds: bounds,
       matchMode: matchMode,
-      isTracingEnabled: enableTracing)
+      isTracingEnabled: enableTracing,
+      shouldMeasureMetrics: enableMetrics)
   }
   
   func makeFirstMatchProcessor(
@@ -35,7 +36,8 @@ extension Engine {
       subjectBounds: subjectBounds,
       searchBounds: searchBounds,
       matchMode: .partialFromFront,
-      isTracingEnabled: enableTracing)
+      isTracingEnabled: enableTracing,
+      shouldMeasureMetrics: enableMetrics)
   }
 }
 

@@ -122,18 +122,6 @@ extension MatchingOptions {
   }
 }
 
-// Deprecated CharacterClass.MatchLevel API
-extension MatchingOptions {
-  var matchLevel: _CharacterClassModel.MatchLevel {
-    switch semanticLevel {
-    case .graphemeCluster:
-      return .graphemeCluster
-    case .unicodeScalar:
-      return .unicodeScalar
-    }
-  }
-}
-
 // MARK: - Implementation
 extension MatchingOptions {
   /// An option that changes the behavior of a regular expression.

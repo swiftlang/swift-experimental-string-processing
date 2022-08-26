@@ -13,25 +13,16 @@
 // But, we can play around with this.
 struct Engine {
 
-  var program: MEProgram
+  let program: MEProgram
 
   // TODO: Pre-allocated register banks
 
   var instructions: InstructionList<Instruction> { program.instructions }
 
-  var enableTracing: Bool {
-    get { program.enableTracing }
-    set { program.enableTracing = newValue }
-  }
+  var enableTracing: Bool { program.enableTracing }
+  var enableMetrics: Bool { program.enableMetrics }
 
-  init(
-    _ program: MEProgram,
-    enableTracing: Bool? = nil
-  ) {
-    var program = program
-    if let t = enableTracing {
-      program.enableTracing = t
-    }
+  init(_ program: MEProgram) {
     self.program = program
   }
 }

@@ -96,9 +96,6 @@ extension RegexTests {
       ("#|abc/#def#", nil),
       ("#/abc\n/#", nil),
       ("#/abc\r/#", nil),
-
-      (#"re'abcre\''"#, (#"abcre\'"#, delim(.reSingleQuote))),
-      (#"re'\'"#, nil)
     ]
 
     for (input, expected) in testCases {

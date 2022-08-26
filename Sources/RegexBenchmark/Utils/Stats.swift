@@ -3,10 +3,10 @@ import Foundation
 enum Stats {}
 
 extension Stats {
-  // 500µs, maybe this should be a % of the runtime for each benchmark?
-  static let maxAllowedStdev = 500e-6
+  // Maximum allowed standard deviation is 5% of the median runtime
+  static let maxAllowedStdev = 0.05
 
-  static func tTest(_ a: BenchmarkResult, _ b: BenchmarkResult) -> Bool {
+  static func tTest(_ a: Measurement, _ b: Measurement) -> Bool {
     // Student's t-test
     // Since we should generally have similar variances across runs
     let n1 = Double(a.samples)
@@ -16,5 +16,11 @@ extension Stats {
     let sP = (sPNumerator/sPDenominator).squareRoot()
     let tVal = (a.median.seconds - b.median.seconds) / (sP * (pow(n1, -1) + pow(n2, -1)).squareRoot())
     return abs(tVal) > 2
+  }
+}
+
+extension BenchmarkResult {
+  var runtimeIsTooVariant: Bool {
+    runtime.stdev > Stats.maxAllowedStdev * runtime.median.seconds
   }
 }

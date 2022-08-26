@@ -31,42 +31,48 @@ add_library(_StringProcessing
   Engine/InstPayload.swift
   Engine/Instruction.swift
   Engine/MEBuilder.swift
+  Engine/MEBuiltins.swift
   Engine/MECapture.swift
   Engine/MEProgram.swift
+  Engine/MEQuantify.swift
+  Engine/Metrics.swift
   Engine/Processor.swift
-  Engine/Register.swift
+  Engine/Registers.swift
   Engine/Structuralize.swift
   Engine/Tracing.swift
   Regex/AnyRegexOutput.swift
   Regex/ASTConversion.swift
   Regex/Core.swift
-  Regex/DSLConsumers.swift
+  Regex/CustomComponents.swift
   Regex/DSLTree.swift
   Regex/Match.swift
   Regex/Options.swift
   Unicode/CaseConversion.swift
   Unicode/CharacterProps.swift
   Unicode/Comparison.swift
-  Unicode/Data.swift
   Unicode/Decoding.swift
   Unicode/Encodings.swift
   Unicode/Formatting.swift
-  Unicode/Graphemes.swift
   Unicode/NecessaryEvils.swift
-  Unicode/Normalization.swift
+  Unicode/NFC.swift
   Unicode/NumberParsing.swift
   Unicode/ScalarProps.swift
   Unicode/Transcoding.swift
   Unicode/UCD.swift
   Unicode/Validation.swift
+  Unicode/WordBreaking.swift
+  Utility/AsciiBitset.swift
   Utility/ASTBuilder.swift
+  Utility/Misc.swift
   Utility/Protocols.swift
+  Utility/RegexFactory.swift
   Utility/Traced.swift
   Utility/TypedIndex.swift
   Utility/TypedInt.swift
+  Utility/TypeVerification.swift
+  _CharacterClassModel.swift
   ByteCodeGen.swift
   Capture.swift
-  CharacterClass.swift
   Compiler.swift
   ConsumerInterface.swift
   Executor.swift

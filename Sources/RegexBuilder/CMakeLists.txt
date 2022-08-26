@@ -1,9 +1,10 @@
 
 add_library(RegexBuilder
+  Algorithms.swift
   Anchor.swift
   Builder.swift
+  CharacterClass.swift
   DSL.swift
-  Match.swift
   Variadics.swift)
 target_compile_options(RegexBuilder PRIVATE
   -enable-library-evolution

@@ -63,6 +63,7 @@ public struct Regex<Output>: RegexComponent {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
+  @available(*, deprecated, renamed: "init(verbatim:)")
   public init(quoting string: String) {
     self.init(node: .quotedLiteral(string))
   }
@@ -82,7 +83,7 @@ extension Regex {
     let tree: DSLTree
 
     /// OptionSet of compiler options for testing purposes
-    fileprivate var compileOptions: Compiler.CompileOptions = .default
+    fileprivate var compileOptions: _CompileOptions = .default
 
     private final class ProgramBox {
       let value: MEProgram
@@ -136,9 +137,30 @@ extension Regex {
 }
 
 @available(SwiftStdlib 5.7, *)
+@_spi(RegexBenchmark)
 extension Regex {
-  internal mutating func _setCompilerOptionsForTesting(_ opts: Compiler.CompileOptions) {
-    program.compileOptions = opts
-    program._loweredProgramStorage = nil
+  public enum _RegexInternalAction {
+    case recompile
+    case addOptions(_CompileOptions)
+  }
+  
+  /// Internal API for RegexBenchmark
+  /// Forces the regex to perform the given action, returning if it was successful
+  public mutating func _forceAction(_ action: _RegexInternalAction) -> Bool {
+    do {
+      switch action {
+      case .addOptions(let opts):
+        program.compileOptions.insert(opts)
+        program._loweredProgramStorage = nil
+        return true
+      case .recompile:
+        let _ = try Compiler(
+          tree: program.tree,
+          compileOptions: program.compileOptions).emit()
+        return true
+      }
+    } catch {
+      return false
+    }
   }
 }

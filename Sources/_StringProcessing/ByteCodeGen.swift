@@ -22,17 +22,19 @@ extension Compiler {
     /// This is used to determine whether to apply initial options.
     var hasEmittedFirstMatchableAtom = false
 
-    private let compileOptions: CompileOptions
+    private let compileOptions: _CompileOptions
     fileprivate var optimizationsEnabled: Bool { !compileOptions.contains(.disableOptimizations) }
 
     init(
       options: MatchingOptions,
-      compileOptions: CompileOptions,
+      compileOptions: _CompileOptions,
       captureList: CaptureList
     ) {
       self.options = options
       self.compileOptions = compileOptions
       self.builder.captureList = captureList
+      self.builder.enableTracing = compileOptions.contains(.enableTracing)
+      self.builder.enableMetrics = compileOptions.contains(.enableMetrics)
     }
   }
 }
@@ -74,6 +76,9 @@ fileprivate extension Compiler.ByteCodeGen {
         emitMatchScalar(s)
       }
 
+    case let .characterClass(cc):
+      emitCharacterClass(cc)
+
     case let .assertion(kind):
       try emitAssertion(kind)
 
@@ -81,7 +86,8 @@ fileprivate extension Compiler.ByteCodeGen {
       try emitBackreference(ref.ast)
 
     case let .symbolicReference(id):
-      builder.buildUnresolvedReference(id: id)
+      builder.buildUnresolvedReference(
+        id: id, isScalarMode: options.semanticLevel == .unicodeScalar)
 
     case let .changeMatchingOptions(optionSequence):
       if !hasEmittedFirstMatchableAtom {
@@ -109,7 +115,7 @@ fileprivate extension Compiler.ByteCodeGen {
     }
 
     // Fast path for eliding boundary checks for an all ascii quoted literal
-    if optimizationsEnabled && s.allSatisfy(\.isASCII) {
+    if optimizationsEnabled && s.allSatisfy(\.isASCII) && !s.isEmpty {
       let lastIdx = s.unicodeScalars.indices.last!
       for idx in s.unicodeScalars.indices {
         let boundaryCheck = idx == lastIdx
@@ -140,155 +146,34 @@ fileprivate extension Compiler.ByteCodeGen {
       guard let i = n.value else {
         throw Unreachable("Expected a value")
       }
-      builder.buildBackreference(.init(i))
+      builder.buildBackreference(
+        .init(i), isScalarMode: options.semanticLevel == .unicodeScalar)
     case .named(let name):
-      try builder.buildNamedReference(name)
+      try builder.buildNamedReference(
+        name, isScalarMode: options.semanticLevel == .unicodeScalar)
     case .relative:
       throw Unsupported("Backreference kind: \(ref)")
-    }
-  }
-
-  mutating func emitStartOfLine() {
-    builder.buildAssert { [semanticLevel = options.semanticLevel]
-        (_, _, input, pos, subjectBounds) in
-      if pos == subjectBounds.lowerBound { return true }
-      switch semanticLevel {
-      case .graphemeCluster:
-        return input[input.index(before: pos)].isNewline
-      case .unicodeScalar:
-        return input.unicodeScalars[input.unicodeScalars.index(before: pos)].isNewline
-      }
-    }
-  }
-
-  mutating func emitEndOfLine() {
-    builder.buildAssert { [semanticLevel = options.semanticLevel]
-      (_, _, input, pos, subjectBounds) in
-      if pos == subjectBounds.upperBound { return true }
-      switch semanticLevel {
-      case .graphemeCluster:
-        return input[pos].isNewline
-      case .unicodeScalar:
-        return input.unicodeScalars[pos].isNewline
-      }
     }
   }
 
   mutating func emitAssertion(
     _ kind: DSLTree.Atom.Assertion
   ) throws {
-    // FIXME: Depends on API model we have... We may want to
-    // think through some of these with API interactions in mind
-    //
-    // This might break how we use `bounds` for both slicing
-    // and things like `firstIndex`, that is `firstIndex` may
-    // need to supply both a slice bounds and a per-search bounds.
-    switch kind {
-    case .startOfSubject:
-      builder.buildAssert { (_, _, input, pos, subjectBounds) in
-        pos == subjectBounds.lowerBound
-      }
-
-    case .endOfSubjectBeforeNewline:
-      builder.buildAssert { [semanticLevel = options.semanticLevel]
-          (_, _, input, pos, subjectBounds) in
-        if pos == subjectBounds.upperBound { return true }
-        switch semanticLevel {
-        case .graphemeCluster:
-          return input.index(after: pos) == subjectBounds.upperBound
-           && input[pos].isNewline
-        case .unicodeScalar:
-          return input.unicodeScalars.index(after: pos) == subjectBounds.upperBound
-           && input.unicodeScalars[pos].isNewline
-        }
-      }
-
-    case .endOfSubject:
-      builder.buildAssert { (_, _, input, pos, subjectBounds) in
-        pos == subjectBounds.upperBound
-      }
-
-    case .resetStartOfMatch:
-      // FIXME: Figure out how to communicate this out
+    if kind == .resetStartOfMatch {
       throw Unsupported(#"\K (reset/keep assertion)"#)
-
-    case .firstMatchingPositionInSubject:
-      // TODO: We can probably build a nice model with API here
-      
-      // FIXME: This needs to be based on `searchBounds`,
-      // not the `subjectBounds` given as an argument here
-      builder.buildAssert { (_, _, input, pos, subjectBounds) in false }
-
-    case .textSegment:
-      builder.buildAssert { (_, _, input, pos, _) in
-        // FIXME: Grapheme or word based on options
-        input.isOnGraphemeClusterBoundary(pos)
-      }
-
-    case .notTextSegment:
-      builder.buildAssert { (_, _, input, pos, _) in
-        // FIXME: Grapheme or word based on options
-        !input.isOnGraphemeClusterBoundary(pos)
-      }
-
-    case .startOfLine:
-      emitStartOfLine()
-
-    case .endOfLine:
-      emitEndOfLine()
-
-    case .caretAnchor:
-      if options.anchorsMatchNewlines {
-        emitStartOfLine()
-      } else {
-        builder.buildAssert { (_, _, input, pos, subjectBounds) in
-          pos == subjectBounds.lowerBound
-        }
-      }
-
-    case .dollarAnchor:
-      if options.anchorsMatchNewlines {
-        emitEndOfLine()
-      } else {
-        builder.buildAssert { (_, _, input, pos, subjectBounds) in
-          pos == subjectBounds.upperBound
-        }
-      }
-
-    case .wordBoundary:
-      builder.buildAssert { [options]
-          (cache, maxIndex, input, pos, subjectBounds) in
-        if options.usesSimpleUnicodeBoundaries {
-          // TODO: How should we handle bounds?
-          return _CharacterClassModel.word.isBoundary(
-            input,
-            at: pos,
-            bounds: subjectBounds,
-            with: options
-          )
-        } else {
-          return input.isOnWordBoundary(at: pos, using: &cache, &maxIndex)
-        }
-      }
-
-    case .notWordBoundary:
-      builder.buildAssert { [options]
-          (cache, maxIndex, input, pos, subjectBounds) in
-        if options.usesSimpleUnicodeBoundaries {
-          // TODO: How should we handle bounds?
-          return !_CharacterClassModel.word.isBoundary(
-            input,
-            at: pos,
-            bounds: subjectBounds,
-            with: options
-          )
-        } else {
-          return !input.isOnWordBoundary(at: pos, using: &cache, &maxIndex)
-        }
-      }
     }
+    builder.buildAssert(
+      by: kind,
+      options.anchorsMatchNewlines,
+      options.usesSimpleUnicodeBoundaries,
+      options.usesASCIIWord,
+      options.semanticLevel)
   }
-  
+
+  mutating func emitCharacterClass(_ cc: DSLTree.Atom.CharacterClass) {
+    builder.buildMatchBuiltin(model: cc.asRuntimeModel(options))
+  }
+
   mutating func emitMatchScalar(_ s: UnicodeScalar) {
     assert(options.semanticLevel == .unicodeScalar)
     if options.isCaseInsensitive && s.properties.isCased {
@@ -337,27 +222,16 @@ fileprivate extension Compiler.ByteCodeGen {
     case .graphemeCluster:
       builder.buildAdvance(1)
     case .unicodeScalar:
-      // TODO: builder.buildAdvanceUnicodeScalar(1)
-      builder.buildConsume { input, bounds in
-        input.unicodeScalars.index(after: bounds.lowerBound)
-      }
+      builder.buildAdvanceUnicodeScalar(1)
     }
   }
 
   mutating func emitAnyNonNewline() {
     switch options.semanticLevel {
     case .graphemeCluster:
-      builder.buildConsume { input, bounds in
-        input[bounds.lowerBound].isNewline
-        ? nil
-        : input.index(after: bounds.lowerBound)
-      }
+      builder.buildConsumeNonNewline()
     case .unicodeScalar:
-      builder.buildConsume { input, bounds in
-        input[bounds.lowerBound].isNewline
-        ? nil
-        : input.unicodeScalars.index(after: bounds.lowerBound)
-      }
+      builder.buildConsumeScalarNonNewline()
     }
   }
 
@@ -591,6 +465,10 @@ fileprivate extension Compiler.ByteCodeGen {
     let minTrips = low
     assert((extraTrips ?? 1) >= 0)
 
+    if tryEmitFastQuant(child, updatedKind, minTrips, extraTrips) {
+      return
+    }
+
     // The below is a general algorithm for bounded and unbounded
     // quantification. It can be specialized when the min
     // is 0 or 1, or when extra trips is 1 or unbounded.
@@ -775,6 +653,80 @@ fileprivate extension Compiler.ByteCodeGen {
     builder.label(exit)
   }
 
+  /// Specialized quantification instruction for repetition of certain nodes in grapheme semantic mode
+  /// Allowed nodes are:
+  /// - single ascii scalar .char
+  /// - ascii .customCharacterClass
+  /// - single grapheme consumgin built in character classes
+  /// - .any, .anyNonNewline, .dot
+  mutating func tryEmitFastQuant(
+    _ child: DSLTree.Node,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) -> Bool {
+    guard optimizationsEnabled
+            && minTrips <= QuantifyPayload.maxStorableTrips
+            && extraTrips ?? 0 <= QuantifyPayload.maxStorableTrips
+            && options.semanticLevel == .graphemeCluster
+            && kind != .reluctant else {
+      return false
+    }
+    switch child {
+    case .customCharacterClass(let ccc):
+      // ascii only custom character class
+      guard let bitset = ccc.asAsciiBitset(options) else {
+        return false
+      }
+      builder.buildQuantify(bitset: bitset, kind, minTrips, extraTrips)
+
+    case .atom(let atom):
+      switch atom {
+      case .char(let c):
+        // Single scalar ascii value character
+        guard let val = c._singleScalarAsciiValue else {
+          return false
+        }
+        builder.buildQuantify(asciiChar: val, kind, minTrips, extraTrips)
+
+      case .any:
+        builder.buildQuantifyAny(
+          matchesNewlines: true, kind, minTrips, extraTrips)
+      case .anyNonNewline:
+        builder.buildQuantifyAny(
+          matchesNewlines: false, kind, minTrips, extraTrips)
+      case .dot:
+        builder.buildQuantifyAny(
+          matchesNewlines: options.dotMatchesNewline, kind, minTrips, extraTrips)
+
+      case .characterClass(let cc):
+        // Custom character class that consumes a single grapheme
+        let model = cc.asRuntimeModel(options)
+        guard model.consumesSingleGrapheme else {
+          return false
+        }
+        builder.buildQuantify(
+          model: model,
+          kind,
+          minTrips,
+          extraTrips)
+      default:
+        return false
+      }
+    case .convertedRegexLiteral(let node, _):
+      return tryEmitFastQuant(node, kind, minTrips, extraTrips)
+    case .nonCapturingGroup(let groupKind, let node):
+      // .nonCapture nonCapturingGroups are ignored during compilation
+      guard groupKind.ast == .nonCapture else {
+        return false
+      }
+      return tryEmitFastQuant(node, kind, minTrips, extraTrips)
+    default:
+      return false
+    }
+    return true
+  }
+
   /// Coalesce any adjacent scalar members in a custom character class together.
   /// This is required in order to produce correct grapheme matching behavior.
   func coalescingCustomCharacterClassMembers(
@@ -907,10 +859,10 @@ fileprivate extension Compiler.ByteCodeGen {
       } else {
         builder.buildMatchAsciiBitset(asciiBitset)
       }
-    } else {
-      let consumer = try ccc.generateConsumer(options)
-      builder.buildConsume(by: consumer)
+      return
     }
+    let consumer = try ccc.generateConsumer(options)
+    builder.buildConsume(by: consumer)
   }
 
   mutating func emitConcatenation(_ children: [DSLTree.Node]) throws {
@@ -1061,6 +1013,8 @@ extension DSLTree.Node {
     case .atom(let atom):
       switch atom {
       case .changeMatchingOptions, .assertion: return false
+      // Captures may be nil so backreferences may be zero length matches
+      case .backreference: return false
       default: return true
       }
     case .trivia, .empty:
