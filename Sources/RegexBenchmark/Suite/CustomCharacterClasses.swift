@@ -15,42 +15,49 @@ extension BenchmarkRunner {
     register(Benchmark(
       name: "BasicCCC",
       regex: try! Regex(basic),
+      pattern: basic,
       type: .allMatches,
       target: input))
     
     register(Benchmark(
       name: "BasicRangeCCC",
       regex: try! Regex(basicRange),
+      pattern: basicRange,
       type: .allMatches,
       target: input))
     
     register(Benchmark(
       name: "CaseInsensitiveCCC",
       regex: try! Regex(caseInsensitive),
+      pattern: caseInsensitive,
       type: .allMatches,
       target: input))
     
     register(Benchmark(
       name: "InvertedCCC",
       regex: try! Regex(inverted),
+      pattern: inverted,
       type: .allMatches,
       target: input))
     
     register(Benchmark(
       name: "SubtractionCCC",
       regex: try! Regex(subtraction),
+      pattern: subtraction,
       type: .allMatches,
       target: input))
     
     register(Benchmark(
       name: "IntersectionCCC",
       regex: try! Regex(intersection),
+      pattern: intersection,
       type: .allMatches,
       target: input))
     
     register(Benchmark(
       name: "symDiffCCC",
       regex: try! Regex(symmetricDifference),
+      pattern: symmetricDifference,
       type: .allMatches,
       target: input))
   }

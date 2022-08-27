@@ -11,7 +11,7 @@
 
 import XCTest
 @testable import _RegexParser
-@testable import _StringProcessing
+@testable @_spi(RegexBenchmark) import _StringProcessing
 import TestSupport
 
 struct MatchError: Error {
@@ -32,7 +32,7 @@ func _firstMatch(
   let result = try regex.firstMatch(in: input)
 
   if validateOptimizations {
-    regex._setCompilerOptionsForTesting(.disableOptimizations)
+    assert(regex._forceAction(.addOptions(.disableOptimizations)))
     let unoptResult = try regex.firstMatch(in: input)
     if result != nil && unoptResult == nil {
       throw MatchError("match not found for unoptimized \(regexStr) in \(input)")
@@ -1517,13 +1517,10 @@ extension RegexTests {
       (" 123", "23"),
       ("123 456", "23"))
 
-    // TODO: \G and \K
-    do {
-      let regex = try Regex(#"\Gab"#, as: Substring.self)
-      XCTExpectFailure {
-        XCTAssertEqual("abab".matches(of: regex).map(\.output), ["ab", "ab"])
-      }
-    }
+    // \G and \K
+    let regex = try Regex(#"\Gab"#, as: Substring.self)
+    XCTAssertEqual("abab".matches(of: regex).map(\.output), ["ab", "ab"])
+
     
     // TODO: Oniguruma \y and \Y
     firstMatchTests(
@@ -1646,6 +1643,11 @@ extension RegexTests {
       (input: "123x23", match: "23x23"),
       xfail: true)
     
+    // Backreferences in scalar mode
+    // In scalar mode the backreference should not match
+    firstMatchTest(#"(.+)\1"#, input: "ée\u{301}", match: "ée\u{301}")
+    firstMatchTest(#"(.+)\1"#, input: "ée\u{301}", match: nil, semanticLevel: .unicodeScalar)
+
     // Backreferences in lookaheads
     firstMatchTests(
       #"^(?=.*(.)(.)\2\1).+$"#,
@@ -2456,6 +2458,9 @@ extension RegexTests {
 
     // case insensitive tests
     firstMatchTest(#"(?i)abc\u{301}d"#, input: "AbC\u{301}d", match: "AbC\u{301}d", semanticLevel: .unicodeScalar)
+
+    // check that we don't crash on empty strings
+    firstMatchTest(#"\Q\E"#, input: "", match: "")
   }
   
   func testCase() {
@@ -2524,5 +2529,36 @@ extension RegexTests {
     expectCompletion(regex: #"(a?)*"#, in: "aa")
     expectCompletion(regex: #"(a{,4})*"#, in: "aa")
     expectCompletion(regex: #"((|)+)*"#, in: "aa")
+  }
+
+  func testQuantifyOptimization() throws {
+    // test that the maximum values for minTrips and extraTrips are handled correctly
+    let maxStorable = Int(QuantifyPayload.maxStorableTrips)
+    let maxExtraTrips = "a{,\(maxStorable)}"
+    expectProgram(for: maxExtraTrips, contains: [.quantify])
+    firstMatchTest(maxExtraTrips, input: String(repeating: "a", count: maxStorable), match: String(repeating: "a", count: maxStorable))
+    firstMatchTest(maxExtraTrips, input: String(repeating: "a", count: maxStorable + 1), match: String(repeating: "a", count: maxStorable))
+    XCTAssertNil(try Regex(maxExtraTrips).wholeMatch(in: String(repeating: "a", count: maxStorable + 1)))
+
+    let maxMinTrips = "a{\(maxStorable),}"
+    expectProgram(for: maxMinTrips, contains: [.quantify])
+    firstMatchTest(maxMinTrips, input: String(repeating: "a", count: maxStorable), match: String(repeating: "a", count: maxStorable))
+    firstMatchTest(maxMinTrips, input: String(repeating: "a", count: maxStorable - 1), match: nil)
+
+    let maxBothTrips = "a{\(maxStorable),\(maxStorable*2)}"
+    expectProgram(for: maxBothTrips, contains: [.quantify])
+    XCTAssertNil(try Regex(maxBothTrips).wholeMatch(in: String(repeating: "a", count: maxStorable*2 + 1)))
+    firstMatchTest(maxBothTrips, input: String(repeating: "a", count: maxStorable*2), match: String(repeating: "a", count: maxStorable*2))
+    firstMatchTest(maxBothTrips, input: String(repeating: "a", count: maxStorable), match: String(repeating: "a", count: maxStorable))
+    firstMatchTest(maxBothTrips, input: String(repeating: "a", count: maxStorable - 1), match: nil)
+    
+    expectProgram(for: "a{,\(maxStorable+1)}", doesNotContain: [.quantify])
+    expectProgram(for: "a{\(maxStorable+1),}", doesNotContain: [.quantify])
+    expectProgram(for: "a{\(maxStorable-1),\(maxStorable*2)}", doesNotContain: [.quantify])
+    expectProgram(for: "a{\(maxStorable),\(maxStorable*2+1)}", doesNotContain: [.quantify])
+  }
+  
+  func testFuzzerArtifacts() throws {
+    expectCompletion(regex: #"(b?)\1*"#, in: "a")
   }
 }

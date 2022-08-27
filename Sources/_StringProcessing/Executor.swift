@@ -15,8 +15,8 @@ struct Executor {
   // TODO: consider let, for now lets us toggle tracing
   var engine: Engine
 
-  init(program: MEProgram, enablesTracing: Bool = false) {
-    self.engine = Engine(program, enableTracing: enablesTracing)
+  init(program: MEProgram) {
+    self.engine = Engine(program)
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -30,7 +30,9 @@ struct Executor {
       input: input,
       subjectBounds: subjectBounds,
       searchBounds: searchBounds)
-
+#if PROCESSOR_MEASUREMENTS_ENABLED
+    defer { if cpu.shouldMeasureMetrics { cpu.printMetrics() } }
+#endif
     var low = searchBounds.lowerBound
     let high = searchBounds.upperBound
     while true {
@@ -57,6 +59,9 @@ struct Executor {
   ) throws -> Regex<Output>.Match? {
     var cpu = engine.makeProcessor(
       input: input, bounds: subjectBounds, matchMode: mode)
+#if PROCESSOR_MEASUREMENTS_ENABLED
+    defer { if cpu.shouldMeasureMetrics { cpu.printMetrics() } }
+#endif
     return try _match(input, from: subjectBounds.lowerBound, using: &cpu)
   }
 

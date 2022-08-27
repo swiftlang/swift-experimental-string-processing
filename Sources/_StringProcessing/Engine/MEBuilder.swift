@@ -14,13 +14,16 @@
 extension MEProgram {
   struct Builder {
     var instructions: [Instruction] = []
+    
+    // Tracing
+    var enableTracing = false
+    var enableMetrics = false
 
     var elements = TypedSetVector<Input.Element, _ElementRegister>()
     var sequences = TypedSetVector<[Input.Element], _SequenceRegister>()
 
     var asciiBitsets: [DSLTree.CustomCharacterClass.AsciiBitset] = []
     var consumeFunctions: [ConsumeFunction] = []
-    var assertionFunctions: [AssertionFunction] = []
     var transformFunctions: [TransformFunction] = []
     var matcherFunctions: [MatcherFunction] = []
 
@@ -143,6 +146,19 @@ extension MEProgram.Builder {
   mutating func buildAdvance(_ n: Distance) {
     instructions.append(.init(.advance, .init(distance: n)))
   }
+  
+  mutating func buildAdvanceUnicodeScalar(_ n: Distance) {
+    instructions.append(
+      .init(.advance, .init(distance: n, isScalarDistance: true)))
+  }
+  
+  mutating func buildConsumeNonNewline() {
+    instructions.append(.init(.matchAnyNonNewline, .init(isScalar: false)))
+  }
+                        
+  mutating func buildConsumeScalarNonNewline() {
+    instructions.append(.init(.matchAnyNonNewline, .init(isScalar: true)))
+  }
 
   mutating func buildMatch(_ e: Character, isCaseInsensitive: Bool) {
     instructions.append(.init(
@@ -171,6 +187,11 @@ extension MEProgram.Builder {
     instructions.append(.init(
       .matchBitset, .init(bitset: makeAsciiBitset(b), isScalar: true)))
   }
+  
+  mutating func buildMatchBuiltin(model: _CharacterClassModel) {
+    instructions.append(.init(
+      .matchBuiltin, .init(model)))
+  }
 
   mutating func buildConsume(
     by p: @escaping MEProgram.ConsumeFunction
@@ -180,10 +201,65 @@ extension MEProgram.Builder {
   }
 
   mutating func buildAssert(
-    by p: @escaping MEProgram.AssertionFunction
+    by kind: DSLTree.Atom.Assertion,
+    _ anchorsMatchNewlines: Bool,
+    _ usesSimpleUnicodeBoundaries: Bool,
+    _ usesASCIIWord: Bool,
+    _ semanticLevel: MatchingOptions.SemanticLevel
+  ) {
+    let payload = AssertionPayload.init(
+      kind,
+      anchorsMatchNewlines,
+      usesSimpleUnicodeBoundaries,
+      usesASCIIWord,
+      semanticLevel)
+    instructions.append(.init(
+      .assertBy,
+      .init(assertion: payload)))
+  }
+
+  mutating func buildQuantify(
+    bitset: DSLTree.CustomCharacterClass.AsciiBitset,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
   ) {
     instructions.append(.init(
-      .assertBy, .init(assertion: makeAssertionFunction(p))))
+      .quantify,
+      .init(quantify: .init(bitset: makeAsciiBitset(bitset), kind, minTrips, extraTrips))))
+  }
+
+  mutating func buildQuantify(
+    asciiChar: UInt8,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    instructions.append(.init(
+      .quantify,
+      .init(quantify: .init(asciiChar: asciiChar, kind, minTrips, extraTrips))))
+  }
+
+  mutating func buildQuantifyAny(
+    matchesNewlines: Bool,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    instructions.append(.init(
+      .quantify,
+      .init(quantify: .init(matchesNewlines: matchesNewlines, kind, minTrips, extraTrips))))
+  }
+
+  mutating func buildQuantify(
+    model: _CharacterClassModel,
+    _ kind: AST.Quantification.Kind,
+    _ minTrips: Int,
+    _ extraTrips: Int?
+  ) {
+    instructions.append(.init(
+      .quantify,
+      .init(quantify: .init(model: model,kind, minTrips, extraTrips))))
   }
 
   mutating func buildAccept() {
@@ -233,22 +309,23 @@ extension MEProgram.Builder {
   }
 
   mutating func buildBackreference(
-    _ cap: CaptureRegister
+    _ cap: CaptureRegister,
+    isScalarMode: Bool
   ) {
     instructions.append(
-      .init(.backreference, .init(capture: cap)))
+      .init(.backreference, .init(capture: cap, isScalarMode: isScalarMode)))
   }
 
-  mutating func buildUnresolvedReference(id: ReferenceID) {
-    buildBackreference(.init(0))
+  mutating func buildUnresolvedReference(id: ReferenceID, isScalarMode: Bool) {
+    buildBackreference(.init(0), isScalarMode: isScalarMode)
     unresolvedReferences[id, default: []].append(lastInstructionAddress)
   }
 
-  mutating func buildNamedReference(_ name: String) throws {
+  mutating func buildNamedReference(_ name: String, isScalarMode: Bool) throws {
     guard let index = captureList.indexOfCapture(named: name) else {
       throw RegexCompilationError.uncapturedReference
     }
-    buildBackreference(.init(index))
+    buildBackreference(.init(index), isScalarMode: isScalarMode)
   }
 
   // TODO: Mutating because of fail address fixup, drop when
@@ -306,7 +383,6 @@ extension MEProgram.Builder {
     regInfo.positions = nextPositionRegister.rawValue
     regInfo.bitsets = asciiBitsets.count
     regInfo.consumeFunctions = consumeFunctions.count
-    regInfo.assertionFunctions = assertionFunctions.count
     regInfo.transformFunctions = transformFunctions.count
     regInfo.matcherFunctions = matcherFunctions.count
     regInfo.captures = nextCaptureRegister.rawValue
@@ -317,10 +393,11 @@ extension MEProgram.Builder {
       staticSequences: sequences.stored,
       staticBitsets: asciiBitsets,
       staticConsumeFunctions: consumeFunctions,
-      staticAssertionFunctions: assertionFunctions,
       staticTransformFunctions: transformFunctions,
       staticMatcherFunctions: matcherFunctions,
       registerInfo: regInfo,
+      enableTracing: enableTracing,
+      enableMetrics: enableMetrics,
       captureList: captureList,
       referencedCaptureOffsets: referencedCaptureOffsets,
       initialOptions: initialOptions)
@@ -399,8 +476,10 @@ fileprivate extension MEProgram.Builder {
         throw RegexCompilationError.uncapturedReference
       }
       for use in uses {
+        let (isScalarMode, _) = instructions[use.rawValue].payload.captureAndMode
         instructions[use.rawValue] =
-          Instruction(.backreference, .init(capture: .init(offset)))
+          Instruction(.backreference,
+            .init(capture: .init(offset), isScalarMode: isScalarMode))
       }
     }
   }
@@ -465,12 +544,6 @@ extension MEProgram.Builder {
   ) -> ConsumeFunctionRegister {
     defer { consumeFunctions.append(f) }
     return ConsumeFunctionRegister(consumeFunctions.count)
-  }
-  mutating func makeAssertionFunction(
-    _ f: @escaping MEProgram.AssertionFunction
-  ) -> AssertionFunctionRegister {
-    defer { assertionFunctions.append(f) }
-    return AssertionFunctionRegister(assertionFunctions.count)
   }
   mutating func makeTransformFunction(
     _ f: @escaping MEProgram.TransformFunction
