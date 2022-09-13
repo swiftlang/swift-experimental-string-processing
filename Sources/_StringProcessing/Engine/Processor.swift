@@ -91,6 +91,8 @@ struct Processor {
   var isTracingEnabled: Bool
   let shouldMeasureMetrics: Bool
   var metrics: ProcessorMetrics = ProcessorMetrics()
+  // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
+  var debugInfoProviders: [InstructionAddress: DSLDebugInfoProvider]
 }
 
 extension Processor {
@@ -119,6 +121,7 @@ extension Processor {
     self.isTracingEnabled = isTracingEnabled
     self.shouldMeasureMetrics = shouldMeasureMetrics
     self.currentPosition = searchBounds.lowerBound
+    self.debugInfoProviders = program.debugInfoProviders
 
     // Initialize registers with end of search bounds
     self.registers = Registers(program, searchBounds.upperBound)
@@ -710,6 +713,23 @@ extension Processor {
       let sp = makeSavePoint(self.currentPC)
       storedCaptures[capNum].registerValue(
         value, overwriteInitial: sp)
+      controller.step()
+
+    case .provideDebugInfo:
+      let context = (
+        matchMode: matchMode,
+        input: String(input[searchBounds]),
+        substringToMatch: String(input[currentPosition...]),
+        backtrackingLocations: savePoints.compactMap {
+          $0.pos.map { String(input[$0...]) }
+        },
+        storedCaptures: storedCaptures.map {
+          // This is to reduce the amount of useless entries when expanded.
+          if let value = $0.value { return value }
+          else if let range = $0.range { return String(input[range]) }
+          else { return nil as String? as Any }
+        })
+      debugInfoProviders[currentPC]!(context: context)
       controller.step()
     }
   }

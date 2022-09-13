@@ -24,7 +24,39 @@ public enum RegexComponentBuilder {
     component.regex
   }
 
+  @available(*, unavailable)
   public static func buildExpression<R: RegexComponent>(_ regex: R) -> R {
     regex
+  }
+
+  @_alwaysEmitIntoClient
+  public static func buildExpression<R: RegexComponent>(
+    _ expression: R
+  ) -> Regex<R.RegexOutput> {
+    expression.regex
+  }
+
+  @_alwaysEmitIntoClient
+  public static func buildFinalResult<R: RegexComponent>(
+    _ component: R
+  ) -> R {
+    component
+  }
+
+  // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
+  public static func buildDebuggable<Output>(
+    component: Regex<Output>,
+    debugInfoProvider: DSLDebugInfoProvider
+  ) -> Regex<Output> {
+    makeFactory().debuggable(component.regex, debugInfoProvider)
+  }
+
+  // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
+  public static func buildDebuggable<Output>(
+    finalResult: Regex<Output>,
+    debugInfoProvider: DSLDebugInfoProvider
+  ) -> Regex<Output> {
+    makeFactory()
+      .debuggableFinalResult(finalResult.regex, debugInfoProvider)
   }
 }

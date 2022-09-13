@@ -208,4 +208,23 @@ public struct _RegexFactory {
       CaptureTransform(transform)
     ))
   }
+  
+  // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
+  public func debuggable<Output>(
+    _ component: some RegexComponent,
+    _ debugInfoProvider: DSLDebugInfoProvider
+  ) -> Regex<Output> {
+    .init(node: .debuggable(component.regex.root,
+                            debugInfoProvider: debugInfoProvider))
+  }
+  
+  // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
+  public func debuggableFinalResult<Output>(
+    _ component: some RegexComponent,
+    _ debugInfoProvider: DSLDebugInfoProvider
+  ) -> Regex<Output> {
+    .init(node: component.regex.root
+      .appending(.debuggable(.empty,
+                             debugInfoProvider: debugInfoProvider)))
+  }
 }

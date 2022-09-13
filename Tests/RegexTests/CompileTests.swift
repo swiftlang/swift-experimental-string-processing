@@ -49,6 +49,7 @@ enum DecodedInstr {
   case transformCapture
   case captureValue
   case quantify
+  case provideDebugInfo
 }
 
 extension DecodedInstr {
@@ -138,6 +139,8 @@ extension DecodedInstr {
       return .captureValue
     case .matchBuiltin:
       return .matchBuiltin
+    case .provideDebugInfo:
+      return .provideDebugInfo
     }
   }
 }

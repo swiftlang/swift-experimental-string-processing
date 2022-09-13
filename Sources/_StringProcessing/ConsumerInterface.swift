@@ -50,6 +50,10 @@ extension DSLTree.Node {
       fatalError("FIXME: Is this where we handle them?")
     case .characterPredicate:
       fatalError("FIXME: Is this where we handle them?")
+
+    case let .debuggable(n, debugInfoProvider: _):
+      // TODO: ApolloZhu Regex confirm okay to skip debugInfoProvider
+      return try n.generateConsumer(opts)
     }
   }
 }
