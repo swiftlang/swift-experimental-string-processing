@@ -34,8 +34,7 @@ struct MEProgram {
   var enableTracing: Bool
   var enableMetrics: Bool
 
-  // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
-  var debugInfoProviders: [InstructionAddress: DSLDebugInfoProvider]
+  var debugInfoProviders: [InstructionAddress: UnsafeRawPointer]
 
   let captureList: CaptureList
   let referencedCaptureOffsets: [ReferenceID: Int]

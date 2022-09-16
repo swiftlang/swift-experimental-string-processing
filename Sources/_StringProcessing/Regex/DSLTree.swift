@@ -92,8 +92,7 @@ extension DSLTree {
     // TODO: Would this just boil down to a consumer?
     case characterPredicate(_CharacterPredicateInterface)
 
-    // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
-    case debuggable(Node, debugInfoProvider: DSLDebugInfoProvider)
+    case debuggable(Node, debugInfoProvider: UnsafeRawPointer)
   }
 }
 

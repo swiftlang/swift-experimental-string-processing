@@ -47,8 +47,7 @@ extension MEProgram {
     var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
     var referencedCaptureOffsets: [ReferenceID: Int] = [:]
 
-    // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
-    var debugInfoProviders: [InstructionAddress: DSLDebugInfoProvider] = [:]
+    var debugInfoProviders: [InstructionAddress: UnsafeRawPointer] = [:]
 
     var captureCount: Int {
       // We currently deduce the capture count from the capture register number.
@@ -331,8 +330,7 @@ extension MEProgram.Builder {
     buildBackreference(.init(index), isScalarMode: isScalarMode)
   }
 
-  // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
-  mutating func buildDebuggable(_ debugInfoProvider: DSLDebugInfoProvider) {
+  mutating func buildDebuggable(_ debugInfoProvider: UnsafeRawPointer) {
     debugInfoProviders[InstructionAddress(rawValue: instructions.count)] = debugInfoProvider
     instructions.append(.init(.provideDebugInfo))
   }

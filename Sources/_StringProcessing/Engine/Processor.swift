@@ -91,8 +91,7 @@ struct Processor {
   var isTracingEnabled: Bool
   let shouldMeasureMetrics: Bool
   var metrics: ProcessorMetrics = ProcessorMetrics()
-  // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
-  var debugInfoProviders: [InstructionAddress: DSLDebugInfoProvider]
+  var debugInfoProviders: [InstructionAddress: UnsafeRawPointer]
 }
 
 extension Processor {
@@ -716,20 +715,25 @@ extension Processor {
       controller.step()
 
     case .provideDebugInfo:
-      let context = (
-        matchMode: matchMode,
-        input: String(input[searchBounds]),
-        substringToMatch: String(input[currentPosition...]),
-        backtrackingLocations: savePoints.compactMap {
-          $0.pos.map { String(input[$0...]) }
-        },
-        storedCaptures: storedCaptures.map {
-          // This is to reduce the amount of useless entries when expanded.
-          if let value = $0.value { return value }
-          else if let range = $0.range { return String(input[range]) }
-          else { return nil as String? as Any }
-        })
-      debugInfoProviders[currentPC]!(context: context)
+      // provideDebugInfo is introduced in 5.8 so this should always be true
+      if #available(SwiftStdlib 5.8, *) {
+        let context = (
+          matchMode: matchMode,
+          input: String(input[searchBounds]),
+          substringToMatch: String(input[currentPosition...]),
+          backtrackingLocations: savePoints.compactMap {
+            $0.pos.map { String(input[$0...]) }
+          },
+          storedCaptures: storedCaptures.map {
+            // This is to reduce the amount of useless entries when expanded.
+            if let value = $0.value { return value }
+            else if let range = $0.range { return String(input[range]) }
+            else { return nil as String? as Any }
+          })
+        let debugInfoProvider = unsafeBitCast(debugInfoProviders[currentPC]!,
+                                              to: DSLDebugInfoProvider.self)
+        debugInfoProvider(context: context)
+      }
       controller.step()
     }
   }

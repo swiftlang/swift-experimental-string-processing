@@ -191,7 +191,7 @@ public struct AlternationBuilder {
     component
   }
 
-  // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
+  @available(SwiftStdlib 5.8, *)
   public static func buildDebuggable<Output>(
     component: Regex<Output>,
     debugInfoProvider: DSLDebugInfoProvider
@@ -199,7 +199,7 @@ public struct AlternationBuilder {
     makeFactory().debuggable(component.regex, debugInfoProvider)
   }
 
-  // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
+  @available(SwiftStdlib 5.8, *)
   public static func buildDebuggable<Output>(
     finalResult: ChoiceOf<Output>,
     debugInfoProvider: DSLDebugInfoProvider

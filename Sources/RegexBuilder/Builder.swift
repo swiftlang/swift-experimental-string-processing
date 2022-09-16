@@ -43,7 +43,7 @@ public enum RegexComponentBuilder {
     component
   }
 
-  // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
+  @available(SwiftStdlib 5.8, *)
   public static func buildDebuggable<Output>(
     component: Regex<Output>,
     debugInfoProvider: DSLDebugInfoProvider
@@ -51,7 +51,7 @@ public enum RegexComponentBuilder {
     makeFactory().debuggable(component.regex, debugInfoProvider)
   }
 
-  // TODO: ApolloZhu @available(SwiftStdlib 5.8, *)
+  @available(SwiftStdlib 5.8, *)
   public static func buildDebuggable<Output>(
     finalResult: Regex<Output>,
     debugInfoProvider: DSLDebugInfoProvider
