@@ -161,8 +161,13 @@ extension Regex {
   }
 }
 
-@available(SwiftStdlib 5.7, *)
 /// A semantic level to use during regex matching.
+///
+/// The semantic level determines whether a regex matches with the same
+/// character-based semantics as string comparisons or by matching individual
+/// Unicode scalar values. See ``Regex/matchingSemantics(_:)`` for more about
+/// changing the semantic level for all or part of a regex.
+@available(SwiftStdlib 5.7, *)
 public struct RegexSemanticLevel: Hashable {
   internal enum Representation {
     case graphemeCluster
@@ -181,15 +186,18 @@ public struct RegexSemanticLevel: Hashable {
   
   /// Match at the Unicode scalar level.
   ///
-  /// At this semantic level, the string's `UnicodeScalarView` is used for matching,
-  /// and each matched element is a `UnicodeScalar` value.
+  /// At this semantic level, the string's `UnicodeScalarView` is used for
+  /// matching, and each matched element is a `UnicodeScalar` value.
   public static var unicodeScalar: RegexSemanticLevel {
     .init(base: .unicodeScalar)
   }
 }
 
-@available(SwiftStdlib 5.7, *)
 /// A word boundary algorithm to use during regex matching.
+///
+/// See ``Regex/wordBoundaryKind(_:)`` for information about specifying the
+/// word boundary kind for all or part of a regex.
+@available(SwiftStdlib 5.7, *)
 public struct RegexWordBoundaryKind: Hashable {
   internal enum Representation {
     case unicodeLevel1
@@ -221,6 +229,9 @@ public struct RegexWordBoundaryKind: Hashable {
 }
 
 /// Specifies how much to attempt to match when using a quantifier.
+///
+/// See ``Regex/repetitionBehavior(_:)`` for more about specifying the default
+/// matching behavior for all or part of a regex.
 @available(SwiftStdlib 5.7, *)
 public struct RegexRepetitionBehavior: Hashable {
   internal enum Kind {
