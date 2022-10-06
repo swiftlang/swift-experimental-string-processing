@@ -95,12 +95,29 @@ extension Regex {
     
     /// The program for execution with the matching engine.
     var loweredProgram: MEProgram {
-      if let loweredObject = _loweredProgramStorage as? ProgramBox {
-        return loweredObject.value
+      /// Atomically loads the compiled program if it has already been stored.
+      func loadProgram() -> MEProgram? {
+        guard let loweredObject = _stdlib_atomicLoadARCRef(object: &_loweredProgramStorage)
+          else { return nil }
+        return unsafeDowncast(loweredObject, to: ProgramBox.self).value
       }
-      let lowered = try! Compiler(tree: tree, compileOptions: compileOptions).emit()
-      _stdlib_atomicInitializeARCRef(object: &_loweredProgramStorage, desired: ProgramBox(lowered))
-      return lowered
+      
+      // Use the previously compiled program, if available.
+      if let program = loadProgram() {
+        return program
+      }
+      
+      // Compile the DSLTree into a lowered program and store it atomically.
+      let compiledProgram = try! Compiler(tree: tree, compileOptions: compileOptions).emit()
+      let storedNewProgram = _stdlib_atomicInitializeARCRef(
+        object: &_loweredProgramStorage,
+        desired: ProgramBox(compiledProgram))
+      
+      // Return the winner of the storage race. We're guaranteed at this point
+      // to have compiled program stored in `_loweredProgramStorage`.
+      return storedNewProgram
+        ? compiledProgram
+        : loadProgram()!
     }
 
     init(ast: AST) {
