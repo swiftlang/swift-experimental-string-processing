@@ -14,6 +14,7 @@
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
+  /// Creates a regular expression using a RegexBuilder closure.
   public init<Content: RegexComponent>(
     @RegexComponentBuilder _ content: () -> Content
   ) where Content.RegexOutput == Output {
@@ -89,6 +90,7 @@ extension UnicodeScalar: RegexComponent {
 public struct One<Output>: RegexComponent {
   public var regex: Regex<Output>
 
+  /// Creates a regex component that matches the given component exactly once.
   public init<Component: RegexComponent>(
     _ component: Component
   ) where Component.RegexOutput == Output {
@@ -96,6 +98,8 @@ public struct One<Output>: RegexComponent {
   }
 }
 
+/// A regex component that matches one or more occurrences of its underlying
+/// component.
 @available(SwiftStdlib 5.7, *)
 public struct OneOrMore<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
@@ -109,6 +113,8 @@ public struct OneOrMore<Output>: _BuiltinRegexComponent {
   // Variadics.swift.
 }
 
+/// A regex component that matches zero or more occurrences of its underlying
+/// component.
 @available(SwiftStdlib 5.7, *)
 public struct ZeroOrMore<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
@@ -122,6 +128,8 @@ public struct ZeroOrMore<Output>: _BuiltinRegexComponent {
   // Variadics.swift.
 }
 
+/// A regex component that matches zero or one occurrences of its underlying
+/// component.
 @available(SwiftStdlib 5.7, *)
 public struct Optionally<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
@@ -135,6 +143,8 @@ public struct Optionally<Output>: _BuiltinRegexComponent {
   // Variadics.swift.
 }
 
+/// A regex component that matches a selectable number of occurrences of its
+/// underlying component.
 @available(SwiftStdlib 5.7, *)
 public struct Repeat<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
@@ -162,6 +172,12 @@ public struct Repeat<Output>: _BuiltinRegexComponent {
 //   ) -> R where R.Match == (W, C...)
 // }
 
+/// A custom parameter attribute that constructs regular expression alternations
+/// from closures.
+///
+/// When you use a `ChoiceOf` initializer, the initializer's
+/// closure parameter has an `AlternationBuilder` attribute, allowing you
+/// to provide multiple regular expression statements as alternatives.
 @available(SwiftStdlib 5.7, *)
 @resultBuilder
 public struct AlternationBuilder {
@@ -177,6 +193,22 @@ public struct AlternationBuilder {
   }
 }
 
+/// A regex component that chooses exactly one of its constituent regex
+/// components when matching.
+///
+/// You can use `ChoiceOf` to provide a group of regex components, each of
+/// which can be exclusively matched. In this example, `regex` successfully
+/// matches either a `"CREDIT"` or `"DEBIT"` substring:
+///
+///     let regex = Regex {
+///         ChoiceOf {
+///             "CREDIT"
+///             "DEBIT"
+///         }
+///     }
+///     let match = try regex.prefixMatch(in: "DEBIT    04032020    Payroll $69.73")
+///     print(match?.0 as Any)
+///     // Prints "DEBIT"
 @available(SwiftStdlib 5.7, *)
 public struct ChoiceOf<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
@@ -186,6 +218,24 @@ public struct ChoiceOf<Output>: _BuiltinRegexComponent {
     self.regex = regex
   }
 
+  /// Creates a regex component that chooses exactly one of the regex components
+  /// provided by the builder closure.
+  ///
+  /// In this example, `regex` successfully matches either a `"CREDIT"` or
+  /// `"DEBIT"` substring:
+  ///
+  ///     let regex = Regex {
+  ///         ChoiceOf {
+  ///             "CREDIT"
+  ///             "DEBIT"
+  ///         }
+  ///     }
+  ///     let match = try regex.prefixMatch(in: "DEBIT    04032020    Payroll $69.73")
+  ///     print(match?.0 as Any)
+  ///     // Prints "DEBIT"
+  ///
+  /// - Parameter builder: A builder closure that declares a list of regex
+  ///   components, each of which can be exclusively matched.
   public init(@AlternationBuilder _ builder: () -> Self) {
     self = builder()
   }
@@ -193,6 +243,8 @@ public struct ChoiceOf<Output>: _BuiltinRegexComponent {
 
 // MARK: - Capture
 
+/// A regex component that saves the matched substring, or a transformed result,
+/// for access in a regular expression match.
 @available(SwiftStdlib 5.7, *)
 public struct Capture<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
@@ -205,6 +257,8 @@ public struct Capture<Output>: _BuiltinRegexComponent {
   // Note: Public initializers are currently gyb'd. See Variadics.swift.
 }
 
+/// A regex component that attempts to transform a matched substring, saving
+/// the result if successful and backtracking if the transformation fails.
 @available(SwiftStdlib 5.7, *)
 public struct TryCapture<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
@@ -219,10 +273,10 @@ public struct TryCapture<Output>: _BuiltinRegexComponent {
 
 // MARK: - Groups
 
-/// An atomic group.
+/// A regex component that represents an atomic group.
 ///
-/// This group opens a local backtracking scope which, upon successful exit,
-/// discards any remaining backtracking points from within the scope.
+/// An atomic group opens a local backtracking scope which, upon successful
+/// exit, discards any remaining backtracking points from within the scope.
 @available(SwiftStdlib 5.7, *)
 public struct Local<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
@@ -235,11 +289,81 @@ public struct Local<Output>: _BuiltinRegexComponent {
 
 // MARK: - Backreference
 
+/// A reference to a captured portion of a regular expresion.
+///
+/// You can use a `Reference` to access a regular expression, both during
+/// the matching process and after a capture has been successful.
+///
+/// In this example, the `kind` reference captures either `"CREDIT"` or
+/// `"DEBIT"` at the beginning of a line. Later in the regular expression, the
+/// presence of `kind` matches the same substring that was captured previously
+/// at the end of the line.
+///
+///     let kindRef = Reference(Substring.self)
+///     let kindRegex = ChoiceOf {
+///         "CREDIT"
+///         "DEBIT"
+///     }
+///
+///     let transactionRegex = Regex {
+///         Anchor.startOfLine
+///         Capture(kindRegex, as: kindRef)
+///         OneOrMore(.anyNonNewline)
+///         kindRef
+///         Anchor.endOfLine
+///     }
+///
+///     let validTransaction = "CREDIT     109912311421    Payroll   $69.73  CREDIT"
+///     let invalidTransaction = "DEBIT     00522142123    Expense   $5.17  CREDIT"
+///
+///     print(validTransaction.contains(transactionRegex))
+///     // Prints "true"
+///     print(invalidTransaction.contains(transactionRegex))
+///     // Prints "false"
+///
+/// Any reference that is used for matching must be captured elsewhere in the
+/// `Regex` block. You can use a reference for matching before it is captured;
+/// in that case, the reference will not match until it has previously been
+/// captured.
+///
+/// To access the captured "transaction kind", you can use the `kind` reference
+/// to subscript a `Regex.Match` instance:
+///
+///     if let match = validTransaction.firstMatch(of: transactionRegex) {
+///         print(match[kindRef])
+///     }
+///     // Prints "CREDIT"
+///
+/// To use a `Reference` to capture a transformed value, include a `transform`
+/// closure when capturing.
+///
+///     struct Transaction {
+///         var id: UInt64
+///     }
+///     let transactionRef = Reference(Transaction.self)
+///
+///     let transactionIDRegex = Regex {
+///         Capture(kindRegex, as: kindRef)
+///         OneOrMore(.whitespace)
+///         TryCapture(as: transactionRef) {
+///             OneOrMore(.digit)
+///         } transform: { str in
+///             UInt64(str).map(Transaction.init(id:))
+///         }
+///         OneOrMore(.anyNonNewline)
+///         kindRef
+///         Anchor.endOfLine
+///     }
+///
+///     if let match = validTransaction.firstMatch(of: transactionIDRegex) {
+///         print(match[transactionRef])
+///     }
+///     // Prints "Transaction(id: 109912311421)"
 @available(SwiftStdlib 5.7, *)
-/// A backreference.
 public struct Reference<Capture>: RegexComponent {
   let id = ReferenceID()
 
+  /// Creates a reference with the specified capture type.
   public init(_ captureType: Capture.Type = Capture.self) {}
 
   @usableFromInline

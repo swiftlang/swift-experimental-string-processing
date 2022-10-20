@@ -147,7 +147,7 @@ extension Anchor {
   ///
   /// Word boundaries are identified using the Unicode default word boundary
   /// algorithm by default. To specify a different word boundary algorithm,
-  /// see the `RegexComponent.wordBoundaryKind(_:)` method.
+  /// see the `RegexComponent/wordBoundaryKind(_:)` method.
   ///
   /// This anchor is equivalent to `\b` in regex syntax.
   public static var wordBoundary: Anchor {
@@ -157,7 +157,7 @@ extension Anchor {
   /// The inverse of this anchor, which matches at every position that this
   /// anchor does not.
   ///
-  /// For the `wordBoundary` and `textSegmentBoundary` anchors, the inverted
+  /// For the ``wordBoundary`` and ``textSegmentBoundary`` anchors, the inverted
   /// version corresponds to `\B` and `\Y`, respectively.
   public var inverted: Anchor {
     var result = self
