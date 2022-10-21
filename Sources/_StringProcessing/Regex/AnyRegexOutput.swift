@@ -263,7 +263,7 @@ extension Regex {
   ///     regex.contains(captureNamed: "1")         // false
   ///
   /// - Parameter name: The name to look for among the regular expression's
-  ///   capture groups. Capture groups names are case sensitive.
+  ///   capture groups. Capture group names are case sensitive.
   public func contains(captureNamed name: String) -> Bool {
     program.tree.captureList.captures.contains(where: {
       $0.name == name

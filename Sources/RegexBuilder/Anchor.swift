@@ -147,7 +147,7 @@ extension Anchor {
   ///
   /// Word boundaries are identified using the Unicode default word boundary
   /// algorithm by default. To specify a different word boundary algorithm,
-  /// see the `RegexComponent/wordBoundaryKind(_:)` method.
+  /// use the `wordBoundaryKind(_:)` method.
   ///
   /// This anchor is equivalent to `\b` in regex syntax.
   public static var wordBoundary: Anchor {
