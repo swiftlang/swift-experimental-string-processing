@@ -238,11 +238,11 @@ extension Regex {
   /// expression metacharacters, they do not need escaping in the string passed
   /// as `verbatimString`.
   ///
-  ///     let adjectiveDesignator = try Regex(verbatim: "(adj.)")
+  ///     let adjectiveDesignator = Regex<Substring>(verbatim: "(adj.)")
   ///
   ///     print("awesome (adj.)".contains(adjectiveDesignator))
   ///     // Prints "true"
-  ///     print("adjective (n.)".contains(adjectiveDesignator))
+  ///     print("apple (n.)".contains(adjectiveDesignator))
   ///     // Prints "false"
   ///
   /// - Parameter verbatimString: A string to convert into a regular expression

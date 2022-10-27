@@ -83,8 +83,8 @@ extension Regex {
   ///
   /// This method corresponds to applying the `m` option in regex syntax. For
   /// this behavior in the `RegexBuilder` syntax, see
-  /// ``Anchor.startOfLine``, ``Anchor.endOfLine``, ``Anchor.startOfSubject``,
-  /// and ``Anchor.endOfSubject``.
+  /// `Anchor.startOfLine`, `Anchor.endOfLine`, `Anchor.startOfSubject`,
+  /// and `Anchor.endOfSubject`.
   ///
   /// - Parameter matchLineEndings: A Boolean value indicating whether `^` and
   ///   `$` should match the start and end of lines, respectively.

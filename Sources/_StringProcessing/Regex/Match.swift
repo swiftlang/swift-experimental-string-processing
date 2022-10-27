@@ -126,7 +126,7 @@ extension Regex {
   ///     }
   ///     // Prints "Searching"
   ///
-  ///     if let wordMatch = try titleCaseWord.wholeMatch(in: "title case word at the End") {
+  ///     if let wordMatch = try titleCaseWord.prefixMatch(in: "title case word at the End") {
   ///         print(wordMatch.0)
   ///     } else {
   ///         print("No match.")
@@ -217,7 +217,7 @@ extension Regex {
   ///     }
   ///     // Prints "Searching"
   ///
-  ///     if let wordMatch = try titleCaseWord.wholeMatch(in: "title case word at the End") {
+  ///     if let wordMatch = try titleCaseWord.prefixMatch(in: "title case word at the End") {
   ///         print(wordMatch.0)
   ///     } else {
   ///         print("No match.")

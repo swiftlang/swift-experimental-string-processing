@@ -55,6 +55,7 @@ public protocol RegexComponent<RegexOutput> {
 /// Call `contains(_:)` to check for the presence of a pattern, or
 /// `firstMatch(of:)` or `matches(of:)` to find matches.
 ///
+///     let setting = "color: 161 103 230"
 ///     if setting.contains(simpleDigits) {
 ///         print("'\(setting)' contains some digits.")
 ///     }
