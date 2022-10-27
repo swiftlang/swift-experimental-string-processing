@@ -244,7 +244,70 @@ public struct ChoiceOf<Output>: _BuiltinRegexComponent {
 // MARK: - Capture
 
 /// A regex component that saves the matched substring, or a transformed result,
-/// for access in a regular expression match.
+/// for access in a regex match.
+///
+/// Use a `Capture` component to capture one part of a regex to access
+/// separately after matching. In the example below, `regex` matches a dollar
+/// sign (`"$"`) followed by one or more digits, a period (`"."`), and then two
+/// additional digits, as long as that pattern appears at the end of the line.
+/// Because the `Capture` block wraps the digits and period, that part of the
+/// match is captured separately.
+///
+///     let transactions = """
+///         CREDIT     109912311421    Payroll   $69.73
+///         CREDIT     105912031123    Travel   $121.54
+///         DEBIT      107733291022    Refund    $8.42
+///         """
+///
+///     let regex = Regex {
+///         "$"
+///         Capture {
+///           OneOrMore(.digit)
+///           "."
+///           Repeat(.digit, count: 2)
+///         }
+///         Anchor.endOfLine
+///     }
+///
+///     // The type of each match's output is `(Substring, Substring)`.
+///     for match in transactions.matches(of: regex) {
+///         print("Transaction amount: \(match.1)")
+///     }
+///     // Prints "Transaction amount: 69.73"
+///     // Prints "Transaction amount: 121.54"
+///     // Prints "Transaction amount: 8.42"
+///
+/// Each `Capture` block increases the number of components in the regex's
+/// output type. In the example above, the capture type of each match is
+/// `(Substring, Substring)`.
+///
+/// By providing a transform function to the `Capture` block, you can change the
+/// type of the captured value from `Substring` to the result of the transform.
+/// This example declares `doubleValueRegex`, which converts the captured amount
+/// to a `Double`:
+///
+///     let doubleValueRegex = Regex {
+///         "$"
+///         Capture {
+///             OneOrMore(.digit)
+///             "."
+///             Repeat(.digit, count: 2)
+///         } transform: { Double($0)! }
+///         Anchor.endOfLine
+///     }
+///
+///     // The type of each match's output is `(Substring, Double)`.
+///     for match in transactions.matches(of: doubleValueRegex) {
+///         if match.1 >= 100.0 {
+///             print("Large amount: \(match.1)")
+///         }
+///     }
+///     // Prints "Large amount: 121.54"
+///
+/// Throwing an error from a `transform` closure aborts matching and propagates
+/// the error out to the caller. If you instead want to use a failable
+/// transformation, where a `nil` result participates in matching, use
+/// ``TryCapture`` instead of `Capture`.
 @available(SwiftStdlib 5.7, *)
 public struct Capture<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
@@ -259,6 +322,59 @@ public struct Capture<Output>: _BuiltinRegexComponent {
 
 /// A regex component that attempts to transform a matched substring, saving
 /// the result if successful and backtracking if the transformation fails.
+///
+/// You use a `TryCapture` component to capture part of a match as a
+/// transformed value, when a failure to transform should mean the regex
+/// continues matching, backtracking from that point if necessary.
+///
+/// The code below demonstrates using `TryCapture` to include a test that the
+/// `Double` value of a capture is over a limit. In the example, `regex`
+/// matches a dollar sign (`"$"`) followed by one or more digits, a period
+/// (`"."`), and then two additional digits, as long as that pattern appears at
+/// the end of the line. The `TryCapture` block wraps the digits and period,
+/// capturing that part of the match separately and passing it to its
+/// `transform` closure. That closure converts the captured portion of the
+/// match, converts it to a `Double`, and only returns a non-`nil` value if it
+/// is over the transaction limit.
+///
+///     let transactions = """
+///         CREDIT     109912311421    Payroll   $69.73
+///         CREDIT     105912031123    Travel   $121.54
+///         DEBIT      107733291022    Refund    $8.42
+///         """
+///     let transactionLimit = 100.0
+///
+///     let regex = Regex {
+///         "$"
+///         TryCapture {
+///             OneOrMore(.digit)
+///             "."
+///             Repeat(.digit, count: 2)
+///         } transform: { str -> Double? in
+///             let value = Double(str)!
+///             if value > transactionLimit {
+///                 return value
+///             }
+///             return nil
+///         }
+///         Anchor.endOfLine
+///     }
+///
+/// When the `TryCapture` block's `transform` closure processes the three
+/// different amounts in the list of transactions, it only returns a non-`nil`
+/// value for the $121.54 transaction. Even though the capture returns an
+/// optional `Double` value, the captured value is non-optional.
+///
+///     // The type of each match's output is `(Substring, Double)`.
+///     for match in transactions.matches(of: regex) {
+///         print("Transaction amount: \(match.1)")
+///     }
+///     // Prints "Transaction amount: 121.54"
+///
+/// Throwing an error from a `transform` closure aborts matching and propagates
+/// the error out to the caller. If you want to capture the `nil` results of a
+/// failable transformation, instead of continuing a search, use ``Capture``
+/// instead of `TryCapture`.
 @available(SwiftStdlib 5.7, *)
 public struct TryCapture<Output>: _BuiltinRegexComponent {
   public var regex: Regex<Output>
@@ -378,6 +494,7 @@ public struct Reference<Capture>: RegexComponent {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex.Match {
+  /// Accesses this match's capture by the given reference.
   public subscript<Capture>(_ reference: Reference<Capture>) -> Capture {
     self[reference.id]
   }
