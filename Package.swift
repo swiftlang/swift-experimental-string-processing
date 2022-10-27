@@ -89,6 +89,14 @@ let package = Package(
             swiftSettings: [
                 .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
             ]),
+        .testTarget(
+            name: "DocumentationTests",
+            dependencies: ["_StringProcessing", "RegexBuilder"],
+            swiftSettings: [
+                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
+                .unsafeFlags(["-enable-bare-slash-regex"]),
+            ]),
+        
         // FIXME: Disabled due to rdar://94763190.
         // .testTarget(
         //     name: "Prototypes",
