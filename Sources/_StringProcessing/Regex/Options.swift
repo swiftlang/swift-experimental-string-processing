@@ -68,8 +68,8 @@ extension Regex {
     wrapInOption(.unicodeWordBoundaries, addingIf: wordBoundaryKind == .default)
   }
   
-  /// Returns a regular expression where the start and end of input
-  /// anchors (`^` and `$`) also match against the start and end of a line.
+  /// Returns a regular expression where the "any" metacharacter (`.`)
+  /// also matches against the start and end of a line.
   ///
   /// - Parameter dotMatchesNewlines: A Boolean value indicating whether `.`
   ///   should match a newline character.
