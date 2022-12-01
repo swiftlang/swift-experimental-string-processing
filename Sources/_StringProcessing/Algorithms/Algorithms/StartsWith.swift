@@ -56,10 +56,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Returns: `true` if the initial elements of the sequence matches the
   ///   beginning of `regex`; otherwise, `false`.
   public func starts(with regex: some RegexComponent) -> Bool {
-    _starts(with: RegexConsumer(regex))
-  }
-  
-  func _ends<R: RegexComponent>(with regex: R) -> Bool {
-    _ends(with: RegexConsumer(regex))
+    let s = self[...]
+    return (try? regex.regex.prefixMatch(in: s)) != nil
   }
 }

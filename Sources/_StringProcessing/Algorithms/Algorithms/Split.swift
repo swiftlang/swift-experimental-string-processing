@@ -399,21 +399,6 @@ extension StringProtocol where SubSequence == Substring {
 
 @available(SwiftStdlib 5.7, *)
 extension BidirectionalCollection where SubSequence == Substring {
-  @_disfavoredOverload
-  func split<R: RegexComponent>(
-    by separator: R,
-    maxSplits: Int,
-    omittingEmptySubsequences: Bool
-  ) -> SplitCollection<RegexConsumer<R, Self>> {
-    split(by: RegexConsumer(separator), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
-  }
-  
-  func splitFromBack<R: RegexComponent>(
-    by separator: R
-  ) -> ReversedSplitCollection<RegexConsumer<R, Self>> {
-    splitFromBack(by: RegexConsumer(separator))
-  }
-
   // TODO: Is this @_disfavoredOverload necessary?
   // It prevents split(separator: String) from choosing this overload instead
   // of the collection-based version when String has RegexComponent conformance
@@ -431,9 +416,34 @@ extension BidirectionalCollection where SubSequence == Substring {
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [SubSequence] {
-    Array(split(
-      by: RegexConsumer(separator),
-      maxSplits: maxSplits,
-      omittingEmptySubsequences: omittingEmptySubsequences))
+    var result: [SubSequence] = []
+    var subSequenceStart = startIndex
+    
+    func appendSubsequence(end: Index) -> Bool {
+      if subSequenceStart == end && omittingEmptySubsequences {
+        return false
+      }
+      result.append(self[subSequenceStart..<end])
+      return true
+    }
+    
+    guard maxSplits > 0 && !isEmpty else {
+      _ = appendSubsequence(end: endIndex)
+      return result
+    }
+
+    for match in _matches(of: separator) {
+      defer { subSequenceStart = match.range.upperBound }
+      let didAppend = appendSubsequence(end: match.range.lowerBound)
+      if didAppend && result.count == maxSplits {
+        break
+      }
+    }
+    
+    if subSequenceStart != endIndex || !omittingEmptySubsequences {
+      result.append(self[subSequenceStart..<endIndex])
+    }
+    
+    return result
   }
 }

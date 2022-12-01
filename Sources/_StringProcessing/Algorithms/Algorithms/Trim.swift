@@ -292,17 +292,11 @@ extension BidirectionalCollection where SubSequence == Substring {
   @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func trimmingPrefix(_ regex: some RegexComponent) -> SubSequence {
-    _trimmingPrefix(RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  func _trimmingSuffix<R: RegexComponent>(_ regex: R) -> SubSequence {
-    _trimmingSuffix(RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  func _trimming<R: RegexComponent>(_ regex: R) -> SubSequence {
-    _trimming(RegexConsumer(regex))
+    let s = self[...]
+    guard let prefix = try? regex.regex.prefixMatch(in: s) else {
+      return s
+    }
+    return s[prefix.range.upperBound...]
   }
 }
 
@@ -314,37 +308,11 @@ extension RangeReplaceableCollection
   @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix(_ regex: some RegexComponent) {
-    _trimPrefix(RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  mutating func _trimSuffix<R: RegexComponent>(_ regex: R) {
-    _trimSuffix(RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  mutating func _trim<R: RegexComponent>(_ regex: R) {
-    let consumer = RegexConsumer<R, Self>(regex)
-    _trimPrefix(consumer)
-    _trimSuffix(consumer)
+    let s = self[...]
+    guard let prefix = try? regex.regex.prefixMatch(in: s) else {
+      return
+    }
+    self.removeSubrange(prefix.range)
   }
 }
 
-extension Substring {
-  @available(SwiftStdlib 5.7, *)
-  mutating func _trimPrefix<R: RegexComponent>(_ regex: R) {
-    _trimPrefix(RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  mutating func _trimSuffix<R: RegexComponent>(_ regex: R) {
-    _trimSuffix(RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  mutating func _trim<R: RegexComponent>(_ regex: R) {
-    let consumer = RegexConsumer<R, Self>(regex)
-    _trimPrefix(consumer)
-    _trimSuffix(consumer)
-  }
-}

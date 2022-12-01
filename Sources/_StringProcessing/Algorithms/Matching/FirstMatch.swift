@@ -38,21 +38,6 @@ extension BidirectionalCollection {
 // MARK: Regex algorithms
 
 extension BidirectionalCollection where SubSequence == Substring {
-  @available(SwiftStdlib 5.7, *)
-  @_disfavoredOverload
-  func firstMatch<R: RegexComponent>(
-    of regex: R
-  ) -> _MatchResult<RegexConsumer<R, Self>>? {
-    _firstMatch(of: RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  func lastMatch<R: RegexComponent>(
-    of regex: R
-  ) -> _BackwardMatchResult<RegexConsumer<R, Self>>? {
-    lastMatch(of: RegexConsumer(regex))
-  }
-
   /// Returns the first match of the specified regex within the collection.
   /// - Parameter regex: The regex to search for.
   /// - Returns: The first match of `regex` in the collection, or `nil` if

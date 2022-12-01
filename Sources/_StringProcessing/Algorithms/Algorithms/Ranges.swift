@@ -299,13 +299,6 @@ extension Collection where SubSequence == Substring {
 }
 
 extension BidirectionalCollection where SubSequence == Substring {
-  @available(SwiftStdlib 5.7, *)
-  func _rangesFromBack<R: RegexComponent>(
-    of regex: R
-  ) -> ReversedRangesCollection<RegexConsumer<R, Self>> {
-    _rangesFromBack(of: RegexConsumer(regex))
-  }
-
   // FIXME: Return `some Collection<Range<Index>>` for SE-0346
   /// Finds and returns the ranges of the all occurrences of a given sequence
   /// within the collection.

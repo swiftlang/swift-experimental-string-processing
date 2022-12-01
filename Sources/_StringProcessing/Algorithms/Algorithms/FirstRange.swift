@@ -78,11 +78,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   @_disfavoredOverload
   @available(SwiftStdlib 5.7, *)
   public func firstRange(of regex: some RegexComponent) -> Range<Index>? {
-    _firstRange(of: RegexConsumer(regex))
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  func _lastRange<R: RegexComponent>(of regex: R) -> Range<Index>? {
-    _lastRange(of: RegexConsumer(regex))
+    let s = self[...]
+    return try? regex.regex.firstMatch(in: s)?.range
   }
 }
