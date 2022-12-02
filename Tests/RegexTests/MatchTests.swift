@@ -1517,6 +1517,19 @@ extension RegexTests {
       (" 123", "23"),
       ("123 456", "23"))
 
+    let defaultBoundaryRegex = try Regex(#"\b.{3}X.{3}\b"#)
+    // Default word boundaries match at the start/end of a string/line.
+    XCTAssertNotNil(try defaultBoundaryRegex.firstMatch(in: "---X---"))
+    XCTAssertNotNil(try defaultBoundaryRegex.firstMatch(in: "abc\n---X---\ndef"))
+    
+    let simpleBoundaryRegex = defaultBoundaryRegex.wordBoundaryKind(.simple)
+    // Simple word boundaries match only when the adjacent position matches \w.
+    XCTAssertNil(try simpleBoundaryRegex.firstMatch(in: "---X---"))
+    XCTAssertNil(try simpleBoundaryRegex.firstMatch(in: "abc\n---X---\ndef"))
+    
+    XCTAssertNotNil(try simpleBoundaryRegex.firstMatch(in: "x--X--x"))
+    XCTAssertNotNil(try simpleBoundaryRegex.firstMatch(in: "abc\nx--X--x\ndef"))
+    
     // \G and \K
     let regex = try Regex(#"\Gab"#, as: Substring.self)
     XCTAssertEqual("abab".matches(of: regex).map(\.output), ["ab", "ab"])
