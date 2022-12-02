@@ -20,15 +20,6 @@ extension Collection {
   }
 }
 
-extension BidirectionalCollection {
-  func _lastRange<S: BackwardCollectionSearcher>(
-    of searcher: S
-  ) -> Range<Index>? where S.BackwardSearched == Self {
-    var state = searcher.backwardState(for: self, in: startIndex..<endIndex)
-    return searcher.searchBack(self, &state)
-  }
-}
-
 // MARK: Fixed pattern algorithms
 
 extension Collection where Element: Equatable {

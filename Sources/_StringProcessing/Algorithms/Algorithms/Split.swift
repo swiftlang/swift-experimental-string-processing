@@ -106,121 +106,6 @@ extension SplitCollection: Sequence {
   }
 }
 
-//extension SplitCollection: Collection {
-//  public struct Index {
-//    var start: Base.Index
-//    var base: RangesCollection<Searcher>.Index
-//    var isEndIndex: Bool
-//  }
-//
-//  public var startIndex: Index {
-//    let base = ranges.startIndex
-//    return Index(start: ranges.base.startIndex, base: base, isEndIndex: false)
-//  }
-//
-//  public var endIndex: Index {
-//    Index(start: ranges.base.endIndex, base: ranges.endIndex, isEndIndex: true)
-//  }
-//
-//  public func formIndex(after index: inout Index) {
-//    guard !index.isEndIndex else { fatalError("Cannot advance past endIndex") }
-//
-//    if let range = index.base.range {
-//      let newStart = range.upperBound
-//      ranges.formIndex(after: &index.base)
-//      index.start = newStart
-//    } else {
-//      index.isEndIndex = true
-//    }
-//  }
-//
-//  public func index(after index: Index) -> Index {
-//    var index = index
-//    formIndex(after: &index)
-//    return index
-//  }
-//
-//  public subscript(index: Index) -> Base.SubSequence {
-//    guard !index.isEndIndex else {
-//      fatalError("Cannot subscript using endIndex")
-//    }
-//    let end = index.base.range?.lowerBound ?? ranges.base.endIndex
-//    return ranges.base[index.start..<end]
-//  }
-//}
-//
-//extension SplitCollection.Index: Comparable {
-//   static func == (lhs: Self, rhs: Self) -> Bool {
-//    switch (lhs.isEndIndex, rhs.isEndIndex) {
-//    case (false, false):
-//      return lhs.start == rhs.start
-//    case (let lhs, let rhs):
-//      return lhs == rhs
-//    }
-//  }
-//
-//  static func < (lhs: Self, rhs: Self) -> Bool {
-//    switch (lhs.isEndIndex, rhs.isEndIndex) {
-//    case (true, _):
-//      return false
-//    case (_, true):
-//      return true
-//    case (false, false):
-//      return lhs.start < rhs.start
-//    }
-//  }
-//}
-
-// MARK: `ReversedSplitCollection`
-
-struct ReversedSplitCollection<Searcher: BackwardCollectionSearcher> {
-  public typealias Base = Searcher.BackwardSearched
-  
-  let ranges: ReversedRangesCollection<Searcher>
-  
-  init(ranges: ReversedRangesCollection<Searcher>) {
-    self.ranges = ranges
-  }
-
-  init(base: Base, searcher: Searcher) {
-    self.ranges = base._rangesFromBack(of: searcher)
-  }
-}
-
-extension ReversedSplitCollection: Sequence {
-  public struct Iterator: IteratorProtocol {
-    let base: Base
-    var index: Base.Index
-    var ranges: ReversedRangesCollection<Searcher>.Iterator
-    var isDone: Bool
-    
-    init(ranges: ReversedRangesCollection<Searcher>) {
-      self.base = ranges.base
-      self.index = base.endIndex
-      self.ranges = ranges.makeIterator()
-      self.isDone = false
-    }
-    
-    public mutating func next() -> Base.SubSequence? {
-      guard !isDone else { return nil }
-      
-      guard let range = ranges.next() else {
-        isDone = true
-        return base[..<index]
-      }
-      
-      defer { index = range.lowerBound }
-      return base[range.upperBound..<index]
-    }
-  }
-  
-  public func makeIterator() -> Iterator {
-    Iterator(ranges: ranges)
-  }
-}
-
-// TODO: `Collection` conformance
-
 // MARK: `CollectionSearcher` algorithms
 
 extension Collection {
@@ -237,16 +122,6 @@ extension Collection {
   }
 }
 
-extension BidirectionalCollection {
-  func splitFromBack<Searcher: BackwardCollectionSearcher>(
-    by separator: Searcher
-  ) -> ReversedSplitCollection<Searcher>
-    where Searcher.BackwardSearched == Self
-  {
-    ReversedSplitCollection(base: self, searcher: separator)
-  }
-}
-
 // MARK: Predicate algorithms
 
 extension Collection {
@@ -260,14 +135,6 @@ extension Collection {
   }
 }
 
-extension BidirectionalCollection where Element: Equatable {
-  func splitFromBack(
-    whereSeparator predicate: @escaping (Element) -> Bool
-  ) -> ReversedSplitCollection<PredicateConsumer<Self>> {
-    splitFromBack(by: PredicateConsumer(predicate: predicate))
-  }
-}
-
 // MARK: Single element algorithms
 
 extension Collection where Element: Equatable {
@@ -277,14 +144,6 @@ extension Collection where Element: Equatable {
     omittingEmptySubsequences: Bool
   ) -> SplitCollection<PredicateConsumer<Self>> {
     split(whereSeparator: { $0 == separator }, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
-  }
-}
-
-extension BidirectionalCollection where Element: Equatable {
-  func splitFromBack(
-    by separator: Element
-  ) -> ReversedSplitCollection<PredicateConsumer<Self>> {
-    splitFromBack(whereSeparator: { $0 == separator })
   }
 }
 

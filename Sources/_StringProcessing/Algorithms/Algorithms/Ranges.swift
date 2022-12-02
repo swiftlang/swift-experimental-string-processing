@@ -115,43 +115,6 @@ extension RangesCollection.Index: Comparable {
   }
 }
 
-// MARK: `ReversedRangesCollection`
-
-struct ReversedRangesCollection<Searcher: BackwardCollectionSearcher> {
-  typealias Base = Searcher.BackwardSearched
-  
-  let base: Base
-  let searcher: Searcher
-  
-  init(base: Base, searcher: Searcher) {
-    self.base = base
-    self.searcher = searcher
-  }
-}
-
-extension ReversedRangesCollection: Sequence {
-  public struct Iterator: IteratorProtocol {
-    let base: Base
-    let searcher: Searcher
-    var state: Searcher.BackwardState
-    
-    init(base: Base, searcher: Searcher) {
-      self.base = base
-      self.searcher = searcher
-      self.state = searcher.backwardState(
-        for: base, in: base.startIndex..<base.endIndex)
-    }
-    
-    public mutating func next() -> Range<Base.Index>? {
-      searcher.searchBack(base, &state)
-    }
-  }
-  
-  public func makeIterator() -> Iterator {
-    Iterator(base: base, searcher: searcher)
-  }
-}
-
 // TODO: `Collection` conformance
 
 // MARK: `CollectionSearcher` algorithms
@@ -161,14 +124,6 @@ extension Collection {
     of searcher: S
   ) -> RangesCollection<S> where S.Searched == Self {
     RangesCollection(base: self, searcher: searcher)
-  }
-}
-
-extension BidirectionalCollection {
-  func _rangesFromBack<S: BackwardCollectionSearcher>(
-    of searcher: S
-  ) -> ReversedRangesCollection<S> where S.BackwardSearched == Self {
-    ReversedRangesCollection(base: self, searcher: searcher)
   }
 }
 
@@ -193,37 +148,6 @@ extension Collection where Element: Equatable {
   ) -> [Range<Index>] where C.Element == Element {
     Array(_ranges(of: other))
   }
-}
-
-extension BidirectionalCollection where Element: Equatable {
-  // FIXME
-//  public func rangesFromBack<S: Sequence>(
-//    of other: S
-//  ) -> ReversedRangesCollection<ZSearcher<SubSequence>>
-//    where S.Element == Element
-//  {
-//    fatalError()
-//  }
-}
-
-extension BidirectionalCollection where Element: Comparable {
-  func _ranges<C: Collection>(
-    of other: C
-  ) -> RangesCollection<PatternOrEmpty<TwoWaySearcher<Self>>>
-    where C.Element == Element
-  {
-    _ranges(of: PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(other))))
-  }
-  
-  // FIXME
-//  public func rangesFromBack<S: Sequence>(
-//    of other: S
-//  ) -> ReversedRangesCollection<PatternOrEmpty<TwoWaySearcher<SubSequence>>>
-//    where S.Element == Element
-//  {
-//    rangesFromBack(
-//      of: PatternOrEmpty(searcher: TwoWaySearcher(pattern: Array(other))))
-//  }
 }
 
 @available(SwiftStdlib 5.7, *)
