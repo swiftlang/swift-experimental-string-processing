@@ -14,7 +14,7 @@
 import ArgumentParser
 #if os(macOS)
 import Darwin
-#elseif os(Linux)
+#elseif canImport(Glibc)
 import Glibc
 #elseif os(Windows)
 import CRT

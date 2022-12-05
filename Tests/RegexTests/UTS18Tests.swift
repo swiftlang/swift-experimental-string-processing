@@ -62,7 +62,7 @@ fileprivate func expectFirstMatch<Output: Equatable>(
   XCTAssertEqual(input.firstMatch(of: r)?.output, output, file: file, line: line)
 }
 
-#if os(Linux)
+#if os(Linux) || os(Android)
 func XCTExpectFailure(_ message: String? = nil, body: () throws -> Void) rethrows {}
 #endif
 
