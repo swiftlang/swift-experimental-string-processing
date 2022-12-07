@@ -46,10 +46,10 @@ static uint32_t hash(uint32_t scalar, uint32_t level, uint32_t seed) {
 
 // This implementation is based on the minimal perfect hashing strategy found
 // here: https://arxiv.org/pdf/1702.03154.pdf
-intptr_t _swift_stdlib_getMphIdx(uint32_t scalar, intptr_t levels,
-                                 const uint64_t * const *keys,
-                                 const uint16_t * const *ranks,
-                                 const uint16_t * const sizes) {
+intptr_t _swift_string_processing_getMphIdx(uint32_t scalar, intptr_t levels,
+                                            const uint64_t * const *keys,
+                                            const uint16_t * const *ranks,
+                                            const uint16_t * const sizes) {
   intptr_t resultIdx = 0;
 
   // Here, levels represent the numbers of bit arrays used for this hash table.
@@ -100,9 +100,9 @@ intptr_t _swift_stdlib_getMphIdx(uint32_t scalar, intptr_t levels,
   return resultIdx;
 }
 
-intptr_t _swift_stdlib_getScalarBitArrayIdx(uint32_t scalar,
-                                              const uint64_t *bitArrays,
-                                              const uint16_t *ranks) {
+intptr_t _swift_string_processing_getScalarBitArrayIdx(uint32_t scalar,
+                                                       const uint64_t *bitArrays,
+                                                       const uint16_t *ranks) {
   uint64_t chunkSize = 0x110000 / 64 / 64;
   uint64_t base = scalar / chunkSize;
   uint64_t idx = base / 64;
