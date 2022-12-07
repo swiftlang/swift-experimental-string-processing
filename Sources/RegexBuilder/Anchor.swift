@@ -81,7 +81,7 @@ extension Anchor {
   }
   
   /// An anchor that matches at the end of the input string or at the end of
-  /// the line immediately before the the end of the string.
+  /// the line immediately before the end of the string.
   ///
   /// This anchor is equivalent to `\Z` in regex syntax.
   public static var endOfSubjectBeforeNewline: Anchor {
