@@ -11,7 +11,10 @@
 
 @_implementationOnly import _RegexParser
 
-/// A type-erased regex output.
+/// The type-erased, dynamic output of a regular expression match.
+///
+/// When you find a match using regular expression that has `AnyRegexOutput`
+/// as its output type, you can find information about matches by iterating
 @available(SwiftStdlib 5.7, *)
 public struct AnyRegexOutput {
   internal let input: String
@@ -20,21 +23,22 @@ public struct AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput {
-  /// Creates a type-erased regex output from an existing match.
+  /// Creates a dynamic regular expression match output from an existing match.
   ///
-  /// Use this initializer to fit a strongly-typed regex match into the
-  /// use site of a type-erased regex output.
+  /// You can use this initializer when you need an `AnyRegexOutput` instance
+  /// instead of the output type of a strongly-typed `Regex.Match`.
   public init<Output>(_ match: Regex<Output>.Match) {
     self = match.anyRegexOutput
   }
 
-  /// Returns a strongly-typed output by converting type-erased values to the specified type.
+  /// Returns strongly-typed match output by converting this type-erased
+  /// output to the specified type, if possible.
   ///
-  /// - Parameter type: The expected output type.
-  /// - Returns: The output, if the underlying value can be converted to the
-  ///   output type; otherwise `nil`.
+  /// - Parameter outputType: The expected output type.
+  /// - Returns: The output, if the underlying value can be converted to
+  ///   `outputType`; otherwise, `nil`.
   public func extractValues<Output>(
-    as type: Output.Type = Output.self
+    as outputType: Output.Type = Output.self
   ) -> Output? {
     let elements = map {
       $0.existentialOutputComponent(from: input)
@@ -45,31 +49,40 @@ extension AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput: RandomAccessCollection {
-  /// An individual type-erased output value.
+  /// An individual match output value.
   public struct Element {
     internal let representation: ElementRepresentation
     internal let input: String
 
-    /// The range over which a value was captured. `nil` for no-capture.
+    /// The range over which a value was captured, if there was a capture.
+    ///
+    /// If nothing was captured, `range` is `nil`.
     public var range: Range<String.Index>? {
       representation.content?.range
     }
 
-    /// The slice of the input over which a value was captured. `nil` for no-capture.
+    /// The slice of the input which was captured, if there was a capture.
+    ///
+    /// If nothing was captured, `substring` is `nil`.
     public var substring: Substring? {
       range.map { input[$0] }
     }
 
-    /// The captured value, `nil` for no-capture.
+    /// The captured value, if there was a capture.
+    ///
+    /// If nothing was captured, `value` is `nil`.
     public var value: Any? {
       representation.value(forInput: input)
     }
 
+    /// The type of this capture.
     public var type: Any.Type {
       representation.type
     }
 
-    /// The name of this capture, if it has one, otherwise `nil`.
+    /// The name of this capture, if the capture is named.
+    ///
+    /// If the capture is unnamed, `name` is `nil`.
     public var name: String? {
       representation.name
     }
@@ -110,7 +123,12 @@ extension AnyRegexOutput: RandomAccessCollection {
 
 @available(SwiftStdlib 5.7, *)
 extension AnyRegexOutput {
-  /// Access a capture by name. Returns `nil` if no capture with that name was present in the Regex.
+  /// Accesses the capture with the specified name, if a capture with that name
+  /// exists.
+  ///
+  /// - Parameter name: The name of the capture to access.
+  /// - Returns: An element providing information about the capture, if there is
+  ///   a capture named `name`; otherwise, `nil`.
   public subscript(name: String) -> Element? {
     first {
       $0.name == name
@@ -122,12 +140,17 @@ extension AnyRegexOutput {
 extension Regex.Match where Output == AnyRegexOutput {
   /// Accesses the whole match using the `.0` syntax.
   public subscript(
-    dynamicMember keyPath: KeyPath<(Substring, _doNotUse: ()), Substring>
+    dynamicMember _keyPath: KeyPath<(Substring, _doNotUse: ()), Substring>
   ) -> Substring {
     anyRegexOutput.input[range]
   }
 
-  /// Access a capture by name. Returns `nil` if there's no capture with that name.
+  /// Accesses the capture with the specified name, if a capture with that name
+  /// exists.
+  ///
+  /// - Parameter name: The name of the capture to access.
+  /// - Returns: An element providing information about the capture, if there is
+  ///   a capture named `name`; otherwise, `nil`.
   public subscript(name: String) -> AnyRegexOutput.Element? {
     anyRegexOutput.first {
       $0.name == name
@@ -139,9 +162,22 @@ extension Regex.Match where Output == AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex where Output == AnyRegexOutput {
-  /// Parses and compiles a regular expression, resulting in a type-erased capture list.
+  /// Creates a regular expression from the given string, using a dynamic
+  /// capture list.
   ///
-  /// - Parameter pattern: The regular expression.
+  /// Use this initializer to create a `Regex` instance from a regular
+  /// expression that you have stored in `pattern`.
+  ///
+  ///     let simpleDigits = try Regex("[0-9]+")
+  ///
+  /// This initializer throws an error if `pattern` uses invalid regular
+  /// expression syntax.
+  ///
+  /// The output type of the new `Regex` is the dynamic ``AnyRegexOutput``.
+  /// If you know the capture structure of `pattern` ahead of time, use the
+  /// ``init(_:as:)`` initializer instead.
+  ///
+  /// - Parameter pattern: A string with regular expression syntax.
   public init(_ pattern: String) throws {
     self.init(ast: try parse(pattern, .traditional))
   }
@@ -153,13 +189,32 @@ extension Regex where Output == AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  /// Parses and compiles a regular expression.
+  /// Creates a regular expression from the given string, using the specified
+  /// capture type.
   ///
-  /// - Parameter pattern: The regular expression.
-  /// - Parameter as: The desired type for the output.
+  /// You can use this initializer to create a `Regex` instance from a regular
+  /// expression that you have stored in `pattern` when you know the capture
+  /// structure of the regular expression in advance.
+  ///
+  /// In this example, the regular expression includes two parenthesized
+  /// capture groups, so the capture type is `(Substring, Substring, Substring)`.
+  /// The first substring in the tuple represents the entire match, while the
+  /// second and third substrings represent the first and second capture group,
+  /// respectively.
+  ///
+  ///     let keyAndValue = try Regex("(.+): (.+)", as: (Substring, Substring, Substring).self)
+  ///
+  /// This initializer throws an error if `pattern` uses invalid regular
+  /// expression syntax, or if `outputType` does not match the capture
+  /// structure declared by `pattern`. If you don't know the capture structure
+  /// in advance, use the ``init(_:)`` initializer instead.
+  ///
+  /// - Parameters:
+  ///   - pattern: A string with regular expression syntax.
+  ///   - outputType: The desired type for the output captures.
   public init(
     _ pattern: String,
-    as: Output.Type = Output.self
+    as outputType: Output.Type = Output.self
   ) throws {
     let regex = Regex(ast: try parse(pattern, .traditional))
     
@@ -175,13 +230,40 @@ extension Regex {
     self = regex
   }
 
-  /// Produces a regex that matches `verbatim` exactly, as though every
-  /// metacharacter in it was escaped.
-  public init(verbatim: String) {
-    self.init(node: .quotedLiteral(verbatim))
+  /// Creates a regular expression that matches the given string exactly, as
+  /// though every metacharacter in it was escaped.
+  ///
+  /// This example creates a regular expression that matches the string
+  /// `"(adj)"`, including the parentheses. Although parentheses are regular
+  /// expression metacharacters, they do not need escaping in the string passed
+  /// as `verbatimString`.
+  ///
+  ///     let adjectiveDesignator = Regex<Substring>(verbatim: "(adj.)")
+  ///
+  ///     print("awesome (adj.)".contains(adjectiveDesignator))
+  ///     // Prints "true"
+  ///     print("apple (n.)".contains(adjectiveDesignator))
+  ///     // Prints "false"
+  ///
+  /// - Parameter verbatimString: A string to convert into a regular expression
+  ///   exactly, escaping any metacharacters.
+  public init(verbatim verbatimString: String) {
+    self.init(node: .quotedLiteral(verbatimString))
   }
 
-  /// Returns whether a named-capture with `name` exists
+  /// Returns a Boolean value indicating whether a named capture with the given
+  /// name exists.
+  ///
+  /// This example shows a regular expression that includes capture groups
+  /// named `key` and `value`:
+  ///
+  ///     let regex = try Regex("(?'key'.+?): (?'value'.+)")
+  ///     regex.contains(captureNamed: "key")       // true
+  ///     regex.contains(captureNamed: "VALUE")     // false
+  ///     regex.contains(captureNamed: "1")         // false
+  ///
+  /// - Parameter name: The name to look for among the regular expression's
+  ///   capture groups. Capture group names are case sensitive.
   public func contains(captureNamed name: String) -> Bool {
     program.tree.captureList.captures.contains(where: {
       $0.name == name
@@ -193,10 +275,14 @@ extension Regex {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex where Output == AnyRegexOutput {
-  /// Creates a type-erased regex from an existing regex.
+  /// Creates a regular expression with a dynamic capture list from the given
+  /// regular expression.
   ///
-  /// Use this initializer to fit a regex with strongly-typed captures into the
-  /// use site of a type-erased regex, i.e. one that was created from a string.
+  /// You can use this initializer to convert a `Regex` with strongly-typed
+  /// captures into a `Regex` with `AnyRegexOutput` as its output type.
+  ///
+  /// - Parameter regex: A regular expression to convert to use a dynamic
+  ///   capture list.
   public init<Output>(_ regex: Regex<Output>) {
     self.init(node: regex.root)
   }
@@ -204,10 +290,15 @@ extension Regex where Output == AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex.Match where Output == AnyRegexOutput {
-  /// Creates a type-erased regex match from an existing match.
+  /// Creates a regular expression match with a dynamic capture list from the
+  /// given match.
   ///
-  /// Use this initializer to fit a regex match with strongly-typed captures into the
-  /// use site of a type-erased regex match.
+  /// You can use this initializer to convert a `Regex.Match` with
+  /// strongly-typed captures into a match with the type-eraser `AnyRegexOutput`
+  /// as its output type.
+  ///
+  /// - Parameter match: A regular expression match to convert to a match with
+  ///   type-erased captures.
   public init<Output>(_ match: Regex<Output>.Match) {
     self.init(
       anyRegexOutput: match.anyRegexOutput,
@@ -218,16 +309,29 @@ extension Regex.Match where Output == AnyRegexOutput {
 
 @available(SwiftStdlib 5.7, *)
 extension Regex {
-  /// Creates a strongly-typed regex from a type-erased regex.
+  /// Creates a regular expression with a strongly-typed capture list from the
+  /// given regular expression.
   ///
-  /// Use this initializer to create a strongly-typed regex from
-  /// one that was created from a string. Returns `nil` if the types
-  /// don't match.
+  /// You can use this initializer to convert a regular expression with a
+  /// dynamic capture list to one with a strongly-typed capture list. If the
+  /// type you provide as `outputType` doesn't match the capture structure of
+  /// `regex`, the initializer returns `nil`.
+  ///
+  ///     let dynamicRegex = try Regex("(.+?): (.+)")
+  ///     if let stronglyTypedRegex = Regex(dynamicRegex, as: (Substring, Substring, Substring).self) {
+  ///         print("Converted properly")
+  ///     }
+  ///     // Prints "Converted properly"
+  ///
+  /// - Parameters:
+  ///   - regex: A regular expression to convert to use a strongly-typed capture
+  ///     list.
+  ///   - outputType: The capture structure to use.
   public init?(
-    _ erased: Regex<AnyRegexOutput>,
-    as: Output.Type = Output.self
+    _ regex: Regex<AnyRegexOutput>,
+    as outputType: Output.Type = Output.self
   ) {
-    self.init(node: erased.root)
+    self.init(node: regex.root)
     
     guard _verifyType().0 else {
       return nil

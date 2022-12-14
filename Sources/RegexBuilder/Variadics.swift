@@ -688,6 +688,16 @@ extension RegexComponentBuilder {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<Component: RegexComponent>(
@@ -701,6 +711,17 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<Component: RegexComponent>(
@@ -724,6 +745,16 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<Component: RegexComponent>(
@@ -737,6 +768,17 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<Component: RegexComponent>(
@@ -751,6 +793,16 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<Component: RegexComponent>(
@@ -764,6 +816,17 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<Component: RegexComponent>(
@@ -778,6 +841,13 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<Component: RegexComponent>(
@@ -789,6 +859,14 @@ extension Repeat {
     self.init(factory.exactly(count, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<Component: RegexComponent>(
@@ -800,6 +878,18 @@ extension Repeat {
     self.init(factory.exactly(count, componentBuilder()))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<Component: RegexComponent, R: RangeExpression>(
@@ -811,6 +901,19 @@ extension Repeat {
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<Component: RegexComponent, R: RangeExpression>(
@@ -824,6 +927,16 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, Component: RegexComponent>(
     _ component: Component,
@@ -836,6 +949,17 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -858,6 +982,16 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, Component: RegexComponent>(
     _ component: Component,
@@ -870,6 +1004,17 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -883,6 +1028,16 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, Component: RegexComponent>(
     _ component: Component,
@@ -895,6 +1050,17 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -908,6 +1074,13 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
   @_alwaysEmitIntoClient
   public init<W, C1, Component: RegexComponent>(
     _ component: Component,
@@ -918,6 +1091,14 @@ extension Repeat {
     self.init(factory.exactly(count, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, Component: RegexComponent>(
     count: Int,
@@ -928,6 +1109,18 @@ extension Repeat {
     self.init(factory.exactly(count, componentBuilder()))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
@@ -938,6 +1131,19 @@ extension Repeat {
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
@@ -950,6 +1156,16 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, Component: RegexComponent>(
     _ component: Component,
@@ -962,6 +1178,17 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -984,6 +1211,16 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, Component: RegexComponent>(
     _ component: Component,
@@ -996,6 +1233,17 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1009,6 +1257,16 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, Component: RegexComponent>(
     _ component: Component,
@@ -1021,6 +1279,17 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1034,6 +1303,13 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, Component: RegexComponent>(
     _ component: Component,
@@ -1044,6 +1320,14 @@ extension Repeat {
     self.init(factory.exactly(count, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, Component: RegexComponent>(
     count: Int,
@@ -1054,6 +1338,18 @@ extension Repeat {
     self.init(factory.exactly(count, componentBuilder()))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
@@ -1064,6 +1360,19 @@ extension Repeat {
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
@@ -1076,6 +1385,16 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, Component: RegexComponent>(
     _ component: Component,
@@ -1088,6 +1407,17 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1110,6 +1440,16 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, Component: RegexComponent>(
     _ component: Component,
@@ -1122,6 +1462,17 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1135,6 +1486,16 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, Component: RegexComponent>(
     _ component: Component,
@@ -1147,6 +1508,17 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1160,6 +1532,13 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, Component: RegexComponent>(
     _ component: Component,
@@ -1170,6 +1549,14 @@ extension Repeat {
     self.init(factory.exactly(count, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, Component: RegexComponent>(
     count: Int,
@@ -1180,6 +1567,18 @@ extension Repeat {
     self.init(factory.exactly(count, componentBuilder()))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
@@ -1190,6 +1589,19 @@ extension Repeat {
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
@@ -1202,6 +1614,16 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component,
@@ -1214,6 +1636,17 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1236,6 +1669,16 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component,
@@ -1248,6 +1691,17 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1261,6 +1715,16 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component,
@@ -1273,6 +1737,17 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1286,6 +1761,13 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     _ component: Component,
@@ -1296,6 +1778,14 @@ extension Repeat {
     self.init(factory.exactly(count, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, Component: RegexComponent>(
     count: Int,
@@ -1306,6 +1796,18 @@ extension Repeat {
     self.init(factory.exactly(count, componentBuilder()))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
@@ -1316,6 +1818,19 @@ extension Repeat {
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
@@ -1328,6 +1843,16 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component,
@@ -1340,6 +1865,17 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1362,6 +1898,16 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component,
@@ -1374,6 +1920,17 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1387,6 +1944,16 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component,
@@ -1399,6 +1966,17 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1412,6 +1990,13 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     _ component: Component,
@@ -1422,6 +2007,14 @@ extension Repeat {
     self.init(factory.exactly(count, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
     count: Int,
@@ -1432,6 +2025,18 @@ extension Repeat {
     self.init(factory.exactly(count, componentBuilder()))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
@@ -1442,6 +2047,19 @@ extension Repeat {
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
@@ -1454,6 +2072,16 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component,
@@ -1466,6 +2094,17 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1488,6 +2127,16 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component,
@@ -1500,6 +2149,17 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1513,6 +2173,16 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component,
@@ -1525,6 +2195,17 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1538,6 +2219,13 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     _ component: Component,
@@ -1548,6 +2236,14 @@ extension Repeat {
     self.init(factory.exactly(count, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
     count: Int,
@@ -1558,6 +2254,18 @@ extension Repeat {
     self.init(factory.exactly(count, componentBuilder()))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
@@ -1568,6 +2276,19 @@ extension Repeat {
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
@@ -1580,6 +2301,16 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component,
@@ -1592,6 +2323,17 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1614,6 +2356,16 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component,
@@ -1626,6 +2378,17 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1639,6 +2402,16 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component,
@@ -1651,6 +2424,17 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1664,6 +2448,13 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     _ component: Component,
@@ -1674,6 +2465,14 @@ extension Repeat {
     self.init(factory.exactly(count, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
     count: Int,
@@ -1684,6 +2483,18 @@ extension Repeat {
     self.init(factory.exactly(count, componentBuilder()))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
@@ -1694,6 +2505,19 @@ extension Repeat {
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
@@ -1706,6 +2530,16 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component,
@@ -1718,6 +2552,17 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1740,6 +2585,16 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component,
@@ -1752,6 +2607,17 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1765,6 +2631,16 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component,
@@ -1777,6 +2653,17 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1790,6 +2677,13 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     _ component: Component,
@@ -1800,6 +2694,14 @@ extension Repeat {
     self.init(factory.exactly(count, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
     count: Int,
@@ -1810,6 +2712,18 @@ extension Repeat {
     self.init(factory.exactly(count, componentBuilder()))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
@@ -1820,6 +2734,19 @@ extension Repeat {
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
@@ -1832,6 +2759,16 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component,
@@ -1844,6 +2781,17 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1866,6 +2814,16 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component,
@@ -1878,6 +2836,17 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1891,6 +2860,16 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component,
@@ -1903,6 +2882,17 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1916,6 +2906,13 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     _ component: Component,
@@ -1926,6 +2923,14 @@ extension Repeat {
     self.init(factory.exactly(count, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
     count: Int,
@@ -1936,6 +2941,18 @@ extension Repeat {
     self.init(factory.exactly(count, componentBuilder()))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
@@ -1946,6 +2963,19 @@ extension Repeat {
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
@@ -1958,6 +2988,16 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ component: Component,
@@ -1970,6 +3010,17 @@ extension Optionally {
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -1992,6 +3043,16 @@ extension RegexComponentBuilder {
 }
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ component: Component,
@@ -2004,6 +3065,17 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension ZeroOrMore {
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -2017,6 +3089,16 @@ extension ZeroOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ component: Component,
@@ -2029,6 +3111,17 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension OneOrMore {
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ behavior: RegexRepetitionBehavior? = nil,
@@ -2042,6 +3135,13 @@ extension OneOrMore {
 
 @available(SwiftStdlib 5.7, *)
 extension Repeat {
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     _ component: Component,
@@ -2052,6 +3152,14 @@ extension Repeat {
     self.init(factory.exactly(count, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
     count: Int,
@@ -2062,6 +3170,18 @@ extension Repeat {
     self.init(factory.exactly(count, componentBuilder()))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent, R: RangeExpression>(
     _ component: Component,
@@ -2072,6 +3192,19 @@ extension Repeat {
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
 
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent, R: RangeExpression>(
     _ expression: R,
@@ -2084,6 +3217,10 @@ extension Repeat {
 }
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter component: The regex component to wrap in an atomic
+  ///   group.
   @available(SwiftStdlib 5.7, *)
   @_disfavoredOverload
   @_alwaysEmitIntoClient
@@ -2097,6 +3234,10 @@ extension Local {
 
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to wrap in an atomic group.
   @available(SwiftStdlib 5.7, *)
   @_disfavoredOverload
   @_alwaysEmitIntoClient
@@ -2109,6 +3250,10 @@ extension Local {
 }
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter component: The regex component to wrap in an atomic
+  ///   group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, Component: RegexComponent>(
@@ -2121,6 +3266,10 @@ extension Local {
 
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to wrap in an atomic group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, Component: RegexComponent>(
@@ -2132,6 +3281,10 @@ extension Local {
 }
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter component: The regex component to wrap in an atomic
+  ///   group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, Component: RegexComponent>(
@@ -2144,6 +3297,10 @@ extension Local {
 
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to wrap in an atomic group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, Component: RegexComponent>(
@@ -2155,6 +3312,10 @@ extension Local {
 }
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter component: The regex component to wrap in an atomic
+  ///   group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, Component: RegexComponent>(
@@ -2167,6 +3328,10 @@ extension Local {
 
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to wrap in an atomic group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, Component: RegexComponent>(
@@ -2178,6 +3343,10 @@ extension Local {
 }
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter component: The regex component to wrap in an atomic
+  ///   group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, Component: RegexComponent>(
@@ -2190,6 +3359,10 @@ extension Local {
 
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to wrap in an atomic group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, Component: RegexComponent>(
@@ -2201,6 +3374,10 @@ extension Local {
 }
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter component: The regex component to wrap in an atomic
+  ///   group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
@@ -2213,6 +3390,10 @@ extension Local {
 
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to wrap in an atomic group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, Component: RegexComponent>(
@@ -2224,6 +3405,10 @@ extension Local {
 }
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter component: The regex component to wrap in an atomic
+  ///   group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
@@ -2236,6 +3421,10 @@ extension Local {
 
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to wrap in an atomic group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, Component: RegexComponent>(
@@ -2247,6 +3436,10 @@ extension Local {
 }
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter component: The regex component to wrap in an atomic
+  ///   group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
@@ -2259,6 +3452,10 @@ extension Local {
 
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to wrap in an atomic group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, Component: RegexComponent>(
@@ -2270,6 +3467,10 @@ extension Local {
 }
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter component: The regex component to wrap in an atomic
+  ///   group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
@@ -2282,6 +3483,10 @@ extension Local {
 
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to wrap in an atomic group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, Component: RegexComponent>(
@@ -2293,6 +3498,10 @@ extension Local {
 }
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter component: The regex component to wrap in an atomic
+  ///   group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
@@ -2305,6 +3514,10 @@ extension Local {
 
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to wrap in an atomic group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, Component: RegexComponent>(
@@ -2316,6 +3529,10 @@ extension Local {
 }
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter component: The regex component to wrap in an atomic
+  ///   group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
@@ -2328,6 +3545,10 @@ extension Local {
 
 @available(SwiftStdlib 5.7, *)
 extension Local {
+  /// Creates an atomic group with the given regex component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to wrap in an atomic group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
   public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, Component: RegexComponent>(
@@ -3071,6 +4292,9 @@ extension AlternationBuilder {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter component: The regex component to capture.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W>(
@@ -3080,6 +4304,13 @@ extension Capture {
     self.init(factory.capture(component))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W>(
@@ -3089,6 +4320,15 @@ extension Capture {
     self.init(factory.capture(component, reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, NewCapture>(
@@ -3099,6 +4339,17 @@ extension Capture {
     self.init(factory.capture(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, NewCapture>(
@@ -3113,6 +4364,16 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, NewCapture>(
@@ -3123,6 +4384,18 @@ extension TryCapture {
     self.init(factory.captureOptional(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, NewCapture>(
@@ -3139,6 +4412,10 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to capture.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W>(
@@ -3148,6 +4425,14 @@ extension Capture {
     self.init(factory.capture(componentBuilder()))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W>(
@@ -3158,6 +4443,16 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, NewCapture>(
@@ -3168,6 +4463,18 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, NewCapture>(
@@ -3182,6 +4489,17 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, NewCapture>(
@@ -3192,6 +4510,19 @@ extension TryCapture {
     self.init(factory.captureOptional(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_disfavoredOverload
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, NewCapture>(
@@ -3208,6 +4539,9 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter component: The regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1>(
     _ component: R
@@ -3216,6 +4550,13 @@ extension Capture {
     self.init(factory.capture(component))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1>(
     _ component: R, as reference: Reference<W>
@@ -3224,6 +4565,15 @@ extension Capture {
     self.init(factory.capture(component, reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, NewCapture>(
     _ component: R,
@@ -3233,6 +4583,17 @@ extension Capture {
     self.init(factory.capture(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, NewCapture>(
     _ component: R,
@@ -3246,6 +4607,16 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, NewCapture>(
     _ component: R,
@@ -3255,6 +4626,18 @@ extension TryCapture {
     self.init(factory.captureOptional(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, NewCapture>(
     _ component: R,
@@ -3270,6 +4653,10 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1>(
     @RegexComponentBuilder _ componentBuilder: () -> R
@@ -3278,6 +4665,14 @@ extension Capture {
     self.init(factory.capture(componentBuilder()))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1>(
     as reference: Reference<W>,
@@ -3287,6 +4682,16 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -3296,6 +4701,18 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -3309,6 +4726,17 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -3318,6 +4746,19 @@ extension TryCapture {
     self.init(factory.captureOptional(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -3333,6 +4774,9 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter component: The regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2>(
     _ component: R
@@ -3341,6 +4785,13 @@ extension Capture {
     self.init(factory.capture(component))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2>(
     _ component: R, as reference: Reference<W>
@@ -3349,6 +4800,15 @@ extension Capture {
     self.init(factory.capture(component, reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, NewCapture>(
     _ component: R,
@@ -3358,6 +4818,17 @@ extension Capture {
     self.init(factory.capture(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, NewCapture>(
     _ component: R,
@@ -3371,6 +4842,16 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, NewCapture>(
     _ component: R,
@@ -3380,6 +4861,18 @@ extension TryCapture {
     self.init(factory.captureOptional(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, NewCapture>(
     _ component: R,
@@ -3395,6 +4888,10 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2>(
     @RegexComponentBuilder _ componentBuilder: () -> R
@@ -3403,6 +4900,14 @@ extension Capture {
     self.init(factory.capture(componentBuilder()))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2>(
     as reference: Reference<W>,
@@ -3412,6 +4917,16 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -3421,6 +4936,18 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -3434,6 +4961,17 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -3443,6 +4981,19 @@ extension TryCapture {
     self.init(factory.captureOptional(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -3458,6 +5009,9 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter component: The regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3>(
     _ component: R
@@ -3466,6 +5020,13 @@ extension Capture {
     self.init(factory.capture(component))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3>(
     _ component: R, as reference: Reference<W>
@@ -3474,6 +5035,15 @@ extension Capture {
     self.init(factory.capture(component, reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     _ component: R,
@@ -3483,6 +5053,17 @@ extension Capture {
     self.init(factory.capture(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     _ component: R,
@@ -3496,6 +5077,16 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     _ component: R,
@@ -3505,6 +5096,18 @@ extension TryCapture {
     self.init(factory.captureOptional(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     _ component: R,
@@ -3520,6 +5123,10 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3>(
     @RegexComponentBuilder _ componentBuilder: () -> R
@@ -3528,6 +5135,14 @@ extension Capture {
     self.init(factory.capture(componentBuilder()))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3>(
     as reference: Reference<W>,
@@ -3537,6 +5152,16 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -3546,6 +5171,18 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -3559,6 +5196,17 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -3568,6 +5216,19 @@ extension TryCapture {
     self.init(factory.captureOptional(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -3583,6 +5244,9 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter component: The regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4>(
     _ component: R
@@ -3591,6 +5255,13 @@ extension Capture {
     self.init(factory.capture(component))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4>(
     _ component: R, as reference: Reference<W>
@@ -3599,6 +5270,15 @@ extension Capture {
     self.init(factory.capture(component, reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     _ component: R,
@@ -3608,6 +5288,17 @@ extension Capture {
     self.init(factory.capture(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     _ component: R,
@@ -3621,6 +5312,16 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     _ component: R,
@@ -3630,6 +5331,18 @@ extension TryCapture {
     self.init(factory.captureOptional(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     _ component: R,
@@ -3645,6 +5358,10 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4>(
     @RegexComponentBuilder _ componentBuilder: () -> R
@@ -3653,6 +5370,14 @@ extension Capture {
     self.init(factory.capture(componentBuilder()))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4>(
     as reference: Reference<W>,
@@ -3662,6 +5387,16 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -3671,6 +5406,18 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -3684,6 +5431,17 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -3693,6 +5451,19 @@ extension TryCapture {
     self.init(factory.captureOptional(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -3708,6 +5479,9 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter component: The regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
     _ component: R
@@ -3716,6 +5490,13 @@ extension Capture {
     self.init(factory.capture(component))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
     _ component: R, as reference: Reference<W>
@@ -3724,6 +5505,15 @@ extension Capture {
     self.init(factory.capture(component, reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     _ component: R,
@@ -3733,6 +5523,17 @@ extension Capture {
     self.init(factory.capture(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     _ component: R,
@@ -3746,6 +5547,16 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     _ component: R,
@@ -3755,6 +5566,18 @@ extension TryCapture {
     self.init(factory.captureOptional(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     _ component: R,
@@ -3770,6 +5593,10 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
     @RegexComponentBuilder _ componentBuilder: () -> R
@@ -3778,6 +5605,14 @@ extension Capture {
     self.init(factory.capture(componentBuilder()))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5>(
     as reference: Reference<W>,
@@ -3787,6 +5622,16 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -3796,6 +5641,18 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -3809,6 +5666,17 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -3818,6 +5686,19 @@ extension TryCapture {
     self.init(factory.captureOptional(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -3833,6 +5714,9 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter component: The regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
     _ component: R
@@ -3841,6 +5725,13 @@ extension Capture {
     self.init(factory.capture(component))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
     _ component: R, as reference: Reference<W>
@@ -3849,6 +5740,15 @@ extension Capture {
     self.init(factory.capture(component, reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     _ component: R,
@@ -3858,6 +5758,17 @@ extension Capture {
     self.init(factory.capture(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     _ component: R,
@@ -3871,6 +5782,16 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     _ component: R,
@@ -3880,6 +5801,18 @@ extension TryCapture {
     self.init(factory.captureOptional(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     _ component: R,
@@ -3895,6 +5828,10 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
     @RegexComponentBuilder _ componentBuilder: () -> R
@@ -3903,6 +5840,14 @@ extension Capture {
     self.init(factory.capture(componentBuilder()))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6>(
     as reference: Reference<W>,
@@ -3912,6 +5857,16 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -3921,6 +5876,18 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -3934,6 +5901,17 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -3943,6 +5921,19 @@ extension TryCapture {
     self.init(factory.captureOptional(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -3958,6 +5949,9 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter component: The regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
     _ component: R
@@ -3966,6 +5960,13 @@ extension Capture {
     self.init(factory.capture(component))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
     _ component: R, as reference: Reference<W>
@@ -3974,6 +5975,15 @@ extension Capture {
     self.init(factory.capture(component, reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     _ component: R,
@@ -3983,6 +5993,17 @@ extension Capture {
     self.init(factory.capture(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     _ component: R,
@@ -3996,6 +6017,16 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     _ component: R,
@@ -4005,6 +6036,18 @@ extension TryCapture {
     self.init(factory.captureOptional(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     _ component: R,
@@ -4020,6 +6063,10 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
     @RegexComponentBuilder _ componentBuilder: () -> R
@@ -4028,6 +6075,14 @@ extension Capture {
     self.init(factory.capture(componentBuilder()))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7>(
     as reference: Reference<W>,
@@ -4037,6 +6092,16 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -4046,6 +6111,18 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -4059,6 +6136,17 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -4068,6 +6156,19 @@ extension TryCapture {
     self.init(factory.captureOptional(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -4083,6 +6184,9 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter component: The regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
     _ component: R
@@ -4091,6 +6195,13 @@ extension Capture {
     self.init(factory.capture(component))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
     _ component: R, as reference: Reference<W>
@@ -4099,6 +6210,15 @@ extension Capture {
     self.init(factory.capture(component, reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     _ component: R,
@@ -4108,6 +6228,17 @@ extension Capture {
     self.init(factory.capture(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     _ component: R,
@@ -4121,6 +6252,16 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     _ component: R,
@@ -4130,6 +6271,18 @@ extension TryCapture {
     self.init(factory.captureOptional(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     _ component: R,
@@ -4145,6 +6298,10 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
     @RegexComponentBuilder _ componentBuilder: () -> R
@@ -4153,6 +6310,14 @@ extension Capture {
     self.init(factory.capture(componentBuilder()))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8>(
     as reference: Reference<W>,
@@ -4162,6 +6327,16 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -4171,6 +6346,18 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -4184,6 +6371,17 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -4193,6 +6391,19 @@ extension TryCapture {
     self.init(factory.captureOptional(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -4208,6 +6419,9 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter component: The regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     _ component: R
@@ -4216,6 +6430,13 @@ extension Capture {
     self.init(factory.capture(component))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     _ component: R, as reference: Reference<W>
@@ -4224,6 +6445,15 @@ extension Capture {
     self.init(factory.capture(component, reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     _ component: R,
@@ -4233,6 +6463,17 @@ extension Capture {
     self.init(factory.capture(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     _ component: R,
@@ -4246,6 +6487,16 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     _ component: R,
@@ -4255,6 +6506,18 @@ extension TryCapture {
     self.init(factory.captureOptional(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     _ component: R,
@@ -4270,6 +6533,10 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     @RegexComponentBuilder _ componentBuilder: () -> R
@@ -4278,6 +6545,14 @@ extension Capture {
     self.init(factory.capture(componentBuilder()))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
     as reference: Reference<W>,
@@ -4287,6 +6562,16 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -4296,6 +6581,18 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -4309,6 +6606,17 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -4318,6 +6626,19 @@ extension TryCapture {
     self.init(factory.captureOptional(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -4333,6 +6654,9 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter component: The regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
     _ component: R
@@ -4341,6 +6665,13 @@ extension Capture {
     self.init(factory.capture(component))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
     _ component: R, as reference: Reference<W>
@@ -4349,6 +6680,15 @@ extension Capture {
     self.init(factory.capture(component, reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     _ component: R,
@@ -4358,6 +6698,17 @@ extension Capture {
     self.init(factory.capture(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     _ component: R,
@@ -4371,6 +6722,16 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     _ component: R,
@@ -4380,6 +6741,18 @@ extension TryCapture {
     self.init(factory.captureOptional(component, nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to capture.
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     _ component: R,
@@ -4395,6 +6768,10 @@ extension TryCapture {
 
 @available(SwiftStdlib 5.7, *)
 extension Capture {
+  /// Creates a capture for the given component.
+  ///
+  /// - Parameter componentBuilder: A builder closure that generates a
+  ///   regex component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
     @RegexComponentBuilder _ componentBuilder: () -> R
@@ -4403,6 +6780,14 @@ extension Capture {
     self.init(factory.capture(componentBuilder()))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
     as reference: Reference<W>,
@@ -4412,6 +6797,16 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), reference._raw))
   }
 
+  /// Creates a capture for the given component, transforming with the
+  /// given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -4421,6 +6816,18 @@ extension Capture {
     self.init(factory.capture(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, transforming with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     as reference: Reference<NewCapture>,
@@ -4434,6 +6841,17 @@ extension Capture {
 
 @available(SwiftStdlib 5.7, *)
 extension TryCapture {
+  /// Creates a capture for the given component, attempting to transform
+  /// with the given closure.
+  ///
+  /// - Parameters:
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     @RegexComponentBuilder _ componentBuilder: () -> R,
@@ -4443,6 +6861,19 @@ extension TryCapture {
     self.init(factory.captureOptional(componentBuilder(), nil, transform))
   }
 
+  /// Creates a capture for the given component using the specified
+  /// reference, attempting to transform with the given closure.
+  ///
+  /// - Parameters:
+  ///   - reference: The reference to use for anything captured by
+  ///     `component`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component to capture.
+  ///   - transform: A closure that takes the substring matched by
+  ///     `component` and returns a new value to capture, or `nil` if
+  ///     matching should proceed, backtracking if allowed. If `transform`
+  ///     throws an error, matching is abandoned and the error is returned
+  ///     to the caller.
   @_alwaysEmitIntoClient
   public init<R: RegexComponent, W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, NewCapture>(
     as reference: Reference<NewCapture>,
