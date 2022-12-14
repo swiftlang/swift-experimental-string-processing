@@ -75,45 +75,6 @@ extension RangeReplaceableCollection {
 // MARK: Regex algorithms
 
 extension RangeReplaceableCollection where SubSequence == Substring {
-  @available(SwiftStdlib 5.7, *)
-  func _replacing<R: RegexComponent, Replacement: Collection>(
-    _ regex: R,
-    with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
-    subrange: Range<Index>,
-    maxReplacements: Int = .max
-  ) rethrows -> Self where Replacement.Element == Element {
-    try _replacing(
-      RegexConsumer(regex),
-      with: replacement,
-      subrange: subrange,
-      maxReplacements: maxReplacements)
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  func _replacing<R: RegexComponent, Replacement: Collection>(
-    _ regex: R,
-    with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
-    maxReplacements: Int = .max
-  ) rethrows -> Self where Replacement.Element == Element {
-    try _replacing(
-      regex,
-      with: replacement,
-      subrange: startIndex..<endIndex,
-      maxReplacements: maxReplacements)
-  }
-
-  @available(SwiftStdlib 5.7, *)
-  mutating func _replace<R: RegexComponent, Replacement: Collection>(
-    _ regex: R,
-    with replacement: (_MatchResult<RegexConsumer<R, Substring>>) throws -> Replacement,
-    maxReplacements: Int = .max
-  ) rethrows where Replacement.Element == Element {
-    self = try _replacing(
-      regex,
-      with: replacement,
-      maxReplacements: maxReplacements)
-  }
-
   /// Returns a new collection in which all occurrences of a sequence matching
   /// the given regex are replaced by another regex match.
   /// - Parameters:

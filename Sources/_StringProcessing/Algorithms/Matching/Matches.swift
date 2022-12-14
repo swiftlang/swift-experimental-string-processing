@@ -357,13 +357,6 @@ extension BidirectionalCollection where SubSequence == Substring {
       regex: regex.regex)
   }
 
-  @available(SwiftStdlib 5.7, *)
-  func _matchesFromBack<R: RegexComponent>(
-    of regex: R
-  ) -> ReversedMatchesCollection<RegexConsumer<R, Self>> {
-    _matchesFromBack(of: RegexConsumer(regex))
-  }
-
   // FIXME: Return `some Collection<Regex<R.Output>.Match> for SE-0346
   /// Returns a collection containing all matches of the specified regex.
   /// - Parameter regex: The regex to search for.

@@ -16,13 +16,24 @@ import _StringProcessing
 
 class RenderDSLTests: XCTestCase {}
 
+extension BidirectionalCollection {
+  func trimmingSuffix(while predicate: (Element) -> Bool) -> SubSequence {
+    var i = endIndex
+    while i > startIndex {
+      formIndex(before: &i)
+      if !predicate(self[i]) { return self[...i] }
+    }
+    return self[..<startIndex]
+  }
+}
+
 func testConversion(
   _ regex: String,
   _ expectedDSL: String,
   file: StaticString = #file, line: UInt = #line
 ) throws {
   let ast = try _RegexParser.parse(regex, .traditional)
-  let actualDSL = renderAsBuilderDSL(ast: ast)._trimmingSuffix(while: \.isWhitespace)
+  let actualDSL = renderAsBuilderDSL(ast: ast).trimmingSuffix(while: \.isWhitespace)
   XCTAssertEqual(actualDSL, expectedDSL[...], file: file, line: line)
 }
 
