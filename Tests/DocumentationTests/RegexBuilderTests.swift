@@ -19,8 +19,13 @@ import RegexBuilder
 
 class RegexBuilderTests: XCTestCase {}
 
+@available(SwiftStdlib 5.7, *)
 extension RegexBuilderTests {
   func testCharacterClass_inverted() throws {
+    // `CharacterClass` depends on some standard library SPI that is only
+    // available in >= macOS 13. The warning for the next line is spurious.
+    guard #available(macOS 13, *) else { return }
+    
     let validCharacters = CharacterClass("a"..."z", .anyOf("-_"))
     let invalidCharacters = validCharacters.inverted
     
