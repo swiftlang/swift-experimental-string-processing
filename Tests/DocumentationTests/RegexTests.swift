@@ -18,6 +18,7 @@ import _StringProcessing
 
 class RegexTests: XCTestCase {}
 
+@available(SwiftStdlib 5.7, *)
 extension RegexTests {
   func testRegex() throws {
     // 'keyAndValue' is created using a regex literal
@@ -91,6 +92,7 @@ extension RegexTests {
   }
 }
 
+@available(SwiftStdlib 5.7, *)
 extension RegexTests {
   func testRegex_wholeMatchIn() throws {
     let digits = /[0-9]+/

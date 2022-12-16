@@ -93,7 +93,7 @@ let package = Package(
             name: "DocumentationTests",
             dependencies: ["_StringProcessing", "RegexBuilder"],
             swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
+                availabilityDefinition,
                 .unsafeFlags(["-enable-bare-slash-regex"]),
             ]),
         
