@@ -335,6 +335,23 @@ struct VariadicsGenerator: ParsableCommand {
       case .oneOrMore: return "oneOrMore"
       }
     }
+    
+    var commentAbstract: String {
+      switch self {
+      case .zeroOrOne: return """
+          /// Creates a regex component that matches the given component
+          /// zero or one times.
+        """
+      case .zeroOrMore: return """
+          /// Creates a regex component that matches the given component
+          /// zero or more times.
+        """
+      case .oneOrMore: return """
+          /// Creates a regex component that matches the given component
+          /// one or more times.
+        """
+      }
+    }
   }
   
   struct QuantifierParameters {
@@ -389,6 +406,15 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(kind.rawValue) {
+      \(kind.commentAbstract)
+        ///
+        /// - Parameters:
+        ///   - component: The regex component.
+        ///   - behavior: The repetition behavior to use when repeating
+        ///     `component` in the match. If `behavior` is `nil`, the default
+        ///     repetition behavior is used, which can be changed from
+        ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+        ///     `Regex`.
       \(params.disfavored)\
         @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
@@ -402,6 +428,16 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension \(kind.rawValue) {
+      \(kind.commentAbstract)
+        ///
+        /// - Parameters:
+        ///   - behavior: The repetition behavior to use when repeating
+        ///     `component` in the match. If `behavior` is `nil`, the default
+        ///     repetition behavior is used, which can be changed from
+        ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+        ///     `Regex`.
+        ///   - componentBuilder: A builder closure that generates a regex
+        ///     component.
       \(params.disfavored)\
         @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
@@ -461,6 +497,10 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(groupName) {
+        /// Creates an atomic group with the given regex component.
+        ///
+        /// - Parameter component: The regex component to wrap in an atomic
+        ///   group.
         \(defaultAvailableAttr)
       \(disfavored)\
         @_alwaysEmitIntoClient
@@ -474,6 +514,10 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension \(groupName) {
+        /// Creates an atomic group with the given regex component.
+        ///
+        /// - Parameter componentBuilder: A builder closure that generates a
+        ///   regex component to wrap in an atomic group.
         \(defaultAvailableAttr)
       \(disfavored)\
         @_alwaysEmitIntoClient
@@ -499,6 +543,13 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension Repeat {
+        /// Creates a regex component that matches the given component repeated
+        /// the specified number of times.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to repeat.
+        ///   - count: The number of times to repeat `component`. `count` must
+        ///     be greater than or equal to zero.
       \(params.disfavored)\
         @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
@@ -510,6 +561,14 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(factory.exactly(count, component))
         }
 
+        /// Creates a regex component that matches the given component repeated
+        /// the specified number of times.
+        ///
+        /// - Parameters:
+        ///   - count: The number of times to repeat `component`. `count` must
+        ///     be greater than or equal to zero.
+        ///   - componentBuilder: A builder closure that creates the regex
+        ///     component to repeat.
       \(params.disfavored)\
         @_alwaysEmitIntoClient
         public init<\(params.genericParams)>(
@@ -521,6 +580,18 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(factory.exactly(count, componentBuilder()))
         }
 
+        /// Creates a regex component that matches the given component repeated
+        /// a number of times specified by the given range expression.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to repeat.
+        ///   - expression: A range expression specifying the number of times
+        ///     that `component` can repeat.
+        ///   - behavior: The repetition behavior to use when repeating
+        ///     `component` in the match. If `behavior` is `nil`, the default
+        ///     repetition behavior is used, which can be changed from
+        ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+        ///     `Regex`.
       \(params.disfavored)\
         @_alwaysEmitIntoClient
         public init<\(params.genericParams), R: RangeExpression>(
@@ -532,6 +603,19 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
         }
 
+        /// Creates a regex component that matches the given component repeated
+        /// a number of times specified by the given range expression.
+        ///
+        /// - Parameters:
+        ///   - expression: A range expression specifying the number of times
+        ///     that `component` can repeat.
+        ///   - behavior: The repetition behavior to use when repeating
+        ///     `component` in the match. If `behavior` is `nil`, the default
+        ///     repetition behavior is used, which can be changed from
+        ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+        ///     `Regex`.
+        ///   - componentBuilder: A builder closure that creates the regex
+        ///     component to repeat.
       \(params.disfavored)\
         @_alwaysEmitIntoClient
         public init<\(params.genericParams), R: RangeExpression>(
@@ -649,6 +733,9 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension Capture {
+        /// Creates a capture for the given component.
+        ///
+        /// - Parameter component: The regex component to capture.
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams)>(
@@ -658,6 +745,13 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(factory.capture(component))
         }
 
+        /// Creates a capture for the given component using the specified
+        /// reference.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to capture.
+        ///   - reference: The reference to use for anything captured by
+        ///     `component`.
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams)>(
@@ -667,6 +761,15 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(factory.capture(component, reference._raw))
         }
 
+        /// Creates a capture for the given component, transforming with the
+        /// given closure.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to capture.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
@@ -677,6 +780,17 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(factory.capture(component, nil, transform))
         }
 
+        /// Creates a capture for the given component using the specified
+        /// reference, transforming with the given closure.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to capture.
+        ///   - reference: The reference to use for anything captured by
+        ///     `component`.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
@@ -691,6 +805,16 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension TryCapture {
+        /// Creates a capture for the given component, attempting to transform
+        /// with the given closure.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to capture.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture, or `nil` if
+        ///     matching should proceed, backtracking if allowed. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
@@ -701,6 +825,18 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(factory.captureOptional(component, nil, transform))
         }
 
+        /// Creates a capture for the given component using the specified
+        /// reference, attempting to transform with the given closure.
+        ///
+        /// - Parameters:
+        ///   - component: The regex component to capture.
+        ///   - reference: The reference to use for anything captured by
+        ///     `component`.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture, or `nil` if
+        ///     matching should proceed, backtracking if allowed. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
@@ -717,6 +853,10 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension Capture {
+        /// Creates a capture for the given component.
+        ///
+        /// - Parameter componentBuilder: A builder closure that generates a
+        ///   regex component to capture.
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams)>(
@@ -726,6 +866,14 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(factory.capture(componentBuilder()))
         }
 
+        /// Creates a capture for the given component using the specified
+        /// reference.
+        ///
+        /// - Parameters:
+        ///   - reference: The reference to use for anything captured by
+        ///     `component`.
+        ///   - componentBuilder: A builder closure that generates a regex
+        ///     component to capture.
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams)>(
@@ -736,6 +884,16 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(factory.capture(componentBuilder(), reference._raw))
         }
 
+        /// Creates a capture for the given component, transforming with the
+        /// given closure.
+        ///
+        /// - Parameters:
+        ///   - componentBuilder: A builder closure that generates a regex
+        ///     component to capture.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
@@ -746,6 +904,18 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(factory.capture(componentBuilder(), nil, transform))
         }
 
+        /// Creates a capture for the given component using the specified
+        /// reference, transforming with the given closure.
+        ///
+        /// - Parameters:
+        ///   - reference: The reference to use for anything captured by
+        ///     `component`.
+        ///   - componentBuilder: A builder closure that generates a regex
+        ///     component to capture.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
@@ -760,6 +930,17 @@ struct VariadicsGenerator: ParsableCommand {
 
       \(defaultAvailableAttr)
       extension TryCapture {
+        /// Creates a capture for the given component, attempting to transform
+        /// with the given closure.
+        ///
+        /// - Parameters:
+        ///   - componentBuilder: A builder closure that generates a regex
+        ///     component to capture.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture, or `nil` if
+        ///     matching should proceed, backtracking if allowed. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
@@ -770,6 +951,19 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(factory.captureOptional(componentBuilder(), nil, transform))
         }
 
+        /// Creates a capture for the given component using the specified
+        /// reference, attempting to transform with the given closure.
+        ///
+        /// - Parameters:
+        ///   - reference: The reference to use for anything captured by
+        ///     `component`.
+        ///   - componentBuilder: A builder closure that generates a regex
+        ///     component to capture.
+        ///   - transform: A closure that takes the substring matched by
+        ///     `component` and returns a new value to capture, or `nil` if
+        ///     matching should proceed, backtracking if allowed. If `transform`
+        ///     throws an error, matching is abandoned and the error is returned
+        ///     to the caller.
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(

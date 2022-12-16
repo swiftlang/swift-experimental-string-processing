@@ -9,6 +9,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+extension BidirectionalCollection where Element: Equatable {
+   fileprivate func _ends<C: BidirectionalCollection>(with suffix: C) -> Bool
+     where C.Element == Element
+   {
+     FixedPatternConsumer(pattern: suffix).consumingBack(self[...]) != nil
+   }
+ }
+
 struct TwoWaySearcher<Searched: BidirectionalCollection>
   where Searched.Element: Comparable
 {

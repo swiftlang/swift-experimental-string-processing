@@ -12,19 +12,70 @@
 @_implementationOnly import _RegexParser
 
 /// A type that represents a regular expression.
+///
+/// You can use types that conform to `RegexComponent` as parameters to string
+/// searching operations and inside `RegexBuilder` closures.
 @available(SwiftStdlib 5.7, *)
 public protocol RegexComponent<RegexOutput> {
+  /// The output type for this regular expression.
+  ///
+  /// A `Regex` instance's output type depends on whether the `Regex` has
+  /// captures and how it is created.
+  ///
+  /// - A `Regex` created from a string using the ``init(_:)`` initializer
+  ///   has an output type of ``AnyRegexOutput``, whether it has captures or
+  ///   not.
+  /// - A `Regex` without captures created from a regex literal, the
+  ///   ``init(_:as:)`` initializer, or a `RegexBuilder` closure has a
+  ///   `Substring` output type, where the substring is the portion of the
+  ///   string that was matched.
+  /// - A `Regex` with captures created from a regex literal or the
+  ///   ``init(_:as:)`` initializer has a tuple of substrings as its output
+  ///   type. The first component of the tuple is the full portion of the string
+  ///   that was matched, with the remaining components holding the captures.
   associatedtype RegexOutput
+  
+  /// The regular expression represented by this component.
   var regex: Regex<RegexOutput> { get }
 }
 
 /// A regular expression.
 ///
-///     let regex = try Regex("a(.*)b")
-///     let match = "cbaxb".firstMatch(of: regex)
-///     print(match.0) // "axb"
-///     print(match.1) // "x"
+/// Regular expressions are a concise way of describing a pattern, which can
+/// help you match or extract portions of a string. You can create a `Regex`
+/// instance using regular expression syntax, either in a regex literal or a
+/// string.
 ///
+///     // 'keyAndValue' is created using a regex literal
+///     let keyAndValue = /(.+?): (.+)/
+///     // 'simpleDigits' is created from a pattern in a string
+///     let simpleDigits = try Regex("[0-9]+")
+///
+/// You can use a `Regex` to search for a pattern in a string or substring.
+/// Call `contains(_:)` to check for the presence of a pattern, or
+/// `firstMatch(of:)` or `matches(of:)` to find matches.
+///
+///     let setting = "color: 161 103 230"
+///     if setting.contains(simpleDigits) {
+///         print("'\(setting)' contains some digits.")
+///     }
+///     // Prints "'color: 161 103 230' contains some digits."
+///
+/// When you find a match, the resulting ``Match`` type includes an
+/// ``Match/output`` property that contains the matched substring along with
+/// any captures:
+///
+///     if let match = setting.firstMatch(of: keyAndValue) {
+///         print("Key: \(match.1)")
+///         print("Value: \(match.2)")
+///     }
+///     // Key: color
+///     // Value: 161 103 230
+///
+/// When you import the `RegexBuilder` module, you can also create `Regex`
+/// instances using a clear and flexible declarative syntax. Using this
+/// style, you can combine, capture, and transform regexes, `RegexBuilder`
+/// types, and custom parsers.
 @available(SwiftStdlib 5.7, *)
 public struct Regex<Output>: RegexComponent {
   let program: Program
@@ -64,8 +115,8 @@ public struct Regex<Output>: RegexComponent {
 @available(SwiftStdlib 5.7, *)
 extension Regex {
   @available(*, deprecated, renamed: "init(verbatim:)")
-  public init(quoting string: String) {
-    self.init(node: .quotedLiteral(string))
+  public init(quoting _string: String) {
+    self.init(node: .quotedLiteral(_string))
   }
 }
 
@@ -95,12 +146,29 @@ extension Regex {
     
     /// The program for execution with the matching engine.
     var loweredProgram: MEProgram {
-      if let loweredObject = _loweredProgramStorage as? ProgramBox {
-        return loweredObject.value
+      /// Atomically loads the compiled program if it has already been stored.
+      func loadProgram() -> MEProgram? {
+        guard let loweredObject = _stdlib_atomicLoadARCRef(object: &_loweredProgramStorage)
+          else { return nil }
+        return unsafeDowncast(loweredObject, to: ProgramBox.self).value
       }
-      let lowered = try! Compiler(tree: tree, compileOptions: compileOptions).emit()
-      _stdlib_atomicInitializeARCRef(object: &_loweredProgramStorage, desired: ProgramBox(lowered))
-      return lowered
+      
+      // Use the previously compiled program, if available.
+      if let program = loadProgram() {
+        return program
+      }
+      
+      // Compile the DSLTree into a lowered program and store it atomically.
+      let compiledProgram = try! Compiler(tree: tree, compileOptions: compileOptions).emit()
+      let storedNewProgram = _stdlib_atomicInitializeARCRef(
+        object: &_loweredProgramStorage,
+        desired: ProgramBox(compiledProgram))
+      
+      // Return the winner of the storage race. We're guaranteed at this point
+      // to have compiled program stored in `_loweredProgramStorage`.
+      return storedNewProgram
+        ? compiledProgram
+        : loadProgram()!
     }
 
     init(ast: AST) {
