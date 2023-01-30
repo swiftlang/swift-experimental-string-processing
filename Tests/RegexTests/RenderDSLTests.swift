@@ -135,6 +135,32 @@ extension RenderDSLTests {
         }
       }
       """#)
+    
+    try testConversion(#"a(?:\w|\W)b(?:\d|\D)c(?:\v|\V)d(?:\h|\H)e"#, #"""
+      Regex {
+        "a"
+        ChoiceOf {
+          One(.word)
+          One(.word.inverted)
+        }
+        "b"
+        ChoiceOf {
+          One(.digit)
+          One(.digit.inverted)
+        }
+        "c"
+        ChoiceOf {
+          One(.verticalWhitespace)
+          One(.verticalWhitespace.inverted)
+        }
+        "d"
+        ChoiceOf {
+          One(.horizontalWhitespace)
+          One(.horizontalWhitespace.inverted)
+        }
+        "e"
+      }
+      """#)
   }
 
   func testOptions() throws {
