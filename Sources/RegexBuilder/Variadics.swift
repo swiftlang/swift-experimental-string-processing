@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Copyright (c) 2021-2023 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -571,7 +571,11 @@ extension RegexComponentBuilder {
     accumulated: R0, next: R1
   ) -> Regex<Substring> where R0.RegexOutput == W0  {
     let factory = makeFactory()
-    return factory.accumulate(accumulated, next)
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return factory.accumulate(accumulated, factory.ignoreCapturesInTypedOutput(next))
+    } else {
+      return factory.accumulate(accumulated, next)
+    }
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -582,7 +586,11 @@ extension RegexComponentBuilder {
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0)> where R0.RegexOutput == (W0, C0)  {
     let factory = makeFactory()
-    return factory.accumulate(accumulated, next)
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return factory.accumulate(accumulated, factory.ignoreCapturesInTypedOutput(next))
+    } else {
+      return factory.accumulate(accumulated, next)
+    }
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -593,7 +601,11 @@ extension RegexComponentBuilder {
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1)> where R0.RegexOutput == (W0, C0, C1)  {
     let factory = makeFactory()
-    return factory.accumulate(accumulated, next)
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return factory.accumulate(accumulated, factory.ignoreCapturesInTypedOutput(next))
+    } else {
+      return factory.accumulate(accumulated, next)
+    }
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -604,7 +616,11 @@ extension RegexComponentBuilder {
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2)> where R0.RegexOutput == (W0, C0, C1, C2)  {
     let factory = makeFactory()
-    return factory.accumulate(accumulated, next)
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return factory.accumulate(accumulated, factory.ignoreCapturesInTypedOutput(next))
+    } else {
+      return factory.accumulate(accumulated, next)
+    }
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -615,7 +631,11 @@ extension RegexComponentBuilder {
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3)> where R0.RegexOutput == (W0, C0, C1, C2, C3)  {
     let factory = makeFactory()
-    return factory.accumulate(accumulated, next)
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return factory.accumulate(accumulated, factory.ignoreCapturesInTypedOutput(next))
+    } else {
+      return factory.accumulate(accumulated, next)
+    }
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -626,7 +646,11 @@ extension RegexComponentBuilder {
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4)> where R0.RegexOutput == (W0, C0, C1, C2, C3, C4)  {
     let factory = makeFactory()
-    return factory.accumulate(accumulated, next)
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return factory.accumulate(accumulated, factory.ignoreCapturesInTypedOutput(next))
+    } else {
+      return factory.accumulate(accumulated, next)
+    }
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -637,7 +661,11 @@ extension RegexComponentBuilder {
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5)> where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5)  {
     let factory = makeFactory()
-    return factory.accumulate(accumulated, next)
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return factory.accumulate(accumulated, factory.ignoreCapturesInTypedOutput(next))
+    } else {
+      return factory.accumulate(accumulated, next)
+    }
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -648,7 +676,11 @@ extension RegexComponentBuilder {
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6)> where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6)  {
     let factory = makeFactory()
-    return factory.accumulate(accumulated, next)
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return factory.accumulate(accumulated, factory.ignoreCapturesInTypedOutput(next))
+    } else {
+      return factory.accumulate(accumulated, next)
+    }
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -659,7 +691,11 @@ extension RegexComponentBuilder {
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7)> where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7)  {
     let factory = makeFactory()
-    return factory.accumulate(accumulated, next)
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return factory.accumulate(accumulated, factory.ignoreCapturesInTypedOutput(next))
+    } else {
+      return factory.accumulate(accumulated, next)
+    }
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -670,7 +706,11 @@ extension RegexComponentBuilder {
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8)> where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8)  {
     let factory = makeFactory()
-    return factory.accumulate(accumulated, next)
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return factory.accumulate(accumulated, factory.ignoreCapturesInTypedOutput(next))
+    } else {
+      return factory.accumulate(accumulated, next)
+    }
   }
 }
 @available(SwiftStdlib 5.7, *)
@@ -681,7 +721,11 @@ extension RegexComponentBuilder {
     accumulated: R0, next: R1
   ) -> Regex<(Substring, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)> where R0.RegexOutput == (W0, C0, C1, C2, C3, C4, C5, C6, C7, C8, C9)  {
     let factory = makeFactory()
-    return factory.accumulate(accumulated, next)
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return factory.accumulate(accumulated, factory.ignoreCapturesInTypedOutput(next))
+    } else {
+      return factory.accumulate(accumulated, next)
+    }
   }
 }
 

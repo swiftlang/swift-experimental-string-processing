@@ -42,6 +42,9 @@ extension DSLTree {
     /// Matches a noncapturing subpattern.
     case nonCapturingGroup(_AST.GroupKind, Node)
 
+    /// Marks all captures in a subpattern as ignored in strongly-typed output.
+    case ignoreCapturesInTypedOutput(Node)
+    
     // TODO: Consider splitting off grouped conditions, or have
     // our own kind
 
@@ -340,6 +343,27 @@ typealias _CharacterPredicateInterface = (
  */
 
 extension DSLTree.Node {
+  /// Indicates whether this node has at least one child node (among other
+  /// associated values).
+  var hasChildNodes: Bool {
+    switch self {
+    case .trivia, .empty, .quotedLiteral,
+        .consumer, .matcher, .characterPredicate,
+        .customCharacterClass, .atom:
+      return false
+      
+    case .orderedChoice(let c), .concatenation(let c):
+      return !c.isEmpty
+      
+    case .convertedRegexLiteral, .capture, .nonCapturingGroup,
+        .quantification, .ignoreCapturesInTypedOutput, .conditional:
+      return true
+      
+    case .absentFunction(let abs):
+      return !abs.ast.children.isEmpty
+    }
+  }
+  
   @_spi(RegexBuilder)
   public var children: [DSLTree.Node] {
     switch self {
@@ -354,6 +378,7 @@ extension DSLTree.Node {
     case let .capture(_, _, n, _):        return [n]
     case let .nonCapturingGroup(_, n):    return [n]
     case let .quantification(_, _, n):    return [n]
+    case let .ignoreCapturesInTypedOutput(n):        return [n]
 
     case let .conditional(_, t, f): return [t,f]
 
@@ -403,11 +428,13 @@ extension DSLTree {
 }
 
 extension DSLTree {
+  /// Indicates whether this DSLTree contains any capture groups.
   var hasCapture: Bool {
     root.hasCapture
   }
 }
 extension DSLTree.Node {
+  /// Indicates whether this DSLTree node contains any capture groups.
   var hasCapture: Bool {
     switch self {
     case .capture:
@@ -572,52 +599,55 @@ struct CaptureTransform: Hashable, CustomStringConvertible {
 
 extension CaptureList.Builder {
   mutating func addCaptures(
-    of node: DSLTree.Node, optionalNesting nesting: OptionalNesting
+    of node: DSLTree.Node, optionalNesting nesting: OptionalNesting, visibleInTypedOutput: Bool
   ) {
     switch node {
     case let .orderedChoice(children):
       for child in children {
-        addCaptures(of: child, optionalNesting: nesting.addingOptional)
+        addCaptures(of: child, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
       }
 
     case let .concatenation(children):
       for child in children {
-        addCaptures(of: child, optionalNesting: nesting)
+        addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
       }
 
     case let .capture(name, _, child, transform):
       captures.append(.init(
         name: name,
         type: transform?.resultType ?? child.wholeMatchType,
-        optionalDepth: nesting.depth, .fake))
-      addCaptures(of: child, optionalNesting: nesting)
+        optionalDepth: nesting.depth, visibleInTypedOutput: visibleInTypedOutput, .fake))
+      addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
 
     case let .nonCapturingGroup(kind, child):
       assert(!kind.ast.isCapturing)
-      addCaptures(of: child, optionalNesting: nesting)
+      addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
+      
+    case let .ignoreCapturesInTypedOutput(child):
+      addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: false)
 
     case let .conditional(cond, trueBranch, falseBranch):
       switch cond.ast {
       case .group(let g):
-        addCaptures(of: .group(g), optionalNesting: nesting)
+        addCaptures(of: .group(g), optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
       default:
         break
       }
 
-      addCaptures(of: trueBranch, optionalNesting: nesting.addingOptional)
-      addCaptures(of: falseBranch, optionalNesting: nesting.addingOptional)
+      addCaptures(of: trueBranch, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
+      addCaptures(of: falseBranch, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
 
     case let .quantification(amount, _, child):
       var optNesting = nesting
       if amount.ast.bounds.atLeast == 0 {
         optNesting = optNesting.addingOptional
       }
-      addCaptures(of: child, optionalNesting: optNesting)
+      addCaptures(of: child, optionalNesting: optNesting, visibleInTypedOutput: visibleInTypedOutput)
 
     case let .absentFunction(abs):
       switch abs.ast.kind {
       case .expression(_, _, let child):
-        addCaptures(of: child, optionalNesting: nesting)
+        addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
       case .clearer, .repeater, .stopper:
         break
       }
@@ -625,7 +655,7 @@ extension CaptureList.Builder {
     case let .convertedRegexLiteral(n, _):
       // We disable nesting for converted AST trees, as literals do not nest
       // captures. This includes literals nested in a DSL.
-      return addCaptures(of: n, optionalNesting: nesting.disablingNesting)
+      return addCaptures(of: n, optionalNesting: nesting.disablingNesting, visibleInTypedOutput: visibleInTypedOutput)
 
     case .matcher:
       break
@@ -639,8 +669,8 @@ extension CaptureList.Builder {
   static func build(_ dsl: DSLTree) -> CaptureList {
     var builder = Self()
     builder.captures.append(
-      .init(type: dsl.root.wholeMatchType, optionalDepth: 0, .fake))
-    builder.addCaptures(of: dsl.root, optionalNesting: .init(canNest: true))
+      .init(type: dsl.root.wholeMatchType, optionalDepth: 0, visibleInTypedOutput: true, .fake))
+    builder.addCaptures(of: dsl.root, optionalNesting: .init(canNest: true), visibleInTypedOutput: true)
     return builder.captures
   }
 }
@@ -650,7 +680,7 @@ extension DSLTree.Node {
   /// output but forwarding its only child's output.
   var isOutputForwarding: Bool {
     switch self {
-    case .nonCapturingGroup:
+    case .nonCapturingGroup, .ignoreCapturesInTypedOutput:
       return true
     case .orderedChoice, .concatenation, .capture,
          .conditional, .quantification, .customCharacterClass, .atom,
@@ -710,6 +740,7 @@ extension DSLTree {
       case let .capture(_, _, n, _):        return [_Tree(n)]
       case let .nonCapturingGroup(_, n):    return [_Tree(n)]
       case let .quantification(_, _, n):    return [_Tree(n)]
+      case let .ignoreCapturesInTypedOutput(n):        return [_Tree(n)]
 
       case let .conditional(_, t, f): return [_Tree(t), _Tree(f)]
 
