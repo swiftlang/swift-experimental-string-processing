@@ -518,6 +518,14 @@ extension PrettyPrinter {
         } else {
           output(base.0)
         }
+
+      case let .characterClass(cc):
+        if wrap {
+          output("One(\(cc._patternBase))")
+        } else {
+          output(cc._patternBase)
+        }
+
       default:
         print(" // TODO: Atom \(a)")
       }

@@ -276,4 +276,40 @@ extension RenderDSLTests {
       }
       """#)
   }
+
+  func testCharacterClass() throws {
+    try testConversion(#"[abc]+"#, #"""
+      Regex {
+        OneOrMore(.anyOf("abc"))
+      }
+      """#)
+
+    try testConversion(#"[[:whitespace:]]"#, #"""
+      Regex {
+        One(.whitespace)
+      }
+      """#)
+
+    try testConversion(#"[\b\w]+"#, #"""
+      Regex {
+        OneOrMore {
+          CharacterClass(
+            .anyOf("\u{8}"),
+            .word
+          )
+        }
+      }
+      """#)
+
+    try testConversion(#"[abc\sd]+"#, #"""
+      Regex {
+        OneOrMore {
+          CharacterClass(
+            .anyOf("abcd"),
+            .whitespace
+          )
+        }
+      }
+      """#)
+  }
 }
