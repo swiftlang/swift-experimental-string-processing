@@ -119,7 +119,9 @@ enum MatchCall {
 
 func customTest<Match: Equatable>(
   _ regex: Regex<Match>,
-  _ tests: (input: String, call: MatchCall, match: Match?)...
+  _ tests: (input: String, call: MatchCall, match: Match?)...,
+  file: StaticString = #file,
+  line: UInt = #line
 ) {
   for (input, call, match) in tests {
     let result: Match?
@@ -129,7 +131,40 @@ func customTest<Match: Equatable>(
     case .firstMatch:
       result = input.firstMatch(of: regex)?.output
     }
-    XCTAssertEqual(result, match)
+    XCTAssertEqual(result, match, file: file, line: line)
+  }
+}
+
+func customTest<Match>(
+  _ regex: Regex<Match>,
+  _ isEquivalent: (Match, Match) -> Bool,
+  _ tests: (input: String, call: MatchCall, match: Match?)...,
+  file: StaticString = #file,
+  line: UInt = #line
+) {
+  for (input, call, match) in tests {
+    let result: Match?
+    switch call {
+    case .match:
+      result = input.wholeMatch(of: regex)?.output
+    case .firstMatch:
+      result = input.firstMatch(of: regex)?.output
+    }
+    switch (result, match) {
+    case let (result?, match?):
+      XCTAssert(
+        isEquivalent(result, match),
+        "'\(result)' isn't equal to '\(match)'.",
+        file: file, line: line)
+    case (nil, nil):
+      // Success
+      break
+    case (nil, _):
+      XCTFail("No match when expected", file: file, line: line)
+    case (_, nil):
+      XCTFail("Unexpected match", file: file, line: line)
+    }
+    
   }
 }
 
@@ -210,40 +245,92 @@ class CustomRegexComponentTests: XCTestCase {
       ("abc", .firstMatch, nil),
       ("55z", .match, nil),
       ("55z", .firstMatch, 5))
+    
+    customTest(
+      Regex<(Substring, Substring, Int)> {
+        #/(\D+)/#
+        Capture(Numbler())
+      },
+      ==,
+      ("ab123c", .firstMatch, ("ab1", "ab", 1)),
+      ("abc", .firstMatch, nil),
+      ("123", .firstMatch, nil),
+      ("a55z", .match, nil),
+      ("a55z", .firstMatch, ("a5", "a", 5)))
+    
+    customTest(
+      Regex<(Substring, prefix: Substring)> {
+        #/(?<prefix>\D+)/#
+      },
+      ==,
+      ("ab123c", .firstMatch, ("ab", "ab")),
+      ("abc", .firstMatch, ("abc", "abc")),
+      ("123", .firstMatch, nil),
+      ("a55z", .match, nil),
+      ("a55z", .firstMatch, ("a", "a")))
 
-    // TODO: Convert below tests to better infra. Right now
-    // it's hard because `Match` is constrained to be
-    // `Equatable` which tuples cannot be.
+    customTest(
+      Regex<Substring> {
+        #/(?<prefix>\D+)/#
+        Optionally("~")
+      },
+      ("ab123c", .firstMatch, "ab"),
+      ("abc", .firstMatch, "abc"),
+      ("123", .firstMatch, nil),
+      ("a55z", .match, nil),
+      ("a55z", .firstMatch, "a"))
 
-    let regex3 = Regex {
-      Capture {
-        OneOrMore {
-          Numbler()
+    customTest(
+      Regex<(Substring, Int)> {
+        #/(?<prefix>\D+)/#
+        Capture(Numbler())
+      },
+      ==,
+      ("ab123c", .firstMatch, ("ab1", 1)),
+      ("abc", .firstMatch, nil),
+      ("123", .firstMatch, nil),
+      ("a55z", .match, nil),
+      ("a55z", .firstMatch, ("a5", 5)))
+    
+    customTest(
+      Regex<(Substring, Int, Substring)> {
+        #/(?<prefix>\D+)/#
+        Regex {
+          Capture(Numbler())
+          Capture(OneOrMore(.word))
         }
-      }
-    }
-
-    let str = "ab123c"
-    let res3 = try XCTUnwrap(str.firstMatch(of: regex3))
-
-    let expectedSubstring = str.dropFirst(2).prefix(3)
-    XCTAssertEqual(res3.range, expectedSubstring.startIndex..<expectedSubstring.endIndex)
-    XCTAssertEqual(res3.output.0, expectedSubstring)
-    XCTAssertEqual(res3.output.1, expectedSubstring)
-
-    let regex4 = Regex {
-      OneOrMore {
-        Capture { Numbler() }
-      }
-    }
-
-    guard let res4 = "ab123c".firstMatch(of: regex4) else {
-      XCTFail()
-      return
-    }
-
-    XCTAssertEqual(res4.output.0, "123")
-    XCTAssertEqual(res4.output.1, 3)
+      },
+      ==,
+      ("ab123c", .firstMatch, ("ab123c", 1, "23c")),
+      ("abc", .firstMatch, nil),
+      ("123", .firstMatch, nil),
+      ("a55z", .match, ("a55z", 5, "5z")),
+      ("a55z", .firstMatch, ("a55z", 5, "5z")))
+    
+    customTest(
+      Regex<(Substring, Substring)> {
+        Capture {
+          OneOrMore {
+            Numbler()
+          }
+        }
+      },
+      ==,
+      ("abc123", .firstMatch, ("123", "123")),
+      ("abc123", .match, nil),
+      ("abc", .firstMatch, nil))
+    
+    customTest(
+      Regex<(Substring, Int)> {
+        OneOrMore {
+          Capture { Numbler() }
+        }
+      },
+      ==,
+      ("ab123c", .firstMatch, ("123", 3)),
+      ("abc", .firstMatch, nil),
+      ("55z", .match, nil),
+      ("55z", .firstMatch, ("55", 5)))
   }
 
   func testRegexAbort() {
