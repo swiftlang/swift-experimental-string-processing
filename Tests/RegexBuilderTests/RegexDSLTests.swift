@@ -14,6 +14,7 @@ import _StringProcessing
 import RegexBuilder
 import TestSupport
 
+@available(SwiftStdlib 5.7, *)
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<Content: RegexComponent, MatchType>(
     _ tests: (input: String, expectedCaptures: MatchType?)...,
