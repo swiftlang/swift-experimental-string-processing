@@ -117,7 +117,7 @@ enum MatchCall {
   case firstMatch
 }
 
-func customTest<Match: Equatable>(
+fileprivate func customTest<Match: Equatable>(
   _ regex: Regex<Match>,
   _ tests: (input: String, call: MatchCall, match: Match?)...,
   file: StaticString = #file,
@@ -135,7 +135,7 @@ func customTest<Match: Equatable>(
   }
 }
 
-func customTest<Match>(
+fileprivate func customTest<Match>(
   _ regex: Regex<Match>,
   _ isEquivalent: (Match, Match) -> Bool,
   _ tests: (input: String, call: MatchCall, match: Match?)...,
@@ -164,7 +164,6 @@ func customTest<Match>(
     case (_, nil):
       XCTFail("Unexpected match", file: file, line: line)
     }
-    
   }
 }
 
@@ -245,29 +244,6 @@ class CustomRegexComponentTests: XCTestCase {
       ("abc", .firstMatch, nil),
       ("55z", .match, nil),
       ("55z", .firstMatch, 5))
-    
-    customTest(
-      Regex<(Substring, Substring, Int)> {
-        #/(\D+)/#
-        Capture(Numbler())
-      },
-      ==,
-      ("ab123c", .firstMatch, ("ab1", "ab", 1)),
-      ("abc", .firstMatch, nil),
-      ("123", .firstMatch, nil),
-      ("a55z", .match, nil),
-      ("a55z", .firstMatch, ("a5", "a", 5)))
-    
-    customTest(
-      Regex<(Substring, prefix: Substring)> {
-        #/(?<prefix>\D+)/#
-      },
-      ==,
-      ("ab123c", .firstMatch, ("ab", "ab")),
-      ("abc", .firstMatch, ("abc", "abc")),
-      ("123", .firstMatch, nil),
-      ("a55z", .match, nil),
-      ("a55z", .firstMatch, ("a", "a")))
 
     customTest(
       Regex<Substring> {
@@ -279,6 +255,30 @@ class CustomRegexComponentTests: XCTestCase {
       ("123", .firstMatch, nil),
       ("a55z", .match, nil),
       ("a55z", .firstMatch, "a"))
+
+#if !os(Linux)
+    customTest(
+      Regex<(Substring, Substring, Int)> {
+        #/(\D+)/#
+        Capture(Numbler())
+      },
+      ==,
+      ("ab123c", .firstMatch, ("ab1", "ab", 1)),
+      ("abc", .firstMatch, nil),
+      ("123", .firstMatch, nil),
+      ("a55z", .match, nil),
+      ("a55z", .firstMatch, ("a5", "a", 5)))
+
+    customTest(
+      Regex<(Substring, prefix: Substring)> {
+        #/(?<prefix>\D+)/#
+      },
+      ==,
+      ("ab123c", .firstMatch, ("ab", "ab")),
+      ("abc", .firstMatch, ("abc", "abc")),
+      ("123", .firstMatch, nil),
+      ("a55z", .match, nil),
+      ("a55z", .firstMatch, ("a", "a")))
 
     customTest(
       Regex<(Substring, Int)> {
@@ -331,6 +331,7 @@ class CustomRegexComponentTests: XCTestCase {
       ("abc", .firstMatch, nil),
       ("55z", .match, nil),
       ("55z", .firstMatch, ("55", 5)))
+#endif
   }
 
   func testRegexAbort() {
