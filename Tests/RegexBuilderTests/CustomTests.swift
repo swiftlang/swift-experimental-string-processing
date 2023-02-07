@@ -136,7 +136,7 @@ fileprivate func customTest<Match: Equatable>(
 }
 
 fileprivate func customTest<Match>(
-  _ regex: Regex<Match>,
+  _ regex: some RegexComponent<Match>,
   _ isEquivalent: (Match, Match) -> Bool,
   _ tests: (input: String, call: MatchCall, match: Match?)...,
   file: StaticString = #file,
