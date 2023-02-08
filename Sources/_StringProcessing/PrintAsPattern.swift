@@ -778,7 +778,7 @@ extension DSLTree.Atom.CharacterClass {
     case .verticalWhitespace:
       return ".verticalWhitespace"
     case .notVerticalWhitespace:
-      return ".vertialWhitespace.inverted"
+      return ".verticalWhitespace.inverted"
     case .whitespace:
       return ".whitespace"
     case .notWhitespace:
