@@ -14,7 +14,9 @@
 /// A type that represents the current state of regex matching options, with
 /// stack-based scoping.
 struct MatchingOptions {
-  fileprivate var stack: [Representation]
+  // FIXME: Workaround for rdar://104923020
+  // fileprivate
+  var stack: [Representation]
   
   fileprivate func _invariantCheck() {
     assert(!stack.isEmpty, "Unbalanced call to endScope")
@@ -125,7 +127,9 @@ extension MatchingOptions {
 // MARK: - Implementation
 extension MatchingOptions {
   /// An option that changes the behavior of a regular expression.
-  fileprivate enum Option: Int {
+  // FIXME: Workaround for rdar://104923020
+  // fileprivate
+  enum Option: Int {
     // PCRE options
     case caseInsensitive
     case allowDuplicateGroupNames
@@ -212,7 +216,9 @@ extension MatchingOptions {
 
 extension MatchingOptions {
   /// A set of matching options.
-  fileprivate struct Representation: OptionSet, RawRepresentable {
+  // FIXME: Workaround for rdar://104923020
+  // fileprivate
+  struct Representation: OptionSet, RawRepresentable {
     var rawValue: UInt32
 
     /// Returns `true` if the option denoted by `kind` is a member of this set.
