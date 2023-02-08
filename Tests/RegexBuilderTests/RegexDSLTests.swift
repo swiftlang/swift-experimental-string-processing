@@ -1756,6 +1756,119 @@ class RegexDSLTests: XCTestCase {
       XCTFail("Expected to match capture")
     }
   }
+  
+  func testLabeledCapturesInDSL() throws {
+    let oneNumericField = "abc:123:def"
+    let twoNumericFields = "abc:123:def:456:ghi"
+    
+    let regexWithCapture = #/:(\d+):/#
+    let regexWithLabeledCapture = #/:(?<number>\d+):/#
+    let regexWithNonCapture = #/:(?:\d+):/#
+
+    do {
+      // The output type of a regex with unlabeled captures is concatenated.
+      let dslWithCapture = Regex {
+        OneOrMore(.word)
+        regexWithCapture
+        OneOrMore(.word)
+      }
+      XCTAssert(type(of: dslWithCapture).self == Regex<(Substring, Substring)>.self)
+      
+      let output = try XCTUnwrap(oneNumericField.wholeMatch(of: dslWithCapture)?.output)
+      XCTAssertEqual(output.0, oneNumericField[...])
+      XCTAssertEqual(output.1, "123")
+    }
+    do {
+      // The output type of a regex with a labeled capture is dropped.
+      let dslWithLabeledCapture = Regex {
+        OneOrMore(.word)
+        regexWithLabeledCapture
+        OneOrMore(.word)
+      }
+      XCTAssert(type(of: dslWithLabeledCapture).self == Regex<Substring>.self)
+      
+      let match = try XCTUnwrap(oneNumericField.wholeMatch(of: dslWithLabeledCapture))
+      XCTAssertEqual(match.output, oneNumericField[...])
+      
+      // We can recover the ignored captures by converting to `AnyRegexOutput`.
+      let anyOutput = AnyRegexOutput(match)
+      XCTAssertEqual(anyOutput.count, 2)
+      XCTAssertEqual(anyOutput[0].substring, oneNumericField[...])
+      XCTAssertEqual(anyOutput[1].substring, "123")
+      XCTAssertEqual(anyOutput["number"]?.substring, "123")
+    }
+    do {
+      let coalescingWithCapture = Regex {
+        "e" as Character
+        #/\u{301}(\d*)/#
+      }
+      XCTAssertNotNil(try coalescingWithCapture.firstMatch(in: "e\u{301}"))
+      XCTAssertNotNil(try coalescingWithCapture.firstMatch(in: "é"))
+
+      let coalescingWithLabeledCapture = Regex {
+        "e" as Character
+        #/\u{301}(?<number>\d*)/#
+      }
+      XCTAssertNotNil(try coalescingWithLabeledCapture.firstMatch(in: "e\u{301}"))
+      XCTAssertNotNil(try coalescingWithLabeledCapture.firstMatch(in: "é"))
+    }
+    do {
+      // Only the output type of a regex with a labeled capture is dropped,
+      // outputs of other regexes in the same DSL are concatenated.
+      let dslWithBothCaptures = Regex {
+        OneOrMore(.word)
+        regexWithCapture
+        OneOrMore(.word)
+        regexWithLabeledCapture
+        OneOrMore(.word)
+      }
+      XCTAssert(type(of: dslWithBothCaptures).self == Regex<(Substring, Substring)>.self)
+      
+      let match = try XCTUnwrap(twoNumericFields.wholeMatch(of: dslWithBothCaptures))
+      XCTAssertEqual(match.output.0, twoNumericFields[...])
+      XCTAssertEqual(match.output.1, "123")
+      
+      let anyOutput = AnyRegexOutput(match)
+      XCTAssertEqual(anyOutput.count, 3)
+      XCTAssertEqual(anyOutput[0].substring, twoNumericFields[...])
+      XCTAssertEqual(anyOutput[1].substring, "123")
+      XCTAssertEqual(anyOutput[2].substring, "456")
+    }
+    do {
+      // The output type of a regex with too many captures is dropped.
+      // "Too many" means the left and right output types would add up to >= 10.
+      let alpha = "AAA:abcdefghijklm:123:456:"
+      let regexWithTooManyCaptures = #/(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)(l)(m)/#
+      let dslWithTooManyCaptures = Regex {
+        Capture(OneOrMore(.word))
+        ":"
+        regexWithTooManyCaptures
+        ":"
+        TryCapture(OneOrMore(.word)) { Int($0) }
+        #/:(\d+):/#
+      }
+      XCTAssert(type(of: dslWithTooManyCaptures).self
+        == Regex<(Substring, Substring, Int, Substring)>.self)
+            
+      let match = try XCTUnwrap(alpha.wholeMatch(of: dslWithTooManyCaptures))
+      XCTAssertEqual(match.output.0, alpha[...])
+      XCTAssertEqual(match.output.1, "AAA")
+      XCTAssertEqual(match.output.2, 123)
+      XCTAssertEqual(match.output.3, "456")
+      
+      // All captures groups are available through `AnyRegexOutput`.
+      let anyOutput = AnyRegexOutput(match)
+      XCTAssertEqual(anyOutput.count, 17)
+      XCTAssertEqual(anyOutput[0].substring, alpha[...])
+      XCTAssertEqual(anyOutput[1].substring, "AAA")
+      for (offset, letter) in "abcdefghijklm".enumerated() {
+        XCTAssertEqual(anyOutput[offset + 2].substring, String(letter)[...])
+      }
+      XCTAssertEqual(anyOutput[15].substring, "123")
+      XCTAssertEqual(anyOutput[15].value as? Int, 123)
+      XCTAssertEqual(anyOutput[16].substring, "456")
+    }
+  }
 }
 
 extension Unicode.Scalar {
