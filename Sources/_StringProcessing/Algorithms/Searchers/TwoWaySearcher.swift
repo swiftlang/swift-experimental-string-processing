@@ -133,7 +133,10 @@ extension TwoWaySearcher: CollectionSearcher {
       searched.formIndex(before: &lIndex)
       
       if pattern[i] != searched[lIndex] {
-        searched.formIndex(&state.criticalIndex, offsetBy: period)
+        _ = searched.formIndex(
+          &state.criticalIndex,
+          offsetBy: period,
+          limitedBy: searched.endIndex)
         if periodIsExact { state.memory = (pattern.count - period, end) }
         return nil
       }
