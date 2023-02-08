@@ -174,6 +174,16 @@ class AlgorithmTests: XCTestCase {
     expectRanges("ababacabababa", "abababa", [6..<13])
     expectRanges("ababacabababa", "aba", [0..<3, 6..<9, 10..<13])
   }
+  
+  // rdar://105154010
+  func testFirstRangeMissingCrash() {
+    let str = "%2$@ %#@AROUND_TIME@"
+    let target = "%@"
+    XCTAssertNil(str.firstRange(of: target))
+    XCTAssertNil(str.dropFirst().dropLast().firstRange(of: target))
+    XCTAssertNil(str.dropFirst().dropLast().firstRange(of: target[...]))
+    XCTAssertNil(str.firstRange(of: target[...]))
+  }
 
   func testRegexSplit() {
     func expectSplit(
