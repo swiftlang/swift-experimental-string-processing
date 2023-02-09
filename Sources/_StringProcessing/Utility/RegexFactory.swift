@@ -26,10 +26,9 @@ public struct _RegexFactory {
     _ child: some RegexComponent
   ) -> Regex<Substring> {
     // Don't wrap `child` again if it's a leaf node.
-//    child.regex.root.hasChildNodes
-//      ?
-    .init(node: .ignoreCapturesInTypedOutput(child.regex.root))
-//      : .init(node: child.regex.root)
+    child.regex.root.hasChildNodes
+      ? .init(node: .ignoreCapturesInTypedOutput(child.regex.root))
+      : .init(node: child.regex.root)
   }
   
   @available(SwiftStdlib 5.7, *)
