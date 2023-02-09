@@ -16,15 +16,15 @@ import XCTest
 
 extension CaptureList.Capture {
   static var cap: Self {
-    return Self(optionalDepth: 0, .fake)
+    return Self(optionalDepth: 0, visibleInTypedOutput: true, .fake)
   }
 
   static var opt: Self {
-    return Self(optionalDepth: 1, .fake)
+    return Self(optionalDepth: 1, visibleInTypedOutput: true, .fake)
   }
 
   static func named(_ name: String, opt: Int = 0) -> Self {
-    return Self(name: name, optionalDepth: opt, .fake)
+    return Self(name: name, optionalDepth: opt, visibleInTypedOutput: true, .fake)
   }
 }
 extension CaptureList {

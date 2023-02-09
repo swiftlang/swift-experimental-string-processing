@@ -131,6 +131,9 @@ extension PrettyPrinter {
         printer.printAsPattern(convertedFromAST: child)
       }
 
+    case let .ignoreCapturesInTypedOutput(child):
+      printAsPattern(convertedFromAST: child, isTopLevel: isTopLevel)
+      
     case .conditional:
       print("/* TODO: conditional */")
 

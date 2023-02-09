@@ -27,16 +27,19 @@ extension CaptureList {
     public var type: Any.Type
     public var optionalDepth: Int
     public var location: SourceLocation
+    public var visibleInTypedOutput: Bool
 
     public init(
       name: String? = nil,
       type: Any.Type = Substring.self,
       optionalDepth: Int,
+      visibleInTypedOutput: Bool,
       _ location: SourceLocation
     ) {
       self.name = name
       self.type = type
       self.optionalDepth = optionalDepth
+      self.visibleInTypedOutput = visibleInTypedOutput
       self.location = location
     }
   }
@@ -104,58 +107,60 @@ extension CaptureList {
 
 extension CaptureList.Builder {
   public mutating func addCaptures(
-    of node: AST.Node, optionalNesting nesting: OptionalNesting
+    of node: AST.Node,
+    optionalNesting nesting: OptionalNesting,
+    visibleInTypedOutput: Bool
   ) {
     switch node {
     case let .alternation(a):
       for child in a.children {
-        addCaptures(of: child, optionalNesting: nesting.addingOptional)
+        addCaptures(of: child, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
       }
 
     case let .concatenation(c):
       for child in c.children {
-        addCaptures(of: child, optionalNesting: nesting)
+        addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
       }
 
     case let .group(g):
       switch g.kind.value {
       case .capture:
-        captures.append(.init(optionalDepth: nesting.depth, g.location))
+        captures.append(.init(optionalDepth: nesting.depth, visibleInTypedOutput: visibleInTypedOutput, g.location))
 
       case .namedCapture(let name):
         captures.append(.init(
-          name: name.value, optionalDepth: nesting.depth, g.location))
+          name: name.value, optionalDepth: nesting.depth, visibleInTypedOutput: visibleInTypedOutput, g.location))
 
       case .balancedCapture(let b):
         captures.append(.init(
-          name: b.name?.value, optionalDepth: nesting.depth, g.location))
+          name: b.name?.value, optionalDepth: nesting.depth, visibleInTypedOutput: visibleInTypedOutput, g.location))
 
       default: break
       }
-      addCaptures(of: g.child, optionalNesting: nesting)
+      addCaptures(of: g.child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
 
     case .conditional(let c):
       switch c.condition.kind {
       case .group(let g):
-        addCaptures(of: .group(g), optionalNesting: nesting)
+        addCaptures(of: .group(g), optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
       default:
         break
       }
 
-      addCaptures(of: c.trueBranch, optionalNesting: nesting.addingOptional)
-      addCaptures(of: c.falseBranch, optionalNesting: nesting.addingOptional)
+      addCaptures(of: c.trueBranch, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
+      addCaptures(of: c.falseBranch, optionalNesting: nesting.addingOptional, visibleInTypedOutput: visibleInTypedOutput)
 
     case .quantification(let q):
       var optNesting = nesting
       if q.amount.value.bounds.atLeast == 0 {
         optNesting = optNesting.addingOptional
       }
-      addCaptures(of: q.child, optionalNesting: optNesting)
+      addCaptures(of: q.child, optionalNesting: optNesting, visibleInTypedOutput: visibleInTypedOutput)
 
     case .absentFunction(let abs):
       switch abs.kind {
       case .expression(_, _, let child):
-        addCaptures(of: child, optionalNesting: nesting)
+        addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
       case .clearer, .repeater, .stopper:
         break
       }
@@ -166,8 +171,8 @@ extension CaptureList.Builder {
   }
   public static func build(_ ast: AST) -> CaptureList {
     var builder = Self()
-    builder.captures.append(.init(optionalDepth: 0, .fake))
-    builder.addCaptures(of: ast.root, optionalNesting: .init(canNest: false))
+    builder.captures.append(.init(optionalDepth: 0, visibleInTypedOutput: true, .fake))
+    builder.addCaptures(of: ast.root, optionalNesting: .init(canNest: false), visibleInTypedOutput: true)
     return builder.captures
   }
 }

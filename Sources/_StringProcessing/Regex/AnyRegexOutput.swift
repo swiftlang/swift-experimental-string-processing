@@ -359,6 +359,10 @@ extension AnyRegexOutput {
 
     /// The capture reference this element refers to.
     var referenceID: ReferenceID? = nil
+    
+    /// A Boolean value indicating whether this capture should be included in
+    /// the typed output.
+    var visibleInTypedOutput: Bool
   }
 
   internal init(input: String, elements: [ElementRepresentation]) {
