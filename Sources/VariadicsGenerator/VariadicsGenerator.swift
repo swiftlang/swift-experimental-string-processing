@@ -132,7 +132,7 @@ struct VariadicsGenerator: ParsableCommand {
       //
       // This source file is part of the Swift.org open source project
       //
-      // Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+      // Copyright (c) 2021-2023 Apple Inc. and the Swift project authors
       // Licensed under Apache License v2.0 with Runtime Library Exception
       //
       // See https://swift.org/LICENSE.txt for license information
@@ -262,7 +262,20 @@ struct VariadicsGenerator: ParsableCommand {
           accumulated: R0, next: R1
         ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
           let factory = makeFactory()
+      
+      """)
+    if leftArity == 0 {
+      output("""
+          return factory.accumulate(ignoringOutputTypeOf: accumulated, next)
+      
+      """)
+    } else {
+      output("""
           return factory.accumulate(accumulated, next)
+      
+      """)
+    }
+    output("""
         }
       }
 
@@ -274,7 +287,6 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
       \(defaultAvailableAttr)
       extension \(concatBuilderName) {
-        \(defaultAvailableAttr)
         @_alwaysEmitIntoClient
         public static func buildPartialBlock<W0
       """)
@@ -308,7 +320,20 @@ struct VariadicsGenerator: ParsableCommand {
     output("""
         {
           let factory = makeFactory()
-          return factory.accumulate(accumulated, next)
+      
+      """)
+    if leftArity == 0 {
+      output("""
+          return factory.accumulate(ignoringOutputTypeOf: accumulated, andAlso: next)
+      
+      """)
+    } else {
+      output("""
+          return factory.accumulate(accumulated, ignoringOutputTypeOf: next)
+      
+      """)
+    }
+    output("""
         }
       }
 

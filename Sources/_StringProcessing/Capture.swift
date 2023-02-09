@@ -61,7 +61,7 @@ extension Sequence where Element == AnyRegexOutput.Element {
   // and traffic through existentials
   @available(SwiftStdlib 5.7, *)
   func existentialOutput(from input: String) -> Any {
-    let elements = map {
+    let elements = filter(\.representation.visibleInTypedOutput).map {
       $0.existentialOutputComponent(from: input)
     }
     return elements.count == 1
