@@ -14,7 +14,8 @@ extension CaptureList {
         optionalDepth: cap.optionalDepth,
         content: meStored.deconstructed,
         name: cap.name,
-        referenceID: list.referencedCaptureOffsets.first { $1 == i }?.key
+        referenceID: list.referencedCaptureOffsets.first { $1 == i }?.key,
+        visibleInTypedOutput: cap.visibleInTypedOutput
       )
       
       result.append(element)

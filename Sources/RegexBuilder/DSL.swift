@@ -508,3 +508,65 @@ extension Regex.Match {
 internal func makeFactory() -> _RegexFactory {
   _RegexFactory()
 }
+
+/// These are special `accumulate` methods that wrap one or both components in
+/// a node that indicates that that their output types shouldn't be included in
+/// the resulting strongly-typed output type. This is required from a
+/// `buildPartialBlock` call where a component's output type is either ignored
+/// or not included in the resulting type. For example:
+///
+///     static func buildPartialBlock<W0, W1, C1, R0: RegexComponent, R1: RegexComponent>(
+///       accumulated: R0, next: R1
+///     ) -> Regex<(Substring, C1)>  where R0.RegexOutput == W0, R1.RegexOutput == (W1, C1)
+///
+/// In this `buildPartialBlock` overload, `W0` isn't included in the
+/// resulting output type, even though it can match any output type, including
+/// a tuple. When `W0` matches a tuple type that doesn't match another overload
+/// (because of arity or labels) we need this "ignoring" variant so that we
+/// don't have a type mismatch when we ultimately cast the type-erased output
+/// to the expected type.
+@available(SwiftStdlib 5.7, *)
+extension _RegexFactory {
+  /// Concatenates the `left` and `right` component, wrapping `right` to
+  /// indicate that its output type shouldn't be included in the resulting
+  /// strongly-typed output type.
+  @_alwaysEmitIntoClient
+  internal func accumulate<Output>(
+    _ left: some RegexComponent,
+    ignoringOutputTypeOf right: some RegexComponent
+  ) -> Regex<Output> {
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return accumulate(left, ignoreCapturesInTypedOutput(right))
+    }
+    return accumulate(left, right)
+  }
+  
+  /// Concatenates the `left` and `right` component, wrapping `left` to
+  /// indicate that its output type shouldn't be included in the resulting
+  /// strongly-typed output type.
+  @_alwaysEmitIntoClient
+  internal func accumulate<Output>(
+    ignoringOutputTypeOf left: some RegexComponent,
+    _ right: some RegexComponent
+  ) -> Regex<Output> {
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return accumulate(ignoreCapturesInTypedOutput(left), right)
+    }
+    return accumulate(left, right)
+  }
+
+  /// Concatenates the `left` and `right` component, wrapping both sides to
+  /// indicate that their output types shouldn't be included in the resulting
+  /// strongly-typed output type.
+  @_alwaysEmitIntoClient
+  internal func accumulate<Output>(
+    ignoringOutputTypeOf left: some RegexComponent,
+    andAlso right: some RegexComponent
+  ) -> Regex<Output> {
+    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+      return accumulate(
+        ignoreCapturesInTypedOutput(left), ignoreCapturesInTypedOutput(right))
+    }
+    return accumulate(left, right)
+  }
+}
