@@ -58,7 +58,7 @@ class RegexDSLTests: XCTestCase {
     let regex = Regex {
       "a"
       Capture(Character("b")) // Character
-      TryCapture("1") { Int($0) } // Int
+      TryCapture { "1" } transform: { Int($0) } // Int
     }
     // Assert the inferred capture type.
     let _: (Substring, Substring, Int).Type = type(of: regex).RegexOutput.self
@@ -1756,16 +1756,21 @@ class RegexDSLTests: XCTestCase {
       XCTFail("Expected to match capture")
     }
   }
+}
   
-  func testLabeledCapturesInDSL() throws {
-    let oneNumericField = "abc:123:def"
-    let twoNumericFields = "abc:123:def:456:ghi"
+fileprivate let oneNumericField = "abc:123:def"
+fileprivate let twoNumericFields = "abc:123:def:456:ghi"
     
-    let regexWithCapture = #/:(\d+):/#
-    let regexWithLabeledCapture = #/:(?<number>\d+):/#
-    let regexWithNonCapture = #/:(?:\d+):/#
+@available(SwiftStdlib 5.7, *)
+fileprivate let regexWithCapture = #/:(\d+):/#
+@available(SwiftStdlib 5.7, *)
+fileprivate let regexWithLabeledCapture = #/:(?<number>\d+):/#
+@available(SwiftStdlib 5.7, *)
+fileprivate let regexWithNonCapture = #/:(?:\d+):/#
 
-    do {
+@available(SwiftStdlib 5.7, *)
+extension RegexDSLTests {
+  func testLabeledCaptures_regularCapture() throws {
       // The output type of a regex with unlabeled captures is concatenated.
       let dslWithCapture = Regex {
         OneOrMore(.word)
@@ -1778,7 +1783,8 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(output.0, oneNumericField[...])
       XCTAssertEqual(output.1, "123")
     }
-    do {
+  
+  func testLabeledCaptures_labeledCapture() throws {
       // The output type of a regex with a labeled capture is dropped.
       let dslWithLabeledCapture = Regex {
         OneOrMore(.word)
@@ -1797,7 +1803,8 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(anyOutput[1].substring, "123")
       XCTAssertEqual(anyOutput["number"]?.substring, "123")
     }
-    do {
+  
+  func testLabeledCaptures_coalescingWithCapture() throws {
       let coalescingWithCapture = Regex {
         "e" as Character
         #/\u{301}(\d*)/#
@@ -1812,7 +1819,8 @@ class RegexDSLTests: XCTestCase {
       XCTAssertNotNil(try coalescingWithLabeledCapture.firstMatch(in: "e\u{301}"))
       XCTAssertNotNil(try coalescingWithLabeledCapture.firstMatch(in: "é"))
     }
-    do {
+  
+  func testLabeledCaptures_bothCapture() throws {
       // Only the output type of a regex with a labeled capture is dropped,
       // outputs of other regexes in the same DSL are concatenated.
       let dslWithBothCaptures = Regex {
@@ -1834,7 +1842,8 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(anyOutput[1].substring, "123")
       XCTAssertEqual(anyOutput[2].substring, "456")
     }
-    do {
+  
+  func testLabeledCaptures_tooManyCapture() throws {
       // The output type of a regex with too many captures is dropped.
       // "Too many" means the left and right output types would add up to >= 10.
       let alpha = "AAA:abcdefghijklm:123:456:"
@@ -1869,7 +1878,6 @@ class RegexDSLTests: XCTestCase {
       XCTAssertEqual(anyOutput[16].substring, "456")
     }
   }
-}
 
 extension Unicode.Scalar {
   // Convert a hexadecimal string to a scalar
