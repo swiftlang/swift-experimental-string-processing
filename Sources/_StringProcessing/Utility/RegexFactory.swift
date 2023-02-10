@@ -20,6 +20,16 @@ public struct _RegexFactory {
   // Hide is behind an SPI that only RegexBuilder can use.
   @_spi(RegexBuilder)
   public init() {}
+
+  @available(SwiftStdlib 5.8, *)
+  public func ignoreCapturesInTypedOutput(
+    _ child: some RegexComponent
+  ) -> Regex<Substring> {
+    // Don't wrap `child` again if it's a leaf node.
+    child.regex.root.hasChildNodes
+      ? .init(node: .ignoreCapturesInTypedOutput(child.regex.root))
+      : .init(node: child.regex.root)
+  }
   
   @available(SwiftStdlib 5.7, *)
   public func accumulate<Output>(

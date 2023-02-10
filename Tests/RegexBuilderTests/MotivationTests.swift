@@ -261,6 +261,7 @@ extension RegexDSLTests {
 
 #endif
 
+@available(SwiftStdlib 5.7, *)
 extension RegexDSLTests {
   func testProposalExample() {
     let statement = """
@@ -309,7 +310,7 @@ extension RegexDSLTests {
           "CREDIT"
           "DEBIT"
         }
-      } transform: { (s: Substring) in
+      } transform: { (s: Substring) -> TransactionKind? in
         TransactionKind(rawValue: String(s))
       }
       
@@ -322,7 +323,7 @@ extension RegexDSLTests {
         Repeat(.digit, count: 2)
         Repeat(.digit, count: 2)
         Repeat(.digit, count: 4)
-      } transform: { (s: Substring) in
+      } transform: { (s: Substring) -> Date? in
         Date(mmddyyyy: String(s))
       }
       
@@ -345,7 +346,7 @@ extension RegexDSLTests {
         OneOrMore(.digit)
         "."
         Repeat(.digit, count: 2)
-      } transform: { (s: Substring) in
+      } transform: { (s: Substring) -> Double? in
         Double(s)
       }
     }

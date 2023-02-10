@@ -135,6 +135,32 @@ extension RenderDSLTests {
         }
       }
       """#)
+    
+    try testConversion(#"a(?:\w|\W)b(?:\d|\D)c(?:\v|\V)d(?:\h|\H)e"#, #"""
+      Regex {
+        "a"
+        ChoiceOf {
+          One(.word)
+          One(.word.inverted)
+        }
+        "b"
+        ChoiceOf {
+          One(.digit)
+          One(.digit.inverted)
+        }
+        "c"
+        ChoiceOf {
+          One(.verticalWhitespace)
+          One(.verticalWhitespace.inverted)
+        }
+        "d"
+        ChoiceOf {
+          One(.horizontalWhitespace)
+          One(.horizontalWhitespace.inverted)
+        }
+        "e"
+      }
+      """#)
   }
 
   func testOptions() throws {
@@ -273,6 +299,42 @@ extension RenderDSLTests {
       Regex {
         "a"
         "\u{301}"
+      }
+      """#)
+  }
+
+  func testCharacterClass() throws {
+    try testConversion(#"[abc]+"#, #"""
+      Regex {
+        OneOrMore(.anyOf("abc"))
+      }
+      """#)
+
+    try testConversion(#"[[:whitespace:]]"#, #"""
+      Regex {
+        One(.whitespace)
+      }
+      """#)
+
+    try testConversion(#"[\b\w]+"#, #"""
+      Regex {
+        OneOrMore {
+          CharacterClass(
+            .anyOf("\u{8}"),
+            .word
+          )
+        }
+      }
+      """#)
+
+    try testConversion(#"[abc\sd]+"#, #"""
+      Regex {
+        OneOrMore {
+          CharacterClass(
+            .anyOf("abcd"),
+            .whitespace
+          )
+        }
       }
       """#)
   }

@@ -874,7 +874,7 @@ fileprivate extension Compiler.ByteCodeGen {
       switch node {
       case .concatenation(let ch):
         return ch.flatMap(flatten)
-      case .convertedRegexLiteral(let n, _):
+      case .convertedRegexLiteral(let n, _), .ignoreCapturesInTypedOutput(let n):
         return flatten(n)
       default:
         return [node]
@@ -951,6 +951,9 @@ fileprivate extension Compiler.ByteCodeGen {
     case let .nonCapturingGroup(kind, child):
       try emitNoncapturingGroup(kind.ast, child)
 
+    case let .ignoreCapturesInTypedOutput(child):
+      try emitNode(child)
+      
     case .conditional:
       throw Unsupported("Conditionals")
 

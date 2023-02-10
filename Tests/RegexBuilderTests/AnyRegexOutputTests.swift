@@ -5,6 +5,7 @@ import RegexBuilder
 
 private let enablePrinting = false
 
+@available(SwiftStdlib 5.7, *)
 extension RegexDSLTests {
 
   func testContrivedAROExample() {

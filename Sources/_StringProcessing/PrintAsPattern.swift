@@ -131,6 +131,9 @@ extension PrettyPrinter {
         printer.printAsPattern(convertedFromAST: child)
       }
 
+    case let .ignoreCapturesInTypedOutput(child):
+      printAsPattern(convertedFromAST: child, isTopLevel: isTopLevel)
+      
     case .conditional:
       print("/* TODO: conditional */")
 
@@ -518,6 +521,14 @@ extension PrettyPrinter {
         } else {
           output(base.0)
         }
+
+      case let .characterClass(cc):
+        if wrap {
+          output("One(\(cc._patternBase))")
+        } else {
+          output(cc._patternBase)
+        }
+
       default:
         print(" // TODO: Atom \(a)")
       }
@@ -770,7 +781,7 @@ extension DSLTree.Atom.CharacterClass {
     case .verticalWhitespace:
       return ".verticalWhitespace"
     case .notVerticalWhitespace:
-      return ".vertialWhitespace.inverted"
+      return ".verticalWhitespace.inverted"
     case .whitespace:
       return ".whitespace"
     case .notWhitespace:
