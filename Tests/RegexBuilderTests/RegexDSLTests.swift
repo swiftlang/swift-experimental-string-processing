@@ -1254,8 +1254,8 @@ class RegexDSLTests: XCTestCase {
         TryCapture(as: b) {
           "#"
           OneOrMore(.digit)
-        } transform: { (s: Substring) in
-          Int(s.dropFirst())
+        } transform: {
+          Int($0.dropFirst())
         }
       }
       a
@@ -1272,14 +1272,14 @@ class RegexDSLTests: XCTestCase {
     do {
       let a = Reference(Substring.self)
       let b = Reference(Int.self)
-      let regex = Regex<(Substring, Substring, Int?, Int?, Substring?)> {
+      let regex = Regex {
         Capture("abc", as: a)
         ZeroOrMore {
           TryCapture(as: b) {
             "#"
             OneOrMore(.digit)
-          } transform: { (s: Substring) -> Int? in
-            Int(s.dropFirst())
+          } transform: {
+            Int($0.dropFirst())
           }
         }
         a
