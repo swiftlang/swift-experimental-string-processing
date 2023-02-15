@@ -98,10 +98,13 @@ class AlgorithmTests: XCTestCase {
     // `String.contains` get selected instead, which has inconsistent behavior.
     
     // Test that original `contains` functions are still accessible
-    let containsRef = "abcd".contains
-    XCTAssert(type(of: containsRef) == ((Character) -> Bool).self)
-    let containsParamsRef = "abcd".contains(_:)
-    XCTAssert(type(of: containsParamsRef) == ((Character) -> Bool).self)
+
+    // rdar://105502403
+    // Error: constructing SILType with type that should have been eliminated by SIL lowering
+    // let containsRef = "abcd".contains
+    // XCTAssert(type(of: containsRef) == ((Character) -> Bool).self)
+    // let containsParamsRef = "abcd".contains(_:)
+    // XCTAssert(type(of: containsParamsRef) == ((Character) -> Bool).self)
   }
   
   func testRegexRanges() {
@@ -247,10 +250,13 @@ class AlgorithmTests: XCTestCase {
     XCTAssertEqual(CountedOptionSet.arrayLiteralCreationCount, 3)
 
     // Test that original `split` functions are still accessible
-    let splitRef = "abcd".split
-    XCTAssert(type(of: splitRef) == ((Character, Int, Bool) -> [Substring]).self)
-    let splitParamsRef = "abcd".split(separator:maxSplits:omittingEmptySubsequences:)
-    XCTAssert(type(of: splitParamsRef) == ((Character, Int, Bool) -> [Substring]).self)
+    
+    // rdar://105502403
+    // Error: constructing SILType with type that should have been eliminated by SIL lowering
+    // let splitRef = "abcd".split
+    // XCTAssert(type(of: splitRef) == ((Character, Int, Bool) -> [Substring]).self)
+    // let splitParamsRef = "abcd".split(separator:maxSplits:omittingEmptySubsequences:)
+    // XCTAssert(type(of: splitParamsRef) == ((Character, Int, Bool) -> [Substring]).self)
   }
 
   func testSplitPermutations() throws {

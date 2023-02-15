@@ -15,9 +15,9 @@
 @available(SwiftStdlib 5.7, *)
 extension Regex {
   /// Creates a regular expression using a RegexBuilder closure.
-  public init<Content: RegexComponent>(
-    @RegexComponentBuilder _ content: () -> Content
-  ) where Content.RegexOutput == Output {
+  public init(
+    @RegexComponentBuilder _ content: () -> some RegexComponent<Output>
+  ) {
     self = content().regex
   }
 }
@@ -91,9 +91,9 @@ public struct One<Output>: RegexComponent {
   public var regex: Regex<Output>
 
   /// Creates a regex component that matches the given component exactly once.
-  public init<Component: RegexComponent>(
-    _ component: Component
-  ) where Component.RegexOutput == Output {
+  public init(
+    _ component: some RegexComponent<Output>
+  ) {
     self.regex = component.regex
   }
 }
