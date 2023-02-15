@@ -16,15 +16,15 @@ import TestSupport
 
 @available(SwiftStdlib 5.7, *)
 class RegexDSLTests: XCTestCase {
-  func _testDSLCaptures<Content: RegexComponent, MatchType>(
+  func _testDSLCaptures<MatchType>(
     _ tests: (input: String, expectedCaptures: MatchType?)...,
     matchType: MatchType.Type,
     _ equivalence: (MatchType, MatchType) -> Bool,
     xfail: Bool = false,
     file: StaticString = #file,
     line: UInt = #line,
-    @RegexComponentBuilder _ content: () -> Content
-  ) throws where Content.RegexOutput == MatchType {
+    @RegexComponentBuilder _ content: () -> some RegexComponent<MatchType>
+  ) throws {
     let regex = content()
     for (input, maybeExpectedCaptures) in tests {
       let maybeMatch = input.wholeMatch(of: regex)
