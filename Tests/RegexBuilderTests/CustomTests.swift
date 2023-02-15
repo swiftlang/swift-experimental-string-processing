@@ -226,7 +226,7 @@ class CustomRegexComponentTests: XCTestCase {
   // tests.
   func testCustomRegexComponents() throws {
     customTest(
-      Regex<Substring> {
+      Regex {
         Numbler()
         Asciibbler()
       },
@@ -237,7 +237,7 @@ class CustomRegexComponentTests: XCTestCase {
       ("t4", .match, nil))
 
     customTest(
-      Regex<Substring> {
+      Regex {
         OneOrMore { Numbler() }
       },
       ("ab123c", .firstMatch, "123"),
@@ -520,7 +520,7 @@ class CustomRegexComponentTests: XCTestCase {
     )
 
     customTest(
-      Regex<CurrencyParser.Currency> {
+      Regex {
         CurrencyParser()
       },
       ("USD", .usd, nil),
@@ -532,7 +532,7 @@ class CustomRegexComponentTests: XCTestCase {
 
     // No capture, two errors
     customTest(
-      Regex<Substring> {
+      Regex {
         IntParser()
         " "
         IntParser()
@@ -544,7 +544,7 @@ class CustomRegexComponentTests: XCTestCase {
     )
 
     customTest(
-      Regex<Substring> {
+      Regex {
         CurrencyParser()
         IntParser()
       },
@@ -557,7 +557,7 @@ class CustomRegexComponentTests: XCTestCase {
     // One capture, two errors: One error is thrown from inside a capture,
     // while the other one is thrown from outside
     customTest(
-      Regex<(Substring, CurrencyParser.Currency)> {
+      Regex {
         Capture { CurrencyParser() }
         IntParser()
       },
@@ -568,7 +568,7 @@ class CustomRegexComponentTests: XCTestCase {
     )
 
     customTest(
-      Regex<(Substring, Int)> {
+      Regex {
         CurrencyParser()
         Capture { IntParser() }
       },
@@ -580,7 +580,7 @@ class CustomRegexComponentTests: XCTestCase {
 
     // One capture, two errors: Both errors are thrown from inside the capture
     customTest(
-      Regex<(Substring, Substring)> {
+      Regex {
         Capture {
           CurrencyParser()
           IntParser()
@@ -594,7 +594,7 @@ class CustomRegexComponentTests: XCTestCase {
 
     // Two captures, two errors: Different erros are thrown from inside captures
     customTest(
-      Regex<(Substring, CurrencyParser.Currency, Int)> {
+      Regex {
         Capture(CurrencyParser())
         Capture(IntParser())
       },

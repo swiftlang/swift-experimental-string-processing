@@ -310,8 +310,8 @@ extension RegexDSLTests {
           "CREDIT"
           "DEBIT"
         }
-      } transform: { (s: Substring) -> TransactionKind? in
-        TransactionKind(rawValue: String(s))
+      } transform: {
+        TransactionKind(rawValue: String($0))
       }
       
       OneOrMore(.whitespace)
@@ -323,8 +323,8 @@ extension RegexDSLTests {
         Repeat(.digit, count: 2)
         Repeat(.digit, count: 2)
         Repeat(.digit, count: 4)
-      } transform: { (s: Substring) -> Date? in
-        Date(mmddyyyy: String(s))
+      } transform: {
+        Date(mmddyyyy: String($0))
       }
       
       OneOrMore(.whitespace)
@@ -346,8 +346,8 @@ extension RegexDSLTests {
         OneOrMore(.digit)
         "."
         Repeat(.digit, count: 2)
-      } transform: { (s: Substring) -> Double? in
-        Double(s)
+      } transform: {
+        Double($0)
       }
     }
     
