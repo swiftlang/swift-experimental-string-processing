@@ -73,6 +73,10 @@ func output(_ content: String) {
   print(content, terminator: "")
 }
 
+func outputMark(_ content: String) {
+  print("// MARK: - \(content)\n")
+}
+
 func outputForEach<C: Collection>(
   _ elements: C,
   separator: String? = nil,
@@ -148,13 +152,15 @@ struct VariadicsGenerator: ParsableCommand {
 
     log("Generating concatenation overloads...")
     for (leftArity, rightArity) in Permutations(totalArity: maxArity) {
-      guard rightArity != 0 else {
+      if rightArity == 0 {
+        outputMark("Partial block (left arity \(leftArity))")
         continue
       }
       log("  Left arity: \(leftArity)  Right arity: \(rightArity)")
       emitConcatenation(leftArity: leftArity, rightArity: rightArity)
     }
 
+    outputMark("Partial block (empty)")
     for arity in 0...maxArity {
       emitConcatenationWithEmpty(leftArity: arity)
     }
@@ -163,6 +169,7 @@ struct VariadicsGenerator: ParsableCommand {
 
     log("Generating quantifiers...")
     for arity in 0...maxArity {
+      outputMark("Quantifiers (arity \(arity))")
       log("  Arity \(arity): ", terminator: "")
       for kind in QuantifierKind.allCases {
         log("\(kind.rawValue) ", terminator: "")
@@ -174,6 +181,7 @@ struct VariadicsGenerator: ParsableCommand {
     }
 
     log("Generating atomic groups...")
+    outputMark("Atomic groups")
     for arity in 0...maxArity {
       log("  Arity \(arity): ", terminator: "")
       emitAtomicGroup(arity: arity)
@@ -182,11 +190,15 @@ struct VariadicsGenerator: ParsableCommand {
 
     log("Generating alternation overloads...")
     for (leftArity, rightArity) in Permutations(totalArity: maxArity) {
+      if rightArity == 0 {
+        outputMark("Alternation builder (arity \(leftArity))")
+      }
       log("  Left arity: \(leftArity)  Right arity: \(rightArity)")
       emitAlternation(leftArity: leftArity, rightArity: rightArity)
     }
 
     log("Generating 'AlternationBuilder.buildBlock(_:)' overloads...")
+    outputMark("Alternation builder buildBlock")
     for arity in 1...maxArity {
       log("  Capture arity: \(arity)")
       emitUnaryAlternationBuildBlock(arity: arity)
@@ -217,31 +229,16 @@ struct VariadicsGenerator: ParsableCommand {
     let genericParams: String = {
       var result = "W0, W1, "
       result += captureTypeList(leftArity+rightArity)
-      result += ", R0: \(regexComponentProtocolName), R1: \(regexComponentProtocolName)"
       return result
     }()
 
     // Emit concatenation type declaration.
-
-    let whereClause: String = {
-      var result = " where R0.\(outputAssociatedTypeName) == "
-      if leftArity == 0 {
-        result += "W0"
-      } else {
-        result += "(W0, "
-        result += captureTypeList(leftArity)
-        result += ")"
-      }
-      result += ", R1.\(outputAssociatedTypeName) == "
-      if rightArity == 0 {
-        result += "W1"
-      } else {
-        result += "(W1, "
-        result += captureTypeList(leftArity+rightArity, lowerBound: leftArity)
-        result += ")"
-      }
-      return result
-    }()
+    let leftOutputType = leftArity == 0
+      ? "W0"
+      : "(W0, \(captureTypeList(leftArity)))"
+    let rightOutputType = rightArity == 0
+      ? "W1"
+      : "(W1, \(captureTypeList(leftArity+rightArity, lowerBound: leftArity)))"
 
     let matchType: String = {
       if leftArity+rightArity == 0 {
@@ -259,8 +256,9 @@ struct VariadicsGenerator: ParsableCommand {
       extension \(concatBuilderName) {
         @_alwaysEmitIntoClient
         public static func buildPartialBlock<\(genericParams)>(
-          accumulated: R0, next: R1
-        ) -> \(regexTypeName)<\(matchType)> \(whereClause) {
+          accumulated: some RegexComponent<\(leftOutputType)>,
+          next: some RegexComponent<\(rightOutputType)>
+        ) -> \(regexTypeName)<\(matchType)> {
           let factory = makeFactory()
       
       """)
@@ -294,8 +292,21 @@ struct VariadicsGenerator: ParsableCommand {
       ", C\($0)"
     }
     output("""
-      , R0: \(regexComponentProtocolName), R1: \(regexComponentProtocolName)>(
-          accumulated: R0, next: R1
+      >(
+          accumulated: some \(regexComponentProtocolName)<
+      """)
+    if leftArity == 0 {
+      output("W0")
+    } else {
+      output("(W0")
+      outputForEach(0..<leftArity) {
+        ", C\($0)"
+      }
+      output(")")
+    }
+    output("""
+      >,
+          next: some \(regexComponentProtocolName)
         ) -> \(regexTypeName)<
       """)
     if leftArity == 0 {
@@ -307,18 +318,8 @@ struct VariadicsGenerator: ParsableCommand {
       }
       output(")")
     }
-    output("> where R0.\(outputAssociatedTypeName) == ")
-    if leftArity == 0 {
-      output("W0")
-    } else {
-      output("(W0")
-      outputForEach(0..<leftArity) {
-        ", C\($0)"
-      }
-      output(")")
-    }
     output("""
-        {
+      > {
           let factory = makeFactory()
       
       """)
@@ -380,30 +381,25 @@ struct VariadicsGenerator: ParsableCommand {
   }
   
   struct QuantifierParameters {
+    var arity: Int
     var disfavored: String
     var genericParams: String
     var whereClauseForInit: String
-    var whereClause: String
     var quantifiedCaptures: String
     var matchType: String
     
-    var repeatingWhereClause: String {
-      whereClauseForInit.isEmpty
-        ? "where R.Bound == Int"
-        : whereClauseForInit + ", R.Bound == Int"
-    }
-    
     init(kind: QuantifierKind, arity: Int) {
+      self.arity = arity
       self.disfavored = arity == 0 ? "  @_disfavoredOverload\n" : ""
       self.genericParams = {
         var result = ""
         if arity > 0 {
           result += "W, "
           result += captureTypeList(arity)
-          result += ", "
         }
-        result += "Component: \(regexComponentProtocolName)"
-        return result
+        return result.isEmpty
+          ? ""
+          : "<\(result)>"
       }()
 
       let capturesJoined = captureTypeList(arity)
@@ -418,10 +414,11 @@ struct VariadicsGenerator: ParsableCommand {
       self.matchType = arity == 0
         ? baseMatchTypeName
         : "(\(baseMatchTypeName), \(quantifiedCaptures))"
-      self.whereClauseForInit = "where \(outputAssociatedTypeName) == \(matchType)" +
-        (arity == 0 ? "" : ", Component.\(outputAssociatedTypeName) == (W, \(capturesJoined))")
-      self.whereClause = arity == 0 ? "" :
-        "where Component.\(outputAssociatedTypeName) == (W, \(capturesJoined))"
+      self.whereClauseForInit = "where \(outputAssociatedTypeName) == \(matchType)"
+    }
+    
+    var primaryAssociatedType: String {
+      arity == 0 ? "" : "<(W, \(captureTypeList(arity)))>"
     }
   }
 
@@ -442,8 +439,8 @@ struct VariadicsGenerator: ParsableCommand {
         ///     `Regex`.
       \(params.disfavored)\
         @_alwaysEmitIntoClient
-        public init<\(params.genericParams)>(
-          _ component: Component,
+        public init\(params.genericParams)(
+          _ component: some RegexComponent\(params.primaryAssociatedType),
           _ behavior: RegexRepetitionBehavior? = nil
         ) \(params.whereClauseForInit) {
           let factory = makeFactory()
@@ -465,9 +462,9 @@ struct VariadicsGenerator: ParsableCommand {
         ///     component.
       \(params.disfavored)\
         @_alwaysEmitIntoClient
-        public init<\(params.genericParams)>(
+        public init\(params.genericParams)(
           _ behavior: RegexRepetitionBehavior? = nil,
-          @\(concatBuilderName) _ componentBuilder: () -> Component
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent\(params.primaryAssociatedType)
         ) \(params.whereClauseForInit) {
           let factory = makeFactory()
           self.init(factory.\(kind.astQuantifierAmount)(componentBuilder(), behavior))
@@ -479,9 +476,9 @@ struct VariadicsGenerator: ParsableCommand {
         \(defaultAvailableAttr)
         extension \(concatBuilderName) {
           @_alwaysEmitIntoClient
-          public static func buildLimitedAvailability<\(params.genericParams)>(
-            _ component: Component
-          ) -> \(regexTypeName)<\(params.matchType)> \(params.whereClause) {
+          public static func buildLimitedAvailability\(params.genericParams)(
+            _ component: some RegexComponent\(params.primaryAssociatedType)
+          ) -> \(regexTypeName)<\(params.matchType)> {
             let factory = makeFactory()
             return factory.\(kind.astQuantifierAmount)(component, nil)
           }
@@ -505,19 +502,17 @@ struct VariadicsGenerator: ParsableCommand {
     let genericParams: String = {
       var result = ""
       if arity > 0 {
-        result += "W, "
+        result += "<W, "
         result += captureTypeList(arity)
-        result += ", "
+        result += ">"
       }
-      result += "Component: \(regexComponentProtocolName)"
       return result
     }()
     let capturesJoined = captureTypeList(arity)
     let matchType = arity == 0
       ? baseMatchTypeName
       : "(\(baseMatchTypeName), \(capturesJoined))"
-    let whereClauseForInit = "where \(outputAssociatedTypeName) == \(matchType)" +
-      (arity == 0 ? "" : ", Component.\(outputAssociatedTypeName) == (W, \(capturesJoined))")
+    let whereClauseForInit = "where \(outputAssociatedTypeName) == \(matchType)"
 
     output("""
       \(defaultAvailableAttr)
@@ -529,8 +524,8 @@ struct VariadicsGenerator: ParsableCommand {
         \(defaultAvailableAttr)
       \(disfavored)\
         @_alwaysEmitIntoClient
-        public init<\(genericParams)>(
-          _ component: Component
+        public init\(genericParams)(
+          _ component: some RegexComponent\(arity == 0 ? "" : "<(W, \(capturesJoined))>")
         ) \(whereClauseForInit) {
           let factory = makeFactory()
           self.init(factory.atomicNonCapturing(\(node(builder: false))))
@@ -546,8 +541,8 @@ struct VariadicsGenerator: ParsableCommand {
         \(defaultAvailableAttr)
       \(disfavored)\
         @_alwaysEmitIntoClient
-        public init<\(genericParams)>(
-          @\(concatBuilderName) _ componentBuilder: () -> Component
+        public init\(genericParams)(
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent\(arity == 0 ? "" : "<(W, \(capturesJoined))>")
         ) \(whereClauseForInit) {
           let factory = makeFactory()
           self.init(factory.atomicNonCapturing(\(node(builder: true))))
@@ -577,8 +572,8 @@ struct VariadicsGenerator: ParsableCommand {
         ///     be greater than or equal to zero.
       \(params.disfavored)\
         @_alwaysEmitIntoClient
-        public init<\(params.genericParams)>(
-          _ component: Component,
+        public init\(params.genericParams)(
+          _ component: some RegexComponent\(params.primaryAssociatedType),
           count: Int
         ) \(params.whereClauseForInit) {
           precondition(count >= 0, "Must specify a positive count")
@@ -596,9 +591,9 @@ struct VariadicsGenerator: ParsableCommand {
         ///     component to repeat.
       \(params.disfavored)\
         @_alwaysEmitIntoClient
-        public init<\(params.genericParams)>(
+        public init\(params.genericParams)(
           count: Int,
-          @\(concatBuilderName) _ componentBuilder: () -> Component
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent\(params.primaryAssociatedType)
         ) \(params.whereClauseForInit) {
           precondition(count >= 0, "Must specify a positive count")
           let factory = makeFactory()
@@ -619,11 +614,11 @@ struct VariadicsGenerator: ParsableCommand {
         ///     `Regex`.
       \(params.disfavored)\
         @_alwaysEmitIntoClient
-        public init<\(params.genericParams), R: RangeExpression>(
-          _ component: Component,
-          _ expression: R,
+        public init\(params.genericParams)(
+          _ component: some RegexComponent\(params.primaryAssociatedType),
+          _ expression: some RangeExpression<Int>,
           _ behavior: RegexRepetitionBehavior? = nil
-        ) \(params.repeatingWhereClause) {
+        ) \(params.whereClauseForInit) {
           let factory = makeFactory()
           self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
         }
@@ -643,11 +638,11 @@ struct VariadicsGenerator: ParsableCommand {
         ///     component to repeat.
       \(params.disfavored)\
         @_alwaysEmitIntoClient
-        public init<\(params.genericParams), R: RangeExpression>(
-          _ expression: R,
+        public init\(params.genericParams)(
+          _ expression: some RangeExpression<Int>,
           _ behavior: RegexRepetitionBehavior? = nil,
-          @\(concatBuilderName) _ componentBuilder: () -> Component
-        ) \(params.repeatingWhereClause) {
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent\(params.primaryAssociatedType)
+        ) \(params.whereClauseForInit) {
           let factory = makeFactory()
           self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, componentBuilder()))
         }
@@ -657,35 +652,27 @@ struct VariadicsGenerator: ParsableCommand {
   }
 
   func emitAlternation(leftArity: Int, rightArity: Int) {
-    let leftGenParams: String = {
-      if leftArity == 0 {
-        return "R0"
-      }
-      return "R0, W0, " + (0..<leftArity).map { "C\($0)" }.joined(separator: ", ")
-    }()
-    let rightGenParams: String = {
-      if rightArity == 0 {
-        return "R1"
-      }
-      return "R1, W1, " + (leftArity..<leftArity+rightArity).map { "C\($0)" }.joined(separator: ", ")
-    }()
-    let genericParams = leftGenParams + ", " + rightGenParams
-    let whereClause: String = {
-      var result = "where R0: \(regexComponentProtocolName), R1: \(regexComponentProtocolName)"
-      if leftArity > 0 {
-        result += ", R0.\(outputAssociatedTypeName) == (W0, \((0..<leftArity).map { "C\($0)" }.joined(separator: ", ")))"
-      }
-      if rightArity > 0 {
-        result += ", R1.\(outputAssociatedTypeName) == (W1, \((leftArity..<leftArity+rightArity).map { "C\($0)" }.joined(separator: ", ")))"
-      }
-      return result
-    }()
+    let leftCaptureTypes = captureTypeList(leftArity)
+    let rightCaptureTypes = captureTypeList(leftArity + rightArity, lowerBound: leftArity)
+    let leftGenParams = leftArity == 0
+      ? ""
+      : "W0, " + leftCaptureTypes
+    let rightGenParams = rightArity == 0
+      ? ""
+      : "W1, " + rightCaptureTypes
+    let _bothParams = [leftGenParams, rightGenParams]
+      .filter { !$0.isEmpty }
+      .joined(separator: ", ")
+    let genericParams = _bothParams.isEmpty
+      ? ""
+      : "<\(_bothParams)>"
+    
     let resultCaptures: String = {
-      var result = (0..<leftArity).map { "C\($0)" }.joined(separator: ", ")
+      var result = leftCaptureTypes
       if leftArity > 0, rightArity > 0 {
         result += ", "
       }
-      result += (leftArity..<leftArity+rightArity).map { "C\($0)?" }.joined(separator: ", ")
+      result += captureTypeList(leftArity + rightArity, lowerBound: leftArity, optional: true)
       return result
     }()
     let matchType: String = {
@@ -698,9 +685,10 @@ struct VariadicsGenerator: ParsableCommand {
       \(defaultAvailableAttr)
       extension \(altBuilderName) {
         @_alwaysEmitIntoClient
-        public static func buildPartialBlock<\(genericParams)>(
-          accumulated: R0, next: R1
-        ) -> ChoiceOf<\(matchType)> \(whereClause) {
+        public static func buildPartialBlock\(genericParams)(
+          accumulated: some RegexComponent\(leftGenParams.isEmpty ? "" : "<(\(leftGenParams))>"),
+          next: some RegexComponent\(rightGenParams.isEmpty ? "" : "<(\(rightGenParams))>")
+        ) -> ChoiceOf<\(matchType)> {
           let factory = makeFactory()
           return .init(factory.accumulateAlternation(accumulated, next))
         }
@@ -739,8 +727,8 @@ struct VariadicsGenerator: ParsableCommand {
   func emitCapture(arity: Int) {
     let disfavored = arity == 0 ? "  @_disfavoredOverload\n" : ""
     let genericParams = arity == 0
-      ? "R: \(regexComponentProtocolName), W"
-      : "R: \(regexComponentProtocolName), W, " + captureTypeList(arity)
+      ? "W"
+      : "W, " + captureTypeList(arity)
     let matchType = arity == 0
       ? "W"
       : "(W, " + captureTypeList(arity) + ")"
@@ -751,11 +739,10 @@ struct VariadicsGenerator: ParsableCommand {
     }
     let rawNewMatchType = newMatchType(newCaptureType: "W")
     let transformedNewMatchType = newMatchType(newCaptureType: "NewCapture")
-    let whereClauseRaw = "where \(outputAssociatedTypeName) == \(rawNewMatchType), R.\(outputAssociatedTypeName) == \(matchType)"
-    let whereClauseTransformed = "where \(outputAssociatedTypeName) == \(transformedNewMatchType), R.\(outputAssociatedTypeName) == \(matchType)"
+    let whereClauseRaw = "where \(outputAssociatedTypeName) == \(rawNewMatchType)"
+    let whereClauseTransformed = "where \(outputAssociatedTypeName) == \(transformedNewMatchType)"
+    outputMark("Non-builder capture (arity \(arity))")
     output("""
-      // MARK: - Non-builder capture arity \(arity)
-
       \(defaultAvailableAttr)
       extension Capture {
         /// Creates a capture for the given component.
@@ -764,7 +751,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams)>(
-          _ component: R
+          _ component: some RegexComponent<\(matchType)>
         ) \(whereClauseRaw) {
           let factory = makeFactory()
           self.init(factory.capture(component))
@@ -780,7 +767,8 @@ struct VariadicsGenerator: ParsableCommand {
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams)>(
-          _ component: R, as reference: Reference<W>
+          _ component: some RegexComponent<\(matchType)>,
+          as reference: Reference<W>
         ) \(whereClauseRaw) {
           let factory = makeFactory()
           self.init(factory.capture(component, reference._raw))
@@ -798,7 +786,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          _ component: R,
+          _ component: some RegexComponent<\(matchType)>,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
           let factory = makeFactory()
@@ -819,7 +807,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          _ component: R,
+          _ component: some RegexComponent<\(matchType)>,
           as reference: Reference<NewCapture>,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
@@ -843,7 +831,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          _ component: R,
+          _ component: some RegexComponent<\(matchType)>,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
           let factory = makeFactory()
@@ -865,7 +853,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          _ component: R,
+          _ component: some RegexComponent<\(matchType)>,
           as reference: Reference<NewCapture>,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
@@ -873,9 +861,10 @@ struct VariadicsGenerator: ParsableCommand {
           self.init(factory.captureOptional(component, reference._raw, transform))
         }
       }
-
-      // MARK: - Builder capture arity \(arity)
-
+      
+      """)
+      outputMark("Builder capture (arity \(arity))")
+      output("""
       \(defaultAvailableAttr)
       extension Capture {
         /// Creates a capture for the given component.
@@ -885,7 +874,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams)>(
-          @\(concatBuilderName) _ componentBuilder: () -> R
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent<\(matchType)>
         ) \(whereClauseRaw) {
           let factory = makeFactory()
           self.init(factory.capture(componentBuilder()))
@@ -903,7 +892,7 @@ struct VariadicsGenerator: ParsableCommand {
         @_alwaysEmitIntoClient
         public init<\(genericParams)>(
           as reference: Reference<W>,
-          @\(concatBuilderName) _ componentBuilder: () -> R
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent<\(matchType)>
         ) \(whereClauseRaw) {
           let factory = makeFactory()
           self.init(factory.capture(componentBuilder(), reference._raw))
@@ -922,7 +911,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          @\(concatBuilderName) _ componentBuilder: () -> R,
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent<\(matchType)>,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
           let factory = makeFactory()
@@ -945,7 +934,7 @@ struct VariadicsGenerator: ParsableCommand {
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
-          @\(concatBuilderName) _ componentBuilder: () -> R,
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent<\(matchType)>,
           transform: @escaping (W) throws -> NewCapture
         ) \(whereClauseTransformed) {
           let factory = makeFactory()
@@ -969,7 +958,7 @@ struct VariadicsGenerator: ParsableCommand {
       \(disfavored)\
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
-          @\(concatBuilderName) _ componentBuilder: () -> R,
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent<\(matchType)>,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
           let factory = makeFactory()
@@ -993,7 +982,7 @@ struct VariadicsGenerator: ParsableCommand {
         @_alwaysEmitIntoClient
         public init<\(genericParams), NewCapture>(
           as reference: Reference<NewCapture>,
-          @\(concatBuilderName) _ componentBuilder: () -> R,
+          @\(concatBuilderName) _ componentBuilder: () -> some RegexComponent<\(matchType)>,
           transform: @escaping (W) throws -> NewCapture?
         ) \(whereClauseTransformed) {
           let factory = makeFactory()

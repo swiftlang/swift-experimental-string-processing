@@ -120,17 +120,17 @@ class AlgorithmsResultBuilderTests: XCTestCase {
     case trimmingPrefix
   }
 
-  func expectMatch<R: RegexComponent, MatchType>(
+  func expectMatch<MatchType, RegexOutputType>(
     _ algo: MatchAlgo,
     _ tests: (input: String, expectedCaptures: MatchType?)...,
     matchType: MatchType.Type,
     equivalence: (MatchType, MatchType) -> Bool,
     file: StaticString = #file,
     line: UInt = #line,
-    @RegexComponentBuilder _ content: () -> R
+    @RegexComponentBuilder _ content: () -> some RegexComponent<RegexOutputType>
   ) throws {
     for (input, expectedCaptures) in tests {
-      var actual: Regex<R.RegexOutput>.Match?
+      var actual: Regex<RegexOutputType>.Match?
       switch algo {
       case .whole:
         actual = input.wholeMatch(of: content)
@@ -149,12 +149,12 @@ class AlgorithmsResultBuilderTests: XCTestCase {
     }
   }
 
-  func expectEqual<R: RegexComponent, Expected: Equatable>(
+  func expectEqual<Expected: Equatable>(
     _ algo: EquatableAlgo,
     _ tests: (input: String, expected: Expected)...,
     file: StaticString = #file,
     line: UInt = #line,
-    @RegexComponentBuilder _ content: () -> R
+    @RegexComponentBuilder _ content: () -> some RegexComponent
   ) throws {
     for (input, expected) in tests {
       var actual: Expected

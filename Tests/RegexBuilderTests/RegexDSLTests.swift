@@ -16,15 +16,15 @@ import TestSupport
 
 @available(SwiftStdlib 5.7, *)
 class RegexDSLTests: XCTestCase {
-  func _testDSLCaptures<Content: RegexComponent, MatchType>(
+  func _testDSLCaptures<MatchType>(
     _ tests: (input: String, expectedCaptures: MatchType?)...,
     matchType: MatchType.Type,
     _ equivalence: (MatchType, MatchType) -> Bool,
     xfail: Bool = false,
     file: StaticString = #file,
     line: UInt = #line,
-    @RegexComponentBuilder _ content: () -> Content
-  ) throws where Content.RegexOutput == MatchType {
+    @RegexComponentBuilder _ content: () -> some RegexComponent<MatchType>
+  ) throws {
     let regex = content()
     for (input, maybeExpectedCaptures) in tests {
       let maybeMatch = input.wholeMatch(of: regex)
@@ -1254,8 +1254,8 @@ class RegexDSLTests: XCTestCase {
         TryCapture(as: b) {
           "#"
           OneOrMore(.digit)
-        } transform: { (s: Substring) in
-          Int(s.dropFirst())
+        } transform: {
+          Int($0.dropFirst())
         }
       }
       a
@@ -1272,14 +1272,14 @@ class RegexDSLTests: XCTestCase {
     do {
       let a = Reference(Substring.self)
       let b = Reference(Int.self)
-      let regex = Regex<(Substring, Substring, Int?, Int?, Substring?)> {
+      let regex = Regex {
         Capture("abc", as: a)
         ZeroOrMore {
           TryCapture(as: b) {
             "#"
             OneOrMore(.digit)
-          } transform: { (s: Substring) -> Int? in
-            Int(s.dropFirst())
+          } transform: {
+            Int($0.dropFirst())
           }
         }
         a
