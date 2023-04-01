@@ -89,7 +89,7 @@ struct Processor {
   var metrics: ProcessorMetrics
 
   /// Set if the string has fast contiguous UTF-8 available
-  let fastUTF8: UnsafeRawBufferPointer? = nil
+  let fastUTF8: UnsafeRawBufferPointer?
 }
 
 extension Processor {
@@ -128,6 +128,7 @@ extension Processor {
        repeating: .init(), count: program.registerInfo.captures)
 
     // print(MemoryLayout<Processor>.size)
+    self.fastUTF8 = input._unsafeFastUTF8
 
     _checkInvariants()
   }
@@ -160,6 +161,16 @@ extension Processor {
     assert(subjectBounds.upperBound <= input.endIndex)
     assert(currentPosition >= searchBounds.lowerBound)
     assert(currentPosition <= searchBounds.upperBound)
+
+    assert({
+      guard let utf8 = self.fastUTF8 else { return true }
+      var copy = input
+      return copy.withUTF8 {
+        let base = UnsafeRawPointer($0.baseAddress!)
+        return utf8.baseAddress == base
+      }
+    }())
+
   }
 }
 

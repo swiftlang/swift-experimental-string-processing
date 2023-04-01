@@ -223,7 +223,7 @@ internal struct _StringObject {
   /// exclude shared strings.
   @inline(__always)
   var fastUTF8IfAvailable: UnsafeRawBufferPointer? {
-    guard self.largeFastIsTailAllocated else {
+    guard self.isLarge && self.providesFastUTF8 && self.largeFastIsTailAllocated else {
       return nil
     }
     return UnsafeRawBufferPointer(
