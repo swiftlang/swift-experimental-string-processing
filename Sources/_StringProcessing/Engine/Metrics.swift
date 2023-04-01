@@ -3,11 +3,15 @@ extension Processor {
     var instructionCounts: [Instruction.OpCode: Int] = [:]
     var backtracks: Int = 0
     var resets: Int = 0
+    var cycleCount: Int = 0
+
+    var isTracingEnabled: Bool = false
+    var shouldMeasureMetrics: Bool = false
   }
   
   func printMetrics() {
     print("===")
-    print("Total cycle count: \(cycleCount)")
+    print("Total cycle count: \(metrics.cycleCount)")
     print("Backtracks: \(metrics.backtracks)")
     print("Resets: \(metrics.resets)")
     print("Instructions:")
@@ -30,7 +34,7 @@ extension Processor {
   }
   
   mutating func measureMetrics() {
-    if shouldMeasureMetrics {
+    if metrics.shouldMeasureMetrics {
       measure()
     }
   }
