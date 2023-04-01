@@ -86,11 +86,7 @@ struct Processor {
 
   var failureReason: Error? = nil
 
-  // MARK: Metrics, debugging, etc.
-  var cycleCount = 0
-  var isTracingEnabled: Bool
-  let shouldMeasureMetrics: Bool
-  var metrics: ProcessorMetrics = ProcessorMetrics()
+  var metrics: ProcessorMetrics
 }
 
 extension Processor {
@@ -116,8 +112,11 @@ extension Processor {
     self.subjectBounds = subjectBounds
     self.searchBounds = searchBounds
     self.matchMode = matchMode
-    self.isTracingEnabled = isTracingEnabled
-    self.shouldMeasureMetrics = shouldMeasureMetrics
+
+    self.metrics = ProcessorMetrics(
+      isTracingEnabled: isTracingEnabled,
+      shouldMeasureMetrics: shouldMeasureMetrics)
+
     self.currentPosition = searchBounds.lowerBound
 
     // Initialize registers with end of search bounds
@@ -144,8 +143,8 @@ extension Processor {
 
     self.state = .inProgress
     self.failureReason = nil
-    
-    if shouldMeasureMetrics { metrics.resets += 1 }
+
+    metrics.addReset()
     _checkInvariants()
   }
 
@@ -400,8 +399,8 @@ extension Processor {
     storedCaptures = capEnds
     registers.ints = intRegisters
     registers.positions = posRegisters
-    
-    if shouldMeasureMetrics { metrics.backtracks += 1 }
+
+    metrics.addBacktrack()
   }
 
   mutating func abort(_ e: Error? = nil) {
@@ -440,18 +439,8 @@ extension Processor {
     _checkInvariants()
     assert(state == .inProgress)
 
-#if PROCESSOR_MEASUREMENTS_ENABLED
-    if cycleCount == 0 {
-      trace()
-      measureMetrics()
-    }
-    defer {
-      cycleCount += 1
-      trace()
-      measureMetrics()
-      _checkInvariants()
-    }
-#endif
+    startCycleMetrics()
+    defer { endCycleMetrics() }
 
     let (opcode, payload) = fetch()
     switch opcode {
