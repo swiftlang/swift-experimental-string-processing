@@ -34,9 +34,8 @@ private func _isASCIILetter(_ x: UInt8) -> Bool {
 private var _underscore: UInt8 { 0x5F }
 
 
+
 extension String {
-
-
   /// TODO: detailed description of nuanced semantics
   func _asciiCharacter(
     at idx: Index
@@ -128,3 +127,180 @@ extension String {
 
 }
 
+/// MARK: TODO: Better as SPI or new low-level interfaces...
+
+extension String {
+  var _object: _StringObject {
+    unsafeBitCast(self, to: _StringObject.self)
+  }
+
+  var _unsafeFastUTF8: UnsafeRawBufferPointer? {
+    // TODO: platform support, or a stdlib alternative
+#if arch(i386) || arch(arm) || arch(arm64_32) || arch(wasm32)
+    return nil
+#endif
+    return _object.fastUTF8IfAvailable
+  }
+
+}
+
+internal struct _StringObject {
+  // Abstract the count and performance-flags containing word
+  struct CountAndFlags {
+    var _storage: UInt64
+
+    @inline(__always)
+    internal init(zero: ()) { self._storage = 0 }
+  }
+
+  internal var _countAndFlagsBits: UInt64
+
+  /// Bastardization, since we can't access Builtin.BridgeObject
+  internal var discriminatedObjectRawBits: UInt64
+
+  @inline(__always)
+  internal var _countAndFlags: CountAndFlags {
+    _internalInvariant(!isSmall)
+    return CountAndFlags(rawUnchecked: _countAndFlagsBits)
+  }
+
+  // Whether this string is native, i.e. tail-allocated and nul-terminated,
+  // presupposing it is both large and fast
+  @inline(__always)
+  internal var largeFastIsTailAllocated: Bool {
+    _internalInvariant(isLarge && providesFastUTF8)
+    return _countAndFlags.isTailAllocated
+  }
+
+  //  @inlinable @_transparent
+  //  internal var discriminatedObjectRawBits: UInt64 {
+  //#if arch(i386) || arch(arm) || arch(arm64_32) || arch(wasm32)
+  //    let low32: UInt
+  //    switch _variant {
+  //    case .immortal(let bitPattern):
+  //      low32 = bitPattern
+  //    case .native(let storage):
+  //      low32 = Builtin.reinterpretCast(storage)
+  //    case .bridged(let object):
+  //      low32 = Builtin.reinterpretCast(object)
+  //    }
+  //
+  //    return UInt64(truncatingIfNeeded: _discriminator) &<< 56
+  //         | UInt64(truncatingIfNeeded: low32)
+  //#else
+  //    return unsafeBitCast(_object)
+  //#endif
+  //  }
+
+  @inline(__always)
+  internal var isSmall: Bool {
+#if os(Android) && arch(arm64)
+    return (discriminatedObjectRawBits & 0x0020_0000_0000_0000) != 0
+#else
+    return (discriminatedObjectRawBits & 0x2000_0000_0000_0000) != 0
+#endif
+  }
+
+  @inline(__always)
+  internal var isLarge: Bool { return !isSmall }
+
+  // Whether this string can provide access to contiguous UTF-8 code units:
+  //   - Small strings can by spilling to the stack
+  //   - Large native strings can through an offset
+  //   - Shared strings can:
+  //     - Cocoa strings which respond to e.g. CFStringGetCStringPtr()
+  //     - Non-Cocoa shared strings
+  @inline(__always)
+  internal var providesFastUTF8: Bool {
+#if os(Android) && arch(arm64)
+    return (discriminatedObjectRawBits & 0x0010_0000_0000_0000) == 0
+#else
+    return (discriminatedObjectRawBits & 0x1000_0000_0000_0000) == 0
+#endif
+  }
+
+  /// A bastardization of fastUTF8 from StringObject.swift. For now,
+  /// exclude shared strings.
+  @inline(__always)
+  var fastUTF8IfAvailable: UnsafeRawBufferPointer? {
+    guard self.largeFastIsTailAllocated else {
+      return nil
+    }
+    return UnsafeRawBufferPointer(
+      start: self.nativeUTF8Start, count: self.largeCount)
+  }
+
+  @inline(__always)
+  internal var largeCount: Int {
+    _internalInvariant(isLarge)
+    return _countAndFlags.count
+  }
+
+  @inline(__always)
+  internal var nativeUTF8Start: UnsafePointer<UInt8> {
+    _internalInvariant(largeFastIsTailAllocated)
+    return UnsafePointer(
+      bitPattern: largeAddressBits &+ _StringObject.nativeBias
+    )._unsafelyUnwrappedUnchecked
+  }
+
+
+  @inline(__always)
+  internal var largeAddressBits: UInt {
+    _internalInvariant(isLarge)
+    return UInt(truncatingIfNeeded:
+      discriminatedObjectRawBits & Nibbles.largeAddressMask)
+  }
+
+  enum Nibbles {}
+
+  @inline(__always)
+  internal static var nativeBias: UInt {
+#if arch(i386) || arch(arm) || arch(arm64_32) || arch(wasm32)
+    return 20
+#else
+    return 32
+#endif
+  }
+}
+
+extension _StringObject.Nibbles {
+  // Mask for address bits, i.e. non-discriminator and non-extra high bits
+  @inline(__always)
+  static internal var largeAddressMask: UInt64 {
+#if os(Android) && arch(arm64)
+    return 0xFF0F_FFFF_FFFF_FFFF
+#else
+    return 0x0FFF_FFFF_FFFF_FFFF
+#endif
+  }
+
+}
+
+extension _StringObject.CountAndFlags {
+  internal typealias RawBitPattern = UInt64
+
+  @inline(__always)
+  internal init(rawUnchecked bits: RawBitPattern) {
+    self._storage = bits
+  }
+
+  @inline(__always)
+  internal static var isTailAllocatedMask: UInt64 {
+    0x1000_0000_0000_0000
+  }
+
+  @inline(__always)
+  internal static var countMask: UInt64 { 0x0000_FFFF_FFFF_FFFF }
+
+  @inline(__always)
+  internal var count: Int {
+    return Int(
+      truncatingIfNeeded: _storage & _StringObject.CountAndFlags.countMask)
+  }
+
+  @inline(__always)
+  internal var isTailAllocated: Bool {
+    return 0 != _storage & _StringObject.CountAndFlags.isTailAllocatedMask
+  }
+}

@@ -87,6 +87,9 @@ struct Processor {
   var failureReason: Error? = nil
 
   var metrics: ProcessorMetrics
+
+  /// Set if the string has fast contiguous UTF-8 available
+  let fastUTF8: UnsafeRawBufferPointer? = nil
 }
 
 extension Processor {
@@ -123,6 +126,8 @@ extension Processor {
     self.registers = Registers(program, searchBounds.upperBound)
     self.storedCaptures = Array(
        repeating: .init(), count: program.registerInfo.captures)
+
+    // print(MemoryLayout<Processor>.size)
 
     _checkInvariants()
   }
@@ -264,6 +269,8 @@ extension Processor {
     return true
   }
 
+  @inline(never)
+  @_effects(releasenone)
   func loadScalar() -> Unicode.Scalar? {
     currentPosition < end ? input.unicodeScalars[currentPosition] : nil
   }
