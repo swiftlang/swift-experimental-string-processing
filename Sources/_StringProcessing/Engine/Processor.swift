@@ -86,7 +86,7 @@ struct Processor {
 
   var failureReason: Error? = nil
 
-  var metrics: ProcessorMetrics = ProcessorMetrics()
+  var metrics: ProcessorMetrics
 }
 
 extension Processor {
@@ -143,8 +143,8 @@ extension Processor {
 
     self.state = .inProgress
     self.failureReason = nil
-    
-    if metrics.shouldMeasureMetrics { metrics.resets += 1 }
+
+    metrics.addReset()
     _checkInvariants()
   }
 
@@ -400,8 +400,8 @@ extension Processor {
     storedCaptures = capEnds
     registers.ints = intRegisters
     registers.positions = posRegisters
-    
-    if metrics.shouldMeasureMetrics { metrics.backtracks += 1 }
+
+    metrics.addBacktrack()
   }
 
   mutating func abort(_ e: Error? = nil) {
@@ -440,18 +440,8 @@ extension Processor {
     _checkInvariants()
     assert(state == .inProgress)
 
-#if PROCESSOR_MEASUREMENTS_ENABLED
-    if cycleCount == 0 {
-      trace()
-      measureMetrics()
-    }
-    defer {
-      cycleCount += 1
-      trace()
-      measureMetrics()
-      _checkInvariants()
-    }
-#endif
+    startCycleMetrics()
+    defer { endCycleMetrics() }
 
     let (opcode, payload) = fetch().destructure
     switch opcode {
