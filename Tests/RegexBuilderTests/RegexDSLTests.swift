@@ -1099,8 +1099,11 @@ class RegexDSLTests: XCTestCase {
     }
     let _: (Substring, Substring, Int, Double?).Type
     = type(of: regex3).RegexOutput.self
-    
-    let regex4 = Regex {
+
+    // FIXME: Remove explicit type when type checker regression is fixed
+    let regex4: Regex<(
+      Substring, Substring, Substring, Substring, Substring?
+    )> = Regex {
       OneOrMore("a")
       Capture {
         OneOrMore {
