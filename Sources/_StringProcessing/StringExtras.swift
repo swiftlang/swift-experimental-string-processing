@@ -304,3 +304,9 @@ extension _StringObject.CountAndFlags {
     return 0 != _storage & _StringObject.CountAndFlags.isTailAllocatedMask
   }
 }
+
+extension UnsafeRawPointer {
+  func loadByte(_ offset: String.Index) -> UInt8 {
+    self.load(fromByteOffset: offset.encodedOffset, as: UInt8.self)
+  }
+}
