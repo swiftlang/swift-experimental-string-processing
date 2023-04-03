@@ -34,23 +34,24 @@ extension Processor {
     isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> Input.Index? {
-    switch _quickMatchBuiltinCC(
+    if case .definite(let result) = _quickMatchBuiltinCC(
       cc, 
       isInverted: isInverted, 
       isStrictASCII: isStrictASCII,
       isScalarSemantics: isScalarSemantics
     ) {
-      case .no:
-        return nil
-      case .yes(let next):
-        return next
-      case .maybe:
-        return _slowMatchBuiltinCC(
-          cc, 
-          isInverted: isInverted, 
-          isStrictASCII: isStrictASCII,
-          isScalarSemantics: isScalarSemantics)
+      assert(result == _thoroughMatchBuiltinCC(
+        cc,
+        isInverted: isInverted,
+        isStrictASCII: isStrictASCII,
+        isScalarSemantics: isScalarSemantics))
+      return result
     }
+    return _thoroughMatchBuiltinCC(
+      cc,
+      isInverted: isInverted,
+      isStrictASCII: isStrictASCII,
+      isScalarSemantics: isScalarSemantics)
   }
 
   @inline(__always)
@@ -59,23 +60,17 @@ extension Processor {
     isInverted: Bool,
     isStrictASCII: Bool,
     isScalarSemantics: Bool
-  ) -> QuickResult<Input.Index> {
+  ) -> QuickResult<Input.Index?> {
     guard let (next, result) = input._quickMatch(
       cc, at: currentPosition, isScalarSemantics: isScalarSemantics
     ) else {
-      return .maybe
+      return .unknown
     }
-    let idx = result == isInverted ? nil : next
-    assert(idx == _slowMatchBuiltinCC(
-      cc, 
-      isInverted: isInverted,
-      isStrictASCII: isStrictASCII,
-      isScalarSemantics: isScalarSemantics))
-    return .definite(idx)
+    return .definite(result == isInverted ? nil : next)
   }
 
   @inline(never)
-  func _slowMatchBuiltinCC(
+  func _thoroughMatchBuiltinCC(
     _ cc: _CharacterClassModel.Representation,
     isInverted: Bool,
     isStrictASCII: Bool,
