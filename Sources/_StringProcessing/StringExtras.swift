@@ -139,7 +139,8 @@ extension String {
 #if arch(i386) || arch(arm) || arch(arm64_32) || arch(wasm32)
     return nil
 #endif
-    return _object.fastUTF8IfAvailable
+    // TODO: Add in shared string support
+    return _object.nativeUTF8IfAvailable
   }
 
 }
@@ -155,7 +156,8 @@ internal struct _StringObject {
 
   internal var _countAndFlagsBits: UInt64
 
-  /// Bastardization, since we can't access Builtin.BridgeObject
+  // NOTE: We store the raw bits instead of BridgeObject, because we don't
+  // have access to bridge object
   internal var discriminatedObjectRawBits: UInt64
 
   @inline(__always)
@@ -171,26 +173,6 @@ internal struct _StringObject {
     _internalInvariant(isLarge && providesFastUTF8)
     return _countAndFlags.isTailAllocated
   }
-
-  //  @inlinable @_transparent
-  //  internal var discriminatedObjectRawBits: UInt64 {
-  //#if arch(i386) || arch(arm) || arch(arm64_32) || arch(wasm32)
-  //    let low32: UInt
-  //    switch _variant {
-  //    case .immortal(let bitPattern):
-  //      low32 = bitPattern
-  //    case .native(let storage):
-  //      low32 = Builtin.reinterpretCast(storage)
-  //    case .bridged(let object):
-  //      low32 = Builtin.reinterpretCast(object)
-  //    }
-  //
-  //    return UInt64(truncatingIfNeeded: _discriminator) &<< 56
-  //         | UInt64(truncatingIfNeeded: low32)
-  //#else
-  //    return unsafeBitCast(_object)
-  //#endif
-  //  }
 
   @inline(__always)
   internal var isSmall: Bool {
@@ -219,10 +201,10 @@ internal struct _StringObject {
 #endif
   }
 
-  /// A bastardization of fastUTF8 from StringObject.swift. For now,
-  /// exclude shared strings.
+  /// A modification of fastUTF8 from StringObject.swift, as we don't have
+  /// access to shared string internals.
   @inline(__always)
-  var fastUTF8IfAvailable: UnsafeRawBufferPointer? {
+  var nativeUTF8IfAvailable: UnsafeRawBufferPointer? {
     guard self.isLarge && self.providesFastUTF8 && self.largeFastIsTailAllocated else {
       return nil
     }

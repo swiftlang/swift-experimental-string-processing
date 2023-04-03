@@ -89,7 +89,7 @@ struct BenchmarkRunner {
           print("Warning: Standard deviation > \(Stats.maxAllowedStdev*100)% for \(b.name)")
           print(result.runtime)
           print("Rerunning \(b.name)")
-          result = measure(benchmark: b, samples: result.runtime.samples*2)
+          result = measure(benchmark: b, samples: result.runtime.samples)
           print(result.runtime)
           if !result.runtimeIsTooVariant {
             break
