@@ -28,6 +28,7 @@ extension Processor {
     return true
   }
 
+  // Mentioned in ProgrammersManual.md, update docs if redesigned
   func _doMatchBuiltinCC(
     _ cc: _CharacterClassModel.Representation,
     isInverted: Bool,
@@ -54,6 +55,7 @@ extension Processor {
       isScalarSemantics: isScalarSemantics)
   }
 
+  // Mentioned in ProgrammersManual.md, update docs if redesigned
   @inline(__always)
   func _quickMatchBuiltinCC(
     _ cc: _CharacterClassModel.Representation,
@@ -69,6 +71,7 @@ extension Processor {
     return .definite(result == isInverted ? nil : next)
   }
 
+  // Mentioned in ProgrammersManual.md, update docs if redesigned
   @inline(never)
   func _thoroughMatchBuiltinCC(
     _ cc: _CharacterClassModel.Representation,
