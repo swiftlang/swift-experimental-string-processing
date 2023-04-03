@@ -1,7 +1,7 @@
 import Foundation
 @_spi(RegexBenchmark) import _StringProcessing
 
-/// The number of times to re-run the benchmark if results are too variang
+/// The number of times to re-run the benchmark if results are too varying
 private var rerunCount: Int { 3 }
 
 struct BenchmarkRunner {
