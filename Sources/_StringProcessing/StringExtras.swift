@@ -128,3 +128,19 @@ extension String {
 
 }
 
+/// An enum for quick-check functions, which could return a yes, no, or maybe
+/// result.
+enum QuickResult<R> {
+  case yes(_ r: R)
+  case no
+  case maybe
+
+  static func definite(_ r: R?) -> QuickResult {
+    if let r = r {
+      return .yes(r)
+    }
+    return .no
+  }
+}
+
+

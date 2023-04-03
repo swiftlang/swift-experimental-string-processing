@@ -9,17 +9,17 @@ extension Character {
 }
 
 extension Processor {
-  mutating func matchBuiltin(
+  mutating func matchBuiltinCC(
     _ cc: _CharacterClassModel.Representation,
-    _ isInverted: Bool,
-    _ isStrictASCII: Bool,
-    _ isScalarSemantics: Bool
+    isInverted: Bool,
+    isStrictASCII: Bool,
+    isScalarSemantics: Bool
   ) -> Bool {
-    guard let next = _doMatchBuiltin(
+    guard let next = _doMatchBuiltinCC(
       cc,
-      isInverted,
-      isStrictASCII,
-      isScalarSemantics
+      isInverted: isInverted,
+      isStrictASCII: isStrictASCII,
+      isScalarSemantics: isScalarSemantics
     ) else {
       signalFailure()
       return false
@@ -27,21 +27,60 @@ extension Processor {
     currentPosition = next
     return true
   }
-  
-  func _doMatchBuiltin(
+
+  func _doMatchBuiltinCC(
     _ cc: _CharacterClassModel.Representation,
-    _ isInverted: Bool,
-    _ isStrictASCII: Bool,
-    _ isScalarSemantics: Bool
+    isInverted: Bool,
+    isStrictASCII: Bool,
+    isScalarSemantics: Bool
   ) -> Input.Index? {
-
-    // ASCII fast-path
-    if let (next, result) = input._quickMatch(
-      cc, at: currentPosition, isScalarSemantics: isScalarSemantics
+    switch _quickMatchBuiltinCC(
+      cc, 
+      isInverted: isInverted, 
+      isStrictASCII: isStrictASCII,
+      isScalarSemantics: isScalarSemantics
     ) {
-      return result == isInverted ? nil : next
+      case .no:
+        return nil
+      case .yes(let next):
+        return next
+      case .maybe:
+        return _slowMatchBuiltinCC(
+          cc, 
+          isInverted: isInverted, 
+          isStrictASCII: isStrictASCII,
+          isScalarSemantics: isScalarSemantics)
     }
+  }
 
+  @inline(__always)
+  func _quickMatchBuiltinCC(
+    _ cc: _CharacterClassModel.Representation,
+    isInverted: Bool,
+    isStrictASCII: Bool,
+    isScalarSemantics: Bool
+  ) -> QuickResult<Input.Index> {
+    guard let (next, result) = input._quickMatch(
+      cc, at: currentPosition, isScalarSemantics: isScalarSemantics
+    ) else {
+      return .maybe
+    }
+    let idx = result == isInverted ? nil : next
+    assert(idx == _slowMatchBuiltinCC(
+      cc, 
+      isInverted: isInverted,
+      isStrictASCII: isStrictASCII,
+      isScalarSemantics: isScalarSemantics))
+    return .definite(idx)
+  }
+
+  @inline(never)
+  func _slowMatchBuiltinCC(
+    _ cc: _CharacterClassModel.Representation,
+    isInverted: Bool,
+    isStrictASCII: Bool,
+    isScalarSemantics: Bool
+  ) -> Input.Index? {
     guard let char = load(), let scalar = loadScalar() else {
       return nil
     }
