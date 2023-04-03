@@ -1100,17 +1100,25 @@ class RegexDSLTests: XCTestCase {
     let _: (Substring, Substring, Int, Double?).Type
     = type(of: regex3).RegexOutput.self
 
-    // FIXME: Remove explicit type when type checker regression is fixed
+    // FIXME: Remove explicit type and `subregex1` and `subregex2` when type checker regression is fixed
+    let subregex1: Regex<(Substring, Substring?)> = Regex {
+      ZeroOrMore(Capture("d"))
+    }
+    let subregex2: Regex<(
+      Substring, Substring, Substring, Substring?
+    )> = Regex {
+      Capture(OneOrMore("b"))
+      Capture(ZeroOrMore("c"))
+      subregex1
+      Optionally("e")
+    }
     let regex4: Regex<(
       Substring, Substring, Substring, Substring, Substring?
     )> = Regex {
       OneOrMore("a")
       Capture {
         OneOrMore {
-          Capture(OneOrMore("b"))
-          Capture(ZeroOrMore("c"))
-          ZeroOrMore(Capture("d"))
-          Optionally("e")
+          subregex2
         }
       }
     }
