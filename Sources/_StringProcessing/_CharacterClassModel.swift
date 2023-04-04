@@ -81,9 +81,10 @@ struct _CharacterClassModel: Hashable {
     let char = input[currentPosition]
     let scalar = input.unicodeScalars[currentPosition]
     let isScalarSemantics = matchLevel == .unicodeScalar
-    let asciiCheck = (char.isASCII && !isScalarSemantics)
+
+    let asciiCheck = !isStrictASCII
       || (scalar.isASCII && isScalarSemantics)
-      || !isStrictASCII
+      || char.isASCII
     
     var matched: Bool
     var next: String.Index
