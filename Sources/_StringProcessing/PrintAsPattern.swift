@@ -760,8 +760,6 @@ extension DSLTree.Atom.CharacterClass {
     switch self {
     case .anyGrapheme:
       return ".anyGraphemeCluster"
-    case .anyUnicodeScalar:
-      return ".anyUnicodeScalar"
     case .digit:
       return ".digit"
     case .notDigit:
@@ -786,6 +784,8 @@ extension DSLTree.Atom.CharacterClass {
       return ".whitespace"
     case .notWhitespace:
       return ".whitespace.inverted"
+    case .anyUnicodeScalar:
+      fatalError("Unsupported")
     }
   }
 }
