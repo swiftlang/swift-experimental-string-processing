@@ -193,8 +193,6 @@ extension String {
     switch (isScalarSemantics, cc) {
     case (_, .anyGrapheme):
       next = index(after: currentPosition)
-    case (_, .anyScalar):
-      next = unicodeScalars.index(after: currentPosition)
     case (true, _):
       next = unicodeScalars.index(after: currentPosition)
     case (false, _):
@@ -204,12 +202,6 @@ extension String {
     switch cc {
     case .any, .anyGrapheme:
       matched = true
-    case .anyScalar:
-      if isScalarSemantics {
-        matched = true
-      } else {
-        matched = isOnGraphemeClusterBoundary(next)
-      }
     case .digit:
       if isScalarSemantics {
         matched = scalar.properties.numericType != nil && asciiCheck

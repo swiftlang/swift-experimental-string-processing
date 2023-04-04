@@ -45,8 +45,6 @@ struct _CharacterClassModel: Hashable {
     case any = 0
     /// Any grapheme cluster
     case anyGrapheme
-    /// Any Unicode scalar
-    case anyScalar
     /// Character.isDigit
     case digit
     /// Horizontal whitespace: `[:blank:]`, i.e
@@ -90,15 +88,6 @@ struct _CharacterClassModel: Hashable {
   }
 }
 
-extension _CharacterClassModel {
-  var consumesSingleGrapheme: Bool {
-   switch self.cc {
-    case .anyScalar: return false
-    default: return true
-    }
-  }
-}
-
 extension _CharacterClassModel.Representation {
   /// Returns true if this CharacterClass should be matched by strict ascii under the given options
   func isStrictAscii(options: MatchingOptions) -> Bool {
@@ -119,7 +108,6 @@ extension _CharacterClassModel.Representation: CustomStringConvertible {
     switch self {
     case .any: return "<any>"
     case .anyGrapheme: return "<any grapheme>"
-    case .anyScalar: return "<any scalar>"
     case .digit: return "<digit>"
     case .horizontalWhitespace: return "<horizontal whitespace>"
     case .newlineSequence: return "<newline sequence>"
@@ -185,7 +173,7 @@ extension DSLTree.Atom.CharacterClass {
     case .anyGrapheme:
       cc = .anyGrapheme
     case .anyUnicodeScalar:
-      cc = .anyScalar
+      fatalError("Unsupported")
     }
     return _CharacterClassModel(cc: cc, options: options, isInverted: inverted)
   }

@@ -134,8 +134,7 @@ extension String {
 
     // TODO: bitvectors
     switch cc {
-    case .any, .anyGrapheme, .anyScalar:
-      // TODO: should any scalar not consume CR-LF in scalar semantic mode?
+    case .any, .anyGrapheme:
       return (next, true)
 
     case .digit:
