@@ -81,9 +81,8 @@ struct _CharacterClassModel: Hashable {
 
     let isScalarSemantics = matchLevel == .unicodeScalar
 
-    return _matchBuiltinCC(
+    return input._matchBuiltinCC(
       cc,
-      in: input,
       at: currentPosition,
       isInverted: isInverted,
       isStrictASCII: isStrictASCII,

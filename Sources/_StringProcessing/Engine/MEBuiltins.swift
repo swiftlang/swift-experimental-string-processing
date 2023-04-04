@@ -15,9 +15,8 @@ extension Processor {
     isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> Bool {
-    guard let next = _matchBuiltinCC(
+    guard let next = input._matchBuiltinCC(
       cc,
-      in: input,
       at: currentPosition,
       isInverted: isInverted,
       isStrictASCII: isStrictASCII,
@@ -118,156 +117,149 @@ extension Processor {
 
 // MARK: Built-in character class matching
 
-// Mentioned in ProgrammersManual.md, update docs if redesigned
-@_effects(releasenone)
-func _matchBuiltinCC(
-  _ cc: _CharacterClassModel.Representation,
-  in input: String,
-  at currentPosition: String.Index,
-  isInverted: Bool,
-  isStrictASCII: Bool,
-  isScalarSemantics: Bool
-) -> String.Index? {
-  guard currentPosition < input.endIndex else { 
-    return nil
-  }
-  if case .definite(let result) = _quickMatchBuiltinCC(
-    cc,
-    in: input,
-    at: currentPosition,
-    isInverted: isInverted,
-    isStrictASCII: isStrictASCII,
-    isScalarSemantics: isScalarSemantics
-  ) {
-    assert(result == _thoroughMatchBuiltinCC(
+extension String {
+
+  // Mentioned in ProgrammersManual.md, update docs if redesigned
+  func _matchBuiltinCC(
+    _ cc: _CharacterClassModel.Representation,
+    at currentPosition: String.Index,
+    isInverted: Bool,
+    isStrictASCII: Bool,
+    isScalarSemantics: Bool
+  ) -> String.Index? {
+    guard currentPosition < endIndex else {
+      return nil
+    }
+    if case .definite(let result) = _quickMatchBuiltinCC(
       cc,
-      in: input,
       at: currentPosition,
       isInverted: isInverted,
       isStrictASCII: isStrictASCII,
-      isScalarSemantics: isScalarSemantics))
-    return result
+      isScalarSemantics: isScalarSemantics
+    ) {
+      assert(result == _thoroughMatchBuiltinCC(
+        cc,
+        at: currentPosition,
+        isInverted: isInverted,
+        isStrictASCII: isStrictASCII,
+        isScalarSemantics: isScalarSemantics))
+      return result
+    }
+    return _thoroughMatchBuiltinCC(
+      cc,
+      at: currentPosition,
+      isInverted: isInverted,
+      isStrictASCII: isStrictASCII,
+      isScalarSemantics: isScalarSemantics)
   }
-  return _thoroughMatchBuiltinCC(
-    cc,
-    in: input,
-    at: currentPosition,
-    isInverted: isInverted,
-    isStrictASCII: isStrictASCII,
-    isScalarSemantics: isScalarSemantics)
-}
 
-// Mentioned in ProgrammersManual.md, update docs if redesigned
-@_effects(releasenone)
-@inline(__always)
-func _quickMatchBuiltinCC(
-  _ cc: _CharacterClassModel.Representation,
-  in input: String,
-  at currentPosition: String.Index,
-  isInverted: Bool,
-  isStrictASCII: Bool,
-  isScalarSemantics: Bool
-) -> QuickResult<String.Index?> {
-  assert(currentPosition < input.endIndex)
-  guard let (next, result) = input._quickMatch(
-    cc, at: currentPosition, isScalarSemantics: isScalarSemantics
-  ) else {
-    return .unknown
+  // Mentioned in ProgrammersManual.md, update docs if redesigned
+  @inline(__always)
+  func _quickMatchBuiltinCC(
+    _ cc: _CharacterClassModel.Representation,
+    at currentPosition: String.Index,
+    isInverted: Bool,
+    isStrictASCII: Bool,
+    isScalarSemantics: Bool
+  ) -> QuickResult<String.Index?> {
+    assert(currentPosition < endIndex)
+    guard let (next, result) = _quickMatch(
+      cc, at: currentPosition, isScalarSemantics: isScalarSemantics
+    ) else {
+      return .unknown
+    }
+    return .definite(result == isInverted ? nil : next)
   }
-  return .definite(result == isInverted ? nil : next)
-}
 
-// Mentioned in ProgrammersManual.md, update docs if redesigned
-@_effects(releasenone)
-@inline(never)
-func _thoroughMatchBuiltinCC(
-  _ cc: _CharacterClassModel.Representation,
-  in input: String,
-  at currentPosition: String.Index,
-  isInverted: Bool,
-  isStrictASCII: Bool,
-  isScalarSemantics: Bool
-) -> String.Index? {
-  assert(currentPosition < input.endIndex)
-  let char = input[currentPosition]
-  let scalar = input.unicodeScalars[currentPosition]
+  // Mentioned in ProgrammersManual.md, update docs if redesigned
+  @inline(never)
+  func _thoroughMatchBuiltinCC(
+    _ cc: _CharacterClassModel.Representation,
+    at currentPosition: String.Index,
+    isInverted: Bool,
+    isStrictASCII: Bool,
+    isScalarSemantics: Bool
+  ) -> String.Index? {
+    assert(currentPosition < endIndex)
+    let char = self[currentPosition]
+    let scalar = unicodeScalars[currentPosition]
 
-  let asciiCheck = !isStrictASCII
+    let asciiCheck = !isStrictASCII
     || (scalar.isASCII && isScalarSemantics)
     || char.isASCII
 
-  var matched: Bool
-  var next: String.Index
-  switch (isScalarSemantics, cc) {
-  case (_, .anyGrapheme):
-    next = input.index(after: currentPosition)
-  case (_, .anyScalar):
-    next = input.unicodeScalars.index(after: currentPosition)
-  case (true, _):
-    next = input.unicodeScalars.index(after: currentPosition)
-  case (false, _):
-    next = input.index(after: currentPosition)
-  }
+    var matched: Bool
+    var next: String.Index
+    switch (isScalarSemantics, cc) {
+    case (_, .anyGrapheme):
+      next = index(after: currentPosition)
+    case (_, .anyScalar):
+      next = unicodeScalars.index(after: currentPosition)
+    case (true, _):
+      next = unicodeScalars.index(after: currentPosition)
+    case (false, _):
+      next = index(after: currentPosition)
+    }
 
-  switch cc {
-  case .any, .anyGrapheme:
-    matched = true
-  case .anyScalar:
-    if isScalarSemantics {
+    switch cc {
+    case .any, .anyGrapheme:
       matched = true
-    } else {
-      matched = input.isOnGraphemeClusterBoundary(next)
-    }
-  case .digit:
-    if isScalarSemantics {
-      matched = scalar.properties.numericType != nil && asciiCheck
-    } else {
-      matched = char.isNumber && asciiCheck
-    }
-  case .horizontalWhitespace:
-    if isScalarSemantics {
-      matched = scalar.isHorizontalWhitespace && asciiCheck
-    } else {
-      matched = char._isHorizontalWhitespace && asciiCheck
-    }
-  case .verticalWhitespace:
-    if isScalarSemantics {
-      matched = scalar.isNewline && asciiCheck
-    } else {
-      matched = char._isNewline && asciiCheck
-    }
-  case .newlineSequence:
-    if isScalarSemantics {
-      matched = scalar.isNewline && asciiCheck
-      if matched && scalar == "\r"
-          && next != input.endIndex && input.unicodeScalars[next] == "\n" {
-        // Match a full CR-LF sequence even in scalar semantics
-        input.unicodeScalars.formIndex(after: &next)
+    case .anyScalar:
+      if isScalarSemantics {
+        matched = true
+      } else {
+        matched = isOnGraphemeClusterBoundary(next)
       }
-    } else {
-      matched = char._isNewline && asciiCheck
+    case .digit:
+      if isScalarSemantics {
+        matched = scalar.properties.numericType != nil && asciiCheck
+      } else {
+        matched = char.isNumber && asciiCheck
+      }
+    case .horizontalWhitespace:
+      if isScalarSemantics {
+        matched = scalar.isHorizontalWhitespace && asciiCheck
+      } else {
+        matched = char._isHorizontalWhitespace && asciiCheck
+      }
+    case .verticalWhitespace:
+      if isScalarSemantics {
+        matched = scalar.isNewline && asciiCheck
+      } else {
+        matched = char._isNewline && asciiCheck
+      }
+    case .newlineSequence:
+      if isScalarSemantics {
+        matched = scalar.isNewline && asciiCheck
+        if matched && scalar == "\r"
+            && next != endIndex && unicodeScalars[next] == "\n" {
+          // Match a full CR-LF sequence even in scalar semantics
+          unicodeScalars.formIndex(after: &next)
+        }
+      } else {
+        matched = char._isNewline && asciiCheck
+      }
+    case .whitespace:
+      if isScalarSemantics {
+        matched = scalar.properties.isWhitespace && asciiCheck
+      } else {
+        matched = char.isWhitespace && asciiCheck
+      }
+    case .word:
+      if isScalarSemantics {
+        matched = scalar.properties.isAlphabetic && asciiCheck
+      } else {
+        matched = char.isWordCharacter && asciiCheck
+      }
     }
-  case .whitespace:
-    if isScalarSemantics {
-      matched = scalar.properties.isWhitespace && asciiCheck
-    } else {
-      matched = char.isWhitespace && asciiCheck
-    }
-  case .word:
-    if isScalarSemantics {
-      matched = scalar.properties.isAlphabetic && asciiCheck
-    } else {
-      matched = char.isWordCharacter && asciiCheck
-    }
-  }
 
-  if isInverted {
-    matched.toggle()
-  }
+    if isInverted {
+      matched.toggle()
+    }
 
-  guard matched else {
-    return nil
+    guard matched else {
+      return nil
+    }
+    return next
   }
-  return next
 }
-

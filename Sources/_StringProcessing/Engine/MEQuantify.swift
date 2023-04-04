@@ -9,9 +9,8 @@ extension Processor {
         UnicodeScalar.init(_value: UInt32(payload.asciiChar)), true)
     case .builtin:
       // We only emit .quantify if it consumes a single character
-      next = _matchBuiltinCC(
+      next = input._matchBuiltinCC(
         payload.builtin,
-        in: input,
         at: currentPosition,
         isInverted: payload.builtinIsInverted,
         isStrictASCII: payload.builtinIsStrict,
