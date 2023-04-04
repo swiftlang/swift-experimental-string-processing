@@ -18,10 +18,10 @@
 struct _CharacterClassModel: Hashable {
   /// The actual character class to match.
   let cc: Representation
-  
+
   /// The level (character or Unicode scalar) at which to match.
   let matchLevel: MatchingOptions.SemanticLevel
-  
+
   /// If this character character class only matches ascii characters
   let isStrictASCII: Bool
 
@@ -61,7 +61,7 @@ struct _CharacterClassModel: Hashable {
     /// Character.isLetter or Character.isDigit or Character == "_"
     case word
   }
-  
+
   /// Returns the end of the match of this character class in the string.
   ///
   /// - Parameter str: The string to match against.
@@ -78,82 +78,15 @@ struct _CharacterClassModel: Hashable {
     guard currentPosition != input.endIndex else {
       return nil
     }
-    let char = input[currentPosition]
-    let scalar = input.unicodeScalars[currentPosition]
+
     let isScalarSemantics = matchLevel == .unicodeScalar
 
-    let asciiCheck = !isStrictASCII
-      || (scalar.isASCII && isScalarSemantics)
-      || char.isASCII
-    
-    var matched: Bool
-    var next: String.Index
-    switch (isScalarSemantics, cc) {
-    case (_, .anyGrapheme):
-      next = input.index(after: currentPosition)
-    case (_, .anyScalar):
-      // FIXME: This allows us to be not-scalar aligned when in grapheme mode
-      // Should this even be allowed?
-      next = input.unicodeScalars.index(after: currentPosition)
-    case (true, _):
-      next = input.unicodeScalars.index(after: currentPosition)
-    case (false, _):
-      next = input.index(after: currentPosition)
-    }
-
-    switch cc {
-    case .any, .anyGrapheme, .anyScalar:
-      matched = true
-    case .digit:
-      if isScalarSemantics {
-        matched = scalar.properties.numericType != nil && asciiCheck
-      } else {
-        matched = char.isNumber && asciiCheck
-      }
-    case .horizontalWhitespace:
-      if isScalarSemantics {
-        matched = scalar.isHorizontalWhitespace && asciiCheck
-      } else {
-        matched = char._isHorizontalWhitespace && asciiCheck
-      }
-    case .verticalWhitespace:
-      if isScalarSemantics {
-        matched = scalar.isNewline && asciiCheck
-      } else {
-        matched = char._isNewline && asciiCheck
-      }
-    case .newlineSequence:
-      if isScalarSemantics {
-        matched = scalar.isNewline && asciiCheck
-        if matched && scalar == "\r"
-            && next != input.endIndex && input.unicodeScalars[next] == "\n" {
-          // Match a full CR-LF sequence even in scalar sematnics
-          input.unicodeScalars.formIndex(after: &next)
-        }
-      } else {
-        matched = char._isNewline && asciiCheck
-      }
-    case .whitespace:
-      if isScalarSemantics {
-        matched = scalar.properties.isWhitespace && asciiCheck
-      } else {
-        matched = char.isWhitespace && asciiCheck
-      }
-    case .word:
-      if isScalarSemantics {
-        matched = scalar.properties.isAlphabetic && asciiCheck
-      } else {
-        matched = char.isWordCharacter && asciiCheck
-      }
-    }
-    if isInverted {
-      matched.toggle()
-    }
-    if matched {
-      return next
-    } else {
-      return nil
-    }
+    return input._matchBuiltinCC(
+      cc,
+      at: currentPosition,
+      isInverted: isInverted,
+      isStrictASCII: isStrictASCII,
+      isScalarSemantics: isScalarSemantics)
   }
 }
 
@@ -257,3 +190,5 @@ extension DSLTree.Atom.CharacterClass {
     return _CharacterClassModel(cc: cc, options: options, isInverted: inverted)
   }
 }
+
+

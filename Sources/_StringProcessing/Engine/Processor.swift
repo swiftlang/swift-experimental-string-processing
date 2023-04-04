@@ -583,11 +583,11 @@ extension Processor {
 
     case .matchBuiltin:
       let payload = payload.characterClassPayload
-      if matchBuiltin(
+      if matchBuiltinCC(
         payload.cc,
-        payload.isInverted,
-        payload.isStrictASCII,
-        payload.isScalarSemantics
+        isInverted: payload.isInverted,
+        isStrictASCII: payload.isStrictASCII,
+        isScalarSemantics: payload.isScalarSemantics
       ) {
         controller.step()
       }
