@@ -63,9 +63,11 @@ extension String {
       guard next == endIndex || _isSub300StartingByte(utf8[next]) else {
         return nil
       }
+      assert(self[idx] == "\r\n")
       return (first: base, next: next, crLF: true)
     }
 
+    assert(self[idx].isASCII && self[idx] != "\r\n")
     return (first: base, next: next, crLF: false)
   }
 
