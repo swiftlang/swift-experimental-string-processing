@@ -97,29 +97,32 @@ extension String {
 
     case .horizontalWhitespace:
       switch asciiValue {
-        case _space, _tab: return (next, true)
-        default: return (next, false)
+      case _space, _tab: return (next, true)
+      default: return (next, false)
       }
 
     case .verticalWhitespace, .newlineSequence:
       switch asciiValue {
-        case _lineFeed, _carriageReturn, _lineTab, _formFeed:
+      case _lineFeed, _carriageReturn, _lineTab, _formFeed:
         // Scalar semantics: For `\v`, only advance past the CR instead of CR-LF
         if isScalarSemantics && isCRLF && cc == .verticalWhitespace {
           return (utf8.index(before: next), true)
         }
         return (next, true)
 
-        default:
-          return (next, false)
+      default:
+        return (next, false)
       }
 
     case .whitespace:
       switch asciiValue {
-        case _space, _tab, _lineFeed, _lineTab, _formFeed, _carriageReturn:
-          return (next, true)
-        default:
-          return (next, false)
+      case _space, _tab, _lineFeed, _lineTab, _formFeed, _carriageReturn:
+        if isScalarSemantics && isCRLF {
+          return (utf8.index(before: next), true)
+        }
+        return (next, true)
+      default:
+        return (next, false)
       }
 
     case .word:
