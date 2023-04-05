@@ -47,6 +47,7 @@ add_library(_StringProcessing
   Regex/DSLTree.swift
   Regex/Match.swift
   Regex/Options.swift
+  Unicode/ASCII.swift
   Unicode/CaseConversion.swift
   Unicode/CharacterProps.swift
   Unicode/Comparison.swift

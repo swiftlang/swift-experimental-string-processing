@@ -183,7 +183,6 @@ extension AST.Atom.EscapedBuiltin {
     case .wordCharacter:            return .word
     case .notWordCharacter:         return .notWord
     case .graphemeCluster:          return .anyGrapheme
-    case .trueAnychar:              return .anyUnicodeScalar
     default: return nil
     }
   }

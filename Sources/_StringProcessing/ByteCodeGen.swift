@@ -702,9 +702,6 @@ fileprivate extension Compiler.ByteCodeGen {
       case .characterClass(let cc):
         // Custom character class that consumes a single grapheme
         let model = cc.asRuntimeModel(options)
-        guard model.consumesSingleGrapheme else {
-          return false
-        }
         builder.buildQuantify(
           model: model,
           kind,
