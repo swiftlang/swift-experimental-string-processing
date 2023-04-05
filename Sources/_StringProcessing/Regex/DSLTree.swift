@@ -260,7 +260,6 @@ extension DSLTree.Atom.CharacterClass {
   public var inverted: DSLTree.Atom.CharacterClass? {
     switch self {
     case .anyGrapheme: return nil
-    case .anyUnicodeScalar: return nil
     case .digit: return .notDigit
     case .notDigit: return .digit
     case .word: return .notWord
@@ -273,6 +272,8 @@ extension DSLTree.Atom.CharacterClass {
     case .notVerticalWhitespace: return .verticalWhitespace
     case .whitespace: return .notWhitespace
     case .notWhitespace: return .whitespace
+    case .anyUnicodeScalar:
+      fatalError("Unsupported")
     }
   }
 }

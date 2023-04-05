@@ -57,3 +57,11 @@ extension Array {
       with: initialAccumulator, into: { [finish($0) ]}, accumulate: accumulate)
   }
 }
+
+/// An enum for quick-check functions, which could return an answer or indefinite.
+/// We use a separate type because often the answer itself is optional.
+enum QuickResult<R> {
+  case definite(_ r: R)
+  case unknown
+}
+

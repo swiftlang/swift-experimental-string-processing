@@ -9,17 +9,18 @@ extension Character {
 }
 
 extension Processor {
-  mutating func matchBuiltin(
+  mutating func matchBuiltinCC(
     _ cc: _CharacterClassModel.Representation,
-    _ isInverted: Bool,
-    _ isStrictASCII: Bool,
-    _ isScalarSemantics: Bool
+    isInverted: Bool,
+    isStrictASCII: Bool,
+    isScalarSemantics: Bool
   ) -> Bool {
-    guard let next = _doMatchBuiltin(
+    guard let next = input._matchBuiltinCC(
       cc,
-      isInverted,
-      isStrictASCII,
-      isScalarSemantics
+      at: currentPosition,
+      isInverted: isInverted,
+      isStrictASCII: isStrictASCII,
+      isScalarSemantics: isScalarSemantics
     ) else {
       signalFailure()
       return false
@@ -27,96 +28,7 @@ extension Processor {
     currentPosition = next
     return true
   }
-  
-  func _doMatchBuiltin(
-    _ cc: _CharacterClassModel.Representation,
-    _ isInverted: Bool,
-    _ isStrictASCII: Bool,
-    _ isScalarSemantics: Bool
-  ) -> Input.Index? {
-    guard let char = load(), let scalar = loadScalar() else {
-      return nil
-    }
 
-    let asciiCheck = (char.isASCII && !isScalarSemantics)
-      || (scalar.isASCII && isScalarSemantics)
-      || !isStrictASCII
-
-    var matched: Bool
-    var next: Input.Index
-    switch (isScalarSemantics, cc) {
-    case (_, .anyGrapheme):
-      next = input.index(after: currentPosition)
-    case (_, .anyScalar):
-      next = input.unicodeScalars.index(after: currentPosition)
-    case (true, _):
-      next = input.unicodeScalars.index(after: currentPosition)
-    case (false, _):
-      next = input.index(after: currentPosition)
-    }
-
-    switch cc {
-    case .any, .anyGrapheme:
-      matched = true
-    case .anyScalar:
-      if isScalarSemantics {
-        matched = true
-      } else {
-        matched = input.isOnGraphemeClusterBoundary(next)
-      }
-    case .digit:
-      if isScalarSemantics {
-        matched = scalar.properties.numericType != nil && asciiCheck
-      } else {
-        matched = char.isNumber && asciiCheck
-      }
-    case .horizontalWhitespace:
-      if isScalarSemantics {
-        matched = scalar.isHorizontalWhitespace && asciiCheck
-      } else {
-        matched = char._isHorizontalWhitespace && asciiCheck
-      }
-    case .verticalWhitespace:
-      if isScalarSemantics {
-        matched = scalar.isNewline && asciiCheck
-      } else {
-        matched = char._isNewline && asciiCheck
-      }
-    case .newlineSequence:
-      if isScalarSemantics {
-        matched = scalar.isNewline && asciiCheck
-        if matched && scalar == "\r"
-            && next != input.endIndex && input.unicodeScalars[next] == "\n" {
-          // Match a full CR-LF sequence even in scalar semantics
-          input.unicodeScalars.formIndex(after: &next)
-        }
-      } else {
-        matched = char._isNewline && asciiCheck
-      }
-    case .whitespace:
-      if isScalarSemantics {
-        matched = scalar.properties.isWhitespace && asciiCheck
-      } else {
-        matched = char.isWhitespace && asciiCheck
-      }
-    case .word:
-      if isScalarSemantics {
-        matched = scalar.properties.isAlphabetic && asciiCheck
-      } else {
-        matched = char.isWordCharacter && asciiCheck
-      }
-    }
-
-    if isInverted {
-      matched.toggle()
-    }
-
-    guard matched else {
-      return nil
-    }
-    return next
-  }
-  
   func isAtStartOfLine(_ payload: AssertionPayload) -> Bool {
     if currentPosition == subjectBounds.lowerBound { return true }
     switch payload.semanticLevel {
@@ -126,7 +38,7 @@ extension Processor {
       return input.unicodeScalars[input.unicodeScalars.index(before: currentPosition)].isNewline
     }
   }
-  
+
   func isAtEndOfLine(_ payload: AssertionPayload) -> Bool {
     if currentPosition == subjectBounds.upperBound { return true }
     switch payload.semanticLevel {
@@ -169,7 +81,7 @@ extension Processor {
       return isAtStartOfLine(payload)
     case .endOfLine:
       return isAtEndOfLine(payload)
-      
+
     case .caretAnchor:
       if payload.anchorsMatchNewlines {
         return isAtStartOfLine(payload)
@@ -200,5 +112,146 @@ extension Processor {
         return !input.isOnWordBoundary(at: currentPosition, using: &wordIndexCache, &wordIndexMaxIndex)
       }
     }
+  }
+}
+
+// MARK: Built-in character class matching
+
+extension String {
+
+  // Mentioned in ProgrammersManual.md, update docs if redesigned
+  func _matchBuiltinCC(
+    _ cc: _CharacterClassModel.Representation,
+    at currentPosition: String.Index,
+    isInverted: Bool,
+    isStrictASCII: Bool,
+    isScalarSemantics: Bool
+  ) -> String.Index? {
+    guard currentPosition < endIndex else {
+      return nil
+    }
+    if case .definite(let result) = _quickMatchBuiltinCC(
+      cc,
+      at: currentPosition,
+      isInverted: isInverted,
+      isStrictASCII: isStrictASCII,
+      isScalarSemantics: isScalarSemantics
+    ) {
+      assert(result == _thoroughMatchBuiltinCC(
+        cc,
+        at: currentPosition,
+        isInverted: isInverted,
+        isStrictASCII: isStrictASCII,
+        isScalarSemantics: isScalarSemantics))
+      return result
+    }
+    return _thoroughMatchBuiltinCC(
+      cc,
+      at: currentPosition,
+      isInverted: isInverted,
+      isStrictASCII: isStrictASCII,
+      isScalarSemantics: isScalarSemantics)
+  }
+
+  // Mentioned in ProgrammersManual.md, update docs if redesigned
+  @inline(__always)
+  func _quickMatchBuiltinCC(
+    _ cc: _CharacterClassModel.Representation,
+    at currentPosition: String.Index,
+    isInverted: Bool,
+    isStrictASCII: Bool,
+    isScalarSemantics: Bool
+  ) -> QuickResult<String.Index?> {
+    assert(currentPosition < endIndex)
+    guard let (next, result) = _quickMatch(
+      cc, at: currentPosition, isScalarSemantics: isScalarSemantics
+    ) else {
+      return .unknown
+    }
+    return .definite(result == isInverted ? nil : next)
+  }
+
+  // Mentioned in ProgrammersManual.md, update docs if redesigned
+  @inline(never)
+  func _thoroughMatchBuiltinCC(
+    _ cc: _CharacterClassModel.Representation,
+    at currentPosition: String.Index,
+    isInverted: Bool,
+    isStrictASCII: Bool,
+    isScalarSemantics: Bool
+  ) -> String.Index? {
+    assert(currentPosition < endIndex)
+    let char = self[currentPosition]
+    let scalar = unicodeScalars[currentPosition]
+
+    let asciiCheck = !isStrictASCII
+    || (scalar.isASCII && isScalarSemantics)
+    || char.isASCII
+
+    var matched: Bool
+    var next: String.Index
+    switch (isScalarSemantics, cc) {
+    case (_, .anyGrapheme):
+      next = index(after: currentPosition)
+    case (true, _):
+      next = unicodeScalars.index(after: currentPosition)
+    case (false, _):
+      next = index(after: currentPosition)
+    }
+
+    switch cc {
+    case .any, .anyGrapheme:
+      matched = true
+    case .digit:
+      if isScalarSemantics {
+        matched = scalar.properties.numericType != nil && asciiCheck
+      } else {
+        matched = char.isNumber && asciiCheck
+      }
+    case .horizontalWhitespace:
+      if isScalarSemantics {
+        matched = scalar.isHorizontalWhitespace && asciiCheck
+      } else {
+        matched = char._isHorizontalWhitespace && asciiCheck
+      }
+    case .verticalWhitespace:
+      if isScalarSemantics {
+        matched = scalar.isNewline && asciiCheck
+      } else {
+        matched = char._isNewline && asciiCheck
+      }
+    case .newlineSequence:
+      if isScalarSemantics {
+        matched = scalar.isNewline && asciiCheck
+        if matched && scalar == "\r"
+            && next != endIndex && unicodeScalars[next] == "\n" {
+          // Match a full CR-LF sequence even in scalar semantics
+          unicodeScalars.formIndex(after: &next)
+        }
+      } else {
+        matched = char._isNewline && asciiCheck
+      }
+    case .whitespace:
+      if isScalarSemantics {
+        matched = scalar.properties.isWhitespace && asciiCheck
+      } else {
+        matched = char.isWhitespace && asciiCheck
+      }
+    case .word:
+      if isScalarSemantics {
+        matched = scalar.properties.isAlphabetic && asciiCheck
+      } else {
+        matched = char.isWordCharacter && asciiCheck
+      }
+    }
+
+    if isInverted {
+      matched.toggle()
+    }
+
+    guard matched else {
+      return nil
+    }
+    return next
   }
 }
