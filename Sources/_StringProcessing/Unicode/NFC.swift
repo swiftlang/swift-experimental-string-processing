@@ -12,6 +12,11 @@
 @_spi(_Unicode)
 import Swift
 
+extension UInt8 {
+  /// Whether this is the starting byte of a sub-300 (i.e. pre-combining scalar) scalars
+  var _isSub300StartingByte: Bool { self < 0xCC }
+}
+
 extension UnicodeScalar {
   /// Checks whether the scalar is in NFC form.
   var isNFC: Bool { Character(self).singleNFCScalar == self }

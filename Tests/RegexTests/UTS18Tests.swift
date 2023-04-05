@@ -62,7 +62,7 @@ fileprivate func expectFirstMatch<Output: Equatable>(
   XCTAssertEqual(input.firstMatch(of: r)?.output, output, file: file, line: line)
 }
 
-#if os(Linux)
+#if os(Linux) || os(Android)
 func XCTExpectFailure(_ message: String? = nil, body: () throws -> Void) rethrows {}
 #endif
 
@@ -286,6 +286,9 @@ extension UTS18Tests {
     // Test \v - vertical space
     lines = lineInput.matches(of: regex(#"\d{2}\v^"#).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 11)
+    // Test \s - whitespace
+    lines = lineInput.matches(of: regex(#"\d{2}\s^"#).anchorsMatchLineEndings())
+    XCTAssertEqual(lines.count, 11)
     // Test anchors as line boundaries
     lines = lineInput.matches(of: regex(#"^\d{2}$"#).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 12)
@@ -300,6 +303,10 @@ extension UTS18Tests {
     // Unicode scalar semantics - \v matches all except for \r\n sequence
     lines = lineInput.matches(
       of: regex(#"\d{2}\v(?=\d)"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
+    XCTAssertEqual(lines.count, 10)
+    // Unicode scalar semantics - \s matches all except for \r\n sequence
+    lines = lineInput.matches(
+      of: regex(#"\d{2}\s(?=\d)"#).matchingSemantics(.unicodeScalar).anchorsMatchLineEndings())
     XCTAssertEqual(lines.count, 10)
 
     // Does not contain an empty line
