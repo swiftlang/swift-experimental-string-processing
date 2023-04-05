@@ -40,7 +40,14 @@ extension Processor {
         }
       }
       let next = _doQuantifyMatch(payload)
-      guard let idx = next else { break }
+      guard let idx = next else {
+        if !savePoint.rangeIsEmpty {
+          // The last save point has saved the current, non-matching position,
+          // so it's unneeded.
+          savePoint.shrinkRange(input)
+        }
+        break
+      }
       currentPosition = idx
       trips += 1
     }
@@ -50,12 +57,8 @@ extension Processor {
       return false
     }
 
-    if payload.quantKind == .eager && !savePoint.rangeIsEmpty {
-      // The last save point has saved the current position, so it's unneeded
-      savePoint.shrinkRange(input)
-      if !savePoint.rangeIsEmpty {
-        savePoints.append(savePoint)
-      }
+    if !savePoint.rangeIsEmpty {
+      savePoints.append(savePoint)
     }
     return true
   }

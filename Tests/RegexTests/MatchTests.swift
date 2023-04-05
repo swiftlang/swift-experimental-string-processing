@@ -2574,4 +2574,26 @@ extension RegexTests {
   func testFuzzerArtifacts() throws {
     expectCompletion(regex: #"(b?)\1*"#, in: "a")
   }
+  
+  func testIssue640() throws {
+    // Original report from https://github.com/apple/swift-experimental-string-processing/issues/640
+    let r = try Regex("[1-9][0-9]{0,2}(?:,?[0-9]{3})*")
+    XCTAssertNotNil("36,769".wholeMatch(of: r))
+    XCTAssertNotNil("36769".wholeMatch(of: r))
+    
+    for max in 1...8 {
+      let pattern = "a{0,\(max)}a"
+      let regex = try Regex(pattern)
+      for length in 1...(max + 1) {
+        let str = String(repeating: "a", count: length)
+        if str.wholeMatch(of: regex) == nil {
+          XCTFail("Didn't match '\(pattern)' in '\(str)' (\(max),\(length)).")
+        }
+      }
+      
+      let possessiveRegex = try Regex("a{0,\(max)}+a")
+      let str = String(repeating: "a", count: max + 1)
+      XCTAssertNotNil(str.wholeMatch(of: possessiveRegex))
+    }
+  }
 }
