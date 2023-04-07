@@ -2577,17 +2577,26 @@ extension RegexTests {
   
   func testIssue640() throws {
     // Original report from https://github.com/apple/swift-experimental-string-processing/issues/640
-    let r = try Regex("[1-9][0-9]{0,2}(?:,?[0-9]{3})*")
-    XCTAssertNotNil("36,769".wholeMatch(of: r))
-    XCTAssertNotNil("36769".wholeMatch(of: r))
-    
+    let original = try Regex("[1-9][0-9]{0,2}(?:,?[0-9]{3})*")
+    XCTAssertNotNil("36,769".wholeMatch(of: original))
+    XCTAssertNotNil("36769".wholeMatch(of: original))
+
+    // Simplified case
+    let simplified = try Regex("a{0,2}a")
+    XCTAssertNotNil("aaa".wholeMatch(of: simplified))
+
     for max in 1...8 {
-      let pattern = "a{0,\(max)}a"
-      let regex = try Regex(pattern)
+      let patternEager = "a{0,\(max)}a"
+      let regexEager = try Regex(patternEager)
+      let patternReluctant = "a{0,\(max)}?a"
+      let regexReluctant = try Regex(patternReluctant)
       for length in 1...(max + 1) {
         let str = String(repeating: "a", count: length)
-        if str.wholeMatch(of: regex) == nil {
-          XCTFail("Didn't match '\(pattern)' in '\(str)' (\(max),\(length)).")
+        if str.wholeMatch(of: regexEager) == nil {
+          XCTFail("Didn't match '\(patternEager)' in '\(str)' (\(max),\(length)).")
+        }
+        if str.wholeMatch(of: regexReluctant) == nil {
+          XCTFail("Didn't match '\(patternReluctant)' in '\(str)' (\(max),\(length)).")
         }
       }
       
