@@ -21,7 +21,7 @@ extension Processor {
   }
 
   mutating func measure() {
-    let (opcode, _) = fetch().destructure
+    let (opcode, _) = fetch()
     if metrics.instructionCounts.keys.contains(opcode) {
       metrics.instructionCounts[opcode]! += 1
     } else {

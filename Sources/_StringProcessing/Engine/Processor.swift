@@ -160,6 +160,10 @@ extension Processor {
 }
 
 extension Processor {
+  func fetch() -> (Instruction.OpCode, Instruction.Payload) {
+    instructions[controller.pc].destructure
+  }
+
   var slice: Input.SubSequence {
     // TODO: Should we whole-scale switch to slices, or
     // does that depend on options for some anchors?
@@ -449,7 +453,7 @@ extension Processor {
     }
 #endif
 
-    let (opcode, payload) = fetch().destructure
+    let (opcode, payload) = fetch()
     switch opcode {
     case .invalid:
       fatalError("Invalid program")
