@@ -346,23 +346,18 @@ extension Processor {
     return true
   }
 
-  // Matches the next character if it is not a newline
-  mutating func matchAnyNonNewline() -> Bool {
-    guard let c = load(), !c.isNewline else {
+  // Matches the next character/scalar if it is not a newline
+  mutating func matchAnyNonNewline(
+    isScalarSemantics: Bool
+  ) -> Bool {
+    guard let next = input._matchAnyNonNewline(
+      at: currentPosition,
+      isScalarSemantics: isScalarSemantics
+    ) else {
       signalFailure()
       return false
     }
-    _uncheckedForcedConsumeOne()
-    return true
-  }
-  
-  // Matches the next scalar if it is not a newline
-  mutating func matchAnyNonNewlineScalar() -> Bool {
-    guard let s = loadScalar(), !s.isNewline else {
-      signalFailure()
-      return false
-    }
-    input.unicodeScalars.formIndex(after: &currentPosition)
+    currentPosition = next
     return true
   }
 
@@ -535,14 +530,8 @@ extension Processor {
         }
       }
     case .matchAnyNonNewline:
-      if payload.isScalar {
-        if matchAnyNonNewlineScalar() {
-          controller.step()
-        }
-      } else {
-        if matchAnyNonNewline() {
-          controller.step()
-        }
+      if matchAnyNonNewline(isScalarSemantics: payload.isScalar) {
+        controller.step()
       }
     case .match:
       let (isCaseInsensitive, reg) = payload.elementPayload

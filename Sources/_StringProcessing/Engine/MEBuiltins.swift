@@ -115,8 +115,69 @@ extension Processor {
   }
 }
 
-// MARK: Built-in character class matching
+// MARK: Matching `.`
+extension String {
 
+  func _matchAnyNonNewline(
+    at currentPosition: String.Index,
+    isScalarSemantics: Bool
+  ) -> String.Index? {
+    guard currentPosition < endIndex else {
+      return nil
+    }
+    if case .definite(let result) = _quickMatchAnyNonNewline(
+      at: currentPosition,
+      isScalarSemantics: isScalarSemantics
+    ) {
+      assert(result == _thoroughMatchAnyNonNewline(
+        at: currentPosition,
+        isScalarSemantics: isScalarSemantics))
+      return result
+    }
+    return _thoroughMatchAnyNonNewline(
+      at: currentPosition,
+      isScalarSemantics: isScalarSemantics)
+  }
+
+  @inline(__always)
+  func _quickMatchAnyNonNewline(
+    at currentPosition: String.Index,
+    isScalarSemantics: Bool
+  ) -> QuickResult<String.Index?> {
+    assert(currentPosition < endIndex)
+    guard let (asciiValue, next, isCRLF) = _quickASCIICharacter(
+      at: currentPosition
+    ) else {
+      return .unknown
+    }
+    switch asciiValue {
+      case ._lineFeed, ._carriageReturn:
+        return .definite(nil)
+      default:
+        assert(!isCRLF)
+        return .definite(next)
+    }
+  }
+
+  @inline(never)
+  func _thoroughMatchAnyNonNewline(
+    at currentPosition: String.Index,
+    isScalarSemantics: Bool
+  ) -> String.Index? {
+    assert(currentPosition < endIndex)
+    if isScalarSemantics {
+      let scalar = unicodeScalars[currentPosition]
+      guard !scalar.isNewline else { return nil }
+      return unicodeScalars.index(after: currentPosition)
+    }
+
+    let char = self[currentPosition]
+    guard !char.isNewline else { return nil }
+    return index(after: currentPosition)
+  }
+}
+
+// MARK: - Built-in character class matching
 extension String {
 
   // Mentioned in ProgrammersManual.md, update docs if redesigned
