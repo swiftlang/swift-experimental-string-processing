@@ -167,8 +167,8 @@ class AlgorithmTests: XCTestCase {
       
       let firstRange = input.firstRange(of: pattern)
       XCTAssertEqual(firstRange.map(input.offsets(of:)), expected.first, file: file, line: line)
-      if let fr = firstRange, !pattern.isEmpty {
-        let secondRange = input[fr.upperBound...].firstRange(of: pattern).map(input.offsets(of:))
+      if let upperBound = firstRange?.upperBound, !pattern.isEmpty {
+        let secondRange = input[upperBound...].firstRange(of: pattern).map(input.offsets(of:))
         XCTAssertEqual(secondRange, expected.dropFirst().first, file: file, line: line)
       }
     }
@@ -181,6 +181,7 @@ class AlgorithmTests: XCTestCase {
     expectRanges("ababacabababa", "abababa", [6..<13])
     expectRanges("ababacabababa", "aba", [0..<3, 6..<9, 10..<13])
     
+    // Test for rdar://92794248
     expectRanges("ADACBADADACBADACB", "ADACB", [0..<5, 7..<12, 12..<17])
   }
   
