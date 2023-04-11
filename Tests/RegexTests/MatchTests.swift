@@ -2574,4 +2574,35 @@ extension RegexTests {
   func testFuzzerArtifacts() throws {
     expectCompletion(regex: #"(b?)\1*"#, in: "a")
   }
+  
+  func testIssue640() throws {
+    // Original report from https://github.com/apple/swift-experimental-string-processing/issues/640
+    let original = try Regex("[1-9][0-9]{0,2}(?:,?[0-9]{3})*")
+    XCTAssertNotNil("36,769".wholeMatch(of: original))
+    XCTAssertNotNil("36769".wholeMatch(of: original))
+
+    // Simplified case
+    let simplified = try Regex("a{0,2}a")
+    XCTAssertNotNil("aaa".wholeMatch(of: simplified))
+
+    for max in 1...8 {
+      let patternEager = "a{0,\(max)}a"
+      let regexEager = try Regex(patternEager)
+      let patternReluctant = "a{0,\(max)}?a"
+      let regexReluctant = try Regex(patternReluctant)
+      for length in 1...(max + 1) {
+        let str = String(repeating: "a", count: length)
+        if str.wholeMatch(of: regexEager) == nil {
+          XCTFail("Didn't match '\(patternEager)' in '\(str)' (\(max),\(length)).")
+        }
+        if str.wholeMatch(of: regexReluctant) == nil {
+          XCTFail("Didn't match '\(patternReluctant)' in '\(str)' (\(max),\(length)).")
+        }
+      }
+      
+      let possessiveRegex = try Regex("a{0,\(max)}+a")
+      let str = String(repeating: "a", count: max + 1)
+      XCTAssertNotNil(str.wholeMatch(of: possessiveRegex))
+    }
+  }
 }
