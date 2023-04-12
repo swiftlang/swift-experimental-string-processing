@@ -3,7 +3,8 @@ extension Processor {
     var next: Input.Index?
     switch payload.type {
     case .bitset:
-      next = _doMatchBitset(registers[payload.bitset])
+      next = input.matchBitset(
+        registers[payload.bitset], at: currentPosition, limitedBy: end)
     case .asciiChar:
       next = input.matchScalar(
         UnicodeScalar.init(_value: UInt32(payload.asciiChar)),

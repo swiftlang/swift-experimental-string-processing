@@ -243,6 +243,7 @@ extension Processor {
   }
 
   mutating func matchCaseInsensitive(_ e: Element) -> Bool {
+    // TODO: need benchmark coverage
     guard let cur = load(), cur.lowercased() == e.lowercased() else {
       signalFailure()
       return false
@@ -290,6 +291,7 @@ extension Processor {
     _ s: Unicode.Scalar,
     boundaryCheck: Bool
   ) -> Bool {
+    // TODO: needs benchmark coverage
     guard let curScalar = loadScalar(),
           s.properties.lowercaseMapping == curScalar.properties.lowercaseMapping,
           let idx = input.unicodeScalars.index(
@@ -305,21 +307,15 @@ extension Processor {
     return true
   }
 
-  func _doMatchBitset(_ bitset: DSLTree.CustomCharacterClass.AsciiBitset) -> Input.Index? {
-    if let cur = load(), bitset.matches(char: cur) {
-      return input.index(after: currentPosition)
-    } else {
-      return nil
-    }
-  }
-
   // If we have a bitset we know that the CharacterClass only matches against
   // ascii characters, so check if the current input element is ascii then
   // check if it is set in the bitset
   mutating func matchBitset(
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
   ) -> Bool {
-    guard let next = _doMatchBitset(bitset) else {
+    guard let next = input.matchBitset(
+      bitset, at: currentPosition, limitedBy: end
+    ) else {
       signalFailure()
       return false
     }
@@ -747,5 +743,26 @@ extension String {
 
     return idx
   }
+
+  func matchBitset(
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
+    at pos: Index,
+    limitedBy end: Index
+  ) -> Index? {
+    // TODO: extremely quick-check-able
+    // TODO: can be sped up with string internals
+
+    assert(end <= endIndex)
+
+    guard pos < end, bitset.matches(char: self[pos]) else {
+      return nil
+    }
+
+    let idx = index(after: pos)
+    guard idx <= end else { return nil }
+
+    return idx
+  }
+
 
 }
