@@ -232,11 +232,13 @@ extension Processor {
   // Match against the current input element. Returns whether
   // it succeeded vs signaling an error.
   mutating func match(_ e: Element) -> Bool {
-    guard let cur = load(), cur == e else {
+    guard let next = input.match(
+      e, at: currentPosition, limitedBy: end
+    ) else {
       signalFailure()
       return false
     }
-    _uncheckedForcedConsumeOne()
+    currentPosition = next
     return true
   }
 
@@ -256,6 +258,7 @@ extension Processor {
     isScalarMode: Bool
   ) -> Bool  {
     if isScalarMode {
+      // TODO: sink to specialized method on string, needs benchmark
       for s in seq.unicodeScalars {
         guard matchScalar(s, boundaryCheck: false) else { return false }
       }
@@ -701,6 +704,23 @@ extension Processor {
 func blackHole<T>(_ t: T) { _ = t }
 
 extension String {
+
+  func match(
+    _ char: Character,
+    at pos: Index,
+    limitedBy end: String.Index
+  ) -> Index? {
+    // TODO: This can be greatly sped up with string internals
+    // TODO: This is also very much quick-check-able
+    assert(end <= endIndex)
+
+    guard pos < end, self[pos] == char else { return nil }
+
+    let idx = index(after: pos)
+    guard idx <= end else { return nil }
+
+    return idx
+  }
 
   // func consumeScalar(_ n: Distance) -> Bool {
 
