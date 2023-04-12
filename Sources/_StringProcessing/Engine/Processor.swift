@@ -180,6 +180,7 @@ extension Processor {
   // Returns whether the advance succeeded. On failure, our
   // save point was restored
   mutating func consume(_ n: Distance) -> Bool {
+    // TODO: need benchmark coverage
     guard let idx = input.index(
       currentPosition, offsetBy: n.rawValue, limitedBy: end
     ) else {
@@ -192,6 +193,7 @@ extension Processor {
   
   // Advances in unicode scalar view
   mutating func consumeScalar(_ n: Distance) -> Bool {
+    // TODO: need benchmark coverage
     guard let idx = input.unicodeScalars.index(
       currentPosition, offsetBy: n.rawValue, limitedBy: end
     ) else {
@@ -222,11 +224,6 @@ extension Processor {
 
   func load() -> Element? {
     currentPosition < end ? input[currentPosition] : nil
-  }
-  func load(count: Int) -> Input.SubSequence? {
-    let slice = self.slice[currentPosition...].prefix(count)
-    guard slice.count == count else { return nil }
-    return slice
   }
 
   // Match against the current input element. Returns whether
@@ -259,16 +256,21 @@ extension Processor {
     isScalarMode: Bool
   ) -> Bool  {
     if isScalarMode {
-      // TODO: sink to specialized method on string, needs benchmark
+      // TODO: needs benchmark coverage
       for s in seq.unicodeScalars {
         guard matchScalar(s, boundaryCheck: false) else { return false }
       }
       return true
     }
 
-    for e in seq {
-      guard match(e) else { return false }
+    guard let next = input.matchSeq(
+      seq, at: currentPosition, limitedBy: end
+    ) else {
+      signalFailure()
+      return false
     }
+
+    currentPosition = next
     return true
   }
 
@@ -327,6 +329,7 @@ extension Processor {
   mutating func matchBitsetScalar(
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
   ) -> Bool {
+    // TODO: needs benchmark coverage
     guard let curScalar = loadScalar(),
           bitset.matches(scalar: curScalar),
           let idx = input.unicodeScalars.index(currentPosition, offsetBy: 1, limitedBy: end) else {
@@ -716,6 +719,25 @@ extension String {
     guard idx <= end else { return nil }
 
     return idx
+  }
+
+  func matchSeq(
+    _ seq: Substring,
+    at pos: Index,
+    limitedBy end: Index
+  ) -> Index? {
+    // TODO: This can be greatly sped up with string internals
+    // TODO: This is also very much quick-check-able
+    assert(end <= endIndex)
+
+    var cur = pos
+    for e in seq {
+      guard cur < end, self[cur] == e else { return nil }
+      self.formIndex(after: &cur)
+    }
+
+    guard cur <= end else { return nil }
+    return cur
   }
 
   // func consumeScalar(_ n: Distance) -> Bool {
