@@ -272,21 +272,10 @@ extension Processor {
     currentPosition < end ? input.unicodeScalars[currentPosition] : nil
   }
   
-  func _doMatchScalar(_ s: Unicode.Scalar, _ boundaryCheck: Bool) -> Input.Index? {
-    if s == loadScalar(),
-       let idx = input.unicodeScalars.index(
-        currentPosition,
-        offsetBy: 1,
-        limitedBy: end),
-       (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx)) {
-      return idx
-    } else {
-      return nil
-    }
-  }
-  
   mutating func matchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) -> Bool {
-    guard let next = _doMatchScalar(s, boundaryCheck) else {
+    guard let next = input.matchScalar(
+      s, at: currentPosition, limitedBy: end, boundaryCheck: boundaryCheck
+    ) else {
       signalFailure()
       return false
     }
@@ -695,4 +684,48 @@ extension Processor {
       controller.step()
     }
   }
+
+  func sleep() {
+    var i = 0
+    for c in input {
+      if i > 20 { break }
+      i += 1
+      if c == "C" {
+        blackHole(c)
+      }
+    }
+  }
+}
+
+@inline(never)
+func blackHole<T>(_ t: T) { _ = t }
+
+extension String {
+
+  // func consumeScalar(_ n: Distance) -> Bool {
+
+  // }
+
+  func matchScalar(
+    _ scalar: Unicode.Scalar,
+    at pos: Index,
+    limitedBy end: String.Index,
+    boundaryCheck: Bool
+  ) -> Index? {
+    assert(end <= endIndex)
+
+    guard pos < end, unicodeScalars[pos] == scalar else {
+      return nil
+    }
+
+    let idx = unicodeScalars.index(after: pos)
+    guard idx <= end else { return nil }
+
+    if boundaryCheck && !isOnGraphemeClusterBoundary(idx) {
+      return nil
+    }
+
+    return idx
+  }
+
 }

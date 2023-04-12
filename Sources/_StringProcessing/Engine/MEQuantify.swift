@@ -5,8 +5,11 @@ extension Processor {
     case .bitset:
       next = _doMatchBitset(registers[payload.bitset])
     case .asciiChar:
-      next = _doMatchScalar(
-        UnicodeScalar.init(_value: UInt32(payload.asciiChar)), true)
+      next = input.matchScalar(
+        UnicodeScalar.init(_value: UInt32(payload.asciiChar)),
+        at: currentPosition,
+        limitedBy: end,
+        boundaryCheck: true)
     case .builtin:
       // We only emit .quantify if it consumes a single character
       next = input._matchBuiltinCC(
