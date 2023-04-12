@@ -20,6 +20,7 @@ extension Processor {
         isStrictASCII: payload.builtinIsStrict,
         isScalarSemantics: false)
     case .any:
+      // TODO: call out to existing code with quick check
       let matched = currentPosition != input.endIndex
         && (!input[currentPosition].isNewline || payload.anyMatchesNewline)
       next = matched ? input.index(after: currentPosition) : nil

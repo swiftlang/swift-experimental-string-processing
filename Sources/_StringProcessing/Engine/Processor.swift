@@ -686,21 +686,7 @@ extension Processor {
       controller.step()
     }
   }
-
-  func sleep() {
-    var i = 0
-    for c in input {
-      if i > 20 { break }
-      i += 1
-      if c == "C" {
-        blackHole(c)
-      }
-    }
-  }
 }
-
-@inline(never)
-func blackHole<T>(_ t: T) { _ = t }
 
 extension String {
 
@@ -739,10 +725,6 @@ extension String {
     guard cur <= end else { return nil }
     return cur
   }
-
-  // func consumeScalar(_ n: Distance) -> Bool {
-
-  // }
 
   func matchScalar(
     _ scalar: Unicode.Scalar,
