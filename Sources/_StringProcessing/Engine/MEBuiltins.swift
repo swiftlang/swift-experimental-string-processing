@@ -63,10 +63,10 @@ extension Processor {
       switch payload.semanticLevel {
       case .graphemeCluster:
         return input.index(after: currentPosition) == subjectBounds.upperBound
-         && input[currentPosition].isNewline
+        && input[currentPosition].isNewline
       case .unicodeScalar:
         return input.unicodeScalars.index(after: currentPosition) == subjectBounds.upperBound
-         && input.unicodeScalars[currentPosition].isNewline
+        && input.unicodeScalars[currentPosition].isNewline
       }
 
     case .endOfSubject: return currentPosition == subjectBounds.upperBound
@@ -121,6 +121,7 @@ extension Processor {
 
 // MARK: Matching `.`
 extension String {
+  // TODO: Should the below have a `limitedBy` parameter?
 
   func _matchAnyNonNewline(
     at currentPosition: String.Index,
@@ -155,11 +156,11 @@ extension String {
       return .unknown
     }
     switch asciiValue {
-      case ._lineFeed, ._carriageReturn:
-        return .definite(nil)
-      default:
-        assert(!isCRLF)
-        return .definite(next)
+    case (._lineFeed)...(._carriageReturn):
+      return .definite(nil)
+    default:
+      assert(!isCRLF)
+      return .definite(next)
     }
   }
 
@@ -183,6 +184,7 @@ extension String {
 
 // MARK: - Built-in character class matching
 extension String {
+  // TODO: Should the below have a `limitedBy` parameter?
 
   // Mentioned in ProgrammersManual.md, update docs if redesigned
   func _matchBuiltinCC(

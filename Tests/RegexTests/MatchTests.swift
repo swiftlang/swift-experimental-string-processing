@@ -1891,6 +1891,11 @@ extension RegexTests {
   func testSingleLineMode() {
     firstMatchTest(#".+"#, input: "a\nb", match: "a")
     firstMatchTest(#"(?s:.+)"#, input: "a\nb", match: "a\nb")
+
+    // We recognize LF, line tab, FF, and CR as newlines by default
+    firstMatchTest(#"."#, input: "\u{A}\u{B}\u{C}\u{D}\nb", match: "b")
+    firstMatchTest(#".+"#, input: "\u{A}\u{B}\u{C}\u{D}\nbb", match: "bb")
+
   }
 
   func testMatchNewlines() {
