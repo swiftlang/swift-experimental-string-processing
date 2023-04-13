@@ -81,6 +81,10 @@ extension MEProgram.Builder {
     .init(instructions.endIndex - 1)
   }
 
+  mutating func buildFatalError() {
+    instructions.append(.init(.invalid))
+  }
+
   mutating func buildMoveImmediate(
     _ value: UInt64, into: IntRegister
   ) {
@@ -306,6 +310,10 @@ extension MEProgram.Builder {
 
   mutating func buildMoveCurrentPosition(into r: PositionRegister) {
     instructions.append(.init(.moveCurrentPosition, .init(position: r)))
+  }
+
+  mutating func buildRestorePosition(from r: PositionRegister) {
+    instructions.append(.init(.restorePosition, .init(position: r)))
   }
 
   mutating func buildBackreference(
