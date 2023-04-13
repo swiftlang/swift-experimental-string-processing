@@ -97,13 +97,13 @@ struct BenchmarkRunner {
 
     if alsoRunScalarSemantic {
       register(InputListBenchmark(
-        name: name,
+        name: name + "_Scalar",
         regex: swiftRegex.matchingSemantics(.unicodeScalar),
         pattern: pattern,
         targets: inputList
       ))
       register(InputListNSBenchmark(
-        name: name + CrossBenchmark.nsSuffix,
+        name: name + "_Scalar" + CrossBenchmark.nsSuffix,
         regex: pattern,
         targets: inputList
       ))
