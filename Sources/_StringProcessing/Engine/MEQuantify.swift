@@ -3,10 +3,14 @@ extension Processor {
     var next: Input.Index?
     switch payload.type {
     case .bitset:
-      next = _doMatchBitset(registers[payload.bitset])
+      next = input.matchBitset(
+        registers[payload.bitset], at: currentPosition, limitedBy: end)
     case .asciiChar:
-      next = _doMatchScalar(
-        UnicodeScalar.init(_value: UInt32(payload.asciiChar)), true)
+      next = input.matchScalar(
+        UnicodeScalar.init(_value: UInt32(payload.asciiChar)),
+        at: currentPosition,
+        limitedBy: end,
+        boundaryCheck: true)
     case .builtin:
       // We only emit .quantify if it consumes a single character
       next = input._matchBuiltinCC(
@@ -16,6 +20,7 @@ extension Processor {
         isStrictASCII: payload.builtinIsStrict,
         isScalarSemantics: false)
     case .any:
+      // TODO: call out to existing code with quick check
       let matched = currentPosition != input.endIndex
         && (!input[currentPosition].isNewline || payload.anyMatchesNewline)
       next = matched ? input.index(after: currentPosition) : nil

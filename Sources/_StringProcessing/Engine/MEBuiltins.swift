@@ -30,6 +30,7 @@ extension Processor {
   }
 
   func isAtStartOfLine(_ payload: AssertionPayload) -> Bool {
+    // TODO: needs benchmark coverage
     if currentPosition == subjectBounds.lowerBound { return true }
     switch payload.semanticLevel {
     case .graphemeCluster:
@@ -40,6 +41,7 @@ extension Processor {
   }
 
   func isAtEndOfLine(_ payload: AssertionPayload) -> Bool {
+    // TODO: needs benchmark coverage
     if currentPosition == subjectBounds.upperBound { return true }
     switch payload.semanticLevel {
     case .graphemeCluster:
@@ -50,6 +52,8 @@ extension Processor {
   }
 
   mutating func builtinAssert(by payload: AssertionPayload) throws -> Bool {
+    // TODO: needs benchmark coverage
+
     // Future work: Optimize layout and dispatch
     switch payload.kind {
     case .startOfSubject: return currentPosition == subjectBounds.lowerBound

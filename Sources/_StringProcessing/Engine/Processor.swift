@@ -86,11 +86,7 @@ struct Processor {
 
   var failureReason: Error? = nil
 
-  // MARK: Metrics, debugging, etc.
-  var cycleCount = 0
-  var isTracingEnabled: Bool
-  let shouldMeasureMetrics: Bool
-  var metrics: ProcessorMetrics = ProcessorMetrics()
+  var metrics: ProcessorMetrics
 }
 
 extension Processor {
@@ -116,8 +112,11 @@ extension Processor {
     self.subjectBounds = subjectBounds
     self.searchBounds = searchBounds
     self.matchMode = matchMode
-    self.isTracingEnabled = isTracingEnabled
-    self.shouldMeasureMetrics = shouldMeasureMetrics
+
+    self.metrics = ProcessorMetrics(
+      isTracingEnabled: isTracingEnabled,
+      shouldMeasureMetrics: shouldMeasureMetrics)
+
     self.currentPosition = searchBounds.lowerBound
 
     // Initialize registers with end of search bounds
@@ -144,8 +143,8 @@ extension Processor {
 
     self.state = .inProgress
     self.failureReason = nil
-    
-    if shouldMeasureMetrics { metrics.resets += 1 }
+
+    metrics.addReset()
     _checkInvariants()
   }
 
@@ -160,6 +159,10 @@ extension Processor {
 }
 
 extension Processor {
+  func fetch() -> (Instruction.OpCode, Instruction.Payload) {
+    instructions[controller.pc].destructure
+  }
+
   var slice: Input.SubSequence {
     // TODO: Should we whole-scale switch to slices, or
     // does that depend on options for some anchors?
@@ -177,6 +180,7 @@ extension Processor {
   // Returns whether the advance succeeded. On failure, our
   // save point was restored
   mutating func consume(_ n: Distance) -> Bool {
+    // TODO: need benchmark coverage
     guard let idx = input.index(
       currentPosition, offsetBy: n.rawValue, limitedBy: end
     ) else {
@@ -189,6 +193,7 @@ extension Processor {
   
   // Advances in unicode scalar view
   mutating func consumeScalar(_ n: Distance) -> Bool {
+    // TODO: need benchmark coverage
     guard let idx = input.unicodeScalars.index(
       currentPosition, offsetBy: n.rawValue, limitedBy: end
     ) else {
@@ -220,24 +225,22 @@ extension Processor {
   func load() -> Element? {
     currentPosition < end ? input[currentPosition] : nil
   }
-  func load(count: Int) -> Input.SubSequence? {
-    let slice = self.slice[currentPosition...].prefix(count)
-    guard slice.count == count else { return nil }
-    return slice
-  }
 
   // Match against the current input element. Returns whether
   // it succeeded vs signaling an error.
   mutating func match(_ e: Element) -> Bool {
-    guard let cur = load(), cur == e else {
+    guard let next = input.match(
+      e, at: currentPosition, limitedBy: end
+    ) else {
       signalFailure()
       return false
     }
-    _uncheckedForcedConsumeOne()
+    currentPosition = next
     return true
   }
 
   mutating func matchCaseInsensitive(_ e: Element) -> Bool {
+    // TODO: need benchmark coverage
     guard let cur = load(), cur.lowercased() == e.lowercased() else {
       signalFailure()
       return false
@@ -253,15 +256,21 @@ extension Processor {
     isScalarMode: Bool
   ) -> Bool  {
     if isScalarMode {
+      // TODO: needs benchmark coverage
       for s in seq.unicodeScalars {
         guard matchScalar(s, boundaryCheck: false) else { return false }
       }
       return true
     }
 
-    for e in seq {
-      guard match(e) else { return false }
+    guard let next = input.matchSeq(
+      seq, at: currentPosition, limitedBy: end
+    ) else {
+      signalFailure()
+      return false
     }
+
+    currentPosition = next
     return true
   }
 
@@ -269,21 +278,10 @@ extension Processor {
     currentPosition < end ? input.unicodeScalars[currentPosition] : nil
   }
   
-  func _doMatchScalar(_ s: Unicode.Scalar, _ boundaryCheck: Bool) -> Input.Index? {
-    if s == loadScalar(),
-       let idx = input.unicodeScalars.index(
-        currentPosition,
-        offsetBy: 1,
-        limitedBy: end),
-       (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx)) {
-      return idx
-    } else {
-      return nil
-    }
-  }
-  
   mutating func matchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) -> Bool {
-    guard let next = _doMatchScalar(s, boundaryCheck) else {
+    guard let next = input.matchScalar(
+      s, at: currentPosition, limitedBy: end, boundaryCheck: boundaryCheck
+    ) else {
       signalFailure()
       return false
     }
@@ -295,6 +293,7 @@ extension Processor {
     _ s: Unicode.Scalar,
     boundaryCheck: Bool
   ) -> Bool {
+    // TODO: needs benchmark coverage
     guard let curScalar = loadScalar(),
           s.properties.lowercaseMapping == curScalar.properties.lowercaseMapping,
           let idx = input.unicodeScalars.index(
@@ -310,21 +309,15 @@ extension Processor {
     return true
   }
 
-  func _doMatchBitset(_ bitset: DSLTree.CustomCharacterClass.AsciiBitset) -> Input.Index? {
-    if let cur = load(), bitset.matches(char: cur) {
-      return input.index(after: currentPosition)
-    } else {
-      return nil
-    }
-  }
-
   // If we have a bitset we know that the CharacterClass only matches against
   // ascii characters, so check if the current input element is ascii then
   // check if it is set in the bitset
   mutating func matchBitset(
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
   ) -> Bool {
-    guard let next = _doMatchBitset(bitset) else {
+    guard let next = input.matchBitset(
+      bitset, at: currentPosition, limitedBy: end
+    ) else {
       signalFailure()
       return false
     }
@@ -336,6 +329,7 @@ extension Processor {
   mutating func matchBitsetScalar(
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
   ) -> Bool {
+    // TODO: needs benchmark coverage
     guard let curScalar = loadScalar(),
           bitset.matches(scalar: curScalar),
           let idx = input.unicodeScalars.index(currentPosition, offsetBy: 1, limitedBy: end) else {
@@ -396,8 +390,8 @@ extension Processor {
     storedCaptures = capEnds
     registers.ints = intRegisters
     registers.positions = posRegisters
-    
-    if shouldMeasureMetrics { metrics.backtracks += 1 }
+
+    metrics.addBacktrack()
   }
 
   mutating func abort(_ e: Error? = nil) {
@@ -436,20 +430,10 @@ extension Processor {
     _checkInvariants()
     assert(state == .inProgress)
 
-#if PROCESSOR_MEASUREMENTS_ENABLED
-    if cycleCount == 0 {
-      trace()
-      measureMetrics()
-    }
-    defer {
-      cycleCount += 1
-      trace()
-      measureMetrics()
-      _checkInvariants()
-    }
-#endif
+    startCycleMetrics()
+    defer { endCycleMetrics() }
 
-    let (opcode, payload) = fetch().destructure
+    let (opcode, payload) = fetch()
     switch opcode {
     case .invalid:
       fatalError("Invalid program")
@@ -702,4 +686,87 @@ extension Processor {
       controller.step()
     }
   }
+}
+
+extension String {
+
+  func match(
+    _ char: Character,
+    at pos: Index,
+    limitedBy end: String.Index
+  ) -> Index? {
+    // TODO: This can be greatly sped up with string internals
+    // TODO: This is also very much quick-check-able
+    assert(end <= endIndex)
+
+    guard pos < end, self[pos] == char else { return nil }
+
+    let idx = index(after: pos)
+    guard idx <= end else { return nil }
+
+    return idx
+  }
+
+  func matchSeq(
+    _ seq: Substring,
+    at pos: Index,
+    limitedBy end: Index
+  ) -> Index? {
+    // TODO: This can be greatly sped up with string internals
+    // TODO: This is also very much quick-check-able
+    assert(end <= endIndex)
+
+    var cur = pos
+    for e in seq {
+      guard cur < end, self[cur] == e else { return nil }
+      self.formIndex(after: &cur)
+    }
+
+    guard cur <= end else { return nil }
+    return cur
+  }
+
+  func matchScalar(
+    _ scalar: Unicode.Scalar,
+    at pos: Index,
+    limitedBy end: String.Index,
+    boundaryCheck: Bool
+  ) -> Index? {
+    assert(end <= endIndex)
+
+    guard pos < end, unicodeScalars[pos] == scalar else {
+      return nil
+    }
+
+    let idx = unicodeScalars.index(after: pos)
+    guard idx <= end else { return nil }
+
+    if boundaryCheck && !isOnGraphemeClusterBoundary(idx) {
+      return nil
+    }
+
+    return idx
+  }
+
+  func matchBitset(
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
+    at pos: Index,
+    limitedBy end: Index
+  ) -> Index? {
+    // TODO: extremely quick-check-able
+    // TODO: can be sped up with string internals
+
+    assert(end <= endIndex)
+
+    guard pos < end, bitset.matches(char: self[pos]) else {
+      return nil
+    }
+
+    let idx = index(after: pos)
+    guard idx <= end else { return nil }
+
+    return idx
+  }
+
+
 }
