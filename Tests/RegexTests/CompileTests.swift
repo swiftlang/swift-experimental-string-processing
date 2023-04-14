@@ -376,14 +376,6 @@ extension RegexTests {
       contains: [.matchBitset],
       doesNotContain: [.consumeBy, .matchBitsetScalar])
     expectProgram(
-      for: "[a-á]",
-      contains: [.consumeBy],
-      doesNotContain: [.matchBitset, .matchBitsetScalar])
-    expectProgram(
-      for: "[a-fá-ém-zk]",
-      contains: [.matchBitset, .consumeBy],
-      doesNotContain: [.matchBitsetScalar])
-    expectProgram(
       for: "[a-c0123]",
       contains: [.matchBitset],
       doesNotContain: [.matchBitsetScalar, .consumeBy])
@@ -409,6 +401,18 @@ extension RegexTests {
       for: #"\p{Greek}"#,
       contains: [.consumeBy],
       doesNotContain: [.matchBuiltin, .matchBitset, .matchBitsetScalar])
+
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+    
+    expectProgram(
+      for: "[a-á]",
+      contains: [.consumeBy],
+      doesNotContain: [.matchBitset, .matchBitsetScalar])
+    expectProgram(
+      for: "[a-fá-ém-zk]",
+      contains: [.matchBitset, .consumeBy],
+      doesNotContain: [.matchBitsetScalar])
   }
 
   func testScalarOptimizeCompilation() {
