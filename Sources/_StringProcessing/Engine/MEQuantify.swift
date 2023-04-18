@@ -1,31 +1,37 @@
 extension Processor {
   func _doQuantifyMatch(_ payload: QuantifyPayload) -> Input.Index? {
-    var next: Input.Index?
+    // FIXME: is the below updated for scalar semantics?
     switch payload.type {
     case .bitset:
-      next = input.matchBitset(
+      return input.matchBitset(
         registers[payload.bitset], at: currentPosition, limitedBy: end)
     case .asciiChar:
-      next = input.matchScalar(
+      return input.matchScalar(
         UnicodeScalar.init(_value: UInt32(payload.asciiChar)),
         at: currentPosition,
         limitedBy: end,
         boundaryCheck: true)
     case .builtin:
+      // FIXME: bounds check? endIndex or end?
+
       // We only emit .quantify if it consumes a single character
-      next = input._matchBuiltinCC(
+      return input._matchBuiltinCC(
         payload.builtin,
         at: currentPosition,
         isInverted: payload.builtinIsInverted,
         isStrictASCII: payload.builtinIsStrict,
         isScalarSemantics: false)
     case .any:
-      // TODO: call out to existing code with quick check
-      let matched = currentPosition != input.endIndex
-        && (!input[currentPosition].isNewline || payload.anyMatchesNewline)
-      next = matched ? input.index(after: currentPosition) : nil
+      // FIXME: endIndex or end?
+      guard currentPosition < input.endIndex else { return nil }
+
+      if payload.anyMatchesNewline {
+        return input.index(after: currentPosition)
+      }
+
+      return input._matchAnyNonNewline(
+        at: currentPosition, isScalarSemantics: false)
     }
-    return next
   }
 
   /// Generic quantify instruction interpreter
