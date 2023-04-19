@@ -1,16 +1,22 @@
 extension Processor {
   func _doQuantifyMatch(_ payload: QuantifyPayload) -> Input.Index? {
-    // FIXME: is the below updated for scalar semantics?
+    // TODO: This optimization is only enabled for grapheme cluster semantics,
+    //       we want these for scalar semantics as well.
+
     switch payload.type {
     case .bitset:
       return input.matchBitset(
-        registers[payload.bitset], at: currentPosition, limitedBy: end)
+        registers[payload.bitset],
+        at: currentPosition,
+        limitedBy: end,
+        isScalarSemantics: false)
     case .asciiChar:
       return input.matchScalar(
         UnicodeScalar.init(_value: UInt32(payload.asciiChar)),
         at: currentPosition,
         limitedBy: end,
-        boundaryCheck: true)
+        boundaryCheck: true,
+        isCaseInsensitive: false)
     case .builtin:
       // FIXME: bounds check? endIndex or end?
 
@@ -41,7 +47,7 @@ extension Processor {
     var trips = 0
     var extraTrips = payload.extraTrips
     var savePoint = startQuantifierSavePoint()
-    
+
     while true {
       if trips >= payload.minTrips {
         if extraTrips == 0 { break }
