@@ -15,7 +15,7 @@ extension Processor {
     isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> Bool {
-    guard let next = input._matchBuiltinCC(
+    guard let next = input.matchBuiltinCC(
       cc,
       at: currentPosition,
       isInverted: isInverted,
@@ -123,7 +123,7 @@ extension Processor {
 extension String {
   // TODO: Should the below have a `limitedBy` parameter?
 
-  func _matchAnyNonNewline(
+  func matchAnyNonNewline(
     at currentPosition: String.Index,
     isScalarSemantics: Bool
   ) -> String.Index? {
@@ -145,7 +145,7 @@ extension String {
   }
 
   @inline(__always)
-  func _quickMatchAnyNonNewline(
+  private func _quickMatchAnyNonNewline(
     at currentPosition: String.Index,
     isScalarSemantics: Bool
   ) -> QuickResult<String.Index?> {
@@ -165,7 +165,7 @@ extension String {
   }
 
   @inline(never)
-  func _thoroughMatchAnyNonNewline(
+  private func _thoroughMatchAnyNonNewline(
     at currentPosition: String.Index,
     isScalarSemantics: Bool
   ) -> String.Index? {
@@ -187,7 +187,7 @@ extension String {
   // TODO: Should the below have a `limitedBy` parameter?
 
   // Mentioned in ProgrammersManual.md, update docs if redesigned
-  func _matchBuiltinCC(
+  func matchBuiltinCC(
     _ cc: _CharacterClassModel.Representation,
     at currentPosition: String.Index,
     isInverted: Bool,
@@ -222,7 +222,7 @@ extension String {
 
   // Mentioned in ProgrammersManual.md, update docs if redesigned
   @inline(__always)
-  func _quickMatchBuiltinCC(
+  private func _quickMatchBuiltinCC(
     _ cc: _CharacterClassModel.Representation,
     at currentPosition: String.Index,
     isInverted: Bool,
@@ -240,7 +240,7 @@ extension String {
 
   // Mentioned in ProgrammersManual.md, update docs if redesigned
   @inline(never)
-  func _thoroughMatchBuiltinCC(
+  private func _thoroughMatchBuiltinCC(
     _ cc: _CharacterClassModel.Representation,
     at currentPosition: String.Index,
     isInverted: Bool,
