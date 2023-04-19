@@ -309,7 +309,7 @@ extension Processor {
   mutating func matchAnyNonNewline(
     isScalarSemantics: Bool
   ) -> Bool {
-    guard let next = input._matchAnyNonNewline(
+    guard let next = input.matchAnyNonNewline(
       at: currentPosition,
       isScalarSemantics: isScalarSemantics
     ) else {

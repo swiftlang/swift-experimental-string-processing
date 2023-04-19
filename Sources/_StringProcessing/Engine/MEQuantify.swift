@@ -21,7 +21,7 @@ extension Processor {
       // FIXME: bounds check? endIndex or end?
 
       // We only emit .quantify if it consumes a single character
-      return input._matchBuiltinCC(
+      return input.matchBuiltinCC(
         payload.builtin,
         at: currentPosition,
         isInverted: payload.builtinIsInverted,
@@ -35,7 +35,7 @@ extension Processor {
         return input.index(after: currentPosition)
       }
 
-      return input._matchAnyNonNewline(
+      return input.matchAnyNonNewline(
         at: currentPosition, isScalarSemantics: false)
     }
   }
