@@ -220,7 +220,6 @@ extension Processor {
     currentPosition < end ? input[currentPosition] : nil
   }
 
-
   // MARK: Match functions
   //
   // TODO: refactor these such that `cycle()` calls the corresponding String
