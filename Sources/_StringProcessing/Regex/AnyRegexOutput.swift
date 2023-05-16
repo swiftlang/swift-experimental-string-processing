@@ -283,7 +283,7 @@ extension Regex where Output == AnyRegexOutput {
   ///
   /// - Parameter regex: A regular expression to convert to use a dynamic
   ///   capture list.
-  public init<Output>(_ regex: Regex<Output>) {
+  public init<OtherOutput>(_ regex: Regex<OtherOutput>) {
     self.init(node: regex.root)
   }
 }
@@ -299,7 +299,7 @@ extension Regex.Match where Output == AnyRegexOutput {
   ///
   /// - Parameter match: A regular expression match to convert to a match with
   ///   type-erased captures.
-  public init<Output>(_ match: Regex<Output>.Match) {
+  public init<OtherOutput>(_ match: Regex<OtherOutput>.Match) {
     self.init(
       anyRegexOutput: match.anyRegexOutput,
       range: match.range
