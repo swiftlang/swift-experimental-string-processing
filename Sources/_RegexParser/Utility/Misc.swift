@@ -32,6 +32,19 @@ extension Character {
     let str = String(self)
     return str._nfcCodeUnits.elementsEqual(str.utf8)
   }
+  
+  /// Whether this character could be confusable with a metacharacter in a
+  /// regex literal.
+  ///
+  /// A "confusable" character is one that starts with a non-alphanumeric ASCII
+  /// character and includes other combining Unicode scalars. For example,
+  /// `"[́"` (aka `"[\u{301}"`) is confusable, since it looks just like the
+  /// `"["` metacharacter, but doesn't parse as one.
+  public var isConfusable: Bool {
+    let scalars = self.unicodeScalars
+    return scalars.count > 1 && scalars.first!.isASCII && self != "\r\n" &&
+      !self.isLetter && !self.isNumber
+  }
 }
 
 extension CustomStringConvertible {

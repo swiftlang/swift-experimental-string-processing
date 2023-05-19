@@ -11,7 +11,7 @@
 
 import XCTest
 @testable import _RegexParser
-@testable @_spi(RegexBenchmark) import _StringProcessing
+@testable @_spi(RegexBenchmark) @_spi(LiteralPattern) import _StringProcessing
 import TestSupport
 
 struct MatchError: Error {
@@ -19,6 +19,21 @@ struct MatchError: Error {
   init(_ message: String) {
     self.message = message
   }
+}
+
+// This just piggy-backs on the existing match testing to validate that
+// literal patterns round trip correctly.
+func _roundTripLiteral(
+  _ regexStr: String,
+  syntax: SyntaxOptions
+) throws -> Regex<AnyRegexOutput>? {
+  guard let pattern = try Regex(regexStr, syntax: syntax)._literalPattern else {
+    return nil
+  }
+  
+  let remadeRegex = try Regex(pattern)
+  XCTAssertEqual(pattern, remadeRegex._literalPattern)
+  return remadeRegex
 }
 
 func _firstMatch(
@@ -30,7 +45,34 @@ func _firstMatch(
 ) throws -> (String, [String?])? {
   var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
   let result = try regex.firstMatch(in: input)
-
+  do {
+    let roundTripRegex = try? _roundTripLiteral(regexStr, syntax: syntax)
+    let roundTripResult = try? roundTripRegex?
+      .matchingSemantics(semanticLevel)
+      .firstMatch(in: input)?[0]
+      .substring
+    switch (result?[0].substring, roundTripResult) {
+    case let (match?, rtMatch?):
+      XCTAssertEqual(match, rtMatch)
+    case (nil, nil):
+      break // okay
+    case let (match?, _):
+      XCTFail("""
+        Didn't match in round-tripped version of '\(regexStr)'
+        For input '\(input)'
+        Original: '\(regexStr)'
+        _literalPattern: '\(roundTripRegex?._literalPattern ?? "<no pattern>")'
+        """)
+    case let (_, rtMatch?):
+      XCTFail("""
+        Incorrectly matched as '\(rtMatch)'
+        For input '\(input)'
+        Original: '\(regexStr)'
+        _literalPattern: '\(roundTripRegex!._literalPattern!)'
+        """)
+    }
+  }
+  
   if validateOptimizations {
     assert(regex._forceAction(.addOptions(.disableOptimizations)))
     let unoptResult = try regex.firstMatch(in: input)

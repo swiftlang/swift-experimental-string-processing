@@ -535,7 +535,7 @@ extension _RegexFactory {
     _ left: some RegexComponent,
     ignoringOutputTypeOf right: some RegexComponent
   ) -> Regex<Output> {
-    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+    if #available(macOS 14.0, iOS 9999, watchOS 9999, tvOS 9999, *) {
       return accumulate(left, ignoreCapturesInTypedOutput(right))
     }
     return accumulate(left, right)
@@ -549,7 +549,7 @@ extension _RegexFactory {
     ignoringOutputTypeOf left: some RegexComponent,
     _ right: some RegexComponent
   ) -> Regex<Output> {
-    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+    if #available(macOS 14.0, iOS 9999, watchOS 9999, tvOS 9999, *) {
       return accumulate(ignoreCapturesInTypedOutput(left), right)
     }
     return accumulate(left, right)
@@ -563,7 +563,7 @@ extension _RegexFactory {
     ignoringOutputTypeOf left: some RegexComponent,
     andAlso right: some RegexComponent
   ) -> Regex<Output> {
-    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+    if #available(macOS 14.0, iOS 9999, watchOS 9999, tvOS 9999, *) {
       return accumulate(
         ignoreCapturesInTypedOutput(left), ignoreCapturesInTypedOutput(right))
     }

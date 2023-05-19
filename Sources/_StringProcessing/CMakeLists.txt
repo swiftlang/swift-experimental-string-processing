@@ -76,6 +76,7 @@ add_library(_StringProcessing
   Compiler.swift
   ConsumerInterface.swift
   Executor.swift
+  LiteralPrinter.swift
   MatchingOptions.swift
   PrintAsPattern.swift)
 target_compile_options(_StringProcessing PRIVATE
