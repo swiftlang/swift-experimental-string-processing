@@ -110,6 +110,11 @@ extension MatchingOptions {
     !stack.last!.contains(.unicodeWordBoundaries)
   }
   
+  var usesExtendedWhitespace: Bool {
+    stack.last!.contains(.extended)
+      || stack.last!.contains(.extraExtended)
+  }
+  
   enum SemanticLevel {
     case graphemeCluster
     case unicodeScalar
@@ -165,6 +170,10 @@ extension MatchingOptions {
     
     // Swift-only default possessive quantifier
     case possessiveByDefault
+    
+    // Whitespace options
+    case extended
+    case extraExtended
 
     init?(_ astKind: AST.MatchingOption.Kind) {
       switch astKind {
@@ -204,10 +213,10 @@ extension MatchingOptions {
         self = .possessiveByDefault
       case .nsreCompatibleDot:
         self = .nsreCompatibleDot
-        
-      // Whitespace options are only relevant during parsing, not compilation.
-      case .extended, .extraExtended:
-        return nil
+      case .extended:
+        self = .extended
+      case .extraExtended:
+        self = .extraExtended
       }
     }
     

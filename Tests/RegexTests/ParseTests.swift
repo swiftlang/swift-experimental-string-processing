@@ -2978,6 +2978,7 @@ extension RegexTests {
     diagnosticTest(".\u{35F}", .confusableCharacter(".\u{35F}"))
     diagnosticTest("|\u{360}", .confusableCharacter("|\u{360}"))
     diagnosticTest(" \u{361}", .confusableCharacter(" \u{361}"))
+    diagnosticTest("\\Q \u{361}\\E") // OK in quoted section
 
     // MARK: Interpolation (currently unsupported)
 
