@@ -1,7 +1,6 @@
 extension Processor {
   func _doQuantifyMatch(_ payload: QuantifyPayload) -> Input.Index? {
-    // TODO: This optimization is only enabled for grapheme cluster semantics,
-    //       we want these for scalar semantics as well.
+    let isScalarSemantics = payload.isScalarSemantics
 
     switch payload.type {
     case .bitset:

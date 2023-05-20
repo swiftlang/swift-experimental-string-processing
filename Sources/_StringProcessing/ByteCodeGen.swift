@@ -667,10 +667,11 @@ fileprivate extension Compiler.ByteCodeGen {
     _ minTrips: Int,
     _ extraTrips: Int?
   ) -> Bool {
+    let isScalarSemantics = options.semanticLevel == .unicodeScalar
     guard optimizationsEnabled
             && minTrips <= QuantifyPayload.maxStorableTrips
             && extraTrips ?? 0 <= QuantifyPayload.maxStorableTrips
-            && options.semanticLevel == .graphemeCluster
+            && !isScalarSemantics
             && kind != .reluctant else {
       return false
     }
@@ -680,7 +681,7 @@ fileprivate extension Compiler.ByteCodeGen {
       guard let bitset = ccc.asAsciiBitset(options) else {
         return false
       }
-      builder.buildQuantify(bitset: bitset, kind, minTrips, extraTrips)
+      builder.buildQuantify(bitset: bitset, kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics)
 
     case .atom(let atom):
       switch atom {
@@ -689,17 +690,17 @@ fileprivate extension Compiler.ByteCodeGen {
         guard let val = c._singleScalarAsciiValue else {
           return false
         }
-        builder.buildQuantify(asciiChar: val, kind, minTrips, extraTrips)
+        builder.buildQuantify(asciiChar: val, kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics)
 
       case .any:
         builder.buildQuantifyAny(
-          matchesNewlines: true, kind, minTrips, extraTrips)
+          matchesNewlines: true, kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics)
       case .anyNonNewline:
         builder.buildQuantifyAny(
-          matchesNewlines: false, kind, minTrips, extraTrips)
+          matchesNewlines: false, kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics)
       case .dot:
         builder.buildQuantifyAny(
-          matchesNewlines: options.dotMatchesNewline, kind, minTrips, extraTrips)
+          matchesNewlines: options.dotMatchesNewline, kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics)
 
       case .characterClass(let cc):
         // Custom character class that consumes a single grapheme
@@ -708,7 +709,8 @@ fileprivate extension Compiler.ByteCodeGen {
           model: model,
           kind,
           minTrips,
-          extraTrips)
+          extraTrips,
+          isScalarSemantics: isScalarSemantics)
       default:
         return false
       }
