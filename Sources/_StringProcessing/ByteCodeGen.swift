@@ -23,7 +23,9 @@ extension Compiler {
     var hasEmittedFirstMatchableAtom = false
 
     private let compileOptions: _CompileOptions
-    fileprivate var optimizationsEnabled: Bool { !compileOptions.contains(.disableOptimizations) }
+    fileprivate var optimizationsEnabled: Bool {
+      !compileOptions.contains(.disableOptimizations)
+    }
 
     init(
       options: MatchingOptions,

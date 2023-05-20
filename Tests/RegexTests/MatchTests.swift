@@ -620,6 +620,42 @@ extension RegexTests {
     // TODO: After captures, easier to test these
   }
 
+  func testQuantificationScalarSemantics() {
+    // TODO: We want more thorough testing here, including "a{n,m}", "a?", etc.
+
+    firstMatchTest("a*", input: "aaa\u{301}", match: "aa")
+    firstMatchTest("a*", input: "aaa\u{301}", match: "aaa", semanticLevel: .unicodeScalar)
+    firstMatchTest("a+", input: "aaa\u{301}", match: "aa")
+    firstMatchTest("a+", input: "aaa\u{301}", match: "aaa", semanticLevel: .unicodeScalar)
+    firstMatchTest("a?", input: "a\u{301}", match: "")
+    firstMatchTest("a?", input: "a\u{301}", match: "a", semanticLevel: .unicodeScalar)
+
+    firstMatchTest("[ab]*", input: "abab\u{301}", match: "aba")
+    firstMatchTest("[ab]*", input: "abab\u{301}", match: "abab", semanticLevel: .unicodeScalar)
+    firstMatchTest("[ab]+", input: "abab\u{301}", match: "aba")
+    firstMatchTest("[ab]+", input: "abab\u{301}", match: "abab", semanticLevel: .unicodeScalar)
+    firstMatchTest("[ab]?", input: "b\u{301}", match: "")
+    firstMatchTest("[ab]?", input: "b\u{301}", match: "b", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#"\s*"#, input: "  \u{301}", match: "  \u{301}")
+    firstMatchTest(#"\s*"#, input: "  \u{301}", match: "  ", semanticLevel: .unicodeScalar)
+    firstMatchTest(#"\s+"#, input: "  \u{301}", match: "  \u{301}")
+    firstMatchTest(#"\s+"#, input: "  \u{301}", match: "  ", semanticLevel: .unicodeScalar)
+    firstMatchTest(#"\s?"#, input: " \u{301}", match: " \u{301}")
+    firstMatchTest(#"\s?"#, input: " \u{301}", match: " ", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#".*?a"#, input: "xxa\u{301}xaZ", match: "xxa\u{301}xa")
+    firstMatchTest(#".*?a"#, input: "xxa\u{301}xaZ", match: "xxa", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".+?a"#, input: "xxa\u{301}xaZ", match: "xxa\u{301}xa")
+    firstMatchTest(#".+?a"#, input: "xxa\u{301}xaZ", match: "xxa", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".?a"#, input: "e\u{301}aZ", match: "e\u{301}a")
+    firstMatchTest(#".?a"#, input: "e\u{301}aZ", match: "\u{301}a", semanticLevel: .unicodeScalar)
+
+
+
+    // TODO: other test cases?
+  }
+
   func testMatchCharacterClasses() {
     // Must have new stdlib for character class ranges and word boundaries.
     guard ensureNewStdlib() else { return }
