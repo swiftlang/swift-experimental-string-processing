@@ -8,13 +8,13 @@ extension Processor {
         registers[payload.bitset],
         at: currentPosition,
         limitedBy: end,
-        isScalarSemantics: false)
+        isScalarSemantics: isScalarSemantics)
     case .asciiChar:
       return input.matchScalar(
         UnicodeScalar.init(_value: UInt32(payload.asciiChar)),
         at: currentPosition,
         limitedBy: end,
-        boundaryCheck: true,
+        boundaryCheck: !isScalarSemantics,
         isCaseInsensitive: false)
     case .builtin:
       // FIXME: bounds check? endIndex or end?
@@ -25,17 +25,20 @@ extension Processor {
         at: currentPosition,
         isInverted: payload.builtinIsInverted,
         isStrictASCII: payload.builtinIsStrict,
-        isScalarSemantics: false)
+        isScalarSemantics: isScalarSemantics)
     case .any:
       // FIXME: endIndex or end?
       guard currentPosition < input.endIndex else { return nil }
 
       if payload.anyMatchesNewline {
+        if isScalarSemantics {
+          return input.unicodeScalars.index(after: currentPosition)
+        }
         return input.index(after: currentPosition)
       }
 
       return input.matchAnyNonNewline(
-        at: currentPosition, isScalarSemantics: false)
+        at: currentPosition, isScalarSemantics: isScalarSemantics)
     }
   }
 
