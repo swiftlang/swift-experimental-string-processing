@@ -651,6 +651,10 @@ extension RegexTests {
     firstMatchTest(#".?a"#, input: "e\u{301}aZ", match: "e\u{301}a")
     firstMatchTest(#".?a"#, input: "e\u{301}aZ", match: "\u{301}a", semanticLevel: .unicodeScalar)
 
+    firstMatchTest(#".+\u{301}"#, input: "aa\u{301}Z", match: nil)
+    firstMatchTest(#".+\u{301}"#, input: "aa\u{301}Z", match: "aa\u{301}", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".*\u{301}"#, input: "\u{301}Z", match: "\u{301}")
+    firstMatchTest(#".*\u{301}"#, input: "\u{301}Z", match: "\u{301}", semanticLevel: .unicodeScalar)
 
 
     // TODO: other test cases?
