@@ -481,7 +481,6 @@ struct QuantifyPayload: RawRepresentable {
     isScalarSemantics: Bool
   ) {
     assert(model.cc.rawValue < 0xFF)
-//    assert(model.matchLevel != .unicodeScalar)
     let packedModel = model.cc.rawValue
       + (model.isInverted ? 1 << 9 : 0)
       + (model.isStrictASCII ? 1 << 10 : 0)

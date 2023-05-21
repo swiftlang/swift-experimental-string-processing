@@ -671,7 +671,6 @@ fileprivate extension Compiler.ByteCodeGen {
     guard optimizationsEnabled
             && minTrips <= QuantifyPayload.maxStorableTrips
             && extraTrips ?? 0 <= QuantifyPayload.maxStorableTrips
-//            && !isScalarSemantics
             && kind != .reluctant else {
       return false
     }
