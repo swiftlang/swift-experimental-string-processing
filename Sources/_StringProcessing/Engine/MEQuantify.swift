@@ -48,7 +48,9 @@ extension Processor {
   mutating func runQuantify(_ payload: QuantifyPayload) -> Bool {
     var trips = 0
     var extraTrips = payload.extraTrips
-    var savePoint = startQuantifierSavePoint()
+    var savePoint = startQuantifierSavePoint(
+      isScalarSemantics: payload.isScalarSemantics
+    )
 
     while true {
       if trips >= payload.minTrips {
@@ -87,7 +89,9 @@ extension Processor {
     assert(payload.quantKind == .eager
            && payload.minTrips == 0
            && payload.extraTrips == nil)
-    var savePoint = startQuantifierSavePoint()
+    var savePoint = startQuantifierSavePoint(
+      isScalarSemantics: payload.isScalarSemantics
+    )
 
     while true {
       savePoint.updateRange(newEnd: currentPosition)
@@ -109,7 +113,9 @@ extension Processor {
     assert(payload.quantKind == .eager
            && payload.minTrips == 1
            && payload.extraTrips == nil)
-    var savePoint = startQuantifierSavePoint()
+    var savePoint = startQuantifierSavePoint(
+      isScalarSemantics: payload.isScalarSemantics
+    )
     while true {
       let next = _doQuantifyMatch(payload)
       guard let idx = next else { break }
