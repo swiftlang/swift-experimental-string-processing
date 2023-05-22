@@ -232,7 +232,7 @@ extension Processor {
   mutating func match(
     _ e: Element, isCaseInsensitive: Bool
   ) -> Bool {
-    guard let next = input.match(
+    guard currentPosition < end, let next = input.match(
       e,
       at: currentPosition,
       limitedBy: end,
@@ -251,7 +251,7 @@ extension Processor {
     _ seq: Substring,
     isScalarSemantics: Bool
   ) -> Bool  {
-    guard let next = input.matchSeq(
+    guard currentPosition < end, let next = input.matchSeq(
       seq,
       at: currentPosition,
       limitedBy: end,
@@ -270,7 +270,7 @@ extension Processor {
     boundaryCheck: Bool,
     isCaseInsensitive: Bool
   ) -> Bool {
-    guard let next = input.matchScalar(
+    guard currentPosition < end, let next = input.matchScalar(
       s,
       at: currentPosition,
       limitedBy: end,
@@ -291,7 +291,7 @@ extension Processor {
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
     isScalarSemantics: Bool
   ) -> Bool {
-    guard let next = input.matchBitset(
+    guard currentPosition < end, let next = input.matchBitset(
       bitset,
       at: currentPosition,
       limitedBy: end,
@@ -308,7 +308,7 @@ extension Processor {
   mutating func matchAnyNonNewline(
     isScalarSemantics: Bool
   ) -> Bool {
-    guard let next = input.matchAnyNonNewline(
+    guard currentPosition < end, let next = input.matchAnyNonNewline(
       at: currentPosition,
       isScalarSemantics: isScalarSemantics
     ) else {
@@ -538,7 +538,8 @@ extension Processor {
       let reg = payload.consumer
       guard currentPosition < searchBounds.upperBound,
             let nextIndex = registers[reg](
-              input, currentPosition..<searchBounds.upperBound)
+              input, currentPosition..<searchBounds.upperBound),
+            nextIndex <= end
       else {
         signalFailure()
         return
@@ -565,7 +566,7 @@ extension Processor {
       do {
         guard let (nextIdx, val) = try matcher(
           input, currentPosition, searchBounds
-        ) else {
+        ), nextIdx <= end else {
           signalFailure()
           return
         }

@@ -17,7 +17,7 @@ extension Processor {
         boundaryCheck: !isScalarSemantics,
         isCaseInsensitive: false)
     case .builtin:
-      // FIXME: bounds check? endIndex or end?
+      guard currentPosition < end else { return nil }
 
       // We only emit .quantify if it consumes a single character
       return input.matchBuiltinCC(
@@ -27,8 +27,7 @@ extension Processor {
         isStrictASCII: payload.builtinIsStrict,
         isScalarSemantics: isScalarSemantics)
     case .any:
-      // FIXME: endIndex or end?
-      guard currentPosition < input.endIndex else { return nil }
+      guard currentPosition < end else { return nil }
 
       if payload.anyMatchesNewline {
         if isScalarSemantics {

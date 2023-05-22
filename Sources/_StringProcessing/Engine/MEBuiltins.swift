@@ -15,7 +15,7 @@ extension Processor {
     isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> Bool {
-    guard let next = input.matchBuiltinCC(
+    guard currentPosition < end, let next = input.matchBuiltinCC(
       cc,
       at: currentPosition,
       isInverted: isInverted,
@@ -102,18 +102,16 @@ extension Processor {
 
     case .wordBoundary:
       if payload.usesSimpleUnicodeBoundaries {
-        // TODO: How should we handle bounds?
         return atSimpleBoundary(payload.usesASCIIWord, payload.semanticLevel)
       } else {
-        return input.isOnWordBoundary(at: currentPosition, using: &wordIndexCache, &wordIndexMaxIndex)
+        return input.isOnWordBoundary(at: currentPosition, in: searchBounds, using: &wordIndexCache, &wordIndexMaxIndex)
       }
 
     case .notWordBoundary:
       if payload.usesSimpleUnicodeBoundaries {
-        // TODO: How should we handle bounds?
         return !atSimpleBoundary(payload.usesASCIIWord, payload.semanticLevel)
       } else {
-        return !input.isOnWordBoundary(at: currentPosition, using: &wordIndexCache, &wordIndexMaxIndex)
+        return !input.isOnWordBoundary(at: currentPosition, in: searchBounds, using: &wordIndexCache, &wordIndexMaxIndex)
       }
     }
   }
@@ -127,9 +125,7 @@ extension String {
     at currentPosition: String.Index,
     isScalarSemantics: Bool
   ) -> String.Index? {
-    guard currentPosition < endIndex else {
-      return nil
-    }
+    assert(currentPosition < endIndex)
     if case .definite(let result) = _quickMatchAnyNonNewline(
       at: currentPosition,
       isScalarSemantics: isScalarSemantics
@@ -194,9 +190,7 @@ extension String {
     isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> String.Index? {
-    guard currentPosition < endIndex else {
-      return nil
-    }
+    assert(currentPosition < endIndex)
     if case .definite(let result) = _quickMatchBuiltinCC(
       cc,
       at: currentPosition,
