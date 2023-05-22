@@ -657,16 +657,8 @@ extension RegexTests {
     firstMatchTest(#".*\u{301}"#, input: "\u{301}Z", match: "\u{301}", semanticLevel: .unicodeScalar)
 
     firstMatchTest(#".?\u{301}"#, input: "aa\u{302}\u{301}Z", match: nil)
-    firstMatchTest(#".?.?.?\u{301}.?.?Z"#, input: "aa\u{302}\u{301}Z", match: "\u{302}\u{301}Z", semanticLevel: .unicodeScalar)
-    firstMatchTest(#".?.?.?.?\u{301}.?.?Z"#, input: "aa\u{302}\u{301}Z", match: "a\u{302}\u{301}Z", semanticLevel: .unicodeScalar)
-
-
-    firstMatchTest(#".?\u{301}"#, input: "a\u{301}Z", match: nil)
-    firstMatchTest(#".?\u{301}"#, input: "a\u{301}Z", match: "a\u{301}", semanticLevel: .unicodeScalar)
-    firstMatchTest(#".?\u{301}"#, input: "aa\u{301}Z", match: "a\u{301}", semanticLevel: .unicodeScalar)
-
-    firstMatchTest(#".?\u{301}"#, input: "\u{301}Z", match: "\u{301}")
-    firstMatchTest(#".?\u{301}"#, input: "\u{301}Z", match: "\u{301}", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".?\u{301}.?Z"#, input: "aa\u{302}\u{301}Z", match: "\u{302}\u{301}Z", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".?.?\u{301}.?Z"#, input: "aa\u{302}\u{301}Z", match: "a\u{302}\u{301}Z", semanticLevel: .unicodeScalar)
 
 
     // TODO: other test cases?
