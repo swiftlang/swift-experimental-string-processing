@@ -1,7 +1,6 @@
 extension Processor {
   func _doQuantifyMatch(_ payload: QuantifyPayload) -> Input.Index? {
-    // TODO: This optimization is only enabled for grapheme cluster semantics,
-    //       we want these for scalar semantics as well.
+    let isScalarSemantics = payload.isScalarSemantics
 
     switch payload.type {
     case .bitset:
@@ -9,13 +8,13 @@ extension Processor {
         registers[payload.bitset],
         at: currentPosition,
         limitedBy: end,
-        isScalarSemantics: false)
+        isScalarSemantics: isScalarSemantics)
     case .asciiChar:
       return input.matchScalar(
         UnicodeScalar.init(_value: UInt32(payload.asciiChar)),
         at: currentPosition,
         limitedBy: end,
-        boundaryCheck: true,
+        boundaryCheck: !isScalarSemantics,
         isCaseInsensitive: false)
     case .builtin:
       // FIXME: bounds check? endIndex or end?
@@ -26,17 +25,20 @@ extension Processor {
         at: currentPosition,
         isInverted: payload.builtinIsInverted,
         isStrictASCII: payload.builtinIsStrict,
-        isScalarSemantics: false)
+        isScalarSemantics: isScalarSemantics)
     case .any:
       // FIXME: endIndex or end?
       guard currentPosition < input.endIndex else { return nil }
 
       if payload.anyMatchesNewline {
+        if isScalarSemantics {
+          return input.unicodeScalars.index(after: currentPosition)
+        }
         return input.index(after: currentPosition)
       }
 
       return input.matchAnyNonNewline(
-        at: currentPosition, isScalarSemantics: false)
+        at: currentPosition, isScalarSemantics: isScalarSemantics)
     }
   }
 
@@ -46,7 +48,9 @@ extension Processor {
   mutating func runQuantify(_ payload: QuantifyPayload) -> Bool {
     var trips = 0
     var extraTrips = payload.extraTrips
-    var savePoint = startQuantifierSavePoint()
+    var savePoint = startQuantifierSavePoint(
+      isScalarSemantics: payload.isScalarSemantics
+    )
 
     while true {
       if trips >= payload.minTrips {
@@ -85,7 +89,9 @@ extension Processor {
     assert(payload.quantKind == .eager
            && payload.minTrips == 0
            && payload.extraTrips == nil)
-    var savePoint = startQuantifierSavePoint()
+    var savePoint = startQuantifierSavePoint(
+      isScalarSemantics: payload.isScalarSemantics
+    )
 
     while true {
       savePoint.updateRange(newEnd: currentPosition)
@@ -107,7 +113,9 @@ extension Processor {
     assert(payload.quantKind == .eager
            && payload.minTrips == 1
            && payload.extraTrips == nil)
-    var savePoint = startQuantifierSavePoint()
+    var savePoint = startQuantifierSavePoint(
+      isScalarSemantics: payload.isScalarSemantics
+    )
     while true {
       let next = _doQuantifyMatch(payload)
       guard let idx = next else { break }
