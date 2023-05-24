@@ -194,16 +194,6 @@ class AlgorithmTests: XCTestCase {
     XCTAssertNil(str.dropFirst().dropLast().firstRange(of: target[...]))
     XCTAssertNil(str.firstRange(of: target[...]))
   }
-  
-  // rdar://105154010
-  func testFirstRangeMissingCrash() {
-    let str = "%2$@ %#@AROUND_TIME@"
-    let target = "%@"
-    XCTAssertNil(str.firstRange(of: target))
-    XCTAssertNil(str.dropFirst().dropLast().firstRange(of: target))
-    XCTAssertNil(str.dropFirst().dropLast().firstRange(of: target[...]))
-    XCTAssertNil(str.firstRange(of: target[...]))
-  }
 
   func testRegexSplit() {
     func expectSplit(
