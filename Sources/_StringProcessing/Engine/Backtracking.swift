@@ -16,6 +16,11 @@ extension Processor {
     // Quantifiers may store a range of positions to restore to
     var rangeStart: Position?
     var rangeEnd: Position?
+
+    // FIXME: refactor, for now this field is only used for quantifier save
+    //        points. We should try to separate out the concerns better.
+    var isScalarSemantics: Bool
+
     // The end of the call stack, so we can slice it off
     // when failing inside a call.
     //
@@ -68,7 +73,11 @@ extension Processor {
         rangeStart = nil
         rangeEnd = nil
       } else {
-        input.formIndex(before: &rangeEnd!)
+        if isScalarSemantics {
+          input.unicodeScalars.formIndex(before: &rangeEnd!)
+        } else {
+          input.formIndex(before: &rangeEnd!)
+        }
       }
     }
   }
@@ -82,19 +91,23 @@ extension Processor {
       pos: addressOnly ? nil : currentPosition,
       rangeStart: nil,
       rangeEnd: nil,
+      isScalarSemantics: false, // FIXME: refactor away
       stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,
       intRegisters: registers.ints,
       posRegisters: registers.positions)
   }
   
-  func startQuantifierSavePoint() -> SavePoint {
+  func startQuantifierSavePoint(
+    isScalarSemantics: Bool
+  ) -> SavePoint {
     // Restores to the instruction AFTER the current quantifier instruction
     SavePoint(
       pc: controller.pc + 1,
       pos: nil,
       rangeStart: nil,
       rangeEnd: nil,
+      isScalarSemantics: isScalarSemantics,
       stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,
       intRegisters: registers.ints,
