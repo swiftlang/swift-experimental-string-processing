@@ -77,14 +77,13 @@ func _firstMatch(
   }
   try validateSubstring("\(input)\n".dropLast())
   try validateSubstring("A\(input)Z".dropFirst().dropLast())
-
-// This is causing out-of-bounds indexing errors:
-//  do {
-//    // Test sub-character slicing
-//    let substr = input + "\n"
-//    let prevIndex = substr.unicodeScalars.index(substr.endIndex, offsetBy: -1)
-//    try validateSubstring(substr[..<prevIndex])
-//  }
+  do {
+    // Test sub-character slicing
+    // TODO: Test sub-scalar slicing
+    let substr = input + "\n"
+    let prevIndex = substr.unicodeScalars.index(substr.endIndex, offsetBy: -1)
+    try validateSubstring(substr[..<prevIndex])
+  }
 
   if validateOptimizations {
     assert(regex._forceAction(.addOptions(.disableOptimizations)))

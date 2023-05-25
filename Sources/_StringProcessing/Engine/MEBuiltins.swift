@@ -18,6 +18,7 @@ extension Processor {
     guard currentPosition < end, let next = input.matchBuiltinCC(
       cc,
       at: currentPosition,
+      limitedBy: end,
       isInverted: isInverted,
       isStrictASCII: isStrictASCII,
       isScalarSemantics: isScalarSemantics
@@ -119,35 +120,44 @@ extension Processor {
 
 // MARK: Matching `.`
 extension String {
-  // TODO: Should the below have a `limitedBy` parameter?
-
+  func characterAndEnd(at pos: String.Index, limitedBy end: String.Index) -> (Character, String.Index)? {
+    guard pos < end else { return nil }
+    let next = index(pos, offsetBy: 1, limitedBy: end) ?? end
+    return self[pos..<next].first.map { ($0, next) }
+  }
+  
   func matchAnyNonNewline(
     at currentPosition: String.Index,
+    limitedBy end: String.Index,
     isScalarSemantics: Bool
   ) -> String.Index? {
-    assert(currentPosition < endIndex)
+    guard currentPosition < end else { return nil }
     if case .definite(let result) = _quickMatchAnyNonNewline(
       at: currentPosition,
+      limitedBy: end,
       isScalarSemantics: isScalarSemantics
     ) {
       assert(result == _thoroughMatchAnyNonNewline(
         at: currentPosition,
+        limitedBy: end,
         isScalarSemantics: isScalarSemantics))
       return result
     }
     return _thoroughMatchAnyNonNewline(
       at: currentPosition,
+      limitedBy: end,
       isScalarSemantics: isScalarSemantics)
   }
 
   @inline(__always)
   private func _quickMatchAnyNonNewline(
     at currentPosition: String.Index,
+    limitedBy end: String.Index,
     isScalarSemantics: Bool
   ) -> QuickResult<String.Index?> {
-    assert(currentPosition < endIndex)
+    guard currentPosition < end else { return .definite(nil) }
     guard let (asciiValue, next, isCRLF) = _quickASCIICharacter(
-      at: currentPosition
+      at: currentPosition, limitedBy: end
     ) else {
       return .unknown
     }
@@ -163,37 +173,39 @@ extension String {
   @inline(never)
   private func _thoroughMatchAnyNonNewline(
     at currentPosition: String.Index,
+    limitedBy end: String.Index,
     isScalarSemantics: Bool
   ) -> String.Index? {
-    assert(currentPosition < endIndex)
     if isScalarSemantics {
+      guard currentPosition < end else { return nil }
       let scalar = unicodeScalars[currentPosition]
       guard !scalar.isNewline else { return nil }
       return unicodeScalars.index(after: currentPosition)
     }
 
-    let char = self[currentPosition]
-    guard !char.isNewline else { return nil }
-    return index(after: currentPosition)
+    guard let (char, next) = characterAndEnd(at: currentPosition, limitedBy: end),
+          !char.isNewline
+    else { return nil }
+    return next
   }
 }
 
 // MARK: - Built-in character class matching
 extension String {
-  // TODO: Should the below have a `limitedBy` parameter?
-
   // Mentioned in ProgrammersManual.md, update docs if redesigned
   func matchBuiltinCC(
     _ cc: _CharacterClassModel.Representation,
     at currentPosition: String.Index,
+    limitedBy end: String.Index,
     isInverted: Bool,
     isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> String.Index? {
-    assert(currentPosition < endIndex)
+    guard currentPosition < end else { return nil }
     if case .definite(let result) = _quickMatchBuiltinCC(
       cc,
       at: currentPosition,
+      limitedBy: end,
       isInverted: isInverted,
       isStrictASCII: isStrictASCII,
       isScalarSemantics: isScalarSemantics
@@ -201,6 +213,7 @@ extension String {
       assert(result == _thoroughMatchBuiltinCC(
         cc,
         at: currentPosition,
+        limitedBy: end,
         isInverted: isInverted,
         isStrictASCII: isStrictASCII,
         isScalarSemantics: isScalarSemantics))
@@ -209,6 +222,7 @@ extension String {
     return _thoroughMatchBuiltinCC(
       cc,
       at: currentPosition,
+      limitedBy: end,
       isInverted: isInverted,
       isStrictASCII: isStrictASCII,
       isScalarSemantics: isScalarSemantics)
@@ -219,13 +233,17 @@ extension String {
   private func _quickMatchBuiltinCC(
     _ cc: _CharacterClassModel.Representation,
     at currentPosition: String.Index,
+    limitedBy end: String.Index,
     isInverted: Bool,
     isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> QuickResult<String.Index?> {
-    assert(currentPosition < endIndex)
+    guard currentPosition < end else { return .definite(nil) }
     guard let (next, result) = _quickMatch(
-      cc, at: currentPosition, isScalarSemantics: isScalarSemantics
+      cc,
+      at: currentPosition,
+      limitedBy: end,
+      isScalarSemantics: isScalarSemantics
     ) else {
       return .unknown
     }
@@ -237,12 +255,16 @@ extension String {
   private func _thoroughMatchBuiltinCC(
     _ cc: _CharacterClassModel.Representation,
     at currentPosition: String.Index,
+    limitedBy end: String.Index,
     isInverted: Bool,
     isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> String.Index? {
-    assert(currentPosition < endIndex)
-    let char = self[currentPosition]
+    // TODO: Branch here on scalar semantics
+    // Don't want to pay character cost if unnecessary
+    guard var (char, next) =
+            characterAndEnd(at: currentPosition, limitedBy: end)
+    else { return nil }
     let scalar = unicodeScalars[currentPosition]
 
     let asciiCheck = !isStrictASCII
@@ -250,14 +272,8 @@ extension String {
     || char.isASCII
 
     var matched: Bool
-    var next: String.Index
-    switch (isScalarSemantics, cc) {
-    case (_, .anyGrapheme):
-      next = index(after: currentPosition)
-    case (true, _):
+    if isScalarSemantics && cc != .anyGrapheme {
       next = unicodeScalars.index(after: currentPosition)
-    case (false, _):
-      next = index(after: currentPosition)
     }
 
     switch cc {
@@ -285,7 +301,7 @@ extension String {
       if isScalarSemantics {
         matched = scalar.isNewline && asciiCheck
         if matched && scalar == "\r"
-            && next != endIndex && unicodeScalars[next] == "\n" {
+            && next != end && unicodeScalars[next] == "\n" {
           // Match a full CR-LF sequence even in scalar semantics
           unicodeScalars.formIndex(after: &next)
         }

@@ -68,14 +68,16 @@ extension Character {
     switch opts.semanticLevel {
     case .graphemeCluster:
       return { input, bounds in
-        let low = bounds.lowerBound
+        guard let (char, next) = input.characterAndEnd(
+          at: bounds.lowerBound, limitedBy: bounds.upperBound)
+        else { return nil }
         if isCaseInsensitive && isCased {
-          return input[low].lowercased() == lowercased()
-            ? input.index(after: low)
+          return char.lowercased() == self.lowercased()
+            ? next
             : nil
         } else {
-          return input[low] == self
-            ? input.index(after: low)
+          return char == self
+            ? next
             : nil
         }
       }
@@ -188,7 +190,7 @@ extension DSLTree.Atom.CharacterClass {
   func generateConsumer(_ opts: MatchingOptions) -> MEProgram.ConsumeFunction {
     let model = asRuntimeModel(opts)
     return { input, bounds in
-      model.matches(in: input, at: bounds.lowerBound)
+      model.matches(in: input, at: bounds.lowerBound, limitedBy: bounds.upperBound)
     }
   }
 }
@@ -517,7 +519,7 @@ extension DSLTree.CustomCharacterClass {
       }
       if isInverted {
         return opts.semanticLevel == .graphemeCluster
-          ? input.index(after: bounds.lowerBound)
+          ? Swift.min(input.index(after: bounds.lowerBound), bounds.upperBound)
           : input.unicodeScalars.index(after: bounds.lowerBound)
       }
       return nil

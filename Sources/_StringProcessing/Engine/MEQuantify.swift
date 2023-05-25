@@ -23,6 +23,7 @@ extension Processor {
       return input.matchBuiltinCC(
         payload.builtin,
         at: currentPosition,
+        limitedBy: end,
         isInverted: payload.builtinIsInverted,
         isStrictASCII: payload.builtinIsStrict,
         isScalarSemantics: isScalarSemantics)
@@ -37,7 +38,9 @@ extension Processor {
       }
 
       return input.matchAnyNonNewline(
-        at: currentPosition, isScalarSemantics: isScalarSemantics)
+        at: currentPosition,
+        limitedBy: end,
+        isScalarSemantics: isScalarSemantics)
     }
   }
 
