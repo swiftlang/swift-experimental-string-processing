@@ -107,15 +107,15 @@ public enum TypeConstruction {
       var currentElementAddressUnaligned = UnsafeMutableRawPointer(baseAddress)
       for element in elements {
         // Open existential on each element type.
-        func initializeElement<T>(_ element: T) {
+        func initializeElement<U>(_ element: U) {
           currentElementAddressUnaligned =
-            currentElementAddressUnaligned.roundedUp(toAlignmentOf: T.self)
+            currentElementAddressUnaligned.roundedUp(toAlignmentOf: U.self)
           currentElementAddressUnaligned.bindMemory(
-            to: T.self, capacity: MemoryLayout<T>.size
+            to: U.self, capacity: MemoryLayout<U>.size
           ).initialize(to: element)
           // Advance to the next element (unaligned).
           currentElementAddressUnaligned =
-            currentElementAddressUnaligned.advanced(by: MemoryLayout<T>.size)
+            currentElementAddressUnaligned.advanced(by: MemoryLayout<U>.size)
         }
         _openExistential(element, do: initializeElement)
       }
@@ -175,8 +175,8 @@ extension MemoryLayout {
     if byteOffset == 0 { return 0 }
     var currentOffset = 0
     for (index, type) in elementTypes.enumerated() {
-      func sizeAndAlignMask<T>(_: T.Type) -> (Int, Int) {
-        (MemoryLayout<T>.size, MemoryLayout<T>.alignment - 1)
+      func sizeAndAlignMask<U>(_: U.Type) -> (Int, Int) {
+        (MemoryLayout<U>.size, MemoryLayout<U>.alignment - 1)
       }
       // The ABI of an offset-based key path only stores the byte offset, so
       // this doesn't work if there's a 0-sized element, e.g. `Void`,

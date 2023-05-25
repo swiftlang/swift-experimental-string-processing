@@ -620,6 +620,50 @@ extension RegexTests {
     // TODO: After captures, easier to test these
   }
 
+  func testQuantificationScalarSemantics() {
+    // TODO: We want more thorough testing here, including "a{n,m}", "a?", etc.
+
+    firstMatchTest("a*", input: "aaa\u{301}", match: "aa")
+    firstMatchTest("a*", input: "aaa\u{301}", match: "aaa", semanticLevel: .unicodeScalar)
+    firstMatchTest("a+", input: "aaa\u{301}", match: "aa")
+    firstMatchTest("a+", input: "aaa\u{301}", match: "aaa", semanticLevel: .unicodeScalar)
+    firstMatchTest("a?", input: "a\u{301}", match: "")
+    firstMatchTest("a?", input: "a\u{301}", match: "a", semanticLevel: .unicodeScalar)
+
+    firstMatchTest("[ab]*", input: "abab\u{301}", match: "aba")
+    firstMatchTest("[ab]*", input: "abab\u{301}", match: "abab", semanticLevel: .unicodeScalar)
+    firstMatchTest("[ab]+", input: "abab\u{301}", match: "aba")
+    firstMatchTest("[ab]+", input: "abab\u{301}", match: "abab", semanticLevel: .unicodeScalar)
+    firstMatchTest("[ab]?", input: "b\u{301}", match: "")
+    firstMatchTest("[ab]?", input: "b\u{301}", match: "b", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#"\s*"#, input: "  \u{301}", match: "  \u{301}")
+    firstMatchTest(#"\s*"#, input: "  \u{301}", match: "  ", semanticLevel: .unicodeScalar)
+    firstMatchTest(#"\s+"#, input: "  \u{301}", match: "  \u{301}")
+    firstMatchTest(#"\s+"#, input: "  \u{301}", match: "  ", semanticLevel: .unicodeScalar)
+    firstMatchTest(#"\s?"#, input: " \u{301}", match: " \u{301}")
+    firstMatchTest(#"\s?"#, input: " \u{301}", match: " ", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#".*?a"#, input: "xxa\u{301}xaZ", match: "xxa\u{301}xa")
+    firstMatchTest(#".*?a"#, input: "xxa\u{301}xaZ", match: "xxa", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".+?a"#, input: "xxa\u{301}xaZ", match: "xxa\u{301}xa")
+    firstMatchTest(#".+?a"#, input: "xxa\u{301}xaZ", match: "xxa", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".?a"#, input: "e\u{301}aZ", match: "e\u{301}a")
+    firstMatchTest(#".?a"#, input: "e\u{301}aZ", match: "\u{301}a", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#".+\u{301}"#, input: "aa\u{301}Z", match: nil)
+    firstMatchTest(#".+\u{301}"#, input: "aa\u{301}Z", match: "aa\u{301}", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".*\u{301}"#, input: "\u{301}Z", match: "\u{301}")
+    firstMatchTest(#".*\u{301}"#, input: "\u{301}Z", match: "\u{301}", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#".?\u{301}"#, input: "aa\u{302}\u{301}Z", match: nil)
+    firstMatchTest(#".?\u{301}.?Z"#, input: "aa\u{302}\u{301}Z", match: "\u{302}\u{301}Z", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".?.?\u{301}.?Z"#, input: "aa\u{302}\u{301}Z", match: "a\u{302}\u{301}Z", semanticLevel: .unicodeScalar)
+
+
+    // TODO: other test cases?
+  }
+
   func testMatchCharacterClasses() {
     // Must have new stdlib for character class ranges and word boundaries.
     guard ensureNewStdlib() else { return }
@@ -1891,6 +1935,11 @@ extension RegexTests {
   func testSingleLineMode() {
     firstMatchTest(#".+"#, input: "a\nb", match: "a")
     firstMatchTest(#"(?s:.+)"#, input: "a\nb", match: "a\nb")
+
+    // We recognize LF, line tab, FF, and CR as newlines by default
+    firstMatchTest(#"."#, input: "\u{A}\u{B}\u{C}\u{D}\nb", match: "b")
+    firstMatchTest(#".+"#, input: "\u{A}\u{B}\u{C}\u{D}\nbb", match: "bb")
+
   }
 
   func testMatchNewlines() {
@@ -2573,5 +2622,36 @@ extension RegexTests {
   
   func testFuzzerArtifacts() throws {
     expectCompletion(regex: #"(b?)\1*"#, in: "a")
+  }
+  
+  func testIssue640() throws {
+    // Original report from https://github.com/apple/swift-experimental-string-processing/issues/640
+    let original = try Regex("[1-9][0-9]{0,2}(?:,?[0-9]{3})*")
+    XCTAssertNotNil("36,769".wholeMatch(of: original))
+    XCTAssertNotNil("36769".wholeMatch(of: original))
+
+    // Simplified case
+    let simplified = try Regex("a{0,2}a")
+    XCTAssertNotNil("aaa".wholeMatch(of: simplified))
+
+    for max in 1...8 {
+      let patternEager = "a{0,\(max)}a"
+      let regexEager = try Regex(patternEager)
+      let patternReluctant = "a{0,\(max)}?a"
+      let regexReluctant = try Regex(patternReluctant)
+      for length in 1...(max + 1) {
+        let str = String(repeating: "a", count: length)
+        if str.wholeMatch(of: regexEager) == nil {
+          XCTFail("Didn't match '\(patternEager)' in '\(str)' (\(max),\(length)).")
+        }
+        if str.wholeMatch(of: regexReluctant) == nil {
+          XCTFail("Didn't match '\(patternReluctant)' in '\(str)' (\(max),\(length)).")
+        }
+      }
+      
+      let possessiveRegex = try Regex("a{0,\(max)}+a")
+      let str = String(repeating: "a", count: max + 1)
+      XCTAssertNotNil(str.wholeMatch(of: possessiveRegex))
+    }
   }
 }
