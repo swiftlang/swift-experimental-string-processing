@@ -61,7 +61,8 @@ extension String {
     guard i != range.lowerBound, i != range.upperBound else {
       return true
     }
-    
+    assert(range.contains(i))
+
     // If our index is already in our cache, then this is obviously on a
     // boundary.
     if let cache = cache, cache.contains(i) {

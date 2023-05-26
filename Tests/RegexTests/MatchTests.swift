@@ -79,10 +79,18 @@ func _firstMatch(
   try validateSubstring("A\(input)Z".dropFirst().dropLast())
   do {
     // Test sub-character slicing
-    // TODO: Test sub-scalar slicing
-    let substr = input + "\n"
-    let prevIndex = substr.unicodeScalars.index(substr.endIndex, offsetBy: -1)
-    try validateSubstring(substr[..<prevIndex])
+    let str = input + "\n"
+    let prevIndex = str.unicodeScalars.index(str.endIndex, offsetBy: -1)
+    try validateSubstring(str[..<prevIndex])
+  }
+  do {
+    // Validate that we don't crash when sub-scalar slicing is used
+    // Actual matching behavior is untested here
+    let str = "\u{e9}\(input)e\u{e9}"
+    let upper = str.utf8.index(before: str.endIndex)
+    _ = try regex.firstMatch(in: str[..<upper])
+    let lower = str.utf8.index(after: str.startIndex)
+    _ = try regex.firstMatch(in: str[lower...])
   }
 
   if validateOptimizations {

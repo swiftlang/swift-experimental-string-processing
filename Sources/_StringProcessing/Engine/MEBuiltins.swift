@@ -120,7 +120,27 @@ extension Processor {
 
 // MARK: Matching `.`
 extension String {
+  /// Returns the character at `pos`, bounded by `end`, as well as the upper
+  /// boundary of the returned character.
+  ///
+  /// This function handles loading a character from a string while respecting
+  /// an end boundary, even if that end boundary is sub-character or sub-scalar.
+  ///
+  /// - Parameters:
+  ///   - pos: The position to load a character from.
+  ///   - end: The limit for the character at `pos`.
+  /// - Returns:
+  ///   - If `pos` is at or past `end`, this function returns `nil`.
+  ///   - If `end` is between `pos` and the next grapheme cluster boundary (i.e.,
+  ///     `end` is before `self.index(after: pos)`, then the returned character
+  ///     is smaller than the one that would be produced by `self[pos]` and the
+  ///     returned index is at the end of that character.
+  ///   - If `end` is between `pos` and the next grapheme cluster boundary, and
+  ///     is not on a Unicode scalar boundary, the partial scalar is dropped. This
+  ///     can result in a `nil` return or a character that includes only part of
+  ///     the `self[pos]` character.
   func characterAndEnd(at pos: String.Index, limitedBy end: String.Index) -> (Character, String.Index)? {
+    // FIXME: Sink into the stdlib to avoid multiple boundary calculations
     guard pos < end else { return nil }
     let next = index(pos, offsetBy: 1, limitedBy: end) ?? end
     return self[pos..<next].first.map { ($0, next) }
