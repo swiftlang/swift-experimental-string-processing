@@ -26,14 +26,15 @@ struct MatchError: Error {
 func _roundTripLiteral(
   _ regexStr: String,
   syntax: SyntaxOptions
-) throws -> Regex<AnyRegexOutput>? {
+) throws -> (Regex<AnyRegexOutput>, String)? {
+  guard #available(SwiftStdlib 5.9, *) else { return nil }
   guard let pattern = try Regex(regexStr, syntax: syntax)._literalPattern else {
     return nil
   }
   
   let remadeRegex = try Regex(pattern)
   XCTAssertEqual(pattern, remadeRegex._literalPattern)
-  return remadeRegex
+  return (remadeRegex, remadeRegex._literalPattern!)
 }
 
 func _firstMatch(
@@ -46,7 +47,13 @@ func _firstMatch(
   var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
   let result = try regex.firstMatch(in: input)
   do {
-    let roundTripRegex = try? _roundTripLiteral(regexStr, syntax: syntax)
+    let roundTripRegex: Regex<AnyRegexOutput>?
+    let roundTripLiteral: String?
+    if let result = try? _roundTripLiteral(regexStr, syntax: syntax) {
+      (roundTripRegex, roundTripLiteral) = result
+    } else {
+      (roundTripRegex, roundTripLiteral) = (nil, nil)
+    }
     let roundTripResult = try? roundTripRegex?
       .matchingSemantics(semanticLevel)
       .firstMatch(in: input)?[0]
@@ -56,12 +63,12 @@ func _firstMatch(
       XCTAssertEqual(match, rtMatch)
     case (nil, nil):
       break // okay
-    case let (match?, _):
+    case (.some, _):
       XCTFail("""
         Didn't match in round-tripped version of '\(regexStr)'
         For input '\(input)'
         Original: '\(regexStr)'
-        _literalPattern: '\(roundTripRegex?._literalPattern ?? "<no pattern>")'
+        _literalPattern: '\(roundTripLiteral ?? "<no pattern>")'
         """)
     case let (_, rtMatch?):
       XCTFail("""

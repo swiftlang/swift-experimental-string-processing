@@ -11,7 +11,7 @@
 
 @_implementationOnly import _RegexParser
 
-@available(macOS 9999, *) // TODO: 5.9?
+@available(SwiftStdlib 5.9, *)
 extension Regex {
   /// The literal pattern for this regex.
   ///
