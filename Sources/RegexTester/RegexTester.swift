@@ -14,7 +14,7 @@ import _RegexParser
 import _StringProcessing
 
 @main
-@available(macOS 9999, *)
+@available(SwiftStdlib 5.8, *)
 struct RegexTester: ParsableCommand {
   typealias MatchFunctionType = (String) throws -> Regex<AnyRegexOutput>.Match?
 
