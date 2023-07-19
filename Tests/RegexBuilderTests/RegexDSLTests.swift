@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
-import _StringProcessing
+@testable import _StringProcessing
 import RegexBuilder
 import TestSupport
 
@@ -969,6 +969,55 @@ class RegexDSLTests: XCTestCase {
         
         XCTAssertNil(try r.firstMatch(in: "\nbaaa\n"))
         XCTAssertNil(try r.firstMatch(in: "\naaab\n"))
+      }
+    }
+  }
+  
+  func testCanOnlyMatchAtStart() throws {
+    func expectCanOnlyMatchAtStart(
+      _ expectation: Bool,
+      file: StaticString = #file, line: UInt = #line,
+      @RegexComponentBuilder _ content: () -> some RegexComponent
+    ) {
+      let regex = content().regex
+      XCTAssertEqual(regex.program.loweredProgram.canOnlyMatchAtStart, expectation, file: file, line: line)
+    }
+    
+    expectCanOnlyMatchAtStart(true) {
+      Anchor.startOfSubject
+      "foo"
+    }
+    expectCanOnlyMatchAtStart(false) {
+      "foo"
+    }
+    expectCanOnlyMatchAtStart(true) {
+      Optionally { "foo" }
+      Anchor.startOfSubject
+      "bar"
+    }
+    
+    expectCanOnlyMatchAtStart(true) {
+      ChoiceOf {
+        Regex {
+          Anchor.startOfSubject
+          "foo"
+        }
+        Regex {
+          Anchor.startOfSubject
+          "bar"
+        }
+      }
+    }
+    expectCanOnlyMatchAtStart(false) {
+      ChoiceOf {
+        Regex {
+          Anchor.startOfSubject
+          "foo"
+        }
+        Regex {
+          Anchor.startOfLine
+          "bar"
+        }
       }
     }
   }
