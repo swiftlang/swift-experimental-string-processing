@@ -43,6 +43,9 @@ extension MEProgram {
     var captureList = CaptureList()
     var initialOptions = MatchingOptions()
 
+    // Starting constraint
+    var canOnlyMatchAtStart = false
+    
     // Symbolic reference resolution
     var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
     var referencedCaptureOffsets: [ReferenceID: Int] = [:]
@@ -404,7 +407,8 @@ extension MEProgram.Builder {
       enableMetrics: enableMetrics,
       captureList: captureList,
       referencedCaptureOffsets: referencedCaptureOffsets,
-      initialOptions: initialOptions)
+      initialOptions: initialOptions,
+      canOnlyMatchAtStart: canOnlyMatchAtStart)
   }
 
   mutating func reset() { self = Self() }
