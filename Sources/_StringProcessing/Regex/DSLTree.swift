@@ -723,7 +723,7 @@ extension DSLTree.Node {
   ///
   /// In particular, non-required groups and option-setting groups are
   /// inconclusive about where they can match.
-  func _canOnlyMatchAtStartImpl(_ options: inout MatchingOptions) -> Bool? {
+  private func _canOnlyMatchAtStartImpl(_ options: inout MatchingOptions) -> Bool? {
     switch self {
     // Defining cases
     case .atom(.assertion(.startOfSubject)):
@@ -804,7 +804,7 @@ extension DSLTree.Node {
   /// - `/(^foo)?bar/` (`^` is in an optional group)
   /// - `/(^foo|bar)/` (only one side of the alternation starts with `^`)
   /// - `/(?m)^foo/` (`^` means "the start of a line" due to `(?m)`)
-  func canOnlyMatchAtStart() -> Bool {
+  internal func canOnlyMatchAtStart() -> Bool {
     var options = MatchingOptions()
     return _canOnlyMatchAtStartImpl(&options) ?? false
   }
