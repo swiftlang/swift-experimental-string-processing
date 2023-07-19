@@ -13,7 +13,7 @@ extension BenchmarkRunner {
       baseName: "AnchoredNotFound",
       regex: "^ +a",
       input: input,
-      isWhole: true)
+      includeFirst: true)
     anchoredNotFound.register(&self)
   }
 }
