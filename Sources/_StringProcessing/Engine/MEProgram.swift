@@ -38,6 +38,7 @@ struct MEProgram {
   let referencedCaptureOffsets: [ReferenceID: Int]
   
   var initialOptions: MatchingOptions
+  var canOnlyMatchAtStart: Bool
 }
 
 extension MEProgram: CustomStringConvertible {

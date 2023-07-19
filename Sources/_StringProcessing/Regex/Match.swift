@@ -273,7 +273,9 @@ extension Regex {
     _ input: String,
     in subjectBounds: Range<String.Index>
   ) throws -> Regex<Output>.Match? {
-    try _firstMatch(input, subjectBounds: subjectBounds, searchBounds: subjectBounds)
+    try regex.program.loweredProgram.canOnlyMatchAtStart
+      ? _match(input, in: subjectBounds, mode: .partialFromFront)
+      : _firstMatch(input, subjectBounds: subjectBounds, searchBounds: subjectBounds)
   }
 
   func _firstMatch(
