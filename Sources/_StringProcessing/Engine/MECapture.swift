@@ -34,7 +34,7 @@ extension Processor {
   struct _StoredCapture {
     var range: Range<Position>? = nil
 
-    var value: Any? = nil
+    var value: Any? { nil }
 
     // An in-progress capture start
     fileprivate var currentCaptureBegin: Position? = nil
@@ -72,7 +72,7 @@ extension Processor {
       }
 
       range = low..<idx
-      value = nil // TODO: cleaner IPI around this...
+//      value = nil // TODO: cleaner IPI around this...
       currentCaptureBegin = nil
     }
 
@@ -83,7 +83,8 @@ extension Processor {
       _invariantCheck()
       defer { _invariantCheck() }
 
-      self.value = value
+      fatalError()
+//      self.value = value
     }
   }
 }
