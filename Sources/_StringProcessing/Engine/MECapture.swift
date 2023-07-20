@@ -36,6 +36,8 @@ extension Processor {
 
     var value: Any? { nil }
 
+    var valueIndex: Array.Index? = nil
+
     // An in-progress capture start
     fileprivate var currentCaptureBegin: Position? = nil
 
