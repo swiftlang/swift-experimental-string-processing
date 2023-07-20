@@ -984,28 +984,29 @@ class RegexDSLTests: XCTestCase {
       @RegexComponentBuilder _ content: () -> some RegexComponent
     ) {
       let regex = content().regex
+      let result = regex.program.loweredProgram.canOnlyMatchAtStart
       print("""
-        canOnlyMatchAtStart: \(regex.program.loweredProgram.canOnlyMatchAtStart)
+        canOnlyMatchAtStart: \(result)
         expectation: \(expectation)
-        equal? \(regex.program.loweredProgram.canOnlyMatchAtStart == expectation)
+        equal? \(result == expectation)
         """)
       
+      XCTAssertEqual(result ? 1 : 0, expectation ? 1 : 0, file: file, line: line)
+      
       if expectation {
-        XCTAssertTrue(regex.program.loweredProgram.canOnlyMatchAtStart, file: file, line: line)
+        XCTAssertTrue(result, file: file, line: line)
       } else {
-        XCTAssertFalse(regex.program.loweredProgram.canOnlyMatchAtStart, file: file, line: line)
+        XCTAssertFalse(result, file: file, line: line)
       }
       
-      XCTAssertTrue(expectation == regex.program.loweredProgram.canOnlyMatchAtStart, file: file, line: line)
+      XCTAssertTrue(expectation == result, file: file, line: line)
 
-      XCTAssertEqual(regex.program.loweredProgram.canOnlyMatchAtStart, expectation, file: file, line: line)
+      XCTAssertEqual(result, expectation, file: file, line: line)
       XCTAssertEqual(
-        regex.program.loweredProgram.canOnlyMatchAtStart.baseValue,
+        result.baseValue,
         expectation.baseValue,
         file: file, line: line)
-      print(
-        regex.program.loweredProgram.canOnlyMatchAtStart.baseValue,
-        expectation.baseValue)
+      fflush(stdout)
     }
     
     expectCanOnlyMatchAtStart(true) {

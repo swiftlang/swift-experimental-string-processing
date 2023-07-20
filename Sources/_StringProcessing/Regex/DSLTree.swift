@@ -724,6 +724,7 @@ extension DSLTree.Node {
   /// In particular, non-required groups and option-setting groups are
   /// inconclusive about where they can match.
   private func _canOnlyMatchAtStartImpl(_ options: inout MatchingOptions) -> Bool? {
+    print(self)
     switch self {
     // Defining cases
     case .atom(.assertion(.startOfSubject)):
