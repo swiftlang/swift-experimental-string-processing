@@ -14,6 +14,10 @@ import XCTest
 import RegexBuilder
 import TestSupport
 
+extension Bool {
+  var baseValue: UInt8 { withUnsafeBytes(of: self) { $0.load(as: UInt8.self) } }
+}
+
 @available(SwiftStdlib 5.7, *)
 class RegexDSLTests: XCTestCase {
   func _testDSLCaptures<MatchType>(
@@ -991,7 +995,17 @@ class RegexDSLTests: XCTestCase {
       } else {
         XCTAssertFalse(regex.program.loweredProgram.canOnlyMatchAtStart, file: file, line: line)
       }
+      
+      XCTAssertTrue(expectation == regex.program.loweredProgram.canOnlyMatchAtStart, file: file, line: line)
+
       XCTAssertEqual(regex.program.loweredProgram.canOnlyMatchAtStart, expectation, file: file, line: line)
+      XCTAssertEqual(
+        regex.program.loweredProgram.canOnlyMatchAtStart.baseValue,
+        expectation.baseValue,
+        file: file, line: line)
+      print(
+        regex.program.loweredProgram.canOnlyMatchAtStart.baseValue,
+        expectation.baseValue)
     }
     
     expectCanOnlyMatchAtStart(true) {
