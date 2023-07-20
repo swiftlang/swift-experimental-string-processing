@@ -980,6 +980,17 @@ class RegexDSLTests: XCTestCase {
       @RegexComponentBuilder _ content: () -> some RegexComponent
     ) {
       let regex = content().regex
+      print("""
+        canOnlyMatchAtStart: \(regex.program.loweredProgram.canOnlyMatchAtStart)
+        expectation: \(expectation)
+        equal? \(regex.program.loweredProgram.canOnlyMatchAtStart == expectation)
+        """)
+      
+      if expectation {
+        XCTAssertTrue(regex.program.loweredProgram.canOnlyMatchAtStart, file: file, line: line)
+      } else {
+        XCTAssertFalse(regex.program.loweredProgram.canOnlyMatchAtStart, file: file, line: line)
+      }
       XCTAssertEqual(regex.program.loweredProgram.canOnlyMatchAtStart, expectation, file: file, line: line)
     }
     
