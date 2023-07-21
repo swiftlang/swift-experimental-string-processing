@@ -985,28 +985,7 @@ class RegexDSLTests: XCTestCase {
     ) {
       let regex = content().regex
       let result = regex.program.loweredProgram.canOnlyMatchAtStart
-      print("""
-        canOnlyMatchAtStart: \(result)
-        expectation: \(expectation)
-        equal? \(result == expectation)
-        """)
-      
-      XCTAssertEqual(result ? 1 : 0, expectation ? 1 : 0, file: file, line: line)
-      
-      if expectation {
-        XCTAssertTrue(result, file: file, line: line)
-      } else {
-        XCTAssertFalse(result, file: file, line: line)
-      }
-      
-      XCTAssertTrue(expectation == result, file: file, line: line)
-
       XCTAssertEqual(result, expectation, file: file, line: line)
-      XCTAssertEqual(
-        result.baseValue,
-        expectation.baseValue,
-        file: file, line: line)
-      fflush(stdout)
     }
     
     expectCanOnlyMatchAtStart(true) {

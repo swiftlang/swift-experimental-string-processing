@@ -395,6 +395,7 @@ extension MEProgram.Builder {
     regInfo.captures = nextCaptureRegister.rawValue
 
     return MEProgram(
+      canOnlyMatchAtStart: canOnlyMatchAtStart,
       instructions: InstructionList(instructions),
       staticElements: elements.stored,
       staticSequences: sequences.stored,
@@ -407,8 +408,7 @@ extension MEProgram.Builder {
       enableMetrics: enableMetrics,
       captureList: captureList,
       referencedCaptureOffsets: referencedCaptureOffsets,
-      initialOptions: initialOptions,
-      canOnlyMatchAtStart: canOnlyMatchAtStart)
+      initialOptions: initialOptions)
   }
 
   mutating func reset() { self = Self() }
