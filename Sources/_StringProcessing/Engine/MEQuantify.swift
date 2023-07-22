@@ -74,6 +74,10 @@ extension Processor {
     }
 
     if trips < payload.minTrips {
+      // TODO: Refactor to make logic smoother...
+      // TODO: Skip this unnecessary saved state traffic
+      rectifySaveState(savePoint.savedStateIndex)
+
       signalFailure()
       return false
     }
@@ -108,6 +112,10 @@ extension Processor {
     savePoint.shrinkRange(input)
     if !savePoint.rangeIsEmpty {
       savePoints.append(savePoint)
+    } else {
+      // TODO: Refactor to make logic smoother...
+      // TODO: Skip this unnecessary saved state traffic
+      rectifySaveState(savePoint.savedStateIndex)
     }
     return true
   }
@@ -128,6 +136,10 @@ extension Processor {
     }
 
     if savePoint.rangeIsEmpty {
+      // TODO: Refactor to make logic smoother...
+      // TODO: Skip this unnecessary saved state traffic
+      rectifySaveState(savePoint.savedStateIndex)
+
       signalFailure()
       return false
     }
@@ -135,6 +147,10 @@ extension Processor {
     savePoint.shrinkRange(input)
     if !savePoint.rangeIsEmpty {
       savePoints.append(savePoint)
+    } else {
+      // TODO: Refactor to make logic smoother...
+      // TODO: Skip this unnecessary saved state traffic
+      rectifySaveState(savePoint.savedStateIndex)
     }
     return true
   }
