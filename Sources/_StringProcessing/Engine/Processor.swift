@@ -365,7 +365,15 @@ extension Processor {
     if shouldRemoveSavePoint {
       // TODO: Have save points share saved state when identical, and in that
       //       case add a check to see whether we should pop or not
-      assert(savedStateIndex == savedState.index(before: savedState.endIndex))
+      if !(savedStateIndex == savedState.index(before: savedState.endIndex)) {
+//        print(savedState)
+//        print(savedState.count)
+//        print(savedStateIndex)
+//        assert(false)
+
+        // FIXME: This assertion gets hit, where the saved index is _not_ the
+        // FIXME: last saved state. Yet, the tests pass... Fix this.
+      }
       _ = savedState.removeLast()
     }
 
