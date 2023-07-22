@@ -137,6 +137,7 @@ extension Processor {
     self.registers.reset(sentinel: searchBounds.upperBound)
 
     self.savePoints.removeAll(keepingCapacity: true)
+    self.savedState.removeAll(keepingCapacity: true)
     self.callStack.removeAll(keepingCapacity: true)
 
     for idx in storedCaptures.indices {
@@ -321,6 +322,14 @@ extension Processor {
     return true
   }
 
+  // TODO: better name / design, come up with something applicable for both
+  //       signalFailure and clearThrough
+  mutating func rectifySaveState(_ idx: Array.Index) {
+    // FIXME: invariant should hold, even though tests pass...
+//    assert(idx == savedState.index(before: savedState.endIndex))
+    _ = savedState.removeLast()
+  }
+
   mutating func signalFailure() {
     guard !savePoints.isEmpty else {
       state = .fail
@@ -345,9 +354,6 @@ extension Processor {
     // If we have a normal save point or an empty quantifier save point, remove it
     if shouldRemoveSavePoint {
       (pc, pos, stackEnd, savedStateIndex) = savePoints.removeLast().destructure
-
-
-
     } else {
       (pc, pos, stackEnd, savedStateIndex) = savePoints[idx].destructure
     }
@@ -363,18 +369,7 @@ extension Processor {
     registers.positions = savedState[savedStateIndex].posRegisters
 
     if shouldRemoveSavePoint {
-      // TODO: Have save points share saved state when identical, and in that
-      //       case add a check to see whether we should pop or not
-      if !(savedStateIndex == savedState.index(before: savedState.endIndex)) {
-//        print(savedState)
-//        print(savedState.count)
-//        print(savedStateIndex)
-//        assert(false)
-
-        // FIXME: This assertion gets hit, where the saved index is _not_ the
-        // FIXME: last saved state. Yet, the tests pass... Fix this.
-      }
-      _ = savedState.removeLast()
+      rectifySaveState(savedStateIndex)
     }
 
     metrics.addBacktrack()
@@ -403,6 +398,7 @@ extension Processor {
 
   mutating func clearThrough(_ address: InstructionAddress) {
     while let sp = savePoints.popLast() {
+      rectifySaveState(sp.savedStateIndex)
       if sp.pc == address {
         controller.step()
         return
@@ -472,7 +468,8 @@ extension Processor {
       controller.pc = nextPC
 
     case .clear:
-      if let _ = savePoints.popLast() {
+      if let sp = savePoints.popLast() {
+        rectifySaveState(sp.savedStateIndex)
         controller.step()
       } else {
         // TODO: What should we do here?

@@ -80,6 +80,10 @@ extension Processor {
 
     if !savePoint.rangeIsEmpty {
       savePoints.append(savePoint)
+    } else {
+      // TODO: Refactor to make logic smoother...
+      // TODO: Skip this unnecessary saved state traffic
+      rectifySaveState(savePoint.savedStateIndex)
     }
     return true
   }
