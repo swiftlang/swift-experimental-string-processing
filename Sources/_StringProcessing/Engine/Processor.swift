@@ -77,6 +77,8 @@ struct Processor {
 
   var callStack: [InstructionAddress] = []
 
+  var savedState: [SavedState] = []
+
   var storedCaptures: Array<_StoredCapture>
 
   var wordIndexCache: Set<String.Index>? = nil
@@ -324,13 +326,11 @@ extension Processor {
       state = .fail
       return
     }
-    let (pc, pos, stackEnd, capEnds, intRegisters, posRegisters): (
+    let (pc, pos, stackEnd, savedStateIndex): (
       pc: InstructionAddress,
       pos: Position?,
       stackEnd: CallStackAddress,
-      captureEnds: [_StoredCapture],
-      intRegisters: [Int],
-      PositionRegister: [Input.Index]
+      savedStateIndex: Array.Index
     )
 
     let idx = savePoints.index(before: savePoints.endIndex)
@@ -338,22 +338,36 @@ extension Processor {
     if !savePoints[idx].rangeIsEmpty {
       savePoints[idx].takePositionFromRange(input)
     }
+
+    // TODO: clean up the quantifier save point logic some
+    let shouldRemoveSavePoint = savePoints[idx].rangeIsEmpty
+
     // If we have a normal save point or an empty quantifier save point, remove it
-    if savePoints[idx].rangeIsEmpty {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
+    if shouldRemoveSavePoint {
+      (pc, pos, stackEnd, savedStateIndex) = savePoints.removeLast().destructure
+
+
+
     } else {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
+      (pc, pos, stackEnd, savedStateIndex) = savePoints[idx].destructure
     }
 
     assert(stackEnd.rawValue <= callStack.count)
-    assert(capEnds.count == storedCaptures.count)
+    assert(savedState[savedStateIndex].captureEnds.count == storedCaptures.count)
 
     controller.pc = pc
     currentPosition = pos ?? currentPosition
     callStack.removeLast(callStack.count - stackEnd.rawValue)
-    storedCaptures = capEnds
-    registers.ints = intRegisters
-    registers.positions = posRegisters
+    storedCaptures = savedState[savedStateIndex].captureEnds
+    registers.ints = savedState[savedStateIndex].intRegisters
+    registers.positions = savedState[savedStateIndex].posRegisters
+
+    if shouldRemoveSavePoint {
+      // TODO: Have save points share saved state when identical, and in that
+      //       case add a check to see whether we should pop or not
+      assert(savedStateIndex == savedState.index(before: savedState.endIndex))
+      _ = savedState.removeLast()
+    }
 
     metrics.addBacktrack()
   }

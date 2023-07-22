@@ -31,6 +31,14 @@
 
 
 extension Processor {
+
+  struct SavedState {
+    var captureEnds: [_StoredCapture]
+    var intRegisters: [Int]
+    var posRegisters: [Input.Index]
+  }
+
+
   struct _StoredCapture {
     var range: Range<Position>? = nil
 
