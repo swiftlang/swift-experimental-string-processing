@@ -15,8 +15,7 @@ extension Processor {
     var pos: Position?
 
     // Quantifiers may store a range of positions to restore to
-    var rangeStart: Position?
-    var rangeEnd: Position?
+    var quantifiedRange: Range<Position>?
 
     // FIXME: refactor, for now this field is only used for quantifier save
     //        points. We should try to separate out the concerns better.
@@ -53,43 +52,28 @@ extension Processor {
     // Whether this save point is quantified, meaning it has a range of
     // possible positions to explore.
     var isQuantified: Bool {
-      if rangeEnd == nil {
-        assert(rangeStart == nil)
-        return false
-      }
-      assert(rangeStart != nil)
-      return true
-    }
-
-    mutating func updateRange(newEnd: Input.Index) {
-      if rangeStart == nil {
-        assert(rangeEnd == nil)
-        rangeStart = newEnd
-      }
-      rangeEnd = newEnd
+      quantifiedRange != nil
     }
 
     /// Move the next range position into pos, and removing it from the range
     mutating func takePositionFromRange(_ input: Input) {
       assert(isQuantified)
-      pos = rangeEnd!
-      shrinkRange(input)
-    }
-
-    /// Shrink the range of the save point by one index, essentially dropping the last index
-    mutating func shrinkRange(_ input: Input) {
-      assert(isQuantified)
-      if rangeEnd == rangeStart {
-        // The range is now empty
-        rangeStart = nil
-        rangeEnd = nil
-      } else {
-        if isScalarSemantics {
-          input.unicodeScalars.formIndex(before: &rangeEnd!)
-        } else {
-          input.formIndex(before: &rangeEnd!)
-        }
+      let range = quantifiedRange!
+      pos = range.upperBound
+      if range.isEmpty {
+        // Becomes a normal save point
+        quantifiedRange = nil
+        return
       }
+
+      // Shrink the range
+      let newUpper: Position
+      if isScalarSemantics {
+        newUpper = input.unicodeScalars.index(before: range.upperBound)
+      } else {
+        newUpper = input.index(before: range.upperBound)
+      }
+      quantifiedRange = range.lowerBound..<newUpper
     }
   }
 
@@ -99,8 +83,7 @@ extension Processor {
     SavePoint(
       pc: pc,
       pos: currentPosition,
-      rangeStart: nil,
-      rangeEnd: nil,
+      quantifiedRange: nil,
       isScalarSemantics: false,
       stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,
@@ -114,8 +97,7 @@ extension Processor {
     SavePoint(
       pc: pc,
       pos: nil,
-      rangeStart: nil,
-      rangeEnd: nil,
+      quantifiedRange: nil,
       isScalarSemantics: false,
       stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,
@@ -130,42 +112,7 @@ extension Processor {
     SavePoint(
       pc: controller.pc + 1,
       pos: nil,
-      rangeStart: range.lowerBound,
-      rangeEnd: range.upperBound,
-      isScalarSemantics: isScalarSemantics,
-      stackEnd: .init(callStack.count),
-      captureEnds: storedCaptures,
-      intRegisters: registers.ints,
-      posRegisters: registers.positions)
-  }
-//
-//  func makeSavePoint(
-//    resumeAt pc: InstructionAddress? = nil,
-//    quantifiedRange: Range<Position>? = nil,
-//    addressOnly: Bool = false,
-//    isScalarSemantics: Bool = false
-//  ) -> SavePoint {
-//    SavePoint(
-//      pc: pc ?? controller.pc + 1,
-//      pos: addressOnly ? nil : currentPosition,
-//      rangeStart: quantifiedRange?.lowerBound,
-//      rangeEnd: quantifiedRange?.lowerBound,
-//      isScalarSemantics: false, // FIXME: refactor away
-//      stackEnd: .init(callStack.count),
-//      captureEnds: storedCaptures,
-//      intRegisters: registers.ints,
-//      posRegisters: registers.positions)
-//  }
-  
-  func startQuantifierSavePoint(
-    isScalarSemantics: Bool
-  ) -> SavePoint {
-    // Restores to the instruction AFTER the current quantifier instruction
-    SavePoint(
-      pc: controller.pc + 1,
-      pos: nil,
-      rangeStart: nil,
-      rangeEnd: nil,
+      quantifiedRange: range,
       isScalarSemantics: isScalarSemantics,
       stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,

@@ -121,8 +121,9 @@ extension Processor.SavePoint {
       if !isQuantified {
         posStr = "<none>"
       } else {
-        let startStr = "\(input.distance(from: input.startIndex, to: rangeStart!))"
-        let endStr = "\(input.distance(from: input.startIndex, to: rangeEnd!))"
+        let range = quantifiedRange!
+        let startStr = "\(input.distance(from: input.startIndex, to: range.lowerBound))"
+        let endStr = "\(input.distance(from: input.startIndex, to: range.upperBound))"
         posStr = "\(startStr)...\(endStr)"
       }
     }
