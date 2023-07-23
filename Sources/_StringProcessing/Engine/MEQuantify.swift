@@ -50,18 +50,26 @@ extension Processor {
   mutating func runQuantify(_ payload: QuantifyPayload) -> Bool {
     var trips = 0
     var extraTrips = payload.extraTrips
+
+    while trips < payload.minTrips {
+      guard let next = _doQuantifyMatch(payload) else {
+        signalFailure()
+        return false
+      }
+      currentPosition = next
+      trips += 1
+    }
+
     var savePoint = startQuantifierSavePoint(
       isScalarSemantics: payload.isScalarSemantics
     )
-
     while true {
-      if trips >= payload.minTrips {
-        if extraTrips == 0 { break }
-        extraTrips = extraTrips.map({$0 - 1})
-        if payload.quantKind == .eager {
-          savePoint.updateRange(newEnd: currentPosition)
-        }
+      if extraTrips == 0 { break }
+      extraTrips = extraTrips.map({$0 - 1})
+      if payload.quantKind == .eager {
+        savePoint.updateRange(newEnd: currentPosition)
       }
+
       let next = _doQuantifyMatch(payload)
       guard let idx = next else {
         if savePoint.isQuantified {
@@ -73,11 +81,6 @@ extension Processor {
       }
       currentPosition = idx
       trips += 1
-    }
-
-    if trips < payload.minTrips {
-      signalFailure()
-      return false
     }
 
     if savePoint.isQuantified {
