@@ -91,7 +91,13 @@ extension Processor {
     assert(payload.quantKind == .eager
            && payload.minTrips == 0
            && payload.extraTrips == nil)
+    _doRunEagerZeroOrMoreQuantify(payload)
+  }
 
+  // NOTE: So-as to inline into one-or-more call, which makes a significant
+  // performance difference
+  @inline(__always)
+  mutating func _doRunEagerZeroOrMoreQuantify(_ payload: QuantifyPayload) {
     guard let next = _doQuantifyMatch(payload) else {
       // Consumed no input, no point saved
       return
@@ -110,30 +116,21 @@ extension Processor {
     savePoints.append(makeQuantifiedSavePoint(rangeStart..<rangeEnd, isScalarSemantics: payload.isScalarSemantics))
   }
 
-  /// Specialized quantify instruction interpreter for +
+  /// Specialized quantify instruction interpreter for `+`
   mutating func runEagerOneOrMoreQuantify(_ payload: QuantifyPayload) -> Bool {
     assert(payload.quantKind == .eager
            && payload.minTrips == 1
            && payload.extraTrips == nil)
-    var savePoint = startQuantifierSavePoint(
-      isScalarSemantics: payload.isScalarSemantics
-    )
-    while true {
-      let next = _doQuantifyMatch(payload)
-      guard let idx = next else { break }
-      currentPosition = idx
-      savePoint.updateRange(newEnd: currentPosition)
-    }
 
-    if !savePoint.isQuantified {
+    // Match at least once
+    guard let next = _doQuantifyMatch(payload) else {
       signalFailure()
       return false
     }
-    // The last save point has saved the current position, so it's unneeded
-    savePoint.shrinkRange(input)
-    if savePoint.isQuantified {
-      savePoints.append(savePoint)
-    }
+
+    // Run `a+` as `aa*`
+    currentPosition = next
+    _doRunEagerZeroOrMoreQuantify(payload)
     return true
   }
 
