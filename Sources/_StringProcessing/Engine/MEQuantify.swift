@@ -86,28 +86,28 @@ extension Processor {
     return true
   }
 
-  /// Specialized quantify instruction interpreter for *
-  mutating func runEagerZeroOrMoreQuantify(_ payload: QuantifyPayload) -> Bool {
+  /// Specialized quantify instruction interpreter for `*`, always succeeds
+  mutating func runEagerZeroOrMoreQuantify(_ payload: QuantifyPayload) {
     assert(payload.quantKind == .eager
            && payload.minTrips == 0
            && payload.extraTrips == nil)
-    var savePoint = startQuantifierSavePoint(
-      isScalarSemantics: payload.isScalarSemantics
-    )
 
+    guard let next = _doQuantifyMatch(payload) else {
+      // Consumed no input, no point saved
+      return
+    }
+
+    // Create a quantified save point for every part of the input matched up
+    // to the final position.
+    let rangeStart = currentPosition
+    var rangeEnd = currentPosition
     while true {
-      savePoint.updateRange(newEnd: currentPosition)
-      let next = _doQuantifyMatch(payload)
-      guard let idx = next else { break }
-      currentPosition = idx
+      guard let next = _doQuantifyMatch(payload) else { break }
+      rangeEnd = currentPosition
+      currentPosition = next
     }
 
-    // The last save point has saved the current position, so it's unneeded
-    savePoint.shrinkRange(input)
-    if savePoint.isQuantified {
-      savePoints.append(savePoint)
-    }
-    return true
+    savePoints.append(makeQuantifiedSavePoint(rangeStart..<rangeEnd, isScalarSemantics: payload.isScalarSemantics))
   }
 
   /// Specialized quantify instruction interpreter for +
@@ -147,8 +147,7 @@ extension Processor {
     }
     if payload.quantKind != .possessive {
       // Save the zero match
-      let savePoint = makeSavePoint(currentPC + 1)
-      savePoints.append(savePoint)
+      savePoints.append(makeSavePoint(resumingAt: currentPC+1))
     }
     currentPosition = idx
     return true

@@ -433,19 +433,19 @@ extension Processor {
       }
     case .save:
       let resumeAddr = payload.addr
-      let sp = makeSavePoint(resumeAddr)
+      let sp = makeSavePoint(resumingAt: resumeAddr)
       savePoints.append(sp)
       controller.step()
 
     case .saveAddress:
       let resumeAddr = payload.addr
-      let sp = makeSavePoint(resumeAddr, addressOnly: true)
+      let sp = makeAddressOnlySavePoint(resumingAt: resumeAddr)
       savePoints.append(sp)
       controller.step()
 
     case .splitSaving:
       let (nextPC, resumeAddr) = payload.pairedAddrAddr
-      let sp = makeSavePoint(resumeAddr)
+      let sp = makeSavePoint(resumingAt: resumeAddr)
       savePoints.append(sp)
       controller.pc = nextPC
 
@@ -522,7 +522,8 @@ extension Processor {
         assertionFailure(".reluctant is not supported by .quantify")
         return
       case (.eager, 0, nil):
-        matched = runEagerZeroOrMoreQuantify(quantPayload)
+        runEagerZeroOrMoreQuantify(quantPayload)
+        matched = true
       case (.eager, 1, nil):
         matched = runEagerOneOrMoreQuantify(quantPayload)
       case (_, 0, 1):
@@ -631,9 +632,7 @@ extension Processor {
       let (val, cap) = payload.pairedValueCapture
       let value = registers[val]
       let capNum = Int(asserting: cap.rawValue)
-      let sp = makeSavePoint(self.currentPC)
-      storedCaptures[capNum].registerValue(
-        value, overwriteInitial: sp)
+      storedCaptures[capNum].registerValue(value)
       controller.step()
     }
   }

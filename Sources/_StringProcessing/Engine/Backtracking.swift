@@ -94,20 +94,68 @@ extension Processor {
   }
 
   func makeSavePoint(
-    _ pc: InstructionAddress,
-    addressOnly: Bool = false
+    resumingAt pc: InstructionAddress
   ) -> SavePoint {
     SavePoint(
       pc: pc,
-      pos: addressOnly ? nil : currentPosition,
+      pos: currentPosition,
       rangeStart: nil,
       rangeEnd: nil,
-      isScalarSemantics: false, // FIXME: refactor away
+      isScalarSemantics: false,
       stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,
       intRegisters: registers.ints,
       posRegisters: registers.positions)
   }
+
+  func makeAddressOnlySavePoint(
+    resumingAt pc: InstructionAddress
+  ) -> SavePoint {
+    SavePoint(
+      pc: pc,
+      pos: nil,
+      rangeStart: nil,
+      rangeEnd: nil,
+      isScalarSemantics: false,
+      stackEnd: .init(callStack.count),
+      captureEnds: storedCaptures,
+      intRegisters: registers.ints,
+      posRegisters: registers.positions)
+  }
+
+  func makeQuantifiedSavePoint(
+    _ range: Range<Position>,
+    isScalarSemantics: Bool
+  ) -> SavePoint {
+    SavePoint(
+      pc: controller.pc + 1,
+      pos: nil,
+      rangeStart: range.lowerBound,
+      rangeEnd: range.upperBound,
+      isScalarSemantics: isScalarSemantics,
+      stackEnd: .init(callStack.count),
+      captureEnds: storedCaptures,
+      intRegisters: registers.ints,
+      posRegisters: registers.positions)
+  }
+//
+//  func makeSavePoint(
+//    resumeAt pc: InstructionAddress? = nil,
+//    quantifiedRange: Range<Position>? = nil,
+//    addressOnly: Bool = false,
+//    isScalarSemantics: Bool = false
+//  ) -> SavePoint {
+//    SavePoint(
+//      pc: pc ?? controller.pc + 1,
+//      pos: addressOnly ? nil : currentPosition,
+//      rangeStart: quantifiedRange?.lowerBound,
+//      rangeEnd: quantifiedRange?.lowerBound,
+//      isScalarSemantics: false, // FIXME: refactor away
+//      stackEnd: .init(callStack.count),
+//      captureEnds: storedCaptures,
+//      intRegisters: registers.ints,
+//      posRegisters: registers.positions)
+//  }
   
   func startQuantifierSavePoint(
     isScalarSemantics: Bool
