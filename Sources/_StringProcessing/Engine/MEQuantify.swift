@@ -60,31 +60,36 @@ extension Processor {
       trips += 1
     }
 
-    var savePoint = startQuantifierSavePoint(
-      isScalarSemantics: payload.isScalarSemantics
-    )
-    while true {
-      if maxExtraTrips == 0 { break }
-      maxExtraTrips = maxExtraTrips.map({$0 - 1})
-      if payload.quantKind == .eager {
-        savePoint.updateRange(newEnd: currentPosition)
-      }
-
-      let next = _doQuantifyMatch(payload)
-      guard let idx = next else {
-        if savePoint.isQuantified {
-          // The last save point has saved the current, non-matching position,
-          // so it's unneeded.
-          savePoint.shrinkRange(input)
-        }
-        break
-      }
-      currentPosition = idx
-      trips += 1
+    if maxExtraTrips == 0 {
+      // We're done
+      return true
     }
 
-    if savePoint.isQuantified {
-      savePoints.append(savePoint)
+    guard let next = _doQuantifyMatch(payload) else {
+      return true
+    }
+    maxExtraTrips = maxExtraTrips.map { $0 - 1 }
+
+    // Remember the range of valid positions in case we can create a quantified
+    // save point
+    let rangeStart = currentPosition
+    var rangeEnd = currentPosition
+    currentPosition = next
+
+    while true {
+      if maxExtraTrips == 0 { break }
+
+      guard let next = _doQuantifyMatch(payload) else {
+        break
+      }
+      maxExtraTrips = maxExtraTrips.map({$0 - 1})
+      rangeEnd = currentPosition
+      currentPosition = next
+    }
+
+    if payload.quantKind == .eager {
+      savePoints.append(makeQuantifiedSavePoint(
+        rangeStart..<rangeEnd, isScalarSemantics: payload.isScalarSemantics))
     }
     return true
   }
@@ -110,6 +115,7 @@ extension Processor {
     // to the final position.
     let rangeStart = currentPosition
     var rangeEnd = currentPosition
+    currentPosition = next
     while true {
       guard let next = _doQuantifyMatch(payload) else { break }
       rangeEnd = currentPosition
