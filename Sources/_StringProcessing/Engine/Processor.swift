@@ -339,7 +339,7 @@ extension Processor {
     // If we have a quantifier save point, move the next range position into
     // pos instead of removing it
     if savePoints[idx].isQuantified {
-      savePoints[idx].takePositionFromRange(input)
+      savePoints[idx].takePositionFromQuantifiedRange(input)
       (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
     } else {
       (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure

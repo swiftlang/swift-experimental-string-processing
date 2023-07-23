@@ -56,7 +56,7 @@ extension Processor {
     }
 
     /// Move the next range position into pos, and removing it from the range
-    mutating func takePositionFromRange(_ input: Input) {
+    mutating func takePositionFromQuantifiedRange(_ input: Input) {
       assert(isQuantified)
       let range = quantifiedRange!
       pos = range.upperBound
