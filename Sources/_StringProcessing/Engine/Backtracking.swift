@@ -13,6 +13,7 @@ extension Processor {
   struct SavePoint {
     var pc: InstructionAddress
     var pos: Position?
+
     // Quantifiers may store a range of positions to restore to
     var rangeStart: Position?
     var rangeEnd: Position?
@@ -49,10 +50,20 @@ extension Processor {
       return (pc, pos, stackEnd, captureEnds, intRegisters, posRegisters)
     }
 
-    var rangeIsEmpty: Bool { rangeEnd == nil }
+    // Whether this save point is quantified, meaning it has a range of
+    // possible positions to explore.
+    var isQuantified: Bool {
+      if rangeEnd == nil {
+        assert(rangeStart == nil)
+        return false
+      }
+      assert(rangeStart != nil)
+      return true
+    }
 
     mutating func updateRange(newEnd: Input.Index) {
       if rangeStart == nil {
+        assert(rangeEnd == nil)
         rangeStart = newEnd
       }
       rangeEnd = newEnd
@@ -60,14 +71,14 @@ extension Processor {
 
     /// Move the next range position into pos, and removing it from the range
     mutating func takePositionFromRange(_ input: Input) {
-      assert(!rangeIsEmpty)
+      assert(isQuantified)
       pos = rangeEnd!
       shrinkRange(input)
     }
 
     /// Shrink the range of the save point by one index, essentially dropping the last index
     mutating func shrinkRange(_ input: Input) {
-      assert(!rangeIsEmpty)
+      assert(isQuantified)
       if rangeEnd == rangeStart {
         // The range is now empty
         rangeStart = nil

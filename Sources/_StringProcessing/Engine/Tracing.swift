@@ -118,7 +118,7 @@ extension Processor.SavePoint {
     if let p = self.pos {
       posStr = "\(input.distance(from: input.startIndex, to: p))"
     } else {
-      if rangeIsEmpty {
+      if !isQuantified {
         posStr = "<none>"
       } else {
         let startStr = "\(input.distance(from: input.startIndex, to: rangeStart!))"

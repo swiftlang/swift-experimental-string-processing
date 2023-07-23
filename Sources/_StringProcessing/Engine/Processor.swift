@@ -335,15 +335,14 @@ extension Processor {
     )
 
     let idx = savePoints.index(before: savePoints.endIndex)
-    // If we have a quantifier save point, move the next range position into pos
-    if !savePoints[idx].rangeIsEmpty {
+
+    // If we have a quantifier save point, move the next range position into
+    // pos instead of removing it
+    if savePoints[idx].isQuantified {
       savePoints[idx].takePositionFromRange(input)
-    }
-    // If we have a normal save point or an empty quantifier save point, remove it
-    if savePoints[idx].rangeIsEmpty {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
-    } else {
       (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
+    } else {
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
     }
 
     assert(stackEnd.rawValue <= callStack.count)
