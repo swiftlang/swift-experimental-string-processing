@@ -46,10 +46,10 @@ extension Processor {
 
   /// Generic quantify instruction interpreter
   /// - Handles .eager and .posessive
-  /// - Handles arbitrary minTrips and extraTrips
+  /// - Handles arbitrary minTrips and maxExtraTrips
   mutating func runQuantify(_ payload: QuantifyPayload) -> Bool {
     var trips = 0
-    var extraTrips = payload.extraTrips
+    var maxExtraTrips = payload.maxExtraTrips
 
     while trips < payload.minTrips {
       guard let next = _doQuantifyMatch(payload) else {
@@ -64,8 +64,8 @@ extension Processor {
       isScalarSemantics: payload.isScalarSemantics
     )
     while true {
-      if extraTrips == 0 { break }
-      extraTrips = extraTrips.map({$0 - 1})
+      if maxExtraTrips == 0 { break }
+      maxExtraTrips = maxExtraTrips.map({$0 - 1})
       if payload.quantKind == .eager {
         savePoint.updateRange(newEnd: currentPosition)
       }
@@ -93,7 +93,7 @@ extension Processor {
   mutating func runEagerZeroOrMoreQuantify(_ payload: QuantifyPayload) {
     assert(payload.quantKind == .eager
            && payload.minTrips == 0
-           && payload.extraTrips == nil)
+           && payload.maxExtraTrips == nil)
     _doRunEagerZeroOrMoreQuantify(payload)
   }
 
@@ -123,7 +123,7 @@ extension Processor {
   mutating func runEagerOneOrMoreQuantify(_ payload: QuantifyPayload) -> Bool {
     assert(payload.quantKind == .eager
            && payload.minTrips == 1
-           && payload.extraTrips == nil)
+           && payload.maxExtraTrips == nil)
 
     // Match at least once
     guard let next = _doQuantifyMatch(payload) else {
@@ -140,7 +140,7 @@ extension Processor {
   /// Specialized quantify instruction interpreter for ?
   mutating func runZeroOrOneQuantify(_ payload: QuantifyPayload) -> Bool {
     assert(payload.minTrips == 0
-           && payload.extraTrips == 1)
+           && payload.maxExtraTrips == 1)
     let next = _doQuantifyMatch(payload)
     guard let idx = next else {
       return true // matched zero times
