@@ -10,9 +10,13 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
-import _StringProcessing
+@testable import _StringProcessing
 import RegexBuilder
 import TestSupport
+
+extension Bool {
+  var baseValue: UInt8 { withUnsafeBytes(of: self) { $0.load(as: UInt8.self) } }
+}
 
 @available(SwiftStdlib 5.7, *)
 class RegexDSLTests: XCTestCase {
@@ -969,6 +973,56 @@ class RegexDSLTests: XCTestCase {
         
         XCTAssertNil(try r.firstMatch(in: "\nbaaa\n"))
         XCTAssertNil(try r.firstMatch(in: "\naaab\n"))
+      }
+    }
+  }
+  
+  func testCanOnlyMatchAtStart() throws {
+    func expectCanOnlyMatchAtStart(
+      _ expectation: Bool,
+      file: StaticString = #file, line: UInt = #line,
+      @RegexComponentBuilder _ content: () -> some RegexComponent
+    ) {
+      let regex = content().regex
+      let result = regex.program.loweredProgram.canOnlyMatchAtStart
+      XCTAssertEqual(result, expectation, file: file, line: line)
+    }
+    
+    expectCanOnlyMatchAtStart(true) {
+      Anchor.startOfSubject
+      "foo"
+    }
+    expectCanOnlyMatchAtStart(false) {
+      "foo"
+    }
+    expectCanOnlyMatchAtStart(true) {
+      Optionally { "foo" }
+      Anchor.startOfSubject
+      "bar"
+    }
+    
+    expectCanOnlyMatchAtStart(true) {
+      ChoiceOf {
+        Regex {
+          Anchor.startOfSubject
+          "foo"
+        }
+        Regex {
+          Anchor.startOfSubject
+          "bar"
+        }
+      }
+    }
+    expectCanOnlyMatchAtStart(false) {
+      ChoiceOf {
+        Regex {
+          Anchor.startOfSubject
+          "foo"
+        }
+        Regex {
+          Anchor.startOfLine
+          "bar"
+        }
       }
     }
   }

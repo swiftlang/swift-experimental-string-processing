@@ -711,6 +711,105 @@ extension DSLTree.Node {
   }
 }
 
+extension DSLTree.Node {
+  /// Implementation for `canOnlyMatchAtStart`, which maintains the option
+  /// state.
+  ///
+  /// For a given specific node, this method can return one of three values:
+  ///
+  /// - `true`: This node is guaranteed to match only at the start of a subject.
+  /// - `false`: This node can match anywhere in the subject.
+  /// - `nil`: This node is inconclusive about where it can match.
+  ///
+  /// In particular, non-required groups and option-setting groups are
+  /// inconclusive about where they can match.
+  private func _canOnlyMatchAtStartImpl(_ options: inout MatchingOptions) -> Bool? {
+    switch self {
+    // Defining cases
+    case .atom(.assertion(.startOfSubject)):
+      return true
+    case .atom(.assertion(.caretAnchor)):
+      return !options.anchorsMatchNewlines
+      
+    // Changing options doesn't determine `true`/`false`.
+    case .atom(.changeMatchingOptions(let sequence)):
+      options.apply(sequence.ast)
+      return nil
+      
+    // Any other atom or consuming node returns `false`.
+    case .atom, .customCharacterClass, .quotedLiteral:
+      return false
+      
+    // Trivia/empty have no effect.
+    case .trivia, .empty:
+      return nil
+      
+    // In an alternation, all of its children must match only at start.
+    case .orderedChoice(let children):
+      return children.allSatisfy { $0._canOnlyMatchAtStartImpl(&options) == true }
+      
+    // In a concatenation, the first definitive child provides the answer.
+    case .concatenation(let children):
+      for child in children {
+        if let result = child._canOnlyMatchAtStartImpl(&options) {
+          return result
+        }
+      }
+      return false
+
+    // Groups (and other parent nodes) defer to the child.
+    case .nonCapturingGroup(let kind, let child):
+      options.beginScope()
+      defer { options.endScope() }
+      if case .changeMatchingOptions(let sequence) = kind.ast {
+        options.apply(sequence)
+      }
+      return child._canOnlyMatchAtStartImpl(&options)
+    case .capture(_, _, let child, _):
+      options.beginScope()
+      defer { options.endScope() }
+      return child._canOnlyMatchAtStartImpl(&options)
+    case .ignoreCapturesInTypedOutput(let child),
+        .convertedRegexLiteral(let child, _):
+      return child._canOnlyMatchAtStartImpl(&options)
+
+    // A quantification that doesn't require its child to exist can still
+    // allow a start-only match. (e.g. `/(foo)?^bar/`)
+    case .quantification(let amount, _, let child):
+      return amount.requiresAtLeastOne
+        ? child._canOnlyMatchAtStartImpl(&options)
+        : nil
+
+    // For conditional nodes, both sides must require matching at start.
+    case .conditional(_, let child1, let child2):
+      return child1._canOnlyMatchAtStartImpl(&options) == true
+        && child2._canOnlyMatchAtStartImpl(&options) == true
+
+    // Extended behavior isn't known, so we return `false` for safety.
+    case .consumer, .matcher, .characterPredicate, .absentFunction:
+      return false
+    }
+  }
+  
+  /// Returns a Boolean value indicating whether the regex with this node as
+  /// the root can _only_ match at the start of a subject.
+  ///
+  /// For example, these regexes can only match at the start of a subject:
+  ///
+  /// - `/^foo/`
+  /// - `/(^foo|^bar)/` (both sides of the alternation start with `^`)
+  ///
+  /// These can match other places in a subject:
+  ///
+  /// - `/(^foo)?bar/` (`^` is in an optional group)
+  /// - `/(^foo|bar)/` (only one side of the alternation starts with `^`)
+  /// - `/(?m)^foo/` (`^` means "the start of a line" due to `(?m)`)
+  internal func canOnlyMatchAtStart() -> Bool {
+    var options = MatchingOptions()
+    return _canOnlyMatchAtStartImpl(&options) ?? false
+  }
+}
+
 // MARK: AST wrapper types
 //
 // These wrapper types are required because even @_spi-marked public APIs can't
@@ -817,6 +916,17 @@ extension DSLTree {
       }
       public static func range(_ lower: Int, _ upper: Int) -> Self {
         .init(ast: .range(.init(lower, at: .fake), .init(upper, at: .fake)))
+      }
+      
+      internal var requiresAtLeastOne: Bool {
+        switch ast {
+        case .zeroOrOne, .zeroOrMore, .upToN:
+          return false
+        case .oneOrMore:
+          return true
+        case .exactly(let num), .nOrMore(let num), .range(let num, _):
+          return num.value.map { $0 > 0 } ?? false
+        }
       }
     }
     

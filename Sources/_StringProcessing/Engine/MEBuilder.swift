@@ -43,6 +43,9 @@ extension MEProgram {
     var captureList = CaptureList()
     var initialOptions = MatchingOptions()
 
+    // Starting constraint
+    var canOnlyMatchAtStart = false
+    
     // Symbolic reference resolution
     var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
     var referencedCaptureOffsets: [ReferenceID: Int] = [:]
@@ -392,6 +395,7 @@ extension MEProgram.Builder {
     regInfo.captures = nextCaptureRegister.rawValue
 
     return MEProgram(
+      canOnlyMatchAtStart: canOnlyMatchAtStart,
       instructions: InstructionList(instructions),
       staticElements: elements.stored,
       staticSequences: sequences.stored,

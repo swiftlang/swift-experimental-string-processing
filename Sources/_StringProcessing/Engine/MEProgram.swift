@@ -20,6 +20,8 @@ struct MEProgram {
   typealias MatcherFunction =
     (Input, Input.Index, Range<Input.Index>) throws -> (Input.Index, Any)?
 
+  var canOnlyMatchAtStart: Bool
+
   var instructions: InstructionList<Instruction>
 
   var staticElements: [Input.Element]
