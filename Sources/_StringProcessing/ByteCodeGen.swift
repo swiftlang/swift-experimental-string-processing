@@ -46,6 +46,7 @@ extension Compiler.ByteCodeGen {
     // The whole match (`.0` element of output) is equivalent to an implicit
     // capture over the entire regex.
     try emitNode(.capture(name: nil, reference: nil, root))
+    builder.canOnlyMatchAtStart = root.canOnlyMatchAtStart()
     builder.buildAccept()
     return try builder.assemble()
   }

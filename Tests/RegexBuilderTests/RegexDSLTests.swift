@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
-import _StringProcessing
+@testable import _StringProcessing
 import RegexBuilder
 import TestSupport
 
@@ -973,6 +973,55 @@ class RegexDSLTests: XCTestCase {
     }
   }
   
+  func testCanOnlyMatchAtStart() throws {
+    func expectCanOnlyMatchAtStart(
+      _ expectation: Bool,
+      file: StaticString = #file, line: UInt = #line,
+      @RegexComponentBuilder _ content: () -> some RegexComponent
+    ) {
+      let regex = content().regex
+      XCTAssertEqual(regex.program.loweredProgram.canOnlyMatchAtStart, expectation, file: file, line: line)
+    }
+    
+    expectCanOnlyMatchAtStart(true) {
+      Anchor.startOfSubject
+      "foo"
+    }
+    expectCanOnlyMatchAtStart(false) {
+      "foo"
+    }
+    expectCanOnlyMatchAtStart(true) {
+      Optionally { "foo" }
+      Anchor.startOfSubject
+      "bar"
+    }
+    
+    expectCanOnlyMatchAtStart(true) {
+      ChoiceOf {
+        Regex {
+          Anchor.startOfSubject
+          "foo"
+        }
+        Regex {
+          Anchor.startOfSubject
+          "bar"
+        }
+      }
+    }
+    expectCanOnlyMatchAtStart(false) {
+      ChoiceOf {
+        Regex {
+          Anchor.startOfSubject
+          "foo"
+        }
+        Regex {
+          Anchor.startOfLine
+          "bar"
+        }
+      }
+    }
+  }
+  
   func testNestedGroups() throws {
     return;
     
@@ -1797,8 +1846,7 @@ extension RegexDSLTests {
   
   func testLabeledCaptures_labeledCapture() throws {
     guard #available(macOS 13, *) else {
-      XCTSkip("Fix only exists on macOS 13")
-      return
+      throw XCTSkip("Fix only exists on macOS 13")
     }
     // The output type of a regex with a labeled capture is dropped.
     let dslWithLabeledCapture = Regex {
@@ -1837,8 +1885,7 @@ extension RegexDSLTests {
   
   func testLabeledCaptures_bothCapture() throws {
     guard #available(macOS 13, *) else {
-      XCTSkip("Fix only exists on macOS 13")
-      return
+      throw XCTSkip("Fix only exists on macOS 13")
     }
     // Only the output type of a regex with a labeled capture is dropped,
     // outputs of other regexes in the same DSL are concatenated.
@@ -1864,8 +1911,7 @@ extension RegexDSLTests {
   
   func testLabeledCaptures_tooManyCapture() throws {
     guard #available(macOS 13, *) else {
-      XCTSkip("Fix only exists on macOS 13")
-      return
+      throw XCTSkip("Fix only exists on macOS 13")
     }
     // The output type of a regex with too many captures is dropped.
     // "Too many" means the left and right output types would add up to >= 10.
