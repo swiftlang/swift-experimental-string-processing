@@ -103,7 +103,6 @@ extension String {
 
     var next = utf8.index(after: idx)
     if next == end {
-      // assert(self[idx].isASCII)
       return (first: base, next: next, crLF: false)
     }
 
@@ -116,7 +115,6 @@ extension String {
       guard next == end || utf8[next]._isSub300StartingByte else {
         return nil
       }
-      // assert(self[idx] == "\r\n")
       return (first: base, next: next, crLF: true)
     }
 
