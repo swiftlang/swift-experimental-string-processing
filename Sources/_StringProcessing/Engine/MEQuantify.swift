@@ -48,6 +48,9 @@ extension Processor {
   /// - Handles .eager and .posessive
   /// - Handles arbitrary minTrips and maxExtraTrips
   mutating func runQuantify(_ payload: QuantifyPayload) -> Bool {
+    assert(payload.quantKind != .reluctant)
+    assert(payload.minTrips >= 2, "Should have hit a specialized path")
+
     var trips = 0
     var maxExtraTrips = payload.maxExtraTrips
 
