@@ -125,7 +125,7 @@ extension String {
   ///
   /// This function handles loading a character from a string while respecting
   /// an end boundary, even if that end boundary is sub-character or sub-scalar.
-
+  ///
   ///   - If `pos` is at or past `end`, this function returns `nil`.
   ///   - If `end` is between `pos` and the next grapheme cluster boundary (i.e.,
   ///     `end` is before `self.index(after: pos)`, then the returned character
@@ -145,10 +145,20 @@ extension String {
   func characterAndEnd(at pos: String.Index, limitedBy end: String.Index) -> (Character, String.Index)? {
     // FIXME: Sink into the stdlib to avoid multiple boundary calculations
     guard pos < end else { return nil }
-    let next = index(pos, offsetBy: 1, limitedBy: end) ?? end
-    // Substring will round down non-scalar aligned indices
-    let substr = self[pos..<next]
-    return substr.first.map { ($0, substr.endIndex) }
+    let next = index(after: pos)
+    if next <= end {
+      return (self[pos], next)
+    }
+
+    // `end` must be a sub-character position that is between `pos` and the
+    // next grapheme boundary. This is okay if `end` is on a Unicode scalar
+    // boundary, but if it's in the middle of a scalar's code units, there
+    // may not be a character to return at all after rounding down. Use
+    // `Substring`'s rounding to determine what we can return.
+    let substr = self[pos..<end]
+    return substr.isEmpty
+      ? nil
+      : (substr.first!, substr.endIndex)
   }
   
   func matchAnyNonNewline(
