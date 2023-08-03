@@ -190,7 +190,7 @@ extension String {
     limitedBy end: String.Index,
     isScalarSemantics: Bool
   ) -> QuickResult<String.Index?> {
-    guard currentPosition < end else { return .definite(nil) }
+    assert(currentPosition < end)
     guard let (asciiValue, next, isCRLF) = _quickASCIICharacter(
       at: currentPosition, limitedBy: end
     ) else {
@@ -273,7 +273,7 @@ extension String {
     isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> QuickResult<String.Index?> {
-    guard currentPosition < end else { return .definite(nil) }
+    assert(currentPosition < end)
     guard let (next, result) = _quickMatch(
       cc,
       at: currentPosition,
@@ -336,7 +336,7 @@ extension String {
       if isScalarSemantics {
         matched = scalar.isNewline && asciiCheck
         if matched && scalar == "\r"
-            && next != end && unicodeScalars[next] == "\n" {
+            && next < end && unicodeScalars[next] == "\n" {
           // Match a full CR-LF sequence even in scalar semantics
           unicodeScalars.formIndex(after: &next)
         }
