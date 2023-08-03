@@ -715,10 +715,8 @@ extension String {
       guard curScalar == scalar else { return nil }
     }
 
-    // TODO: Is this the correct behavior for a sub-scalar substring end?
-    // Can a malformed Unicode scalar match anything?
     let idx = unicodeScalars.index(after: pos)
-    guard idx <= end else { return nil }
+    assert(idx <= end, "Input is a substring with a sub-scalar endIndex.")
 
     if boundaryCheck && !isOnGraphemeClusterBoundary(idx) {
       return nil
