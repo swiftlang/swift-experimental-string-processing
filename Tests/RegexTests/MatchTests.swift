@@ -30,6 +30,68 @@ func _firstMatch(
 ) throws -> (String, [String?])? {
   var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
   let result = try regex.firstMatch(in: input)
+  
+  func validateSubstring(_ substringInput: Substring) throws {
+    // Sometimes the characters we add to a substring merge with existing
+    // string members. This messes up cross-validation, so skip the test.
+    guard input == substringInput else { return }
+    
+    let substringResult = try regex.firstMatch(in: substringInput)
+    switch (result, substringResult) {
+    case (nil, nil):
+      break
+    case let (result?, substringResult?):
+      if substringResult.range.upperBound > substringInput.endIndex {
+        throw MatchError("Range exceeded substring upper bound for \(input) and \(regexStr)")
+      }
+      let stringMatch = input[result.range]
+      let substringMatch = substringInput[substringResult.range]
+      if stringMatch != substringMatch {
+        throw MatchError("""
+        Pattern: '\(regexStr)'
+        String match returned: '\(stringMatch)'
+        Substring match returned: '\(substringMatch)'
+        """)
+      }
+    case (.some(let result), nil):
+      throw MatchError("""
+        Pattern: '\(regexStr)'
+        Input: '\(input)'
+        Substring '\(substringInput)' ('\(substringInput.base)')
+        String match returned: '\(input[result.range])'
+        Substring match returned: nil
+        """)
+    case (nil, .some(let substringResult)):
+      throw MatchError("""
+        Pattern: '\(regexStr)'
+        Input: '\(input)'
+        Substring '\(substringInput)' ('\(substringInput.base)')
+        String match returned: nil
+        Substring match returned: '\(substringInput[substringResult.range])'
+        """)
+    }
+  }
+  
+  if !input.isEmpty {
+    try validateSubstring("\(input)\(input.last!)".dropLast())
+  }
+  try validateSubstring("\(input)\n".dropLast())
+  try validateSubstring("A\(input)Z".dropFirst().dropLast())
+  do {
+    // Test sub-character slicing
+    let str = input + "\n"
+    let prevIndex = str.unicodeScalars.index(str.endIndex, offsetBy: -1)
+    try validateSubstring(str[..<prevIndex])
+  }
+  do {
+    // Validate that we don't crash when sub-scalar slicing is used
+    // Actual matching behavior is untested here
+    let str = "\u{e9}\(input)e\u{e9}"
+    let upper = str.utf8.index(before: str.endIndex)
+    _ = try regex.firstMatch(in: str[..<upper])
+    let lower = str.utf8.index(after: str.startIndex)
+    _ = try regex.firstMatch(in: str[lower...])
+  }
 
   if validateOptimizations {
     assert(regex._forceAction(.addOptions(.disableOptimizations)))
@@ -52,6 +114,7 @@ func _firstMatch(
       }
     }
   }
+  
   guard let result = result else { return nil }
   let caps = result.output.slices(from: input)
   return (String(input[result.range]), caps.map { $0.map(String.init) })
