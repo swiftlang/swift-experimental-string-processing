@@ -28,25 +28,15 @@ extension Processor {
     // save point stack
     var stackEnd: CallStackAddress
 
-    // FIXME: Save minimal info (e.g. stack position and
-    // perhaps current start)
-    var captureEnds: [_StoredCapture]
-
-    // The int registers store values that can be relevant to
-    // backtracking, such as the number of trips in a quantification.
-    var intRegisters: [Int]
-    // Same with position registers
-    var posRegisters: [Input.Index]
+    var savedStateIndex: Array.Index
 
     var destructure: (
       pc: InstructionAddress,
       pos: Position?,
       stackEnd: CallStackAddress,
-      captureEnds: [_StoredCapture],
-      intRegisters: [Int],
-      PositionRegister: [Input.Index]
+      savedStateIndex: Array.Index
     ) {
-      return (pc, pos, stackEnd, captureEnds, intRegisters, posRegisters)
+      return (pc, pos, stackEnd, savedStateIndex)
     }
 
     var rangeIsEmpty: Bool { rangeEnd == nil }
@@ -82,36 +72,44 @@ extension Processor {
     }
   }
 
-  func makeSavePoint(
+  mutating func makeSavePoint(
     _ pc: InstructionAddress,
     addressOnly: Bool = false
   ) -> SavePoint {
-    SavePoint(
+    // TODO: Only push back if there's been a change in state
+    savedState.append(.init(
+      captureEnds: storedCaptures,
+      intRegisters: registers.ints,
+      posRegisters: registers.positions))
+
+    return SavePoint(
       pc: pc,
       pos: addressOnly ? nil : currentPosition,
       rangeStart: nil,
       rangeEnd: nil,
       isScalarSemantics: false, // FIXME: refactor away
       stackEnd: .init(callStack.count),
-      captureEnds: storedCaptures,
-      intRegisters: registers.ints,
-      posRegisters: registers.positions)
+      savedStateIndex: savedState.index(before: savedState.endIndex))
   }
   
-  func startQuantifierSavePoint(
+  mutating func startQuantifierSavePoint(
     isScalarSemantics: Bool
   ) -> SavePoint {
+    // TODO: Only push back if there's been a change in state
+    savedState.append(.init(
+      captureEnds: storedCaptures,
+      intRegisters: registers.ints,
+      posRegisters: registers.positions))
+
     // Restores to the instruction AFTER the current quantifier instruction
-    SavePoint(
+    return SavePoint(
       pc: controller.pc + 1,
       pos: nil,
       rangeStart: nil,
       rangeEnd: nil,
       isScalarSemantics: isScalarSemantics,
       stackEnd: .init(callStack.count),
-      captureEnds: storedCaptures,
-      intRegisters: registers.ints,
-      posRegisters: registers.positions)
+      savedStateIndex: savedState.index(before: savedState.endIndex))
   }
 }
 

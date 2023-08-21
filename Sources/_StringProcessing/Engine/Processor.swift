@@ -77,6 +77,8 @@ struct Processor {
 
   var callStack: [InstructionAddress] = []
 
+  var savedState: [SavedState] = []
+
   var storedCaptures: Array<_StoredCapture>
 
   var wordIndexCache: Set<String.Index>? = nil
@@ -135,6 +137,7 @@ extension Processor {
     self.registers.reset(sentinel: searchBounds.upperBound)
 
     self.savePoints.removeAll(keepingCapacity: true)
+    self.savedState.removeAll(keepingCapacity: true)
     self.callStack.removeAll(keepingCapacity: true)
 
     for idx in storedCaptures.indices {
@@ -320,18 +323,23 @@ extension Processor {
     return true
   }
 
+  // TODO: better name / design, come up with something applicable for both
+  //       signalFailure and clearThrough
+  mutating func rectifySaveState(_ idx: Array.Index) {
+    assert(idx == savedState.index(before: savedState.endIndex))
+    _ = savedState.removeLast()
+  }
+
   mutating func signalFailure() {
     guard !savePoints.isEmpty else {
       state = .fail
       return
     }
-    let (pc, pos, stackEnd, capEnds, intRegisters, posRegisters): (
+    let (pc, pos, stackEnd, savedStateIndex): (
       pc: InstructionAddress,
       pos: Position?,
       stackEnd: CallStackAddress,
-      captureEnds: [_StoredCapture],
-      intRegisters: [Int],
-      PositionRegister: [Input.Index]
+      savedStateIndex: Array.Index
     )
 
     let idx = savePoints.index(before: savePoints.endIndex)
@@ -339,22 +347,30 @@ extension Processor {
     if !savePoints[idx].rangeIsEmpty {
       savePoints[idx].takePositionFromRange(input)
     }
+
+    // TODO: clean up the quantifier save point logic some
+    let shouldRemoveSavePoint = savePoints[idx].rangeIsEmpty
+
     // If we have a normal save point or an empty quantifier save point, remove it
-    if savePoints[idx].rangeIsEmpty {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
+    if shouldRemoveSavePoint {
+      (pc, pos, stackEnd, savedStateIndex) = savePoints.removeLast().destructure
     } else {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
+      (pc, pos, stackEnd, savedStateIndex) = savePoints[idx].destructure
     }
 
     assert(stackEnd.rawValue <= callStack.count)
-    assert(capEnds.count == storedCaptures.count)
+    assert(savedState[savedStateIndex].captureEnds.count == storedCaptures.count)
 
     controller.pc = pc
     currentPosition = pos ?? currentPosition
     callStack.removeLast(callStack.count - stackEnd.rawValue)
-    storedCaptures = capEnds
-    registers.ints = intRegisters
-    registers.positions = posRegisters
+    storedCaptures = savedState[savedStateIndex].captureEnds
+    registers.ints = savedState[savedStateIndex].intRegisters
+    registers.positions = savedState[savedStateIndex].posRegisters
+
+    if shouldRemoveSavePoint {
+      rectifySaveState(savedStateIndex)
+    }
 
     metrics.addBacktrack()
   }
@@ -382,6 +398,7 @@ extension Processor {
 
   mutating func clearThrough(_ address: InstructionAddress) {
     while let sp = savePoints.popLast() {
+      rectifySaveState(sp.savedStateIndex)
       if sp.pc == address {
         controller.step()
         return
@@ -451,7 +468,8 @@ extension Processor {
       controller.pc = nextPC
 
     case .clear:
-      if let _ = savePoints.popLast() {
+      if let sp = savePoints.popLast() {
+        rectifySaveState(sp.savedStateIndex)
         controller.step()
       } else {
         // TODO: What should we do here?
@@ -632,9 +650,15 @@ extension Processor {
       let (val, cap) = payload.pairedValueCapture
       let value = registers[val]
       let capNum = Int(asserting: cap.rawValue)
-      let sp = makeSavePoint(self.currentPC)
-      storedCaptures[capNum].registerValue(
-        value, overwriteInitial: sp)
+
+      // FIXME: Why is this overwriteInitial in here? It's not used inside
+      // FIXME: registerValue at all
+
+      // let sp = makeSavePoint(self.currentPC)
+      // storedCaptures[capNum].registerValue(
+      //   value, overwriteInitial: sp)
+
+      storedCaptures[capNum].registerValue(value)
       controller.step()
     }
   }
