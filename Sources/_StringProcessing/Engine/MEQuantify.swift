@@ -49,7 +49,6 @@ extension Processor {
   /// - Handles arbitrary minTrips and maxExtraTrips
   mutating func runQuantify(_ payload: QuantifyPayload) -> Bool {
     assert(payload.quantKind != .reluctant)
-    assert(payload.minTrips >= 2, "Should have hit a specialized path")
 
     var trips = 0
     var maxExtraTrips = payload.maxExtraTrips
@@ -93,6 +92,9 @@ extension Processor {
     if payload.quantKind == .eager {
       savePoints.append(makeQuantifiedSavePoint(
         rangeStart..<rangeEnd, isScalarSemantics: payload.isScalarSemantics))
+    } else {
+      // No backtracking permitted after a successful advance
+      assert(payload.quantKind == .possessive)
     }
     return true
   }
