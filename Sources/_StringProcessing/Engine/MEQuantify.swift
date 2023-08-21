@@ -46,109 +46,119 @@ extension Processor {
 
   /// Generic quantify instruction interpreter
   /// - Handles .eager and .posessive
-  /// - Handles arbitrary minTrips and extraTrips
+  /// - Handles arbitrary minTrips and maxExtraTrips
   mutating func runQuantify(_ payload: QuantifyPayload) -> Bool {
-    var trips = 0
-    var extraTrips = payload.extraTrips
-    var savePoint = startQuantifierSavePoint(
-      isScalarSemantics: payload.isScalarSemantics
-    )
+    assert(payload.quantKind != .reluctant)
 
-    while true {
-      if trips >= payload.minTrips {
-        if extraTrips == 0 { break }
-        extraTrips = extraTrips.map({$0 - 1})
-        if payload.quantKind == .eager {
-          savePoint.updateRange(newEnd: currentPosition)
-        }
+    var trips = 0
+    var maxExtraTrips = payload.maxExtraTrips
+
+    while trips < payload.minTrips {
+      guard let next = _doQuantifyMatch(payload) else {
+        signalFailure()
+        return false
       }
-      let next = _doQuantifyMatch(payload)
-      guard let idx = next else {
-        if !savePoint.rangeIsEmpty {
-          // The last save point has saved the current, non-matching position,
-          // so it's unneeded.
-          savePoint.shrinkRange(input)
-        }
-        break
-      }
-      currentPosition = idx
+      currentPosition = next
       trips += 1
     }
 
-    if trips < payload.minTrips {
-      signalFailure()
-      return false
+    if maxExtraTrips == 0 {
+      // We're done
+      return true
     }
 
-    if !savePoint.rangeIsEmpty {
-      savePoints.append(savePoint)
+    guard let next = _doQuantifyMatch(payload) else {
+      return true
     }
-    return true
-  }
+    maxExtraTrips = maxExtraTrips.map { $0 - 1 }
 
-  /// Specialized quantify instruction interpreter for *
-  mutating func runEagerZeroOrMoreQuantify(_ payload: QuantifyPayload) -> Bool {
-    assert(payload.quantKind == .eager
-           && payload.minTrips == 0
-           && payload.extraTrips == nil)
-    var savePoint = startQuantifierSavePoint(
-      isScalarSemantics: payload.isScalarSemantics
-    )
+    // Remember the range of valid positions in case we can create a quantified
+    // save point
+    let rangeStart = currentPosition
+    var rangeEnd = currentPosition
+    currentPosition = next
 
     while true {
-      savePoint.updateRange(newEnd: currentPosition)
-      let next = _doQuantifyMatch(payload)
-      guard let idx = next else { break }
-      currentPosition = idx
+      if maxExtraTrips == 0 { break }
+
+      guard let next = _doQuantifyMatch(payload) else {
+        break
+      }
+      maxExtraTrips = maxExtraTrips.map({$0 - 1})
+      rangeEnd = currentPosition
+      currentPosition = next
     }
 
-    // The last save point has saved the current position, so it's unneeded
-    savePoint.shrinkRange(input)
-    if !savePoint.rangeIsEmpty {
-      savePoints.append(savePoint)
+    if payload.quantKind == .eager {
+      savePoints.append(makeQuantifiedSavePoint(
+        rangeStart..<rangeEnd, isScalarSemantics: payload.isScalarSemantics))
+    } else {
+      // No backtracking permitted after a successful advance
+      assert(payload.quantKind == .possessive)
     }
     return true
   }
 
-  /// Specialized quantify instruction interpreter for +
+  /// Specialized quantify instruction interpreter for `*`, always succeeds
+  mutating func runEagerZeroOrMoreQuantify(_ payload: QuantifyPayload) {
+    assert(payload.quantKind == .eager
+           && payload.minTrips == 0
+           && payload.maxExtraTrips == nil)
+    _doRunEagerZeroOrMoreQuantify(payload)
+  }
+
+  // NOTE: So-as to inline into one-or-more call, which makes a significant
+  // performance difference
+  @inline(__always)
+  mutating func _doRunEagerZeroOrMoreQuantify(_ payload: QuantifyPayload) {
+    guard let next = _doQuantifyMatch(payload) else {
+      // Consumed no input, no point saved
+      return
+    }
+
+    // Create a quantified save point for every part of the input matched up
+    // to the final position.
+    let rangeStart = currentPosition
+    var rangeEnd = currentPosition
+    currentPosition = next
+    while true {
+      guard let next = _doQuantifyMatch(payload) else { break }
+      rangeEnd = currentPosition
+      currentPosition = next
+    }
+
+    savePoints.append(makeQuantifiedSavePoint(rangeStart..<rangeEnd, isScalarSemantics: payload.isScalarSemantics))
+  }
+
+  /// Specialized quantify instruction interpreter for `+`
   mutating func runEagerOneOrMoreQuantify(_ payload: QuantifyPayload) -> Bool {
     assert(payload.quantKind == .eager
            && payload.minTrips == 1
-           && payload.extraTrips == nil)
-    var savePoint = startQuantifierSavePoint(
-      isScalarSemantics: payload.isScalarSemantics
-    )
-    while true {
-      let next = _doQuantifyMatch(payload)
-      guard let idx = next else { break }
-      currentPosition = idx
-      savePoint.updateRange(newEnd: currentPosition)
-    }
+           && payload.maxExtraTrips == nil)
 
-    if savePoint.rangeIsEmpty {
+    // Match at least once
+    guard let next = _doQuantifyMatch(payload) else {
       signalFailure()
       return false
     }
-    // The last save point has saved the current position, so it's unneeded
-    savePoint.shrinkRange(input)
-    if !savePoint.rangeIsEmpty {
-      savePoints.append(savePoint)
-    }
+
+    // Run `a+` as `aa*`
+    currentPosition = next
+    _doRunEagerZeroOrMoreQuantify(payload)
     return true
   }
 
   /// Specialized quantify instruction interpreter for ?
   mutating func runZeroOrOneQuantify(_ payload: QuantifyPayload) -> Bool {
     assert(payload.minTrips == 0
-           && payload.extraTrips == 1)
+           && payload.maxExtraTrips == 1)
     let next = _doQuantifyMatch(payload)
     guard let idx = next else {
       return true // matched zero times
     }
     if payload.quantKind != .possessive {
       // Save the zero match
-      let savePoint = makeSavePoint(currentPC + 1)
-      savePoints.append(savePoint)
+      savePoints.append(makeSavePoint(resumingAt: currentPC+1))
     }
     currentPosition = idx
     return true

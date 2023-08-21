@@ -335,15 +335,14 @@ extension Processor {
     )
 
     let idx = savePoints.index(before: savePoints.endIndex)
-    // If we have a quantifier save point, move the next range position into pos
-    if !savePoints[idx].rangeIsEmpty {
-      savePoints[idx].takePositionFromRange(input)
-    }
-    // If we have a normal save point or an empty quantifier save point, remove it
-    if savePoints[idx].rangeIsEmpty {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
-    } else {
+
+    // If we have a quantifier save point, move the next range position into
+    // pos instead of removing it
+    if savePoints[idx].isQuantified {
+      savePoints[idx].takePositionFromQuantifiedRange(input)
       (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
+    } else {
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
     }
 
     assert(stackEnd.rawValue <= callStack.count)
@@ -434,19 +433,19 @@ extension Processor {
       }
     case .save:
       let resumeAddr = payload.addr
-      let sp = makeSavePoint(resumeAddr)
+      let sp = makeSavePoint(resumingAt: resumeAddr)
       savePoints.append(sp)
       controller.step()
 
     case .saveAddress:
       let resumeAddr = payload.addr
-      let sp = makeSavePoint(resumeAddr, addressOnly: true)
+      let sp = makeAddressOnlySavePoint(resumingAt: resumeAddr)
       savePoints.append(sp)
       controller.step()
 
     case .splitSaving:
       let (nextPC, resumeAddr) = payload.pairedAddrAddr
-      let sp = makeSavePoint(resumeAddr)
+      let sp = makeSavePoint(resumingAt: resumeAddr)
       savePoints.append(sp)
       controller.pc = nextPC
 
@@ -518,12 +517,13 @@ extension Processor {
     case .quantify:
       let quantPayload = payload.quantify
       let matched: Bool
-      switch (quantPayload.quantKind, quantPayload.minTrips, quantPayload.extraTrips) {
+      switch (quantPayload.quantKind, quantPayload.minTrips, quantPayload.maxExtraTrips) {
       case (.reluctant, _, _):
         assertionFailure(".reluctant is not supported by .quantify")
         return
       case (.eager, 0, nil):
-        matched = runEagerZeroOrMoreQuantify(quantPayload)
+        runEagerZeroOrMoreQuantify(quantPayload)
+        matched = true
       case (.eager, 1, nil):
         matched = runEagerOneOrMoreQuantify(quantPayload)
       case (_, 0, 1):
@@ -632,9 +632,7 @@ extension Processor {
       let (val, cap) = payload.pairedValueCapture
       let value = registers[val]
       let capNum = Int(asserting: cap.rawValue)
-      let sp = makeSavePoint(self.currentPC)
-      storedCaptures[capNum].registerValue(
-        value, overwriteInitial: sp)
+      storedCaptures[capNum].registerValue(value)
       controller.step()
     }
   }

@@ -459,16 +459,16 @@ fileprivate extension Compiler.ByteCodeGen {
     assert(high != 0)
     assert((0...(high ?? Int.max)).contains(low))
 
-    let extraTrips: Int?
+    let maxExtraTrips: Int?
     if let h = high {
-      extraTrips = h - low
+      maxExtraTrips = h - low
     } else {
-      extraTrips = nil
+      maxExtraTrips = nil
     }
     let minTrips = low
-    assert((extraTrips ?? 1) >= 0)
+    assert((maxExtraTrips ?? 1) >= 0)
 
-    if tryEmitFastQuant(child, updatedKind, minTrips, extraTrips) {
+    if tryEmitFastQuant(child, updatedKind, minTrips, maxExtraTrips) {
       return
     }
 
@@ -486,19 +486,19 @@ fileprivate extension Compiler.ByteCodeGen {
           decrement %minTrips and fallthrough
 
       loop-body:
-        <if can't guarantee forward progress && extraTrips = nil>:
+        <if can't guarantee forward progress && maxExtraTrips = nil>:
           mov currentPosition %pos
         evaluate the subexpression
-        <if can't guarantee forward progress && extraTrips = nil>:
+        <if can't guarantee forward progress && maxExtraTrips = nil>:
           if %pos is currentPosition:
             goto exit
         goto min-trip-count control block
 
       exit-policy control block:
-        if %extraTrips is zero:
+        if %maxExtraTrips is zero:
           goto exit
         else:
-          decrement %extraTrips and fallthrough
+          decrement %maxExtraTrips and fallthrough
 
         <if eager>:
           save exit and goto loop-body
@@ -525,12 +525,12 @@ fileprivate extension Compiler.ByteCodeGen {
           /* fallthrough */
     """
 
-    // Specialization based on `extraTrips` for 0 or unbounded
+    // Specialization based on `maxExtraTrips` for 0 or unbounded
     _ = """
       exit-policy control block:
-        <if extraTrips == 0>:
+        <if maxExtraTrips == 0>:
           goto exit
-        <if extraTrips == .unbounded>:
+        <if maxExtraTrips == .unbounded>:
           /* fallthrough */
     """
 
@@ -563,12 +563,12 @@ fileprivate extension Compiler.ByteCodeGen {
       minTripsReg = nil
     }
 
-    let extraTripsReg: IntRegister?
-    if (extraTrips ?? 0) > 0 {
-      extraTripsReg = builder.makeIntRegister(
-        initialValue: extraTrips!)
+    let maxExtraTripsReg: IntRegister?
+    if (maxExtraTrips ?? 0) > 0 {
+      maxExtraTripsReg = builder.makeIntRegister(
+        initialValue: maxExtraTrips!)
     } else {
-      extraTripsReg = nil
+      maxExtraTripsReg = nil
     }
 
     // Set up a dummy save point for possessive to update
@@ -600,7 +600,7 @@ fileprivate extension Compiler.ByteCodeGen {
     let startPosition: PositionRegister?
     let emitPositionChecking =
       (!optimizationsEnabled || !child.guaranteesForwardProgress) &&
-      extraTrips == nil
+      maxExtraTrips == nil
 
     if emitPositionChecking {
       startPosition = builder.makePositionRegister()
@@ -610,7 +610,7 @@ fileprivate extension Compiler.ByteCodeGen {
     }
     try emitNode(child)
     if emitPositionChecking {
-      // in all quantifier cases, no matter what minTrips or extraTrips is,
+      // in all quantifier cases, no matter what minTrips or maxExtraTrips is,
       // if we have a successful non-advancing match, branch to exit because it
       // can match an arbitrary number of times
       builder.buildCondBranch(to: exit, ifSamePositionAs: startPosition!)
@@ -623,20 +623,20 @@ fileprivate extension Compiler.ByteCodeGen {
     }
 
     // exit-policy:
-    //   condBranch(to: exit, ifZeroElseDecrement: %extraTrips)
+    //   condBranch(to: exit, ifZeroElseDecrement: %maxExtraTrips)
     //   <eager: split(to: loop, saving: exit)>
     //   <possesive:
     //     clearSavePoint
     //     split(to: loop, saving: exit)>
     //   <reluctant: save(restoringAt: loop)
     builder.label(exitPolicy)
-    switch extraTrips {
+    switch maxExtraTrips {
     case nil: break
     case 0:   builder.buildBranch(to: exit)
     default:
-      assert(extraTripsReg != nil, "logic inconsistency")
+      assert(maxExtraTripsReg != nil, "logic inconsistency")
       builder.buildCondBranch(
-        to: exit, ifZeroElseDecrement: extraTripsReg!)
+        to: exit, ifZeroElseDecrement: maxExtraTripsReg!)
     }
 
     switch updatedKind {
@@ -666,12 +666,12 @@ fileprivate extension Compiler.ByteCodeGen {
     _ child: DSLTree.Node,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?
+    _ maxExtraTrips: Int?
   ) -> Bool {
     let isScalarSemantics = options.semanticLevel == .unicodeScalar
     guard optimizationsEnabled
             && minTrips <= QuantifyPayload.maxStorableTrips
-            && extraTrips ?? 0 <= QuantifyPayload.maxStorableTrips
+            && maxExtraTrips ?? 0 <= QuantifyPayload.maxStorableTrips
             && kind != .reluctant else {
       return false
     }
@@ -681,7 +681,7 @@ fileprivate extension Compiler.ByteCodeGen {
       guard let bitset = ccc.asAsciiBitset(options) else {
         return false
       }
-      builder.buildQuantify(bitset: bitset, kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics)
+      builder.buildQuantify(bitset: bitset, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
 
     case .atom(let atom):
       switch atom {
@@ -690,17 +690,17 @@ fileprivate extension Compiler.ByteCodeGen {
         guard let val = c._singleScalarAsciiValue else {
           return false
         }
-        builder.buildQuantify(asciiChar: val, kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics)
+        builder.buildQuantify(asciiChar: val, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
 
       case .any:
         builder.buildQuantifyAny(
-          matchesNewlines: true, kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics)
+          matchesNewlines: true, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
       case .anyNonNewline:
         builder.buildQuantifyAny(
-          matchesNewlines: false, kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics)
+          matchesNewlines: false, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
       case .dot:
         builder.buildQuantifyAny(
-          matchesNewlines: options.dotMatchesNewline, kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics)
+          matchesNewlines: options.dotMatchesNewline, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
 
       case .characterClass(let cc):
         // Custom character class that consumes a single grapheme
@@ -709,19 +709,19 @@ fileprivate extension Compiler.ByteCodeGen {
           model: model,
           kind,
           minTrips,
-          extraTrips,
+          maxExtraTrips,
           isScalarSemantics: isScalarSemantics)
       default:
         return false
       }
     case .convertedRegexLiteral(let node, _):
-      return tryEmitFastQuant(node, kind, minTrips, extraTrips)
+      return tryEmitFastQuant(node, kind, minTrips, maxExtraTrips)
     case .nonCapturingGroup(let groupKind, let node):
       // .nonCapture nonCapturingGroups are ignored during compilation
       guard groupKind.ast == .nonCapture else {
         return false
       }
-      return tryEmitFastQuant(node, kind, minTrips, extraTrips)
+      return tryEmitFastQuant(node, kind, minTrips, maxExtraTrips)
     default:
       return false
     }
