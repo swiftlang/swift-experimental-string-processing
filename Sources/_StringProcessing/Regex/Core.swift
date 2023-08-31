@@ -126,6 +126,13 @@ extension Regex {
   /// A program representation that caches any lowered representation for
   /// execution.
   internal final class Program {
+
+    // This stored property should be stored at offset zero.  We perform atomic
+    // operations on it.
+    //
+    /// Do not access this property directly - all accesses must go through `_loweredProgramStoragePtr `.
+    fileprivate var _loweredProgramStorage: AnyObject? = nil
+
     /// The underlying IR.
     ///
     /// FIXME: If Regex is the unit of composition, then it should be a Node instead,
@@ -141,14 +148,16 @@ extension Regex {
       init(_ value: MEProgram) { self.value = value }
     }
 
-    /// Do not use directly - all accesses must go through `loweredProgram`.
-    fileprivate var _loweredProgramStorage: AnyObject? = nil
-    
+    fileprivate var _loweredProgramStoragePtr: UnsafeMutablePointer<AnyObject?> {
+      _getUnsafePointerToStoredProperties(self)
+        .assumingMemoryBound(to: Optional<AnyObject>.self)
+    }
+
     /// The program for execution with the matching engine.
     var loweredProgram: MEProgram {
       /// Atomically loads the compiled program if it has already been stored.
       func loadProgram() -> MEProgram? {
-        guard let loweredObject = _stdlib_atomicLoadARCRef(object: &_loweredProgramStorage)
+        guard let loweredObject = _stdlib_atomicLoadARCRef(object: _loweredProgramStoragePtr)
           else { return nil }
         return unsafeDowncast(loweredObject, to: ProgramBox.self).value
       }
@@ -161,7 +170,7 @@ extension Regex {
       // Compile the DSLTree into a lowered program and store it atomically.
       let compiledProgram = try! Compiler(tree: tree, compileOptions: compileOptions).emit()
       let storedNewProgram = _stdlib_atomicInitializeARCRef(
-        object: &_loweredProgramStorage,
+        object: _loweredProgramStoragePtr,
         desired: ProgramBox(compiledProgram))
       
       // Return the winner of the storage race. We're guaranteed at this point
