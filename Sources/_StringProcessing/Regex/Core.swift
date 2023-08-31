@@ -130,7 +130,7 @@ extension Regex {
     // This stored property should be stored at offset zero.  We perform atomic
     // operations on it.
     //
-    /// Do not access this property directly - all accesses must go through `loweredProgram`.
+    /// Do not access this property directly - all accesses must go through `_loweredProgramStoragePtr `.
     fileprivate var _loweredProgramStorage: AnyObject? = nil
 
     /// The underlying IR.
