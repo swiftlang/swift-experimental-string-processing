@@ -29,8 +29,10 @@ extension Unicode.Script {
   
   static func extensions(for scalar: Unicode.Scalar) -> [Unicode.Script] {
     var count: UInt8 = 0
-    let pointer = _swift_string_processing_getScriptExtensions(scalar.value, &count)
-    
+    let pointer = withUnsafeMutablePointer(to: &count) {
+      _swift_string_processing_getScriptExtensions(scalar.value, $0)
+    }
+
     guard let pointer = pointer else {
       return [Unicode.Script(scalar)]
     }
