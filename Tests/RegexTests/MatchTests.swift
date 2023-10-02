@@ -2261,6 +2261,15 @@ extension RegexTests {
         with: "",
         subrange: trimmed.startIndex..<trimmed.endIndex),
       "abc456")
+    
+    do {
+      // Matching must respect subscript boundaries
+      let x = "prefix\nselection\nsuffix"
+      let y = x.dropFirst(7).dropLast(7)
+      XCTAssertEqual(y, "selection")
+      let z = y.replacing(#/\R/#, with: "a")
+      XCTAssertEqual(z, y)
+    }
   }
   
   func testMatchingOptionsScope() {
