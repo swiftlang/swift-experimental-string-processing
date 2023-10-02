@@ -43,7 +43,8 @@ struct Executor {
       }
       if low >= high { return nil }
       if graphemeSemantic {
-        input.formIndex(after: &low)
+        low = input.index(
+          low, offsetBy: 1, limitedBy: searchBounds.upperBound) ?? searchBounds.upperBound
       } else {
         input.unicodeScalars.formIndex(after: &low)
       }

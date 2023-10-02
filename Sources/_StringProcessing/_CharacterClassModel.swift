@@ -68,12 +68,13 @@ struct _CharacterClassModel: Hashable {
   /// - Returns: The index of the end of the match, or `nil` if there is no match.
   func matches(
     in input: String,
-    at currentPosition: String.Index
+    at currentPosition: String.Index,
+    limitedBy end: String.Index
   ) -> String.Index? {
     // FIXME: This is only called in custom character classes that contain builtin
     // character classes as members (ie: [a\w] or set operations), is there
     // any way to avoid that? Can we remove this somehow?
-    guard currentPosition != input.endIndex else {
+    guard currentPosition < end else {
       return nil
     }
 
@@ -82,6 +83,7 @@ struct _CharacterClassModel: Hashable {
     return input.matchBuiltinCC(
       cc,
       at: currentPosition,
+      limitedBy: end,
       isInverted: isInverted,
       isStrictASCII: isStrictASCII,
       isScalarSemantics: isScalarSemantics)
