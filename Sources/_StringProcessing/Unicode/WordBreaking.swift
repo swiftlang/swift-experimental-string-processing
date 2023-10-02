@@ -37,7 +37,9 @@ extension Processor {
     if currentPosition == subjectBounds.lowerBound {
       return matchesWord(at: currentPosition)
     }
-    let priorIdx = input.index(before: currentPosition)
+    let priorIdx = semanticLevel == .graphemeCluster
+      ? input.index(before: currentPosition)
+      : input.unicodeScalars.index(before: currentPosition)
     if currentPosition == subjectBounds.upperBound {
       return matchesWord(at: priorIdx)
     }
@@ -51,14 +53,16 @@ extension Processor {
 extension String {
   func isOnWordBoundary(
     at i: String.Index,
+    in range: Range<String.Index>,
     using cache: inout Set<String.Index>?,
     _ maxIndex: inout String.Index?
   ) -> Bool {
     // TODO: needs benchmark coverage
-    guard i != startIndex, i != endIndex else {
+    guard i != range.lowerBound, i != range.upperBound else {
       return true
     }
-    
+    assert(range.contains(i))
+
     // If our index is already in our cache, then this is obviously on a
     // boundary.
     if let cache = cache, cache.contains(i) {
@@ -76,9 +80,9 @@ extension String {
     
     if #available(SwiftStdlib 5.7, *) {
       var indices: Set<String.Index> = []
-      var j = maxIndex ?? startIndex
+      var j = maxIndex ?? range.lowerBound
       
-      while j < endIndex, j <= i {
+      while j < range.upperBound, j <= i {
         indices.insert(j)
         j = _wordIndex(after: j)
       }

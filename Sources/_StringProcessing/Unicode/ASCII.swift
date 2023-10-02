@@ -85,11 +85,14 @@ extension String {
   /// and we can give the right `next` index, not requiring the caller to re-adjust it
   /// TODO: detailed description of nuanced semantics
   func _quickASCIICharacter(
-    at idx: Index
+    at idx: Index,
+    limitedBy end: Index
   ) -> (first: UInt8, next: Index, crLF: Bool)? {
     // TODO: fastUTF8 version
-
-    if idx == endIndex {
+    assert(String.Index(idx, within: unicodeScalars) != nil)
+    assert(idx <= end)
+    
+    if idx == end {
       return nil
     }
     let base = utf8[idx]
@@ -99,8 +102,7 @@ extension String {
     }
 
     var next = utf8.index(after: idx)
-    if next == utf8.endIndex {
-      assert(self[idx].isASCII)
+    if next == end {
       return (first: base, next: next, crLF: false)
     }
 
@@ -110,10 +112,9 @@ extension String {
     // Handle CR-LF:
     if base == ._carriageReturn && tail == ._lineFeed {
       utf8.formIndex(after: &next)
-      guard next == endIndex || utf8[next]._isSub300StartingByte else {
+      guard next == end || utf8[next]._isSub300StartingByte else {
         return nil
       }
-      assert(self[idx] == "\r\n")
       return (first: base, next: next, crLF: true)
     }
 
@@ -124,11 +125,12 @@ extension String {
   func _quickMatch(
     _ cc: _CharacterClassModel.Representation,
     at idx: Index,
+    limitedBy end: Index,
     isScalarSemantics: Bool
   ) -> (next: Index, matchResult: Bool)? {
     /// ASCII fast-paths
     guard let (asciiValue, next, isCRLF) = _quickASCIICharacter(
-      at: idx
+      at: idx, limitedBy: end
     ) else {
       return nil
     }
