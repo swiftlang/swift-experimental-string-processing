@@ -310,6 +310,7 @@ extension Processor {
   ) -> Bool {
     guard let next = input.matchAnyNonNewline(
       at: currentPosition,
+      limitedBy: end,
       isScalarSemantics: isScalarSemantics
     ) else {
       signalFailure()
@@ -536,9 +537,10 @@ extension Processor {
 
     case .consumeBy:
       let reg = payload.consumer
+      let consumer = registers[reg]
       guard currentPosition < searchBounds.upperBound,
-            let nextIndex = registers[reg](
-              input, currentPosition..<searchBounds.upperBound)
+            let nextIndex = consumer(input, currentPosition..<searchBounds.upperBound),
+            nextIndex <= end
       else {
         signalFailure()
         return
@@ -565,7 +567,7 @@ extension Processor {
       do {
         guard let (nextIdx, val) = try matcher(
           input, currentPosition, searchBounds
-        ) else {
+        ), nextIdx <= end else {
           signalFailure()
           return
         }
@@ -652,20 +654,16 @@ extension String {
   ) -> Index? {
     // TODO: This can be greatly sped up with string internals
     // TODO: This is also very much quick-check-able
-    assert(end <= endIndex)
-
-    guard pos < end else { return nil }
+    guard let (stringChar, next) = characterAndEnd(at: pos, limitedBy: end)
+    else { return nil }
 
     if isCaseInsensitive {
-      guard self[pos].lowercased() == char.lowercased() else { return nil }
+      guard stringChar.lowercased() == char.lowercased() else { return nil }
     } else {
-      guard self[pos] == char else { return nil }
+      guard stringChar == char else { return nil }
     }
 
-    let idx = index(after: pos)
-    guard idx <= end else { return nil }
-
-    return idx
+    return next
   }
 
   func matchSeq(
@@ -676,8 +674,6 @@ extension String {
   ) -> Index? {
     // TODO: This can be greatly sped up with string internals
     // TODO: This is also very much quick-check-able
-    assert(end <= endIndex)
-
     var cur = pos
 
     if isScalarSemantics {
@@ -687,8 +683,10 @@ extension String {
       }
     } else {
       for e in seq {
-        guard cur < end, self[cur] == e else { return nil }
-        self.formIndex(after: &cur)
+        guard let (char, next) = characterAndEnd(at: cur, limitedBy: end),
+              char == e
+        else { return nil }
+        cur = next
       }
     }
 
@@ -705,8 +703,6 @@ extension String {
   ) -> Index? {
     // TODO: extremely quick-check-able
     // TODO: can be sped up with string internals
-    assert(end <= endIndex)
-
     guard pos < end else { return nil }
     let curScalar = unicodeScalars[pos]
 
@@ -720,7 +716,7 @@ extension String {
     }
 
     let idx = unicodeScalars.index(after: pos)
-    guard idx <= end else { return nil }
+    assert(idx <= end, "Input is a substring with a sub-scalar endIndex.")
 
     if boundaryCheck && !isOnGraphemeClusterBoundary(idx) {
       return nil
@@ -737,22 +733,14 @@ extension String {
   ) -> Index? {
     // TODO: extremely quick-check-able
     // TODO: can be sped up with string internals
-    assert(end <= endIndex)
-
-    guard pos < end else { return nil }
-
-    let idx: String.Index
     if isScalarSemantics {
+      guard pos < end else { return nil }
       guard bitset.matches(unicodeScalars[pos]) else { return nil }
-      idx = unicodeScalars.index(after: pos)
+      return unicodeScalars.index(after: pos)
     } else {
-      guard bitset.matches(self[pos]) else { return nil }
-      idx = index(after: pos)
+      guard let (char, next) = characterAndEnd(at: pos, limitedBy: end),
+            bitset.matches(char) else { return nil }
+      return next
     }
-
-    guard idx <= end else { return nil }
-    return idx
   }
-
-
 }
