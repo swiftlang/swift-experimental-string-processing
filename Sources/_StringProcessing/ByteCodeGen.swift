@@ -67,7 +67,7 @@ fileprivate extension Compiler.ByteCodeGen {
       emitAnyNonNewline()
 
     case .dot:
-      emitDot()
+      try emitDot()
 
     case let .char(c):
       emitCharacter(c)
@@ -238,9 +238,15 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
-  mutating func emitDot() {
+  mutating func emitDot() throws {
     if options.dotMatchesNewline {
-      emitAny()
+      if options.usesNSRECompatibleDot {
+        try emitAlternation([
+          .atom(.characterClass(.newlineSequence)),
+          .atom(.anyNonNewline)])
+      } else {
+        emitAny()
+      }
     } else {
       emitAnyNonNewline()
     }
@@ -964,7 +970,7 @@ fileprivate extension Compiler.ByteCodeGen {
     case let .customCharacterClass(ccc):
       if ccc.containsDot {
         if !ccc.isInverted {
-          emitDot()
+          try emitDot()
         } else {
           throw Unsupported("Inverted any")
         }
