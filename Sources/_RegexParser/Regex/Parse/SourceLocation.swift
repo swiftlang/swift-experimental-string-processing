@@ -63,15 +63,15 @@ public protocol LocatedErrorProtocol: Error {
 
 extension Source {
   /// An error that includes information about the location in source code.
-  public struct LocatedError<E: Error>: Error, LocatedErrorProtocol {
-    public let error: E
+  public struct LocatedError: Error, LocatedErrorProtocol {
+    public let error: Error
     public let location: SourceLocation
 
-    init(_ e: E, _ r: SourceLocation) {
+    init(_ e: Error, _ r: SourceLocation) {
       self.error = e
       self.location = r
     }
-    public init(_ v: E, _ r: Range<Source.Position>) {
+    public init(_ v: Error, _ r: Range<Source.Position>) {
       self.error = v
       self.location = Location(r)
     }
@@ -133,6 +133,6 @@ extension Error {
     if self is LocatedErrorProtocol {
       return self
     }
-    return Source.LocatedError<Self>(self, loc)
+    return Source.LocatedError(self, loc)
   }
 }

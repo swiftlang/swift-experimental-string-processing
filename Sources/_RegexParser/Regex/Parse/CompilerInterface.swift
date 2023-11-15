@@ -107,8 +107,16 @@ public func swiftCompilerParseRegexLiteral(
     // however that it will need plumbing through on the compiler side.
     return (regexToEmit: input, version: currentRegexLiteralFormatVersion)
   } catch {
+    let message: String
+    if
+      let located = error as? Source.LocatedError,
+      let errorDiag = located.error as? Diagnostics.ErrorDiagnostic {
+      message = errorDiag.description
+    } else {
+      message = String(describing: error)
+    }
     throw CompilerParseError(
-      message: "cannot parse regular expression: \(String(describing: error))",
+      message: "cannot parse regular expression: \(message)",
       location: (error as? LocatedErrorProtocol)?.location.start
     )
   }

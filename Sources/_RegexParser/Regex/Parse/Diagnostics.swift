@@ -337,13 +337,14 @@ public struct Diagnostics: Hashable {
     diags.contains(where: { $0.behavior == .fatalError })
   }
 
+  struct ErrorDiagnostic: Error, CustomStringConvertible {
+    var diag: Diagnostic
+    var description: String { diag.message }
+  }
+
   /// If any error diagnostic has been added, throw it as an Error.
   func throwAnyError() throws {
     for diag in diags where diag.isAnyError {
-      struct ErrorDiagnostic: Error, CustomStringConvertible {
-        var diag: Diagnostic
-        var description: String { diag.message }
-      }
       throw Source.LocatedError(ErrorDiagnostic(diag: diag), diag.location)
     }
   }
