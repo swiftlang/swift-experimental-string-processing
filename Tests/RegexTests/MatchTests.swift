@@ -11,7 +11,7 @@
 
 import XCTest
 @testable import _RegexParser
-@testable @_spi(RegexBenchmark) import _StringProcessing
+@testable @_spi(RegexBenchmark) @_spi(Foundation) import _StringProcessing
 import TestSupport
 
 struct MatchError: Error {
@@ -2715,6 +2715,42 @@ extension RegexTests {
       let possessiveRegex = try Regex("a{0,\(max)}+a")
       let str = String(repeating: "a", count: max + 1)
       XCTAssertNotNil(str.wholeMatch(of: possessiveRegex))
+    }
+  }
+  
+  func testNSRECompatibility() throws {
+    // NSRE-compatibility includes scalar matching, so `[\r\n]` should match
+    // either `\r` or `\n`.
+    let text = #"""
+      y=sin(x)+sin(2x)+sin(3x);\#rText "This is a function of x.";\r
+      """#
+    let lineTerminationRegex = try Regex(#";[\r\n]"#)
+      ._nsreCompatibility
+    
+    let afterLine = try XCTUnwrap(text.firstRange(of: "Text"))
+    let match = try lineTerminationRegex.firstMatch(in: text)
+    XCTAssert(match?.range.upperBound == afterLine.lowerBound)
+    
+    // NSRE-compatibility treats "dot" as special, in that it can match a
+    // newline sequence as well as a single Unicode scalar.
+    let aDotBRegex = try Regex(#"a.b"#)
+      ._nsreCompatibility
+      .dotMatchesNewlines()
+    for input in ["a\rb", "a\nb", "a\r\nb"] {
+      XCTAssertNotNil(try aDotBRegex.wholeMatch(in: input))
+    }
+    
+    // NSRE-compatibility doesn't give special treatment to newline sequences
+    // when matching other "match everything" regex patterns, like `[[^z]z]`,
+    // so this pattern doesn't match "a\r\nb".
+    let aCCBRegex = try Regex(#"a[[^z]z]b"#)
+      ._nsreCompatibility
+    for input in ["a\rb", "a\nb", "a\r\nb"] {
+      if input.unicodeScalars.count == 3 {
+        XCTAssertNotNil(try aCCBRegex.wholeMatch(in: input))
+      } else {
+        XCTAssertNil(try aCCBRegex.wholeMatch(in: input))
+      }
     }
   }
 }

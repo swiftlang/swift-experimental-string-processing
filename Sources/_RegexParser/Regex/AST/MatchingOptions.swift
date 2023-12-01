@@ -44,6 +44,9 @@ extension AST {
       
       // Swift-only default possessive quantifier
       case possessiveByDefault      // t.b.d.
+      
+      // NSRegularExpression compatibility special-case
+      case nsreCompatibleDot        // no AST representation
     }
     
     public var kind: Kind

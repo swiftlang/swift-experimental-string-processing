@@ -159,6 +159,18 @@ extension Regex {
       return wrapInOption(.unicodeScalarSemantics, addingIf: true)
     }
   }
+  
+  /// Returns a regular expression that uses an NSRegularExpression
+  /// compatibility mode.
+  ///
+  /// This mode includes using Unicode scalar semantics and treating a `dot`
+  /// as matching newline sequences (when in the unrelated dot-matches-newlines
+  /// mode).
+  @_spi(Foundation)
+  public var _nsreCompatibility: Regex<RegexOutput> {
+    wrapInOption(.nsreCompatibleDot, addingIf: true)
+      .wrapInOption(.unicodeScalarSemantics, addingIf: true)
+  }
 }
 
 /// A semantic level to use during regex matching.
