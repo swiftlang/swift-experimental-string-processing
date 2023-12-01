@@ -118,6 +118,22 @@ func parseTest(
     return
   }
   serializedCaptures.deallocate()
+  
+  if !unsupported && expectedErrors.isEmpty,
+     let pattern = Regex<AnyRegexOutput>(ast: ast)._literalPattern
+  {
+    let reparsedAST = parseWithRecovery(pattern, syntax)
+    let roundtripPattern = Regex<AnyRegexOutput>(ast: ast)._literalPattern!
+    XCTAssert(
+      pattern == roundtripPattern,
+      """
+
+        Input:     \(input)
+        Pattern:   \(pattern)
+        Roundtrip: \(roundtripPattern)
+        """,
+      file: file, line: line)
+  }
 }
 
 /// Test delimiter lexing. Takes an input string that starts with a regex
