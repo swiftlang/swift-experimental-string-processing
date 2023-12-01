@@ -544,6 +544,9 @@ extension AST.MatchingOption.Kind {
       
     // Swift-only default possessive quantifier
     case .possessiveByDefault: return nil
+      
+    // NSRE Compatibility option; no literal representation
+    case .nsreCompatibleDot: return nil
     }
   }
 }
