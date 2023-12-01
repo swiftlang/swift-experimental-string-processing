@@ -17,10 +17,20 @@ extension Regex {
   ///
   /// This is non-`nil` when used on a regex that can be represented as a
   /// string. The literal pattern may be different from the literal or string
-  /// that was used to create the regex. If this regex includes components
-  /// that cannot be represented in a regex literal, such as a capture transform
-  /// or a custom parser that conforms to the `CustomConsumingRegexComponent`
-  /// protocol, this property is `nil`.
+  /// that was used to create the regex, though parsing the `_literalPattern`
+  /// always generates the same internal representation as the original regex.
+  ///
+  ///     // The literal pattern for some regexes is identical to the original:
+  ///     let regex1 = /(\d+):(\d+)/
+  ///     // regex1._literalPattern == #"(\d+):(\d+)"#
+  ///
+  ///     // The literal pattern for others is different, but equivalent:
+  ///     let regex2 = /\p{isName=BEE}/
+  ///     // regex2._literalPattern == #"\N{BEE}"#
+  ///
+  /// If this regex includes components that cannot be represented in a regex
+  /// literal, such as a capture transform or a custom parser that conforms to
+  /// the `CustomConsumingRegexComponent` protocol, this property is `nil`.
   ///
   /// The value of this property may change between different releases of Swift.
   public var _literalPattern: String? {
