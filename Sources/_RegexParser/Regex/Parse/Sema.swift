@@ -142,7 +142,8 @@ extension RegexValidator {
 
     case .caseInsensitive, .possessiveByDefault, .reluctantByDefault,
         .singleLine, .multiline, .namedCapturesOnly, .extended, .extraExtended,
-        .asciiOnlyDigit, .asciiOnlyWord, .asciiOnlySpace, .asciiOnlyPOSIXProps:
+        .asciiOnlyDigit, .asciiOnlyWord, .asciiOnlySpace, .asciiOnlyPOSIXProps,
+        .nsreCompatibleDot:
       break
     }
   }
