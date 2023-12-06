@@ -120,6 +120,10 @@ extension MatchingOptions {
       ? .graphemeCluster
       : .unicodeScalar
   }
+  
+  var usesNSRECompatibleDot: Bool {
+    stack.last!.contains(.nsreCompatibleDot)
+  }
 }
 
 // MARK: - Implementation
@@ -141,6 +145,7 @@ extension MatchingOptions {
     // Not available via regex literal flags
     case transparentBounds
     case withoutAnchoringBounds
+    case nsreCompatibleDot
 
     // Oniguruma options
     case asciiOnlyDigit
@@ -197,6 +202,8 @@ extension MatchingOptions {
         self = .byteSemantics
       case .possessiveByDefault:
         self = .possessiveByDefault
+      case .nsreCompatibleDot:
+        self = .nsreCompatibleDot
         
       // Whitespace options are only relevant during parsing, not compilation.
       case .extended, .extraExtended:
