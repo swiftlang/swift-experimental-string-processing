@@ -737,11 +737,10 @@ extension String {
     // meanings in some code paths.
     let isInverted = bitset.isInverted
 
-    // TODO: More fodder for refactoring `_quickASCIICharacter`, see the comment 
-    // there
-    guard let (asciiByte, next, isCRLF) = _quickASCIICharacter(
+    guard let (asciiByte, isCRLF: isCRLF, next) = _quickASCIICharacter(
       at: pos,
-      limitedBy: end
+      limitedBy: end,
+      isScalarSemantics: isScalarSemantics
     ) else {
       if isScalarSemantics {
         guard pos < end else { return nil }
@@ -760,13 +759,7 @@ extension String {
     }
 
     // CR-LF should only match `[\r]` in scalar semantic mode or if inverted
-    if isCRLF {
-      if isScalarSemantics {
-        return self.unicodeScalars.index(before: next)
-      }
-      if isInverted {
-        return next
-      }
+    if isCRLF && !isScalarSemantics && !isInverted {
       return nil
     }
 
