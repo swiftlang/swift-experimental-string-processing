@@ -76,10 +76,7 @@ extension Processor {
       currentCaptureBegin = nil
     }
 
-    mutating func registerValue(
-      _ value: Any,
-      overwriteInitial: SavePoint? = nil
-    ) {
+    mutating func registerValue(_ value: Any) {
       _invariantCheck()
       defer { _invariantCheck() }
 
