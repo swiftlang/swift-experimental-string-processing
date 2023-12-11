@@ -226,6 +226,11 @@ extension Processor {
            && payload.maxExtraTrips == nil)
 
     // Match at least once
+    //
+    // NOTE: Due to newline-sequence in scalar-semantic mode advancing two
+    // positions, we can't just have doRunEagerZeroOrMoreQuantify return the
+    // range-end and advance the range-start ourselves. Instead, we do one
+    // call before looping.
     guard let next = doQuantifyMatch(payload) else {
       signalFailure()
       return false
