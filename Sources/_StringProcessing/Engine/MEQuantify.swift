@@ -1,27 +1,6 @@
 private typealias ASCIIBitset = DSLTree.CustomCharacterClass.AsciiBitset
 
 extension Processor {
-  func _doASCIIBitsetMatch(
-    _: AsciiBitsetRegister
-  ) -> Input.Index? {
-    fatalError()
-  }
-}
-
-
-extension String {
-  func index(after idx: Index, isScalarSemantics: Bool) -> Index {
-    if isScalarSemantics {
-      return unicodeScalars.index(after: idx)
-    } else {
-      return index(after: idx)
-    }
-  }
-}
-
-
-extension Processor {
-
   internal mutating func runQuantify(_ payload: QuantifyPayload) -> Bool {
     let matched: Bool
     switch (payload.quantKind, payload.minTrips, payload.maxExtraTrips) {
@@ -61,8 +40,6 @@ extension Processor {
         boundaryCheck: !isScalarSemantics,
         isCaseInsensitive: false)
     case .builtin:
-      guard currentPosition < end else { return nil }
-
       // We only emit .quantify if it consumes a single character
       return input.matchBuiltinCC(
         payload.builtin,
@@ -72,16 +49,10 @@ extension Processor {
         isStrictASCII: payload.builtinIsStrict,
         isScalarSemantics: isScalarSemantics)
     case .any:
-      guard currentPosition < end else { return nil }
-
-      if payload.anyMatchesNewline {
-        return input.index(
-          after: currentPosition, isScalarSemantics: isScalarSemantics)
-      }
-
-      return input.matchAnyNonNewline(
+      return input.matchRegexDot(
         at: currentPosition,
         limitedBy: end,
+        anyMatchesNewline: payload.anyMatchesNewline,
         isScalarSemantics: isScalarSemantics)
     }
   }
@@ -217,20 +188,16 @@ extension Processor {
         assert(currentPosition > rangeEnd)
       }
     case .any:
+      let anyMatchesNewline = payload.anyMatchesNewline
       while true {
-        guard currentPosition < end else { break }
-        let next: String.Index?
-        if payload.anyMatchesNewline {
-          next = input.index(
-            after: currentPosition, isScalarSemantics: isScalarSemantics)
-        } else {
-          next = input.matchAnyNonNewline(
-            at: currentPosition,
-            limitedBy: end,
-            isScalarSemantics: isScalarSemantics)
+        guard let next = input.matchRegexDot(
+          at: currentPosition,
+          limitedBy: end,
+          anyMatchesNewline: anyMatchesNewline,
+          isScalarSemantics: isScalarSemantics)
+        else {
+          break
         }
-
-        guard let next else { break }
         matchedOnce = true
         rangeEnd = currentPosition
         currentPosition = next
