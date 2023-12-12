@@ -34,7 +34,7 @@ extension Processor {
       currentPosition = next
       return true
     case (_, 1, nil):
-      guard let (next, savePointRange) = input.runEagerOneOrMoreQuantify(
+      guard let (next, savePointRange) = input.runOneOrMoreQuantify(
         payload,
         asciiBitset: asciiBitset,
         at: currentPosition,
@@ -67,14 +67,14 @@ extension Processor {
       return true
     case (_, 0, 1):
       // FIXME: Is this correct for lazy zero-or-one?
-      let (next, save) = input.runZeroOrOneQuantify(
+      let (next, savePointRange) = input.runZeroOrOneQuantify(
         payload,
         asciiBitset: asciiBitset,
         at: currentPosition,
         limitedBy: end)
-      // Also, we should assert same answer as runGeneralQuantify...
-      if save {
-        savePoints.append(makeSavePoint(resumingAt: currentPC+1))
+      if let savePointRange {
+        savePoints.append(makeQuantifiedSavePoint(
+          savePointRange, isScalarSemantics: payload.isScalarSemantics))
       }
       currentPosition = next
       return true
@@ -163,7 +163,7 @@ extension String {
       maxTrips = UInt64.max
     }
 
-    return _runEagerNOrMoreQuantify(
+    return _runNOrMoreQuantify(
       payload,
       minTrips: minTrips,
       maxTrips: maxTrips,
@@ -180,7 +180,7 @@ extension String {
     limitedBy end: Index
   ) -> (Index, savePointRange: Range<Index>?) {
     assert(payload.minTrips == 0 && payload.maxExtraTrips == nil)
-    guard let res = _runEagerNOrMoreQuantify(
+    guard let res = _runNOrMoreQuantify(
       payload,
       minTrips: 0,
       maxTrips: UInt64.max,
@@ -198,7 +198,7 @@ extension String {
   ///
   /// NOTE: inline always makes a huge perf difference for zero-or-more case
   @inline(__always)
-  fileprivate func _runEagerNOrMoreQuantify(
+  fileprivate func _runNOrMoreQuantify(
     _ payload: QuantifyPayload,
     minTrips: UInt64,
     maxTrips: UInt64,
@@ -207,7 +207,7 @@ extension String {
     limitedBy end: Index
   ) -> (Index, savePointRange: Range<Index>?)? {
     assert(minTrips == payload.minTrips)
-    assert(minTrips + (payload.maxExtraTrips ?? UInt64.max - minTrips) == maxTrips)
+    assert(minTrips + (payload.maxExtraTrips ?? (UInt64.max - minTrips)) == maxTrips)
 
     // Create a quantified save point for every part of the input matched up
     // to the final position.
@@ -328,7 +328,7 @@ extension String {
   ) -> (Index, savePointRange: Range<Index>?)? {
     assert(payload.maxExtraTrips == nil)
 
-    return _runEagerNOrMoreQuantify(
+    return _runNOrMoreQuantify(
       payload,
       minTrips: payload.minTrips,
       maxTrips: UInt64.max,
@@ -338,17 +338,15 @@ extension String {
   }
 
   /// Specialized quantify instruction interpreter for `+`
-  fileprivate func runEagerOneOrMoreQuantify(
+  fileprivate func runOneOrMoreQuantify(
     _ payload: QuantifyPayload,
     asciiBitset: ASCIIBitset?, // Necessary ugliness...
     at currentPosition: Index,
     limitedBy end: Index
   ) -> (Index, savePointRange: Range<Index>?)? {
-    assert(payload.quantKind == .eager
-           && payload.minTrips == 1
-           && payload.maxExtraTrips == nil)
+    assert(payload.minTrips == 1 && payload.maxExtraTrips == nil)
 
-    return _runEagerNOrMoreQuantify(
+    return _runNOrMoreQuantify(
       payload,
       minTrips: 1,
       maxTrips: UInt64.max,
@@ -363,18 +361,21 @@ extension String {
     asciiBitset: ASCIIBitset?, // Necessary ugliness...
     at currentPosition: Index,
     limitedBy end: Index
-  ) -> (Index, makeSavePoint: Bool) {
-    assert(payload.minTrips == 0
-           && payload.maxExtraTrips == 1)
-    guard let next = doQuantifyMatch(
+  ) -> (Index, savePointRange: Range<Index>?) {
+    assert(payload.minTrips == 0 && payload.maxExtraTrips == 1)
+
+    guard let res = _runNOrMoreQuantify(
       payload,
+      minTrips: 0,
+      maxTrips: 1,
       asciiBitset: asciiBitset,
       at: currentPosition,
       limitedBy: end
     ) else {
-      return (currentPosition, false)
+      fatalError("Unreachable: zero-or-more always succeeds")
     }
-    return (next, payload.quantKind != .possessive)
+
+    return res
   }  
 }
 
