@@ -1,8 +1,20 @@
 private typealias ASCIIBitset = DSLTree.CustomCharacterClass.AsciiBitset
 
 extension Processor {
+  private func maybeASCIIBitset(
+    _ payload: QuantifyPayload
+  ) -> ASCIIBitset? {
+    guard payload.type == .asciiBitset else { return nil }
+    return registers[payload.bitset]
+  }
+
   internal mutating func runQuantify(_ payload: QuantifyPayload) -> Bool {
-    let matched: Bool
+    let asciiBitset = maybeASCIIBitset(payload)
+
+    // TODO: Refactor below called functions to be non-mutating.
+    // They might need to communicate save-point info upwards in addition to
+    // a new (optional) currentPosition. Then, we can assert in testing that the
+    // specialized functions produce the same answer as `runGeneralQuantify`.
     switch (payload.quantKind, payload.minTrips, payload.maxExtraTrips) {
     case (.reluctant, _, _):
       assertionFailure(".reluctant is not supported by .quantify")
@@ -10,30 +22,111 @@ extension Processor {
       //       instead?
       return false 
     case (.eager, 0, nil):
-      runEagerZeroOrMoreQuantify(payload)
+      let (next, savePointRange) = input.runEagerZeroOrMoreQuantify(
+        payload,
+        asciiBitset: asciiBitset,
+        at: currentPosition,
+        limitedBy: end)
+      assert((next, savePointRange) == input.runGeneralQuantify(
+        payload,
+        asciiBitset: asciiBitset,
+        at: currentPosition,
+        limitedBy: end)!)
+      if let savePointRange {
+        savePoints.append(makeQuantifiedSavePoint(
+          savePointRange, isScalarSemantics: payload.isScalarSemantics))
+      }
+      currentPosition = next
       return true
     case (.eager, 1, nil):
-      return runEagerOneOrMoreQuantify(payload)
+      guard let (next, savePointRange) = input.runEagerOneOrMoreQuantify(
+        payload,
+        asciiBitset: asciiBitset,
+        at: currentPosition,
+        limitedBy: end
+      ) else {
+        assert(nil == input.runGeneralQuantify(
+          payload,
+          asciiBitset: asciiBitset,
+          at: currentPosition,
+          limitedBy: end))
+        signalFailure()
+        return false
+      }
+      assert((next, savePointRange) == input.runGeneralQuantify(
+        payload,
+        asciiBitset: asciiBitset,
+        at: currentPosition,
+        limitedBy: end)!)
+      if let savePointRange {
+        savePoints.append(makeQuantifiedSavePoint(
+          savePointRange, isScalarSemantics: payload.isScalarSemantics))
+      }
+      currentPosition = next
+      return true
     case (_, 0, 1):
-      runZeroOrOneQuantify(payload)
+      // FIXME: Is this correct for lazy zero-or-one?
+      let (next, save) = input.runZeroOrOneQuantify(
+        payload,
+        asciiBitset: asciiBitset,
+        at: currentPosition,
+        limitedBy: end)
+      // Also, we should assert same answer as runGeneralQuantify...
+      if save {
+        savePoints.append(makeSavePoint(resumingAt: currentPC+1))
+      }
+      currentPosition = next
       return true
     default:
-      return runGeneralQuantify(payload)
+      guard let (next, savePointRange) = input.runGeneralQuantify(
+        payload,
+        asciiBitset: asciiBitset,
+        at: currentPosition,
+        limitedBy: end
+      ) else {
+        assert(nil == input.runGeneralQuantify(
+          payload,
+          asciiBitset: asciiBitset,
+          at: currentPosition,
+          limitedBy: end))
+        signalFailure()
+        return false
+      }
+      assert((next, savePointRange) == input.runGeneralQuantify(
+        payload,
+        asciiBitset: asciiBitset,
+        at: currentPosition,
+        limitedBy: end)!)
+      if let savePointRange {
+        savePoints.append(makeQuantifiedSavePoint(
+          savePointRange, isScalarSemantics: payload.isScalarSemantics))
+      }
+      currentPosition = next
+
+      return true
     }
   }
+}
 
-  private func doQuantifyMatch(_ payload: QuantifyPayload) -> Input.Index? {
+extension String {
+  fileprivate func doQuantifyMatch(
+    _ payload: QuantifyPayload,
+    asciiBitset: ASCIIBitset?, // Necessary ugliness...
+    at currentPosition: Index,
+    limitedBy end: Index
+  ) -> Index? {
     let isScalarSemantics = payload.isScalarSemantics
 
     switch payload.type {
     case .asciiBitset:
-      return input.matchASCIIBitset(
-        registers[payload.bitset],
+      assert(asciiBitset != nil, "Invariant: needs to be passed in")
+      return matchASCIIBitset(
+        asciiBitset!,
         at: currentPosition,
         limitedBy: end,
         isScalarSemantics: isScalarSemantics)
     case .asciiChar:
-      return input.matchScalar(
+      return matchScalar(
         UnicodeScalar.init(_value: UInt32(payload.asciiChar)),
         at: currentPosition,
         limitedBy: end,
@@ -41,7 +134,7 @@ extension Processor {
         isCaseInsensitive: false)
     case .builtin:
       // We only emit .quantify if it consumes a single character
-      return input.matchBuiltinCC(
+      return matchBuiltinCC(
         payload.builtin,
         at: currentPosition,
         limitedBy: end,
@@ -49,7 +142,7 @@ extension Processor {
         isStrictASCII: payload.builtinIsStrict,
         isScalarSemantics: isScalarSemantics)
     case .any:
-      return input.matchRegexDot(
+      return matchRegexDot(
         at: currentPosition,
         limitedBy: end,
         anyMatchesNewline: payload.anyMatchesNewline,
@@ -60,16 +153,29 @@ extension Processor {
   /// Generic quantify instruction interpreter
   /// - Handles .eager and .posessive
   /// - Handles arbitrary minTrips and maxExtraTrips
-  private mutating func runGeneralQuantify(_ payload: QuantifyPayload) -> Bool {
+  fileprivate func runGeneralQuantify(
+    _ payload: QuantifyPayload,
+    asciiBitset: ASCIIBitset?,
+    at currentPosition: Index,
+    limitedBy end: Index
+  ) -> (
+    nextPosition: Index,
+    savePointRange: Range<Index>?
+  )? {
     assert(payload.quantKind != .reluctant)
 
     var trips = 0
     var maxExtraTrips = payload.maxExtraTrips
+    var currentPosition = currentPosition
 
     while trips < payload.minTrips {
-      guard let next = doQuantifyMatch(payload) else {
-        signalFailure()
-        return false
+      guard let next = doQuantifyMatch(
+        payload,
+        asciiBitset: asciiBitset,
+        at: currentPosition,
+        limitedBy: end
+      ) else {
+        return nil
       }
       currentPosition = next
       trips += 1
@@ -77,11 +183,16 @@ extension Processor {
 
     if maxExtraTrips == 0 {
       // We're done
-      return true
+      return (currentPosition, nil)
     }
 
-    guard let next = doQuantifyMatch(payload) else {
-      return true
+    guard let next = doQuantifyMatch(
+      payload,
+      asciiBitset: asciiBitset,
+      at: currentPosition,
+      limitedBy: end
+    ) else {
+      return (currentPosition, nil)
     }
     maxExtraTrips = maxExtraTrips.map { $0 - 1 }
 
@@ -94,7 +205,12 @@ extension Processor {
     while true {
       if maxExtraTrips == 0 { break }
 
-      guard let next = doQuantifyMatch(payload) else {
+      guard let next = doQuantifyMatch(
+        payload,
+        asciiBitset: asciiBitset,
+        at: currentPosition,
+        limitedBy: end
+      ) else {
         break
       }
       maxExtraTrips = maxExtraTrips.map({$0 - 1})
@@ -103,31 +219,43 @@ extension Processor {
     }
 
     if payload.quantKind == .eager {
-      savePoints.append(makeQuantifiedSavePoint(
-        rangeStart..<rangeEnd, isScalarSemantics: payload.isScalarSemantics))
+      return (currentPosition, rangeStart..<rangeEnd)
     } else {
       // No backtracking permitted after a successful advance
       assert(payload.quantKind == .possessive)
     }
-    return true
+    return (currentPosition, nil)
   }
 
   /// Specialized quantify instruction interpreter for `*`, always succeeds
-  private mutating func runEagerZeroOrMoreQuantify(_ payload: QuantifyPayload) {
+  fileprivate func runEagerZeroOrMoreQuantify(
+    _ payload: QuantifyPayload,
+    asciiBitset: ASCIIBitset?, // Necessary ugliness...
+    at currentPosition: Index,
+    limitedBy end: Index
+  ) -> (Index, savePointRange: Range<Index>?) {
     assert(payload.quantKind == .eager
            && payload.minTrips == 0
            && payload.maxExtraTrips == nil)
-    _ = doRunEagerZeroOrMoreQuantify(payload)
+    return doRunEagerZeroOrMoreQuantify(
+      payload,
+      asciiBitset: asciiBitset,
+      at: currentPosition,
+      limitedBy: end)
   }
 
-  // Returns whether it matched at least once
-  //
   // NOTE: inline-always so-as to inline into one-or-more call, which makes a
   // significant performance difference
   @inline(__always)
-  private mutating func doRunEagerZeroOrMoreQuantify(_ payload: QuantifyPayload) -> Bool {
+  private func doRunEagerZeroOrMoreQuantify(
+    _ payload: QuantifyPayload,
+    asciiBitset: ASCIIBitset?, // Necessary ugliness...
+    at currentPosition: Index,
+    limitedBy end: Index
+  ) -> (Index, savePointRange: Range<Index>?) {
     // Create a quantified save point for every part of the input matched up
     // to the final position.
+    var currentPosition = currentPosition
     let isScalarSemantics = payload.isScalarSemantics
     let rangeStart = currentPosition
     var rangeEnd = currentPosition
@@ -135,10 +263,10 @@ extension Processor {
 
     switch payload.type {
     case .asciiBitset:
-      let bitset = registers[payload.bitset]
       while true {
-        guard let next = input.matchASCIIBitset(
-          bitset,
+        assert(asciiBitset != nil, "Invariant: needs to be passed in")
+        guard let next = matchASCIIBitset(
+          asciiBitset!,
           at: currentPosition,
           limitedBy: end,
           isScalarSemantics: isScalarSemantics)
@@ -153,7 +281,7 @@ extension Processor {
     case .asciiChar:
       let asciiScalar = UnicodeScalar.init(_value: UInt32(payload.asciiChar))
       while true {
-        guard let next = input.matchScalar(
+        guard let next = matchScalar(
           asciiScalar,
           at: currentPosition,
           limitedBy: end,
@@ -172,7 +300,7 @@ extension Processor {
       let isInverted = payload.builtinIsInverted
       let isStrictASCII = payload.builtinIsStrict
       while true {
-        guard let next = input.matchBuiltinCC(
+        guard let next = matchBuiltinCC(
           builtin,
           at: currentPosition,
           limitedBy: end,
@@ -190,7 +318,7 @@ extension Processor {
     case .any:
       let anyMatchesNewline = payload.anyMatchesNewline
       while true {
-        guard let next = input.matchRegexDot(
+        guard let next = matchRegexDot(
           at: currentPosition,
           limitedBy: end,
           anyMatchesNewline: anyMatchesNewline,
@@ -207,20 +335,23 @@ extension Processor {
 
     guard matchedOnce else {
       // Consumed no input, no point saved
-      return false
+      return (currentPosition, nil)
     }
 
     // NOTE: We can't assert that rangeEnd trails currentPosition by one
     // position, because newline-sequence in scalar semantic mode still
     // matches two scalars
 
-    savePoints.append(makeQuantifiedSavePoint(
-      rangeStart..<rangeEnd, isScalarSemantics: payload.isScalarSemantics))
-    return true
+    return (currentPosition, rangeStart..<rangeEnd)
   }
 
   /// Specialized quantify instruction interpreter for `+`
-  private mutating func runEagerOneOrMoreQuantify(_ payload: QuantifyPayload) -> Bool {
+  fileprivate func runEagerOneOrMoreQuantify(
+    _ payload: QuantifyPayload,
+    asciiBitset: ASCIIBitset?, // Necessary ugliness...
+    at currentPosition: Index,
+    limitedBy end: Index
+  ) -> (Index, savePointRange: Range<Index>?)? {
     assert(payload.quantKind == .eager
            && payload.minTrips == 1
            && payload.maxExtraTrips == nil)
@@ -231,30 +362,42 @@ extension Processor {
     // positions, we can't just have doRunEagerZeroOrMoreQuantify return the
     // range-end and advance the range-start ourselves. Instead, we do one
     // call before looping.
-    guard let next = doQuantifyMatch(payload) else {
-      signalFailure()
-      return false
+    guard let next = doQuantifyMatch(
+      payload,
+      asciiBitset: asciiBitset,
+      at: currentPosition,
+      limitedBy: end
+    ) else {
+      return nil
     }
 
     // Run `a+` as `aa*`
-    currentPosition = next
-    doRunEagerZeroOrMoreQuantify(payload)
-    return true
+    return doRunEagerZeroOrMoreQuantify(
+      payload,
+      asciiBitset: asciiBitset,
+      at: next,
+      limitedBy: end)
   }
 
   /// Specialized quantify instruction interpreter for ?
-  private mutating func runZeroOrOneQuantify(_ payload: QuantifyPayload) {
+  fileprivate func runZeroOrOneQuantify(
+    _ payload: QuantifyPayload,
+    asciiBitset: ASCIIBitset?, // Necessary ugliness...
+    at currentPosition: Index,
+    limitedBy end: Index
+  ) -> (Index, makeSavePoint: Bool) {
     assert(payload.minTrips == 0
            && payload.maxExtraTrips == 1)
-    let next = doQuantifyMatch(payload)
-    guard let idx = next else {
-      return // matched zero times
+    guard let next = doQuantifyMatch(
+      payload,
+      asciiBitset: asciiBitset,
+      at: currentPosition,
+      limitedBy: end
+    ) else {
+      return (currentPosition, false)
     }
-    if payload.quantKind != .possessive {
-      // Save the zero match
-      savePoints.append(makeSavePoint(resumingAt: currentPC+1))
-    }
-    currentPosition = idx
-    return
-  }
+    return (next, payload.quantKind != .possessive)
+  }  
 }
+
+

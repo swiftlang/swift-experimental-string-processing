@@ -519,8 +519,6 @@ extension Processor {
         controller.step()
       }
 
-
-
     case .consumeBy:
       let reg = payload.consumer
       let consumer = registers[reg]
