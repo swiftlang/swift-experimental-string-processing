@@ -64,6 +64,32 @@ extension Processor {
       }
       currentPosition = next
       return true
+    case (.eager, _, nil):
+      guard let (next, savePointRange) = input.runEagerNOrMoreQuantify(
+        payload,
+        asciiBitset: asciiBitset,
+        at: currentPosition,
+        limitedBy: end
+      ) else {
+        assert(nil == input.runGeneralQuantify(
+          payload,
+          asciiBitset: asciiBitset,
+          at: currentPosition,
+          limitedBy: end))
+        signalFailure()
+        return false
+      }
+      assert((next, savePointRange) == input.runGeneralQuantify(
+        payload,
+        asciiBitset: asciiBitset,
+        at: currentPosition,
+        limitedBy: end)!)
+      if let savePointRange {
+        savePoints.append(makeQuantifiedSavePoint(
+          savePointRange, isScalarSemantics: payload.isScalarSemantics))
+      }
+      currentPosition = next
+      return true
     case (_, 0, 1):
       // FIXME: Is this correct for lazy zero-or-one?
       let (next, save) = input.runZeroOrOneQuantify(
@@ -84,19 +110,9 @@ extension Processor {
         at: currentPosition,
         limitedBy: end
       ) else {
-        assert(nil == input.runGeneralQuantify(
-          payload,
-          asciiBitset: asciiBitset,
-          at: currentPosition,
-          limitedBy: end))
         signalFailure()
         return false
       }
-      assert((next, savePointRange) == input.runGeneralQuantify(
-        payload,
-        asciiBitset: asciiBitset,
-        at: currentPosition,
-        limitedBy: end)!)
       if let savePointRange {
         savePoints.append(makeQuantifiedSavePoint(
           savePointRange, isScalarSemantics: payload.isScalarSemantics))
@@ -237,29 +253,42 @@ extension String {
     assert(payload.quantKind == .eager
            && payload.minTrips == 0
            && payload.maxExtraTrips == nil)
-    return doRunEagerZeroOrMoreQuantify(
+    guard let res = _runEagerNOrMoreQuantify(
       payload,
+      minTrips: 0,
       asciiBitset: asciiBitset,
       at: currentPosition,
-      limitedBy: end)
+      limitedBy: end
+    ) else {
+      fatalError("Unreachable: zero-or-more always succeeds")
+    }
+
+    return res
   }
 
-  // NOTE: inline-always so-as to inline into one-or-more call, which makes a
-  // significant performance difference
+  /// Specialized n-or-more eager quantification interpreter
+  ///
+  /// NOTE: inline always makes a huge perf difference for zero-or-more case
   @inline(__always)
-  private func doRunEagerZeroOrMoreQuantify(
+  fileprivate func _runEagerNOrMoreQuantify(
     _ payload: QuantifyPayload,
+    minTrips: UInt64,
     asciiBitset: ASCIIBitset?, // Necessary ugliness...
     at currentPosition: Index,
     limitedBy end: Index
-  ) -> (Index, savePointRange: Range<Index>?) {
+  ) -> (Index, savePointRange: Range<Index>?)? {
+    assert(payload.quantKind == .eager)
+    assert(payload.maxExtraTrips == nil)
+    assert(minTrips == payload.minTrips)
+
     // Create a quantified save point for every part of the input matched up
     // to the final position.
     var currentPosition = currentPosition
     let isScalarSemantics = payload.isScalarSemantics
-    let rangeStart = currentPosition
+    var rangeStart = currentPosition
     var rangeEnd = currentPosition
-    var matchedOnce = false
+
+    var numMatches = 0
 
     switch payload.type {
     case .asciiBitset:
@@ -273,7 +302,10 @@ extension String {
         else {
           break
         }
-        matchedOnce = true
+        numMatches += 1
+        if numMatches == minTrips {
+          rangeStart = next
+        }
         rangeEnd = currentPosition
         currentPosition = next
         assert(currentPosition > rangeEnd)
@@ -290,7 +322,10 @@ extension String {
         else {
           break
         }
-        matchedOnce = true
+        numMatches += 1
+        if numMatches == minTrips {
+          rangeStart = next
+        }
         rangeEnd = currentPosition
         currentPosition = next
         assert(currentPosition > rangeEnd)
@@ -310,7 +345,10 @@ extension String {
         else {
           break
         }
-        matchedOnce = true
+        numMatches += 1
+        if numMatches == minTrips {
+          rangeStart = next
+        }
         rangeEnd = currentPosition
         currentPosition = next
         assert(currentPosition > rangeEnd)
@@ -326,23 +364,49 @@ extension String {
         else {
           break
         }
-        matchedOnce = true
+        numMatches += 1
+        if numMatches == minTrips {
+          rangeStart = next
+        }
         rangeEnd = currentPosition
         currentPosition = next
         assert(currentPosition > rangeEnd)
       }
     }
 
-    guard matchedOnce else {
+    guard numMatches >= minTrips else {
+      return nil
+    }
+
+    guard numMatches > minTrips else {
       // Consumed no input, no point saved
       return (currentPosition, nil)
     }
+    assert(rangeStart <= rangeEnd)
 
     // NOTE: We can't assert that rangeEnd trails currentPosition by one
     // position, because newline-sequence in scalar semantic mode still
     // matches two scalars
 
     return (currentPosition, rangeStart..<rangeEnd)
+  }
+
+  /// Specialized quantify instruction interpreter for `+`
+  fileprivate func runEagerNOrMoreQuantify(
+    _ payload: QuantifyPayload,
+    asciiBitset: ASCIIBitset?, // Necessary ugliness...
+    at currentPosition: Index,
+    limitedBy end: Index
+  ) -> (Index, savePointRange: Range<Index>?)? {
+    assert(payload.quantKind == .eager
+           && payload.maxExtraTrips == nil)
+
+    return _runEagerNOrMoreQuantify(
+      payload,
+      minTrips: payload.minTrips,
+      asciiBitset: asciiBitset,
+      at: currentPosition,
+      limitedBy: end)
   }
 
   /// Specialized quantify instruction interpreter for `+`
@@ -356,26 +420,11 @@ extension String {
            && payload.minTrips == 1
            && payload.maxExtraTrips == nil)
 
-    // Match at least once
-    //
-    // NOTE: Due to newline-sequence in scalar-semantic mode advancing two
-    // positions, we can't just have doRunEagerZeroOrMoreQuantify return the
-    // range-end and advance the range-start ourselves. Instead, we do one
-    // call before looping.
-    guard let next = doQuantifyMatch(
+    return _runEagerNOrMoreQuantify(
       payload,
+      minTrips: 1,
       asciiBitset: asciiBitset,
       at: currentPosition,
-      limitedBy: end
-    ) else {
-      return nil
-    }
-
-    // Run `a+` as `aa*`
-    return doRunEagerZeroOrMoreQuantify(
-      payload,
-      asciiBitset: asciiBitset,
-      at: next,
       limitedBy: end)
   }
 
