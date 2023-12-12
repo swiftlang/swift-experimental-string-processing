@@ -21,69 +21,44 @@ extension Processor {
       // TODO: this was pre-refactoring behavior, should we fatal error
       //       instead?
       return false 
-    case (.eager, 0, nil):
-      let (next, savePointRange) = input.runEagerZeroOrMoreQuantify(
+    case (_, 0, nil):
+      let (next, savePointRange) = input.runZeroOrMoreQuantify(
         payload,
         asciiBitset: asciiBitset,
         at: currentPosition,
         limitedBy: end)
-      assert((next, savePointRange) == input.runGeneralQuantify(
-        payload,
-        asciiBitset: asciiBitset,
-        at: currentPosition,
-        limitedBy: end)!)
       if let savePointRange {
         savePoints.append(makeQuantifiedSavePoint(
           savePointRange, isScalarSemantics: payload.isScalarSemantics))
       }
       currentPosition = next
       return true
-    case (.eager, 1, nil):
+    case (_, 1, nil):
       guard let (next, savePointRange) = input.runEagerOneOrMoreQuantify(
         payload,
         asciiBitset: asciiBitset,
         at: currentPosition,
         limitedBy: end
       ) else {
-        assert(nil == input.runGeneralQuantify(
-          payload,
-          asciiBitset: asciiBitset,
-          at: currentPosition,
-          limitedBy: end))
         signalFailure()
         return false
       }
-      assert((next, savePointRange) == input.runGeneralQuantify(
-        payload,
-        asciiBitset: asciiBitset,
-        at: currentPosition,
-        limitedBy: end)!)
       if let savePointRange {
         savePoints.append(makeQuantifiedSavePoint(
           savePointRange, isScalarSemantics: payload.isScalarSemantics))
       }
       currentPosition = next
       return true
-    case (.eager, _, nil):
-      guard let (next, savePointRange) = input.runEagerNOrMoreQuantify(
+    case (_, _, nil):
+      guard let (next, savePointRange) = input.runNOrMoreQuantify(
         payload,
         asciiBitset: asciiBitset,
         at: currentPosition,
         limitedBy: end
       ) else {
-        assert(nil == input.runGeneralQuantify(
-          payload,
-          asciiBitset: asciiBitset,
-          at: currentPosition,
-          limitedBy: end))
         signalFailure()
         return false
       }
-      assert((next, savePointRange) == input.runGeneralQuantify(
-        payload,
-        asciiBitset: asciiBitset,
-        at: currentPosition,
-        limitedBy: end)!)
       if let savePointRange {
         savePoints.append(makeQuantifiedSavePoint(
           savePointRange, isScalarSemantics: payload.isScalarSemantics))
@@ -180,82 +155,35 @@ extension String {
   )? {
     assert(payload.quantKind != .reluctant)
 
-    var trips = 0
-    var maxExtraTrips = payload.maxExtraTrips
-    var currentPosition = currentPosition
-
-    while trips < payload.minTrips {
-      guard let next = doQuantifyMatch(
-        payload,
-        asciiBitset: asciiBitset,
-        at: currentPosition,
-        limitedBy: end
-      ) else {
-        return nil
-      }
-      currentPosition = next
-      trips += 1
+    let minTrips = payload.minTrips
+    let maxTrips: UInt64
+    if let maxExtraTrips = payload.maxExtraTrips {
+      maxTrips = payload.minTrips + maxExtraTrips
+    } else {
+      maxTrips = UInt64.max
     }
 
-    if maxExtraTrips == 0 {
-      // We're done
-      return (currentPosition, nil)
-    }
-
-    guard let next = doQuantifyMatch(
+    return _runEagerNOrMoreQuantify(
       payload,
+      minTrips: minTrips,
+      maxTrips: maxTrips,
       asciiBitset: asciiBitset,
       at: currentPosition,
-      limitedBy: end
-    ) else {
-      return (currentPosition, nil)
-    }
-    maxExtraTrips = maxExtraTrips.map { $0 - 1 }
-
-    // Remember the range of valid positions in case we can create a quantified
-    // save point
-    let rangeStart = currentPosition
-    var rangeEnd = currentPosition
-    currentPosition = next
-
-    while true {
-      if maxExtraTrips == 0 { break }
-
-      guard let next = doQuantifyMatch(
-        payload,
-        asciiBitset: asciiBitset,
-        at: currentPosition,
-        limitedBy: end
-      ) else {
-        break
-      }
-      maxExtraTrips = maxExtraTrips.map({$0 - 1})
-      rangeEnd = currentPosition
-      currentPosition = next
-    }
-
-    if payload.quantKind == .eager {
-      return (currentPosition, rangeStart..<rangeEnd)
-    } else {
-      // No backtracking permitted after a successful advance
-      assert(payload.quantKind == .possessive)
-    }
-    return (currentPosition, nil)
+      limitedBy: end)
   }
 
   /// Specialized quantify instruction interpreter for `*`, always succeeds
-  fileprivate func runEagerZeroOrMoreQuantify(
+  fileprivate func runZeroOrMoreQuantify(
     _ payload: QuantifyPayload,
     asciiBitset: ASCIIBitset?, // Necessary ugliness...
     at currentPosition: Index,
     limitedBy end: Index
   ) -> (Index, savePointRange: Range<Index>?) {
-    assert(payload.quantKind == .eager
-           && payload.minTrips == 0
-           && payload.maxExtraTrips == nil)
+    assert(payload.minTrips == 0 && payload.maxExtraTrips == nil)
     guard let res = _runEagerNOrMoreQuantify(
       payload,
       minTrips: 0,
+      maxTrips: UInt64.max,
       asciiBitset: asciiBitset,
       at: currentPosition,
       limitedBy: end
@@ -273,13 +201,13 @@ extension String {
   fileprivate func _runEagerNOrMoreQuantify(
     _ payload: QuantifyPayload,
     minTrips: UInt64,
+    maxTrips: UInt64,
     asciiBitset: ASCIIBitset?, // Necessary ugliness...
     at currentPosition: Index,
     limitedBy end: Index
   ) -> (Index, savePointRange: Range<Index>?)? {
-    assert(payload.quantKind == .eager)
-    assert(payload.maxExtraTrips == nil)
     assert(minTrips == payload.minTrips)
+    assert(minTrips + (payload.maxExtraTrips ?? UInt64.max - minTrips) == maxTrips)
 
     // Create a quantified save point for every part of the input matched up
     // to the final position.
@@ -292,7 +220,7 @@ extension String {
 
     switch payload.type {
     case .asciiBitset:
-      while true {
+      while numMatches < maxTrips {
         assert(asciiBitset != nil, "Invariant: needs to be passed in")
         guard let next = matchASCIIBitset(
           asciiBitset!,
@@ -312,7 +240,7 @@ extension String {
       }
     case .asciiChar:
       let asciiScalar = UnicodeScalar.init(_value: UInt32(payload.asciiChar))
-      while true {
+      while numMatches < maxTrips {
         guard let next = matchScalar(
           asciiScalar,
           at: currentPosition,
@@ -334,7 +262,7 @@ extension String {
       let builtin = payload.builtin
       let isInverted = payload.builtinIsInverted
       let isStrictASCII = payload.builtinIsStrict
-      while true {
+      while numMatches < maxTrips {
         guard let next = matchBuiltinCC(
           builtin,
           at: currentPosition,
@@ -355,7 +283,7 @@ extension String {
       }
     case .any:
       let anyMatchesNewline = payload.anyMatchesNewline
-      while true {
+      while numMatches < maxTrips {
         guard let next = matchRegexDot(
           at: currentPosition,
           limitedBy: end,
@@ -378,7 +306,7 @@ extension String {
       return nil
     }
 
-    guard numMatches > minTrips else {
+    guard payload.quantKind == .eager && numMatches > minTrips else {
       // Consumed no input, no point saved
       return (currentPosition, nil)
     }
@@ -392,18 +320,18 @@ extension String {
   }
 
   /// Specialized quantify instruction interpreter for `+`
-  fileprivate func runEagerNOrMoreQuantify(
+  fileprivate func runNOrMoreQuantify(
     _ payload: QuantifyPayload,
     asciiBitset: ASCIIBitset?, // Necessary ugliness...
     at currentPosition: Index,
     limitedBy end: Index
   ) -> (Index, savePointRange: Range<Index>?)? {
-    assert(payload.quantKind == .eager
-           && payload.maxExtraTrips == nil)
+    assert(payload.maxExtraTrips == nil)
 
     return _runEagerNOrMoreQuantify(
       payload,
       minTrips: payload.minTrips,
+      maxTrips: UInt64.max,
       asciiBitset: asciiBitset,
       at: currentPosition,
       limitedBy: end)
@@ -423,6 +351,7 @@ extension String {
     return _runEagerNOrMoreQuantify(
       payload,
       minTrips: 1,
+      maxTrips: UInt64.max,
       asciiBitset: asciiBitset,
       at: currentPosition,
       limitedBy: end)
