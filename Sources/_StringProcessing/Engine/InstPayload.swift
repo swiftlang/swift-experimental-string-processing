@@ -408,6 +408,14 @@ struct QuantifyPayload: RawRepresentable {
   var typeMask: UInt64       { 7 }
   var payloadMask: UInt64    { 0xFF_FF }
 
+  // Calculate the maximum number of trips, else UInt64.max if unbounded
+  var maxTrips: UInt64 {
+    guard let maxExtraTrips else {
+      return UInt64.max
+    }
+    return minTrips + maxExtraTrips
+  }
+
   static func packInfoValues(
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,

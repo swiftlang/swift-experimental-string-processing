@@ -2,15 +2,27 @@
 private typealias ASCIIBitset = DSLTree.CustomCharacterClass.AsciiBitset
 
 extension Processor {
-  private func maybeASCIIBitset(
-    _ payload: QuantifyPayload
-  ) -> ASCIIBitset? {
-    guard payload.type == .asciiBitset else { return nil }
-    return registers[payload.bitset]
-  }
-
   internal mutating func runQuantify(_ payload: QuantifyPayload) -> Bool {
-    let asciiBitset = maybeASCIIBitset(payload)
+    if payload.type == .asciiBitset {
+      guard let (next, savePointRange) = input.matchQuantifiedASCIIBitset(
+        registers[payload.bitset],
+        at: currentPosition,
+        limitedBy: end,
+        minMatches: payload.minTrips,
+        maxMatches: payload.maxTrips,
+        quantificationKind: payload.quantKind,
+        isScalarSemantics: payload.isScalarSemantics
+      ) else {
+        signalFailure()
+        return false
+      }
+      if let savePointRange {
+        savePoints.append(makeQuantifiedSavePoint(
+          savePointRange, isScalarSemantics: payload.isScalarSemantics))
+      }
+      currentPosition = next
+      return true
+    }
 
     // TODO: Refactor below called functions to be non-mutating.
     // They might need to communicate save-point info upwards in addition to
@@ -25,7 +37,7 @@ extension Processor {
     case (_, 0, nil):
       let (next, savePointRange) = input.runZeroOrMoreQuantify(
         payload,
-        asciiBitset: asciiBitset,
+        asciiBitset: nil,
         at: currentPosition,
         limitedBy: end)
       if let savePointRange {
@@ -37,7 +49,7 @@ extension Processor {
     case (_, 1, nil):
       guard let (next, savePointRange) = input.runOneOrMoreQuantify(
         payload,
-        asciiBitset: asciiBitset,
+        asciiBitset: nil,
         at: currentPosition,
         limitedBy: end
       ) else {
@@ -53,7 +65,7 @@ extension Processor {
     case (_, _, nil):
       guard let (next, savePointRange) = input.runNOrMoreQuantify(
         payload,
-        asciiBitset: asciiBitset,
+        asciiBitset: nil,
         at: currentPosition,
         limitedBy: end
       ) else {
@@ -70,7 +82,7 @@ extension Processor {
       // FIXME: Is this correct for lazy zero-or-one?
       let (next, savePointRange) = input.runZeroOrOneQuantify(
         payload,
-        asciiBitset: asciiBitset,
+        asciiBitset: nil,
         at: currentPosition,
         limitedBy: end)
       if let savePointRange {
@@ -82,7 +94,7 @@ extension Processor {
     default:
       guard let (next, savePointRange) = input.runGeneralQuantify(
         payload,
-        asciiBitset: asciiBitset,
+        asciiBitset: nil,
         at: currentPosition,
         limitedBy: end
       ) else {
@@ -232,24 +244,7 @@ extension String {
 
     switch payload.type {
     case .asciiBitset:
-      while numMatches < maxTrips {
-        assert(asciiBitset != nil, "Invariant: needs to be passed in")
-        guard let next = matchASCIIBitset(
-          asciiBitset!,
-          at: currentPosition,
-          limitedBy: end,
-          isScalarSemantics: isScalarSemantics)
-        else {
-          break
-        }
-        numMatches &+= 1
-        if numMatches == minTrips {
-          rangeStart = next
-        }
-        rangeEnd = currentPosition
-        currentPosition = next
-        assert(currentPosition > rangeEnd)
-      }
+      fatalError("handled above")
     case .asciiChar:
       let asciiScalar = UnicodeScalar.init(_value: UInt32(payload.asciiChar))
       while numMatches < maxTrips {
