@@ -1,3 +1,4 @@
+@_implementationOnly import _RegexParser
 private typealias ASCIIBitset = DSLTree.CustomCharacterClass.AsciiBitset
 
 extension Processor {
@@ -100,45 +101,56 @@ extension Processor {
 }
 
 extension String {
-  fileprivate func doQuantifyMatch(
-    _ payload: QuantifyPayload,
-    asciiBitset: ASCIIBitset?, // Necessary ugliness...
+  fileprivate func matchQuantifiedASCIIBitset(
+    _ asciiBitset: ASCIIBitset,
     at currentPosition: Index,
-    limitedBy end: Index
-  ) -> Index? {
-    let isScalarSemantics = payload.isScalarSemantics
+    limitedBy end: Index,
+    minMatches: UInt64,
+    maxMatches: UInt64,
+    quantificationKind: AST.Quantification.Kind,
+    isScalarSemantics: Bool
+  ) -> (next: Index, savePointRange: Range<Index>?)? {
+    // Create a quantified save point for every part of the input
+    // (after minTrips) matched up to the final position.
+    var currentPosition = currentPosition
+    var rangeStart = currentPosition
+    var rangeEnd = currentPosition
 
-    switch payload.type {
-    case .asciiBitset:
-      assert(asciiBitset != nil, "Invariant: needs to be passed in")
-      return matchASCIIBitset(
-        asciiBitset!,
+    var numMatches = 0
+
+    while numMatches < maxMatches {
+      guard let next = matchASCIIBitset(
+        asciiBitset,
         at: currentPosition,
         limitedBy: end,
         isScalarSemantics: isScalarSemantics)
-    case .asciiChar:
-      return matchScalar(
-        UnicodeScalar.init(_value: UInt32(payload.asciiChar)),
-        at: currentPosition,
-        limitedBy: end,
-        boundaryCheck: !isScalarSemantics,
-        isCaseInsensitive: false)
-    case .builtin:
-      // We only emit .quantify if it consumes a single character
-      return matchBuiltinCC(
-        payload.builtin,
-        at: currentPosition,
-        limitedBy: end,
-        isInverted: payload.builtinIsInverted,
-        isStrictASCII: payload.builtinIsStrict,
-        isScalarSemantics: isScalarSemantics)
-    case .any:
-      return matchRegexDot(
-        at: currentPosition,
-        limitedBy: end,
-        anyMatchesNewline: payload.anyMatchesNewline,
-        isScalarSemantics: isScalarSemantics)
+      else {
+        break
+      }
+      numMatches &+= 1
+      if numMatches == minMatches {
+        rangeStart = next
+      }
+      rangeEnd = currentPosition
+      currentPosition = next
+      assert(currentPosition > rangeEnd)
     }
+
+    guard numMatches >= minMatches else {
+      return nil
+    }
+
+    guard quantificationKind == .eager && numMatches > minMatches else {
+      // Consumed no input, no point saved
+      return (currentPosition, nil)
+    }
+    assert(rangeStart <= rangeEnd)
+
+    // NOTE: We can't assert that rangeEnd trails currentPosition by one
+    // position, because newline-sequence in scalar semantic mode still
+    // matches two scalars
+
+    return (currentPosition, rangeStart..<rangeEnd)
   }
 
   /// Generic quantify instruction interpreter
@@ -209,8 +221,8 @@ extension String {
     assert(minTrips == payload.minTrips)
     assert(minTrips + (payload.maxExtraTrips ?? (UInt64.max - minTrips)) == maxTrips)
 
-    // Create a quantified save point for every part of the input matched up
-    // to the final position.
+    // Create a quantified save point for every part of the input
+    // (after minTrips) matched up to the final position.
     var currentPosition = currentPosition
     let isScalarSemantics = payload.isScalarSemantics
     var rangeStart = currentPosition
@@ -230,7 +242,7 @@ extension String {
         else {
           break
         }
-        numMatches += 1
+        numMatches &+= 1
         if numMatches == minTrips {
           rangeStart = next
         }
@@ -250,7 +262,7 @@ extension String {
         else {
           break
         }
-        numMatches += 1
+        numMatches &+= 1
         if numMatches == minTrips {
           rangeStart = next
         }
@@ -273,7 +285,7 @@ extension String {
         else {
           break
         }
-        numMatches += 1
+        numMatches &+= 1
         if numMatches == minTrips {
           rangeStart = next
         }
@@ -292,7 +304,7 @@ extension String {
         else {
           break
         }
-        numMatches += 1
+        numMatches &+= 1
         if numMatches == minTrips {
           rangeStart = next
         }
