@@ -2091,9 +2091,7 @@ extension Parser {
         // multiple scalars. These may be confusable for metacharacters, e.g
         // `[\u{301}]` wouldn't be interpreted as a custom character class due
         // to the combining accent (assuming it is literal, not `\u{...}`).
-        let scalars = char.unicodeScalars
-        if scalars.count > 1 && scalars.first!.isASCII && char != "\r\n" &&
-            !char.isLetter && !char.isNumber {
+        if char.isConfusable {
           p.error(.confusableCharacter(char), at: charLoc.location)
         }
         break
