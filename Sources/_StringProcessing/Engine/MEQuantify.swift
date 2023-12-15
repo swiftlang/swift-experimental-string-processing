@@ -92,10 +92,10 @@ extension Processor {
           isScalarSemantics: isScalarSemantics)
       }
 
-    case .builtin:
+    case .builtinCC:
       if isZeroOrMore {
         matchResult = input.matchZeroOrMoreBuiltinCC(
-          payload.builtin,
+          payload.builtinCC,
           at: currentPosition,
           limitedBy: end,
           produceSavePointRange: produceSavePointRange,
@@ -104,7 +104,7 @@ extension Processor {
           isScalarSemantics: isScalarSemantics)
       } else if isOneOrMore {
         matchResult = input.matchOneOrMoreBuiltinCC(
-          payload.builtin,
+          payload.builtinCC,
           at: currentPosition,
           limitedBy: end,
           produceSavePointRange: produceSavePointRange,
@@ -113,7 +113,7 @@ extension Processor {
           isScalarSemantics: isScalarSemantics)
       } else {
         matchResult = input.matchQuantifiedBuiltinCC(
-          payload.builtin,
+          payload.builtinCC,
           at: currentPosition,
           limitedBy: end,
           minMatches: minMatches,
@@ -158,6 +158,11 @@ extension String {
     ) -> Index?
   ) -> (next: Index, savePointRange: Range<Index>?)? {
     var currentPosition = currentPosition
+
+    // The range of backtracking positions to try. For zero-or-more, starts
+    // before any match happens. Always ends before the final match, since
+    // the final match is what is tried without backtracking. An empty range
+    // is valid and means a single backtracking position at rangeStart.
     var rangeStart = currentPosition
     var rangeEnd = currentPosition
 
@@ -171,6 +176,12 @@ extension String {
       }
       numMatches &+= 1
       if numMatches == minMatches {
+        // For this loop iteration, rangeEnd will actually trail rangeStart by
+        // a single match position. Next iteration, they will be equal
+        // (empty range denoting a single backtracking point). Note that we
+        // only ever return a range if we have exceeded `minMatches`; if we
+        // exactly mach `minMatches` there is no backtracking positions to
+        // remember.
         rangeStart = next
       }
       rangeEnd = currentPosition
@@ -183,20 +194,22 @@ extension String {
     }
 
     guard produceSavePointRange && numMatches > minMatches else {
-      // Consumed no input, no point saved
+      // No backtracking positions to try
       return (currentPosition, nil)
     }
     assert(rangeStart <= rangeEnd)
 
-    // NOTE: We can't assert that rangeEnd trails currentPosition by one
-    // position, because newline-sequence in scalar semantic mode still
+    // NOTE: We can't assert that rangeEnd trails currentPosition by exactly
+    // one position, because newline-sequence in scalar semantic mode still
     // matches two scalars
 
     return (currentPosition, rangeStart..<rangeEnd)
   }
 
-  /// NOTE: [Zero|One]OrMore overloads are to specialize the inlined run loop,
-  /// which has a substantive perf impact (especially for zero-or-more)
+  // NOTE: [Zero|One]OrMore overloads are to specialize the inlined run loop,
+  // which has a perf impact. At the time of writing this, 10% for
+  // zero-or-more and 5% for one-or-more improvement, which could very well
+  // be much higher if/when the inner match functions are made faster.
 
   fileprivate func matchZeroOrMoreASCIIBitset(
     _ asciiBitset: ASCIIBitset,
