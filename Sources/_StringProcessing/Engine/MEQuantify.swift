@@ -180,7 +180,7 @@ extension String {
         // a single match position. Next iteration, they will be equal
         // (empty range denoting a single backtracking point). Note that we
         // only ever return a range if we have exceeded `minMatches`; if we
-        // exactly mach `minMatches` there is no backtracking positions to
+        // exactly match `minMatches` there is no backtracking positions to
         // remember.
         rangeStart = next
       }
