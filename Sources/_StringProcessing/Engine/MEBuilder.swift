@@ -225,48 +225,48 @@ extension MEProgram.Builder {
     bitset: DSLTree.CustomCharacterClass.AsciiBitset,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?,
+    _ maxExtraTrips: Int?,
     isScalarSemantics: Bool
   ) {
     instructions.append(.init(
       .quantify,
-      .init(quantify: .init(bitset: makeAsciiBitset(bitset), kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics))))
+      .init(quantify: .init(bitset: makeAsciiBitset(bitset), kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
   }
 
   mutating func buildQuantify(
     asciiChar: UInt8,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?,
+    _ maxExtraTrips: Int?,
     isScalarSemantics: Bool
   ) {
     instructions.append(.init(
       .quantify,
-      .init(quantify: .init(asciiChar: asciiChar, kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics))))
+      .init(quantify: .init(asciiChar: asciiChar, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
   }
 
   mutating func buildQuantifyAny(
     matchesNewlines: Bool,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?,
+    _ maxExtraTrips: Int?,
     isScalarSemantics: Bool
   ) {
     instructions.append(.init(
       .quantify,
-      .init(quantify: .init(matchesNewlines: matchesNewlines, kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics))))
+      .init(quantify: .init(matchesNewlines: matchesNewlines, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
   }
 
   mutating func buildQuantify(
     model: _CharacterClassModel,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?,
+    _ maxExtraTrips: Int?,
     isScalarSemantics: Bool
   ) {
     instructions.append(.init(
       .quantify,
-      .init(quantify: .init(model: model,kind, minTrips, extraTrips, isScalarSemantics: isScalarSemantics))))
+      .init(quantify: .init(model: model,kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
   }
 
   mutating func buildAccept() {

@@ -93,7 +93,7 @@ extension Instruction: CustomStringConvertible {
       return "\(opcode) \(imm) -> int[\(reg)]"
     case .quantify:
       let payload = payload.quantify
-      return "\(opcode) \(payload.type) \(payload.minTrips) \(payload.extraTrips?.description ?? "unbounded" )"
+      return "\(opcode) \(payload.type) \(payload.minTrips) \(payload.maxExtraTrips?.description ?? "unbounded" )"
     case .save:
       let resumeAddr = payload.addr
       return "\(opcode) \(resumeAddr)"
@@ -118,11 +118,12 @@ extension Processor.SavePoint {
     if let p = self.pos {
       posStr = "\(input.distance(from: input.startIndex, to: p))"
     } else {
-      if rangeIsEmpty {
+      if !isQuantified {
         posStr = "<none>"
       } else {
-        let startStr = "\(input.distance(from: input.startIndex, to: rangeStart!))"
-        let endStr = "\(input.distance(from: input.startIndex, to: rangeEnd!))"
+        let range = quantifiedRange!
+        let startStr = "\(input.distance(from: input.startIndex, to: range.lowerBound))"
+        let endStr = "\(input.distance(from: input.startIndex, to: range.upperBound))"
         posStr = "\(startStr)...\(endStr)"
       }
     }
