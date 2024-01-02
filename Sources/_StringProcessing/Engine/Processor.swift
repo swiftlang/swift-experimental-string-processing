@@ -291,7 +291,7 @@ extension Processor {
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
     isScalarSemantics: Bool
   ) -> Bool {
-    guard let next = input.matchBitset(
+    guard let next = input.matchASCIIBitset(
       bitset,
       at: currentPosition,
       limitedBy: end,
@@ -335,15 +335,14 @@ extension Processor {
     )
 
     let idx = savePoints.index(before: savePoints.endIndex)
-    // If we have a quantifier save point, move the next range position into pos
-    if !savePoints[idx].rangeIsEmpty {
-      savePoints[idx].takePositionFromRange(input)
-    }
-    // If we have a normal save point or an empty quantifier save point, remove it
-    if savePoints[idx].rangeIsEmpty {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
-    } else {
+
+    // If we have a quantifier save point, move the next range position into
+    // pos instead of removing it
+    if savePoints[idx].isQuantified {
+      savePoints[idx].takePositionFromQuantifiedRange(input)
       (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
+    } else {
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
     }
 
     assert(stackEnd.rawValue <= callStack.count)
@@ -434,19 +433,19 @@ extension Processor {
       }
     case .save:
       let resumeAddr = payload.addr
-      let sp = makeSavePoint(resumeAddr)
+      let sp = makeSavePoint(resumingAt: resumeAddr)
       savePoints.append(sp)
       controller.step()
 
     case .saveAddress:
       let resumeAddr = payload.addr
-      let sp = makeSavePoint(resumeAddr, addressOnly: true)
+      let sp = makeAddressOnlySavePoint(resumingAt: resumeAddr)
       savePoints.append(sp)
       controller.step()
 
     case .splitSaving:
       let (nextPC, resumeAddr) = payload.pairedAddrAddr
-      let sp = makeSavePoint(resumeAddr)
+      let sp = makeSavePoint(resumingAt: resumeAddr)
       savePoints.append(sp)
       controller.pc = nextPC
 
@@ -518,12 +517,13 @@ extension Processor {
     case .quantify:
       let quantPayload = payload.quantify
       let matched: Bool
-      switch (quantPayload.quantKind, quantPayload.minTrips, quantPayload.extraTrips) {
+      switch (quantPayload.quantKind, quantPayload.minTrips, quantPayload.maxExtraTrips) {
       case (.reluctant, _, _):
         assertionFailure(".reluctant is not supported by .quantify")
         return
       case (.eager, 0, nil):
-        matched = runEagerZeroOrMoreQuantify(quantPayload)
+        runEagerZeroOrMoreQuantify(quantPayload)
+        matched = true
       case (.eager, 1, nil):
         matched = runEagerOneOrMoreQuantify(quantPayload)
       case (_, 0, 1):
@@ -632,9 +632,7 @@ extension Processor {
       let (val, cap) = payload.pairedValueCapture
       let value = registers[val]
       let capNum = Int(asserting: cap.rawValue)
-      let sp = makeSavePoint(self.currentPC)
-      storedCaptures[capNum].registerValue(
-        value, overwriteInitial: sp)
+      storedCaptures[capNum].registerValue(value)
       controller.step()
     }
   }
@@ -725,22 +723,53 @@ extension String {
     return idx
   }
 
-  func matchBitset(
+  func matchASCIIBitset(
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
     at pos: Index,
     limitedBy end: Index,
     isScalarSemantics: Bool
   ) -> Index? {
-    // TODO: extremely quick-check-able
-    // TODO: can be sped up with string internals
-    if isScalarSemantics {
-      guard pos < end else { return nil }
-      guard bitset.matches(unicodeScalars[pos]) else { return nil }
-      return unicodeScalars.index(after: pos)
-    } else {
-      guard let (char, next) = characterAndEnd(at: pos, limitedBy: end),
-            bitset.matches(char) else { return nil }
-      return next
+
+    // FIXME: Inversion should be tracked and handled in only one place.
+    // That is, we should probably store it as a bit in the instruction, so that
+    // bitset matching and bitset inversion is bit-based rather that semantically
+    // inverting the notion of a match or not. As-is, we need to track both
+    // meanings in some code paths.
+    let isInverted = bitset.isInverted
+
+    // TODO: More fodder for refactoring `_quickASCIICharacter`, see the comment 
+    // there
+    guard let (asciiByte, next, isCRLF) = _quickASCIICharacter(
+      at: pos,
+      limitedBy: end
+    ) else {
+      if isScalarSemantics {
+        guard pos < end else { return nil }
+        guard bitset.matches(unicodeScalars[pos]) else { return nil }
+        return unicodeScalars.index(after: pos)
+      } else {
+        guard let (char, next) = characterAndEnd(at: pos, limitedBy: end),
+              bitset.matches(char) else { return nil }
+        return next
+      }
     }
+
+    guard bitset.matches(asciiByte) else {
+      // FIXME: check inversion here after refactored out of bitset
+      return nil
+    }
+
+    // CR-LF should only match `[\r]` in scalar semantic mode or if inverted
+    if isCRLF {
+      if isScalarSemantics {
+        return self.unicodeScalars.index(before: next)
+      }
+      if isInverted {
+        return next
+      }
+      return nil
+    }
+
+    return next
   }
 }

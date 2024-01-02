@@ -1848,8 +1848,7 @@ extension RegexDSLTests {
   func testLabeledCaptures_labeledCapture() throws {
     return
     guard #available(macOS 13, *) else {
-      XCTSkip("Fix only exists on macOS 13")
-      return
+      throw XCTSkip("Fix only exists on macOS 13")
     }
     // The output type of a regex with a labeled capture is dropped.
     let dslWithLabeledCapture = Regex {
@@ -1890,8 +1889,7 @@ extension RegexDSLTests {
   func testLabeledCaptures_bothCapture() throws {
     return
     guard #available(macOS 13, *) else {
-      XCTSkip("Fix only exists on macOS 13")
-      return
+      throw XCTSkip("Fix only exists on macOS 13")
     }
     // Only the output type of a regex with a labeled capture is dropped,
     // outputs of other regexes in the same DSL are concatenated.
@@ -1918,8 +1916,7 @@ extension RegexDSLTests {
   func testLabeledCaptures_tooManyCapture() throws {
     return
     guard #available(macOS 13, *) else {
-      XCTSkip("Fix only exists on macOS 13")
-      return
+      throw XCTSkip("Fix only exists on macOS 13")
     }
     // The output type of a regex with too many captures is dropped.
     // "Too many" means the left and right output types would add up to >= 10.
