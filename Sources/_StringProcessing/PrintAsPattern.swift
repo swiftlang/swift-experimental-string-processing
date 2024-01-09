@@ -847,7 +847,7 @@ extension AST.Atom.CharacterProperty {
   // TODO: Some way to integrate this with conversion...
   var _patternBase: String {
     if isUnprintableProperty {
-      return _regexBase
+      return _regexBase ?? " // TODO: Property \(self)"
     }
     
     return _dslBase
@@ -886,25 +886,19 @@ extension AST.Atom.CharacterProperty {
     }
   }
   
-  var _regexBase: String {
+  var _regexBase: String? {
+    let prefix = isInverted ? "\\P" : "\\p"
     switch kind {
     case .ascii:
       return "[:\(isInverted ? "^" : "")ascii:]"
       
-    case .binary(let b, value: _):
-      if isInverted {
-        return "[^\\p{\(b.rawValue)}]"
-      } else {
-        return "\\p{\(b.rawValue)}"
-      }
+    case .binary(let b, value: let value):
+      let suffix = value ? "" : "=false"
+      return "\(prefix){\(b.rawValue)\(suffix)}"
       
     case .generalCategory(let gc):
-      if isInverted {
-        return "[^\\p{\(gc.rawValue)}]"
-      } else {
-        return "\\p{\(gc.rawValue)}"
-      }
-      
+      return "\(prefix){\(gc.rawValue)}"
+
     case .posix(let p):
       return "[:\(isInverted ? "^" : "")\(p.rawValue):]"
       
@@ -914,8 +908,16 @@ extension AST.Atom.CharacterProperty {
     case .scriptExtension(let s):
       return "[:\(isInverted ? "^" : "")scx=\(s.rawValue):]"
       
+    case .any:
+      return "\(prefix){Any}"
+    case .assigned:
+      return "\(prefix){Assigned}"
+
+    case .named(let name):
+      return "\\N{\(name)}"
+
     default:
-      return " // TODO: Property \(self)"
+      return nil
     }
   }
 }
@@ -1066,7 +1068,7 @@ extension AST.Atom {
       return "<#value#>"
 
     case let .property(p):
-      return p._regexBase
+      return p._regexBase ?? " // TODO: Property \(p)"
       
     case let .escaped(e):
       return "\\\(e.character)"

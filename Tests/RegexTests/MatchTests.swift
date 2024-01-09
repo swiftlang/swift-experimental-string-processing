@@ -21,6 +21,21 @@ struct MatchError: Error {
   }
 }
 
+// This just piggy-backs on the existing match testing to validate that
+// literal patterns round trip correctly.
+func _roundTripLiteral(
+  _ regexStr: String,
+  syntax: SyntaxOptions
+) throws -> Regex<AnyRegexOutput>? {
+  guard let pattern = try Regex(regexStr, syntax: syntax)._literalPattern else {
+    return nil
+  }
+  
+  let remadeRegex = try Regex(pattern)
+  XCTAssertEqual(pattern, remadeRegex._literalPattern)
+  return remadeRegex
+}
+
 func _firstMatch(
   _ regexStr: String,
   input: String,
@@ -71,7 +86,35 @@ func _firstMatch(
         """)
     }
   }
-  
+
+  do {
+    let roundTripRegex = try? _roundTripLiteral(regexStr, syntax: syntax)
+    let roundTripResult = try? roundTripRegex?
+      .matchingSemantics(semanticLevel)
+      .firstMatch(in: input)?[0]
+      .substring
+    switch (result?[0].substring, roundTripResult) {
+    case let (match?, rtMatch?):
+      XCTAssertEqual(match, rtMatch)
+    case (nil, nil):
+      break // okay
+    case let (match?, _):
+      XCTFail("""
+        Didn't match in round-tripped version of '\(regexStr)'
+        For input '\(input)'
+        Original: '\(regexStr)'
+        _literalPattern: '\(roundTripRegex?._literalPattern ?? "<no pattern>")'
+        """)
+    case let (_, rtMatch?):
+      XCTFail("""
+        Incorrectly matched as '\(rtMatch)'
+        For input '\(input)'
+        Original: '\(regexStr)'
+        _literalPattern: '\(roundTripRegex!._literalPattern!)'
+        """)
+    }
+  }
+
   if !input.isEmpty {
     try validateSubstring("\(input)\(input.last!)".dropLast())
   }
