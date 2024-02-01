@@ -130,6 +130,7 @@ extension Processor {
       return false
     }
     if let savePointRange {
+      assert(!produceSavePointRange)
       savePoints.append(makeQuantifiedSavePoint(
         savePointRange, isScalarSemantics: payload.isScalarSemantics))
     }
@@ -203,7 +204,10 @@ extension String {
     // one position, because newline-sequence in scalar semantic mode still
     // matches two scalars
 
-    return (currentPosition, rangeStart..<rangeEnd)
+    return (
+      currentPosition,
+      Range(uncheckedBounds: (lower: rangeStart, upper: rangeEnd))
+    )
   }
 
   // NOTE: [Zero|One]OrMore overloads are to specialize the inlined run loop,
