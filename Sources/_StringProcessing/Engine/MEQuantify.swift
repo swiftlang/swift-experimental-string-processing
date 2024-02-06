@@ -130,7 +130,7 @@ extension Processor {
       return false
     }
     if let savePointRange {
-      assert(!produceSavePointRange)
+      assert(produceSavePointRange)
       savePoints.append(makeQuantifiedSavePoint(
         savePointRange, isScalarSemantics: payload.isScalarSemantics))
     }
