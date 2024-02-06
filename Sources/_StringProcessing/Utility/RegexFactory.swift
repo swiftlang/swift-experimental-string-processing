@@ -21,7 +21,7 @@ public struct _RegexFactory {
   @_spi(RegexBuilder)
   public init() {}
 
-  @available(SwiftStdlib 5.8, *)
+  @available(SwiftStdlib 5.9, *)
   public func ignoreCapturesInTypedOutput(
     _ child: some RegexComponent
   ) -> Regex<Substring> {
