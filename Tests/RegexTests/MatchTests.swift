@@ -138,7 +138,7 @@ func _firstMatch(
   }
 
   if validateOptimizations {
-    assert(regex._forceAction(.addOptions(.disableOptimizations)))
+    precondition(regex._forceAction(.addOptions(.disableOptimizations)))
     let unoptResult = try regex.firstMatch(in: input)
     if result != nil && unoptResult == nil {
       throw MatchError("match not found for unoptimized \(regexStr) in \(input)")
