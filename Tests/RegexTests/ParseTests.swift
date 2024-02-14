@@ -119,7 +119,8 @@ func parseTest(
   }
   serializedCaptures.deallocate()
   
-  if !unsupported && expectedErrors.isEmpty,
+  if #available(SwiftStdlib 5.11, *),
+     !unsupported && expectedErrors.isEmpty,
      let pattern = Regex<AnyRegexOutput>(ast: ast)._literalPattern
   {
     let reparsedAST = parseWithRecovery(pattern, syntax)

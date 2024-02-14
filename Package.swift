@@ -97,7 +97,7 @@ let package = Package(
             name: "RegexTests",
             dependencies: ["_StringProcessing", "TestSupport"],
             swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
+                availabilityDefinition
             ]),
         .testTarget(
             name: "RegexBuilderTests",
