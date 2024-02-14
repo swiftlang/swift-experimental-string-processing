@@ -15,7 +15,15 @@ let availabilityDefinition = PackageDescription.SwiftSetting.unsafeFlags([
     "-Xfrontend",
     "-define-availability",
     "-Xfrontend",
-    "SwiftStdlib 5.9:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999",
+    "SwiftStdlib 5.9:macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0",
+    "-Xfrontend",
+    "-define-availability",
+    "-Xfrontend",
+    "SwiftStdlib 5.10:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999",
+    "-Xfrontend",
+    "-define-availability",
+    "-Xfrontend",
+    "SwiftStdlib 5.11:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999",
 ])
 
 /// Swift settings for building a private stdlib-like module that is to be used
@@ -89,7 +97,7 @@ let package = Package(
             name: "RegexTests",
             dependencies: ["_StringProcessing", "TestSupport"],
             swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
+                availabilityDefinition
             ]),
         .testTarget(
             name: "RegexBuilderTests",

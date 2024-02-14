@@ -11,7 +11,7 @@
 
 @_implementationOnly import _RegexParser
 
-@available(SwiftStdlib 5.9, *)
+@available(SwiftStdlib 5.7, *)
 extension Regex {
   /// The literal pattern for this regex.
   ///
@@ -33,6 +33,7 @@ extension Regex {
   /// the `CustomConsumingRegexComponent` protocol, this property is `nil`.
   ///
   /// The value of this property may change between different releases of Swift.
+  @available(SwiftStdlib 5.11, *)
   public var _literalPattern: String? {
     var gen = LiteralPrinter(options: MatchingOptions())
     gen.outputNode(self.program.tree.root)
