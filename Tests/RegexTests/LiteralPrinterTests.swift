@@ -14,6 +14,7 @@ import XCTest
 import _StringProcessing
 import RegexBuilder
 
+@available(SwiftStdlib 5.9, *)
 extension RegexTests {
   func testPrintableRegex() throws {
     let regexString = #"([a-fGH1-9[^\D]]+)?b*cd(e.+)\2\w\S+?"#

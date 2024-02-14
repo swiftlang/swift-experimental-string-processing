@@ -35,6 +35,7 @@ extension AST.CustomCharacterClass.Member: ExpressibleByExtendedGraphemeClusterL
 
 class RegexTests: XCTestCase {}
 
+@available(SwiftStdlib 5.9, *)
 func parseTest(
   _ input: String, _ expectedAST: AST.Node,
   throwsError expectedErrors: ParseError..., unsupported: Bool = false,
@@ -51,6 +52,7 @@ func parseTest(
   )
 }
 
+@available(SwiftStdlib 5.9, *)
 func parseTest(
   _ input: String, _ expectedAST: AST,
   throwsError expectedErrors: [ParseError] = [], unsupported: Bool = false,
@@ -342,6 +344,7 @@ func compilerInterfaceDiagnosticMessageTest(
   }
 }
 
+@available(SwiftStdlib 5.9, *)
 extension RegexTests {
   func testParse() {
     parseTest(

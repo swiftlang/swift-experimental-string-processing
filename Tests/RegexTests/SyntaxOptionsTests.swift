@@ -21,6 +21,7 @@ private let dotAST = concat(
 private let dotASTQuoted = concat(
   dplus, quote("."), dplus, quote("."), dplus, quote("."), dplus)
 
+@available(SwiftStdlib 5.9, *)
 extension RegexTests {
 
   func testSemanticWhitespace() {
