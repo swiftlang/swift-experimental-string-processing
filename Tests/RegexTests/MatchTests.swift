@@ -23,7 +23,7 @@ struct MatchError: Error {
 
 // This just piggy-backs on the existing match testing to validate that
 // literal patterns round trip correctly.
-@available(SwiftStdlib 5.11, *)
+@available(SwiftStdlib 6.0, *)
 func _roundTripLiteral(
   _ regexStr: String,
   syntax: SyntaxOptions
@@ -88,7 +88,7 @@ func _firstMatch(
     }
   }
 
-  if #available(SwiftStdlib 5.11, *) {
+  if #available(SwiftStdlib 6.0, *) {
     let roundTripRegex = try? _roundTripLiteral(regexStr, syntax: syntax)
     let roundTripResult = try? roundTripRegex?
       .matchingSemantics(semanticLevel)

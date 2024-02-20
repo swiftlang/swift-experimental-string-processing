@@ -14,7 +14,7 @@ import XCTest
 import _StringProcessing
 import RegexBuilder
 
-@available(SwiftStdlib 5.11, *)
+@available(SwiftStdlib 6.0, *)
 fileprivate func _literalTest<T>(
   _ regex: Regex<T>,
   expected: String?,
@@ -28,7 +28,7 @@ fileprivate func _literalTest<T>(
   }
 }
 
-@available(SwiftStdlib 5.11, *)
+@available(SwiftStdlib 6.0, *)
 extension RegexTests {
   func testPrintableRegex() throws {
     let regexString = #"([a-fGH1-9[^\D]]+)?b*cd(e.+)\2\w\S+?"#
@@ -73,7 +73,7 @@ extension RegexTests {
 // MARK: - PrintableRegex
 
 // Demonstration of a guaranteed Codable/Sendable regex type.
-@available(SwiftStdlib 5.11, *)
+@available(SwiftStdlib 6.0, *)
 struct PrintableRegex: RegexComponent, @unchecked Sendable {
   var pattern: String
   var regex: Regex<AnyRegexOutput>
@@ -94,7 +94,7 @@ struct PrintableRegex: RegexComponent, @unchecked Sendable {
   }
 }
 
-@available(SwiftStdlib 5.11, *)
+@available(SwiftStdlib 6.0, *)
 extension PrintableRegex: Codable {
   init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
@@ -108,7 +108,7 @@ extension PrintableRegex: Codable {
   }
 }
 
-@available(SwiftStdlib 5.11, *)
+@available(SwiftStdlib 6.0, *)
 extension PrintableRegex: CustomStringConvertible {
   var description: String {
     pattern
