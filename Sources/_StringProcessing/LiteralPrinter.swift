@@ -33,7 +33,7 @@ extension Regex {
   /// the `CustomConsumingRegexComponent` protocol, this property is `nil`.
   ///
   /// The value of this property may change between different releases of Swift.
-  @available(SwiftStdlib 5.11, *)
+  @available(SwiftStdlib 6.0, *)
   public var _literalPattern: String? {
     var gen = LiteralPrinter(options: MatchingOptions())
     gen.outputNode(self.program.tree.root)
