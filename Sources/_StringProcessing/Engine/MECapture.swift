@@ -37,7 +37,7 @@ extension Processor {
     var value: Any? = nil
 
     // An in-progress capture start
-    fileprivate var currentCaptureBegin: Position? = nil
+    var currentCaptureBegin: Position? = nil
 
     fileprivate func _invariantCheck() {
       if range == nil {
