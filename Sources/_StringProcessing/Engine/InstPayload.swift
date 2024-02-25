@@ -211,11 +211,11 @@ extension Instruction.Payload {
     self.rawValue == 1
   }
 
-  init(bool: BoolRegister) {
-    self.init(bool)
+  init(bool: Bool) {
+    self.init(bool ? 1 : 0, 0)
   }
-  var bool: BoolRegister {
-    interpret()
+  var boolPayload: Bool {
+    interpret(as: TypedInt<Bool>.self) == 1
   }
 
   init(element: ElementRegister, isCaseInsensitive: Bool) {

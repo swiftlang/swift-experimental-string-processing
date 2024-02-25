@@ -146,8 +146,8 @@ extension MEProgram.Builder {
     instructions.append(.init(.clearThrough))
     fixup(to: t)
   }
-  mutating func buildFail() {
-    instructions.append(.init(.fail))
+  mutating func buildFail(preservingCaptures: Bool = false) {
+    instructions.append(.init(.fail, .init(bool: preservingCaptures)))
   }
 
   mutating func buildAdvance(_ n: Distance) {
