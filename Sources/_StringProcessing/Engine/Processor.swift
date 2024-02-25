@@ -320,7 +320,7 @@ extension Processor {
     return true
   }
 
-  mutating func signalFailure() {
+  mutating func signalFailure(preservingCaptures: Bool = false) {
     guard !savePoints.isEmpty else {
       state = .fail
       return
@@ -351,9 +351,19 @@ extension Processor {
     controller.pc = pc
     currentPosition = pos ?? currentPosition
     callStack.removeLast(callStack.count - stackEnd.rawValue)
-    storedCaptures = capEnds
     registers.ints = intRegisters
     registers.positions = posRegisters
+
+    if preservingCaptures {
+      for i in capEnds.indices {
+        if storedCaptures[i].range == nil {
+          storedCaptures[i].currentCaptureBegin = capEnds[i].currentCaptureBegin
+        }
+      }
+    } else {
+      // Reset all capture information
+      storedCaptures = capEnds
+    }
 
     metrics.addBacktrack()
   }
@@ -464,7 +474,8 @@ extension Processor {
       tryAccept()
 
     case .fail:
-      signalFailure()
+      let preservingCaptures = payload.boolPayload
+      signalFailure(preservingCaptures: preservingCaptures)
 
     case .advance:
       let (isScalar, distance) = payload.distance
