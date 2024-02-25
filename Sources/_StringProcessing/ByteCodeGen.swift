@@ -291,31 +291,19 @@ fileprivate extension Compiler.ByteCodeGen {
     try emitNode(node)
   }
 
-  mutating func emitLookaround(
-    _ kind: (forwards: Bool, positive: Bool),
-    _ child: DSLTree.Node
-  ) throws {
-    guard kind.forwards else {
-      throw Unsupported("backwards assertions")
-    }
-
-    let positive = kind.positive
+  mutating func emitPositiveLookahead(_ child: DSLTree.Node) throws {
     /*
       save(restoringAt: success)
       save(restoringAt: intercept)
       <sub-pattern>    // failure restores at intercept
       clearThrough(intercept) // remove intercept and any leftovers from <sub-pattern>
-      <if negative>:
-        clearSavePoint // remove success
-      fail             // positive->success, negative propagates
+      fail             // ->success
     intercept:
-      <if positive>:
-        clearSavePoint // remove success
-      fail             // positive propagates, negative->success
+      clearSavePoint   // remove success
+      fail             // propagate failure
     success:
       ...
     */
-
     let intercept = builder.makeAddress()
     let success = builder.makeAddress()
 
@@ -323,18 +311,56 @@ fileprivate extension Compiler.ByteCodeGen {
     builder.buildSave(intercept)
     try emitNode(child)
     builder.buildClearThrough(intercept)
-    if !positive {
-      builder.buildClear()
-    }
-    builder.buildFail()
+    builder.buildFail(preservingCaptures: true) // Lookahead succeeds here
 
     builder.label(intercept)
-    if positive {
-      builder.buildClear()
-    }
+    builder.buildClear()
     builder.buildFail()
 
     builder.label(success)
+  }
+  
+  mutating func emitNegativeLookahead(_ child: DSLTree.Node) throws {
+    /*
+      save(restoringAt: success)
+      save(restoringAt: intercept)
+      <sub-pattern>    // failure restores at intercept
+      clearThrough(intercept) // remove intercept and any leftovers from <sub-pattern>
+      clearSavePoint   // remove success
+      fail             // propagate failure
+    intercept:
+      fail             // ->success
+    success:
+      ...
+    */
+    let intercept = builder.makeAddress()
+    let success = builder.makeAddress()
+
+    builder.buildSave(success)
+    builder.buildSave(intercept)
+    try emitNode(child)
+    builder.buildClearThrough(intercept)
+    builder.buildClear()
+    builder.buildFail()
+
+    builder.label(intercept)
+    builder.buildFail()
+
+    builder.label(success)
+  }
+  
+  mutating func emitLookaround(
+    _ kind: (forwards: Bool, positive: Bool),
+    _ child: DSLTree.Node
+  ) throws {
+    guard kind.forwards else {
+      throw Unsupported("backwards assertions")
+    }
+    if kind.positive {
+      try emitPositiveLookahead(child)
+    } else {
+      try emitNegativeLookahead(child)
+    }
   }
 
   mutating func emitAtomicNoncapturingGroup(
