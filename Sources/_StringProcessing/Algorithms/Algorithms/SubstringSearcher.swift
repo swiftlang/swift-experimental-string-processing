@@ -66,39 +66,44 @@ struct SubstringSearcher<Searched: StringProtocol>: Sequence, IteratorProtocol
         end == text.endIndex ? nil : text.index(after: end))
     }
     
-    var patternOffset = state.patternCount - 1
-    var patternCursor = pattern.index(before: pattern.endIndex)
-    var textCursor = text.index(before: end)
-    
-    // Search backwards from `end` to the start of the pattern
-    while patternCursor >= pattern.startIndex
-            && pattern[patternCursor] == text[textCursor]
-    {
-      patternOffset -= 1
-      
-      // Success!
-      if patternCursor == pattern.startIndex {
-        // Calculate the offset for the next search.
-        return (
-          textCursor..<end,
-          text.index(end, offsetBy: state.patternCount, limitedBy: text.endIndex))
+    var currentEnd = end
+    while true {
+      // Search backwards from `currentEnd` to the start of the pattern
+      var textCursor = text.index(before: currentEnd)
+      var patternOffset = state.patternCount - 1
+      var patternCursor = pattern.index(before: pattern.endIndex)
+
+      while patternCursor >= pattern.startIndex
+              && pattern[patternCursor] == text[textCursor]
+      {
+        patternOffset -= 1
+        
+        // Success!
+        if patternCursor == pattern.startIndex {
+          // Calculate the offset for the next search.
+          return (
+            textCursor..<currentEnd,
+            text.index(currentEnd, offsetBy: state.patternCount, limitedBy: text.endIndex))
+        }
+        
+        precondition(textCursor > text.startIndex)
+        text.formIndex(before: &textCursor)
+        pattern.formIndex(before: &patternCursor)
       }
       
-      precondition(textCursor > text.startIndex)
-      text.formIndex(before: &textCursor)
-      pattern.formIndex(before: &patternCursor)
+      // Match failed - calculate the end index of the next possible
+      // candidate, based on the `badCharacterOffsets` table and the
+      // current position in the pattern.
+      let shiftOffset = Swift.max(
+        1,
+        patternOffset - (state.badCharacterOffsets[text[textCursor]] ?? 0))
+      if let nextEnd = text.index(
+        currentEnd, offsetBy: shiftOffset, limitedBy: text.endIndex) {
+        currentEnd = nextEnd
+      } else {
+        return (nil, nil)
+      }
     }
-    
-    // Match failed - calculate the end index of the next possible
-    // candidate, based on the `badCharacterOffsets` table and the
-    // current position in the pattern.
-    let shiftOffset = Swift.max(
-      1,
-      patternOffset - (state.badCharacterOffsets[text[textCursor]] ?? 0))
-    let nextEnd = text.index(
-      end, offsetBy: shiftOffset, limitedBy: text.endIndex)
-    guard let nextEnd else { return (nil, nil) }
-    return nextRange(in: text, searchFromEnd: nextEnd)
   }
   
   @inlinable
