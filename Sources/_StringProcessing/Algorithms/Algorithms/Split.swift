@@ -175,7 +175,7 @@ extension StringProtocol where SubSequence == Substring {
     omittingEmptySubsequences: Bool = true
   ) -> [Substring] {
     Array(split(
-      by: ZSearcher(pattern: Array(separator), by: ==),
+      by: SubstringSearcher(text: "" as Self, pattern: separator[...]),
       maxSplits: maxSplits,
       omittingEmptySubsequences: omittingEmptySubsequences))
   }
@@ -188,7 +188,7 @@ extension StringProtocol where SubSequence == Substring {
     omittingEmptySubsequences: Bool = true
   ) -> [Substring] {
     Array(split(
-      by: ZSearcher(pattern: Array(separator), by: ==),
+      by: SubstringSearcher(text: "" as Self, pattern: separator[...]),
       maxSplits: maxSplits,
       omittingEmptySubsequences: omittingEmptySubsequences))
   }

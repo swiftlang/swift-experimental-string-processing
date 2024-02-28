@@ -12,41 +12,61 @@
 /// An implementation of the Boyer-Moore-Horspool algorithm, for string-specific
 /// searching.
 @usableFromInline
-struct SubstringSearcher: Sequence, IteratorProtocol {
+struct SubstringSearcher<Searched: StringProtocol>: Sequence, IteratorProtocol
+  where Searched.SubSequence == Substring
+{
   @usableFromInline
-  let text: Substring
+  struct State {
+    @usableFromInline
+    let badCharacterOffsets: [Character: Int]
+    @usableFromInline
+    let patternCount: Int
+    @usableFromInline
+    var endOfNextPotentialMatch: String.Index?
+    
+    init(text: Substring? = nil, pattern: Substring) {
+      var offsets: [Character: Int] = [:]
+      var count = 0
+      for (offset, ch) in pattern.enumerated() {
+        offsets[ch] = offset
+        count += 1
+      }
+      
+      self.badCharacterOffsets = offsets
+      self.patternCount = count
+      if let text {
+        self.endOfNextPotentialMatch = text.index(
+          text.startIndex, offsetBy: patternCount, limitedBy: text.endIndex)
+      }
+    }
+  }
+  
+  @usableFromInline
+  let text: Searched
   @usableFromInline
   let pattern: Substring
   @usableFromInline
-  let badCharacterOffsets: [Character: Int]
-  @usableFromInline
-  let patternCount: Int
-  @usableFromInline
-  var endOfNextPotentialMatch: String.Index?
+  var state: State
   
   @usableFromInline
-  init(text: Substring, pattern: Substring) {
+  init(text: Searched, pattern: Substring) {
     self.text = text
     self.pattern = pattern
-    self.patternCount = pattern.count
-    self.endOfNextPotentialMatch = text.index(
-      text.startIndex, offsetBy: patternCount, limitedBy: text.endIndex)
-    self.badCharacterOffsets = Dictionary(
-      zip(pattern, 0...), uniquingKeysWith: { _, last in last })
+    self.state = .init(text: text[...], pattern: pattern)
   }
 
   @inlinable
-  func nextRange(searchFromEnd end: String.Index) 
+  func nextRange(in text: Searched, searchFromEnd end: String.Index)
     -> (result: Range<String.Index>?, nextEnd: String.Index?)
   {
     // Empty pattern matches at every position.
-    if patternCount == 0 {
+    if state.patternCount == 0 {
       return (
         end..<end,
         end == text.endIndex ? nil : text.index(after: end))
     }
     
-    var patternOffset = patternCount - 1
+    var patternOffset = state.patternCount - 1
     var patternCursor = pattern.index(before: pattern.endIndex)
     var textCursor = text.index(before: end)
     
@@ -61,7 +81,7 @@ struct SubstringSearcher: Sequence, IteratorProtocol {
         // Calculate the offset for the next search.
         return (
           textCursor..<end,
-          text.index(end, offsetBy: patternCount, limitedBy: text.endIndex))
+          text.index(end, offsetBy: state.patternCount, limitedBy: text.endIndex))
       }
       
       precondition(textCursor > text.startIndex)
@@ -74,100 +94,31 @@ struct SubstringSearcher: Sequence, IteratorProtocol {
     // current position in the pattern.
     let shiftOffset = Swift.max(
       1,
-      patternOffset - (badCharacterOffsets[text[textCursor]] ?? 0))
+      patternOffset - (state.badCharacterOffsets[text[textCursor]] ?? 0))
     let nextEnd = text.index(
       end, offsetBy: shiftOffset, limitedBy: text.endIndex)
     guard let nextEnd else { return (nil, nil) }
-    return nextRange(searchFromEnd: nextEnd)
+    return nextRange(in: text, searchFromEnd: nextEnd)
   }
   
   @inlinable
   mutating func next() -> Range<String.Index>? {
-    guard let end = endOfNextPotentialMatch else { return nil }
-    let (result, nextEnd) = nextRange(searchFromEnd: end)
-    endOfNextPotentialMatch = nextEnd
+    guard let end = state.endOfNextPotentialMatch else { return nil }
+    let (result, nextEnd) = nextRange(in: text, searchFromEnd: end)
+    state.endOfNextPotentialMatch = nextEnd
     return result
-//    while let end = endOfSearch {
-//      // Empty pattern matches at every position.
-//      if patternCount == 0 {
-//        endOfSearch = end == text.endIndex ? nil : text.index(after: end)
-//        return end..<end
-//      }
-//      
-//      var patternOffset = patternCount - 1
-//      var patternCursor = pattern.index(before: pattern.endIndex)
-//      var textCursor = text.index(before: end)
-//      
-//      // Search backwards from `end` to the start of the pattern
-//      while patternCursor >= pattern.startIndex
-//              && pattern[patternCursor] == text[textCursor]
-//      {
-//        patternOffset -= 1
-//        
-//        // Success!
-//        if patternCursor == pattern.startIndex {
-//          // Calculate the offset for the next search.
-//          endOfSearch = text.index(end, offsetBy: patternCount, limitedBy: text.endIndex)
-//          return textCursor..<end
-//        }
-//        
-//        precondition(textCursor > text.startIndex)
-//        text.formIndex(before: &textCursor)
-//        pattern.formIndex(before: &patternCursor)
-//      }
-//      
-//      // Match failed - calculate the end index of the next possible
-//      // candidate, based on the `badCharacterOffsets` table and the
-//      // current position in the pattern.
-//      let shiftOffset = Swift.max(
-//        1,
-//        patternOffset - (badCharacterOffsets[text[textCursor]] ?? 0))
-//      endOfSearch = text.index(
-//        end, offsetBy: shiftOffset, limitedBy: text.endIndex)
-//    }
-//    return nil
   }
 }
 
-extension SubstringSearcher {
-  struct Coll: Collection {
-    var iterator: SubstringSearcher
-    var startIndex: Index
-    
-    var endIndex: Index { Index() }
-    
-    init(iterator: SubstringSearcher) {
-      var iterator = iterator
-      self.startIndex = Index(range: iterator.next())
-      self.iterator = iterator
-    }
-    
-    struct Index: Comparable {
-      var range: Range<String.Index>?
-      var endOfNextPotentialMatch: String.Index?
-
-      static func < (lhs: Index, rhs: Index) -> Bool {
-        switch (lhs.range, rhs.range) {
-        case (nil, _): false
-        case (_, nil): true
-        case let (lhs?, rhs?):
-          lhs.lowerBound < rhs.lowerBound
-        }
-      }
-    }
-    
-    subscript(index: Index) -> Range<String.Index> {
-      index.range!
-    }
-    
-    func index(after index: Index) -> Index {
-      let (range, next) = iterator.nextRange(
-        searchFromEnd: index.endOfNextPotentialMatch!)
-      return Index(range: range, endOfNextPotentialMatch: next)
-    }
+extension SubstringSearcher: CollectionSearcher {
+  func state(for text: Searched, in range: Range<String.Index>) -> State {
+    State(text: text[range], pattern: pattern)
   }
   
-  var collection: Coll {
-    .init(iterator: self)
+  func search(_ text: Searched, _ state: inout State) -> Range<String.Index>? {
+    guard let end = state.endOfNextPotentialMatch else { return nil }
+    let (result, nextEnd) = nextRange(in: text, searchFromEnd: end)
+    state.endOfNextPotentialMatch = nextEnd
+    return result
   }
 }
