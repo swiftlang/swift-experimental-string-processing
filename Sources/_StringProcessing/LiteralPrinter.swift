@@ -444,7 +444,17 @@ extension String {
 
 extension UnicodeScalar {
   var escapedString: String {
-    "\\u{" + String(value, radix: 16) + "}"
+    switch self {
+    case "\n": return #"\n"#
+    case "\r": return #"\r"#
+    case "\t": return #"\t"#
+    default:
+      let code = String(value, radix: 16, uppercase: true)
+      let prefix = code.count <= 4
+        ? #"\u"# + String(repeating: "0", count: 4 - code.count)
+        : #"\U"# + String(repeating: "0", count: 8 - code.count)
+      return prefix + code
+    }
   }
 }
 
