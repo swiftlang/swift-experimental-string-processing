@@ -9,8 +9,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// BEGIN AUTO-GENERATED CONTENT
-
 @_spi(RegexBuilder) import _StringProcessing
 
 @available(SwiftStdlib 5.7, *)
@@ -532,10 +530,7 @@ extension Local {
     let factory = makeFactory()
     self.init(factory.atomicNonCapturing(component))
   }
-}
 
-@available(SwiftStdlib 5.7, *)
-extension Local {
   /// Creates an atomic group with the given regex component.
   ///
   /// - Parameter componentBuilder: A builder closure that generates a
@@ -550,6 +545,7 @@ extension Local {
     self.init(factory.atomicNonCapturing(componentBuilder()))
   }
 }
+
 @available(SwiftStdlib 5.7, *)
 extension Local {
   /// Creates an atomic group with the given regex component.
@@ -558,308 +554,27 @@ extension Local {
   ///   group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
-  public init<W, C1>(
-    _ component: some RegexComponent<(W, C1)>
-  ) where RegexOutput == (Substring, C1) {
+  public init<W, each Capture>(
+    _ component: some RegexComponent<(W, repeat each Capture)>
+  ) where RegexOutput == (Substring, repeat each Capture) {
     let factory = makeFactory()
     self.init(factory.atomicNonCapturing(component))
   }
-}
 
-@available(SwiftStdlib 5.7, *)
-extension Local {
   /// Creates an atomic group with the given regex component.
   ///
   /// - Parameter componentBuilder: A builder closure that generates a
   ///   regex component to wrap in an atomic group.
   @available(SwiftStdlib 5.7, *)
   @_alwaysEmitIntoClient
-  public init<W, C1>(
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, C1)>
-  ) where RegexOutput == (Substring, C1) {
+  public init<W, each Capture>(
+    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, repeat each Capture)>
+  ) where RegexOutput == (Substring, repeat each Capture) {
     let factory = makeFactory()
     self.init(factory.atomicNonCapturing(componentBuilder()))
-  }
-}
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter component: The regex component to wrap in an atomic
-  ///   group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2>(
-    _ component: some RegexComponent<(W, C1, C2)>
-  ) where RegexOutput == (Substring, C1, C2) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(component))
   }
 }
 
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter componentBuilder: A builder closure that generates a
-  ///   regex component to wrap in an atomic group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2>(
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, C1, C2)>
-  ) where RegexOutput == (Substring, C1, C2) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(componentBuilder()))
-  }
-}
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter component: The regex component to wrap in an atomic
-  ///   group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3>(
-    _ component: some RegexComponent<(W, C1, C2, C3)>
-  ) where RegexOutput == (Substring, C1, C2, C3) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(component))
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter componentBuilder: A builder closure that generates a
-  ///   regex component to wrap in an atomic group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3>(
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, C1, C2, C3)>
-  ) where RegexOutput == (Substring, C1, C2, C3) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(componentBuilder()))
-  }
-}
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter component: The regex component to wrap in an atomic
-  ///   group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4>(
-    _ component: some RegexComponent<(W, C1, C2, C3, C4)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(component))
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter componentBuilder: A builder closure that generates a
-  ///   regex component to wrap in an atomic group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4>(
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, C1, C2, C3, C4)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(componentBuilder()))
-  }
-}
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter component: The regex component to wrap in an atomic
-  ///   group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4, C5>(
-    _ component: some RegexComponent<(W, C1, C2, C3, C4, C5)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4, C5) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(component))
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter componentBuilder: A builder closure that generates a
-  ///   regex component to wrap in an atomic group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4, C5>(
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, C1, C2, C3, C4, C5)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4, C5) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(componentBuilder()))
-  }
-}
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter component: The regex component to wrap in an atomic
-  ///   group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4, C5, C6>(
-    _ component: some RegexComponent<(W, C1, C2, C3, C4, C5, C6)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(component))
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter componentBuilder: A builder closure that generates a
-  ///   regex component to wrap in an atomic group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4, C5, C6>(
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, C1, C2, C3, C4, C5, C6)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(componentBuilder()))
-  }
-}
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter component: The regex component to wrap in an atomic
-  ///   group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4, C5, C6, C7>(
-    _ component: some RegexComponent<(W, C1, C2, C3, C4, C5, C6, C7)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(component))
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter componentBuilder: A builder closure that generates a
-  ///   regex component to wrap in an atomic group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4, C5, C6, C7>(
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, C1, C2, C3, C4, C5, C6, C7)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(componentBuilder()))
-  }
-}
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter component: The regex component to wrap in an atomic
-  ///   group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4, C5, C6, C7, C8>(
-    _ component: some RegexComponent<(W, C1, C2, C3, C4, C5, C6, C7, C8)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(component))
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter componentBuilder: A builder closure that generates a
-  ///   regex component to wrap in an atomic group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4, C5, C6, C7, C8>(
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, C1, C2, C3, C4, C5, C6, C7, C8)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(componentBuilder()))
-  }
-}
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter component: The regex component to wrap in an atomic
-  ///   group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
-    _ component: some RegexComponent<(W, C1, C2, C3, C4, C5, C6, C7, C8, C9)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(component))
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter componentBuilder: A builder closure that generates a
-  ///   regex component to wrap in an atomic group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9>(
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, C1, C2, C3, C4, C5, C6, C7, C8, C9)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(componentBuilder()))
-  }
-}
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter component: The regex component to wrap in an atomic
-  ///   group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
-    _ component: some RegexComponent<(W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(component))
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Local {
-  /// Creates an atomic group with the given regex component.
-  ///
-  /// - Parameter componentBuilder: A builder closure that generates a
-  ///   regex component to wrap in an atomic group.
-  @available(SwiftStdlib 5.7, *)
-  @_alwaysEmitIntoClient
-  public init<W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10>(
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10)>
-  ) where RegexOutput == (Substring, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10) {
-    let factory = makeFactory()
-    self.init(factory.atomicNonCapturing(componentBuilder()))
-  }
-}
 // MARK: - Alternation builder (arity 0)
 
 @available(SwiftStdlib 5.7, *)

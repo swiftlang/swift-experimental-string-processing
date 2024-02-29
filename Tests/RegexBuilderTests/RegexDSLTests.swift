@@ -884,6 +884,21 @@ class RegexDSLTests: XCTestCase {
       }
       "a"
     }
+    
+    // FIXME: Atomic groups lose their captures, will fix in:
+    // https://github.com/apple/swift-experimental-string-processing/pull/723
+    // try _testDSLCaptures(
+    //   ("aaa", ("aaa", "a")),
+    //   matchType: (Substring, Substring).self, ==)
+    // {
+    //   Local {
+    //     "a"
+    //     Capture {
+    //       OneOrMore("a", .reluctant)
+    //     }
+    //   }
+    //   "a"
+    // }
   }
   
   func testAssertions() throws {
