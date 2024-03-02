@@ -1804,8 +1804,7 @@ extension RegexTests {
     firstMatchTests(
       #"(?>(\d+))\w+\1"#,
       (input: "23x23", match: "23x23"),
-      (input: "123x23", match: "23x23"),
-      xfail: true)
+      (input: "123x23", match: "23x23"))
     
     // Backreferences in scalar mode
     // In scalar mode the backreference should not match
