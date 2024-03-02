@@ -403,7 +403,7 @@ fileprivate extension Compiler.ByteCodeGen {
     builder.buildSave(intercept)
     try emitNode(child)
     builder.buildClearThrough(intercept)
-    builder.buildFail()
+    builder.buildFail(preservingCaptures: true) // Atomic group succeeds here
 
     builder.label(intercept)
     builder.buildClear()
