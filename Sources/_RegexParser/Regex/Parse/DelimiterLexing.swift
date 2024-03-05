@@ -70,6 +70,20 @@ extension Delimiter {
   }
 }
 
+/// A wrapper for an `UnsafeRawPointer` representing a source location, marked
+/// `@unchecked Sendable` to help errors carrying such information satisfy their
+/// `Sendable` requirement.
+///
+/// TODO: consider further refactoring to avoid needing to lie to the compiler
+/// about Sendability.
+struct UnsafeSourceLocation: @unchecked Sendable {
+  let ptr: UnsafeRawPointer
+
+  init(_ ptr: UnsafeRawPointer) {
+    self.ptr = ptr
+  }
+}
+
 public struct DelimiterLexError: Error, CustomStringConvertible {
   public enum Kind: Hashable {
     case unterminated
@@ -81,12 +95,14 @@ public struct DelimiterLexError: Error, CustomStringConvertible {
 
   public var kind: Kind
 
+  var resumeLocation: UnsafeSourceLocation
+
   /// The pointer at which to resume lexing.
-  public var resumePtr: UnsafeRawPointer
+  public var resumePtr: UnsafeRawPointer { resumeLocation.ptr }
 
   init(_ kind: Kind, resumeAt resumePtr: UnsafeRawPointer) {
     self.kind = kind
-    self.resumePtr = resumePtr
+    self.resumeLocation = UnsafeSourceLocation(resumePtr)
   }
 
   public var description: String {
