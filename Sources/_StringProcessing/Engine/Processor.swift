@@ -354,13 +354,7 @@ extension Processor {
     registers.ints = intRegisters
     registers.positions = posRegisters
 
-    if preservingCaptures {
-      for i in capEnds.indices {
-        if storedCaptures[i].range == nil {
-          storedCaptures[i].currentCaptureBegin = capEnds[i].currentCaptureBegin
-        }
-      }
-    } else {
+    if !preservingCaptures {
       // Reset all capture information
       storedCaptures = capEnds
     }
