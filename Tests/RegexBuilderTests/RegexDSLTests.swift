@@ -1963,6 +1963,72 @@ extension RegexDSLTests {
     XCTAssertEqual(anyOutput[15].value as? Int, 123)
     XCTAssertEqual(anyOutput[16].substring, "456")
   }
+  
+  func testDeeplyNestedCapture() throws {
+    // Broken up: 'unable to type-check this expression in reasonable time'
+    let r0 = Optionally {
+      Capture {
+        OneOrMore(CharacterClass.digit)
+      }
+    }
+    let r1 = ZeroOrMore {
+      Capture {
+        r0
+      }
+    }
+    let regex = Regex {
+      Capture {
+        OneOrMore {
+          Capture {
+            r1
+          }
+        }
+      }
+    }
+    XCTAssert(type(of: regex).self
+              == Regex<(Substring, Substring, Substring, Substring?, Substring??)>.self)
+    let match = try XCTUnwrap("123".wholeMatch(of: regex))
+    XCTAssertEqual(match.output.0, "123")
+    XCTAssertEqual(match.output.1, "123")
+    XCTAssertEqual(match.output.4, "123")
+    // Because capture groups only retain the last capture, these two groups
+    // are the empty string. After matching/capturing "123", the outer
+    // `OneOrMore` loops again, and since the innermost quanitifier is optional,
+    // the second loop matches the empty substring at the end of the input.
+    // That empty substring is then captured by capture groups 2 and 3.
+    XCTAssertEqual(match.output.2, "")
+    XCTAssertEqual(match.output.3, "")
+  }
+  
+  func testVariedNesting() throws {
+    let regex = Regex {
+      "a"
+      OneOrMore {
+        Capture {
+          Optionally {
+            Capture {
+              "b"
+            }
+          }
+          "c"
+        }
+        "d"
+      }
+      "e"
+      ZeroOrMore {
+        Capture {
+          "f"
+        }
+      }
+    }
+    XCTAssert(type(of: regex).self
+              == Regex<(Substring, Substring, Substring?, Substring?)>.self)
+    let match = try XCTUnwrap("acdbcdcde".wholeMatch(of: regex))
+    XCTAssertEqual(match.output.0, "acdbcdcde")
+    XCTAssertEqual(match.output.1, "c")
+    XCTAssertEqual(match.output.2, "b")
+    XCTAssertNil(match.output.3)
+  }
 }
 
 extension Unicode.Scalar {
