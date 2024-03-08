@@ -313,8 +313,8 @@ fileprivate extension Compiler.ByteCodeGen {
       save(restoringAt: success)
       save(restoringAt: intercept)
       <sub-pattern>    // failure restores at intercept
-      clearThrough(intercept) // remove intercept and any leftovers from <sub-pattern>
-      fail             // ->success
+      clearThrough(intercept)       // remove intercept and any leftovers from <sub-pattern>
+     fail(preservingCaptures: true) // ->success
     intercept:
       clearSavePoint   // remove success
       fail             // propagate failure
@@ -387,8 +387,8 @@ fileprivate extension Compiler.ByteCodeGen {
       save(continuingAt: success)
       save(restoringAt: intercept)
       <sub-pattern>    // failure restores at intercept
-      clearThrough(intercept) // remove intercept and any leftovers from <sub-pattern>
-      fail             // ->success
+      clearThrough(intercept)        // remove intercept and any leftovers from <sub-pattern>
+      fail(preservingCaptures: true) // ->success
     intercept:
       clearSavePoint   // remove success
       fail             // propagate failure
