@@ -58,7 +58,7 @@ extension RegexComponentBuilder {
   }
 }
 
-// MARK: - Quantifiers (no output captures)
+// MARK: - Quantifiers
 
 @available(SwiftStdlib 5.7, *)
 extension Optionally {
@@ -86,6 +86,25 @@ extension Optionally {
   /// zero or one times.
   ///
   /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  @_alwaysEmitIntoClient
+  public init<C0, C1, each Capture>(
+    _ component: some RegexComponent<(C0, C1, repeat each Capture)>,
+    _ behavior: RegexRepetitionBehavior? = nil
+  ) where RegexOutput == (Substring, C1, repeat (each Capture)?) {
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(component, behavior))
+  }
+
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
   ///   - behavior: The repetition behavior to use when repeating
   ///     `component` in the match. If `behavior` is `nil`, the default
   ///     repetition behavior is used, which can be changed from
@@ -102,6 +121,26 @@ extension Optionally {
     let factory = makeFactory()
     self.init(factory.zeroOrOne(componentBuilder(), behavior))
   }
+  
+  /// Creates a regex component that matches the given component
+  /// zero or one times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
+  @_alwaysEmitIntoClient
+  public init<C0, C1, each Capture>(
+    _ behavior: RegexRepetitionBehavior? = nil,
+    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(C0, C1, repeat each Capture)>
+  ) where RegexOutput == (Substring, C1?, repeat (each Capture)?) {
+    let factory = makeFactory()
+    self.init(factory.zeroOrOne(componentBuilder(), behavior))
+  }
 }
 
 @available(SwiftStdlib 5.7, *)
@@ -111,6 +150,14 @@ extension RegexComponentBuilder {
   public static func buildLimitedAvailability(
     _ component: some RegexComponent
   ) -> Regex<Substring> {
+    let factory = makeFactory()
+    return factory.zeroOrOne(component, nil)
+  }
+  
+  @_alwaysEmitIntoClient
+  public static func buildLimitedAvailability<C0, C1, each Capture>(
+    _ component: some RegexComponent<(C0, C1, repeat each Capture)>
+  ) -> Regex<(Substring, C1?, repeat (each Capture)?)> {
     let factory = makeFactory()
     return factory.zeroOrOne(component, nil)
   }
@@ -142,6 +189,25 @@ extension ZeroOrMore {
   /// zero or more times.
   ///
   /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  @_alwaysEmitIntoClient
+  public init<C0, C1, each Capture>(
+    _ component: some RegexComponent<(C0, C1, repeat each Capture)>,
+    _ behavior: RegexRepetitionBehavior? = nil
+  ) where RegexOutput == (Substring, C1?, repeat (each Capture)?) {
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(component, behavior))
+  }
+
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
   ///   - behavior: The repetition behavior to use when repeating
   ///     `component` in the match. If `behavior` is `nil`, the default
   ///     repetition behavior is used, which can be changed from
@@ -155,6 +221,26 @@ extension ZeroOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent
   ) where RegexOutput == Substring {
+    let factory = makeFactory()
+    self.init(factory.zeroOrMore(componentBuilder(), behavior))
+  }
+
+  /// Creates a regex component that matches the given component
+  /// zero or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
+  @_alwaysEmitIntoClient
+  public init<C0, C1, each Capture>(
+    _ behavior: RegexRepetitionBehavior? = nil,
+    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(C0, C1, repeat each Capture)>
+  ) where RegexOutput == (Substring, C1?, repeat (each Capture)?) {
     let factory = makeFactory()
     self.init(factory.zeroOrMore(componentBuilder(), behavior))
   }
@@ -186,6 +272,25 @@ extension OneOrMore {
   /// one or more times.
   ///
   /// - Parameters:
+  ///   - component: The regex component.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  @_alwaysEmitIntoClient
+  public init<C0, C1, each Capture>(
+    _ component: some RegexComponent<(C0, C1, repeat each Capture)>,
+    _ behavior: RegexRepetitionBehavior? = nil
+  ) where RegexOutput == (Substring, C1, repeat each Capture) {
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(component, behavior))
+  }
+
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
   ///   - behavior: The repetition behavior to use when repeating
   ///     `component` in the match. If `behavior` is `nil`, the default
   ///     repetition behavior is used, which can be changed from
@@ -199,6 +304,26 @@ extension OneOrMore {
     _ behavior: RegexRepetitionBehavior? = nil,
     @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent
   ) where RegexOutput == Substring {
+    let factory = makeFactory()
+    self.init(factory.oneOrMore(componentBuilder(), behavior))
+  }
+
+  /// Creates a regex component that matches the given component
+  /// one or more times.
+  ///
+  /// - Parameters:
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  ///   - componentBuilder: A builder closure that generates a regex
+  ///     component.
+  @_alwaysEmitIntoClient
+  public init<C0, C1, each Capture>(
+    _ behavior: RegexRepetitionBehavior? = nil,
+    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(C0, C1, repeat each Capture)>
+  ) where RegexOutput == (Substring, C1, repeat each Capture) {
     let factory = makeFactory()
     self.init(factory.oneOrMore(componentBuilder(), behavior))
   }
@@ -244,6 +369,41 @@ extension Repeat {
   }
 
   /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
+  @_alwaysEmitIntoClient
+  public init<C0, C1, each Capture>(
+    _ component: some RegexComponent<(C0, C1, repeat each Capture)>,
+    count: Int
+  ) where RegexOutput == (Substring, C1?, repeat (each Capture)?) {
+    precondition(count >= 0, "Must specify a positive count")
+    let factory = makeFactory()
+    self.init(factory.exactly(count, component))
+  }
+
+  /// Creates a regex component that matches the given component repeated
+  /// the specified number of times.
+  ///
+  /// - Parameters:
+  ///   - count: The number of times to repeat `component`. `count` must
+  ///     be greater than or equal to zero.
+  ///   - componentBuilder: A builder closure that creates the regex
+  ///     component to repeat.
+  @_alwaysEmitIntoClient
+  public init<C0, C1, each Capture>(
+    count: Int,
+    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(C0, C1, repeat each Capture)>
+  ) where RegexOutput == (Substring, C1?, repeat (each Capture)?) {
+    precondition(count >= 0, "Must specify a positive count")
+    let factory = makeFactory()
+    self.init(factory.exactly(count, componentBuilder()))
+  }
+
+  /// Creates a regex component that matches the given component repeated
   /// a number of times specified by the given range expression.
   ///
   /// - Parameters:
@@ -262,6 +422,28 @@ extension Repeat {
     _ expression: some RangeExpression<Int>,
     _ behavior: RegexRepetitionBehavior? = nil
   ) where RegexOutput == Substring {
+    let factory = makeFactory()
+    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
+  }
+  
+  /// Creates a regex component that matches the given component repeated
+  /// a number of times specified by the given range expression.
+  ///
+  /// - Parameters:
+  ///   - component: The regex component to repeat.
+  ///   - expression: A range expression specifying the number of times
+  ///     that `component` can repeat.
+  ///   - behavior: The repetition behavior to use when repeating
+  ///     `component` in the match. If `behavior` is `nil`, the default
+  ///     repetition behavior is used, which can be changed from
+  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
+  ///     `Regex`.
+  @_alwaysEmitIntoClient
+  public init<C0, C1, each Capture>(
+    _ component: some RegexComponent<(C0, C1, repeat each Capture)>,
+    _ expression: some RangeExpression<Int>,
+    _ behavior: RegexRepetitionBehavior? = nil
+  ) where RegexOutput == (Substring, C1?, repeat (each Capture)?) {
     let factory = makeFactory()
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
   }
@@ -289,205 +471,6 @@ extension Repeat {
     let factory = makeFactory()
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, componentBuilder()))
   }
-}
-
-// MARK: - Quantifiers (variadic)
-
-@available(SwiftStdlib 5.7, *)
-extension Optionally {
-  /// Creates a regex component that matches the given component
-  /// zero or one times.
-  ///
-  /// - Parameters:
-  ///   - component: The regex component.
-  ///   - behavior: The repetition behavior to use when repeating
-  ///     `component` in the match. If `behavior` is `nil`, the default
-  ///     repetition behavior is used, which can be changed from
-  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
-  ///     `Regex`.
-  @_alwaysEmitIntoClient
-  public init<W, Capture0, each Capture>(
-    _ component: some RegexComponent<(W, Capture0, repeat each Capture)>,
-    _ behavior: RegexRepetitionBehavior? = nil
-  ) where RegexOutput == (Substring, (Capture0, repeat each Capture)?) {
-    let factory = makeFactory()
-    self.init(factory.zeroOrOne(component, behavior))
-  }
-  
-  /// Creates a regex component that matches the given component
-  /// zero or one times.
-  ///
-  /// - Parameters:
-  ///   - behavior: The repetition behavior to use when repeating
-  ///     `component` in the match. If `behavior` is `nil`, the default
-  ///     repetition behavior is used, which can be changed from
-  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
-  ///     `Regex`.
-  ///   - componentBuilder: A builder closure that generates a regex
-  ///     component.
-  @_alwaysEmitIntoClient
-  public init<W, Capture0, each Capture>(
-    _ behavior: RegexRepetitionBehavior? = nil,
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, Capture0, repeat each Capture)>
-  ) where RegexOutput == (Substring, (Capture0, repeat each Capture)?) {
-    let factory = makeFactory()
-    self.init(factory.zeroOrOne(componentBuilder(), behavior))
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension RegexComponentBuilder {
-  @_alwaysEmitIntoClient
-  public static func buildLimitedAvailability<W, Capture0, each Capture>(
-    _ component: some RegexComponent<(W, Capture0, repeat each Capture)>
-  ) -> Regex<(Substring, (Capture0, repeat each Capture)?)> {
-    let factory = makeFactory()
-    return factory.zeroOrOne(component, nil)
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension ZeroOrMore {
-  /// Creates a regex component that matches the given component
-  /// zero or more times.
-  ///
-  /// - Parameters:
-  ///   - component: The regex component.
-  ///   - behavior: The repetition behavior to use when repeating
-  ///     `component` in the match. If `behavior` is `nil`, the default
-  ///     repetition behavior is used, which can be changed from
-  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
-  ///     `Regex`.
-  @_alwaysEmitIntoClient
-  public init<W, Capture0, each Capture>(
-    _ component: some RegexComponent<(W, Capture0, repeat each Capture)>,
-    _ behavior: RegexRepetitionBehavior? = nil
-  ) where RegexOutput == (Substring, (Capture0, repeat each Capture)?) {
-    let factory = makeFactory()
-    self.init(factory.zeroOrMore(component, behavior))
-  }
-
-  /// Creates a regex component that matches the given component
-  /// zero or more times.
-  ///
-  /// - Parameters:
-  ///   - behavior: The repetition behavior to use when repeating
-  ///     `component` in the match. If `behavior` is `nil`, the default
-  ///     repetition behavior is used, which can be changed from
-  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
-  ///     `Regex`.
-  ///   - componentBuilder: A builder closure that generates a regex
-  ///     component.
-  @_alwaysEmitIntoClient
-  public init<W, Capture0, each Capture>(
-    _ behavior: RegexRepetitionBehavior? = nil,
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, Capture0, repeat each Capture)>
-  ) where RegexOutput == (Substring, (Capture0, repeat each Capture)?) {
-    let factory = makeFactory()
-    self.init(factory.zeroOrMore(componentBuilder(), behavior))
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension OneOrMore {
-  /// Creates a regex component that matches the given component
-  /// one or more times.
-  ///
-  /// - Parameters:
-  ///   - component: The regex component.
-  ///   - behavior: The repetition behavior to use when repeating
-  ///     `component` in the match. If `behavior` is `nil`, the default
-  ///     repetition behavior is used, which can be changed from
-  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
-  ///     `Regex`.
-  @_alwaysEmitIntoClient
-  public init<W, Capture0, each Capture>(
-    _ component: some RegexComponent<(W, Capture0, repeat each Capture)>,
-    _ behavior: RegexRepetitionBehavior? = nil
-  ) where RegexOutput == (Substring, Capture0, repeat each Capture) {
-    let factory = makeFactory()
-    self.init(factory.oneOrMore(component, behavior))
-  }
-
-  /// Creates a regex component that matches the given component
-  /// one or more times.
-  ///
-  /// - Parameters:
-  ///   - behavior: The repetition behavior to use when repeating
-  ///     `component` in the match. If `behavior` is `nil`, the default
-  ///     repetition behavior is used, which can be changed from
-  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
-  ///     `Regex`.
-  ///   - componentBuilder: A builder closure that generates a regex
-  ///     component.
-  @_alwaysEmitIntoClient
-  public init<W, Capture0, each Capture>(
-    _ behavior: RegexRepetitionBehavior? = nil,
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, Capture0, repeat each Capture)>
-  ) where RegexOutput == (Substring, Capture0, repeat each Capture) {
-    let factory = makeFactory()
-    self.init(factory.oneOrMore(componentBuilder(), behavior))
-  }
-}
-
-@available(SwiftStdlib 5.7, *)
-extension Repeat {
-  /// Creates a regex component that matches the given component repeated
-  /// the specified number of times.
-  ///
-  /// - Parameters:
-  ///   - component: The regex component to repeat.
-  ///   - count: The number of times to repeat `component`. `count` must
-  ///     be greater than or equal to zero.
-  @_alwaysEmitIntoClient
-  public init<W, Capture0, each Capture>(
-    _ component: some RegexComponent<(W, Capture0, repeat each Capture)>,
-    count: Int
-  ) where RegexOutput == (Substring, (Capture0, repeat each Capture)?) {
-    precondition(count >= 0, "Must specify a positive count")
-    let factory = makeFactory()
-    self.init(factory.exactly(count, component))
-  }
-
-  /// Creates a regex component that matches the given component repeated
-  /// the specified number of times.
-  ///
-  /// - Parameters:
-  ///   - count: The number of times to repeat `component`. `count` must
-  ///     be greater than or equal to zero.
-  ///   - componentBuilder: A builder closure that creates the regex
-  ///     component to repeat.
-  @_alwaysEmitIntoClient
-  public init<W, Capture0, each Capture>(
-    count: Int,
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, Capture0, repeat each Capture)>
-  ) where RegexOutput == (Substring, (Capture0, repeat each Capture)?) {
-    precondition(count >= 0, "Must specify a positive count")
-    let factory = makeFactory()
-    self.init(factory.exactly(count, componentBuilder()))
-  }
-
-  /// Creates a regex component that matches the given component repeated
-  /// a number of times specified by the given range expression.
-  ///
-  /// - Parameters:
-  ///   - component: The regex component to repeat.
-  ///   - expression: A range expression specifying the number of times
-  ///     that `component` can repeat.
-  ///   - behavior: The repetition behavior to use when repeating
-  ///     `component` in the match. If `behavior` is `nil`, the default
-  ///     repetition behavior is used, which can be changed from
-  ///     `eager` by calling `repetitionBehavior(_:)` on the resulting
-  ///     `Regex`.
-  @_alwaysEmitIntoClient
-  public init<W, Capture0, each Capture>(
-    _ component: some RegexComponent<(W, Capture0, repeat each Capture)>,
-    _ expression: some RangeExpression<Int>,
-    _ behavior: RegexRepetitionBehavior? = nil
-  ) where RegexOutput == (Substring, (Capture0, repeat each Capture)?) {
-    let factory = makeFactory()
-    self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, component))
-  }
 
   /// Creates a regex component that matches the given component repeated
   /// a number of times specified by the given range expression.
@@ -503,11 +486,11 @@ extension Repeat {
   ///   - componentBuilder: A builder closure that creates the regex
   ///     component to repeat.
   @_alwaysEmitIntoClient
-  public init<W, Capture0, each Capture>(
+  public init<C0, C1, each Capture>(
     _ expression: some RangeExpression<Int>,
     _ behavior: RegexRepetitionBehavior? = nil,
-    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(W, Capture0, repeat each Capture)>
-  ) where RegexOutput == (Substring, (Capture0, repeat each Capture)?) {
+    @RegexComponentBuilder _ componentBuilder: () -> some RegexComponent<(C0, C1, repeat each Capture)>
+  ) where RegexOutput == (Substring, C1?, repeat (each Capture)?) {
     let factory = makeFactory()
     self.init(factory.repeating(expression.relative(to: 0..<Int.max), behavior, componentBuilder()))
   }
@@ -583,7 +566,7 @@ extension AlternationBuilder {
   public static func buildPartialBlock<W0, W1, C0, C1>(
     accumulated: some RegexComponent<(W0, C0)>,
     next: some RegexComponent<(W1, C1)>
-  ) -> ChoiceOf<(Substring, Optional<C0>, Optional<C1>)> {
+  ) -> ChoiceOf<(Substring, C0?, C1?)> {
     let factory = makeFactory()
     return .init(factory.accumulateAlternation(accumulated, next))
   }
@@ -592,7 +575,7 @@ extension AlternationBuilder {
   public static func buildPartialBlock<W0, W1, each Capture0, each Capture1>(
     accumulated: some RegexComponent<(W0, repeat each Capture0)>,
     next: some RegexComponent<(W1, repeat each Capture1)>
-  ) -> ChoiceOf<(Substring, repeat each Capture0, repeat Optional<each Capture1>)> {
+  ) -> ChoiceOf<(Substring, repeat each Capture0, repeat (each Capture1)?)> {
     let factory = makeFactory()
     return .init(factory.accumulateAlternation(accumulated, next))
   }
