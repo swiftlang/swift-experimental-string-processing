@@ -203,9 +203,8 @@ extension DSLTree.CustomCharacterClass.Member {
       
       return { input, bounds in
         let curIdx = bounds.lowerBound
-        let nextIndex = isCharacterSemantic
-          ? input.index(after: curIdx)
-          : input.unicodeScalars.index(after: curIdx)
+        let nextIndex = input.index(
+          after: curIdx, isScalarSemantics: !isCharacterSemantic)
 
         // Under grapheme semantics, we compare based on single NFC scalars. If
         // such a character is not single scalar under NFC, the match fails. In
@@ -348,9 +347,9 @@ extension AST.Atom.CharacterProperty {
         if p(input, bounds) != nil { return nil }
 
         // TODO: bounds check
-        return opts.semanticLevel == .graphemeCluster
-          ? input.index(after: bounds.lowerBound)
-          : input.unicodeScalars.index(after: bounds.lowerBound)
+        return input.index(
+          after: bounds.lowerBound, 
+          isScalarSemantics: opts.semanticLevel == .unicodeScalar)
       }
     }
 
@@ -378,7 +377,6 @@ extension AST.Atom.CharacterProperty {
 
       case .generalCategory(let p):
         return try p.generateConsumer(opts)
-//        fatalError("TODO: Map categories: \(p)")
 
       case .binary(let prop, value: let value):
         let cons = try prop.generateConsumer(opts)

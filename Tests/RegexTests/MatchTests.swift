@@ -11,7 +11,7 @@
 
 import XCTest
 @testable import _RegexParser
-@testable @_spi(RegexBenchmark) import _StringProcessing
+@testable @_spi(RegexBenchmark) @_spi(Foundation) import _StringProcessing
 import TestSupport
 
 struct MatchError: Error {
@@ -19,6 +19,22 @@ struct MatchError: Error {
   init(_ message: String) {
     self.message = message
   }
+}
+
+// This just piggy-backs on the existing match testing to validate that
+// literal patterns round trip correctly.
+@available(SwiftStdlib 6.0, *)
+func _roundTripLiteral(
+  _ regexStr: String,
+  syntax: SyntaxOptions
+) throws -> Regex<AnyRegexOutput>? {
+  guard let pattern = try Regex(regexStr, syntax: syntax)._literalPattern else {
+    return nil
+  }
+  
+  let remadeRegex = try Regex(pattern)
+  XCTAssertEqual(pattern, remadeRegex._literalPattern)
+  return remadeRegex
 }
 
 func _firstMatch(
@@ -30,9 +46,99 @@ func _firstMatch(
 ) throws -> (String, [String?])? {
   var regex = try Regex(regexStr, syntax: syntax).matchingSemantics(semanticLevel)
   let result = try regex.firstMatch(in: input)
+  
+  func validateSubstring(_ substringInput: Substring) throws {
+    // Sometimes the characters we add to a substring merge with existing
+    // string members. This messes up cross-validation, so skip the test.
+    guard input == substringInput else { return }
+    
+    let substringResult = try regex.firstMatch(in: substringInput)
+    switch (result, substringResult) {
+    case (nil, nil):
+      break
+    case let (result?, substringResult?):
+      if substringResult.range.upperBound > substringInput.endIndex {
+        throw MatchError("Range exceeded substring upper bound for \(input) and \(regexStr)")
+      }
+      let stringMatch = input[result.range]
+      let substringMatch = substringInput[substringResult.range]
+      if stringMatch != substringMatch {
+        throw MatchError("""
+        Pattern: '\(regexStr)'
+        String match returned: '\(stringMatch)'
+        Substring match returned: '\(substringMatch)'
+        """)
+      }
+    case (.some(let result), nil):
+      throw MatchError("""
+        Pattern: '\(regexStr)'
+        Input: '\(input)'
+        Substring '\(substringInput)' ('\(substringInput.base)')
+        String match returned: '\(input[result.range])'
+        Substring match returned: nil
+        """)
+    case (nil, .some(let substringResult)):
+      throw MatchError("""
+        Pattern: '\(regexStr)'
+        Input: '\(input)'
+        Substring '\(substringInput)' ('\(substringInput.base)')
+        String match returned: nil
+        Substring match returned: '\(substringInput[substringResult.range])'
+        """)
+    }
+  }
+
+  if #available(SwiftStdlib 6.0, *) {
+    let roundTripRegex = try? _roundTripLiteral(regexStr, syntax: syntax)
+    let roundTripResult = try? roundTripRegex?
+      .matchingSemantics(semanticLevel)
+      .firstMatch(in: input)?[0]
+      .substring
+    switch (result?[0].substring, roundTripResult) {
+    case let (match?, rtMatch?):
+      XCTAssertEqual(match, rtMatch)
+    case (nil, nil):
+      break // okay
+    case let (match?, _):
+      XCTFail("""
+        Didn't match in round-tripped version of '\(regexStr)'
+        For input '\(input)'
+        Original: '\(regexStr)'
+        _literalPattern: '\(roundTripRegex?._literalPattern ?? "<no pattern>")'
+        """)
+    case let (_, rtMatch?):
+      XCTFail("""
+        Incorrectly matched as '\(rtMatch)'
+        For input '\(input)'
+        Original: '\(regexStr)'
+        _literalPattern: '\(roundTripRegex!._literalPattern!)'
+        """)
+    }
+  }
+
+  if !input.isEmpty {
+    try validateSubstring("\(input)\(input.last!)".dropLast())
+  }
+  try validateSubstring("\(input)\n".dropLast())
+  try validateSubstring("A\(input)Z".dropFirst().dropLast())
+  do {
+    // Test sub-character slicing
+    let str = input + "\n"
+    let prevIndex = str.unicodeScalars.index(str.endIndex, offsetBy: -1)
+    try validateSubstring(str[..<prevIndex])
+  }
+  do {
+    // Validate that we don't crash when sub-scalar slicing is used
+    // Actual matching behavior is untested here
+    let str = "\u{e9}\(input)e\u{e9}"
+    let upper = str.utf8.index(before: str.endIndex)
+    _ = try regex.firstMatch(in: str[..<upper])
+    let lower = str.utf8.index(after: str.startIndex)
+    _ = try regex.firstMatch(in: str[lower...])
+  }
 
   if validateOptimizations {
-    assert(regex._forceAction(.addOptions(.disableOptimizations)))
+    precondition(regex._forceAction(.addOptions(.disableOptimizations)))
     let unoptResult = try regex.firstMatch(in: input)
     if result != nil && unoptResult == nil {
       throw MatchError("match not found for unoptimized \(regexStr) in \(input)")
@@ -52,6 +158,7 @@ func _firstMatch(
       }
     }
   }
+  
   guard let result = result else { return nil }
   let caps = result.output.slices(from: input)
   return (String(input[result.range]), caps.map { $0.map(String.init) })
@@ -618,6 +725,50 @@ extension RegexTests {
     firstMatchTest("(?U)a??a", input: "aaa", match: "aa")
 
     // TODO: After captures, easier to test these
+  }
+
+  func testQuantificationScalarSemantics() {
+    // TODO: We want more thorough testing here, including "a{n,m}", "a?", etc.
+
+    firstMatchTest("a*", input: "aaa\u{301}", match: "aa")
+    firstMatchTest("a*", input: "aaa\u{301}", match: "aaa", semanticLevel: .unicodeScalar)
+    firstMatchTest("a+", input: "aaa\u{301}", match: "aa")
+    firstMatchTest("a+", input: "aaa\u{301}", match: "aaa", semanticLevel: .unicodeScalar)
+    firstMatchTest("a?", input: "a\u{301}", match: "")
+    firstMatchTest("a?", input: "a\u{301}", match: "a", semanticLevel: .unicodeScalar)
+
+    firstMatchTest("[ab]*", input: "abab\u{301}", match: "aba")
+    firstMatchTest("[ab]*", input: "abab\u{301}", match: "abab", semanticLevel: .unicodeScalar)
+    firstMatchTest("[ab]+", input: "abab\u{301}", match: "aba")
+    firstMatchTest("[ab]+", input: "abab\u{301}", match: "abab", semanticLevel: .unicodeScalar)
+    firstMatchTest("[ab]?", input: "b\u{301}", match: "")
+    firstMatchTest("[ab]?", input: "b\u{301}", match: "b", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#"\s*"#, input: "  \u{301}", match: "  \u{301}")
+    firstMatchTest(#"\s*"#, input: "  \u{301}", match: "  ", semanticLevel: .unicodeScalar)
+    firstMatchTest(#"\s+"#, input: "  \u{301}", match: "  \u{301}")
+    firstMatchTest(#"\s+"#, input: "  \u{301}", match: "  ", semanticLevel: .unicodeScalar)
+    firstMatchTest(#"\s?"#, input: " \u{301}", match: " \u{301}")
+    firstMatchTest(#"\s?"#, input: " \u{301}", match: " ", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#".*?a"#, input: "xxa\u{301}xaZ", match: "xxa\u{301}xa")
+    firstMatchTest(#".*?a"#, input: "xxa\u{301}xaZ", match: "xxa", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".+?a"#, input: "xxa\u{301}xaZ", match: "xxa\u{301}xa")
+    firstMatchTest(#".+?a"#, input: "xxa\u{301}xaZ", match: "xxa", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".?a"#, input: "e\u{301}aZ", match: "e\u{301}a")
+    firstMatchTest(#".?a"#, input: "e\u{301}aZ", match: "\u{301}a", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#".+\u{301}"#, input: "aa\u{301}Z", match: nil)
+    firstMatchTest(#".+\u{301}"#, input: "aa\u{301}Z", match: "aa\u{301}", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".*\u{301}"#, input: "\u{301}Z", match: "\u{301}")
+    firstMatchTest(#".*\u{301}"#, input: "\u{301}Z", match: "\u{301}", semanticLevel: .unicodeScalar)
+
+    firstMatchTest(#".?\u{301}"#, input: "aa\u{302}\u{301}Z", match: nil)
+    firstMatchTest(#".?\u{301}.?Z"#, input: "aa\u{302}\u{301}Z", match: "\u{302}\u{301}Z", semanticLevel: .unicodeScalar)
+    firstMatchTest(#".?.?\u{301}.?Z"#, input: "aa\u{302}\u{301}Z", match: "a\u{302}\u{301}Z", semanticLevel: .unicodeScalar)
+
+
+    // TODO: other test cases?
   }
 
   func testMatchCharacterClasses() {
@@ -1653,8 +1804,7 @@ extension RegexTests {
     firstMatchTests(
       #"(?>(\d+))\w+\1"#,
       (input: "23x23", match: "23x23"),
-      (input: "123x23", match: "23x23"),
-      xfail: true)
+      (input: "123x23", match: "23x23"))
     
     // Backreferences in scalar mode
     // In scalar mode the backreference should not match
@@ -1672,12 +1822,10 @@ extension RegexTests {
       (input: "abbba", match: nil),
       (input: "ABBA", match: nil),
       (input: "defABBAdef", match: nil))
-    // FIXME: Backreferences don't escape positive lookaheads
     firstMatchTests(
       #"^(?=.*(.)(.)\2\1).+\2$"#,
       (input: "ABBAB", match: "ABBAB"),
-      (input: "defABBAdefB", match: "defABBAdefB"),
-      xfail: true)
+      (input: "defABBAdefB", match: "defABBAdefB"))
     
     firstMatchTests(
       #"^(?!.*(.)(.)\2\1).+$"#,
@@ -1891,6 +2039,11 @@ extension RegexTests {
   func testSingleLineMode() {
     firstMatchTest(#".+"#, input: "a\nb", match: "a")
     firstMatchTest(#"(?s:.+)"#, input: "a\nb", match: "a\nb")
+
+    // We recognize LF, line tab, FF, and CR as newlines by default
+    firstMatchTest(#"."#, input: "\u{A}\u{B}\u{C}\u{D}\nb", match: "b")
+    firstMatchTest(#".+"#, input: "\u{A}\u{B}\u{C}\u{D}\nbb", match: "bb")
+
   }
 
   func testMatchNewlines() {
@@ -2545,7 +2698,7 @@ extension RegexTests {
   }
 
   func testQuantifyOptimization() throws {
-    // test that the maximum values for minTrips and extraTrips are handled correctly
+    // test that the maximum values for minTrips and maxExtraTrips are handled correctly
     let maxStorable = Int(QuantifyPayload.maxStorableTrips)
     let maxExtraTrips = "a{,\(maxStorable)}"
     expectProgram(for: maxExtraTrips, contains: [.quantify])
@@ -2603,6 +2756,59 @@ extension RegexTests {
       let possessiveRegex = try Regex("a{0,\(max)}+a")
       let str = String(repeating: "a", count: max + 1)
       XCTAssertNotNil(str.wholeMatch(of: possessiveRegex))
+    }
+  }
+  
+  func testIssue713() throws {
+    // Original report from https://github.com/apple/swift-experimental-string-processing/issues/713
+    let originalInput = "Something 9a"
+    let originalRegex = #/(?=([1-9]|(a|b)))/#
+    let originalOutput = originalInput.matches(of: originalRegex).map(\.output)
+    XCTAssert(originalOutput[0] == ("", "9", nil))
+    XCTAssert(originalOutput[1] == ("", "a", "a"))
+
+    let simplifiedRegex = #/(?=(9))/#
+    let simplifiedOutput = originalInput.matches(of: simplifiedRegex).map(\.output)
+    XCTAssert(simplifiedOutput[0] == ("", "9"))
+
+    let additionalRegex = #/(a+)b(a+)/#
+    let additionalInput = "abaaba"
+    XCTAssertNil(additionalInput.wholeMatch(of: additionalRegex))
+  }
+  
+  func testNSRECompatibility() throws {
+    // NSRE-compatibility includes scalar matching, so `[\r\n]` should match
+    // either `\r` or `\n`.
+    let text = #"""
+      y=sin(x)+sin(2x)+sin(3x);\#rText "This is a function of x.";\r
+      """#
+    let lineTerminationRegex = try Regex(#";[\r\n]"#)
+      ._nsreCompatibility
+    
+    let afterLine = try XCTUnwrap(text.firstRange(of: "Text"))
+    let match = try lineTerminationRegex.firstMatch(in: text)
+    XCTAssert(match?.range.upperBound == afterLine.lowerBound)
+    
+    // NSRE-compatibility treats "dot" as special, in that it can match a
+    // newline sequence as well as a single Unicode scalar.
+    let aDotBRegex = try Regex(#"a.b"#)
+      ._nsreCompatibility
+      .dotMatchesNewlines()
+    for input in ["a\rb", "a\nb", "a\r\nb"] {
+      XCTAssertNotNil(try aDotBRegex.wholeMatch(in: input))
+    }
+    
+    // NSRE-compatibility doesn't give special treatment to newline sequences
+    // when matching other "match everything" regex patterns, like `[[^z]z]`,
+    // so this pattern doesn't match "a\r\nb".
+    let aCCBRegex = try Regex(#"a[[^z]z]b"#)
+      ._nsreCompatibility
+    for input in ["a\rb", "a\nb", "a\r\nb"] {
+      if input.unicodeScalars.count == 3 {
+        XCTAssertNotNil(try aCCBRegex.wholeMatch(in: input))
+      } else {
+        XCTAssertNil(try aCCBRegex.wholeMatch(in: input))
+      }
     }
   }
 }

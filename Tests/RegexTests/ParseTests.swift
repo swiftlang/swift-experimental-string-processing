@@ -118,6 +118,23 @@ func parseTest(
     return
   }
   serializedCaptures.deallocate()
+  
+  if #available(SwiftStdlib 6.0, *),
+     !unsupported && expectedErrors.isEmpty,
+     let pattern = Regex<AnyRegexOutput>(ast: ast)._literalPattern
+  {
+    let reparsedAST = parseWithRecovery(pattern, syntax)
+    let roundtripPattern = Regex<AnyRegexOutput>(ast: ast)._literalPattern!
+    XCTAssert(
+      pattern == roundtripPattern,
+      """
+
+        Input:     \(input)
+        Pattern:   \(pattern)
+        Roundtrip: \(roundtripPattern)
+        """,
+      file: file, line: line)
+  }
 }
 
 /// Test delimiter lexing. Takes an input string that starts with a regex
@@ -2978,6 +2995,7 @@ extension RegexTests {
     diagnosticTest(".\u{35F}", .confusableCharacter(".\u{35F}"))
     diagnosticTest("|\u{360}", .confusableCharacter("|\u{360}"))
     diagnosticTest(" \u{361}", .confusableCharacter(" \u{361}"))
+    diagnosticTest("\\Q \u{361}\\E") // OK in quoted section
 
     // MARK: Interpolation (currently unsupported)
 

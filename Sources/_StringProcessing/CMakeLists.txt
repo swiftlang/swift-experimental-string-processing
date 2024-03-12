@@ -23,7 +23,6 @@ add_library(_StringProcessing
   Algorithms/Searchers/NaivePatternSearcher.swift
   Algorithms/Searchers/PatternOrEmpty.swift
   Algorithms/Searchers/PredicateSearcher.swift
-  Algorithms/Searchers/TwoWaySearcher.swift
   Algorithms/Searchers/ZSearcher.swift
   Engine/Backtracking.swift
   Engine/Consume.swift
@@ -77,6 +76,7 @@ add_library(_StringProcessing
   Compiler.swift
   ConsumerInterface.swift
   Executor.swift
+  LiteralPrinter.swift
   MatchingOptions.swift
   PrintAsPattern.swift)
 target_compile_options(_StringProcessing PRIVATE

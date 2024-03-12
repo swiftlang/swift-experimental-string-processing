@@ -35,7 +35,7 @@ struct Processor {
   /// of the search. `input` can be a "supersequence" of the subject, while
   /// `input[subjectBounds]` is the logical entity that is being searched.
   let input: Input
-  
+
   /// The bounds of the logical subject in `input`.
   ///
   /// `subjectBounds` represents the bounds of the string or substring that a
@@ -46,7 +46,7 @@ struct Processor {
   /// `subjectBounds` is always equal to or a subrange of
   /// `input.startIndex..<input.endIndex`.
   let subjectBounds: Range<Position>
-  
+
   /// The bounds within the subject for an individual search.
   ///
   /// `searchBounds` is equal to `subjectBounds` in some cases, but can be a
@@ -62,7 +62,7 @@ struct Processor {
   let instructions: InstructionList<Instruction>
 
   // MARK: Resettable state
-  
+
   /// The current search position while processing.
   ///
   /// `currentPosition` must always be in the range `subjectBounds` or equal
@@ -81,16 +81,12 @@ struct Processor {
 
   var wordIndexCache: Set<String.Index>? = nil
   var wordIndexMaxIndex: String.Index? = nil
-  
+
   var state: State = .inProgress
 
   var failureReason: Error? = nil
 
-  // MARK: Metrics, debugging, etc.
-  var cycleCount = 0
-  var isTracingEnabled: Bool
-  let shouldMeasureMetrics: Bool
-  var metrics: ProcessorMetrics = ProcessorMetrics()
+  var metrics: ProcessorMetrics
 }
 
 extension Processor {
@@ -116,14 +112,17 @@ extension Processor {
     self.subjectBounds = subjectBounds
     self.searchBounds = searchBounds
     self.matchMode = matchMode
-    self.isTracingEnabled = isTracingEnabled
-    self.shouldMeasureMetrics = shouldMeasureMetrics
+
+    self.metrics = ProcessorMetrics(
+      isTracingEnabled: isTracingEnabled,
+      shouldMeasureMetrics: shouldMeasureMetrics)
+
     self.currentPosition = searchBounds.lowerBound
 
     // Initialize registers with end of search bounds
     self.registers = Registers(program, searchBounds.upperBound)
     self.storedCaptures = Array(
-       repeating: .init(), count: program.registerInfo.captures)
+      repeating: .init(), count: program.registerInfo.captures)
 
     _checkInvariants()
   }
@@ -144,8 +143,8 @@ extension Processor {
 
     self.state = .inProgress
     self.failureReason = nil
-    
-    if shouldMeasureMetrics { metrics.resets += 1 }
+
+    metrics.addReset()
     _checkInvariants()
   }
 
@@ -160,16 +159,14 @@ extension Processor {
 }
 
 extension Processor {
+  func fetch() -> (Instruction.OpCode, Instruction.Payload) {
+    instructions[controller.pc].destructure
+  }
+
   var slice: Input.SubSequence {
     // TODO: Should we whole-scale switch to slices, or
     // does that depend on options for some anchors?
     input[searchBounds]
-  }
-
-  // Advance in our input, without any checks or failure signalling
-  mutating func _uncheckedForcedConsumeOne() {
-    assert(currentPosition != end)
-    input.formIndex(after: &currentPosition)
   }
 
   // Advance in our input
@@ -177,6 +174,7 @@ extension Processor {
   // Returns whether the advance succeeded. On failure, our
   // save point was restored
   mutating func consume(_ n: Distance) -> Bool {
+    // TODO: needs benchmark coverage
     guard let idx = input.index(
       currentPosition, offsetBy: n.rawValue, limitedBy: end
     ) else {
@@ -186,9 +184,10 @@ extension Processor {
     currentPosition = idx
     return true
   }
-  
+
   // Advances in unicode scalar view
   mutating func consumeScalar(_ n: Distance) -> Bool {
+    // TODO: needs benchmark coverage
     guard let idx = input.unicodeScalars.index(
       currentPosition, offsetBy: n.rawValue, limitedBy: end
     ) else {
@@ -220,29 +219,29 @@ extension Processor {
   func load() -> Element? {
     currentPosition < end ? input[currentPosition] : nil
   }
-  func load(count: Int) -> Input.SubSequence? {
-    let slice = self.slice[currentPosition...].prefix(count)
-    guard slice.count == count else { return nil }
-    return slice
-  }
+
+  // MARK: Match functions
+  //
+  // TODO: refactor these such that `cycle()` calls the corresponding String
+  //       method directly, and all the step, signalFailure, and
+  //       currentPosition logic is collected into a single place inside
+  //       cycle().
 
   // Match against the current input element. Returns whether
   // it succeeded vs signaling an error.
-  mutating func match(_ e: Element) -> Bool {
-    guard let cur = load(), cur == e else {
+  mutating func match(
+    _ e: Element, isCaseInsensitive: Bool
+  ) -> Bool {
+    guard let next = input.match(
+      e,
+      at: currentPosition,
+      limitedBy: end,
+      isCaseInsensitive: isCaseInsensitive
+    ) else {
       signalFailure()
       return false
     }
-    _uncheckedForcedConsumeOne()
-    return true
-  }
-
-  mutating func matchCaseInsensitive(_ e: Element) -> Bool {
-    guard let cur = load(), cur.lowercased() == e.lowercased() else {
-      signalFailure()
-      return false
-    }
-    _uncheckedForcedConsumeOne()
+    currentPosition = next
     return true
   }
 
@@ -250,108 +249,52 @@ extension Processor {
   // it succeeded vs signaling an error.
   mutating func matchSeq(
     _ seq: Substring,
-    isScalarMode: Bool
+    isScalarSemantics: Bool
   ) -> Bool  {
-    if isScalarMode {
-      for s in seq.unicodeScalars {
-        guard matchScalar(s, boundaryCheck: false) else { return false }
-      }
-      return true
+    guard let next = input.matchSeq(
+      seq,
+      at: currentPosition,
+      limitedBy: end,
+      isScalarSemantics: isScalarSemantics
+    ) else {
+      signalFailure()
+      return false
     }
 
-    for e in seq {
-      guard match(e) else { return false }
-    }
+    currentPosition = next
     return true
   }
 
-  func loadScalar() -> Unicode.Scalar? {
-    currentPosition < end ? input.unicodeScalars[currentPosition] : nil
-  }
-  
-  func _doMatchScalar(_ s: Unicode.Scalar, _ boundaryCheck: Bool) -> Input.Index? {
-    if s == loadScalar(),
-       let idx = input.unicodeScalars.index(
-        currentPosition,
-        offsetBy: 1,
-        limitedBy: end),
-       (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx)) {
-      return idx
-    } else {
-      return nil
-    }
-  }
-  
-  mutating func matchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) -> Bool {
-    guard let next = _doMatchScalar(s, boundaryCheck) else {
+  mutating func matchScalar(
+    _ s: Unicode.Scalar,
+    boundaryCheck: Bool,
+    isCaseInsensitive: Bool
+  ) -> Bool {
+    guard let next = input.matchScalar(
+      s,
+      at: currentPosition,
+      limitedBy: end,
+      boundaryCheck: boundaryCheck,
+      isCaseInsensitive: isCaseInsensitive
+    ) else {
       signalFailure()
       return false
     }
     currentPosition = next
     return true
-  }
-
-  mutating func matchScalarCaseInsensitive(
-    _ s: Unicode.Scalar,
-    boundaryCheck: Bool
-  ) -> Bool {
-    guard let curScalar = loadScalar(),
-          s.properties.lowercaseMapping == curScalar.properties.lowercaseMapping,
-          let idx = input.unicodeScalars.index(
-            currentPosition,
-            offsetBy: 1,
-            limitedBy: end),
-          (!boundaryCheck || input.isOnGraphemeClusterBoundary(idx))
-    else {
-      signalFailure()
-      return false
-    }
-    currentPosition = idx
-    return true
-  }
-
-  func _doMatchBitset(_ bitset: DSLTree.CustomCharacterClass.AsciiBitset) -> Input.Index? {
-    if let cur = load(), bitset.matches(char: cur) {
-      return input.index(after: currentPosition)
-    } else {
-      return nil
-    }
   }
 
   // If we have a bitset we know that the CharacterClass only matches against
   // ascii characters, so check if the current input element is ascii then
   // check if it is set in the bitset
   mutating func matchBitset(
-    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
-  ) -> Bool {
-    guard let next = _doMatchBitset(bitset) else {
-      signalFailure()
-      return false
-    }
-    currentPosition = next
-    return true
-  }
-
-  // Equivalent of matchBitset but emitted when in unicode scalar semantic mode
-  mutating func matchBitsetScalar(
-    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset
-  ) -> Bool {
-    guard let curScalar = loadScalar(),
-          bitset.matches(scalar: curScalar),
-          let idx = input.unicodeScalars.index(currentPosition, offsetBy: 1, limitedBy: end) else {
-      signalFailure()
-      return false
-    }
-    currentPosition = idx
-    return true
-  }
-
-  // Matches the next character/scalar if it is not a newline
-  mutating func matchAnyNonNewline(
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
     isScalarSemantics: Bool
   ) -> Bool {
-    guard let next = input._matchAnyNonNewline(
+    guard let next = input.matchASCIIBitset(
+      bitset,
       at: currentPosition,
+      limitedBy: end,
       isScalarSemantics: isScalarSemantics
     ) else {
       signalFailure()
@@ -361,7 +304,23 @@ extension Processor {
     return true
   }
 
-  mutating func signalFailure() {
+  // Matches the next character/scalar if it is not a newline
+  mutating func matchAnyNonNewline(
+    isScalarSemantics: Bool
+  ) -> Bool {
+    guard let next = input.matchAnyNonNewline(
+      at: currentPosition,
+      limitedBy: end,
+      isScalarSemantics: isScalarSemantics
+    ) else {
+      signalFailure()
+      return false
+    }
+    currentPosition = next
+    return true
+  }
+
+  mutating func signalFailure(preservingCaptures: Bool = false) {
     guard !savePoints.isEmpty else {
       state = .fail
       return
@@ -376,15 +335,14 @@ extension Processor {
     )
 
     let idx = savePoints.index(before: savePoints.endIndex)
-    // If we have a quantifier save point, move the next range position into pos
-    if !savePoints[idx].rangeIsEmpty {
-      savePoints[idx].takePositionFromRange(input)
-    }
-    // If we have a normal save point or an empty quantifier save point, remove it
-    if savePoints[idx].rangeIsEmpty {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
-    } else {
+
+    // If we have a quantifier save point, move the next range position into
+    // pos instead of removing it
+    if savePoints[idx].isQuantified {
+      savePoints[idx].takePositionFromQuantifiedRange(input)
       (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
+    } else {
+      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
     }
 
     assert(stackEnd.rawValue <= callStack.count)
@@ -393,11 +351,15 @@ extension Processor {
     controller.pc = pc
     currentPosition = pos ?? currentPosition
     callStack.removeLast(callStack.count - stackEnd.rawValue)
-    storedCaptures = capEnds
     registers.ints = intRegisters
     registers.positions = posRegisters
-    
-    if shouldMeasureMetrics { metrics.backtracks += 1 }
+
+    if !preservingCaptures {
+      // Reset all capture information
+      storedCaptures = capEnds
+    }
+
+    metrics.addBacktrack()
   }
 
   mutating func abort(_ e: Error? = nil) {
@@ -431,25 +393,15 @@ extension Processor {
     // TODO: What should we do here?
     fatalError("Invalid code: Tried to clear save points when empty")
   }
-  
+
   mutating func cycle() {
     _checkInvariants()
     assert(state == .inProgress)
 
-#if PROCESSOR_MEASUREMENTS_ENABLED
-    if cycleCount == 0 {
-      trace()
-      measureMetrics()
-    }
-    defer {
-      cycleCount += 1
-      trace()
-      measureMetrics()
-      _checkInvariants()
-    }
-#endif
+    startCycleMetrics()
+    defer { endCycleMetrics() }
 
-    let (opcode, payload) = fetch().destructure
+    let (opcode, payload) = fetch()
     switch opcode {
     case .invalid:
       fatalError("Invalid program")
@@ -489,19 +441,19 @@ extension Processor {
       }
     case .save:
       let resumeAddr = payload.addr
-      let sp = makeSavePoint(resumeAddr)
+      let sp = makeSavePoint(resumingAt: resumeAddr)
       savePoints.append(sp)
       controller.step()
 
     case .saveAddress:
       let resumeAddr = payload.addr
-      let sp = makeSavePoint(resumeAddr, addressOnly: true)
+      let sp = makeAddressOnlySavePoint(resumingAt: resumeAddr)
       savePoints.append(sp)
       controller.step()
 
     case .splitSaving:
       let (nextPC, resumeAddr) = payload.pairedAddrAddr
-      let sp = makeSavePoint(resumeAddr)
+      let sp = makeSavePoint(resumingAt: resumeAddr)
       savePoints.append(sp)
       controller.pc = nextPC
 
@@ -520,7 +472,8 @@ extension Processor {
       tryAccept()
 
     case .fail:
-      signalFailure()
+      let preservingCaptures = payload.boolPayload
+      signalFailure(preservingCaptures: preservingCaptures)
 
     case .advance:
       let (isScalar, distance) = payload.distance
@@ -539,39 +492,25 @@ extension Processor {
       }
     case .match:
       let (isCaseInsensitive, reg) = payload.elementPayload
-      if isCaseInsensitive {
-        if matchCaseInsensitive(registers[reg]) {
-          controller.step()
-        }
-      } else {
-        if match(registers[reg]) {
-          controller.step()
-        }
+      if match(registers[reg], isCaseInsensitive: isCaseInsensitive) {
+        controller.step()
       }
 
     case .matchScalar:
       let (scalar, caseInsensitive, boundaryCheck) = payload.scalarPayload
-      if caseInsensitive {
-        if matchScalarCaseInsensitive(scalar, boundaryCheck: boundaryCheck) {
-          controller.step()
-        }
-      } else {
-        if matchScalar(scalar, boundaryCheck: boundaryCheck) {
-          controller.step()
-        }
+      if matchScalar(
+        scalar,
+        boundaryCheck: boundaryCheck,
+        isCaseInsensitive: caseInsensitive
+      ) {
+        controller.step()
       }
 
     case .matchBitset:
       let (isScalar, reg) = payload.bitsetPayload
       let bitset = registers[reg]
-      if isScalar {
-        if matchBitsetScalar(bitset) {
-          controller.step()
-        }
-      } else {
-        if matchBitset(bitset) {
-          controller.step()
-        }
+      if matchBitset(bitset, isScalarSemantics: isScalar) {
+        controller.step()
       }
 
     case .matchBuiltin:
@@ -585,30 +524,16 @@ extension Processor {
         controller.step()
       }
     case .quantify:
-      let quantPayload = payload.quantify
-      let matched: Bool
-      switch (quantPayload.quantKind, quantPayload.minTrips, quantPayload.extraTrips) {
-      case (.reluctant, _, _):
-        assertionFailure(".reluctant is not supported by .quantify")
-        return
-      case (.eager, 0, nil):
-        matched = runEagerZeroOrMoreQuantify(quantPayload)
-      case (.eager, 1, nil):
-        matched = runEagerOneOrMoreQuantify(quantPayload)
-      case (_, 0, 1):
-        matched = runZeroOrOneQuantify(quantPayload)
-      default:
-        matched = runQuantify(quantPayload)
-      }
-      if matched {
+      if runQuantify(payload.quantify) {
         controller.step()
       }
 
     case .consumeBy:
       let reg = payload.consumer
+      let consumer = registers[reg]
       guard currentPosition < searchBounds.upperBound,
-            let nextIndex = registers[reg](
-              input, currentPosition..<searchBounds.upperBound)
+            let nextIndex = consumer(input, currentPosition..<searchBounds.upperBound),
+            nextIndex <= end
       else {
         signalFailure()
         return
@@ -635,7 +560,7 @@ extension Processor {
       do {
         guard let (nextIdx, val) = try matcher(
           input, currentPosition, searchBounds
-        ) else {
+        ), nextIdx <= end else {
           signalFailure()
           return
         }
@@ -662,7 +587,7 @@ extension Processor {
         signalFailure()
         return
       }
-      if matchSeq(input[range], isScalarMode: isScalarMode) {
+      if matchSeq(input[range], isScalarSemantics: isScalarMode) {
         controller.step()
       }
 
@@ -700,10 +625,144 @@ extension Processor {
       let (val, cap) = payload.pairedValueCapture
       let value = registers[val]
       let capNum = Int(asserting: cap.rawValue)
-      let sp = makeSavePoint(self.currentPC)
-      storedCaptures[capNum].registerValue(
-        value, overwriteInitial: sp)
+      storedCaptures[capNum].registerValue(value)
       controller.step()
     }
+  }
+}
+
+// MARK: String matchers
+//
+// TODO: Refactor into separate file, formalize patterns
+
+extension String {
+
+  func match(
+    _ char: Character,
+    at pos: Index,
+    limitedBy end: String.Index,
+    isCaseInsensitive: Bool
+  ) -> Index? {
+    // TODO: This can be greatly sped up with string internals
+    // TODO: This is also very much quick-check-able
+    guard let (stringChar, next) = characterAndEnd(at: pos, limitedBy: end)
+    else { return nil }
+
+    if isCaseInsensitive {
+      guard stringChar.lowercased() == char.lowercased() else { return nil }
+    } else {
+      guard stringChar == char else { return nil }
+    }
+
+    return next
+  }
+
+  func matchSeq(
+    _ seq: Substring,
+    at pos: Index,
+    limitedBy end: Index,
+    isScalarSemantics: Bool
+  ) -> Index? {
+    // TODO: This can be greatly sped up with string internals
+    // TODO: This is also very much quick-check-able
+    var cur = pos
+
+    if isScalarSemantics {
+      for e in seq.unicodeScalars {
+        guard cur < end, unicodeScalars[cur] == e else { return nil }
+        self.unicodeScalars.formIndex(after: &cur)
+      }
+    } else {
+      for e in seq {
+        guard let (char, next) = characterAndEnd(at: cur, limitedBy: end),
+              char == e
+        else { return nil }
+        cur = next
+      }
+    }
+
+    guard cur <= end else { return nil }
+    return cur
+  }
+
+  func matchScalar(
+    _ scalar: Unicode.Scalar,
+    at pos: Index,
+    limitedBy end: String.Index,
+    boundaryCheck: Bool,
+    isCaseInsensitive: Bool
+  ) -> Index? {
+    // TODO: extremely quick-check-able
+    // TODO: can be sped up with string internals
+    guard pos < end else { return nil }
+    let curScalar = unicodeScalars[pos]
+
+    if isCaseInsensitive {
+      guard curScalar.properties.lowercaseMapping == scalar.properties.lowercaseMapping
+      else {
+        return nil
+      }
+    } else {
+      guard curScalar == scalar else { return nil }
+    }
+
+    let idx = unicodeScalars.index(after: pos)
+    assert(idx <= end, "Input is a substring with a sub-scalar endIndex.")
+
+    if boundaryCheck && !isOnGraphemeClusterBoundary(idx) {
+      return nil
+    }
+
+    return idx
+  }
+
+  func matchASCIIBitset(
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
+    at pos: Index,
+    limitedBy end: Index,
+    isScalarSemantics: Bool
+  ) -> Index? {
+
+    // FIXME: Inversion should be tracked and handled in only one place.
+    // That is, we should probably store it as a bit in the instruction, so that
+    // bitset matching and bitset inversion is bit-based rather that semantically
+    // inverting the notion of a match or not. As-is, we need to track both
+    // meanings in some code paths.
+    let isInverted = bitset.isInverted
+
+    // TODO: More fodder for refactoring `_quickASCIICharacter`, see the comment 
+    // there
+    guard let (asciiByte, next, isCRLF) = _quickASCIICharacter(
+      at: pos,
+      limitedBy: end
+    ) else {
+      if isScalarSemantics {
+        guard pos < end else { return nil }
+        guard bitset.matches(unicodeScalars[pos]) else { return nil }
+        return unicodeScalars.index(after: pos)
+      } else {
+        guard let (char, next) = characterAndEnd(at: pos, limitedBy: end),
+              bitset.matches(char) else { return nil }
+        return next
+      }
+    }
+
+    guard bitset.matches(asciiByte) else {
+      // FIXME: check inversion here after refactored out of bitset
+      return nil
+    }
+
+    // CR-LF should only match `[\r]` in scalar semantic mode or if inverted
+    if isCRLF {
+      if isScalarSemantics {
+        return self.unicodeScalars.index(before: next)
+      }
+      if isInverted {
+        return next
+      }
+      return nil
+    }
+
+    return next
   }
 }

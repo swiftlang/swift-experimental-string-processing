@@ -211,11 +211,11 @@ extension Instruction.Payload {
     self.rawValue == 1
   }
 
-  init(bool: BoolRegister) {
-    self.init(bool)
+  init(bool: Bool) {
+    self.init(bool ? 1 : 0, 0)
   }
-  var bool: BoolRegister {
-    interpret()
+  var boolPayload: Bool {
+    interpret(as: TypedInt<Bool>.self) == 1
   }
 
   init(element: ElementRegister, isCaseInsensitive: Bool) {
@@ -370,41 +370,58 @@ extension Instruction.Payload {
   }
 }
 
+// TODO: Consider switching all quantification to a quantification
+//       instruction, where the general path has an instruction list (i.e. a
+//       slice of a list)
+
 // MARK: Struct definitions
 struct QuantifyPayload: RawRepresentable {
   let rawValue: UInt64
   enum PayloadType: UInt64 {
-    case bitset = 0
+    case asciiBitset = 0
     case asciiChar = 1
     case any = 2
-    case builtin = 4
+    case builtinCC = 4
   }
+
+  // TODO: figure out how to better organize this...
 
   // Future work: optimize this layout -> payload type should be a fast switch
   // The top 8 bits are reserved for the opcode so we have 56 bits to work with
-  // b55-b38 - Unused
+  // b55-b39 - Unused
+  // b39-b38 - isScalarSemantics
   // b38-b35 - Payload type (one of 4 types, stored on 3 bits)
   // b35-b27 - minTrips (8 bit int)
-  // b27-b18 - extraTrips (8 bit value, one bit for nil)
+  // b27-b18 - maxExtraTrips (8 bit value, one bit for nil)
   // b18-b16 - Quantification type (one of three types)
   // b16-b0  - Payload value (depends on payload type)
   static var quantKindShift: UInt64   { 16 }
-  static var extraTripsShift: UInt64  { 18 }
+  static var maxExtraTripsShift: UInt64  { 18 }
   static var minTripsShift: UInt64    { 27 }
   static var typeShift: UInt64        { 35 }
   static var maxStorableTrips: UInt64 { (1 << 8) - 1 }
+  static var isScalarSemanticsBit: UInt64 { 1 &<< 38 }
 
   var quantKindMask: UInt64  { 3 }
-  var extraTripsMask: UInt64 { 0x1FF }
+  var maxExtraTripsMask: UInt64 { 0x1FF }
   var minTripsMask: UInt64   { 0xFF }
   var typeMask: UInt64       { 7 }
   var payloadMask: UInt64    { 0xFF_FF }
 
+  // Calculate the maximum number of trips, else UInt64.max if unbounded
+  var maxTrips: UInt64 {
+    guard let maxExtraTrips else {
+      return UInt64.max
+    }
+    return minTrips + maxExtraTrips
+  }
+
   static func packInfoValues(
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?,
-    _ type: PayloadType
+    _ maxExtraTrips: Int?,
+    _ type: PayloadType,
+    isScalarSemantics: Bool
   ) -> UInt64 {
     let kindVal: UInt64
     switch kind {
@@ -415,11 +432,14 @@ struct QuantifyPayload: RawRepresentable {
     case .possessive:
       kindVal = 2
     }
-    let extraTripsVal: UInt64 = extraTrips == nil ? 1 : UInt64(extraTrips!) << 1
-    return (kindVal << QuantifyPayload.quantKindShift) +
-    (extraTripsVal << QuantifyPayload.extraTripsShift) +
-    (UInt64(minTrips) << QuantifyPayload.minTripsShift) +
-    (type.rawValue << QuantifyPayload.typeShift)
+    // TODO: refactor / reimplement
+    let maxExtraTripsVal: UInt64 = maxExtraTrips == nil ? 1 : UInt64(maxExtraTrips!) << 1
+    let scalarSemanticsBit = isScalarSemantics ? Self.isScalarSemanticsBit : 0
+    return (kindVal << QuantifyPayload.quantKindShift) |
+    (maxExtraTripsVal << QuantifyPayload.maxExtraTripsShift) |
+    (UInt64(minTrips) << QuantifyPayload.minTripsShift) |
+    (type.rawValue << QuantifyPayload.typeShift) |
+    scalarSemanticsBit
   }
 
   init(rawValue: UInt64) {
@@ -431,46 +451,49 @@ struct QuantifyPayload: RawRepresentable {
     bitset: AsciiBitsetRegister,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?
+    _ maxExtraTrips: Int?,
+    isScalarSemantics: Bool
   ) {
     assert(bitset.bits <= _payloadMask)
     self.rawValue = bitset.bits
-      + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .bitset)
+      + QuantifyPayload.packInfoValues(kind, minTrips, maxExtraTrips, .asciiBitset, isScalarSemantics: isScalarSemantics)
   }
 
   init(
     asciiChar: UInt8,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?
+    _ maxExtraTrips: Int?,
+    isScalarSemantics: Bool
   ) {
     self.rawValue = UInt64(asciiChar)
-      + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .asciiChar)
+      + QuantifyPayload.packInfoValues(kind, minTrips, maxExtraTrips, .asciiChar, isScalarSemantics: isScalarSemantics)
   }
 
   init(
     matchesNewlines: Bool,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?
+    _ maxExtraTrips: Int?,
+    isScalarSemantics: Bool
   ) {
     self.rawValue = (matchesNewlines ? 1 : 0)
-      + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .any)
+      + QuantifyPayload.packInfoValues(kind, minTrips, maxExtraTrips, .any, isScalarSemantics: isScalarSemantics)
   }
 
   init(
     model: _CharacterClassModel,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?
+    _ maxExtraTrips: Int?,
+    isScalarSemantics: Bool
   ) {
     assert(model.cc.rawValue < 0xFF)
-    assert(model.matchLevel != .unicodeScalar)
     let packedModel = model.cc.rawValue
       + (model.isInverted ? 1 << 9 : 0)
       + (model.isStrictASCII ? 1 << 10 : 0)
     self.rawValue = packedModel
-      + QuantifyPayload.packInfoValues(kind, minTrips, extraTrips, .builtin)
+      + QuantifyPayload.packInfoValues(kind, minTrips, maxExtraTrips, .builtinCC, isScalarSemantics: isScalarSemantics)
   }
 
   var type: PayloadType {
@@ -491,13 +514,17 @@ struct QuantifyPayload: RawRepresentable {
     (self.rawValue >> QuantifyPayload.minTripsShift) & minTripsMask
   }
 
-  var extraTrips: UInt64? {
-    let val = (self.rawValue >> QuantifyPayload.extraTripsShift) & extraTripsMask
+  var maxExtraTrips: UInt64? {
+    let val = (self.rawValue >> QuantifyPayload.maxExtraTripsShift) & maxExtraTripsMask
     if val == 1 {
       return nil
     } else {
       return val >> 1
     }
+  }
+
+  var isScalarSemantics: Bool {
+    rawValue & Self.isScalarSemanticsBit != 0
   }
 
   var bitset: AsciiBitsetRegister {
@@ -512,7 +539,7 @@ struct QuantifyPayload: RawRepresentable {
     (self.rawValue & 1) == 1
   }
 
-  var builtin: _CharacterClassModel.Representation {
+  var builtinCC: _CharacterClassModel.Representation {
     _CharacterClassModel.Representation(rawValue: self.rawValue & 0xFF)!
   }
   var builtinIsInverted: Bool {

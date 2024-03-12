@@ -43,6 +43,9 @@ extension MEProgram {
     var captureList = CaptureList()
     var initialOptions = MatchingOptions()
 
+    // Starting constraint
+    var canOnlyMatchAtStart = false
+    
     // Symbolic reference resolution
     var unresolvedReferences: [ReferenceID: [InstructionAddress]] = [:]
     var referencedCaptureOffsets: [ReferenceID: Int] = [:]
@@ -143,8 +146,8 @@ extension MEProgram.Builder {
     instructions.append(.init(.clearThrough))
     fixup(to: t)
   }
-  mutating func buildFail() {
-    instructions.append(.init(.fail))
+  mutating func buildFail(preservingCaptures: Bool = false) {
+    instructions.append(.init(.fail, .init(bool: preservingCaptures)))
   }
 
   mutating func buildAdvance(_ n: Distance) {
@@ -226,44 +229,48 @@ extension MEProgram.Builder {
     bitset: DSLTree.CustomCharacterClass.AsciiBitset,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?
+    _ maxExtraTrips: Int?,
+    isScalarSemantics: Bool
   ) {
     instructions.append(.init(
       .quantify,
-      .init(quantify: .init(bitset: makeAsciiBitset(bitset), kind, minTrips, extraTrips))))
+      .init(quantify: .init(bitset: makeAsciiBitset(bitset), kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
   }
 
   mutating func buildQuantify(
     asciiChar: UInt8,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?
+    _ maxExtraTrips: Int?,
+    isScalarSemantics: Bool
   ) {
     instructions.append(.init(
       .quantify,
-      .init(quantify: .init(asciiChar: asciiChar, kind, minTrips, extraTrips))))
+      .init(quantify: .init(asciiChar: asciiChar, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
   }
 
   mutating func buildQuantifyAny(
     matchesNewlines: Bool,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?
+    _ maxExtraTrips: Int?,
+    isScalarSemantics: Bool
   ) {
     instructions.append(.init(
       .quantify,
-      .init(quantify: .init(matchesNewlines: matchesNewlines, kind, minTrips, extraTrips))))
+      .init(quantify: .init(matchesNewlines: matchesNewlines, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
   }
 
   mutating func buildQuantify(
     model: _CharacterClassModel,
     _ kind: AST.Quantification.Kind,
     _ minTrips: Int,
-    _ extraTrips: Int?
+    _ maxExtraTrips: Int?,
+    isScalarSemantics: Bool
   ) {
     instructions.append(.init(
       .quantify,
-      .init(quantify: .init(model: model,kind, minTrips, extraTrips))))
+      .init(quantify: .init(model: model,kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics))))
   }
 
   mutating func buildAccept() {
@@ -408,7 +415,8 @@ extension MEProgram.Builder {
       enableMetrics: enableMetrics,
       captureList: captureList,
       referencedCaptureOffsets: referencedCaptureOffsets,
-      initialOptions: initialOptions)
+      initialOptions: initialOptions,
+      canOnlyMatchAtStart: canOnlyMatchAtStart)
   }
 
   mutating func reset() { self = Self() }

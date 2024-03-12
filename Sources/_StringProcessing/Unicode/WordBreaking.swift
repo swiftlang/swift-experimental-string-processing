@@ -12,6 +12,7 @@
 @_spi(_Unicode)
 import Swift
 
+// TODO: Sink onto String
 extension Processor {
   func atSimpleBoundary(
     _ usesAsciiWord: Bool,
@@ -20,9 +21,11 @@ extension Processor {
     func matchesWord(at i: Input.Index) -> Bool {
       switch semanticLevel {
       case .graphemeCluster:
+        // TODO: needs benchmark coverage
         let c = input[i]
         return c.isWordCharacter && (c.isASCII || !usesAsciiWord)
       case .unicodeScalar:
+        // TODO: needs benchmark coverage
         let c = input.unicodeScalars[i]
         return (c.properties.isAlphabetic || c == "_") && (c.isASCII || !usesAsciiWord)
       }
@@ -34,7 +37,9 @@ extension Processor {
     if currentPosition == subjectBounds.lowerBound {
       return matchesWord(at: currentPosition)
     }
-    let priorIdx = input.index(before: currentPosition)
+    let priorIdx = semanticLevel == .graphemeCluster
+      ? input.index(before: currentPosition)
+      : input.unicodeScalars.index(before: currentPosition)
     if currentPosition == subjectBounds.upperBound {
       return matchesWord(at: priorIdx)
     }
@@ -48,13 +53,16 @@ extension Processor {
 extension String {
   func isOnWordBoundary(
     at i: String.Index,
+    in range: Range<String.Index>,
     using cache: inout Set<String.Index>?,
     _ maxIndex: inout String.Index?
   ) -> Bool {
-    guard i != startIndex, i != endIndex else {
+    // TODO: needs benchmark coverage
+    guard i != range.lowerBound, i != range.upperBound else {
       return true
     }
-    
+    assert(range.contains(i))
+
     // If our index is already in our cache, then this is obviously on a
     // boundary.
     if let cache = cache, cache.contains(i) {
@@ -72,9 +80,9 @@ extension String {
     
     if #available(SwiftStdlib 5.7, *) {
       var indices: Set<String.Index> = []
-      var j = maxIndex ?? startIndex
+      var j = maxIndex ?? range.lowerBound
       
-      while j < endIndex, j <= i {
+      while j < range.upperBound, j <= i {
         indices.insert(j)
         j = _wordIndex(after: j)
       }

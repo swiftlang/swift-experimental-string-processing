@@ -31,7 +31,7 @@ struct Executor {
       subjectBounds: subjectBounds,
       searchBounds: searchBounds)
 #if PROCESSOR_MEASUREMENTS_ENABLED
-    defer { if cpu.shouldMeasureMetrics { cpu.printMetrics() } }
+    defer { if cpu.metrics.shouldMeasureMetrics { cpu.printMetrics() } }
 #endif
     var low = searchBounds.lowerBound
     let high = searchBounds.upperBound
@@ -43,7 +43,8 @@ struct Executor {
       }
       if low >= high { return nil }
       if graphemeSemantic {
-        input.formIndex(after: &low)
+        low = input.index(
+          low, offsetBy: 1, limitedBy: searchBounds.upperBound) ?? searchBounds.upperBound
       } else {
         input.unicodeScalars.formIndex(after: &low)
       }
@@ -60,7 +61,7 @@ struct Executor {
     var cpu = engine.makeProcessor(
       input: input, bounds: subjectBounds, matchMode: mode)
 #if PROCESSOR_MEASUREMENTS_ENABLED
-    defer { if cpu.shouldMeasureMetrics { cpu.printMetrics() } }
+    defer { if cpu.metrics.shouldMeasureMetrics { cpu.printMetrics() } }
 #endif
     return try _match(input, from: subjectBounds.lowerBound, using: &cpu)
   }

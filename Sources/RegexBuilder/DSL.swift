@@ -32,21 +32,21 @@ internal protocol _BuiltinRegexComponent: RegexComponent {
 // MARK: - Primitive regex components
 
 @available(SwiftStdlib 5.7, *)
-extension String: RegexComponent {
+extension String: @retroactive RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> { .init(verbatim: self) }
 }
 
 @available(SwiftStdlib 5.7, *)
-extension Substring: RegexComponent {
+extension Substring: @retroactive RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> { String(self).regex }
 }
 
 @available(SwiftStdlib 5.7, *)
-extension Character: RegexComponent {
+extension Character: @retroactive RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> {
@@ -55,7 +55,7 @@ extension Character: RegexComponent {
 }
 
 @available(SwiftStdlib 5.7, *)
-extension UnicodeScalar: RegexComponent {
+extension UnicodeScalar: @retroactive RegexComponent {
   public typealias Output = Substring
 
   public var regex: Regex<Output> {
@@ -535,7 +535,7 @@ extension _RegexFactory {
     _ left: some RegexComponent,
     ignoringOutputTypeOf right: some RegexComponent
   ) -> Regex<Output> {
-    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+    if #available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *) {
       return accumulate(left, ignoreCapturesInTypedOutput(right))
     }
     return accumulate(left, right)
@@ -549,7 +549,7 @@ extension _RegexFactory {
     ignoringOutputTypeOf left: some RegexComponent,
     _ right: some RegexComponent
   ) -> Regex<Output> {
-    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+    if #available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *) {
       return accumulate(ignoreCapturesInTypedOutput(left), right)
     }
     return accumulate(left, right)
@@ -563,7 +563,7 @@ extension _RegexFactory {
     ignoringOutputTypeOf left: some RegexComponent,
     andAlso right: some RegexComponent
   ) -> Regex<Output> {
-    if #available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *) {
+    if #available(macOS 14.0, iOS 17.0, watchOS 10.0, tvOS 17.0, *) {
       return accumulate(
         ignoreCapturesInTypedOutput(left), ignoreCapturesInTypedOutput(right))
     }

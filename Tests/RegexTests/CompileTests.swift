@@ -529,4 +529,42 @@ extension RegexTests {
     expectProgram(for: #"(a+)*"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
     expectProgram(for: #"(a{1,})*"#, doesNotContain: [.moveCurrentPosition, .condBranchSamePosition])
   }
+  
+  func testCanOnlyMatchAtStart() throws {
+    func expectCanOnlyMatchAtStart(
+      _ regexStr: String,
+      _ expectTrue: Bool,
+      file: StaticString = #file,
+      line: UInt = #line
+    ) throws {
+      let regex = try Regex(regexStr)
+      XCTAssertEqual(
+        regex.program.loweredProgram.canOnlyMatchAtStart, expectTrue,
+        file: file, line: line)
+    }
+    
+    try expectCanOnlyMatchAtStart("^foo", true)        // anchor
+    try expectCanOnlyMatchAtStart("\\Afoo", true)      // more specific anchor
+    try expectCanOnlyMatchAtStart("foo", false)        // no anchor
+
+    try expectCanOnlyMatchAtStart("(?i)^foo", true)    // unrelated option
+    try expectCanOnlyMatchAtStart("(?m)^foo", false)   // anchors match newlines
+    try expectCanOnlyMatchAtStart("(?i:^foo)", true)   // unrelated option
+    try expectCanOnlyMatchAtStart("(?m:^foo)", false)  // anchors match newlines
+
+    try expectCanOnlyMatchAtStart("(^foo|bar)", false) // one side of alternation
+    try expectCanOnlyMatchAtStart("(foo|^bar)", false) // other side of alternation
+    try expectCanOnlyMatchAtStart("(^foo|^bar)", true) // both sides of alternation
+
+    // Test quantifiers that include the anchor
+    try expectCanOnlyMatchAtStart("(^foo)?bar", false)
+    try expectCanOnlyMatchAtStart("(^foo)*bar", false)
+    try expectCanOnlyMatchAtStart("(^foo)+bar", true)
+    try expectCanOnlyMatchAtStart("(?:^foo)+bar", true)
+
+    // Test quantifiers before the anchor
+    try expectCanOnlyMatchAtStart("(foo)?^bar", true)  // The initial group must match ""
+    try expectCanOnlyMatchAtStart("(?:foo)?^bar", true)
+    try expectCanOnlyMatchAtStart("(foo)+^bar", false) // This can't actually match anywhere
+  }
 }
