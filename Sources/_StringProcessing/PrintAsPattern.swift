@@ -1105,6 +1105,11 @@ extension AST.Atom {
       
     case .changeMatchingOptions:
       return "/* TODO: change matching options */"
+
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
 }
@@ -1125,6 +1130,9 @@ extension AST.Quantification.Amount {
     case let .nOrMore(n):  return "Repeat(\(n._patternBase)...)"
     case let .upToN(n):    return "Repeat(...\(n._patternBase))"
     case let .range(n, m): return "Repeat(\(n._patternBase)...\(m._patternBase))"
+    #if RESILIENT_LIBRARIES
+    @unknown default: fatalError()
+    #endif
     }
   }
   
@@ -1144,6 +1152,9 @@ extension AST.Quantification.Kind {
     case .eager: return ".eager"
     case .reluctant: return ".reluctant"
     case .possessive: return ".possessive"
+    #if RESILIENT_LIBRARIES
+    @unknown default: fatalError()
+    #endif
     }
   }
 }

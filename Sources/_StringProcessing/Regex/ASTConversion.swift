@@ -97,6 +97,11 @@ extension AST.Node {
       case let .absentFunction(abs):
         // TODO: What should this map to?
         return .absentFunction(.init(ast: abs))
+
+      #if RESILIENT_LIBRARIES
+      @unknown default:
+        fatalError()
+      #endif
       }
     }
 
@@ -141,9 +146,18 @@ extension AST.CustomCharacterClass {
           return .intersection(lhs, rhs)
         case .symmetricDifference:
           return .symmetricDifference(lhs, rhs)
+        #if RESILIENT_LIBRARIES
+        @unknown default:
+          fatalError()
+        #endif
         }
       case let .trivia(t):
         return .trivia(t.contents)
+
+      #if RESILIENT_LIBRARIES
+      @unknown default:
+        fatalError()
+      #endif
       }
     }
 

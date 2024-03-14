@@ -217,6 +217,10 @@ extension MatchingOptions {
         self = .extended
       case .extraExtended:
         self = .extraExtended
+      #if RESILIENT_LIBRARIES
+      @unknown default:
+        fatalError()
+      #endif
       }
     }
     

@@ -324,6 +324,11 @@ extension AST.Atom {
         .backtrackingDirective, .changeMatchingOptions, .invalid:
       // FIXME: implement
       return nil
+
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
 }
@@ -685,7 +690,13 @@ extension AST.Atom.CharacterProperty {
 
       case .invalid:
         throw Unreachable("Expected valid property")
+
+      #if RESILIENT_LIBRARIES
+      @unknown default:
+        throw Unreachable("Unknown kind \(kind)")
+      #endif
       }
+
     }()
 
     if !isInverted { return preInversion }
@@ -855,6 +866,10 @@ extension Unicode.BinaryProperty {
     case .expandsOnNFC, .expandsOnNFD, .expandsOnNFKD,
         .expandsOnNFKC:
       throw Unsupported("Unicode-deprecated: \(self)")
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      break
+    #endif
     }
 
     throw Unsupported("TODO: map prop \(self)")
@@ -905,6 +920,10 @@ extension Unicode.POSIXProperty {
     case .xdigit:
       return consume(propertyScalarPredicate(\.isHexDigit)) // or number
 
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
 }
@@ -1023,6 +1042,11 @@ extension Unicode.ExtendedGeneralCategory {
       return consume(categoryScalarPredicate(.paragraphSeparator))
     case .spaceSeparator:
       return consume(categoryScalarPredicate(.spaceSeparator))
+
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
 }

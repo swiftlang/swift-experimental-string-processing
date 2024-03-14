@@ -216,6 +216,10 @@ extension LiteralPrinter {
       output("{,\(n.value!)}")
     case let .range(low, high):
       output("{\(low.value!),\(high.value!)}")
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
     
     outputQuantificationKind(kind)
@@ -235,6 +239,10 @@ extension LiteralPrinter {
         output(options.isReluctantByDefault ? "" : "?")
       case .possessive:
         output("+")
+      #if RESILIENT_LIBRARIES
+      @unknown default:
+        fatalError()
+      #endif
       }
     case let .syntax(kind):
       // Syntactically-specified quantification modifiers can stay as-is.
@@ -245,6 +253,10 @@ extension LiteralPrinter {
         output("?")
       case .possessive:
         output("+")
+      #if RESILIENT_LIBRARIES
+      @unknown default:
+        fatalError()
+      #endif
       }
     }
   }
@@ -351,6 +363,10 @@ extension LiteralPrinter {
       output("\\g{\(prefix)\(abs(value))}")
     case .named(let name):
       output("\\g{\(name)}")
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
   
@@ -558,6 +574,11 @@ extension AST.MatchingOption.Kind {
       
     // NSRE Compatibility option; no literal representation
     case .nsreCompatibleDot: return nil
+
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
 }
@@ -597,6 +618,11 @@ extension DSLTree._AST.GroupKind {
       
     case let .changeMatchingOptions(sequence):
       return sequence._patternString + ":"
+
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
 }
