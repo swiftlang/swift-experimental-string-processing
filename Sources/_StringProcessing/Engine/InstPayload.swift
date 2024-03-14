@@ -423,6 +423,10 @@ struct QuantifyPayload: RawRepresentable {
       kindVal = 1
     case .possessive:
       kindVal = 2
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
     // TODO: refactor / reimplement
     let maxExtraTripsVal: UInt64 = maxExtraTrips == nil ? 1 : UInt64(maxExtraTrips!) << 1
