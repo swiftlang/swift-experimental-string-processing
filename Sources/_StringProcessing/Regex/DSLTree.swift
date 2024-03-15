@@ -651,6 +651,10 @@ extension CaptureList.Builder {
         addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
       case .clearer, .repeater, .stopper:
         break
+      #if RESILIENT_LIBRARIES
+      @unknown default:
+        fatalError()
+      #endif
       }
 
     case let .convertedRegexLiteral(n, _):
@@ -926,6 +930,10 @@ extension DSLTree {
           return true
         case .exactly(let num), .nOrMore(let num), .range(let num, _):
           return num.value.map { $0 > 0 } ?? false
+        #if RESILIENT_LIBRARIES
+        @unknown default:
+          fatalError()
+        #endif
         }
       }
     }

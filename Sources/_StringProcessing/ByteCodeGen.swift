@@ -156,6 +156,10 @@ fileprivate extension Compiler.ByteCodeGen {
         name, isScalarMode: options.semanticLevel == .unicodeScalar)
     case .relative:
       throw Unsupported("Backreference kind: \(ref)")
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
 
@@ -657,6 +661,10 @@ fileprivate extension Compiler.ByteCodeGen {
       // quantification break if trying to restore to a prior
       // iteration because the register got overwritten?
       //
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
 
     builder.label(exit)
