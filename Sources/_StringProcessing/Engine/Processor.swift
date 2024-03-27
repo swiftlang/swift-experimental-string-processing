@@ -175,14 +175,25 @@ extension Processor {
   // save point was restored
   mutating func consume(_ n: Distance) -> Bool {
     // TODO: needs benchmark coverage
-    guard let idx = input.index(
+    if let idx = input.index(
       currentPosition, offsetBy: n.rawValue, limitedBy: end
-    ) else {
-      signalFailure()
-      return false
+    ) {
+      currentPosition = idx
+      return true
     }
-    currentPosition = idx
-    return true
+
+    // If `end` falls in the middle of a character, and we are trying to advance
+    // by one "character", then we should max out at `end` even though the above
+    // advancement will result in `nil`.
+    if n == 1, let idx = input.unicodeScalars.index(
+      currentPosition, offsetBy: n.rawValue, limitedBy: end
+    ) {
+      currentPosition = idx
+      return true
+    }
+
+    signalFailure()
+    return false
   }
 
   // Advances in unicode scalar view
@@ -412,6 +423,10 @@ extension Processor {
     case .moveCurrentPosition:
       let reg = payload.position
       registers[reg] = currentPosition
+      controller.step()
+    case .restorePosition:
+      let reg = payload.position
+      currentPosition = registers[reg]
       controller.step()
     case .branch:
       controller.pc = payload.addr
