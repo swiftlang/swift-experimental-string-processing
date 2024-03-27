@@ -139,7 +139,7 @@ extension AST.Atom {
       // FIXME: implement
       return nil
       
-    default:
+    case .char, .scalar, .escaped, .dot, .caretAnchor, .dollarAnchor:
       fatalError("Handled in ByteCodeGen or earlier.")
 
     #if RESILIENT_LIBRARIES
