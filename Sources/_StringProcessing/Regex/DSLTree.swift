@@ -131,6 +131,23 @@ extension DSLTree {
       }
     }
     
+    func coalescingASCIIMembers(_ opts: MatchingOptions) -> CustomCharacterClass {
+      var ascii: [Member] = []
+      var nonAscii: [Member] = []
+      for member in members {
+        if member.asAsciiBitset(opts, false) != nil {
+          ascii.append(member)
+        } else {
+          nonAscii.append(member)
+        }
+      }
+      if ascii.isEmpty || nonAscii.isEmpty { return self }
+      return CustomCharacterClass(members: [
+        .custom(CustomCharacterClass(members: ascii)),
+        .custom(CustomCharacterClass(members: nonAscii))
+      ], isInverted: isInverted)
+    }
+    
     public init(members: [DSLTree.CustomCharacterClass.Member], isInverted: Bool = false) {
       self.members = members
       self.isInverted = isInverted
@@ -161,6 +178,17 @@ extension DSLTree {
       indirect case intersection(CustomCharacterClass, CustomCharacterClass)
       indirect case subtraction(CustomCharacterClass, CustomCharacterClass)
       indirect case symmetricDifference(CustomCharacterClass, CustomCharacterClass)
+      
+      var isOnlyTrivia: Bool {
+        switch self {
+        case .custom(let ccc):
+          return ccc.members.all(\.isOnlyTrivia)
+        case .trivia:
+          return true
+        default:
+          return false
+        }
+      }
     }
   }
 
