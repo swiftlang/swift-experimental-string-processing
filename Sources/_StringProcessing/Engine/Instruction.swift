@@ -44,6 +44,14 @@ extension Instruction {
     /// Operands:
     ///   - Position register to move into
     case moveCurrentPosition
+    
+    /// Set the current position to the value stored in the register
+    ///
+    ///     restorePosition(from: PositionRegister)
+    ///
+    /// Operands:
+    ///  - Position register to read from
+    case restorePosition
 
     // MARK: General Purpose: Control flow
 
