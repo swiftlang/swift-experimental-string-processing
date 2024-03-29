@@ -12,9 +12,7 @@
 /// An implementation of the Boyer-Moore-Horspool algorithm, for string-specific
 /// searching.
 @usableFromInline
-struct SubstringSearcher<Searched: StringProtocol>: Sequence, IteratorProtocol
-  where Searched.SubSequence == Substring
-{
+struct SubstringSearcher: Sequence, IteratorProtocol {
   @usableFromInline
   struct State {
     @usableFromInline
@@ -40,6 +38,9 @@ struct SubstringSearcher<Searched: StringProtocol>: Sequence, IteratorProtocol
       }
     }
   }
+  
+  @usableFromInline
+  typealias Searched = Substring
   
   @usableFromInline
   let text: Searched

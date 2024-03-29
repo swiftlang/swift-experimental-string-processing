@@ -150,9 +150,9 @@ extension Collection where Element: Equatable {
   ) -> [SubSequence] where C.Element == Element {
     switch (self, separator) {
     case (let str as String, let sep as String):
-      return str._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
+      return str[...]._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
     case (let str as String, let sep as Substring):
-      return str._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
+      return str[...]._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
     case (let str as Substring, let sep as String):
       return str._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
     case (let str as Substring, let sep as Substring):
@@ -186,8 +186,8 @@ extension StringProtocol where SubSequence == Substring {
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [Substring] {
-    Array(split(
-      by: SubstringSearcher(text: "" as Self, pattern: separator[...]),
+    Array(self[...].split(
+      by: SubstringSearcher(text: "" as Substring, pattern: separator[...]),
       maxSplits: maxSplits,
       omittingEmptySubsequences: omittingEmptySubsequences))
   }
@@ -199,8 +199,8 @@ extension StringProtocol where SubSequence == Substring {
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [Substring] {
-    Array(split(
-      by: SubstringSearcher(text: "" as Self, pattern: separator[...]),
+    Array(self[...].split(
+      by: SubstringSearcher(text: "" as Substring, pattern: separator[...]),
       maxSplits: maxSplits,
       omittingEmptySubsequences: omittingEmptySubsequences))
   }
