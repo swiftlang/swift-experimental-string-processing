@@ -507,7 +507,22 @@ class AlgorithmTests: XCTestCase {
     expectReplace("a", "a", "X", "X")
     expectReplace("aab", "a", "X", "XXb")
     
-    // FIXME: Test maxReplacements
+    let str = "aabaaabaab"
+    XCTAssertEqual(
+        str.replacing("aab", with: "Z", maxReplacements: 1000),
+        "ZaZZ")
+    XCTAssertEqual(
+        str.replacing("aab", with: "Z", maxReplacements: 3),
+        "ZaZZ")
+    XCTAssertEqual(
+        str.replacing("aab", with: "Z", maxReplacements: 2),
+        "ZaZaab")
+    XCTAssertEqual(
+        str.replacing("aab", with: "Z", maxReplacements: 1),
+        "Zaaabaab")
+    XCTAssertEqual(
+        str.replacing("aab", with: "Z", maxReplacements: 0),
+        str)
   }
   
   func testSubstring() throws {

@@ -22,16 +22,14 @@ extension Substring {
     var result = String()
     var index = startIndex
     
-    // `maxRanges` is a workaround for https://github.com/apple/swift/issues/59522
     var rangeIterator = SubstringSearcher(text: self, pattern: other)
     var replacementCount = 0
-    while let range = rangeIterator.next() {
+    while replacementCount < maxReplacements, let range = rangeIterator.next() {
       result.append(contentsOf: self[index..<range.lowerBound])
       result.append(contentsOf: replacement)
       index = range.upperBound
       
       replacementCount += 1
-      if replacementCount == maxReplacements { break }
     }
     
     result.append(contentsOf: self[index...])
