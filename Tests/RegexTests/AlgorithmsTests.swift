@@ -67,6 +67,12 @@ class AlgorithmTests: XCTestCase {
     XCTAssertTrue("bbababacabababa".contains("abababa"))
     XCTAssertFalse("bbababacbbababa".contains("abababa"))
     
+    let str = "abcde"
+    let pattern = "bcde"
+    XCTAssertTrue(str[...].contains(pattern))
+    XCTAssertTrue(str.contains(pattern[...]))
+    XCTAssertTrue(str[...].contains(pattern[...]))
+
     XCTAssertFalse("".contains("abcd"))
     
     for start in 0..<9 {
@@ -163,6 +169,13 @@ class AlgorithmTests: XCTestCase {
       let actualSeq: [Range<Int>] = input.ranges(of: pattern).map(input.offsets(of:))
       XCTAssertEqual(actualSeq, expected, file: file, line: line)
 
+      let a1: [Range<Int>] = input[...].ranges(of: pattern).map(input.offsets(of:))
+      let a2: [Range<Int>] = input.ranges(of: pattern[...]).map(input.offsets(of:))
+      let a3: [Range<Int>] = input[...].ranges(of: pattern[...]).map(input.offsets(of:))
+      XCTAssertEqual(a1, expected, file: file, line: line)
+      XCTAssertEqual(a2, expected, file: file, line: line)
+      XCTAssertEqual(a3, expected, file: file, line: line)
+
       // `IndexingIterator` tests the collection conformance
       let actualCol: [Range<Int>] = input.ranges(of: pattern)[...].map(input.offsets(of:))
       XCTAssertEqual(actualCol, expected, file: file, line: line)
@@ -173,6 +186,13 @@ class AlgorithmTests: XCTestCase {
         let secondRange = input[upperBound...].firstRange(of: pattern).map(input.offsets(of:))
         XCTAssertEqual(secondRange, expected.dropFirst().first, file: file, line: line)
       }
+      
+      let r1 = input[...].firstRange(of: pattern)
+      let r2 = input.firstRange(of: pattern[...])
+      let r3 = input[...].firstRange(of: pattern[...])
+      XCTAssertEqual(r1.map(input.offsets(of:)), expected.first, file: file, line: line)
+      XCTAssertEqual(r2.map(input.offsets(of:)), expected.first, file: file, line: line)
+      XCTAssertEqual(r3.map(input.offsets(of:)), expected.first, file: file, line: line)
     }
 
     expectRanges("", "", [0..<0])
@@ -227,6 +247,13 @@ class AlgorithmTests: XCTestCase {
     ) {
       let actual = Array(string.split(separator: separator, omittingEmptySubsequences: false))
       XCTAssertEqual(actual, expected, file: file, line: line)
+      
+      let a1 = Array(string[...].split(separator: separator, omittingEmptySubsequences: false))
+      let a2 = Array(string.split(separator: separator[...], omittingEmptySubsequences: false))
+      let a3 = Array(string[...].split(separator: separator[...], omittingEmptySubsequences: false))
+      XCTAssertEqual(a1, expected, file: file, line: line)
+      XCTAssertEqual(a2, expected, file: file, line: line)
+      XCTAssertEqual(a3, expected, file: file, line: line)
     }
 
     expectSplit("", "", [""])
@@ -506,6 +533,15 @@ class AlgorithmTests: XCTestCase {
     XCTAssertEqual(s.replacing(regex, with: ""), " |  | ")
     XCTAssertEqual(s1.replacing(regex, with: ""), " | ")
     XCTAssertEqual(s2.replacing(regex, with: ""), "")
+
+    XCTAssertEqual(s.replacing("aa", with: "Z"), "Za | ZZZ | ZZZZZ")
+    XCTAssertEqual(s.replacing("aa" as Substring, with: "Z"), "Za | ZZZ | ZZZZZ")
+    XCTAssertEqual(s.replacing("aa", with: "Z" as Substring), "Za | ZZZ | ZZZZZ")
+    XCTAssertEqual(s.replacing("aa" as Substring, with: "Z" as Substring), "Za | ZZZ | ZZZZZ")
+    XCTAssertEqual(s1.replacing("aa", with: "Z"), "ZZZ | ZZZZZ")
+    XCTAssertEqual(s1.replacing("aa", with: "Z" as Substring), "ZZZ | ZZZZZ")
+    XCTAssertEqual(s1.replacing("aa" as Substring, with: "Z"), "ZZZ | ZZZZZ")
+    XCTAssertEqual(s1.replacing("aa" as Substring, with: "Z" as Substring), "ZZZ | ZZZZZ")
 
     XCTAssertEqual(
       s.matches(of: regex).map(\.0),

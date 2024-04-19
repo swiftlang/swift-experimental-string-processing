@@ -91,11 +91,11 @@ extension RangeReplaceableCollection where Element: Equatable {
                                 maxReplacements: maxReplacements) as! Self
     case (let str as Substring, let other as Substring, let repl as Substring):
       return str._replacingSubstring(other, with: repl,
-                                maxReplacements: maxReplacements) as! Self
+                                maxReplacements: maxReplacements)[...] as! Self
 
     case (let str as Substring, let other as String, let repl as String):
       return str[...]._replacingSubstring(other[...], with: repl[...],
-                                maxReplacements: maxReplacements) as! Self
+                                maxReplacements: maxReplacements)[...] as! Self
     case (let str as String, let other as Substring, let repl as String):
       return str[...]._replacingSubstring(other[...], with: repl[...],
                                 maxReplacements: maxReplacements) as! Self
@@ -108,10 +108,10 @@ extension RangeReplaceableCollection where Element: Equatable {
                                 maxReplacements: maxReplacements) as! Self
     case (let str as Substring, let other as String, let repl as Substring):
       return str[...]._replacingSubstring(other[...], with: repl[...],
-                                maxReplacements: maxReplacements) as! Self
+                                maxReplacements: maxReplacements)[...] as! Self
     case (let str as Substring, let other as Substring, let repl as String):
       return str[...]._replacingSubstring(other[...], with: repl[...],
-                                maxReplacements: maxReplacements) as! Self
+                                maxReplacements: maxReplacements)[...] as! Self
 
     default:
       return _replacing(
