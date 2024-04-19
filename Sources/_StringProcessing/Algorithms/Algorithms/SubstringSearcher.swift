@@ -11,15 +11,10 @@
 
 /// An implementation of the Boyer-Moore-Horspool algorithm, for string-specific
 /// searching.
-@usableFromInline
 struct SubstringSearcher: Sequence, IteratorProtocol {
-  @usableFromInline
   struct State {
-    @usableFromInline
     let badCharacterOffsets: [Character: Int]
-    @usableFromInline
     let patternCount: Int
-    @usableFromInline
     var endOfNextPotentialMatch: String.Index?
     
     init(text: Substring? = nil, pattern: Substring) {
@@ -39,24 +34,18 @@ struct SubstringSearcher: Sequence, IteratorProtocol {
     }
   }
   
-  @usableFromInline
   typealias Searched = Substring
   
-  @usableFromInline
   let text: Searched
-  @usableFromInline
   let pattern: Substring
-  @usableFromInline
   var state: State
   
-  @usableFromInline
   init(text: Searched, pattern: Substring) {
     self.text = text
     self.pattern = pattern
     self.state = .init(text: text[...], pattern: pattern)
   }
 
-  @inlinable
   func nextRange(in text: Searched, searchFromEnd end: String.Index)
     -> (result: Range<String.Index>?, nextEnd: String.Index?)
   {
@@ -107,7 +96,6 @@ struct SubstringSearcher: Sequence, IteratorProtocol {
     }
   }
   
-  @inlinable
   mutating func next() -> Range<String.Index>? {
     guard let end = state.endOfNextPotentialMatch else { return nil }
     let (result, nextEnd) = nextRange(in: text, searchFromEnd: end)

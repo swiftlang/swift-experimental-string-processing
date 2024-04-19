@@ -22,7 +22,6 @@ extension Collection {
 
 // MARK: Fixed pattern algorithms
 extension Substring {
-  @usableFromInline
   func _firstRangeSubstring(
     of other: Substring
   ) -> Range<String.Index>? {
@@ -32,7 +31,6 @@ extension Substring {
 }
 
 extension Collection where Element: Equatable {
-  @usableFromInline
   func _firstRangeGeneric<C: Collection>(
     of other: C
   ) -> Range<Index>? where C.Element == Element {
@@ -47,7 +45,6 @@ extension Collection where Element: Equatable {
   /// - Returns: A range in the collection of the first occurrence of `sequence`.
   /// Returns nil if `sequence` is not found.
   @available(SwiftStdlib 5.7, *)
-  @inline(__always)
   public func firstRange<C: Collection>(
     of other: C
   ) -> Range<Index>? where C.Element == Element {
@@ -75,7 +72,6 @@ extension BidirectionalCollection where Element: Comparable {
   /// - Returns: A range in the collection of the first occurrence of `sequence`.
   /// Returns `nil` if `sequence` is not found.
   @available(SwiftStdlib 5.7, *)
-  @inline(__always)
   public func firstRange<C: Collection>(
     of other: C
   ) -> Range<Index>? where C.Element == Element {
