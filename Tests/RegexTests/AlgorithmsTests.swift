@@ -64,6 +64,8 @@ class AlgorithmTests: XCTestCase {
     XCTAssertTrue("abcde".contains("bcde"))
     XCTAssertTrue("abcde".contains("bcd"))
     XCTAssertTrue("ababacabababa".contains("abababa"))
+    XCTAssertTrue("bbababacabababa".contains("abababa"))
+    XCTAssertFalse("bbababacbbababa".contains("abababa"))
     
     XCTAssertFalse("".contains("abcd"))
     
@@ -340,7 +342,7 @@ class AlgorithmTests: XCTestCase {
       XCTAssertEqual(stringActual, expected, """
         Mismatch in string split of '\(str)', maxSplits: \(maxSplits), omitEmpty: \(omitEmpty)
           expected: \(expected.map(String.init))
-          actual:   \(regexActual.map(String.init))
+          actual:   \(stringActual.map(String.init))
         """)
     }
   }
