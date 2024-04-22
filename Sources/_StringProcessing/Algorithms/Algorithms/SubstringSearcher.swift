@@ -17,16 +17,28 @@ struct SubstringSearcher: Sequence, IteratorProtocol {
     let patternCount: Int
     var endOfNextPotentialMatch: String.Index?
     
+    /// Require this length to calculate and use bad character offsets instead of just
+    // using a simple naive search.
+    static let patternCountMinimum = 4
+    
     init(text: Substring? = nil, pattern: Substring) {
       var offsets: [Character: Int] = [:]
       var count = 0
-      for (offset, ch) in pattern.enumerated() {
-        offsets[ch] = offset
-        count += 1
+      let useBadCharacterOffsets = 
+        pattern.index(pattern.startIndex, offsetBy: Self.patternCountMinimum, limitedBy: pattern.endIndex) 
+          != nil
+      if useBadCharacterOffsets {      
+          for (offset, ch) in pattern.enumerated() {
+            offsets[ch] = offset
+            count += 1
+          }
+        self.badCharacterOffsets = offsets
+        self.patternCount = count
+      } else {
+        self.badCharacterOffsets = [:]
+        self.patternCount = pattern.count
       }
       
-      self.badCharacterOffsets = offsets
-      self.patternCount = count
       if let text {
         self.endOfNextPotentialMatch = text.index(
           text.startIndex, offsetBy: patternCount, limitedBy: text.endIndex)
@@ -46,14 +58,51 @@ struct SubstringSearcher: Sequence, IteratorProtocol {
     self.state = .init(text: text[...], pattern: pattern)
   }
 
-  func nextRange(in text: Searched, searchFromEnd end: String.Index)
+  func nextRangeNaive(in text: Searched, searchFromEnd end: String.Index)
     -> (result: Range<String.Index>?, nextEnd: String.Index?)
   {
+    precondition(state.patternCount > 0)
+    let patternLastIndex = pattern.index(before: pattern.endIndex)
+    var textLastIndex = text.index(before: end)
+    
+  FindLastCharacterMatch:
+    while let potentialMatchEnd = text[textLastIndex...].firstIndex(of: pattern[patternLastIndex]) {
+      var textCursor = potentialMatchEnd
+      var patternCursor = patternLastIndex
+      precondition(textCursor >= text.startIndex)
+      while patternCursor > pattern.startIndex {
+        pattern.formIndex(before: &patternCursor)
+        text.formIndex(before: &textCursor)
+        
+        guard pattern[patternCursor] == text[textCursor] else {
+          textLastIndex = text.index(after: potentialMatchEnd)
+          continue FindLastCharacterMatch
+        }
+      }
+      
+      // It's a match!
+      let currentEnd = text.index(after: potentialMatchEnd)
+      return (
+        textCursor..<currentEnd, 
+        text.index(currentEnd, offsetBy: state.patternCount, limitedBy: text.endIndex))
+    }
+    
+    return (nil, nil)
+  }
+
+  func nextRange(in text: Searched, searchFromEnd end: String.Index)
+    -> (result: Range<String.Index>?, nextEnd: String.Index?)
+  {  
     // Empty pattern matches at every position.
     if state.patternCount == 0 {
       return (
         end..<end,
         end == text.endIndex ? nil : text.index(after: end))
+    }
+
+    // Fall back to naive search if we didn't calculate bad character offsets
+    if state.badCharacterOffsets.isEmpty {
+      return nextRangeNaive(in: text, searchFromEnd: end)
     }
     
     var currentEnd = end
