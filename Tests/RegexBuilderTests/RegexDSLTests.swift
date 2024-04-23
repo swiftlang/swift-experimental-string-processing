@@ -885,20 +885,18 @@ class RegexDSLTests: XCTestCase {
       "a"
     }
     
-    // FIXME: Atomic groups lose their captures, will fix in:
-    // https://github.com/apple/swift-experimental-string-processing/pull/723
-    // try _testDSLCaptures(
-    //   ("aaa", ("aaa", "a")),
-    //   matchType: (Substring, Substring).self, ==)
-    // {
-    //   Local {
-    //     "a"
-    //     Capture {
-    //       OneOrMore("a", .reluctant)
-    //     }
-    //   }
-    //   "a"
-    // }
+    try _testDSLCaptures(
+      ("aaa", ("aaa", "a")),
+      matchType: (Substring, Substring).self, ==)
+    {
+      Local {
+        "a"
+        Capture {
+          OneOrMore("a", .reluctant)
+        }
+      }
+      "a"
+    }
   }
   
   func testAssertions() throws {
@@ -2079,7 +2077,8 @@ extension RegexDSLTests {
         regex_OC
       }
     }
-    let _: Regex<(Substring, Substring??, Substring??, Substring??)> = regex_O_OCC_OC
+    let _: Regex<(Substring, Substring??, Substring??, Substring??)> 
+      = regex_O_OCC_OC
 
     let regex_O_OCC_OCC = Regex {
       Optionally {
@@ -2087,7 +2086,8 @@ extension RegexDSLTests {
         regex_OCC
       }
     }
-    let _: Regex<(Substring, Substring??, Substring??, Substring??, Substring??)> = regex_O_OCC_OCC
+    let _: Regex<(Substring, Substring??, Substring??, Substring??, Substring??)>
+      = regex_O_OCC_OCC
     
     let regexChoices_CCOC = Regex {
       ChoiceOf {
@@ -2102,9 +2102,10 @@ extension RegexDSLTests {
         }
       }
     }
-    let _: Regex<(Substring, Substring?, Substring?, Substring??)> = regexChoices_CCOC
+    let _: Regex<(Substring, Substring?, Substring?, Substring??)> 
+      = regexChoices_CCOC
     
-    let regex_Zr3Mr3MOr3 = Regex {
+    let regex_NineCaptures = Regex {
       ZeroOrMore {
         regexWithMultipleCaptures
       }
@@ -2117,7 +2118,30 @@ extension RegexDSLTests {
         }
       }
     }
-    let _: Regex<(Substring, Substring?, Substring?, Substring?, Substring, Substring, Substring, Substring?, Substring?, Substring?)> = regex_Zr3Mr3MOr3
+    let _: Regex<(
+      Substring, Substring?, Substring?, Substring?, Substring, Substring,
+      Substring, Substring?, Substring?, Substring?)>
+        = regex_NineCaptures
+
+    let regex_ElevenCaptures = Regex {
+      regex_NineCaptures
+      regex_OCC
+    }
+    let _: Regex<(
+      Substring, Substring?, Substring?, Substring?, Substring, Substring,
+      Substring, Substring?, Substring?, Substring?, Substring?, Substring?)>
+        = regex_ElevenCaptures
+    
+    let regex_TwentyCaptures = Regex {
+      regex_ElevenCaptures
+      regex_NineCaptures
+    }
+    let _: Regex<(
+      Substring, Substring?, Substring?, Substring?, Substring, Substring,
+      Substring, Substring?, Substring?, Substring?, Substring?, Substring?,
+      Substring?, Substring?, Substring?, Substring, Substring, Substring,
+      Substring?, Substring?, Substring?)>
+        = regex_TwentyCaptures
   }
 }
 
