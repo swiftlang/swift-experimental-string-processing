@@ -58,9 +58,10 @@ let package = Package(
         .executable(
             name: "VariadicsGenerator",
             targets: ["VariadicsGenerator"]),
-        .executable(
-            name: "RegexBenchmark",
-            targets: ["RegexBenchmark"])
+// Disable to work around rdar://126877024
+//        .executable(
+//            name: "RegexBenchmark",
+//            targets: ["RegexBenchmark"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.0.0"),
@@ -142,17 +143,17 @@ let package = Package(
                 "_StringProcessing"
             ],
             swiftSettings: [availabilityDefinition]),
-        .executableTarget(
-            name: "RegexBenchmark",
-            dependencies: [
-                .product(name: "ArgumentParser", package: "swift-argument-parser"),
-                "_RegexParser",
-                "_StringProcessing",
-                "RegexBuilder"
-            ],
-            swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
-            ]),
+//        .executableTarget(
+//            name: "RegexBenchmark",
+//            dependencies: [
+//                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+//                "_RegexParser",
+//                "_StringProcessing",
+//                "RegexBuilder"
+//            ],
+//            swiftSettings: [
+//                .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
+//            ]),
 
         // MARK: Exercises
         .target(
