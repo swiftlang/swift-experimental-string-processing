@@ -316,9 +316,10 @@ extension String {
   ) -> String.Index? {
     // TODO: Branch here on scalar semantics
     // Don't want to pay character cost if unnecessary
-    guard var (char, next) =
+    guard let (char, nextIndex) =
             characterAndEnd(at: currentPosition, limitedBy: end)
     else { return nil }
+    var next = nextIndex
     let scalar = unicodeScalars[currentPosition]
 
     let asciiCheck = !isStrictASCII

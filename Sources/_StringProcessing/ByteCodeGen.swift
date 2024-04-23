@@ -156,6 +156,10 @@ fileprivate extension Compiler.ByteCodeGen {
         name, isScalarMode: options.semanticLevel == .unicodeScalar)
     case .relative:
       throw Unsupported("Backreference kind: \(ref)")
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
 
@@ -252,9 +256,11 @@ fileprivate extension Compiler.ByteCodeGen {
     }
   }
 
-  mutating func emitAlternation(
-    _ children: [DSLTree.Node]
-  ) throws {
+  mutating func emitAlternationGen<C: BidirectionalCollection>(
+    _ elements: C,
+    withBacktracking: Bool,
+    _ body: (inout Compiler.ByteCodeGen, C.Element) throws -> Void
+  ) rethrows {
     // Alternation: p0 | p1 | ... | pn
     //     save next_p1
     //     <code for p0>
@@ -272,15 +278,26 @@ fileprivate extension Compiler.ByteCodeGen {
     //     <code for pn>
     //   done:
     let done = builder.makeAddress()
-    for component in children.dropLast() {
+    for element in elements.dropLast() {
       let next = builder.makeAddress()
       builder.buildSave(next)
-      try emitNode(component)
+      try body(&self, element)
+      if !withBacktracking {
+        builder.buildClear()
+      }
       builder.buildBranch(to: done)
       builder.label(next)
     }
-    try emitNode(children.last!)
+    try body(&self, elements.last!)
     builder.label(done)
+  }
+  
+  mutating func emitAlternation(
+    _ children: [DSLTree.Node]
+  ) throws {
+    try emitAlternationGen(children, withBacktracking: true) {
+      try $0.emitNode($1)
+    }
   }
 
   mutating func emitConcatenationComponent(
@@ -291,31 +308,19 @@ fileprivate extension Compiler.ByteCodeGen {
     try emitNode(node)
   }
 
-  mutating func emitLookaround(
-    _ kind: (forwards: Bool, positive: Bool),
-    _ child: DSLTree.Node
-  ) throws {
-    guard kind.forwards else {
-      throw Unsupported("backwards assertions")
-    }
-
-    let positive = kind.positive
+  mutating func emitPositiveLookahead(_ child: DSLTree.Node) throws {
     /*
       save(restoringAt: success)
       save(restoringAt: intercept)
       <sub-pattern>    // failure restores at intercept
-      clearThrough(intercept) // remove intercept and any leftovers from <sub-pattern>
-      <if negative>:
-        clearSavePoint // remove success
-      fail             // positive->success, negative propagates
+      clearThrough(intercept)       // remove intercept and any leftovers from <sub-pattern>
+     fail(preservingCaptures: true) // ->success
     intercept:
-      <if positive>:
-        clearSavePoint // remove success
-      fail             // positive propagates, negative->success
+      clearSavePoint   // remove success
+      fail             // propagate failure
     success:
       ...
     */
-
     let intercept = builder.makeAddress()
     let success = builder.makeAddress()
 
@@ -323,18 +328,56 @@ fileprivate extension Compiler.ByteCodeGen {
     builder.buildSave(intercept)
     try emitNode(child)
     builder.buildClearThrough(intercept)
-    if !positive {
-      builder.buildClear()
-    }
-    builder.buildFail()
+    builder.buildFail(preservingCaptures: true) // Lookahead succeeds here
 
     builder.label(intercept)
-    if positive {
-      builder.buildClear()
-    }
+    builder.buildClear()
     builder.buildFail()
 
     builder.label(success)
+  }
+  
+  mutating func emitNegativeLookahead(_ child: DSLTree.Node) throws {
+    /*
+      save(restoringAt: success)
+      save(restoringAt: intercept)
+      <sub-pattern>    // failure restores at intercept
+      clearThrough(intercept) // remove intercept and any leftovers from <sub-pattern>
+      clearSavePoint   // remove success
+      fail             // propagate failure
+    intercept:
+      fail             // ->success
+    success:
+      ...
+    */
+    let intercept = builder.makeAddress()
+    let success = builder.makeAddress()
+
+    builder.buildSave(success)
+    builder.buildSave(intercept)
+    try emitNode(child)
+    builder.buildClearThrough(intercept)
+    builder.buildClear()
+    builder.buildFail()
+
+    builder.label(intercept)
+    builder.buildFail()
+
+    builder.label(success)
+  }
+  
+  mutating func emitLookaround(
+    _ kind: (forwards: Bool, positive: Bool),
+    _ child: DSLTree.Node
+  ) throws {
+    guard kind.forwards else {
+      throw Unsupported("backwards assertions")
+    }
+    if kind.positive {
+      try emitPositiveLookahead(child)
+    } else {
+      try emitNegativeLookahead(child)
+    }
   }
 
   mutating func emitAtomicNoncapturingGroup(
@@ -344,8 +387,8 @@ fileprivate extension Compiler.ByteCodeGen {
       save(continuingAt: success)
       save(restoringAt: intercept)
       <sub-pattern>    // failure restores at intercept
-      clearThrough(intercept) // remove intercept and any leftovers from <sub-pattern>
-      fail             // ->success
+      clearThrough(intercept)        // remove intercept and any leftovers from <sub-pattern>
+      fail(preservingCaptures: true) // ->success
     intercept:
       clearSavePoint   // remove success
       fail             // propagate failure
@@ -360,7 +403,7 @@ fileprivate extension Compiler.ByteCodeGen {
     builder.buildSave(intercept)
     try emitNode(child)
     builder.buildClearThrough(intercept)
-    builder.buildFail()
+    builder.buildFail(preservingCaptures: true) // Atomic group succeeds here
 
     builder.label(intercept)
     builder.buildClear()
@@ -657,6 +700,10 @@ fileprivate extension Compiler.ByteCodeGen {
       // quantification break if trying to restore to a prior
       // iteration because the register got overwritten?
       //
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
 
     builder.label(exit)
@@ -838,6 +885,36 @@ fileprivate extension Compiler.ByteCodeGen {
       }
   }
 
+  /// Flatten quoted strings into sequences of atoms, so that the standard
+  /// CCC codegen will handle them.
+  func flatteningCustomCharacterClassMembers(
+    _ members: [DSLTree.CustomCharacterClass.Member]
+  ) -> [DSLTree.CustomCharacterClass.Member] {
+    var characters: Set<Character> = []
+    var scalars: Set<UnicodeScalar> = []
+    var result: [DSLTree.CustomCharacterClass.Member] = []
+    for member in members {
+      switch member {
+      case .atom(let atom):
+        switch atom {
+        case let .char(char):
+          characters.insert(char)
+        case let .scalar(scalar):
+          scalars.insert(scalar)
+        default:
+          result.append(member)
+        }
+      case let .quotedLiteral(str):
+        characters.formUnion(str)
+      default:
+        result.append(member)
+      }
+    }
+    result.append(contentsOf: characters.map { .atom(.char($0)) })
+    result.append(contentsOf: scalars.map { .atom(.scalar($0)) })
+    return result
+  }
+  
   func coalescingCustomCharacterClass(
     _ ccc: DSLTree.CustomCharacterClass
   ) -> DSLTree.CustomCharacterClass {
@@ -845,12 +922,150 @@ fileprivate extension Compiler.ByteCodeGen {
     // mode, we don't want to coalesce any scalars into a grapheme. This
     // means that e.g `[e\u{301}-\u{302}]` remains a range between U+301 and
     // U+302.
-    guard options.semanticLevel == .graphemeCluster else { return ccc }
-
-    let members = coalescingCustomCharacterClassMembers(ccc.members)
-    return .init(members: members, isInverted: ccc.isInverted)
+    let members = options.semanticLevel == .graphemeCluster
+      ? coalescingCustomCharacterClassMembers(ccc.members)
+      : ccc.members
+    return .init(
+      members: flatteningCustomCharacterClassMembers(members),
+      isInverted: ccc.isInverted)
   }
 
+  mutating func emitCharacterInCCC(_ c: Character)  {
+    switch options.semanticLevel {
+    case .graphemeCluster:
+      emitCharacter(c)
+    case .unicodeScalar:
+      // When in scalar mode, act like an alternation of the individual scalars
+      // that comprise a character.
+      emitAlternationGen(c.unicodeScalars, withBacktracking: false) {
+        $0.emitMatchScalar($1)
+      }
+    }
+  }
+  
+  mutating func emitCCCMember(
+    _ member: DSLTree.CustomCharacterClass.Member
+  ) throws {
+    switch member {
+    case .atom(let atom):
+      switch atom {
+      case .char(let c):
+        emitCharacterInCCC(c)
+      case .scalar(let s):
+        emitCharacterInCCC(Character(s))
+      default:
+        try emitAtom(atom)
+      }
+    case .custom(let ccc):
+      try emitCustomCharacterClass(ccc)
+    case .quotedLiteral:
+      fatalError("Removed in 'flatteningCustomCharacterClassMembers'")
+    case .range:
+      let consumer = try member.generateConsumer(options)
+      builder.buildConsume(by: consumer)
+    case .trivia:
+      return
+      
+    // TODO: Can we decide when it's better to try `rhs` first?
+    // Intersection is trivial, since failure on either side propagates:
+    // - store current position
+    // - lhs
+    // - restore current position
+    // - rhs
+    case let .intersection(lhs, rhs):
+      let r = builder.makePositionRegister()
+      builder.buildMoveCurrentPosition(into: r)
+      try emitCustomCharacterClass(lhs)
+      builder.buildRestorePosition(from: r)
+      try emitCustomCharacterClass(rhs)
+      
+    // TODO: Can we decide when it's better to try `rhs` first?
+    // For subtraction, failure in `lhs` propagates, while failure in `rhs` is
+    // swallowed/reversed:
+    // - store current position
+    // - lhs
+    // - save to end
+    // - restore current position
+    // - rhs
+    // - clear, fail (since both succeeded)
+    // - end: ...
+    case let .subtraction(lhs, rhs):
+      let r = builder.makePositionRegister()
+      let end = builder.makeAddress()
+      builder.buildMoveCurrentPosition(into: r)
+      try emitCustomCharacterClass(lhs)   // no match here = failure, propagates
+      builder.buildSave(end)
+      builder.buildRestorePosition(from: r)
+      try emitCustomCharacterClass(rhs)   // no match here = success, resumes at 'end'
+      builder.buildClear()                // clears 'end'
+      builder.buildFail()                 // this failure propagates outward
+      builder.label(end)
+    
+    // Symmetric difference always requires executing both `rhs` and `lhs`.
+    // Execute each, ignoring failure and storing the resulting position in a
+    // register. If those results are equal, fail. If they're different, use
+    // the position that is different from the starting position:
+    // - store current position as r0
+    // - save to lhsFail
+    // - lhs
+    // - clear lhsFail (and continue)
+    // - lhsFail: save position as r1
+    //
+    // - restore current position
+    // - save to rhsFail
+    // - rhs
+    // - clear rhsFail (and continue)
+    // - rhsFail: save position as r2
+    //
+    // - restore to resulting position from lhs (r1)
+    // - if equal to r2, goto fail (both sides had same result)
+    // - if equal to r0, goto advance (lhs failed)
+    // - goto end
+    // - advance: restore to resulting position from rhs (r2)
+    // - goto end
+    // - fail: fail
+    // - end: ...
+    case let .symmetricDifference(lhs, rhs):
+      let r0 = builder.makePositionRegister()
+      let r1 = builder.makePositionRegister()
+      let r2 = builder.makePositionRegister()
+      let lhsFail = builder.makeAddress()
+      let rhsFail = builder.makeAddress()
+      let advance = builder.makeAddress()
+      let fail = builder.makeAddress()
+      let end = builder.makeAddress()
+
+      builder.buildMoveCurrentPosition(into: r0)
+      builder.buildSave(lhsFail)
+      try emitCustomCharacterClass(lhs)
+      builder.buildClear()
+      builder.label(lhsFail)
+      builder.buildMoveCurrentPosition(into: r1)
+      
+      builder.buildRestorePosition(from: r0)
+      builder.buildSave(rhsFail)
+      try emitCustomCharacterClass(rhs)
+      builder.buildClear()
+      builder.label(rhsFail)
+      builder.buildMoveCurrentPosition(into: r2)
+      
+      // If r1 == r2, then fail
+      builder.buildRestorePosition(from: r1)
+      builder.buildCondBranch(to: fail, ifSamePositionAs: r2)
+      
+      // If r1 == r0, then move to r2 before ending
+      builder.buildCondBranch(to: advance, ifSamePositionAs: r0)
+      builder.buildBranch(to: end)
+      builder.label(advance)
+      builder.buildRestorePosition(from: r2)
+      builder.buildBranch(to: end)
+
+      builder.label(fail)
+      builder.buildFail()
+      builder.label(end)      
+    }
+  }
+  
   mutating func emitCustomCharacterClass(
     _ ccc: DSLTree.CustomCharacterClass
   ) throws {
@@ -868,8 +1083,67 @@ fileprivate extension Compiler.ByteCodeGen {
       }
       return
     }
-    let consumer = try ccc.generateConsumer(options)
-    builder.buildConsume(by: consumer)
+
+    let updatedCCC: DSLTree.CustomCharacterClass
+    if optimizationsEnabled {
+      updatedCCC = ccc.coalescingASCIIMembers(options)
+    } else {
+      updatedCCC = ccc
+    }
+    let filteredMembers = updatedCCC.members.filter({!$0.isOnlyTrivia})
+    
+    if updatedCCC.isInverted {
+      // inverted
+      // custom character class: p0 | p1 | ... | pn
+      // Try each member to make sure they all fail
+      //     save next_p1
+      //     <code for p0>
+      //     clear, fail
+      //   next_p1:
+      //     save next_p2
+      //     <code for p1>
+      //     clear fail
+      //   next_p2:
+      //     save next_p...
+      //     <code for p2>
+      //     clear fail
+      //   ...
+      //   next_pn:
+      //     save done
+      //     <code for pn>
+      //     clear fail
+      //   done:
+      //     step forward by 1
+      let done = builder.makeAddress()
+      for member in filteredMembers.dropLast() {
+        let next = builder.makeAddress()
+        builder.buildSave(next)
+        try emitCCCMember(member)
+        builder.buildClear()
+        builder.buildFail()
+        builder.label(next)
+      }
+      builder.buildSave(done)
+      try emitCCCMember(filteredMembers.last!)
+      builder.buildClear()
+      builder.buildFail()
+      builder.label(done)
+      
+      // Consume a single unit for the inverted ccc
+      switch options.semanticLevel {
+      case .graphemeCluster:
+        builder.buildAdvance(1)
+      case .unicodeScalar:
+        builder.buildAdvanceUnicodeScalar(1)
+      }
+      return
+    }
+    // non inverted CCC
+    // Custom character class: p0 | p1 | ... | pn
+    // Very similar to alternation, but we don't keep backtracking save points
+    try emitAlternationGen(filteredMembers, withBacktracking: false) {
+      try $0.emitCCCMember($1)
+    }
   }
 
   mutating func emitConcatenation(_ children: [DSLTree.Node]) throws {
@@ -1006,6 +1280,12 @@ fileprivate extension Compiler.ByteCodeGen {
 }
 
 extension DSLTree.Node {
+  /// A Boolean value indicating whether this node advances the match position
+  /// on a successful match.
+  ///
+  /// For example, an alternation like `(a|b|c)` always advances the position
+  /// by a character, but `(a|b|)` has an empty branch, which matches without
+  /// advancing.
   var guaranteesForwardProgress: Bool {
     switch self {
     case .orderedChoice(let children):
@@ -1036,12 +1316,34 @@ extension DSLTree.Node {
     case .consumer, .matcher:
       // Allow zero width consumers and matchers
      return false
-    case .customCharacterClass:
-      return true
+    case .customCharacterClass(let ccc):
+      return ccc.guaranteesForwardProgress
     case .quantification(let amount, _, let child):
       let (atLeast, _) = amount.ast.bounds
       return atLeast ?? 0 > 0 && child.guaranteesForwardProgress
     default: return false
     }
+  }
+}
+
+extension DSLTree.CustomCharacterClass {
+  /// We allow trivia into CustomCharacterClass, which could result in a CCC
+  /// that matches nothing, ie `(?x)[ ]`.
+  var guaranteesForwardProgress: Bool {
+    for m in members {
+      switch m {
+      case .trivia:
+        continue
+      case let .intersection(lhs, rhs):
+        return lhs.guaranteesForwardProgress && rhs.guaranteesForwardProgress
+      case let .subtraction(lhs, _):
+        return lhs.guaranteesForwardProgress
+      case let .symmetricDifference(lhs, rhs):
+        return lhs.guaranteesForwardProgress && rhs.guaranteesForwardProgress
+      default:
+        return true
+      }
+    }
+    return false
   }
 }

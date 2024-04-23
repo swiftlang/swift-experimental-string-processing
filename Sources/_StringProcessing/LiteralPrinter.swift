@@ -33,7 +33,7 @@ extension Regex {
   /// the `CustomConsumingRegexComponent` protocol, this property is `nil`.
   ///
   /// The value of this property may change between different releases of Swift.
-  @available(SwiftStdlib 5.11, *)
+  @available(SwiftStdlib 6.0, *)
   public var _literalPattern: String? {
     var gen = LiteralPrinter(options: MatchingOptions())
     gen.outputNode(self.program.tree.root)
@@ -216,6 +216,10 @@ extension LiteralPrinter {
       output("{,\(n.value!)}")
     case let .range(low, high):
       output("{\(low.value!),\(high.value!)}")
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
     
     outputQuantificationKind(kind)
@@ -235,6 +239,10 @@ extension LiteralPrinter {
         output(options.isReluctantByDefault ? "" : "?")
       case .possessive:
         output("+")
+      #if RESILIENT_LIBRARIES
+      @unknown default:
+        fatalError()
+      #endif
       }
     case let .syntax(kind):
       // Syntactically-specified quantification modifiers can stay as-is.
@@ -245,6 +253,10 @@ extension LiteralPrinter {
         output("?")
       case .possessive:
         output("+")
+      #if RESILIENT_LIBRARIES
+      @unknown default:
+        fatalError()
+      #endif
       }
     }
   }
@@ -351,6 +363,10 @@ extension LiteralPrinter {
       output("\\g{\(prefix)\(abs(value))}")
     case .named(let name):
       output("\\g{\(name)}")
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
   
@@ -444,7 +460,17 @@ extension String {
 
 extension UnicodeScalar {
   var escapedString: String {
-    "\\u{" + String(value, radix: 16) + "}"
+    switch self {
+    case "\n": return #"\n"#
+    case "\r": return #"\r"#
+    case "\t": return #"\t"#
+    default:
+      let code = String(value, radix: 16, uppercase: true)
+      let prefix = code.count <= 4
+        ? #"\u"# + String(repeating: "0", count: 4 - code.count)
+        : #"\U"# + String(repeating: "0", count: 8 - code.count)
+      return prefix + code
+    }
   }
 }
 
@@ -548,6 +574,11 @@ extension AST.MatchingOption.Kind {
       
     // NSRE Compatibility option; no literal representation
     case .nsreCompatibleDot: return nil
+
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
 }
@@ -587,6 +618,11 @@ extension DSLTree._AST.GroupKind {
       
     case let .changeMatchingOptions(sequence):
       return sequence._patternString + ":"
+
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
   }
 }
