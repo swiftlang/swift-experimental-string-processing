@@ -1940,18 +1940,17 @@ extension RegexDSLTests {
       TryCapture<(Substring, Int)>(OneOrMore(.word)) { Int($0) }
       #/:(\d+):/#
     }
-// FIXME (Variadics): The output type is now `(Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Int, Substring)`
     XCTAssert(type(of: dslWithTooManyCaptures).self
-              == Regex<(Substring, Substring, Int, Substring)>.self)
+              == Regex<(Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Substring, Int, Substring)>.self)
     
     let match = try XCTUnwrap(alpha.wholeMatch(of: dslWithTooManyCaptures))
     XCTAssertEqual(match.output.0, alpha[...])
     XCTAssertEqual(match.output.1, "AAA")
-// FIXME (Variadics): match.output.2 is no longer an `Int`
-//    XCTAssertEqual(match.output.2, 123)
-// FIXME (Variadics): match.output.3 is now the second letter of `regexWithTooManyCaptures`, i.e. "b"
-    XCTAssertEqual(match.output.3, "456")
-    
+    XCTAssertEqual(match.output.2, "a")
+    XCTAssertEqual(match.output.3, "b")
+    XCTAssertEqual(match.output.15, 123)
+    XCTAssertEqual(match.output.16, "456")
+
     // All captures groups are available through `AnyRegexOutput`.
     let anyOutput = AnyRegexOutput(match)
     XCTAssertEqual(anyOutput.count, 17)
