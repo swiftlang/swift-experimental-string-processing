@@ -1870,6 +1870,7 @@ extension RegexDSLTests {
       OneOrMore(.word)
     }
     XCTAssert(type(of: dslWithLabeledCapture).self == Regex<Substring>.self)
+    let _: Regex<Substring> = dslWithLabeledCapture
     
     let match = try XCTUnwrap(oneNumericField.wholeMatch(of: dslWithLabeledCapture))
     XCTAssertEqual(match.output, oneNumericField[...])
@@ -1912,6 +1913,7 @@ extension RegexDSLTests {
       OneOrMore(.word)
     }
     XCTAssert(type(of: dslWithBothCaptures).self == Regex<(Substring, Substring)>.self)
+    let _: Regex<(Substring, Substring)> = dslWithBothCaptures
     
     let match = try XCTUnwrap(twoNumericFields.wholeMatch(of: dslWithBothCaptures))
     XCTAssertEqual(match.output.0, twoNumericFields[...])
