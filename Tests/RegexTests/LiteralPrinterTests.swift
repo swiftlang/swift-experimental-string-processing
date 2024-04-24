@@ -14,17 +14,35 @@ import XCTest
 import _StringProcessing
 import RegexBuilder
 
-@available(SwiftStdlib 5.11, *)
+@available(SwiftStdlib 6.0, *)
+fileprivate func _literalTest<T>(
+  _ regex: Regex<T>,
+  expected: String?,
+  file: StaticString = #filePath,
+  line: UInt = #line
+) {
+  XCTAssertEqual(regex._literalPattern, expected, file: file, line: line)
+  if let expected {
+    let remadeRegex = try? Regex(expected)
+    XCTAssertEqual(expected, remadeRegex?._literalPattern, file: file, line: line)
+  }
+}
+
+@available(SwiftStdlib 6.0, *)
 extension RegexTests {
   func testPrintableRegex() throws {
     let regexString = #"([a-fGH1-9[^\D]]+)?b*cd(e.+)\2\w\S+?"#
-    let regex = try! Regex(regexString)
-    let pattern = try XCTUnwrap(regex._literalPattern)
+    let regex = try Regex(regexString)
     // Note: This is true for this particular regex, but not all regexes
-    XCTAssertEqual(regexString, pattern)
+    _literalTest(regex, expected: regexString)
     
     let printableRegex = try XCTUnwrap(PrintableRegex(regex))
-    XCTAssertEqual("\(printableRegex)", pattern)
+    XCTAssertEqual("\(printableRegex)", regexString)
+  }
+  
+  func testUnicodeEscapes() throws {
+    let regex = #/\r\n\t cafe\u{301} \u{1D11E}/#
+    _literalTest(regex, expected: #"\r\n\t cafe\u0301 \U0001D11E"#)
   }
   
   func testPrintableDSLRegex() throws {
@@ -39,8 +57,7 @@ extension RegexTests {
       }.dotMatchesNewlines()
       Optionally("c")
     }.ignoresCase()
-    let pattern = try XCTUnwrap(regex._literalPattern)
-    XCTAssertEqual("(?i:(?:aaa)+?(?s:(?:bbb)*|d+|e{3,})c?)", pattern)
+    _literalTest(regex, expected: "(?i:(?:aaa)+?(?s:(?:bbb)*|d+|e{3,})c?)")
 
     let nonPrintableRegex = Regex {
       OneOrMore("a")
@@ -49,14 +66,14 @@ extension RegexTests {
       } transform: { Int($0)! }
       Optionally("b")
     }
-    XCTAssertNil(nonPrintableRegex._literalPattern)
+    _literalTest(nonPrintableRegex, expected: nil)
   }
 }
 
 // MARK: - PrintableRegex
 
 // Demonstration of a guaranteed Codable/Sendable regex type.
-@available(SwiftStdlib 5.11, *)
+@available(SwiftStdlib 6.0, *)
 struct PrintableRegex: RegexComponent, @unchecked Sendable {
   var pattern: String
   var regex: Regex<AnyRegexOutput>
@@ -77,7 +94,7 @@ struct PrintableRegex: RegexComponent, @unchecked Sendable {
   }
 }
 
-@available(SwiftStdlib 5.11, *)
+@available(SwiftStdlib 6.0, *)
 extension PrintableRegex: Codable {
   init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
@@ -91,7 +108,7 @@ extension PrintableRegex: Codable {
   }
 }
 
-@available(SwiftStdlib 5.11, *)
+@available(SwiftStdlib 6.0, *)
 extension PrintableRegex: CustomStringConvertible {
   var description: String {
     pattern

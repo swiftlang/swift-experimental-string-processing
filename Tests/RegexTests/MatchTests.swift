@@ -23,7 +23,7 @@ struct MatchError: Error {
 
 // This just piggy-backs on the existing match testing to validate that
 // literal patterns round trip correctly.
-@available(SwiftStdlib 5.11, *)
+@available(SwiftStdlib 6.0, *)
 func _roundTripLiteral(
   _ regexStr: String,
   syntax: SyntaxOptions
@@ -88,7 +88,7 @@ func _firstMatch(
     }
   }
 
-  if #available(SwiftStdlib 5.11, *) {
+  if #available(SwiftStdlib 6.0, *) {
     let roundTripRegex = try? _roundTripLiteral(regexStr, syntax: syntax)
     let roundTripResult = try? roundTripRegex?
       .matchingSemantics(semanticLevel)
@@ -1804,8 +1804,7 @@ extension RegexTests {
     firstMatchTests(
       #"(?>(\d+))\w+\1"#,
       (input: "23x23", match: "23x23"),
-      (input: "123x23", match: "23x23"),
-      xfail: true)
+      (input: "123x23", match: "23x23"))
     
     // Backreferences in scalar mode
     // In scalar mode the backreference should not match
@@ -1823,12 +1822,10 @@ extension RegexTests {
       (input: "abbba", match: nil),
       (input: "ABBA", match: nil),
       (input: "defABBAdef", match: nil))
-    // FIXME: Backreferences don't escape positive lookaheads
     firstMatchTests(
       #"^(?=.*(.)(.)\2\1).+\2$"#,
       (input: "ABBAB", match: "ABBAB"),
-      (input: "defABBAdefB", match: "defABBAdefB"),
-      xfail: true)
+      (input: "defABBAdefB", match: "defABBAdefB"))
     
     firstMatchTests(
       #"^(?!.*(.)(.)\2\1).+$"#,
@@ -2760,6 +2757,23 @@ extension RegexTests {
       let str = String(repeating: "a", count: max + 1)
       XCTAssertNotNil(str.wholeMatch(of: possessiveRegex))
     }
+  }
+  
+  func testIssue713() throws {
+    // Original report from https://github.com/apple/swift-experimental-string-processing/issues/713
+    let originalInput = "Something 9a"
+    let originalRegex = #/(?=([1-9]|(a|b)))/#
+    let originalOutput = originalInput.matches(of: originalRegex).map(\.output)
+    XCTAssert(originalOutput[0] == ("", "9", nil))
+    XCTAssert(originalOutput[1] == ("", "a", "a"))
+
+    let simplifiedRegex = #/(?=(9))/#
+    let simplifiedOutput = originalInput.matches(of: simplifiedRegex).map(\.output)
+    XCTAssert(simplifiedOutput[0] == ("", "9"))
+
+    let additionalRegex = #/(a+)b(a+)/#
+    let additionalInput = "abaaba"
+    XCTAssertNil(additionalInput.wholeMatch(of: additionalRegex))
   }
   
   func testNSRECompatibility() throws {

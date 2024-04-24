@@ -211,11 +211,11 @@ extension Instruction.Payload {
     self.rawValue == 1
   }
 
-  init(bool: BoolRegister) {
-    self.init(bool)
+  init(bool: Bool) {
+    self.init(bool ? 1 : 0, 0)
   }
-  var bool: BoolRegister {
-    interpret()
+  var boolPayload: Bool {
+    interpret(as: TypedInt<Bool>.self) == 1
   }
 
   init(element: ElementRegister, isCaseInsensitive: Bool) {
@@ -431,6 +431,10 @@ struct QuantifyPayload: RawRepresentable {
       kindVal = 1
     case .possessive:
       kindVal = 2
+    #if RESILIENT_LIBRARIES
+    @unknown default:
+      fatalError()
+    #endif
     }
     // TODO: refactor / reimplement
     let maxExtraTripsVal: UInt64 = maxExtraTrips == nil ? 1 : UInt64(maxExtraTrips!) << 1

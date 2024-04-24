@@ -17,9 +17,19 @@ public let currentRegexLiteralFormatVersion = 1
 
 @_spi(CompilerInterface)
 public struct CompilerLexError: Error {
+  var underlyingLocation: UnsafeSourceLocation
+
   public var message: String
-  public var location: UnsafeRawPointer
+  public var location: UnsafeRawPointer { return underlyingLocation.ptr }
   public var completelyErroneous: Bool
+
+  init(
+    message: String, location: UnsafeRawPointer, completelyErroneous: Bool
+  ) {
+    self.message = message
+    self.underlyingLocation = UnsafeSourceLocation(location)
+    self.completelyErroneous = completelyErroneous
+  }
 }
 
 /// Interface for the Swift compiler.

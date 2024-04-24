@@ -256,6 +256,28 @@ class AlgorithmsResultBuilderTests: XCTestCase {
       "+"
       int
     }
+
+    let ref1 = Reference<Substring>()
+    let ref2 = Reference<Substring>()
+    try expectMatch(
+      .first,
+      ("ABBAB", ("ABBAB", "A", "B")),
+      ("defABBAdefB", ("defABBAdefB", "A", "B")),
+      matchType: (Substring, Substring, Substring).self,
+      equivalence: ==
+    ) {
+      Anchor.startOfSubject
+      Lookahead {
+        ZeroOrMore(.any)
+        Capture(as: ref1) { One(.any) }
+        Capture(as: ref2) { One(.any) }
+        ref2
+        ref1
+      }
+      OneOrMore(.any)
+      ref2
+      Anchor.endOfSubject
+    }
   }
 
   func testStartsAndContains() throws {

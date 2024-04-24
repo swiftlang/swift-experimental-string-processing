@@ -19,6 +19,7 @@ enum DecodedInstr {
   case invalid
   case moveImmediate
   case moveCurrentPosition
+  case restorePosition
   case branch
   case condBranchZeroElseDecrement
   case condBranchSamePosition
@@ -65,6 +66,8 @@ extension DecodedInstr {
       return .moveImmediate
     case .moveCurrentPosition:
       return .moveCurrentPosition
+    case .restorePosition:
+      return .restorePosition
     case .branch:
       return .branch
     case .condBranchZeroElseDecrement:
@@ -368,6 +371,48 @@ extension RegexTests {
       semanticLevel: .unicodeScalar,
       contains: [.matchBitsetScalar],
       doesNotContain: [.matchBitset, .consumeBy])
+    expectProgram(
+      for: "[a-c]",
+      contains: [.matchBitset],
+      doesNotContain: [.consumeBy, .matchBitsetScalar])
+    expectProgram(
+      for: "[a-c0123]",
+      contains: [.matchBitset],
+      doesNotContain: [.matchBitsetScalar, .consumeBy])
+    expectProgram(
+      for: #"\w"#,
+      contains: [.matchBuiltin],
+      doesNotContain: [.consumeBy, .matchBitset, .matchBitsetScalar])
+    expectProgram(
+      for: #"[\w]"#,
+      contains: [.matchBuiltin],
+      doesNotContain: [.consumeBy, .matchBitset, .matchBitsetScalar])
+    expectProgram(
+      for: #"\w"#,
+      semanticLevel: .unicodeScalar,
+      contains: [.matchBuiltin],
+      doesNotContain: [.consumeBy, .matchBitset, .matchBitsetScalar])
+    expectProgram(
+      for: #"[\w]"#,
+      semanticLevel: .unicodeScalar,
+      contains: [.matchBuiltin],
+      doesNotContain: [.consumeBy, .matchBitset, .matchBitsetScalar])
+    expectProgram(
+      for: #"\p{Greek}"#,
+      contains: [.consumeBy],
+      doesNotContain: [.matchBuiltin, .matchBitset, .matchBitsetScalar])
+
+    // Must have new stdlib for character class ranges.
+    guard ensureNewStdlib() else { return }
+    
+    expectProgram(
+      for: "[a-á]",
+      contains: [.consumeBy],
+      doesNotContain: [.matchBitset, .matchBitsetScalar])
+    expectProgram(
+      for: "[a-fá-ém-zk]",
+      contains: [.matchBitset, .consumeBy],
+      doesNotContain: [.matchBitsetScalar])
   }
 
   func testScalarOptimizeCompilation() {
