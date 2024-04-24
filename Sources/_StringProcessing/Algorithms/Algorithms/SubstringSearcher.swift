@@ -17,21 +17,22 @@ struct SubstringSearcher: Sequence, IteratorProtocol {
     let patternCount: Int
     var endOfNextPotentialMatch: String.Index?
     
-    /// Require this length to calculate and use bad character offsets instead of just
-    // using a simple naive search.
+    /// The minimum pattern length for using bad character offsets 
+    /// (aka Boyer-Moore) instead of just a simple naive search.
     static let patternCountMinimum = 4
     
     init(text: Substring? = nil, pattern: Substring) {
-      var offsets: [Character: Int] = [:]
-      var count = 0
-      let useBadCharacterOffsets = 
-        pattern.index(pattern.startIndex, offsetBy: Self.patternCountMinimum, limitedBy: pattern.endIndex) 
-          != nil
-      if useBadCharacterOffsets {      
-          for (offset, ch) in pattern.enumerated() {
-            offsets[ch] = offset
-            count += 1
-          }
+      let useBadCharacterOffsets =
+        pattern.prefix(Self.patternCountMinimum).count == Self.patternCountMinimum
+      
+      if useBadCharacterOffsets {
+        var offsets: [Character: Int] = [:]
+        var count = 0
+        for (offset, ch) in pattern.enumerated() {
+          offsets[ch] = offset
+          count += 1
+        }
+        
         self.badCharacterOffsets = offsets
         self.patternCount = count
       } else {
@@ -44,9 +45,11 @@ struct SubstringSearcher: Sequence, IteratorProtocol {
           text.startIndex, offsetBy: patternCount, limitedBy: text.endIndex)
       }
     }
+    
+    var shouldUseNaiveSearch: Bool {
+      badCharacterOffsets.isEmpty
+    }
   }
-  
-  typealias Searched = Substring
   
   let text: Searched
   let pattern: Substring
@@ -58,6 +61,8 @@ struct SubstringSearcher: Sequence, IteratorProtocol {
     self.state = .init(text: text[...], pattern: pattern)
   }
 
+  /// Finds and returns the range of the next matching substring, along
+  /// with the end index of the next possible match, using a naive approach.
   func nextRangeNaive(in text: Searched, searchFromEnd end: String.Index)
     -> (result: Range<String.Index>?, nextEnd: String.Index?)
   {
@@ -69,6 +74,7 @@ struct SubstringSearcher: Sequence, IteratorProtocol {
     while let potentialMatchEnd = text[textLastIndex...].firstIndex(of: pattern[patternLastIndex]) {
       var textCursor = potentialMatchEnd
       var patternCursor = patternLastIndex
+      
       precondition(textCursor >= text.startIndex)
       while patternCursor > pattern.startIndex {
         pattern.formIndex(before: &patternCursor)
@@ -90,6 +96,8 @@ struct SubstringSearcher: Sequence, IteratorProtocol {
     return (nil, nil)
   }
 
+  /// Finds and returns the range of the next matching substring, along
+  /// with the end index of the next possible match.
   func nextRange(in text: Searched, searchFromEnd end: String.Index)
     -> (result: Range<String.Index>?, nextEnd: String.Index?)
   {  
@@ -100,8 +108,8 @@ struct SubstringSearcher: Sequence, IteratorProtocol {
         end == text.endIndex ? nil : text.index(after: end))
     }
 
-    // Fall back to naive search if we didn't calculate bad character offsets
-    if state.badCharacterOffsets.isEmpty {
+    // We fall back to the naive search if `pattern` is small.
+    if state.shouldUseNaiveSearch {
       return nextRangeNaive(in: text, searchFromEnd: end)
     }
     
@@ -154,6 +162,8 @@ struct SubstringSearcher: Sequence, IteratorProtocol {
 }
 
 extension SubstringSearcher: CollectionSearcher {
+  typealias Searched = Substring
+  
   func state(for text: Searched, in range: Range<String.Index>) -> State {
     State(text: text[range], pattern: pattern)
   }
