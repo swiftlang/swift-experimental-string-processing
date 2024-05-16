@@ -230,7 +230,7 @@ extension RenderDSLTests {
       """#)
     try testConversion(#"[abc\u{301}]"#, #"""
       Regex {
-        One(.anyOf("abc\u{301}"))
+        One(CharacterClass.anyOf("abc\u{301}"))
       }
       """#)
 
@@ -248,7 +248,7 @@ extension RenderDSLTests {
 
     try testConversion(#"(?x) [ a b c \u{301} ] "#, #"""
       Regex {
-        One(.anyOf("abc\u{301}"))
+        One(CharacterClass.anyOf("abc\u{301}"))
       }
       """#)
 

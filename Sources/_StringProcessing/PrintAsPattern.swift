@@ -1339,6 +1339,13 @@ extension DSLTree.Atom {
 
       for option in options {
         switch option.kind {
+        case .extended:
+          // We don't currently support (?x) in the DSL, so if we see it, just
+          // do nothing.
+          if options.count == 1 {
+            return nil
+          }
+
         case .reluctantByDefault:
           if isAdd {
             printer.quantificationBehavior = .reluctant
