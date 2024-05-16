@@ -74,6 +74,51 @@ extension PrettyPrinter {
     printBlock("Regex") { printer in
       printer.printAsPattern(convertedFromAST: node, isTopLevel: true)
     }
+
+    printInlineMatchingOptions()
+  }
+
+  mutating func printInlineMatchingOptions() {
+    while !inlineMatchingOptions.isEmpty {
+      let (options, condition) = popMatchingOptions()
+
+      printIndented { printer in
+        for option in options {
+          switch option.kind {
+          case .asciiOnlyDigit:
+            printer.print(".asciiOnlyDigits(\(condition))")
+
+          case .asciiOnlyPOSIXProps:
+            printer.print(".asciiOnlyCharacterClasses(\(condition))")
+
+          case .asciiOnlySpace:
+            printer.print(".asciiOnlyWhitespace(\(condition))")
+
+          case .asciiOnlyWord:
+            printer.print(".asciiOnlyWordCharacters(\(condition))")
+
+          case .caseInsensitive:
+            printer.print(".ignoresCase(\(condition))")
+
+          case .multiline:
+            printer.print(".anchorsMatchLineEndings(\(condition))")
+
+          case .reluctantByDefault:
+            // This is handled by altering every OneOrMore, etc by changing each
+            // individual repetition behavior instead of creating a nested regex.
+            continue
+
+          case .singleLine:
+            printer.print(".dotMatchesNewlines(\(condition))")
+
+          default:
+            break
+          }
+        }
+      }
+
+      print("}")
+    }
   }
 
   // FIXME: Use of back-offs like height and depth
@@ -424,7 +469,7 @@ extension PrettyPrinter {
     // Also in the same vein, if we have a few atom members but no
     // nonAtomMembers, then we can emit a single .anyOf(...) for them.
     if !charMembers.isEmpty, nonCharMembers.isEmpty {
-      let anyOf = ".anyOf(\(charMembers))"
+      let anyOf = "CharacterClass.anyOf(\(charMembers))"
       
       indent()
       
@@ -502,7 +547,7 @@ extension PrettyPrinter {
         if wrap {
           output("One(.anyOf(\(String(c)._quoted)))")
         } else {
-          output(".anyOf(\(String(c)._quoted))")
+          output("CharacterClass.anyOf(\(String(c)._quoted))")
         }
         
       case let .scalar(s):
@@ -510,7 +555,7 @@ extension PrettyPrinter {
         if wrap {
           output("One(.anyOf(\(s._dslBase._bareQuoted)))")
         } else {
-          output(".anyOf(\(s._dslBase._bareQuoted))")
+          output("CharacterClass.anyOf(\(s._dslBase._bareQuoted))")
         }
         
       case let .unconverted(a):
@@ -538,7 +583,7 @@ extension PrettyPrinter {
       if wrap {
         output("One(.anyOf(\(s._quoted)))")
       } else {
-        output(".anyOf(\(s._quoted))")
+        output("CharacterClass.anyOf(\(s._quoted))")
       }
       
     case .trivia(_):
@@ -1281,14 +1326,47 @@ extension DSLTree.Atom {
       return ("/* TODO: symbolic references */", false)
       
     case .changeMatchingOptions(let matchingOptions):
-      for add in matchingOptions.ast.adding {
-        switch add.kind {
+      let options: [AST.MatchingOption]
+      let isAdd: Bool
+
+      if matchingOptions.ast.removing.isEmpty {
+        options = matchingOptions.ast.adding
+        isAdd = true
+      } else {
+        options = matchingOptions.ast.removing
+        isAdd = false
+      }
+
+      for option in options {
+        switch option.kind {
+        case .extended:
+          // We don't currently support (?x) in the DSL, so if we see it, just
+          // do nothing.
+          if options.count == 1 {
+            return nil
+          }
+
         case .reluctantByDefault:
-          printer.quantificationBehavior = .reluctant
+          if isAdd {
+            printer.quantificationBehavior = .reluctant
+          } else {
+            printer.quantificationBehavior = .eager
+          }
+
+
+          // Don't create a nested Regex for (?U), we handle this by altering
+          // every individual repetitionBehavior for things like OneOrMore.
+          if options.count == 1 {
+            return nil
+          }
+
         default:
           break
         }
       }
+
+      printer.print("Regex {")
+      printer.pushMatchingOptions(options, isAdded: isAdd)
     }
     
     return nil
