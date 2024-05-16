@@ -79,29 +79,29 @@ extension PrettyPrinter {
   }
 
   mutating func printInlineMatchingOptions() {
-    for matchingOptions in inlineMatchingOptions {
-      let options = popMatchingOptions()
+    while !inlineMatchingOptions.isEmpty {
+      let (options, condition) = popMatchingOptions()
 
       printIndented { printer in
         for option in options {
           switch option.kind {
           case .asciiOnlyDigit:
-            printer.print(".asciiOnlyDigits()")
+            printer.print(".asciiOnlyDigits(\(condition))")
 
           case .asciiOnlyPOSIXProps:
-            printer.print(".asciiOnlyCharacterClasses()")
+            printer.print(".asciiOnlyCharacterClasses(\(condition))")
 
           case .asciiOnlySpace:
-            printer.print(".asciiOnlyWhitespace()")
+            printer.print(".asciiOnlyWhitespace(\(condition))")
 
           case .asciiOnlyWord:
-            printer.print(".asciiOnlyWordCharacters()")
+            printer.print(".asciiOnlyWordCharacters(\(condition))")
 
           case .caseInsensitive:
-            printer.print(".ignoresCase()")
+            printer.print(".ignoresCase(\(condition))")
 
           case .multiline:
-            printer.print(".anchorsMatchLineEndings()")
+            printer.print(".anchorsMatchLineEndings(\(condition))")
 
           case .reluctantByDefault:
             // This is handled by altering every OneOrMore, etc by changing each
@@ -109,7 +109,7 @@ extension PrettyPrinter {
             continue
 
           case .singleLine:
-            printer.print(".dotMatchesNewlines()")
+            printer.print(".dotMatchesNewlines(\(condition))")
 
           default:
             break
@@ -1326,14 +1326,30 @@ extension DSLTree.Atom {
       return ("/* TODO: symbolic references */", false)
       
     case .changeMatchingOptions(let matchingOptions):
-      for add in matchingOptions.ast.adding {
-        switch add.kind {
+      let options: [AST.MatchingOption]
+      let isAdd: Bool
+
+      if matchingOptions.ast.removing.isEmpty {
+        options = matchingOptions.ast.adding
+        isAdd = true
+      } else {
+        options = matchingOptions.ast.removing
+        isAdd = false
+      }
+
+      for option in options {
+        switch option.kind {
         case .reluctantByDefault:
-          printer.quantificationBehavior = .reluctant
+          if isAdd {
+            printer.quantificationBehavior = .reluctant
+          } else {
+            printer.quantificationBehavior = .eager
+          }
+
 
           // Don't create a nested Regex for (?U), we handle this by altering
           // every individual repetitionBehavior for things like OneOrMore.
-          if matchingOptions.ast.adding.count == 1 {
+          if options.count == 1 {
             return nil
           }
 
@@ -1343,7 +1359,7 @@ extension DSLTree.Atom {
       }
 
       printer.print("Regex {")
-      printer.pushMatchingOptions(matchingOptions.ast.adding)
+      printer.pushMatchingOptions(options, isAdded: isAdd)
     }
     
     return nil

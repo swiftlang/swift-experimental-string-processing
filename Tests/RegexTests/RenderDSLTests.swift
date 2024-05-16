@@ -306,7 +306,7 @@ extension RenderDSLTests {
   func testCharacterClass() throws {
     try testConversion(#"[abc]+"#, #"""
       Regex {
-        OneOrMore(.anyOf("abc"))
+        OneOrMore(CharacterClass.anyOf("abc"))
       }
       """#)
 
@@ -335,6 +335,57 @@ extension RenderDSLTests {
             .whitespace
           )
         }
+      }
+      """#)
+
+    try testConversion(#"[^i]*"#, #"""
+      Regex {
+        ZeroOrMore(CharacterClass.anyOf("i").inverted)
+      }
+      """#)
+  }
+
+  func testChangeMatchingOptions() throws {
+    try testConversion(#"(?s).*(?-s).*"#, #"""
+      Regex {
+        Regex {
+          ZeroOrMore {
+            /./
+          }
+          Regex {
+            ZeroOrMore {
+              /./
+            }
+          }
+          .dotMatchesNewlines(false)
+        }
+        .dotMatchesNewlines(true)
+      }
+      """#)
+
+    try testConversion(#"(?U)a+(?-U)a+"#, #"""
+      Regex {
+        OneOrMore(.reluctant) {
+          "a"
+        }
+        OneOrMore {
+          "a"
+        }
+      }
+      """#)
+
+    try testConversion(#"(?sim)hello(?-s)world"#, #"""
+      Regex {
+        Regex {
+          "hello"
+          Regex {
+            "world"
+          }
+          .dotMatchesNewlines(false)
+        }
+        .dotMatchesNewlines(true)
+        .ignoresCase(true)
+        .anchorsMatchLineEndings(true)
       }
       """#)
   }
