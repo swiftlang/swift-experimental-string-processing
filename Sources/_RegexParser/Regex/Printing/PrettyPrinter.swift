@@ -43,6 +43,10 @@ public struct PrettyPrinter {
   
   // The current default quantification behavior
   public var quantificationBehavior: AST.Quantification.Kind = .eager
+
+  // A stack of the current added inline matching options, e.g. (?s) and a
+  // boolean indicating true = added (?s) and false = removed (?-s).
+  public var inlineMatchingOptions: [([AST.MatchingOption], Bool)] = []
 }
 
 // MARK: - Raw interface
@@ -141,5 +145,22 @@ extension PrettyPrinter {
     print("\(header) \(startDelimiter)")
     printIndented(f)
     print(endDelimiter)
+  }
+
+  /// Pushes the list of matching options to the current stack of other matching
+  /// options and increases the indentation level by 1.
+  public mutating func pushMatchingOptions(
+    _ options: [AST.MatchingOption],
+    isAdded: Bool
+  ) {
+    indentLevel += 1
+    inlineMatchingOptions.append((options, isAdded))
+  }
+
+  /// Pops the most recent list of matching options from the printer and
+  /// decreases the indentation level by 1.
+  public mutating func popMatchingOptions() -> ([AST.MatchingOption], Bool) {
+    indentLevel -= 1
+    return inlineMatchingOptions.removeLast()
   }
 }
