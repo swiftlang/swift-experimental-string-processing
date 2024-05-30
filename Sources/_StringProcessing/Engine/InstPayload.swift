@@ -381,7 +381,7 @@ struct QuantifyPayload: RawRepresentable {
     case asciiBitset = 0
     case asciiChar = 1
     case any = 2
-    case builtin = 4
+    case builtinCC = 4
   }
 
   // TODO: figure out how to better organize this...
@@ -407,6 +407,14 @@ struct QuantifyPayload: RawRepresentable {
   var minTripsMask: UInt64   { 0xFF }
   var typeMask: UInt64       { 7 }
   var payloadMask: UInt64    { 0xFF_FF }
+
+  // Calculate the maximum number of trips, else UInt64.max if unbounded
+  var maxTrips: UInt64 {
+    guard let maxExtraTrips else {
+      return UInt64.max
+    }
+    return minTrips + maxExtraTrips
+  }
 
   static func packInfoValues(
     _ kind: AST.Quantification.Kind,
@@ -489,7 +497,7 @@ struct QuantifyPayload: RawRepresentable {
       + (model.isInverted ? 1 << 9 : 0)
       + (model.isStrictASCII ? 1 << 10 : 0)
     self.rawValue = packedModel
-      + QuantifyPayload.packInfoValues(kind, minTrips, maxExtraTrips, .builtin, isScalarSemantics: isScalarSemantics)
+      + QuantifyPayload.packInfoValues(kind, minTrips, maxExtraTrips, .builtinCC, isScalarSemantics: isScalarSemantics)
   }
 
   var type: PayloadType {
@@ -535,7 +543,7 @@ struct QuantifyPayload: RawRepresentable {
     (self.rawValue & 1) == 1
   }
 
-  var builtin: _CharacterClassModel.Representation {
+  var builtinCC: _CharacterClassModel.Representation {
     _CharacterClassModel.Representation(rawValue: self.rawValue & 0xFF)!
   }
   var builtinIsInverted: Bool {

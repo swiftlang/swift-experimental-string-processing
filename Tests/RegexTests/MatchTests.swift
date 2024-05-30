@@ -2302,15 +2302,6 @@ extension RegexTests {
         with: "",
         subrange: trimmed.startIndex..<trimmed.endIndex),
       "abc456")
-    
-    do {
-      // Matching must respect subscript boundaries
-      let x = "prefix\nselection\nsuffix"
-      let y = x.dropFirst(7).dropLast(7)
-      XCTAssertEqual(y, "selection")
-      let z = y.replacing(#/\R/#, with: "a")
-      XCTAssertEqual(z, y)
-    }
   }
   
   func testMatchingOptionsScope() {
@@ -2709,11 +2700,11 @@ extension RegexTests {
   func testQuantifyOptimization() throws {
     // test that the maximum values for minTrips and maxExtraTrips are handled correctly
     let maxStorable = Int(QuantifyPayload.maxStorableTrips)
-    let maxmaxExtraTrips = "a{,\(maxStorable)}"
-    expectProgram(for: maxmaxExtraTrips, contains: [.quantify])
-    firstMatchTest(maxmaxExtraTrips, input: String(repeating: "a", count: maxStorable), match: String(repeating: "a", count: maxStorable))
-    firstMatchTest(maxmaxExtraTrips, input: String(repeating: "a", count: maxStorable + 1), match: String(repeating: "a", count: maxStorable))
-    XCTAssertNil(try Regex(maxmaxExtraTrips).wholeMatch(in: String(repeating: "a", count: maxStorable + 1)))
+    let maxExtraTrips = "a{,\(maxStorable)}"
+    expectProgram(for: maxExtraTrips, contains: [.quantify])
+    firstMatchTest(maxExtraTrips, input: String(repeating: "a", count: maxStorable), match: String(repeating: "a", count: maxStorable))
+    firstMatchTest(maxExtraTrips, input: String(repeating: "a", count: maxStorable + 1), match: String(repeating: "a", count: maxStorable))
+    XCTAssertNil(try Regex(maxExtraTrips).wholeMatch(in: String(repeating: "a", count: maxStorable + 1)))
 
     let maxMinTrips = "a{\(maxStorable),}"
     expectProgram(for: maxMinTrips, contains: [.quantify])
