@@ -135,7 +135,7 @@ extension Collection where Element: Equatable {
   ) -> RangesCollection<ZSearcher<Self>> where C.Element == Element {
     _ranges(of: ZSearcher(pattern: Array(other), by: ==))
   }
-
+  
   // FIXME: Return `some Collection<Range<Index>>` for SE-0346
   /// Finds and returns the ranges of the all occurrences of a given sequence
   /// within the collection.
@@ -146,7 +146,19 @@ extension Collection where Element: Equatable {
   public func ranges<C: Collection>(
     of other: C
   ) -> [Range<Index>] where C.Element == Element {
-    Array(_ranges(of: other))
+    switch (self, other) {
+    case (let str as String, let other as String):
+      return Array(SubstringSearcher(text: str[...], pattern: other[...])) as! [Range<Index>]
+    case (let str as Substring, let other as String):
+      return Array(SubstringSearcher(text: str, pattern: other[...])) as! [Range<Index>]
+    case (let str as String, let other as Substring):
+      return Array(SubstringSearcher(text: str[...], pattern: other)) as! [Range<Index>]
+    case (let str as Substring, let other as Substring):
+      return Array(SubstringSearcher(text: str, pattern: other)) as! [Range<Index>]
+      
+    default:
+      return Array(_ranges(of: other))
+    }
   }
 }
 
