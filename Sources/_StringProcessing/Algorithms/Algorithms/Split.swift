@@ -148,10 +148,22 @@ extension Collection where Element: Equatable {
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [SubSequence] where C.Element == Element {
-    Array(split(
-      by: ZSearcher(pattern: Array(separator), by: ==),
-      maxSplits: maxSplits,
-      omittingEmptySubsequences: omittingEmptySubsequences))
+    switch (self, separator) {
+    case (let str as String, let sep as String):
+      return str[...]._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
+    case (let str as String, let sep as Substring):
+      return str[...]._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
+    case (let str as Substring, let sep as String):
+      return str._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
+    case (let str as Substring, let sep as Substring):
+      return str._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
+      
+    default:
+      return Array(split(
+        by: ZSearcher(pattern: Array(separator), by: ==),
+        maxSplits: maxSplits,
+        omittingEmptySubsequences: omittingEmptySubsequences))
+    }
   }
 }
 
@@ -174,8 +186,8 @@ extension StringProtocol where SubSequence == Substring {
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [Substring] {
-    Array(split(
-      by: ZSearcher(pattern: Array(separator), by: ==),
+    Array(self[...].split(
+      by: SubstringSearcher(text: "" as Substring, pattern: separator[...]),
       maxSplits: maxSplits,
       omittingEmptySubsequences: omittingEmptySubsequences))
   }
@@ -187,8 +199,8 @@ extension StringProtocol where SubSequence == Substring {
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [Substring] {
-    Array(split(
-      by: ZSearcher(pattern: Array(separator), by: ==),
+    Array(self[...].split(
+      by: SubstringSearcher(text: "" as Substring, pattern: separator[...]),
       maxSplits: maxSplits,
       omittingEmptySubsequences: omittingEmptySubsequences))
   }

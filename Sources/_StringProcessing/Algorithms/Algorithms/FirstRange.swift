@@ -21,8 +21,23 @@ extension Collection {
 }
 
 // MARK: Fixed pattern algorithms
+extension Substring {
+  func _firstRangeSubstring(
+    of other: Substring
+  ) -> Range<String.Index>? {
+    var searcher = SubstringSearcher(text: self, pattern: other)
+    return searcher.next()
+  }
+}
 
 extension Collection where Element: Equatable {
+  func _firstRangeGeneric<C: Collection>(
+    of other: C
+  ) -> Range<Index>? where C.Element == Element {
+    let searcher = ZSearcher<SubSequence>(pattern: Array(other), by: ==)
+    return searcher.search(self[...], in: startIndex..<endIndex)
+  }
+
   /// Finds and returns the range of the first occurrence of a given collection
   /// within this collection.
   ///
@@ -33,9 +48,19 @@ extension Collection where Element: Equatable {
   public func firstRange<C: Collection>(
     of other: C
   ) -> Range<Index>? where C.Element == Element {
-    // TODO: Use a more efficient search algorithm
-    let searcher = ZSearcher<SubSequence>(pattern: Array(other), by: ==)
-    return searcher.search(self[...], in: startIndex..<endIndex)
+    switch (self, other) {
+    case (let str as String, let other as String):
+      return str[...]._firstRangeSubstring(of: other[...]) as! Range<Index>?
+    case (let str as Substring, let other as String):
+      return str._firstRangeSubstring(of: other[...]) as! Range<Index>?
+    case (let str as String, let other as Substring):
+      return str[...]._firstRangeSubstring(of: other) as! Range<Index>?
+    case (let str as Substring, let other as Substring):
+      return str._firstRangeSubstring(of: other) as! Range<Index>?
+      
+    default:
+      return _firstRangeGeneric(of: other)
+    }
   }
 }
 
@@ -50,8 +75,19 @@ extension BidirectionalCollection where Element: Comparable {
   public func firstRange<C: Collection>(
     of other: C
   ) -> Range<Index>? where C.Element == Element {
-    let searcher = ZSearcher<SubSequence>(pattern: Array(other), by: ==)
-    return searcher.search(self[...], in: startIndex..<endIndex)
+    switch (self, other) {
+    case (let str as String, let other as String):
+      return str[...]._firstRangeSubstring(of: other[...]) as! Range<Index>?
+    case (let str as Substring, let other as String):
+      return str._firstRangeSubstring(of: other[...]) as! Range<Index>?
+    case (let str as String, let other as Substring):
+      return str[...]._firstRangeSubstring(of: other) as! Range<Index>?
+    case (let str as Substring, let other as Substring):
+      return str._firstRangeSubstring(of: other) as! Range<Index>?
+      
+    default:
+      return _firstRangeGeneric(of: other)
+    }
   }
 }
 
