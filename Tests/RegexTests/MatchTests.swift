@@ -256,6 +256,33 @@ func matchTest(
 
 // TODO: Adjust below to also check captures
 
+/// Test all matches in a string, using `matches(of:)`.
+func allMatchesTest(
+  _ regex: String,
+  input: String,
+  matches: [Substring],
+  xfail: Bool = false,
+  semanticLevel: RegexSemanticLevel = .graphemeCluster,
+  file: StaticString = #filePath,
+  line: UInt = #line
+) {
+  do {
+    let regex = try Regex(regex).matchingSemantics(semanticLevel)
+    let allMatches = input.matches(of: regex).map(\.0)
+
+    if xfail {
+      XCTAssertNotEqual(allMatches, matches, file: file, line: line)
+    } else {
+      XCTAssertEqual(allMatches, matches, "Incorrect match", file: file, line: line)
+    }
+  } catch {
+    if !xfail {
+      XCTFail("\(error)", file: file, line: line)
+    }
+    return
+  }
+}
+
 /// Test the first match in a string, via `firstRange(of:)`
 func firstMatchTest(
   _ regex: String,
@@ -1667,6 +1694,15 @@ extension RegexTests {
       ("123", "23"),
       (" 123", "23"),
       ("123 456", "23"))
+    
+    allMatchesTest(
+      #"\b\w"#,
+      input: "ab cd efgh",
+      matches: ["a", "c", "e"])
+    allMatchesTest(
+      #"\B\w"#,
+      input: "ab cd efgh",
+      matches: ["b", "d", "f", "g", "h"])
 
     let defaultBoundaryRegex = try Regex(#"\b.{3}X.{3}\b"#)
     // Default word boundaries match at the start/end of a string/line.
