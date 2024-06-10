@@ -105,14 +105,14 @@ extension Processor {
       if payload.usesSimpleUnicodeBoundaries {
         return atSimpleBoundary(payload.usesASCIIWord, payload.semanticLevel)
       } else {
-        return input.isOnWordBoundary(at: currentPosition, in: searchBounds, using: &wordIndexCache, &wordIndexMaxIndex)
+        return input.isOnWordBoundary(at: currentPosition, in: subjectBounds, using: &wordIndexCache, &wordIndexMaxIndex)
       }
 
     case .notWordBoundary:
       if payload.usesSimpleUnicodeBoundaries {
         return !atSimpleBoundary(payload.usesASCIIWord, payload.semanticLevel)
       } else {
-        return !input.isOnWordBoundary(at: currentPosition, in: searchBounds, using: &wordIndexCache, &wordIndexMaxIndex)
+        return !input.isOnWordBoundary(at: currentPosition, in: subjectBounds, using: &wordIndexCache, &wordIndexMaxIndex)
       }
     }
   }
