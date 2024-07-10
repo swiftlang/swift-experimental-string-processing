@@ -572,6 +572,34 @@ class AlgorithmTests: XCTestCase {
       s2.matches(of: try Regex("a*?")).map { s2.offsets(of: $0.range) }, [0..<0, 1..<1, 2..<2])
     XCTAssertEqual(
       s2.ranges(of: try Regex("a*?")).map(s2.offsets(of:)), [0..<0, 1..<1, 2..<2])
+    
+    // Make sure that searching doesn't match over a substring boundary, even
+    // when the boundary is in the middle of a character.
+    let cafe = "c\u{302}afe\u{301}"
+    let cafeStringDropLastScalar = "c\u{302}afe"
+    let cafeStringDropFirstScalar = "\u{302}afe\u{301}"
+    let cafeSubDropLastScalar =
+      cafe[..<(cafe.unicodeScalars.index(before: cafe.endIndex))]
+    let cafeSubDropFirstScalar = 
+      cafe[cafe.unicodeScalars.index(after: cafe.startIndex)...]
+    
+    XCTAssertFalse(cafe.contains(cafeStringDropLastScalar))
+    XCTAssertFalse(cafe.contains(cafeStringDropFirstScalar))
+    XCTAssertFalse(cafe.contains(cafeSubDropLastScalar))
+    XCTAssertFalse(cafe.contains(cafeSubDropFirstScalar))
+    XCTAssertFalse(cafe.contains("afe"))
+    XCTAssertTrue(cafe.contains("afé"))
+    XCTAssertTrue(cafe.contains("ĉaf"))
+
+    XCTAssertFalse(cafeSubDropLastScalar.contains("afe\u{301}"))
+    XCTAssertFalse(cafeSubDropLastScalar.contains("afé"))
+    XCTAssertTrue(cafeSubDropLastScalar.contains("afe"))
+    XCTAssertTrue(cafeSubDropLastScalar.contains(cafeStringDropLastScalar))
+
+    XCTAssertFalse(cafeSubDropFirstScalar.contains("c\u{302}af"))
+    XCTAssertFalse(cafeSubDropFirstScalar.contains("ĉaf"))
+    XCTAssertTrue(cafeSubDropFirstScalar.contains("\u{302}af"))
+    XCTAssertTrue(cafeSubDropFirstScalar.contains(cafeStringDropFirstScalar))
   }
 
   func testUnicodeScalarSemantics() throws {
