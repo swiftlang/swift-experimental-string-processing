@@ -572,6 +572,44 @@ class AlgorithmTests: XCTestCase {
       s2.matches(of: try Regex("a*?")).map { s2.offsets(of: $0.range) }, [0..<0, 1..<1, 2..<2])
     XCTAssertEqual(
       s2.ranges(of: try Regex("a*?")).map(s2.offsets(of:)), [0..<0, 1..<1, 2..<2])
+    
+    func checkContains(
+      _ expected: Bool,
+      _ a: some StringProtocol,
+      _ b: some StringProtocol,
+      file: StaticString = #file, line: UInt = #line
+    ) {
+      let result = a.firstRange(of: b) != nil
+      XCTAssertEqual(expected, result, file: file, line: line)
+    }
+    
+    // Make sure that searching doesn't match over a substring boundary, even
+    // when the boundary is in the middle of a character.
+    let cafe = "c\u{302}afe\u{301}"
+    let cafeStringDropLastScalar = "c\u{302}afe"
+    let cafeStringDropFirstScalar = "\u{302}afe\u{301}"
+    let cafeSubDropLastScalar =
+      cafe[..<(cafe.unicodeScalars.index(before: cafe.endIndex))]
+    let cafeSubDropFirstScalar = 
+      cafe[cafe.unicodeScalars.index(after: cafe.startIndex)...]
+    
+    checkContains(false, cafe, cafeStringDropLastScalar)
+    checkContains(false, cafe, cafeStringDropFirstScalar)
+    checkContains(false, cafe, cafeSubDropLastScalar)
+    checkContains(false, cafe, cafeSubDropFirstScalar)
+    checkContains(false, cafe, "afe")
+    checkContains(true, cafe, "afé")
+    checkContains(true, cafe, "ĉaf")
+
+    checkContains(false, cafeSubDropLastScalar, "afe\u{301}")
+    checkContains(false, cafeSubDropLastScalar, "afé")
+    checkContains(true, cafeSubDropLastScalar, "afe")
+    checkContains(true, cafeSubDropLastScalar, cafeStringDropLastScalar)
+
+    checkContains(false, cafeSubDropFirstScalar, "c\u{302}af")
+    checkContains(false, cafeSubDropFirstScalar, "ĉaf")
+    checkContains(true, cafeSubDropFirstScalar, "\u{302}af")
+    checkContains(true, cafeSubDropFirstScalar, cafeStringDropFirstScalar)
   }
 
   func testUnicodeScalarSemantics() throws {
