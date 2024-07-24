@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 // TODO: Where should this live? Inside TypeConstruction?
 func constructExistentialOutputComponent(

@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
 /// A regex component that matches a specific condition at a particular position
