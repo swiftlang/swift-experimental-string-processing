@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 // NOTE: This is a model type. We want to be able to get one from
 // an AST, but this isn't a natural thing to produce in the context

@@ -1,4 +1,4 @@
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 extension CaptureList {
   @available(SwiftStdlib 5.7, *)

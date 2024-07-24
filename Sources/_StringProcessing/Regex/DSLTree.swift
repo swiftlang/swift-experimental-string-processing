@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 @_spi(RegexBuilder)
 public struct DSLTree {

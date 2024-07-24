@@ -1,4 +1,4 @@
-@_implementationOnly import _RegexParser // For AssertionKind
+internal import _RegexParser // For AssertionKind
 extension Character {
   var _isHorizontalWhitespace: Bool {
     self.unicodeScalars.first?.isHorizontalWhitespace == true

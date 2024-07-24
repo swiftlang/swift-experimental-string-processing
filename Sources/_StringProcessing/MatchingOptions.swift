@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 /// A type that represents the current state of regex matching options, with
 /// stack-based scoping.
