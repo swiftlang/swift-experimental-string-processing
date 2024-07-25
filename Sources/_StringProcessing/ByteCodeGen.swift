@@ -12,7 +12,7 @@
 @_spi(_Unicode)
 import Swift
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 
 extension Compiler {
   struct ByteCodeGen {
