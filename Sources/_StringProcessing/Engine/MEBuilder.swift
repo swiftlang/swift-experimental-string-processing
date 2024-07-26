@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser // For errors
+internal import _RegexParser // For errors
 
 extension MEProgram {
   struct Builder {

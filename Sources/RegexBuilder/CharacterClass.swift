@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 @_spi(RegexBuilder) import _StringProcessing
 
 /// A class of characters that match in a regex.

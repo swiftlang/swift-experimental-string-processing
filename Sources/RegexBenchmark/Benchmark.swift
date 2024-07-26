@@ -1,5 +1,5 @@
 @_spi(RegexBenchmark) import _StringProcessing
-@_implementationOnly import _RegexParser
+internal import _RegexParser
 import Foundation
 
 protocol RegexBenchmark: Debug {
