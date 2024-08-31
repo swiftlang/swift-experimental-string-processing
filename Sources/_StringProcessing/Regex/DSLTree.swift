@@ -44,7 +44,7 @@ extension DSLTree {
 
     /// Marks all captures in a subpattern as ignored in strongly-typed output.
     case ignoreCapturesInTypedOutput(Node)
-    
+
     // TODO: Consider splitting off grouped conditions, or have
     // our own kind
 
@@ -105,7 +105,7 @@ extension DSLTree {
     case explicit(_AST.QuantificationKind)
     /// A kind set via syntax, which can be affected by options.
     case syntax(_AST.QuantificationKind)
-    
+
     var ast: AST.Quantification.Kind? {
       switch self {
       case .default: return nil
@@ -114,12 +114,12 @@ extension DSLTree {
       }
     }
   }
-  
+
   @_spi(RegexBuilder)
   public struct CustomCharacterClass {
     var members: [Member]
     var isInverted: Bool
-    
+
     var containsDot: Bool {
       members.contains { member in
         switch member {
@@ -130,7 +130,7 @@ extension DSLTree {
         }
       }
     }
-    
+
     func coalescingASCIIMembers(_ opts: MatchingOptions) -> CustomCharacterClass {
       var ascii: [Member] = []
       var nonAscii: [Member] = []
@@ -147,18 +147,18 @@ extension DSLTree {
         .custom(CustomCharacterClass(members: nonAscii))
       ], isInverted: isInverted)
     }
-    
+
     public init(members: [DSLTree.CustomCharacterClass.Member], isInverted: Bool = false) {
       self.members = members
       self.isInverted = isInverted
     }
-    
+
     public static func generalCategory(_ category: Unicode.GeneralCategory) -> Self {
       let property = AST.Atom.CharacterProperty(.generalCategory(category.extendedGeneralCategory!), isInverted: false, isPOSIX: false)
       let astAtom = AST.Atom(.property(property), .fake)
       return .init(members: [.atom(.unconverted(.init(ast: astAtom)))])
     }
-    
+
     public var inverted: CustomCharacterClass {
       var result = self
       result.isInverted.toggle()
@@ -178,7 +178,7 @@ extension DSLTree {
       indirect case intersection(CustomCharacterClass, CustomCharacterClass)
       indirect case subtraction(CustomCharacterClass, CustomCharacterClass)
       indirect case symmetricDifference(CustomCharacterClass, CustomCharacterClass)
-      
+
       var isOnlyTrivia: Bool {
         switch self {
         case .custom(let ccc):
@@ -263,7 +263,7 @@ extension DSLTree.Atom {
     /// \B
     case notWordBoundary
   }
-  
+
   @_spi(RegexBuilder)
   public enum CharacterClass: Hashable {
     case digit
@@ -380,23 +380,23 @@ extension DSLTree.Node {
         .consumer, .matcher, .characterPredicate,
         .customCharacterClass, .atom:
       return false
-      
+
     case .orderedChoice(let c), .concatenation(let c):
       return !c.isEmpty
-      
+
     case .convertedRegexLiteral, .capture, .nonCapturingGroup,
         .quantification, .ignoreCapturesInTypedOutput, .conditional:
       return true
-      
+
     case .absentFunction(let abs):
       return !abs.ast.children.isEmpty
     }
   }
-  
+
   @_spi(RegexBuilder)
   public var children: [DSLTree.Node] {
     switch self {
-      
+
     case let .orderedChoice(v):   return v
     case let .concatenation(v): return v
 
@@ -504,12 +504,12 @@ public struct ReferenceID: Hashable {
   public var _raw: Int {
     base
   }
-  
+
   public init() {
     base = Self.counter
     Self.counter += 1
   }
-  
+
   init(_ base: Int) {
     self.base = base
   }
@@ -651,7 +651,7 @@ extension CaptureList.Builder {
     case let .nonCapturingGroup(kind, child):
       assert(!kind.ast.isCapturing)
       addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: visibleInTypedOutput)
-      
+
     case let .ignoreCapturesInTypedOutput(child):
       addCaptures(of: child, optionalNesting: nesting, visibleInTypedOutput: false)
 
@@ -762,24 +762,24 @@ extension DSLTree.Node {
       return true
     case .atom(.assertion(.caretAnchor)):
       return !options.anchorsMatchNewlines
-      
+
     // Changing options doesn't determine `true`/`false`.
     case .atom(.changeMatchingOptions(let sequence)):
       options.apply(sequence.ast)
       return nil
-      
+
     // Any other atom or consuming node returns `false`.
     case .atom, .customCharacterClass, .quotedLiteral:
       return false
-      
+
     // Trivia/empty have no effect.
     case .trivia, .empty:
       return nil
-      
+
     // In an alternation, all of its children must match only at start.
     case .orderedChoice(let children):
       return children.allSatisfy { $0._canOnlyMatchAtStartImpl(&options) == true }
-      
+
     // In a concatenation, the first definitive child provides the answer.
     case .concatenation(let children):
       for child in children {
@@ -822,7 +822,7 @@ extension DSLTree.Node {
       return false
     }
   }
-  
+
   /// Returns a Boolean value indicating whether the regex with this node as
   /// the root can _only_ match at the start of a subject.
   ///
@@ -854,14 +854,14 @@ extension DSLTree {
   /// `_TreeNode` conformance.
   struct _Tree: _TreeNode {
     var node: DSLTree.Node
-    
+
     init(_ node: DSLTree.Node) {
       self.node = node
     }
-    
+
     var children: [_Tree]? {
       switch node {
-        
+
       case let .orderedChoice(v): return v.map(_Tree.init)
       case let .concatenation(v): return v.map(_Tree.init)
 
@@ -892,7 +892,7 @@ extension DSLTree {
     @_spi(RegexBuilder)
     public struct GroupKind {
       internal var ast: AST.Group.Kind
-      
+
       public static var atomicNonCapturing: Self {
         .init(ast: .atomicNonCapturing)
       }
@@ -902,17 +902,23 @@ extension DSLTree {
       public static var negativeLookahead: Self {
         .init(ast: .negativeLookahead)
       }
+      public static var lookbehind: Self {
+          .init(ast: .lookbehind)
+      }
+      public static var negativeLookbehind: Self {
+          .init(ast: .negativeLookbehind)
+      }
     }
 
     @_spi(RegexBuilder)
     public struct ConditionKind {
       internal var ast: AST.Conditional.Condition.Kind
     }
-    
+
     @_spi(RegexBuilder)
     public struct QuantificationKind {
       internal var ast: AST.Quantification.Kind
-      
+
       public static var eager: Self {
         .init(ast: .eager)
       }
@@ -923,11 +929,11 @@ extension DSLTree {
         .init(ast: .possessive)
       }
     }
-    
+
     @_spi(RegexBuilder)
     public struct QuantificationAmount {
       internal var ast: AST.Quantification.Amount
-      
+
       public static var zeroOrMore: Self {
         .init(ast: .zeroOrMore)
       }
@@ -949,7 +955,7 @@ extension DSLTree {
       public static func range(_ lower: Int, _ upper: Int) -> Self {
         .init(ast: .range(.init(lower, at: .fake), .init(upper, at: .fake)))
       }
-      
+
       internal var requiresAtLeastOne: Bool {
         switch ast {
         case .zeroOrOne, .zeroOrMore, .upToN:
@@ -965,27 +971,27 @@ extension DSLTree {
         }
       }
     }
-    
+
     @_spi(RegexBuilder)
     public struct ASTNode {
       internal var ast: AST.Node
     }
-    
+
     @_spi(RegexBuilder)
     public struct AbsentFunction {
       internal var ast: AST.AbsentFunction
     }
-    
+
     @_spi(RegexBuilder)
     public struct Reference {
       internal var ast: AST.Reference
     }
-    
+
     @_spi(RegexBuilder)
     public struct MatchingOptionSequence {
       internal var ast: AST.MatchingOptionSequence
     }
-    
+
     public struct Atom {
       internal var ast: AST.Atom
     }

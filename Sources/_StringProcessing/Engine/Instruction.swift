@@ -94,6 +94,13 @@ extension Instruction {
     /// Operand: Amount to advance by.
     case advance
 
+    /// Reverse the input position.
+    ///
+    ///     reverse(_ amount: Distance)
+    ///
+    /// Operand: Amount to reverse by.
+    case reverse
+
     // TODO: Is the amount useful here? Is it commonly more than 1?
 
     /// Composite assert-advance else restore.
@@ -105,12 +112,28 @@ extension Instruction {
     ///  - Boolean for if we should match in a case insensitive way
     case match
 
+    /// Composite reverse-assert else restore.
+    ///
+    ///     match(_: EltReg, isCaseInsensitive: Bool)
+    ///
+    /// Operands:
+    ///  - Element register to compare against.
+    ///  - Boolean for if we should match in a case insensitive way
+    case reverseMatch
+
     /// Match against a scalar and possibly perform a boundary check or match in a case insensitive way
     ///
     ///     matchScalar(_: Unicode.Scalar, isCaseInsensitive: Bool, boundaryCheck: Bool)
     ///
     /// Operands: Scalar value to match against and booleans
     case matchScalar
+
+    /// Reverse match against a scalar and possibly perform a boundary check or reverse match in a case insensitive way
+    ///
+    ///     reverseMatchScalar(_: Unicode.Scalar, isCaseInsensitive: Bool, boundaryCheck: Bool)
+    ///
+    /// Operands: Scalar value to match against and booleans
+    case reverseMatchScalar
 
     /// Match a character or a scalar against a set of valid ascii values stored in a bitset
     ///
@@ -121,6 +144,15 @@ extension Instruction {
     ///  - Boolean for if we should match by scalar value
     case matchBitset
 
+    /// Reverse match a character or a scalar against a set of valid ascii values stored in a bitset
+    ///
+    ///     reverseMatchBitset(_: AsciiBitsetRegister, isScalar: Bool)
+    ///
+    /// Operand:
+    ///  - Ascii bitset register containing the bitset
+    ///  - Boolean for if we should match by scalar value
+    case reverseMatchBitset
+
     /// Match against a built-in character class
     ///
     ///     matchBuiltin(_: CharacterClassPayload)
@@ -130,10 +162,24 @@ extension Instruction {
     /// - If it is inverted
     /// - If it strictly matches only ascii values
     case matchBuiltin
-    
+
+    /// Reverse match against a built-in character class
+    ///
+    ///     reverseMatchBuiltin(_: CharacterClassPayload)
+    ///
+    /// Operand: the payload contains
+    /// - The character class
+    /// - If it is inverted
+    /// - If it strictly matches only ascii values
+    case reverseMatchBuiltin
+
     /// Matches any non newline character
     /// Operand: If we are in scalar mode or not
     case matchAnyNonNewline
+
+    /// Reverse matches any non newline character
+    /// Operand: If we are in scalar mode or not
+    case reverseMatchAnyNonNewline
 
     // MARK: Extension points
 
@@ -201,7 +247,7 @@ extension Instruction {
 
     /// Fused save-and-branch. 
     ///
-    ///   split(to: target, saving: backtrackPoint)
+    ///    split(to: target, saving: backtrackPoint)
     ///
     case splitSaving
 
@@ -212,6 +258,13 @@ extension Instruction {
     ///     quantify(_:QuantifyPayload)
     ///
     case quantify
+    /// Fused reverse quantify, execute, save instruction
+    /// Quantifies the stored instruction in an inner loop instead of looping through instructions in processor
+    /// Only quantifies specific nodes
+    ///
+    ///     reverseQuantify(_:QuantifyPayload)
+    ///
+    case reverseQuantify
     /// Begin the given capture
     ///
     ///     beginCapture(_:CapReg)
@@ -255,7 +308,6 @@ extension Instruction {
 
     // TODO: Fused assertions. It seems like we often want to
     // branch based on assertion fail or success.
-
   }
 }
 

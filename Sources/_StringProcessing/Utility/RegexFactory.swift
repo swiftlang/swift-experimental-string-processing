@@ -167,7 +167,23 @@ public struct _RegexFactory {
   ) -> Regex<Output> {
     .init(node: .nonCapturingGroup(.negativeLookahead, component.regex.root))
   }
-  
+
+  @_spi(RegexBuilder)
+  @available(SwiftStdlib 5.7, *)
+  public func lookbehindNonCapturing<Output>(
+    _ component: some RegexComponent
+  ) -> Regex<Output> {
+    .init(node: .nonCapturingGroup(.lookbehind, component.regex.root))
+  }
+
+  @_spi(RegexBuilder)
+  @available(SwiftStdlib 5.7, *)
+  public func negativeLookbehindNonCapturing<Output>(
+    _ component: some RegexComponent
+  ) -> Regex<Output> {
+    .init(node: .nonCapturingGroup(.negativeLookbehind, component.regex.root))
+  }
+
   @available(SwiftStdlib 5.7, *)
   public func orderedChoice<Output>(
     _ component: some RegexComponent
