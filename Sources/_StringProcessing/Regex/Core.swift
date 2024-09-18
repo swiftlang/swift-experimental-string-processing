@@ -81,6 +81,11 @@ public protocol RegexComponent<RegexOutput> {
 /// > Prior to Swift 6,
 /// > you might need to write `#/myregex/#` instead of `/myregex/`
 /// > when you make a regular expression using a literal.
+/// > For more information,
+/// > see [Regular Expression Literals][regex-literal] in  *[The Swift Programming Language][tspl]*.
+///
+/// [regex-literal]: https://docs.swift.org/swift-book/documentation/the-swift-programming-language/lexicalstructure/#Regular-Expression-Literals
+/// [tspl]: https://docs.swift.org/swift-book/
 @available(SwiftStdlib 5.7, *)
 public struct Regex<Output>: RegexComponent {
   let program: Program
