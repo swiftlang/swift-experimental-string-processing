@@ -87,6 +87,9 @@ enum ParseError: Error, Hashable {
 
   case expectedCalloutArgument
 
+  // Excessively nested groups (i.e. recursion)
+  case nestingTooDeep
+
   // MARK: Semantic Errors
 
   case unsupported(String)
@@ -241,6 +244,9 @@ extension ParseError: CustomStringConvertible {
       return "character '\(lhs)' must compare less than or equal to '\(rhs)'"
     case .notQuantifiable:
       return "expression is not quantifiable"
+
+    case .nestingTooDeep:
+      return "group is too deeply nested"
     }
   }
 }
@@ -302,6 +308,10 @@ extension Diagnostic {
 public struct Diagnostics: Hashable {
   public private(set) var diags = [Diagnostic]()
 
+  // In the event of an unrecoverable parse error, set this
+  // to avoid emitting spurious diagnostics.
+  internal var suppressFurtherDiagnostics = false
+
   public init() {}
   public init(_ diags: [Diagnostic]) {
     self.diags = diags
@@ -309,11 +319,17 @@ public struct Diagnostics: Hashable {
 
   /// Add a new diagnostic to emit.
   public mutating func append(_ diag: Diagnostic) {
+    guard !suppressFurtherDiagnostics else {
+      return
+    }
     diags.append(diag)
   }
 
   /// Add all the diagnostics of another diagnostic collection.
   public mutating func append(contentsOf other: Diagnostics) {
+    guard !suppressFurtherDiagnostics else {
+      return
+    }
     diags.append(contentsOf: other.diags)
   }
 
@@ -321,6 +337,10 @@ public struct Diagnostics: Hashable {
   /// This assumes that `other` was the same as `self`, but may have additional
   /// diagnostics added to it.
   public mutating func appendNewFatalErrors(from other: Diagnostics) {
+    guard !suppressFurtherDiagnostics else {
+      return
+    }
+
     let newDiags = other.diags.dropFirst(diags.count)
     for diag in newDiags where diag.behavior == .fatalError {
       append(diag)

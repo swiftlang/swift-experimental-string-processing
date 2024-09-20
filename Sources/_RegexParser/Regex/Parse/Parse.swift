@@ -73,6 +73,9 @@ struct ParsingContext {
   /// A set of used group names.
   private var usedGroupNames = Set<String>()
 
+  /// The depth of calls to parseNode (recursion depth plus 1)
+  fileprivate var parseDepth = 0
+
   /// The syntax options currently set.
   fileprivate(set) var syntax: SyntaxOptions
 
@@ -87,6 +90,8 @@ struct ParsingContext {
       usedGroupNames.insert(name)
     }
   }
+
+  fileprivate var maxParseDepth: Int { 64 }
 
   init(syntax: SyntaxOptions) {
     self.syntax = syntax
@@ -188,6 +193,20 @@ extension Parser {
   ///     Alternation  -> Concatenation ('|' Concatenation)*
   ///
   mutating func parseNode() -> AST.Node {
+    // Excessively nested groups is a common DOS attack, so limit
+    // our recursion.
+    context.parseDepth += 1
+    defer { context.parseDepth -= 1 }
+    guard context.parseDepth < context.maxParseDepth else {
+      self.errorAtCurrentPosition(.nestingTooDeep)
+
+      // This is not generally recoverable and further errors will be
+      // incorrect
+      diags.suppressFurtherDiagnostics = true
+
+      return .empty(.init(loc(src.currentPosition)))
+    }
+
     let _start = src.currentPosition
 
     if src.isEmpty { return .empty(.init(loc(_start))) }
@@ -504,6 +523,19 @@ extension Parser {
   mutating func parseCustomCharacterClass(
     _ start: Source.Located<CustomCC.Start>
   ) -> CustomCC {
+    // Excessively nested recursion is a common DOS attack, so limit
+    // our recursion.
+    context.parseDepth += 1
+    defer { context.parseDepth -= 1 }
+    guard context.parseDepth < context.maxParseDepth else {
+      self.errorAtCurrentPosition(.nestingTooDeep)
+
+      // This is not generally recoverable and further errors will be
+      // incorrect
+      diags.suppressFurtherDiagnostics = true
+      return .init(start, [], start.location)
+    }
+
     let alreadyInCCC = context.isInCustomCharacterClass
     context.isInCustomCharacterClass = true
     defer { context.isInCustomCharacterClass = alreadyInCCC }
