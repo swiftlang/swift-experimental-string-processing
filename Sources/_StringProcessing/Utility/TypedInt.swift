@@ -9,6 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+internal import _RegexParser
 
 // Just a phantom-typed Int wrapper.
 struct TypedInt<👻>: RawRepresentable, Hashable {

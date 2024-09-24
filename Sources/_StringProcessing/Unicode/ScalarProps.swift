@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+internal import _RegexParser
+
 @_silgen_name("_swift_string_processing_getScript")
 func _swift_string_processing_getScript(_: UInt32) -> UInt8
 
