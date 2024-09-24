@@ -9,6 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+internal import _RegexParser
 
 enum MatchMode {
   case wholeString
