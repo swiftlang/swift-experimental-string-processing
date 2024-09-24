@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+internal import _RegexParser
+
 @available(SwiftStdlib 5.7, *)
 extension Regex {
   /// The result of matching a regular expression against a string.

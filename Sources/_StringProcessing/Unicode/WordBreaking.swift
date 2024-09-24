@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+internal import _RegexParser
+
 @_spi(_Unicode)
 import Swift
 
