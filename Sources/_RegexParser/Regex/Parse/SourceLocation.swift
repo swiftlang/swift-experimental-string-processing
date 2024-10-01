@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Copyright (c) 2021-2024 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -126,6 +126,15 @@ extension Source.LocatedError: CustomStringConvertible {
     return error
   }
 }
+
+#if _runtime(_ObjC) && !$Embedded
+extension Source.LocatedError {
+  // Error protocol requirements for NSError bridging.
+  public var _domain: String { error._domain }
+  public var _code: Int { error._code }
+  public var _userInfo: AnyObject? { error._userInfo }
+}
+#endif
 
 extension Error {
   func addingLocation(_ loc: Range<Source.Position>) -> Error {
