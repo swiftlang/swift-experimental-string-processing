@@ -63,7 +63,7 @@ extension SplitSequence: Sequence {
       self.omittingEmptySubsequences = omittingEmptySubsequences
     }
     
-    public mutating func next() -> Input.SubSequence? {
+    mutating func next() -> Input.SubSequence? {
       guard !isDone else { return nil }
       
       /// Return the rest of base if it's non-empty or we're including
@@ -101,7 +101,7 @@ extension SplitSequence: Sequence {
     }
   }
   
-  public func makeIterator() -> Iterator {
+  func makeIterator() -> Iterator {
     Iterator(ranges: ranges, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
   }
 }
