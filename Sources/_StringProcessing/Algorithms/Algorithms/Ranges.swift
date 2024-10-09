@@ -29,7 +29,7 @@ struct RangesSequence<Searcher: CollectionSearcher> {
       self.state = base.searcher.state(for: base.input, in: base.input.startIndex..<base.input.endIndex)
     }
 
-    public mutating func next() -> Range<Searcher.Searched.Index>? {
+    mutating func next() -> Range<Searcher.Searched.Index>? {
       base.searcher.search(base.input, &state)
     }
   }
