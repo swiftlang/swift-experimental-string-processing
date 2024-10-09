@@ -18,6 +18,8 @@ extension BenchmarkRunner {
     self.addDiceNotation()
     self.addErrorMessages()
     self.addIpAddress()
+
+    self.addURL()
     // -- end of registrations --
   }
 }
