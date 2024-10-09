@@ -9,20 +9,13 @@ add_library(_StringProcessing
   Algorithms/Algorithms/Trim.swift
   Algorithms/Consumers/CollectionConsumer.swift
   Algorithms/Consumers/FixedPatternConsumer.swift
-  Algorithms/Consumers/ManyConsumer.swift
-  Algorithms/Consumers/PredicateConsumer.swift
   Algorithms/Consumers/RegexConsumer.swift
   Algorithms/Matching/FirstMatch.swift
   Algorithms/Matching/Matches.swift
-  Algorithms/Matching/MatchingCollectionConsumer.swift
   Algorithms/Matching/MatchingCollectionSearcher.swift
   Algorithms/Matching/MatchReplace.swift
   Algorithms/Matching/MatchResult.swift
   Algorithms/Searchers/CollectionSearcher.swift
-  Algorithms/Searchers/ConsumerSearcher.swift
-  Algorithms/Searchers/NaivePatternSearcher.swift
-  Algorithms/Searchers/PatternOrEmpty.swift
-  Algorithms/Searchers/PredicateSearcher.swift
   Algorithms/Searchers/ZSearcher.swift
   Engine/Backtracking.swift
   Engine/Consume.swift

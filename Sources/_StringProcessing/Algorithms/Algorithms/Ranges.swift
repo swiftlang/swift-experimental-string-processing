@@ -11,107 +11,33 @@
 
 // MARK: `RangesCollection`
 
-struct RangesCollection<Searcher: CollectionSearcher> {
-  public typealias Base = Searcher.Searched
-  
-  let base: Base
+struct RangesSequence<Searcher: CollectionSearcher> {
+  let input: Searcher.Searched
   let searcher: Searcher
-  private(set) public var startIndex: Index
 
-  init(base: Base, searcher: Searcher) {
-    self.base = base
+  init(input: Searcher.Searched, searcher: Searcher) {
+    self.input = input
     self.searcher = searcher
-    
-    var state = searcher.state(for: base, in: base.startIndex..<base.endIndex)
-    self.startIndex = Index(range: nil, state: state)
-
-    if let range = searcher.search(base, &state) {
-      self.startIndex = Index(range: range, state: state)
-    } else {
-      self.startIndex = endIndex
-    }
-  }
-}
-
-struct RangesIterator<Searcher: CollectionSearcher>: IteratorProtocol {
-  public typealias Base = Searcher.Searched
-  
-  let base: Base
-  let searcher: Searcher
-  var state: Searcher.State
-
-  init(base: Base, searcher: Searcher) {
-    self.base = base
-    self.searcher = searcher
-    self.state = searcher.state(for: base, in: base.startIndex..<base.endIndex)
   }
 
-  public mutating func next() -> Range<Base.Index>? {
-    searcher.search(base, &state)
-  }
-}
-
-extension RangesCollection: Sequence {
-  public func makeIterator() -> RangesIterator<Searcher> {
-    Iterator(base: base, searcher: searcher)
-  }
-}
-
-extension RangesCollection: Collection {
-  // TODO: Custom `SubSequence` for the sake of more efficient slice iteration
-  
-  public struct Index {
-    var range: Range<Searcher.Searched.Index>?
+  struct Iterator: IteratorProtocol {
+    let base: RangesSequence
     var state: Searcher.State
-  }
 
-  public var endIndex: Index {
-    // TODO: Avoid calling `state(for:startingAt)` here
-    Index(
-      range: nil,
-      state: searcher.state(for: base, in: base.startIndex..<base.endIndex))
-  }
-
-  public func formIndex(after index: inout Index) {
-    guard index != endIndex else { fatalError("Cannot advance past endIndex") }
-    index.range = searcher.search(base, &index.state)
-  }
-
-  public func index(after index: Index) -> Index {
-    var index = index
-    formIndex(after: &index)
-    return index
-  }
-
-  public subscript(index: Index) -> Range<Base.Index> {
-    guard let range = index.range else {
-      fatalError("Cannot subscript using endIndex")
+    init(_ base: RangesSequence) {
+      self.base = base
+      self.state = base.searcher.state(for: base.input, in: base.input.startIndex..<base.input.endIndex)
     }
-    return range
+
+    mutating func next() -> Range<Searcher.Searched.Index>? {
+      base.searcher.search(base.input, &state)
+    }
   }
 }
 
-extension RangesCollection.Index: Comparable {
-  static func == (lhs: Self, rhs: Self) -> Bool {
-    switch (lhs.range, rhs.range) {
-    case (nil, nil):
-      return true
-    case (nil, _?), (_?, nil):
-      return false
-    case (let lhs?, let rhs?):
-      return lhs.lowerBound == rhs.lowerBound
-    }
-  }
-
-  static func < (lhs: Self, rhs: Self) -> Bool {
-    switch (lhs.range, rhs.range) {
-    case (nil, _):
-      return false
-    case (_, nil):
-      return true
-    case (let lhs?, let rhs?):
-      return lhs.lowerBound < rhs.lowerBound
-    }
+extension RangesSequence: Sequence {
+  func makeIterator() -> Iterator {
+    Iterator(self)
   }
 }
 
@@ -122,8 +48,8 @@ extension RangesCollection.Index: Comparable {
 extension Collection {
   func _ranges<S: CollectionSearcher>(
     of searcher: S
-  ) -> RangesCollection<S> where S.Searched == Self {
-    RangesCollection(base: self, searcher: searcher)
+  ) -> RangesSequence<S> where S.Searched == Self {
+    RangesSequence(input: self, searcher: searcher)
   }
 }
 
@@ -132,7 +58,7 @@ extension Collection {
 extension Collection where Element: Equatable {
   func _ranges<C: Collection>(
     of other: C
-  ) -> RangesCollection<ZSearcher<Self>> where C.Element == Element {
+  ) -> RangesSequence<ZSearcher<Self>> where C.Element == Element {
     _ranges(of: ZSearcher(pattern: Array(other), by: ==))
   }
   
@@ -163,8 +89,8 @@ extension Collection where Element: Equatable {
 }
 
 @available(SwiftStdlib 5.7, *)
-struct RegexRangesCollection<Output> {
-  let base: RegexMatchesCollection<Output>
+struct RegexRangesSequence<Output> {
+  let base: RegexMatchesSequence<Output>
 
   init(
     input: String,
@@ -181,9 +107,9 @@ struct RegexRangesCollection<Output> {
 }
 
 @available(SwiftStdlib 5.7, *)
-extension RegexRangesCollection: Sequence {
+extension RegexRangesSequence: Sequence {
   struct Iterator: IteratorProtocol {
-    var matchesBase: RegexMatchesCollection<Output>.Iterator
+    var matchesBase: RegexMatchesSequence<Output>.Iterator
     
     mutating func next() -> Range<String.Index>? {
       matchesBase.next().map(\.range)
@@ -195,16 +121,6 @@ extension RegexRangesCollection: Sequence {
   }
 }
 
-@available(SwiftStdlib 5.7, *)
-extension RegexRangesCollection: Collection {
-  typealias Index = RegexMatchesCollection<Output>.Index
-
-  var startIndex: Index { base.startIndex }
-  var endIndex: Index { base.endIndex }
-  func index(after i: Index) -> Index { base.index(after: i) }
-  subscript(position: Index) -> Range<String.Index> { base[position].range }
-}
-
 // MARK: Regex algorithms
 
 extension Collection where SubSequence == Substring {
@@ -214,8 +130,8 @@ extension Collection where SubSequence == Substring {
     of regex: R,
     subjectBounds: Range<String.Index>,
     searchBounds: Range<String.Index>
-  ) -> RegexRangesCollection<R.RegexOutput> {
-    RegexRangesCollection(
+  ) -> RegexRangesSequence<R.RegexOutput> {
+    RegexRangesSequence(
       input: self[...].base,
       subjectBounds: subjectBounds,
       searchBounds: searchBounds,
@@ -226,7 +142,7 @@ extension Collection where SubSequence == Substring {
   @_disfavoredOverload
   func _ranges<R: RegexComponent>(
     of regex: R
-  ) -> RegexRangesCollection<R.RegexOutput> {
+  ) -> RegexRangesSequence<R.RegexOutput> {
     _ranges(
       of: regex,
       subjectBounds: startIndex..<endIndex,
