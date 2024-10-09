@@ -12,7 +12,7 @@
 // MARK: `SplitCollection`
 
 struct SplitSequence<Searcher: CollectionSearcher> {
-  public typealias Input = Searcher.Searched
+  typealias Input = Searcher.Searched
   
   let ranges: RangesSequence<Searcher>
   var maxSplits: Int
