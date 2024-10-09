@@ -11,15 +11,15 @@
 
 // MARK: `SplitCollection`
 
-struct SplitCollection<Searcher: CollectionSearcher> {
-  public typealias Base = Searcher.Searched
+struct SplitSequence<Searcher: CollectionSearcher> {
+  public typealias Input = Searcher.Searched
   
-  let ranges: RangesCollection<Searcher>
+  let ranges: RangesSequence<Searcher>
   var maxSplits: Int
   var omittingEmptySubsequences: Bool
 
   init(
-    ranges: RangesCollection<Searcher>,
+    ranges: RangesSequence<Searcher>,
     maxSplits: Int,
     omittingEmptySubsequences: Bool)
   {
@@ -29,53 +29,53 @@ struct SplitCollection<Searcher: CollectionSearcher> {
   }
 
   init(
-    base: Base,
+    input: Input,
     searcher: Searcher,
     maxSplits: Int,
     omittingEmptySubsequences: Bool)
   {
-    self.ranges = base._ranges(of: searcher)
+    self.ranges = input._ranges(of: searcher)
     self.maxSplits = maxSplits
     self.omittingEmptySubsequences = omittingEmptySubsequences
   }
 }
 
-extension SplitCollection: Sequence {
+extension SplitSequence: Sequence {
   public struct Iterator: IteratorProtocol {
-    let base: Base
-    var index: Base.Index
-    var ranges: RangesCollection<Searcher>.Iterator
-    var maxSplits: Int
-    var omittingEmptySubsequences: Bool
+    var ranges: RangesSequence<Searcher>.Iterator
+    var index: Input.Index
 
+    var maxSplits: Int
     var splitCounter = 0
+    var omittingEmptySubsequences: Bool
     var isDone = false
 
+    var input: Input { ranges.base.input }
+
     init(
-      ranges: RangesCollection<Searcher>,
+      ranges: RangesSequence<Searcher>,
       maxSplits: Int,
       omittingEmptySubsequences: Bool
     ) {
-      self.base = ranges.base
-      self.index = base.startIndex
+      self.index = ranges.input.startIndex
       self.ranges = ranges.makeIterator()
       self.maxSplits = maxSplits
       self.omittingEmptySubsequences = omittingEmptySubsequences
     }
     
-    public mutating func next() -> Base.SubSequence? {
+    public mutating func next() -> Input.SubSequence? {
       guard !isDone else { return nil }
       
       /// Return the rest of base if it's non-empty or we're including
       /// empty subsequences.
-      func finish() -> Base.SubSequence? {
+      func finish() -> Input.SubSequence? {
         isDone = true
-        return index == base.endIndex && omittingEmptySubsequences
+        return index == input.endIndex && omittingEmptySubsequences
           ? nil
-          : base[index...]
+          : input[index...]
       }
       
-      if index == base.endIndex {
+      if index == input.endIndex {
         return finish()
       }
       
@@ -96,7 +96,7 @@ extension SplitCollection: Sequence {
         }
         
         splitCounter += 1
-        return base[index..<range.lowerBound]
+        return input[index..<range.lowerBound]
       }
     }
   }
@@ -109,13 +109,13 @@ extension SplitCollection: Sequence {
 // MARK: `CollectionSearcher` algorithms
 
 extension Collection {
-  func split<Searcher: CollectionSearcher>(
+  func _split<Searcher: CollectionSearcher>(
     by separator: Searcher,
     maxSplits: Int,
     omittingEmptySubsequences: Bool
-  ) -> SplitCollection<Searcher> where Searcher.Searched == Self {
-    SplitCollection(
-      base: self,
+  ) -> SplitSequence<Searcher> where Searcher.Searched == Self {
+    SplitSequence(
+      input: self,
       searcher: separator,
       maxSplits: maxSplits,
       omittingEmptySubsequences: omittingEmptySubsequences)
@@ -126,12 +126,12 @@ extension Collection {
 
 extension Collection where Element: Equatable {
   @_disfavoredOverload
-  func split<C: Collection>(
+  func _split<C: Collection>(
     by separator: C,
     maxSplits: Int,
     omittingEmptySubsequences: Bool
-  ) -> SplitCollection<ZSearcher<Self>> where C.Element == Element {
-    split(by: ZSearcher(pattern: Array(separator), by: ==), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
+  ) -> SplitSequence<ZSearcher<Self>> where C.Element == Element {
+    _split(by: ZSearcher(pattern: Array(separator), by: ==), maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences)
   }
 
   // FIXME: Return `some Collection<SubSequence>` for SE-0346
@@ -159,7 +159,7 @@ extension Collection where Element: Equatable {
       return str._split(separator: sep, maxSplits: maxSplits, omittingEmptySubsequences: omittingEmptySubsequences) as! [SubSequence]
       
     default:
-      return Array(split(
+      return Array(_split(
         by: ZSearcher(pattern: Array(separator), by: ==),
         maxSplits: maxSplits,
         omittingEmptySubsequences: omittingEmptySubsequences))
@@ -186,7 +186,7 @@ extension StringProtocol where SubSequence == Substring {
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [Substring] {
-    Array(self[...].split(
+    Array(self[...]._split(
       by: SubstringSearcher(text: "" as Substring, pattern: separator[...]),
       maxSplits: maxSplits,
       omittingEmptySubsequences: omittingEmptySubsequences))
@@ -199,7 +199,7 @@ extension StringProtocol where SubSequence == Substring {
     maxSplits: Int = .max,
     omittingEmptySubsequences: Bool = true
   ) -> [Substring] {
-    Array(self[...].split(
+    Array(self[...]._split(
       by: SubstringSearcher(text: "" as Substring, pattern: separator[...]),
       maxSplits: maxSplits,
       omittingEmptySubsequences: omittingEmptySubsequences))

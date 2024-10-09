@@ -38,7 +38,7 @@ extension Substring {
 }
 
 extension RangeReplaceableCollection {
-  func _replacing<Ranges: Collection, Replacement: Collection>(
+  func _replacing<Ranges: Sequence, Replacement: Collection>(
     _ ranges: Ranges,
     with replacement: Replacement,
     maxReplacements: Int = .max
