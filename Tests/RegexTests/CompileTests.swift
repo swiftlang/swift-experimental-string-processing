@@ -154,7 +154,7 @@ extension RegexTests {
   ) throws {
     assert(!equivs.isEmpty)
     let progs = try equivs.map {
-      try _compileRegex($0).engine.program
+      try _compileRegex($0)
     }
     let ref = progs.first!
     for (prog, equiv) in zip(progs, equivs).dropFirst() {
@@ -325,7 +325,7 @@ extension RegexTests {
     do {
       let prog = try _compileRegex(regex, syntax, semanticLevel)
       var found: Set<DecodedInstr> = []
-      for inst in prog.engine.instructions {
+      for inst in prog.instructions {
         let decoded = DecodedInstr.decode(inst)
         found.insert(decoded)
 

@@ -128,11 +128,8 @@ extension StringCapture {
 
 // TODO: Move `flatCaptureTest`s over here too...
 
-func compile(_ ast: AST) -> Executor {
-  let tree = ast.dslTree
-  let prog = try! Compiler(tree: tree).emit()
-  let executor = Executor(program: prog)
-  return executor
+func compile(_ ast: AST) -> MEProgram {
+  try! Compiler(tree: ast.dslTree).emit()
 }
 
 func captureTest(
@@ -184,8 +181,11 @@ func captureTest(
   for (input, output) in tests {
     let inputRange = input.startIndex..<input.endIndex
 
-    guard let result = try! executor.dynamicMatch(
-      input, in: inputRange, .wholeString
+    guard let result = try! Executor<AnyRegexOutput>.wholeMatch(
+      compile(ast),
+      input,
+      subjectBounds: inputRange,
+      searchBounds: inputRange
     ) else {
       XCTFail("No match", file: file, line: line)
       return

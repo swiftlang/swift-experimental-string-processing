@@ -89,7 +89,7 @@ func _compileRegex(
   _ regex: String,
   _ syntax: SyntaxOptions = .traditional,
   _ semanticLevel: RegexSemanticLevel? = nil
-) throws -> Executor {
+) throws -> MEProgram {
   let ast = try parse(regex, syntax)
   let dsl: DSLTree
 
@@ -104,7 +104,7 @@ func _compileRegex(
     dsl = ast.dslTree
   }
   let program = try Compiler(tree: dsl).emit()
-  return Executor(program: program)
+  return program
 }
 
 @_spi(RegexBenchmark)
