@@ -2381,7 +2381,18 @@ extension RegexTests {
     XCTAssertTrue("cafe".contains(caseInsensitiveRegex))
     XCTAssertTrue("CaFe".contains(caseInsensitiveRegex))
   }
-  
+
+  // https://github.com/swiftlang/swift-experimental-string-processing/issues/768
+  func testWordBoundaryCaching() throws {
+    // This will first find word boundaries up til the middle before failing,
+    // then it will find word boundaries til late in the string, then fail,
+    // and finally should succeed on a word boundary cached from the first
+    // attempt.
+    let input = "first second third fourth"
+    let regex = try Regex(#".*second\bX|.*third\bX|.*first\b"#)
+    XCTAssertTrue(input.contains(regex))
+  }
+
   // MARK: Character Semantics
   
   var eComposed: String { "é" }
