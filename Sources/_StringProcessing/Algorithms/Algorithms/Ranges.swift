@@ -36,7 +36,7 @@ struct RangesSequence<Searcher: CollectionSearcher> {
 }
 
 extension RangesSequence: Sequence {
-  public func makeIterator() -> Iterator {
+  func makeIterator() -> Iterator {
     Iterator(self)
   }
 }
