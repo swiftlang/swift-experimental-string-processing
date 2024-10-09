@@ -48,6 +48,16 @@ struct Processor {
   /// `input.startIndex..<input.endIndex`.
   let subjectBounds: Range<Position>
 
+  let matchMode: MatchMode
+  let instructions: InstructionList<Instruction>
+
+  // MARK: Update-only state
+
+  var wordIndexCache: Set<String.Index>? = nil
+  var wordIndexMaxIndex: String.Index? = nil
+
+  // MARK: Resettable state
+
   /// The bounds within the subject for an individual search.
   ///
   /// `searchBounds` is equal to `subjectBounds` in some cases, but can be a
@@ -57,12 +67,7 @@ struct Processor {
   /// Anchors like `^` and `.startOfSubject` use `subjectBounds` instead of
   /// `searchBounds`. The "start of matching" anchor `\G` uses `searchBounds`
   /// as its starting point.
-  let searchBounds: Range<Position>
-
-  let matchMode: MatchMode
-  let instructions: InstructionList<Instruction>
-
-  // MARK: Resettable state
+  var searchBounds: Range<Position>
 
   /// The current search position while processing.
   ///
@@ -79,9 +84,6 @@ struct Processor {
   var callStack: [InstructionAddress] = []
 
   var storedCaptures: Array<_StoredCapture>
-
-  var wordIndexCache: Set<String.Index>? = nil
-  var wordIndexMaxIndex: String.Index? = nil
 
   var state: State = .inProgress
 
@@ -128,8 +130,12 @@ extension Processor {
     _checkInvariants()
   }
 
-  mutating func reset(currentPosition: Position) {
+  mutating func reset(
+    currentPosition: Position,
+    searchBounds: Range<Position>
+  ) {
     self.currentPosition = currentPosition
+    self.searchBounds = searchBounds
 
     self.controller = Controller(pc: 0)
 

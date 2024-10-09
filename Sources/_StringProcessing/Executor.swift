@@ -48,7 +48,7 @@ struct Executor {
       } else {
         input.unicodeScalars.formIndex(after: &low)
       }
-      cpu.reset(currentPosition: low)
+      cpu.reset(currentPosition: low, searchBounds: searchBounds)
     }
   }
 
@@ -99,5 +99,11 @@ struct Executor {
     _ mode: MatchMode
   ) throws -> Regex<AnyRegexOutput>.Match? {
     try match(input, in: subjectBounds, mode)
+  }
+}
+
+extension Executor {
+  func makeIterator() {
+    
   }
 }
