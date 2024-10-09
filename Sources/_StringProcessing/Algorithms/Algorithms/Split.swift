@@ -41,7 +41,7 @@ struct SplitSequence<Searcher: CollectionSearcher> {
 }
 
 extension SplitSequence: Sequence {
-  public struct Iterator: IteratorProtocol {
+  struct Iterator: IteratorProtocol {
     var ranges: RangesSequence<Searcher>.Iterator
     var index: Input.Index
 
