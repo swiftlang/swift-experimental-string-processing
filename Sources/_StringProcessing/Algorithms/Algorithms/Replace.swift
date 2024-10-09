@@ -49,13 +49,15 @@ extension RangeReplaceableCollection {
     
     var result = Self()
     var index = startIndex
-    
-    // `maxRanges` is a workaround for https://github.com/apple/swift/issues/59522
-    let maxRanges = ranges.prefix(maxReplacements)
-    for range in maxRanges {
+    var replacements = 0
+
+    for range in ranges {
+      if replacements == maxReplacements { break }
+
       result.append(contentsOf: self[index..<range.lowerBound])
       result.append(contentsOf: replacement)
       index = range.upperBound
+      replacements += 1
     }
     
     result.append(contentsOf: self[index...])
