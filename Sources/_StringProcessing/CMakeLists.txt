@@ -18,8 +18,6 @@ add_library(_StringProcessing
   Algorithms/Searchers/CollectionSearcher.swift
   Algorithms/Searchers/ZSearcher.swift
   Engine/Backtracking.swift
-  Engine/Consume.swift
-  Engine/Engine.swift
   Engine/InstPayload.swift
   Engine/Instruction.swift
   Engine/MEBuilder.swift
