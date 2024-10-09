@@ -18,7 +18,7 @@ enum MatchMode {
 
 /// A concrete CU. Somehow will run the concrete logic and
 /// feed stuff back to generic code
-struct Controller {
+struct Controller: Equatable {
   var pc: InstructionAddress
 
   mutating func step() {
@@ -153,6 +153,23 @@ extension Processor {
 
     metrics.addReset()
     _checkInvariants()
+  }
+
+  func isReset(
+    currentPosition: Position, searchBounds: Range<Position>
+  ) -> Bool {
+    guard self.currentPosition == currentPosition,
+          self.searchBounds == searchBounds,
+          self.controller == Controller(pc: 0),
+          self.savePoints.isEmpty,
+          self.callStack.isEmpty,
+          self.storedCaptures.allSatisfy({ $0.range == nil }),
+          self.state == .inProgress,
+          self.failureReason == nil
+    else {
+      return false
+    }
+    return true
   }
 
   func _checkInvariants() {

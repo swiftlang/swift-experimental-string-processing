@@ -30,6 +30,28 @@ struct Executor {
       input: input,
       subjectBounds: subjectBounds,
       searchBounds: searchBounds)
+    return try firstMatch(
+      input,
+      subjectBounds: subjectBounds,
+      searchBounds: searchBounds,
+      graphemeSemantic: graphemeSemantic,
+      usingResetProcessor: &cpu)
+  }
+
+  @available(SwiftStdlib 5.7, *)
+  func firstMatch<Output>(
+    _ input: String,
+    subjectBounds: Range<String.Index>,
+    searchBounds: Range<String.Index>,
+    graphemeSemantic: Bool,
+    usingResetProcessor cpu: inout Processor
+  ) throws -> Regex<Output>.Match? {
+    assert(
+      cpu.isReset(
+        currentPosition: searchBounds.lowerBound,
+        searchBounds: searchBounds))
+    assert(input == cpu.input)
+
 #if PROCESSOR_MEASUREMENTS_ENABLED
     defer { if cpu.metrics.shouldMeasureMetrics { cpu.printMetrics() } }
 #endif
