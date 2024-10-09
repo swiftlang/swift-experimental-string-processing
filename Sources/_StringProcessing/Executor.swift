@@ -13,10 +13,10 @@ internal import _RegexParser
 
 struct Executor {
   // TODO: consider let, for now lets us toggle tracing
-  var engine: Engine
+  var program: MEProgram
 
   init(program: MEProgram) {
-    self.engine = Engine(program)
+    self.program = program
   }
 
   @available(SwiftStdlib 5.7, *)
@@ -26,10 +26,15 @@ struct Executor {
     searchBounds: Range<String.Index>,
     graphemeSemantic: Bool
   ) throws -> Regex<Output>.Match? {
-    var cpu = engine.makeFirstMatchProcessor(
+    var cpu = Processor(
+      program: program,
       input: input,
       subjectBounds: subjectBounds,
-      searchBounds: searchBounds)
+      searchBounds: searchBounds,
+      matchMode: .partialFromFront,
+      isTracingEnabled: program.enableTracing,
+      shouldMeasureMetrics: program.enableMetrics)
+
     return try firstMatch(
       input,
       subjectBounds: subjectBounds,
@@ -80,8 +85,14 @@ struct Executor {
     in subjectBounds: Range<String.Index>,
     _ mode: MatchMode
   ) throws -> Regex<Output>.Match? {
-    var cpu = engine.makeProcessor(
-      input: input, bounds: subjectBounds, matchMode: mode)
+    var cpu = Processor(
+      program: program,
+      input: input,
+      subjectBounds: subjectBounds,
+      searchBounds: subjectBounds,
+      matchMode: mode,
+      isTracingEnabled: program.enableTracing,
+      shouldMeasureMetrics: program.enableMetrics)
 #if PROCESSOR_MEASUREMENTS_ENABLED
     defer { if cpu.metrics.shouldMeasureMetrics { cpu.printMetrics() } }
 #endif
@@ -105,10 +116,10 @@ struct Executor {
 
     let capList = MECaptureList(
       values: cpu.storedCaptures,
-      referencedCaptureOffsets: engine.program.referencedCaptureOffsets)
+      referencedCaptureOffsets: program.referencedCaptureOffsets)
 
     let range = currentPosition..<endIdx
-    let caps = engine.program.captureList.createElements(capList)
+    let caps = program.captureList.createElements(capList)
 
     let anyRegexOutput = AnyRegexOutput(input: input, elements: caps)
     return .init(anyRegexOutput: anyRegexOutput, range: range)
