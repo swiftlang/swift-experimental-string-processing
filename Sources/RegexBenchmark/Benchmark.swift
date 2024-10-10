@@ -153,6 +153,8 @@ struct CrossBenchmark {
   /// Whether to also run scalar-semantic mode
   var alsoRunScalarSemantic: Bool = true
 
+  var alsoRunSimpleWordBoundaries: Bool = false
+
   func register(_ runner: inout BenchmarkRunner) {
     if isWhole {
       runner.registerCrossBenchmark(
@@ -160,14 +162,16 @@ struct CrossBenchmark {
         input: input,
         pattern: regex,
         .whole,
-        alsoRunScalarSemantic: alsoRunScalarSemantic)
+        alsoRunScalarSemantic: alsoRunScalarSemantic,
+        alsoRunSimpleWordBoundaries: alsoRunSimpleWordBoundaries)
     } else {
       runner.registerCrossBenchmark(
         nameBase: baseName,
         input: input,
         pattern: regex,
         .allMatches,
-        alsoRunScalarSemantic: alsoRunScalarSemantic)
+        alsoRunScalarSemantic: alsoRunScalarSemantic,
+        alsoRunSimpleWordBoundaries: alsoRunSimpleWordBoundaries)
 
       if includeFirst || runner.includeFirstOverride {
         runner.registerCrossBenchmark(
@@ -175,7 +179,8 @@ struct CrossBenchmark {
           input: input,
           pattern: regex,
           .first,
-          alsoRunScalarSemantic: alsoRunScalarSemantic)
+          alsoRunScalarSemantic: alsoRunScalarSemantic,
+          alsoRunSimpleWordBoundaries: alsoRunSimpleWordBoundaries)
       }
     }
   }
