@@ -49,39 +49,43 @@ enum Executor<Output> {
     subjectBounds: Range<String.Index>,
     searchBounds: Range<String.Index>
   ) throws -> Regex<Output>.Match? {
-    // Fast-path for start-anchored regex
-    if program.canOnlyMatchAtStart {
-      return try Executor._run(
-        program,
-        input,
-        subjectBounds: subjectBounds,
-        searchBounds: searchBounds,
-        mode: .partialFromFront)
-    }
-
     var cpu = Processor(
       program: program,
       input: input,
       subjectBounds: subjectBounds,
       searchBounds: searchBounds,
       matchMode: .partialFromFront)
+    return try Executor._firstMatch(
+      program,
+      using: &cpu)
+  }
+
+  static func _firstMatch(
+    _ program: MEProgram,
+    using cpu: inout Processor
+  ) throws -> Regex<Output>.Match? {
     let isGraphemeSemantic = program.initialOptions.semanticLevel == .graphemeCluster
 
-
-    var low = searchBounds.lowerBound
-    let high = searchBounds.upperBound
+    var low = cpu.searchBounds.lowerBound
+    let high = cpu.searchBounds.upperBound
     while true {
       if let m = try Executor._run(program, &cpu) {
         return m
       }
-      if low >= high { return nil }
-      if isGraphemeSemantic {
-        low = input.index(
-          low, offsetBy: 1, limitedBy: searchBounds.upperBound) ?? searchBounds.upperBound
-      } else {
-        input.unicodeScalars.formIndex(after: &low)
+      // Fast-path for start-anchored regex
+      if program.canOnlyMatchAtStart {
+        return nil
       }
-      cpu.reset(currentPosition: low, searchBounds: searchBounds)
+      if low == high { return nil }
+      if isGraphemeSemantic {
+        cpu.input.formIndex(after: &low)
+      } else {
+        cpu.input.unicodeScalars.formIndex(after: &low)
+      }
+      guard low <= high else {
+        return nil
+      }
+      cpu.reset(currentPosition: low, searchBounds: cpu.searchBounds)
     }
   }
 
@@ -109,7 +113,14 @@ extension Executor {
     }
 
     func makeIterator() -> Iterator {
-      fatalError()
+      Iterator(
+        program: program,
+        processor: Processor(
+          program: program,
+          input: input,
+          subjectBounds: subjectBounds,
+          searchBounds: searchBounds,
+          matchMode: .partialFromFront))
     }
   }
 }
@@ -138,7 +149,9 @@ extension Executor.Matches.Iterator {
   }
 
   mutating func next() -> Regex<Output>.Match? {
-    guard let match = try? Executor._run(program, &processor) else {
+    guard let match = try? Executor._firstMatch(
+      program, using: &processor
+    ) else {
       return nil
     }
 
@@ -199,6 +212,12 @@ extension Processor {
 #if PROCESSOR_MEASUREMENTS_ENABLED
     defer { if cpu.metrics.shouldMeasureMetrics { cpu.printMetrics() } }
 #endif
+    if self.state == .fail {
+      if let e = failureReason {
+        throw e
+      }
+      return nil
+    }
     assert(isReset())
     while true {
       switch self.state {
