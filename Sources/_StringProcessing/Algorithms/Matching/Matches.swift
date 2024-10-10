@@ -55,12 +55,6 @@ extension RegexMatchesSequence: Sequence {
 
   struct Iterator: IteratorProtocol {
     let base: RegexMatchesSequence
-    
-    // Because `RegexMatchesCollection` eagerly computes the first match for
-    // its `startIndex`, the iterator can use that match for its initial
-    // iteration. For subsequent calls to `next()`, this value is `false`, and
-    // `nextStart` is used to search for the next match.
-    var initialIteration = true
 
     // Set to nil when iteration is finished (because some regex can empty-match
     // at the end of the subject).
