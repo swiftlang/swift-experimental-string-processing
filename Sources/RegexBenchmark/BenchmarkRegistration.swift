@@ -19,7 +19,7 @@ extension BenchmarkRunner {
     self.addErrorMessages()
     self.addIpAddress()
 
-    self.addURL()
+    self.addURLWithWordBoundaries()
     // -- end of registrations --
   }
 }
