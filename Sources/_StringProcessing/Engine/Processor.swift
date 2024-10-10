@@ -105,9 +105,7 @@ extension Processor {
     input: Input,
     subjectBounds: Range<Position>,
     searchBounds: Range<Position>,
-    matchMode: MatchMode,
-    isTracingEnabled: Bool,
-    shouldMeasureMetrics: Bool
+    matchMode: MatchMode
   ) {
     self.controller = Controller(pc: 0)
     self.instructions = program.instructions
@@ -117,8 +115,8 @@ extension Processor {
     self.matchMode = matchMode
 
     self.metrics = ProcessorMetrics(
-      isTracingEnabled: isTracingEnabled,
-      shouldMeasureMetrics: shouldMeasureMetrics)
+      isTracingEnabled: program.enableTracing,
+      shouldMeasureMetrics: program.enableTracing)
 
     self.currentPosition = searchBounds.lowerBound
 
@@ -155,12 +153,11 @@ extension Processor {
     _checkInvariants()
   }
 
-  func isReset(
-    currentPosition: Position, searchBounds: Range<Position>
-  ) -> Bool {
-    guard self.currentPosition == currentPosition,
-          self.searchBounds == searchBounds,
-          self.controller == Controller(pc: 0),
+  // Check that resettable state has been reset. Note that `reset()`
+  // takes a new current position and search bounds.
+  func isReset() -> Bool {
+    _checkInvariants()
+    guard self.controller == Controller(pc: 0),
           self.savePoints.isEmpty,
           self.callStack.isEmpty,
           self.storedCaptures.allSatisfy({ $0.range == nil }),

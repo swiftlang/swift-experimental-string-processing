@@ -109,7 +109,12 @@ extension Regex {
   /// - Returns: The match, if this regex matches the entirety of `string`;
   ///   otherwise, `nil`.
   public func wholeMatch(in string: String) throws -> Regex<Output>.Match? {
-    try _match(string, in: string.startIndex..<string.endIndex, mode: .wholeString)
+    let bounds = string.startIndex..<string.endIndex
+    return try Executor.wholeMatch(
+      program.loweredProgram,
+      string,
+      subjectBounds: bounds,
+      searchBounds: bounds)
   }
 
   /// Returns a match if this regex matches the given string at its start.
@@ -142,7 +147,12 @@ extension Regex {
   /// - Returns: The match, if this regex matches at the start of `string`;
   ///   otherwise, `nil`.
   public func prefixMatch(in string: String) throws -> Regex<Output>.Match? {
-    try _match(string, in: string.startIndex..<string.endIndex, mode: .partialFromFront)
+    let bounds = string.startIndex..<string.endIndex
+    return try Executor.prefixMatch(
+      program.loweredProgram,
+      string,
+      subjectBounds: bounds,
+      searchBounds: bounds)
   }
 
   /// Returns the first match for this regex found in the given string.
@@ -166,7 +176,12 @@ extension Regex {
   /// - Parameter string: The string to match this regular expression against.
   /// - Returns: The match, if one is found; otherwise, `nil`.
   public func firstMatch(in string: String) throws -> Regex<Output>.Match? {
-    try _firstMatch(string, in: string.startIndex..<string.endIndex)
+    let bounds = string.startIndex..<string.endIndex
+    return try Executor.firstMatch(
+      self.program.loweredProgram,
+      string,
+      subjectBounds: bounds,
+      searchBounds: bounds)
   }
 
   /// Returns a match if this regex matches the given substring in its entirety.
@@ -200,7 +215,12 @@ extension Regex {
   /// - Returns: The match, if this regex matches the entirety of `string`;
   ///   otherwise, `nil`.
   public func wholeMatch(in string: Substring) throws -> Regex<Output>.Match? {
-    try _match(string.base, in: string.startIndex..<string.endIndex, mode: .wholeString)
+    let bounds = string.startIndex..<string.endIndex
+    return try Executor.wholeMatch(
+      program.loweredProgram,
+      string.base,
+      subjectBounds: bounds,
+      searchBounds: bounds)
   }
 
   /// Returns a match if this regex matches the given substring at its start.
@@ -234,7 +254,12 @@ extension Regex {
   /// - Returns: The match, if this regex matches at the start of `string`;
   ///   otherwise, `nil`.
   public func prefixMatch(in string: Substring) throws -> Regex<Output>.Match? {
-    try _match(string.base, in: string.startIndex..<string.endIndex, mode: .partialFromFront)
+    let bounds = string.startIndex..<string.endIndex
+    return try Executor.prefixMatch(
+      program.loweredProgram,
+      string.base,
+      subjectBounds: bounds,
+      searchBounds: bounds)
   }
 
   /// Returns the first match for this regex found in the given substring.
@@ -259,40 +284,45 @@ extension Regex {
   ///   against.
   /// - Returns: The match, if one is found; otherwise, `nil`.
   public func firstMatch(in string: Substring) throws -> Regex<Output>.Match? {
-    try _firstMatch(string.base, in: string.startIndex..<string.endIndex)
+    let bounds = string.startIndex..<string.endIndex
+    return try Executor.firstMatch(
+      self.program.loweredProgram,
+      string.base,
+      subjectBounds: bounds,
+      searchBounds: bounds)
   }
+//
+//  func _match(
+//    _ input: String,
+//    in subjectBounds: Range<String.Index>,
+//    mode: MatchMode = .wholeString
+//  ) throws -> Regex<Output>.Match? {
+//
+//
+//    let executor = Executor(program: regex.program.loweredProgram)
+//    return try executor.match(input, in: subjectBounds, mode)
+//  }
 
-  func _match(
-    _ input: String,
-    in subjectBounds: Range<String.Index>,
-    mode: MatchMode = .wholeString
-  ) throws -> Regex<Output>.Match? {
-    let executor = Executor(program: regex.program.loweredProgram)
-    return try executor.match(input, in: subjectBounds, mode)
-  }
+//  func _firstMatch(
+//    _ input: String,
+//    in subjectBounds: Range<String.Index>
+//  ) throws -> Regex<Output>.Match? {
+//    try Executor.firstMatch(self.program.loweredProgram, input, subjectBounds: subjectBounds, searchBounds: subjectBounds)
+//  }
 
-  func _firstMatch(
-    _ input: String,
-    in subjectBounds: Range<String.Index>
-  ) throws -> Regex<Output>.Match? {
-    try regex.program.loweredProgram.canOnlyMatchAtStart
-      ? _match(input, in: subjectBounds, mode: .partialFromFront)
-      : _firstMatch(input, subjectBounds: subjectBounds, searchBounds: subjectBounds)
-  }
-
-  func _firstMatch(
-    _ input: String,
-    subjectBounds: Range<String.Index>,
-    searchBounds: Range<String.Index>
-  ) throws -> Regex<Output>.Match? {
-    let executor = Executor(program: regex.program.loweredProgram)
-    let graphemeSemantic = regex.initialOptions.semanticLevel == .graphemeCluster
-    return try executor.firstMatch(
-      input,
-      subjectBounds: subjectBounds,
-      searchBounds: searchBounds,
-      graphemeSemantic: graphemeSemantic)
-  }
+//  func _firstMatch(
+//    _ input: String,
+//    subjectBounds: Range<String.Index>,
+//    searchBounds: Range<String.Index>
+//  ) throws -> Regex<Output>.Match? {
+//    let executor = Executor(program: regex.program.loweredProgram)
+//    let graphemeSemantic = regex.initialOptions.semanticLevel == .graphemeCluster
+//    return try executor.firstMatch(
+//      input,
+//      subjectBounds: subjectBounds,
+//      searchBounds: searchBounds,
+//      graphemeSemantic: graphemeSemantic)
+//  }
 }
 
 @available(SwiftStdlib 5.7, *)

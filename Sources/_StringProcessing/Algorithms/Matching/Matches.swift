@@ -76,11 +76,12 @@ extension RegexMatchesSequence: Sequence {
       guard let position = currentPosition, position <= base.searchBounds.upperBound else {
         return nil
       }
-      
+
       // Otherwise, find the next match (if any) and compute `nextStart`
-      let match = try? base.regex._firstMatch(
+      let match = try? Executor<Output>.firstMatch(
+        base.regex.program.loweredProgram,
         base.input,
-        subjectBounds: base.subjectBounds,
+        subjectBounds: base.subjectBounds, 
         searchBounds: position..<base.searchBounds.upperBound)
       currentPosition = match.flatMap(base.searchIndex(after:))
       return match
@@ -116,6 +117,9 @@ extension BidirectionalCollection where SubSequence == Substring {
     // FIXME: Array init calls count, which double-executes the regex :-(
     // FIXME: just return some Collection<Regex<Output>.Match>
     var result = Array<Regex<Output>.Match>()
+
+    
+
     for match in _matches(of: r) {
       result.append(match)
     }
