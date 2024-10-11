@@ -37,7 +37,10 @@ struct Runner: ParsableCommand {
 
   @Flag(help: "Exclude running NSRegex benchmarks")
   var excludeNs = false
-  
+
+  @Flag(help: "Rather than specify specific-benchmarks as patterns, use exact names")
+  var exactName = false
+
   @Flag(help: """
 Enable tracing of the engine (warning: lots of output). Prints out processor state each cycle
 
@@ -73,7 +76,11 @@ swift build -c release -Xswiftc -DPROCESSOR_MEASUREMENTS_ENABLED
     if !self.specificBenchmarks.isEmpty {
       runner.suite = runner.suite.filter { b in
         specificBenchmarks.contains { pattern in
-          try! Regex(pattern).firstMatch(in: b.name) != nil
+          if exactName {
+            return pattern == b.name
+          }
+
+          return try! Regex(pattern).firstMatch(in: b.name) != nil
         }
       }
     }
