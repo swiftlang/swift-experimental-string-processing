@@ -1,3 +1,5 @@
+internal import _RegexParser
+
 private typealias ASCIIBitset = DSLTree.CustomCharacterClass.AsciiBitset
 
 extension Processor {
