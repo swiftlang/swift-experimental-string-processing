@@ -41,6 +41,8 @@ extension Processor {
 
     // MARK: writeable, resettable
 
+    var isDirty = false
+
     // currently, useful for range-based quantification
     var ints: [Int]
 
@@ -58,17 +60,22 @@ extension Processor.Registers {
   }
   subscript(_ i: IntRegister) -> Int {
     get { ints[i.rawValue] }
-    set { ints[i.rawValue] = newValue }
+    set {
+      isDirty = true
+      ints[i.rawValue] = newValue
+    }
   }
   subscript(_ i: ValueRegister) -> Any {
     get { values[i.rawValue] }
     set {
+      isDirty = true
       values[i.rawValue] = newValue
     }
   }
   subscript(_ i: PositionRegister) -> Input.Index {
     get { positions[i.rawValue] }
     set {
+      isDirty = true
       positions[i.rawValue] = newValue
     }
   }
@@ -128,6 +135,9 @@ extension Processor.Registers {
   }
 
   mutating func reset(sentinel: Input.Index) {
+    guard isDirty else {
+      return
+    }
     self.ints._setAll(to: 0)
     self.values._setAll(to: SentinelValue())
     self.positions._setAll(to: Processor.Registers.sentinelIndex)

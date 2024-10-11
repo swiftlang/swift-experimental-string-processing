@@ -139,8 +139,12 @@ extension Processor {
 
     self.registers.reset(sentinel: searchBounds.upperBound)
 
-    self.savePoints.removeAll(keepingCapacity: true)
-    self.callStack.removeAll(keepingCapacity: true)
+    if !self.savePoints.isEmpty {
+      self.savePoints.removeAll(keepingCapacity: true)
+    }
+    if !self.callStack.isEmpty {
+      self.callStack.removeAll(keepingCapacity: true)
+    }
 
     for idx in storedCaptures.indices {
       storedCaptures[idx] = .init()
