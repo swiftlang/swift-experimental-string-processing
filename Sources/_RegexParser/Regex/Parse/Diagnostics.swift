@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Copyright (c) 2021-2024 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -363,6 +363,14 @@ public struct Diagnostics: Hashable {
       struct ErrorDiagnostic: Error, CustomStringConvertible {
         var diag: Diagnostic
         var description: String { diag.message }
+#if _runtime(_ObjC) && !$Embedded
+        // Error protocol requirements for NSError bridging.
+        var _domain: String { "_RegexParser.Diagnostics" }
+        var _code: Int { 0 }
+        var _userInfo: AnyObject? {
+          [/*kCFErrorDescriptionKey*/ "NSDescription": description] as AnyObject
+        }
+#endif
       }
       throw Source.LocatedError(ErrorDiagnostic(diag: diag), diag.location)
     }

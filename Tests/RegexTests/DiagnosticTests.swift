@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift.org open source project
 //
-// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Copyright (c) 2021-2024 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -105,6 +105,19 @@ extension RegexTests {
       print("\(ParseError.emptyProperty)")
       print("\(ParseError.expectedNumber("abc", kind: .decimal))")
       print("\(ParseError.expectedNumber("abc", kind: .hex))")
+    }
+  }
+
+  func testErrorDescriptions() {
+    XCTAssertThrowsError(try Regex(#"\"#)) { error in
+      let message = "\(error)"
+      XCTAssertEqual(message, "expected escape sequence")
+#if _runtime(_ObjC) && !$Embedded
+      // Last resort from _CFErrorCreateLocalizedDescription:
+      // "The operation couldn’t be completed. (DOMAIN error CODE - MESSAGE)"
+      XCTAssertTrue(error.localizedDescription.contains(message))
+      XCTAssertEqual((error as NSError).domain, "_RegexParser.Diagnostics")
+#endif
     }
   }
 }
