@@ -11,7 +11,7 @@ extension CaptureList {
     
     for (i, (cap, meStored)) in zip(captures, list.values).enumerated() {
       if !cap.visibleInTypedOutput {
-        print("invisible!")
+        fatalError("Why does this never get hit?")
       }
       let element = AnyRegexOutput.ElementRepresentation(
         optionalDepth: cap.optionalDepth,
