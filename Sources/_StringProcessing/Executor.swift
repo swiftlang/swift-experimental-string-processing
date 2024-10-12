@@ -190,15 +190,22 @@ extension Executor {
     guard let endIdx = try cpu.run() else {
       return nil
     }
-    let capList = MECaptureList(
-      values: cpu.storedCaptures,
-      referencedCaptureOffsets: program.referencedCaptureOffsets)
-
     let range = startPosition..<endIdx
-    let caps = program.captureList.createElements(capList)
+
+    let wholeMatchValue: Any?
+    if let val = program.registerInfo.wholeMatchValue {
+      wholeMatchValue = cpu.registers.values[val]
+    } else {
+      wholeMatchValue = nil
+    }
+    let aroElements = Executor.createExistentialElements(
+      program,
+      matchRange: startPosition..<endIdx,
+      storedCaptures: cpu.storedCaptures,
+      wholeMatchValue: wholeMatchValue)
 
     let anyRegexOutput = AnyRegexOutput(
-      input: cpu.input, elements: caps)
+      input: cpu.input, elements: aroElements)
     return .init(anyRegexOutput: anyRegexOutput, range: range)
   }}
 
