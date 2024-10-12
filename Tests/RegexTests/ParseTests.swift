@@ -3335,6 +3335,13 @@ extension RegexTests {
       + "a"
       + String(repeating: ")*", count: 500),
       .nestingTooDeep)
+
+    diagnosticTest(
+      String(repeating: "[", count: 500)
+      + "a"
+      + String(repeating: "]*", count: 500),
+      .nestingTooDeep)
+
   }
 
   func testDelimiterLexingErrors() {
