@@ -10,6 +10,9 @@ extension CaptureList {
     var result = [AnyRegexOutput.ElementRepresentation]()
     
     for (i, (cap, meStored)) in zip(captures, list.values).enumerated() {
+      if !cap.visibleInTypedOutput {
+        print("invisible!")
+      }
       let element = AnyRegexOutput.ElementRepresentation(
         optionalDepth: cap.optionalDepth,
         content: meStored.deconstructed,
