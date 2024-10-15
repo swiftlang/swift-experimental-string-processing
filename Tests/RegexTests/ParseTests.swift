@@ -3322,6 +3322,28 @@ extension RegexTests {
     diagnosticTest("(*LIMIT_DEPTH=-1", .expectedNumber("", kind: .decimal), .expected(")"), unsupported: true)
   }
 
+  func testMaliciousNesting() {
+    // Excessively nested subpatterns is a common DOS attack
+    diagnosticTest(
+      String(repeating: "(", count: 500)
+      + "a"
+      + String(repeating: ")*", count: 500),
+      .nestingTooDeep)
+
+    diagnosticTest(
+      String(repeating: "(?:", count: 500)
+      + "a"
+      + String(repeating: ")*", count: 500),
+      .nestingTooDeep)
+
+    diagnosticTest(
+      String(repeating: "[", count: 500)
+      + "a"
+      + String(repeating: "]*", count: 500),
+      .nestingTooDeep)
+
+  }
+
   func testDelimiterLexingErrors() {
 
     // MARK: Printable ASCII
