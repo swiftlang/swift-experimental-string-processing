@@ -32,6 +32,9 @@ struct Runner: ParsableCommand {
   @Option(help: "Save comparison results as csv")
   var saveComparison: String?
 
+  @Option(help: "Save benchmark results as csv")
+  var saveCSV: String?
+
   @Flag(help: "Quiet mode")
   var quiet = false
 
@@ -84,9 +87,14 @@ swift build -c release -Xswiftc -DPROCESSOR_MEASUREMENTS_ENABLED
     
     if let loadFile = load {
       try runner.load(from: loadFile)
+      if excludeNs {
+        runner.results.results = runner.results.results.filter {
+          !$0.key.contains("_NS")
+        }
+      }
     } else {
       if excludeNs {
-        runner.suite = runner.suite.filter { b in !b.name.contains("NS") }
+        runner.suite = runner.suite.filter { b in !b.name.contains("_NS") }
       }
       runner.run()
     }
@@ -108,6 +116,9 @@ swift build -c release -Xswiftc -DPROCESSOR_MEASUREMENTS_ENABLED
     }
     if let compareFile = compareCompileTime {
       try runner.compareCompileTimes(against: compareFile, showChart: showChart)
+    }
+    if let csvPath = saveCSV {
+      try runner.saveCSV(to: csvPath)
     }
   }
 }
