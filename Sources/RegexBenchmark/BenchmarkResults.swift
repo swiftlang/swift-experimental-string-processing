@@ -21,7 +21,21 @@ extension BenchmarkRunner {
     self.results = result
     print("Loaded results from \(url.path)")
   }
-  
+
+  /// Attempts to save results in a CSV format to the given path
+  func saveCSV(to savePath: String) throws {
+    let url = URL(fileURLWithPath: savePath, isDirectory: false)
+    let parent = url.deletingLastPathComponent()
+    if !FileManager.default.fileExists(atPath: parent.path) {
+      try! FileManager.default.createDirectory(
+        atPath: parent.path,
+        withIntermediateDirectories: true)
+    }
+    print("Saving result as CSV to \(url.path)")
+    try results.saveCSV(to: url)
+
+  }
+
   /// Compare this runner's results against the results stored in the given file path
   func compare(
     against compareFilePath: String,
@@ -153,6 +167,12 @@ struct Measurement: Codable, CustomStringConvertible {
   var description: String {
     return "\(median) (stdev: \(Time(stdev)), N = \(samples))"
   }
+
+  var asCSV: String {
+    """
+    \(median.asCSVSeconds), \(stdev), \(samples)
+    """
+  }
 }
 
 struct BenchmarkResult: Codable, CustomStringConvertible {
@@ -169,6 +189,13 @@ struct BenchmarkResult: Codable, CustomStringConvertible {
       base += "\n  > parse time: \(parseTime)"
     }
     return base
+  }
+
+  var asCSV: String {
+    let na = "N/A, N/A, N/A"
+    return """
+    \(runtime.asCSV), \(compileTime?.asCSV ?? na), \(parseTime?.asCSV ?? na)
+    """
   }
 }
 
@@ -263,6 +290,27 @@ struct SuiteResult {
 }
 
 extension SuiteResult: Codable {
+  func saveCSV(to url: URL) throws {
+    var output: [(name: String, result: BenchmarkResult)] = []
+    for key in results.keys {
+      output.append((key, results[key]!))
+    }
+    output.sort {
+      $0.name < $1.name
+    }
+    var contents = """
+    name,\
+    runtime_median, runTime_stddev, runTime_samples,\
+    compileTime_median, compileTime_stddev, compileTime_samples,\
+    parseTime_median, parseTime_stddev, parseTime_samples\n
+    """
+    for (name, result) in output {
+      contents.append("\(name), \(result.asCSV))\n")
+    }
+    print("Saving result as .csv to \(url.path())")
+    try contents.write(to: url, atomically: true, encoding: String.Encoding.utf8)
+  }
+
   func save(to url: URL) throws {
     let encoder = JSONEncoder()
     let data = try encoder.encode(self)
