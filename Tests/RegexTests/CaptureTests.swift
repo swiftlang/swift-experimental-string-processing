@@ -222,6 +222,10 @@ func captureTest(
 
 extension RegexTests {
 
+  func testCI() throws {
+    XCTAssert(false) // test that CI is running out tests
+  }
+
   func testLiteralStructuredCaptures() throws {
     captureTest(
       "abc",
