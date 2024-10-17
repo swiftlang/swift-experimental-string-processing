@@ -99,10 +99,10 @@ struct RegexRangesSequence<Output> {
     regex: Regex<Output>
   ) {
     self.base = .init(
+      program: regex.regex.program.loweredProgram,
       input: input,
       subjectBounds: subjectBounds,
-      searchBounds: searchBounds,
-      regex: regex)
+      searchBounds: searchBounds)
   }
 }
 
