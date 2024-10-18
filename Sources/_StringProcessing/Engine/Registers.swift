@@ -172,6 +172,10 @@ extension MEProgram {
     var positionStackAddresses = 0
     var savePointAddresses = 0
     var captures = 0
+
+    // The value register holding the whole-match value, if there
+    // is one
+    var wholeMatchValue: Int? = nil
   }
 }
 

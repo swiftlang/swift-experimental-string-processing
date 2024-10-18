@@ -33,9 +33,17 @@ extension MEProgram {
 
     // Registers
     var nextIntRegister = IntRegister(0)
-    var nextCaptureRegister = CaptureRegister(0)
     var nextValueRegister = ValueRegister(0)
     var nextPositionRegister = PositionRegister(0)
+
+    // Set to non-nil when a value register holds the whole-match
+    // value (i.e. when a regex consists entirely of a custom matcher)
+    var wholeMatchValue: ValueRegister? = nil
+
+    // Note: Capture 0 (i.e. whole-match) is handled specially
+    // by the engine, so `n` here refers to the regex AST's `n+1`
+    // capture
+    var nextCaptureRegister = CaptureRegister(0)
 
     // Special addresses or instructions
     var failAddressToken: AddressToken? = nil
@@ -69,6 +77,24 @@ extension MEProgram.Builder {
       self.first = a
       self.second = b
     }
+  }
+
+  // Maps the AST's named capture offset to a capture register
+  func captureRegister(named name: String) throws -> CaptureRegister {
+    guard let index = captureList.indexOfCapture(named: name) else {
+      throw RegexCompilationError.uncapturedReference
+    }
+    return .init(index - 1)
+  }
+
+  // Map an AST's backreference number to a capture register
+  func captureRegister(forBackreference i: Int) -> CaptureRegister {
+    .init(i - 1)
+  }
+
+  mutating func denoteCurrentValueIsWholeMatchValue() {
+    assert(wholeMatchValue == nil)
+    wholeMatchValue = nextValueRegister
   }
 }
 
@@ -337,10 +363,8 @@ extension MEProgram.Builder {
   }
 
   mutating func buildNamedReference(_ name: String, isScalarMode: Bool) throws {
-    guard let index = captureList.indexOfCapture(named: name) else {
-      throw RegexCompilationError.uncapturedReference
-    }
-    buildBackreference(.init(index), isScalarMode: isScalarMode)
+    let cap = try captureRegister(named: name)
+    buildBackreference(cap, isScalarMode: isScalarMode)
   }
 
   // TODO: Mutating because of fail address fixup, drop when
@@ -401,6 +425,7 @@ extension MEProgram.Builder {
     regInfo.transformFunctions = transformFunctions.count
     regInfo.matcherFunctions = matcherFunctions.count
     regInfo.captures = nextCaptureRegister.rawValue
+    regInfo.wholeMatchValue = wholeMatchValue?.rawValue
 
     return MEProgram(
       instructions: InstructionList(instructions),
@@ -514,8 +539,8 @@ extension MEProgram.Builder {
       assert(preexistingValue == nil)
     }
     if let name = name {
-      let index = captureList.indexOfCapture(named: name)
-      assert(index == nextCaptureRegister.rawValue)
+      let cap = try? captureRegister(named: name)
+      assert(cap == nextCaptureRegister)
     }
     assert(nextCaptureRegister.rawValue < captureList.captures.count)
     return nextCaptureRegister

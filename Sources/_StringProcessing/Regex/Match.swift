@@ -40,7 +40,10 @@ extension Regex.Match {
     let typeErasedMatch = anyRegexOutput.existentialOutput(
       from: anyRegexOutput.input
     )
-    return typeErasedMatch as! Output
+    guard let output = typeErasedMatch as? Output else {
+      fatalError("Internal error: existential cast failed")
+    }
+    return output
   }
 
   /// Accesses a capture by its name or number.
