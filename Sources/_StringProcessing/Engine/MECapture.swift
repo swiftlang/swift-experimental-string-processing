@@ -84,17 +84,3 @@ extension Processor {
     }
   }
 }
-
-struct MECaptureList {
-  var values: Array<Processor._StoredCapture>
-  var referencedCaptureOffsets: [ReferenceID: Int]
-
-  func latestUntyped(from input: String) -> Array<Substring?> {
-    values.map {
-      guard let range = $0.range else {
-        return nil
-      }
-      return input[range]
-    }
-  }
-}

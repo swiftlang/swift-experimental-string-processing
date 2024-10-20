@@ -518,6 +518,38 @@ class CustomRegexComponentTests: XCTestCase {
       ("x10x", nil, IntParser.ParseError()),
       ("30", 30, nil)
     )
+    customTest(
+      Regex {
+        Optionally {
+          IntParser()
+        }
+      },
+      ("zzz", nil, IntParser.ParseError()),
+      ("x10x", nil, IntParser.ParseError()),
+      ("30", "30", nil)
+    )
+    customTest(
+      Regex {
+        Regex {
+          IntParser()
+        }
+      },
+      ("zzz", nil, IntParser.ParseError()),
+      ("x10x", nil, IntParser.ParseError()),
+      ("30", 30, nil)
+    )
+    customTest(
+      Regex {
+        Regex {
+          IntParser()
+        }
+        "x"
+      },
+      ("zzz", nil, IntParser.ParseError()),
+      ("x10x", nil, IntParser.ParseError()),
+      ("30", nil, nil),
+      ("30x", "30x", nil)
+    )
 
     customTest(
       Regex {
