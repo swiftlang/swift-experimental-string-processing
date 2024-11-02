@@ -20,6 +20,10 @@ extension BenchmarkRunner {
     self.addIpAddress()
 
     self.addURLWithWordBoundaries()
+
+    // Register community benchmarks
+    self.addCommunityBenchmark_sspringerURL()
+
     // -- end of registrations --
   }
 }
