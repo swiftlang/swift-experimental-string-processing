@@ -117,6 +117,30 @@ fileprivate extension Compiler.ByteCodeGen {
   }
 
   mutating func emitQuotedLiteral(_ s: String) {
+    // ASCII is normalization-invariant, so is the safe subset for
+    // us to optimize
+    if optimizationsEnabled,
+       !options.usesCanonicalEquivalence || s.utf8.allSatisfy(\._isASCII),
+       !s.isEmpty
+    {
+
+      // TODO: Make an optimizations configuration struct, where
+      // we can enable/disable specific optimizations and change
+      // thresholds
+      let longThreshold = 5
+
+      // Longer content will be matched against UTF-8 in contiguous
+      // memory
+      //
+      // TODO: case-insensitive variant (just add/subtract from
+      // ASCII value)
+      if s.utf8.count >= longThreshold, !options.isCaseInsensitive {
+        let boundaryCheck = options.semanticLevel == .graphemeCluster
+        builder.buildMatchUTF8(Array(s.utf8), boundaryCheck: boundaryCheck)
+        return
+      }
+    }
+
     guard options.semanticLevel == .graphemeCluster else {
       for char in s {
         for scalar in char.unicodeScalars {
