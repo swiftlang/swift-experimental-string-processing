@@ -112,6 +112,17 @@ extension Instruction {
     /// Operands: Scalar value to match against and booleans
     case matchScalar
 
+    /// Match directly (binary semantics) against a series of UTF-8 bytes
+    ///
+    /// NOTE: Compiler should ensure to only emit this instruction when normalization
+    /// is not required. E.g., scalar-semantic mode or when the matched portion is entirely ASCII
+    /// (which is invariant under NFC). Similary, this is case-sensitive.
+    ///
+    /// TODO: should we add case-insensitive?
+    ///
+    ///     matchUTF8(_: UTF8Register, boundaryCheck: Bool)
+    case matchUTF8
+
     /// Match a character or a scalar against a set of valid ascii values stored in a bitset
     ///
     ///     matchBitset(_: AsciiBitsetRegister, isScalar: Bool)

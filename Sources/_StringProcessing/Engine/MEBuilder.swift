@@ -20,7 +20,7 @@ extension MEProgram {
     var enableMetrics = false
 
     var elements = TypedSetVector<Input.Element, _ElementRegister>()
-    var sequences = TypedSetVector<[Input.Element], _SequenceRegister>()
+    var utf8Contents = TypedSetVector<[UInt8], _UTF8Register>()
 
     var asciiBitsets: [DSLTree.CustomCharacterClass.AsciiBitset] = []
     var consumeFunctions: [ConsumeFunction] = []
@@ -196,6 +196,11 @@ extension MEProgram.Builder {
   mutating func buildMatch(_ e: Character, isCaseInsensitive: Bool) {
     instructions.append(.init(
       .match, .init(element: elements.store(e), isCaseInsensitive: isCaseInsensitive)))
+  }
+
+  mutating func buildMatchUTF8(_ utf8: Array<UInt8>, boundaryCheck: Bool) {
+    instructions.append(.init(.matchUTF8, .init(
+      utf8: utf8Contents.store(utf8), boundaryCheck: boundaryCheck)))
   }
 
   mutating func buildMatchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) {
@@ -416,7 +421,7 @@ extension MEProgram.Builder {
 
     var regInfo = MEProgram.RegisterInfo()
     regInfo.elements = elements.count
-    regInfo.sequences = sequences.count
+    regInfo.utf8Contents = utf8Contents.count
     regInfo.ints = nextIntRegister.rawValue
     regInfo.values = nextValueRegister.rawValue
     regInfo.positions = nextPositionRegister.rawValue
@@ -430,7 +435,7 @@ extension MEProgram.Builder {
     return MEProgram(
       instructions: InstructionList(instructions),
       staticElements: elements.stored,
-      staticSequences: sequences.stored,
+      staticUTF8Contents: utf8Contents.stored,
       staticBitsets: asciiBitsets,
       staticConsumeFunctions: consumeFunctions,
       staticTransformFunctions: transformFunctions,

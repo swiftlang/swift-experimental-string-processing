@@ -24,11 +24,9 @@ extension Processor {
     // Verbatim elements to compare against
     var elements: [Element]
 
-    // Verbatim sequences to compare against
-    //
-    // TODO: Degenericize Processor and store Strings
-    var sequences: [[Element]] = []
-    
+    // Verbatim bytes to compare against
+    var utf8Contents: [[UInt8]]
+
     var bitsets: [DSLTree.CustomCharacterClass.AsciiBitset]
 
     var consumeFunctions: [MEProgram.ConsumeFunction]
@@ -55,9 +53,6 @@ extension Processor {
 extension Processor.Registers {
   typealias Input = String
 
-  subscript(_ i: SequenceRegister) -> [Input.Element] {
-    sequences[i.rawValue]
-  }
   subscript(_ i: IntRegister) -> Int {
     get { ints[i.rawValue] }
     set {
@@ -81,6 +76,9 @@ extension Processor.Registers {
   }
   subscript(_ i: ElementRegister) -> Input.Element {
     elements[i.rawValue]
+  }
+  subscript(_ i: UTF8Register) -> [UInt8] {
+    utf8Contents[i.rawValue]
   }
   subscript(
     _ i: AsciiBitsetRegister
@@ -110,8 +108,8 @@ extension Processor.Registers {
     self.elements = program.staticElements
     assert(elements.count == info.elements)
 
-    self.sequences = program.staticSequences
-    assert(sequences.count == info.sequences)
+    self.utf8Contents = program.staticUTF8Contents
+    assert(utf8Contents.count == info.utf8Contents)
 
     self.bitsets = program.staticBitsets
     assert(bitsets.count == info.bitsets)
@@ -156,7 +154,7 @@ extension MutableCollection {
 extension MEProgram {
   struct RegisterInfo {
     var elements = 0
-    var sequences = 0
+    var utf8Contents = 0
     var bools = 0
     var strings = 0
     var bitsets = 0
