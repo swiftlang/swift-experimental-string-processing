@@ -96,7 +96,7 @@ let package = Package(
                 swiftSettings: [availabilityDefinition]),
         .testTarget(
             name: "RegexTests",
-            dependencies: ["_StringProcessing", "TestSupport"],
+            dependencies: ["_StringProcessing", "RegexBuilder", "TestSupport"],
             swiftSettings: [
                 availabilityDefinition
             ]),
