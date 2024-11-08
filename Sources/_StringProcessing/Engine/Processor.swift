@@ -320,6 +320,24 @@ extension Processor {
     return true
   }
 
+  // TODO: bytes should be a Span or RawSpan
+  mutating func matchUTF8(
+    _ bytes: Array<UInt8>,
+    boundaryCheck: Bool
+  ) -> Bool {
+    guard let next = input.matchUTF8(
+      bytes,
+      at: currentPosition,
+      limitedBy: end,
+      boundaryCheck: boundaryCheck
+    ) else {
+      signalFailure()
+      return false
+    }
+    currentPosition = next
+    return true
+  }
+
   // If we have a bitset we know that the CharacterClass only matches against
   // ascii characters, so check if the current input element is ascii then
   // check if it is set in the bitset
@@ -542,6 +560,15 @@ extension Processor {
         controller.step()
       }
 
+    case .matchUTF8:
+      let (utf8Reg, boundaryCheck) = payload.matchUTF8Payload
+      let utf8Content = registers[utf8Reg]
+      if matchUTF8(
+        utf8Content, boundaryCheck: boundaryCheck
+      ) {
+        controller.step()
+      }
+
     case .matchBitset:
       let (isScalar, reg) = payload.bitsetPayload
       let bitset = registers[reg]
@@ -750,6 +777,27 @@ extension String {
     }
 
     return idx
+  }
+
+  func matchUTF8(
+    _ bytes: Array<UInt8>,
+    at pos: Index,
+    limitedBy end: Index,
+    boundaryCheck: Bool
+  ) -> Index? {
+    var cur = pos
+    for b in bytes {
+      guard cur < end, self.utf8[cur] == b else { return nil }
+      self.utf8.formIndex(after: &cur)
+    }
+
+    guard cur <= end else { return nil }
+
+    if boundaryCheck && !isOnGraphemeClusterBoundary(cur) {
+      return nil
+    }
+
+    return cur
   }
 
   func matchASCIIBitset(

@@ -12,3 +12,4 @@ extension BenchmarkRunner {
     url.register(&self)
   }
 }
+
