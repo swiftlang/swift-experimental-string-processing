@@ -20,6 +20,7 @@ extension BenchmarkRunner {
     self.addIpAddress()
 
     self.addURLWithWordBoundaries()
+    self.addFSPathsRegex()
     // -- end of registrations --
   }
 }
