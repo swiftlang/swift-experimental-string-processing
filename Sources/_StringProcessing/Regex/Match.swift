@@ -303,6 +303,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter regex: The regular expression to match.
   /// - Returns: The match, if one is found. If there is no match, or a
   ///   transformation in `regex` throws an error, this method returns `nil`.
+  @inlinable
   public func wholeMatch<R: RegexComponent>(
     of regex: R
   ) -> Regex<R.RegexOutput>.Match? {
@@ -314,6 +315,7 @@ extension BidirectionalCollection where SubSequence == Substring {
   /// - Parameter regex: The regular expression to match.
   /// - Returns: The match, if one is found. If there is no match, or a
   ///   transformation in `regex` throws an error, this method returns `nil`.
+  @inlinable
   public func prefixMatch<R: RegexComponent>(
     of regex: R
   ) -> Regex<R.RegexOutput>.Match? {
