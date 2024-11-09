@@ -419,34 +419,33 @@ extension MEProgram.Builder {
         inst.opcode, payload)
     }
 
-    var regInfo = MEProgram.RegisterInfo()
-    regInfo.elements = elements.count
-    regInfo.utf8Contents = utf8Contents.count
-    regInfo.ints = nextIntRegister.rawValue
-    regInfo.values = nextValueRegister.rawValue
-    regInfo.positions = nextPositionRegister.rawValue
-    regInfo.bitsets = asciiBitsets.count
-    regInfo.consumeFunctions = consumeFunctions.count
-    regInfo.transformFunctions = transformFunctions.count
-    regInfo.matcherFunctions = matcherFunctions.count
-    regInfo.captures = nextCaptureRegister.rawValue
-    regInfo.wholeMatchValue = wholeMatchValue?.rawValue
+    let regs = Processor.Registers(
+      elements: elements.stored,
+      utf8Contents: utf8Contents.stored,
+      bitsets: asciiBitsets,
+      consumeFunctions: consumeFunctions,
+      transformFunctions: transformFunctions,
+      matcherFunctions: matcherFunctions,
+      numInts: nextIntRegister.rawValue,
+      numValues: nextValueRegister.rawValue,
+      numPositions: nextPositionRegister.rawValue
+    )
 
-    return MEProgram(
+    let storedCaps = Array(
+      repeating: Processor._StoredCapture(), count: nextCaptureRegister.rawValue)
+
+    let meProgram = MEProgram(
       instructions: InstructionList(instructions),
-      staticElements: elements.stored,
-      staticUTF8Contents: utf8Contents.stored,
-      staticBitsets: asciiBitsets,
-      staticConsumeFunctions: consumeFunctions,
-      staticTransformFunctions: transformFunctions,
-      staticMatcherFunctions: matcherFunctions,
-      registerInfo: regInfo,
+      wholeMatchValueRegister: wholeMatchValue,
       enableTracing: enableTracing,
       enableMetrics: enableMetrics,
       captureList: captureList,
       referencedCaptureOffsets: referencedCaptureOffsets,
       initialOptions: initialOptions,
-      canOnlyMatchAtStart: canOnlyMatchAtStart)
+      canOnlyMatchAtStart: canOnlyMatchAtStart,
+      registers: regs,
+      storedCaptures: storedCaps)
+    return meProgram
   }
 
   mutating func reset() { self = Self() }
