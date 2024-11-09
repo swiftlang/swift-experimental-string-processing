@@ -5,12 +5,25 @@ extension BenchmarkRunner {
   mutating func addFSPathsRegex() {
     let fsPathsRegex =
     #"^\./First/Second/(Prefix)?Third/.*\.extension/.*(OptionLeft|OptionRight)$"#
-    let paths = CrossInputListBenchmark(
+
+    CrossInputListBenchmark(
       baseName: "FSPathsRegex",
       regex: fsPathsRegex,
       inputs: Inputs.fsPathsList
-    )
-    paths.register(&self)
+    ).register(&self)
+
+    CrossInputListBenchmark(
+      baseName: "FSPathsRegexNotFound",
+      regex: fsPathsRegex,
+      inputs: Inputs.fsPathsNotFoundList
+    ).register(&self)
+
+    CrossInputListBenchmark(
+      baseName: "FSPathsRegexFound",
+      regex: fsPathsRegex,
+      inputs: Inputs.fsPathsFoundList
+    ).register(&self)
+
   }
 }
 
