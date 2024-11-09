@@ -18,7 +18,6 @@ protocol Traced {
 
 protocol TracedProcessor: ProcessorProtocol, Traced {
   // Empty defaulted
-  func formatCallStack() -> String // empty default
   func formatSavePoints() -> String // empty default
   func formatRegisters() -> String // empty default
 
@@ -50,14 +49,6 @@ extension TracedProcessor {
 
   func trace() {
     if isTracingEnabled { printTrace() }
-  }
-
-  // Helpers for the conformers
-  func formatCallStack() -> String {
-    if !callStack.isEmpty {
-      return "call stack: \(callStack)\n"
-    }
-    return ""
   }
 
   func formatSavePoints() -> String {
@@ -158,7 +149,6 @@ extension TracedProcessor {
 
   func formatTrace() -> String {
     var result = "\n--- cycle \(cycleCount) ---\n"
-    result += formatCallStack()
     result += formatSavePoints()
     result += formatRegisters()
     result += formatInput()
