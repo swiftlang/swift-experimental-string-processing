@@ -81,8 +81,6 @@ struct Processor {
 
   var savePoints: [SavePoint] = []
 
-  var callStack: [InstructionAddress] = []
-
   var storedCaptures: Array<_StoredCapture>
 
   var state: State = .inProgress
@@ -142,9 +140,6 @@ extension Processor {
     if !self.savePoints.isEmpty {
       self.savePoints.removeAll(keepingCapacity: true)
     }
-    if !self.callStack.isEmpty {
-      self.callStack.removeAll(keepingCapacity: true)
-    }
 
     for idx in storedCaptures.indices {
       storedCaptures[idx] = .init()
@@ -163,7 +158,6 @@ extension Processor {
     _checkInvariants()
     guard self.controller == Controller(pc: 0),
           self.savePoints.isEmpty,
-          self.callStack.isEmpty,
           self.storedCaptures.allSatisfy({ $0.range == nil }),
           self.state == .inProgress,
           self.failureReason == nil
@@ -361,10 +355,9 @@ extension Processor {
       state = .fail
       return
     }
-    let (pc, pos, stackEnd, capEnds, intRegisters, posRegisters): (
+    let (pc, pos, capEnds, intRegisters, posRegisters): (
       pc: InstructionAddress,
       pos: Position?,
-      stackEnd: CallStackAddress,
       captureEnds: [_StoredCapture],
       intRegisters: [Int],
       PositionRegister: [Input.Index]
@@ -376,17 +369,15 @@ extension Processor {
     // pos instead of removing it
     if savePoints[idx].isQuantified {
       savePoints[idx].takePositionFromQuantifiedRange(input)
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
+      (pc, pos, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
     } else {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
+      (pc, pos, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
     }
 
-    assert(stackEnd.rawValue <= callStack.count)
     assert(capEnds.count == storedCaptures.count)
 
     controller.pc = pc
     currentPosition = pos ?? currentPosition
-    callStack.removeLast(callStack.count - stackEnd.rawValue)
     registers.ints = intRegisters
     registers.positions = posRegisters
 

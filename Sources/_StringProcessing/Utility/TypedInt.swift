@@ -99,10 +99,6 @@ enum _Distance {}
 typealias InstructionAddress = TypedInt<_InstructionAddress>
 enum _InstructionAddress {}
 
-/// A position in the call stack, i.e. for save point restores
-typealias CallStackAddress = TypedInt<_CallStackAddress>
-enum _CallStackAddress {}
-
 /// A position in a position stack, i.e. for NFA simulation
 typealias PositionStackAddress = TypedInt<_PositionStackAddress>
 enum _PositionStackAddress {}
@@ -110,7 +106,6 @@ enum _PositionStackAddress {}
 /// A position in the save point stack, i.e. for backtracking
 typealias SavePointStackAddress = TypedInt<_SavePointAddress>
 enum _SavePointAddress {}
-
 
 // MARK: - Registers
 
