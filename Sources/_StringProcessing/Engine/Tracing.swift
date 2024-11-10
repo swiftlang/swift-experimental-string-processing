@@ -128,7 +128,7 @@ extension Processor.SavePoint {
       }
     }
     return """
-      pc: \(self.pc), pos: \(posStr), stackEnd: \(stackEnd)
+      pc: \(self.pc), pos: \(posStr)
       """
   }
 }
