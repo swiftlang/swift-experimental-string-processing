@@ -19,11 +19,15 @@ let availabilityDefinition = PackageDescription.SwiftSetting.unsafeFlags([
     "-Xfrontend",
     "-define-availability",
     "-Xfrontend",
-    "SwiftStdlib 5.10:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999",
+    "SwiftStdlib 5.10:macOS 14.4, iOS 17.4, watchOS 10.4, tvOS 17.4, visionOS 1.1",
     "-Xfrontend",
     "-define-availability",
     "-Xfrontend",
-    "SwiftStdlib 6.0:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999",
+    "SwiftStdlib 6.0:macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0",
+    "-Xfrontend",
+    "-define-availability",
+    "-Xfrontend",
+    "SwiftStdlib 6.1:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999",
 ])
 
 /// Swift settings for building a private stdlib-like module that is to be used
