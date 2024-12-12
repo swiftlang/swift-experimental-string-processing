@@ -193,8 +193,8 @@ extension Executor {
     let range = startPosition..<endIdx
 
     let wholeMatchValue: Any?
-    if let val = program.registerInfo.wholeMatchValue {
-      wholeMatchValue = cpu.registers.values[val]
+    if let reg = program.wholeMatchValueRegister {
+      wholeMatchValue = cpu.registers[reg]
     } else {
       wholeMatchValue = nil
     }

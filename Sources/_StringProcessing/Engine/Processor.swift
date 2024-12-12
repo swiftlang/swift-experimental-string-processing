@@ -49,6 +49,7 @@ struct Processor {
   let subjectBounds: Range<Position>
 
   let matchMode: MatchMode
+
   let instructions: InstructionList<Instruction>
 
   // MARK: Update-only state
@@ -100,6 +101,9 @@ extension Processor {
 }
 
 extension Processor {
+  // TODO: This has lots of retain/release traffic. We really just
+  // want to borrow the program and most of its static stuff. The only
+  // thing we need an actual copy of is the modifyable-resettable state
   init(
     program: MEProgram,
     input: Input,
@@ -120,10 +124,10 @@ extension Processor {
 
     self.currentPosition = searchBounds.lowerBound
 
-    // Initialize registers with end of search bounds
-    self.registers = Registers(program, searchBounds.upperBound)
-    self.storedCaptures = Array(
-      repeating: .init(), count: program.registerInfo.captures)
+    // Initialize registers from stored starting state
+    self.registers = program.registers
+
+    self.storedCaptures = program.storedCaptures
 
     _checkInvariants()
   }
@@ -137,7 +141,7 @@ extension Processor {
 
     self.controller = Controller(pc: 0)
 
-    self.registers.reset(sentinel: searchBounds.upperBound)
+    self.registers.reset()
 
     if !self.savePoints.isEmpty {
       self.savePoints.removeAll(keepingCapacity: true)
