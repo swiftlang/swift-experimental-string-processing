@@ -41,6 +41,7 @@ enum DecodedInstr {
   case matchAnyNonNewline
   case matchBitset
   case matchBuiltin
+  case matchUTF8
   case consumeBy
   case assertBy
   case matchBy
@@ -141,6 +142,8 @@ extension DecodedInstr {
       return .captureValue
     case .matchBuiltin:
       return .matchBuiltin
+    case .matchUTF8:
+      return .matchUTF8
     }
   }
 }
@@ -443,10 +446,30 @@ extension RegexTests {
       contains: [.matchScalarUnchecked],
       doesNotContain: [.match, .consumeBy, .matchScalar])
     expectProgram(
-      for: "aaa\u{301}",
+      for: "a\u{301}",
       semanticLevel: .unicodeScalar,
       contains: [.matchScalarUnchecked],
       doesNotContain: [.match, .consumeBy, .matchScalar])
+    expectProgram(
+      for: "abcdefg",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchUTF8],
+      doesNotContain: [.match, .consumeBy, .matchScalar])
+    expectProgram(
+      for: "abcdefg",
+      semanticLevel: .graphemeCluster,
+      contains: [.matchUTF8],
+      doesNotContain: [.match, .consumeBy, .matchScalar])
+    expectProgram(
+      for: "aaa\u{301}",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchUTF8],
+      doesNotContain: [.match, .consumeBy, .matchScalar])
+    expectProgram(
+      for: "aaa\u{301}",
+      semanticLevel: .graphemeCluster,
+      contains: [.match],
+      doesNotContain: [.matchUTF8, .consumeBy])
   }
   
   func testCaseInsensitivityCompilation() {

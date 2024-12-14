@@ -122,8 +122,9 @@ enum _SavePointAddress {}
 typealias ElementRegister = TypedInt<_ElementRegister>
 enum _ElementRegister {}
 
-typealias SequenceRegister = TypedInt<_SequenceRegister>
-enum _SequenceRegister {}
+/// The register number for a sequence of UTF-8 bytes
+typealias UTF8Register = TypedInt<_UTF8Register>
+enum _UTF8Register {}
 
 /// The register number for a stored boolean value
 ///

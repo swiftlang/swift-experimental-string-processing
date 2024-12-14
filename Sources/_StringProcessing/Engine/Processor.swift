@@ -49,6 +49,7 @@ struct Processor {
   let subjectBounds: Range<Position>
 
   let matchMode: MatchMode
+
   let instructions: InstructionList<Instruction>
 
   // MARK: Update-only state
@@ -100,6 +101,9 @@ extension Processor {
 }
 
 extension Processor {
+  // TODO: This has lots of retain/release traffic. We really just
+  // want to borrow the program and most of its static stuff. The only
+  // thing we need an actual copy of is the modifyable-resettable state
   init(
     program: MEProgram,
     input: Input,
@@ -120,10 +124,10 @@ extension Processor {
 
     self.currentPosition = searchBounds.lowerBound
 
-    // Initialize registers with end of search bounds
-    self.registers = Registers(program, searchBounds.upperBound)
-    self.storedCaptures = Array(
-      repeating: .init(), count: program.registerInfo.captures)
+    // Initialize registers from stored starting state
+    self.registers = program.registers
+
+    self.storedCaptures = program.storedCaptures
 
     _checkInvariants()
   }
@@ -137,7 +141,7 @@ extension Processor {
 
     self.controller = Controller(pc: 0)
 
-    self.registers.reset(sentinel: searchBounds.upperBound)
+    self.registers.reset()
 
     if !self.savePoints.isEmpty {
       self.savePoints.removeAll(keepingCapacity: true)
@@ -312,6 +316,24 @@ extension Processor {
       limitedBy: end,
       boundaryCheck: boundaryCheck,
       isCaseInsensitive: isCaseInsensitive
+    ) else {
+      signalFailure()
+      return false
+    }
+    currentPosition = next
+    return true
+  }
+
+  // TODO: bytes should be a Span or RawSpan
+  mutating func matchUTF8(
+    _ bytes: Array<UInt8>,
+    boundaryCheck: Bool
+  ) -> Bool {
+    guard let next = input.matchUTF8(
+      bytes,
+      at: currentPosition,
+      limitedBy: end,
+      boundaryCheck: boundaryCheck
     ) else {
       signalFailure()
       return false
@@ -542,6 +564,15 @@ extension Processor {
         controller.step()
       }
 
+    case .matchUTF8:
+      let (utf8Reg, boundaryCheck) = payload.matchUTF8Payload
+      let utf8Content = registers[utf8Reg]
+      if matchUTF8(
+        utf8Content, boundaryCheck: boundaryCheck
+      ) {
+        controller.step()
+      }
+
     case .matchBitset:
       let (isScalar, reg) = payload.bitsetPayload
       let bitset = registers[reg]
@@ -750,6 +781,27 @@ extension String {
     }
 
     return idx
+  }
+
+  func matchUTF8(
+    _ bytes: Array<UInt8>,
+    at pos: Index,
+    limitedBy end: Index,
+    boundaryCheck: Bool
+  ) -> Index? {
+    var cur = pos
+    for b in bytes {
+      guard cur < end, self.utf8[cur] == b else { return nil }
+      self.utf8.formIndex(after: &cur)
+    }
+
+    guard cur <= end else { return nil }
+
+    if boundaryCheck && !isOnGraphemeClusterBoundary(cur) {
+      return nil
+    }
+
+    return cur
   }
 
   func matchASCIIBitset(
