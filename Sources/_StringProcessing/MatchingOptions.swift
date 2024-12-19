@@ -125,7 +125,15 @@ extension MatchingOptions {
       ? .graphemeCluster
       : .unicodeScalar
   }
-  
+
+  /// Whether matching needs to honor canonical equivalence.
+  ///
+  /// Currently, this is synonymous with grapheme-cluster semantics, but could
+  /// become its own option in the future
+  var usesCanonicalEquivalence: Bool {
+    semanticLevel == .graphemeCluster
+  }
+
   var usesNSRECompatibleDot: Bool {
     stack.last!.contains(.nsreCompatibleDot)
   }

@@ -43,9 +43,18 @@ extension Compiler {
 
 extension Compiler.ByteCodeGen {
   mutating func emitRoot(_ root: DSLTree.Node) throws -> MEProgram {
-    // The whole match (`.0` element of output) is equivalent to an implicit
-    // capture over the entire regex.
-    try emitNode(.capture(name: nil, reference: nil, root))
+    // If the whole regex is a matcher, then the whole-match value
+    // is the constructed value. Denote that the current value
+    // register is the processor's value output.
+    switch root {
+    case .matcher:
+      builder.denoteCurrentValueIsWholeMatchValue()
+    default:
+      break
+    }
+
+    try emitNode(root)
+
     builder.canOnlyMatchAtStart = root.canOnlyMatchAtStart()
     builder.buildAccept()
     return try builder.assemble()
@@ -108,6 +117,30 @@ fileprivate extension Compiler.ByteCodeGen {
   }
 
   mutating func emitQuotedLiteral(_ s: String) {
+    // ASCII is normalization-invariant, so is the safe subset for
+    // us to optimize
+    if optimizationsEnabled,
+       !options.usesCanonicalEquivalence || s.utf8.allSatisfy(\._isASCII),
+       !s.isEmpty
+    {
+
+      // TODO: Make an optimizations configuration struct, where
+      // we can enable/disable specific optimizations and change
+      // thresholds
+      let longThreshold = 5
+
+      // Longer content will be matched against UTF-8 in contiguous
+      // memory
+      //
+      // TODO: case-insensitive variant (just add/subtract from
+      // ASCII value)
+      if s.utf8.count >= longThreshold, !options.isCaseInsensitive {
+        let boundaryCheck = options.semanticLevel == .graphemeCluster
+        builder.buildMatchUTF8(Array(s.utf8), boundaryCheck: boundaryCheck)
+        return
+      }
+    }
+
     guard options.semanticLevel == .graphemeCluster else {
       for char in s {
         for scalar in char.unicodeScalars {
@@ -149,8 +182,9 @@ fileprivate extension Compiler.ByteCodeGen {
       guard let i = n.value else {
         throw Unreachable("Expected a value")
       }
+      let cap = builder.captureRegister(forBackreference: i)
       builder.buildBackreference(
-        .init(i), isScalarMode: options.semanticLevel == .unicodeScalar)
+        cap, isScalarMode: options.semanticLevel == .unicodeScalar)
     case .named(let name):
       try builder.buildNamedReference(
         name, isScalarMode: options.semanticLevel == .unicodeScalar)

@@ -44,7 +44,7 @@ extension RangeReplaceableCollection {
 // MARK: Predicate algorithms
 
 extension Collection {
-  fileprivate func endOfPrefix(while predicate: (Element) throws -> Bool) rethrows -> Index {
+  fileprivate func _endOfPrefix(while predicate: (Element) throws -> Bool) rethrows -> Index {
     try firstIndex(where: { try !predicate($0) }) ?? endIndex
   }
 
@@ -52,7 +52,7 @@ extension Collection {
   public func trimmingPrefix(
     while predicate: (Element) throws -> Bool
   ) rethrows -> SubSequence {
-    let end = try endOfPrefix(while: predicate)
+    let end = try _endOfPrefix(while: predicate)
     return self[end...]
   }
 }
@@ -62,7 +62,7 @@ extension Collection where SubSequence == Self {
   public mutating func trimPrefix(
     while predicate: (Element) throws -> Bool
   ) throws {
-    let end = try endOfPrefix(while: predicate)
+    let end = try _endOfPrefix(while: predicate)
     self = self[end...]
   }
 }
@@ -73,7 +73,7 @@ extension RangeReplaceableCollection {
   public mutating func trimPrefix(
     while predicate: (Element) throws -> Bool
   ) rethrows {
-    let end = try endOfPrefix(while: predicate)
+    let end = try _endOfPrefix(while: predicate)
     removeSubrange(startIndex..<end)
   }
 }

@@ -9,69 +9,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// MARK: `MatchingCollectionSearcher` algorithms
-
-extension RangeReplaceableCollection {
-  func _replacing<
-    Searcher: MatchingCollectionSearcher, Replacement: Collection
-  >(
-    _ searcher: Searcher,
-    with replacement: (_MatchResult<Searcher>) throws -> Replacement,
-    subrange: Range<Index>,
-    maxReplacements: Int = .max
-  ) rethrows -> Self where Searcher.Searched == SubSequence,
-                  Replacement.Element == Element
-  {
-    precondition(maxReplacements >= 0)
-
-    var index = subrange.lowerBound
-    var result = Self()
-    result.append(contentsOf: self[..<index])
-
-    for match in self[subrange]._matches(of: searcher)
-          .prefix(maxReplacements)
-    {
-      result.append(contentsOf: self[index..<match.range.lowerBound])
-      result.append(contentsOf: try replacement(match))
-      index = match.range.upperBound
-    }
-
-    result.append(contentsOf: self[index...])
-    return result
-  }
-
-  func _replacing<
-    Searcher: MatchingCollectionSearcher, Replacement: Collection
-  >(
-    _ searcher: Searcher,
-    with replacement: (_MatchResult<Searcher>) throws -> Replacement,
-    maxReplacements: Int = .max
-  ) rethrows -> Self where Searcher.Searched == SubSequence,
-                           Replacement.Element == Element
-  {
-    try _replacing(
-      searcher,
-      with: replacement,
-      subrange: startIndex..<endIndex,
-      maxReplacements: maxReplacements)
-  }
-
-  mutating func _replace<
-    Searcher: MatchingCollectionSearcher, Replacement: Collection
-  >(
-    _ searcher: Searcher,
-    with replacement: (_MatchResult<Searcher>) throws -> Replacement,
-    maxReplacements: Int = .max
-  ) rethrows where Searcher.Searched == SubSequence,
-                   Replacement.Element == Element
-  {
-    self = try _replacing(
-      searcher,
-      with: replacement,
-      maxReplacements: maxReplacements)
-  }
-}
-
 // MARK: Regex algorithms
 
 extension RangeReplaceableCollection where SubSequence == Substring {
