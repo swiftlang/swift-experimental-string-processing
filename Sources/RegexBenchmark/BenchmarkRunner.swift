@@ -33,7 +33,8 @@ struct BenchmarkRunner {
     input: String,
     pattern: String,
     _ type: Benchmark.MatchType,
-    alsoRunScalarSemantic: Bool = true
+    alsoRunScalarSemantic: Bool = true,
+    alsoRunSimpleWordBoundaries: Bool
   ) {
     let swiftRegex = try! Regex(pattern)
     let nsRegex: NSRegularExpression
@@ -57,6 +58,16 @@ struct BenchmarkRunner {
         regex: nsRegex,
         type: .init(type),
         target: input))
+
+    if alsoRunSimpleWordBoundaries {
+      register(
+        Benchmark(
+          name: nameBase + nameSuffix + "_SimpleWordBoundaries",
+          regex: swiftRegex.wordBoundaryKind(.simple),
+          pattern: pattern,
+          type: type,
+          target: input))
+    }
 
     if alsoRunScalarSemantic {
       register(

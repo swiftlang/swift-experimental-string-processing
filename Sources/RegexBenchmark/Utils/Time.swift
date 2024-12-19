@@ -66,6 +66,11 @@ extension Time {
 }
 
 extension Time: CustomStringConvertible {
+  /// Normalize our time to fractions of a second for CSV output
+  public var asCSVSeconds: String {
+    return String(format: "%.3g", seconds)
+  }
+
   public var description: String {
     if self.seconds == 0 { return "0" }
     if self.abs() < .attosecond { return String(format: "%.3gas", seconds * 1e18) }

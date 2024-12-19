@@ -18,7 +18,7 @@ enum MatchMode {
 
 /// A concrete CU. Somehow will run the concrete logic and
 /// feed stuff back to generic code
-struct Controller {
+struct Controller: Equatable {
   var pc: InstructionAddress
 
   mutating func step() {
@@ -48,6 +48,17 @@ struct Processor {
   /// `input.startIndex..<input.endIndex`.
   let subjectBounds: Range<Position>
 
+  let matchMode: MatchMode
+
+  let instructions: InstructionList<Instruction>
+
+  // MARK: Update-only state
+
+  var wordIndexCache: Set<String.Index>? = nil
+  var wordIndexMaxIndex: String.Index? = nil
+
+  // MARK: Resettable state
+
   /// The bounds within the subject for an individual search.
   ///
   /// `searchBounds` is equal to `subjectBounds` in some cases, but can be a
@@ -57,12 +68,7 @@ struct Processor {
   /// Anchors like `^` and `.startOfSubject` use `subjectBounds` instead of
   /// `searchBounds`. The "start of matching" anchor `\G` uses `searchBounds`
   /// as its starting point.
-  let searchBounds: Range<Position>
-
-  let matchMode: MatchMode
-  let instructions: InstructionList<Instruction>
-
-  // MARK: Resettable state
+  var searchBounds: Range<Position>
 
   /// The current search position while processing.
   ///
@@ -76,12 +82,7 @@ struct Processor {
 
   var savePoints: [SavePoint] = []
 
-  var callStack: [InstructionAddress] = []
-
   var storedCaptures: Array<_StoredCapture>
-
-  var wordIndexCache: Set<String.Index>? = nil
-  var wordIndexMaxIndex: String.Index? = nil
 
   var state: State = .inProgress
 
@@ -98,14 +99,15 @@ extension Processor {
 }
 
 extension Processor {
+  // TODO: This has lots of retain/release traffic. We really just
+  // want to borrow the program and most of its static stuff. The only
+  // thing we need an actual copy of is the modifyable-resettable state
   init(
     program: MEProgram,
     input: Input,
     subjectBounds: Range<Position>,
     searchBounds: Range<Position>,
-    matchMode: MatchMode,
-    isTracingEnabled: Bool,
-    shouldMeasureMetrics: Bool
+    matchMode: MatchMode
   ) {
     self.controller = Controller(pc: 0)
     self.instructions = program.instructions
@@ -115,28 +117,33 @@ extension Processor {
     self.matchMode = matchMode
 
     self.metrics = ProcessorMetrics(
-      isTracingEnabled: isTracingEnabled,
-      shouldMeasureMetrics: shouldMeasureMetrics)
+      isTracingEnabled: program.enableTracing,
+      shouldMeasureMetrics: program.enableMetrics)
 
     self.currentPosition = searchBounds.lowerBound
 
-    // Initialize registers with end of search bounds
-    self.registers = Registers(program, searchBounds.upperBound)
-    self.storedCaptures = Array(
-      repeating: .init(), count: program.registerInfo.captures)
+    // Initialize registers from stored starting state
+    self.registers = program.registers
+
+    self.storedCaptures = program.storedCaptures
 
     _checkInvariants()
   }
 
-  mutating func reset(currentPosition: Position) {
+  mutating func reset(
+    currentPosition: Position,
+    searchBounds: Range<Position>
+  ) {
     self.currentPosition = currentPosition
+    self.searchBounds = searchBounds
 
     self.controller = Controller(pc: 0)
 
-    self.registers.reset(sentinel: searchBounds.upperBound)
+    self.registers.reset()
 
-    self.savePoints.removeAll(keepingCapacity: true)
-    self.callStack.removeAll(keepingCapacity: true)
+    if !self.savePoints.isEmpty {
+      self.savePoints.removeAll(keepingCapacity: true)
+    }
 
     for idx in storedCaptures.indices {
       storedCaptures[idx] = .init()
@@ -147,6 +154,21 @@ extension Processor {
 
     metrics.addReset()
     _checkInvariants()
+  }
+
+  // Check that resettable state has been reset. Note that `reset()`
+  // takes a new current position and search bounds.
+  func isReset() -> Bool {
+    _checkInvariants()
+    guard self.controller == Controller(pc: 0),
+          self.savePoints.isEmpty,
+          self.storedCaptures.allSatisfy({ $0.range == nil }),
+          self.state == .inProgress,
+          self.failureReason == nil
+    else {
+      return false
+    }
+    return true
   }
 
   func _checkInvariants() {
@@ -296,6 +318,24 @@ extension Processor {
     return true
   }
 
+  // TODO: bytes should be a Span or RawSpan
+  mutating func matchUTF8(
+    _ bytes: Array<UInt8>,
+    boundaryCheck: Bool
+  ) -> Bool {
+    guard let next = input.matchUTF8(
+      bytes,
+      at: currentPosition,
+      limitedBy: end,
+      boundaryCheck: boundaryCheck
+    ) else {
+      signalFailure()
+      return false
+    }
+    currentPosition = next
+    return true
+  }
+
   // If we have a bitset we know that the CharacterClass only matches against
   // ascii characters, so check if the current input element is ascii then
   // check if it is set in the bitset
@@ -337,10 +377,9 @@ extension Processor {
       state = .fail
       return
     }
-    let (pc, pos, stackEnd, capEnds, intRegisters, posRegisters): (
+    let (pc, pos, capEnds, intRegisters, posRegisters): (
       pc: InstructionAddress,
       pos: Position?,
-      stackEnd: CallStackAddress,
       captureEnds: [_StoredCapture],
       intRegisters: [Int],
       PositionRegister: [Input.Index]
@@ -352,17 +391,15 @@ extension Processor {
     // pos instead of removing it
     if savePoints[idx].isQuantified {
       savePoints[idx].takePositionFromQuantifiedRange(input)
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
+      (pc, pos, capEnds, intRegisters, posRegisters) = savePoints[idx].destructure
     } else {
-      (pc, pos, stackEnd, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
+      (pc, pos, capEnds, intRegisters, posRegisters) = savePoints.removeLast().destructure
     }
 
-    assert(stackEnd.rawValue <= callStack.count)
     assert(capEnds.count == storedCaptures.count)
 
     controller.pc = pc
     currentPosition = pos ?? currentPosition
-    callStack.removeLast(callStack.count - stackEnd.rawValue)
     registers.ints = intRegisters
     registers.positions = posRegisters
 
@@ -514,6 +551,15 @@ extension Processor {
         scalar,
         boundaryCheck: boundaryCheck,
         isCaseInsensitive: caseInsensitive
+      ) {
+        controller.step()
+      }
+
+    case .matchUTF8:
+      let (utf8Reg, boundaryCheck) = payload.matchUTF8Payload
+      let utf8Content = registers[utf8Reg]
+      if matchUTF8(
+        utf8Content, boundaryCheck: boundaryCheck
       ) {
         controller.step()
       }
@@ -726,6 +772,27 @@ extension String {
     }
 
     return idx
+  }
+
+  func matchUTF8(
+    _ bytes: Array<UInt8>,
+    at pos: Index,
+    limitedBy end: Index,
+    boundaryCheck: Bool
+  ) -> Index? {
+    var cur = pos
+    for b in bytes {
+      guard cur < end, self.utf8[cur] == b else { return nil }
+      self.utf8.formIndex(after: &cur)
+    }
+
+    guard cur <= end else { return nil }
+
+    if boundaryCheck && !isOnGraphemeClusterBoundary(cur) {
+      return nil
+    }
+
+    return cur
   }
 
   func matchASCIIBitset(

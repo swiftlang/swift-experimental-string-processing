@@ -43,7 +43,7 @@ extension Instruction.Payload {
     // and variables
 
     case string(StringRegister)
-    case sequence(SequenceRegister)
+    case utf8(UTF8Register)
     case position(PositionRegister)
     case optionalString(StringRegister?)
     case int(IntRegister)
@@ -168,10 +168,18 @@ extension Instruction.Payload {
     return (scalar, caseInsensitive: caseInsensitive, boundaryCheck: boundaryCheck)
   }
 
-  init(sequence: SequenceRegister) {
-    self.init(sequence)
+  init(utf8: UTF8Register, boundaryCheck: Bool) {
+    self.init(boundaryCheck ? 1 : 0, utf8)
   }
-  var sequence: SequenceRegister {
+  var matchUTF8Payload: (UTF8Register, boundaryCheck: Bool) {
+    let pair: (UInt64, UTF8Register) = interpretPair()
+    return (pair.1, pair.0 == 1)
+  }
+
+  init(utf8: UTF8Register) {
+    self.init(utf8)
+  }
+  var utf8: UTF8Register {
     interpret()
   }
 

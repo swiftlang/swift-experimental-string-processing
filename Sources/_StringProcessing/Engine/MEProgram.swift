@@ -21,15 +21,7 @@ struct MEProgram {
     (Input, Input.Index, Range<Input.Index>) throws -> (Input.Index, Any)?
 
   var instructions: InstructionList<Instruction>
-
-  var staticElements: [Input.Element]
-  var staticSequences: [[Input.Element]]
-  var staticBitsets: [DSLTree.CustomCharacterClass.AsciiBitset]
-  var staticConsumeFunctions: [ConsumeFunction]
-  var staticTransformFunctions: [TransformFunction]
-  var staticMatcherFunctions: [MatcherFunction]
-
-  var registerInfo: RegisterInfo
+  var wholeMatchValueRegister: ValueRegister?
 
   var enableTracing: Bool
   var enableMetrics: Bool
@@ -39,18 +31,22 @@ struct MEProgram {
   
   var initialOptions: MatchingOptions
   var canOnlyMatchAtStart: Bool
+
+  // We store the initial register state in the program, so that
+  // processors can be spun up quicker (useful for running same regex
+  // over many, many smaller inputs).
+  var registers: Processor.Registers
+  var storedCaptures: [Processor._StoredCapture]
+
 }
 
 extension MEProgram: CustomStringConvertible {
   var description: String {
+    // TODO: Re-instate better pretty-printing functionality
+
     var result = """
-    Elements: \(staticElements)
 
     """
-    if !staticConsumeFunctions.isEmpty {
-      result += "Consume functions: \(staticConsumeFunctions)"
-    }
-
     // TODO: Extract into formatting code
 
     for idx in instructions.indices {
