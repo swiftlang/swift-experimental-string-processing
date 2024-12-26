@@ -133,9 +133,13 @@ extension MatchingOptions {
   var usesCanonicalEquivalence: Bool {
     semanticLevel == .graphemeCluster
   }
-
+  
   var usesNSRECompatibleDot: Bool {
     stack.last!.contains(.nsreCompatibleDot)
+  }
+
+  var reversed: Bool {
+    stack.last!.contains(.reverse)
   }
 }
 
@@ -159,6 +163,9 @@ extension MatchingOptions {
     case transparentBounds
     case withoutAnchoringBounds
     case nsreCompatibleDot
+
+    // Not available via regex literal flags
+    case reverse
 
     // Oniguruma options
     case asciiOnlyDigit
@@ -225,6 +232,8 @@ extension MatchingOptions {
         self = .extended
       case .extraExtended:
         self = .extraExtended
+      case .reverse:
+        self = .reverse
       #if RESILIENT_LIBRARIES
       @unknown default:
         fatalError()

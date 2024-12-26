@@ -289,8 +289,8 @@ func firstMatchTest(
   input: String,
   match: String?,
   syntax: SyntaxOptions = .traditional,
-  enableTracing: Bool = false,
-  dumpAST: Bool = false,
+  enableTracing: Bool = true,
+  dumpAST: Bool = true,
   xfail: Bool = false,
   validateOptimizations: Bool = true,
   semanticLevel: RegexSemanticLevel = .graphemeCluster,
@@ -325,6 +325,7 @@ func firstMatchTests(
   enableTracing: Bool = false,
   dumpAST: Bool = false,
   xfail: Bool = false,
+  validateOptimizations: Bool = true,
   semanticLevel: RegexSemanticLevel = .graphemeCluster,
   file: StaticString = #filePath,
   line: UInt = #line
@@ -338,6 +339,7 @@ func firstMatchTests(
       enableTracing: enableTracing,
       dumpAST: dumpAST,
       xfail: xfail,
+      validateOptimizations: validateOptimizations,
       semanticLevel: semanticLevel,
       file: file,
       line: line)
@@ -1601,28 +1603,62 @@ extension RegexTests {
       (input: "hzello", match: "e"),
       (input: "hezllo", match: nil),
       (input: "helloz", match: nil))
+  }
 
+  func testLookbehinds() {
     firstMatchTest(
-      #"(?<=USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
+      #"(?<=USD)\d+"#, input: "Price: USD100", match: "100")
     firstMatchTest(
-      #"(*plb:USD)\d+"#, input: "Price: USD100", match: "100", xfail: true)
+      #"(*plb:USD)\d+"#, input: "Price: USD100", match: "100")
     firstMatchTest(
       #"(*positive_lookbehind:USD)\d+"#,
-      input: "Price: USD100", match: "100", xfail: true)
-    // engines generally enforce that lookbehinds are fixed width
-    firstMatchTest(
-      #"\d{3}(?<=USD\d{3})"#, input: "Price: USD100", match: "100", xfail: true)
+      input: "Price: USD100", match: "100")
 
     firstMatchTest(
-      #"(?<!USD)\d+"#, input: "Price: JYP100", match: "100", xfail: true)
+      #"\d{3}(?<=USD\d{3})"#, input: "Price: USD100", match: "100")
+
     firstMatchTest(
-      #"(*nlb:USD)\d+"#, input: "Price: JYP100", match: "100", xfail: true)
+      #"(?<!USD)\d+"#, input: "Price: JYP100", match: "100")
+    firstMatchTest(
+      #"(*nlb:USD)\d+"#, input: "Price: JYP100", match: "100")
     firstMatchTest(
       #"(*negative_lookbehind:USD)\d+"#,
-      input: "Price: JYP100", match: "100", xfail: true)
-    // engines generally enforce that lookbehinds are fixed width
+      input: "Price: JYP100", match: "100")
+
     firstMatchTest(
-      #"\d{3}(?<!USD\d{3})"#, input: "Price: JYP100", match: "100", xfail: true)
+      #"\d{3}(?<!USD\d{3})"#, input: "Price: JYP100", match: "100")
+
+    firstMatchTest(#"(?<=abc)def"#, input: "abcdefg", match: "def")
+    firstMatchTests(
+      #"(?<=az|b|c)def"#,
+      ("azdefg", "def"),
+      ("bdefg", "def"),
+      ("cdefg", "def"),
+      ("123defg", nil)
+    )
+
+// FIXME: quickMatch and thoroughMatch have different results
+//    firstMatchTest(
+//      #"(?<=\d{1,3}-.{1,3}-\d{1,3})suffix"#,
+//      input: "123-_+/-789suffix",
+//      match: "suffix"
+//    )
+
+    firstMatchTests(
+      #"(?<=^\d{1,3})abc"#,
+      ("123abc", "abc"),
+      ("12abc", "abc"),
+      ("1abc", "abc"),
+      ("1234abc", nil), // FIXME: Shouldn't match but does because `^` assertions are broken
+      ("z123abc", nil) // FIXME: Same as above
+    )
+
+    firstMatchTest(#"abcd(?<=c(?=d)d)"#, input: "abcdefg", match: "abcd")
+    firstMatchTest(#"abcd(?<=cd(?=d).)"#, input: "abcdefg", match: nil)
+    firstMatchTest(#"abcd(?<=c(?=e)d)"#, input: "abcdefg", match: nil)
+    firstMatchTest(#"abcd(?<=bc(?=d).)"#, input: "abcdefg", match: "abcd")
+    firstMatchTest(#"abcd(?<=bc(?=de)d)"#, input: "abcdefg", match: "abcd")
+    firstMatchTest(#"abcd(?<=bc(?=de).)"#, input: "abcdefg", match: "abcd")
   }
 
   func testMatchAnchors() throws {
