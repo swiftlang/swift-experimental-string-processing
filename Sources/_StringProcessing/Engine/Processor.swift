@@ -219,11 +219,51 @@ extension Processor {
     return false
   }
 
+  // Reverse in our input
+  //
+  // Returns whether the advance succeeded. On failure, our
+  // save point was restored
+  mutating func reverseConsume(_ n: Distance) -> Bool {
+    // TODO: needs benchmark coverage
+    if let idx = input.index(
+      currentPosition, offsetBy: -n.rawValue, limitedBy: start
+    ) {
+      currentPosition = idx
+      return true
+    }
+
+    // If `start` falls in the middle of a character, and we are trying to advance
+    // by one "character", then we should max out at `start` even though the above
+    // advancement will result in `nil`.
+    if n == 1, let idx = input.unicodeScalars.index(
+      currentPosition, offsetBy: -n.rawValue, limitedBy: start
+    ) {
+      currentPosition = idx
+      return true
+    }
+
+    signalFailure()
+    return false
+  }
+
   // Advances in unicode scalar view
   mutating func consumeScalar(_ n: Distance) -> Bool {
     // TODO: needs benchmark coverage
     guard let idx = input.unicodeScalars.index(
       currentPosition, offsetBy: n.rawValue, limitedBy: end
+    ) else {
+      signalFailure()
+      return false
+    }
+    currentPosition = idx
+    return true
+  }
+
+  // Reverses in unicode scalar view
+  mutating func reverseConsumeScalar(_ n: Distance) -> Bool {
+    // TODO: needs benchmark coverage
+    guard let idx = input.unicodeScalars.index(
+      currentPosition, offsetBy: -n.rawValue, limitedBy: start
     ) else {
       signalFailure()
       return false
@@ -279,6 +319,33 @@ extension Processor {
     return true
   }
 
+  // Reverse match against the current input element. Returns whether
+  // it succeeded vs signaling an error.
+  mutating func reverseMatch(
+    _ e: Element, isCaseInsensitive: Bool
+  ) -> Bool {
+    let previous = input.reverseMatch(
+      e,
+      at: currentPosition,
+      limitedBy: start,
+      isCaseInsensitive: isCaseInsensitive
+    )
+
+    guard let previous else {
+      guard currentPosition == start else {
+        // If there's no previous character, and we're not
+        // at the start of the string, the match has failed
+        signalFailure()
+        return false
+      }
+
+      return true
+    }
+
+    currentPosition = previous
+    return true
+  }
+
   // Match against the current input prefix. Returns whether
   // it succeeded vs signaling an error.
   mutating func matchSeq(
@@ -315,6 +382,32 @@ extension Processor {
       return false
     }
     currentPosition = next
+    return true
+  }
+
+  mutating func reverseMatchScalar(
+    _ s: Unicode.Scalar,
+    boundaryCheck: Bool,
+    isCaseInsensitive: Bool
+  ) -> Bool {
+    let previous = input.reverseMatchScalar(
+      s,
+      at: currentPosition,
+      limitedBy: start,
+      boundaryCheck: boundaryCheck,
+      isCaseInsensitive: isCaseInsensitive
+    ) 
+
+    guard let previous else {
+      guard currentPosition == start else {
+        signalFailure()
+        return false
+      }
+
+      return true
+    }
+
+    currentPosition = previous
     return true
   }
 
@@ -356,6 +449,26 @@ extension Processor {
     return true
   }
 
+  // If we have a bitset we know that the CharacterClass only matches against
+  // ascii characters, so check if the current input element is ascii then
+  // check if it is set in the bitset
+  mutating func reverseMatchBitset(
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
+    isScalarSemantics: Bool
+  ) -> Bool {
+    guard let previous = input.reverseMatchASCIIBitset(
+      bitset,
+      at: currentPosition,
+      limitedBy: start,
+      isScalarSemantics: isScalarSemantics
+    ) else {
+      signalFailure()
+      return false
+    }
+    currentPosition = previous
+    return true
+  }
+
   // Matches the next character/scalar if it is not a newline
   mutating func matchAnyNonNewline(
     isScalarSemantics: Bool
@@ -369,6 +482,22 @@ extension Processor {
       return false
     }
     currentPosition = next
+    return true
+  }
+
+  // Matches the previous character/scalar if it is not a newline
+  mutating func reverseMatchAnyNonNewline(
+    isScalarSemantics: Bool
+  ) -> Bool {
+    guard let previous = input.reverseMatchAnyNonNewline(
+      at: currentPosition,
+      limitedBy: start,
+      isScalarSemantics: isScalarSemantics
+    ) else {
+      signalFailure()
+      return false
+    }
+    currentPosition = previous
     return true
   }
 
@@ -535,8 +664,23 @@ extension Processor {
           controller.step()
         }
       }
+    case .reverse:
+      let (isScalar, distance) = payload.distance
+      if isScalar {
+        if reverseConsumeScalar(distance) {
+          controller.step()
+        }
+      } else {
+        if reverseConsume(distance) {
+          controller.step()
+        }
+      }
     case .matchAnyNonNewline:
       if matchAnyNonNewline(isScalarSemantics: payload.isScalar) {
+        controller.step()
+      }
+    case .reverseMatchAnyNonNewline:
+      if reverseMatchAnyNonNewline(isScalarSemantics: payload.isScalar) {
         controller.step()
       }
     case .match:
@@ -544,10 +688,23 @@ extension Processor {
       if match(registers[reg], isCaseInsensitive: isCaseInsensitive) {
         controller.step()
       }
-
+    case .reverseMatch:
+      let (isCaseInsensitive, reg) = payload.elementPayload
+      if reverseMatch(registers[reg], isCaseInsensitive: isCaseInsensitive) {
+        controller.step()
+      }
     case .matchScalar:
       let (scalar, caseInsensitive, boundaryCheck) = payload.scalarPayload
       if matchScalar(
+        scalar,
+        boundaryCheck: boundaryCheck,
+        isCaseInsensitive: caseInsensitive
+      ) {
+        controller.step()
+      }
+    case .reverseMatchScalar:
+      let (scalar, caseInsensitive, boundaryCheck) = payload.scalarPayload
+      if reverseMatchScalar(
         scalar,
         boundaryCheck: boundaryCheck,
         isCaseInsensitive: caseInsensitive
@@ -570,7 +727,12 @@ extension Processor {
       if matchBitset(bitset, isScalarSemantics: isScalar) {
         controller.step()
       }
-
+    case .reverseMatchBitset:
+      let (isScalar, reg) = payload.bitsetPayload
+      let bitset = registers[reg]
+      if reverseMatchBitset(bitset, isScalarSemantics: isScalar) {
+        controller.step()
+      }
     case .matchBuiltin:
       let payload = payload.characterClassPayload
       if matchBuiltinCC(
@@ -581,8 +743,38 @@ extension Processor {
       ) {
         controller.step()
       }
+    case .reverseMatchBuiltin:
+      let payload = payload.characterClassPayload
+      if reverseMatchBuiltinCC(
+        payload.cc,
+        isInverted: payload.isInverted,
+        isStrictASCII: payload.isStrictASCII,
+        isScalarSemantics: payload.isScalarSemantics
+      ) {
+        controller.step()
+      }
     case .quantify:
       if runQuantify(payload.quantify) {
+        controller.step()
+      }
+    case .reverseQuantify:
+      let quantPayload = payload.quantify
+      let matched: Bool
+      switch (quantPayload.quantKind, quantPayload.minTrips, quantPayload.maxExtraTrips) {
+      case (.reluctant, _, _):
+        assertionFailure(".reluctant is not supported by .quantify")
+        return
+      case (.eager, 0, nil):
+        runEagerZeroOrMoreReverseQuantify(quantPayload)
+        matched = true
+      case (.eager, 1, nil):
+        matched = runEagerOneOrMoreReverseQuantify(quantPayload)
+      case (_, 0, 1):
+        matched = runZeroOrOneReverseQuantify(quantPayload)
+      default:
+        matched = runReverseQuantify(quantPayload)
+      }
+      if matched {
         controller.step()
       }
 
@@ -715,6 +907,25 @@ extension String {
     return next
   }
 
+  func reverseMatch(
+    _ char: Character,
+    at pos: Index,
+    limitedBy start: String.Index,
+    isCaseInsensitive: Bool
+  ) -> Index? {
+    // TODO: This can be greatly sped up with string internals
+    // TODO: This is also very much quick-check-able
+    guard let (stringChar, next) = characterAndStart(at: pos, limitedBy: start) else { return nil }
+
+    if isCaseInsensitive {
+      guard stringChar.lowercased() == char.lowercased() else { return nil }
+    } else {
+      guard stringChar == char else { return nil }
+    }
+
+    return next
+  }
+
   func matchSeq(
     _ seq: Substring,
     at pos: Index,
@@ -766,6 +977,38 @@ extension String {
 
     let idx = unicodeScalars.index(after: pos)
     assert(idx <= end, "Input is a substring with a sub-scalar endIndex.")
+
+    if boundaryCheck && !isOnGraphemeClusterBoundary(idx) {
+      return nil
+    }
+
+    return idx
+  }
+
+  func reverseMatchScalar(
+    _ scalar: Unicode.Scalar,
+    at pos: Index,
+    limitedBy start: String.Index,
+    boundaryCheck: Bool,
+    isCaseInsensitive: Bool
+  ) -> Index? {
+    // TODO: extremely quick-check-able
+    // TODO: can be sped up with string internals
+    guard pos >= start else { return nil }
+    let curScalar = unicodeScalars[pos]
+
+    if isCaseInsensitive {
+      guard curScalar.properties.lowercaseMapping == scalar.properties.lowercaseMapping
+      else {
+        return nil
+      }
+    } else {
+      guard curScalar == scalar else { return nil }
+    }
+
+    guard pos != start else { return pos }
+    let idx = unicodeScalars.index(before: pos)
+    assert(idx >= start, "Input is a substring with a sub-scalar startIndex.")
 
     if boundaryCheck && !isOnGraphemeClusterBoundary(idx) {
       return nil
@@ -843,5 +1086,55 @@ extension String {
     }
 
     return next
+  }
+
+  func reverseMatchASCIIBitset(
+    _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
+    at pos: Index,
+    limitedBy start: Index,
+    isScalarSemantics: Bool
+  ) -> Index? {
+
+    // FIXME: Inversion should be tracked and handled in only one place.
+    // That is, we should probably store it as a bit in the instruction, so that
+    // bitset matching and bitset inversion is bit-based rather that semantically
+    // inverting the notion of a match or not. As-is, we need to track both
+    // meanings in some code paths.
+    let isInverted = bitset.isInverted
+
+    // TODO: More fodder for refactoring `_quickASCIICharacter`, see the comment
+    // there
+    guard let (asciiByte, previous, isCRLF) = _quickReverseASCIICharacter(
+      at: pos,
+      limitedBy: start
+    ) else {
+      if isScalarSemantics {
+        guard pos >= start else { return nil }
+        guard bitset.matches(unicodeScalars[pos]) else { return nil }
+        return unicodeScalars.index(before: pos)
+      } else {
+        guard let (char, previous) = characterAndStart(at: pos, limitedBy: start),
+              bitset.matches(char) else { return nil }
+        return previous
+      }
+    }
+
+    guard bitset.matches(asciiByte) else {
+      // FIXME: check inversion here after refactored out of bitset
+      return nil
+    }
+
+    // CR-LF should only match `[\r]` in scalar semantic mode or if inverted
+    if isCRLF {
+      if isScalarSemantics {
+        return self.unicodeScalars.index(after: previous)
+      }
+      if isInverted {
+        return previous
+      }
+      return nil
+    }
+
+    return previous
   }
 }

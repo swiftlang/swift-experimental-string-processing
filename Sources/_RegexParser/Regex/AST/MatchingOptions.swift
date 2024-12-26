@@ -47,6 +47,9 @@ extension AST {
       
       // NSRegularExpression compatibility special-case
       case nsreCompatibleDot        // no AST representation
+
+      // Lookbehind support
+      case reverse                  // no AST representation
     }
     
     public var kind: Kind
