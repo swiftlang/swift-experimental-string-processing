@@ -252,7 +252,7 @@ extension String {
     limitedBy start: String.Index,
     isScalarSemantics: Bool
   ) -> String.Index? {
-    guard currentPosition >= start else { return nil }
+    guard currentPosition > start else { return nil }
     if case .definite(let result) = _quickReverseMatchAnyNonNewline(
       at: currentPosition,
       limitedBy: start,
@@ -297,7 +297,7 @@ extension String {
     limitedBy start: String.Index,
     isScalarSemantics: Bool
   ) -> QuickResult<String.Index?> {
-    assert(currentPosition >= start)
+    assert(currentPosition > start)
     guard let (asciiValue, previous, isCRLF) = _quickReverseASCIICharacter(
       at: currentPosition, limitedBy: start
     ) else {
@@ -338,7 +338,7 @@ extension String {
     isScalarSemantics: Bool
   ) -> String.Index? {
     if isScalarSemantics {
-      guard currentPosition >= start else { return nil }
+      guard currentPosition > start else { return nil }
       let scalar = unicodeScalars[currentPosition]
       guard !scalar.isNewline else { return nil }
       return unicodeScalars.index(before: currentPosition)

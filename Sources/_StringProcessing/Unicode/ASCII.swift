@@ -109,7 +109,7 @@ extension String {
     let tail = utf8[next]
     guard tail._isSub300StartingByte else { return nil }
 
-    // Handle CR-LF:
+    // Handle CR-LF by advancing past the sequence if both characters are present
     if base == ._carriageReturn && tail == ._lineFeed {
       utf8.formIndex(after: &next)
       guard next == end || utf8[next]._isSub300StartingByte else {
@@ -123,17 +123,17 @@ extension String {
   }
 
   /// TODO: better to take isScalarSemantics parameter, we can return more results
-  /// and we can give the right `previous` index, not requiring the caller to re-adjust it
+  /// and we can give the right `next` index, not requiring the caller to re-adjust it
   /// TODO: detailed description of nuanced semantics
   func _quickReverseASCIICharacter(
     at idx: Index,
     limitedBy start: Index
-  ) -> (char: UInt8, previous: Index, crLF: Bool)? {
+  ) -> (first: UInt8, previous: Index, crLF: Bool)? {
     // TODO: fastUTF8 version
     assert(String.Index(idx, within: unicodeScalars) != nil)
     assert(idx >= start)
 
-    // Exit if we're at our limit
+    // If we're already at the start, there is no previous character
     if idx == start {
       return nil
     }
@@ -146,23 +146,23 @@ extension String {
 
     var previous = utf8.index(before: idx)
     if previous == start {
-      return (char: char, previous: previous, crLF: false)
+      return (first: char, previous: previous, crLF: false)
     }
 
     let head = utf8[previous]
     guard head._isSub300StartingByte else { return nil }
 
-    // Handle CR-LF:
-    if char == ._carriageReturn && head == ._lineFeed {
+    // Handle CR-LF by reversing past the sequence if both characters are present
+    if char == ._lineFeed && head == ._carriageReturn {
       utf8.formIndex(before: &previous)
       guard previous == start || utf8[previous]._isSub300StartingByte else {
         return nil
       }
-      return (char: char, previous: previous, crLF: true)
+      return (first: char, previous: previous, crLF: true)
     }
 
     assert(self[idx].isASCII && self[idx] != "\r\n")
-    return (char: char, previous: previous, crLF: false)
+    return (first: char, previous: previous, crLF: false)
   }
 
   func _quickMatch(
