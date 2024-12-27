@@ -221,7 +221,7 @@ extension Processor {
 
   // Reverse in our input
   //
-  // Returns whether the advance succeeded. On failure, our
+  // Returns whether the reverse succeeded. On failure, our
   // save point was restored
   mutating func reverseConsume(_ n: Distance) -> Bool {
     // TODO: needs benchmark coverage
@@ -234,7 +234,7 @@ extension Processor {
 
     // If `start` falls in the middle of a character, and we are trying to advance
     // by one "character", then we should max out at `start` even though the above
-    // advancement will result in `nil`.
+    // reversal will result in `nil`.
     if n == 1, let idx = input.unicodeScalars.index(
       currentPosition, offsetBy: -n.rawValue, limitedBy: start
     ) {
