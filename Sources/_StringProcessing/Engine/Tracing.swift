@@ -65,6 +65,13 @@ extension Instruction: CustomStringConvertible {
       } else {
         return "match char[\(reg)]"
       }
+    case .reverseMatch:
+      let (isCaseInsensitive, reg) = payload.elementPayload
+      if isCaseInsensitive {
+        return "reverseMatchCaseInsensitive char[\(reg)]"
+      } else {
+        return "reverseMatch char[\(reg)]"
+      }
     case .matchBitset:
       let (isScalar, reg) = payload.bitsetPayload
       if isScalar {
@@ -72,9 +79,19 @@ extension Instruction: CustomStringConvertible {
       } else {
         return "matchBitset bitset[\(reg)]"
       }
+    case .reverseMatchBitset:
+      let (isScalar, reg) = payload.bitsetPayload
+      if isScalar {
+        return "reverseMatchBitsetScalar bitset[\(reg)]"
+      } else {
+        return "reverseMatchBitset bitset[\(reg)]"
+      }
     case .matchBuiltin:
       let payload = payload.characterClassPayload
       return "matchBuiltin \(payload.cc) (\(payload.isInverted))"
+    case .reverseMatchBuiltin:
+      let payload = payload.characterClassPayload
+      return "\(opcode) \(payload.cc) (\(payload.isInverted))"
     case .matchBy:
       let (matcherReg, valReg) = payload.pairedMatcherValue
       return "\(opcode) match[\(matcherReg)] -> val[\(valReg)]"
@@ -85,6 +102,13 @@ extension Instruction: CustomStringConvertible {
       } else {
         return "matchScalar '\(scalar)' boundaryCheck: \(boundaryCheck)"
       }
+    case .reverseMatchScalar:
+      let (scalar, caseInsensitive, boundaryCheck) = payload.scalarPayload
+      if caseInsensitive {
+        return "reverseMatchScalarCaseInsensitive '\(scalar)' boundaryCheck: \(boundaryCheck)"
+      } else {
+        return "reverseMatchScalar '\(scalar)' boundaryCheck: \(boundaryCheck)"
+      }
     case .moveCurrentPosition:
       let reg = payload.position
       return "\(opcode) -> pos[\(reg)]"
@@ -92,6 +116,9 @@ extension Instruction: CustomStringConvertible {
       let (imm, reg) = payload.pairedImmediateInt
       return "\(opcode) \(imm) -> int[\(reg)]"
     case .quantify:
+      let payload = payload.quantify
+      return "\(opcode) \(payload.type) \(payload.minTrips) \(payload.maxExtraTrips?.description ?? "unbounded" )"
+    case .reverseQuantify:
       let payload = payload.quantify
       return "\(opcode) \(payload.type) \(payload.minTrips) \(payload.maxExtraTrips?.description ?? "unbounded" )"
     case .save:
@@ -106,6 +133,8 @@ extension Instruction: CustomStringConvertible {
     case .transformCapture:
       let (cap, trans) = payload.pairedCaptureTransform
       return "\(opcode) trans[\(trans)](\(cap))"
+    case .reverse:
+      return "\(opcode) \(payload.distance)"
     default:
       return "\(opcode)"
     }

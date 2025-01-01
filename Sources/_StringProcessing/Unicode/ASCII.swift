@@ -109,7 +109,7 @@ extension String {
     let tail = utf8[next]
     guard tail._isSub300StartingByte else { return nil }
 
-    // Handle CR-LF:
+    // Handle CR-LF by advancing past the sequence if both characters are present
     if base == ._carriageReturn && tail == ._lineFeed {
       utf8.formIndex(after: &next)
       guard next == end || utf8[next]._isSub300StartingByte else {
@@ -120,6 +120,49 @@ extension String {
 
     assert(self[idx].isASCII && self[idx] != "\r\n")
     return (first: base, next: next, crLF: false)
+  }
+
+  /// TODO: better to take isScalarSemantics parameter, we can return more results
+  /// and we can give the right `next` index, not requiring the caller to re-adjust it
+  /// TODO: detailed description of nuanced semantics
+  func _quickReverseASCIICharacter(
+    at idx: Index,
+    limitedBy start: Index
+  ) -> (first: UInt8, previous: Index, crLF: Bool)? {
+    // TODO: fastUTF8 version
+    assert(String.Index(idx, within: unicodeScalars) != nil)
+    assert(idx >= start)
+
+    // If we're already at the start, there is no previous character
+    if idx == start {
+      return nil
+    }
+
+    let char = utf8[idx]
+    guard char._isASCII else {
+      assert(!self[idx].isASCII)
+      return nil
+    }
+
+    var previous = utf8.index(before: idx)
+    if previous == start {
+      return (first: char, previous: previous, crLF: false)
+    }
+
+    let head = utf8[previous]
+    guard head._isSub300StartingByte else { return nil }
+
+    // Handle CR-LF by reversing past the sequence if both characters are present
+    if char == ._lineFeed && head == ._carriageReturn {
+      utf8.formIndex(before: &previous)
+      guard previous == start || utf8[previous]._isSub300StartingByte else {
+        return nil
+      }
+      return (first: char, previous: previous, crLF: true)
+    }
+
+    assert(self[idx].isASCII && self[idx] != "\r\n")
+    return (first: char, previous: previous, crLF: false)
   }
 
   func _quickMatch(
@@ -169,5 +212,50 @@ extension String {
     }
   }
 
-}
+  func _quickReverseMatch(
+    _ cc: _CharacterClassModel.Representation,
+    at idx: Index,
+    limitedBy start: Index,
+    isScalarSemantics: Bool
+  ) -> (previous: Index, matchResult: Bool)? {
+    /// ASCII fast-paths
+    guard let (asciiValue, previous, isCRLF) = _quickReverseASCIICharacter(
+      at: idx, limitedBy: start
+    ) else {
+      return nil
+    }
 
+    // TODO: bitvectors
+    switch cc {
+    case .any, .anyGrapheme:
+      return (previous, true)
+
+    case .digit:
+      return (previous, asciiValue._asciiIsDigit)
+
+    case .horizontalWhitespace:
+      return (previous, asciiValue._asciiIsHorizontalWhitespace)
+
+    case .verticalWhitespace, .newlineSequence:
+      if asciiValue._asciiIsVerticalWhitespace {
+        if isScalarSemantics && isCRLF && cc == .verticalWhitespace {
+          return (utf8.index(after: previous), true)
+        }
+        return (previous, true)
+      }
+      return (previous, false)
+
+    case .whitespace:
+      if asciiValue._asciiIsWhitespace {
+        if isScalarSemantics && isCRLF {
+          return (utf8.index(after: previous), true)
+        }
+        return (previous, true)
+      }
+      return (previous, false)
+
+    case .word:
+      return (previous, asciiValue._asciiIsWord)
+    }
+  }
+}
