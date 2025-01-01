@@ -258,6 +258,4 @@ extension String {
       return (previous, asciiValue._asciiIsWord)
     }
   }
-
 }
-
