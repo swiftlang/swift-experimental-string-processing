@@ -60,7 +60,7 @@ private func graphemeBreakPropertyData(
   }
 
   // For testing our framework
-  if forceFailure/*, lower == Unicode.Scalar(0x07FD)*/ {
+  if forceFailure, lower == Unicode.Scalar(0x07FD as UInt32) {
     return nil
   }
 
