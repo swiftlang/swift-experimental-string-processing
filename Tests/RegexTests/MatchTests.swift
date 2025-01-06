@@ -2193,6 +2193,25 @@ extension RegexTests {
       ("cafe", true),
       ("CaFe", true),
       ("EfAc", true))
+    
+    matchTest(
+      #"(?i)a+b"#,
+      ("ab", true),
+      ("Ab", true),
+      ("aB", true),
+      ("AB", true))
+    matchTest(
+      #"(?i)a?b"#,
+      ("ab", true),
+      ("Ab", true),
+      ("aB", true),
+      ("AB", true))
+    matchTest(
+      #"(?i)[a]?b"#,
+      ("ab", true),
+      ("Ab", true),
+      ("aB", true),
+      ("AB", true))
   }
 
   func testNonSemanticWhitespace() {
