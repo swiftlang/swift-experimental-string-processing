@@ -2199,19 +2199,35 @@ extension RegexTests {
       ("ab", true),
       ("Ab", true),
       ("aB", true),
-      ("AB", true))
+      ("AB", true),
+      ("AaAab", true),
+      ("aaaAB", true))
     matchTest(
-      #"(?i)a?b"#,
+      #"^(?i)a?b$"#,
       ("ab", true),
       ("Ab", true),
       ("aB", true),
-      ("AB", true))
+      ("AB", true),
+      ("aaB", false),
+      ("b", true),
+      ("B", true))
     matchTest(
-      #"(?i)[a]?b"#,
+      #"^(?i)[a]?b$"#,
       ("ab", true),
       ("Ab", true),
       ("aB", true),
-      ("AB", true))
+      ("AB", true),
+      ("b", true),
+      ("B", true))
+    matchTest(
+      #"^(?i)a{2,4}b$"#,
+      ("ab", false),
+      ("Ab", false),
+      ("AaB", true),
+      ("aAB", true),
+      ("aAaB", true),
+      ("aAaAB", true),
+      ("AaAaAB", false))
   }
 
   func testNonSemanticWhitespace() {
