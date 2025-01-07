@@ -41,6 +41,8 @@ extension Regex.Match {
       from: anyRegexOutput.input
     )
     guard let output = typeErasedMatch as? Output else {
+      print(typeErasedMatch)
+      print(Output.self)
       fatalError("Internal error: existential cast failed")
     }
     return output
