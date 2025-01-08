@@ -41,6 +41,7 @@ enum DecodedInstr {
   case matchAnyNonNewline
   case matchBitset
   case matchBuiltin
+  case matchUTF8
   case consumeBy
   case assertBy
   case matchBy
@@ -141,6 +142,8 @@ extension DecodedInstr {
       return .captureValue
     case .matchBuiltin:
       return .matchBuiltin
+    case .matchUTF8:
+      return .matchUTF8
     }
   }
 }
@@ -154,7 +157,7 @@ extension RegexTests {
   ) throws {
     assert(!equivs.isEmpty)
     let progs = try equivs.map {
-      try _compileRegex($0).engine.program
+      try _compileRegex($0)
     }
     let ref = progs.first!
     for (prog, equiv) in zip(progs, equivs).dropFirst() {
@@ -325,7 +328,7 @@ extension RegexTests {
     do {
       let prog = try _compileRegex(regex, syntax, semanticLevel)
       var found: Set<DecodedInstr> = []
-      for inst in prog.engine.instructions {
+      for inst in prog.instructions {
         let decoded = DecodedInstr.decode(inst)
         found.insert(decoded)
 
@@ -443,10 +446,30 @@ extension RegexTests {
       contains: [.matchScalarUnchecked],
       doesNotContain: [.match, .consumeBy, .matchScalar])
     expectProgram(
-      for: "aaa\u{301}",
+      for: "a\u{301}",
       semanticLevel: .unicodeScalar,
       contains: [.matchScalarUnchecked],
       doesNotContain: [.match, .consumeBy, .matchScalar])
+    expectProgram(
+      for: "abcdefg",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchUTF8],
+      doesNotContain: [.match, .consumeBy, .matchScalar])
+    expectProgram(
+      for: "abcdefg",
+      semanticLevel: .graphemeCluster,
+      contains: [.matchUTF8],
+      doesNotContain: [.match, .consumeBy, .matchScalar])
+    expectProgram(
+      for: "aaa\u{301}",
+      semanticLevel: .unicodeScalar,
+      contains: [.matchUTF8],
+      doesNotContain: [.match, .consumeBy, .matchScalar])
+    expectProgram(
+      for: "aaa\u{301}",
+      semanticLevel: .graphemeCluster,
+      contains: [.match],
+      doesNotContain: [.matchUTF8, .consumeBy])
   }
   
   func testCaseInsensitivityCompilation() {

@@ -81,18 +81,18 @@ extension String {
     }
     
     if #available(SwiftStdlib 5.7, *) {
-      var indices: Set<String.Index> = []
+      if cache == nil {
+        cache = []
+      }
       var j = maxIndex ?? range.lowerBound
       
       while j < range.upperBound, j <= i {
-        indices.insert(j)
+        cache!.insert(j)
         j = _wordIndex(after: j)
       }
       
-      cache = indices
       maxIndex = j
-      
-      return indices.contains(i)
+      return cache!.contains(i)
     } else {
       return false
     }
