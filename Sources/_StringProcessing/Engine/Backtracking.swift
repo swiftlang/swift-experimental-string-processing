@@ -21,13 +21,6 @@ extension Processor {
     //        points. We should try to separate out the concerns better.
     var isScalarSemantics: Bool
 
-    // The end of the call stack, so we can slice it off
-    // when failing inside a call.
-    //
-    // NOTE: Alternatively, also place return addresses on the
-    // save point stack
-    var stackEnd: CallStackAddress
-
     // FIXME: Save minimal info (e.g. stack position and
     // perhaps current start)
     var captureEnds: [_StoredCapture]
@@ -41,12 +34,11 @@ extension Processor {
     var destructure: (
       pc: InstructionAddress,
       pos: Position?,
-      stackEnd: CallStackAddress,
       captureEnds: [_StoredCapture],
       intRegisters: [Int],
       PositionRegister: [Input.Index]
     ) {
-      return (pc, pos, stackEnd, captureEnds, intRegisters, posRegisters)
+      return (pc, pos, captureEnds, intRegisters, posRegisters)
     }
 
     // Whether this save point is quantified, meaning it has a range of
@@ -85,7 +77,6 @@ extension Processor {
       pos: currentPosition,
       quantifiedRange: nil,
       isScalarSemantics: false,
-      stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,
       intRegisters: registers.ints,
       posRegisters: registers.positions)
@@ -99,7 +90,6 @@ extension Processor {
       pos: nil,
       quantifiedRange: nil,
       isScalarSemantics: false,
-      stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,
       intRegisters: registers.ints,
       posRegisters: registers.positions)
@@ -114,7 +104,6 @@ extension Processor {
       pos: nil,
       quantifiedRange: range,
       isScalarSemantics: isScalarSemantics,
-      stackEnd: .init(callStack.count),
       captureEnds: storedCaptures,
       intRegisters: registers.ints,
       posRegisters: registers.positions)

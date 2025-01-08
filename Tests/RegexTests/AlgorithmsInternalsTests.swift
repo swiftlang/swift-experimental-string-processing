@@ -54,21 +54,8 @@ extension AlgorithmTests {
     ]
 
     // Make sure we're getting the right collection type
-    let _: RegexMatchesCollection<Substring> = matches
+    let _: RegexMatchesSequence<Substring> = matches
 
     XCTAssertEqual(matches.map(\.output), expected)
-    
-    let i = matches.index(matches.startIndex, offsetBy: 3)
-    XCTAssertEqual(matches[i].output, expected[3])
-    let j = matches.index(i, offsetBy: 5)
-    XCTAssertEqual(j, matches.endIndex)
-    
-    var index = matches.startIndex
-    while index < matches.endIndex {
-      XCTAssertEqual(
-        matches[index].output,
-        expected[matches.distance(from: matches.startIndex, to: index)])
-      matches.formIndex(after: &index)
-    }
   }
 }

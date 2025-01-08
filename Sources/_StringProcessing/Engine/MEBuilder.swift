@@ -20,7 +20,7 @@ extension MEProgram {
     var enableMetrics = false
 
     var elements = TypedSetVector<Input.Element, _ElementRegister>()
-    var sequences = TypedSetVector<[Input.Element], _SequenceRegister>()
+    var utf8Contents = TypedSetVector<[UInt8], _UTF8Register>()
 
     var asciiBitsets: [DSLTree.CustomCharacterClass.AsciiBitset] = []
     var consumeFunctions: [ConsumeFunction] = []
@@ -33,9 +33,17 @@ extension MEProgram {
 
     // Registers
     var nextIntRegister = IntRegister(0)
-    var nextCaptureRegister = CaptureRegister(0)
     var nextValueRegister = ValueRegister(0)
     var nextPositionRegister = PositionRegister(0)
+
+    // Set to non-nil when a value register holds the whole-match
+    // value (i.e. when a regex consists entirely of a custom matcher)
+    var wholeMatchValue: ValueRegister? = nil
+
+    // Note: Capture 0 (i.e. whole-match) is handled specially
+    // by the engine, so `n` here refers to the regex AST's `n+1`
+    // capture
+    var nextCaptureRegister = CaptureRegister(0)
 
     // Special addresses or instructions
     var failAddressToken: AddressToken? = nil
@@ -69,6 +77,24 @@ extension MEProgram.Builder {
       self.first = a
       self.second = b
     }
+  }
+
+  // Maps the AST's named capture offset to a capture register
+  func captureRegister(named name: String) throws -> CaptureRegister {
+    guard let index = captureList.indexOfCapture(named: name) else {
+      throw RegexCompilationError.uncapturedReference
+    }
+    return .init(index - 1)
+  }
+
+  // Map an AST's backreference number to a capture register
+  func captureRegister(forBackreference i: Int) -> CaptureRegister {
+    .init(i - 1)
+  }
+
+  mutating func denoteCurrentValueIsWholeMatchValue() {
+    assert(wholeMatchValue == nil)
+    wholeMatchValue = nextValueRegister
   }
 }
 
@@ -170,6 +196,11 @@ extension MEProgram.Builder {
   mutating func buildMatch(_ e: Character, isCaseInsensitive: Bool) {
     instructions.append(.init(
       .match, .init(element: elements.store(e), isCaseInsensitive: isCaseInsensitive)))
+  }
+
+  mutating func buildMatchUTF8(_ utf8: Array<UInt8>, boundaryCheck: Bool) {
+    instructions.append(.init(.matchUTF8, .init(
+      utf8: utf8Contents.store(utf8), boundaryCheck: boundaryCheck)))
   }
 
   mutating func buildMatchScalar(_ s: Unicode.Scalar, boundaryCheck: Bool) {
@@ -337,10 +368,8 @@ extension MEProgram.Builder {
   }
 
   mutating func buildNamedReference(_ name: String, isScalarMode: Bool) throws {
-    guard let index = captureList.indexOfCapture(named: name) else {
-      throw RegexCompilationError.uncapturedReference
-    }
-    buildBackreference(.init(index), isScalarMode: isScalarMode)
+    let cap = try captureRegister(named: name)
+    buildBackreference(cap, isScalarMode: isScalarMode)
   }
 
   // TODO: Mutating because of fail address fixup, drop when
@@ -390,33 +419,33 @@ extension MEProgram.Builder {
         inst.opcode, payload)
     }
 
-    var regInfo = MEProgram.RegisterInfo()
-    regInfo.elements = elements.count
-    regInfo.sequences = sequences.count
-    regInfo.ints = nextIntRegister.rawValue
-    regInfo.values = nextValueRegister.rawValue
-    regInfo.positions = nextPositionRegister.rawValue
-    regInfo.bitsets = asciiBitsets.count
-    regInfo.consumeFunctions = consumeFunctions.count
-    regInfo.transformFunctions = transformFunctions.count
-    regInfo.matcherFunctions = matcherFunctions.count
-    regInfo.captures = nextCaptureRegister.rawValue
+    let regs = Processor.Registers(
+      elements: elements.stored,
+      utf8Contents: utf8Contents.stored,
+      bitsets: asciiBitsets,
+      consumeFunctions: consumeFunctions,
+      transformFunctions: transformFunctions,
+      matcherFunctions: matcherFunctions,
+      numInts: nextIntRegister.rawValue,
+      numValues: nextValueRegister.rawValue,
+      numPositions: nextPositionRegister.rawValue
+    )
 
-    return MEProgram(
+    let storedCaps = Array(
+      repeating: Processor._StoredCapture(), count: nextCaptureRegister.rawValue)
+
+    let meProgram = MEProgram(
       instructions: InstructionList(instructions),
-      staticElements: elements.stored,
-      staticSequences: sequences.stored,
-      staticBitsets: asciiBitsets,
-      staticConsumeFunctions: consumeFunctions,
-      staticTransformFunctions: transformFunctions,
-      staticMatcherFunctions: matcherFunctions,
-      registerInfo: regInfo,
+      wholeMatchValueRegister: wholeMatchValue,
       enableTracing: enableTracing,
       enableMetrics: enableMetrics,
       captureList: captureList,
       referencedCaptureOffsets: referencedCaptureOffsets,
       initialOptions: initialOptions,
-      canOnlyMatchAtStart: canOnlyMatchAtStart)
+      canOnlyMatchAtStart: canOnlyMatchAtStart,
+      registers: regs,
+      storedCaptures: storedCaps)
+    return meProgram
   }
 
   mutating func reset() { self = Self() }
@@ -514,8 +543,8 @@ extension MEProgram.Builder {
       assert(preexistingValue == nil)
     }
     if let name = name {
-      let index = captureList.indexOfCapture(named: name)
-      assert(index == nextCaptureRegister.rawValue)
+      let cap = try? captureRegister(named: name)
+      assert(cap == nextCaptureRegister)
     }
     assert(nextCaptureRegister.rawValue < captureList.captures.count)
     return nextCaptureRegister
