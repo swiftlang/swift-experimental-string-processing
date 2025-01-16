@@ -773,11 +773,19 @@ fileprivate extension Compiler.ByteCodeGen {
     case .atom(let atom):
       switch atom {
       case .char(let c):
-        // Single scalar ascii value character
-        guard let val = c._singleScalarAsciiValue else {
-          return false
+        if options.isCaseInsensitive && c.isCased {
+          // Cased character with case-insensitive matching; match only as an ASCII bitset
+          guard let bitset = DSLTree.CustomCharacterClass(members: [.atom(atom)]).asAsciiBitset(options) else {
+            return false
+          }
+          builder.buildQuantify(bitset: bitset, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
+        } else {
+          // Uncased character OR case-sensitive matching; match as a single scalar ascii value character
+          guard let val = c._singleScalarAsciiValue else {
+            return false
+          }
+          builder.buildQuantify(asciiChar: val, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
         }
-        builder.buildQuantify(asciiChar: val, kind, minTrips, maxExtraTrips, isScalarSemantics: isScalarSemantics)
 
       case .any:
         builder.buildQuantifyAny(
