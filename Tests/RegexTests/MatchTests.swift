@@ -1637,12 +1637,11 @@ extension RegexTests {
       ("123defg", nil)
     )
 
-// FIXME: quickMatch and thoroughMatch have different results
-//    firstMatchTest(
-//      #"(?<=\d{1,3}-.{1,3}-\d{1,3})suffix"#,
-//      input: "123-_+/-789suffix",
-//      match: "suffix"
-//    )
+    firstMatchTest(
+      #"(?<=\d{1,3}-.{1,3}-\d{1,3})suffix"#,
+      input: "123-_+/-789suffix",
+      match: "suffix"
+    )
 
     firstMatchTests(
       #"(?<=^\d{1,3})abc"#,

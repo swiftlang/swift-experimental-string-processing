@@ -416,7 +416,7 @@ extension String {
     isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> String.Index? {
-    guard currentPosition >= start else { return nil }
+    guard currentPosition > start else { return nil }
     if case .definite(let result) = _quickReverseMatchBuiltinCC(
       cc,
       at: currentPosition,
@@ -443,6 +443,7 @@ extension String {
       isScalarSemantics: isScalarSemantics)
   }
 
+  // TODO: JH - Is there any value in testing this? How would it be tested?
   // Mentioned in ProgrammersManual.md, update docs if redesigned
   @inline(__always)
   private func _quickMatchBuiltinCC(
@@ -450,7 +451,7 @@ extension String {
     at currentPosition: String.Index,
     limitedBy end: String.Index,
     isInverted: Bool,
-    isStrictASCII: Bool,
+    isStrictASCII: Bool, // TODO: JH - Is this just reserved for future use? A relic of the past?
     isScalarSemantics: Bool
   ) -> QuickResult<String.Index?> {
     assert(currentPosition < end)
@@ -474,7 +475,7 @@ extension String {
     isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> QuickResult<String.Index?> {
-    assert(currentPosition >= start)
+    assert(currentPosition > start)
     guard let (previous, result) = _quickReverseMatch(
       cc,
       at: currentPosition,
@@ -486,6 +487,7 @@ extension String {
     return .definite(result == isInverted ? nil : previous)
   }
 
+  // TODO: JH - How can this be unit tested?
   // Mentioned in ProgrammersManual.md, update docs if redesigned
   @inline(never)
   private func _thoroughMatchBuiltinCC(

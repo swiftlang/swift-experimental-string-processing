@@ -232,7 +232,7 @@ extension Processor {
       return true
     }
 
-    // If `start` falls in the middle of a character, and we are trying to advance
+    // If `start` falls in the middle of a character, and we are trying to reverse
     // by one "character", then we should max out at `start` even though the above
     // reversal will result in `nil`.
     if n == 1, let idx = input.unicodeScalars.index(
@@ -994,7 +994,7 @@ extension String {
   ) -> Index? {
     // TODO: extremely quick-check-able
     // TODO: can be sped up with string internals
-    guard pos >= start else { return nil }
+    guard pos > start else { return nil }
     let curScalar = unicodeScalars[pos]
 
     if isCaseInsensitive {
@@ -1006,7 +1006,6 @@ extension String {
       guard curScalar == scalar else { return nil }
     }
 
-    guard pos != start else { return pos }
     let idx = unicodeScalars.index(before: pos)
     assert(idx >= start, "Input is a substring with a sub-scalar startIndex.")
 

@@ -248,4 +248,272 @@ final class StringMatchingTests: XCTestCase {
     // Then we should get nil because there isn't an index before `startIndex`
     XCTAssertNil(result)
   }
+
+  func testMatchBuiltinCCAtEnd() {
+    // Given
+    let sut = ""
+
+    // When
+    let next = sut.matchBuiltinCC(
+      .any,
+      at: sut.endIndex,
+      limitedBy: sut.endIndex,
+      isInverted: false,
+      isStrictASCII: false,
+      isScalarSemantics: true
+    )
+
+    // Then
+    XCTAssertNil(next)
+  }
+}
+
+// MARK: matchScalar tests
+extension StringMatchingTests {
+  func testMatchScalar() {
+    // Given
+    let sut = "bar"
+
+    // When
+    let next = sut.matchScalar(
+      "b",
+      at: sut.startIndex,
+      limitedBy: sut.endIndex,
+      boundaryCheck: false,
+      isCaseInsensitive: false
+    )
+
+    // Then
+    XCTAssertEqual(next, sut.index(after: sut.startIndex))
+  }
+
+  func testMatchScalarNoMatch() {
+    // Given
+    let sut = "bar"
+
+    // When
+    let next = sut.matchScalar(
+      "a",
+      at: sut.startIndex,
+      limitedBy: sut.endIndex,
+      boundaryCheck: false,
+      isCaseInsensitive: false
+    )
+
+    // Then
+    XCTAssertNil(next)
+  }
+
+  func testMatchScalarCaseInsensitive() {
+    // Given
+    let sut = "BAR"
+
+    // When
+    let next = sut.matchScalar(
+      "b",
+      at: sut.startIndex,
+      limitedBy: sut.endIndex,
+      boundaryCheck: false,
+      isCaseInsensitive: true
+    )
+
+    // Then
+    XCTAssertEqual(next, sut.index(after: sut.startIndex))
+  }
+
+  func testMatchScalarCaseInsensitiveNoMatch() {
+    // Given
+    let sut = "BAR"
+
+    // When
+    let next = sut.matchScalar(
+      "a",
+      at: sut.startIndex,
+      limitedBy: sut.endIndex,
+      boundaryCheck: false,
+      isCaseInsensitive: true
+    )
+
+    // Then
+    XCTAssertNil(next)
+  }
+
+  func testMatchScalarAtEnd() {
+    // Given
+    let sut = ""
+
+    // When
+    let next = sut.matchScalar(
+      "a",
+      at: sut.endIndex,
+      limitedBy: sut.endIndex,
+      boundaryCheck: false,
+      isCaseInsensitive: false
+    )
+
+    // Then
+    XCTAssertNil(next)
+  }
+
+  func testMatchScalarBoundaryCheck() {
+    // Given
+    // \u{62}\u{300}\u{316}\u{65}\u{73}\u{74}
+    let sut = "b̖̀est"
+
+    // When
+    let next = sut.matchScalar(
+      "\u{300}",
+      at: sut.unicodeScalars.index(after: sut.unicodeScalars.startIndex),
+      limitedBy: sut.endIndex,
+      boundaryCheck: true,
+      isCaseInsensitive: false
+    )
+
+    // Then
+    XCTAssertNil(next)
+  }
+
+  func testMatchScalarNoBoundaryCheck() {
+    // Given
+    // \u{62}\u{300}\u{316}\u{65}\u{73}\u{74}
+    let sut = "b̖̀est"
+    let atPos = sut.unicodeScalars.index(after: sut.unicodeScalars.startIndex)
+
+    // When
+    let next = sut.matchScalar(
+      "\u{300}",
+      at: atPos,
+      limitedBy: sut.endIndex,
+      boundaryCheck: false,
+      isCaseInsensitive: false
+    )
+
+    // Then
+    XCTAssertEqual(next, sut.unicodeScalars.index(after: atPos))
+  }
+}
+
+// MARK: reverseMatchScalar tests
+extension StringMatchingTests {
+  func testReverseMatchScalar() {
+    // Given
+    let sut = "bar"
+
+    // When
+    let previous = sut.reverseMatchScalar(
+      "a",
+      at: sut.index(after: sut.startIndex),
+      limitedBy: sut.startIndex,
+      boundaryCheck: false,
+      isCaseInsensitive: false
+    )
+
+    // Then
+    XCTAssertEqual(previous, sut.startIndex)
+  }
+
+  func testReverseMatchScalarNoMatch() {
+    // Given
+    let sut = "bar"
+
+    // When
+    let previous = sut.reverseMatchScalar(
+      "b",
+      at: sut.index(after: sut.startIndex),
+      limitedBy: sut.startIndex,
+      boundaryCheck: false,
+      isCaseInsensitive: false
+    )
+
+    // Then
+    XCTAssertNil(previous)
+  }
+
+  func testReverseMatchScalarCaseInsensitive() {
+    // Given
+    let sut = "BAR"
+
+    // When
+    let previous = sut.reverseMatchScalar(
+      "a",
+      at: sut.index(after: sut.startIndex),
+      limitedBy: sut.startIndex,
+      boundaryCheck: false,
+      isCaseInsensitive: true
+    )
+
+    // Then
+    XCTAssertEqual(previous, sut.startIndex)
+  }
+
+  func testReverseMatchScalarCaseInsensitiveNoMatch() {
+    // Given
+    let sut = "BAR"
+
+    // When
+    let previous = sut.reverseMatchScalar(
+      "b",
+      at: sut.index(after: sut.startIndex),
+      limitedBy: sut.startIndex,
+      boundaryCheck: false,
+      isCaseInsensitive: true
+    )
+
+    // Then
+    XCTAssertNil(previous)
+  }
+
+  func testReverseMatchScalarAtStart() {
+    // Given
+    let sut = "a"
+
+    // When
+    let previous = sut.reverseMatchScalar(
+      "a",
+      at: sut.startIndex,
+      limitedBy: sut.startIndex,
+      boundaryCheck: false,
+      isCaseInsensitive: false
+    )
+
+    // Then
+    XCTAssertNil(previous)
+  }
+
+  func testReverseMatchScalarBoundaryCheck() {
+    // Given
+    // \u{61}\u{62}\u{300}\u{316}\u{63}\u{64}
+    let sut = "ab̖̀cd"
+
+    // When
+    let previous = sut.reverseMatchScalar(
+      "\u{316}",
+      at: sut.unicodeScalars.index(sut.unicodeScalars.startIndex, offsetBy: 3),
+      limitedBy: sut.startIndex,
+      boundaryCheck: true,
+      isCaseInsensitive: false
+    )
+
+    // Then
+    XCTAssertNil(previous)
+  }
+
+  func testReverseMatchScalarNoBoundaryCheck() {
+    // Given
+    // \u{61}\u{62}\u{300}\u{316}\u{63}\u{64}
+    let sut = "ab̖̀cd"
+    let atPos = sut.unicodeScalars.index(sut.unicodeScalars.startIndex, offsetBy: 3)
+
+    // When
+    let previous = sut.reverseMatchScalar(
+      "\u{316}",
+      at: atPos,
+      limitedBy: sut.startIndex,
+      boundaryCheck: false,
+      isCaseInsensitive: false
+    )
+
+    // Then
+    XCTAssertEqual(previous, sut.unicodeScalars.index(before: atPos))
+  }
 }
