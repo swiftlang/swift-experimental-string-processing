@@ -74,6 +74,9 @@ enum Symbol {
     case .terminal(let t):
       return t.render()
     case .terminalSequence(let s):
+      guard !s.isEmpty else {
+        return "\"\""
+      }
       return "\(s.map({ $0.render() }).joined(separator: " "))"
     case .nonTerminal(let n):
       return n.render()
