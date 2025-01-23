@@ -49,7 +49,6 @@ struct Expression {
   }
 }
 
-// Was Choice
 struct Choice {
   var sequence: [Symbol]
 

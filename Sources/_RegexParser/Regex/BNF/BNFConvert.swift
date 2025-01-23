@@ -5,6 +5,11 @@
 //  Created by Michael Ilseman on 1/18/25.
 //
 
+/// Create a unique non-terminal symbol
+///
+/// NOTE: Currently, this is unique per input regex, but we should extend any
+/// API or SPI to either be able to re-use a generator or pass in a unique seed
+/// (such as a regex-counter).
 struct SymbolGenerator {
   var prefix = ""
 
@@ -33,6 +38,7 @@ struct BNFConvert {
 }
 
 extension BNFConvert {
+  /// Create a new BNF rule for `sym` and add it to our productions.
   @discardableResult
   mutating func createProduction(
     _ sym: NonTerminalSymbol,
@@ -45,6 +51,7 @@ extension BNFConvert {
     return sym
   }
 
+  /// Create a new symbol for `name` and BNF rule and add it to our productions.
   mutating func createProduction(
     _ name: String,
     _ choices: [Choice]
@@ -61,15 +68,9 @@ extension BNFConvert {
 }
 
 extension BNFConvert {
-  mutating func convertAlternation(
-    _ alt: AST.Alternation
-  ) -> [Choice] {
-    fatalError()
-  }
-
-  // Convert a Regex AST node to a concatnative component
-  //
-  // Alternations always produce a new rule
+  /// Convert a Regex AST node to a concatnative component
+  ///
+  /// Alternations always produce a new rule, as do some quantifications
   mutating func convert(
     _ node: AST.Node
   ) throws -> [Symbol] {
@@ -93,7 +94,7 @@ extension BNFConvert {
       // A group is where an alternation could be nested
 
       switch g.kind.value {
-        // BNF as no captures, so these function as syntactic groups
+        // BNF has no captures, so these are just syntactic groups
       case .capture, .namedCapture(_), .balancedCapture(_), .nonCapture:
         return try convert(g.child)
 
@@ -124,8 +125,6 @@ extension BNFConvert {
       case .changeMatchingOptions(_):
         fatalError()
       }
-
-      fatalError()
 
       /// (?(cond) true-branch | false-branch)
     case .conditional(_): fatalError()
@@ -207,6 +206,7 @@ extension BNFConvert {
       break
     }
 
+    // TODO: Not sure what the canonical empty choice is (i.e. ACCEPT).
     let emptyChoice = Choice(Symbol.terminalSequence([]))
     switch amount {
     case .zeroOrMore:
@@ -294,13 +294,7 @@ extension BNFConvert {
 
 
 extension BNFConvert {
-/*
- var symbols = SymbolGenerator()
- var productions = [NonTerminalSymbol: [Choice]]()
- var root: NonTerminalSymbol? = nil
-
- */
-
+  /// Apply `f` (accumulating results) to our rules in reverse-post-order.
   func reversePostOrder<T>(
     _ f: (NonTerminalSymbol, [Choice]) -> T
   ) -> [T] {
@@ -321,7 +315,7 @@ extension BNFConvert {
       }
 
       for choice in choices {
-        for symbol in choice.sequence {
+        for symbol in choice.sequence.lazy.reversed() {
           if case .nonTerminal(let sym) = symbol {
             visit(sym)
           }
