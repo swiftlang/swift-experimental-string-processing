@@ -24,19 +24,16 @@ struct Regex2BNF: ParsableCommand {
   var runExamples = false
 
   func convert(_ pattern: String) throws {
-    print("\n=== /\(pattern)/ ===\n")
-    let ast = try _RegexParser.parse(pattern, .init())
-    print(ast)
-    print()
+    print("/\(pattern)/\n")
     print(try _printAsBNF(inputRegex: pattern))
   }
 
   mutating func run() throws {
     if runExamples {
       // TODO: Turn into test cases
-      print("[Examples")
+//      print("[Examples")
 
-      print("Single-scalar character literals:")
+//      print("Single-scalar character literals:")
       try convert("a")
       try convert("Z")
       try convert("あ")
@@ -44,16 +41,16 @@ struct Regex2BNF: ParsableCommand {
       try convert("\u{301}")
 
 
-      print("Multi-scalar character literals")
+//      print("Multi-scalar character literals")
       try convert("🧟‍♀️")
       try convert("e\u{301}")
 
-      print("Simple alternations")
+//      print("Simple alternations")
       try convert("a|b")
       try convert("a|b|c|d")
       try convert("a|🧟‍♀️\u{301}日|z")
 
-      print("Simple quantifications")
+//      print("Simple quantifications")
       try convert("a*")
       try convert("a+")
       try convert("a?")
@@ -61,16 +58,16 @@ struct Regex2BNF: ParsableCommand {
       try convert("a{,10}")
       try convert("a{2,}")
 
-      print("Grouping")
+//      print("Grouping")
       try convert("a(b|c)d")
       try convert("a(bcd|def(g|h)+)z")
 
-      print("Dot")
+//      print("Dot")
 //      try convert(".*")
 //      try convert("(a|b)*.{3}(a|b)")
 
 
-      print("[Done]")
+//      print("[Done]")
     }
     try convert(pattern)
 

@@ -291,6 +291,136 @@ extension BNFConvert {
   }
 }
 
+extension BNFConvert {
+  // TODO: I just want a use-def chain
+  func calculateUseGraph() -> [NonTerminalSymbol: [NonTerminalSymbol]] {
+    fatalError()
+  }
+
+  
+
+  /// Optimize the BNF
+  mutating func optimize() {
+    // Iterate until we reach a fixed point
+    var changed = true
+    while changed {
+      changed = false
+
+      //
+      // Value propagation: propagate small single-choice single-symbol
+      // productions
+      //
+      // A ::= B C D E
+      // B ::= "b"
+      // C ::= C2
+      // C2 ::= "c"
+      // D ::= "d" "d" "d"
+      // E ::= "e" "e" "e" "e" ...
+      //
+      // -->
+      //
+      // A ::= "b" "c" "d" "d" "d" E
+      // E ::= "e" "e" "e" "e" ...
+      //
+
+      // Build up a list of single-choice single-symbol productions
+      // for upwards propagation
+      let terminalSequenceThreshold = 3
+      var singles = [NonTerminalSymbol: Symbol]()
+      for (key, val) in productions {
+        if val.count == 1 {
+          let valChoice = val.first!
+          if valChoice.sequence.count == 1 {
+            let valSym = valChoice.sequence.first!
+            if case .terminalSequence(let array) = valSym {
+              if array.count > terminalSequenceThreshold {
+                continue
+              }
+            }
+            singles[key] = valSym
+          }
+        }
+      }
+
+      for (key, val) in productions {
+        var valCopy = val
+        var valCopyDidChange = false
+
+        for choiceIdx in val.indices {
+
+          let choice = val[choiceIdx]
+          var choiceCopy = choice
+          var choiceCopyDidChange = false
+
+          for idx in choice.sequence.indices {
+            if case .nonTerminal(let nt) = choice.sequence[idx] {
+              if let sym = singles[nt] {
+                choiceCopy.sequence[idx] = sym
+                choiceCopyDidChange = true
+              }
+            }
+          }
+
+          if choiceCopyDidChange {
+            valCopy[choiceIdx] = choiceCopy
+            valCopyDidChange = true
+          }
+        }
+
+        if valCopyDidChange {
+          productions[key] = valCopy
+          changed = true
+        }
+      }
+
+      // TODO: I think the below is unnecessary, since that would have
+      // upwards propagated for everyone except root.
+//
+//      // Check for a simple layer of redirection:
+//      //
+//      // A ::= B
+//      // B ::= ...
+//      //
+//      // -->
+//      //
+//      // A ::= ...
+//      for (key, val) in productions {
+//        if val.count == 1 {
+//          let valChoice = val.first!
+//          if valChoice.sequence.count == 1 {
+//            let valSym = valChoice.sequence.first!
+//            if case .nonTerminal(let rhs) = valSym {
+//              guard let rhsProd = productions[rhs] else {
+//                fatalError("Invariant violated: Unknown production")
+//              }
+//              productions[key] = rhsProd
+//              changed = true
+//            }
+//          }
+//        }
+//      }
+
+      // Check ROOT, since it has no uses it couldn't upward propagate
+      // a single non-terminal child
+      guard let rootSymbol = root else {
+        fatalError("Invariant violated: no root set")
+      }
+      guard let val = productions[rootSymbol] else {
+        // TODO: or is this an empty grammar?
+        // TODO: test empty regex
+        fatalError("Invariant violated: root has no production")
+      }
+
+      // TODO: This isn't a win when RHS already has uses
+      if val.count == 1 {
+        if case .nonTerminal(let rhs) = val.first!.sequence.first! {
+          productions[rootSymbol] = productions[rhs]
+          changed = true
+        }
+      }
+    }
+  }
+}
 
 
 extension BNFConvert {

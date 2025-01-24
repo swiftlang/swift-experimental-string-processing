@@ -21,6 +21,7 @@ func convert(_ ast: AST) throws -> BNF {
   var converter = BNFConvert()
   let rhs = try converter.convert(ast.root)
   converter.root = converter.createProduction("ROOT", rhs)
+  converter.optimize()
   return converter.createBNF()
 }
 
