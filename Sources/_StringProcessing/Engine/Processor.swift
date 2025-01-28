@@ -429,6 +429,24 @@ extension Processor {
     return true
   }
 
+  // TODO: bytes should be a Span or RawSpan
+  mutating func reverseMatchUTF8(
+    _ bytes: Array<UInt8>,
+    boundaryCheck: Bool
+  ) -> Bool {
+    guard let previous = input.reverseMatchUTF8(
+      bytes,
+      at: currentPosition,
+      limitedBy: start,
+      boundaryCheck: boundaryCheck
+    ) else {
+      signalFailure()
+      return false
+    }
+    currentPosition = previous
+    return true
+  }
+
   // If we have a bitset we know that the CharacterClass only matches against
   // ascii characters, so check if the current input element is ascii then
   // check if it is set in the bitset
@@ -716,6 +734,15 @@ extension Processor {
       let (utf8Reg, boundaryCheck) = payload.matchUTF8Payload
       let utf8Content = registers[utf8Reg]
       if matchUTF8(
+        utf8Content, boundaryCheck: boundaryCheck
+      ) {
+        controller.step()
+      }
+
+    case .reverseMatchUTF8:
+      let (utf8Reg, boundaryCheck) = payload.matchUTF8Payload
+      let utf8Content = registers[utf8Reg]
+      if reverseMatchUTF8(
         utf8Content, boundaryCheck: boundaryCheck
       ) {
         controller.step()
@@ -1028,7 +1055,28 @@ extension String {
       self.utf8.formIndex(after: &cur)
     }
 
-    guard cur <= end else { return nil }
+    assert(cur <= end)
+
+    if boundaryCheck && !isOnGraphemeClusterBoundary(cur) {
+      return nil
+    }
+
+    return cur
+  }
+
+  func reverseMatchUTF8(
+    _ bytes: Array<UInt8>,
+    at pos: Index,
+    limitedBy start: Index,
+    boundaryCheck: Bool
+  ) -> Index? {
+    var cur = pos
+    for b in bytes.reversed() {
+      guard cur > start, self.utf8[cur] == b else { return nil }
+      self.utf8.formIndex(before: &cur)
+    }
+
+    assert(cur > start)
 
     if boundaryCheck && !isOnGraphemeClusterBoundary(cur) {
       return nil

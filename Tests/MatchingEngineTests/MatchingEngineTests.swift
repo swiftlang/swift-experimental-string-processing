@@ -355,7 +355,8 @@ extension StringMatchingTests {
     XCTAssertNil(next)
   }
 
-  func testMatchScalarBoundaryCheck() {
+  // TODO: JH - Write test for when the boundary check passes/check if that's already covered
+  func testMatchScalarFailsBoundaryCheck() {
     // Given
     // \u{62}\u{300}\u{316}\u{65}\u{73}\u{74}
     let sut = "b̖̀est"
@@ -377,19 +378,19 @@ extension StringMatchingTests {
     // Given
     // \u{62}\u{300}\u{316}\u{65}\u{73}\u{74}
     let sut = "b̖̀est"
-    let atPos = sut.unicodeScalars.index(after: sut.unicodeScalars.startIndex)
+    let startPos = sut.unicodeScalars.index(after: sut.unicodeScalars.startIndex)
 
     // When
     let next = sut.matchScalar(
       "\u{300}",
-      at: atPos,
+      at: startPos,
       limitedBy: sut.endIndex,
       boundaryCheck: false,
       isCaseInsensitive: false
     )
 
     // Then
-    XCTAssertEqual(next, sut.unicodeScalars.index(after: atPos))
+    XCTAssertEqual(next, sut.unicodeScalars.index(after: startPos))
   }
 }
 
@@ -480,7 +481,8 @@ extension StringMatchingTests {
     XCTAssertNil(previous)
   }
 
-  func testReverseMatchScalarBoundaryCheck() {
+  // TODO: JH - Write test for when the boundary check passes/check if that's already covered
+  func testReverseMatchScalarFailsBoundaryCheck() {
     // Given
     // \u{61}\u{62}\u{300}\u{316}\u{63}\u{64}
     let sut = "ab̖̀cd"
@@ -502,18 +504,204 @@ extension StringMatchingTests {
     // Given
     // \u{61}\u{62}\u{300}\u{316}\u{63}\u{64}
     let sut = "ab̖̀cd"
-    let atPos = sut.unicodeScalars.index(sut.unicodeScalars.startIndex, offsetBy: 3)
+    let startPos = sut.unicodeScalars.index(sut.unicodeScalars.startIndex, offsetBy: 3)
 
     // When
     let previous = sut.reverseMatchScalar(
       "\u{316}",
-      at: atPos,
+      at: startPos,
       limitedBy: sut.startIndex,
       boundaryCheck: false,
       isCaseInsensitive: false
     )
 
     // Then
-    XCTAssertEqual(previous, sut.unicodeScalars.index(before: atPos))
+    XCTAssertEqual(previous, sut.unicodeScalars.index(before: startPos))
+  }
+}
+
+// MARK: matchUTF8 tests
+extension StringMatchingTests {
+  func testMatchUTF8() {
+    // Given
+    let sut = "quotedliteral"
+    let needle = Array(sut.prefix(3).utf8)
+
+    // When
+    let next = sut.matchUTF8(
+      needle,
+      at: sut.startIndex,
+      limitedBy: sut.endIndex,
+      boundaryCheck: false
+    )
+
+    // Then
+    XCTAssertEqual(next, sut.index(sut.startIndex, offsetBy: 3))
+  }
+
+  func testMatchUTF8NoMatch() {
+    // Given
+    let haystack = "quotedliteral"
+    let needle = Array("\(haystack.prefix(2))a".utf8)
+
+    // When
+    let next = haystack.matchUTF8(
+      needle,
+      at: haystack.startIndex,
+      limitedBy: haystack.endIndex,
+      boundaryCheck: false
+    )
+
+    // Then
+    XCTAssertNil(next)
+  }
+
+  func testMatchUTF8MatchPastEnd() {
+    // Given
+    let haystack = "quotedliteral"
+    let needle = Array(haystack.prefix(3).utf8)
+
+    // When
+    let next = haystack.matchUTF8(
+      needle,
+      at: haystack.startIndex,
+      limitedBy: haystack.index(haystack.startIndex, offsetBy: 2),
+      boundaryCheck: false
+    )
+
+    // Then
+    XCTAssertNil(next)
+  }
+
+  // TODO: JH - Write test for when the boundary check passes/check if that's already covered
+  func testMatchUTF8FailsBoundaryCheck() {
+    // Given
+    // \u{62}\u{300}\u{316}\u{65}\u{73}\u{74}
+    let sut = "b̖̀est"
+
+    // When
+    let next = sut.matchUTF8(
+      Array("\u{62}".utf8),
+      at: sut.unicodeScalars.startIndex,
+      limitedBy: sut.endIndex,
+      boundaryCheck: true
+    )
+
+    // Then
+    XCTAssertNil(next)
+  }
+
+  func testMatchUTF8NoBoundaryCheck() {
+    // Given
+    // \u{62}\u{300}\u{316}\u{65}\u{73}\u{74}
+    let sut = "b̖̀est"
+
+    // When
+    let next = sut.matchUTF8(
+      Array("\u{62}".utf8),
+      at: sut.startIndex,
+      limitedBy: sut.endIndex,
+      boundaryCheck: false
+    )
+
+    // Then
+    XCTAssertEqual(next, sut.unicodeScalars.index(after: sut.startIndex))
+  }
+}
+
+// MARK: reverseMatchUTF8 tests
+extension StringMatchingTests {
+  func testReverseMatchUTF8() {
+    // Given
+    let sut = "quotedliteral"
+    let needle = Array(sut.suffix(3).utf8)
+
+    // When
+    let previous = sut.reverseMatchUTF8(
+      needle,
+      at: sut.index(before: sut.endIndex),
+      limitedBy: sut.startIndex,
+      boundaryCheck: false
+    )
+
+    // Then
+    XCTAssertEqual(previous, sut.index(sut.endIndex, offsetBy: -4))
+  }
+
+  func testReverseMatchUTF8NoMatch() {
+    // Given
+    let haystack = "quotedliteral"
+    let needle = Array("\(haystack.suffix(2))a".utf8)
+
+    // When
+    let previous = haystack.reverseMatchUTF8(
+      needle,
+      at: haystack.index(before: haystack.endIndex),
+      limitedBy: haystack.startIndex,
+      boundaryCheck: false
+    )
+
+    // Then
+    XCTAssertNil(previous)
+  }
+
+  func testReverseMatchUTF8MatchPastStart() {
+    // Given
+    let haystack = "quotedliteral"
+    let needle = Array(haystack.suffix(3).utf8)
+
+    // When
+    let previous = haystack.reverseMatchUTF8(
+      needle,
+      at: haystack.index(haystack.endIndex, offsetBy: -1),
+      limitedBy: haystack.index(haystack.unicodeScalars.endIndex, offsetBy: -2),
+      boundaryCheck: false
+    )
+
+    // Then
+    XCTAssertNil(previous)
+  }
+
+  // TODO: JH - Write test for when the boundary check passes/check if that's already covered
+  func testReverseMatchUTF8FailsBoundaryCheck() {
+    // Given
+    // \u{61}\u{62}\u{300}\u{316}\u{63}\u{64}
+    let sut = "ab̖̀cd"
+    let needle = Array("\u{316}".utf8)
+
+    // When
+    let previous = sut.reverseMatchUTF8(
+      needle,
+      at: sut.utf8.index(sut.utf8.endIndex, offsetBy: -3),
+      limitedBy: sut.startIndex,
+      boundaryCheck: true
+    )
+
+    // Then
+    XCTAssertNil(previous)
+  }
+
+  func testReverseMatchUTF8NoBoundaryCheck() throws {
+    // Given
+    // \u{61}\u{62}\u{300}\u{316}\u{63}\u{64}
+    // utf8 = [97, 98, 204, 128, 204, 150, 99, 100]
+    let sut = "ab̖̀cd"
+    // utf8 = [204, 150]
+    let needle = Array("\u{316}".utf8)
+    // Position of \u{316} = 5[utf8]
+    let startPos = sut.utf8.index(sut.utf8.endIndex, offsetBy: -3)
+
+    // When
+    let previous = sut.reverseMatchUTF8(
+      needle,
+      at: startPos,
+      limitedBy: sut.startIndex,
+      boundaryCheck: false
+    )
+
+    // Then
+    // TODO: JH - Is there a better way to write this assertion?
+    // Previous should be the second byte of \u{300}
+    XCTAssertEqual(sut.utf8[previous!], 128)
   }
 }

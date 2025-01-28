@@ -134,6 +134,7 @@ extension Instruction {
     ///
     /// Operands: Scalar value to match against and booleans
     case reverseMatchScalar
+
     /// Match directly (binary semantics) against a series of UTF-8 bytes
     ///
     /// NOTE: Compiler should ensure to only emit this instruction when normalization
@@ -144,6 +145,17 @@ extension Instruction {
     ///
     ///     matchUTF8(_: UTF8Register, boundaryCheck: Bool)
     case matchUTF8
+
+    /// Reverse match directly (binary semantics) against a series of UTF-8 bytes
+    ///
+    /// NOTE: Compiler should ensure to only emit this instruction when normalization
+    /// is not required. E.g., scalar-semantic mode or when the matched portion is entirely ASCII
+    /// (which is invariant under NFC). Similary, this is case-sensitive.
+    ///
+    /// TODO: should we add case-insensitive?
+    ///
+    ///     reverseMatchUTF8(_: UTF8Register, boundaryCheck: Bool)
+    case reverseMatchUTF8
 
     /// Match a character or a scalar against a set of valid ascii values stored in a bitset
     ///

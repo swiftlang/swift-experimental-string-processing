@@ -139,7 +139,11 @@ fileprivate extension Compiler.ByteCodeGen {
       // ASCII value)
       if s.utf8.count >= longThreshold, !options.isCaseInsensitive {
         let boundaryCheck = options.semanticLevel == .graphemeCluster
-        builder.buildMatchUTF8(Array(s.utf8), boundaryCheck: boundaryCheck)
+        builder.buildMatchUTF8(
+          Array(s.utf8),
+          boundaryCheck: boundaryCheck,
+          reverse: reverse
+        )
         return
       }
     }

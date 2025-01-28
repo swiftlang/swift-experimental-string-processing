@@ -209,8 +209,9 @@ extension MEProgram.Builder {
       opcode, .init(element: elements.store(e), isCaseInsensitive: isCaseInsensitive)))
   }
 
-  mutating func buildMatchUTF8(_ utf8: Array<UInt8>, boundaryCheck: Bool) {
-    instructions.append(.init(.matchUTF8, .init(
+  mutating func buildMatchUTF8(_ utf8: Array<UInt8>, boundaryCheck: Bool, reverse: Bool) {
+    let opcode = reverse ? Instruction.OpCode.reverseMatchUTF8 : .matchUTF8
+    instructions.append(.init(opcode, .init(
       utf8: utf8Contents.store(utf8), boundaryCheck: boundaryCheck)))
   }
 
