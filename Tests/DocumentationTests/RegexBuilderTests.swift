@@ -205,3 +205,32 @@ extension RegexBuilderTests {
     XCTAssertEqual(matches[0].1, 121.54)
   }
 }
+
+@available(SwiftStdlib 5.10, *)
+extension RegexBuilderTests {
+  func testPositiveLookbehind() throws {
+    let regex = Regex {
+      Lookbehind { "foo" }
+      "bar"
+    }
+
+    let matching = try regex.firstMatch(in: "foobar")?.output // == "bar"
+    let nonMatching = try regex.firstMatch(in: "fuubar")?.output // == nil
+
+    try XCTAssertEqual(XCTUnwrap(matching), "bar")
+    XCTAssertNil(nonMatching)
+  }
+
+  func testNegativeLookbehind() throws {
+    let regex = Regex {
+      NegativeLookbehind { "buzz" }
+      "baz"
+    }
+
+    let matching = try regex.firstMatch(in: "foobaz")?.output // == "baz"
+    let nonMatching = try regex.firstMatch(in: "buzzbaz")?.output // == nil
+
+    try XCTAssertEqual(XCTUnwrap(matching), "baz")
+    XCTAssertNil(nonMatching)
+  }
+}
