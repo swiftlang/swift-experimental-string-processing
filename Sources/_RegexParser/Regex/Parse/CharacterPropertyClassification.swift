@@ -237,6 +237,7 @@ extension Parser {
       case "elba", "elbasan":               return .elbasan
       case "elym", "elymaic":               return .elymaic
       case "ethi", "ethiopic":              return .ethiopic
+      case "gara", "garay":                 return .garay
       case "geor", "georgian":              return .georgian
       case "glag", "glagolitic":            return .glagolitic
       case "gong", "gunjalagondi":          return .gunjalaGondi
@@ -245,6 +246,7 @@ extension Parser {
       case "gran", "grantha":               return .grantha
       case "grek", "greek":                 return .greek
       case "gujr", "gujarati":              return .gujarati
+      case "gukh", "gurungkhema":           return .gurungKhema
       case "guru", "gurmukhi":              return .gurmukhi
       case "hang", "hangul":                return .hangul
       case "hani", "han":                   return .han
@@ -261,11 +263,13 @@ extension Parser {
       case "java", "javanese":              return .javanese
       case "kali", "kayahli":               return .kayahLi
       case "kana", "katakana":              return .katakana
+      case "kawi":                          return .kawi
       case "khar", "kharoshthi":            return .kharoshthi
       case "khmr", "khmer":                 return .khmer
       case "khoj", "khojki":                return .khojki
       case "kits", "khitansmallscript":     return .khitanSmallScript
       case "knda", "kannada":               return .kannada
+      case "krai", "kiratrai":              return .kiratRai
       case "kthi", "kaithi":                return .kaithi
       case "lana", "taitham":               return .taiTham
       case "laoo", "lao":                   return .lao
@@ -293,6 +297,7 @@ extension Parser {
       case "mtei", "meeteimayek":           return .meeteiMayek
       case "mult", "multani":               return .multani
       case "mymr", "myanmar":               return .myanmar
+      case "nagm", "nagmundari":            return .nagMundari
       case "nand", "nandinagari":           return .nandinagari
       case "narb", "oldnortharabian":       return .oldNorthArabian
       case "nbat", "nabataean":             return .nabataean
@@ -301,6 +306,7 @@ extension Parser {
       case "nshu", "nushu":                 return .nushu
       case "ogam", "ogham":                 return .ogham
       case "olck", "olchiki":               return .olChiki
+      case "onao", "olonal":                return .olOnal
       case "orkh", "oldturkic":             return .oldTurkic
       case "orya", "oriya":                 return .oriya
       case "osge", "osage":                 return .osage
@@ -332,6 +338,7 @@ extension Parser {
       case "sora", "sorasompeng":           return .soraSompeng
       case "soyo", "soyombo":               return .soyombo
       case "sund", "sundanese":             return .sundanese
+      case "sunu", "sunuwar":               return .sunuwar
       case "sylo", "sylotinagri":           return .sylotiNagri
       case "syrc", "syriac":                return .syriac
       case "tagb", "tagbanwa":              return .tagbanwa
@@ -349,7 +356,9 @@ extension Parser {
       case "tibt", "tibetan":               return .tibetan
       case "tirh", "tirhuta":               return .tirhuta
       case "tnsa", "tangsa":                return .tangsa
+      case "todr", "todhri":                return .todhri
       case "toto":                          return .toto
+      case "tutg", "tulutigalari":          return .tuluTigalari
       case "ugar", "ugaritic":              return .ugaritic
       case "vaii", "vai":                   return .vai
       case "vith", "vithkuqi":              return .vithkuqi
