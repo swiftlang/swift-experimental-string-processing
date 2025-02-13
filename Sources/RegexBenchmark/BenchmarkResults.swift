@@ -114,16 +114,16 @@ extension BenchmarkRunner {
       print(item)
     }
 
-    #if os(macOS) && canImport(Charts)
-    if showChart {
-      print("""
-        === Comparison chart =================================================================
-        Press Control-C to close...
-        """)
-      BenchmarkResultApp.comparisons = comparisons
-      BenchmarkResultApp.main()
-    }
-    #endif
+//    #if os(macOS) && canImport(Charts)
+//    if showChart {
+//      print("""
+//        === Comparison chart =================================================================
+//        Press Control-C to close...
+//        """)
+//      BenchmarkResultApp.comparisons = comparisons
+//      BenchmarkResultApp.main()
+//    }
+//    #endif
   }
   
   func saveComparisons(
