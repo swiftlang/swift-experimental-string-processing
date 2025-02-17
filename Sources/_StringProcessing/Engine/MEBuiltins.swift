@@ -368,6 +368,25 @@ extension String {
       limitedBy: end,
       isScalarSemantics: isScalarSemantics)
   }
+
+  internal func reverseMatchRegexDot(
+    at currentPosition: Index,
+    limitedBy start: Index,
+    anyMatchesNewline: Bool,
+    isScalarSemantics: Bool
+  ) -> Index? {
+    guard currentPosition > start else { return nil }
+
+    if anyMatchesNewline {
+      return index(
+        before: currentPosition, isScalarSemantics: isScalarSemantics)
+    }
+
+    return reverseMatchAnyNonNewline(
+      at: currentPosition,
+      limitedBy: start,
+      isScalarSemantics: isScalarSemantics)
+  }
 }
 
 // MARK: - Built-in character class matching

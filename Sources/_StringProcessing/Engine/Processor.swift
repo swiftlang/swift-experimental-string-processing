@@ -785,23 +785,7 @@ extension Processor {
         controller.step()
       }
     case .reverseQuantify:
-      let quantPayload = payload.quantify
-      let matched: Bool
-      switch (quantPayload.quantKind, quantPayload.minTrips, quantPayload.maxExtraTrips) {
-      case (.reluctant, _, _):
-        assertionFailure(".reluctant is not supported by .quantify")
-        return
-      case (.eager, 0, nil):
-        runEagerZeroOrMoreReverseQuantify(quantPayload)
-        matched = true
-      case (.eager, 1, nil):
-        matched = runEagerOneOrMoreReverseQuantify(quantPayload)
-      case (_, 0, 1):
-        matched = runZeroOrOneReverseQuantify(quantPayload)
-      default:
-        matched = runReverseQuantify(quantPayload)
-      }
-      if matched {
+      if runReverseQuantify(payload.quantify) {
         controller.step()
       }
 
