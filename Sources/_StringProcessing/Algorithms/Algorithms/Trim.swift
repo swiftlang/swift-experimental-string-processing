@@ -61,7 +61,7 @@ extension Collection where SubSequence == Self {
   @available(SwiftStdlib 5.7, *)
   public mutating func trimPrefix(
     while predicate: (Element) throws -> Bool
-  ) throws {
+  ) rethrows {
     let end = try _endOfPrefix(while: predicate)
     self = self[end...]
   }
