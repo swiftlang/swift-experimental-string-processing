@@ -63,6 +63,25 @@ extension RegexTests {
       _ = p.lexNumber()
     }
 
+    let invalidQuantBounds: Array<String> = [
+      "65536",                       // UInt16.max + 1
+      "2147483646",                  // Int32.max  - 1
+      "9223372036854775806",         // Int64.max  - 1
+    ]
+
+    for invalidNum in invalidQuantBounds {
+      let regexes: Array<String> = [
+        "x{\(invalidNum)}",
+        "x{1,\(invalidNum)}",
+        "x{\(invalidNum),1}",
+      ]
+      for regex in regexes {
+        diagnose(regex, expecting: .numberOverflow(invalidNum)) { p in
+          _ = p.parse()
+        }
+      }
+    }
+
     // TODO: want to dummy print out source ranges, etc, test that.
   }
 

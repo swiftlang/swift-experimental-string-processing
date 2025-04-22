@@ -331,7 +331,9 @@ extension Parser {
   ///
   /// Diagnoses on overflow
   ///
-  mutating func lexNumber(_ kind: RadixKind = .decimal) -> AST.Atom.Number? {
+  mutating func lexNumber(
+    _ kind: RadixKind = .decimal
+  ) -> AST.Atom.Number? {
     guard let str = tryEatPrefix(kind.characterFilter) else {
       return nil
     }
@@ -341,6 +343,26 @@ extension Parser {
     }
     return .init(i, at: str.location)
   }
+
+  /// Try to eat a quantification bound, such as appears in `/x{3,12}`
+  ///
+  /// Returns: `nil` if there's no number, otherwise the number
+  ///
+  /// Diagnoses on overflow. Currenlty, we will diagnose for any values over `UInt16.max`
+  ///
+  mutating func lexQuantBound() -> AST.Atom.Number? {
+    let kind = RadixKind.decimal
+    guard let str = tryEatPrefix(kind.characterFilter) else {
+      return nil
+    }
+    guard let i = UInt16(str.value, radix: kind.radix) else {
+      error(.numberOverflow(str.value), at: str.location)
+      return .init(nil, at: str.location)
+    }
+
+    return .init(Int(i), at: str.location)
+  }
+
 
   /// Expect a number of a given `kind`, diagnosing if a number cannot be
   /// parsed.
@@ -492,7 +514,7 @@ extension Parser {
 
         return p.tryEating { p in
           guard p.tryEat("{"),
-                let range = p.lexRange(trivia: &trivia),
+                let range = p.lexQuantRange(trivia: &trivia),
                 p.tryEat("}")
           else { return nil }
           return range.value
@@ -519,12 +541,14 @@ extension Parser {
   ///                  | ExpRange
   ///     ExpRange    -> '..<' <Int> | '...' <Int>
   ///                  | <Int> '..<' <Int> | <Int> '...' <Int>?
-  mutating func lexRange(trivia: inout [AST.Trivia]) -> Located<Quant.Amount>? {
+  mutating func lexQuantRange(
+    trivia: inout [AST.Trivia]
+  ) -> Located<Quant.Amount>? {
     recordLoc { p in
       p.tryEating { p in
         if let t = p.lexWhitespace() { trivia.append(t) }
 
-        let lowerOpt = p.lexNumber()
+        let lowerOpt = p.lexQuantBound()
 
         if let t = p.lexWhitespace() { trivia.append(t) }
 
@@ -546,7 +570,7 @@ extension Parser {
 
         if let t = p.lexWhitespace() { trivia.append(t) }
 
-        var upperOpt = p.lexNumber()
+        var upperOpt = p.lexQuantBound()
         if closedRange == false {
           // If we have an open range, the upper bound should be adjusted down.
           upperOpt?.value? -= 1
