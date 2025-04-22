@@ -348,7 +348,7 @@ extension Parser {
   ///
   /// Returns: `nil` if there's no number, otherwise the number
   ///
-  /// Diagnoses on overflow. Currenlty, we will diagnose for any values over `UInt16.max`
+  /// Diagnoses on overflow. Currently, we will diagnose for any values over `UInt16.max`
   ///
   mutating func lexQuantBound() -> AST.Atom.Number? {
     let kind = RadixKind.decimal
