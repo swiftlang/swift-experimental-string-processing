@@ -368,9 +368,8 @@ fileprivate extension Compiler.ByteCodeGen {
       throw Unsupported("Lookarounds with custom consumers")
     }
 
+    options.beginScope()
     if !kind.forwards {
-      defer { options.endScope() }
-      options.beginScope()
       // TODO: JH - Is it okay to use .fake here?
       options.apply(.init(adding: [.init(.reverse, location: .fake)]))
     }
@@ -380,6 +379,8 @@ fileprivate extension Compiler.ByteCodeGen {
     } else {
       try emitNegativeLookaround(child)
     }
+
+    options.endScope()
   }
 
   mutating func emitPositiveLookaround(_ child: DSLTree.Node) throws {

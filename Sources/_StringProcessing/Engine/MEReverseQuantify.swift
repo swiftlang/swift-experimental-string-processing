@@ -189,7 +189,7 @@ extension String {
       }
       rangeStart = currentPosition
       currentPosition = previous
-      assert(currentPosition > rangeEnd)
+      assert(currentPosition < rangeStart)
     }
 
     guard numMatches >= minMatches else {
@@ -302,7 +302,7 @@ extension String {
       produceSavePointRange: produceSavePointRange,
       isScalarSemantics: isScalarSemantics
     ) { currentPosition, start, isScalarSemantics in
-      reverseMatchScalar(
+      matchPreviousScalar(
         scalar,
         at: currentPosition,
         limitedBy: start,
@@ -325,7 +325,7 @@ extension String {
       produceSavePointRange: produceSavePointRange,
       isScalarSemantics: isScalarSemantics
     ) { currentPosition, start, isScalarSemantics in
-      reverseMatchScalar(
+      matchPreviousScalar(
         scalar,
         at: currentPosition,
         limitedBy: start,
@@ -351,7 +351,7 @@ extension String {
       produceSavePointRange: produceSavePointRange,
       isScalarSemantics: isScalarSemantics
     ) { currentPosition, start, isScalarSemantics in
-      reverseMatchScalar(
+      matchPreviousScalar(
         scalar,
         at: currentPosition,
         limitedBy: start,
@@ -378,7 +378,7 @@ extension String {
       produceSavePointRange: produceSavePointRange,
       isScalarSemantics: isScalarSemantics
     ) { currentPosition, start, isScalarSemantics in
-      reverseMatchBuiltinCC(
+      matchPreviousBuiltinCC(
         builtinCC,
         at: currentPosition,
         limitedBy: start,
@@ -404,7 +404,7 @@ extension String {
       produceSavePointRange: produceSavePointRange,
       isScalarSemantics: isScalarSemantics
     ) { currentPosition, start, isScalarSemantics in
-      reverseMatchBuiltinCC(
+      matchPreviousBuiltinCC(
         builtinCC,
         at: currentPosition,
         limitedBy: start,
@@ -433,7 +433,7 @@ extension String {
       produceSavePointRange: produceSavePointRange,
       isScalarSemantics: isScalarSemantics
     ) { currentPosition, start, isScalarSemantics in
-      reverseMatchBuiltinCC(
+      matchPreviousBuiltinCC(
         builtinCC,
         at: currentPosition,
         limitedBy: start,

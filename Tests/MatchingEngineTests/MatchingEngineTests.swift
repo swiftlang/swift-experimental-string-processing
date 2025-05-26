@@ -78,15 +78,15 @@ final class StringMatchingTests: XCTestCase {
   // MARK: characterAndStart tests
   func testCharacterAndStart_HappyPath() throws {
     // Given
-    let sut = "foo"
+    let sut = "bar"
     let pos = sut.index(before: sut.endIndex)
 
     // When
-    let result = sut.characterAndStart(at: pos, limitedBy: sut.startIndex)
+    let result = sut.character(before: pos, limitedBy: sut.startIndex)
 
     // Then
     let (char, previousIndex) = try XCTUnwrap(result)
-    XCTAssertEqual(char, "o")
+    XCTAssertEqual(char, "a")
     XCTAssertEqual(previousIndex, sut.index(before: pos))
   }
 
@@ -135,7 +135,7 @@ final class StringMatchingTests: XCTestCase {
     let sut = "foo"
 
     // When
-    let result = sut.characterAndStart(at: sut.startIndex, limitedBy: sut.startIndex)
+    let result = sut.character(before: sut.startIndex, limitedBy: sut.startIndex)
 
     // Then
     XCTAssertNil(result)
@@ -195,7 +195,7 @@ final class StringMatchingTests: XCTestCase {
     XCTAssertNil(result)
   }
 
-  func testReverseMatchAnyNonNewline() throws {
+  func testMatchPreviousAnyNonNewline() throws {
     // Given
     // A string without any newline characters
     let sut = "bar"
@@ -203,7 +203,7 @@ final class StringMatchingTests: XCTestCase {
     let pos = sut.index(before: sut.endIndex)
 
     // When we run the reverse match:
-    let result = sut.reverseMatchAnyNonNewline(
+    let result = sut.matchPreviousAnyNonNewline(
       at: pos,
       limitedBy: sut.startIndex,
       isScalarSemantics: true
@@ -215,15 +215,15 @@ final class StringMatchingTests: XCTestCase {
     XCTAssertEqual(sut[previousIndex], "a")
   }
 
-  func testReverseMatchAnyNonNewline_Newline() throws {
+  func testMatchPreviousAnyNonNewline_Newline() throws {
     // Given
     // A string that has a newline character,
     let sut = "ba\nr"
-    // and the index of that newline character
-    let pos = try XCTUnwrap(sut.firstIndex(of: "\n"))
+    // and the index of the character after that newline
+    let pos = sut.index(sut.startIndex, offsetBy: 3)
 
     // When we run the reverse match:
-    let result = sut.reverseMatchAnyNonNewline(
+    let result = sut.matchPreviousAnyNonNewline(
       at: pos,
       limitedBy: sut.startIndex,
       isScalarSemantics: true
@@ -233,13 +233,13 @@ final class StringMatchingTests: XCTestCase {
     XCTAssertNil(result)
   }
 
-  func testReverseMatchAnyNonNewline_atStart() throws {
+  func testMatchPreviousAnyNonNewline_atStart() throws {
     // Given
     // A string without any newline characters
     let sut = "bar"
 
     // When we try to reverse match starting at `startIndex`:
-    let result = sut.reverseMatchAnyNonNewline(
+    let result = sut.matchPreviousAnyNonNewline(
       at: sut.startIndex,
       limitedBy: sut.startIndex,
       isScalarSemantics: true
@@ -396,31 +396,31 @@ extension StringMatchingTests {
 
 // MARK: reverseMatchScalar tests
 extension StringMatchingTests {
-  func testReverseMatchScalar() {
+  func testMatchPreviousScalar() {
     // Given
     let sut = "bar"
 
     // When
-    let previous = sut.reverseMatchScalar(
+    let previous = sut.matchPreviousScalar(
       "a",
-      at: sut.index(after: sut.startIndex),
+      at: sut.index(before: sut.endIndex),
       limitedBy: sut.startIndex,
       boundaryCheck: false,
       isCaseInsensitive: false
     )
 
     // Then
-    XCTAssertEqual(previous, sut.startIndex)
+    XCTAssertEqual(previous, sut.index(after: sut.startIndex))
   }
 
-  func testReverseMatchScalarNoMatch() {
+  func testMatchPreviousScalarNoMatch() {
     // Given
     let sut = "bar"
 
     // When
-    let previous = sut.reverseMatchScalar(
+    let previous = sut.matchPreviousScalar(
       "b",
-      at: sut.index(after: sut.startIndex),
+      at: sut.index(before: sut.endIndex),
       limitedBy: sut.startIndex,
       boundaryCheck: false,
       isCaseInsensitive: false
@@ -430,31 +430,31 @@ extension StringMatchingTests {
     XCTAssertNil(previous)
   }
 
-  func testReverseMatchScalarCaseInsensitive() {
+  func testMatchPreviousScalarCaseInsensitive() {
     // Given
     let sut = "BAR"
 
     // When
-    let previous = sut.reverseMatchScalar(
+    let previous = sut.matchPreviousScalar(
       "a",
-      at: sut.index(after: sut.startIndex),
+      at: sut.index(before: sut.endIndex),
       limitedBy: sut.startIndex,
       boundaryCheck: false,
       isCaseInsensitive: true
     )
 
     // Then
-    XCTAssertEqual(previous, sut.startIndex)
+    XCTAssertEqual(previous, sut.index(after: sut.startIndex))
   }
 
-  func testReverseMatchScalarCaseInsensitiveNoMatch() {
+  func testMatchPreviousScalarCaseInsensitiveNoMatch() {
     // Given
     let sut = "BAR"
 
     // When
-    let previous = sut.reverseMatchScalar(
+    let previous = sut.matchPreviousScalar(
       "b",
-      at: sut.index(after: sut.startIndex),
+      at: sut.index(before: sut.endIndex),
       limitedBy: sut.startIndex,
       boundaryCheck: false,
       isCaseInsensitive: true
@@ -464,12 +464,12 @@ extension StringMatchingTests {
     XCTAssertNil(previous)
   }
 
-  func testReverseMatchScalarAtStart() {
+  func testMatchPreviousScalarAtStart() {
     // Given
     let sut = "a"
 
     // When
-    let previous = sut.reverseMatchScalar(
+    let previous = sut.matchPreviousScalar(
       "a",
       at: sut.startIndex,
       limitedBy: sut.startIndex,
@@ -482,13 +482,13 @@ extension StringMatchingTests {
   }
 
   // TODO: JH - Write test for when the boundary check passes/check if that's already covered
-  func testReverseMatchScalarFailsBoundaryCheck() {
+  func testMatchPreviousScalarFailsBoundaryCheck() {
     // Given
     // \u{61}\u{62}\u{300}\u{316}\u{63}\u{64}
     let sut = "ab̖̀cd"
 
     // When
-    let previous = sut.reverseMatchScalar(
+    let previous = sut.matchPreviousScalar(
       "\u{316}",
       at: sut.unicodeScalars.index(sut.unicodeScalars.startIndex, offsetBy: 3),
       limitedBy: sut.startIndex,
@@ -500,14 +500,14 @@ extension StringMatchingTests {
     XCTAssertNil(previous)
   }
 
-  func testReverseMatchScalarNoBoundaryCheck() {
+  func testMatchPreviousScalarNoBoundaryCheck() {
     // Given
     // \u{61}\u{62}\u{300}\u{316}\u{63}\u{64}
     let sut = "ab̖̀cd"
-    let startPos = sut.unicodeScalars.index(sut.unicodeScalars.startIndex, offsetBy: 3)
+    let startPos = sut.unicodeScalars.index(sut.unicodeScalars.startIndex, offsetBy: 4)
 
     // When
-    let previous = sut.reverseMatchScalar(
+    let previous = sut.matchPreviousScalar(
       "\u{316}",
       at: startPos,
       limitedBy: sut.startIndex,
@@ -611,11 +611,11 @@ extension StringMatchingTests {
 
 // MARK: reverseMatchUTF8 tests
 extension StringMatchingTests {
-  func testReverseMatchUTF8() {
+  func testMatchPreviousUTF8() {
     // Given
     let sut = "quotedliteral"
     let needle = Array(sut.suffix(3).utf8)
-
+    
     // When
     let previous = sut.reverseMatchUTF8(
       needle,
@@ -623,16 +623,16 @@ extension StringMatchingTests {
       limitedBy: sut.startIndex,
       boundaryCheck: false
     )
-
+    
     // Then
     XCTAssertEqual(previous, sut.index(sut.endIndex, offsetBy: -4))
   }
-
-  func testReverseMatchUTF8NoMatch() {
+  
+  func testMatchPreviousUTF8NoMatch() {
     // Given
     let haystack = "quotedliteral"
     let needle = Array("\(haystack.suffix(2))a".utf8)
-
+    
     // When
     let previous = haystack.reverseMatchUTF8(
       needle,
@@ -640,16 +640,16 @@ extension StringMatchingTests {
       limitedBy: haystack.startIndex,
       boundaryCheck: false
     )
-
+    
     // Then
     XCTAssertNil(previous)
   }
-
-  func testReverseMatchUTF8MatchPastStart() {
+  
+  func testMatchPreviousUTF8MatchPastStart() {
     // Given
     let haystack = "quotedliteral"
     let needle = Array(haystack.suffix(3).utf8)
-
+    
     // When
     let previous = haystack.reverseMatchUTF8(
       needle,
@@ -657,18 +657,18 @@ extension StringMatchingTests {
       limitedBy: haystack.index(haystack.unicodeScalars.endIndex, offsetBy: -2),
       boundaryCheck: false
     )
-
+    
     // Then
     XCTAssertNil(previous)
   }
-
+  
   // TODO: JH - Write test for when the boundary check passes/check if that's already covered
-  func testReverseMatchUTF8FailsBoundaryCheck() {
+  func testMatchPreviousUTF8FailsBoundaryCheck() {
     // Given
     // \u{61}\u{62}\u{300}\u{316}\u{63}\u{64}
     let sut = "ab̖̀cd"
     let needle = Array("\u{316}".utf8)
-
+    
     // When
     let previous = sut.reverseMatchUTF8(
       needle,
@@ -676,12 +676,12 @@ extension StringMatchingTests {
       limitedBy: sut.startIndex,
       boundaryCheck: true
     )
-
+    
     // Then
     XCTAssertNil(previous)
   }
-
-  func testReverseMatchUTF8NoBoundaryCheck() throws {
+  
+  func testMatchPreviousUTF8NoBoundaryCheck() throws {
     // Given
     // \u{61}\u{62}\u{300}\u{316}\u{63}\u{64}
     // utf8 = [97, 98, 204, 128, 204, 150, 99, 100]
@@ -690,7 +690,7 @@ extension StringMatchingTests {
     let needle = Array("\u{316}".utf8)
     // Position of \u{316} = 5[utf8]
     let startPos = sut.utf8.index(sut.utf8.endIndex, offsetBy: -3)
-
+    
     // When
     let previous = sut.reverseMatchUTF8(
       needle,
@@ -698,7 +698,7 @@ extension StringMatchingTests {
       limitedBy: sut.startIndex,
       boundaryCheck: false
     )
-
+    
     // Then
     // TODO: JH - Is there a better way to write this assertion?
     // Previous should be the second byte of \u{300}

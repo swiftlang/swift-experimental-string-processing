@@ -122,34 +122,35 @@ extension String {
     return (first: base, next: next, crLF: false)
   }
 
+  /// Get the ASCII character at the position before `idx`
+  /// 
   /// TODO: better to take isScalarSemantics parameter, we can return more results
   /// and we can give the right `next` index, not requiring the caller to re-adjust it
   /// TODO: detailed description of nuanced semantics
-  func _quickReverseASCIICharacter(
+  func _quickPreviousASCIICharacter(
     at idx: Index,
     limitedBy start: Index
-  ) -> (first: UInt8, previous: Index, crLF: Bool)? {
+  ) -> (char: UInt8, index: Index, crLF: Bool)? {
     // TODO: fastUTF8 version
     assert(String.Index(idx, within: unicodeScalars) != nil)
-    assert(idx >= start)
+    assert(idx > start)
 
-    // If we're already at the start, there is no previous character
-    if idx == start {
-      return nil
-    }
-
-    let char = utf8[idx]
-    guard char._isASCII else {
-      assert(!self[idx].isASCII)
-      return nil
-    }
-
+    // The index of the character we want to return
     var previous = utf8.index(before: idx)
-    if previous == start {
-      return (first: char, previous: previous, crLF: false)
+
+    // The character we want to return
+    let char = utf8[previous]
+    guard char._isASCII else {
+      assert(!self[previous].isASCII)
+      return nil
     }
 
-    let head = utf8[previous]
+    if previous == start {
+      // We've hit the start so there's no need to check for CR-LF
+      return (char: char, index: previous, crLF: false)
+    }
+
+    let head = utf8[utf8.index(before: previous)]
     guard head._isSub300StartingByte else { return nil }
 
     // Handle CR-LF by reversing past the sequence if both characters are present
@@ -158,11 +159,11 @@ extension String {
       guard previous == start || utf8[previous]._isSub300StartingByte else {
         return nil
       }
-      return (first: char, previous: previous, crLF: true)
+      return (char: char, index: previous, crLF: true)
     }
 
-    assert(self[idx].isASCII && self[idx] != "\r\n")
-    return (first: char, previous: previous, crLF: false)
+    assert(self[previous].isASCII && self[previous] != "\r\n")
+    return (char: char, index: previous, crLF: false)
   }
 
   func _quickMatch(
@@ -212,14 +213,14 @@ extension String {
     }
   }
 
-  func _quickReverseMatch(
+  func _quickMatchPrevious(
     _ cc: _CharacterClassModel.Representation,
     at idx: Index,
     limitedBy start: Index,
     isScalarSemantics: Bool
   ) -> (previous: Index, matchResult: Bool)? {
     /// ASCII fast-paths
-    guard let (asciiValue, previous, isCRLF) = _quickReverseASCIICharacter(
+    guard let (asciiValue, previousIndex, isCRLF) = _quickPreviousASCIICharacter(
       at: idx, limitedBy: start
     ) else {
       return nil
@@ -228,34 +229,34 @@ extension String {
     // TODO: bitvectors
     switch cc {
     case .any, .anyGrapheme:
-      return (previous, true)
+      return (previousIndex, true)
 
     case .digit:
-      return (previous, asciiValue._asciiIsDigit)
+      return (previousIndex, asciiValue._asciiIsDigit)
 
     case .horizontalWhitespace:
-      return (previous, asciiValue._asciiIsHorizontalWhitespace)
+      return (previousIndex, asciiValue._asciiIsHorizontalWhitespace)
 
     case .verticalWhitespace, .newlineSequence:
       if asciiValue._asciiIsVerticalWhitespace {
         if isScalarSemantics && isCRLF && cc == .verticalWhitespace {
-          return (utf8.index(after: previous), true)
+          return (utf8.index(after: previousIndex), true)
         }
-        return (previous, true)
+        return (previousIndex, true)
       }
-      return (previous, false)
+      return (previousIndex, false)
 
     case .whitespace:
       if asciiValue._asciiIsWhitespace {
         if isScalarSemantics && isCRLF {
-          return (utf8.index(after: previous), true)
+          return (utf8.index(after: previousIndex), true)
         }
-        return (previous, true)
+        return (previousIndex, true)
       }
-      return (previous, false)
+      return (previousIndex, false)
 
     case .word:
-      return (previous, asciiValue._asciiIsWord)
+      return (previousIndex, asciiValue._asciiIsWord)
     }
   }
 }

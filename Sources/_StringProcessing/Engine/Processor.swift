@@ -324,7 +324,7 @@ extension Processor {
   mutating func reverseMatch(
     _ e: Element, isCaseInsensitive: Bool
   ) -> Bool {
-    let previous = input.reverseMatch(
+    let previous = input.matchPrevious(
       e,
       at: currentPosition,
       limitedBy: start,
@@ -390,7 +390,7 @@ extension Processor {
     boundaryCheck: Bool,
     isCaseInsensitive: Bool
   ) -> Bool {
-    let previous = input.reverseMatchScalar(
+    let previous = input.matchPreviousScalar(
       s,
       at: currentPosition,
       limitedBy: start,
@@ -507,7 +507,7 @@ extension Processor {
   mutating func reverseMatchAnyNonNewline(
     isScalarSemantics: Bool
   ) -> Bool {
-    guard let previous = input.reverseMatchAnyNonNewline(
+    guard let previous = input.matchPreviousAnyNonNewline(
       at: currentPosition,
       limitedBy: start,
       isScalarSemantics: isScalarSemantics
@@ -918,7 +918,8 @@ extension String {
     return next
   }
 
-  func reverseMatch(
+  // Match `char` to the character at the index before `pos`
+  func matchPrevious(
     _ char: Character,
     at pos: Index,
     limitedBy start: String.Index,
@@ -926,15 +927,15 @@ extension String {
   ) -> Index? {
     // TODO: This can be greatly sped up with string internals
     // TODO: This is also very much quick-check-able
-    guard let (stringChar, next) = characterAndStart(at: pos, limitedBy: start) else { return nil }
+    guard let prev = character(before: pos, limitedBy: start) else { return nil }
 
     if isCaseInsensitive {
-      guard stringChar.lowercased() == char.lowercased() else { return nil }
+      guard prev.char.lowercased() == char.lowercased() else { return nil }
     } else {
-      guard stringChar == char else { return nil }
+      guard prev.char == char else { return nil }
     }
 
-    return next
+    return prev.index
   }
 
   func matchSeq(
@@ -996,7 +997,7 @@ extension String {
     return idx
   }
 
-  func reverseMatchScalar(
+  func matchPreviousScalar(
     _ scalar: Unicode.Scalar,
     at pos: Index,
     limitedBy start: String.Index,
@@ -1006,25 +1007,25 @@ extension String {
     // TODO: extremely quick-check-able
     // TODO: can be sped up with string internals
     guard pos > start else { return nil }
-    let curScalar = unicodeScalars[pos]
+    let prevIndex = unicodeScalars.index(before: pos)
+    let prevScalar = unicodeScalars[prevIndex]
 
     if isCaseInsensitive {
-      guard curScalar.properties.lowercaseMapping == scalar.properties.lowercaseMapping
+      guard prevScalar.properties.lowercaseMapping == scalar.properties.lowercaseMapping
       else {
         return nil
       }
     } else {
-      guard curScalar == scalar else { return nil }
+      guard prevScalar == scalar else { return nil }
     }
 
-    let idx = unicodeScalars.index(before: pos)
-    assert(idx >= start, "Input is a substring with a sub-scalar startIndex.")
+    assert(prevIndex >= start, "Input is a substring with a sub-scalar startIndex.")
 
-    if boundaryCheck && !isOnGraphemeClusterBoundary(idx) {
+    if boundaryCheck && !isOnGraphemeClusterBoundary(prevIndex) {
       return nil
     }
 
-    return idx
+    return prevIndex
   }
 
   func matchUTF8(
@@ -1135,7 +1136,7 @@ extension String {
 
     // TODO: More fodder for refactoring `_quickASCIICharacter`, see the comment
     // there
-    guard let (asciiByte, previous, isCRLF) = _quickReverseASCIICharacter(
+    guard let (asciiByte, previous, isCRLF) = _quickPreviousASCIICharacter(
       at: pos,
       limitedBy: start
     ) else {
@@ -1144,9 +1145,9 @@ extension String {
         guard bitset.matches(unicodeScalars[pos]) else { return nil }
         return unicodeScalars.index(before: pos)
       } else {
-        guard let (char, previous) = characterAndStart(at: pos, limitedBy: start),
-              bitset.matches(char) else { return nil }
-        return previous
+        guard let prev = character(before: pos, limitedBy: start),
+              bitset.matches(prev.char) else { return nil }
+        return prev.index
       }
     }
 

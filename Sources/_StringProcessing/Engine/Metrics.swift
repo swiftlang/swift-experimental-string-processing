@@ -1,68 +1,69 @@
 extension Processor {
-#if PROCESSOR_MEASUREMENTS_ENABLED
+// #if PROCESSOR_MEASUREMENTS_ENABLED
   struct ProcessorMetrics {
     var instructionCounts: [Instruction.OpCode: Int] = [:]
     var backtracks: Int = 0
     var resets: Int = 0
     var cycleCount: Int = 0
 
-    var isTracingEnabled: Bool = false
-    var shouldMeasureMetrics: Bool = false
+    var isTracingEnabled: Bool = true
+    var shouldMeasureMetrics: Bool = true
 
     init(isTracingEnabled: Bool, shouldMeasureMetrics: Bool) {
-      self.isTracingEnabled = isTracingEnabled
-      self.shouldMeasureMetrics = shouldMeasureMetrics
+//      self.isTracingEnabled = isTracingEnabled
+//      self.shouldMeasureMetrics = shouldMeasureMetrics
     }
   }
-#else
-  struct ProcessorMetrics {
-    var isTracingEnabled: Bool { false }
-    var shouldMeasureMetrics: Bool { false }
-    var cycleCount: Int { 0 }
-
-    init(isTracingEnabled: Bool, shouldMeasureMetrics: Bool) { }
-  }
-#endif
+//#else
+//  struct ProcessorMetrics {
+//    var isTracingEnabled: Bool { false }
+//    var shouldMeasureMetrics: Bool { false }
+//    var cycleCount: Int { 0 }
+//
+//    init(isTracingEnabled: Bool, shouldMeasureMetrics: Bool) { }
+//  }
+//#endif
 }
 
 extension Processor {
 
   mutating func startCycleMetrics() {
-#if PROCESSOR_MEASUREMENTS_ENABLED
+// #if PROCESSOR_MEASUREMENTS_ENABLED
     if metrics.cycleCount == 0 {
+      print(instructions.map(\.description).joined(separator: "\n"))
       trace()
       measureMetrics()
     }
-#endif
+//#endif
   }
 
   mutating func endCycleMetrics() {
-#if PROCESSOR_MEASUREMENTS_ENABLED
+// #if PROCESSOR_MEASUREMENTS_ENABLED
     metrics.cycleCount += 1
     trace()
     measureMetrics()
     _checkInvariants()
-#endif
+//#endif
   }
 }
 
 extension Processor.ProcessorMetrics {
 
   mutating func addReset() {
-#if PROCESSOR_MEASUREMENTS_ENABLED
+// #if PROCESSOR_MEASUREMENTS_ENABLED
     self.resets += 1
-#endif
+//#endif
   }
 
   mutating func addBacktrack() {
-#if PROCESSOR_MEASUREMENTS_ENABLED
+// #if PROCESSOR_MEASUREMENTS_ENABLED
     self.backtracks += 1
-#endif
+//#endif
   }
 }
 
 extension Processor {
-#if PROCESSOR_MEASUREMENTS_ENABLED
+// #if PROCESSOR_MEASUREMENTS_ENABLED
   func printMetrics() {
     print("===")
     print("Total cycle count: \(metrics.cycleCount)")
@@ -92,5 +93,5 @@ extension Processor {
       measure()
     }
   }
-#endif
+//#endif
 }

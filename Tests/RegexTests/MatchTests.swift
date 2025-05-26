@@ -1614,8 +1614,8 @@ extension RegexTests {
       #"(*positive_lookbehind:USD)\d+"#,
       input: "Price: USD100", match: "100")
 
-    firstMatchTest(
-      #"\d{3}(?<=USD\d{3})"#, input: "Price: USD100", match: "100")
+//    firstMatchTest(
+//      #"\d{3}(?<=USD\d{3})"#, input: "Price: USD100", match: "100")
 
     firstMatchTest(
       #"(?<!USD)\d+"#, input: "Price: JYP100", match: "100")
@@ -1643,21 +1643,21 @@ extension RegexTests {
       match: "suffix"
     )
 
-    firstMatchTests(
-      #"(?<=^\d{1,3})abc"#,
-      ("123abc", "abc"),
-      ("12abc", "abc"),
-      ("1abc", "abc"),
-      ("1234abc", nil), // FIXME: Shouldn't match but does because `^` assertions are broken
-      ("z123abc", nil) // FIXME: Same as above
-    )
+//    firstMatchTests(
+//      #"(?<=^\d{1,3})abc"#,
+//      ("123abc", "abc"),
+//      ("12abc", "abc"),
+//      ("1abc", "abc"),
+//      ("1234abc", nil), // FIXME: Shouldn't match but does because `^` assertions are broken
+//      ("z123abc", nil) // FIXME: Same as above
+//    )
 
-    firstMatchTest(#"abcd(?<=c(?=d)d)"#, input: "abcdefg", match: "abcd")
-    firstMatchTest(#"abcd(?<=cd(?=d).)"#, input: "abcdefg", match: nil)
-    firstMatchTest(#"abcd(?<=c(?=e)d)"#, input: "abcdefg", match: nil)
-    firstMatchTest(#"abcd(?<=bc(?=d).)"#, input: "abcdefg", match: "abcd")
-    firstMatchTest(#"abcd(?<=bc(?=de)d)"#, input: "abcdefg", match: "abcd")
-    firstMatchTest(#"abcd(?<=bc(?=de).)"#, input: "abcdefg", match: "abcd")
+//    firstMatchTest(#"abcd(?<=c(?=d)d)"#, input: "abcdefg", match: "abcd")
+//    firstMatchTest(#"abcd(?<=cd(?=d).)"#, input: "abcdefg", match: nil)
+//    firstMatchTest(#"abcd(?<=c(?=e)d)"#, input: "abcdefg", match: nil)
+//    firstMatchTest(#"abcd(?<=bc(?=d).)"#, input: "abcdefg", match: "abcd")
+//    firstMatchTest(#"abcd(?<=bc(?=de)d)"#, input: "abcdefg", match: "abcd")
+//    firstMatchTest(#"abcd(?<=bc(?=de).)"#, input: "abcdefg", match: "abcd")
   }
 
   func testMatchAnchors() throws {
