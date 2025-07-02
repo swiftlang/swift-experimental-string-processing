@@ -791,6 +791,10 @@ extension DSLTree.Node {
 
     // Groups (and other parent nodes) defer to the child.
     case .nonCapturingGroup(let kind, let child):
+      // FIXME: JH - There are lookbehinds that we can definitively tell can only match at the start. Figure that out and implement it. Ex: (?<=^)abc while silly, is an example of this. There may be others
+      guard kind.ast != .lookbehind, kind.ast != .negativeLookbehind else {
+        return false
+      }
       options.beginScope()
       defer { options.endScope() }
       if case .changeMatchingOptions(let sequence) = kind.ast {

@@ -36,7 +36,7 @@ extension Processor {
     isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> Bool {
-    guard currentPosition >= start, let previous = input.matchPreviousBuiltinCC(
+    guard let previous = input.matchPreviousBuiltinCC(
       cc,
       at: currentPosition,
       limitedBy: start,
@@ -182,6 +182,7 @@ extension String {
       : (substr.first!, substr.endIndex)
   }
 
+  // TODO: JH - Fix this docu
   /// Returns the character before `pos`, bounded by `start`, as well as that
   /// character's index.
   /// 
@@ -215,6 +216,7 @@ extension String {
       return (self[previous], previous)
     }
 
+    // TODO: JH - Verify this works as expected
     // `start` must be a sub-character position that is between `pos` and the
     // next grapheme boundary. This is okay if `start` is on a Unicode scalar
     // boundary, but if it's in the middle of a scalar's code units, there

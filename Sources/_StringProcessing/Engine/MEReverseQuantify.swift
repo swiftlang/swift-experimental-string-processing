@@ -232,7 +232,7 @@ extension String {
       produceSavePointRange: produceSavePointRange,
       isScalarSemantics: isScalarSemantics
     ) { currentPosition, start, isScalarSemantics in
-      reverseMatchASCIIBitset(
+      matchPreviousASCIIBitset(
         asciiBitset,
         at: currentPosition,
         limitedBy: start,
@@ -254,7 +254,7 @@ extension String {
       produceSavePointRange: produceSavePointRange,
       isScalarSemantics: isScalarSemantics
     ) { currentPosition, start, isScalarSemantics in
-      reverseMatchASCIIBitset(
+      matchPreviousASCIIBitset(
         asciiBitset,
         at: currentPosition,
         limitedBy: start,
@@ -279,7 +279,7 @@ extension String {
       produceSavePointRange: produceSavePointRange,
       isScalarSemantics: isScalarSemantics
     ) { currentPosition, start, isScalarSemantics in
-      reverseMatchASCIIBitset(
+      matchPreviousASCIIBitset(
         asciiBitset,
         at: currentPosition,
         limitedBy: start,

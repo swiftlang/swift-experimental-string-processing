@@ -1643,14 +1643,14 @@ extension RegexTests {
       match: "suffix"
     )
 
-//    firstMatchTests(
-//      #"(?<=^\d{1,3})abc"#,
-//      ("123abc", "abc"),
-//      ("12abc", "abc"),
-//      ("1abc", "abc"),
-//      ("1234abc", nil), // FIXME: Shouldn't match but does because `^` assertions are broken
-//      ("z123abc", nil) // FIXME: Same as above
-//    )
+    firstMatchTests(
+      #"(?<=^\d{1,3})abc"#,
+      ("123abc", "abc"),
+      ("12abc", "abc"),
+      ("1abc", "abc"), 
+      ("1234abc", nil),
+      ("z123abc", nil)
+    )
 
 //    firstMatchTest(#"abcd(?<=c(?=d)d)"#, input: "abcdefg", match: "abcd")
 //    firstMatchTest(#"abcd(?<=cd(?=d).)"#, input: "abcdefg", match: nil)

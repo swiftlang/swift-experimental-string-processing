@@ -139,31 +139,31 @@ extension String {
     var previous = utf8.index(before: idx)
 
     // The character we want to return
-    let char = utf8[previous]
-    guard char._isASCII else {
+    let previousChar = utf8[previous]
+    guard previousChar._isASCII else {
       assert(!self[previous].isASCII)
       return nil
     }
 
     if previous == start {
       // We've hit the start so there's no need to check for CR-LF
-      return (char: char, index: previous, crLF: false)
+      return (char: previousChar, index: previous, crLF: false)
     }
 
     let head = utf8[utf8.index(before: previous)]
     guard head._isSub300StartingByte else { return nil }
 
     // Handle CR-LF by reversing past the sequence if both characters are present
-    if char == ._lineFeed && head == ._carriageReturn {
+    if previousChar == ._lineFeed && head == ._carriageReturn {
       utf8.formIndex(before: &previous)
       guard previous == start || utf8[previous]._isSub300StartingByte else {
         return nil
       }
-      return (char: char, index: previous, crLF: true)
+      return (char: previousChar, index: previous, crLF: true)
     }
 
     assert(self[previous].isASCII && self[previous] != "\r\n")
-    return (char: char, index: previous, crLF: false)
+    return (char: previousChar, index: previous, crLF: false)
   }
 
   func _quickMatch(

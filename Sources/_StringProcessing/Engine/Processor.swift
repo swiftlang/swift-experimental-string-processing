@@ -474,7 +474,7 @@ extension Processor {
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
     isScalarSemantics: Bool
   ) -> Bool {
-    guard let previous = input.reverseMatchASCIIBitset(
+    guard let previous = input.matchPreviousASCIIBitset(
       bitset,
       at: currentPosition,
       limitedBy: start,
@@ -1120,7 +1120,7 @@ extension String {
     return next
   }
 
-  func reverseMatchASCIIBitset(
+  func matchPreviousASCIIBitset(
     _ bitset: DSLTree.CustomCharacterClass.AsciiBitset,
     at pos: Index,
     limitedBy start: Index,
@@ -1141,9 +1141,10 @@ extension String {
       limitedBy: start
     ) else {
       if isScalarSemantics {
-        guard pos >= start else { return nil }
-        guard bitset.matches(unicodeScalars[pos]) else { return nil }
-        return unicodeScalars.index(before: pos)
+        guard pos > start else { return nil }
+        let matchPos = unicodeScalars.index(before: pos)
+        guard bitset.matches(unicodeScalars[matchPos]) else { return nil }
+        return matchPos
       } else {
         guard let prev = character(before: pos, limitedBy: start),
               bitset.matches(prev.char) else { return nil }
