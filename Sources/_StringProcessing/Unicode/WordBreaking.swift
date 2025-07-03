@@ -87,7 +87,10 @@ extension String {
       var j = maxIndex ?? range.lowerBound
       
       while j < range.upperBound, j <= i {
-        cache!.insert(j)
+        // Workaround for underlying issue in https://github.com/swiftlang/swift-experimental-string-processing/issues/818
+        let (inserted, _) = cache!.insert(j)
+        guard inserted else { return true }
+        
         j = _wordIndex(after: j)
       }
       
