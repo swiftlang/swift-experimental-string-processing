@@ -1946,6 +1946,22 @@ extension RegexDSLTests {
     XCTAssertEqual(anyOutput[15].value as? Int, 123)
     XCTAssertEqual(anyOutput[16].substring, "456")
   }
+  
+  func testIssue818() throws {
+    // Original report from https://github.com/swiftlang/swift-experimental-string-processing/issues/818
+    let clip = "⁠‘⁠⁠example.com⁠⁠’"
+    let clip2 = "\u{2060}\u{2018}\u{2060}\u{2060}example.com\u{2060}\u{2060}\u{2019}"
+    assert(clip.unicodeScalars.elementsEqual(clip2.unicodeScalars))
+    
+    let pattern = Regex {
+      Anchor.wordBoundary     // line A
+      "example"
+      Anchor.wordBoundary     // line B
+    }
+    
+    XCTAssertNotNil(clip.contains(pattern))
+    XCTAssertNotNil(clip2.contains(pattern))
+  }
 }
 
 extension Unicode.Scalar {
