@@ -1614,8 +1614,8 @@ extension RegexTests {
       #"(*positive_lookbehind:USD)\d+"#,
       input: "Price: USD100", match: "100")
 
-//    firstMatchTest(
-//      #"\d{3}(?<=USD\d{3})"#, input: "Price: USD100", match: "100")
+    firstMatchTest(
+      #"\d{3}(?<=USD\d{3})"#, input: "Price: USD100", match: "100")
 
     firstMatchTest(
       #"(?<!USD)\d+"#, input: "Price: JYP100", match: "100")

@@ -437,7 +437,7 @@ extension String {
     isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> String.Index? {
-    guard currentPosition > start, currentPosition < endIndex else { return nil }
+    guard currentPosition > start else { return nil }
     if case .definite(let result) = _quickMatchPreviousBuiltinCC(
       cc,
       at: currentPosition,
@@ -606,7 +606,7 @@ extension String {
     guard var (previousChar, previousIndex) =
             character(before: currentPosition, limitedBy: start)
     else { return nil }
-    let scalar = unicodeScalars[currentPosition]
+    let scalar = unicodeScalars[previousIndex]
 
     let asciiCheck = !isStrictASCII
     || (scalar.isASCII && isScalarSemantics)
