@@ -369,9 +369,13 @@ fileprivate extension Compiler.ByteCodeGen {
     }
 
     options.beginScope()
-    if !kind.forwards {
-      // TODO: JH - Is it okay to use .fake here?
-      options.apply(.init(adding: [.init(.reverse, location: .fake)]))
+    // TODO: JH - Is it okay to use .fake here?
+    let location = child.astNode?.location ?? .fake
+    let reverseOption = [AST.MatchingOption(.reverse, location: location)]
+    if kind.forwards {
+      options.apply(.init(removing: reverseOption))
+    } else {
+      options.apply(.init(adding: reverseOption))
     }
 
     if kind.positive {

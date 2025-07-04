@@ -1652,12 +1652,12 @@ extension RegexTests {
       ("z123abc", nil)
     )
 
-//    firstMatchTest(#"abcd(?<=c(?=d)d)"#, input: "abcdefg", match: "abcd")
-//    firstMatchTest(#"abcd(?<=cd(?=d).)"#, input: "abcdefg", match: nil)
-//    firstMatchTest(#"abcd(?<=c(?=e)d)"#, input: "abcdefg", match: nil)
-//    firstMatchTest(#"abcd(?<=bc(?=d).)"#, input: "abcdefg", match: "abcd")
-//    firstMatchTest(#"abcd(?<=bc(?=de)d)"#, input: "abcdefg", match: "abcd")
-//    firstMatchTest(#"abcd(?<=bc(?=de).)"#, input: "abcdefg", match: "abcd")
+    firstMatchTest(#"abcd(?<=c(?=d)d)"#, input: "abcdefg", match: "abcd")
+    firstMatchTest(#"abcd(?<=cd(?=d).)"#, input: "abcdefg", match: nil)
+    firstMatchTest(#"abcd(?<=c(?=e)d)"#, input: "abcdefg", match: nil)
+    firstMatchTest(#"abcd(?<=bc(?=d).)"#, input: "abcdefg", match: "abcd")
+    firstMatchTest(#"abcd(?<=bc(?=de)d)"#, input: "abcdefg", match: "abcd")
+    firstMatchTest(#"abcd(?<=bc(?=de).)"#, input: "abcdefg", match: "abcd")
   }
 
   func testMatchAnchors() throws {

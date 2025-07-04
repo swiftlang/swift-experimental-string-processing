@@ -211,9 +211,9 @@ extension Executor {
 
 extension Processor {
   fileprivate mutating func run() throws -> Input.Index? {
-// #if PROCESSOR_MEASUREMENTS_ENABLED
+ #if PROCESSOR_MEASUREMENTS_ENABLED
     defer { if metrics.shouldMeasureMetrics { printMetrics() } }
-//#endif
+#endif
     if self.state == .fail {
       if let e = failureReason {
         throw e
