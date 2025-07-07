@@ -751,6 +751,12 @@ extension RegexTests {
     firstMatchTest("(?U)a??", input: "a", match: "a")
     firstMatchTest("(?U)a??a", input: "aaa", match: "aa")
 
+    // Quantification syntax is somewhat dependent on the contents.
+    // In JS, PCRE2, Python, and some others, /x{-1}/ will be literally "x{-1}"
+    // Note that Java8 and Rust throw an (unhelpful) error
+    firstMatchTest("x{-1}", input: "x{-1}", match: "x{-1}")
+    firstMatchTest("x{-1}", input: "xax{-2}bx{-1}c", match: "x{-1}")
+
     // TODO: After captures, easier to test these
   }
 
