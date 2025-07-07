@@ -1,10 +1,32 @@
+##===----------------------------------------------------------------------===##
+##
+## This source file is part of the Swift.org open source project
+##
+## Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+## Licensed under Apache License v2.0 with Runtime Library Exception
+##
+## See https://swift.org/LICENSE.txt for license information
+##
+##===----------------------------------------------------------------------===##
+
 # python3 createBenchmark.py MyRegexBenchmark
 # reference: https://github.com/apple/swift/blob/main/benchmark/scripts/create_benchmark.py
 
 import argparse
 import os
 
-template = """import _StringProcessing
+template = """//===----------------------------------------------------------------------===//
+//
+// This source file is part of the Swift.org open source project
+//
+// Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+// Licensed under Apache License v2.0 with Runtime Library Exception
+//
+// See https://swift.org/LICENSE.txt for license information
+//
+//===----------------------------------------------------------------------===//
+
+import _StringProcessing
 
 extension BenchmarkRunner {{
   mutating func add{name}() {{
