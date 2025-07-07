@@ -15,7 +15,7 @@ import XCTest
 // *without* `-disable-availability-checking` to ensure the #available check is
 // not compiled into a no-op.
 
-#if os(Linux) || os(Android)
+#if os(Linux) || os(Android) || os(Windows)
 public func XCTExpectFailure(
   _ message: String? = nil, body: () throws -> Void
 ) rethrows {}
