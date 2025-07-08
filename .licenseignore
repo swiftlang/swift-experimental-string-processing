@@ -10,6 +10,7 @@
 .editorconfig
 .github/*
 .build
+*.py
 *.yml
 *.yaml
 *.cmake
