@@ -14,20 +14,25 @@ import random
 
 random.seed(0)
 
+
 def ipv6():
-  return ":".join(["".join([random.choice(string.hexdigits) for _ in range(4)]) for _ in range(8)])
+    return ":".join(["".join([random.choice(string.hexdigits)
+                    for _ in range(4)]) for _ in range(8)])
+
 
 def ipv4():
-  return ".".join([str(random.randint(1,255)) for _ in range(4)])
+    return ".".join([str(random.randint(1, 255)) for _ in range(4)])
+
 
 def mac():
-  x = random.randint(0,1)
-  if x == 0:
-    raw = "{:02x}".format(random.randint(0,2**48-1))
-    return ":".join([raw[i:i + 2] for i in range(0, len(raw), 2)])
-  else:
-    raw = "{:02x}".format(random.randint(0,2**48-1))
-    return "-".join([raw[i:i + 2] for i in range(0, len(raw), 2)])
+    x = random.randint(0, 1)
+    if x == 0:
+        raw = "{:02x}".format(random.randint(0, 2**48 - 1))
+        return ":".join([raw[i:i + 2] for i in range(0, len(raw), 2)])
+    else:
+        raw = "{:02x}".format(random.randint(0, 2**48 - 1))
+        return "-".join([raw[i:i + 2] for i in range(0, len(raw), 2)])
+
 
 res = """
 extension Inputs {{

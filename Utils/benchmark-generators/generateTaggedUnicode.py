@@ -27,9 +27,14 @@ end = " </data>"
 minLine = 10
 maxLine = 100
 
+
 def get_random(i):
-   return "".join([chr(random.randint(low, high)) for _ in range(i)])
-   
-lines = [start + get_random(random.randint(minLine, maxLine)) + end for _ in range(numLines)]
+    return "".join([chr(random.randint(low, high)) for _ in range(i)])
+
+
+lines = [
+    start + get_random(random.randint(minLine, maxLine)) + end
+    for _ in range(numLines)
+]
 
 print("\n".join(lines))

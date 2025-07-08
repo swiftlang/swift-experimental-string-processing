@@ -20,4 +20,3 @@ jobs:
     with:
       license_header_check_project_name: "Swift.org"
       unacceptable_language_check_enabled: false
-      

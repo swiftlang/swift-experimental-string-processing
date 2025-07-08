@@ -26,15 +26,15 @@ n = 1000
 # issues but otherwise this should work
 emails = []
 for _ in range(n):
-  domain_len = random.randint(2,64)
-  locale_len = random.randint(2,64)
-  tld_len = random.randint(2,10)
-  
-  domain = "".join(random.sample(domain_charset, domain_len))
-  locale = "".join(random.sample(locale_charset, locale_len))
-  tld = "".join(random.sample(string.ascii_lowercase, tld_len))
-  email = locale + "@" + domain + "." + tld
-  emails.append(email)
+    domain_len = random.randint(2, 64)
+    locale_len = random.randint(2, 64)
+    tld_len = random.randint(2, 10)
+
+    domain = "".join(random.sample(domain_charset, domain_len))
+    locale = "".join(random.sample(locale_charset, locale_len))
+    tld = "".join(random.sample(string.ascii_lowercase, tld_len))
+    email = locale + "@" + domain + "." + tld
+    emails.append(email)
 
 res = """
 extension Inputs {{
