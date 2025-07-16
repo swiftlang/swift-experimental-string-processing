@@ -75,8 +75,8 @@ final class StringMatchingTests: XCTestCase {
     XCTAssertNil(result)
   }
 
-  // MARK: characterAndStart tests
-  func testCharacterAndStart_HappyPath() throws {
+  // MARK: characterBefore tests
+  func testCharacterBefore_HappyPath() throws {
     // Given
     let sut = "bar"
     let pos = sut.index(before: sut.endIndex)
@@ -92,7 +92,7 @@ final class StringMatchingTests: XCTestCase {
 
   // FIXME: JH - Two diacritical marks are considered a character.
   // TODO: JH - Learn more about Substring rounding(?)
-//  func testCharacterAndStart_SubcharacterMatch() throws {
+//  func testCharacterBefore_SubcharacterMatch() throws {
 //    // Given a string with 2 subcharacter positions in its utf8 view
 //    // \u{61}\u{62}\u{300}\u{316}\u{63}\u{64}
 //    let sut = "ab̖̀cd"
@@ -102,7 +102,7 @@ final class StringMatchingTests: XCTestCase {
 //    let start = sut.startIndex//utf8.index(before: pos)
 //
 //    // When
-//    let result = sut.characterAndStart(at: pos, limitedBy: start)
+//    let result = sut.character(before: pos, limitedBy: start)
 //
 //    // Then
 //    XCTAssertNil(result)
@@ -111,7 +111,7 @@ final class StringMatchingTests: XCTestCase {
 //    XCTAssertEqual(nextIndex, end)
 //  }
 //
-//  func testCharacterAndStart_SubcharacterMatchEmptyRounded() throws {
+//  func testCharacterBefore_SubcharacterMatchEmptyRounded() throws {
 //    // Given a string with 3 sub-character positions in its utf8 view
 //    // \u{61}\u{62}\u{335}\u{300}\u{316}\u{63}\u{64}
 //    let sut = "ab̵̖̀cd"
@@ -124,13 +124,13 @@ final class StringMatchingTests: XCTestCase {
 //
 //    // When we try to get a character from a sub-character range
 //    // of unicode scalars
-//    let result = sut.characterAndStart(at: pos, limitedBy: start)
+//    let result = sut.character(before: pos, limitedBy: start)
 //
-//    // Then `characterAndStart` should return nil rather than an empty string
+//    // Then `characterBefore` should return nil rather than an empty string
 //    XCTAssertNil(result)
 //  }
 
-  func testCharacterAndStart_atStart() {
+  func testCharacterBefore_atStart() {
     // Given
     let sut = "foo"
 
@@ -355,7 +355,6 @@ extension StringMatchingTests {
     XCTAssertNil(next)
   }
 
-  // TODO: JH - Write test for when the boundary check passes/check if that's already covered
   func testMatchScalarFailsBoundaryCheck() {
     // Given
     // \u{62}\u{300}\u{316}\u{65}\u{73}\u{74}
@@ -481,7 +480,6 @@ extension StringMatchingTests {
     XCTAssertNil(previous)
   }
 
-  // TODO: JH - Write test for when the boundary check passes/check if that's already covered
   func testMatchPreviousScalarFailsBoundaryCheck() {
     // Given
     // \u{61}\u{62}\u{300}\u{316}\u{63}\u{64}
@@ -573,7 +571,6 @@ extension StringMatchingTests {
     XCTAssertNil(next)
   }
 
-  // TODO: JH - Write test for when the boundary check passes/check if that's already covered
   func testMatchUTF8FailsBoundaryCheck() {
     // Given
     // \u{62}\u{300}\u{316}\u{65}\u{73}\u{74}
@@ -662,7 +659,6 @@ extension StringMatchingTests {
     XCTAssertNil(previous)
   }
   
-  // TODO: JH - Write test for when the boundary check passes/check if that's already covered
   func testMatchPreviousUTF8FailsBoundaryCheck() {
     // Given
     // \u{61}\u{62}\u{300}\u{316}\u{63}\u{64}
@@ -700,7 +696,6 @@ extension StringMatchingTests {
     )
     
     // Then
-    // TODO: JH - Is there a better way to write this assertion?
     // Previous should be the second byte of \u{300}
     XCTAssertEqual(sut.utf8[previous!], 128)
   }

@@ -183,9 +183,8 @@ extension String {
   }
 
   // TODO: JH - Fix this docu
-  /// Returns the character before `pos`, bounded by `start`, as well as that
-  /// character's index.
-  /// 
+  /// Returns the character and index before `pos`, bounded by `start`.
+  ///
   /// This function handles loading a character from a string while respecting
   /// a start boundary, even if that start boundary is sub-character or sub-scalar.
   ///
@@ -464,7 +463,6 @@ extension String {
       isScalarSemantics: isScalarSemantics)
   }
 
-  // TODO: JH - Is there any value in testing this? How would it be tested?
   // Mentioned in ProgrammersManual.md, update docs if redesigned
   @inline(__always)
   private func _quickMatchBuiltinCC(
@@ -472,7 +470,7 @@ extension String {
     at currentPosition: String.Index,
     limitedBy end: String.Index,
     isInverted: Bool,
-    isStrictASCII: Bool, // TODO: JH - Is this just reserved for future use? A relic of the past?
+    isStrictASCII: Bool,
     isScalarSemantics: Bool
   ) -> QuickResult<String.Index?> {
     assert(currentPosition < end)
