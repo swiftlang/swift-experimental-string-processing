@@ -65,7 +65,6 @@ final class QuickASCIICharacterTests: XCTestCase {
     XCTAssertFalse(isCRLF)
   }
 
-  // TODO: JH - Figure out how to test sub 300 starting bytes
   func testIsCRLF() throws {
     // Given
     let sut = "\r\n"
@@ -88,7 +87,7 @@ final class QuickPreviousASCIICharacterTests: XCTestCase {
     let index = sut.index(after: sut.startIndex)
 
     // When
-    let result = sut._quickPreviousASCIICharacter(at: index, limitedBy: sut.startIndex)
+    let result = sut._quickASCIICharacter(before: index, limitedBy: sut.startIndex)
 
     // Then
     let (char, previousIdx, isCRLF) = try XCTUnwrap(result)
@@ -102,7 +101,7 @@ final class QuickPreviousASCIICharacterTests: XCTestCase {
     let sut = "éi"
 
     // When
-    let result = sut._quickPreviousASCIICharacter(at: sut.index(after: sut.startIndex), limitedBy: sut.startIndex)
+    let result = sut._quickASCIICharacter(before: sut.index(after: sut.startIndex), limitedBy: sut.startIndex)
 
     // Then
     XCTAssertNil(result)
@@ -114,7 +113,7 @@ final class QuickPreviousASCIICharacterTests: XCTestCase {
     let index = sut.index(after: sut.startIndex)
 
     // When
-    let result = sut._quickPreviousASCIICharacter(at: index, limitedBy: sut.startIndex)
+    let result = sut._quickASCIICharacter(before: index, limitedBy: sut.startIndex)
 
     // Then
     let (char, previousIdx, isCRLF) = try XCTUnwrap(result)
@@ -123,22 +122,31 @@ final class QuickPreviousASCIICharacterTests: XCTestCase {
     XCTAssertFalse(isCRLF)
   }
 
-  // TODO: JH - Figure out how to test sub 300 starting bytes
-  // FIXME: JH
-//  func testIsCRLF() throws {
-//    // Given
-//    let sut = "foo\r\nbar"
-//
-//    // When
-//    let result = sut._quickPreviousASCIICharacter(at: sut.utf8.endIndex, limitedBy: sut.startIndex)
-//
-//    // Then
-//    let (char, actualIndex, isCRLF) = try XCTUnwrap(result)
-//    let expectedIndex = sut.utf8.index(sut.utf8.endIndex, offsetBy: -2)
-//    XCTAssertEqual(char, sut.utf8[expectedIndex])
-//    XCTAssertEqual(actualIndex, expectedIndex)
-//    XCTAssertTrue(isCRLF)
-//  }
+  func testIsCRLF() throws {
+    // Given
+    let sut = "foo\r\nbar"
+    // \n
+    let startingIndex = sut.utf8.index(sut.utf8.startIndex, offsetBy: 5)
+
+    // When
+    let result = sut._quickASCIICharacter(
+      before: startingIndex,
+      limitedBy: sut.startIndex
+    )
+
+    // Then
+    let (char, index, crlf) = try XCTUnwrap(result)
+    // We should have reversed past the CRLF sequence
+    let expectedIndex = sut.utf8.index(startingIndex, offsetBy: -2)
+    XCTAssertEqual(index, expectedIndex)
+
+    // We should have received only the LF
+    let expectedCharPosition = sut.utf8.index(before: startingIndex)
+    XCTAssertEqual(char, sut.utf8[expectedCharPosition])
+
+    // And we should have detected the CRLF sequence
+    XCTAssertTrue(crlf)
+  }
 }
 
 final class ASCIIQuickMatchTests: XCTestCase {
@@ -265,27 +273,26 @@ final class ASCIIQuickMatchPreviousTests: XCTestCase {
     try _test(matching: .verticalWhitespace, against: "\tb", shouldMatch: false)
   }
 
-  // FIXME: JH
-//  func testVerticalWhitespaceMatchesCRLF() throws {
-//    let sut = "a\r\nb"
-//
-//    // When using scalar semantics:
-//    // The next index should be the index of the "\n" character
-//    try _test(
-//      matching: .verticalWhitespace,
-//      against: sut,
-//      at: sut.utf8.index(before: sut.utf8.endIndex),
-//      expectedPrevious: sut.utf8.firstIndex(of: ._carriageReturn)
-//    )
-//
-//    // When not using scalar semantics:
-//    // The next index should be the index after the whole \r\n sequence (the end index)
-//    try _test(
-//      matching: .verticalWhitespace,
-//      against: sut,
-//      isScalarSemantics: false
-//    )
-//  }
+  func testVerticalWhitespaceMatchesCRLF() throws {
+    let sut = "a\r\nb"
+
+    // When using scalar semantics:
+    // The next index should be the index of the "\n" character
+    try _test(
+      matching: .verticalWhitespace,
+      against: sut,
+      at: sut.utf8.index(before: sut.utf8.endIndex),
+      expectedPrevious: sut.utf8.index(sut.utf8.startIndex, offsetBy: 2)
+    )
+
+    // When not using scalar semantics:
+    // The next index should be the index after the whole \r\n sequence (the end index)
+    try _test(
+      matching: .verticalWhitespace,
+      against: sut,
+      isScalarSemantics: false
+    )
+  }
 
   func testWhitespace() throws {
     try _test(matching: .whitespace, against: " a")

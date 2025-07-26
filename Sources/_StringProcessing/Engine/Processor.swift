@@ -1136,8 +1136,8 @@ extension String {
 
     // TODO: More fodder for refactoring `_quickASCIICharacter`, see the comment
     // there
-    guard let (asciiByte, previous, isCRLF) = _quickPreviousASCIICharacter(
-      at: pos,
+    guard let (asciiByte, previous, isCRLF) = _quickASCIICharacter(
+      before: pos,
       limitedBy: start
     ) else {
       if isScalarSemantics {

@@ -182,18 +182,17 @@ extension String {
       : (substr.first!, substr.endIndex)
   }
 
-  // TODO: JH - Fix this docu
   /// Returns the character and index before `pos`, bounded by `start`.
   ///
   /// This function handles loading a character from a string while respecting
   /// a start boundary, even if that start boundary is sub-character or sub-scalar.
   ///
-  ///   - If `pos` is at or past `start`, this function returns `nil`.
-  ///   - If `start` is between `pos` and the next grapheme cluster boundary (i.e.,
-  ///     `start` is before `self.index(after: pos)`, then the returned character
+  ///   - If `pos` is `start`, this function returns `nil`.
+  ///   - If `start` is between `pos` and the previous grapheme cluster boundary (i.e.,
+  ///     `start` is before `self.index(before: pos)`, then the returned character
   ///     is smaller than the one that would be produced by `self[pos]` and the
   ///     returned index is at the start of that character.
-  ///   - If `start` is between `pos` and the next grapheme cluster boundary, and
+  ///   - If `start` is between `pos` and the previous grapheme cluster boundary, and
   ///     is not on a Unicode scalar boundary, the partial scalar is dropped. This
   ///     can result in a `nil` return or a character that includes only part of
   ///     the `self[pos]` character.
@@ -217,7 +216,7 @@ extension String {
 
     // TODO: JH - Verify this works as expected
     // `start` must be a sub-character position that is between `pos` and the
-    // next grapheme boundary. This is okay if `start` is on a Unicode scalar
+    // previous grapheme boundary. This is okay if `start` is on a Unicode scalar
     // boundary, but if it's in the middle of a scalar's code units, there
     // may not be a character to return at all after rounding down. Use
     // `Substring`'s rounding to determine what we can return.
@@ -299,8 +298,8 @@ extension String {
     isScalarSemantics: Bool
   ) -> QuickResult<String.Index?> {
     assert(currentPosition > start)
-    guard let (asciiValue, previous, isCRLF) = _quickPreviousASCIICharacter(
-      at: currentPosition, limitedBy: start
+    guard let (asciiValue, previous, isCRLF) = _quickASCIICharacter(
+      before: currentPosition, limitedBy: start
     ) else {
       return .unknown
     }

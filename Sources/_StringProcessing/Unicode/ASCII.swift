@@ -81,9 +81,19 @@ extension UInt8 {
 }
 
 extension String {
+  /// Get the ASCII character at `idx` and the index following `idx`, advancing past
+  /// CRLF sequences if necessary.
+  ///
+  /// If a CRLF sequence is detected, the returned `next` value will be at the index past
+  /// both characters in the sequence.
+  ///
   /// TODO: better to take isScalarSemantics parameter, we can return more results
   /// and we can give the right `next` index, not requiring the caller to re-adjust it
   /// TODO: detailed description of nuanced semantics
+  /// - Parameters:
+  ///   - idx: The index of the desired character.
+  ///   - end: An upper bound that the `next` index cannot be greater than.
+  /// - Returns: The character at `idx`, the index after `idx`,
   func _quickASCIICharacter(
     at idx: Index,
     limitedBy end: Index
@@ -122,13 +132,19 @@ extension String {
     return (first: base, next: next, crLF: false)
   }
 
-  /// Get the ASCII character at the position before `idx`
-  /// 
+  /// Get the ASCII character and index of the position before `idx`
+  ///
+  /// Treats CRLF sequences as a single character.
+  ///
   /// TODO: better to take isScalarSemantics parameter, we can return more results
-  /// and we can give the right `next` index, not requiring the caller to re-adjust it
+  /// and we can give the right `index`, not requiring the caller to re-adjust it
   /// TODO: detailed description of nuanced semantics
-  func _quickPreviousASCIICharacter(
-    at idx: Index,
+  /// - Parameters:
+  ///   - idx: The index to look backwards from
+  ///   - start: A lower bound that the `next` index can't be less than.
+  /// - Returns: The character before the one at `idx`, the index of that character, and whether or not that character is a CRLF sequence. Nil if there is no character before `idx`.
+  func _quickASCIICharacter(
+    before idx: Index,
     limitedBy start: Index
   ) -> (char: UInt8, index: Index, crLF: Bool)? {
     // TODO: fastUTF8 version
@@ -146,16 +162,15 @@ extension String {
     }
 
     if previous == start {
-      // We've hit the start so there's no need to check for CR-LF
       return (char: previousChar, index: previous, crLF: false)
     }
 
     let head = utf8[utf8.index(before: previous)]
     guard head._isSub300StartingByte else { return nil }
 
-    // Handle CR-LF by reversing past the sequence if both characters are present
     if previousChar == ._lineFeed && head == ._carriageReturn {
       utf8.formIndex(before: &previous)
+
       guard previous == start || utf8[previous]._isSub300StartingByte else {
         return nil
       }
@@ -220,8 +235,8 @@ extension String {
     isScalarSemantics: Bool
   ) -> (previous: Index, matchResult: Bool)? {
     /// ASCII fast-paths
-    guard let (asciiValue, previousIndex, isCRLF) = _quickPreviousASCIICharacter(
-      at: idx, limitedBy: start
+    guard let (asciiValue, previousIndex, isCRLF) = _quickASCIICharacter(
+      before: idx, limitedBy: start
     ) else {
       return nil
     }
