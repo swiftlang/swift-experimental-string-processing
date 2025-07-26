@@ -523,6 +523,19 @@ extension Parser {
   mutating func parseCustomCharacterClass(
     _ start: Source.Located<CustomCC.Start>
   ) -> CustomCC {
+    // Excessively nested recursion is a common DOS attack, so limit
+    // our recursion.
+    context.parseDepth += 1
+    defer { context.parseDepth -= 1 }
+    guard context.parseDepth < context.maxParseDepth else {
+      self.errorAtCurrentPosition(.nestingTooDeep)
+
+      // This is not generally recoverable and further errors will be
+      // incorrect
+      diags.suppressFurtherDiagnostics = true
+      return .init(start, [], start.location)
+    }
+
     let alreadyInCCC = context.isInCustomCharacterClass
     context.isInCustomCharacterClass = true
     defer { context.isInCustomCharacterClass = alreadyInCCC }

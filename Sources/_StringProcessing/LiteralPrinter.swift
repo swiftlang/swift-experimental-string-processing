@@ -575,6 +575,9 @@ extension AST.MatchingOption.Kind {
     // NSRE Compatibility option; no literal representation
     case .nsreCompatibleDot: return nil
 
+    // Reverse option for lookbehinds; no literal representation
+    case .reverse: return nil
+
     #if RESILIENT_LIBRARIES
     @unknown default:
       fatalError()

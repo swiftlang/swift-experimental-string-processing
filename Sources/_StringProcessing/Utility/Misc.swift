@@ -74,6 +74,15 @@ extension String {
       return index(after: idx)
     }
   }
+
+  /// Index before in either grapheme or scalar view
+  func index(before idx: Index, isScalarSemantics: Bool) -> Index {
+    if isScalarSemantics {
+      return unicodeScalars.index(before: idx)
+    } else {
+      return index(before: idx)
+    }
+  }
 }
 
 

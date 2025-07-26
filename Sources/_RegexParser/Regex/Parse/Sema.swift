@@ -143,7 +143,7 @@ extension RegexValidator {
     case .caseInsensitive, .possessiveByDefault, .reluctantByDefault,
         .singleLine, .multiline, .namedCapturesOnly, .extended, .extraExtended,
         .asciiOnlyDigit, .asciiOnlyWord, .asciiOnlySpace, .asciiOnlyPOSIXProps,
-        .nsreCompatibleDot:
+        .nsreCompatibleDot, .reverse:
       break
     }
   }
@@ -370,7 +370,7 @@ extension RegexValidator {
     }
     switch kind.value {
     case .capture, .namedCapture, .nonCapture, .lookahead, .negativeLookahead,
-        .atomicNonCapturing:
+        .atomicNonCapturing, .lookbehind, .negativeLookbehind:
       break
 
     case .balancedCapture:
@@ -384,8 +384,8 @@ extension RegexValidator {
     case .nonAtomicLookahead:
       error(.unsupported("non-atomic lookahead"), at: kind.location)
 
-    case .lookbehind, .negativeLookbehind, .nonAtomicLookbehind:
-      error(.unsupported("lookbehind"), at: kind.location)
+    case .nonAtomicLookbehind:
+      error(.unsupported("non-atomic lookbehind"), at: kind.location)
 
     case .scriptRun, .atomicScriptRun:
       error(.unsupported("script run"), at: kind.location)

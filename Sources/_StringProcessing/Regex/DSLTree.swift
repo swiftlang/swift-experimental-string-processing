@@ -105,7 +105,7 @@ extension DSLTree {
     case explicit(_AST.QuantificationKind)
     /// A kind set via syntax, which can be affected by options.
     case syntax(_AST.QuantificationKind)
-    
+
     var ast: AST.Quantification.Kind? {
       switch self {
       case .default: return nil
@@ -114,12 +114,12 @@ extension DSLTree {
       }
     }
   }
-  
+
   @_spi(RegexBuilder)
   public struct CustomCharacterClass {
     var members: [Member]
     var isInverted: Bool
-    
+
     var containsDot: Bool {
       members.contains { member in
         switch member {
@@ -152,13 +152,13 @@ extension DSLTree {
       self.members = members
       self.isInverted = isInverted
     }
-    
+
     public static func generalCategory(_ category: Unicode.GeneralCategory) -> Self {
       let property = AST.Atom.CharacterProperty(.generalCategory(category.extendedGeneralCategory!), isInverted: false, isPOSIX: false)
       let astAtom = AST.Atom(.property(property), .fake)
       return .init(members: [.atom(.unconverted(.init(ast: astAtom)))])
     }
-    
+
     public var inverted: CustomCharacterClass {
       var result = self
       result.isInverted.toggle()
@@ -263,7 +263,7 @@ extension DSLTree.Atom {
     /// \B
     case notWordBoundary
   }
-  
+
   @_spi(RegexBuilder)
   public enum CharacterClass: Hashable {
     case digit
@@ -396,7 +396,7 @@ extension DSLTree.Node {
   @_spi(RegexBuilder)
   public var children: [DSLTree.Node] {
     switch self {
-      
+
     case let .orderedChoice(v):   return v
     case let .concatenation(v): return v
 
@@ -504,12 +504,12 @@ public struct ReferenceID: Hashable {
   public var _raw: Int {
     base
   }
-  
+
   public init() {
     base = Self.counter
     Self.counter += 1
   }
-  
+
   init(_ base: Int) {
     self.base = base
   }
@@ -791,6 +791,10 @@ extension DSLTree.Node {
 
     // Groups (and other parent nodes) defer to the child.
     case .nonCapturingGroup(let kind, let child):
+      // FIXME: JH - There are lookbehinds that we can definitively tell can only match at the start. Figure that out and implement it. Ex: (?<=^)abc while silly, is an example of this. There may be others
+      guard kind.ast != .lookbehind, kind.ast != .negativeLookbehind else {
+        return false
+      }
       options.beginScope()
       defer { options.endScope() }
       if case .changeMatchingOptions(let sequence) = kind.ast {
@@ -854,14 +858,14 @@ extension DSLTree {
   /// `_TreeNode` conformance.
   struct _Tree: _TreeNode {
     var node: DSLTree.Node
-    
+
     init(_ node: DSLTree.Node) {
       self.node = node
     }
-    
+
     var children: [_Tree]? {
       switch node {
-        
+
       case let .orderedChoice(v): return v.map(_Tree.init)
       case let .concatenation(v): return v.map(_Tree.init)
 
@@ -892,7 +896,7 @@ extension DSLTree {
     @_spi(RegexBuilder)
     public struct GroupKind {
       internal var ast: AST.Group.Kind
-      
+
       public static var atomicNonCapturing: Self {
         .init(ast: .atomicNonCapturing)
       }
@@ -902,17 +906,23 @@ extension DSLTree {
       public static var negativeLookahead: Self {
         .init(ast: .negativeLookahead)
       }
+      public static var lookbehind: Self {
+          .init(ast: .lookbehind)
+      }
+      public static var negativeLookbehind: Self {
+          .init(ast: .negativeLookbehind)
+      }
     }
 
     @_spi(RegexBuilder)
     public struct ConditionKind {
       internal var ast: AST.Conditional.Condition.Kind
     }
-    
+
     @_spi(RegexBuilder)
     public struct QuantificationKind {
       internal var ast: AST.Quantification.Kind
-      
+
       public static var eager: Self {
         .init(ast: .eager)
       }
@@ -923,11 +933,11 @@ extension DSLTree {
         .init(ast: .possessive)
       }
     }
-    
+
     @_spi(RegexBuilder)
     public struct QuantificationAmount {
       internal var ast: AST.Quantification.Amount
-      
+
       public static var zeroOrMore: Self {
         .init(ast: .zeroOrMore)
       }
@@ -965,27 +975,27 @@ extension DSLTree {
         }
       }
     }
-    
+
     @_spi(RegexBuilder)
     public struct ASTNode {
       internal var ast: AST.Node
     }
-    
+
     @_spi(RegexBuilder)
     public struct AbsentFunction {
       internal var ast: AST.AbsentFunction
     }
-    
+
     @_spi(RegexBuilder)
     public struct Reference {
       internal var ast: AST.Reference
     }
-    
+
     @_spi(RegexBuilder)
     public struct MatchingOptionSequence {
       internal var ast: AST.MatchingOptionSequence
     }
-    
+
     public struct Atom {
       internal var ast: AST.Atom
     }
