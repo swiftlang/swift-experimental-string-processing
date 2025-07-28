@@ -6,6 +6,7 @@ add_library(_StringProcessing
   Algorithms/Algorithms/Replace.swift
   Algorithms/Algorithms/Split.swift
   Algorithms/Algorithms/StartsWith.swift
+  Algorithms/Algorithms/SubstringSearcher.swift
   Algorithms/Algorithms/Trim.swift
   Algorithms/Consumers/CollectionConsumer.swift
   Algorithms/Consumers/FixedPatternConsumer.swift
