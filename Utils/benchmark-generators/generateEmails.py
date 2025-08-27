@@ -11,8 +11,8 @@
 
 # python3 generateEmails.py > output.txt
 
-import string
 import random
+import string
 
 random.seed(0)
 
