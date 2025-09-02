@@ -212,7 +212,7 @@ extension Executor {
 extension Processor {
   fileprivate mutating func run() throws -> Input.Index? {
 #if PROCESSOR_MEASUREMENTS_ENABLED
-    defer { if cpu.metrics.shouldMeasureMetrics { cpu.printMetrics() } }
+    defer { if metrics.shouldMeasureMetrics { printMetrics() } }
 #endif
     if self.state == .fail {
       if let e = failureReason {
