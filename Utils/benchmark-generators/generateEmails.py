@@ -1,7 +1,18 @@
+##===----------------------------------------------------------------------===##
+##
+## This source file is part of the Swift.org open source project
+##
+## Copyright (c) 2021-2022 Apple Inc. and the Swift project authors
+## Licensed under Apache License v2.0 with Runtime Library Exception
+##
+## See https://swift.org/LICENSE.txt for license information
+##
+##===----------------------------------------------------------------------===##
+
 # python3 generateEmails.py > output.txt
 
-import string
 import random
+import string
 
 random.seed(0)
 
@@ -15,15 +26,15 @@ n = 1000
 # issues but otherwise this should work
 emails = []
 for _ in range(n):
-  domain_len = random.randint(2,64)
-  locale_len = random.randint(2,64)
-  tld_len = random.randint(2,10)
-  
-  domain = "".join(random.sample(domain_charset, domain_len))
-  locale = "".join(random.sample(locale_charset, locale_len))
-  tld = "".join(random.sample(string.ascii_lowercase, tld_len))
-  email = locale + "@" + domain + "." + tld
-  emails.append(email)
+    domain_len = random.randint(2, 64)
+    locale_len = random.randint(2, 64)
+    tld_len = random.randint(2, 10)
+
+    domain = "".join(random.sample(domain_charset, domain_len))
+    locale = "".join(random.sample(locale_charset, locale_len))
+    tld = "".join(random.sample(string.ascii_lowercase, tld_len))
+    email = locale + "@" + domain + "." + tld
+    emails.append(email)
 
 res = """
 extension Inputs {{
