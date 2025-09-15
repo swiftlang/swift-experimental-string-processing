@@ -178,6 +178,7 @@ extension Regex where Output == AnyRegexOutput {
   /// ``init(_:as:)`` initializer instead.
   ///
   /// - Parameter pattern: A string with regular expression syntax.
+  @_effects(readnone)
   public init(_ pattern: String) throws {
     self.init(ast: try parse(pattern, .traditional))
   }
@@ -212,6 +213,7 @@ extension Regex {
   /// - Parameters:
   ///   - pattern: A string with regular expression syntax.
   ///   - outputType: The desired type for the output captures.
+  @_effects(readnone)
   public init(
     _ pattern: String,
     as outputType: Output.Type = Output.self
@@ -247,6 +249,7 @@ extension Regex {
   ///
   /// - Parameter verbatimString: A string to convert into a regular expression
   ///   exactly, escaping any metacharacters.
+  @_effects(readnone)
   public init(verbatim verbatimString: String) {
     self.init(node: .quotedLiteral(verbatimString))
   }
