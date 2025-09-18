@@ -2864,6 +2864,18 @@ extension RegexTests {
     XCTAssertNil(additionalInput.wholeMatch(of: additionalRegex))
   }
   
+  func testIssueSwift81427() throws {
+    // This issue is a nondeterministic matching failure, where this character
+    // set is occasionally compiled incorrectly. Multiple test runs (not just
+    // multiple executions of this test) are required for verification.
+    firstMatchTests(
+      "[(?:\r\n)\n\r]",
+      ("\n", "\n"),
+      ("\r", "\r"),
+      ("\r\n", "\r\n")
+    )
+  }
+  
   func testNSRECompatibility() throws {
     // NSRE-compatibility includes scalar matching, so `[\r\n]` should match
     // either `\r` or `\n`.
