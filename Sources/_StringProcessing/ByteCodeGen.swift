@@ -940,20 +940,26 @@ fileprivate extension Compiler.ByteCodeGen {
       case .atom(let atom):
         switch atom {
         case let .char(char):
-          characters.insert(char)
+          if characters.insert(char).inserted {
+            result.append(member)
+          }
         case let .scalar(scalar):
-          scalars.insert(scalar)
+          if scalars.insert(scalar).inserted {
+            result.append(member)
+          }
         default:
           result.append(member)
         }
       case let .quotedLiteral(str):
-        characters.formUnion(str)
+        for char in str {
+          if characters.insert(char).inserted {
+            result.append(.atom(.char(char)))
+          }
+        }
       default:
         result.append(member)
       }
     }
-    result.append(contentsOf: characters.map { .atom(.char($0)) })
-    result.append(contentsOf: scalars.map { .atom(.scalar($0)) })
     return result
   }
   
