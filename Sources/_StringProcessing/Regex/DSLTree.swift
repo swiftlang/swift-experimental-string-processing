@@ -92,19 +92,38 @@ extension DSLTree {
 }
 
 extension DSLTree {
-  enum QuantificationKind {
+  struct QuantificationKind {
+    var quantificationKind: _AST.QuantificationKind?
+    var isExplicit: Bool
+    var canAutoPossessify: Bool?
+    
     /// The default quantification kind, as set by options.
-    case `default`
+    static var `default`: Self {
+      .init(quantificationKind: nil, isExplicit: false, canAutoPossessify: nil)
+    }
+    
     /// An explicitly chosen kind, overriding any options.
-    case explicit(_AST.QuantificationKind)
+    static func explicit(_ kind: _AST.QuantificationKind) -> Self {
+      .init(quantificationKind: kind, isExplicit: true, canAutoPossessify: nil)
+    }
+
     /// A kind set via syntax, which can be affected by options.
-    case syntax(_AST.QuantificationKind)
+    static func syntax(_ kind: _AST.QuantificationKind) -> Self {
+      .init(quantificationKind: kind, isExplicit: false, canAutoPossessify: nil)
+    }
     
     var ast: AST.Quantification.Kind? {
-      switch self {
-      case .default: return nil
-      case .explicit(let kind), .syntax(let kind):
-        return kind.ast
+      quantificationKind?.ast
+    }
+    
+    func applying(options: MatchingOptions) -> AST.Quantification.Kind {
+      guard let kind = quantificationKind?.ast else {
+        return options.defaultQuantificationKind
+      }
+      return if isExplicit {
+        kind
+      } else {
+        kind.applying(options)
       }
     }
   }
@@ -887,6 +906,146 @@ extension DSLTree.Node {
     var options = MatchingOptions()
     return _canOnlyMatchAtStartImpl(&options) ?? false
   }
+}
+
+// MARK: Required first and last atoms
+
+extension DSLTree.Node {
+  private func _requiredAtomImpl(forward: Bool) -> DSLTree.Atom?? {
+    switch self {
+    case .atom(let atom):
+      return switch atom {
+      case .changeMatchingOptions:
+        nil
+      default:
+        atom
+      }
+
+    // In a concatenation, the first definitive child provides the answer.
+    case .concatenation(let children):
+      if forward {
+        for child in children {
+          if let result = child._requiredAtomImpl(forward: forward) {
+            return result
+          }
+        }
+      } else {
+        for child in children.reversed() {
+          if let result = child._requiredAtomImpl(forward: forward) {
+            return result
+          }
+        }
+      }
+      return nil
+
+    // For a quoted literal, we can look at the first char
+    // TODO: matching semantics???
+    case .quotedLiteral(let str):
+      return str.first.map(DSLTree.Atom.char)
+    
+    // TODO: custom character classes could/should participate here somehow
+    case .customCharacterClass:
+      return .some(nil)
+      
+    // Trivia/empty have no effect.
+    case .trivia, .empty:
+      return nil
+      
+    // For alternation and conditional, no required first (this could change
+    // if we identify the _same_ required first atom across all possibilities).
+    case .orderedChoice, .conditional:
+      return .some(nil)
+
+    // Groups (and other parent nodes) defer to the child.
+    case .nonCapturingGroup(_, let child), .capture(_, _, let child, _),
+        .ignoreCapturesInTypedOutput(let child),
+        .limitCaptureNesting(let child):
+      return child._requiredAtomImpl(forward: forward)
+
+    // A quantification that doesn't require its child to exist can still
+    // allow a start-only match. (e.g. `/(foo)?^bar/`)
+    case .quantification(let amount, _, let child):
+      return amount.requiresAtLeastOne
+        ? child._requiredAtomImpl(forward: forward)
+        : .some(nil)
+
+    // Extended behavior isn't known, so we return `false` for safety.
+    case .consumer, .matcher, .characterPredicate, .absentFunction:
+      return .some(nil)
+    }
+  }
+  
+  internal func requiredFirstAtom() -> DSLTree.Atom? {
+    self._requiredAtomImpl(forward: true) ?? nil
+  }
+  
+  internal func requiredLastAtom() -> DSLTree.Atom? {
+    self._requiredAtomImpl(forward: false) ?? nil
+  }
+}
+
+
+private func _requiredAtomImpl(_ list: inout ArraySlice<DSLTree.Node>) -> DSLTree.Atom?? {
+  guard let node = list.popFirst() else {
+    return nil
+  }
+  switch node {
+  case .atom(let atom):
+    return switch atom {
+    case .changeMatchingOptions:
+      nil
+    default:
+      atom
+    }
+
+  // In a concatenation, the first definitive child provides the answer.
+  case .concatenation(let children):
+    for _ in 0..<children.count {
+      if let result = _requiredAtomImpl(&list) {
+        return result
+      }
+    }
+    return nil
+
+  // For a quoted literal, we can look at the first char
+  // TODO: matching semantics???
+  case .quotedLiteral(let str):
+    return str.first.map(DSLTree.Atom.char)
+  
+  // TODO: custom character classes could/should participate here somehow
+  case .customCharacterClass:
+    return .some(nil)
+    
+  // Trivia/empty have no effect.
+  case .trivia, .empty:
+    return nil
+    
+  // For alternation and conditional, no required first (this could change
+  // if we identify the _same_ required first atom across all possibilities).
+  case .orderedChoice, .conditional:
+    return .some(nil)
+
+  // Groups (and other parent nodes) defer to the child.
+  case .nonCapturingGroup, .capture,
+      .ignoreCapturesInTypedOutput,
+      .limitCaptureNesting:
+    return _requiredAtomImpl(&list)
+
+  // A quantification that doesn't require its child to exist can still
+  // allow a start-only match. (e.g. `/(foo)?^bar/`)
+  case .quantification(let amount, _, _):
+    return amount.requiresAtLeastOne
+      ? _requiredAtomImpl(&list)
+      : .some(nil)
+
+  // Extended behavior isn't known, so we return `false` for safety.
+  case .consumer, .matcher, .characterPredicate, .absentFunction:
+    return .some(nil)
+  }
+}
+
+internal func requiredFirstAtom(_ list: inout ArraySlice<DSLTree.Node>) -> DSLTree.Atom? {
+  _requiredAtomImpl(&list) ?? nil
 }
 
 // MARK: AST wrapper types

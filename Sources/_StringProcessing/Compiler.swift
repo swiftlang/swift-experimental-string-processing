@@ -47,13 +47,13 @@ class Compiler {
   
   __consuming func emitViaList() throws -> MEProgram {
     // TODO: Handle global options
-    let dslList = DSLList(tree: tree)
+    var dslList = DSLList(tree: tree)
     var codegen = ByteCodeGen(
       options: options,
       compileOptions:
         compileOptions,
       captureList: tree.captureList)
-    return try codegen.emitRoot(dslList)
+    return try codegen.emitRoot(&dslList)
   }
 }
 

@@ -12,7 +12,7 @@
 internal import _RegexParser
 
 extension Compiler.ByteCodeGen {
-  mutating func emitRoot(_ root: DSLList) throws -> MEProgram {
+  mutating func emitRoot(_ root: inout DSLList) throws -> MEProgram {
     // If the whole regex is a matcher, then the whole-match value
     // is the constructed value. Denote that the current value
     // register is the processor's value output.
@@ -22,7 +22,11 @@ extension Compiler.ByteCodeGen {
     default:
       break
     }
-
+    
+    if optimizationsEnabled {
+      root.autoPossessify()
+    }
+    
     var list = root.nodes[...]
     try emitNode(&list)
 
@@ -352,15 +356,7 @@ fileprivate extension Compiler.ByteCodeGen {
     _ kind: DSLTree.QuantificationKind,
     _ list: inout ArraySlice<DSLTree.Node>
   ) throws {
-    let updatedKind: AST.Quantification.Kind
-    switch kind {
-    case .explicit(let kind):
-      updatedKind = kind.ast
-    case .syntax(let kind):
-      updatedKind = kind.ast.applying(options)
-    case .default:
-      updatedKind = options.defaultQuantificationKind
-    }
+    let updatedKind = kind.applying(options: options)
 
     let (low, high) = amount.bounds
     guard let low = low else {
