@@ -1979,10 +1979,10 @@ extension RegexDSLTests {
            OneOrMore(.digit)
        } transform: { Int($0)! }
        "/"
-       // denominator
+       // denominator (modified to test for double optional)
        Capture {
            OneOrMore(.digit)
-       } transform: { Int($0)! }
+       } transform: { Optional.some(Int($0)) }
     }
     
     do {
@@ -1995,7 +1995,7 @@ extension RegexDSLTests {
       XCTAssert(erasedMatch.output[0].type == Substring.self)
       XCTAssert(erasedMatch.output[1].type == Int?.self)
       XCTAssert(erasedMatch.output[2].type == Int.self)
-      XCTAssert(erasedMatch.output[3].type == Int.self)
+      XCTAssert(erasedMatch.output[3].type == Int??.self)
     }
 
     do {
@@ -2007,7 +2007,7 @@ extension RegexDSLTests {
       let erasedMatch = Regex<AnyRegexOutput>.Match(match)
       XCTAssert(erasedMatch.output[0].type == Substring.self)
       XCTAssert(erasedMatch.output[2].type == Int.self)
-      XCTAssert(erasedMatch.output[3].type == Int.self)
+      XCTAssert(erasedMatch.output[3].type == Int??.self)
 
       XCTExpectFailure {
         // `nil` value is interpreted as `Substring?` instead of `Int?`
